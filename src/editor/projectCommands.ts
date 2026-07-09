@@ -1,4 +1,4 @@
-import { Project, ProjectCommand } from "./types";
+import { ItemTextRecord, Project, ProjectCommand } from "./types";
 import {
   clearLandLayout,
   clearRandomRect,
@@ -188,6 +188,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "upsertMonsterDescription") return upsertMonsterDescription(project, command.id, command.text);
   if (command.kind === "updateScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, command.changes);
   if (command.kind === "clearScenarioItemRecord") return updateRecord(project, "scenarioItems", command.id, emptyScenarioItem(command.id));
+  if (command.kind === "updateItemTextRecord") return updateItemTextRecord(project, command.itemId, command.changes);
   if (command.kind === "updateTreasureRecord") return updateRecord(project, "treasures", command.id, command.changes);
   if (command.kind === "updateShopRecord") return updateRecord(project, "shops", command.id, command.changes);
   if (command.kind === "updateSimpleEncounterRecord") return updateRecord(project, "simpleEncounters", command.id, command.changes);
@@ -230,6 +231,30 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateProjectAsset") return updateProjectAsset(project, command);
   if (command.kind === "deleteProjectAsset") return deleteProjectAsset(project, command);
   return project;
+}
+
+function updateItemTextRecord(
+  project: Project,
+  itemId: number,
+  changes: Partial<Pick<ItemTextRecord, "unidentifiedName" | "identifiedName" | "description">>
+) {
+  const normalizedItemId = Math.trunc(itemId);
+  const current = [...(project.itemTexts ?? [])];
+  const index = current.findIndex((record) => (record.itemId || record.id) === normalizedItemId);
+  const base = index >= 0 ? current[index] : {
+    id: normalizedItemId,
+    itemId: normalizedItemId,
+    unidentifiedName: "",
+    identifiedName: "",
+    description: "",
+    authored: true,
+    provenance: { sourceFile: "Data ID.rsrc", recordIndex: normalizedItemId, byteOffset: 0, byteLength: 0, confidence: "inferred" as const }
+  };
+  const next = { ...base, ...changes, id: normalizedItemId, itemId: normalizedItemId, authored: true };
+  if (index >= 0) current[index] = next;
+  else current.push(next);
+  current.sort((a, b) => (a.itemId || a.id) - (b.itemId || b.id));
+  return { ...project, itemTexts: current };
 }
 
 export function projectCommandLabel(command: ProjectCommand) {

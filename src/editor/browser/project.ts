@@ -1,4 +1,4 @@
-import { BenchmarkReport, Project, ScenarioShell, ValidationReport } from "../types";
+import { BenchmarkReport, ItemTextRecord, Project, ScenarioShell, ValidationReport } from "../types";
 import { BrowserProjectSource, BrowserRawSourceSnapshot, BrowserScenarioSource, readProjectPackage, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
@@ -66,6 +66,7 @@ export function createBrowserProject(projectName: string): Project {
     monsterIconOverrides: [],
     scenarioIconResources: [],
     scenarioItems: [],
+    itemTexts: [],
     treasures: [],
     shops: [],
     simpleEncounters: [],
@@ -173,6 +174,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     monsterIconOverrides: parsed.monsterIconOverrides,
     scenarioIconResources: [],
     scenarioItems: parsed.scenarioItems,
+    itemTexts: parseBrowserItemTexts(files),
     treasures: parsed.treasures,
     shops: parsed.shops,
     simpleEncounters: parsed.simpleEncounters,
@@ -556,6 +558,7 @@ export function normalizeBrowserProject(project: Project): Project {
   project.monsterIconOverrides ??= [];
   project.scenarioIconResources ??= [];
   project.scenarioItems ??= [];
+  project.itemTexts ??= [];
   project.treasures ??= [];
   project.shops ??= [];
   project.simpleEncounters ??= [];
@@ -703,6 +706,49 @@ function parseBrowserRuleNames(files: Map<string, Uint8Array>) {
 
 function mergeRuleNameStrings(defaults: string[], decoded: string[]) {
   return defaults.map((fallback, index) => decoded[index]?.trim() || fallback);
+}
+
+function parseBrowserItemTexts(files: Map<string, Uint8Array>): ItemTextRecord[] {
+  const byItemId = new Map<number, ItemTextRecord>();
+  for (const [name, bytes] of files) {
+    const normalized = name.replace(/\\/g, "/").toLowerCase();
+    const baseName = normalized.split("/").pop() ?? normalized;
+    if (baseName !== "data id" && baseName !== "data id.rsrc" && baseName !== "data id.rsf" && baseName !== "._data id") continue;
+    for (const resource of parseResourceFork(bytes)) {
+      if (resource.resourceType !== "STR#") continue;
+      const resourceBase = itemTextResourceBase(resource.id);
+      if (resourceBase == null) continue;
+      const slotKind = resource.id - resourceBase;
+      const strings = parseStringListResource(resource.data);
+      for (let index = 0; index < strings.length; index += 1) {
+        const itemId = resourceBase + index;
+        if (itemId <= 0 || itemId >= 1000) continue;
+        const text = typeof strings[index] === "string" ? strings[index] : "";
+        if (!text.trim() && slotKind !== 2) continue;
+        const existing = byItemId.get(itemId) ?? {
+          id: itemId,
+          itemId,
+          unidentifiedName: "",
+          identifiedName: "",
+          description: "",
+          authored: false,
+          provenance: { sourceFile: name, recordIndex: itemId, byteOffset: 0, byteLength: resource.data.byteLength, confidence: "source-backed" }
+        };
+        if (slotKind === 0) existing.unidentifiedName = text;
+        else if (slotKind === 1) existing.identifiedName = text;
+        else if (slotKind === 2) existing.description = text;
+        byItemId.set(itemId, existing);
+      }
+    }
+  }
+  return [...byItemId.values()].sort((a, b) => a.itemId - b.itemId);
+}
+
+function itemTextResourceBase(resourceId: number) {
+  const offset = ((resourceId % 200) + 200) % 200;
+  if (offset !== 0 && offset !== 1 && offset !== 2) return null;
+  const base = resourceId - offset;
+  return base >= 0 && base < 1000 ? base : null;
 }
 
 function browserReferenceTileset(landlook: number) {

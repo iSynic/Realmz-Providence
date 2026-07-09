@@ -166,7 +166,8 @@ export function createBrowserScenarioPackageZip(
   ));
   const warnings = [
     ...(project.validation.ok ? [] : project.validation.warnings),
-    ...projectOnlyScenarioExportWarnings(project)
+    ...projectOnlyScenarioExportWarnings(project),
+    ...itemTextExportWarnings(project, rawSources.files)
   ];
   return {
     fileName,
@@ -406,6 +407,8 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
     const spellNameResourceWrite = writeCustomSpellNameResources(project, rawFiles);
     if (spellNameResourceWrite) writes.push(spellNameResourceWrite);
   }
+  const itemTextResourceWrite = writeItemTextResources(project, rawFiles);
+  if (itemTextResourceWrite) writes.push(itemTextResourceWrite);
   if (project.raceOverrides.length > 0) {
     writes.push({
       path: "Data Race",
@@ -481,6 +484,78 @@ function writeCustomSpellNameResources(project: Project, rawFiles: BrowserRawSou
     path: outputPathForRawSource(source),
     bytes: mergeResourceEntries(source.bytesData, updates).bytes
   };
+}
+
+function writeItemTextResources(project: Project, rawFiles: BrowserRawSourceFile[]): BinaryWriteResult | null {
+  const authored = (project.itemTexts ?? []).filter((record) => record.authored && record.itemId > 0 && record.itemId < 1000);
+  if (authored.length === 0) return null;
+  const source = dataIdResourceFork(rawFiles);
+  const original = source?.bytesData ?? new Uint8Array();
+  const entries = parseResourceFork(original);
+  const updates: ResourceForkUpdate[] = [];
+  const families = new Set(authored.map((record) => Math.floor(record.itemId / 200) * 200));
+  for (const base of [...families].sort((a, b) => a - b)) {
+    for (const offset of [0, 1, 2]) {
+      const resourceId = base + offset;
+      const entry = entries.find((candidate) => candidate.resourceType === "STR#" && candidate.id === resourceId);
+      const strings = entry ? parseStringListResource(entry.data) : [];
+      while (strings.length < 200) strings.push("");
+      let changed = false;
+      for (const record of authored) {
+        if (Math.floor(record.itemId / 200) * 200 !== base) continue;
+        const index = record.itemId - base;
+        if (index < 0 || index >= 200) continue;
+        const next =
+          offset === 0 ? record.unidentifiedName :
+          offset === 1 ? record.identifiedName :
+          record.description;
+        if (strings[index] === next) continue;
+        strings[index] = next ?? "";
+        changed = true;
+      }
+      if (changed) {
+        updates.push({
+          resourceType: entry?.resourceType ?? "STR#",
+          id: entry?.id ?? resourceId,
+          name: entry?.name ?? itemTextResourceName(offset),
+          attributes: entry?.attributes ?? 0,
+          data: encodeStringListResource(strings)
+        });
+      }
+    }
+  }
+  if (updates.length === 0) return null;
+  return {
+    path: source ? outputPathForRawSource(source) : "Data ID.rsrc",
+    bytes: mergeResourceEntries(original, updates).bytes
+  };
+}
+
+function dataIdResourceFork(rawFiles: BrowserRawSourceFile[]) {
+  for (const source of rawFiles) {
+    const outputPath = outputPathForRawSource(source).toLowerCase();
+    const name = source.name.toLowerCase();
+    if (!["data id", "data id.rsrc", "data id.rsf", "._data id"].includes(name) && !outputPath.endsWith("/data id") && !outputPath.endsWith("/data id.rsrc") && !outputPath.endsWith("/data id.rsf") && !outputPath.endsWith("/._data id")) {
+      continue;
+    }
+    if (parseResourceFork(source.bytesData).some((entry) => entry.resourceType === "STR#" && itemTextResourceBase(entry.id) != null)) {
+      return source;
+    }
+  }
+  return null;
+}
+
+function itemTextResourceBase(resourceId: number) {
+  const offset = ((resourceId % 200) + 200) % 200;
+  if (offset !== 0 && offset !== 1 && offset !== 2) return null;
+  const base = resourceId - offset;
+  return base >= 0 && base < 1000 ? base : null;
+}
+
+function itemTextResourceName(offset: number) {
+  if (offset === 0) return "Item Unidentified Names";
+  if (offset === 1) return "Item Names";
+  return "Item Descriptions";
 }
 
 function dataSpellResourceFork(rawFiles: BrowserRawSourceFile[]) {
@@ -763,6 +838,18 @@ function projectOnlyScenarioExportWarnings(project: Project) {
   return [
     "Race/caste rule name edits are project-only labels. Realmz stores those names in the global Data Files/Custom Names.rsrc support resource, which is not part of scenario ZIP export; Data Race/Data Caste behavior records still export normally."
   ];
+}
+
+function itemTextExportWarnings(project: Project, rawFiles: BrowserRawSourceFile[]) {
+  const authored = (project.itemTexts ?? []).some((record) => record.authored);
+  if (!authored || dataIdResourceFork(rawFiles) || canCreateCustomItemTextResource(project)) return [];
+  return [
+    "Custom item name/description edits need a captured Data ID resource fork for scenario ZIP export. They remain preserved in the Providence project package."
+  ];
+}
+
+function canCreateCustomItemTextResource(project: Project) {
+  return (project.itemTexts ?? []).some((record) => record.authored && record.itemId >= 800 && record.itemId < 1000);
 }
 
 function managedAssetResourceBytes(asset: ManagedAsset) {

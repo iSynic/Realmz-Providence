@@ -11,6 +11,13 @@ export type ItemReferenceOption = {
   iconId: number | null;
 };
 
+export type ItemTextDisplay = {
+  itemId: number;
+  unidentifiedName: string;
+  identifiedName: string;
+  description: string;
+};
+
 export type ItemReferenceCategory = "weapon" | "armor" | "accessory" | "magic" | "supply" | "unknown";
 
 export const ITEM_REFERENCE_CATEGORIES: { id: ItemReferenceCategory | "all"; label: string; range?: string }[] = [
@@ -247,6 +254,7 @@ function emptyItemUsage(): ItemUsage {
 function itemReferenceDependencyKey(project: Project, catalog?: LibraryCatalog | null) {
   return [
     "scenarioItems", objectCacheKey(project.scenarioItems),
+    "itemTexts", objectCacheKey(project.itemTexts),
     "treasures", objectCacheKey(project.treasures),
     "shops", objectCacheKey(project.shops),
     "catalogEntities", objectCacheKey(catalog?.entities)
@@ -277,8 +285,35 @@ function formatItemUsage(usage: ItemUsage) {
   return parts.join(", ");
 }
 
+export function itemTextDisplay(project: Project, itemId: number, catalog?: LibraryCatalog | null): ItemTextDisplay {
+  const itemTexts = project.itemTexts ?? [];
+  const projectText = itemTexts.find((record) => record.itemId === itemId || record.id === itemId);
+  const fromCatalog = itemTextsFromStringLists(catalog).get(itemId);
+  return {
+    itemId,
+    unidentifiedName: projectText?.unidentifiedName ?? fromCatalog?.unidentifiedName ?? "",
+    identifiedName: projectText?.identifiedName ?? fromCatalog?.identifiedName ?? "",
+    description: projectText?.description ?? fromCatalog?.description ?? ""
+  };
+}
+
 function itemNamesFromStringLists(project: Project, catalog?: LibraryCatalog | null) {
   const names = new Map<number, string>();
+  for (const [itemId, record] of itemTextsFromStringLists(catalog)) {
+    const label = record.identifiedName.trim() || record.unidentifiedName.trim();
+    if (label && !/^item\s+-?\d+$/i.test(label)) names.set(itemId, label);
+  }
+  for (const record of project.itemTexts ?? []) {
+    const itemId = record.itemId || record.id;
+    const text = (record.identifiedName || record.unidentifiedName || "").trim();
+    if (!itemId || !text || /^item\s+-?\d+$/i.test(text)) continue;
+    names.set(itemId, text);
+  }
+  return names;
+}
+
+function itemTextsFromStringLists(catalog?: LibraryCatalog | null) {
+  const itemTexts = new Map<number, ItemTextDisplay>();
   const resources = [
     ...(catalog?.entities.filter((entity) => entity.type === "resource" || entity.type === "string-list-resource") ?? [])
   ];
@@ -289,17 +324,23 @@ function itemNamesFromStringLists(project: Project, catalog?: LibraryCatalog | n
     const resourceId = numericSummaryValue(resource, ["resourceId", "id"]);
     const strings = Array.isArray(resource.summary.strings) ? resource.summary.strings : [];
     if (resourceId == null || strings.length === 0) continue;
-    const base = resourceId - 1;
-    if (base < 0 || base % 200 !== 0) continue;
+    const offset = ((resourceId % 200) + 200) % 200;
+    if (offset !== 0 && offset !== 1 && offset !== 2) continue;
+    const base = resourceId - offset;
+    if (base < 0 || base >= 1000) continue;
     for (let index = 0; index < strings.length; index += 1) {
       const itemId = base + index;
       if (itemId <= 0) continue;
       const text = typeof strings[index] === "string" ? strings[index].trim() : "";
-      if (!text || /^item\s+-?\d+$/i.test(text)) continue;
-      names.set(itemId, text);
+      if (!text) continue;
+      const existing = itemTexts.get(itemId) ?? { itemId, unidentifiedName: "", identifiedName: "", description: "" };
+      if (offset === 0) existing.unidentifiedName = text;
+      else if (offset === 1) existing.identifiedName = text;
+      else if (offset === 2) existing.description = text;
+      itemTexts.set(itemId, existing);
     }
   }
-  return names;
+  return itemTexts;
 }
 
 function itemCategoryLabel(itemId: number) {

@@ -1,20 +1,19 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { ENTITY_TYPE_LABELS } from "../constants";
-import { loadBrowserBundledLibraryAssetPreview, loadBrowserBundledLibraryResourceData } from "../browser/library";
-import { createIconLibraryEntry, iconLibraryAssetResourceBase64, providenceIconLibraryAssets } from "../iconLibrary";
+import { loadBrowserBundledLibraryAssetPreview } from "../browser/library";
 import { TutorialTip } from "../components/TutorialTip";
-import { useIconPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
+import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { isDraftEntity, LibraryDraftSpec } from "../libraryDrafts";
-import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, ScenarioIconResource, ScenarioItemRecord, SemanticEntity, SelectedEntity } from "../types";
+import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKind, Project, ProjectCommand, RealmzTargetRecordKind, ScenarioItemRecord, SemanticEntity, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
 import { TargetRecordEditor } from "./ScriptsPanel";
 import { directRecordsForTool, labelForSelectedId, type DirectRecordRow } from "../directRecordIndex";
-import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
+import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../itemReferences";
 import { ruleCasteName, ruleRaceName } from "../ruleNames";
+import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
 
 const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string; editors: DomainEditor[] }> = {
   maps: {
@@ -190,6 +189,7 @@ export function SuiteDomainPanel({
   projectDir?: string;
   workspaceDir?: string;
 }) {
+  void onUpdateLibraryCatalog;
   const config = DOMAIN_CONFIG[tab];
   const economyActive = tab === "economy";
   const [economySection, setEconomySection] = useState<EconomySection>(() =>
@@ -281,7 +281,6 @@ export function SuiteDomainPanel({
           previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
-          onUpdateLibraryCatalog={onUpdateLibraryCatalog}
         />
       )}
       {project && targetRecordTypes.length > 0 && (
@@ -297,6 +296,16 @@ export function SuiteDomainPanel({
           {visibleTargetRecordTypes.map((recordType) => (
             economyActive && recordType === "treasure" ? (
               <TreasureWorkbench
+                key={recordType}
+                project={project}
+                catalog={catalog}
+                selectedEntity={selectedEntity}
+                previewContext={{ desktopRuntime, projectDir, workspaceDir }}
+                onSelectEntity={onSelectEntity}
+                onApplyCommand={onApplyCommand}
+              />
+            ) : economyActive && recordType === "shop" ? (
+              <ShopWorkbench
                 key={recordType}
                 project={project}
                 catalog={catalog}
@@ -586,8 +595,7 @@ function ItemCatalogWorkbench({
   selectedEntity,
   previewContext,
   onSelectEntity,
-  onApplyCommand,
-  onUpdateLibraryCatalog
+  onApplyCommand
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -595,12 +603,12 @@ function ItemCatalogWorkbench({
   previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
-  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
 }) {
   const deferredOptions = useDeferredItemReferenceOptions(project, catalog);
   const options = deferredOptions ?? [];
   const [category, setCategory] = useState<ItemReferenceCategory | "all">("weapon");
   const [query, setQuery] = useState("");
+  const [visibleLimit, setVisibleLimit] = useState(240);
   const selectedFromEntity = itemIdFromEntityId(selectedEntity?.id ?? "");
   const filteredOptions = useMemo(() => {
     const text = query.trim().toLowerCase();
@@ -610,7 +618,11 @@ function ItemCatalogWorkbench({
       return [option.label, option.detail, option.summary, String(option.value)].some((part) => part.toLowerCase().includes(text));
     });
   }, [category, options, query]);
-  const visibleOptions = useMemo(() => filteredOptions.slice(0, 240), [filteredOptions]);
+  useEffect(() => {
+    setVisibleLimit(240);
+  }, [category, query]);
+  const visibleOptions = useMemo(() => filteredOptions.slice(0, visibleLimit), [filteredOptions, visibleLimit]);
+  const hiddenOptionCount = Math.max(0, filteredOptions.length - visibleOptions.length);
   const [localSelectedId, setLocalSelectedId] = useState<number | null>(null);
   const selectedId =
     selectedFromEntity ??
@@ -679,10 +691,15 @@ function ItemCatalogWorkbench({
                 <b>{option.value}</b>
               </button>
             ))}
-            {filteredOptions.length > visibleOptions.length && (
-              <p className="domain-list-limit">
-                {filteredOptions.length - visibleOptions.length} more item reference{filteredOptions.length - visibleOptions.length === 1 ? "" : "s"}; search or choose a narrower category.
-              </p>
+            {hiddenOptionCount > 0 && (
+              <div className="item-browser-load-more">
+                <small>
+                  {hiddenOptionCount} more item reference{hiddenOptionCount === 1 ? "" : "s"}.
+                </small>
+                <button type="button" onClick={() => setVisibleLimit((limit) => limit + 240)}>
+                  Load {Math.min(240, hiddenOptionCount)} More
+                </button>
+              </div>
             )}
             {filteredOptions.length === 0 && <p>No items match this category/search.</p>}
           </ScrollArea>
@@ -695,7 +712,6 @@ function ItemCatalogWorkbench({
           previewContext={previewContext}
           onSelectEntity={onSelectEntity}
           onApplyCommand={onApplyCommand}
-          onUpdateLibraryCatalog={onUpdateLibraryCatalog}
         />
       </div>
     </article>
@@ -728,7 +744,6 @@ function useDeferredItemReferenceOptions(project: Project, catalog?: LibraryCata
   const [options, setOptions] = useState<ItemReferenceOption[] | null>(null);
   useEffect(() => {
     let disposed = false;
-    setOptions(null);
     const timer = window.setTimeout(() => {
       const next = itemReferenceOptions(project, catalog);
       if (!disposed) setOptions(next);
@@ -757,8 +772,7 @@ function ItemDetailPanel({
   catalog,
   previewContext,
   onSelectEntity,
-  onApplyCommand,
-  onUpdateLibraryCatalog
+  onApplyCommand
 }: {
   option: ItemReferenceOption | null;
   entity: SemanticEntity | LibraryEntity | null;
@@ -767,7 +781,6 @@ function ItemDetailPanel({
   previewContext: PreviewRuntimeContext;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
-  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
 }) {
   if (!option) {
     return (
@@ -784,13 +797,23 @@ function ItemDetailPanel({
   const customEditable = customRecordId != null;
   const customSlotOccupied = Boolean(scenarioItem && scenarioItemSlotInUse(scenarioItem));
   const nextCustomId = nextCustomItemId(project);
+  const itemText = itemTextDisplay(project, option.value, catalog);
+  const editableItemText = {
+    ...itemText,
+    unidentifiedName: itemText.unidentifiedName || itemText.identifiedName || `Item ${option.value}`,
+    identifiedName: itemText.identifiedName || itemText.unidentifiedName || `Custom Item ${option.value}`,
+    description: itemText.description
+  };
   return (
     <section className="item-detail-panel">
       <header>
-        <div>
-          <span>{option.value}</span>
-          <h3>{option.label.replace(/\s+\(-?\d+\)$/, "")}</h3>
-          <p>{itemFamilyLabel(option.value)}{unique ? " | unique item cost" : ""}</p>
+        <div className="item-detail-title">
+          <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} />
+          <div>
+            <span>{option.value}</span>
+            <h3>{option.label.replace(/\s+\(-?\d+\)$/, "")}</h3>
+            <p>{itemFamilyLabel(option.value)}{unique ? " | unique item cost" : ""}</p>
+          </div>
         </div>
         <b>{itemEditRangeLabel(option.value)}</b>
       </header>
@@ -801,7 +824,7 @@ function ItemDetailPanel({
             <button
               type="button"
               className="btn btn-primary btn-xs"
-              onClick={() => onApplyCommand?.({ kind: "updateScenarioItemRecord", label: `Edit custom item ${option.value}`, id: customRecordId, changes: { itemId: option.value } })}
+            onClick={() => onApplyCommand?.({ kind: "updateScenarioItemRecord", label: `Edit custom item ${option.value}`, id: customRecordId, changes: { itemId: option.value } })}
             >
               Create Custom Item
             </button>
@@ -821,11 +844,22 @@ function ItemDetailPanel({
               className="btn btn-primary btn-xs"
               onClick={() => {
                 const id = nextCustomId - 800;
+                const copiedText = itemTextDisplay(project, option.value, catalog);
                 onApplyCommand?.({
                   kind: "updateScenarioItemRecord",
                   label: `Copy item ${option.value} to custom item ${nextCustomId}`,
                   id,
                   changes: { ...scenarioItemChangesFromSummary(summary), itemId: nextCustomId }
+                });
+                onApplyCommand?.({
+                  kind: "updateItemTextRecord",
+                  label: `Copy item ${option.value} names to custom item ${nextCustomId}`,
+                  itemId: nextCustomId,
+                  changes: {
+                    unidentifiedName: copiedText.unidentifiedName || copiedText.identifiedName || `Item ${nextCustomId}`,
+                    identifiedName: copiedText.identifiedName || copiedText.unidentifiedName || `Custom Item ${nextCustomId}`,
+                    description: copiedText.description
+                  }
                 });
                 onSelectEntity(selectEntityFromId(`item:${nextCustomId}`));
               }}
@@ -837,55 +871,63 @@ function ItemDetailPanel({
           <span>All custom item slots are currently in use.</span>
         )}
       </div>
-      <div className="item-detail-grid">
-        <ItemFact label="Icon" value={numberText(summary, "iconId")} />
-        <ItemFact label="Type" value={numberText(summary, "type")} />
-        <ItemFact label="Cost" value={costText(numberField(summary, "cost"))} />
-        <ItemFact label="Charges" value={numberText(summary, "charge")} />
-        <ItemFact label="Sound" value={numberText(summary, "sound")} />
-        <ItemFact label="Cursed As" value={numberText(summary, "cursedItemId")} />
-      </div>
-      <div className="item-detail-columns">
-        <ItemFieldGroup title="Equipping" help="Stats and equipment-facing fields used by Realmz item wear/use behavior. Built-in values are reference data unless this is a custom scenario item.">
-          <ItemFact label="Strength" value={numberText(summary, "st")} />
-          <ItemFact label="Luck" value={numberText(summary, "lu")} />
-          <ItemFact label="Movement" value={numberText(summary, "movement")} />
-          <ItemFact label="Armor Rating" value={numberText(summary, "ac")} />
-          <ItemFact label="Magic Resist" value={numberText(summary, "magicResistance")} />
-          <ItemFact label="Spell Points" value={numberText(summary, "spellPoints")} />
-          <ItemFact label="Hands" value={numberText(summary, "hands")} />
-          <ItemFact label="Weight" value={numberText(summary, "weight")} />
-        </ItemFieldGroup>
-        <ItemFieldGroup title="Damage" help="Damage and resistance modifiers used by weapon and item behavior. Values come from shared Data ID or scenario Data NI depending on the item family.">
-          <ItemFact label="Base Damage" value={numberText(summary, "damage")} />
-          <ItemFact label="Heat" value={numberText(summary, "heat")} />
-          <ItemFact label="Cold" value={numberText(summary, "cold")} />
-          <ItemFact label="Electric" value={numberText(summary, "electric")} />
-          <ItemFact label="Vs. Small" value={numberText(summary, "vSmall")} />
-          <ItemFact label="Vs. Large" value={numberText(summary, "vLarge")} />
-          <ItemFact label="Vs. Undead" value={numberText(summary, "vsUndead")} />
-          <ItemFact label="Vs. Evil" value={numberText(summary, "vsEvil")} />
-        </ItemFieldGroup>
-        <ItemFieldGroup title="Special Behavior" help="Special item fields drive unusual runtime behavior. Door-like items can call Extra Action Points, so changes here can affect Scripts.">
-          <ItemFact label="Special 1" value={numberText(summary, "special1")} />
-          <ItemFact label="Special 2" value={numberText(summary, "special2")} />
-          <ItemFact label="Special 3" value={numberText(summary, "special3")} />
-          <ItemFact label="Special 4" value={numberText(summary, "special4")} />
-          <ItemFact label="Special 5" value={numberText(summary, "special5")} />
-          <ItemFact label="Weight / Charge" value={numberText(summary, "weightPerCharge")} />
-          <ItemFact label="Drop On Empty" value={numberText(summary, "dropOnEmpty")} />
-          <ItemFact label="Magic Flag" value={numberText(summary, "magical")} />
-        </ItemFieldGroup>
-        <ItemFieldGroup title="Use Restrictions" help="Race, caste, category, and class-gating values used to decide who can use this item.">
-          <ItemFact label="Item Category Bits" value={formatPair(summary.itemCat0, summary.itemCat1)} />
-          <ItemFact label="Race Restrictions" value={numberText(summary, "raceRestrictions")} />
-          <ItemFact label="Caste Restrictions" value={numberText(summary, "casteRestrictions")} />
-          <ItemFact label="Specific Race" value={numberText(summary, "specificRace")} />
-          <ItemFact label="Specific Caste" value={numberText(summary, "specificCaste")} />
-          <ItemFact label="Race Class Only" value={numberText(summary, "raceClassOnly")} />
-          <ItemFact label="Caste Class Only" value={numberText(summary, "casteClassOnly")} />
-        </ItemFieldGroup>
-      </div>
+      {!customEditable && (
+        <>
+          <ItemTextSummary itemText={editableItemText} />
+          <div className="item-detail-grid">
+            <ItemFact label="Icon" value={numberText(summary, "iconId")} />
+            <ItemFact label="Type" value={itemTypeText(numberField(summary, "type"))} />
+            <ItemFact label="Cost" value={costText(numberField(summary, "cost"))} />
+            <ItemFact label="Charges" value={numberText(summary, "charge")} />
+            <ItemFact label="Sound" value={numberText(summary, "sound")} />
+            <ItemFact label="Cursed As" value={numberText(summary, "cursedItemId")} />
+          </div>
+          <div className="item-detail-columns">
+            <ItemFieldGroup title="Equipping" help="Stats and equipment-facing fields used by Realmz item wear/use behavior. Built-in values are reference data unless this is a custom scenario item.">
+              <ItemFact label="Strength" value={numberText(summary, "st")} />
+              <ItemFact label="Luck" value={numberText(summary, "lu")} />
+              <ItemFact label="Movement" value={numberText(summary, "movement")} />
+              <ItemFact label="Armor Rating" value={numberText(summary, "ac")} />
+              <ItemFact label="Magic Resist" value={numberText(summary, "magicResistance")} />
+              <ItemFact label="Spell Points" value={numberText(summary, "spellPoints")} />
+              <ItemFact label="Hands" value={numberText(summary, "hands")} />
+              <ItemFact label="Weight" value={numberText(summary, "weight")} />
+            </ItemFieldGroup>
+            <ItemFieldGroup title="Damage" help="Damage and resistance modifiers used by weapon and item behavior. Values come from shared Data ID or scenario Data NI depending on the item family.">
+              <ItemFact label="Base Damage" value={numberText(summary, "damage")} />
+              <ItemFact label="Heat" value={numberText(summary, "heat")} />
+              <ItemFact label="Cold" value={numberText(summary, "cold")} />
+              <ItemFact label="Electric" value={numberText(summary, "electric")} />
+              <ItemFact label="Vs. Small" value={numberText(summary, "vSmall")} />
+              <ItemFact label="Vs. Large" value={numberText(summary, "vLarge")} />
+              <ItemFact label="Vs. Undead" value={numberText(summary, "vsUndead")} />
+              <ItemFact label="Vs. Evil" value={numberText(summary, "vsEvil")} />
+            </ItemFieldGroup>
+            <ItemFieldGroup title="Special Behavior" help="Special item fields drive unusual runtime behavior. Door-like items can call Extra Action Points, so changes here can affect Scripts.">
+              <ItemFact label="Special 1" value={numberText(summary, "special1")} />
+              <ItemFact label="Special 2" value={numberText(summary, "special2")} />
+              <ItemFact label="Special 3" value={numberText(summary, "special3")} />
+              <ItemFact label="Special 4" value={numberText(summary, "special4")} />
+              <ItemFact label="Special 5" value={numberText(summary, "special5")} />
+              <ItemFact label="Weight / Charge" value={numberText(summary, "weightPerCharge")} />
+              <ItemFact label="Drop On Empty" value={numberText(summary, "dropOnEmpty")} />
+              <ItemFact label="Magical" value={numberText(summary, "magical")} />
+            </ItemFieldGroup>
+            <ItemFieldGroup title="Use Restrictions" help="Race, caste, category, and class-gating values used to decide who can use this item.">
+              <ItemRestrictionSummary
+                itemCat0={numberField(summary, "itemCat0") ?? 0}
+                itemCat1={numberField(summary, "itemCat1") ?? 0}
+                raceRestrictions={numberField(summary, "raceRestrictions") ?? 0}
+                casteRestrictions={numberField(summary, "casteRestrictions") ?? 0}
+                specificRace={numberField(summary, "specificRace") ?? 0}
+                specificCaste={numberField(summary, "specificCaste") ?? 0}
+                raceClassOnly={numberField(summary, "raceClassOnly") ?? 0}
+                casteClassOnly={numberField(summary, "casteClassOnly") ?? 0}
+              />
+            </ItemFieldGroup>
+          </div>
+        </>
+      )}
       {customEditable && (
         <ScenarioItemEditor
           record={scenarioItem ?? emptyScenarioItemForUi(customRecordId)}
@@ -893,8 +935,7 @@ function ItemDetailPanel({
           project={project}
           catalog={catalog}
           previewContext={previewContext}
-          onApplyCommand={onApplyCommand}
-          onUpdateLibraryCatalog={onUpdateLibraryCatalog}
+          itemText={editableItemText}
           onChange={(field, value) => {
             onApplyCommand?.({
               kind: "updateScenarioItemRecord",
@@ -903,6 +944,17 @@ function ItemDetailPanel({
               changes: { itemId: option.value, [field]: value } as Partial<ScenarioItemRecord>
             });
           }}
+          onTextChange={(changes) => onApplyCommand?.({
+            kind: "updateItemTextRecord",
+            label: `Update custom item ${option.value} text`,
+            itemId: option.value,
+            changes: {
+              unidentifiedName: editableItemText.unidentifiedName,
+              identifiedName: editableItemText.identifiedName,
+              description: editableItemText.description,
+              ...changes
+            }
+          })}
         />
       )}
       <section className="item-used-by">
@@ -918,9 +970,22 @@ function ItemDetailPanel({
   );
 }
 
-function ItemFieldGroup({ title, help, children }: { title: string; help?: string; children: ReactNode }) {
+function ItemTextSummary({ itemText }: { itemText: ItemTextDisplay }) {
   return (
-    <section className="item-field-group">
+    <ItemFieldGroup title="Names And Description" className="item-field-group-full item-text-summary">
+      <ItemFact label="Unidentified Name" value={itemText.unidentifiedName || "None"} />
+      <ItemFact label="Identified Name" value={itemText.identifiedName || "None"} />
+      <div className="item-fact item-fact-description">
+        <span>Description</span>
+        <code>{itemText.description || "None"}</code>
+      </div>
+    </ItemFieldGroup>
+  );
+}
+
+function ItemFieldGroup({ title, help, className = "", children }: { title: string; help?: string; className?: string; children: ReactNode }) {
+  return (
+    <section className={`item-field-group ${className}`.trim()}>
       <header>
         {help ? (
           <TutorialTip title={title} body={help} side="right">
@@ -964,12 +1029,6 @@ type ScenarioItemNumberKey =
   | "magical"
   | "itemCat0"
   | "itemCat1"
-  | "raceRestrictions"
-  | "casteRestrictions"
-  | "specificRace"
-  | "specificCaste"
-  | "raceClassOnly"
-  | "casteClassOnly"
   | "vSmall"
   | "vLarge"
   | "heat"
@@ -997,9 +1056,7 @@ const SCENARIO_ITEM_EDIT_GROUPS: Array<{
       { key: "type", label: "Type", help: "Realmz item type/category field." },
       { key: "cost", label: "Cost", help: "Negative cost marks a unique item in Realmz." },
       { key: "charge", label: "Charges", help: "Number of uses or charges, when the item supports them." },
-      { key: "sound", label: "Sound", help: "Sound played by item effects, when used." },
-      { key: "cursedItemId", label: "Cursed As", help: "Item ID used after curse transformation." },
-      { key: "magical", label: "Magic Flag", help: "Realmz magical-item marker." }
+      { key: "sound", label: "Sound", help: "Sound played by item effects, when used." }
     ]
   },
   {
@@ -1030,26 +1087,12 @@ const SCENARIO_ITEM_EDIT_GROUPS: Array<{
       { key: "vsEvil", label: "Vs. Evil" }
     ]
   },
-  {
-    title: "Restrictions And Special Fields",
-    fields: [
-      { key: "itemCat0", label: "Category Bits A" },
-      { key: "itemCat1", label: "Category Bits B" },
-      { key: "raceRestrictions", label: "Race Restrict." },
-      { key: "casteRestrictions", label: "Caste Restrict." },
-      { key: "specificRace", label: "Specific Race" },
-      { key: "specificCaste", label: "Specific Caste" },
-      { key: "raceClassOnly", label: "Race Only" },
-      { key: "casteClassOnly", label: "Caste Only" },
-      { key: "special1", label: "Special 1" },
-      { key: "special2", label: "Special 2" },
-      { key: "special3", label: "Special 3" },
-      { key: "special4", label: "Special 4" },
-      { key: "special5", label: "Special 5" },
-      { key: "weightPerCharge", label: "Weight/Charge" },
-      { key: "dropOnEmpty", label: "Drop Empty" }
-    ]
-  }
+];
+
+const SCENARIO_ITEM_SPECIAL_FIELDS: Array<{ key: ScenarioItemNumberKey; label: string; help?: string }> = [
+  { key: "special5", label: "Bonus / Amount", help: "Amount used by ability, monster-type, and party-condition effects." },
+  { key: "weightPerCharge", label: "Weight / Charge", help: "Weight used per charge for charge-like items." },
+  { key: "dropOnEmpty", label: "Drop On Empty", help: "Whether Realmz drops this item when its charges are depleted." }
 ];
 
 function ScenarioItemEditor({
@@ -1058,19 +1101,21 @@ function ScenarioItemEditor({
   project,
   catalog,
   previewContext,
-  onApplyCommand,
-  onUpdateLibraryCatalog,
-  onChange
+  itemText,
+  onChange,
+  onTextChange
 }: {
   record: ScenarioItemRecord;
   itemId: number;
   project: Project;
   catalog?: LibraryCatalog | null;
   previewContext: PreviewRuntimeContext;
-  onApplyCommand?: (command: ProjectCommand) => void;
-  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
-  onChange: (field: ScenarioItemNumberKey, value: number) => void;
+  itemText: ItemTextDisplay;
+  onChange: (field: ScenarioItemNumberKey | ItemRestrictionKey, value: number) => void;
+  onTextChange: (changes: Partial<Pick<ItemTextDisplay, "unidentifiedName" | "identifiedName" | "description">>) => void;
 }) {
+  const magicalRawValue = Number(record.magical ?? 0);
+  const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [catalog, project]);
   return (
     <section className="scenario-item-editor" aria-label={`Custom item ${itemId} editor`}>
       <header>
@@ -1085,8 +1130,30 @@ function ScenarioItemEditor({
         <small>Scenario items</small>
       </header>
       <div className="scenario-item-editor-grid">
+        <ItemFieldGroup title="Names And Description" className="item-field-group-full item-name-editor">
+          <ItemTextInput
+            label="Unidentified Name"
+            value={itemText.unidentifiedName || itemText.identifiedName || `Item ${itemId}`}
+            onCommit={(value) => onTextChange({ unidentifiedName: value })}
+          />
+          <ItemTextInput
+            label="Identified Name"
+            value={itemText.identifiedName || itemText.unidentifiedName || `Custom Item ${itemId}`}
+            onCommit={(value) => onTextChange({ identifiedName: value })}
+          />
+          <ItemTextInput
+            label="Description"
+            value={itemText.description}
+            multiline
+            onCommit={(value) => onTextChange({ description: value })}
+          />
+        </ItemFieldGroup>
         {SCENARIO_ITEM_EDIT_GROUPS.map((group) => (
-          <ItemFieldGroup key={group.title} title={group.title}>
+          <ItemFieldGroup
+            key={group.title}
+            title={group.title}
+            className={group.title === "Identity And Use" ? "item-field-group-compact" : undefined}
+          >
             {group.fields.map((field) => field.key === "iconId" ? (
               <ItemIconField
                 key={field.key}
@@ -1094,9 +1161,23 @@ function ScenarioItemEditor({
                 project={project}
                 catalog={catalog}
                 previewContext={previewContext}
-                onApplyCommand={onApplyCommand}
-                onUpdateLibraryCatalog={onUpdateLibraryCatalog}
+                itemOptions={itemOptions}
                 onChange={(value) => onChange("iconId", value)}
+              />
+            ) : field.key === "type" ? (
+              <ItemTypeSelectField
+                key={field.key}
+                value={Number(record.type ?? 0)}
+                onChange={(value) => onChange("type", value)}
+              />
+            ) : field.key === "sound" ? (
+              <ItemSoundField
+                key={field.key}
+                value={Number(record.sound ?? 0)}
+                project={project}
+                catalog={catalog}
+                previewContext={previewContext}
+                onChange={(value) => onChange("sound", value)}
               />
             ) : (
               <ItemNumberInput
@@ -1109,105 +1190,694 @@ function ScenarioItemEditor({
             ))}
           </ItemFieldGroup>
         ))}
+        <ItemFieldGroup title="Identification And Curse">
+          <ItemMagicField
+            value={magicalRawValue}
+            onChange={(value) => onChange("magical", value)}
+          />
+          <CursedFormItemField
+            value={Number(record.cursedItemId ?? 0)}
+            options={itemOptions}
+            onChange={(value) => onChange("cursedItemId", value)}
+          />
+          <ItemCategorySelectEditor
+            itemCat0={record.itemCat0}
+            itemCat1={record.itemCat1}
+            onChange={(itemCat0, itemCat1) => {
+              if (itemCat0 !== record.itemCat0) onChange("itemCat0", itemCat0);
+              if (itemCat1 !== record.itemCat1) onChange("itemCat1", itemCat1);
+            }}
+          />
+          {magicalRawValue !== 0 && magicalRawValue !== 1 && (
+            <ItemFieldNote>
+              Magic raw value {magicalRawValue}; Realmz treats any nonzero value as magical. Toggling normalizes it to 1 or 0.
+            </ItemFieldNote>
+          )}
+        </ItemFieldGroup>
+        <ItemFieldGroup title="Race And Caste Restrictions" className="item-field-group-full">
+          <ItemUseRestrictionEditor
+            record={record}
+            onChange={(field, value) => onChange(field, value)}
+          />
+        </ItemFieldGroup>
+        <ItemFieldGroup title="Special Behavior" className="item-field-group-full">
+          <ItemSpecialBehaviorSummary record={record} />
+          <div className="item-special-field-grid">
+            <ItemSpecialEffectCodeField
+              value={Number(record.special1 ?? 0)}
+              onChange={(value) => onChange("special1", value)}
+            />
+            <ItemNumberInput
+              label="Spell / Amount"
+              value={Number(record.special2 ?? 0)}
+              title="Spell number for spell-storing items, or amount used by condition and attack effects."
+              onCommit={(value) => onChange("special2", value)}
+            />
+            <ItemSpecialAttributeField
+              label="Special 3"
+              value={Number(record.special3 ?? 0)}
+              onChange={(value) => onChange("special3", value)}
+            />
+            <ItemSpecialAttributeField
+              label="Special 4"
+              value={Number(record.special4 ?? 0)}
+              onChange={(value) => onChange("special4", value)}
+            />
+            {SCENARIO_ITEM_SPECIAL_FIELDS.map((field) => (
+              <ItemNumberInput
+                key={field.key}
+                label={field.label}
+                value={Number(record[field.key] ?? 0)}
+                title={field.help}
+                onCommit={(value) => onChange(field.key, value)}
+              />
+            ))}
+          </div>
+        </ItemFieldGroup>
       </div>
     </section>
   );
 }
 
-type ItemIconOption = {
-  key: string;
-  resourceId: number;
+type ItemRestrictionKey =
+  | "raceRestrictions"
+  | "casteRestrictions"
+  | "specificRace"
+  | "specificCaste"
+  | "raceClassOnly"
+  | "casteClassOnly";
+
+const CASTE_CLASS_LABELS = [
+  "Warrior Castes",
+  "Thief Castes",
+  "Archer Castes",
+  "Sorcerer Castes",
+  "Priest Castes",
+  "Enchanter Castes",
+  "Warrior Wizard Castes"
+];
+
+function ItemRestrictionSummary({
+  itemCat0,
+  itemCat1,
+  raceRestrictions,
+  casteRestrictions,
+  specificRace,
+  specificCaste,
+  raceClassOnly,
+  casteClassOnly
+}: {
+  itemCat0: number;
+  itemCat1: number;
+  raceRestrictions: number;
+  casteRestrictions: number;
+  specificRace: number;
+  specificCaste: number;
+  raceClassOnly: number;
+  casteClassOnly: number;
+}) {
+  return (
+    <div className="item-restriction-summary">
+      <ItemFact label="Item Categories" value={summarizeItemCategoryLabels(itemCat0, itemCat1, 5)} />
+      <ItemFact label="Cannot Use - Race Types" value={summarizeMaskLabels(raceRestrictions, RACE_DESCRIPTOR_LABELS)} />
+      <ItemFact label="Can Use Only - Race Types" value={summarizeMaskLabels(raceClassOnly, RACE_DESCRIPTOR_LABELS)} />
+      <ItemFact label="Cannot Use - Caste Types" value={summarizeMaskLabels(casteRestrictions, CASTE_CLASS_LABELS)} />
+      <ItemFact label="Can Use Only - Caste Types" value={summarizeMaskLabels(casteClassOnly, CASTE_CLASS_LABELS)} />
+      <ItemFact label="Specific Race" value={specificRace ? `${specificRace}: ${REALMZ_RACES[specificRace - 1] ?? "Unknown race"}` : "Any"} />
+      <ItemFact label="Specific Caste" value={specificCaste ? `${specificCaste}: ${REALMZ_CASTES[specificCaste - 1] ?? "Unknown caste"}` : "Any"} />
+    </div>
+  );
+}
+
+function ItemCategorySelectEditor({
+  itemCat0,
+  itemCat1,
+  onChange
+}: {
+  itemCat0: number;
+  itemCat1: number;
+  onChange: (itemCat0: number, itemCat1: number) => void;
+}) {
+  const selectedIndex = selectedItemCategoryIndex(itemCat0, itemCat1);
+  return (
+    <label className="item-category-select-editor">
+      <span>Category</span>
+      <select
+        value={selectedIndex == null ? "" : String(selectedIndex)}
+        onChange={(event) => {
+          const nextIndex = event.currentTarget.value === "" ? null : Number(event.currentTarget.value);
+          onChange(...itemCategoryPairForSingleSelection(nextIndex));
+        }}
+      >
+        <option value="">No category</option>
+        {ITEM_CATEGORY_LABELS.map((label, index) => (
+          <option key={label} value={index}>
+            {label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function ItemMagicField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const magical = value !== 0;
+  return (
+    <label className="item-check-field" title="Realmz checks this as a nonzero magical-item marker.">
+      <input
+        type="checkbox"
+        checked={magical}
+        onChange={(event) => onChange(event.currentTarget.checked ? 1 : 0)}
+      />
+      <span>Detectable As Magical</span>
+    </label>
+  );
+}
+
+function CursedFormItemField({
+  value,
+  options,
+  onChange
+}: {
+  value: number;
+  options: ItemReferenceOption[];
+  onChange: (value: number) => void;
+}) {
+  const selectedOption = options.find((option) => option.value === value);
+  return (
+    <label className="item-number-input item-field-wide" title="If nonzero, Realmz secretly loads this item as the cursed form while keeping the original item identity hidden until revealed.">
+      <span>Cursed Form Item</span>
+      <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
+        <option value="0">No cursed form</option>
+        {value !== 0 && !selectedOption && <option value={String(value)}>Current item {value}</option>}
+        {options.map((option) => (
+          <option key={option.key} value={String(option.value)}>{option.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function ItemFieldNote({ children }: { children: ReactNode }) {
+  return <p className="item-field-note">{children}</p>;
+}
+
+function ItemSpecialBehaviorSummary({ record }: { record: ScenarioItemRecord }) {
+  const descriptions = describeItemSpecialBehavior(record);
+  return (
+    <div className="item-special-summary">
+      <strong>Known Behavior</strong>
+      {descriptions.length ? (
+        <ul>
+          {descriptions.map((description) => <li key={description}>{description}</li>)}
+        </ul>
+      ) : (
+        <p>No known special behavior fields are set.</p>
+      )}
+    </div>
+  );
+}
+
+function ItemSpecialEffectCodeField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const group = specialEffectGroupForValue(value);
+  const groupOptions = specialEffectOptionsForGroup(group);
+  const hasKnownValue = groupOptions.some((option) => option.value === value);
+  return (
+    <div className="item-cascade-field item-special-effect-field" title="Primary Realmz special behavior code. Unknown raw values are preserved until changed.">
+      <label>
+        <span>Special 1</span>
+        <select
+          value={group}
+          onChange={(event) => {
+            const nextGroup = event.currentTarget.value as ItemSpecialEffectGroup;
+            onChange(defaultSpecialEffectValue(nextGroup, value));
+          }}
+        >
+          <option value="none">No special effect</option>
+          <option value="power">Power level</option>
+          <option value="addCondition">Add condition</option>
+          <option value="removeCondition">Remove condition</option>
+          <option value="hitBonus">Hit bonus</option>
+          <option value="raw">Raw code</option>
+        </select>
+      </label>
+      {group === "raw" ? (
+        <ItemNumberInput label="Raw Code" value={value} onCommit={onChange} />
+      ) : group !== "none" && (
+        <label>
+          <span>{specialEffectDetailLabel(group)}</span>
+          <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
+            {!hasKnownValue && <option value={value}>Current code {value}</option>}
+            {groupOptions.map((option) => (
+              <option key={`${option.value}:${option.label}`} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+      )}
+    </div>
+  );
+}
+
+type ItemSpecialEffectGroup = "none" | "power" | "addCondition" | "removeCondition" | "hitBonus" | "raw";
+
+function specialEffectGroupForValue(value: number): ItemSpecialEffectGroup {
+  if (value === 0) return "none";
+  if ((value >= -7 && value <= -1) || value === 8) return "power";
+  if (value >= 20 && value <= 59) return "addCondition";
+  if (value >= 60 && value <= 99) return "removeCondition";
+  if (value >= 120 && value <= 122) return "hitBonus";
+  return "raw";
+}
+
+function defaultSpecialEffectValue(group: ItemSpecialEffectGroup, currentValue: number) {
+  if (group === "none") return 0;
+  if (group === "power") return currentValue >= -7 && currentValue <= -1 ? currentValue : -1;
+  if (group === "addCondition") return currentValue >= 20 && currentValue <= 59 ? currentValue : 20;
+  if (group === "removeCondition") return currentValue >= 60 && currentValue <= 99 ? currentValue : 60;
+  if (group === "hitBonus") return currentValue >= 120 && currentValue <= 122 ? currentValue : 120;
+  return currentValue;
+}
+
+function specialEffectOptionsForGroup(group: ItemSpecialEffectGroup) {
+  if (group === "power") {
+    return [
+      ...Array.from({ length: 7 }, (_, index) => ({ value: -(index + 1), label: `Power level ${index + 1}` })),
+      { value: 8, label: "Random power level" }
+    ];
+  }
+  if (group === "addCondition") {
+    return CONDITION_LABELS.slice(0, 40).map((label, index) => ({ value: index + 20, label }));
+  }
+  if (group === "removeCondition") {
+    return CONDITION_LABELS.slice(0, 40).map((label, index) => ({ value: index + 60, label }));
+  }
+  if (group === "hitBonus") {
+    return [
+      { value: 120, label: "Auto hit" },
+      { value: 121, label: "Penetration bonus" },
+      { value: 122, label: "Double to-hit bonus" }
+    ];
+  }
+  return [];
+}
+
+function specialEffectDetailLabel(group: ItemSpecialEffectGroup) {
+  if (group === "power") return "Power";
+  if (group === "addCondition") return "Condition";
+  if (group === "removeCondition") return "Condition";
+  if (group === "hitBonus") return "Bonus";
+  return "Value";
+}
+
+type ItemSpecialAttributeGroup = "none" | "ability" | "monsterType" | "partyCondition" | "raw";
+
+function ItemSpecialAttributeField({
+  label,
+  value,
+  onChange
+}: {
   label: string;
-  detail: string;
-  sourceKind: ScenarioIconResource["sourceKind"] | "raw";
-  asset?: LibraryAsset;
-  resourceBase64?: string | null;
-  previewPath?: string | null;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  const group = specialAttributeGroupForValue(value);
+  const options = specialAttributeOptionsForGroup(group);
+  const hasKnownValue = options.some((option) => option.value === value);
+  return (
+    <div className="item-cascade-field" title={`${label} companion field for ability, monster-type, and party-condition behavior.`}>
+      <label>
+        <span>{label}</span>
+        <select
+          value={group}
+          onChange={(event) => {
+            const nextGroup = event.currentTarget.value as ItemSpecialAttributeGroup;
+            onChange(defaultSpecialAttributeValue(nextGroup, value));
+          }}
+        >
+          <option value="none">No behavior</option>
+          <option value="ability">Special ability</option>
+          <option value="monsterType">Monster-type bonus</option>
+          <option value="partyCondition">Party condition</option>
+          <option value="raw">Raw value</option>
+        </select>
+      </label>
+      {group === "raw" ? (
+        <ItemNumberInput label="Raw Value" value={value} onCommit={onChange} />
+      ) : group !== "none" && (
+        <label>
+          <span>{specialAttributeDetailLabel(group)}</span>
+          <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
+            {!hasKnownValue && <option value={value}>Current value {value}</option>}
+            {options.map((option) => (
+              <option key={`${option.value}:${option.label}`} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+      )}
+    </div>
+  );
+}
+
+function specialAttributeGroupForValue(value: number): ItemSpecialAttributeGroup {
+  if (value === 0) return "none";
+  if (value > 0 && value < 16) return "ability";
+  if (value < 0) return "monsterType";
+  if (value >= 30 && value <= 40) return "partyCondition";
+  return "raw";
+}
+
+function defaultSpecialAttributeValue(group: ItemSpecialAttributeGroup, currentValue: number) {
+  if (group === "none") return 0;
+  if (group === "ability") return currentValue > 0 && currentValue < 16 ? currentValue : 1;
+  if (group === "monsterType") return currentValue < 0 ? currentValue : -1;
+  if (group === "partyCondition") return currentValue >= 30 && currentValue <= 40 ? currentValue : 30;
+  return currentValue;
+}
+
+function specialAttributeOptionsForGroup(group: ItemSpecialAttributeGroup) {
+  if (group === "ability") {
+    return Array.from({ length: 15 }, (_, index) => ({ value: index + 1, label: `Ability ${index + 1}` }));
+  }
+  if (group === "monsterType") {
+    return Array.from({ length: 20 }, (_, index) => ({ value: -(index + 1), label: `Monster type ${index + 1}` }));
+  }
+  if (group === "partyCondition") {
+    return Array.from({ length: 11 }, (_, index) => ({ value: index + 30, label: `Party condition ${index + 30}` }));
+  }
+  return [];
+}
+
+function specialAttributeDetailLabel(group: ItemSpecialAttributeGroup) {
+  if (group === "ability") return "Ability";
+  if (group === "monsterType") return "Monster Type";
+  if (group === "partyCondition") return "Condition";
+  return "Value";
+}
+
+function describeItemSpecialBehavior(record: ScenarioItemRecord) {
+  const sp1 = Number(record.special1 ?? 0);
+  const sp2 = Number(record.special2 ?? 0);
+  const sp3 = Number(record.special3 ?? 0);
+  const sp4 = Number(record.special4 ?? 0);
+  const sp5 = Number(record.special5 ?? 0);
+  const descriptions: string[] = [];
+  if (sp1 === -10) {
+    descriptions.push(`Inflicts condition ${conditionNameFromOneBasedCode(sp3 - 19)}.`);
+  } else if (sp1 >= -7 && sp1 <= -1) {
+    descriptions.push(`Power level ${Math.abs(sp1)}.`);
+  } else if (sp1 === 8) {
+    descriptions.push("Random power level.");
+  } else if (sp1 > 19 && sp1 < 60) {
+    descriptions.push(`Adds condition ${conditionNameFromZeroBasedCode(sp1 - 20)} by ${sp2}.`);
+  } else if (sp1 > 59 && sp1 < 100) {
+    descriptions.push(`Removes condition ${conditionNameFromZeroBasedCode(sp1 - 60)} by ${sp2}.`);
+  } else if (sp1 === 120) {
+    descriptions.push("Always hits in combat.");
+  } else if (sp1 === 121) {
+    descriptions.push("Penetration weapon; Realmz treats magical plus as doubled for to-hit display.");
+  } else if (sp1 === 122) {
+    descriptions.push(`Adds attack rounds (${attackBonusText(sp2)}).`);
+  } else if (sp1 > 0) {
+    descriptions.push(`Unclassified special effect code ${sp1}; raw tuple is preserved.`);
+  }
+  if (sp2 > 1100) descriptions.push(`Stores spell ${sp2}.`);
+  if (sp3 < 0) {
+    descriptions.push(`Monster-type hit bonus ${sp5} against type ${Math.abs(sp3)}.`);
+  } else if (sp3 > 0 && sp3 < 16) {
+    descriptions.push(`Adds character special ability ${sp3} by ${sp5}.`);
+  } else if (sp3 >= 30) {
+    descriptions.push(`Applies party condition code ${sp3} by ${sp5}.`);
+  }
+  if (sp4 < 0) {
+    descriptions.push(`Secondary monster-type hit bonus ${sp5} against type ${Math.abs(sp4)}.`);
+  } else if (sp4 > 0 && sp4 < 16) {
+    descriptions.push(`Adds secondary character special ability ${sp4} by ${sp5}.`);
+  } else if (sp4 >= 30) {
+    descriptions.push(`Applies secondary party condition code ${sp4} by ${sp5}.`);
+  }
+  if (!descriptions.length && [sp1, sp2, sp3, sp4, sp5].some((value) => value !== 0)) {
+    descriptions.push(`Raw special tuple preserved: ${sp1}, ${sp2}, ${sp3}, ${sp4}, ${sp5}.`);
+  }
+  return descriptions;
+}
+
+function conditionNameFromOneBasedCode(code: number) {
+  if (code <= 0) return `code ${code}`;
+  return `${code}: ${CONDITION_LABELS[code - 1] ?? "Unknown condition"}`;
+}
+
+function conditionNameFromZeroBasedCode(code: number) {
+  return `${code}: ${CONDITION_LABELS[code] ?? "Unknown condition"}`;
+}
+
+function attackBonusText(value: number) {
+  if (value === 1) return "+1/2";
+  if (value === 2) return "+1";
+  if (value === 3) return "+1 1/2";
+  if (value === 4) return "+2";
+  return `raw value ${value}`;
+}
+
+function ItemUseRestrictionEditor({
+  record,
+  onChange
+}: {
+  record: ScenarioItemRecord;
+  onChange: (field: ItemRestrictionKey, value: number) => void;
+}) {
+  return (
+    <div className="item-use-restriction-editor">
+      <div className="item-specific-restrictions">
+        <label>
+          <span>Specific Race</span>
+          <select value={record.specificRace} onChange={(event) => onChange("specificRace", Number(event.currentTarget.value))}>
+            <option value={0}>Any race</option>
+            {REALMZ_RACES.map((label, index) => (
+              <option key={label} value={index + 1}>{index + 1}: {label}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Specific Caste</span>
+          <select value={record.specificCaste} onChange={(event) => onChange("specificCaste", Number(event.currentTarget.value))}>
+            <option value={0}>Any caste</option>
+            {REALMZ_CASTES.map((label, index) => (
+              <option key={label} value={index + 1}>{index + 1}: {label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <ItemMaskEditor
+        title="Those That Can't Use It"
+        groups={[
+          { title: "Race Restrictions", field: "raceRestrictions", labels: RACE_DESCRIPTOR_LABELS, value: record.raceRestrictions },
+          { title: "Caste Restrictions", field: "casteRestrictions", labels: CASTE_CLASS_LABELS, value: record.casteRestrictions }
+        ]}
+        onChange={onChange}
+      />
+      <ItemMaskEditor
+        title="Those That Can Use It"
+        groups={[
+          { title: "Race Restrictions", field: "raceClassOnly", labels: RACE_DESCRIPTOR_LABELS, value: record.raceClassOnly },
+          { title: "Caste Restrictions", field: "casteClassOnly", labels: CASTE_CLASS_LABELS, value: record.casteClassOnly }
+        ]}
+        onChange={onChange}
+      />
+    </div>
+  );
+}
+
+function ItemMaskEditor({
+  title,
+  groups,
+  onChange
+}: {
+  title: string;
+  groups: Array<{ title: string; field: ItemRestrictionKey; labels: string[]; value: number }>;
+  onChange: (field: ItemRestrictionKey, value: number) => void;
+}) {
+  return (
+    <section className="item-mask-editor">
+      <header>{title}</header>
+      {groups.map((group) => (
+        <div key={group.field}>
+          <h5>{group.title}</h5>
+          <div className="item-bit-editor">
+            {group.labels.map((label, index) => {
+              const checked = bitFromMask(group.value, index);
+              return (
+                <label key={label} className={checked ? "checked" : ""}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => onChange(group.field, setBitInMask(group.value, index, event.currentTarget.checked))}
+                  />
+                  <span>{label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function bitFromMask(value: number, bit: number) {
+  return Boolean((value >>> 0) & (1 << bit));
+}
+
+function setBitInMask(value: number, bit: number, checked: boolean) {
+  const next = checked ? ((value >>> 0) | (1 << bit)) : ((value >>> 0) & ~(1 << bit));
+  return toSigned16(next);
+}
+
+function bitFromPair(itemCat0: number, itemCat1: number, bit: number) {
+  const source = bit < 32 ? itemCat0 : itemCat1;
+  return Boolean((source >>> 0) & (1 << (bit % 32)));
+}
+
+function setBitInPair(itemCat0: number, itemCat1: number, bit: number, checked: boolean): [number, number] {
+  if (bit < 32) return [toSigned32(setUnsignedBit(itemCat0, bit, checked)), itemCat1];
+  return [itemCat0, toSigned32(setUnsignedBit(itemCat1, bit - 32, checked))];
+}
+
+function itemCategoryStorageBit(index: number) {
+  return 31 - (index % 32);
+}
+
+function itemCategoryBitFromPair(itemCat0: number, itemCat1: number, index: number) {
+  const source = index < 32 ? itemCat0 : itemCat1;
+  return Boolean((source >>> 0) & (1 << itemCategoryStorageBit(index)));
+}
+
+function setItemCategoryBitInPair(itemCat0: number, itemCat1: number, index: number, checked: boolean): [number, number] {
+  const bit = itemCategoryStorageBit(index);
+  if (index < 32) return [toSigned32(setUnsignedBit(itemCat0, bit, checked)), itemCat1];
+  return [itemCat0, toSigned32(setUnsignedBit(itemCat1, bit, checked))];
+}
+
+function selectedItemCategoryIndex(itemCat0: number, itemCat1: number) {
+  const selected = ITEM_CATEGORY_LABELS.findIndex((_, index) => itemCategoryBitFromPair(itemCat0, itemCat1, index));
+  return selected >= 0 ? selected : null;
+}
+
+function itemCategoryPairForSingleSelection(index: number | null): [number, number] {
+  if (index == null || !Number.isFinite(index)) return [0, 0];
+  return setItemCategoryBitInPair(0, 0, Math.trunc(index), true);
+}
+
+function setUnsignedBit(value: number, bit: number, checked: boolean) {
+  return checked ? ((value >>> 0) | (1 << bit)) : ((value >>> 0) & ~(1 << bit));
+}
+
+function toSigned16(value: number) {
+  const unsigned = value & 0xffff;
+  return unsigned > 0x7fff ? unsigned - 0x10000 : unsigned;
+}
+
+function toSigned32(value: number) {
+  return value | 0;
+}
+
+function summarizeMaskLabels(mask: number, labels: string[]) {
+  return summarizeBitLabels([mask], labels, 4);
+}
+
+function summarizeBitLabels(values: number[], labels: string[], limit: number) {
+  const selected = labels.filter((_, index) => bitFromPair(values[0] ?? 0, values[1] ?? 0, index));
+  if (!selected.length) return "None";
+  if (selected.length <= limit) return selected.join(", ");
+  return `${selected.slice(0, limit).join(", ")} +${selected.length - limit} more`;
+}
+
+function summarizeItemCategoryLabels(itemCat0: number, itemCat1: number, limit: number) {
+  const selected = ITEM_CATEGORY_LABELS.filter((_, index) => itemCategoryBitFromPair(itemCat0, itemCat1, index));
+  if (!selected.length) return "None";
+  if (selected.length <= limit) return selected.join(", ");
+  return `${selected.slice(0, limit).join(", ")} +${selected.length - limit} more`;
+}
+
+const ITEM_TYPE_LABELS: Record<number, string> = {
+  0: "Ring",
+  1: "Do not use",
+  2: "Melee Weapon",
+  3: "Shield",
+  4: "Armor and Robe",
+  5: "Gauntlet and Gloves",
+  6: "Cloak and Cape",
+  7: "Helmet and Cap",
+  8: "Ion Stone",
+  9: "Boots",
+  10: "Quiver",
+  11: "Waist and Belt",
+  12: "Neck",
+  13: "Scroll Case",
+  14: "Misc Item",
+  15: "Missile Weapon",
+  16: "Broach",
+  17: "Face and Mask",
+  18: "Scabbard",
+  19: "Belt Loop",
+  20: "Scroll",
+  21: "Magic Item",
+  22: "Supply Item",
+  23: "Action Point Item (SP5 = AP ID)",
+  24: "Identified Item",
+  25: "Scenario Item"
 };
+
+function itemTypeLabel(value: number) {
+  const abs = Math.abs(value);
+  if (ITEM_TYPE_LABELS[abs]) return ITEM_TYPE_LABELS[abs];
+  return `Raw type ${value}`;
+}
+
+function itemTypeText(value: number | null | undefined) {
+  if (value == null) return "unknown";
+  return `${value}: ${itemTypeLabel(value)}`;
+}
+
+const ITEM_TYPE_OPTIONS = Array.from({ length: 26 }, (_, value) => ({ value, label: itemTypeLabel(value) }));
+
+const SHOP_ITEM_CATEGORY_OPTIONS: Array<{ id: ItemReferenceCategory | "all"; label: string; range?: string }> = [
+  { id: "all", label: "All Items" },
+  ...ITEM_REFERENCE_CATEGORIES
+];
 
 function ItemIconField({
   value,
   project,
   catalog,
   previewContext,
-  onApplyCommand,
-  onUpdateLibraryCatalog,
+  itemOptions,
   onChange
 }: {
   value: number;
   project: Project;
   catalog?: LibraryCatalog | null;
   previewContext: PreviewRuntimeContext;
-  onApplyCommand?: (command: ProjectCommand) => void;
-  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
+  itemOptions: ItemReferenceOption[];
   onChange: (value: number) => void;
 }) {
-  const options = useMemo(() => itemIconOptions(project, catalog, value), [catalog, project, value]);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  useEffect(() => {
-    if (!selectedKey) return;
-    const selectedOption = options.find((option) => option.key === selectedKey);
-    if (!selectedOption || Math.abs(selectedOption.resourceId) !== Math.abs(value)) setSelectedKey(null);
-  }, [options, selectedKey, value]);
-  const selected = (selectedKey ? options.find((option) => option.key === selectedKey) : null) ??
-    options.find((option) => Math.abs(option.resourceId) === Math.abs(value)) ??
-    options[0] ??
-    null;
   const previewUrl = useIconPreviewUrl(value, project, catalog, previewContext);
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   useEffect(() => setFailedUrl(null), [previewUrl]);
   const usableUrl = previewUrl && previewUrl !== failedUrl ? previewUrl : null;
-  const canCopyToLibrary = Boolean(selected && selected.sourceKind !== "raw" && onUpdateLibraryCatalog);
-  const packageScenarioResource = async (option: ItemIconOption) => {
-    if (option.sourceKind !== "providence-library") return;
-    const resourceBase64 = await loadItemIconResourceBase64(option, previewContext, catalog);
-    if (!resourceBase64) return;
-    onApplyCommand?.({
-      kind: "upsertScenarioIconResource",
-      label: `Package item icon ${option.resourceId}`,
-      resource: {
-        resourceId: option.resourceId,
-        label: option.label,
-        sourceKind: "providence-library",
-        resourceBase64,
-        previewPath: option.previewPath ?? option.asset?.previewPath ?? null
-      }
-    });
-  };
-  const copyToLibrary = async () => {
-    if (!selected || !onUpdateLibraryCatalog) return;
-    const resourceBase64 = await loadItemIconResourceBase64(selected, previewContext, catalog);
-    if (!resourceBase64) return;
-    const sourceLabel = selected.label || `cicn ${selected.resourceId}`;
-    const { catalog: nextCatalog, entity } = createIconLibraryEntry(catalog ?? null, catalog?.managedPath ?? "browser://workspace/library", {
-      kind: "item-icon",
-      label: `${sourceLabel} Variant`,
-      origin: {
-        kind: selected.sourceKind === "providence-library" ? "library-variant" : selected.sourceKind === "vault-of-arcana" ? "vault-of-arcana" : "external-resource",
-        sourceId: selected.key,
-        sourceLabel
-      },
-      resources: [{
-        role: "item",
-        resourceId: Math.abs(selected.resourceId),
-        resourceType: "cicn",
-        label: sourceLabel,
-        resourceBase64,
-        previewPath: selected.previewPath ?? selected.asset?.previewPath ?? null,
-        bytes: selected.asset?.bytes,
-        sha256: selected.asset?.sha256
-      }]
-    });
-    onUpdateLibraryCatalog(nextCatalog, entity ? `Added ${entity.label} to Icon Library` : "Updated Icon Library");
-  };
   return (
     <div className="item-icon-field">
-      <label className="item-number-input" title="Icon drawn for this item in Realmz lists and menus. Providence item-library icons are packaged only when a scenario item references them.">
+      <label className="item-number-input" title="CICN resource ID drawn for this item in Realmz lists and menus.">
         <span>Icon</span>
         <span className="item-icon-field-control">
-          <span className="item-icon-preview" title={value ? `cicn ${value}` : "No icon"}>
+          <button
+            type="button"
+            className="item-icon-preview item-icon-preview-button"
+            title={value ? `Choose cicn icon; current ${value}` : "Choose cicn icon"}
+            onClick={() => setPickerOpen(true)}
+          >
             {usableUrl ? <img src={usableUrl} alt="" onError={() => setFailedUrl(usableUrl)} /> : <i>{value || "-"}</i>}
-          </span>
+          </button>
           <input
             type="number"
             value={value}
@@ -1218,121 +1888,217 @@ function ItemIconField({
           />
         </span>
       </label>
-      <select
-        className="item-icon-source-select"
-        value={selected?.key ?? ""}
-        onChange={(event) => {
-          const option = options.find((candidate) => candidate.key === event.currentTarget.value);
-          if (!option) return;
-          setSelectedKey(option.key);
-          onChange(option.resourceId);
-          void packageScenarioResource(option);
-        }}
-      >
-        {options.map((option) => (
-          <option key={option.key} value={option.key}>{option.label}</option>
+      {pickerOpen && (
+        <ItemIconPickerModal
+          value={value}
+          project={project}
+          catalog={catalog}
+          previewContext={previewContext}
+          itemOptions={itemOptions}
+          onChoose={(nextValue) => {
+            onChange(nextValue);
+            setPickerOpen(false);
+          }}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+type ItemIconPickerChoice = {
+  id: number;
+  label: string;
+  detail: string;
+};
+
+function ItemIconPickerModal({
+  value,
+  project,
+  catalog,
+  previewContext,
+  itemOptions,
+  onChoose,
+  onClose
+}: {
+  value: number;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  itemOptions: ItemReferenceOption[];
+  onChoose: (value: number) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const choices = useMemo(() => itemIconPickerChoices(project, catalog, itemOptions), [catalog, itemOptions, project]);
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleChoices = choices
+    .filter((choice) => !normalizedQuery || String(choice.id).includes(normalizedQuery) || choice.label.toLowerCase().includes(normalizedQuery) || choice.detail.toLowerCase().includes(normalizedQuery))
+    .slice(0, 160);
+  return (
+    <div className="item-icon-picker-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="item-icon-picker-modal" role="dialog" aria-modal="true" aria-label="Choose item icon" onMouseDown={(event) => event.stopPropagation()}>
+        <header>
+          <div>
+            <strong>Choose Icon</strong>
+            <small>{choices.length} cicn option(s)</small>
+          </div>
+          <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>Close</button>
+        </header>
+        <input
+          type="search"
+          value={query}
+          placeholder="Search cicn id, item, or source..."
+          onChange={(event) => setQuery(event.currentTarget.value)}
+        />
+        <div className="item-icon-picker-grid">
+          {visibleChoices.map((choice) => (
+            <ItemIconPickerButton
+              key={`${choice.id}:${choice.label}`}
+              choice={choice}
+              selected={choice.id === value}
+              project={project}
+              catalog={catalog}
+              previewContext={previewContext}
+              onChoose={onChoose}
+            />
+          ))}
+        </div>
+        {choices.length > visibleChoices.length && <small>{choices.length - visibleChoices.length} more icon(s); search to narrow.</small>}
+      </section>
+    </div>
+  );
+}
+
+function ItemIconPickerButton({
+  choice,
+  selected,
+  project,
+  catalog,
+  previewContext,
+  onChoose
+}: {
+  choice: ItemIconPickerChoice;
+  selected: boolean;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  onChoose: (value: number) => void;
+}) {
+  const previewUrl = useIconPreviewUrl(choice.id, project, catalog, previewContext);
+  return (
+    <button
+      type="button"
+      className={`item-icon-picker-option${selected ? " selected" : ""}`}
+      onClick={() => onChoose(choice.id)}
+    >
+      <span className="item-icon-preview">
+        {previewUrl ? <img src={previewUrl} alt="" /> : <i>{choice.id}</i>}
+      </span>
+      <strong>{choice.id}</strong>
+      <small>{choice.label}</small>
+    </button>
+  );
+}
+
+function itemIconPickerChoices(project: Project, catalog: LibraryCatalog | null | undefined, itemOptions: ItemReferenceOption[]) {
+  const choices = new Map<number, ItemIconPickerChoice>();
+  const addChoice = (id: number | null | undefined, label: string, detail: string) => {
+    if (id == null || id === 0 || !Number.isFinite(id)) return;
+    const normalizedId = Math.trunc(id);
+    const existing = choices.get(normalizedId);
+    if (existing) {
+      if (!existing.label.includes(label)) existing.detail = [existing.detail, detail].filter(Boolean).join(" | ");
+      return;
+    }
+    choices.set(normalizedId, { id: normalizedId, label, detail });
+  };
+  for (const option of itemOptions) addChoice(option.iconId, option.label.replace(/\s+\(-?\d+\)$/, ""), `item ${option.value}`);
+  for (const asset of project.assets ?? []) {
+    if (asset.kind === "icon" || asset.resourceType.trim() === "cicn") addChoice(asset.resourceId, asset.label, "project icon");
+  }
+  for (const asset of project.assetCatalog.icons ?? []) {
+    addChoice(asset.resourceId, asset.name || `cicn ${asset.resourceId}`, asset.source || "project catalog");
+  }
+  for (const asset of catalog?.assets ?? []) {
+    const resourceType = (asset.resourceType ?? "").trim();
+    if (asset.resourceId != null && (asset.type === "icon" || asset.type.includes("icon") || resourceType === "cicn")) {
+      addChoice(asset.resourceId, asset.label, asset.source || "library icon");
+    }
+  }
+  return [...choices.values()].sort((a, b) => Math.abs(a.id) - Math.abs(b.id) || a.id - b.id);
+}
+
+function ItemTypeSelectField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const hasOption = ITEM_TYPE_OPTIONS.some((option) => option.value === value);
+  return (
+    <label className="item-number-input item-type-select" title="Realmz equipment/use type. This is separate from the item category restriction list.">
+      <span>Type</span>
+      <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
+        {!hasOption && <option value={String(value)}>{itemTypeText(value)}</option>}
+        {ITEM_TYPE_OPTIONS.map((option) => (
+          <option key={option.value} value={String(option.value)}>{option.value}: {option.label}</option>
         ))}
       </select>
-      {selected && <small>{selected.detail}</small>}
-      <button type="button" className="btn btn-secondary btn-xs" disabled={!canCopyToLibrary} onClick={() => void copyToLibrary()}>
-        {selected?.sourceKind === "providence-library" ? "Duplicate Icon Variant" : "Copy To Icon Library"}
+    </label>
+  );
+}
+
+function ItemSoundField({
+  value,
+  project,
+  catalog,
+  previewContext,
+  onChange
+}: {
+  value: number;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  onChange: (value: number) => void;
+}) {
+  const previewUrl = useItemSoundPreviewUrl(value, project, catalog, previewContext);
+  return (
+    <div className="item-sound-field">
+      <ItemNumberInput label="Sound" value={value} onCommit={onChange} />
+      <button
+        type="button"
+        className="btn btn-secondary btn-xs"
+        disabled={!previewUrl}
+        title={previewUrl ? `Play snd ${Math.abs(value)}` : "No playable sound preview is available."}
+        onClick={() => previewUrl && playPreviewUrl(previewUrl)}
+      >
+        Play
       </button>
     </div>
   );
 }
 
-function itemIconOptions(project: Project, catalog: LibraryCatalog | null | undefined, currentIconId: number): ItemIconOption[] {
-  const options: ItemIconOption[] = [];
-  const seen = new Set<string>();
-  const add = (option: ItemIconOption) => {
-    if (!Number.isFinite(option.resourceId)) return;
-    if (seen.has(option.key)) return;
-    seen.add(option.key);
-    options.push(option);
-  };
-  if (currentIconId) {
-    add({
-      key: `raw:${Math.abs(currentIconId)}`,
-      resourceId: Math.abs(currentIconId),
-      label: `Current icon ${Math.abs(currentIconId)}`,
-      detail: "Raw icon ID; preserved until changed.",
-      sourceKind: "raw"
-    });
-  }
-  for (const resource of project.scenarioIconResources ?? []) {
-    add({
-      key: `scenario-resource:${Math.abs(resource.resourceId)}`,
-      resourceId: Math.abs(resource.resourceId),
-      label: `${resource.label || "Scenario icon"} (${Math.abs(resource.resourceId)})`,
-      detail: "Packaged with this scenario when referenced by a custom item.",
-      sourceKind: resource.sourceKind,
-      resourceBase64: resource.resourceBase64,
-      previewPath: resource.previewPath ?? null
-    });
-  }
-  for (const asset of catalog?.assets ?? []) {
-    if (!isVaultIconAsset(asset)) continue;
-    add({
-      key: `vault:${asset.id}`,
-      resourceId: Math.abs(asset.resourceId ?? 0),
-      label: `${asset.label || "Vault icon"} (${Math.abs(asset.resourceId ?? 0)})`,
-      detail: "Protected Vault of Arcana icon; copy to the Providence Icon Library before editing.",
-      sourceKind: "vault-of-arcana",
-      asset,
-      previewPath: asset.previewPath ?? null
-    });
-  }
-  for (const asset of providenceIconLibraryAssets(catalog, "item-icon")) {
-    add({
-      key: `providence:${asset.id}`,
-      resourceId: Math.abs(asset.resourceId ?? 0),
-      label: `${asset.label || "Providence item icon"} (${Math.abs(asset.resourceId ?? 0)})`,
-      detail: "Editable Providence Icon Library entry; selecting it packages this icon with the scenario.",
-      sourceKind: "providence-library",
-      asset,
-      previewPath: asset.previewPath ?? null
-    });
-  }
-  return options.sort((left, right) => {
-    const currentLeft = Math.abs(left.resourceId) === Math.abs(currentIconId) ? -1 : 0;
-    const currentRight = Math.abs(right.resourceId) === Math.abs(currentIconId) ? -1 : 0;
-    return currentLeft - currentRight || left.resourceId - right.resourceId || left.label.localeCompare(right.label);
-  });
-}
-
-function isVaultIconAsset(asset: LibraryAsset) {
-  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
-  const sourceText = `${asset.type} ${asset.source} ${asset.relativePath} ${asset.label}`.toLowerCase();
-  return asset.type === "vault-icon" || sourceText.includes("vault of arcana") || sourceText.includes("vault-of-arcana");
-}
-
-async function loadItemIconResourceBase64(
-  option: ItemIconOption,
-  previewContext: PreviewRuntimeContext,
-  catalog: LibraryCatalog | null | undefined
+function useItemSoundPreviewUrl(
+  soundId: number,
+  project: Project,
+  catalog: LibraryCatalog | null | undefined,
+  previewContext: PreviewRuntimeContext
 ) {
-  if (option.resourceBase64) return option.resourceBase64;
-  if (!option.asset) return null;
-  const providenceBase64 = iconLibraryAssetResourceBase64(catalog, option.asset);
-  if (providenceBase64) return providenceBase64;
-  if (previewContext.desktopRuntime) {
-    if (!previewContext.workspaceDir) throw new Error("Workspace directory is required to load icon resource data.");
-    return invoke<string>("load_library_resource_data", {
-      workspaceDir: previewContext.workspaceDir,
-      source: option.asset.source,
-      relativePath: option.asset.relativePath
-    });
-  }
-  const data = await loadBrowserBundledLibraryResourceData(option.asset);
-  return data ? bytesToBase64(data) : null;
-}
-
-function bytesToBase64(bytes: Uint8Array) {
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += 1) {
-    binary += String.fromCharCode(bytes[index]);
-  }
-  return btoa(binary);
+  const resourceId = soundId ? Math.abs(soundId) : null;
+  const managedAsset = resourceId == null ? null : (project.assets ?? []).find((asset) =>
+    asset.kind === "sound" &&
+    Math.abs(asset.resourceId) === resourceId
+  ) ?? null;
+  const projectAsset = resourceId == null ? null : (project.assetCatalog.sounds ?? []).find((asset) =>
+    Math.abs(asset.resourceId) === resourceId
+  ) ?? null;
+  const libraryAsset = resourceId == null ? null : catalog?.assets.find((asset) =>
+    (asset.type === "sound" || (asset.resourceType ?? "").trim() === "snd") &&
+    asset.resourceId != null &&
+    Math.abs(asset.resourceId) === resourceId
+  ) ?? null;
+  return useResolvedPreviewUrl(
+    managedAsset?.previewPath ?? projectAsset?.previewPath ?? libraryAsset?.previewPath ?? null,
+    managedAsset,
+    libraryAsset,
+    { ...previewContext, project, resourceType: "snd ", resourceId }
+  );
 }
 
 function ItemNumberInput({
@@ -1373,6 +2139,41 @@ function ItemNumberInput({
           if (event.key === "Escape") setDraft(String(value));
         }}
       />
+    </label>
+  );
+}
+
+function ItemTextInput({
+  label,
+  value,
+  multiline = false,
+  onCommit
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+  onCommit: (value: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+  const commit = () => {
+    if (draft !== value) onCommit(draft);
+  };
+  const commonProps = {
+    value: draft,
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft(event.currentTarget.value),
+    onBlur: commit,
+    onKeyDown: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (event.key === "Escape") setDraft(value);
+      if (!multiline && event.key === "Enter") event.currentTarget.blur();
+    }
+  };
+  return (
+    <label className={`item-text-input${multiline ? " item-text-input-multiline" : ""}`}>
+      <span>{label}</span>
+      {multiline ? <textarea {...commonProps} /> : <input type="text" {...commonProps} />}
     </label>
   );
 }
@@ -1502,6 +2303,22 @@ function scenarioItemChangesFromSummary(summary: Record<string, unknown>): Parti
       const value = numberField(summary, field.key);
       if (value != null) changes[field.key] = value as never;
     }
+  }
+  const restrictionKeys: ItemRestrictionKey[] = [
+    "raceRestrictions",
+    "casteRestrictions",
+    "specificRace",
+    "specificCaste",
+    "raceClassOnly",
+    "casteClassOnly"
+  ];
+  for (const key of restrictionKeys) {
+    const value = numberField(summary, key);
+    if (value != null) changes[key] = value as never;
+  }
+  for (const key of ["itemCat0", "itemCat1"] as const) {
+    const value = numberField(summary, key);
+    if (value != null) changes[key] = value;
   }
   return changes;
 }
@@ -1946,6 +2763,368 @@ function treasureFilledItems(project: Project, id: number) {
 
 function treasureRewardTotal(record: Project["treasures"][number]) {
   return Math.max(0, record.exp) + Math.max(0, record.gold) + Math.max(0, record.gems) + Math.max(0, record.jewelry);
+}
+
+function ShopWorkbench({
+  project,
+  catalog,
+  selectedEntity,
+  previewContext,
+  onSelectEntity,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  selectedEntity: SelectedEntity | null;
+  previewContext: PreviewRuntimeContext;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const records = targetRecords(project, "shop");
+  const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", "shop") ?? records[0]?.id ?? 1;
+  const visibleRecords = useMemo(() => includeSelectedRecord(records, selectedId, 140), [records, selectedId]);
+  const record = (project.shops ?? []).find((candidate) => candidate.id === selectedId) ?? null;
+  const deferredOptions = useDeferredItemReferenceOptions(project, catalog);
+  const options = deferredOptions ?? [];
+  const optionsByValue = useMemo(() => new Map(options.map((option) => [option.value, option])), [options]);
+  const nextId = nextTargetRecordId(project, "shop");
+  return (
+    <article className="shop-workbench">
+      <header className="shop-workbench-header">
+        <div>
+          <span>Shop Records</span>
+          <h2>
+            <TutorialTip title="Shop Editor" body={SHOP_RECORD_HELP} side="right">
+              <span>Shop Editor</span>
+            </TutorialTip>
+          </h2>
+          <p>Build source shop stock from item IDs, quantities, and inflation.</p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary btn-xs"
+          onClick={() => {
+            onApplyCommand?.({ kind: "createTargetRecord", label: "Create Shop", recordType: "shop", id: nextId });
+            onSelectEntity(selectEntityFromId(`shop:${nextId}`));
+          }}
+        >
+          New Shop {nextId}
+        </button>
+      </header>
+      <div className="shop-workbench-layout">
+        <aside className="shop-record-browser">
+          <header>
+            <TutorialTip title="Shop Records" body={SHOP_RECORD_HELP} side="right">
+              <strong>{records.length.toLocaleString()} records</strong>
+            </TutorialTip>
+            <small>{records.reduce((total, entry) => total + shopFilledSlots(project, entry.id), 0).toLocaleString()} stocked slots</small>
+          </header>
+          <ScrollArea className="shop-record-list" aria-label="Shop records">
+            {visibleRecords.map((entry) => {
+              const candidate = (project.shops ?? []).find((shop) => shop.id === entry.id) ?? null;
+              const itemIds = shopFilledSlotIndexes(candidate).slice(0, 5).map((slot) => candidate?.itemIds[slot] ?? 0);
+              return (
+                <button
+                  key={`shop:${entry.id}`}
+                  type="button"
+                  className={entry.id === selectedId ? "selected" : ""}
+                  onClick={() => onSelectEntity(selectEntityFromId(`shop:${entry.id}`))}
+                >
+                  <span>
+                    <strong>Shop {entry.id}</strong>
+                    <small>{targetRecordSummary(project, "shop", entry.id)}</small>
+                  </span>
+                  <TreasureMiniIcons itemIds={itemIds} optionsByValue={optionsByValue} />
+                </button>
+              );
+            })}
+            {records.length > visibleRecords.length && (
+              <p className="domain-list-limit">{records.length - visibleRecords.length} more shop records; use search to jump to a specific ID.</p>
+            )}
+            {records.length === 0 && <p>No shop records yet.</p>}
+          </ScrollArea>
+        </aside>
+        <section className="shop-detail-panel">
+          {record ? (
+            <>
+              <header>
+                <div>
+                  <span>Shop {record.id}</span>
+                  <h3>{shopFilledSlotIndexes(record).length} stocked slot{shopFilledSlotIndexes(record).length === 1 ? "" : "s"}</h3>
+                  <p>{shopStockQuantityTotal(record).toLocaleString()} total stocked item{shopStockQuantityTotal(record) === 1 ? "" : "s"} before runtime shop changes</p>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-xs"
+                  onClick={() => onApplyCommand?.({ kind: "deleteTargetRecord", label: "Clear shop", recordType: "shop", id: record.id })}
+                >
+                  Clear To Defaults
+                </button>
+              </header>
+              <ShopSettingsEditor record={record} onApplyCommand={onApplyCommand} />
+              <ShopStockEditor
+                project={project}
+                catalog={catalog}
+                previewContext={previewContext}
+                record={record}
+                options={options}
+                optionsLoading={!deferredOptions}
+                onApplyCommand={onApplyCommand}
+              />
+            </>
+          ) : (
+            <div className="shop-empty-detail">
+              <strong>Shop {selectedId} does not exist yet.</strong>
+              <button
+                type="button"
+                className="btn btn-primary btn-xs"
+                onClick={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create shop", recordType: "shop", id: selectedId })}
+              >
+                Create Shop {selectedId}
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+    </article>
+  );
+}
+
+function ShopSettingsEditor({ record, onApplyCommand }: { record: Project["shops"][number]; onApplyCommand?: (command: ProjectCommand) => void }) {
+  return (
+    <section className="shop-settings-panel" aria-label="Shop settings">
+      <div className="shop-setting-card">
+        <ItemNumberInput
+          label="Inflation"
+          value={record.inflation}
+          title="Price adjustment applied by this shop source record."
+          onCommit={(inflation) => onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop inflation", id: record.id, changes: { inflation } })}
+        />
+        <small>Price adjustment applied by this shop source record.</small>
+      </div>
+    </section>
+  );
+}
+
+function ShopStockEditor({
+  project,
+  catalog,
+  previewContext,
+  record,
+  options,
+  optionsLoading,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  record: Project["shops"][number];
+  options: ItemReferenceOption[];
+  optionsLoading: boolean;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const [category, setCategory] = useState<ItemReferenceCategory | "all">("weapon");
+  const [query, setQuery] = useState("");
+  const openSlot = firstOpenShopSlot(record);
+  const filledSlots = shopFilledSlotIndexes(record);
+  const visibleSlots = filledSlots.length ? filledSlots.slice(0, 120) : openSlot >= 0 ? [openSlot] : [];
+  const optionsByValue = useMemo(() => new Map(options.map((option) => [option.value, option])), [options]);
+  const filteredOptions = useMemo(() => {
+    const text = query.trim().toLowerCase();
+    return options.filter((option) => {
+      if (category !== "all" && option.category !== category) return false;
+      if (!text) return true;
+      return [option.label, option.detail, option.summary, String(option.value)].some((part) => part.toLowerCase().includes(text));
+    }).slice(0, 42);
+  }, [category, options, query]);
+  const updateStock = (itemIds: number[], quantities: number[]) => {
+    onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop stock", id: record.id, changes: { itemIds, quantities } });
+  };
+  const addItem = (itemId: number) => {
+    if (openSlot < 0) return;
+    updateStock(updateShopArraySlot(record.itemIds, openSlot, itemId), updateShopArraySlot(record.quantities, openSlot, 1));
+  };
+  const clearAll = () => {
+    updateStock(new Array(1000).fill(0), new Array(1000).fill(0));
+  };
+  return (
+    <section className="shop-stock-panel">
+      <div className="shop-catalog-panel">
+        <header>
+          <div>
+            <TutorialTip title="Item Pool" body="Choose from the same item families used by Treasure and Items. Clicking an item fills the next open shop slot with quantity 1." side="right">
+              <strong>Item Pool</strong>
+            </TutorialTip>
+            <small>{openSlot >= 0 ? `Next open slot ${openSlot}` : "All shop slots are filled"}</small>
+          </div>
+        </header>
+        <div className="shop-pool-controls">
+          <label>
+            <span>Category</span>
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.currentTarget.value as ItemReferenceCategory | "all")}
+              aria-label="Shop item category"
+            >
+              {SHOP_ITEM_CATEGORY_OPTIONS.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.range ? `${entry.label} (${entry.range})` : entry.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <input
+            className="item-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder="Search item pool..."
+            aria-label="Search shop items"
+          />
+        </div>
+        <ScrollArea className="shop-catalog-list" aria-label="Items available for shop stock">
+          {filteredOptions.map((option) => (
+            <button key={option.key} type="button" disabled={openSlot < 0} onClick={() => addItem(option.value)}>
+              <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} />
+              <span>
+                <strong>{itemOptionName(option)}</strong>
+                <small>{option.detail}</small>
+              </span>
+              <b>{option.value}</b>
+            </button>
+          ))}
+          {optionsLoading && <p>Loading item references...</p>}
+          {filteredOptions.length === 0 && <p>No items match this category/search.</p>}
+        </ScrollArea>
+      </div>
+      <div className="shop-inventory-panel">
+        <header>
+          <div>
+            <TutorialTip title="Shop Stock" body="Realmz copies this source stock into the runtime shop inventory when a new game starts. Saved games can diverge after play begins." side="right">
+              <strong>Shop Stock</strong>
+            </TutorialTip>
+            <small>{filledSlots.length} of 1000 slots filled</small>
+          </div>
+          <button type="button" className="btn btn-danger btn-xs" disabled={filledSlots.length === 0} onClick={clearAll}>
+            Clear Stock
+          </button>
+        </header>
+        <ScrollArea className="shop-inventory-list" aria-label="Shop stocked items">
+          {visibleSlots.map((slot) => {
+            const itemId = record.itemIds[slot] ?? 0;
+            const quantity = record.quantities[slot] ?? 0;
+            const option = optionsByValue.get(itemId);
+            return (
+              <ShopStockSlotEditor
+                key={slot}
+                slot={slot}
+                itemId={itemId}
+                quantity={quantity}
+                option={option}
+                options={options}
+                project={project}
+                catalog={catalog}
+                previewContext={previewContext}
+                onCommitItem={(value) => updateStock(updateShopArraySlot(record.itemIds, slot, value), record.quantities)}
+                onCommitQuantity={(value) => updateStock(record.itemIds, updateShopArraySlot(record.quantities, slot, clampByte(value)))}
+                onClear={() => updateStock(updateShopArraySlot(record.itemIds, slot, 0), updateShopArraySlot(record.quantities, slot, 0))}
+              />
+            );
+          })}
+          {filledSlots.length > visibleSlots.length && <p className="domain-list-limit">{filledSlots.length - visibleSlots.length} more stocked slots not shown.</p>}
+          {visibleSlots.length === 0 && <p>No stock slots available.</p>}
+        </ScrollArea>
+      </div>
+    </section>
+  );
+}
+
+function ShopStockSlotEditor({
+  slot,
+  itemId,
+  quantity,
+  option,
+  options,
+  project,
+  catalog,
+  previewContext,
+  onCommitItem,
+  onCommitQuantity,
+  onClear
+}: {
+  slot: number;
+  itemId: number;
+  quantity: number;
+  option?: ItemReferenceOption;
+  options: ItemReferenceOption[];
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  onCommitItem: (value: number) => void;
+  onCommitQuantity: (value: number) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className={itemId || quantity ? "shop-stock-card filled" : "shop-stock-card"}>
+      <span className="shop-stock-index">Slot {slot}</span>
+      {option ? <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} /> : <span className="item-option-icon"><i>IT</i></span>}
+      <label>
+        <span>Item</span>
+        <select value={String(itemId)} onChange={(event) => onCommitItem(Number(event.currentTarget.value))}>
+          <option value="0">Empty / none</option>
+          {itemId !== 0 && !option && <option value={String(itemId)}>Current item {itemId}</option>}
+          {options.map((entry) => (
+            <option key={entry.key} value={entry.value}>{entry.label}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        <span>Qty</span>
+        <input type="number" min={0} max={255} value={quantity} onChange={(event) => onCommitQuantity(Number(event.currentTarget.value))} />
+      </label>
+      <button type="button" className="btn btn-secondary btn-xs" disabled={!itemId && !quantity} onClick={onClear}>
+        Clear
+      </button>
+      <small>{option ? [option.detail, option.sourceState].filter(Boolean).join(" | ") : itemId ? "Raw item ID" : "Open stock slot"}</small>
+    </div>
+  );
+}
+
+function shopFilledSlotIndexes(record: Project["shops"][number] | null | undefined) {
+  if (!record) return [];
+  const count = Math.max(record.itemIds.length, record.quantities.length);
+  const indexes: number[] = [];
+  for (let slot = 0; slot < count; slot += 1) {
+    if ((record.itemIds[slot] ?? 0) !== 0 || (record.quantities[slot] ?? 0) !== 0) indexes.push(slot);
+  }
+  return indexes;
+}
+
+function firstOpenShopSlot(record: Project["shops"][number]) {
+  for (let slot = 0; slot < 1000; slot += 1) {
+    if ((record.itemIds[slot] ?? 0) === 0 && (record.quantities[slot] ?? 0) === 0) return slot;
+  }
+  return -1;
+}
+
+function updateShopArraySlot(values: number[], slot: number, value: number) {
+  const next = values.slice(0, 1000);
+  while (next.length < 1000) next.push(0);
+  next[slot] = Number.isFinite(value) ? Math.trunc(value) : 0;
+  return next;
+}
+
+function clampByte(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(255, Math.trunc(value)));
+}
+
+function shopFilledSlots(project: Project, id: number) {
+  return shopFilledSlotIndexes((project.shops ?? []).find((record) => record.id === id)).length;
+}
+
+function shopStockQuantityTotal(record: Project["shops"][number]) {
+  return record.quantities.reduce((total, quantity, slot) => (record.itemIds[slot] ?? 0) ? total + Math.max(0, quantity) : total, 0);
 }
 
 function numberField(summary: Record<string, unknown>, key: string) {

@@ -1099,6 +1099,16 @@ export type MapRecord = {
   provenance?: Provenance;
 };
 
+export type ItemTextRecord = {
+  id: number;
+  itemId: number;
+  unidentifiedName: string;
+  identifiedName: string;
+  description: string;
+  authored?: boolean;
+  provenance?: Provenance;
+};
+
 export type DungeonCellFlag =
   | "wall"
   | "horizontalDoor"
@@ -1292,6 +1302,7 @@ export type ProjectCommand =
   | { kind: "upsertMonsterDescription"; label: string; id: number; text: string }
   | { kind: "updateScenarioItemRecord"; label: string; id: number; changes: Partial<ScenarioItemRecord> }
   | { kind: "clearScenarioItemRecord"; label: string; id: number }
+  | { kind: "updateItemTextRecord"; label: string; itemId: number; changes: Partial<Pick<ItemTextRecord, "unidentifiedName" | "identifiedName" | "description">> }
   | { kind: "updateTreasureRecord"; label: string; id: number; changes: Partial<Pick<TreasureRecord, "itemIds" | "exp" | "gold" | "gems" | "jewelry">> }
   | { kind: "updateShopRecord"; label: string; id: number; changes: Partial<Pick<ShopRecord, "itemIds" | "quantities" | "inflation">> }
   | { kind: "updateSimpleEncounterRecord"; label: string; id: number; changes: Partial<Pick<SimpleEncounterRecord, "actions" | "choiceResults" | "canBackOut" | "maxTimes" | "casteSuccess" | "prompt" | "texts">> }
@@ -1395,6 +1406,7 @@ export type Project = {
   monsterIconOverrides: MonsterIconOverride[];
   scenarioIconResources: ScenarioIconResource[];
   scenarioItems: ScenarioItemRecord[];
+  itemTexts: ItemTextRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
   simpleEncounters: SimpleEncounterRecord[];
