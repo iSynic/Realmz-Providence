@@ -1,10 +1,11 @@
 import { CheckCircle2, XCircle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Issue, Project, SelectedEntity } from "../types";
+import { useDraftChangeGuards } from "../app/draftChangeGuard";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
-import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
+import { assetFallbacks, blockedSemanticObjects, entityById, generatedRuntimeCaches, recordById, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
 import { loadScenarioCoverageManifest } from "../scenarioCoverage";
 import type { ScenarioCoverageManifest } from "../scenarioCoverage";
 import { ScrollArea } from "../ui";
@@ -34,6 +35,10 @@ export function LinterPanel({
   onValidate: () => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
+  const { confirmBeforeDraftDiscard } = useDraftChangeGuards();
+  const openLintEntity = useCallback((entity: SelectedEntity) => {
+    confirmBeforeDraftDiscard(`open ${entity.id}`, () => onSelectEntity(entity));
+  }, [confirmBeforeDraftDiscard, onSelectEntity]);
   const grouped = useMemo(() => {
     const map = new Map<string, Issue[]>();
     for (const issue of issues) {
@@ -99,7 +104,7 @@ export function LinterPanel({
               summary={group.summary}
             >
               {group.rows.map((row) => (
-                <LintInsightRow key={row.id} row={row} onSelectEntity={onSelectEntity} />
+                <LintInsightRow key={row.id} row={row} onSelectEntity={openLintEntity} />
               ))}
             </LinterSection>
           ))}
@@ -116,7 +121,7 @@ export function LinterPanel({
                 <LintIssueRow
                   key={`${issue.message}-${index}`}
                   issue={issue}
-                  onSelectEntity={onSelectEntity}
+                  onSelectEntity={openLintEntity}
                 />
               ))}
               {sourceIssues.length > LINTER_ROW_LIMIT && (
@@ -127,7 +132,7 @@ export function LinterPanel({
               )}
             </LinterSection>
           ))}
-          {project && issues.length === 0 && <div className="entity-empty">All checks passed.</div>}
+          {project && issues.length === 0 && <div className="entity-empty">No authoring findings.</div>}
         </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
@@ -137,7 +142,7 @@ export function LinterPanel({
           </TutorialTip>
         </div>
         <ScrollArea className="semantic-right-scroll" aria-label="Linter semantic inspector">
-          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
+          <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={openLintEntity} />
         </ScrollArea>
       </aside>
     </div>
@@ -164,6 +169,15 @@ function issueSourceHelp(source: string) {
   const lower = source.toLowerCase();
   if (lower.includes("export")) {
     return "Export issues are release blockers or warnings produced by Providence's current writer and package compatibility checks.";
+  }
+  if (lower.includes("authoring")) {
+    return "Authoring issues are scenario-owned edits or export checks with a concrete next step for the author.";
+  }
+  if (lower.includes("import") || lower.includes("refresh")) {
+    return "Import refresh issues point at stale or incomplete imported project evidence. Refresh the import when the scenario source is still the authority.";
+  }
+  if (lower.includes("record")) {
+    return "Record warnings come from editable scenario records such as monsters, battles, encounters, shops, treasure, or rules overrides.";
   }
   if (lower.includes("resource")) {
     return "Resource issues usually mean a record points at missing, fallback-only, malformed, or unsupported resource-fork data.";
@@ -213,10 +227,11 @@ function LinterSection({
 
 function issueGroupSummary(source: string, issues: Issue[]) {
   const errors = issues.filter((issue) => issue.severity === "error").length;
-  const warnings = issues.length - errors;
+  const warnings = issues.filter((issue) => issue.severity === "warning").length;
+  const notes = issues.length - errors - warnings;
   if (errors > 0) return `${errors.toLocaleString()} blocker${errors === 1 ? "" : "s"} should be fixed before export.`;
-  if (source.toLowerCase() === "project") return `${warnings.toLocaleString()} project-wide warning${warnings === 1 ? "" : "s"}; expand only when you need the full queue.`;
-  return `${warnings.toLocaleString()} warning${warnings === 1 ? "" : "s"}; most can be reviewed from the owning tool.`;
+  if (warnings > 0) return `${warnings.toLocaleString()} authoring warning${warnings === 1 ? "" : "s"}; open the owning tool before changing records.`;
+  return `${notes.toLocaleString()} supporting note${notes === 1 ? "" : "s"}; review only when it explains an export or preview question.`;
 }
 
 function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManifest | null }) {
@@ -404,30 +419,41 @@ function LintInsightRow({ row, onSelectEntity }: { row: LintInsight; onSelectEnt
 function semanticLintGroups(project: Project | null) {
   if (!project) return [];
   const gaps = resourceGaps(project);
+  const missingScenarioResources = gaps.filter((gap) => gap.reason === "scenario resource missing");
+  const referenceResourceNotes = gaps.filter((gap) => gap.reason !== "scenario resource missing");
   const fallbacks = assetFallbacks(project);
   const caches = generatedRuntimeCaches(project);
   const passThrough = sourcePassThroughList(project);
-  const unresolved = unresolvedLinks(project);
+  const unresolved = unresolvedLinks(project).filter((link) => isAuthoringLink(project, link));
   const blocked = blockedSemanticObjects(project);
   const ed3Summaries = ed3DiagnosticSummaries(project);
   const ed3Counts = ed3ClassificationCounts(ed3Summaries);
   const ed3Risky = ed3RiskySummaries(ed3Summaries);
+  const ed3AuthoringRisk = ed3Risky.filter((summary) => summary.classification === "orphan-authored-content");
+  const ed3EvidenceOnly = ed3Risky.filter((summary) => summary.classification !== "orphan-authored-content");
   const edcdUsages = buildEdcdRowUsages(project);
   const edcdCounts = edcdStatusCounts(edcdUsages);
-  const edcdRisky = edcdUsages.filter((usage) => ["missing", "shared", "conflict"].includes(usage.status));
+  const edcdActionable = edcdUsages.filter((usage) => usage.status === "missing" || usage.status === "conflict");
+  const edcdShared = edcdUsages.filter((usage) => usage.status === "shared");
   return [
     {
       title: "Resource Coverage",
-      defaultOpen: gaps.length > 0,
-      summary: resourceCoverageSummary(gaps.length, fallbacks.length),
+      defaultOpen: missingScenarioResources.length > 0,
+      summary: resourceCoverageSummary(missingScenarioResources.length, referenceResourceNotes.length, fallbacks.length),
       rows: [
-        ...gaps.slice(0, 12).map((gap): LintInsight => ({
+        ...missingScenarioResources.slice(0, 12).map((gap): LintInsight => ({
           id: `gap:${gap.entity.id}`,
           severity: "warning",
           message: `${gap.entity.label} is ${gap.reason}.`,
-          detail: `${gap.consumers.length.toLocaleString()} incoming reference(s).`,
+          detail: `${gap.consumers.length.toLocaleString()} incoming scenario reference(s). Add the resource to Scenario Assets or change the referring record.`,
           target: gap.entity.id
         })),
+        referenceResourceNotes.length > 0 ? {
+          id: "reference-resource-summary",
+          severity: "info" as const,
+          message: `${referenceResourceNotes.length.toLocaleString()} referenced resource${referenceResourceNotes.length === 1 ? "" : "s"} resolve through stock/reference provenance.`,
+          detail: "These are not scenario-copy work unless the author intentionally wants bundled custom media."
+        } : null,
         fallbacks.length > 0 ? {
           id: "asset-fallback-summary",
           severity: "info" as const,
@@ -440,7 +466,7 @@ function semanticLintGroups(project: Project | null) {
     {
       title: "Export Boundaries",
       defaultOpen: false,
-      summary: "These are compatibility notes about what Providence writes directly and what it preserves unchanged.",
+      summary: "These are supporting notes about what Providence writes directly and what it preserves unchanged.",
       rows: [
         {
           id: "pass-through",
@@ -450,22 +476,22 @@ function semanticLintGroups(project: Project | null) {
         },
         {
           id: "runtime-caches",
-          severity: "warning" as const,
+          severity: "info" as const,
           message: `${caches.length.toLocaleString()} runtime cache model${caches.length === 1 ? "" : "s"} cannot be edited.`,
-          detail: "These are generated by Realmz at runtime and should not be authored directly."
+          detail: "These are generated by Realmz at runtime and are preserved as evidence, not authoring backlog."
         },
         {
           id: "blocked-objects",
-          severity: "warning" as const,
+          severity: "info" as const,
           message: `${blocked.entities.length + blocked.records.length} item(s) are not editable yet.`,
-          detail: "These items are visible for review but cannot be written by this exporter."
+          detail: "These items are visible for review. They become blockers only if marked edited while still blocked."
         }
       ].filter((row) => !row.message.startsWith("0 "))
     },
     {
       title: "Script Source Triage",
-      defaultOpen: ed3Risky.length > 0 && ed3Risky.length <= 8,
-      summary: scriptTriageSummary(ed3Summaries.length, ed3Risky.length),
+      defaultOpen: ed3AuthoringRisk.length > 0 && ed3AuthoringRisk.length <= 8,
+      summary: scriptTriageSummary(ed3Summaries.length, ed3AuthoringRisk.length, ed3EvidenceOnly.length),
       rows: [
         ...ED3_CLASSIFICATION_ORDER
           .map((classification): LintInsight | null => {
@@ -481,26 +507,32 @@ function semanticLintGroups(project: Project | null) {
             };
           })
           .filter((row): row is LintInsight => Boolean(row)),
-        ...ed3Risky.slice(0, 8).map((summary): LintInsight => ({
+        ...ed3AuthoringRisk.slice(0, 8).map((summary): LintInsight => ({
           id: `ed3-risk:${summary.recordIndex}`,
           severity: summary.linterSeverity ?? "warning",
           message: `Review Extra Action Point #${summary.recordIndex}.`,
           detail: humanScriptTriageDetail(summary.classification),
           target: summary.entityId
         })),
-        ed3Risky.length > 8 ? {
+        ed3AuthoringRisk.length > 8 ? {
           id: "ed3-risk-more",
           severity: "info" as const,
-          message: `${(ed3Risky.length - 8).toLocaleString()} more imported Extra Action Point${ed3Risky.length - 8 === 1 ? "" : "s"} need review.`,
+          message: `${(ed3AuthoringRisk.length - 8).toLocaleString()} more possible orphan authored Extra Action Point${ed3AuthoringRisk.length - 8 === 1 ? "" : "s"} need review.`,
           detail: "Use Scripts filters or the developer report when you need entry-by-entry evidence."
+        } : null,
+        ed3EvidenceOnly.length > 0 ? {
+          id: "ed3-evidence-only",
+          severity: "info" as const,
+          message: `${ed3EvidenceOnly.length.toLocaleString()} imported Extra Action Point${ed3EvidenceOnly.length === 1 ? "" : "s"} remain evidence-only.`,
+          detail: "Runtime residue and trace-needed rows are preserved and inspectable in Scripts, but they are not authoring fixes until a call path is proven."
         } : null
       ]
         .filter((row): row is LintInsight => Boolean(row))
     },
     {
       title: "Action Settings",
-      defaultOpen: edcdRisky.length > 0 && edcdRisky.length <= 6,
-      summary: edcdSettingsSummary(edcdUsages, edcdRisky),
+      defaultOpen: edcdActionable.length > 0 && edcdActionable.length <= 6,
+      summary: edcdSettingsSummary(edcdUsages, edcdActionable, edcdShared.length),
       rows: [
         ...EDCD_STATUS_ORDER
           .map((status): LintInsight | null => {
@@ -514,17 +546,17 @@ function semanticLintGroups(project: Project | null) {
             };
           })
           .filter((row): row is LintInsight => Boolean(row)),
-        ...edcdRisky.slice(0, 8).map((usage): LintInsight => ({
+        ...edcdActionable.slice(0, 8).map((usage): LintInsight => ({
           id: `edcd-risk:${usage.rowId}`,
-          severity: usage.status === "missing" || usage.status === "conflict" ? "warning" : "info",
+          severity: "warning",
           message: edcdRiskMessage(usage),
           detail: usage.warnings[0] ?? usage.summary,
           target: usage.exists ? `record:Data EDCD:${usage.rowId}` : undefined
         })),
-        edcdRisky.length > 8 ? {
+        edcdActionable.length > 8 ? {
           id: "edcd-risk-more",
           severity: "info" as const,
-          message: `${(edcdRisky.length - 8).toLocaleString()} more Action Settings entr${edcdRisky.length - 8 === 1 ? "y" : "ies"} need review.`,
+          message: `${(edcdActionable.length - 8).toLocaleString()} more Action Settings entr${edcdActionable.length - 8 === 1 ? "y" : "ies"} need repair.`,
           detail: "Use Scripts > Action Settings to filter, inspect, duplicate, or repair settings."
         } : null
       ].filter((row): row is LintInsight => Boolean(row))
@@ -544,18 +576,30 @@ function semanticLintGroups(project: Project | null) {
   ].filter((group) => group.rows.length > 0);
 }
 
-function resourceCoverageSummary(gapCount: number, fallbackCount: number) {
-  if (gapCount === 0 && fallbackCount === 0) return "All referenced resources currently resolve.";
-  const parts = [];
-  if (gapCount > 0) parts.push(`${gapCount.toLocaleString()} missing/problem resource${gapCount === 1 ? "" : "s"}`);
-  if (fallbackCount > 0) parts.push(`${fallbackCount.toLocaleString()} shared-library fallback${fallbackCount === 1 ? "" : "s"}`);
-  return `${parts.join("; ")}. Missing resources deserve review; fallbacks are often normal Realmz behavior.`;
+function isAuthoringLink(project: Project, link: ReturnType<typeof unresolvedLinks>[number]) {
+  const fromEntity = entityById(project, link.from);
+  if (fromEntity?.editState === "editable") return true;
+  const fromRecord = recordById(project, link.from);
+  if (fromRecord?.editState === "editable") return true;
+  return /^(trigger|macro|action-slot|random|encounter|battle|monster|message|shop|treasure|thief|time|item|spell|race|caste|map-record):/.test(link.from);
 }
 
-function scriptTriageSummary(total: number, risky: number) {
+function resourceCoverageSummary(gapCount: number, referenceCount: number, fallbackCount: number) {
+  if (gapCount === 0 && referenceCount === 0 && fallbackCount === 0) return "All referenced resources currently resolve.";
+  const parts = [];
+  if (gapCount > 0) parts.push(`${gapCount.toLocaleString()} missing scenario resource${gapCount === 1 ? "" : "s"}`);
+  if (referenceCount > 0) parts.push(`${referenceCount.toLocaleString()} stock/reference lookup${referenceCount === 1 ? "" : "s"}`);
+  if (fallbackCount > 0) parts.push(`${fallbackCount.toLocaleString()} shared-library fallback${fallbackCount === 1 ? "" : "s"}`);
+  return `${parts.join("; ")}. Missing scenario resources deserve review; stock/reference lookups are normal unless custom bundled media is intended.`;
+}
+
+function scriptTriageSummary(total: number, risky: number, evidenceOnly: number) {
   if (total === 0) return "No unlinked Extra Action Points were found.";
-  if (risky === 0) return "Extra Action Points are either callable, likely padding, or not currently actionable.";
-  return `${risky.toLocaleString()} unlinked Extra Action Point${risky === 1 ? "" : "s"} may need review before you treat them as intentional scenario behavior.`;
+  if (risky === 0) {
+    if (evidenceOnly > 0) return `${evidenceOnly.toLocaleString()} imported Extra Action Point${evidenceOnly === 1 ? "" : "s"} remain preserved as evidence, not authoring work.`;
+    return "Extra Action Points are either callable, likely padding, or not currently actionable.";
+  }
+  return `${risky.toLocaleString()} possible orphan authored Extra Action Point${risky === 1 ? "" : "s"} may need review before release.`;
 }
 
 function edcdStatusCounts(usages: EdcdRowUsage[]) {
@@ -564,10 +608,13 @@ function edcdStatusCounts(usages: EdcdRowUsage[]) {
   return counts;
 }
 
-function edcdSettingsSummary(usages: EdcdRowUsage[], risky: EdcdRowUsage[]) {
+function edcdSettingsSummary(usages: EdcdRowUsage[], risky: EdcdRowUsage[], sharedCount: number) {
   if (usages.length === 0) return "No Action Settings are present.";
-  if (risky.length === 0) return `${usages.length.toLocaleString()} Action Settings entr${usages.length === 1 ? "y" : "ies"} found with no missing, shared, or conflicting usage.`;
-  return `${risky.length.toLocaleString()} of ${usages.length.toLocaleString()} Action Settings entr${usages.length === 1 ? "y" : "ies"} need author review.`;
+  if (risky.length === 0) {
+    const shared = sharedCount > 0 ? ` ${sharedCount.toLocaleString()} shared entr${sharedCount === 1 ? "y is" : "ies are"} informational.` : "";
+    return `${usages.length.toLocaleString()} Action Settings entr${usages.length === 1 ? "y" : "ies"} found with no missing or conflicting usage.${shared}`;
+  }
+  return `${risky.length.toLocaleString()} of ${usages.length.toLocaleString()} Action Settings entr${usages.length === 1 ? "y" : "ies"} need repair.`;
 }
 
 function edcdStatusMessage(status: EdcdRowStatus, count: number) {
@@ -620,10 +667,12 @@ function humanScriptTriageDetail(classification: string) {
 
 function LintIssueRow({ issue, onSelectEntity }: { issue: Issue; onSelectEntity: (entity: SelectedEntity) => void }) {
   const target = issue.target ?? (isSemanticId(issue.source) ? issue.source : null);
+  const meta = [issue.provenance ? issueProvenanceLabel(issue.provenance) : null, target].filter(Boolean).join(" | ");
   const content = (
     <>
       {issue.severity === "error" ? "x" : issue.severity === "warning" ? "!" : "i"} {issue.message}
-      {target && <small>{target}</small>}
+      {issue.detail && <small>{issue.detail}</small>}
+      {meta && <small>{meta}</small>}
     </>
   );
   if (!target) {
@@ -638,4 +687,12 @@ function LintIssueRow({ issue, onSelectEntity }: { issue: Issue; onSelectEntity:
 
 function isSemanticId(value: string) {
   return /^(map|trigger|macro|action-slot|random|record|resource|resource-type|asset|render-profile|asset-fallback|runtime-cache|encounter|battle|monster|message|shop|treasure|thief|time|contact|solids|menu|quest-flag):/.test(value);
+}
+
+function issueProvenanceLabel(value: NonNullable<Issue["provenance"]>) {
+  if (value === "authored") return "Scenario-authored";
+  if (value === "imported") return "Imported evidence";
+  if (value === "reference") return "Reference";
+  if (value === "runtime") return "Runtime evidence";
+  return "Export";
 }

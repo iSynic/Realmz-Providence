@@ -1138,10 +1138,27 @@ function validateMapRecords(project: Project, errors: string[], warnings: string
 
 function appendTargetDiagnostics(issues: ReturnType<typeof validateRealmzTargetRecord>, errors: string[], warnings: string[]) {
   for (const issue of issues) {
-    const message = `${issue.message} ${issue.detail}`;
+    const context = targetDiagnosticContext(issue.id);
+    const message = `${context ? `${context}: ` : ""}${issue.message} ${issue.detail}`;
     if (issue.severity === "error") errors.push(message);
     else if (issue.severity === "warning") warnings.push(message);
   }
+}
+
+function targetDiagnosticContext(issueId: string) {
+  const [recordType, rawId] = issueId.split(":");
+  const id = Number(rawId);
+  if (!Number.isFinite(id)) return null;
+  if (recordType === "message") return `String ${id}`;
+  if (recordType === "battle") return `Battle ${id}`;
+  if (recordType === "monster") return `Monster ${id}`;
+  if (recordType === "treasure") return `Treasure ${id}`;
+  if (recordType === "shop") return `Shop ${id}`;
+  if (recordType === "simpleEncounter") return `Simple Encounter ${id}`;
+  if (recordType === "complexEncounter") return `Complex Encounter ${id}`;
+  if (recordType === "thiefEncounter") return `Rogue Encounter ${id}`;
+  if (recordType === "timedEncounter") return `Timed Encounter ${id}`;
+  return null;
 }
 
 export function benchmarkBrowserProject(project: Project): BenchmarkReport {

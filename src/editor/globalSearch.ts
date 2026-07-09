@@ -2,7 +2,7 @@ import { DOCUMENTATION_TOPICS, documentationSearchText } from "./docs/documentat
 import { itemReferenceOptions } from "./itemReferences";
 import { monsterReferenceOptions } from "./monsterReferences";
 import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, SelectedEntity } from "./types";
-import { selectEntityFromId, triggerEntityId } from "./utils";
+import { issuesFor, selectEntityFromId, triggerEntityId } from "./utils";
 import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
 import { buildEdcdRowUsages } from "./edcdRows";
 import { ruleCasteName, ruleRaceName } from "./ruleNames";
@@ -589,32 +589,17 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void, custo
 }
 
 function addDiagnosticRows(project: Project, add: (row: SearchableRow) => void) {
-  const validation = [
-    ...project.validation.errors.map((message) => ({ severity: "Error", message })),
-    ...project.validation.warnings.map((message) => ({ severity: "Warning", message }))
-  ];
-  validation.forEach((issue, index) => add({
+  issuesFor(project).forEach((issue, index) => add({
     id: `validation:${index}`,
     scope: "diagnostics",
-    kind: issue.severity,
-    title: `${issue.severity}: ${issue.message.slice(0, 80)}`,
-    subtitle: "Project validation",
+    kind: titleCase(issue.severity),
+    title: `${titleCase(issue.severity)}: ${issue.message.slice(0, 80)}`,
+    subtitle: issue.source,
     snippet: issue.message,
-    badges: ["Linter", issue.severity],
+    badges: ["Linter", titleCase(issue.severity), issue.provenance ?? "authoring"],
+    selectedEntity: issue.target ? selectEntityFromId(issue.target) : undefined,
     route: { kind: "workbench", workbench: "project", domain: "linter", editor: "issues" }
   }));
-  for (const [index, diagnostic] of (project.diagnostics ?? []).entries()) {
-    add({
-      id: `diagnostic:${index}`,
-      scope: "diagnostics",
-      kind: diagnostic.severity,
-      title: `${titleCase(diagnostic.severity)}: ${diagnostic.message.slice(0, 80)}`,
-      subtitle: diagnostic.source ?? diagnostic.code,
-      snippet: diagnostic.message,
-      badges: ["Diagnostic", diagnostic.severity],
-      route: { kind: "workbench", workbench: "project", domain: "linter", editor: "issues" }
-    });
-  }
 }
 
 function buildDocsRows() {

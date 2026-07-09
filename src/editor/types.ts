@@ -1871,4 +1871,11 @@ export type SemanticSummary = {
   diagnosticCount: number;
 };
 
-export type Issue = { severity: string; message: string; source: string; target?: string | null };
+export type Issue = {
+  severity: string;
+  message: string;
+  source: string;
+  target?: string | null;
+  detail?: string;
+  provenance?: "authored" | "imported" | "reference" | "runtime" | "export";
+};
