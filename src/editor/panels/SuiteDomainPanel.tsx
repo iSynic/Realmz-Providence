@@ -2499,7 +2499,7 @@ function TreasureWorkbench({
                   Clear To Defaults
                 </button>
               </header>
-              <TreasureRewardEditor record={record} onApplyCommand={onApplyCommand} />
+              <TreasureRewardEditor project={project} catalog={catalog} previewContext={previewContext} record={record} onApplyCommand={onApplyCommand} />
               <TreasureLootEditor
                 project={project}
                 catalog={catalog}
@@ -2555,26 +2555,92 @@ function TreasureMiniItemBadge({ itemId, option }: { itemId: number; option?: It
   );
 }
 
-function TreasureRewardEditor({ record, onApplyCommand }: { record: Project["treasures"][number]; onApplyCommand?: (command: ProjectCommand) => void }) {
+const TREASURE_REWARD_ICONS = {
+  exp: { label: "Victory points", src: "/economy/victory-points.png" },
+  gold: { label: "Gold", iconId: 2002 },
+  gems: { label: "Gems", iconId: 2014 },
+  jewelry: { label: "Jewelry", iconId: 2012 }
+} satisfies Record<string, TreasureRewardIconDescriptor>;
+
+type TreasureRewardIconDescriptor = {
+  label: string;
+  src?: string;
+  iconId?: number;
+};
+
+function TreasureRewardEditor({
+  project,
+  catalog,
+  previewContext,
+  record,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  record: Project["treasures"][number];
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
   const update = (changes: Partial<Pick<Project["treasures"][number], "exp" | "gold" | "gems" | "jewelry">>) => {
     onApplyCommand?.({ kind: "updateTreasureRecord", label: "Update treasure rewards", id: record.id, changes });
   };
   return (
     <section className="treasure-reward-panel" aria-label="Treasure rewards">
-      <TreasureRewardInput label="Victory Points" value={record.exp} hint="Character advancement reward" onCommit={(exp) => update({ exp })} />
-      <TreasureRewardInput label="Gold" value={record.gold} hint="Coins awarded to the party" onCommit={(gold) => update({ gold })} />
-      <TreasureRewardInput label="Gems" value={record.gems} hint="Gem reward count" onCommit={(gems) => update({ gems })} />
-      <TreasureRewardInput label="Jewelry" value={record.jewelry} hint="Jewelry reward count" onCommit={(jewelry) => update({ jewelry })} />
+      <TreasureRewardInput icon={TREASURE_REWARD_ICONS.exp} project={project} catalog={catalog} previewContext={previewContext} label="Victory Points" value={record.exp} hint="Character advancement reward" onCommit={(exp) => update({ exp })} />
+      <TreasureRewardInput icon={TREASURE_REWARD_ICONS.gold} project={project} catalog={catalog} previewContext={previewContext} label="Gold" value={record.gold} hint="Coins awarded to the party" onCommit={(gold) => update({ gold })} />
+      <TreasureRewardInput icon={TREASURE_REWARD_ICONS.gems} project={project} catalog={catalog} previewContext={previewContext} label="Gems" value={record.gems} hint="Gem reward count" onCommit={(gems) => update({ gems })} />
+      <TreasureRewardInput icon={TREASURE_REWARD_ICONS.jewelry} project={project} catalog={catalog} previewContext={previewContext} label="Jewelry" value={record.jewelry} hint="Jewelry reward count" onCommit={(jewelry) => update({ jewelry })} />
     </section>
   );
 }
 
-function TreasureRewardInput({ label, value, hint, onCommit }: { label: string; value: number; hint: string; onCommit: (value: number) => void }) {
+function TreasureRewardInput({
+  icon,
+  project,
+  catalog,
+  previewContext,
+  label,
+  value,
+  hint,
+  onCommit
+}: {
+  icon: TreasureRewardIconDescriptor;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+  label: string;
+  value: number;
+  hint: string;
+  onCommit: (value: number) => void;
+}) {
   return (
     <div className="treasure-reward-input">
-      <ItemNumberInput label={label} value={value} title={hint} onCommit={onCommit} />
+      <TreasureRewardIcon icon={icon} project={project} catalog={catalog} previewContext={previewContext} />
+      <div className="treasure-reward-field">
+        <ItemNumberInput label={label} value={value} title={hint} onCommit={onCommit} />
+      </div>
       <small>{hint}</small>
     </div>
+  );
+}
+
+function TreasureRewardIcon({
+  icon,
+  project,
+  catalog,
+  previewContext
+}: {
+  icon: TreasureRewardIconDescriptor;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
+}) {
+  const iconUrl = useIconPreviewUrl(icon.iconId ?? null, project, catalog, previewContext);
+  const src = icon.src ?? iconUrl;
+  return (
+    <span className={icon.src ? "treasure-reward-icon vp" : "treasure-reward-icon"} title={icon.iconId ? `${icon.label} (cicn ${icon.iconId})` : icon.label}>
+      {src ? <img src={src} alt="" draggable={false} /> : <i>{icon.label.slice(0, 2).toUpperCase()}</i>}
+    </span>
   );
 }
 

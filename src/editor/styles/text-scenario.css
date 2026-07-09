@@ -1407,7 +1407,7 @@
 
 .treasure-reward-panel {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
   gap: 8px;
 }
 
@@ -1423,6 +1423,45 @@
   padding: 8px;
 }
 
+.treasure-reward-input {
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+}
+
+.treasure-reward-field {
+  min-width: 0;
+}
+
+.treasure-reward-icon {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #31516d;
+  border-radius: 5px;
+  background: #071019;
+}
+
+.treasure-reward-icon img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.treasure-reward-icon.vp img {
+  width: 31px;
+  height: 31px;
+  image-rendering: auto;
+}
+
+.treasure-reward-icon i {
+  color: #ffd84a;
+  font-style: normal;
+  font-size: 10px;
+}
+
 
 
 .treasure-reward-input small,
@@ -1430,6 +1469,10 @@
   color: #88a0b5;
   font-size: 10px;
   line-height: 1.3;
+}
+
+.treasure-reward-input small {
+  grid-column: 2;
 }
 
 
