@@ -522,7 +522,7 @@ function edcdSoundTargets(code: number, values: number[]): EdcdUsageTarget[] {
 }
 
 export function assetOriginLabel(asset: ManagedAsset | LibraryAsset) {
-  if ("exportState" in asset) return "Scenario";
+  if ("exportState" in asset) return asset.libraryScope === "custom-library" ? "Custom Library" : "Scenario";
   const text = `${asset.source} ${asset.relativePath} ${asset.label} ${asset.type}`.toLowerCase();
   if (/\b(ui|interface|manual|documentation|screenshot|button|window)\b/.test(text)) return "UI Reference";
   if (text.includes("divinity") && !text.includes("realmz data")) return "Divinity Reference";

@@ -7,6 +7,7 @@ import {
   ManagedAsset,
   ManagedAssetConversion,
   ManagedAssetKind,
+  ManagedAssetLibraryScope,
   PaletteMode
 } from "./types";
 
@@ -21,16 +22,18 @@ export const SCENARIO_SOUND_MAX_ID = 500;
 
 export type MediaAssetImportOptions = {
   target?: AssetImportTarget;
+  resourceType?: string;
   fitMode?: ImageFitMode;
   scaleMode?: ImageScaleMode;
   matte?: ImageMatte;
   paletteMode?: PaletteMode;
   ditherMode?: DitherMode;
   linkedEntity?: string | null;
+  libraryScope?: ManagedAssetLibraryScope;
 };
 
 export type MediaAssetSourceInfo = {
-  kind: "image" | "sound";
+  kind: "image" | "sound" | "text" | "raw";
   width: number | null;
   height: number | null;
   durationMs: number | null;
@@ -63,6 +66,7 @@ export type MediaAssetImportRequest = {
   finalWidth: number | null;
   finalHeight: number | null;
   warnings: string[];
+  libraryScope: ManagedAssetLibraryScope;
 };
 
 export async function inspectMediaAssetSource(file: File, kind: ManagedAssetKind): Promise<MediaAssetSourceInfo> {
@@ -75,6 +79,16 @@ export async function inspectMediaAssetSource(file: File, kind: ManagedAssetKind
       durationMs: decoded.durationMs,
       sampleRate: decoded.sampleRate,
       channels: decoded.sourceChannels
+    };
+  }
+  if (kind === "text" || kind === "other") {
+    return {
+      kind: kind === "text" ? "text" : "raw",
+      width: null,
+      height: null,
+      durationMs: null,
+      sampleRate: null,
+      channels: null
     };
   }
   const decoded = await decodeImageFile(file);
@@ -101,6 +115,37 @@ export async function fileToMediaAssetRequest(
   const label = stripExtension(file.name);
   const target = options.target ?? assetTargetForKind(kind);
   const warnings: string[] = [];
+  if (kind === "text" || kind === "other") {
+    const resourceType = normalizeResourceType(options.resourceType ?? resourceTypeForFile(file, kind));
+    if (!resourceType.trim()) warnings.push("Resource type is empty; choose a four-character Realmz resource type before export.");
+    return {
+      label,
+      kind,
+      resourceType,
+      resourceId,
+      mimeType: kind === "text" ? file.type || "text/plain" : file.type || "application/octet-stream",
+      originalBase64: bytesToBase64(original),
+      previewBase64: bytesToBase64(original),
+      image: null,
+      audio: null,
+      linkedEntity: options.linkedEntity ?? null,
+      target,
+      fitMode: null,
+      scaleMode: null,
+      matte: null,
+      paletteMode: null,
+      ditherMode: null,
+      sourceWidth: null,
+      sourceHeight: null,
+      sourceDurationMs: null,
+      sourceSampleRate: null,
+      sourceChannels: null,
+      finalWidth: null,
+      finalHeight: null,
+      warnings,
+      libraryScope: options.libraryScope ?? "scenario"
+    };
+  }
   if (kind === "sound") {
     const decoded = await decodeAudioFile(file);
     if (decoded.pcm8.length === 0) warnings.push("Audio contains no decoded samples.");
@@ -137,7 +182,8 @@ export async function fileToMediaAssetRequest(
       sourceChannels: decoded.sourceChannels,
       finalWidth: null,
       finalHeight: null,
-      warnings
+      warnings,
+      libraryScope: options.libraryScope ?? "scenario"
     };
   }
 
@@ -184,16 +230,15 @@ export async function fileToMediaAssetRequest(
     sourceChannels: null,
     finalWidth: prepared.width,
     finalHeight: prepared.height,
-    warnings
+    warnings,
+    libraryScope: options.libraryScope ?? "scenario"
   };
 }
 
 export function requestToBrowserAsset(request: MediaAssetImportRequest): ManagedAsset {
   const id = `asset:browser:${stableToken(`${request.label}-${Date.now()}`)}`;
   const originalPath = `data:${request.mimeType};base64,${request.originalBase64}`;
-  const previewPath = request.kind === "sound"
-    ? `data:audio/wav;base64,${request.previewBase64}`
-    : `data:image/png;base64,${request.previewBase64}`;
+  const previewPath = previewDataUrlForRequest(request);
   return {
     id,
     label: request.label,
@@ -213,6 +258,7 @@ export function requestToBrowserAsset(request: MediaAssetImportRequest): Managed
     sampleRate: request.audio?.sampleRate ?? null,
     channels: request.audio?.channels ?? null,
     exportState: "preview-only",
+    libraryScope: request.libraryScope,
     provenance: "browser media import",
     linkedEntity: request.linkedEntity,
     conversion: requestToConversion(request)
@@ -226,6 +272,7 @@ export function requestToBrowserReplacement(request: MediaAssetImportRequest, pr
     resourceId: previous.resourceId,
     resourceType: previous.resourceType,
     linkedEntity: previous.linkedEntity,
+    libraryScope: previous.libraryScope,
     provenance: `${previous.provenance}; replaced in browser preview`
   };
 }
@@ -234,6 +281,8 @@ export function assetTargetForKind(kind: ManagedAssetKind): AssetImportTarget {
   if (kind === "special-land-tile") return "special-land-tile";
   if (kind === "icon") return "icon";
   if (kind === "sound") return "sound";
+  if (kind === "text") return "text";
+  if (kind === "other") return "raw-resource";
   return "scenario-picture";
 }
 
@@ -253,6 +302,12 @@ export function nextResourceId(assets: ManagedAsset[], kind: ManagedAssetKind) {
   }
   if (kind === "sound") {
     return nextIdInRange(assets, kind, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID);
+  }
+  if (kind === "text") {
+    const used = new Set(assets.filter((asset) => asset.kind === "text").map((asset) => asset.resourceId));
+    let id = -200;
+    while (used.has(id)) id -= 1;
+    return id;
   }
   const base = kind === "icon" ? 30126 : SCENARIO_PICTURE_MIN_ID;
   const used = new Set(assets.filter((asset) => asset.kind === kind).map((asset) => asset.resourceId));
@@ -288,6 +343,27 @@ function requestToConversion(request: MediaAssetImportRequest): ManagedAssetConv
     finalHeight: request.finalHeight,
     warnings: request.warnings
   };
+}
+
+function previewDataUrlForRequest(request: MediaAssetImportRequest) {
+  if (request.kind === "sound") return `data:audio/wav;base64,${request.previewBase64}`;
+  if (request.kind === "text") return `data:text/plain;base64,${request.previewBase64}`;
+  if (request.kind === "other") return `data:application/octet-stream;base64,${request.previewBase64}`;
+  return `data:image/png;base64,${request.previewBase64}`;
+}
+
+function resourceTypeForFile(file: File, kind: ManagedAssetKind) {
+  if (kind === "text") {
+    if (/\.styl$/i.test(file.name)) return "styl";
+    if (/\.str#?$/i.test(file.name)) return "STR#";
+    return "TEXT";
+  }
+  const match = file.name.match(/\.([A-Za-z0-9 #]{1,4})$/);
+  return match ? match[1] : "Rsrc";
+}
+
+function normalizeResourceType(value: string) {
+  return value.slice(0, 4) || "Rsrc";
 }
 
 function normalizeImageOptions(

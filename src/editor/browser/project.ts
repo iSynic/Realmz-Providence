@@ -802,10 +802,11 @@ export function validateBrowserProject(project: Project): ValidationReport {
       warnings.push(`${alignment.source} has ${alignment.trailingBytes} trailing bytes after full records.`);
     }
   }
-  for (const asset of project.assets ?? []) {
+  const scenarioAssets = (project.assets ?? []).filter((asset) => asset.libraryScope !== "custom-library");
+  for (const asset of scenarioAssets) {
     if (asset.exportState === "blocked") errors.push(`${asset.label} needs adjustment before Realmz export.`);
     if (asset.exportState === "preview-only") warnings.push(`${asset.label} is preview-only in the browser; desktop export needs converted resource bytes.`);
-    if (!["PICT", "cicn", "snd "].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported resource type ${asset.resourceType}.`);
+    if (!["PICT", "cicn", "snd ", "TEXT", "styl"].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported resource type ${asset.resourceType}.`);
     if (asset.kind === "picture" && asset.resourceType !== "PICT") errors.push(`${asset.label} must export as a PICT resource.`);
     if (asset.kind === "sound" && asset.resourceType !== "snd ") errors.push(`${asset.label} must export as an snd resource.`);
     if ((asset.kind === "icon" || asset.kind === "special-land-tile") && asset.resourceType !== "cicn") {
@@ -834,10 +835,10 @@ export function validateBrowserProject(project: Project): ValidationReport {
   for (const encounter of project.complexEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
   for (const encounter of project.thiefEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "thiefEncounter", encounter.id), errors, warnings);
   for (const encounter of project.timedEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "timedEncounter", encounter.id), errors, warnings);
-  if ((project.assets ?? []).length > 0) {
-    warnings.push(`${project.assets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
+  if (scenarioAssets.length > 0) {
+    warnings.push(`${scenarioAssets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);
   }
-  if ((project.assets ?? []).some((asset) => asset.kind === "text" && (asset.resourceType === "TEXT" || asset.resourceType.trim() === "styl"))) {
+  if (scenarioAssets.some((asset) => asset.kind === "text" && (asset.resourceType === "TEXT" || asset.resourceType.trim() === "styl"))) {
     warnings.push("Scrolling Text TEXT/styl export is runtime-suspect: recent Windows Realmz testing ignored styl formatting, and Mac Realmz 7.1.2 crashed after a Providence-authored Scrolling Text action step.");
   }
   if (project.semanticSchema.schemaVersion !== 5) {
@@ -1095,6 +1096,7 @@ function validateTileAttributes(project: Project, sourceNames: Set<string>, warn
 function knownIconIds(project: Project) {
   const ids = new Set<number>();
   for (const asset of project.assets ?? []) {
+    if (asset.libraryScope === "custom-library") continue;
     if (asset.resourceType === "cicn") insertIconId(ids, asset.resourceId);
   }
   for (const asset of project.assetCatalog.icons ?? []) insertIconId(ids, asset.resourceId);

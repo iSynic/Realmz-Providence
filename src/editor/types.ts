@@ -14,7 +14,7 @@ export type EditorTab =
   | "linter"
   | "export";
 export type ActiveWorkbench = "project" | "library";
-export type AssetWorkbenchSection = "project" | "realmz" | "divinity" | "records" | "advanced";
+export type AssetWorkbenchSection = "project" | "custom" | "realmz" | "divinity" | "records" | "advanced";
 export type AssetSearchHint = {
   query: string;
   nonce: number;
@@ -134,7 +134,8 @@ export type PaintCellChange = { x: number; y: number; index: number; from: numbe
 export type BattleGridCellChange = { index: number; from: number; to: number };
 export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
 export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
-export type AssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound";
+export type ManagedAssetLibraryScope = "scenario" | "custom-library";
+export type AssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound" | "text" | "raw-resource";
 export type ImageFitMode = "fit" | "crop" | "stretch";
 export type ImageScaleMode = "smooth" | "crisp";
 export type ImageMatte = "transparent" | "white" | "black";
@@ -280,6 +281,7 @@ export type ManagedAsset = {
   sampleRate: number | null;
   channels: number | null;
   exportState: ManagedAssetExportState;
+  libraryScope?: ManagedAssetLibraryScope;
   provenance: string;
   linkedEntity: string | null;
   conversion?: ManagedAssetConversion | null;
@@ -1342,7 +1344,7 @@ export type ProjectCommand =
     }
   | { kind: "attachProjectAsset"; label: string; asset: ManagedAsset }
   | { kind: "replaceProjectAsset"; label: string; assetId: string; asset: ManagedAsset }
-  | { kind: "updateProjectAsset"; label: string; assetId: string; changes: Partial<Pick<ManagedAsset, "label" | "resourceId" | "linkedEntity">> }
+  | { kind: "updateProjectAsset"; label: string; assetId: string; changes: Partial<Pick<ManagedAsset, "label" | "resourceId" | "linkedEntity" | "libraryScope">> }
   | { kind: "deleteProjectAsset"; label: string; assetId: string }
   | {
       kind: "updateScenarioStartup";

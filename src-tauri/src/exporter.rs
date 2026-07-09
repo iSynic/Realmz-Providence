@@ -684,6 +684,12 @@ fn write_managed_resources(
     ));
     let mut scrolling_text_runtime_warning_emitted = false;
     for asset in &project.assets {
+        if matches!(
+            asset.library_scope,
+            Some(crate::project::ManagedAssetLibraryScope::CustomLibrary)
+        ) {
+            continue;
+        }
         if !matches!(
             asset.export_state,
             crate::project::ManagedAssetExportState::Ready
@@ -1108,6 +1114,7 @@ mod tests {
             sample_rate: None,
             channels: None,
             export_state: ManagedAssetExportState::Ready,
+            library_scope: None,
             provenance: "test".to_string(),
             linked_entity: Some("resource:TEXT:-200".to_string()),
             conversion: None,

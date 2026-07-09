@@ -504,6 +504,7 @@ function catalogRows(catalog: LibraryCatalog) {
 
 function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
   for (const asset of project.assets ?? []) {
+    const assetSection: AssetWorkbenchSection = asset.libraryScope === "custom-library" ? "custom" : "project";
     add({
       id: asset.id,
       scope: "assets",
@@ -511,9 +512,9 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       title: asset.label,
       subtitle: `${asset.resourceType} ${asset.resourceId} | ${asset.fileName}`,
       snippet: [asset.provenance, asset.exportState, asset.originalPath].filter(Boolean).join(" | "),
-      badges: ["Scenario Asset", asset.kind],
+      badges: [asset.libraryScope === "custom-library" ? "Custom Library" : "Scenario Asset", asset.kind],
       selectedEntity: selectEntityFromId(asset.id),
-      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor(asset.kind, asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.label), assetSection: "project", assetKindFilter: asset.kind },
+      route: { kind: "workbench", workbench: "project", domain: "assets", editor: assetEditor(asset.kind, asset.resourceType), searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.label), assetSection, assetKindFilter: asset.kind },
       preview: asset.previewPath,
       numericId: asset.resourceId,
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
@@ -536,7 +537,9 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
     });
   }
-  const managedResourceKeys = new Set((project.assets ?? []).map((asset) => `${asset.resourceType.trim()}:${asset.resourceId}`));
+  const managedResourceKeys = new Set((project.assets ?? [])
+    .filter((asset) => asset.libraryScope !== "custom-library")
+    .map((asset) => `${asset.resourceType.trim()}:${asset.resourceId}`));
   for (const entity of project.semanticSchema?.entities ?? []) {
     const resourceType = libraryEntityResourceType(entity);
     const resourceId = libraryEntityResourceId(entity);
@@ -794,7 +797,7 @@ function assetKindFilter(resourceType: string | null | undefined, kind: string):
 
 function libraryAssetSearchSection(asset: { source?: string; relativePath?: string; label?: string; type?: string }): AssetWorkbenchSection {
   const parts = [asset.source, asset.relativePath, asset.label, asset.type].join(" ").toLowerCase();
-  if (parts.includes("divinity") || parts.includes("manual") || parts.includes("ui")) return "divinity";
+  if (parts.includes("manual") || parts.includes("ui")) return "divinity";
   return "realmz";
 }
 

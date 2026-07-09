@@ -1,6 +1,6 @@
 import { Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ManagedAssetKind } from "../../types";
+import { ManagedAssetKind, ManagedAssetLibraryScope } from "../../types";
 import { TutorialTip } from "../../components/TutorialTip";
 import {
   assetTargetForKind,
@@ -12,10 +12,10 @@ import {
   SCENARIO_SOUND_MIN_ID
 } from "../../mediaAssets";
 
-const ASSET_IMPORT_HELP = "Import converts source media into a Realmz-ready scenario asset. Pictures become PICT resources, sounds become snd resources, and icon-like images become 32 x 32 cicn resources when imported as icons or special land tiles.";
-const IMPORT_KIND_HELP = "Choose the Realmz resource family before importing. The same image can become a scenario picture, a general icon, or a map-paintable special land tile.";
+const ASSET_IMPORT_HELP = "Import files as scenario assets or custom-library assets. Pictures, icons, special land tiles, sounds, text/style resources, and unsupported raw resources keep their resource type and ID.";
+const IMPORT_KIND_HELP = "Choose the Realmz resource family before importing. Image files can become pictures or icons; text and raw resource files are preserved without image conversion.";
 const IMPORT_CONVERSION_HELP = "Providence previews the original source beside the Realmz-ready output so you can catch scaling, transparency, palette, and sound-conversion issues before the asset is added to the project.";
-const IMPORT_TARGET_HELP = "Target shows the Realmz resource family Providence will write: PICT for pictures, snd for sounds, or cicn for icons and special land tiles.";
+const IMPORT_TARGET_HELP = "Target shows the Realmz resource family Providence will write: PICT for pictures, snd for sounds, cicn for icons, or TEXT/styl/raw bytes for resource imports.";
 const IMPORT_FIT_HELP = "Fit controls how an image becomes a fixed 32 x 32 icon or special-land tile: padding preserves shape, crop fills the tile, and stretch forces the image to the target size.";
 const IMPORT_SCALE_HELP = "Smooth scaling is useful for pictures and art imports. Crisp pixels preserves hard pixel-art edges for Realmz-style icons, sprites, and map tiles.";
 const IMPORT_MATTE_HELP = "Transparency matters for cicn overlays. Special Land Tiles should usually keep transparent pixels so the landlook base tile remains visible underneath.";
@@ -25,12 +25,14 @@ export function AssetImportBar({
   onImportAssets,
   compact = false,
   fixedKind,
-  label = "Import"
+  label = "Import",
+  libraryScope = "scenario"
 }: {
   onImportAssets?: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
   compact?: boolean;
   fixedKind?: ManagedAssetKind;
   label?: string;
+  libraryScope?: ManagedAssetLibraryScope;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [kind, setKind] = useState<ManagedAssetKind>(fixedKind ?? "picture");
@@ -40,21 +42,25 @@ export function AssetImportBar({
   const [scaleMode, setScaleMode] = useState<MediaAssetImportOptions["scaleMode"]>("smooth");
   const [matte, setMatte] = useState<MediaAssetImportOptions["matte"]>("transparent");
   const [ditherMode, setDitherMode] = useState<MediaAssetImportOptions["ditherMode"]>("none");
+  const [resourceType, setResourceType] = useState("TEXT");
   const [sourceInfo, setSourceInfo] = useState<MediaAssetSourceInfo | null>(null);
   const [sourcePreviewDataUrl, setSourcePreviewDataUrl] = useState<string | null>(null);
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [previewSummary, setPreviewSummary] = useState("");
   const [previewWarnings, setPreviewWarnings] = useState<string[]>([]);
-  const accept = fixedKind ? (fixedKind === "sound" ? "audio/*" : "image/*") : "image/*,audio/*";
-  const isImage = activeKind !== "sound";
+  const accept = fixedKind ? acceptForKind(fixedKind) : "image/*,audio/*,text/*,.txt,.text,.styl,.str,.str#,.*";
+  const isImage = activeKind === "picture" || activeKind === "icon" || activeKind === "special-land-tile";
+  const isByteResource = activeKind === "text" || activeKind === "other";
   const fixedSizeImage = activeKind === "icon" || activeKind === "special-land-tile";
   const buildOptions = (): MediaAssetImportOptions => ({
     target: assetTargetForKind(activeKind),
+    resourceType: isByteResource ? resourceType : undefined,
     fitMode,
     scaleMode,
     matte,
     paletteMode: "adaptive-256",
-    ditherMode
+    ditherMode,
+    libraryScope
   });
   const openImportDialog = (files: File[]) => {
     const first = files[0];
@@ -70,6 +76,7 @@ export function AssetImportBar({
     setScaleMode(isLikelyPixelArt(first, nextKind) ? "crisp" : "smooth");
     setMatte(nextKind === "picture" ? "white" : "transparent");
     setDitherMode(nextKind === "picture" ? "floyd-steinberg" : "none");
+    setResourceType(defaultResourceTypeForKind(first, nextKind));
   };
   const pendingImportKinds = importKindsForFile(pendingFiles[0], fixedKind);
   useEffect(() => {
@@ -83,13 +90,13 @@ export function AssetImportBar({
         if (disposed) return;
         setSourceInfo(info);
         setSourcePreviewDataUrl(`data:${request.mimeType};base64,${request.originalBase64}`);
-        setPreviewDataUrl(request.kind === "sound"
-          ? `data:audio/wav;base64,${request.previewBase64}`
-          : `data:image/png;base64,${request.previewBase64}`);
+        setPreviewDataUrl(previewDataUrlForImport(request));
         setPreviewWarnings(request.warnings);
         setPreviewSummary(request.audio
           ? `${formatDuration(request.audio.durationMs)} at ${request.audio.sampleRate.toLocaleString()} Hz, mono 8-bit`
-          : `${request.finalWidth ?? request.image?.width ?? 0} x ${request.finalHeight ?? request.image?.height ?? 0} ${request.resourceType}`);
+          : request.image
+            ? `${request.finalWidth ?? request.image.width} x ${request.finalHeight ?? request.image.height} ${request.resourceType}`
+            : `${request.resourceType} ${request.originalBase64.length ? "bytes preserved" : "empty resource"}`);
       } catch (error) {
         if (disposed) return;
         const message = commandErrorLabel(error);
@@ -104,7 +111,7 @@ export function AssetImportBar({
     return () => {
       disposed = true;
     };
-  }, [activeKind, ditherMode, fitMode, matte, pendingFiles, scaleMode]);
+  }, [activeKind, ditherMode, fitMode, libraryScope, matte, pendingFiles, resourceType, scaleMode]);
   return (
     <div className={`asset-import-bar${compact ? " compact" : ""}`}>
       {fixedKind && <span className="asset-import-fixed-kind">{kindLabel(fixedKind)}</span>}
@@ -144,13 +151,17 @@ export function AssetImportBar({
                     <strong>Realmz-ready output</strong>
                   </TutorialTip>
                   {previewDataUrl && activeKind === "sound" && <audio controls src={previewDataUrl} />}
-                  {previewDataUrl && activeKind !== "sound" && <img src={previewDataUrl} alt="Converted asset preview" />}
+                  {previewDataUrl && isImage && <img src={previewDataUrl} alt="Converted asset preview" />}
+                  {previewDataUrl && activeKind === "text" && <pre className="asset-import-text-preview">{decodePreviewText(previewDataUrl)}</pre>}
+                  {previewDataUrl && activeKind === "other" && <span>Raw bytes will be preserved.</span>}
                   {!previewDataUrl && <span>{previewSummary}</span>}
                 </div>
                 <div className="asset-import-preview">
                   <strong>Original source</strong>
                   {sourcePreviewDataUrl && activeKind === "sound" && <audio controls src={sourcePreviewDataUrl} />}
-                  {sourcePreviewDataUrl && activeKind !== "sound" && <img src={sourcePreviewDataUrl} alt="Original source preview" />}
+                  {sourcePreviewDataUrl && isImage && <img src={sourcePreviewDataUrl} alt="Original source preview" />}
+                  {sourcePreviewDataUrl && activeKind === "text" && <pre className="asset-import-text-preview">{decodePreviewText(sourcePreviewDataUrl)}</pre>}
+                  {sourcePreviewDataUrl && activeKind === "other" && <span>{sourceInfo ? sourceSummary(sourceInfo) : "Reading..."}</span>}
                   {!sourcePreviewDataUrl && <span>{sourceInfo ? sourceSummary(sourceInfo) : "Reading..."}</span>}
                 </div>
               </div>
@@ -169,6 +180,7 @@ export function AssetImportBar({
                       setScaleMode(isLikelyPixelArt(pendingFiles[0], nextKind) ? "crisp" : "smooth");
                       setMatte(nextKind === "picture" ? "white" : "transparent");
                       setDitherMode(nextKind === "picture" ? "floyd-steinberg" : "none");
+                      setResourceType(defaultResourceTypeForKind(pendingFiles[0], nextKind));
                     }}
                   >
                     {pendingImportKinds.map((option) => (
@@ -183,6 +195,20 @@ export function AssetImportBar({
                   <span>Source</span><b>{sourceInfo ? sourceSummary(sourceInfo) : "Reading..."}</b>
                   <span>Output</span><b>{previewSummary}</b>
                 </div>
+                {isByteResource && (
+                  <label>
+                    <span>Resource Type</span>
+                    {activeKind === "text" ? (
+                      <select value={resourceType} onChange={(event) => setResourceType(event.currentTarget.value)}>
+                        <option value="TEXT">TEXT</option>
+                        <option value="styl">styl</option>
+                        <option value="STR#">STR#</option>
+                      </select>
+                    ) : (
+                      <input value={resourceType} maxLength={4} onChange={(event) => setResourceType(event.currentTarget.value)} />
+                    )}
+                  </label>
+                )}
                 {isImage && (
                   <>
                     {fixedSizeImage && (
@@ -245,7 +271,7 @@ export function AssetImportBar({
                 }}
                 disabled={!previewDataUrl}
               >
-                Import as Scenario Asset
+                Import as {libraryScope === "custom-library" ? "Custom Library Asset" : "Scenario Asset"}
               </button>
             </div>
           </div>
@@ -257,6 +283,7 @@ export function AssetImportBar({
 
 export function defaultImportKindForFile(file: File | undefined): ManagedAssetKind {
   if (file?.type.startsWith("audio/")) return "sound";
+  if (file?.type.startsWith("text/") || /\.(txt|text|styl|str#?)$/i.test(file?.name ?? "")) return "text";
   return "picture";
 }
 
@@ -267,13 +294,16 @@ export function importKindsForFile(file: File | undefined, fixedKind?: ManagedAs
     { kind: "special-land-tile" as ManagedAssetKind, label: "Special Land Tile / cicn 32 x 32" }
   ];
   const soundKind = { kind: "sound" as ManagedAssetKind, label: "Sound / snd" };
+  const textKind = { kind: "text" as ManagedAssetKind, label: "Text / TEXT or styl" };
+  const rawKind = { kind: "other" as ManagedAssetKind, label: "Raw Resource" };
   if (fixedKind) {
-    const fixed = [...allImageKinds, soundKind].find((option) => option.kind === fixedKind);
+    const fixed = [...allImageKinds, soundKind, textKind, rawKind].find((option) => option.kind === fixedKind);
     return fixed ? [fixed] : [{ kind: fixedKind, label: kindLabel(fixedKind) }];
   }
   if (file?.type.startsWith("audio/")) return [soundKind];
   if (file?.type.startsWith("image/")) return allImageKinds;
-  return [...allImageKinds, soundKind];
+  if (file?.type.startsWith("text/") || /\.(txt|text|styl|str#?)$/i.test(file?.name ?? "")) return [textKind, rawKind];
+  return [rawKind, textKind, ...allImageKinds, soundKind];
 }
 
 export function isLikelyPixelArt(file: File | undefined, kind: ManagedAssetKind) {
@@ -284,6 +314,8 @@ export function previewResourceIdForKind(kind: ManagedAssetKind) {
   if (kind === "special-land-tile") return -100;
   if (kind === "sound") return SCENARIO_SOUND_MIN_ID;
   if (kind === "icon") return 30126;
+  if (kind === "text") return -200;
+  if (kind === "other") return 1;
   return SCENARIO_PICTURE_MIN_ID;
 }
 
@@ -291,11 +323,15 @@ export function targetLabel(kind: ManagedAssetKind) {
   if (kind === "special-land-tile") return "32 x 32 cicn, negative tile ID";
   if (kind === "icon") return "32 x 32 cicn";
   if (kind === "sound") return "Mac snd resource";
+  if (kind === "text") return "TEXT, styl, or STR# resource bytes";
+  if (kind === "other") return "Raw resource bytes";
   return "Scenario PICT resource";
 }
 
 export function sourceSummary(info: MediaAssetSourceInfo) {
   if (info.kind === "sound") return `${formatDuration(info.durationMs)} at ${(info.sampleRate ?? 0).toLocaleString()} Hz, ${info.channels ?? 0} channel(s)`;
+  if (info.kind === "text") return "Text resource bytes";
+  if (info.kind === "raw") return "Raw resource bytes";
   return `${info.width ?? 0} x ${info.height ?? 0}`;
 }
 
@@ -316,5 +352,43 @@ export function kindLabel(kind: ManagedAssetKind) {
   if (kind === "picture") return "Picture / PICT";
   if (kind === "icon") return "Icon / cicn";
   if (kind === "sound") return "Sound / snd";
+  if (kind === "text") return "Text / TEXT or styl";
+  if (kind === "other") return "Raw Resource";
   return kind;
+}
+
+function acceptForKind(kind: ManagedAssetKind) {
+  if (kind === "sound") return "audio/*";
+  if (kind === "text") return "text/*,.txt,.text,.styl,.str,.str#";
+  if (kind === "other") return "*";
+  return "image/*";
+}
+
+function defaultResourceTypeForKind(file: File | undefined, kind: ManagedAssetKind) {
+  if (kind === "text") {
+    if (/\.styl$/i.test(file?.name ?? "")) return "styl";
+    if (/\.str#?$/i.test(file?.name ?? "")) return "STR#";
+    return "TEXT";
+  }
+  return "Rsrc";
+}
+
+function previewDataUrlForImport(request: { kind: ManagedAssetKind; previewBase64: string }) {
+  if (request.kind === "sound") return `data:audio/wav;base64,${request.previewBase64}`;
+  if (request.kind === "text") return `data:text/plain;base64,${request.previewBase64}`;
+  if (request.kind === "other") return `data:application/octet-stream;base64,${request.previewBase64}`;
+  return `data:image/png;base64,${request.previewBase64}`;
+}
+
+function decodePreviewText(dataUrl: string) {
+  const comma = dataUrl.indexOf(",");
+  if (comma < 0) return "";
+  try {
+    const binary = atob(dataUrl.slice(comma + 1));
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+  } catch {
+    return "";
+  }
 }

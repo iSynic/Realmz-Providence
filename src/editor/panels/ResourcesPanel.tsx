@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
+import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAssetKind, ManagedAssetLibraryScope, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { browserReferenceAtlasToken } from "../browser/atlasPaths";
 import { loadBrowserScenarioResourcePreview } from "../browser/project";
@@ -12,7 +12,8 @@ import { renderListKey } from "../renderKeys";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { TutorialTip } from "../components/TutorialTip";
 import {
-  ASSET_SECTIONS,
+  PRIMARY_ASSET_SECTIONS,
+  TECHNICAL_ASSET_SECTIONS,
   AssetImportBar,
   AssetPagination,
   AssetSection,
@@ -47,8 +48,8 @@ type ProjectGalleryItem =
 
 const ASSET_PAGE_SIZE_OPTIONS = [50, 100, 200, 500, 0];
 
-const ASSETS_WORKBENCH_HELP = "Assets shows what media can be previewed, what media the scenario owns, and which records use each resource. A previewable reference asset is not exported unless it is imported or scenario-supplied.";
-const ASSET_KIND_FILTER_HELP = "Filter by Realmz resource family. Pictures are PICT resources, sounds are snd resources, icons and special land tiles are cicn resources, and text resources are TEXT or STR# entries.";
+const ASSETS_WORKBENCH_HELP = "Import, preview, replace, and locate scenario media. Text and scrolling-text editing stays in Strings.";
+const ASSET_KIND_FILTER_HELP = "Filter by Realmz resource family. Pictures are PICT resources, sounds are snd resources, icons and special land tiles are cicn resources, and text resources include TEXT, STR#, and styl entries.";
 const UI_REFERENCE_HELP = "Divinity and Realmz editor interface art is useful for research, but it is not scenario media. Keep it hidden unless you are comparing manual/editor artwork.";
 const SPECIAL_LAND_FILTER_HELP = "Special Land Tiles are 32 x 32 cicn resources painted as negative map field values. Realmz draws the landlook base tile under the transparent icon.";
 const RESOURCE_FALLBACK_HELP = "Fallback warnings identify records that point at resources Providence could not resolve from the scenario or bundled Realmz libraries. Treat used missing resources as release risks.";
@@ -56,18 +57,21 @@ const TILE_ATLAS_HELP = "Tile atlases are landlook render sources. Standard Real
 
 function assetSectionHelp(section: AssetSection) {
   if (section === "project") {
-    return "Scenario Assets are project-owned media that Providence can package into the scenario resource fork or companion files. Use this section for authored pictures, sounds, icons, text, and special land tiles.";
+    return "Import and manage pictures, sounds, icons, text resources, and special land tiles that ship with this scenario.";
+  }
+  if (section === "custom") {
+    return "Keep reusable assets with this Providence project without exporting them until you move them into Scenario Assets.";
   }
   if (section === "realmz") {
-    return "Reference Libraries are Realmz built-ins. They can power previews and pickers, but they are read-only and are not copied into your scenario.";
+    return "Browse useful stock and reference media for previewing and copying into the scenario.";
   }
   if (section === "divinity") {
-    return "Divinity Reference contains editor/manual evidence and comparison art. These resources are read-only and usually should not appear in normal authoring pickers.";
+    return "Editor UI reference material kept out of normal authoring views.";
   }
   if (section === "records") {
-    return "Decoded Records shows parsed scenario records rather than media assets. It is useful when tracing which data records refer to a resource.";
+    return "Parsed scenario records and resource references.";
   }
-  return "Advanced Inventory is the raw resource-fork ledger. It exposes imported PICT, cicn, snd, TEXT, STR#, styl, RLMZ, vers, malformed, and compatibility resources for diagnostics.";
+  return "Raw resource listings, diagnostics, and compatibility records.";
 }
 
 export function ResourcesPanel({
@@ -97,7 +101,7 @@ export function ResourcesPanel({
   onSelectEntity: (entity: SelectedEntity) => void;
   onImportAssets?: (files: File[], kind: ManagedAssetKind, options?: MediaAssetImportOptions) => void;
   onReplaceAsset?: (assetId: string, file: File) => void;
-  onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
+  onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number; libraryScope?: ManagedAssetLibraryScope }) => void;
   onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
 }) {
@@ -147,6 +151,7 @@ export function ResourcesPanel({
     ...scenarioResources.map((asset) => ({ type: "scenario" as const, asset })),
     ...projectAssets.map((asset) => ({ type: "managed" as const, asset }))
   ], [projectAssets, scenarioResources]);
+  const isManagedAssetSection = section === "project" || section === "custom";
   useEffect(() => {
     setLibraryPage(0);
   }, [section, kindFilter, normalizedQuery, libraryPreviewFilter, showUiReference, assetPageSize]);
@@ -186,7 +191,7 @@ export function ResourcesPanel({
     if (!item) return;
     setSelectedAsset(item);
     const targetSection = searchHint.section ?? section;
-    if (targetSection === "project") {
+    if (targetSection === "project" || targetSection === "custom") {
       const itemIndex = projectGalleryItems.findIndex((galleryItem) => projectGalleryItemEntityId(galleryItem) === searchHint.selectedEntityId);
       if (itemIndex >= 0) setLibraryPage(Math.floor(itemIndex / projectPageSize));
     } else if (targetSection === "realmz" || targetSection === "divinity") {
@@ -216,12 +221,12 @@ export function ResourcesPanel({
               <span>Assets</span>
             </TutorialTip>
           </h1>
-          <p>Manage media that ships with this scenario, and browse bundled reference resources for previews and pickers.</p>
+          <p>Import, preview, replace, and locate scenario resources.</p>
         </div>
-        <AssetImportBar onImportAssets={project ? onImportAssets : undefined} compact />
+        <AssetImportBar onImportAssets={project ? onImportAssets : undefined} compact libraryScope={section === "custom" ? "custom-library" : "scenario"} />
       </header>
       <div className="asset-section-tabs" role="tablist" aria-label="Asset sections">
-        {ASSET_SECTIONS.map((item) => (
+        {PRIMARY_ASSET_SECTIONS.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -235,6 +240,25 @@ export function ResourcesPanel({
             </TutorialTip>
           </button>
         ))}
+        <details className="asset-technical-menu" open={section === "divinity" || section === "records" || section === "advanced"}>
+          <summary>Technical Inventory</summary>
+          <div>
+            {TECHNICAL_ASSET_SECTIONS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={section === item.id}
+                className={section === item.id ? "active" : ""}
+                onClick={() => setSectionOverride(item.id)}
+              >
+                <TutorialTip title={item.label} body={assetSectionHelp(item.id)} side="below">
+                  <span>{item.label}</span>
+                </TutorialTip>
+              </button>
+            ))}
+          </div>
+        </details>
       </div>
       {section !== "records" && (
         <div className="asset-filter-row">
@@ -271,7 +295,7 @@ export function ResourcesPanel({
             <TutorialTip title={assetSectionTitle(section)} body={assetSectionHelp(section)} side="below">
               <span>{assetSectionTitle(section)}</span>
             </TutorialTip>
-            <b>{section === "project" ? `${(projectAssets.length + scenarioResources.length).toLocaleString()} scenario asset${projectAssets.length + scenarioResources.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
+            <b>{isManagedAssetSection ? `${(projectAssets.length + scenarioResources.length).toLocaleString()} ${section === "custom" ? "library" : "scenario"} asset${projectAssets.length + scenarioResources.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
           </div>
           {kindFilter === "special-land-tile" && (
             <div className="special-land-explainer">
@@ -286,11 +310,11 @@ export function ResourcesPanel({
               {authoringGuidance}
             </div>
           )}
-          {section === "project" && kindFilter === "special-land-tile" && (
-            <AssetImportBar compact fixedKind="special-land-tile" label="Import Tile" onImportAssets={project ? onImportAssets : undefined} />
+          {isManagedAssetSection && kindFilter === "special-land-tile" && (
+            <AssetImportBar compact fixedKind="special-land-tile" label="Import Tile" libraryScope={section === "custom" ? "custom-library" : "scenario"} onImportAssets={project ? onImportAssets : undefined} />
           )}
-          {section === "project" && <div className="asset-subsection-heading">Ships With This Scenario</div>}
-          {section === "project" && (
+          {isManagedAssetSection && <div className="asset-subsection-heading">{section === "custom" ? "Project Custom Library" : "Ships With This Scenario"}</div>}
+          {isManagedAssetSection && (
             <>
               <AssetGalleryControls
                 pageSize={assetPageSize}
@@ -333,6 +357,8 @@ export function ResourcesPanel({
                         onReplaceAsset={onReplaceAsset}
                         onDeleteAsset={onDeleteAsset}
                         onSelectPaintTile={onSelectPaintTile}
+                        libraryActionLabel={section === "custom" ? "Move To Scenario" : "Move To Custom Library"}
+                        onMoveAssetScope={(assetId) => onUpdateAsset?.(assetId, { libraryScope: section === "custom" ? "scenario" : "custom-library" })}
                         onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [] })}
                       />
                     ) : (
@@ -348,11 +374,13 @@ export function ResourcesPanel({
                         onUpdateAsset={onUpdateAsset}
                         onDeleteAsset={onDeleteAsset}
                         onSelectEntity={onSelectEntity}
+                        libraryActionLabel={section === "custom" ? "Move To Scenario" : "Move To Custom Library"}
+                        onMoveAssetScope={(assetId) => onUpdateAsset?.(assetId, { libraryScope: section === "custom" ? "scenario" : "custom-library" })}
                         onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [] })}
                       />
                     ))}
                     {project && projectGalleryItems.length === 0 && (
-                      <p className="empty-copy compact">No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario.</p>
+                      <p className="empty-copy compact">{section === "custom" ? "No custom library assets yet. Move scenario assets here when you want reusable media in the project without exporting it." : "No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario."}</p>
                     )}
                     {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
                   </div>
@@ -370,7 +398,7 @@ export function ResourcesPanel({
               </div>
             </>
           )}
-          {section !== "project" && (
+          {!isManagedAssetSection && (
             <>
               <div className="asset-subsection-heading">{assetSectionTitle(section)}</div>
               <AssetGalleryControls
@@ -777,7 +805,9 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   if (!project) return [];
   const assets: ScenarioResourceAsset[] = [];
   const seen = new Set<string>();
-  const managedResourceKeys = new Set((project.assets ?? []).map((asset) => `${asset.resourceType.trim()}:${asset.resourceId}`));
+  const managedResourceKeys = new Set((project.assets ?? [])
+    .filter((asset) => asset.libraryScope !== "custom-library")
+    .map((asset) => `${asset.resourceType.trim()}:${asset.resourceId}`));
   const addResource = (resourceType: string, resourceId: number, label: string, source: string, previewPath?: string | null, extraSummary: Record<string, unknown> = {}) => {
     const key = `${resourceType}:${resourceId}:${source}`;
     if (seen.has(key)) return;

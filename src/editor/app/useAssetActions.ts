@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Dispatch } from "react";
 import { fileToMediaAssetRequest, MediaAssetImportOptions, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "../mediaAssets";
 import { EditorAction, EditorState } from "../store";
-import { ManagedAssetKind, Project } from "../types";
+import { ManagedAssetKind, ManagedAssetLibraryScope, Project } from "../types";
 import { commandError } from "../utils";
 
 export function useAssetActions({
@@ -43,7 +43,7 @@ export function useAssetActions({
     }
   }
 
-  async function updateManagedAsset(assetId: string, changes: { label?: string; resourceId?: number }) {
+  async function updateManagedAsset(assetId: string, changes: { label?: string; resourceId?: number; libraryScope?: ManagedAssetLibraryScope }) {
     if (!state.project) return;
     if (!desktopRuntime) {
       dispatch({ type: "applyCommand", command: { kind: "updateProjectAsset", label: "Update asset", assetId, changes } });
@@ -55,7 +55,8 @@ export function useAssetActions({
         project: state.project,
         assetId,
         label: changes.label ?? null,
-        resourceId: changes.resourceId ?? null
+        resourceId: changes.resourceId ?? null,
+        libraryScope: changes.libraryScope ?? null
       });
       dispatch({ type: "markSaved", project });
       dispatch({ type: "setProject", project, selectedMapId });
@@ -76,6 +77,7 @@ export function useAssetActions({
       dispatch({ type: "setStatus", status: `Replacing ${existing.label}...` });
       const request = await fileToMediaAssetRequest(file, existing.kind, existing.resourceId, {
         target: existing.conversion?.target,
+        resourceType: existing.resourceType,
         fitMode: existing.conversion?.fitMode ?? undefined,
         scaleMode: existing.conversion?.scaleMode ?? undefined,
         matte: existing.conversion?.matte ?? undefined,

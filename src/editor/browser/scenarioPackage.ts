@@ -231,7 +231,7 @@ function writeManagedResources(
 
 function hasResourceUpdates(project: Project) {
   return (
-    (project.assets ?? []).length > 0 ||
+    (project.assets ?? []).some((asset) => asset.libraryScope !== "custom-library") ||
     (project.monsterIconOverrides ?? []).length > 0 ||
     (project.scenarioIconResources ?? []).length > 0 ||
     (project.mapRecords ?? []).length > 0
@@ -578,6 +578,9 @@ function managedAssetResourceUpdates(assets: ManagedAsset[], originalResourceFor
   const originalEntries = parseResourceFork(originalResourceFork);
   let scrollingTextWarningEmitted = false;
   for (const asset of assets) {
+    if (asset.libraryScope === "custom-library") {
+      continue;
+    }
     if (asset.exportState !== "ready") {
       result.blockedAssets.push(asset.label);
       continue;

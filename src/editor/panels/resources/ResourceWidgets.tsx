@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { FileText, ImageIcon, Music, Upload, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DecodedResourcePreview, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../../types";
+import { DecodedResourcePreview, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../../types";
 import { compactValue, selectEntityFromId } from "../../utils";
 import { resourceConsumers } from "../../semanticGraph";
 import { resourceUsageLinks } from "../../contentLinks";
@@ -24,7 +24,7 @@ import {
 } from "../../mediaAssets";
 import { AssetImportBar } from "./AssetImportDialog";
 
-export type AssetSection = "project" | "realmz" | "divinity" | "records" | "advanced";
+export type AssetSection = "project" | "custom" | "realmz" | "divinity" | "records" | "advanced";
 export const LIBRARY_PAGE_SIZE = 20;
 const SPECIAL_LAND_AUTHORING_HELP = "Special Land Tiles are scenario-local cicn resources addressed by negative map tile values. They are separate from standard landlook atlases and can be selected for map painting.";
 const PROJECT_ASSET_NAME_HELP = "This is an editor-facing Providence label. It helps authors identify the asset, but Realmz still resolves the exported resource by type and numeric resource ID.";
@@ -43,16 +43,21 @@ const RESOURCE_SOURCE_HELP = "Original source is the file imported into Providen
 
 export const ASSET_SECTIONS: Array<{ id: AssetSection; editor: string; label: string }> = [
   { id: "project", editor: "project-assets", label: "Scenario Assets" },
-  { id: "realmz", editor: "library-assets", label: "Reference Libraries" },
-  { id: "divinity", editor: "divinity-reference", label: "Divinity Reference" },
+  { id: "custom", editor: "custom-library-assets", label: "Custom Library" },
+  { id: "realmz", editor: "library-assets", label: "Reference Assets" },
+  { id: "divinity", editor: "divinity-reference", label: "Divinity UI Reference" },
   { id: "records", editor: "decoded-records", label: "Decoded Records" },
-  { id: "advanced", editor: "resource-forks", label: "Advanced Inventory" }
+  { id: "advanced", editor: "resource-forks", label: "Technical Inventory" }
 ];
+
+export const PRIMARY_ASSET_SECTIONS = ASSET_SECTIONS.filter((section) => section.id === "project" || section.id === "custom" || section.id === "realmz");
+export const TECHNICAL_ASSET_SECTIONS = ASSET_SECTIONS.filter((section) => section.id === "divinity" || section.id === "records" || section.id === "advanced");
 
 export function assetSectionFromEditor(activeEditor: string): AssetSection {
   if (activeEditor === "decoded-records") return "records";
+  if (activeEditor === "custom-library-assets") return "custom";
   if (activeEditor === "library-assets") return "realmz";
-  if (activeEditor === "divinity-reference" || activeEditor === "divinity-icons") return "divinity";
+  if (activeEditor === "divinity-reference" || activeEditor === "divinity-icons") return "realmz";
   if (activeEditor === "resource-forks" || activeEditor === "render-assets") return "advanced";
   return "project";
 }
@@ -67,20 +72,24 @@ export function assetKindFilterFromEditor(activeEditor: string): ManagedAssetKin
 }
 
 export function assetSectionTitle(section: AssetSection) {
-  if (section === "realmz") return "Reference Only - Built Into Realmz";
-  if (section === "divinity") return "Reference Only - Divinity";
-  if (section === "advanced") return "Advanced Raw Resources";
-  return "Ships With This Scenario";
+  if (section === "realmz") return "Reference Assets";
+  if (section === "custom") return "Custom Library";
+  if (section === "divinity") return "Divinity UI Reference";
+  if (section === "advanced") return "Technical Inventory";
+  return "Scenario Assets";
 }
 
 export function assetMatchesSection(asset: ManagedAsset, section: AssetSection) {
-  return section === "project";
+  if (section === "project") return asset.libraryScope !== "custom-library";
+  if (section === "custom") return asset.libraryScope === "custom-library";
+  return false;
 }
 
 export function libraryAssetMatchesSection(asset: LibraryAsset, section: AssetSection, showUiReference = false) {
-  if (section !== "realmz" && section !== "divinity") return false;
+  if (section !== "realmz" && section !== "divinity" && section !== "advanced") return false;
   const origin = resourceOrigin(asset);
-  if (section === "realmz") return origin === "realmz-library";
+  if (section === "realmz") return origin === "realmz-library" || origin === "divinity-reference";
+  if (section === "advanced") return showUiReference && origin === "ui-reference";
   return origin === "divinity-reference" || (showUiReference && origin === "ui-reference");
 }
 
@@ -95,6 +104,9 @@ export function libraryAssetMatchesKind(asset: LibraryAsset, filter: ManagedAsse
 }
 
 export function assetAuthoringGuidance(section: AssetSection, kindFilter: ManagedAssetKind | "all") {
+  if (section === "custom") {
+    return "Custom Library assets stay with the Providence project package until you move them into Scenario Assets.";
+  }
   if (section !== "project") return "";
   if (kindFilter === "picture") {
     return `Scenario pictures use PICT IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}. ID ${SCENARIO_SPLASH_PICTURE_ID} is the title picture.`;
@@ -139,7 +151,7 @@ export function SpecialLandTilePanel({
   onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
 }) {
-  const authoredTiles = (project?.assets ?? []).filter((asset) => asset.kind === "special-land-tile");
+  const authoredTiles = (project?.assets ?? []).filter((asset) => asset.kind === "special-land-tile" && asset.libraryScope !== "custom-library");
   const libraryTiles = libraryAssets.filter((asset) => asset.type === "special-land-tile");
   return (
     <section className="tab-panel asset-authoring-panel special-land-authoring">
@@ -201,6 +213,8 @@ export function SpecialLandAssetCard({
   onReplaceAsset,
   onDeleteAsset,
   onSelectPaintTile,
+  libraryActionLabel,
+  onMoveAssetScope,
   onSelect,
   onOpenPreview
 }: {
@@ -212,6 +226,8 @@ export function SpecialLandAssetCard({
   onReplaceAsset?: (assetId: string, file: File) => void;
   onDeleteAsset?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
+  libraryActionLabel?: string;
+  onMoveAssetScope?: (assetId: string) => void;
   onSelect?: (preview: string | null) => void;
   onOpenPreview?: (preview: string | null) => void;
 }) {
@@ -246,6 +262,18 @@ export function SpecialLandAssetCard({
         <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onSelect?.(preview)} />
         <strong>{asset.label}</strong>
         <small>{asset.resourceType} {asset.resourceId}</small>
+        {libraryActionLabel && (
+          <button
+            className="btn btn-secondary btn-xs compact-asset-scope-button"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onMoveAssetScope?.(asset.id);
+            }}
+          >
+            {libraryActionLabel}
+          </button>
+        )}
       </article>
     );
   }
@@ -268,6 +296,11 @@ export function SpecialLandAssetCard({
         <span>32 x 32 export</span>
       </div>
       <div className="asset-card-actions">
+        {libraryActionLabel && (
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onMoveAssetScope?.(asset.id)}>
+            {libraryActionLabel}
+          </button>
+        )}
         <TutorialTip title="Paint With Special Tile" body={SPECIAL_LAND_PAINT_HELP} side="below">
           <button className="btn btn-primary btn-xs" type="button" onClick={() => onSelectPaintTile?.(asset.resourceId)}>
             Select for painting
@@ -310,6 +343,8 @@ export function ManagedAssetCard({
   onUpdateAsset,
   onDeleteAsset,
   onSelectEntity,
+  libraryActionLabel,
+  onMoveAssetScope,
   onSelect,
   onOpenPreview
 }: {
@@ -320,9 +355,11 @@ export function ManagedAssetCard({
   compact?: boolean;
   selected?: boolean;
   onReplaceAsset?: (assetId: string, file: File) => void;
-  onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
+  onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number; libraryScope?: ManagedAssetLibraryScope }) => void;
   onDeleteAsset?: (assetId: string) => void;
   onSelectEntity?: (entity: SelectedEntity) => void;
+  libraryActionLabel?: string;
+  onMoveAssetScope?: (assetId: string) => void;
   onSelect?: (preview: string | null) => void;
   onOpenPreview?: (preview: string | null) => void;
 }) {
@@ -366,6 +403,18 @@ export function ManagedAssetCard({
         <AssetPreview kind={asset.kind} label={asset.label} preview={preview} onOpen={() => onSelect?.(preview)} />
         <strong>{asset.label}</strong>
         <small>{asset.resourceType} {asset.resourceId}</small>
+        {libraryActionLabel && (
+          <button
+            className="btn btn-secondary btn-xs compact-asset-scope-button"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onMoveAssetScope?.(asset.id);
+            }}
+          >
+            {libraryActionLabel}
+          </button>
+        )}
       </article>
     );
   }
@@ -431,6 +480,11 @@ export function ManagedAssetCard({
         </div>
       )}
       <div className="asset-card-actions">
+        {libraryActionLabel && (
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onMoveAssetScope?.(asset.id)}>
+            {libraryActionLabel}
+          </button>
+        )}
         <TutorialTip title="Replace Scenario Asset" body={PROJECT_ASSET_REPLACE_HELP} side="below">
           <button className="btn btn-secondary btn-xs" type="button" disabled={!onReplaceAsset} onClick={() => replaceInputRef.current?.click()}>
             <Upload size={12} /> Replace
@@ -757,6 +811,9 @@ function resourceScopeHelp(scope: ResourceExportScope) {
   if (scope === "ui-reference") {
     return "This is application interface artwork. It is useful for research but should stay out of normal scenario authoring.";
   }
+  if (scope === "custom-library") {
+    return "This asset belongs to the Providence custom library. It stays reusable in the project package until you move it into Scenario Assets.";
+  }
   return "Providence has not proven this resource's export role yet. Inspect Advanced Inventory before treating it as authored scenario media.";
 }
 
@@ -780,10 +837,13 @@ export function ResourcePreviewWindow({
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const title = item.type === "resource" ? item.entity.label : item.asset.label;
+  const eyebrow = item.type === "managed"
+    ? item.asset.libraryScope === "custom-library" ? "Custom Library Asset" : "Scenario Asset"
+    : item.type === "library" ? "Reference Asset" : "Raw Resource";
   return (
     <FloatingWorkbenchPanel
       title={title}
-      eyebrow={item.type === "managed" ? "Scenario Asset" : item.type === "library" ? "Reference Asset" : "Raw Resource"}
+      eyebrow={eyebrow}
       storageKey="assets.resourcePreview.position"
       defaultWidth={760}
       defaultHeight={620}
@@ -1301,6 +1361,14 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
   if (usablePreview && kind === "text") {
     const text = decodeTextDataUrl(usablePreview);
     if (text != null) return <pre className="resource-detail-text" aria-label={label}>{text}</pre>;
+  }
+  if (usablePreview && kind === "other") {
+    return (
+      <div className="resource-detail-missing">
+        <FileText size={28} />
+        <span>Raw resource bytes preserved</span>
+      </div>
+    );
   }
   if (usablePreview) {
     const scaledSize = naturalSize && imageScale !== "fit"

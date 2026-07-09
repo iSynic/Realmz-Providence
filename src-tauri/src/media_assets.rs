@@ -3,7 +3,8 @@ use crate::error::{IoPath, ProvidenceError};
 use crate::importer::save_project as save_project_impl;
 use crate::project::{
     AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
-    ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, PaletteMode,
+    ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
+    PaletteMode,
     ProvidenceProject,
 };
 use crate::resource_fork::{
@@ -53,6 +54,8 @@ pub struct MediaAssetImportRequest {
     pub final_height: Option<u32>,
     #[serde(default)]
     pub warnings: Vec<String>,
+    #[serde(default)]
+    pub library_scope: Option<ManagedAssetLibraryScope>,
 }
 
 #[tauri::command]
@@ -186,7 +189,7 @@ pub fn replace_project_media_asset(
         .linked_entity
         .clone()
         .or_else(|| previous.linked_entity.clone());
-    let replacement = write_managed_media_asset(
+    let mut replacement = write_managed_media_asset(
         Path::new(&project_dir),
         &request,
         &token,
@@ -195,6 +198,7 @@ pub fn replace_project_media_asset(
         "replaced media",
         true,
     )?;
+    replacement.library_scope = previous.library_scope;
     for asset in &mut project.assets {
         if asset.id == asset_id {
             *asset = replacement;
@@ -213,6 +217,7 @@ pub fn update_project_asset(
     asset_id: String,
     label: Option<String>,
     resource_id: Option<i16>,
+    library_scope: Option<crate::project::ManagedAssetLibraryScope>,
 ) -> Result<ProvidenceProject> {
     if let Some(asset) = project.assets.iter_mut().find(|asset| asset.id == asset_id) {
         if let Some(label) = label {
@@ -222,6 +227,9 @@ pub fn update_project_asset(
         }
         if let Some(resource_id) = resource_id {
             asset.resource_id = resource_id;
+        }
+        if let Some(library_scope) = library_scope {
+            asset.library_scope = Some(library_scope);
         }
     }
     project.validation = validate_project_impl(&project);
@@ -300,10 +308,21 @@ fn write_managed_media_asset(
             })?;
             encode_snd_resource(audio)?
         }
+        "TEXT" | "STR#" | "styl" => {
+            if request.kind != ManagedAssetKind::Text {
+                return Err(ProvidenceError::message(
+                    "TEXT, STR#, and styl imports must use the text asset kind",
+                ));
+            }
+            original.clone()
+        }
         other => {
-            return Err(ProvidenceError::message(format!(
-                "Unsupported managed resource type {other}"
-            )));
+            if request.kind != ManagedAssetKind::Other {
+                return Err(ProvidenceError::message(format!(
+                    "Unsupported managed resource type {other}"
+                )));
+            }
+            original.clone()
         }
     };
     let asset_dir = project_root.join("assets").join("media").join(token);
@@ -315,6 +334,8 @@ fn write_managed_media_asset(
     let original_ext = extension_for_mime(&request.mime_type, request.kind);
     let preview_ext = match request.kind {
         ManagedAssetKind::Sound => "wav",
+        ManagedAssetKind::Text => "txt",
+        ManagedAssetKind::Other => "bin",
         _ => "png",
     };
     let original_name = format!("original.{original_ext}");
@@ -350,6 +371,10 @@ fn write_managed_media_asset(
         sample_rate: request.audio.as_ref().map(|audio| audio.sample_rate),
         channels: request.audio.as_ref().map(|audio| audio.channels),
         export_state: ManagedAssetExportState::Ready,
+        library_scope: request
+            .library_scope
+            .clone()
+            .or(Some(ManagedAssetLibraryScope::Scenario)),
         provenance: provenance.to_string(),
         linked_entity,
         conversion: Some(ManagedAssetConversion {
@@ -395,6 +420,30 @@ fn validate_media_asset_request(request: &MediaAssetImportRequest) -> Result<()>
             )));
         }
     }
+    if matches!(request.target, AssetImportTarget::Text) {
+        if request.kind != ManagedAssetKind::Text {
+            return Err(ProvidenceError::message(
+                "Text resource imports must use the text asset kind",
+            ));
+        }
+        if !matches!(request.resource_type.as_str(), "TEXT" | "STR#" | "styl") {
+            return Err(ProvidenceError::message(
+                "Text resource imports must use TEXT, STR#, or styl",
+            ));
+        }
+    }
+    if matches!(request.target, AssetImportTarget::RawResource) {
+        if request.kind != ManagedAssetKind::Other {
+            return Err(ProvidenceError::message(
+                "Raw resource imports must use the raw resource asset kind",
+            ));
+        }
+        if request.resource_type.trim().is_empty() || request.resource_type.len() > 4 {
+            return Err(ProvidenceError::message(
+                "Raw resource imports need a nonempty resource type of four characters or fewer",
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -433,6 +482,7 @@ fn extension_for_mime(mime_type: &str, kind: ManagedAssetKind) -> &'static str {
         "audio/ogg" => "ogg",
         _ => match kind {
             ManagedAssetKind::Sound => "audio",
+            ManagedAssetKind::Text => "txt",
             ManagedAssetKind::Picture
             | ManagedAssetKind::Icon
             | ManagedAssetKind::SpecialLandTile => "image",

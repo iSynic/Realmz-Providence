@@ -650,7 +650,17 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             ));
         }
     }
-    for asset in &project.assets {
+    let scenario_assets = project
+        .assets
+        .iter()
+        .filter(|asset| {
+            !matches!(
+                asset.library_scope,
+                Some(ManagedAssetLibraryScope::CustomLibrary)
+            )
+        })
+        .collect::<Vec<_>>();
+    for asset in &scenario_assets {
         if matches!(asset.export_state, ManagedAssetExportState::Blocked) {
             errors.push(format!(
                 "{} is blocked from export: converted Realmz resource data is not available.",
@@ -878,10 +888,10 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             }
         ));
     }
-    if !project.assets.is_empty() {
+    if !scenario_assets.is_empty() {
         warnings.push(format!(
             "{} managed media asset(s) will be written into the exported Scenario resource fork.",
-            project.assets.len()
+            scenario_assets.len()
         ));
     }
 
@@ -1168,7 +1178,10 @@ fn custom_landlook_art_available(project: &ProvidenceProject, landlook: i8) -> b
             && tileset.pict_id == Some(i32::from(pict_id))
             && tileset.available
     }) || project.assets.iter().any(|asset| {
-        asset.resource_type == "PICT"
+        !matches!(
+            asset.library_scope,
+            Some(ManagedAssetLibraryScope::CustomLibrary)
+        ) && asset.resource_type == "PICT"
             && asset.resource_id == pict_id
             && matches!(asset.export_state, ManagedAssetExportState::Ready)
     })
@@ -1257,6 +1270,12 @@ fn validate_tile_attributes(project: &ProvidenceProject, warnings: &mut Vec<Stri
     }
     let mut known_icons: BTreeSet<i16> = BTreeSet::new();
     for asset in &project.assets {
+        if matches!(
+            asset.library_scope,
+            Some(ManagedAssetLibraryScope::CustomLibrary)
+        ) {
+            continue;
+        }
         if asset.resource_type == "cicn" {
             insert_icon_id(&mut known_icons, asset.resource_id as i32);
         }
@@ -1816,6 +1835,12 @@ fn race_portrait_set_icon_ids(default_icon_set: i16) -> Vec<i16> {
 fn known_resource_ids(project: &ProvidenceProject, resource_type: &str) -> BTreeSet<i16> {
     let mut ids = BTreeSet::new();
     for asset in &project.assets {
+        if matches!(
+            asset.library_scope,
+            Some(ManagedAssetLibraryScope::CustomLibrary)
+        ) {
+            continue;
+        }
         if asset.resource_type == resource_type {
             ids.insert(asset.resource_id);
         }

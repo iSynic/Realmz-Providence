@@ -4,6 +4,7 @@ import { resourceUsageLinks, ContentUsageLink } from "./contentLinks";
 export type ResourceOrigin = "scenario" | "realmz-library" | "divinity-reference" | "ui-reference" | "unknown";
 export type ResourceExportScope =
   | "ships-with-scenario"
+  | "custom-library"
   | "scenario-preview-only"
   | "scenario-blocked"
   | "realmz-built-in-reference"
@@ -61,6 +62,7 @@ export function resourceOriginLabel(origin: ResourceOrigin) {
 
 export function resourceExportScope(asset: ManagedAsset | LibraryAsset): ResourceExportScope {
   if ("exportState" in asset) {
+    if (asset.libraryScope === "custom-library") return "custom-library";
     if (asset.exportState === "ready") return "ships-with-scenario";
     if (asset.exportState === "blocked") return "scenario-blocked";
     return "scenario-preview-only";
@@ -74,6 +76,7 @@ export function resourceExportScope(asset: ManagedAsset | LibraryAsset): Resourc
 
 export function resourceExportScopeLabel(scope: ResourceExportScope) {
   if (scope === "ships-with-scenario") return "Ships with scenario";
+  if (scope === "custom-library") return "Custom library";
   if (scope === "scenario-preview-only") return "Project preview only";
   if (scope === "scenario-blocked") return "Needs export setup";
   if (scope === "realmz-built-in-reference") return "Reference only - built into Realmz";
@@ -166,7 +169,11 @@ export function resolveResource(
   resourceId: number
 ): ResolvedResource {
   const normalizedType = resourceType.trim();
-  const projectAsset = (project?.assets ?? []).find((asset) => asset.resourceType.trim() === normalizedType && asset.resourceId === resourceId) ?? null;
+  const projectAsset = (project?.assets ?? []).find((asset) =>
+    asset.libraryScope !== "custom-library" &&
+    asset.resourceType.trim() === normalizedType &&
+    asset.resourceId === resourceId
+  ) ?? null;
   const libraryAsset = libraryAssets.find((asset) => asset.resourceType?.trim() === normalizedType && asset.resourceId === resourceId) ?? null;
   const origin = projectAsset ? resourceOrigin(projectAsset) : libraryAsset ? resourceOrigin(libraryAsset) : "unknown";
   const kind = projectAsset ? projectAsset.kind : libraryAsset ? managedAssetKindForLibrary(libraryAsset) : "other";

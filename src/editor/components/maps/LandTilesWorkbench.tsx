@@ -529,6 +529,7 @@ function customLandlookAtlasAsset(landlook: number, dataUrl: string, sourceLabel
     sampleRate: null,
     channels: null,
     exportState: "ready",
+    libraryScope: "scenario",
     provenance: `Browser generated from ${sourceLabel}`,
     linkedEntity: `landlook:${landlook}`,
     conversion: {

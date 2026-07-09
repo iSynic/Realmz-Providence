@@ -449,6 +449,8 @@ pub struct ManagedAsset {
     pub sample_rate: Option<u32>,
     pub channels: Option<u16>,
     pub export_state: ManagedAssetExportState,
+    #[serde(default)]
+    pub library_scope: Option<ManagedAssetLibraryScope>,
     pub provenance: String,
     pub linked_entity: Option<String>,
     #[serde(default)]
@@ -488,6 +490,15 @@ pub enum AssetImportTarget {
     Icon,
     SpecialLandTile,
     Sound,
+    Text,
+    RawResource,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ManagedAssetLibraryScope {
+    Scenario,
+    CustomLibrary,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
