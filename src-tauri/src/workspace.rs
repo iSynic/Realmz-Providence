@@ -264,6 +264,11 @@ fn should_refresh_bundled_library(
     if bundled_item_catalog_is_stale(catalog, source_kind) {
         return Ok(true);
     }
+    if source_kind == LibrarySourceKind::DivinityImport
+        && bundled_monster_scrapbook_catalog_is_stale(catalog)
+    {
+        return Ok(true);
+    }
     if source_kind == LibrarySourceKind::RealmzReference
         && realmz_reference_rule_catalog_is_stale(catalog)
     {
@@ -342,6 +347,43 @@ fn bundled_item_catalog_is_stale(catalog: &LibraryCatalog, source_kind: LibraryS
                     .and_then(Value::as_i64)
                     .is_some_and(|id| (800..1000).contains(&id))
             })
+        {
+            return true;
+        }
+    }
+    false
+}
+
+fn bundled_monster_scrapbook_catalog_is_stale(catalog: &LibraryCatalog) -> bool {
+    let scrapbook_sources = catalog
+        .sources
+        .iter()
+        .filter(|source| {
+            source.source_kind == LibrarySourceKind::DivinityImport
+                && source
+                    .relative_path
+                    .replace('/', "\\")
+                    .ends_with("Monster Scrap Book")
+        })
+        .collect::<Vec<_>>();
+    for source in scrapbook_sources {
+        let expected_count = (source.bytes as usize / 466).min(512);
+        if expected_count == 0 {
+            continue;
+        }
+        let entries = catalog
+            .entities
+            .iter()
+            .filter(|entity| {
+                entity.source == source.id && entity.entity_type == "monster-scrapbook-entry"
+            })
+            .collect::<Vec<_>>();
+        if entries.is_empty() || entries.len() != expected_count {
+            return true;
+        }
+        if entries
+            .iter()
+            .any(|entity| entity.summary.get("recordBytes").and_then(Value::as_u64) != Some(466))
         {
             return true;
         }
@@ -1986,6 +2028,58 @@ mod tests {
             .entities
             .iter()
             .any(|entity| entity.entity_type == "item"));
+    }
+
+    #[test]
+    fn workspace_refreshes_stale_bundled_divinity_monster_scrapbook_catalog() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let bundled = temp.path().join(BUNDLED_LIBRARY_DIR);
+        let divinity = bundled.join("divinity").join("Divinity Data");
+        fs::create_dir_all(&divinity).expect("divinity");
+        let scrapbook = vec![0u8; 466 * 201];
+        fs::write(divinity.join("Monster Scrap Book"), &scrapbook).expect("scrapbook");
+        let workspace_dir = temp.path().join("workspace");
+        let source = stale_source_for(
+            &workspace_dir,
+            LibrarySourceKind::DivinityImport,
+            "Divinity Data\\Monster Scrap Book",
+            &scrapbook,
+        );
+        let source_id = source.id.clone();
+        let stale_catalog = LibraryCatalog {
+            schema_version: LIBRARY_SCHEMA_VERSION,
+            imported_at: timestamp(),
+            managed_path: library_dir(&workspace_dir).to_string_lossy().to_string(),
+            sources: vec![source],
+            entities: (0..446)
+                .map(|index| LibraryEntity {
+                    id: format!("library-entity:divinity:monster-scrapbook-entry:{index}"),
+                    entity_type: "monster-scrapbook-entry".to_string(),
+                    label: format!("Monster-scrapbook-entry {index}"),
+                    source: source_id.clone(),
+                    record_ref: None,
+                    edit_state: SemanticEditState::InspectOnly,
+                    confidence: Confidence::Inferred,
+                    summary: summary([("index", json!(index)), ("recordBytes", json!(210))]),
+                })
+                .collect(),
+            ..LibraryCatalog::default()
+        };
+        save_catalog(&workspace_dir, &stale_catalog).expect("stale catalog");
+
+        let workspace = open_workspace_with_bundled_libraries(&workspace_dir, Some(&bundled))
+            .expect("workspace");
+        let catalog = workspace.active_library_catalog.expect("catalog");
+        let scrapbook_entries = catalog
+            .entities
+            .iter()
+            .filter(|entity| entity.entity_type == "monster-scrapbook-entry")
+            .collect::<Vec<_>>();
+
+        assert_eq!(scrapbook_entries.len(), 201);
+        assert!(scrapbook_entries.iter().all(|entity| {
+            entity.summary.get("recordBytes").and_then(Value::as_u64) == Some(466)
+        }));
     }
 
     #[test]

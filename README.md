@@ -1,6 +1,6 @@
 # Realmz Providence
 
-Providence is a modern scenario editor for Realmz. The current release is 0.2.0.
+Providence is a modern scenario editor for Realmz. The current release is 0.2.1.
 
 It is trying to do two things at once:
 
@@ -10,6 +10,14 @@ It is trying to do two things at once:
 That second part matters. Realmz scenarios contain a lot of classic Mac-era binary data, resource forks, packed records, and runtime quirks. Providence treats the original files as evidence, keeps unknown data visible or preserved, and only writes the parts we understand well enough to edit safely.
 
 The app is built with React/Vite on the frontend and Tauri/Rust on the desktop side.
+
+## 0.2.1 Hotfix
+
+The 0.2.1 hotfix corrects Combat monster library and imported scenario monster display regressions found after the 0.2.0 release.
+
+- Desktop now refreshes stale bundled Divinity Monster Scrap Book catalogs that were previously decoded as 210-byte monster records instead of 466-byte scrapbook entries.
+- Combat hides unreferenced imported monster tail records after the Realmz bestiary terminator while preserving and exporting their source bytes.
+- Battle-referenced or newly authored post-terminator monster records still appear where they matter, and validation no longer reports noise for preserved imported tail data.
 
 ## 0.2.0 Highlights
 

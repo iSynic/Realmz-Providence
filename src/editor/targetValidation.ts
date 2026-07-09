@@ -7,6 +7,7 @@ import { edcdFieldNamesForShape } from "./realmzEdcd";
 import { parameterLabelsForOpcode } from "./opcodeCrosswalk";
 import { scriptParameterLabelForOpcode } from "./scriptActionLabels";
 import { BATTLE_RUNTIME_MONSTER_LIMIT, countBattleRuntimeMonsterSlots } from "./battleReferences";
+import { isImportedPostTerminatorMonsterTail } from "./monsterRecords";
 
 const ROGUE_DISARM_TRAP_SLOT = 2;
 const ROGUE_OPEN_LOCK_SLOT = 6;
@@ -62,6 +63,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
   if (recordType === "monster") {
     const record = project.monsters?.find((candidate) => candidate.id === recordId);
     if (!record) return [];
+    if (isImportedPostTerminatorMonsterTail(project, recordId)) return [];
     const issues = validateRecordId(recordType, recordId);
     for (const field of ["weapon", "iconId", "spellPoints", "exp", "stamina", "staminaMax", "deathMacro", "maxSpellPoints"] as const) {
       issues.push(...validateI16Field(recordType, recordId, field, record[field]));

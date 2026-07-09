@@ -17,6 +17,7 @@ try {
   const battleReferences = await server.ssrLoadModule("/src/editor/battleReferences.ts");
   const targetValidation = await server.ssrLoadModule("/src/editor/targetValidation.ts");
   const realmzParser = await server.ssrLoadModule("/src/editor/browser/realmzParser.ts");
+  const monsterRecords = await server.ssrLoadModule("/src/editor/monsterRecords.ts");
 
   checkUpdateMonsterRecord(commands);
   checkCreateMonsterVariantFromNormal(commands);
@@ -28,6 +29,7 @@ try {
   checkGenerateMonsterVariantsForAll(commands);
   checkBattleReferenceCommands(commands, battleReferences);
   checkImportedBattleReferenceDiagnostics(commands, targetValidation);
+  checkImportedMonsterTerminatorTailFiltering(monsterRecords, targetValidation);
   checkPaintBattleGridCells(commands);
   checkBattleRuntimeMonsterLimit(battleReferences);
   checkMonsterIconOverrideCommands(commands);
@@ -293,6 +295,39 @@ function checkImportedBattleReferenceDiagnostics({ rewriteBattleMonsterReference
   assert(repaired.battles[0].grid[2] === 5, "imported missing battle monster repair did not replace the missing reference");
   assert(repaired.battles[0].grid[1] === -6, "imported missing battle monster repair changed unrelated Force Friends state");
   assert(repaired.battles[0].battleMacro === 12, "imported missing battle monster repair changed positive battle macro state");
+}
+
+function checkImportedMonsterTerminatorTailFiltering({ authorFacingMonsterRecordsForSet, authorFacingMonsterScenarioIds }, { validateRealmzTargetRecord }) {
+  const imported = (id, overrides = {}) => monster(id, {
+    authored: false,
+    provenance: { sourceFile: "Data MD", recordIndex: id, byteOffset: id * 210, byteLength: 210, sourceStatus: "source-backed" },
+    ...overrides
+  });
+  const project = projectWith({
+    monsters: [
+      imported(1, { displayName: "Visible", hitDice: 4 }),
+      imported(2, { displayName: "Monster 2", hitDice: 255, attackCount: 0 }),
+      imported(3, { displayName: "Tail Noise", hitDice: 197, attackCount: -31, runPercent: 255 }),
+      imported(4, { displayName: "Referenced Tail", hitDice: 197, attackCount: -31, runPercent: 255 }),
+      monster(5, { displayName: "Authored Tail", hitDice: 6, authored: true })
+    ],
+    monsterSets: [monsterSet(1, [imported(6, { displayName: "Alternate Tail Noise", hitDice: 12 })])],
+    battles: [battle(1, [4])]
+  });
+
+  const ids = authorFacingMonsterScenarioIds(project);
+  assert(ids.includes(1), "author-facing monster IDs dropped a pre-terminator monster");
+  assert(!ids.includes(2), "author-facing monster IDs exposed the bestiary terminator as a normal monster");
+  assert(!ids.includes(3), "author-facing monster IDs exposed unreferenced imported post-terminator tail data");
+  assert(ids.includes(4), "author-facing monster IDs hid a battle-referenced post-terminator monster");
+  assert(ids.includes(5), "author-facing monster IDs hid an authored post-terminator monster");
+  assert(!ids.includes(6), "author-facing monster IDs exposed alternate-set tail data after the Normal terminator");
+  assert(JSON.stringify(authorFacingMonsterRecordsForSet(project, 0).map((record) => record.id)) === JSON.stringify([1, 4, 5]), "battle palette records exposed Normal imported post-terminator tail data");
+  assert(JSON.stringify(authorFacingMonsterRecordsForSet(project, 1).map((record) => record.id)) === JSON.stringify([]), "battle palette records exposed alternate-set imported tail data after the Normal terminator");
+
+  assert(validateRealmzTargetRecord(project, "monster", 3).length === 0, "validation reported imported unreferenced post-terminator tail noise");
+  assert(validateRealmzTargetRecord(project, "monster", 4).length > 0, "validation suppressed a referenced post-terminator monster");
+  assert(validateRealmzTargetRecord(project, "monster", 5).length === 0, "validation incorrectly suppressed or warned on an authored valid post-terminator monster");
 }
 
 function checkPaintBattleGridCells({ paintBattleGridCells }) {

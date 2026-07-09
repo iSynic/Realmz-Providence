@@ -14,6 +14,7 @@ import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } 
 import { LibraryAsset, LibraryCatalog, BattleGridCellChange, BattleRecord, IconEntry, MonsterIconOverride, MonsterRecord, MonsterSetId, Project, ProjectCommand, SelectedEntity } from "../types";
 import { BATTLE_RUNTIME_MONSTER_LIMIT, battleReferencesByMonster, countBattleRuntimeMonsterSlots, type BattleMonsterReference } from "../battleReferences";
 import { encodeCicnResource, mirrorRgbaHorizontally } from "../cicnEncoder";
+import { allMonsterScenarioIds, authorFacingMonsterRecordsForSet, authorFacingMonsterScenarioIds, isZeroBlankMonsterSlot } from "../monsterRecords";
 import {
   IconLibraryCanvas,
   IconLibraryFacingMode,
@@ -1136,8 +1137,14 @@ function BattleBoard({
   onUpdateGrid: (grid: number[]) => void;
 }) {
   useCombatRenderTiming("BattleBoard");
-  const activeMonsterById = monsterMapForSet(lookups, monsterSetPreview);
-  const activeMonsters = monstersForSet(lookups, monsterSetPreview);
+  const activeMonsters = useMemo(
+    () => authorFacingMonsterRecordsForSet(project, monsterSetPreview),
+    [monsterSetPreview, project.battles, project.monsters, project.monsterSets]
+  );
+  const activeMonsterById = useMemo(
+    () => new Map(activeMonsters.map((monster) => [monster.id, monster])),
+    [activeMonsters]
+  );
   const projectAssets = project.assets;
   const projectCatalogIcons = project.assetCatalog?.icons;
   const projectMonsterIconOverrides = project.monsterIconOverrides;
@@ -1956,6 +1963,7 @@ function MonsterPalette({
     previewContext,
     battleIconSourceKey
   );
+  const hasReservedMonsterZero = activeMonsters.some((monster) => monster.id === 0);
   const hasScenarioMonsters = activeMonsters.some((monster) => monster.id > 0);
   const hasOnlyUnplaceableMonsterZero = activeMonsters.length > 0 && !hasScenarioMonsters;
   const hasOnlyOutOfRangeMonsters = hasScenarioMonsters && placeableMonsters.length === 0;
@@ -1966,7 +1974,7 @@ function MonsterPalette({
           <TutorialTip title="Monster Placement Brush" body={MONSTER_PLACEMENT_HELP} side="right">
             <strong>Monster Palette</strong>
           </TutorialTip>
-          <small>{entries.length} placeable</small>
+          <small>{entries.length} placeable{hasReservedMonsterZero ? " | Monster 0 reserved" : ""}</small>
         </div>
         <BattleScenarioMonsterSetField value={monsterSetPreview} onCommit={onMonsterSetPreviewChange} compact />
       </header>
@@ -1982,6 +1990,9 @@ function MonsterPalette({
         )}
         {hasOnlyUnplaceableMonsterZero && (
           <p className="empty-copy compact">Monster 0 exists in {monsterSetFile(monsterSetPreview)}, but Data BD uses 0 for empty battle cells. Create or copy a monster into slot 1 or higher before placing battle monsters.</p>
+        )}
+        {hasReservedMonsterZero && !hasOnlyUnplaceableMonsterZero && (
+          <p className="combat-list-overflow-note">Monster 0 is reserved because Data BD uses 0 for empty battle cells.</p>
         )}
         {hasOnlyOutOfRangeMonsters && (
           <p className="empty-copy compact">This scenario only has monster IDs outside Divinity's battle-authorable range. Use Scenario Monsters 1-{MAX_DIVINITY_BATTLE_MONSTER_ID} for battle placement.</p>
@@ -2132,7 +2143,7 @@ function MonsterWorkbench({
   const projectMonsterSets = project.monsterSets;
   const projectBattles = project.battles;
   const scenarioIds = useMemo(
-    () => measureCombatWork("MonsterWorkbench scenarioIds", () => monsterScenarioIds(project)),
+    () => measureCombatWork("MonsterWorkbench scenarioIds", () => authorFacingMonsterScenarioIds(project)),
     [projectMonsters, projectMonsterSets]
   );
   const scenarioEntries = useMemo<ScenarioMonsterListEntry[]>(
@@ -2497,13 +2508,17 @@ function MonsterWorkbench({
       duplicateLibraryMonster(entry);
     }
   };
-  const activeSetIds = useMemo(() => new Set(monstersForSet(lookups, activeSetId).map((monster) => monster.id)), [activeSetId, lookups]);
+  const activeSetIds = useMemo(
+    () => new Set(authorFacingMonsterRecordsForSet(project, activeSetId).map((monster) => monster.id)),
+    [activeSetId, project.battles, project.monsters, project.monsterSets]
+  );
+  const authorFacingIdSet = useMemo(() => new Set(scenarioIds), [scenarioIds]);
   const normalVariantSourceIds = useMemo(
     () => (project.monsters ?? [])
-      .filter((monster) => monster.id > 0 && !isBlankMonsterSlot(monster))
+      .filter((monster) => monster.id > 0 && monster.hitDice !== 255 && authorFacingIdSet.has(monster.id) && !isBlankMonsterSlot(monster))
       .map((monster) => monster.id)
       .sort((left, right) => left - right),
-    [project.monsters]
+    [authorFacingIdSet, project.monsters]
   );
   const replaceScenarioId = selectedId !== null && scenarioEntries.some((entry) => entry.id === selectedId) ? selectedId : null;
   const selectedSetTools = selectedId !== null ? (
@@ -3145,14 +3160,7 @@ function monsterSetToolbarStatus(setId: MonsterSetId, selectedRecord: MonsterRec
 }
 
 function isBlankMonsterSlot(record: MonsterRecord) {
-  return record.hitDice === 0
-    && record.agility === 0
-    && record.movementMax === 0
-    && record.attackCount === 0
-    && (record.displayName ?? "").trim() === ""
-    && Array.isArray(record.rawBytes)
-    && record.rawBytes.length === MONSTER_RECORD_BYTES
-    && record.rawBytes.every((value) => value === 0);
+  return isZeroBlankMonsterSlot(record);
 }
 
 function MissingMonsterSetEditor({
@@ -6408,10 +6416,7 @@ function nextAvailableId(records: Array<{ id: number }>) {
 }
 
 function monsterScenarioIds(project: Project) {
-  return uniqueSortedNumbers([
-    ...(project.monsters ?? []).map((monster) => monster.id),
-    ...(project.monsterSets ?? []).flatMap((set) => set.monsters.map((monster) => monster.id))
-  ]);
+  return allMonsterScenarioIds(project);
 }
 
 function monstersForSet(lookups: CombatLookups, setId: MonsterSetId) {
@@ -6746,7 +6751,7 @@ function buildCombatLookups(project: Project | null, catalog: LibraryCatalog | n
     monsterIconOverridesByTarget,
     tabCounts: {
       battles: project.battles?.length ?? 0,
-      monsters: monsterScenarioIds(project).length,
+      monsters: authorFacingMonsterScenarioIds(project).length,
       iconSet: iconSetTargetCount
     }
   };
