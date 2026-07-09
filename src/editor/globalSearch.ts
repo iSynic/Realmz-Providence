@@ -1,4 +1,4 @@
-import { DOCUMENTATION_TOPICS, documentationSearchText } from "./docs/documentationContent";
+import { DOCUMENTATION_TOPICS, documentationSearchText } from "./docs/authoringManualContent";
 import { itemReferenceOptions } from "./itemReferences";
 import { monsterReferenceOptions } from "./monsterReferences";
 import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, SelectedEntity } from "./types";

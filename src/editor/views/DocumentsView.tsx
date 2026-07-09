@@ -12,28 +12,28 @@ import {
   DocumentationVisualSlot,
   documentationSearchText,
   documentationTopicById
-} from "../docs/documentationContent";
+} from "../docs/authoringManualContent";
 
 const DOCUMENTS_HELP =
-  "Documents is Providence's in-app handbook. It explains author workflows, Divinity crosswalks, compatibility language, source evidence, and release practices without leaving the editor.";
+  "Documents is Providence's authoring manual. It teaches scenario-building workflows first, with Divinity and repo evidence available as secondary references.";
 const DOCUMENT_SEARCH_HELP =
-  "Document search scans topic titles, summaries, tags, badges, references, section text, cards, and callouts. Use it for concepts like EDCD, special land, runtime cache, release, or Divinity.";
+  "Document search scans chapter titles, summaries, tags, badges, references, section text, cards, and callouts. Use it for concepts like EDCD, special land, runtime cache, release, or Divinity.";
 const DOCUMENT_NAV_HELP =
-  "The navigation list groups topics into author workflows and reference material. Selecting a topic only changes the handbook view; it does not change the active project.";
+  "The navigation list groups the manual into chapters and appendices. Selecting a chapter only changes the manual view; it does not change the active project.";
 const TOPIC_HERO_HELP =
-  "The topic header summarizes the selected handbook page, shows its status badges, and counts either its sections or filtered search results.";
+  "The chapter header summarizes the selected manual page, shows its status badges, and counts either its sections or filtered search results.";
 const VISUAL_SLOTS_HELP =
   "Visual slots mark screenshots or diagrams we plan to capture for stable documentation. Empty slots are placeholders, not missing scenario data.";
 const RELATED_TOPICS_HELP =
-  "Related topics are curated jumps to adjacent concepts. They clear the current document search so you can keep reading without fighting the filter.";
+  "Related chapters are curated jumps to adjacent concepts. They clear the current document search so you can keep reading without fighting the filter.";
 const SOURCE_REFERENCES_HELP =
-  "Source references link a Providence topic back to the Divinity Manual or local repo evidence. Divinity links explain legacy UI concepts; repo evidence explains parser, writer, and runtime behavior.";
+  "References and source notes are secondary context. Divinity links explain legacy UI concepts; repo evidence explains parser, writer, and runtime behavior.";
 const STATUS_BADGES_HELP =
   "Status badges summarize what kind of handbook page this is, such as authoring workflow, reference-only, release, verified, or compatibility-oriented.";
 const SEARCH_TERMS_HELP =
-  "Search terms are indexed tags for the current topic. Click one to filter the handbook to related pages.";
+  "Search terms are indexed tags for the current chapter. Click one to filter the manual to related pages.";
 const DIVINITY_SOURCE_HELP =
-  "Divinity source chips open the local Divinity Manual chapter that anchors the legacy concept or editor behavior.";
+  "Divinity source chips open the local Divinity Manual chapter that anchors a legacy concept or editor behavior.";
 const REPO_SOURCE_HELP =
   "Repo source chips point at local evidence files, generated ledgers, format notes, or release documentation that support the Providence summary.";
 
@@ -70,6 +70,7 @@ export function DocumentsView({
 
   const activeTopic = filteredTopics.find((topic) => topic.id === activeSection) ?? filteredTopics[0] ?? documentationTopicById(activeSection);
   const relatedTopics = activeTopic.relatedTopicIds.map(documentationTopicById).filter((topic) => topic.id !== activeTopic.id);
+  const divinityReferences = activeTopic.references.filter((reference) => reference.kind === "divinity");
 
   function selectSection(sectionId: string, options: { clearSearch?: boolean } = {}) {
     if (options.clearSearch) setQuery("");
@@ -87,11 +88,11 @@ export function DocumentsView({
 
   return (
     <div className="documents-overlay" role="presentation" onClick={onClose}>
-      <section className="documents-panel" role="dialog" aria-modal="true" aria-label="Providence Documents" onClick={(event) => event.stopPropagation()}>
+      <section className="documents-panel" role="dialog" aria-modal="true" aria-label="Providence Authoring Manual" onClick={(event) => event.stopPropagation()}>
         <header className="documents-header">
           <div>
             <TutorialTip title="Providence Documents" body={DOCUMENTS_HELP} side="below">
-              <span>Providence Documents</span>
+              <span>Providence Authoring Manual</span>
             </TutorialTip>
             <strong>{activeTopic.title}</strong>
           </div>
@@ -106,8 +107,8 @@ export function DocumentsView({
               <input
                 value={query}
                 onChange={(event) => setQuery(event.currentTarget.value)}
-                placeholder="Search docs"
-                aria-label="Search documentation"
+                placeholder="Search manual"
+                aria-label="Search manual"
               />
               {query && (
                 <button type="button" onClick={() => setQuery("")} aria-label="Clear documentation search">
@@ -115,7 +116,7 @@ export function DocumentsView({
                 </button>
               )}
             </label>
-            <nav className="documents-nav" aria-label="Document sections">
+            <nav className="documents-nav" aria-label="Manual chapters">
               {groupedTopics.map(({ group, topics }) => (
                 <section key={group.id} className="documents-nav-group" aria-label={group.label}>
                   <header>
@@ -169,7 +170,7 @@ export function DocumentsView({
               <PanelSection
                 title={(
                   <TutorialTip title="Related Topics" body={RELATED_TOPICS_HELP} side="below">
-                    <span>Related Topics</span>
+                    <span>Related Chapters</span>
                   </TutorialTip>
                 )}
                 eyebrow="Keep reading"
@@ -177,29 +178,51 @@ export function DocumentsView({
               >
                 <div className="documents-chip-row" aria-label="Related document topics">
                   {relatedTopics.map((topic) => (
-                    <LinkChip key={topic.id} label={topic.label} detail={topic.groupId === "reference" ? "reference" : "workflow"} onClick={() => selectSection(topic.id, { clearSearch: true })} />
+                    <LinkChip key={topic.id} label={topic.label} detail={topic.groupId === "appendix" ? "appendix" : "chapter"} onClick={() => selectSection(topic.id, { clearSearch: true })} />
                   ))}
                 </div>
               </PanelSection>
             )}
+            {activeTopic.references.length > 0 && (
+              <PanelSection
+                title={(
+                  <TutorialTip title="Source References" body={SOURCE_REFERENCES_HELP} side="below">
+                    <span>References and Source Notes</span>
+                  </TutorialTip>
+                )}
+                eyebrow="Secondary context"
+                density="compact"
+              >
+                <details className="documents-reference-drawer">
+                  <summary>Open references for this chapter</summary>
+                  <div className="documents-source-list">
+                    {activeTopic.references.map((reference) => (
+                      <SourceReferenceChip key={referenceKey(reference)} reference={reference} onOpenDivinityReference={onOpenDivinityReference} />
+                    ))}
+                  </div>
+                </details>
+              </PanelSection>
+            )}
           </article>
 
-          <aside className="documents-reference-panel" aria-label="Source references">
-            <PanelSection
-              title={(
-                <TutorialTip title="Source References" body={SOURCE_REFERENCES_HELP} side="below">
-                  <span>Source References</span>
-                </TutorialTip>
-              )}
-              eyebrow="Divinity and repo"
-              density="compact"
-            >
-              <div className="documents-source-list">
-                {activeTopic.references.map((reference) => (
-                  <SourceReferenceChip key={referenceKey(reference)} reference={reference} onOpenDivinityReference={onOpenDivinityReference} />
-                ))}
-              </div>
-            </PanelSection>
+          <aside className="documents-reference-panel" aria-label="Reading tools">
+            {divinityReferences.length > 0 && (
+              <PanelSection
+                title={(
+                  <TutorialTip title="Divinity Manual Reference" body={DIVINITY_SOURCE_HELP} side="below">
+                    <span>Classic Manual</span>
+                  </TutorialTip>
+                )}
+                eyebrow="Optional reference"
+                density="compact"
+              >
+                <div className="documents-source-list">
+                  {divinityReferences.map((reference) => (
+                    <SourceReferenceChip key={referenceKey(reference)} reference={reference} onOpenDivinityReference={onOpenDivinityReference} />
+                  ))}
+                </div>
+              </PanelSection>
+            )}
             <PanelSection
               title={(
                 <TutorialTip title="Status Badges" body={STATUS_BADGES_HELP} side="below">
@@ -242,7 +265,7 @@ export function DocumentsView({
 function TopicHero({ topic, resultCount, searching }: { topic: DocumentationTopic; resultCount: number; searching: boolean }) {
   return (
     <PanelSection
-      eyebrow={topic.groupId === "reference" ? "Reference" : "Author workflow"}
+      eyebrow={topic.groupId === "appendix" ? "Appendix" : "Manual chapter"}
       title={(
         <TutorialTip title="Topic Header" body={TOPIC_HERO_HELP} side="below">
           <span>{topic.title}</span>
