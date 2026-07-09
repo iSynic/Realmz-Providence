@@ -76,6 +76,11 @@ function WorkbenchRouterContent({
   onReplaceAsset,
   onUpdateAsset,
   onDeleteAsset,
+  onUpdateCustomAsset,
+  onDeleteCustomAsset,
+  onAddAssetToCustomLibrary,
+  onCopyCustomAssetToScenario,
+  onCopyReferenceAssetToScenario,
   onValidate,
   onExport,
   onExportProjectJson,
@@ -99,11 +104,15 @@ function WorkbenchRouterContent({
       <ResourcesPanel
         project={null}
         catalog={state.libraryCatalog}
+        customAssets={state.workspace?.customAssets ?? []}
         selectedEntity={state.selectedEntity}
         desktopRuntime={desktopRuntime}
         workspaceDir={workspaceDir}
         searchHint={assetSearchHint}
         onSelectEntity={onSelectEntity}
+        onImportAssets={onImportAssets}
+        onUpdateCustomAsset={onUpdateCustomAsset}
+        onDeleteCustomAsset={onDeleteCustomAsset}
       />
     );
   }
@@ -302,6 +311,7 @@ function WorkbenchRouterContent({
       <ResourcesPanel
         project={state.project}
         catalog={state.libraryCatalog}
+        customAssets={state.workspace?.customAssets ?? []}
         selectedEntity={state.selectedEntity}
         activeEditor={state.activeEditor}
         desktopRuntime={desktopRuntime}
@@ -313,6 +323,11 @@ function WorkbenchRouterContent({
         onReplaceAsset={onReplaceAsset}
         onUpdateAsset={onUpdateAsset}
         onDeleteAsset={onDeleteAsset}
+        onUpdateCustomAsset={onUpdateCustomAsset}
+        onDeleteCustomAsset={onDeleteCustomAsset}
+        onAddAssetToCustomLibrary={onAddAssetToCustomLibrary}
+        onCopyCustomAssetToScenario={onCopyCustomAssetToScenario}
+        onCopyReferenceAssetToScenario={onCopyReferenceAssetToScenario}
         onSelectPaintTile={(tile: number) => {
           onSelectTile(tile);
           onSetTool("paint");
@@ -397,6 +412,11 @@ type WorkbenchRouterProps = {
   onReplaceAsset: (assetId: string, file: File) => void;
   onUpdateAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
   onDeleteAsset: (assetId: string) => void;
+  onUpdateCustomAsset: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
+  onDeleteCustomAsset: (assetId: string) => void;
+  onAddAssetToCustomLibrary: (assetId: string) => void;
+  onCopyCustomAssetToScenario: (assetId: string) => void;
+  onCopyReferenceAssetToScenario: (assetId: string) => void;
   onValidate: () => void;
   onExport: (target?: ScenarioTarget) => void;
   onExportProjectJson: () => void;

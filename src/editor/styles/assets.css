@@ -950,11 +950,15 @@
 }
 
 .compact-asset-scope-button {
-  justify-self: start;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
+  justify-content: center;
+  padding-inline: 6px;
+  line-height: 1.15;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
 }
 
 

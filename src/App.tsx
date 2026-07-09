@@ -477,12 +477,18 @@ export function App() {
   const {
     importMediaAssets,
     updateManagedAsset,
+    updateCustomLibraryAsset,
     replaceManagedAsset,
-    deleteManagedAsset
+    deleteManagedAsset,
+    deleteCustomLibraryAsset,
+    addProjectAssetToCustomLibrary,
+    copyCustomLibraryAssetToScenario,
+    copyReferenceAssetToScenario
   } = useAssetActions({
     state,
     dispatch,
     desktopRuntime,
+    workspaceDir,
     projectDir,
     selectedMapId: state.selectedMapId
   });
@@ -748,6 +754,11 @@ export function App() {
         onReplaceAsset={replaceManagedAsset}
         onUpdateAsset={updateManagedAsset}
         onDeleteAsset={deleteManagedAsset}
+        onUpdateCustomAsset={updateCustomLibraryAsset}
+        onDeleteCustomAsset={deleteCustomLibraryAsset}
+        onAddAssetToCustomLibrary={addProjectAssetToCustomLibrary}
+        onCopyCustomAssetToScenario={copyCustomLibraryAssetToScenario}
+        onCopyReferenceAssetToScenario={copyReferenceAssetToScenario}
         onValidate={validateProject}
         onExport={exportProject}
         onExportProjectJson={downloadProjectJsonBackup}
@@ -793,6 +804,7 @@ export function App() {
         <GlobalSearchDialog
           project={state.project}
           catalog={state.libraryCatalog}
+          customAssets={state.workspace?.customAssets ?? []}
           onClose={() => setGlobalSearchOpen(false)}
           onOpenResult={(result) => confirmBeforeDraftDiscard(`open ${result.title}`, () => openGlobalSearchResult(result))}
         />

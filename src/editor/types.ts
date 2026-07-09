@@ -1471,6 +1471,7 @@ export type ProvidenceWorkspace = {
   };
   recentProjects: string[];
   activeLibraryCatalog: LibraryCatalog | null;
+  customAssets: ManagedAsset[];
   diagnostics: LibraryDiagnostic[];
 };
 

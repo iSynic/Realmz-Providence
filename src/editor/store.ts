@@ -189,14 +189,14 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case "setWorkspace":
       return {
         ...state,
-        workspace: action.workspace,
+        workspace: action.workspace ? normalizeWorkspace(action.workspace) : null,
         libraryCatalog: action.workspace?.activeLibraryCatalog ?? state.libraryCatalog
       };
     case "setLibraryCatalog":
       return {
         ...state,
         libraryCatalog: action.catalog,
-        workspace: state.workspace ? { ...state.workspace, activeLibraryCatalog: action.catalog } : state.workspace
+        workspace: state.workspace ? { ...normalizeWorkspace(state.workspace), activeLibraryCatalog: action.catalog } : state.workspace
       };
     case "setWorkbench":
       return {
@@ -480,6 +480,13 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     default:
       return state;
   }
+}
+
+function normalizeWorkspace(workspace: ProvidenceWorkspace): ProvidenceWorkspace {
+  return {
+    ...workspace,
+    customAssets: workspace.customAssets ?? []
+  };
 }
 
 function pushHistory(history: HistoryEntry[], project: Project, label: string) {

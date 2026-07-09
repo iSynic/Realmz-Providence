@@ -12,7 +12,7 @@ import {
   SCENARIO_SOUND_MIN_ID
 } from "../../mediaAssets";
 
-const ASSET_IMPORT_HELP = "Import files as scenario assets or custom-library assets. Pictures, icons, special land tiles, sounds, text/style resources, and unsupported raw resources keep their resource type and ID.";
+const ASSET_IMPORT_HELP = "Import files as scenario assets or workspace custom-library assets. Pictures, icons, special land tiles, sounds, text/style resources, and unsupported raw resources keep their resource type and ID.";
 const IMPORT_KIND_HELP = "Choose the Realmz resource family before importing. Image files can become pictures or icons; text and raw resource files are preserved without image conversion.";
 const IMPORT_CONVERSION_HELP = "Providence previews the original source beside the Realmz-ready output so you can catch scaling, transparency, palette, and sound-conversion issues before the asset is added to the project.";
 const IMPORT_TARGET_HELP = "Target shows the Realmz resource family Providence will write: PICT for pictures, snd for sounds, cicn for icons, or TEXT/styl/raw bytes for resource imports.";

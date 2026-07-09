@@ -6,6 +6,7 @@ import {
   loadBrowserBundledLibraryAssetPreview,
   loadBundledLibraryCatalog
 } from "../browser/library";
+import { loadBrowserCustomAssets } from "../browser/workspaceStore";
 import { buildBrowserSemanticSchemaForProject, ensureBrowserReferenceTileAttributes } from "../browser/project";
 import { loadActiveBrowserProject } from "../browser/projectStore";
 import { loadImage } from "../components/TileSprite";
@@ -127,8 +128,9 @@ export function useAppBootstrapEffects({
       if (!desktopRuntime) {
         try {
           const catalog = await loadBundledLibraryCatalog();
+          const customAssets = await loadBrowserCustomAssets();
           if (!disposed) {
-            dispatch({ type: "setWorkspace", workspace: createBrowserWorkspace(catalog) });
+            dispatch({ type: "setWorkspace", workspace: createBrowserWorkspace(catalog, customAssets) });
             dispatch({ type: "setLibraryCatalog", catalog });
             dispatch({ type: "setStatus", status: "Bundled Divinity and Realmz libraries ready" });
           }

@@ -4,8 +4,7 @@ use crate::importer::save_project as save_project_impl;
 use crate::project::{
     AssetImportTarget, DitherMode, ImageFitMode, ImageMatte, ImageScaleMode, ManagedAsset,
     ManagedAssetConversion, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
-    PaletteMode,
-    ProvidenceProject,
+    PaletteMode, ProvidenceProject,
 };
 use crate::resource_fork::{
     encode_cicn_resource, encode_pict_resource_with_dither, encode_snd_resource,
@@ -13,7 +12,10 @@ use crate::resource_fork::{
 };
 use crate::resource_preview::preview_data_url_for_resource;
 use crate::validation::validate_project as validate_project_impl;
-use crate::workspace::BUNDLED_LIBRARY_DIR;
+use crate::workspace::{
+    load_library_asset as load_library_asset_impl, save_workspace as save_workspace_impl,
+    LibraryAsset, ProvidenceWorkspace, BUNDLED_LIBRARY_DIR,
+};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -164,6 +166,110 @@ pub fn import_project_media_asset(
         false,
     )?;
     project.assets.push(asset);
+    project.validation = validate_project_impl(&project);
+    save_project_impl(project_dir, &project)?;
+    Ok(project)
+}
+
+#[tauri::command]
+pub fn import_workspace_media_asset(
+    workspace_dir: String,
+    mut workspace: ProvidenceWorkspace,
+    request: MediaAssetImportRequest,
+) -> Result<ProvidenceWorkspace> {
+    let token = unique_asset_token_for_assets(&workspace.custom_assets, &request.label);
+    let asset_id = format!("asset:workspace:{token}");
+    let mut asset = write_managed_media_asset(
+        Path::new(&workspace_dir),
+        &request,
+        &token,
+        asset_id,
+        request.linked_entity.clone(),
+        "imported workspace media",
+        false,
+    )?;
+    asset.library_scope = Some(ManagedAssetLibraryScope::CustomLibrary);
+    workspace.custom_assets.push(asset);
+    save_workspace_impl(workspace_dir, &workspace)?;
+    Ok(workspace)
+}
+
+#[tauri::command]
+pub fn copy_project_asset_to_workspace(
+    project_dir: String,
+    workspace_dir: String,
+    mut workspace: ProvidenceWorkspace,
+    asset: ManagedAsset,
+) -> Result<ProvidenceWorkspace> {
+    let token = unique_asset_token_for_assets(&workspace.custom_assets, &asset.label);
+    let copied = copy_managed_asset_between_roots(
+        Path::new(&project_dir),
+        Path::new(&workspace_dir),
+        &asset,
+        &token,
+        format!("asset:workspace:{token}"),
+        Some(ManagedAssetLibraryScope::CustomLibrary),
+        "copied from scenario asset",
+    )?;
+    workspace.custom_assets.push(copied);
+    save_workspace_impl(workspace_dir, &workspace)?;
+    Ok(workspace)
+}
+
+#[tauri::command]
+pub fn copy_workspace_asset_to_project(
+    workspace_dir: String,
+    project_dir: String,
+    mut project: ProvidenceProject,
+    asset: ManagedAsset,
+    resource_id: i16,
+) -> Result<ProvidenceProject> {
+    let token = unique_asset_token(&project, &asset.label);
+    let mut copied = copy_managed_asset_between_roots(
+        Path::new(&workspace_dir),
+        Path::new(&project_dir),
+        &asset,
+        &token,
+        format!("asset:{token}"),
+        Some(ManagedAssetLibraryScope::Scenario),
+        "copied from workspace custom library",
+    )?;
+    copied.resource_id = resource_id;
+    if matches!(copied.kind, ManagedAssetKind::SpecialLandTile) {
+        copied.linked_entity = Some(format!("special-land-tile:{resource_id}"));
+    }
+    project.assets.push(copied);
+    project.validation = validate_project_impl(&project);
+    save_project_impl(project_dir, &project)?;
+    Ok(project)
+}
+
+#[tauri::command]
+pub fn copy_library_asset_to_project(
+    workspace_dir: String,
+    project_dir: String,
+    mut project: ProvidenceProject,
+    asset: LibraryAsset,
+    resource_id: i16,
+) -> Result<ProvidenceProject> {
+    if asset.source.contains(":realmz:") {
+        return Err(ProvidenceError::message(
+            "Realmz stock reference assets should be referenced by their existing resource ID.",
+        ));
+    }
+    let (resource_type, _source_resource_id, resource_bytes) =
+        library_asset_resource_bytes(&workspace_dir, &asset)?;
+    let token = unique_asset_token(&project, &asset.label);
+    let copied = write_reference_library_asset(
+        Path::new(&project_dir),
+        &asset,
+        &resource_type,
+        resource_id,
+        &resource_bytes,
+        &token,
+        format!("asset:{token}"),
+    )?;
+    project.assets.push(copied);
     project.validation = validate_project_impl(&project);
     save_project_impl(project_dir, &project)?;
     Ok(project)
@@ -552,4 +658,321 @@ fn unique_asset_token(project: &ProvidenceProject, label: &str) -> String {
         }
     }
     format!("{base}-{}", project.assets.len() + 1)
+}
+
+fn unique_asset_token_for_assets(assets: &[ManagedAsset], label: &str) -> String {
+    let base = stable_token(label);
+    let used: std::collections::BTreeSet<String> = assets
+        .iter()
+        .map(|asset| stable_token(&asset.id.replace("asset:", "").replace("workspace:", "")))
+        .chain(
+            assets
+                .iter()
+                .filter_map(|asset| asset.original_path.split('/').nth(2).map(stable_token)),
+        )
+        .collect();
+    if !used.contains(&base) {
+        return base;
+    }
+    for index in 2..10_000 {
+        let candidate = format!("{base}-{index}");
+        if !used.contains(&candidate) {
+            return candidate;
+        }
+    }
+    format!("{base}-{}", assets.len() + 1)
+}
+
+fn copy_managed_asset_between_roots(
+    source_root: &Path,
+    destination_root: &Path,
+    asset: &ManagedAsset,
+    token: &str,
+    asset_id: String,
+    library_scope: Option<ManagedAssetLibraryScope>,
+    provenance_suffix: &str,
+) -> Result<ManagedAsset> {
+    let original = read_asset_payload(source_root, &asset.original_path)?;
+    let preview = read_asset_payload(source_root, &asset.preview_path)?;
+    let resource = read_asset_payload(source_root, &asset.resource_path)?;
+    let asset_dir = destination_root.join("assets").join("media").join(token);
+    if asset_dir.exists() {
+        fs::remove_dir_all(&asset_dir).with_path(&asset_dir)?;
+    }
+    fs::create_dir_all(&asset_dir).with_path(&asset_dir)?;
+
+    let original_name = copied_file_name(&asset.original_path, &asset.file_name, "original.bin");
+    let preview_name = copied_file_name(&asset.preview_path, "preview.bin", "preview.bin");
+    let resource_name = copied_file_name(&asset.resource_path, "resource.bin", "resource.bin");
+    fs::write(asset_dir.join(&original_name), &original)
+        .with_path(asset_dir.join(&original_name))?;
+    fs::write(asset_dir.join(&preview_name), &preview).with_path(asset_dir.join(&preview_name))?;
+    fs::write(asset_dir.join(&resource_name), &resource)
+        .with_path(asset_dir.join(&resource_name))?;
+
+    let rel_dir = format!("assets/media/{token}");
+    let mut copied = asset.clone();
+    copied.id = asset_id;
+    copied.original_path = format!("{rel_dir}/{original_name}");
+    copied.preview_path = format!("{rel_dir}/{preview_name}");
+    copied.resource_path = format!("{rel_dir}/{resource_name}");
+    copied.file_name = original_name;
+    copied.bytes = original.len() as u64;
+    copied.sha256 = sha256_hex(&original);
+    copied.library_scope = library_scope;
+    copied.provenance = format!("{}; {}", asset.provenance, provenance_suffix);
+    Ok(copied)
+}
+
+fn write_reference_library_asset(
+    project_root: &Path,
+    asset: &LibraryAsset,
+    resource_type: &str,
+    resource_id: i16,
+    resource_bytes: &[u8],
+    token: &str,
+    asset_id: String,
+) -> Result<ManagedAsset> {
+    let asset_dir = project_root.join("assets").join("media").join(token);
+    if asset_dir.exists() {
+        fs::remove_dir_all(&asset_dir).with_path(&asset_dir)?;
+    }
+    fs::create_dir_all(&asset_dir).with_path(&asset_dir)?;
+
+    let original_name = format!(
+        "reference_{}_{}.bin",
+        resource_type.trim().replace(' ', "_"),
+        resource_id
+    );
+    let resource_name = format!(
+        "resource_{}_{}.bin",
+        resource_type.trim().replace(' ', "_"),
+        resource_id
+    );
+    let preview_data_url = preview_data_url_for_resource(resource_type, resource_bytes)?;
+    let preview_bytes = preview_data_url
+        .as_deref()
+        .map(decode_data_url)
+        .transpose()?
+        .unwrap_or_else(|| resource_bytes.to_vec());
+    let preview_name = format!(
+        "preview.{}",
+        preview_extension(preview_data_url.as_deref(), resource_type)
+    );
+
+    fs::write(asset_dir.join(&original_name), resource_bytes)
+        .with_path(asset_dir.join(&original_name))?;
+    fs::write(asset_dir.join(&preview_name), &preview_bytes)
+        .with_path(asset_dir.join(&preview_name))?;
+    fs::write(asset_dir.join(&resource_name), resource_bytes)
+        .with_path(asset_dir.join(&resource_name))?;
+
+    let rel_dir = format!("assets/media/{token}");
+    Ok(ManagedAsset {
+        id: asset_id,
+        label: asset.label.trim().to_string(),
+        kind: managed_asset_kind_for_library(asset, resource_type),
+        resource_type: resource_type.to_string(),
+        resource_id,
+        file_name: original_name.clone(),
+        original_path: format!("{rel_dir}/{original_name}"),
+        preview_path: format!("{rel_dir}/{preview_name}"),
+        resource_path: format!("{rel_dir}/{resource_name}"),
+        mime_type: asset
+            .mime_type
+            .clone()
+            .unwrap_or_else(|| mime_for_resource(resource_type).to_string()),
+        bytes: resource_bytes.len() as u64,
+        sha256: sha256_hex(resource_bytes),
+        width: None,
+        height: None,
+        duration_ms: None,
+        sample_rate: None,
+        channels: None,
+        export_state: ManagedAssetExportState::Ready,
+        library_scope: Some(ManagedAssetLibraryScope::Scenario),
+        provenance: format!("copied from reference asset {}", asset.source),
+        linked_entity: None,
+        conversion: None,
+    })
+}
+
+fn library_asset_resource_bytes(
+    workspace_dir: &str,
+    asset: &LibraryAsset,
+) -> Result<(String, i16, Vec<u8>)> {
+    let Some((file_path, resource_type, resource_id)) =
+        split_library_resource_fragment(&asset.relative_path)
+    else {
+        return Err(ProvidenceError::message(format!(
+            "{} is not a resource-fork member",
+            asset.relative_path
+        )));
+    };
+    let folder = if asset.source.contains(":divinity:") {
+        "divinity"
+    } else if asset.source.contains(":realmz:") {
+        "realmz-reference"
+    } else {
+        "providence"
+    };
+    let relative = Path::new("raw").join(folder).join(file_path);
+    let bytes = load_library_asset_impl(workspace_dir, relative)?;
+    let entries = parse_resource_fork_entries(&bytes);
+    if let Some(entry) = entries
+        .iter()
+        .find(|entry| entry.resource_type == resource_type && entry.id == resource_id)
+    {
+        return Ok((resource_type, resource_id, entry.data.clone()));
+    }
+    Err(ProvidenceError::message(format!(
+        "{} {} was not found in {}",
+        resource_type, resource_id, asset.relative_path
+    )))
+}
+
+fn split_library_resource_fragment(relative_path: &str) -> Option<(&str, String, i16)> {
+    let (file_path, fragment) = relative_path.split_once('#')?;
+    let (resource_type, id) = fragment.rsplit_once(':')?;
+    Some((
+        file_path,
+        resource_type.to_string(),
+        id.parse::<i16>().ok()?,
+    ))
+}
+
+fn managed_asset_kind_for_library(asset: &LibraryAsset, resource_type: &str) -> ManagedAssetKind {
+    if asset.asset_type == "sound" || resource_type.trim() == "snd" {
+        return ManagedAssetKind::Sound;
+    }
+    if asset.asset_type == "special-land-tile" {
+        return ManagedAssetKind::SpecialLandTile;
+    }
+    if asset.asset_type.contains("icon") || resource_type == "cicn" {
+        return ManagedAssetKind::Icon;
+    }
+    if asset.asset_type == "picture" || resource_type == "PICT" {
+        return ManagedAssetKind::Picture;
+    }
+    if asset.asset_type == "text"
+        || resource_type == "TEXT"
+        || resource_type == "STR#"
+        || resource_type == "styl"
+    {
+        return ManagedAssetKind::Text;
+    }
+    ManagedAssetKind::Other
+}
+
+fn mime_for_resource(resource_type: &str) -> &'static str {
+    if resource_type == "PICT" {
+        "image/pict"
+    } else if resource_type == "cicn" {
+        "image/cicn"
+    } else if resource_type.trim() == "snd" {
+        "audio/x-mac-snd"
+    } else if resource_type == "TEXT" || resource_type == "STR#" {
+        "text/plain"
+    } else {
+        "application/octet-stream"
+    }
+}
+
+fn preview_extension(preview_data_url: Option<&str>, resource_type: &str) -> &'static str {
+    if let Some(url) = preview_data_url {
+        if url.starts_with("data:image/png") {
+            return "png";
+        }
+        if url.starts_with("data:audio/wav") {
+            return "wav";
+        }
+        if url.starts_with("data:text/") {
+            return "txt";
+        }
+    }
+    if resource_type == "TEXT" || resource_type == "STR#" {
+        "txt"
+    } else {
+        "bin"
+    }
+}
+
+fn read_asset_payload(root: &Path, path: &str) -> Result<Vec<u8>> {
+    if path.trim().is_empty() {
+        return Err(ProvidenceError::message(
+            "Managed asset payload path is empty",
+        ));
+    }
+    if path.starts_with("data:") {
+        return decode_data_url(path);
+    }
+    let full_path = root.join(path);
+    fs::read(&full_path).with_path(&full_path)
+}
+
+fn decode_data_url(value: &str) -> Result<Vec<u8>> {
+    let Some((metadata, payload)) = value
+        .strip_prefix("data:")
+        .and_then(|rest| rest.split_once(','))
+    else {
+        return Err(ProvidenceError::message("Invalid data URL payload"));
+    };
+    if metadata.to_ascii_lowercase().contains(";base64") {
+        return STANDARD
+            .decode(payload)
+            .map_err(|error| ProvidenceError::message(error.to_string()));
+    }
+    Ok(percent_decode(payload))
+}
+
+fn percent_decode(value: &str) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(value.len());
+    let input = value.as_bytes();
+    let mut index = 0;
+    while index < input.len() {
+        if input[index] == b'%' && index + 2 < input.len() {
+            if let (Some(high), Some(low)) =
+                (hex_value(input[index + 1]), hex_value(input[index + 2]))
+            {
+                bytes.push(high * 16 + low);
+                index += 3;
+                continue;
+            }
+        }
+        bytes.push(input[index]);
+        index += 1;
+    }
+    bytes
+}
+
+fn hex_value(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        b'A'..=b'F' => Some(value - b'A' + 10),
+        _ => None,
+    }
+}
+
+fn copied_file_name(path: &str, preferred: &str, fallback: &str) -> String {
+    let candidate = if path.starts_with("data:") {
+        preferred
+    } else {
+        path.rsplit('/')
+            .next()
+            .filter(|part| !part.is_empty())
+            .unwrap_or(preferred)
+    };
+    let safe = candidate
+        .chars()
+        .map(|ch| match ch {
+            '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
+            _ => ch,
+        })
+        .collect::<String>();
+    if safe.trim().is_empty() {
+        fallback.to_string()
+    } else {
+        safe
+    }
 }

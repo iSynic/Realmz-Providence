@@ -1,7 +1,7 @@
 import { DOCUMENTATION_TOPICS, documentationSearchText } from "./docs/documentationContent";
 import { itemReferenceOptions } from "./itemReferences";
 import { monsterReferenceOptions } from "./monsterReferences";
-import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAssetKind, Project, SelectedEntity } from "./types";
+import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, SelectedEntity } from "./types";
 import { selectEntityFromId, triggerEntityId } from "./utils";
 import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
 import { buildEdcdRowUsages } from "./edcdRows";
@@ -49,9 +49,9 @@ const catalogIndexCache = new WeakMap<LibraryCatalog, SearchableRow[]>();
 const docsRows = buildDocsRows();
 const scopeOrder: GlobalSearchScope[] = ["scenario", "assets", "libraries", "docs", "diagnostics"];
 
-export function buildGlobalSearchIndex(project: Project | null, catalog?: LibraryCatalog | null): GlobalSearchIndex {
+export function buildGlobalSearchIndex(project: Project | null, catalog?: LibraryCatalog | null, customAssets: ManagedAsset[] = []): GlobalSearchIndex {
   const rows = [
-    ...(project ? projectRows(project, catalog) : []),
+    ...(project ? projectRows(project, catalog, customAssets) : customAssetRows(customAssets)),
     ...(catalog ? catalogRows(catalog) : []),
     ...docsRows
   ];
@@ -77,8 +77,8 @@ export function searchGlobalIndex(index: GlobalSearchIndex, query: string, filte
   return scored.map((entry) => entry.row);
 }
 
-function projectRows(project: Project, catalog?: LibraryCatalog | null) {
-  const cacheKey = projectRowsDependencyKey(project, catalog);
+function projectRows(project: Project, catalog?: LibraryCatalog | null, customAssets: ManagedAsset[] = []) {
+  const cacheKey = projectRowsDependencyKey(project, catalog, customAssets);
   const cached = projectIndexCache.get(cacheKey);
   if (cached) return cached;
   const rows: SearchableRow[] = [];
@@ -363,14 +363,14 @@ function projectRows(project: Project, catalog?: LibraryCatalog | null) {
     });
   }
 
-  addAssetRows(project, add);
+  addAssetRows(project, add, customAssets);
   addDiagnosticRows(project, add);
 
   writeProjectRowsCache(cacheKey, rows);
   return rows;
 }
 
-function projectRowsDependencyKey(project: Project, catalog?: LibraryCatalog | null) {
+function projectRowsDependencyKey(project: Project, catalog?: LibraryCatalog | null, customAssets: ManagedAsset[] = []) {
   return [
     "scenario", objectCacheKey(project.scenario),
     "source", objectCacheKey(project.source),
@@ -396,6 +396,7 @@ function projectRowsDependencyKey(project: Project, catalog?: LibraryCatalog | n
     "ruleNames", objectCacheKey(project.ruleNames),
     "questLabels", objectCacheKey(project.questLabels),
     "assets", objectCacheKey(project.assets),
+    "customAssets", objectCacheKey(customAssets),
     "pictures", objectCacheKey(project.assetCatalog.pictures),
     "icons", objectCacheKey(project.assetCatalog.icons),
     "sounds", objectCacheKey(project.assetCatalog.sounds),
@@ -502,7 +503,7 @@ function catalogRows(catalog: LibraryCatalog) {
   return rows;
 }
 
-function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
+function addAssetRows(project: Project, add: (row: SearchableRow) => void, customAssets: ManagedAsset[] = []) {
   for (const asset of project.assets ?? []) {
     const assetSection: AssetWorkbenchSection = asset.libraryScope === "custom-library" ? "custom" : "project";
     add({
@@ -519,6 +520,9 @@ function addAssetRows(project: Project, add: (row: SearchableRow) => void) {
       numericId: asset.resourceId,
       aliases: resourceAliases(asset.resourceType, asset.resourceId)
     });
+  }
+  for (const asset of customAssets) {
+    add(customAssetRow(asset));
   }
   for (const asset of [...(project.assetCatalog.pictures ?? []), ...(project.assetCatalog.icons ?? []), ...(project.assetCatalog.sounds ?? [])]) {
     const id = `resource:${asset.resourceType}:${asset.resourceId}`;
@@ -799,6 +803,35 @@ function libraryAssetSearchSection(asset: { source?: string; relativePath?: stri
   const parts = [asset.source, asset.relativePath, asset.label, asset.type].join(" ").toLowerCase();
   if (parts.includes("manual") || parts.includes("ui")) return "divinity";
   return "realmz";
+}
+
+function customAssetRows(customAssets: ManagedAsset[]) {
+  return customAssets.map((asset) => withSearchText(customAssetRow(asset)));
+}
+
+function customAssetRow(asset: ManagedAsset): SearchableRow {
+  return {
+    id: asset.id,
+    scope: "assets",
+    kind: asset.kind,
+    title: asset.label,
+    subtitle: `${asset.resourceType} ${asset.resourceId} | ${asset.fileName}`,
+    snippet: [asset.provenance, asset.exportState, asset.originalPath].filter(Boolean).join(" | "),
+    badges: ["Custom Library", asset.kind],
+    selectedEntity: selectEntityFromId(asset.id),
+    route: {
+      kind: "workbench",
+      workbench: "library",
+      domain: "assets",
+      editor: assetEditor(asset.kind, asset.resourceType),
+      searchHint: assetSearchHint(asset.resourceType, asset.resourceId, asset.label),
+      assetSection: "custom",
+      assetKindFilter: asset.kind
+    },
+    preview: asset.previewPath,
+    numericId: asset.resourceId,
+    aliases: resourceAliases(asset.resourceType, asset.resourceId)
+  };
 }
 
 function libraryEntityAssetSearchHint(entity: { id: string; label: string; summary: Record<string, unknown> }) {

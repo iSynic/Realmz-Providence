@@ -85,6 +85,12 @@ export function resourceExportScopeLabel(scope: ResourceExportScope) {
   return "Advanced / unknown";
 }
 
+export function canCopyLibraryAssetToScenario(asset: LibraryAsset) {
+  const scope = resourceExportScope(asset);
+  if (scope === "realmz-built-in-reference" || scope === "ui-reference") return false;
+  return Boolean(asset.resourceType && asset.resourceId != null);
+}
+
 export function resourceRole(asset: ManagedAsset | LibraryAsset): ResourceRole {
   if ("exportState" in asset) {
     if (asset.linkedEntity?.startsWith("landlook:") && asset.resourceType === "PICT") return "tile-atlas";
@@ -115,7 +121,7 @@ export function managedAssetKindForLibrary(asset: LibraryAsset): ManagedAssetKin
   if (asset.type === "special-land-tile") return "special-land-tile";
   if (asset.type === "icon" || asset.type === "icon-resource" || asset.type.includes("icon") || asset.resourceType === "cicn") return "icon";
   if (asset.type === "picture" || asset.resourceType === "PICT") return "picture";
-  if (asset.type === "text" || asset.resourceType === "TEXT" || asset.resourceType === "STR#") return "text";
+  if (asset.type === "text" || asset.resourceType === "TEXT" || asset.resourceType === "STR#" || asset.resourceType === "styl") return "text";
   return "other";
 }
 

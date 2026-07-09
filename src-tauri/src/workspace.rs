@@ -1,5 +1,5 @@
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
-use crate::project::{ByteRange, Confidence, DiagnosticSeverity, SemanticEditState};
+use crate::project::{ByteRange, Confidence, DiagnosticSeverity, ManagedAsset, SemanticEditState};
 use crate::resource_preview::decode_classic_text;
 use crate::semantic::resources::{parse_resource_fork, resource_entity_id, resource_type_id};
 use base64::prelude::*;
@@ -32,6 +32,8 @@ pub struct ProvidenceWorkspace {
     pub reference_roots: ReferenceRoots,
     pub recent_projects: Vec<String>,
     pub active_library_catalog: Option<LibraryCatalog>,
+    #[serde(default)]
+    pub custom_assets: Vec<ManagedAsset>,
     pub diagnostics: Vec<LibraryDiagnostic>,
 }
 
@@ -1597,6 +1599,7 @@ fn default_workspace(
         },
         recent_projects: Vec::new(),
         active_library_catalog,
+        custom_assets: Vec::new(),
         diagnostics: Vec::new(),
     }
 }

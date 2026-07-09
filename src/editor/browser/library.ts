@@ -1,4 +1,4 @@
-import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ProvidenceWorkspace } from "../types";
+import { DecodedResourcePreview, LibraryCatalog, LibraryEntity, LibraryRecord, LibrarySource, ManagedAsset, ProvidenceWorkspace } from "../types";
 import { BrowserDirectoryHandle, BrowserFileSelection, BrowserScenarioSource } from "./fsAccess";
 import { parseResourceFork, parseStringListResource, type ResourceEntry } from "./resourceFork";
 import { inspectResourcePreview, inspectResourcePreviewAsync } from "./resourcePreview";
@@ -15,7 +15,7 @@ const bundledResourcePreviewCache = new Map<string, Promise<DecodedResourcePrevi
 type BrowserLibraryFile = { name: string; relativePath: string; bytes: Uint8Array };
 type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference";
 
-export function createBrowserWorkspace(catalog: LibraryCatalog | null = null): ProvidenceWorkspace {
+export function createBrowserWorkspace(catalog: LibraryCatalog | null = null, customAssets: ManagedAsset[] = []): ProvidenceWorkspace {
   return {
     schemaVersion: 1,
     appVersion: "browser-preview",
@@ -28,6 +28,7 @@ export function createBrowserWorkspace(catalog: LibraryCatalog | null = null): P
     },
     recentProjects: [],
     activeLibraryCatalog: catalog,
+    customAssets,
     diagnostics: []
   };
 }

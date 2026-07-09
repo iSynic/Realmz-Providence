@@ -13,7 +13,7 @@ import { loadBrowserScenarioResourcePreview } from "../../browser/project";
 import { useResolvedPreviewUrl } from "../../previewUrls";
 import { FloatingWorkbenchPanel, ScrollArea } from "../../ui";
 import { renderListKey } from "../../renderKeys";
-import { ResourceExportScope, isMapPlaceableLibraryAsset, managedAssetKindForLibrary, resourceExportScope, resourceExportScopeLabel, resourceOrigin, resourceOriginLabel, resourceRole } from "../../resourceResolver";
+import { ResourceExportScope, canCopyLibraryAssetToScenario, isMapPlaceableLibraryAsset, managedAssetKindForLibrary, resourceExportScope, resourceExportScopeLabel, resourceOrigin, resourceOriginLabel, resourceRole } from "../../resourceResolver";
 import {
   MediaAssetImportOptions,
   SCENARIO_PICTURE_MAX_ID,
@@ -105,7 +105,7 @@ export function libraryAssetMatchesKind(asset: LibraryAsset, filter: ManagedAsse
 
 export function assetAuthoringGuidance(section: AssetSection, kindFilter: ManagedAssetKind | "all") {
   if (section === "custom") {
-    return "Custom Library assets stay with the Providence project package until you move them into Scenario Assets.";
+    return "Custom Library assets live in the Providence workspace and can be copied into any scenario when you want them to ship.";
   }
   if (section !== "project") return "";
   if (kindFilter === "picture") {
@@ -583,7 +583,8 @@ export function LibraryAssetCard({
   onSelectEntity,
   onSelect,
   onOpenPreview,
-  onPreviewStatus
+  onPreviewStatus,
+  onCopyToScenario
 }: {
   asset: LibraryAsset;
   project: Project | null;
@@ -595,6 +596,7 @@ export function LibraryAssetCard({
   onSelect?: (preview: AssetPreviewState) => void;
   onOpenPreview?: (preview: AssetPreviewState) => void;
   onPreviewStatus?: (assetId: string, status: ResourcePreviewStatus) => void;
+  onCopyToScenario?: (assetId: string) => void;
 }) {
   const [previewRef, previewVisible] = usePreviewVisibility<HTMLElement>();
   const isSound = managedAssetKindForLibrary(asset) === "sound";
@@ -604,6 +606,7 @@ export function LibraryAssetCard({
   const lastSelectedPreviewKey = useRef("");
   const origin = resourceOrigin(asset);
   const scope = resourceExportScope(asset);
+  const canCopyToScenario = Boolean(onCopyToScenario && canCopyLibraryAssetToScenario(asset));
   const placeable = isMapPlaceableLibraryAsset(asset);
   useEffect(() => {
     onPreviewStatus?.(asset.id, preview.status === "unknown" ? estimatedPreviewStatus(asset) : preview.status);
@@ -643,6 +646,18 @@ export function LibraryAssetCard({
         />
         <strong>{asset.label}</strong>
         <small>{asset.resourceType ?? asset.type} {asset.resourceId ?? ""}</small>
+        {canCopyToScenario && (
+          <button
+            className="btn btn-secondary btn-xs compact-asset-scope-button"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onCopyToScenario?.(asset.id);
+            }}
+          >
+            Copy To Scenario
+          </button>
+        )}
       </article>
     );
   }
@@ -683,6 +698,11 @@ export function LibraryAssetCard({
       )}
       <ResourcePreviewDiagnostics diagnostics={preview.diagnostics} />
       <div className="asset-card-actions">
+        {canCopyToScenario && (
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => onCopyToScenario?.(asset.id)}>
+            Copy To Scenario
+          </button>
+        )}
         <TutorialTip title="Reference Asset Detail" body={LIBRARY_DETAIL_HELP} side="below">
           <button className="btn btn-secondary btn-xs" type="button" onClick={() => onOpenPreview?.(preview)}>
             Open Detail
@@ -762,6 +782,16 @@ export function AssetPreview({
       </TutorialTip>
     );
   }
+  if (preview && kind === "other") {
+    return (
+      <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
+        <button type="button" className="asset-text-preview-card" onClick={onOpen}>
+          <FileText size={22} />
+          <span>Open raw resource</span>
+        </button>
+      </TutorialTip>
+    );
+  }
   if (preview && kind !== "sound") {
     return (
       <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
@@ -773,7 +803,7 @@ export function AssetPreview({
   }
   const placeholder = (
     <div className="asset-preview-placeholder">
-      {kind === "sound" ? <Music size={24} /> : <ImageIcon size={24} />}
+      {kind === "sound" ? <Music size={24} /> : kind === "text" || kind === "other" ? <FileText size={24} /> : <ImageIcon size={24} />}
       <span>{previewFallbackLabel(kind, status)}</span>
       {diagnostics[0] && <small>{diagnosticPreviewText(diagnostics[0])}</small>}
     </div>
@@ -786,7 +816,7 @@ export function AssetPreview({
 }
 
 export type ResourcePreviewItem =
-  | { type: "managed"; asset: ManagedAsset; preview: string | null; usages: ReturnType<typeof resourceUsageLinks> }
+  | { type: "managed"; asset: ManagedAsset; preview: string | null; usages: ReturnType<typeof resourceUsageLinks>; assetRoot?: "project" | "workspace" }
   | { type: "library"; asset: LibraryAsset; preview: AssetPreviewState; usages: ReturnType<typeof resourceUsageLinks> }
   | { type: "resource"; entity: SemanticEntity; consumers: ReturnType<typeof resourceConsumers> };
 
@@ -812,7 +842,7 @@ function resourceScopeHelp(scope: ResourceExportScope) {
     return "This is application interface artwork. It is useful for research but should stay out of normal scenario authoring.";
   }
   if (scope === "custom-library") {
-    return "This asset belongs to the Providence custom library. It stays reusable in the project package until you move it into Scenario Assets.";
+    return "This asset belongs to the Providence custom library. It stays reusable across scenarios until you copy it into Scenario Assets.";
   }
   return "Providence has not proven this resource's export role yet. Inspect Advanced Inventory before treating it as authored scenario media.";
 }
@@ -894,7 +924,7 @@ export function ResourcePreviewContents({
           item={item}
           project={project}
           desktopRuntime={desktopRuntime}
-          projectDir={projectDir}
+          projectDir={item.assetRoot === "workspace" ? workspaceDir ?? projectDir : projectDir}
           onSelectEntity={onSelectEntity}
         />
       )}
@@ -1863,6 +1893,7 @@ export function previewFallbackLabel(kind: ManagedAssetKind, status: ResourcePre
   if (status === "unsupported-variant") return "Cannot preview";
   if (status === "metadata-only") return "Info only";
   if (kind === "sound") return "Select to play";
+  if (kind === "other") return "Raw resource";
   if (status === "preview-ready") return "No preview loaded yet";
   return "No preview";
 }

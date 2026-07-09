@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAssetKind, ManagedAssetLibraryScope, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
+import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { browserReferenceAtlasToken } from "../browser/atlasPaths";
 import { loadBrowserScenarioResourcePreview } from "../browser/project";
 import { useResolvedPreviewUrl } from "../previewUrls";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
 import { resourceUsageLinks } from "../contentLinks";
+import { canCopyLibraryAssetToScenario } from "../resourceResolver";
 import { tileColor } from "../components/TileSprite";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
@@ -42,9 +43,10 @@ import {
 import { RecordsPanel } from "./RecordsPanel";
 
 type AssetPreviewSize = "small" | "medium" | "large";
+type ManagedGalleryItem = { type: "managed"; asset: ManagedAsset; root: "project" | "workspace" };
 type ProjectGalleryItem =
   | { type: "scenario"; asset: ScenarioResourceAsset }
-  | { type: "managed"; asset: Project["assets"][number] };
+  | ManagedGalleryItem;
 
 const ASSET_PAGE_SIZE_OPTIONS = [50, 100, 200, 500, 0];
 
@@ -60,7 +62,7 @@ function assetSectionHelp(section: AssetSection) {
     return "Import and manage pictures, sounds, icons, text resources, and special land tiles that ship with this scenario.";
   }
   if (section === "custom") {
-    return "Keep reusable assets with this Providence project without exporting them until you move them into Scenario Assets.";
+    return "Keep reusable Providence assets in the workspace and copy them into Scenario Assets when a scenario should ship them.";
   }
   if (section === "realmz") {
     return "Browse useful stock and reference media for previewing and copying into the scenario.";
@@ -77,6 +79,7 @@ function assetSectionHelp(section: AssetSection) {
 export function ResourcesPanel({
   project,
   catalog,
+  customAssets = [],
   selectedEntity,
   activeEditor = "domain",
   desktopRuntime = false,
@@ -88,10 +91,16 @@ export function ResourcesPanel({
   onReplaceAsset,
   onUpdateAsset,
   onDeleteAsset,
+  onUpdateCustomAsset,
+  onDeleteCustomAsset,
+  onAddAssetToCustomLibrary,
+  onCopyCustomAssetToScenario,
+  onCopyReferenceAssetToScenario,
   onSelectPaintTile
 }: {
   project: Project | null;
   catalog?: LibraryCatalog | null;
+  customAssets?: ManagedAsset[];
   selectedEntity: SelectedEntity | null;
   activeEditor?: string;
   desktopRuntime?: boolean;
@@ -103,6 +112,11 @@ export function ResourcesPanel({
   onReplaceAsset?: (assetId: string, file: File) => void;
   onUpdateAsset?: (assetId: string, changes: { label?: string; resourceId?: number; libraryScope?: ManagedAssetLibraryScope }) => void;
   onDeleteAsset?: (assetId: string) => void;
+  onUpdateCustomAsset?: (assetId: string, changes: { label?: string; resourceId?: number }) => void;
+  onDeleteCustomAsset?: (assetId: string) => void;
+  onAddAssetToCustomLibrary?: (assetId: string) => void;
+  onCopyCustomAssetToScenario?: (assetId: string) => void;
+  onCopyReferenceAssetToScenario?: (assetId: string) => void;
   onSelectPaintTile?: (tile: number) => void;
 }) {
   const libraryAssets = catalog?.assets ?? [];
@@ -136,11 +150,24 @@ export function ResourcesPanel({
     if (searchHint.section === "divinity") setShowUiReference(true);
     setLibraryPage(0);
   }, [searchHint?.kindFilter, searchHint?.nonce, searchHint?.query, searchHint?.section]);
-  const projectAssets = useMemo(() => (project?.assets ?? []).filter((asset) =>
-    assetMatchesSection(asset, section) &&
-    assetMatchesKind(asset.kind, kindFilter) &&
-    (!normalizedQuery || assetSearchText(asset.label, asset.resourceType, asset.resourceId, asset.fileName).includes(normalizedQuery))
-  ), [kindFilter, normalizedQuery, project?.assets, section]);
+  const managedGalleryItems = useMemo<ManagedGalleryItem[]>(() => {
+    const scopedAssets: ManagedGalleryItem[] = section === "custom"
+      ? [
+          ...customAssets.map((asset) => ({ type: "managed" as const, asset, root: "workspace" as const })),
+          ...(project?.assets ?? [])
+            .filter((asset) => asset.libraryScope === "custom-library")
+            .map((asset) => ({ type: "managed" as const, asset, root: "project" as const }))
+        ]
+      : section === "project"
+        ? (project?.assets ?? [])
+            .filter((asset) => asset.libraryScope !== "custom-library")
+            .map((asset) => ({ type: "managed" as const, asset, root: "project" as const }))
+        : [];
+    return scopedAssets.filter(({ asset }) =>
+      assetMatchesKind(asset.kind, kindFilter) &&
+      (!normalizedQuery || assetSearchText(asset.label, asset.resourceType, asset.resourceId, asset.fileName).includes(normalizedQuery))
+    );
+  }, [customAssets, kindFilter, normalizedQuery, project?.assets, section]);
   const allScenarioResources = useMemo(() => scenarioResourceAssets(project), [project]);
   const scenarioResources = useMemo(() => allScenarioResources.filter((asset) =>
     section === "project" &&
@@ -149,8 +176,8 @@ export function ResourcesPanel({
   ), [allScenarioResources, kindFilter, normalizedQuery, section]);
   const projectGalleryItems = useMemo<ProjectGalleryItem[]>(() => [
     ...scenarioResources.map((asset) => ({ type: "scenario" as const, asset })),
-    ...projectAssets.map((asset) => ({ type: "managed" as const, asset }))
-  ], [projectAssets, scenarioResources]);
+    ...managedGalleryItems
+  ], [managedGalleryItems, scenarioResources]);
   const isManagedAssetSection = section === "project" || section === "custom";
   useEffect(() => {
     setLibraryPage(0);
@@ -183,7 +210,7 @@ export function ResourcesPanel({
     const item = previewItemForEntityId(
       searchHint.selectedEntityId,
       project,
-      project?.assets ?? [],
+      managedGalleryItems,
       allScenarioResources,
       libraryAssets,
       searchHint.section ?? section
@@ -202,6 +229,7 @@ export function ResourcesPanel({
     allScenarioResources,
     libraryAssets,
     libraryPageSize,
+    managedGalleryItems,
     matchingLibraryAssets,
     project,
     project?.assets,
@@ -223,7 +251,7 @@ export function ResourcesPanel({
           </h1>
           <p>Import, preview, replace, and locate scenario resources.</p>
         </div>
-        <AssetImportBar onImportAssets={project ? onImportAssets : undefined} compact libraryScope={section === "custom" ? "custom-library" : "scenario"} />
+        <AssetImportBar onImportAssets={section === "custom" || project ? onImportAssets : undefined} compact libraryScope={section === "custom" ? "custom-library" : "scenario"} />
       </header>
       <div className="asset-section-tabs" role="tablist" aria-label="Asset sections">
         {PRIMARY_ASSET_SECTIONS.map((item) => (
@@ -295,7 +323,7 @@ export function ResourcesPanel({
             <TutorialTip title={assetSectionTitle(section)} body={assetSectionHelp(section)} side="below">
               <span>{assetSectionTitle(section)}</span>
             </TutorialTip>
-            <b>{isManagedAssetSection ? `${(projectAssets.length + scenarioResources.length).toLocaleString()} ${section === "custom" ? "library" : "scenario"} asset${projectAssets.length + scenarioResources.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
+            <b>{isManagedAssetSection ? `${projectGalleryItems.length.toLocaleString()} ${section === "custom" ? "library" : "scenario"} asset${projectGalleryItems.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
           </div>
           {kindFilter === "special-land-tile" && (
             <div className="special-land-explainer">
@@ -311,9 +339,9 @@ export function ResourcesPanel({
             </div>
           )}
           {isManagedAssetSection && kindFilter === "special-land-tile" && (
-            <AssetImportBar compact fixedKind="special-land-tile" label="Import Tile" libraryScope={section === "custom" ? "custom-library" : "scenario"} onImportAssets={project ? onImportAssets : undefined} />
+            <AssetImportBar compact fixedKind="special-land-tile" label="Import Tile" libraryScope={section === "custom" ? "custom-library" : "scenario"} onImportAssets={section === "custom" || project ? onImportAssets : undefined} />
           )}
-          {isManagedAssetSection && <div className="asset-subsection-heading">{section === "custom" ? "Project Custom Library" : "Ships With This Scenario"}</div>}
+          {isManagedAssetSection && <div className="asset-subsection-heading">{section === "custom" ? "Providence Custom Library" : "Ships With This Scenario"}</div>}
           {isManagedAssetSection && (
             <>
               <AssetGalleryControls
@@ -351,15 +379,19 @@ export function ResourcesPanel({
                         key={renderListKey("project-special-land", item.asset, index)}
                         asset={item.asset}
                         desktopRuntime={desktopRuntime}
-                        projectDir={projectDir}
+                        projectDir={item.root === "workspace" ? workspaceDir : projectDir}
                         compact
                         selected={selectedAssetKey === item.asset.id}
-                        onReplaceAsset={onReplaceAsset}
-                        onDeleteAsset={onDeleteAsset}
+                        onReplaceAsset={item.root === "project" ? onReplaceAsset : undefined}
+                        onDeleteAsset={item.root === "workspace" ? onDeleteCustomAsset : onDeleteAsset}
                         onSelectPaintTile={onSelectPaintTile}
-                        libraryActionLabel={section === "custom" ? "Move To Scenario" : "Move To Custom Library"}
-                        onMoveAssetScope={(assetId) => onUpdateAsset?.(assetId, { libraryScope: section === "custom" ? "scenario" : "custom-library" })}
-                        onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [] })}
+                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? "Copy To Scenario" : undefined : section === "custom" ? "Move To Scenario" : "Add To Custom Library"}
+                        onMoveAssetScope={(assetId) => {
+                          if (item.root === "workspace") onCopyCustomAssetToScenario?.(assetId);
+                          else if (section === "custom") onUpdateAsset?.(assetId, { libraryScope: "scenario" });
+                          else onAddAssetToCustomLibrary?.(assetId);
+                        }}
+                        onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [], assetRoot: item.root })}
                       />
                     ) : (
                       <ManagedAssetCard
@@ -367,22 +399,26 @@ export function ResourcesPanel({
                         asset={item.asset}
                         project={project}
                         desktopRuntime={desktopRuntime}
-                        projectDir={projectDir}
+                        projectDir={item.root === "workspace" ? workspaceDir : projectDir}
                         compact
                         selected={selectedAssetKey === item.asset.id}
-                        onReplaceAsset={onReplaceAsset}
-                        onUpdateAsset={onUpdateAsset}
-                        onDeleteAsset={onDeleteAsset}
+                        onReplaceAsset={item.root === "project" ? onReplaceAsset : undefined}
+                        onUpdateAsset={item.root === "workspace" ? onUpdateCustomAsset : onUpdateAsset}
+                        onDeleteAsset={item.root === "workspace" ? onDeleteCustomAsset : onDeleteAsset}
                         onSelectEntity={onSelectEntity}
-                        libraryActionLabel={section === "custom" ? "Move To Scenario" : "Move To Custom Library"}
-                        onMoveAssetScope={(assetId) => onUpdateAsset?.(assetId, { libraryScope: section === "custom" ? "scenario" : "custom-library" })}
-                        onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [] })}
+                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? "Copy To Scenario" : undefined : section === "custom" ? "Move To Scenario" : "Add To Custom Library"}
+                        onMoveAssetScope={(assetId) => {
+                          if (item.root === "workspace") onCopyCustomAssetToScenario?.(assetId);
+                          else if (section === "custom") onUpdateAsset?.(assetId, { libraryScope: "scenario" });
+                          else onAddAssetToCustomLibrary?.(assetId);
+                        }}
+                        onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [], assetRoot: item.root })}
                       />
                     ))}
-                    {project && projectGalleryItems.length === 0 && (
-                      <p className="empty-copy compact">{section === "custom" ? "No custom library assets yet. Move scenario assets here when you want reusable media in the project without exporting it." : "No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario."}</p>
+                    {(section === "custom" || project) && projectGalleryItems.length === 0 && (
+                      <p className="empty-copy compact">{section === "custom" ? "No custom library assets yet. Import reusable Providence media or add scenario assets here for future scenarios." : "No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario."}</p>
                     )}
-                    {!project && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
+                    {!project && section !== "custom" && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
                   </div>
                 </div>
                 <AssetSelectionInspector
@@ -430,6 +466,7 @@ export function ResourcesPanel({
                         selected={selectedAssetKey === asset.id}
                         onSelectEntity={onSelectEntity}
                         onSelect={(preview) => setSelectedAsset({ type: "library", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
+                        onCopyToScenario={project ? onCopyReferenceAssetToScenario : undefined}
                       />
                     ))}
                     {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
@@ -446,6 +483,7 @@ export function ResourcesPanel({
                   projectDir={projectDir}
                   workspaceDir={workspaceDir}
                   onOpenDetail={(item) => setPreviewItem(item)}
+                  onCopyReferenceAssetToScenario={project ? onCopyReferenceAssetToScenario : undefined}
                   onSelectEntity={onSelectEntity}
                 />
               </div>
@@ -604,6 +642,7 @@ function AssetSelectionInspector({
   projectDir,
   workspaceDir,
   onOpenDetail,
+  onCopyReferenceAssetToScenario,
   onSelectEntity
 }: {
   item: ResourcePreviewItem | null;
@@ -613,9 +652,11 @@ function AssetSelectionInspector({
   projectDir: string;
   workspaceDir: string;
   onOpenDetail: (item: ResourcePreviewItem) => void;
+  onCopyReferenceAssetToScenario?: (assetId: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const title = item ? resourcePreviewItemTitle(item) : "No Asset Selected";
+  const showCopyReferenceAction = item?.type === "library" && Boolean(onCopyReferenceAssetToScenario && canCopyLibraryAssetToScenario(item.asset));
   return (
     <aside className="asset-selection-inspector" aria-label="Selected asset inspector">
       <header>
@@ -623,9 +664,16 @@ function AssetSelectionInspector({
           <span>Selection Inspector</span>
           <strong>{title}</strong>
         </div>
-        <button type="button" className="btn btn-secondary btn-xs" disabled={!item} onClick={() => item && onOpenDetail(item)}>
-          Open Detail
-        </button>
+        <div className="panel-header-actions">
+          {showCopyReferenceAction && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => item?.type === "library" && onCopyReferenceAssetToScenario?.(item.asset.id)}>
+              Copy To Scenario
+            </button>
+          )}
+          <button type="button" className="btn btn-secondary btn-xs" disabled={!item} onClick={() => item && onOpenDetail(item)}>
+            Open Detail
+          </button>
+        </div>
       </header>
       {item ? (
         <ResourcePreviewContents item={item} project={project} catalog={catalog} desktopRuntime={desktopRuntime} projectDir={projectDir} workspaceDir={workspaceDir} onSelectEntity={onSelectEntity} />
@@ -660,18 +708,19 @@ function projectGalleryItemEntityId(item: ProjectGalleryItem) {
 function previewItemForEntityId(
   entityId: string,
   project: Project | null,
-  projectAssets: Project["assets"],
+  managedItems: ManagedGalleryItem[],
   scenarioResources: ScenarioResourceAsset[],
   libraryAssets: LibraryAsset[],
   section: AssetSection
 ): ResourcePreviewItem | null {
-  const managed = projectAssets.find((asset) => asset.id === entityId);
+  const managed = managedItems.find((item) => item.asset.id === entityId);
   if (managed) {
     return {
       type: "managed",
-      asset: managed,
+      asset: managed.asset,
       preview: null,
-      usages: project ? resourceUsageLinks(project, managed.resourceType, managed.resourceId) : []
+      usages: project ? resourceUsageLinks(project, managed.asset.resourceType, managed.asset.resourceId) : [],
+      assetRoot: managed.root
     };
   }
   const scenarioResource = scenarioResources.find((asset) => asset.entity.id === entityId);

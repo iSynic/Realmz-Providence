@@ -1,30 +1,44 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Dispatch } from "react";
+import { createBrowserWorkspace, inspectBrowserBundledLibraryAssetPreview, loadBrowserBundledLibraryResourceData } from "../browser/library";
+import { inspectResourcePreview } from "../browser/resourcePreview";
+import { saveBrowserCustomAssets } from "../browser/workspaceStore";
 import { fileToMediaAssetRequest, MediaAssetImportOptions, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "../mediaAssets";
+import { canCopyLibraryAssetToScenario, managedAssetKindForLibrary } from "../resourceResolver";
 import { EditorAction, EditorState } from "../store";
-import { ManagedAssetKind, ManagedAssetLibraryScope, Project } from "../types";
+import { LibraryAsset, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProvidenceWorkspace } from "../types";
 import { commandError } from "../utils";
 
 export function useAssetActions({
   state,
   dispatch,
   desktopRuntime,
+  workspaceDir,
   projectDir,
   selectedMapId
 }: {
   state: EditorState;
   dispatch: Dispatch<EditorAction>;
   desktopRuntime: boolean;
+  workspaceDir: string;
   projectDir: string;
   selectedMapId: string | null;
 }) {
   async function importMediaAssets(files: File[], kind: ManagedAssetKind, options: MediaAssetImportOptions = {}) {
+    if (options.libraryScope === "custom-library") {
+      await importCustomLibraryAssets(files, kind, options);
+      return;
+    }
     if (!state.project || files.length === 0) return;
     let project = state.project;
     try {
       dispatch({ type: "setStatus", status: `Importing ${files.length} ${kind} asset(s)...` });
       for (const file of files) {
-        const request = await fileToMediaAssetRequest(file, kind, nextResourceId(project.assets ?? [], kind), options);
+        const scenarioAssets = (project.assets ?? []).filter((asset) => asset.libraryScope !== "custom-library");
+        const request = await fileToMediaAssetRequest(file, kind, nextResourceId(scenarioAssets, kind), {
+          ...options,
+          libraryScope: "scenario"
+        });
         if (desktopRuntime) {
           project = await invoke<Project>("import_project_media_asset", { projectDir, project, request });
           dispatch({ type: "markSaved", project });
@@ -40,6 +54,34 @@ export function useAssetActions({
       dispatch({ type: "setStatus", status: `Imported ${files.length} ${kind} asset(s)` });
     } catch (error) {
       dispatch({ type: "setStatus", status: `Asset import failed: ${commandError(error)}` });
+    }
+  }
+
+  async function importCustomLibraryAssets(files: File[], kind: ManagedAssetKind, options: MediaAssetImportOptions = {}) {
+    if (files.length === 0) return;
+    let workspace = currentWorkspace();
+    try {
+      dispatch({ type: "setStatus", status: `Importing ${files.length} ${kind} asset(s) into Custom Library...` });
+      for (const file of files) {
+        const request = await fileToMediaAssetRequest(file, kind, nextResourceId(workspace.customAssets ?? [], kind), {
+          ...options,
+          libraryScope: "custom-library"
+        });
+        if (desktopRuntime) {
+          workspace = await invoke<ProvidenceWorkspace>("import_workspace_media_asset", { workspaceDir, workspace, request });
+        } else {
+          const asset = {
+            ...requestToBrowserAsset(request),
+            libraryScope: "custom-library" as ManagedAssetLibraryScope
+          };
+          workspace = { ...workspace, customAssets: [...(workspace.customAssets ?? []), asset] };
+          await saveBrowserCustomAssets(workspace.customAssets);
+        }
+        dispatch({ type: "setWorkspace", workspace });
+      }
+      dispatch({ type: "setStatus", status: `Imported ${files.length} ${kind} asset(s) into Custom Library` });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Custom Library import failed: ${commandError(error)}` });
     }
   }
 
@@ -64,6 +106,12 @@ export function useAssetActions({
     } catch (error) {
       dispatch({ type: "setStatus", status: `Asset update failed: ${commandError(error)}` });
     }
+  }
+
+  async function updateCustomLibraryAsset(assetId: string, changes: { label?: string; resourceId?: number }) {
+    const workspace = currentWorkspace();
+    const customAssets = (workspace.customAssets ?? []).map((asset) => asset.id === assetId ? { ...asset, ...changes } : asset);
+    await commitWorkspaceCustomAssets({ ...workspace, customAssets }, "Custom Library asset updated");
   }
 
   async function replaceManagedAsset(assetId: string, file: File) {
@@ -119,10 +167,219 @@ export function useAssetActions({
     }
   }
 
+  async function deleteCustomLibraryAsset(assetId: string) {
+    const workspace = currentWorkspace();
+    const customAssets = (workspace.customAssets ?? []).filter((asset) => asset.id !== assetId);
+    await commitWorkspaceCustomAssets({ ...workspace, customAssets }, "Custom Library asset deleted");
+  }
+
+  async function addProjectAssetToCustomLibrary(assetId: string) {
+    if (!state.project) return;
+    const asset = state.project.assets.find((candidate) => candidate.id === assetId);
+    if (!asset) {
+      dispatch({ type: "setStatus", status: "Custom Library add failed: asset no longer exists." });
+      return;
+    }
+    try {
+      dispatch({ type: "setStatus", status: `Adding ${asset.label} to Custom Library...` });
+      if (desktopRuntime) {
+        const workspace = await invoke<ProvidenceWorkspace>("copy_project_asset_to_workspace", {
+          projectDir,
+          workspaceDir,
+          workspace: currentWorkspace(),
+          asset
+        });
+        dispatch({ type: "setWorkspace", workspace });
+      } else {
+        const workspace = currentWorkspace();
+        const customAssets = [
+          ...(workspace.customAssets ?? []),
+          duplicateManagedAsset(asset, "custom-library", "workspace", "copied from scenario asset")
+        ];
+        await commitWorkspaceCustomAssets({ ...workspace, customAssets }, `Added ${asset.label} to Custom Library`);
+      }
+      dispatch({ type: "setStatus", status: `Added ${asset.label} to Custom Library` });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Custom Library add failed: ${commandError(error)}` });
+    }
+  }
+
+  async function copyCustomLibraryAssetToScenario(assetId: string) {
+    if (!state.project) return;
+    const asset = (state.workspace?.customAssets ?? []).find((candidate) => candidate.id === assetId);
+    if (!asset) {
+      dispatch({ type: "setStatus", status: "Scenario copy failed: Custom Library asset no longer exists." });
+      return;
+    }
+    try {
+      dispatch({ type: "setStatus", status: `Copying ${asset.label} to Scenario Assets...` });
+      if (desktopRuntime) {
+        const project = await invoke<Project>("copy_workspace_asset_to_project", {
+          workspaceDir,
+          projectDir,
+          project: state.project,
+          asset,
+          resourceId: nextScenarioResourceId(state.project, asset.kind)
+        });
+        dispatch({ type: "markSaved", project });
+        dispatch({ type: "setProject", project, selectedMapId });
+      } else {
+        const copied = duplicateManagedAsset(asset, "scenario", "browser", "copied from workspace custom library", nextScenarioResourceId(state.project, asset.kind));
+        dispatch({ type: "applyCommand", command: { kind: "attachProjectAsset", label: `Copy ${asset.label} to Scenario Assets`, asset: copied } });
+      }
+      dispatch({ type: "setStatus", status: `Copied ${asset.label} to Scenario Assets` });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Scenario copy failed: ${commandError(error)}` });
+    }
+  }
+
+  async function copyReferenceAssetToScenario(assetId: string) {
+    if (!state.project) return;
+    const asset = state.libraryCatalog?.assets.find((candidate) => candidate.id === assetId) ?? null;
+    if (!asset) {
+      dispatch({ type: "setStatus", status: "Reference asset copy failed: asset no longer exists." });
+      return;
+    }
+    if (!canCopyLibraryAssetToScenario(asset)) {
+      dispatch({ type: "setStatus", status: "Reference asset already belongs to Realmz stock resources; use its existing resource ID instead of copying it." });
+      return;
+    }
+    if (!asset.resourceType || asset.resourceId == null) {
+      dispatch({ type: "setStatus", status: "Reference asset copy failed: resource type or ID is missing." });
+      return;
+    }
+    try {
+      dispatch({ type: "setStatus", status: `Copying ${asset.label} to Scenario Assets...` });
+      if (desktopRuntime) {
+        const kind = managedAssetKindForLibrary(asset);
+        const project = await invoke<Project>("copy_library_asset_to_project", {
+          workspaceDir,
+          projectDir,
+          project: state.project,
+          asset,
+          resourceId: nextScenarioResourceId(state.project, kind)
+        });
+        dispatch({ type: "markSaved", project });
+        dispatch({ type: "setProject", project, selectedMapId });
+      } else {
+        const data = await loadBrowserBundledLibraryResourceData(asset);
+        if (!data) throw new Error("reference resource bytes were not available in the bundled library");
+        const preview = await inspectBrowserBundledLibraryAssetPreview(asset);
+        const kind = managedAssetKindForLibrary(asset);
+        const managed = referenceLibraryAssetToManagedAsset(asset, data, preview.dataUrl, nextScenarioResourceId(state.project, kind));
+        dispatch({ type: "applyCommand", command: { kind: "attachProjectAsset", label: `Copy ${asset.label} to Scenario Assets`, asset: managed } });
+      }
+      dispatch({ type: "setStatus", status: `Copied ${asset.label} to Scenario Assets` });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Reference asset copy failed: ${commandError(error)}` });
+    }
+  }
+
+  async function commitWorkspaceCustomAssets(workspace: ProvidenceWorkspace, status: string) {
+    dispatch({ type: "setWorkspace", workspace });
+    if (!desktopRuntime) {
+      await saveBrowserCustomAssets(workspace.customAssets ?? []);
+      dispatch({ type: "setStatus", status });
+      return;
+    }
+    try {
+      await invoke("save_workspace", { workspaceDir, workspace });
+      dispatch({ type: "setStatus", status });
+    } catch (error) {
+      dispatch({ type: "setStatus", status: `Custom Library save failed: ${commandError(error)}` });
+    }
+  }
+
+  function currentWorkspace(): ProvidenceWorkspace {
+    return state.workspace
+      ? { ...state.workspace, customAssets: state.workspace.customAssets ?? [] }
+      : createBrowserWorkspace(state.libraryCatalog, []);
+  }
+
   return {
     importMediaAssets,
+    importCustomLibraryAssets,
     updateManagedAsset,
+    updateCustomLibraryAsset,
     replaceManagedAsset,
-    deleteManagedAsset
+    deleteManagedAsset,
+    deleteCustomLibraryAsset,
+    addProjectAssetToCustomLibrary,
+    copyCustomLibraryAssetToScenario,
+    copyReferenceAssetToScenario
   };
+}
+
+function duplicateManagedAsset(
+  asset: ManagedAsset,
+  libraryScope: ManagedAssetLibraryScope,
+  idPrefix: string,
+  provenanceSuffix: string,
+  resourceId = asset.resourceId
+): ManagedAsset {
+  return {
+    ...asset,
+    id: `asset:${idPrefix}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    resourceId,
+    libraryScope,
+    linkedEntity: asset.kind === "special-land-tile" ? `special-land-tile:${resourceId}` : asset.linkedEntity,
+    provenance: `${asset.provenance}; ${provenanceSuffix}`
+  };
+}
+
+function referenceLibraryAssetToManagedAsset(asset: LibraryAsset, resourceData: Uint8Array, previewDataUrl: string | null, resourceId: number): ManagedAsset {
+  const resourceBase64 = bytesToBase64(resourceData);
+  const resourceType = asset.resourceType ?? asset.type;
+  const mimeType = asset.mimeType ?? mimeForResource(resourceType);
+  const payloadUrl = `data:${mimeType};base64,${resourceBase64}`;
+  const kind = managedAssetKindForLibrary(asset);
+  const decodedPreview = asset.resourceType ? inspectResourcePreview(asset.resourceType, resourceData).dataUrl : null;
+  return {
+    id: `asset:browser-reference:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
+    label: asset.label,
+    kind,
+    resourceType,
+    resourceId,
+    fileName: safeReferenceFileName(asset, resourceType, resourceId),
+    originalPath: payloadUrl,
+    previewPath: decodedPreview ?? previewDataUrl ?? payloadUrl,
+    resourcePath: payloadUrl,
+    mimeType,
+    bytes: resourceData.byteLength,
+    sha256: "browser-reference",
+    width: null,
+    height: null,
+    durationMs: null,
+    sampleRate: null,
+    channels: null,
+    exportState: "ready",
+    libraryScope: "scenario",
+    provenance: `copied from reference asset ${asset.source}`,
+    linkedEntity: kind === "special-land-tile" ? `special-land-tile:${resourceId}` : null,
+    conversion: null
+  };
+}
+
+function nextScenarioResourceId(project: Project, kind: ManagedAssetKind) {
+  return nextResourceId((project.assets ?? []).filter((asset) => asset.libraryScope !== "custom-library"), kind);
+}
+
+function safeReferenceFileName(asset: LibraryAsset, resourceType: string, resourceId: number) {
+  const label = asset.label.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
+  const name = label || `${resourceType.trim() || "resource"}-${resourceId}`;
+  return `${name}.bin`;
+}
+
+function mimeForResource(resourceType: string) {
+  if (resourceType === "snd ") return "audio/x-mac-snd";
+  if (resourceType === "TEXT" || resourceType === "STR#") return "text/plain";
+  if (resourceType === "PICT") return "image/pict";
+  if (resourceType === "cicn") return "image/cicn";
+  return "application/octet-stream";
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
 }

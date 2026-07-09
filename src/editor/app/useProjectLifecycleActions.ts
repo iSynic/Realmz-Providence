@@ -252,7 +252,7 @@ export function useProjectLifecycleActions({
         dispatch({ type: "setStatus", status: `Refreshing ${label} in browser...` });
         const handle = await pickBrowserScenarioSource();
         const catalog = await importBrowserLibrary(handle, kind);
-        const workspace = createBrowserWorkspace(catalog);
+        const workspace = createBrowserWorkspace(catalog, state.workspace?.customAssets ?? []);
         dispatch({ type: "setWorkspace", workspace });
         dispatch({ type: "setLibraryCatalog", catalog });
         dispatch({ type: "setWorkbench", workbench: "library", tab: kind === "divinity-import" ? "combat" : "rules" });
@@ -293,7 +293,7 @@ export function useProjectLifecycleActions({
   async function commitLibraryCatalog(catalog: LibraryCatalog, status: string) {
     const workspace = state.workspace
       ? { ...state.workspace, activeLibraryCatalog: catalog }
-      : createBrowserWorkspace(catalog);
+      : createBrowserWorkspace(catalog, []);
     dispatch({ type: "setWorkspace", workspace });
     dispatch({ type: "setLibraryCatalog", catalog });
     dispatch({ type: "setStatus", status });

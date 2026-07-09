@@ -7,7 +7,7 @@ import {
   GlobalSearchScope,
   searchGlobalIndex
 } from "../globalSearch";
-import { LibraryCatalog, Project } from "../types";
+import { LibraryCatalog, ManagedAsset, Project } from "../types";
 
 const scopeLabels: Record<GlobalSearchScope, string> = {
   scenario: "Scenario",
@@ -30,11 +30,13 @@ const SEARCH_SHORTCUTS_HELP =
 export function GlobalSearchDialog({
   project,
   catalog,
+  customAssets = [],
   onClose,
   onOpenResult
 }: {
   project: Project | null;
   catalog: LibraryCatalog | null;
+  customAssets?: ManagedAsset[];
   onClose: () => void;
   onOpenResult: (result: GlobalSearchResult) => void;
 }) {
@@ -44,7 +46,7 @@ export function GlobalSearchDialog({
   const [expandedScopes, setExpandedScopes] = useState<Set<GlobalSearchScope>>(() => new Set());
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const index = useMemo(() => buildGlobalSearchIndex(project, catalog), [project, catalog]);
+  const index = useMemo(() => buildGlobalSearchIndex(project, catalog, customAssets), [catalog, customAssets, project]);
 
   useEffect(() => {
     inputRef.current?.focus();
