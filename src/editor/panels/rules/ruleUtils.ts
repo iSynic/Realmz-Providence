@@ -236,7 +236,8 @@ export function buildCasteEntries(project: Project, catalog: LibraryCatalog | nu
     library.set(id, casteFromSummary(entity.summary, id));
   }
   const entries = Array.from({ length: CASTE_RECORD_LIMIT }, (_, id) => {
-    const scenarioRecord = scenario.get(id) ?? null;
+    const scenarioSource = scenario.get(id) ?? null;
+    const scenarioRecord = scenarioSource && !isBlankImportedCasteRecord(scenarioSource) ? scenarioSource : null;
     const record = scenarioRecord ?? library.get(id) ?? emptyCasteView(id);
     return {
       id,
@@ -333,6 +334,46 @@ export function casteFromSummary(summary: Record<string, unknown>, id: number): 
     authored: false,
     provenance: undefined
   };
+}
+
+export function isBlankImportedCasteRecord(record: ScenarioCasteOverride | null | undefined) {
+  if (!record || record.authored) return false;
+  const name = record.displayName?.trim() ?? "";
+  const genericName = !name || name === `Caste ${record.id}` || name === `Caste ${record.id + 1}` || REALMZ_CASTES[record.id] === name;
+  if (!genericName) return false;
+  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
+  return (
+    allZeroMatrix(record.specialAbility) &&
+    allZero(record.drvBonus) &&
+    allZero(record.attBonus) &&
+    allZeroMatrix(record.spellcasters) &&
+    allZero(record.minMax) &&
+    allZero(record.conditions) &&
+    record.canUseMissile === 0 &&
+    record.getsMissileBonus === 0 &&
+    allZero(record.stamina) &&
+    allZero(record.strength) &&
+    allZero(record.dodge) &&
+    allZero(record.toHit) &&
+    allZero(record.missile) &&
+    allZero(record.hand2Hand) &&
+    record.casteClass === 0 &&
+    record.minimumAgeGroup === 0 &&
+    record.moveBonus === 0 &&
+    record.magRes === 0 &&
+    record.twoHand === 0 &&
+    record.maxStaminaBonus === 0 &&
+    record.bonusAttacks === 0 &&
+    record.maxAttacks === 0 &&
+    allZero(record.victory) &&
+    record.startMoney === 0 &&
+    allZero(record.startItems) &&
+    allZero(record.attacks) &&
+    allZero(record.itemTypes) &&
+    record.defaultIcon === 0 &&
+    record.maxSpellsAttacks === 0 &&
+    record.spellsSoFar === 0
+  );
 }
 
 export function emptyRaceView(id: number): ScenarioRaceOverride {
@@ -438,7 +479,7 @@ export function capitalize(value: string) {
 export function overrideCount(project: Project, family: RulesFamily) {
   if (family === "spells") return project.spellOverrides?.length ?? 0;
   if (family === "races") return project.raceOverrides?.length ?? 0;
-  return project.casteOverrides?.length ?? 0;
+  return project.casteOverrides?.filter((record) => !isBlankImportedCasteRecord(record)).length ?? 0;
 }
 
 export function num(value: unknown) {
@@ -461,4 +502,12 @@ export function numMatrix(value: unknown, rows: number, columns: number) {
     const cells = Array.isArray(rowValue) ? rowValue : [];
     return Array.from({ length: columns }, (_, column) => num(cells[column]));
   });
+}
+
+function allZero(values: readonly number[] | null | undefined) {
+  return (values ?? []).every((value) => value === 0);
+}
+
+function allZeroMatrix(values: readonly (readonly number[])[] | null | undefined) {
+  return (values ?? []).every((row) => allZero(row));
 }

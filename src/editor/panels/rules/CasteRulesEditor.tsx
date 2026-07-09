@@ -4,14 +4,14 @@ import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES, RESISTANCE_TYP
 import { ruleCasteName } from "../../ruleNames";
 import { isPortraitIconAsset } from "../../resourceResolver";
 import { ArrayFields, BitsetEditor, CheckboxField, EmptyRulesState, IconNumberField, MatrixFields, NumberField, PairGrid, RuleSection, RulesLayout, TextField, CasteProgressionGrid, VictoryPointsGrid } from "./RuleFields";
-import { buildCasteEntries, CASTE_RECORD_LIMIT, selectedIdFor, STANDARD_CASTE_COUNT } from "./ruleUtils";
+import { buildCasteEntries, CASTE_RECORD_LIMIT, isBlankImportedCasteRecord, selectedIdFor, STANDARD_CASTE_COUNT } from "./ruleUtils";
 import { RulesEditorProps } from "./ruleTypes";
 
 export function CasteRulesEditor({ project, catalog, selectedEntity, onSelectEntity, onApplyCommand }: RulesEditorProps) {
   const entries = useMemo(() => buildCasteEntries(project, catalog), [project, catalog]);
   const selectedId = selectedIdFor(selectedEntity?.id, "rule-caste") ?? entries[0]?.id ?? 0;
   const entry = entries.find((candidate) => candidate.id === selectedId) ?? entries[0] ?? null;
-  const customCasteIds = useMemo(() => new Set((project.casteOverrides ?? []).filter((record) => record.id >= STANDARD_CASTE_COUNT).map((record) => record.id)), [project.casteOverrides]);
+  const customCasteIds = useMemo(() => new Set((project.casteOverrides ?? []).filter((record) => record.id >= STANDARD_CASTE_COUNT && !isBlankImportedCasteRecord(record)).map((record) => record.id)), [project.casteOverrides]);
   const nextCustomCasteId = () => {
     for (let id = STANDARD_CASTE_COUNT; id < CASTE_RECORD_LIMIT; id += 1) {
       if (!customCasteIds.has(id)) return id;

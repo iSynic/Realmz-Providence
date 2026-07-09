@@ -142,15 +142,27 @@ export function createRaceOverride(project: Project, id?: number, template?: Par
 }
 
 export function createCasteOverride(project: Project, id?: number, template?: Partial<ScenarioCasteOverride>) {
-  const nextId = id ?? nextIdFor(project.casteOverrides ?? [], 30);
-  if ((project.casteOverrides ?? []).some((record) => record.id === nextId)) return project;
+  const records = project.casteOverrides ?? [];
+  const nextId = id ?? nextCasteOverrideId(records);
+  const existing = records.find((record) => record.id === nextId);
+  if (existing && !isBlankCasteOverride(existing)) return project;
   const displayName = template?.displayName?.trim() || defaultCasteName(nextId);
   const record = { ...emptyCasteOverride(nextId), ...template, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
   const withName = setRuleName(project, "caste", nextId, displayName, true);
   return {
     ...withName,
-    casteOverrides: [...(withName.casteOverrides ?? []), record].sort((a, b) => a.id - b.id)
+    casteOverrides: existing
+      ? (withName.casteOverrides ?? []).map((candidate) => candidate.id === nextId ? record : candidate).sort((a, b) => a.id - b.id)
+      : [...(withName.casteOverrides ?? []), record].sort((a, b) => a.id - b.id)
   };
+}
+
+function nextCasteOverrideId(records: ScenarioCasteOverride[]) {
+  for (let id = 0; id < 30; id += 1) {
+    const existing = records.find((record) => record.id === id);
+    if (!existing || isBlankCasteOverride(existing)) return id;
+  }
+  return records.length;
 }
 
 export function updateRuleOverride<T extends { id: number; authored?: boolean }>(
@@ -268,6 +280,51 @@ function isBlankSpellOverride(record: ScenarioSpellOverride) {
     !record.inCombat &&
     !record.inCamp
   );
+}
+
+function isBlankCasteOverride(record: ScenarioCasteOverride) {
+  if (record.authored) return false;
+  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
+  return (
+    allZeroMatrix(record.specialAbility) &&
+    allZero(record.drvBonus) &&
+    allZero(record.attBonus) &&
+    allZeroMatrix(record.spellcasters) &&
+    allZero(record.minMax) &&
+    allZero(record.conditions) &&
+    record.canUseMissile === 0 &&
+    record.getsMissileBonus === 0 &&
+    allZero(record.stamina) &&
+    allZero(record.strength) &&
+    allZero(record.dodge) &&
+    allZero(record.toHit) &&
+    allZero(record.missile) &&
+    allZero(record.hand2Hand) &&
+    record.casteClass === 0 &&
+    record.minimumAgeGroup === 0 &&
+    record.moveBonus === 0 &&
+    record.magRes === 0 &&
+    record.twoHand === 0 &&
+    record.maxStaminaBonus === 0 &&
+    record.bonusAttacks === 0 &&
+    record.maxAttacks === 0 &&
+    allZero(record.victory) &&
+    record.startMoney === 0 &&
+    allZero(record.startItems) &&
+    allZero(record.attacks) &&
+    allZero(record.itemTypes) &&
+    record.defaultIcon === 0 &&
+    record.maxSpellsAttacks === 0 &&
+    record.spellsSoFar === 0
+  );
+}
+
+function allZero(values: readonly number[] | null | undefined) {
+  return (values ?? []).every((value) => value === 0);
+}
+
+function allZeroMatrix(values: readonly (readonly number[])[] | null | undefined) {
+  return (values ?? []).every((row) => allZero(row));
 }
 
 export function defaultScenarioShell(project: Project) {

@@ -13,11 +13,12 @@ The app is built with React/Vite on the frontend and Tauri/Rust on the desktop s
 
 ## 0.2.1 Hotfix
 
-The 0.2.1 hotfix corrects Combat monster library and imported scenario monster display regressions found after the 0.2.0 release.
+The 0.2.1 hotfix corrects Combat monster library, imported scenario monster display, and Caste reference display regressions found after the 0.2.0 release.
 
 - Desktop now refreshes stale bundled Divinity Monster Scrap Book catalogs that were previously decoded as 210-byte monster records instead of 466-byte scrapbook entries.
 - Combat hides unreferenced imported monster tail records after the Realmz bestiary terminator while preserving and exporting their source bytes.
 - Battle-referenced or newly authored post-terminator monster records still appear where they matter, and validation no longer reports noise for preserved imported tail data.
+- Rules now treats blank imported `Data Caste` rows as placeholders instead of scenario-authored overrides, so standard castes fall back to Realmz reference stats and CICN default icons until the author creates a real scenario caste override.
 
 ## 0.2.0 Highlights
 
