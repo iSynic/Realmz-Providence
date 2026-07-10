@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Action Point Mutations"
+  },
+  "extraActionPoints": [
+    {
+      "key": "invalid-context-macro",
+      "steps": [{ "kind": "disableActionPoint", "target": 1, "level": 0 }]
+    }
+  ]
+}

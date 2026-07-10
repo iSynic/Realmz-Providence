@@ -17,7 +17,8 @@
     "shops": { "type": "array", "items": { "$ref": "#/$defs/shop" } },
     "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
     "simpleEncounters": { "type": "array", "items": { "$ref": "#/$defs/simpleEncounter" } },
-    "actionPoints": { "type": "array", "items": { "$ref": "#/$defs/actionPoint" } }
+    "actionPoints": { "type": "array", "items": { "$ref": "#/$defs/actionPoint" } },
+    "extraActionPoints": { "type": "array", "items": { "$ref": "#/$defs/extraActionPoint" } }
   },
   "$defs": {
     "idRef": {
@@ -435,6 +436,16 @@
         "steps": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/step" } }
       }
     },
+    "extraActionPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["steps"],
+      "properties": {
+        "key": { "$ref": "#/$defs/key" },
+        "id": { "type": "integer", "minimum": 0 },
+        "steps": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/step" } }
+      }
+    },
     "step": {
       "oneOf": [
         { "$ref": "#/$defs/messageStep" },
@@ -477,6 +488,17 @@
         { "$ref": "#/$defs/branchOnPartyConditionStep" },
         { "$ref": "#/$defs/branchOnCharacterConditionStep" },
         { "$ref": "#/$defs/branchOnTileParameterStep" },
+        { "$ref": "#/$defs/copyActionPointStepsStep" },
+        { "$ref": "#/$defs/enableActionPointStep" },
+        { "$ref": "#/$defs/disableActionPointStep" },
+        { "$ref": "#/$defs/patchActionPointStep" },
+        { "$ref": "#/$defs/setDarkLevelStep" },
+        { "$ref": "#/$defs/alterGameTimeStep" },
+        { "$ref": "#/$defs/branchOnGameTimeStep" },
+        { "$ref": "#/$defs/boatCampStatusStep" },
+        { "$ref": "#/$defs/alterFatigueStep" },
+        { "$ref": "#/$defs/changeSpellPointsStep" },
+        { "$ref": "#/$defs/branchOnSpellPointsStep" },
         { "$ref": "#/$defs/enterExitDungeonStep" },
         { "$ref": "#/$defs/edcdStep" },
         { "$ref": "#/$defs/rawStep" }
@@ -632,6 +654,131 @@
         "targetKind": { "enum": ["actionPoint", "simpleEncounter", "complexEncounter"] },
         "falseTarget": { "$ref": "#/$defs/nonzeroIdRef" },
         "trueTarget": { "$ref": "#/$defs/nonzeroIdRef" }
+      }
+    },
+    "copyActionPointStepsStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "source"],
+      "properties": {
+        "kind": { "const": "copyActionPointSteps" },
+        "source": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0, "maximum": 99 },
+            { "type": "string", "minLength": 1 }
+          ]
+        }
+      }
+    },
+    "enableActionPointStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target"],
+      "properties": {
+        "kind": { "const": "enableActionPoint" },
+        "target": { "$ref": "#/$defs/idRef" },
+        "level": { "type": "integer", "minimum": 0 },
+        "percent": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "disableActionPointStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target"],
+      "properties": {
+        "kind": { "const": "disableActionPoint" },
+        "target": { "$ref": "#/$defs/idRef" },
+        "level": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "patchActionPointStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "source"],
+      "properties": {
+        "kind": { "const": "patchActionPoint" },
+        "target": { "$ref": "#/$defs/idRef" },
+        "source": { "$ref": "#/$defs/idRef" },
+        "level": { "type": "integer", "minimum": 0 },
+        "levelType": { "enum": ["land", "dungeon"] }
+      }
+    },
+    "setDarkLevelStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "dark"],
+      "properties": { "kind": { "const": "setDarkLevel" }, "dark": { "type": "boolean" }, "stopIfUnchanged": { "type": "boolean" } }
+    },
+    "alterGameTimeStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "mode"],
+      "properties": {
+        "kind": { "const": "alterGameTime" },
+        "mode": { "enum": ["set", "offset"] },
+        "days": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "hours": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "minutes": { "type": "integer", "minimum": -32768, "maximum": 32767 }
+      }
+    },
+    "branchOnGameTimeStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "successMacro", "failureMacro"],
+      "properties": {
+        "kind": { "const": "branchOnGameTime" },
+        "dayAtMost": { "type": "integer", "minimum": -1, "maximum": 32767 },
+        "hourAtMost": { "type": "integer", "minimum": -1, "maximum": 23 },
+        "successMacro": { "$ref": "#/$defs/idRef" },
+        "failureMacro": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "boatCampStatusStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "anyOf": [{ "required": ["continueBoat"] }, { "required": ["continueCamping"] }, { "required": ["setBoat"] }],
+      "properties": {
+        "kind": { "const": "boatCampStatus" },
+        "continueBoat": { "enum": ["inBoat", "notInBoat"] },
+        "continueCamping": { "enum": ["camping", "notCamping"] },
+        "setBoat": { "enum": ["inBoat", "notInBoat"] }
+      }
+    },
+    "alterFatigueStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "mode"],
+      "properties": {
+        "kind": { "const": "alterFatigue" },
+        "mode": { "enum": ["maximum", "minimum", "percent"] },
+        "percent": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "changeSpellPointsStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "rolls", "low", "high"],
+      "properties": {
+        "kind": { "const": "changeSpellPoints" },
+        "rolls": { "type": "integer", "minimum": 1, "maximum": 32767 },
+        "low": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "high": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "take": { "type": "boolean" },
+        "sound": { "$ref": "#/$defs/idRef" },
+        "message": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "branchOnSpellPointsStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "scope", "minimum", "successMacro"],
+      "properties": {
+        "kind": { "const": "branchOnSpellPoints" },
+        "scope": { "enum": ["picked", "alive"] },
+        "minimum": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "onFailure": { "enum": ["continue", "exitSave"] },
+        "successMacro": { "$ref": "#/$defs/idRef" }
       }
     },
     "enterExitDungeonStep": { "type": "object", "additionalProperties": false, "required": ["kind", "mode", "level", "x", "y", "heading"], "properties": { "kind": { "const": "enterExitDungeon" }, "mode": { "type": "integer" }, "level": { "type": "integer" }, "x": { "type": "integer" }, "y": { "type": "integer" }, "heading": { "type": "integer" } } },

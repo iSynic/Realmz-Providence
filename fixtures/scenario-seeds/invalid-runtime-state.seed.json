@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Runtime State"
+  },
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "alterGameTime", "mode": "set", "hours": 24 },
+        { "kind": "alterFatigue", "mode": "percent" },
+        { "kind": "changeSpellPoints", "rolls": 1, "low": 8, "high": 2 },
+        { "kind": "boatCampStatus" }
+      ]
+    }
+  ]
+}

@@ -42,6 +42,7 @@ const SHOP_BYTES = 3002;
 const ITEM_BYTES = 100;
 const SIMPLE_ENCOUNTER_BYTES = 426;
 const EXTRACODE_BYTES = 10;
+const DOOR_BYTES = 40;
 const SCENARIO_ITEM_ID_BASE = 800;
 const SCENARIO_ITEM_RECORD_COUNT = 200;
 
@@ -82,6 +83,7 @@ export type ScenarioSeed = {
   items?: ScenarioSeedItem[];
   simpleEncounters?: ScenarioSeedSimpleEncounter[];
   actionPoints?: ScenarioSeedActionPoint[];
+  extraActionPoints?: ScenarioSeedExtraActionPoint[];
 };
 
 export type ScenarioSeedScenario = {
@@ -297,6 +299,12 @@ export type ScenarioSeedActionPoint = {
   steps: ScenarioSeedStep[];
 };
 
+export type ScenarioSeedExtraActionPoint = {
+  key?: string;
+  id?: number;
+  steps: ScenarioSeedStep[];
+};
+
 export type ScenarioSeedRegion = {
   key: string;
   x: number;
@@ -341,6 +349,9 @@ export type ScenarioSeedCharacterSelector = "party" | "picked" | number;
 
 export type ScenarioSeedTileParameter = "shoreline" | "boatRequired" | "path" | "blocksLos" | "flyFloatRequired" | "forest" | "tileId";
 
+export type ScenarioSeedTimeMode = "set" | "offset";
+export type ScenarioSeedBoatStatus = "inBoat" | "notInBoat";
+
 export type ScenarioSeedStep =
   | { kind: "message"; message: ScenarioSeedRef }
   | { kind: "battle"; battle: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; reviveParty?: boolean }
@@ -382,6 +393,17 @@ export type ScenarioSeedStep =
   | { kind: "branchOnPartyCondition"; condition: ScenarioSeedPartyCondition; when?: "present" | "absent"; targetKind?: ScenarioSeedBranchTargetKind; target: ScenarioSeedRef }
   | { kind: "branchOnCharacterCondition"; condition: number; selector?: ScenarioSeedCharacterSelector; successTarget: ScenarioSeedRef; failureTarget: ScenarioSeedRef }
   | { kind: "branchOnTileParameter"; test: ScenarioSeedTileParameter; tile?: number; targetKind?: ScenarioSeedBranchTargetKind; falseTarget?: ScenarioSeedRef; trueTarget?: ScenarioSeedRef }
+  | { kind: "copyActionPointSteps"; source: ScenarioSeedRef }
+  | { kind: "enableActionPoint"; target: ScenarioSeedRef; level?: number; percent?: number }
+  | { kind: "disableActionPoint"; target: ScenarioSeedRef; level?: number }
+  | { kind: "patchActionPoint"; target: ScenarioSeedRef; source: ScenarioSeedRef; level?: number; levelType?: LevelType }
+  | { kind: "setDarkLevel"; dark: boolean; stopIfUnchanged?: boolean }
+  | { kind: "alterGameTime"; mode: ScenarioSeedTimeMode; days?: number; hours?: number; minutes?: number }
+  | { kind: "branchOnGameTime"; dayAtMost?: number; hourAtMost?: number; successMacro: ScenarioSeedRef; failureMacro: ScenarioSeedRef }
+  | { kind: "boatCampStatus"; continueBoat?: ScenarioSeedBoatStatus; continueCamping?: "camping" | "notCamping"; setBoat?: ScenarioSeedBoatStatus }
+  | { kind: "alterFatigue"; mode: "maximum" | "minimum" | "percent"; percent?: number }
+  | { kind: "changeSpellPoints"; rolls: number; low: number; high: number; take?: boolean; sound?: ScenarioSeedRef; message?: ScenarioSeedRef }
+  | { kind: "branchOnSpellPoints"; scope: "picked" | "alive"; minimum: number; onFailure?: "continue" | "exitSave"; successMacro: ScenarioSeedRef }
   | { kind: "enterExitDungeon"; mode: number; level: number; x: number; y: number; heading: number }
   | { kind: "edcd"; opcode: number; values: number[] }
   | { kind: "raw"; rawCode: number; id: number };
@@ -422,6 +444,7 @@ export type ScenarioSeedAllocationReport = {
   items: ScenarioSeedAllocationEntry[];
   simpleEncounters: ScenarioSeedAllocationEntry[];
   actionPoints: ScenarioSeedAllocationEntry[];
+  extraActionPoints: ScenarioSeedAllocationEntry[];
   maps: ScenarioSeedMapAllocationEntry[];
   regions: ScenarioSeedRegionAllocationEntry[];
 };
@@ -529,6 +552,10 @@ type ParseContext = {
 type ObjectValue = Record<string, unknown>;
 
 type MapTarget = { levelType: LevelType; index: number; x?: number; y?: number };
+type ActionPointTarget = { levelType: LevelType; levelIndex: number; recordIndex: number };
+type ActionBuildScope =
+  | { kind: "map"; levelType: LevelType; levelIndex: number; recordIndex: number }
+  | { kind: "extra"; recordIndex: number };
 
 type BuildContext = {
   errors: string[];
@@ -544,6 +571,8 @@ type BuildContext = {
   items: Map<string, number>;
   simpleEncounters: Map<string, number>;
   actionPoints: Map<string, number>;
+  actionPointTargets: Map<string, ActionPointTarget>;
+  extraActionPoints: Map<string, number>;
   maps: Map<string, MapTarget>;
   regions: Map<string, MapTarget & { x: number; y: number }>;
 };
@@ -552,7 +581,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   const ctx: ParseContext = { errors: [], warnings: [] };
   const root = requireObject(input, "$", ctx);
   if (!root) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
-  allowKeys(root, "$", ["schemaVersion", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "simpleEncounters", "actionPoints"], ctx);
+  allowKeys(root, "$", ["schemaVersion", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "simpleEncounters", "actionPoints", "extraActionPoints"], ctx);
 
   const schemaVersion = requireInteger(root.schemaVersion, "$.schemaVersion", ctx);
   if (schemaVersion !== null && schemaVersion !== SCENARIO_SEED_SCHEMA_VERSION) {
@@ -584,6 +613,8 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   if (simpleEncounters) seed.simpleEncounters = simpleEncounters;
   const actionPoints = parseArray(root.actionPoints, "$.actionPoints", ctx, parseActionPoint);
   if (actionPoints) seed.actionPoints = actionPoints;
+  const extraActionPoints = parseArray(root.extraActionPoints, "$.extraActionPoints", ctx, parseExtraActionPoint);
+  if (extraActionPoints) seed.extraActionPoints = extraActionPoints;
 
   validateUniqueIds(seed.messages, "messages", ctx);
   validateUniqueIds(seed.quests, "quests", ctx);
@@ -594,6 +625,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   validateUniqueIds(seed.items, "items", ctx);
   validateItems(seed.items, ctx);
   validateUniqueIds(seed.simpleEncounters, "simpleEncounters", ctx);
+  validateUniqueIds(seed.extraActionPoints, "extraActionPoints", ctx);
   validateMaps(seed.maps, ctx);
 
   if (ctx.errors.length > 0) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
@@ -667,7 +699,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   project.shops = (seed.shops ?? []).map((shop) => buildShop(shop, buildContext));
   project.simpleEncounters = (seed.simpleEncounters ?? []).map((encounter) => buildSimpleEncounter(encounter, buildContext));
 
-  const triggerBuild = buildTriggers(seed.actionPoints ?? [], buildContext);
+  const triggerBuild = buildTriggers(seed.actionPoints ?? [], seed.extraActionPoints ?? [], buildContext);
   project.triggers = triggerBuild.triggers;
   project.extracodes = triggerBuild.extracodes;
   project.validation = validateBrowserProject(project);
@@ -1194,6 +1226,18 @@ function parseActionPoint(input: unknown, path: string, ctx: ParseContext): Scen
   };
 }
 
+function parseExtraActionPoint(input: unknown, path: string, ctx: ParseContext): ScenarioSeedExtraActionPoint | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["key", "id", "steps"], ctx);
+  const key = optionalString(value.key, `${path}.key`, ctx);
+  const id = optionalInteger(value.id, `${path}.id`, ctx);
+  const steps = parseArray(value.steps, `${path}.steps`, ctx, parseStep) ?? [];
+  checkIntegerRange(id, `${path}.id`, 0, null, ctx);
+  if (steps.length > 8) ctx.errors.push(`${path}.steps can contain at most 8 Realmz action slots.`);
+  return { ...(key !== undefined ? { key } : {}), ...(id !== undefined ? { id } : {}), steps };
+}
+
 function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSeedStep | null {
   const value = requireObject(input, path, ctx);
   if (!value) return null;
@@ -1457,6 +1501,107 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
       ...(trueTarget !== undefined ? { trueTarget } : {})
     };
   }
+  if (kind === "copyActionPointSteps") {
+    allowKeys(value, path, ["kind", "source"], ctx);
+    const source = requireRef(value.source, `${path}.source`, ctx);
+    if (typeof source === "number") checkIntegerRange(source, `${path}.source`, 0, 99, ctx);
+    return { kind, source };
+  }
+  if (kind === "enableActionPoint") {
+    allowKeys(value, path, ["kind", "target", "level", "percent"], ctx);
+    const target = requireRef(value.target, `${path}.target`, ctx);
+    const level = optionalInteger(value.level, `${path}.level`, ctx);
+    const percent = optionalInteger(value.percent, `${path}.percent`, ctx);
+    checkIntegerRange(level, `${path}.level`, 0, null, ctx);
+    checkIntegerRange(percent, `${path}.percent`, 1, 100, ctx);
+    validateActionPointTargetFields(target, level, undefined, path, ctx);
+    if (target === 0) ctx.errors.push(`${path}.target cannot be Action Point 0 because opcode 13 treats zero as no single target.`);
+    return { kind, target, ...(level !== undefined ? { level } : {}), ...(percent !== undefined ? { percent } : {}) };
+  }
+  if (kind === "disableActionPoint") {
+    allowKeys(value, path, ["kind", "target", "level"], ctx);
+    const target = requireRef(value.target, `${path}.target`, ctx);
+    const level = optionalInteger(value.level, `${path}.level`, ctx);
+    checkIntegerRange(level, `${path}.level`, 0, null, ctx);
+    validateActionPointTargetFields(target, level, undefined, path, ctx);
+    if (target === 0) ctx.errors.push(`${path}.target cannot be Action Point 0 because opcode 13 treats zero as no single target.`);
+    return { kind, target, ...(level !== undefined ? { level } : {}) };
+  }
+  if (kind === "patchActionPoint") {
+    allowKeys(value, path, ["kind", "target", "source", "level", "levelType"], ctx);
+    const target = requireRef(value.target, `${path}.target`, ctx);
+    const source = requireRef(value.source, `${path}.source`, ctx);
+    const level = optionalInteger(value.level, `${path}.level`, ctx);
+    const levelType = optionalLevelType(value.levelType, `${path}.levelType`, ctx);
+    checkIntegerRange(level, `${path}.level`, 0, null, ctx);
+    validateActionPointTargetFields(target, level, levelType, path, ctx, true);
+    return { kind, target, source, ...(level !== undefined ? { level } : {}), ...(levelType !== undefined ? { levelType } : {}) };
+  }
+  if (kind === "setDarkLevel") {
+    allowKeys(value, path, ["kind", "dark", "stopIfUnchanged"], ctx);
+    return { kind, dark: requireBoolean(value.dark, `${path}.dark`, ctx), ...(optionalBoolean(value.stopIfUnchanged, `${path}.stopIfUnchanged`, ctx) !== undefined ? { stopIfUnchanged: optionalBoolean(value.stopIfUnchanged, `${path}.stopIfUnchanged`, ctx) } : {}) };
+  }
+  if (kind === "alterGameTime") {
+    allowKeys(value, path, ["kind", "mode", "days", "hours", "minutes"], ctx);
+    const mode = requireTimeMode(value.mode, `${path}.mode`, ctx);
+    const days = optionalInteger(value.days, `${path}.days`, ctx);
+    const hours = optionalInteger(value.hours, `${path}.hours`, ctx);
+    const minutes = optionalInteger(value.minutes, `${path}.minutes`, ctx);
+    if (mode === "set") {
+      checkIntegerRange(days, `${path}.days`, -1, 32767, ctx);
+      checkIntegerRange(hours, `${path}.hours`, -1, 23, ctx);
+      checkIntegerRange(minutes, `${path}.minutes`, -1, 59, ctx);
+    } else {
+      checkIntegerRange(days, `${path}.days`, -32768, 32767, ctx);
+      checkIntegerRange(hours, `${path}.hours`, -32768, 32767, ctx);
+      checkIntegerRange(minutes, `${path}.minutes`, -32768, 32767, ctx);
+    }
+    return { kind, mode, ...(days !== undefined ? { days } : {}), ...(hours !== undefined ? { hours } : {}), ...(minutes !== undefined ? { minutes } : {}) };
+  }
+  if (kind === "branchOnGameTime") {
+    allowKeys(value, path, ["kind", "dayAtMost", "hourAtMost", "successMacro", "failureMacro"], ctx);
+    const dayAtMost = optionalInteger(value.dayAtMost, `${path}.dayAtMost`, ctx);
+    const hourAtMost = optionalInteger(value.hourAtMost, `${path}.hourAtMost`, ctx);
+    checkIntegerRange(dayAtMost, `${path}.dayAtMost`, -1, 32767, ctx);
+    checkIntegerRange(hourAtMost, `${path}.hourAtMost`, -1, 23, ctx);
+    return { kind, ...(dayAtMost !== undefined ? { dayAtMost } : {}), ...(hourAtMost !== undefined ? { hourAtMost } : {}), successMacro: requireRef(value.successMacro, `${path}.successMacro`, ctx), failureMacro: requireRef(value.failureMacro, `${path}.failureMacro`, ctx) };
+  }
+  if (kind === "boatCampStatus") {
+    allowKeys(value, path, ["kind", "continueBoat", "continueCamping", "setBoat"], ctx);
+    const continueBoat = optionalBoatStatus(value.continueBoat, `${path}.continueBoat`, ctx);
+    const continueCamping = optionalCampingStatus(value.continueCamping, `${path}.continueCamping`, ctx);
+    const setBoat = optionalBoatStatus(value.setBoat, `${path}.setBoat`, ctx);
+    if (continueBoat === undefined && continueCamping === undefined && setBoat === undefined) ctx.errors.push(`${path} must provide a boat/camping check or setBoat.`);
+    return { kind, ...(continueBoat !== undefined ? { continueBoat } : {}), ...(continueCamping !== undefined ? { continueCamping } : {}), ...(setBoat !== undefined ? { setBoat } : {}) };
+  }
+  if (kind === "alterFatigue") {
+    allowKeys(value, path, ["kind", "mode", "percent"], ctx);
+    const mode = requireFatigueMode(value.mode, `${path}.mode`, ctx);
+    const percent = optionalInteger(value.percent, `${path}.percent`, ctx);
+    checkIntegerRange(percent, `${path}.percent`, 0, 100, ctx);
+    if (mode === "percent" && percent === undefined) ctx.errors.push(`${path}.percent is required when mode is percent.`);
+    if (mode !== "percent" && percent !== undefined) ctx.errors.push(`${path}.percent is only valid when mode is percent.`);
+    return { kind, mode, ...(percent !== undefined ? { percent } : {}) };
+  }
+  if (kind === "changeSpellPoints") {
+    allowKeys(value, path, ["kind", "rolls", "low", "high", "take", "sound", "message"], ctx);
+    const rolls = requireInteger(value.rolls, `${path}.rolls`, ctx);
+    const low = requireInteger(value.low, `${path}.low`, ctx);
+    const high = requireInteger(value.high, `${path}.high`, ctx);
+    checkIntegerRange(rolls, `${path}.rolls`, 1, 32767, ctx);
+    checkIntegerRange(low, `${path}.low`, 0, 32767, ctx);
+    checkIntegerRange(high, `${path}.high`, 0, 32767, ctx);
+    if (low !== null && high !== null && low > high) ctx.errors.push(`${path}.low must not exceed ${path}.high.`);
+    return { kind, rolls: rolls ?? 1, low: low ?? 0, high: high ?? 0, ...(optionalBoolean(value.take, `${path}.take`, ctx) !== undefined ? { take: optionalBoolean(value.take, `${path}.take`, ctx) } : {}), ...optionalRefField(value, "sound", path, ctx), ...optionalRefField(value, "message", path, ctx) };
+  }
+  if (kind === "branchOnSpellPoints") {
+    allowKeys(value, path, ["kind", "scope", "minimum", "onFailure", "successMacro"], ctx);
+    const scope = requireSpellPointScope(value.scope, `${path}.scope`, ctx);
+    const minimum = requireInteger(value.minimum, `${path}.minimum`, ctx);
+    const onFailure = optionalSpellFailure(value.onFailure, `${path}.onFailure`, ctx);
+    checkIntegerRange(minimum, `${path}.minimum`, 0, 32767, ctx);
+    return { kind, scope, minimum: minimum ?? 0, ...(onFailure !== undefined ? { onFailure } : {}), successMacro: requireRef(value.successMacro, `${path}.successMacro`, ctx) };
+  }
   if (kind === "enterExitDungeon") {
     allowKeys(value, path, ["kind", "mode", "level", "x", "y", "heading"], ctx);
     return { kind, mode: requireInteger(value.mode, `${path}.mode`, ctx) ?? 0, level: requireInteger(value.level, `${path}.level`, ctx) ?? 0, x: requireInteger(value.x, `${path}.x`, ctx) ?? 0, y: requireInteger(value.y, `${path}.y`, ctx) ?? 0, heading: requireInteger(value.heading, `${path}.heading`, ctx) ?? 0 };
@@ -1490,6 +1635,7 @@ function createBuildContext(): BuildContext {
       items: [],
       simpleEncounters: [],
       actionPoints: [],
+      extraActionPoints: [],
       maps: [],
       regions: []
     },
@@ -1502,6 +1648,8 @@ function createBuildContext(): BuildContext {
     items: new Map(),
     simpleEncounters: new Map(),
     actionPoints: new Map(),
+    actionPointTargets: new Map(),
+    extraActionPoints: new Map(),
     maps: new Map(),
     regions: new Map()
   };
@@ -1516,6 +1664,7 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
   allocateRecordIds(seed.shops ?? [], "shop", context.shops, context.allocations.shops, context);
   allocateItemIds(seed.items ?? [], context);
   allocateRecordIds(seed.simpleEncounters ?? [], "simple encounter", context.simpleEncounters, context.allocations.simpleEncounters, context);
+  allocateRecordIds(seed.extraActionPoints ?? [], "extra action point", context.extraActionPoints, context.allocations.extraActionPoints, context);
   for (const [index, map] of (seed.maps ?? []).entries()) {
     const levelType = map.levelType ?? "land";
     const levelIndex = map.index ?? index;
@@ -1533,9 +1682,24 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
     const recordIndex = actionPoint.recordIndex ?? index;
     if (actionPoint.key) {
       addKey(context.actionPoints, actionPoint.key, recordIndex, "action point", context);
+      addKey(context.actionPointTargets, actionPoint.key, actionPointTargetForSeed(actionPoint, recordIndex, context), "action point target", context);
       context.allocations.actionPoints.push({ key: actionPoint.key, id: recordIndex, explicit: actionPoint.recordIndex !== undefined });
     }
   }
+}
+
+function actionPointTargetForSeed(actionPoint: ScenarioSeedActionPoint, recordIndex: number, context: BuildContext): ActionPointTarget {
+  const mapTarget = actionPoint.map === undefined
+    ? undefined
+    : typeof actionPoint.map === "number"
+      ? { levelType: "land" as const, index: actionPoint.map }
+      : context.maps.get(actionPoint.map);
+  const regionTarget = typeof actionPoint.at === "string" ? context.regions.get(actionPoint.at) : undefined;
+  return {
+    levelType: actionPoint.levelType ?? regionTarget?.levelType ?? mapTarget?.levelType ?? "land",
+    levelIndex: actionPoint.levelIndex ?? regionTarget?.index ?? mapTarget?.index ?? 0,
+    recordIndex
+  };
 }
 
 function allocateRecordIds<T extends { id?: number; key?: string }>(records: T[], label: string, keys: Map<string, number>, allocationEntries: ScenarioSeedAllocationEntry[], context: BuildContext) {
@@ -1636,6 +1800,51 @@ function resolveNonzeroBranchTarget(ref: ScenarioSeedRef, kind: ScenarioSeedBran
     addDiagnostic(context, "error", "zero-sentinel-target", `Tile parameter ${field} resolves to ID 0, which Realmz reserves as no branch.`, "action point");
   }
   return resolved;
+}
+
+function resolveSameMapActionPoint(ref: ScenarioSeedRef, scope: ActionBuildScope, context: BuildContext) {
+  if (scope.kind !== "map") {
+    addDiagnostic(context, "error", "invalid-action-point-context", "copyActionPointSteps can only be authored inside a map Action Point.", "action point");
+    return typeof ref === "number" ? ref : 0;
+  }
+  if (typeof ref === "number") return ref;
+  const target = context.actionPointTargets.get(ref);
+  if (!target) {
+    addDiagnostic(context, "error", "unresolved-reference", `Unknown action point reference "${ref}".`, "action point", ref);
+    return 0;
+  }
+  if (target.levelType !== scope.levelType || target.levelIndex !== scope.levelIndex) {
+    addDiagnostic(context, "error", "different-map-action-point", `copyActionPointSteps source "${ref}" is not on the current ${scope.levelType} level ${scope.levelIndex}.`, "action point", ref);
+  }
+  return target.recordIndex;
+}
+
+function resolveActionPointStateTarget(ref: ScenarioSeedRef, level: number | undefined, scope: ActionBuildScope, context: BuildContext): ActionPointTarget {
+  const fallbackType = scope.kind === "map" ? scope.levelType : "land";
+  const target = typeof ref === "number"
+    ? { levelType: fallbackType, levelIndex: level ?? 0, recordIndex: ref }
+    : resolveKeyedActionPointTarget(ref, context);
+  if (scope.kind !== "map") {
+    addDiagnostic(context, "error", "invalid-action-point-context", "enableActionPoint and disableActionPoint require a map Action Point context so Realmz knows whether to load land or dungeon data.", "action point");
+  } else if (target.levelType !== scope.levelType) {
+    addDiagnostic(context, "error", "different-level-type", `Action Point state target uses ${target.levelType}, but opcode 13 inherits ${scope.levelType} from the executing script.`, "action point", typeof ref === "string" ? ref : undefined);
+  }
+  if (target.recordIndex === 0) {
+    addDiagnostic(context, "error", "zero-sentinel-target", "Opcode 13 cannot mutate Action Point 0 through its single-target field because Realmz treats zero as no target.", "action point", typeof ref === "string" ? ref : undefined);
+  }
+  return target;
+}
+
+function resolvePatchActionPointTarget(ref: ScenarioSeedRef, level: number | undefined, levelType: LevelType | undefined, context: BuildContext): ActionPointTarget {
+  if (typeof ref === "number") return { levelType: levelType ?? "land", levelIndex: level ?? 0, recordIndex: ref };
+  return resolveKeyedActionPointTarget(ref, context);
+}
+
+function resolveKeyedActionPointTarget(key: string, context: BuildContext): ActionPointTarget {
+  const target = context.actionPointTargets.get(key);
+  if (target) return target;
+  addDiagnostic(context, "error", "unresolved-reference", `Unknown action point reference "${key}".`, "action point", key);
+  return { levelType: "land", levelIndex: 0, recordIndex: 0 };
 }
 
 function partyConditionCode(condition: ScenarioSeedPartyCondition) {
@@ -2056,9 +2265,10 @@ function buildSimpleEncounter(seed: ScenarioSeedSimpleEncounter, context: BuildC
   };
 }
 
-function buildTriggers(actionPoints: ScenarioSeedActionPoint[], context: BuildContext): { triggers: TriggerRecord[]; extracodes: ExtraCodeRow[] } {
+function buildTriggers(actionPoints: ScenarioSeedActionPoint[], extraActionPoints: ScenarioSeedExtraActionPoint[], context: BuildContext): { triggers: TriggerRecord[]; extracodes: ExtraCodeRow[] } {
   let nextEdcdId = 0;
   const extracodes: ExtraCodeRow[] = [];
+  const allocateEdcdId = () => nextEdcdId++;
   const triggers = actionPoints.map((actionPoint, index): TriggerRecord => {
     const mapTarget = actionPoint.map !== undefined ? resolveMapTarget(actionPoint.map, context) : null;
     const regionTarget = actionPoint.at !== undefined ? resolveRegionTarget(actionPoint.at, context) : null;
@@ -2067,10 +2277,8 @@ function buildTriggers(actionPoints: ScenarioSeedActionPoint[], context: BuildCo
     const recordIndex = actionPoint.recordIndex ?? index;
     const x = actionPoint.x ?? regionTarget?.x ?? mapTarget?.x ?? 0;
     const y = actionPoint.y ?? regionTarget?.y ?? mapTarget?.y ?? 0;
-    const actions = actionPoint.steps.map((step, slot) => buildAction(step, slot, context, () => {
-      const id = nextEdcdId++;
-      return id;
-    }, extracodes));
+    const scope: ActionBuildScope = { kind: "map", levelType, levelIndex, recordIndex };
+    const actions = actionPoint.steps.map((step, slot) => buildAction(step, slot, context, allocateEdcdId, extracodes, scope));
     return {
       id: actionPoint.id ?? `${levelType}:${levelIndex}:ap:${recordIndex}`,
       source: levelType === "land" ? "Data DD" : "Data DDD",
@@ -2078,20 +2286,40 @@ function buildTriggers(actionPoints: ScenarioSeedActionPoint[], context: BuildCo
       levelIndex,
       recordIndex,
       active: true,
-      doorid: recordIndex,
+      doorid: levelIndex * 10000 + y * 100 + x,
       percent: actionPoint.percent ?? 100,
       coordinate: { x, y },
       actions,
       landid: levelIndex,
       targetX: x,
       targetY: y,
-      provenance: authoredProvenance(levelType === "land" ? "Data DD" : "Data DDD", recordIndex, recordIndex * 28, 28)
+      provenance: authoredProvenance(levelType === "land" ? "Data DD" : "Data DDD", recordIndex, (levelIndex * 100 + recordIndex) * DOOR_BYTES, DOOR_BYTES)
     };
   });
-  return { triggers, extracodes };
+  const macros = extraActionPoints.map((extraActionPoint): TriggerRecord => {
+    const recordIndex = extraActionPoint.id ?? 0;
+    const scope: ActionBuildScope = { kind: "extra", recordIndex };
+    return {
+      id: `Data ED3:macro:${recordIndex}`,
+      source: "Data ED3",
+      levelType: null,
+      levelIndex: null,
+      recordIndex,
+      active: true,
+      doorid: 0,
+      landid: 0,
+      targetX: 0,
+      targetY: 0,
+      percent: 100,
+      coordinate: null,
+      actions: extraActionPoint.steps.map((step, slot) => buildAction(step, slot, context, allocateEdcdId, extracodes, scope)),
+      provenance: authoredProvenance("Data ED3", recordIndex, recordIndex * DOOR_BYTES, DOOR_BYTES)
+    };
+  });
+  return { triggers: [...triggers, ...macros], extracodes };
 }
 
-function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext, nextEdcdId: () => number, extracodes: ExtraCodeRow[]): Action {
+function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext, nextEdcdId: () => number, extracodes: ExtraCodeRow[], scope: ActionBuildScope): Action {
   if (step.kind === "message") return describeAction(slot, 1, resolveRef(step.message, context.messages, "message", context));
   if (step.kind === "simpleEncounter") return describeAction(slot, 4, resolveRef(step.encounter, context.simpleEncounters, "simple encounter", context));
   if (step.kind === "complexEncounter") return describeAction(slot, 5, numericRef(step.encounter, "complex encounter", context));
@@ -2201,6 +2429,31 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
       step.trueTarget === undefined ? 0 : resolveNonzeroBranchTarget(step.trueTarget, targetKind, "trueTarget", context)
     ], nextEdcdId, extracodes);
   }
+  if (step.kind === "copyActionPointSteps") {
+    const source = resolveSameMapActionPoint(step.source, scope, context);
+    return describeAction(slot, 8, source);
+  }
+  if (step.kind === "enableActionPoint" || step.kind === "disableActionPoint") {
+    const target = resolveActionPointStateTarget(step.target, step.level, scope, context);
+    return buildEdcdAction(slot, 13, [target.levelIndex, target.recordIndex, step.kind === "disableActionPoint" ? -1 : step.percent ?? 100, 0, 0], nextEdcdId, extracodes);
+  }
+  if (step.kind === "patchActionPoint") {
+    const target = resolvePatchActionPointTarget(step.target, step.level, step.levelType, context);
+    return buildEdcdAction(slot, 7, [
+      target.levelIndex,
+      target.recordIndex,
+      resolveRef(step.source, context.extraActionPoints, "extra action point", context),
+      target.levelType === "dungeon" ? 2 : 1,
+      0
+    ], nextEdcdId, extracodes);
+  }
+  if (step.kind === "setDarkLevel") return buildEdcdAction(slot, 106, [step.dark ? 2 : 1, step.stopIfUnchanged ? 1 : 0, 0, 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "alterGameTime") return buildEdcdAction(slot, 63, [step.mode === "set" ? 1 : 2, step.mode === "set" ? step.days ?? -1 : step.days ?? 0, step.mode === "set" ? step.hours ?? -1 : step.hours ?? 0, step.mode === "set" ? step.minutes ?? -1 : step.minutes ?? 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "branchOnGameTime") return buildEdcdAction(slot, 64, [step.dayAtMost ?? -1, step.hourAtMost ?? -1, 0, resolveRef(step.successMacro, context.extraActionPoints, "extra action point", context), resolveRef(step.failureMacro, context.extraActionPoints, "extra action point", context)], nextEdcdId, extracodes);
+  if (step.kind === "boatCampStatus") return buildEdcdAction(slot, 103, [boatStatusCode(step.continueBoat), campingStatusCode(step.continueCamping), step.setBoat === undefined ? 0 : step.setBoat === "inBoat" ? 1 : 2, 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "alterFatigue") return buildEdcdAction(slot, 68, [step.mode === "maximum" ? 1 : step.mode === "minimum" ? 2 : 3, 0, step.percent ?? 0, 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "changeSpellPoints") return buildEdcdAction(slot, 74, [step.take ? -step.rolls : step.rolls, step.sound === undefined ? step.low : numericRef(step.sound, "sound", context), step.high, step.sound === undefined ? 0 : numericRef(step.sound, "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
+  if (step.kind === "branchOnSpellPoints") return buildEdcdAction(slot, 75, [step.scope === "picked" ? 1 : 2, step.minimum, step.onFailure === "exitSave" ? 1 : 0, 0, resolveRef(step.successMacro, context.extraActionPoints, "extra action point", context)], nextEdcdId, extracodes);
   if (step.kind === "enterExitDungeon") return buildEdcdAction(slot, 37, [step.mode, step.level, step.x, step.y, step.heading], nextEdcdId, extracodes);
   if (step.kind === "edcd") return buildEdcdAction(slot, step.opcode, padArray(step.values, 5, 0), nextEdcdId, extracodes);
   return describeAction(slot, 0, 0);
@@ -2447,6 +2700,23 @@ function optionalLevelType(input: unknown, path: string, ctx: ParseContext): Lev
   return undefined;
 }
 
+function validateActionPointTargetFields(
+  target: ScenarioSeedRef,
+  level: number | undefined,
+  levelType: LevelType | undefined,
+  path: string,
+  ctx: ParseContext,
+  requireLevelType = false
+) {
+  if (typeof target === "number") {
+    checkIntegerRange(target, `${path}.target`, 0, 99, ctx);
+    if (level === undefined) ctx.errors.push(`${path}.level is required when target is a numeric Action Point ID.`);
+    if (requireLevelType && levelType === undefined) ctx.errors.push(`${path}.levelType is required when target is a numeric Action Point ID.`);
+    return;
+  }
+  if (level !== undefined || levelType !== undefined) ctx.errors.push(`${path}.level and levelType must be omitted when target is a keyed Action Point.`);
+}
+
 function optionalBranchTargetKind(input: unknown, path: string, ctx: ParseContext): ScenarioSeedBranchTargetKind | undefined {
   if (input === undefined) return undefined;
   if (input === "actionPoint" || input === "simpleEncounter" || input === "complexEncounter") return input;
@@ -2459,6 +2729,59 @@ function optionalItemMissingBehavior(input: unknown, path: string, ctx: ParseCon
   if (input === "branch" || input === "continue" || input === "message") return input;
   ctx.errors.push(`${path} must be branch, continue, or message.`);
   return undefined;
+}
+
+function requireBoolean(input: unknown, path: string, ctx: ParseContext): boolean {
+  if (typeof input === "boolean") return input;
+  ctx.errors.push(`${path} must be a boolean.`);
+  return false;
+}
+
+function requireTimeMode(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTimeMode {
+  if (input === "set" || input === "offset") return input;
+  ctx.errors.push(`${path} must be set or offset.`);
+  return "set";
+}
+
+function optionalBoatStatus(input: unknown, path: string, ctx: ParseContext): ScenarioSeedBoatStatus | undefined {
+  if (input === undefined) return undefined;
+  if (input === "inBoat" || input === "notInBoat") return input;
+  ctx.errors.push(`${path} must be inBoat or notInBoat.`);
+  return undefined;
+}
+
+function optionalCampingStatus(input: unknown, path: string, ctx: ParseContext): "camping" | "notCamping" | undefined {
+  if (input === undefined) return undefined;
+  if (input === "camping" || input === "notCamping") return input;
+  ctx.errors.push(`${path} must be camping or notCamping.`);
+  return undefined;
+}
+
+function requireFatigueMode(input: unknown, path: string, ctx: ParseContext): "maximum" | "minimum" | "percent" {
+  if (input === "maximum" || input === "minimum" || input === "percent") return input;
+  ctx.errors.push(`${path} must be maximum, minimum, or percent.`);
+  return "maximum";
+}
+
+function requireSpellPointScope(input: unknown, path: string, ctx: ParseContext): "picked" | "alive" {
+  if (input === "picked" || input === "alive") return input;
+  ctx.errors.push(`${path} must be picked or alive.`);
+  return "picked";
+}
+
+function optionalSpellFailure(input: unknown, path: string, ctx: ParseContext): "continue" | "exitSave" | undefined {
+  if (input === undefined) return undefined;
+  if (input === "continue" || input === "exitSave") return input;
+  ctx.errors.push(`${path} must be continue or exitSave.`);
+  return undefined;
+}
+
+function boatStatusCode(status: ScenarioSeedBoatStatus | undefined) {
+  return status === undefined ? 0 : status === "inBoat" ? 1 : 2;
+}
+
+function campingStatusCode(status: "camping" | "notCamping" | undefined) {
+  return status === undefined ? 0 : status === "camping" ? 1 : 2;
 }
 
 function requirePartyCondition(input: unknown, path: string, ctx: ParseContext): ScenarioSeedPartyCondition {

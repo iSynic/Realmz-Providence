@@ -189,12 +189,27 @@ Implemented condition group:
 - `branchOnCharacterCondition`
 - `branchOnTileParameter`
 
+Implemented action-point mutation group:
+
+- `copyActionPointSteps`
+- `enableActionPoint`
+- `disableActionPoint`
+- `patchActionPoint` with keyed `extraActionPoints` sources
+
+Implemented runtime-state group:
+
+- `setDarkLevel`
+- `alterGameTime`
+- `branchOnGameTime`
+- `boatCampStatus`
+- `alterFatigue`
+- `changeSpellPoints`
+- `branchOnSpellPoints`
+
 Add remaining high-value AP semantic aliases after fixtures cover the current set.
 
 Next groups:
 
-- action point enable/disable, AP copy, AP patch
-- dark/LOS, camping/boat status, game time, fatigue, spell points
 - random rectangle mutation and rectangle resizing
 - battle outcome/flee/coward routing variants
 - combat macro-only aliases with explicit macro context
@@ -272,4 +287,4 @@ For phases that affect exportable records, also run:
 
 ## Recommended Next Commit Scope
 
-Continue Priority 6 with action-point enable/disable, AP copy, and AP patch aliases. Keep raw opcodes available as the fallback while each semantic alias is added.
+Continue Priority 6 with random rectangle mutation and rectangle resizing aliases. Keep raw opcodes available as the fallback while each semantic alias is added.

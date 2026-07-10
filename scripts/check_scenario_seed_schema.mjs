@@ -18,7 +18,7 @@ expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the s
 expect(source.includes("export function parseScenarioSeed"), "scenarioSeed.ts must export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");
 
-const requiredRootProperties = ["scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "simpleEncounters", "actionPoints"];
+const requiredRootProperties = ["scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "simpleEncounters", "actionPoints", "extraActionPoints"];
 for (const key of requiredRootProperties) {
   expect(Object.hasOwn(schema.properties ?? {}, key), `root schema is missing ${key}`);
 }
@@ -71,6 +71,7 @@ const sampleSeed = {
   items: [{ key: "bell-clapper", itemId: 901, identifiedName: "Bell Clapper", iconId: 300, type: 1, cost: 50, weight: 2 }],
   treasures: [{ key: "first-treasure", itemIds: ["bell-clapper"], gold: 10 }],
   shops: [{ key: "first-shop", stock: [{ itemId: "bell-clapper", quantity: 1 }] }],
+  extraActionPoints: [{ key: "replacement-macro", steps: [{ kind: "raw", rawCode: 1, id: 0 }] }],
   simpleEncounters: [{
     key: "first-encounter",
     prompt: "hello",
@@ -162,6 +163,27 @@ const sampleSeed = {
       { kind: "branchOnPartyCondition", condition: "freeFallLevitate", target: "start-ap" },
       { kind: "branchOnCharacterCondition", condition: 9, selector: "picked", successTarget: "start-ap", failureTarget: "extra-ap" },
       { kind: "branchOnTileParameter", test: "path", trueTarget: "extra-ap" }
+    ]
+  }, {
+    x: 8,
+    y: 8,
+    steps: [
+      { kind: "copyActionPointSteps", source: "start-ap" },
+      { kind: "enableActionPoint", target: "start-ap", percent: 55 },
+      { kind: "disableActionPoint", target: "extra-ap" },
+      { kind: "patchActionPoint", target: "extra-ap", source: "replacement-macro" }
+    ]
+  }, {
+    x: 9,
+    y: 9,
+    steps: [
+      { kind: "setDarkLevel", dark: true, stopIfUnchanged: true },
+      { kind: "alterGameTime", mode: "offset", days: 1, hours: -2, minutes: 15 },
+      { kind: "boatCampStatus", continueBoat: "inBoat", continueCamping: "notCamping", setBoat: "inBoat" },
+      { kind: "alterFatigue", mode: "percent", percent: 60 },
+      { kind: "changeSpellPoints", rolls: 2, low: 1, high: 6, take: true, message: "hello" },
+      { kind: "branchOnSpellPoints", scope: "alive", minimum: 5, onFailure: "exitSave", successMacro: "replacement-macro" },
+      { kind: "branchOnGameTime", dayAtMost: 10, hourAtMost: 12, successMacro: "replacement-macro", failureMacro: "replacement-macro" }
     ]
   }]
 };

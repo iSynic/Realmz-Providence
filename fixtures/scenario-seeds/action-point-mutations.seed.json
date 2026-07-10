@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Action Point Mutations Seed"
+  },
+  "maps": [
+    {
+      "key": "field",
+      "levelType": "land",
+      "index": 0,
+      "fillTile": 1
+    }
+  ],
+  "extraActionPoints": [
+    {
+      "key": "replacement-macro",
+      "id": 0,
+      "steps": [{ "kind": "raw", "rawCode": 1, "id": 12 }]
+    }
+  ],
+  "actionPoints": [
+    {
+      "key": "reserved-zero",
+      "recordIndex": 0,
+      "map": "field",
+      "x": 1,
+      "y": 1,
+      "steps": [{ "kind": "raw", "rawCode": 100, "id": 0 }]
+    },
+    {
+      "key": "enable-target",
+      "recordIndex": 1,
+      "map": "field",
+      "x": 2,
+      "y": 2,
+      "steps": [{ "kind": "raw", "rawCode": 100, "id": 0 }]
+    },
+    {
+      "key": "disable-target",
+      "recordIndex": 2,
+      "map": "field",
+      "x": 3,
+      "y": 3,
+      "steps": [{ "kind": "raw", "rawCode": 100, "id": 0 }]
+    },
+    {
+      "key": "mutation-script",
+      "recordIndex": 3,
+      "map": "field",
+      "x": 4,
+      "y": 4,
+      "steps": [
+        { "kind": "copyActionPointSteps", "source": "enable-target" },
+        { "kind": "enableActionPoint", "target": "enable-target", "percent": 55 },
+        { "kind": "disableActionPoint", "target": "disable-target" },
+        { "kind": "patchActionPoint", "target": "disable-target", "source": "replacement-macro" }
+      ]
+    }
+  ]
+}

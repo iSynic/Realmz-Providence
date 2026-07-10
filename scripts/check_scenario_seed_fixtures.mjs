@@ -33,6 +33,8 @@ try {
   checkItems(createProjectFromScenarioSeed);
   checkMonsters(createProjectFromScenarioSeed);
   checkConditionBranches(createProjectFromScenarioSeed);
+  checkActionPointMutations(createProjectFromScenarioSeed);
+  checkRuntimeState(createProjectFromScenarioSeed);
   checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed);
 } finally {
   fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -181,6 +183,36 @@ function checkConditionBranches(createProjectFromScenarioSeed) {
   expect(rows[3] === "7,130,2,0,4", "specific tile branch should encode tile ID and complex encounter target");
 }
 
+function checkActionPointMutations(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("action-point-mutations.seed.json"));
+  expect(result.ok, "action point mutation seed should create a project");
+  if (!result.ok) return;
+  expect(allocationId(result, "extraActionPoints", "replacement-macro") === 0, "replacement macro should allocate to Extra Action Point ID 0");
+  const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:3"));
+  expect(actionCodes(trigger).join(",") === "8,13,13,7", "action point mutation AP should emit copy, state, and patch opcodes");
+  expect(trigger.actions[0]?.id === 1, "copyActionPointSteps should resolve the same-map source AP ID");
+  const rows = trigger.actions.slice(1).map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(rows[0] === "0,1,55,0,0", "enableActionPoint should set the target AP percent");
+  expect(rows[1] === "0,2,-1,0,0", "disableActionPoint should write a negative disabled percent");
+  expect(rows[2] === "0,2,0,1,0", "patchActionPoint should resolve the target and Extra Action Point source macro");
+}
+
+function checkRuntimeState(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("runtime-state.seed.json"));
+  expect(result.ok, "runtime state seed should create a project");
+  if (!result.ok) return;
+  const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:0"));
+  expect(actionCodes(trigger).join(",") === "106,63,103,68,74,75,64", "runtime state AP should emit dark, time, boat/camp, fatigue, spell point, and time branch opcodes");
+  const rows = trigger.actions.map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(rows[0] === "2,1,0,0,0", "setDarkLevel should encode dark state and unchanged short-circuit");
+  expect(rows[1] === "2,1,-2,15,0", "alterGameTime offset should preserve signed day/hour/minute deltas");
+  expect(rows[2] === "1,2,1,0,0", "boatCampStatus should encode both checks and boat state");
+  expect(rows[3] === "3,0,60,0,0", "alterFatigue percent should encode mode and percentage");
+  expect(rows[4] === "-2,1,6,0,0", "changeSpellPoints should encode taking two random 1d6 rolls and the message slot");
+  expect(rows[5] === "2,5,1,0,0", "branchOnSpellPoints should encode alive scope and exit-on-failure behavior");
+  expect(rows[6] === "10,12,0,0,1", "branchOnGameTime should resolve success and failure Extra Action Point keys");
+}
+
 function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
   const unknown = parseScenarioSeed(readSeed("invalid-unknown-key.seed.json"));
   expect(!unknown.ok, "unknown-key seed should fail parsing");
@@ -227,6 +259,19 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
   expect(!zeroKeyTarget.ok, "tile branch key resolving to target ID 0 should fail project creation");
   if (!zeroKeyTarget.ok) {
     expect(zeroKeyTarget.diagnostics.some((diagnostic) => diagnostic.code === "zero-sentinel-target"), "zero-key tile branch should return a structured zero-sentinel-target diagnostic");
+  }
+
+  const actionPointContext = createProjectFromScenarioSeed(readSeed("invalid-action-point-mutations.seed.json"));
+  expect(!actionPointContext.ok, "action point state mutation inside an Extra Action Point should fail project creation");
+  if (!actionPointContext.ok) expect(actionPointContext.diagnostics.some((diagnostic) => diagnostic.code === "invalid-action-point-context"), "invalid action point mutation context should return a structured diagnostic");
+
+  const runtimeState = parseScenarioSeed(readSeed("invalid-runtime-state.seed.json"));
+  expect(!runtimeState.ok, "invalid runtime state steps should fail parsing");
+  if (!runtimeState.ok) {
+    expect(runtimeState.errors.some((error) => error.includes("hours")), "set game time should reject hour 24");
+    expect(runtimeState.errors.some((error) => error.includes("percent is required")), "percent fatigue should require a percentage");
+    expect(runtimeState.errors.some((error) => error.includes("low must not exceed")), "spell point rolls should reject an inverted range");
+    expect(runtimeState.errors.some((error) => error.includes("must provide a boat/camping check")), "boat/camp status should require an operation");
   }
 }
 
