@@ -95,7 +95,7 @@ Implemented normalizer work:
 - Allows treasure item slots, shop stock, and `awardRandomItems` AP aliases to reference item keys.
 - Rejects item rows outside the scenario item range and mismatched `id`/`itemId` pairs.
 
-Still future work: friendlier item templates by kind, stock-item references with no scenario row, item icon asset-key references, and higher-level item behavior presets.
+Current coverage includes semantic `typeName` values and item icon asset-key references. Still future work: complete item templates with behavior defaults, stock-item references with no scenario row, and higher-level item behavior presets.
 
 ## Priority 4: Monster Records
 
@@ -126,7 +126,7 @@ Implemented normalizer work:
 - Allows `addSpecialCharacter` and `dropSpecialCharacter` AP aliases to reference monsters by key.
 - Allows monster loot item and weapon fields to reference item keys.
 
-Still future work: alternate Monster/Mega sets, monster-library template references, monster icon asset-key references, friendlier behavior presets, combat macro aliases that reference monster keys, and stricter optional validation against scenario-specific battle placement limits.
+Current coverage includes stable Monster Library entry templates, inherited library descriptions, Normal-only/exact-copy/generated Monster and Mega variants, monster icon asset-key references, and combat macro aliases that reference monster keys. Still future work: friendlier behavior presets and stricter optional validation against scenario-specific battle placement limits.
 
 ## Priority 5: Asset And Library References
 
@@ -153,7 +153,7 @@ Implemented normalizer work:
 
 Current coverage resolves `picture`, `sound`, scrolling text, and sound-bearing AP fields by asset key. Stock resources remain ID-only and are not bundled. Custom Library assets are copied into Scenario Assets with scenario-safe IDs when the caller supplies the current workspace asset list.
 
-Still future work: reference-catalog assets that are not stock Realmz resources, item/monster icon key fields, and persistence hooks that copy desktop workspace payload files into a newly saved project directory.
+Still future work: reference-catalog assets that are not stock Realmz resources and persistence hooks that copy desktop workspace payload files into a newly saved project directory. Item and monster icon key fields are implemented.
 
 ## Priority 6: More AP Aliases
 
@@ -210,7 +210,7 @@ Implemented combat macro group:
 - `continueIfMonsterPresent`
 - Combat-only aliases reject ordinary map Action Point context
 
-Add remaining high-value AP semantic aliases after fixtures cover the current set.
+Common spell casting, victory-point removal, picked-character alteration, cleric turning, dungeon navigation/view controls, battle exit, level-up, random-battle, and ally-state aliases are implemented. Add only remaining high-value semantic aliases after fixtures cover this expanded set.
 
 Implemented encounter group:
 
@@ -228,7 +228,7 @@ Rule: add aliases in groups with fixture coverage for opcode, ID, EDCD values, a
 
 ## Priority 7: Higher-Level Map Authoring
 
-Status: implemented for deterministic geometry-level authoring; semantic terrain selection remains future work.
+Status: implemented for deterministic geometry, generated Action Point map markers, land Secret Area state, stock hidden-walkable terrain, and directional dungeon passages; broader semantic terrain selection remains future work.
 
 Implemented author-friendly map operations:
 

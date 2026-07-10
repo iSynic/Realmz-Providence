@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Party Runtime Seed" },
+  "extraActionPoints": [
+    {
+      "key": "direct-controls",
+      "steps": [
+        { "kind": "clericTurning", "enabled": false },
+        { "kind": "dropAllEquipment" },
+        { "kind": "compass", "enabled": true },
+        { "kind": "faceDirection", "direction": "random" },
+        { "kind": "dungeonView", "mode": "force3d" },
+        { "kind": "endBattle" },
+        { "kind": "backUpParty" },
+        { "kind": "levelUpPicked" }
+      ]
+    },
+    {
+      "key": "party-effects",
+      "steps": [
+        { "kind": "randomBattles", "enabled": true },
+        { "kind": "allies", "enabled": false },
+        { "kind": "castSpell", "scope": "party", "spell": 17, "power": 4, "saveModifier": -10, "noSave": true },
+        { "kind": "castSpell", "scope": "picked", "spell": 18, "power": 3 },
+        { "kind": "takeVictoryPoints", "amount": 25, "scope": "spread" },
+        { "kind": "alterPicked", "attribute": "stamina", "amount": 5 },
+        { "kind": "compass", "enabled": false },
+        { "kind": "dungeonView", "mode": "allow2d" }
+      ]
+    }
+  ]
+}

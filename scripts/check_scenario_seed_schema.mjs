@@ -18,7 +18,7 @@ expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the s
 expect(source.includes("export function parseScenarioSeed"), "scenarioSeed.ts must export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");
 
-const requiredRootProperties = ["baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "actionPoints", "extraActionPoints"];
+const requiredRootProperties = ["baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "spells", "races", "castes", "actionPoints", "extraActionPoints"];
 for (const key of requiredRootProperties) {
   expect(Object.hasOwn(schema.properties ?? {}, key), `root schema is missing ${key}`);
 }
@@ -62,14 +62,21 @@ const sampleSeed = {
       { kind: "room", x: 20, y: 20, width: 8, height: 6, wallTile: 8, floorTile: 9, doors: [{ side: "north", offset: 3, tile: 10 }] },
       { kind: "road", points: [{ x: 30, y: 30 }, { x: 35, y: 30 }], tile: 11, width: 3 },
       { kind: "river", points: [{ x: 40, y: 40 }, { x: 40, y: 45 }], tile: 12, width: 2 },
-      { kind: "stamp", x: 50, y: 50, tiles: [[13, 14], [15, 16]] }
+      { kind: "stamp", x: 50, y: 50, tiles: [[13, 14], [15, 16]] },
+      { kind: "hiddenWalkable", x: 60, y: 60, tile: 181 },
+      { kind: "landSecret", x: 60, y: 60, state: "hidden" }
     ]
+  }, {
+    key: "dungeon",
+    levelType: "dungeon",
+    index: 0,
+    operations: [{ kind: "dungeonPassage", x: 4, y: 4, directions: ["north", "south"] }]
   }],
   messages: [{ key: "hello", text: "Hello" }, { key: "bye", text: "Bye" }],
   quests: [{ key: "started", label: "Started" }],
   monsters: [{ key: "bell-wight", name: "Bell Wight", description: "A bell-bound guardian.", hitDice: 3, stamina: 12, staminaMax: 12, iconId: 126, exp: 200, attacks: [[1, 6, 0, 0]], items: ["bell-clapper"] }],
   battles: [{ key: "first-battle", placements: [{ x: 6, y: 6, monster: "bell-wight" }] }],
-  items: [{ key: "bell-clapper", itemId: 901, identifiedName: "Bell Clapper", iconId: 300, type: 1, cost: 50, weight: 2 }],
+  items: [{ key: "bell-clapper", itemId: 901, identifiedName: "Bell Clapper", iconId: 300, typeName: "scenarioItem", cost: 50, weight: 2 }],
   assets: [
     { key: "stock-chime", source: "stock", resourceType: "snd ", resourceId: 137 },
     { key: "bell-picture", source: "custom-library", assetId: "asset:workspace:bell", resourceId: 30000 }
@@ -133,6 +140,7 @@ const sampleSeed = {
     requiredQuest: "started",
     location: { kind: "land", level: 0, randomRectangle: 2, x: 10, y: 11 }
   }],
+  spells: [{ key: "bell-ward", displayName: "Bell Ward", cost: 4, damage1: 2, damage2: 6, duration1: 3, spellClass: 4, inCombat: true }],
   actionPoints: [{
     key: "start-ap",
     map: "road",

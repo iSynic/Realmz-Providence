@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Map Semantics" },
+  "maps": [
+    {
+      "levelType": "land",
+      "operations": [
+        { "kind": "dungeonPassage", "x": 1, "y": 1, "directions": ["north", "north"] },
+        { "kind": "hiddenWalkable", "x": 2, "y": 2, "tile": 170 }
+      ]
+    },
+    {
+      "levelType": "dungeon",
+      "operations": [
+        { "kind": "landSecret", "x": 1, "y": 1, "state": "hidden" }
+      ]
+    }
+  ]
+}

@@ -45,6 +45,14 @@
       "money": [12, 1, 0],
       "items": ["rusted-bell"],
       "weapon": "rusted-bell"
+    },
+    {
+      "key": "library-guardian",
+      "id": 8,
+      "libraryEntry": "library-entity:fixture:guardian",
+      "variants": "generated",
+      "name": "Library Guardian",
+      "armor": 9
     }
   ],
   "battles": [

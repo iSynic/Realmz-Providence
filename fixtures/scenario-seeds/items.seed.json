@@ -38,7 +38,7 @@
       "identifiedName": "Silver Clapper",
       "description": "A replacement clapper with a clear, bright tone.",
       "iconId": 301,
-      "type": 1,
+      "typeName": "magicItem",
       "cost": 80,
       "weight": 2
     }

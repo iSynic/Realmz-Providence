@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Spell Override Seed" },
+  "spells": [
+    {
+      "key": "bell-ward",
+      "id": 12,
+      "displayName": "Bell Ward",
+      "description": "A resonant ward against hostile magic.",
+      "range1": 2,
+      "range2": 6,
+      "cost": 4,
+      "damage1": 1,
+      "damage2": 4,
+      "duration1": 3,
+      "targetType": 1,
+      "spellClass": 4,
+      "inCombat": true,
+      "inCamp": false
+    },
+    {
+      "key": "quiet-chime",
+      "displayName": "Quiet Chime",
+      "cost": 2,
+      "spellClass": 4,
+      "inCamp": true
+    }
+  ]
+}

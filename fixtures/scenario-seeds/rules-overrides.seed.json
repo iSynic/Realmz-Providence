@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Rules Override Seed" },
+  "items": [
+    { "key": "apprentice-staff", "itemId": 901, "identifiedName": "Apprentice Staff", "typeName": "meleeWeapon" }
+  ],
+  "races": [
+    { "key": "stoneborn", "id": 30, "displayName": "Stoneborn", "baseMove": 9, "maxAge": 180, "magRes": 15, "canRegenerate": 1 }
+  ],
+  "castes": [
+    {
+      "key": "bell-warden",
+      "id": 10,
+      "displayName": "Bell Warden",
+      "casteClass": 2,
+      "moveBonus": 1,
+      "magRes": 5,
+      "startMoney": 75,
+      "startItems": ["apprentice-staff", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "defaultIcon": 300
+    }
+  ]
+}

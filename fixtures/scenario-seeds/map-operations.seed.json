@@ -31,8 +31,26 @@
         },
         { "kind": "road", "points": [{ "x": 2, "y": 12 }, { "x": 6, "y": 12 }], "tile": 15, "width": 3 },
         { "kind": "river", "points": [{ "x": 10, "y": 12 }, { "x": 10, "y": 16 }], "tile": 16, "width": 2 },
-        { "kind": "stamp", "x": 20, "y": 12, "tiles": [[21, 22, 23], [24, 25, 26]] }
+        { "kind": "stamp", "x": 20, "y": 12, "tiles": [[21, 22, 23], [24, 25, 26]] },
+        { "kind": "hiddenWalkable", "x": 30, "y": 12, "tile": 181 },
+        { "kind": "landSecret", "x": 30, "y": 12, "state": "hidden" },
+        { "kind": "hiddenWalkable", "x": 31, "y": 12 },
+        { "kind": "landSecret", "x": 31, "y": 12, "state": "revealed" }
+      ]
+    },
+    {
+      "key": "vault-map",
+      "levelType": "dungeon",
+      "index": 0,
+      "fillTile": 1,
+      "operations": [
+        { "kind": "dungeonPassage", "x": 4, "y": 4, "directions": ["north", "south"] }
       ]
     }
+  ],
+  "actionPoints": [
+    { "key": "hidden-land-ap", "map": "road-map", "x": 30, "y": 12, "steps": [{ "kind": "raw", "rawCode": 1, "id": 0 }] },
+    { "key": "normal-land-ap", "map": "road-map", "x": 32, "y": 12, "steps": [{ "kind": "raw", "rawCode": 1, "id": 0 }] },
+    { "key": "secret-dungeon-ap", "map": "vault-map", "x": 4, "y": 4, "steps": [{ "kind": "raw", "rawCode": 1, "id": 0 }] }
   ]
 }

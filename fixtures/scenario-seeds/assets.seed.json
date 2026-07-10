@@ -3,7 +3,15 @@
   "scenario": { "name": "Asset References Seed" },
   "assets": [
     { "key": "stock-chime", "source": "stock", "resourceType": "snd ", "resourceId": 137 },
-    { "key": "bell-picture", "source": "custom-library", "assetId": "asset:workspace:bell", "resourceId": 30000 }
+    { "key": "bell-picture", "source": "custom-library", "assetId": "asset:workspace:bell", "resourceId": 30000 },
+    { "key": "stock-item-icon", "source": "stock", "resourceType": "cicn", "resourceId": 300 },
+    { "key": "wight-icon", "source": "custom-library", "assetId": "asset:workspace:wight-icon", "resourceId": 30126 }
+  ],
+  "items": [
+    { "key": "bell-clapper", "identifiedName": "Bell Clapper", "icon": "stock-item-icon" }
+  ],
+  "monsters": [
+    { "key": "bell-wight", "name": "Bell Wight", "icon": "wight-icon" }
   ],
   "actionPoints": [
     {

@@ -6,7 +6,9 @@ import {
   EncounterActionRow,
   ExtraCodeRow,
   ItemTextRecord,
+  LandCellSecretState,
   LevelType,
+  LibraryCatalog,
   MapEntity,
   ManagedAsset,
   ManagedAssetKind,
@@ -19,6 +21,9 @@ import {
   RandomLevel,
   ShopRecord,
   ScenarioItemRecord,
+  ScenarioRaceOverride,
+  ScenarioCasteOverride,
+  ScenarioSpellOverride,
   SimpleEncounterRecord,
   ThiefEncounterRecord,
   TilesetAsset,
@@ -30,6 +35,11 @@ import { nextResourceId } from "./mediaAssets";
 import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./browser/atlasPaths";
 import { createBrowserProject, validateBrowserProject } from "./browser/project";
 import { landlookBaseTile, landlookName, landlookPictId } from "./browser/realmzParser";
+import { clearActionPointMarker, ensureActionPointMarker, landCellSecretState, setLandCellSecretState } from "./map/actionPointMarkers";
+import { setDungeonCellFlags } from "./map/dungeonCellFlags";
+import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
+import { copyCurrentMonsterToAllSets, generateMonsterVariants } from "./projectCommands/targetRecordCommands";
+import { createCasteOverride, createRaceOverride, createSpellOverride } from "./projectCommands/scenarioRulesCommands";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
 
@@ -108,9 +118,62 @@ export type ScenarioSeed = {
   complexEncounters?: ScenarioSeedComplexEncounter[];
   thiefEncounters?: ScenarioSeedThiefEncounter[];
   timedEncounters?: ScenarioSeedTimedEncounter[];
+  spells?: ScenarioSeedSpell[];
+  races?: ScenarioSeedRace[];
+  castes?: ScenarioSeedCaste[];
   actionPoints?: ScenarioSeedActionPoint[];
   extraActionPoints?: ScenarioSeedExtraActionPoint[];
 };
+
+export type ScenarioSeedSpell = {
+  key?: string;
+  id?: number;
+  displayName?: string;
+  description?: string;
+  inCombat?: boolean;
+  inCamp?: boolean;
+} & Partial<Record<ScenarioSeedSpellNumberField, number>>;
+
+export type ScenarioSeedSpellNumberField = Exclude<keyof ScenarioSpellOverride, "id" | "displayName" | "description" | "inCombat" | "inCamp" | "rawBytes" | "authored" | "provenance">;
+
+export type ScenarioSeedRace = {
+  key?: string;
+  id?: number;
+  displayName?: string;
+  plusMinusToHit?: number[];
+  specialAbility?: number[];
+  drvBonus?: number[];
+  attBonus?: number[];
+  minMax?: number[];
+  conditions?: number[];
+  numOfAttacks?: number[];
+  canCaste?: number[];
+  ageRange?: number[][];
+  ageChange?: number[][];
+  itemTypes?: number[];
+} & Partial<Record<"maxAge" | "doesNotDie" | "baseMove" | "magRes" | "twoHand" | "missile" | "canRegenerate" | "defaultIconSet" | "descriptors", number>>;
+
+export type ScenarioSeedCaste = {
+  key?: string;
+  id?: number;
+  displayName?: string;
+  specialAbility?: number[][];
+  drvBonus?: number[];
+  attBonus?: number[];
+  spellcasters?: number[][];
+  minMax?: number[];
+  conditions?: number[];
+  stamina?: number[];
+  strength?: number[];
+  dodge?: number[];
+  toHit?: number[];
+  missile?: number[];
+  hand2Hand?: number[];
+  victory?: number[];
+  startItems?: ScenarioSeedRef[];
+  attacks?: number[];
+  itemTypes?: number[];
+} & Partial<Record<"canUseMissile" | "getsMissileBonus" | "casteClass" | "minimumAgeGroup" | "moveBonus" | "magRes" | "twoHand" | "maxStaminaBonus" | "bonusAttacks" | "maxAttacks" | "startMoney" | "defaultIcon" | "maxSpellsAttacks" | "spellsSoFar", number>>;
 
 export type ScenarioSeedScenario = {
   id?: string;
@@ -191,11 +254,13 @@ export type ScenarioSeedBattlePlacement = {
 export type ScenarioSeedMonster = {
   key?: string;
   id?: number;
+  libraryEntry?: string;
+  variants?: "normalOnly" | "copyAll" | "generated";
   name?: string;
   displayName?: string;
   description?: string;
   iconId?: number;
-  icon?: number;
+  icon?: ScenarioSeedRef;
   attacks?: number[][];
   typeFlags?: number[];
   saves?: number[];
@@ -269,8 +334,37 @@ export type ScenarioSeedItem = {
   identifiedName?: string;
   description?: string;
   iconId?: number;
-  icon?: number;
+  icon?: ScenarioSeedRef;
+  typeName?: ScenarioSeedItemTypeName;
 } & Partial<Record<ScenarioSeedItemNumberField, number>>;
+
+export type ScenarioSeedItemTypeName =
+  | "ring"
+  | "unused"
+  | "meleeWeapon"
+  | "shield"
+  | "armorOrRobe"
+  | "gauntletOrGloves"
+  | "cloakOrCape"
+  | "helmetOrCap"
+  | "ionStone"
+  | "boots"
+  | "quiver"
+  | "waistOrBelt"
+  | "neck"
+  | "scrollCase"
+  | "miscItem"
+  | "missileWeapon"
+  | "broach"
+  | "faceOrMask"
+  | "scabbard"
+  | "beltLoop"
+  | "scroll"
+  | "magicItem"
+  | "supplyItem"
+  | "actionPointItem"
+  | "identifiedItem"
+  | "scenarioItem";
 
 export type ScenarioSeedItemNumberField =
   | "type"
@@ -441,9 +535,15 @@ export type ScenarioSeedMapOperation =
   | { kind: "border"; x: number; y: number; width: number; height: number; tile: number; thickness?: number }
   | { kind: "room"; x: number; y: number; width: number; height: number; wallTile: number; floorTile: number; doors?: ScenarioSeedRoomDoor[] }
   | { kind: "road" | "river"; points: ScenarioSeedPoint[]; tile: number; width?: number }
-  | { kind: "stamp"; x: number; y: number; tiles: number[][] };
+  | { kind: "stamp"; x: number; y: number; tiles: number[][] }
+  | { kind: "landSecret"; x: number; y: number; state: LandCellSecretState }
+  | { kind: "hiddenWalkable"; x: number; y: number; tile?: ScenarioSeedHiddenWalkableTile }
+  | { kind: "dungeonPassage"; x: number; y: number; directions: ScenarioSeedDungeonDirection[] };
 
 export type ScenarioSeedPoint = { x: number; y: number };
+
+export type ScenarioSeedHiddenWalkableTile = 169 | 180 | 181 | 182 | 183 | 184 | 185;
+export type ScenarioSeedDungeonDirection = "north" | "east" | "south" | "west";
 
 export type ScenarioSeedRoomDoor = {
   side: "north" | "south" | "west" | "east";
@@ -537,6 +637,19 @@ export type ScenarioSeedStep =
   | { kind: "alterFatigue"; mode: "maximum" | "minimum" | "percent"; percent?: number }
   | { kind: "changeSpellPoints"; rolls: number; low: number; high: number; take?: boolean; sound?: ScenarioSeedRef; message?: ScenarioSeedRef }
   | { kind: "branchOnSpellPoints"; scope: "picked" | "alive"; minimum: number; onFailure?: "continue" | "exitSave"; successMacro: ScenarioSeedRef }
+  | { kind: "castSpell"; scope: "picked" | "party"; spell: number; power: number; saveModifier?: number; noSave?: boolean }
+  | { kind: "takeVictoryPoints"; amount: number; scope?: "each" | "picked" | "spread" }
+  | { kind: "alterPicked"; attribute: "meleeAttacks" | "spellAttacks" | "movement" | "damage" | "spellPoints" | "handToHand" | "stamina" | "armor" | "toHit" | "missileToHit" | "magicResistance" | "prestige"; amount: number }
+  | { kind: "clericTurning"; enabled: boolean }
+  | { kind: "dropAllEquipment" }
+  | { kind: "compass"; enabled: boolean }
+  | { kind: "faceDirection"; direction: "north" | "east" | "south" | "west" | "random" }
+  | { kind: "dungeonView"; mode: "force3d" | "allow2d" }
+  | { kind: "endBattle" }
+  | { kind: "backUpParty" }
+  | { kind: "levelUpPicked" }
+  | { kind: "randomBattles"; enabled: boolean }
+  | { kind: "allies"; enabled: boolean }
   | { kind: "alterRandomEncounterRectangle"; level: number; rectangle: number; encounterRate: number; battleLow?: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; dungeon?: boolean }
   | { kind: "alterRandomRectangle"; level: number; rectangle: number; encounterPercentDelta?: number; dungeon?: boolean; shape: ScenarioSeedRandomRectangleShape }
   | { kind: "enterExitDungeon"; mode: number; level: number; x: number; y: number; heading: number }
@@ -583,6 +696,9 @@ export type ScenarioSeedAllocationReport = {
   complexEncounters: ScenarioSeedAllocationEntry[];
   thiefEncounters: ScenarioSeedAllocationEntry[];
   timedEncounters: ScenarioSeedAllocationEntry[];
+  spells: ScenarioSeedAllocationEntry[];
+  races: ScenarioSeedAllocationEntry[];
+  castes: ScenarioSeedAllocationEntry[];
   actionPoints: ScenarioSeedAllocationEntry[];
   extraActionPoints: ScenarioSeedAllocationEntry[];
   maps: ScenarioSeedMapAllocationEntry[];
@@ -683,6 +799,16 @@ const SCENARIO_MONSTER_NUMBER_FIELDS: ScenarioSeedMonsterNumberField[] = [
   "maxSpellPoints"
 ];
 
+const SCENARIO_SPELL_NUMBER_FIELDS: ScenarioSeedSpellNumberField[] = [
+  "range1", "range2", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetNum", "canRotate", "saveAdjust",
+  "cannot", "resistAdjust", "cost", "damage1", "damage2", "powerDamage1", "powerDamage2", "duration1", "duration2",
+  "powerDuration1", "powerDuration2", "spellLook1", "spellLook2", "sound1", "sound2", "targetType", "size", "special",
+  "damageType", "spellClass"
+];
+
+const SCENARIO_RACE_NUMBER_FIELDS = ["maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "canRegenerate", "defaultIconSet", "descriptors"] as const;
+const SCENARIO_CASTE_NUMBER_FIELDS = ["canUseMissile", "getsMissileBonus", "casteClass", "minimumAgeGroup", "moveBonus", "magRes", "twoHand", "maxStaminaBonus", "bonusAttacks", "maxAttacks", "startMoney", "defaultIcon", "maxSpellsAttacks", "spellsSoFar"] as const;
+
 export type ScenarioSeedProjectResult =
   | { ok: true; project: Project; warnings: string[]; allocations: ScenarioSeedAllocationReport; diagnostics: ScenarioSeedDiagnostic[] }
   | { ok: false; errors: string[]; warnings: string[]; allocations?: ScenarioSeedAllocationReport; diagnostics: ScenarioSeedDiagnostic[] };
@@ -692,6 +818,7 @@ export type ScenarioSeedProjectOptions = {
   appVersion?: string;
   customAssets?: ManagedAsset[];
   baseTemplates?: Record<string, Project>;
+  libraryCatalog?: LibraryCatalog | null;
 };
 
 type ParseContext = {
@@ -726,18 +853,58 @@ type BuildContext = {
   complexEncounters: Map<string, number>;
   thiefEncounters: Map<string, number>;
   timedEncounters: Map<string, number>;
+  spells: Map<string, number>;
+  races: Map<string, number>;
+  castes: Map<string, number>;
   actionPoints: Map<string, number>;
   actionPointTargets: Map<string, ActionPointTarget>;
   extraActionPoints: Map<string, number>;
   maps: Map<string, MapTarget>;
   regions: Map<string, MapTarget & { x: number; y: number }>;
+  libraryCatalog: LibraryCatalog | null;
 };
+
+const SCENARIO_ITEM_TYPE_CODES: Record<ScenarioSeedItemTypeName, number> = {
+  ring: 0,
+  unused: 1,
+  meleeWeapon: 2,
+  shield: 3,
+  armorOrRobe: 4,
+  gauntletOrGloves: 5,
+  cloakOrCape: 6,
+  helmetOrCap: 7,
+  ionStone: 8,
+  boots: 9,
+  quiver: 10,
+  waistOrBelt: 11,
+  neck: 12,
+  scrollCase: 13,
+  miscItem: 14,
+  missileWeapon: 15,
+  broach: 16,
+  faceOrMask: 17,
+  scabbard: 18,
+  beltLoop: 19,
+  scroll: 20,
+  magicItem: 21,
+  supplyItem: 22,
+  actionPointItem: 23,
+  identifiedItem: 24,
+  scenarioItem: 25
+};
+
+const ALTER_PICKED_ATTRIBUTE_CODES = {
+  meleeAttacks: 1, spellAttacks: 2, movement: 3, damage: 4, spellPoints: 5, handToHand: 6,
+  stamina: 7, armor: 8, toHit: 9, missileToHit: 10, magicResistance: 11, prestige: 12
+} as const;
+
+const DIRECTION_CODES = { north: 1, east: 2, south: 3, west: 4, random: -1 } as const;
 
 export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   const ctx: ParseContext = { errors: [], warnings: [] };
   const root = requireObject(input, "$", ctx);
   if (!root) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
-  allowKeys(root, "$", ["schemaVersion", "baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "actionPoints", "extraActionPoints"], ctx);
+  allowKeys(root, "$", ["schemaVersion", "baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "spells", "races", "castes", "actionPoints", "extraActionPoints"], ctx);
 
   const schemaVersion = requireInteger(root.schemaVersion, "$.schemaVersion", ctx);
   if (schemaVersion !== null && schemaVersion !== SCENARIO_SEED_SCHEMA_VERSION) {
@@ -777,6 +944,12 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   if (thiefEncounters) seed.thiefEncounters = thiefEncounters;
   const timedEncounters = parseArray(root.timedEncounters, "$.timedEncounters", ctx, parseTimedEncounter);
   if (timedEncounters) seed.timedEncounters = timedEncounters;
+  const spells = parseArray(root.spells, "$.spells", ctx, parseSpell);
+  if (spells) seed.spells = spells;
+  const races = parseArray(root.races, "$.races", ctx, parseRace);
+  if (races) seed.races = races;
+  const castes = parseArray(root.castes, "$.castes", ctx, parseCaste);
+  if (castes) seed.castes = castes;
   const actionPoints = parseArray(root.actionPoints, "$.actionPoints", ctx, parseActionPoint);
   if (actionPoints) seed.actionPoints = actionPoints;
   const extraActionPoints = parseArray(root.extraActionPoints, "$.extraActionPoints", ctx, parseExtraActionPoint);
@@ -795,6 +968,11 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   validateUniqueIds(seed.complexEncounters, "complexEncounters", ctx);
   validateUniqueIds(seed.thiefEncounters, "thiefEncounters", ctx);
   validateUniqueIds(seed.timedEncounters, "timedEncounters", ctx);
+  validateUniqueIds(seed.spells, "spells", ctx);
+  validateUniqueIds(seed.races, "races", ctx);
+  validateUniqueIds(seed.castes, "castes", ctx);
+  if ((seed.races?.length ?? 0) > 70) ctx.errors.push("$.races can contain at most 70 override records.");
+  if ((seed.castes?.length ?? 0) > 30) ctx.errors.push("$.castes can contain at most 30 override records.");
   validateUniqueIds(seed.extraActionPoints, "extraActionPoints", ctx);
   validateMaps(seed.maps, ctx);
 
@@ -809,7 +987,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   const now = options.now ?? new Date().toISOString();
   const seed = parsed.seed;
   const baseTemplate = seed.baseTemplate ?? "blank";
-  const buildContext = createBuildContext(baseTemplate);
+  const buildContext = createBuildContext(baseTemplate, options.libraryCatalog ?? null);
   const project = createScenarioSeedBaseProject(seed.scenario.name, baseTemplate, options, buildContext);
   if (!project) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
@@ -877,12 +1055,26 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   }
   if (seed.quests !== undefined) project.questLabels = seed.quests.map((quest): QuestLabel => ({ id: quest.id ?? 0, label: quest.label, ...(quest.note !== undefined ? { note: quest.note } : {}) })).sort((a, b) => a.id - b.id);
   if (seed.monsters !== undefined) {
-    project.monsters = seed.monsters.map((monster) => buildMonster(monster, buildContext));
-    project.monsterDescriptions = seed.monsters.map(buildMonsterDescription).filter((record): record is MonsterDescriptionRecord => record !== null);
+    const builtMonsters = seed.monsters.map((monster) => {
+      const library = resolveMonsterLibraryEntry(monster, buildContext);
+      return {
+        record: buildMonster(monster, buildContext, library?.record),
+        description: buildMonsterDescription(monster, library?.description)
+      };
+    });
+    project.monsters = builtMonsters.map((built) => built.record);
+    project.monsterDescriptions = builtMonsters.map((built) => built.description).filter((record): record is MonsterDescriptionRecord => record !== null);
+    let variantProject = project;
+    for (const monster of seed.monsters) {
+      const id = monster.id ?? 0;
+      if (monster.variants === "copyAll") variantProject = copyCurrentMonsterToAllSets(variantProject, id, 0);
+      if (monster.variants === "generated") variantProject = generateMonsterVariants(variantProject, id);
+    }
+    project.monsterSets = variantProject.monsterSets;
   }
   if (seed.battles !== undefined) project.battles = seed.battles.map((battle) => buildBattle(battle, buildContext));
   if (seed.items !== undefined) {
-    project.scenarioItems = seed.items.map(buildItem);
+    project.scenarioItems = seed.items.map((item) => buildItem(item, buildContext));
     project.itemTexts = seed.items.map(buildItemText).filter((record): record is ItemTextRecord => record !== null);
   }
   if (seed.treasures !== undefined) project.treasures = seed.treasures.map((treasure) => buildTreasure(treasure, buildContext));
@@ -896,6 +1088,26 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   const complexBuild = buildComplexEncounters(seed.complexEncounters ?? [], buildContext, simpleBuild.extracodes);
   if (seed.complexEncounters !== undefined) project.complexEncounters = complexBuild.records;
   if (seed.timedEncounters !== undefined) project.timedEncounters = seed.timedEncounters.map((encounter) => buildTimedEncounter(encounter, buildContext));
+  if (seed.spells !== undefined) {
+    let rulesProject: Project = { ...project, spellOverrides: [] };
+    for (const { key: _key, id, ...template } of seed.spells) rulesProject = createSpellOverride(rulesProject, id, template);
+    project.spellOverrides = rulesProject.spellOverrides;
+  }
+  if (seed.races !== undefined) {
+    let rulesProject: Project = { ...project, raceOverrides: [] };
+    for (const { key: _key, id, ...template } of seed.races) rulesProject = createRaceOverride(rulesProject, id, template);
+    project.raceOverrides = rulesProject.raceOverrides;
+    project.ruleNames = rulesProject.ruleNames;
+  }
+  if (seed.castes !== undefined) {
+    let rulesProject: Project = { ...project, casteOverrides: [] };
+    for (const { key: _key, id, ...caste } of seed.castes) {
+      const template = { ...caste, startItems: caste.startItems?.map((item) => resolveItemRef(item, buildContext)) };
+      rulesProject = createCasteOverride(rulesProject, id, template);
+    }
+    project.casteOverrides = rulesProject.casteOverrides;
+    project.ruleNames = rulesProject.ruleNames;
+  }
 
   const triggerBuild = buildTriggers(seed.actionPoints ?? [], seed.extraActionPoints ?? [], buildContext, complexBuild.extracodes);
   const generatedMapTriggers = triggerBuild.triggers.filter((trigger) => trigger.source !== "Data ED3");
@@ -904,6 +1116,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
     ...(seed.actionPoints === undefined ? baseMapTriggers : generatedMapTriggers),
     ...(seed.extraActionPoints === undefined ? baseExtraActionPoints : generatedExtraActionPoints)
   ];
+  project.maps = syncActionPointMarkers(project.maps, project.triggers);
   project.extracodes = triggerBuild.extracodes;
   project.validation = validateBrowserProject(project);
   if (buildContext.errors.length > 0) {
@@ -1004,6 +1217,85 @@ function parseTimedEncounter(input: unknown, path: string, ctx: ParseContext): S
   };
 }
 
+function parseSpell(input: unknown, path: string, ctx: ParseContext): ScenarioSeedSpell | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["key", "id", "displayName", "description", "inCombat", "inCamp", ...SCENARIO_SPELL_NUMBER_FIELDS], ctx);
+  const key = optionalString(value.key, `${path}.key`, ctx);
+  const id = optionalInteger(value.id, `${path}.id`, ctx);
+  checkIntegerRange(id, `${path}.id`, 0, 104, ctx);
+  const record: ScenarioSeedSpell = {
+    ...(key !== undefined ? { key } : {}),
+    ...(id !== undefined ? { id } : {}),
+    ...(optionalString(value.displayName, `${path}.displayName`, ctx) !== undefined ? { displayName: optionalString(value.displayName, `${path}.displayName`, ctx) } : {}),
+    ...(optionalString(value.description, `${path}.description`, ctx) !== undefined ? { description: optionalString(value.description, `${path}.description`, ctx) } : {}),
+    ...(optionalBoolean(value.inCombat, `${path}.inCombat`, ctx) !== undefined ? { inCombat: optionalBoolean(value.inCombat, `${path}.inCombat`, ctx) } : {}),
+    ...(optionalBoolean(value.inCamp, `${path}.inCamp`, ctx) !== undefined ? { inCamp: optionalBoolean(value.inCamp, `${path}.inCamp`, ctx) } : {})
+  };
+  for (const field of SCENARIO_SPELL_NUMBER_FIELDS) {
+    const parsed = optionalInteger(value[field], `${path}.${field}`, ctx);
+    if (parsed !== undefined) record[field] = parsed;
+  }
+  return record;
+}
+
+function parseRace(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRace | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  const arrayFields = { plusMinusToHit: 8, specialAbility: 14, drvBonus: 8, attBonus: 6, minMax: 12, conditions: 40, numOfAttacks: 2, canCaste: 30, itemTypes: 2 } as const;
+  allowKeys(value, path, ["key", "id", "displayName", ...Object.keys(arrayFields), "ageRange", "ageChange", ...SCENARIO_RACE_NUMBER_FIELDS], ctx);
+  const id = optionalInteger(value.id, `${path}.id`, ctx);
+  checkIntegerRange(id, `${path}.id`, 0, 69, ctx);
+  const record: ScenarioSeedRace = {
+    ...optionalStringProperty(value, "key", path, ctx),
+    ...(id !== undefined ? { id } : {}),
+    ...optionalStringProperty(value, "displayName", path, ctx)
+  };
+  for (const [field, length] of Object.entries(arrayFields) as Array<[keyof typeof arrayFields, number]>) {
+    const parsed = optionalFixedIntegerArray(value[field], `${path}.${field}`, length, ctx);
+    if (parsed) record[field] = parsed;
+  }
+  const ageRange = optionalFixedIntegerMatrix(value.ageRange, `${path}.ageRange`, 5, 2, ctx);
+  const ageChange = optionalFixedIntegerMatrix(value.ageChange, `${path}.ageChange`, 5, 15, ctx);
+  if (ageRange) record.ageRange = ageRange;
+  if (ageChange) record.ageChange = ageChange;
+  for (const field of SCENARIO_RACE_NUMBER_FIELDS) {
+    const parsed = optionalInteger(value[field], `${path}.${field}`, ctx);
+    if (parsed !== undefined) record[field] = parsed;
+  }
+  return record;
+}
+
+function parseCaste(input: unknown, path: string, ctx: ParseContext): ScenarioSeedCaste | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  const arrayFields = { drvBonus: 8, attBonus: 6, minMax: 12, conditions: 40, stamina: 2, strength: 2, dodge: 2, toHit: 2, missile: 2, hand2Hand: 2, victory: 30, attacks: 10, itemTypes: 2 } as const;
+  allowKeys(value, path, ["key", "id", "displayName", "specialAbility", "spellcasters", "startItems", ...Object.keys(arrayFields), ...SCENARIO_CASTE_NUMBER_FIELDS], ctx);
+  const id = optionalInteger(value.id, `${path}.id`, ctx);
+  checkIntegerRange(id, `${path}.id`, 0, 29, ctx);
+  const record: ScenarioSeedCaste = {
+    ...optionalStringProperty(value, "key", path, ctx),
+    ...(id !== undefined ? { id } : {}),
+    ...optionalStringProperty(value, "displayName", path, ctx)
+  };
+  for (const [field, length] of Object.entries(arrayFields) as Array<[keyof typeof arrayFields, number]>) {
+    const parsed = optionalFixedIntegerArray(value[field], `${path}.${field}`, length, ctx);
+    if (parsed) record[field] = parsed;
+  }
+  const specialAbility = optionalFixedIntegerMatrix(value.specialAbility, `${path}.specialAbility`, 2, 14, ctx);
+  const spellcasters = optionalFixedIntegerMatrix(value.spellcasters, `${path}.spellcasters`, 4, 3, ctx);
+  const startItems = parseRefArray(value.startItems, `${path}.startItems`, ctx);
+  if (startItems && startItems.length !== 20) ctx.errors.push(`${path}.startItems must contain exactly 20 entries.`);
+  if (specialAbility) record.specialAbility = specialAbility;
+  if (spellcasters) record.spellcasters = spellcasters;
+  if (startItems) record.startItems = startItems;
+  for (const field of SCENARIO_CASTE_NUMBER_FIELDS) {
+    const parsed = optionalInteger(value[field], `${path}.${field}`, ctx);
+    if (parsed !== undefined) record[field] = parsed;
+  }
+  return record;
+}
+
 function parseTimedLocation(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTimedLocation {
   const value = requireObject(input, path, ctx);
   if (!value) return { kind: "any" };
@@ -1050,6 +1342,7 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
   checkIntegerRange(landlook, `${path}.landlook`, 0, null, ctx);
   checkIntegerRange(fillTile, `${path}.fillTile`, MAP_TILE_MIN, MAP_TILE_MAX, ctx);
   tiles?.forEach((tile, tileIndex) => checkIntegerRange(tile, `${path}.tiles[${tileIndex}]`, MAP_TILE_MIN, MAP_TILE_MAX, ctx));
+  validateMapOperationLevelTypes(operations ?? [], levelType ?? "land", path, ctx);
   return {
     ...(key !== undefined ? { key } : {}),
     ...(levelType !== undefined ? { levelType } : {}),
@@ -1129,7 +1422,7 @@ function parseBattlePlacement(input: unknown, path: string, ctx: ParseContext): 
 function parseMonster(input: unknown, path: string, ctx: ParseContext): ScenarioSeedMonster | null {
   const value = requireObject(input, path, ctx);
   if (!value) return null;
-  allowKeys(value, path, ["key", "id", "name", "displayName", "description", "iconId", "icon", "attacks", "typeFlags", "saves", "spellImmunities", "money", "spells", "items", "weapon", "underneath", "conditions", "notOnMenu", "deathMacro", ...SCENARIO_MONSTER_NUMBER_FIELDS], ctx);
+  allowKeys(value, path, ["key", "id", "libraryEntry", "variants", "name", "displayName", "description", "iconId", "icon", "attacks", "typeFlags", "saves", "spellImmunities", "money", "spells", "items", "weapon", "underneath", "conditions", "notOnMenu", "deathMacro", ...SCENARIO_MONSTER_NUMBER_FIELDS], ctx);
   const key = optionalString(value.key, `${path}.key`, ctx);
   const id = optionalInteger(value.id, `${path}.id`, ctx);
   checkIntegerRange(id, `${path}.id`, 0, null, ctx);
@@ -1154,11 +1447,13 @@ function parseMonster(input: unknown, path: string, ctx: ParseContext): Scenario
   const record: ScenarioSeedMonster = {
     ...(key !== undefined ? { key } : {}),
     ...(id !== undefined ? { id } : {}),
+    ...(optionalString(value.libraryEntry, `${path}.libraryEntry`, ctx) !== undefined ? { libraryEntry: optionalString(value.libraryEntry, `${path}.libraryEntry`, ctx) } : {}),
+    ...(optionalMonsterVariantMode(value.variants, `${path}.variants`, ctx) !== undefined ? { variants: optionalMonsterVariantMode(value.variants, `${path}.variants`, ctx) } : {}),
     ...(optionalString(value.name, `${path}.name`, ctx) !== undefined ? { name: optionalString(value.name, `${path}.name`, ctx) } : {}),
     ...(optionalString(value.displayName, `${path}.displayName`, ctx) !== undefined ? { displayName: optionalString(value.displayName, `${path}.displayName`, ctx) } : {}),
     ...(optionalString(value.description, `${path}.description`, ctx) !== undefined ? { description: optionalString(value.description, `${path}.description`, ctx) } : {}),
     ...optionalNumberField(value, "iconId", path, ctx),
-    ...optionalNumberField(value, "icon", path, ctx),
+    ...optionalRefField(value, "icon", path, ctx),
     ...(attacks ? { attacks } : {}),
     ...(typeFlags ? { typeFlags } : {}),
     ...(saves ? { saves } : {}),
@@ -1236,17 +1531,19 @@ function parseShopStock(input: unknown, path: string, ctx: ParseContext): { item
 function parseItem(input: unknown, path: string, ctx: ParseContext): ScenarioSeedItem | null {
   const value = requireObject(input, path, ctx);
   if (!value) return null;
-  allowKeys(value, path, ["key", "id", "itemId", "unidentifiedName", "identifiedName", "description", "iconId", "icon", ...SCENARIO_ITEM_NUMBER_FIELDS], ctx);
+  allowKeys(value, path, ["key", "id", "itemId", "unidentifiedName", "identifiedName", "description", "iconId", "icon", "typeName", ...SCENARIO_ITEM_NUMBER_FIELDS], ctx);
   const key = optionalString(value.key, `${path}.key`, ctx);
   const id = optionalInteger(value.id, `${path}.id`, ctx);
   const itemId = optionalInteger(value.itemId, `${path}.itemId`, ctx);
   const iconId = optionalInteger(value.iconId, `${path}.iconId`, ctx);
-  const icon = optionalInteger(value.icon, `${path}.icon`, ctx);
+  const icon = optionalRef(value.icon, `${path}.icon`, ctx);
+  const typeName = optionalScenarioItemTypeName(value.typeName, `${path}.typeName`, ctx);
   checkIntegerRange(id, `${path}.id`, 0, SCENARIO_ITEM_RECORD_COUNT - 1, ctx);
   checkIntegerRange(itemId, `${path}.itemId`, SCENARIO_ITEM_ID_BASE, SCENARIO_ITEM_ID_BASE + SCENARIO_ITEM_RECORD_COUNT - 1, ctx);
   if (id !== undefined && itemId !== undefined && itemId !== SCENARIO_ITEM_ID_BASE + id) {
     ctx.errors.push(`${path}.itemId must equal ${SCENARIO_ITEM_ID_BASE} + id when both are supplied.`);
   }
+  if (typeName !== undefined && value.type !== undefined) ctx.errors.push(`${path}.type and ${path}.typeName cannot both be supplied.`);
   const record: ScenarioSeedItem = {
     ...(key !== undefined ? { key } : {}),
     ...(id !== undefined ? { id } : {}),
@@ -1255,7 +1552,8 @@ function parseItem(input: unknown, path: string, ctx: ParseContext): ScenarioSee
     ...(optionalString(value.identifiedName, `${path}.identifiedName`, ctx) !== undefined ? { identifiedName: optionalString(value.identifiedName, `${path}.identifiedName`, ctx) } : {}),
     ...(optionalString(value.description, `${path}.description`, ctx) !== undefined ? { description: optionalString(value.description, `${path}.description`, ctx) } : {}),
     ...(iconId !== undefined ? { iconId } : {}),
-    ...(icon !== undefined ? { icon } : {})
+    ...(icon !== undefined ? { icon } : {}),
+    ...(typeName !== undefined ? { typeName } : {})
   };
   for (const field of SCENARIO_ITEM_NUMBER_FIELDS) {
     const parsed = optionalInteger(value[field], `${path}.${field}`, ctx);
@@ -1726,8 +2024,66 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     checkMapRectBounds(x, y, stampWidth, tiles.length, path, ctx);
     return { kind, x: x ?? 0, y: y ?? 0, tiles };
   }
-  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, stamp.`);
+  if (kind === "landSecret") {
+    allowKeys(value, path, ["kind", "x", "y", "state"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    const state = requireString(value.state, `${path}.state`, ctx);
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    if (state !== null && state !== "normal" && state !== "hidden" && state !== "revealed") {
+      ctx.errors.push(`${path}.state must be normal, hidden, or revealed.`);
+    }
+    return { kind, x: x ?? 0, y: y ?? 0, state: state === "hidden" || state === "revealed" ? state : "normal" };
+  }
+  if (kind === "hiddenWalkable") {
+    allowKeys(value, path, ["kind", "x", "y", "tile"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    const tile = optionalInteger(value.tile, `${path}.tile`, ctx);
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    if (tile !== undefined && !isHiddenWalkableTile(tile)) {
+      ctx.errors.push(`${path}.tile must be one of the stock hidden-walkable tiles: 169 or 180 through 185.`);
+    }
+    return { kind, x: x ?? 0, y: y ?? 0, ...(tile !== undefined && isHiddenWalkableTile(tile) ? { tile } : {}) };
+  }
+  if (kind === "dungeonPassage") {
+    allowKeys(value, path, ["kind", "x", "y", "directions"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    const directions = parseArray(value.directions, `${path}.directions`, ctx, parseDungeonDirection) ?? [];
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    if (directions.length === 0) ctx.errors.push(`${path}.directions must contain at least one direction.`);
+    if (new Set(directions).size !== directions.length) ctx.errors.push(`${path}.directions cannot contain duplicates.`);
+    return { kind, x: x ?? 0, y: y ?? 0, directions };
+  }
+  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, stamp, landSecret, hiddenWalkable, dungeonPassage.`);
   return null;
+}
+
+function validateMapOperationLevelTypes(operations: ScenarioSeedMapOperation[], levelType: LevelType, path: string, ctx: ParseContext) {
+  for (let index = 0; index < operations.length; index++) {
+    const kind = operations[index].kind;
+    if ((kind === "landSecret" || kind === "hiddenWalkable") && levelType !== "land") {
+      ctx.errors.push(`${path}.operations[${index}].kind ${kind} is only valid on land maps.`);
+    }
+    if (kind === "dungeonPassage" && levelType !== "dungeon") {
+      ctx.errors.push(`${path}.operations[${index}].kind dungeonPassage is only valid on dungeon maps.`);
+    }
+  }
+}
+
+function parseDungeonDirection(input: unknown, path: string, ctx: ParseContext): ScenarioSeedDungeonDirection | null {
+  const value = requireString(input, path, ctx);
+  if (value === "north" || value === "east" || value === "south" || value === "west") return value;
+  if (value !== null) ctx.errors.push(`${path} must be north, east, south, or west.`);
+  return null;
+}
+
+function isHiddenWalkableTile(value: number): value is ScenarioSeedHiddenWalkableTile {
+  return value === 169 || (value >= 180 && value <= 185);
 }
 
 function parseRoomDoor(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRoomDoor | null {
@@ -2250,6 +2606,54 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
     checkIntegerRange(minimum, `${path}.minimum`, 0, 32767, ctx);
     return { kind, scope, minimum: minimum ?? 0, ...(onFailure !== undefined ? { onFailure } : {}), successMacro: requireRef(value.successMacro, `${path}.successMacro`, ctx) };
   }
+  if (kind === "castSpell") {
+    allowKeys(value, path, ["kind", "scope", "spell", "power", "saveModifier", "noSave"], ctx);
+    const scope = value.scope === "party" ? "party" : value.scope === "picked" ? "picked" : null;
+    if (scope === null) ctx.errors.push(`${path}.scope must be picked or party.`);
+    const spell = requireInteger(value.spell, `${path}.spell`, ctx);
+    const power = requireInteger(value.power, `${path}.power`, ctx);
+    const saveModifier = optionalInteger(value.saveModifier, `${path}.saveModifier`, ctx);
+    checkIntegerRange(spell, `${path}.spell`, 0, 32767, ctx);
+    checkIntegerRange(power, `${path}.power`, 0, 32767, ctx);
+    checkIntegerRange(saveModifier, `${path}.saveModifier`, -32768, 32767, ctx);
+    return { kind, scope: scope ?? "party", spell: spell ?? 0, power: power ?? 0, ...(saveModifier !== undefined ? { saveModifier } : {}), ...(optionalBoolean(value.noSave, `${path}.noSave`, ctx) !== undefined ? { noSave: optionalBoolean(value.noSave, `${path}.noSave`, ctx) } : {}) };
+  }
+  if (kind === "takeVictoryPoints") {
+    allowKeys(value, path, ["kind", "amount", "scope"], ctx);
+    const amount = requireInteger(value.amount, `${path}.amount`, ctx);
+    const scope = value.scope === undefined || value.scope === "each" || value.scope === "picked" || value.scope === "spread" ? value.scope : null;
+    if (scope === null) ctx.errors.push(`${path}.scope must be each, picked, or spread.`);
+    checkIntegerRange(amount, `${path}.amount`, 0, 32767, ctx);
+    return { kind, amount: amount ?? 0, ...(scope !== undefined && scope !== null ? { scope } : {}) };
+  }
+  if (kind === "alterPicked") {
+    allowKeys(value, path, ["kind", "attribute", "amount"], ctx);
+    const attribute = requireString(value.attribute, `${path}.attribute`, ctx);
+    if (attribute !== null && !Object.prototype.hasOwnProperty.call(ALTER_PICKED_ATTRIBUTE_CODES, attribute)) ctx.errors.push(`${path}.attribute is not a supported picked-character attribute.`);
+    const amount = requireInteger(value.amount, `${path}.amount`, ctx);
+    checkIntegerRange(amount, `${path}.amount`, -32768, 32767, ctx);
+    return { kind, attribute: (attribute && Object.prototype.hasOwnProperty.call(ALTER_PICKED_ATTRIBUTE_CODES, attribute) ? attribute : "stamina") as keyof typeof ALTER_PICKED_ATTRIBUTE_CODES, amount: amount ?? 0 };
+  }
+  if (["clericTurning", "compass", "randomBattles", "allies"].includes(kind ?? "")) {
+    allowKeys(value, path, ["kind", "enabled"], ctx);
+    return { kind, enabled: requireBoolean(value.enabled, `${path}.enabled`, ctx) } as ScenarioSeedStep;
+  }
+  if (["dropAllEquipment", "endBattle", "backUpParty", "levelUpPicked"].includes(kind ?? "")) {
+    allowKeys(value, path, ["kind"], ctx);
+    return { kind } as ScenarioSeedStep;
+  }
+  if (kind === "faceDirection") {
+    allowKeys(value, path, ["kind", "direction"], ctx);
+    const direction = requireString(value.direction, `${path}.direction`, ctx);
+    if (direction !== null && !Object.prototype.hasOwnProperty.call(DIRECTION_CODES, direction)) ctx.errors.push(`${path}.direction must be north, east, south, west, or random.`);
+    return { kind, direction: (direction && Object.prototype.hasOwnProperty.call(DIRECTION_CODES, direction) ? direction : "north") as keyof typeof DIRECTION_CODES };
+  }
+  if (kind === "dungeonView") {
+    allowKeys(value, path, ["kind", "mode"], ctx);
+    const mode = value.mode === "force3d" || value.mode === "allow2d" ? value.mode : null;
+    if (mode === null) ctx.errors.push(`${path}.mode must be force3d or allow2d.`);
+    return { kind, mode: mode ?? "allow2d" };
+  }
   if (kind === "alterRandomEncounterRectangle") {
     allowKeys(value, path, ["kind", "level", "rectangle", "encounterRate", "battleLow", "battleHigh", "dungeon"], ctx);
     const level = requireInteger(value.level, `${path}.level`, ctx);
@@ -2294,7 +2698,7 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
   return null;
 }
 
-function createBuildContext(baseTemplate = "blank"): BuildContext {
+function createBuildContext(baseTemplate = "blank", libraryCatalog: LibraryCatalog | null = null): BuildContext {
   return {
     errors: [],
     warnings: [],
@@ -2313,6 +2717,9 @@ function createBuildContext(baseTemplate = "blank"): BuildContext {
       complexEncounters: [],
       thiefEncounters: [],
       timedEncounters: [],
+      spells: [],
+      races: [],
+      castes: [],
       actionPoints: [],
       extraActionPoints: [],
       maps: [],
@@ -2330,11 +2737,15 @@ function createBuildContext(baseTemplate = "blank"): BuildContext {
     complexEncounters: new Map(),
     thiefEncounters: new Map(),
     timedEncounters: new Map(),
+    spells: new Map(),
+    races: new Map(),
+    castes: new Map(),
     actionPoints: new Map(),
     actionPointTargets: new Map(),
     extraActionPoints: new Map(),
     maps: new Map(),
-    regions: new Map()
+    regions: new Map(),
+    libraryCatalog
   };
 }
 
@@ -2350,6 +2761,9 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
   allocateRecordIds(seed.complexEncounters ?? [], "complex encounter", context.complexEncounters, context.allocations.complexEncounters, context);
   allocateRecordIds(seed.thiefEncounters ?? [], "Rogue encounter", context.thiefEncounters, context.allocations.thiefEncounters, context, 1);
   allocateRecordIds(seed.timedEncounters ?? [], "timed encounter", context.timedEncounters, context.allocations.timedEncounters, context);
+  allocateRecordIds(seed.spells ?? [], "spell override", context.spells, context.allocations.spells, context);
+  allocateRecordIds(seed.races ?? [], "race override", context.races, context.allocations.races, context);
+  allocateRecordIds(seed.castes ?? [], "caste override", context.castes, context.allocations.castes, context);
   allocateRecordIds(seed.extraActionPoints ?? [], "extra action point", context.extraActionPoints, context.allocations.extraActionPoints, context);
   for (const [index, map] of (seed.maps ?? []).entries()) {
     const levelType = map.levelType ?? "land";
@@ -2693,7 +3107,47 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation)
         setTile(tiles, operation.x + column, operation.y + row, operation.tiles[row][column]);
       }
     }
+    return;
   }
+  if (operation.kind === "landSecret") {
+    const index = operation.y * MAP_SIZE + operation.x;
+    tiles[index] = setLandCellSecretState(tiles[index], operation.state, false);
+    return;
+  }
+  if (operation.kind === "hiddenWalkable") {
+    const index = operation.y * MAP_SIZE + operation.x;
+    tiles[index] = setLandCellSecretState(operation.tile ?? 169, landCellSecretState(tiles[index]), false);
+    return;
+  }
+  if (operation.kind === "dungeonPassage") {
+    const directions = new Set(operation.directions);
+    const index = operation.y * MAP_SIZE + operation.x;
+    tiles[index] = setDungeonCellFlags(tiles[index], {
+      allowMoveNorth: directions.has("north"),
+      allowMoveEast: directions.has("east"),
+      allowMoveSouth: directions.has("south"),
+      allowMoveWest: directions.has("west")
+    });
+  }
+}
+
+function syncActionPointMarkers(maps: MapEntity[], triggers: TriggerRecord[]) {
+  const coordinates = new Map<string, Set<number>>();
+  for (const trigger of triggers) {
+    if (!trigger.active || !trigger.coordinate || trigger.levelType === null || trigger.levelIndex === null) continue;
+    const key = `${trigger.levelType}:${trigger.levelIndex}`;
+    const set = coordinates.get(key) ?? new Set<number>();
+    set.add(trigger.coordinate.y * MAP_SIZE + trigger.coordinate.x);
+    coordinates.set(key, set);
+  }
+  return maps.map((map) => {
+    const marked = coordinates.get(`${map.levelType}:${map.index}`) ?? new Set<number>();
+    const tiles = map.tiles.map((value, index) => {
+      const cleared = clearActionPointMarker(value, map.levelType);
+      return marked.has(index) ? ensureActionPointMarker(cleared, map.levelType) : cleared;
+    });
+    return { ...map, tiles };
+  });
 }
 
 function drawPath(tiles: number[], points: ScenarioSeedPoint[], tile: number, width: number) {
@@ -2848,68 +3302,84 @@ function buildBattle(seed: ScenarioSeedBattle, context: BuildContext): BattleRec
   };
 }
 
-function buildMonster(seed: ScenarioSeedMonster, context: BuildContext): MonsterRecord {
+function resolveMonsterLibraryEntry(seed: ScenarioSeedMonster, context: BuildContext): { record: MonsterRecord; description: string } | null {
+  if (seed.libraryEntry === undefined) return null;
+  const entry = context.libraryCatalog?.entities.find((candidate) => candidate.id === seed.libraryEntry);
+  if (!entry) {
+    addDiagnostic(context, "error", "unresolved-monster-library-entry", `Monster Library entry "${seed.libraryEntry}" was not provided to the scenario seed compiler.`, "monster", seed.key ?? seed.libraryEntry);
+    return null;
+  }
+  const record = monsterLibraryEntryTemplate(entry);
+  if (!record) {
+    addDiagnostic(context, "error", "invalid-monster-library-entry", `Monster Library entry "${seed.libraryEntry}" does not contain a reusable monster record.`, "monster", seed.key ?? seed.libraryEntry);
+    return null;
+  }
+  return { record, description: monsterLibraryEntryDescription(entry) };
+}
+
+function buildMonster(seed: ScenarioSeedMonster, context: BuildContext, template: MonsterRecord | undefined): MonsterRecord {
   const id = seed.id ?? 0;
   return {
     id,
-    hitDice: seed.hitDice ?? 1,
-    staminaBonus: seed.staminaBonus ?? 0,
-    agility: seed.agility ?? 10,
+    hitDice: seed.hitDice ?? template?.hitDice ?? 1,
+    staminaBonus: seed.staminaBonus ?? template?.staminaBonus ?? 0,
+    agility: seed.agility ?? template?.agility ?? 10,
     nameId: seed.nameId ?? (id & 0xff),
-    movementMax: seed.movementMax ?? 10,
-    armor: seed.armor ?? 0,
-    magicResistance: seed.magicResistance ?? 0,
-    distance: seed.distance ?? 0,
-    traitor: seed.traitor ?? 0,
-    size: seed.size ?? 1,
-    typeFlags: padArray(seed.typeFlags ?? [], 8, 0),
-    attackCount: seed.attackCount ?? Math.max(1, Math.min(5, seed.attacks?.length ?? 1)),
-    magicAttackCount: seed.magicAttackCount ?? 0,
-    attacks: padNestedNumberArrays(seed.attacks ?? [[0, 0, 0, 0]], 5, 4, 0),
-    damageBonus: seed.damageBonus ?? 0,
-    castPercent: seed.castPercent ?? 0,
-    runPercent: seed.runPercent ?? 0,
-    surrenderPercent: seed.surrenderPercent ?? 0,
-    missilePercent: seed.missilePercent ?? 0,
-    canSummon: seed.canSummon ?? 0,
-    saves: padArray(seed.saves ?? [], 6, 0),
-    spellImmunities: padArray(seed.spellImmunities ?? [], 6, 0),
-    money: padArray(seed.money ?? [], 3, 0),
-    spells: padArray(seed.spells ?? [], 10, 0),
-    items: padArray((seed.items ?? []).map((item) => resolveItemRef(item, context)), 6, 0),
-    weapon: seed.weapon === undefined ? 0 : resolveItemRef(seed.weapon, context),
-    iconId: seed.iconId ?? seed.icon ?? 0,
-    spellPoints: seed.spellPoints ?? 0,
-    exp: seed.exp ?? 0,
-    stamina: seed.stamina ?? 0,
-    staminaMax: seed.staminaMax ?? 0,
-    underneath: padArray(seed.underneath ?? [], 4, 0),
-    target: seed.target ?? 0,
-    guarding: seed.guarding ?? 0,
-    notOnMenu: seed.notOnMenu ?? false,
-    beenAttacked: seed.beenAttacked ?? 0,
-    movement: seed.movement ?? 0,
-    magicToHit: seed.magicToHit ?? 0,
-    conditions: padArray(seed.conditions ?? [], 40, 0),
-    lr: seed.lr ?? 0,
-    up: seed.up ?? 0,
-    attackNum: seed.attackNum ?? 0,
-    bonusAttack: seed.bonusAttack ?? 0,
-    deathMacro: seed.deathMacro === undefined ? 0 : resolveRef(seed.deathMacro, context.actionPoints, "action point", context),
-    maxSpellPoints: seed.maxSpellPoints ?? 0,
-    displayName: seed.displayName ?? seed.name ?? `Monster ${id}`,
+    movementMax: seed.movementMax ?? template?.movementMax ?? 10,
+    armor: seed.armor ?? template?.armor ?? 0,
+    magicResistance: seed.magicResistance ?? template?.magicResistance ?? 0,
+    distance: seed.distance ?? template?.distance ?? 0,
+    traitor: seed.traitor ?? template?.traitor ?? 0,
+    size: seed.size ?? template?.size ?? 1,
+    typeFlags: padArray(seed.typeFlags ?? template?.typeFlags ?? [], 8, 0),
+    attackCount: seed.attackCount ?? (seed.attacks ? Math.max(1, Math.min(5, seed.attacks.length)) : template?.attackCount ?? 1),
+    magicAttackCount: seed.magicAttackCount ?? template?.magicAttackCount ?? 0,
+    attacks: padNestedNumberArrays(seed.attacks ?? template?.attacks ?? [[0, 0, 0, 0]], 5, 4, 0),
+    damageBonus: seed.damageBonus ?? template?.damageBonus ?? 0,
+    castPercent: seed.castPercent ?? template?.castPercent ?? 0,
+    runPercent: seed.runPercent ?? template?.runPercent ?? 0,
+    surrenderPercent: seed.surrenderPercent ?? template?.surrenderPercent ?? 0,
+    missilePercent: seed.missilePercent ?? template?.missilePercent ?? 0,
+    canSummon: seed.canSummon ?? template?.canSummon ?? 0,
+    saves: padArray(seed.saves ?? template?.saves ?? [], 6, 0),
+    spellImmunities: padArray(seed.spellImmunities ?? template?.spellImmunities ?? [], 6, 0),
+    money: padArray(seed.money ?? template?.money ?? [], 3, 0),
+    spells: padArray(seed.spells ?? template?.spells ?? [], 10, 0),
+    items: seed.items === undefined ? padArray(template?.items ?? [], 6, 0) : padArray(seed.items.map((item) => resolveItemRef(item, context)), 6, 0),
+    weapon: seed.weapon === undefined ? template?.weapon ?? 0 : resolveItemRef(seed.weapon, context),
+    iconId: seed.iconId ?? (seed.icon === undefined ? template?.iconId ?? 0 : resolveSeedAssetRef(seed.icon, "icon", "monster icon", context)),
+    spellPoints: seed.spellPoints ?? template?.spellPoints ?? 0,
+    exp: seed.exp ?? template?.exp ?? 0,
+    stamina: seed.stamina ?? template?.stamina ?? 0,
+    staminaMax: seed.staminaMax ?? template?.staminaMax ?? 0,
+    underneath: padArray(seed.underneath ?? template?.underneath ?? [], 4, 0),
+    target: seed.target ?? template?.target ?? 0,
+    guarding: seed.guarding ?? template?.guarding ?? 0,
+    notOnMenu: seed.notOnMenu ?? template?.notOnMenu ?? false,
+    beenAttacked: seed.beenAttacked ?? template?.beenAttacked ?? 0,
+    movement: seed.movement ?? template?.movement ?? 0,
+    magicToHit: seed.magicToHit ?? template?.magicToHit ?? 0,
+    conditions: padArray(seed.conditions ?? template?.conditions ?? [], 40, 0),
+    lr: seed.lr ?? template?.lr ?? 0,
+    up: seed.up ?? template?.up ?? 0,
+    attackNum: seed.attackNum ?? template?.attackNum ?? 0,
+    bonusAttack: seed.bonusAttack ?? template?.bonusAttack ?? 0,
+    deathMacro: seed.deathMacro === undefined ? template?.deathMacro ?? 0 : resolveRef(seed.deathMacro, context.actionPoints, "action point", context),
+    maxSpellPoints: seed.maxSpellPoints ?? template?.maxSpellPoints ?? 0,
+    displayName: seed.displayName ?? seed.name ?? template?.displayName ?? `Monster ${id}`,
     rawBytes: new Array(MONSTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data MD", id, id * MONSTER_BYTES, MONSTER_BYTES)
   };
 }
 
-function buildMonsterDescription(seed: ScenarioSeedMonster): MonsterDescriptionRecord | null {
-  if (seed.description === undefined) return null;
+function buildMonsterDescription(seed: ScenarioSeedMonster, templateDescription?: string): MonsterDescriptionRecord | null {
+  const description = seed.description ?? templateDescription;
+  if (description === undefined || description.length === 0) return null;
   const id = seed.id ?? 0;
   return {
     id,
-    text: seed.description,
+    text: description,
     rawBytes: new Array(MONSTER_DESCRIPTION_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data DES", id, id * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
@@ -2950,13 +3420,13 @@ function buildShop(seed: ScenarioSeedShop, context: BuildContext): ShopRecord {
   };
 }
 
-function buildItem(seed: ScenarioSeedItem): ScenarioItemRecord {
+function buildItem(seed: ScenarioSeedItem, context: BuildContext): ScenarioItemRecord {
   const id = seed.id ?? 0;
   return {
     id,
     itemId: seed.itemId ?? SCENARIO_ITEM_ID_BASE + id,
-    iconId: seed.iconId ?? seed.icon ?? 0,
-    type: seed.type ?? 0,
+    iconId: seed.iconId ?? (seed.icon === undefined ? 0 : resolveSeedAssetRef(seed.icon, "icon", "item icon", context)),
+    type: seed.type ?? (seed.typeName === undefined ? 0 : SCENARIO_ITEM_TYPE_CODES[seed.typeName]),
     st: seed.st ?? 0,
     blunt: seed.blunt ?? 0,
     hands: seed.hands ?? 0,
@@ -3430,6 +3900,19 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
   if (step.kind === "alterFatigue") return buildEdcdAction(slot, 68, [step.mode === "maximum" ? 1 : step.mode === "minimum" ? 2 : 3, 0, step.percent ?? 0, 0, 0], nextEdcdId, extracodes);
   if (step.kind === "changeSpellPoints") return buildEdcdAction(slot, 74, [step.take ? -step.rolls : step.rolls, step.sound === undefined ? step.low : resolveSeedAssetRef(step.sound, "sound", "sound", context), step.high, step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
   if (step.kind === "branchOnSpellPoints") return buildEdcdAction(slot, 75, [step.scope === "picked" ? 1 : 2, step.minimum, step.onFailure === "exitSave" ? 1 : 0, 0, resolveRef(step.successMacro, context.extraActionPoints, "extra action point", context)], nextEdcdId, extracodes);
+  if (step.kind === "castSpell") return buildEdcdAction(slot, step.scope === "picked" ? 17 : 18, [step.spell, step.power, step.saveModifier ?? 0, step.noSave ? 1 : 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "takeVictoryPoints") return buildEdcdAction(slot, 90, [step.amount, step.scope === "picked" ? 1 : step.scope === "spread" ? 2 : 0, 0, 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "alterPicked") return buildEdcdAction(slot, 108, [ALTER_PICKED_ATTRIBUTE_CODES[step.attribute], step.amount, 0, 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "clericTurning") return describeAction(slot, step.enabled ? 83 : 82, 0);
+  if (step.kind === "dropAllEquipment") return describeAction(slot, 91, 0);
+  if (step.kind === "compass") return describeAction(slot, step.enabled ? 93 : 94, 0);
+  if (step.kind === "faceDirection") return describeAction(slot, 95, DIRECTION_CODES[step.direction]);
+  if (step.kind === "dungeonView") return describeAction(slot, step.mode === "force3d" ? 96 : 97, 0);
+  if (step.kind === "endBattle") return describeAction(slot, 100, 0);
+  if (step.kind === "backUpParty") return describeAction(slot, 101, 0);
+  if (step.kind === "levelUpPicked") return describeAction(slot, 102, 0);
+  if (step.kind === "randomBattles") return describeAction(slot, 104, step.enabled ? 1 : 0);
+  if (step.kind === "allies") return describeAction(slot, 105, step.enabled ? 2 : 1);
   if (step.kind === "alterRandomEncounterRectangle") return buildEdcdAction(slot, step.dungeon ? -23 : 23, [step.level, step.rectangle, step.encounterRate, step.battleLow === undefined ? -1 : resolveRef(step.battleLow, context.battles, "battle", context), step.battleHigh === undefined ? -1 : resolveRef(step.battleHigh, context.battles, "battle", context)], nextEdcdId, extracodes);
   if (step.kind === "alterRandomRectangle") {
     const firstId = nextEdcdId();
@@ -3583,6 +4066,23 @@ function parseIntegerArray(input: unknown, path: string, ctx: ParseContext): num
   return values;
 }
 
+function optionalFixedIntegerArray(input: unknown, path: string, length: number, ctx: ParseContext) {
+  const values = parseIntegerArray(input, path, ctx);
+  if (values && values.length !== length) ctx.errors.push(`${path} must contain exactly ${length} entries.`);
+  return values;
+}
+
+function optionalFixedIntegerMatrix(input: unknown, path: string, rows: number, columns: number, ctx: ParseContext) {
+  const values = parseArray(input, path, ctx, (row, rowPath, rowContext) => optionalFixedIntegerArray(row, rowPath, columns, rowContext) ?? null);
+  if (values && values.length !== rows) ctx.errors.push(`${path} must contain exactly ${rows} rows.`);
+  return values;
+}
+
+function optionalStringProperty<T extends string>(value: ObjectValue, key: T, path: string, ctx: ParseContext): Partial<Record<T, string>> {
+  const parsed = optionalString(value[key], `${path}.${key}`, ctx);
+  return parsed === undefined ? {} : { [key]: parsed } as Partial<Record<T, string>>;
+}
+
 function parseStringArray(input: unknown, path: string, ctx: ParseContext): string[] | undefined {
   if (input === undefined) return undefined;
   if (!Array.isArray(input)) {
@@ -3681,6 +4181,22 @@ function optionalManagedAssetKind(input: unknown, path: string, ctx: ParseContex
   if (input === undefined) return undefined;
   if (input === "picture" || input === "icon" || input === "special-land-tile" || input === "sound" || input === "text" || input === "other") return input;
   ctx.errors.push(`${path} must be picture, icon, special-land-tile, sound, text, or other.`);
+  return undefined;
+}
+
+function optionalScenarioItemTypeName(input: unknown, path: string, ctx: ParseContext): ScenarioSeedItemTypeName | undefined {
+  if (input === undefined) return undefined;
+  if (typeof input === "string" && Object.prototype.hasOwnProperty.call(SCENARIO_ITEM_TYPE_CODES, input)) {
+    return input as ScenarioSeedItemTypeName;
+  }
+  ctx.errors.push(`${path} must be a supported semantic item type name.`);
+  return undefined;
+}
+
+function optionalMonsterVariantMode(input: unknown, path: string, ctx: ParseContext): ScenarioSeedMonster["variants"] | undefined {
+  if (input === undefined) return undefined;
+  if (input === "normalOnly" || input === "copyAll" || input === "generated") return input;
+  ctx.errors.push(`${path} must be normalOnly, copyAll, or generated.`);
   return undefined;
 }
 

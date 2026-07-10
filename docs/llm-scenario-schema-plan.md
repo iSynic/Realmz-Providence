@@ -9,9 +9,9 @@ Next implementation plan: [`docs/llm-scenario-schema-next-plan.md`](llm-scenario
 - `schemas/scenario-seed.schema.json` defines the first prompt-facing seed.
 - `src/editor/scenarioSeed.ts` validates and expands that seed into a `Project`.
 - Supported content: scenario metadata, keyed maps, map regions, map drawing operations, messages, quests, battles, Normal scenario monsters and descriptions, treasures, shops, scenario items and item text, stock and Custom Library asset references, simple and timed encounters, Extra Action Points, and semantic AP seed aliases.
-- Supported map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, and `stamp`.
+- Supported map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, `stamp`, `landSecret`, `hiddenWalkable`, and `dungeonPassage`.
 - Supported AP seed aliases: `message`, `battle`, `simpleEncounter`, `complexEncounter`, `shop`, `treasure`, `sound`, `picture`, `scrollingText`, `victoryPoints`, `temple`, `banking`, `displayMap`, `pickCharacters`, `returnGosub`, `popStack`, `addSpecialCharacter`, `dropSpecialCharacter`, `teleport`, `randomMessage`, `selectiveBattle`, `battleOutcome`, `improvedBattleOutcome`, `causeRout`, `battleMacroCriteria`, `spawnMonsters`, `destroyRelatedMonsters`, `continueIfMonsterPresent`, `alterTimedEncounter`, `branchOnQuest`, `setQuestFlag`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `branchOnItem`, `branchOnItemCharges`, `dropItems`, `changeItemCharges`, `replaceItems`, `branchOnPartyCondition`, `branchOnCharacterCondition`, `branchOnTileParameter`, `copyActionPointSteps`, `enableActionPoint`, `disableActionPoint`, `patchActionPoint`, `setDarkLevel`, `alterGameTime`, `branchOnGameTime`, `boatCampStatus`, `alterFatigue`, `changeSpellPoints`, `branchOnSpellPoints`, `alterRandomEncounterRectangle`, `alterRandomRectangle`, `enterExitDungeon`, `edcd`, and `raw`.
-- Full AP editor coverage is broader than the seed layer. The seed layer needs aliases, not opcode archaeology from scratch.
+- Full AP editor coverage is broader than the seed layer. The seed layer now includes common spell, party-state, dungeon-view, battle-control, and picked-character aliases; remaining additions should stay driven by authoring value rather than duplicate opcode archaeology.
 
 ## Guiding Rules
 
@@ -44,7 +44,7 @@ The normalizer allocates Realmz numeric IDs and preserves explicit numeric IDs w
 
 ## Phase 2: Map Primitives
 
-Status: implemented for fill, rectangle, line, path, border, room, wide road/river paths, rectangular stamps, and named regions. Map operations reject out-of-bounds geometry and non-serializable signed 16-bit tile values. Remaining work: reusable templates, semantic terrain groups, and generated action-point placement helpers.
+Status: implemented for fill, rectangle, line, path, border, room, wide road/river paths, rectangular stamps, named regions, land Secret Area state, stock hidden-walkable terrain, directional dungeon passages, and generated Action Point map markers. Map operations reject out-of-bounds geometry and non-serializable signed 16-bit tile values. Remaining work: reusable templates and broader semantic terrain groups.
 
 Do not require prompts to emit 8,100 tiles for normal map authoring. Add map operations:
 
@@ -55,7 +55,7 @@ Do not require prompts to emit 8,100 tiles for normal map authoring. Add map ope
 - `stamp`
 - `border`
 - `region`
-- `placeActionPoint`
+- generated Action Point placement and map-cell marker synchronization
 
 The normalizer applies implemented operations into the fixed 90x90 tile array. Named regions are reusable coordinate references for AP placement and future encounter logic.
 
@@ -105,13 +105,13 @@ The normalizer creates EDCD rows and writes the right opcode automatically for i
 Expand seed records beyond APs:
 
 - simple encounters with raw action rows; future work is option scripts that compile to action/result rows
-- scenario items and item text; future work is friendlier item templates and stock-item references
+- scenario items and item text, including semantic item type names; future work is complete behavior presets and stock-item references
 - complex encounters with groups, spell/item/word/action tests, and result scripts
 - thief encounters
 - timed encounters
 - scenario items and item text
-- scenario monsters and monster descriptions; future work is alternate sets, library templates, and monster art references
-- spell/race/caste overrides
+- scenario monsters and monster descriptions, including Monster Library templates, Normal/Monster/Mega variant generation, and icon asset references; future work is higher-level behavior presets
+- spell, race, and caste overrides are implemented with strict fixed-size record fields
 
 These should use the same key-reference allocation model.
 

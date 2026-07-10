@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Monster Library Reference" },
+  "monsters": [
+    {
+      "key": "missing-template",
+      "libraryEntry": "library-entity:missing"
+    }
+  ]
+}

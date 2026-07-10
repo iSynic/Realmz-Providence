@@ -39,6 +39,9 @@ try {
   checkConditionBranches(createProjectFromScenarioSeed);
   checkActionPointMutations(createProjectFromScenarioSeed);
   checkRuntimeState(createProjectFromScenarioSeed);
+  checkPartyRuntime(createProjectFromScenarioSeed);
+  checkSpells(createProjectFromScenarioSeed);
+  checkRuleOverrides(createProjectFromScenarioSeed);
   checkRandomRectangles(createProjectFromScenarioSeed);
   checkBattleOutcomes(createProjectFromScenarioSeed);
   checkCombatMacros(createProjectFromScenarioSeed);
@@ -85,6 +88,7 @@ function checkBaseTemplate(createProjectFromScenarioSeed) {
   if (!templateResult.ok) return;
   const template = templateResult.project;
   template.maps[0].tiles[0] = 222;
+  template.maps[0].tiles[1 * 90 + 1] = 3156;
   template.scenario.shell.recLevel = 7;
   template.source.rawSourcesDir = "template-raw";
   template.assets = [{ ...mockCustomAsset("asset:template:picture", "picture", "PICT", 30000), libraryScope: "scenario" }];
@@ -96,6 +100,9 @@ function checkBaseTemplate(createProjectFromScenarioSeed) {
   expect(result.project.scenario.name === "Generated From Starter" && result.project.scenario.shell?.sourceFile === "Generated From Starter", "template scenario identity should be rewritten for the generated project");
   expect(result.project.scenario.shell?.recLevel === 7, "omitted scenario shell fields should inherit from the base template");
   expect(result.project.maps[0]?.tiles?.[0] === 222, "omitted map family should inherit from the base template");
+  expect(result.project.maps[0]?.tiles?.[1 * 90 + 1] === 3156, "replacing an inherited Action Point should preserve an independent hidden land Secret Area at its old coordinate");
+  const replacementMarker = result.project.maps[0]?.tiles?.[5 * 90 + 4];
+  expect(replacementMarker === 1156, `replacement Action Points should synchronize their normal trigger markers into inherited maps (got ${replacementMarker})`);
   expect(result.project.messages.some((message) => message.id === 77 && message.text === "Template message"), "omitted message family should inherit from the base template");
   expect(result.project.questLabels.length === 0, "an explicitly declared empty family should replace inherited template records");
   expect(result.project.assets[0]?.id === "asset:template:picture", "omitted asset family should inherit scenario assets from the base template");
@@ -126,6 +133,11 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 4, 11) === 15 && tileAt(tiles, 4, 13) === 15, "wide road should paint its full width");
   expect(tileAt(tiles, 10, 14) === 16 && tileAt(tiles, 11, 14) === 16, "even-width river should paint deterministically toward positive coordinates");
   expect(tileAt(tiles, 20, 12) === 21 && tileAt(tiles, 22, 13) === 26, "stamp should preserve its two-dimensional tile pattern");
+  expect(tileAt(tiles, 30, 12) === 3181, "hidden walkable terrain should retain its authored hidden Secret Area state and Action Point marker");
+  expect(tileAt(tiles, 31, 12) === 2169, "default hidden walkable terrain should support an already revealed Secret Area state without an Action Point");
+  expect(tileAt(tiles, 32, 12) === 1001, "generated land Action Points should write the normal trigger marker into their map cell");
+  const dungeonTiles = result.project.maps.find((map) => map.levelType === "dungeon")?.tiles ?? [];
+  expect(tileAt(dungeonTiles, 4, 4) === 0x1501, "generated dungeon Action Points should preserve directional secret-passage flags and add the trigger marker");
 }
 
 function checkDirectAp(createProjectFromScenarioSeed) {
@@ -241,6 +253,7 @@ function checkItems(createProjectFromScenarioSeed) {
   expect(item?.iconId === 300 && item?.type === 1 && item?.cost === 50 && item?.weight === 2, "scenario item numeric fields should be preserved");
   const text = result.project.itemTexts[0];
   expect(text?.itemId === 901 && text?.identifiedName === "Bronze Clapper", "item text should be generated for scenario item");
+  expect(result.project.scenarioItems[1]?.type === 21, "semantic item type names should compile to Realmz item type codes");
   expect(result.project.treasures[0]?.itemIds?.[0] === 901, "treasure should resolve item key to scenario item ID");
   expect(result.project.shops[0]?.itemIds?.[0] === 901 && result.project.shops[0]?.quantities?.[0] === 2, "shop should resolve item key and quantity");
   const award = result.project.extracodes.find((row) => row.values[0] === 1 && row.values[1] === 901 && row.values[2] === 901);
@@ -256,7 +269,7 @@ function checkItems(createProjectFromScenarioSeed) {
 }
 
 function checkMonsters(createProjectFromScenarioSeed) {
-  const result = createProjectFromScenarioSeed(readSeed("monsters.seed.json"));
+  const result = createProjectFromScenarioSeed(readSeed("monsters.seed.json"), { libraryCatalog: mockMonsterLibraryCatalog() });
   expect(result.ok, "monster seed should create a project");
   if (!result.ok) return;
   expect(allocationId(result, "monsters", "bell-wight") === 7, "bell-wight should preserve explicit monster ID 7");
@@ -266,6 +279,14 @@ function checkMonsters(createProjectFromScenarioSeed) {
   expect(monster?.items?.[0] === 902 && monster?.weapon === 902, "monster item references should resolve item keys");
   expect(monster?.attacks?.[0]?.join(",") === "1,8,0,0", "monster attack row should be preserved");
   expect(result.project.monsterDescriptions[0]?.id === 7 && result.project.monsterDescriptions[0]?.text.includes("temple guardian"), "monster description should be generated");
+  const libraryMonster = result.project.monsters.find((entry) => entry.id === 8);
+  expect(libraryMonster?.displayName === "Library Guardian" && libraryMonster?.hitDice === 6, "Monster Library templates should provide reusable defaults while seed names override the library label");
+  expect(libraryMonster?.armor === 9 && libraryMonster?.iconId === 130 && libraryMonster?.attacks?.[0]?.join(",") === "2,6,0,0", "seed fields should override selected Monster Library defaults without losing inherited art or attacks");
+  expect(result.project.monsterDescriptions.find((entry) => entry.id === 8)?.text === "A reusable stone guardian.", "Monster Library descriptions should carry into generated scenario records");
+  const monsterVariant = result.project.monsterSets?.find((set) => set.setId === 1)?.monsters.find((entry) => entry.id === 8);
+  const megaVariant = result.project.monsterSets?.find((set) => set.setId === -1)?.monsters.find((entry) => entry.id === 8);
+  expect(monsterVariant?.hitDice === 12 && monsterVariant?.armor === 19, "generated Monster variants should use Providence's existing Combat scaling rules");
+  expect(megaVariant?.hitDice === 21 && megaVariant?.armor === 39, "generated Mega variants should use Providence's existing Combat scaling rules");
   const grid = result.project.battles[0]?.grid ?? [];
   expect(grid[6 * 13 + 6] === 7, "battle placement should resolve monster key");
   expect(grid[6 * 13 + 7] === -7, "friendly battle placement should write negative monster ID");
@@ -317,6 +338,45 @@ function checkRuntimeState(createProjectFromScenarioSeed) {
   expect(rows[6] === "10,12,0,0,1", "branchOnGameTime should resolve success and failure Extra Action Point keys");
 }
 
+function checkPartyRuntime(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("party-runtime.seed.json"));
+  expect(result.ok, "party runtime seed should create a project");
+  if (!result.ok) return;
+  const direct = result.project.triggers.find((trigger) => trigger.recordIndex === allocationId(result, "extraActionPoints", "direct-controls"));
+  const effects = result.project.triggers.find((trigger) => trigger.recordIndex === allocationId(result, "extraActionPoints", "party-effects"));
+  expect(actionCodes(direct).join(",") === "82,91,93,95,96,100,101,102", "direct party/runtime controls should emit their documented opcodes");
+  expect(direct?.actions?.[3]?.id === -1, "random dungeon facing should emit direction ID -1");
+  expect(actionCodes(effects).join(",") === "104,105,18,17,90,108,94,97", "party effects and toggles should emit their documented opcodes");
+  const rows = effects?.actions?.slice(2, 6).map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(rows?.[0] === "17,4,-10,1,0" && rows?.[1] === "18,3,0,0,0", "party and picked spell aliases should compile their spell settings");
+  expect(rows?.[2] === "25,2,0,0,0", "victory-point removal should encode spread scope");
+  expect(rows?.[3] === "7,5,0,0,0", "picked-character alteration should encode the semantic stamina attribute");
+}
+
+function checkSpells(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("spells.seed.json"));
+  expect(result.ok, "spell override seed should create a project");
+  if (!result.ok) return;
+  expect(allocationId(result, "spells", "bell-ward") === 12, "explicit spell override IDs should be preserved");
+  expect(allocationId(result, "spells", "quiet-chime") === 0, "keyed spell overrides should allocate the first open custom slot");
+  const ward = result.project.spellOverrides.find((spell) => spell.id === 12);
+  expect(ward?.displayName === "Bell Ward" && ward?.cost === 4 && ward?.damage2 === 4, "spell override fields should compile through Providence's Rules defaults");
+  expect(ward?.inCombat === true && ward?.inCamp === false && ward?.rawBytes?.length === 30, "spell overrides should carry usage flags and fixed Data Spell backing size");
+}
+
+function checkRuleOverrides(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("rules-overrides.seed.json"));
+  expect(result.ok, "race and caste override seed should create a project");
+  if (!result.ok) return;
+  expect(allocationId(result, "races", "stoneborn") === 30 && allocationId(result, "castes", "bell-warden") === 10, "race and caste allocation reports should preserve explicit IDs");
+  const race = result.project.raceOverrides.find((record) => record.id === 30);
+  expect(race?.displayName === "Stoneborn" && race?.baseMove === 9 && race?.maxAge === 180 && race?.minMax.length === 12, "race overrides should merge seed fields with fixed Rules defaults");
+  const caste = result.project.casteOverrides.find((record) => record.id === 10);
+  expect(caste?.displayName === "Bell Warden" && caste?.startMoney === 75 && caste?.startItems[0] === 901, "caste overrides should resolve keyed starting items");
+  expect(caste?.spellcasters.length === 4 && caste?.conditions.length === 40 && caste?.rawBytes?.length === 576, "caste overrides should retain fixed binary-safe dimensions");
+  expect(result.project.ruleNames.raceNames[30] === "Stoneborn" && result.project.ruleNames.casteNames[10] === "Bell Warden", "generated rule names should follow race and caste override labels");
+}
+
 function checkRandomRectangles(createProjectFromScenarioSeed) {
   const result = createProjectFromScenarioSeed(readSeed("random-rectangles.seed.json"));
   expect(result.ok, "random rectangle seed should create a project");
@@ -358,12 +418,16 @@ function checkCombatMacros(createProjectFromScenarioSeed) {
 
 function checkAssets(createProjectFromScenarioSeed) {
   const customAsset = mockCustomAsset("asset:workspace:bell", "picture", "PICT", 42);
-  const result = createProjectFromScenarioSeed(readSeed("assets.seed.json"), { customAssets: [customAsset] });
+  const customIcon = mockCustomAsset("asset:workspace:wight-icon", "icon", "cicn", 42);
+  const result = createProjectFromScenarioSeed(readSeed("assets.seed.json"), { customAssets: [customAsset, customIcon] });
   expect(result.ok, "asset reference seed should create a project when its Custom Library asset is provided");
   if (!result.ok) return;
-  expect(result.project.assets.length === 1, "stock asset references should not create scenario assets");
+  expect(result.project.assets.length === 2, "stock asset references should not create scenario assets while both custom assets should be bundled");
   expect(result.project.assets[0]?.resourceId === 30000 && result.project.assets[0]?.libraryScope === "scenario", "Custom Library picture should copy into Scenario Assets with its requested scenario ID");
-  expect(result.allocations.assets.map((asset) => `${asset.key}:${asset.resourceId}:${asset.bundled}`).join(",") === "stock-chime:137:false,bell-picture:30000:true", "asset allocations should distinguish stock references from bundled assets");
+  expect(result.project.assets[1]?.resourceId === 30126 && result.project.assets[1]?.kind === "icon", "Custom Library monster icon should copy into Scenario Assets with its requested icon ID");
+  expect(result.allocations.assets.map((asset) => `${asset.key}:${asset.resourceId}:${asset.bundled}`).join(",") === "stock-chime:137:false,bell-picture:30000:true,stock-item-icon:300:false,wight-icon:30126:true", "asset allocations should distinguish stock references from bundled assets");
+  expect(result.project.scenarioItems[0]?.iconId === 300, "item icon asset keys should resolve stock cicn IDs without bundling them");
+  expect(result.project.monsters[0]?.iconId === 30126, "monster icon asset keys should resolve copied Custom Library cicn IDs");
   const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:0"));
   expect(actionCodes(trigger).join(",") === "9,27", "asset reference AP should emit sound and picture opcodes");
   expect(trigger.actions.map((action) => action.id).join(",") === "137,30000", "asset keys should resolve to stock and scenario resource IDs");
@@ -453,6 +517,15 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(randomRectangles.errors.some((error) => error.includes("left must not exceed") && error.includes("right")), "absolute random rectangle should reject inverted horizontal bounds");
   }
 
+  const mapSemantics = parseScenarioSeed(readSeed("invalid-map-semantics.seed.json"));
+  expect(!mapSemantics.ok, "map semantics used on the wrong map type should fail parsing");
+  if (!mapSemantics.ok) {
+    expect(mapSemantics.errors.some((error) => error.includes("dungeonPassage is only valid on dungeon maps")), "land maps should reject dungeon passage operations");
+    expect(mapSemantics.errors.some((error) => error.includes("landSecret is only valid on land maps")), "dungeon maps should reject land Secret Area operations");
+    expect(mapSemantics.errors.some((error) => error.includes("stock hidden-walkable tiles")), "hiddenWalkable should reject non-semantic tile IDs");
+    expect(mapSemantics.errors.some((error) => error.includes("cannot contain duplicates")), "dungeon passage directions should reject duplicates");
+  }
+
   const causeRoutContext = createProjectFromScenarioSeed(readSeed("invalid-battle-outcomes.seed.json"));
   expect(!causeRoutContext.ok, "causeRout in a map Action Point should fail project creation");
   if (!causeRoutContext.ok) expect(causeRoutContext.diagnostics.some((diagnostic) => diagnostic.code === "invalid-action-point-context"), "causeRout context failure should return a structured diagnostic");
@@ -487,6 +560,10 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
   const missingTemplate = createProjectFromScenarioSeed(readSeed("invalid-base-template.seed.json"));
   expect(!missingTemplate.ok, "an unavailable base template should fail project creation");
   if (!missingTemplate.ok) expect(missingTemplate.diagnostics.some((diagnostic) => diagnostic.code === "unresolved-base-template"), "missing base template should return a structured diagnostic");
+
+  const missingMonsterLibraryEntry = createProjectFromScenarioSeed(readSeed("invalid-monster-library.seed.json"));
+  expect(!missingMonsterLibraryEntry.ok, "an unavailable Monster Library entry should fail project creation");
+  if (!missingMonsterLibraryEntry.ok) expect(missingMonsterLibraryEntry.diagnostics.some((diagnostic) => diagnostic.code === "unresolved-monster-library-entry"), "missing Monster Library entries should return a structured diagnostic");
 
   const timedEncounters = parseScenarioSeed(readSeed("invalid-timed-encounters.seed.json"));
   expect(!timedEncounters.ok, "invalid timed encounter seed should fail parsing");
@@ -559,6 +636,46 @@ function mockCustomAsset(id, kind, resourceType, resourceId) {
     provenance: "fixture",
     linkedEntity: null,
     conversion: null
+  };
+}
+
+function mockMonsterLibraryCatalog() {
+  return {
+    schemaVersion: 4,
+    importedAt: "2026-07-10T00:00:00.000Z",
+    managedPath: "browser://workspace/library",
+    sources: [],
+    records: [],
+    assets: [],
+    diagnostics: [],
+    summary: { sourceCount: 0, recordCount: 0, entityCount: 1, assetCount: 0, diagnosticCount: 0 },
+    entities: [{
+      id: "library-entity:fixture:guardian",
+      type: "monster-scrapbook-entry",
+      label: "Stone Guardian",
+      source: "library-source:fixture",
+      recordRef: null,
+      editState: "editable",
+      confidence: "confirmed",
+      summary: {
+        description: "A reusable stone guardian.",
+        monsterRecord: {
+          id: 44,
+          displayName: "Stone Guardian",
+          hitDice: 6,
+          agility: 8,
+          movementMax: 6,
+          armor: 7,
+          size: 2,
+          attackCount: 1,
+          attacks: [[2, 6, 0, 0]],
+          iconId: 130,
+          stamina: 24,
+          staminaMax: 24,
+          exp: 350
+        }
+      }
+    }]
   };
 }
 
