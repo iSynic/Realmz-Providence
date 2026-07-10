@@ -1,7 +1,9 @@
-import { memo, useEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { classifyTileValue } from "../map/tileMetadata";
 import { AtlasEntry, IconEntry, TilesetAsset } from "../types";
 import { drawTileSprite, tileColor } from "./TileSprite";
+import { isStockHiddenWalkableTile } from "../map/secrets";
+import { drawWhiteKeyedOverlayImage } from "../map/whiteKeyedOverlay";
 
 function TileSwatchComponent({
   atlas,
@@ -19,7 +21,25 @@ function TileSwatchComponent({
   allowIconFallback?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [hiddenWalkableMarker, setHiddenWalkableMarker] = useState<HTMLImageElement | null>(null);
   const metadata = useMemo(() => classifyTileValue(tile, tileset, [], icons), [icons, tile, tileset]);
+  const showHiddenWalkable = tileset?.landlook !== -1 && isStockHiddenWalkableTile(tile);
+
+  useEffect(() => {
+    if (!showHiddenWalkable || typeof Image === "undefined") {
+      setHiddenWalkableMarker(null);
+      return;
+    }
+    let active = true;
+    const image = new Image();
+    image.onload = () => {
+      if (active) setHiddenWalkableMarker(image);
+    };
+    image.src = "/divinity-manual/assets/pict2007.png";
+    return () => {
+      active = false;
+    };
+  }, [showHiddenWalkable]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,7 +51,11 @@ function TileSwatchComponent({
     context.fillStyle = tileColor(tile);
     context.fillRect(0, 0, canvas.width, canvas.height);
     drawTileSprite(context, atlas, tile, 0, 0, canvas.width, canvas.height, icons, allowIconFallback);
-  }, [allowIconFallback, atlas, icons, tile]);
+    if (showHiddenWalkable && hiddenWalkableMarker?.complete) {
+      const inset = 2;
+      drawWhiteKeyedOverlayImage(context, hiddenWalkableMarker, inset, inset, canvas.width - inset * 2, canvas.height - inset * 2);
+    }
+  }, [allowIconFallback, atlas, hiddenWalkableMarker, icons, showHiddenWalkable, tile]);
 
   return (
     <span className={`tile-swatch tile-kind-${metadata.kind}`} aria-hidden="true">

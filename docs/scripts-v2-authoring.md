@@ -6,6 +6,8 @@ Scripts V2 turns the Scripts panel into a Realmz-native authoring workbench. The
 
 Realmz Action Points are fixed records inside map trigger files. Deleting one does not truncate the file; Providence clears the record to an empty reusable slot.
 
+Action Point placement owns only the matching AP marker. Land Secret Areas are an independent map-cell layer with Normal, Hidden Secret, and Revealed Secret states, so they can exist with or without an Action Point. Their state is authored in Maps; Scripts reports it when an AP shares the coordinate. Dungeon cells use a separate Action Point bit, while secret-passage directions are painted with Dungeon Draw's Allow Move controls. Moving or clearing an AP preserves independently authored land Secret Areas and dungeon passage geometry.
+
 - The Scripts list shows the complete Action Point inventory for map trigger/action records, including active records, reusable empty slots, callable macros, and preserved ED3 evidence.
 - Filter chips narrow the inventory to current map, all scripts, active records, reusable records, warnings, or macros.
 - The capacity badge shows how many fixed Action Point records are currently active, how many reusable slots exist, and why creation is disabled when a map has no reusable records.

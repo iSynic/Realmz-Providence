@@ -781,6 +781,23 @@
   justify-content: start;
 }
 
+.script-ap-secret-status {
+  color: #87a1b9;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.script-ap-marker-status {
+  color: #d6ad4c;
+  font-size: 10px;
+}
+
+.script-ap-dungeon-secret-status {
+  color: #87a1b9;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
 .script-header-inline-field,
 .script-header-fields .script-number-field {
   display: grid;

@@ -1185,11 +1185,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Action Points On Maps",
         paragraphs: [
-          "Action Points are script entry records placed at map coordinates. They can show text, branch on state, teleport, mutate map tiles, start encounters, trigger battles, play media, call macros, and perform many other Realmz actions.",
+          "Action Points are script entry records placed at map coordinates. They can show text, branch on state, teleport, mutate map tiles, start encounters, trigger battles, play media, call macros, and perform many other Realmz actions. Land Secret Areas are an independent cell state and can exist with or without an Action Point; when an AP shares that coordinate, its Secret status is derived from the cell.",
           "Map placement and script body editing are intentionally split. Maps answers where the Action Point sits and what overlay category it belongs to; Scripts answers what its CODE, ID, and Action Settings do."
         ],
         points: [
           "Use the Action Point tool for placement and the Scripts tool for deeper opcode editing.",
+          "Use the map Selection Inspector to set a land cell to Normal, Hidden Secret, or Revealed Secret. Moving or clearing an Action Point does not move or erase that cell state.",
+          "Providence marks stock hidden-walkable tiles 169 and 180-185 on both the map and tile palette. That visual aid does not by itself make the cell a Hidden Secret Area.",
           "Overlay filters can show all Action Points or isolate links by encounters, quests, map mutation, battle, text, and unresolved opcodes.",
           "Use Global Search for AP IDs, macro IDs, text IDs, and battle IDs when jumping between the map overlay and the script body."
         ]
@@ -1387,7 +1389,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior and preserved imported ED3 rows, Global Events for scenario hooks, and Quests for flag usage.",
           "Filter the inventory before editing. Current Map is fastest while map authoring; Warnings is best before release; Reusable shows empty fixed slots that can be repurposed safely.",
-          "Create or select an Action Point, then edit its map cell, chance, and goto fields only when those fields are meaningful for map triggers.",
+          "Create or select an Action Point, then edit its map cell, activation chance, Secret state, and goto fields. For dungeons, paint Allow Move directions in Dungeon Draw; an AP on that secret-passage cell is automatically treated as Secret.",
           "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied, and the shared unapplied-changes dialog protects them when navigating away.",
           "Use Target Details when a direct target has an inline editor. Use Settings when the step needs named options such as branch mode, message, sound, battle, map, range, or secondary target fields.",
           "Open Action Settings when you need to find orphaned settings, repair missing settings, duplicate a known Settings ID, or understand why two steps share the same settings."

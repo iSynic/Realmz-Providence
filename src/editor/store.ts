@@ -367,6 +367,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return {
         ...state,
         project: state.groupBaseProject,
+        selectedCell: refreshSelectedCell(state.selectedCell, state.selectedMapId, state.groupBaseProject),
         dirty: state.groupDirtyBefore,
         groupBaseProject: null,
         groupDirtyBefore: false,
@@ -392,6 +393,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return {
         ...state,
         project: previous.project,
+        selectedCell: refreshSelectedCell(state.selectedCell, state.selectedMapId, previous.project),
         dirty: true,
         past: state.past.slice(0, -1),
         future: [{ project: state.project, label: previous.label }, ...state.future],
@@ -405,6 +407,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       return {
         ...state,
         project: next.project,
+        selectedCell: refreshSelectedCell(state.selectedCell, state.selectedMapId, next.project),
         dirty: true,
         past: pushHistory(state.past, state.project, next.label),
         future: state.future.slice(1),
@@ -558,23 +561,42 @@ function selectedCellAfterCommand(
   previousProject: Project,
   nextProject: Project
 ): EditorState["selectedCell"] {
-  if (command.kind !== "moveActionPoint" || !selectedCell) return selectedCell;
-  const original = previousProject.triggers.find((trigger) => trigger.id === command.triggerId);
-  if (!original || original.source === "Data ED3" || !original.coordinate) return selectedCell;
-  const previousMap = selectedMapFor(previousProject, selectedMapId);
-  if (!previousMap || previousMap.levelType !== original.levelType || previousMap.index !== original.levelIndex) {
-    return selectedCell;
+  if (!selectedCell) return null;
+  if (command.kind === "moveActionPoint") {
+    const original = previousProject.triggers.find((trigger) => trigger.id === command.triggerId);
+    const previousMap = selectedMapFor(previousProject, selectedMapId);
+    const selectedMovedActionPoint = Boolean(
+      original &&
+      original.source !== "Data ED3" &&
+      original.coordinate &&
+      previousMap &&
+      previousMap.levelType === original.levelType &&
+      previousMap.index === original.levelIndex &&
+      selectedCell.x === original.coordinate.x &&
+      selectedCell.y === original.coordinate.y
+    );
+    if (selectedMovedActionPoint) {
+      const targetMap = nextProject.maps.find((map) => map.levelType === command.levelType && map.index === command.levelIndex) ?? null;
+      if (!targetMap || targetMap.id !== previousMap?.id) return null;
+      return {
+        x: command.x,
+        y: command.y,
+        tile: tileValueAt(targetMap, command.x, command.y)
+      };
+    }
   }
-  if (selectedCell.x !== original.coordinate.x || selectedCell.y !== original.coordinate.y) {
-    return selectedCell;
-  }
-  const targetMap = nextProject.maps.find((map) => map.levelType === command.levelType && map.index === command.levelIndex) ?? null;
-  if (!targetMap || targetMap.id !== previousMap.id) return null;
-  return {
-    x: command.x,
-    y: command.y,
-    tile: tileValueAt(targetMap, command.x, command.y)
-  };
+  return refreshSelectedCell(selectedCell, selectedMapId, nextProject);
+}
+
+function refreshSelectedCell(
+  selectedCell: EditorState["selectedCell"],
+  selectedMapId: string | null,
+  project: Project
+): EditorState["selectedCell"] {
+  if (!selectedCell) return null;
+  const map = selectedMapFor(project, selectedMapId);
+  if (!map || selectedCell.x < 0 || selectedCell.x >= map.width || selectedCell.y < 0 || selectedCell.y >= map.height) return null;
+  return { ...selectedCell, tile: tileValueAt(map, selectedCell.x, selectedCell.y) };
 }
 
 function selectedMapFor(project: Project, selectedMapId: string | null) {

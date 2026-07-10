@@ -1,21 +1,34 @@
 import { MapEntity } from "../types";
+import { actionPointMarkerState, landCellSecretState } from "./actionPointMarkers";
 
 const DUNGEON_SECRET_DIRECTION_MASK = 0x0f00;
+const STOCK_HIDDEN_WALKABLE_TILES = new Set([169, 180, 181, 182, 183, 184, 185]);
 
 export function isSecretWalkableTile(value: number, map: MapEntity) {
   if (isDungeonTopDownMap(map)) return hasDungeonSecretDirection(value);
-  const base = normalizedTileBase(value);
-  return base === 169 || (hasSecretMarkerTile(value, map) && (base === 169 || base === 181));
+  return landCellSecretState(value) !== "normal" && isStockHiddenWalkableTile(value);
+}
+
+export function isConcealedWalkableTerrain(value: number, map: MapEntity) {
+  return !isDungeonTopDownMap(map) && isStockHiddenWalkableTile(value);
+}
+
+export function isStockHiddenWalkableTile(value: number) {
+  return STOCK_HIDDEN_WALKABLE_TILES.has(normalizedTileBase(value));
+}
+
+export function showsHiddenWalkableOverlay(value: number, map: MapEntity) {
+  return isConcealedWalkableTerrain(value, map) || isSecretWalkableTile(value, map);
 }
 
 export function hasSecretMarkerTile(value: number, map: MapEntity) {
   if (isDungeonTopDownMap(map)) return hasDungeonSecretDirection(value) || hasDungeonShownSecretMarker(value);
-  return value >= 3000;
+  return actionPointMarkerState(value, "land") === "secret";
 }
 
 export function hasSecretPathTile(value: number, map: MapEntity) {
   if (isDungeonTopDownMap(map)) return hasDungeonSecretDirection(value);
-  return value >= 1000;
+  return actionPointMarkerState(value, "land") !== "none";
 }
 
 function isDungeonTopDownMap(map: MapEntity) {

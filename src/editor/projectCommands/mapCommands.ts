@@ -1,5 +1,7 @@
 import { LandlookRangeSlot, LevelType, MapEntity, MapMarker, MapRecord, MapstatsRecord, PaintCellChange, Project, ProjectCommand, Provenance, RandomLevel, RandomRect, TileAttributeFlag, TileAttributeProfile, TilesetAsset } from "../types";
 import { setDungeonCellFlags } from "../map/dungeonCellFlags";
+import { landCellSecretState, setLandCellSecretState as encodeLandCellSecretState } from "../map/actionPointMarkers";
+import { mapCellFromTileIndex, mapTileIndex } from "../map/geometry";
 
 const MAP_SIZE = 90;
 const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
@@ -29,8 +31,21 @@ export function paintTiles(project: Project, mapId: string, cells: PaintCellChan
     let mapChanged = false;
     for (const cell of cells) {
       if (cell.index < 0 || cell.index >= tiles.length) continue;
-      if (tiles[cell.index] === cell.to) continue;
-      tiles[cell.index] = cell.to;
+      let value = cell.to;
+      if (map.levelType === "land") {
+        const coordinate = mapCellFromTileIndex(map, cell.index);
+        const ownsActionPoint = (project.triggers ?? []).some((trigger) =>
+          trigger.active &&
+          trigger.levelType === "land" &&
+          trigger.levelIndex === map.index &&
+          trigger.coordinate?.x === coordinate.x &&
+          trigger.coordinate.y === coordinate.y
+        );
+        const secretState = landCellSecretState(tiles[cell.index]);
+        value = encodeLandCellSecretState(value, secretState, ownsActionPoint);
+      }
+      if (tiles[cell.index] === value) continue;
+      tiles[cell.index] = value;
       mapChanged = true;
     }
     if (!mapChanged) return map;
@@ -38,6 +53,32 @@ export function paintTiles(project: Project, mapId: string, cells: PaintCellChan
     return { ...map, tiles };
   });
   return projectChanged ? { ...project, maps } : project;
+}
+
+export function setLandCellSecretState(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "setLandCellSecretState" }>
+) {
+  let changed = false;
+  const maps = project.maps.map((map) => {
+    if (map.id !== command.mapId || map.levelType !== "land") return map;
+    const index = mapTileIndex(map, command.x, command.y);
+    if (index < 0 || index >= map.tiles.length) return map;
+    const hasActionPoint = (project.triggers ?? []).some((trigger) =>
+      trigger.active &&
+      trigger.levelType === "land" &&
+      trigger.levelIndex === map.index &&
+      trigger.coordinate?.x === command.x &&
+      trigger.coordinate.y === command.y
+    );
+    const value = encodeLandCellSecretState(map.tiles[index], command.state, hasActionPoint);
+    if (value === map.tiles[index]) return map;
+    const tiles = [...map.tiles];
+    tiles[index] = value;
+    changed = true;
+    return { ...map, tiles };
+  });
+  return changed ? { ...project, maps } : project;
 }
 
 export function updateDungeonCellFlags(project: Project, command: Extract<ProjectCommand, { kind: "updateDungeonCellFlags" }>) {

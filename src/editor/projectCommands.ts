@@ -9,6 +9,7 @@ import {
   duplicateMap,
   ensureLandLayout,
   paintTiles,
+  setLandCellSecretState,
   updateCustomLandTileAttributes,
   updateCustomLandTileCombatBuild,
   updateCustomLandlookBase,
@@ -116,6 +117,7 @@ import {
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);
+  if (command.kind === "setLandCellSecretState") return setLandCellSecretState(project, command);
   if (command.kind === "updateDungeonCellFlags") return updateDungeonCellFlags(project, command);
   if (command.kind === "paintBattleGridCells") return paintBattleGridCells(project, command.battleId, command.cells);
   if (command.kind === "createMap") return createMap(project, command);

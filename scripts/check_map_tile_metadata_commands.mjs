@@ -13,6 +13,9 @@ const failures = [];
 
 try {
   const commands = await server.ssrLoadModule("/src/editor/projectCommands/mapCommands.ts");
+  const scriptCommands = await server.ssrLoadModule("/src/editor/projectCommands/scriptCommands.ts");
+  const actionPointMarkers = await server.ssrLoadModule("/src/editor/map/actionPointMarkers.ts");
+  const secretTiles = await server.ssrLoadModule("/src/editor/map/secrets.ts");
   const metadata = await server.ssrLoadModule("/src/editor/map/tileMetadata.ts");
   const paintGroups = await server.ssrLoadModule("/src/editor/map/paintGroups.ts");
   const renderValues = await server.ssrLoadModule("/src/editor/map/renderValues.ts");
@@ -22,6 +25,11 @@ try {
   checkDefaultBrowserProject(browserProject, appUtilsModule);
   checkNewDungeonDefaultsToWall(commands);
   checkDungeonCellFlagCommand(commands);
+  checkActionPointMarkerEncoding(actionPointMarkers);
+  checkHiddenWalkableOverlay(secretTiles, metadata);
+  checkHiddenWalkablePaletteSource();
+  checkLandActionPointCommands(commands, scriptCommands, actionPointMarkers);
+  checkDungeonActionPointCommands(commands, scriptCommands, actionPointMarkers);
   checkCustomMapstatsAttributeSync(commands, metadata, paintGroups);
   checkCustomCombatBuildSync(commands, metadata);
   checkCustomLandlookBaseSync(commands);
@@ -122,6 +130,212 @@ function checkDungeonCellFlagCommand({ updateDungeonCellFlags }) {
     cells: [{ x: 0, y: 0, index: 0, from: 156 }]
   });
   assert(rejected === project, "Dungeon flag edit should reject land maps without mutation.");
+}
+
+function checkActionPointMarkerEncoding(markers) {
+  assert(markers.actionPointMarkerState(156, "land") === "none", "Plain land tile should not be an Action Point marker.");
+  assert(markers.actionPointMarkerState(1156, "land") === "normal", "Land +1000 band should be a normal Action Point marker.");
+  assert(markers.landCellSecretState(2156) === "revealed", "Land +2000 band should be a revealed Secret Area.");
+  assert(markers.landCellSecretState(3156) === "hidden", "Land +3000 band should be a hidden Secret Area.");
+  assert(markers.landCellSecretState(-3156) === "hidden", "Negative land +3000 band should retain Secret Area semantics.");
+  assert(markers.setLandCellSecretState(-3156, "normal", false) === -156, "Normalizing a standalone negative Secret Area should preserve the signed base tile.");
+  assert(markers.setLandCellSecretState(-3156, "normal", true) === -1156, "Normalizing an AP-backed negative Secret Area should preserve its Action Point band.");
+
+  const noteAndPath = 0x6000 | 1156;
+  const secretWithMetadata = markers.setLandCellSecretState(noteAndPath, "hidden", true);
+  assert((secretWithMetadata & 0x6000) === 0x6000, "Secret Area conversion should preserve land note/path bits.");
+  assert(markers.landCellSecretState(secretWithMetadata) === "hidden", "Land note/path bits should not hide Secret Area state.");
+
+  assert(markers.actionPointMarkerState(0x1000, "dungeon") === "normal", "Dungeon 0x1000 should be a normal Action Point marker.");
+  assert(markers.actionPointMarkerState(0x1100, "dungeon") === "secret", "Dungeon AP plus directional movement should be a Secret Action Point.");
+  assert(markers.actionPointMarkerState(0x1140, "dungeon") === "revealed-secret", "Dungeon reveal bit should identify an already revealed Secret Action Point.");
+}
+
+function checkHiddenWalkableOverlay(secretTiles, metadata) {
+  const map = landMap(0, 0);
+  for (const tile of [169, 180, 181, 182, 183, 184, 185]) {
+    assert(secretTiles.isStockHiddenWalkableTile(tile), `Land tile ${tile} should be part of the stock hidden-walkable set.`);
+    assert(secretTiles.isConcealedWalkableTerrain(tile, map), `Land tile ${tile} should remain identified as concealed walk-through terrain.`);
+    assert(secretTiles.showsHiddenWalkableOverlay(tile, map), `Unbanded land tile ${tile} should remain visible in the hidden-walkable overlay.`);
+    assert(metadata.classifyTileValue(tile, standardTileset(0), [], {}).label.toLowerCase().includes("hidden walkable"), `Land tile ${tile} should be labeled as hidden walkable in the palette.`);
+  }
+  assert(!secretTiles.isSecretWalkableTile(169, map), "Unbanded land tile 169 should not be mislabeled as an authored Secret Area.");
+  assert(secretTiles.showsHiddenWalkableOverlay(3169, map), "A hidden Secret Area using tile 169 should receive the hidden-walkable overlay.");
+  assert(secretTiles.showsHiddenWalkableOverlay(3181, map), "A hidden Secret Area using tile 181 should receive the hidden-walkable overlay.");
+  assert(!secretTiles.showsHiddenWalkableOverlay(179, map), "Adjacent stock tile 179 should not receive the hidden-walkable overlay.");
+  assert(!secretTiles.showsHiddenWalkableOverlay(186, map), "Adjacent stock tile 186 should not receive the hidden-walkable overlay.");
+}
+
+function checkHiddenWalkablePaletteSource() {
+  const swatchSource = fs.readFileSync(path.join(root, "src/editor/components/TileSwatch.tsx"), "utf8");
+  for (const snippet of ["isStockHiddenWalkableTile(tile)", "drawWhiteKeyedOverlayImage", "/divinity-manual/assets/pict2007.png"]) {
+    assert(swatchSource.includes(snippet), `Tile palette hidden-walkable marker is missing: ${snippet}`);
+  }
+  const keyedSource = fs.readFileSync(path.join(root, "src/editor/map/whiteKeyedOverlay.ts"), "utf8");
+  assert(keyedSource.includes("data[index + 3] = 0"), "Tile palette hidden-walkable marker should key the PICT's white pixels to transparency.");
+}
+
+function checkLandActionPointCommands(mapCommands, commands, markers) {
+  const project = actionPointProject(landMap(0, 0));
+  const hiddenWithoutActionPoint = mapCommands.setLandCellSecretState(project, {
+    kind: "setLandCellSecretState",
+    label: "Hide standalone cell",
+    mapId: "land:0",
+    x: 0,
+    y: 0,
+    state: "hidden"
+  });
+  assert(hiddenWithoutActionPoint.maps[0].tiles[0] === 3156, "A land cell should be authorable as hidden without an Action Point.");
+  const revealedWithoutActionPoint = mapCommands.setLandCellSecretState(hiddenWithoutActionPoint, {
+    kind: "setLandCellSecretState",
+    label: "Reveal standalone cell",
+    mapId: "land:0",
+    x: 0,
+    y: 0,
+    state: "revealed"
+  });
+  assert(revealedWithoutActionPoint.maps[0].tiles[0] === 2156, "A standalone hidden land cell should be authorable as already revealed.");
+  const normalizedWithoutActionPoint = mapCommands.setLandCellSecretState(revealedWithoutActionPoint, {
+    kind: "setLandCellSecretState",
+    label: "Normalize standalone cell",
+    mapId: "land:0",
+    x: 0,
+    y: 0,
+    state: "normal"
+  });
+  assert(normalizedWithoutActionPoint.maps[0].tiles[0] === 156, "Normalizing a standalone Secret Area should clear its marker band.");
+
+  const created = commands.createActionPoint(normalizedWithoutActionPoint, {
+    kind: "createActionPoint",
+    label: "Create land AP",
+    levelType: "land",
+    levelIndex: 0,
+    x: 0,
+    y: 0
+  });
+  const trigger = created.triggers.find((candidate) => candidate.active);
+  assert(Boolean(trigger), "Creating a land Action Point should allocate a trigger record.");
+  assert(created.maps[0].tiles[0] === 1156, "Creating a land Action Point should add the +1000 runtime marker.");
+
+  const secret = mapCommands.setLandCellSecretState(created, {
+    kind: "setLandCellSecretState",
+    label: "Hide AP cell",
+    mapId: "land:0",
+    x: 0,
+    y: 0,
+    state: "hidden"
+  });
+  assert(secret.maps[0].tiles[0] === 3156, "Hiding a land cell beneath an Action Point should write the hidden +3000 band.");
+  assert(markers.actionPointMarkerStateForTrigger(secret, trigger) === "secret", "An Action Point should derive Secret status from its land cell.");
+
+  const normalWithActionPoint = mapCommands.setLandCellSecretState(secret, {
+    kind: "setLandCellSecretState",
+    label: "Normalize AP cell",
+    mapId: "land:0",
+    x: 0,
+    y: 0,
+    state: "normal"
+  });
+  assert(normalWithActionPoint.maps[0].tiles[0] === 1156, "Normalizing an AP-backed land cell should retain the +1000 Action Point marker.");
+  const hiddenAgain = mapCommands.setLandCellSecretState(normalWithActionPoint, {
+    kind: "setLandCellSecretState",
+    label: "Hide AP cell again",
+    mapId: "land:0",
+    x: 0,
+    y: 0,
+    state: "hidden"
+  });
+
+  const repainted = mapCommands.paintTiles(hiddenAgain, "land:0", [{ x: 0, y: 0, index: 0, from: 3156, to: 157 }]);
+  assert(repainted.maps[0].tiles[0] === 3157, "Painting terrain under a hidden land cell should preserve its Secret Area band.");
+
+  const moved = commands.moveActionPoint(repainted, {
+    kind: "moveActionPoint",
+    label: "Move AP off hidden cell",
+    triggerId: trigger.id,
+    levelType: "land",
+    levelIndex: 0,
+    x: 1,
+    y: 0
+  });
+  const movedTrigger = moved.triggers.find((candidate) => candidate.active);
+  assert(moved.maps[0].tiles[0] === 3157, "Moving a land Action Point should preserve the independently authored hidden state of its old cell.");
+  assert(moved.maps[0].tiles[90] === 1156, "Moving a land Action Point should add only the normal AP marker at a normal destination.");
+
+  const cleared = commands.deleteTrigger(moved, movedTrigger.id);
+  assert(cleared.maps[0].tiles[90] === 156, "Deleting the last land Action Point on a cell should clear its marker.");
+  assert(cleared.maps[0].tiles[0] === 3157, "Deleting or moving a land Action Point should not clear standalone Secret Area state.");
+
+  const createdOnHidden = commands.createActionPoint(cleared, {
+    kind: "createActionPoint",
+    label: "Create AP on hidden cell",
+    levelType: "land",
+    levelIndex: 0,
+    x: 0,
+    y: 0
+  });
+  assert(createdOnHidden.maps[0].tiles[0] === 3157, "Creating an Action Point on a hidden land cell should preserve its Secret Area state.");
+  const createdOnHiddenTrigger = createdOnHidden.triggers.find((candidate) => candidate.active);
+  const deletedFromHidden = commands.deleteTrigger(createdOnHidden, createdOnHiddenTrigger.id);
+  assert(deletedFromHidden.maps[0].tiles[0] === 3157, "Deleting an Action Point from a hidden cell should leave the standalone Secret Area intact.");
+  const repaintedStandalone = mapCommands.paintTiles(deletedFromHidden, "land:0", [{ x: 0, y: 0, index: 0, from: 3157, to: 169 }]);
+  assert(repaintedStandalone.maps[0].tiles[0] === 3169, "Painting a standalone Secret Area should preserve its hidden state without requiring an Action Point.");
+}
+
+function checkDungeonActionPointCommands(mapCommands, commands, markers) {
+  const project = actionPointProject(dungeonMap(0, [1, 1, 1, 1]));
+  const created = commands.createActionPoint(project, {
+    kind: "createActionPoint",
+    label: "Create dungeon AP",
+    levelType: "dungeon",
+    levelIndex: 0,
+    x: 0,
+    y: 0
+  });
+  const trigger = created.triggers.find((candidate) => candidate.active);
+  assert((created.maps[0].tiles[0] & 0x1000) !== 0, "Creating a dungeon Action Point should set the runtime 0x1000 marker.");
+
+  const secret = mapCommands.updateDungeonCellFlags(created, {
+    kind: "updateDungeonCellFlags",
+    label: "Paint dungeon secret directions",
+    mapId: "dungeon:0",
+    flags: { allowMoveNorth: true, allowMoveSouth: true },
+    cells: [{ x: 0, y: 0, index: 0, from: created.maps[0].tiles[0] }]
+  });
+  const secretMask = secret.maps[0].tiles[0] & 0xffff;
+  assert((secretMask & 0x1500) === 0x1500, "Dungeon Secret Action Point should retain AP, north, and south bits.");
+  assert((secretMask & 0x0a00) === 0, "Dungeon Secret Action Point should not set unselected approach directions.");
+  assert(markers.actionPointMarkerStateForTrigger(secret, trigger) === "secret", "Dungeon Secret Action Point status should derive from painted Allow Move flags.");
+
+  const moved = commands.moveActionPoint(secret, {
+    kind: "moveActionPoint",
+    label: "Move dungeon secret AP",
+    triggerId: trigger.id,
+    levelType: "dungeon",
+    levelIndex: 0,
+    x: 1,
+    y: 0
+  });
+  const movedTrigger = moved.triggers.find((candidate) => candidate.active);
+  assert((moved.maps[0].tiles[0] & 0x1000) === 0, "Moving a dungeon Action Point should clear its old AP marker.");
+  assert((moved.maps[0].tiles[0] & 0x0500) === 0x0500, "Moving a dungeon Action Point should preserve the old cell's painted secret-passage directions.");
+  assert((moved.maps[0].tiles[1] & 0x1000) === 0x1000, "Moving a dungeon Action Point should set the AP marker at its destination.");
+  assert((moved.maps[0].tiles[1] & 0x0f00) === 0, "Moving a dungeon Action Point should not copy secret-passage geometry to its destination.");
+
+  const cleared = commands.deleteTrigger(moved, movedTrigger.id);
+  assert((cleared.maps[0].tiles[1] & 0x1000) === 0, "Deleting the last dungeon Action Point on a cell should clear the runtime marker.");
+  assert((cleared.maps[0].tiles[0] & 0x0500) === 0x0500, "Deleting or moving a dungeon AP should preserve independently authored secret-passage directions.");
+
+  const existingPassage = actionPointProject(dungeonMap(0, [0x0501, 1, 1, 1]));
+  const createdOnPassage = commands.createActionPoint(existingPassage, {
+    kind: "createActionPoint",
+    label: "Create AP on secret passage",
+    levelType: "dungeon",
+    levelIndex: 0,
+    x: 0,
+    y: 0
+  });
+  assert((createdOnPassage.maps[0].tiles[0] & 0x1500) === 0x1500, "Creating a dungeon AP on an existing secret passage should preserve its directions and add the AP marker.");
 }
 
 function checkCustomMapstatsAttributeSync({ updateCustomLandTileAttributes }, { classifyTileValue, tileAttributeGroup }, { landlookGroupTiles }) {
@@ -380,6 +594,15 @@ function projectWithCustomLandlook(overrides = {}) {
     tileAttributes: overrides.tileAttributes ?? customLandlooks.flatMap((landlook) => landlook.records.map((entry) => mapstatsProfile(landlook.landlook, entry, landlook))),
     customLandlooks,
     assetCatalog: overrides.assetCatalog ?? { tilesets: [customTileset()] }
+  };
+}
+
+function actionPointProject(map) {
+  return {
+    maps: [map],
+    triggers: [],
+    editorMetadata: { displayNames: {} },
+    scenario: {}
   };
 }
 

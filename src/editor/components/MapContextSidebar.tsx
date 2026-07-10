@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { TOOLS } from "../constants";
 import { EditorState } from "../store";
-import { CustomMapStamp, DungeonCellFlag, EditorTool, IconEntry, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { CustomMapStamp, DungeonCellFlag, EditorTool, IconEntry, LandCellSecretState, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { mapRecordContainsCell, mapTileIndex, randomRectContainsCell, randomRectEntityId, tileValueAt } from "../map/geometry";
 import { rectCells, regionCellCount } from "../map/regionPaint";
 import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
@@ -20,6 +20,7 @@ import { TutorialTip } from "./TutorialTip";
 import { ScrollArea } from "../ui";
 import { ResizablePane } from "./ResizablePane";
 import { actionPointCapacity, nextActionPointRecordIndex } from "../actionPointCapacity";
+import { actionPointMarkerState, actionPointMarkerStateForTrigger, isSecretActionPointState, landCellSecretState } from "../map/actionPointMarkers";
 import { LandLayoutEditor, type LandLayoutCellSelection, landLayoutStats, normalizeLayoutCells } from "./maps/LandLayoutWorkbench";
 import { attributeSourceLabel, forestTypeLabel, normalizedCombatBuild, tileAttributeLabel, tileAttributeRows, yesNo } from "./maps/mapTileUiUtils";
 import { LandTileAtlasEditor } from "./maps/LandTilesWorkbench";
@@ -2189,6 +2190,13 @@ function SelectionInspector({
               ["Edit State", "editable"]
             ]}
           />
+          {map && (
+            <LandCellSecretEditor
+              map={map}
+              cell={selection.cell}
+              onApplyCommand={onApplyCommand}
+            />
+          )}
           <CellTileEvidence cell={selection.cell} records={selection.records} />
           {selectedCellMeaning && <TileMeaningInspector title="Selected Cell Meaning" meaning={selectedCellMeaning} compact />}
           {selectedCellMeaning && (
@@ -2204,7 +2212,7 @@ function SelectionInspector({
             onOpenScripts={onOpenScripts}
           />
           <ScriptedChangeSection project={project} map={map} cell={selection.cell} onSelectEntity={onSelectEntity} onOpenScripts={onOpenScripts} />
-          <MapDiagnostics diagnostics={[...cellDiagnostics(selection), ...mapTileDiagnostics(selection, map, selectedCellMeaning)]} />
+          <MapDiagnostics diagnostics={[...(map ? cellDiagnostics(selection, map) : []), ...mapTileDiagnostics(selection, map, selectedCellMeaning)]} />
           <SelectionLinks
             map={map}
             triggers={selection.triggers}
@@ -2383,6 +2391,7 @@ function CellActionPointDetails({
       <div className="selection-link-list">
         {triggers.map((trigger) => {
           const selected = selectEntityFromId(triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source));
+          const markerState = actionPointMarkerStateForTrigger(project, trigger);
           const steps = trigger.actions
             .filter((action) => action.code !== 0)
             .slice(0, 4)
@@ -2392,6 +2401,9 @@ function CellActionPointDetails({
               <div>
                 <strong>Action Point {trigger.recordIndex}</strong>
                 <small>{trigger.percent}% chance{trigger.targetX != null && trigger.targetY != null ? ` | sends to ${trigger.landid ?? 0}, ${trigger.targetX},${trigger.targetY}` : ""}</small>
+                {trigger.levelType === "land" && markerState !== "normal" && markerState !== "none" && (
+                  <small>{markerState === "secret" ? "Hidden Secret via land cell state" : "Revealed Secret via land cell state"}</small>
+                )}
               </div>
               {steps.length > 0 ? (
                 <ol>
@@ -2409,6 +2421,49 @@ function CellActionPointDetails({
         })}
       </div>
     </details>
+  );
+}
+
+function LandCellSecretEditor({
+  map,
+  cell,
+  onApplyCommand
+}: {
+  map: MapEntity;
+  cell: { x: number; y: number; tile: number };
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const state = landCellSecretState(cell.tile);
+  const options: Array<{ id: LandCellSecretState; label: string }> = [
+    { id: "normal", label: "Normal" },
+    { id: "hidden", label: "Hidden Secret" },
+    { id: "revealed", label: "Revealed Secret" }
+  ];
+  return (
+    <section className="map-authoring-group land-cell-secret-editor" aria-label="Land cell secret state">
+      <h4>Secret Area</h4>
+      <div className="segmented-control" role="group" aria-label="Secret area state">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            className={state === option.id ? "active" : ""}
+            type="button"
+            aria-pressed={state === option.id}
+            onClick={() => onApplyCommand({
+              kind: "setLandCellSecretState",
+              label: `Set land cell ${option.label}`,
+              mapId: map.id,
+              x: cell.x,
+              y: cell.y,
+              state: option.id
+            })}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <small>{state === "hidden" ? "Undetected until Realmz reveals this cell." : state === "revealed" ? "Stored as already detected." : "Ordinary land cell state."}</small>
+    </section>
   );
 }
 
@@ -2521,13 +2576,15 @@ function scriptedTileChangesForCell(project: Project | null, map: MapEntity | nu
   return out;
 }
 
-function cellDiagnostics(selection: Extract<Selection, { kind: "cell" }>) {
+function cellDiagnostics(selection: Extract<Selection, { kind: "cell" }>, map: MapEntity) {
   const diagnostics: string[] = [];
-  const tileLooksLikeActionMarker = selection.cell.tile > 999;
+  const markerState = actionPointMarkerState(selection.cell.tile, map.levelType);
+  const tileLooksLikeActionMarker = markerState !== "none";
   if (selection.triggers.length > 0 && !tileLooksLikeActionMarker) {
     diagnostics.push("Action Point exists here, but the tile does not look like an AP marker.");
   }
-  if (tileLooksLikeActionMarker && selection.triggers.length === 0) {
+  const orphanedActionMarker = map.levelType === "land" ? markerState === "normal" : tileLooksLikeActionMarker;
+  if (orphanedActionMarker && selection.triggers.length === 0) {
     diagnostics.push("Tile looks like an AP marker, but no Action Point record resolves to this cell.");
   }
   for (const rect of selection.rects) {
@@ -2558,7 +2615,8 @@ function mapTileDiagnostics(
     diagnostics.push("Tile behavior is unknown because no mapstats or Data Solids metadata matched this value.");
   }
   if (map) {
-    if (hasSecretMarkerTile(selection.cell.tile, map) && attributes?.flags.includes("solid")) {
+    const hasLandSecretState = map.levelType === "land" && landCellSecretState(selection.cell.tile) !== "normal";
+    if ((hasLandSecretState || hasSecretMarkerTile(selection.cell.tile, map)) && attributes?.flags.includes("solid")) {
       diagnostics.push("Secret marker appears on a tile marked solid; verify that Realmz can actually enter this cell.");
     }
     if (isSecretWalkableTile(selection.cell.tile, map) && (attributes?.boatRequirement || attributes?.flyFloatRequired)) {
@@ -2583,6 +2641,8 @@ function TriggerSelectionDetails({
 }) {
   const slots = actionSlotEntitiesForTriggerRecord(project, trigger);
   const isActionPoint = trigger.source !== "Data ED3" && trigger.levelType && trigger.levelIndex != null;
+  const markerState = actionPointMarkerStateForTrigger(project, trigger);
+  const secret = isSecretActionPointState(markerState);
   const move = (patch: Partial<{ x: number; y: number }>) => {
     const levelType = trigger.levelType;
     const levelIndex = trigger.levelIndex;
@@ -2611,6 +2671,7 @@ function TriggerSelectionDetails({
         <InfoGrid
           rows={[
             ["Record", `${trigger.source} #${trigger.recordIndex}`],
+            ["Type", secret ? markerState === "revealed-secret" ? "Revealed Secret Action Point" : "Secret Action Point" : "Action Point"],
             ["Chance", `${trigger.percent}%`],
             ["Steps", `${trigger.actions.filter((action) => action.code !== 0 || action.id !== 0).length}/8 filled`]
           ]}
@@ -2639,6 +2700,20 @@ function TriggerSelectionDetails({
           <section className="map-authoring-group" aria-label="Activation">
             <h4>Activation</h4>
             <MapNumberField label="% Chance" value={trigger.percent} min={0} max={100} compact plain maxLength={3} onCommit={(percent) => onApplyCommand({ kind: "updateTriggerHeader", label: "Update Action Point chance", triggerId: trigger.id, fields: { percent } })} />
+            {trigger.levelType === "land" ? (
+              <small className="map-ap-secret-status">
+                {markerState === "secret" ? "Hidden Secret via land cell state." : markerState === "revealed-secret" ? "Revealed Secret via land cell state." : "Normal land cell. Edit Secret Area in the map Selection Inspector."}
+              </small>
+            ) : (
+              <small className="map-ap-dungeon-secret-status">
+                {secret ? "Secret via this cell's Allow Move directions." : "Paint Allow Move directions in Dungeon Draw to make this cell secret."}
+              </small>
+            )}
+            {markerState === "revealed-secret" && (
+              <small className="map-ap-marker-status">
+                {trigger.levelType === "land" ? "Stored as already detected in the land cell." : "Stored with Realmz's already-revealed runtime marker."}
+              </small>
+            )}
           </section>
           <details className="map-authoring-group map-authoring-destination" open={!destinationMatchesTrigger}>
             <summary>

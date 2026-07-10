@@ -29,7 +29,7 @@ import {
 import { clampScroll, mapCellFromTileIndex, MAP_CELLS } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
 import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
-import { hasSecretMarkerTile, isSecretWalkableTile } from "../map/secrets";
+import { hasSecretMarkerTile, showsHiddenWalkableOverlay } from "../map/secrets";
 import { loadMapOverlaySprites } from "../map/mapOverlaySprites";
 import { ScrollArea } from "../ui";
 import {
@@ -687,7 +687,7 @@ function secretOverlaySignature(map: MapEntity) {
   let hash = map.levelType === "dungeon" || map.render.mode === "dungeon-top-down" ? 0x811c9dc5 : 0x45d9f3b;
   for (const value of map.tiles) {
     let marker = 0;
-    if (isSecretWalkableTile(value, map)) marker |= 1;
+    if (showsHiddenWalkableOverlay(value, map)) marker |= 1;
     if (hasSecretMarkerTile(value, map)) marker |= 2;
     hash = Math.imul(hash ^ marker, 16777619);
   }

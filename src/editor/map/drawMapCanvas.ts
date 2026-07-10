@@ -8,11 +8,12 @@ import {
   randomRectEntityId,
   tileValueAt
 } from "./geometry";
-import { hasSecretMarkerTile, isSecretWalkableTile } from "./secrets";
+import { hasSecretMarkerTile, showsHiddenWalkableOverlay } from "./secrets";
 import { triggerEntityId } from "../utils";
 import { drawTileSprite, tileColor } from "../components/TileSprite";
 import { classifyTileValue } from "./tileMetadata";
 import { mapOverlaySprite } from "./mapOverlaySprites";
+import { drawWhiteKeyedOverlayImage } from "./whiteKeyedOverlay";
 import type { MapStampPreviewCell } from "./superTileStamps";
 
 export function drawBaseMap(
@@ -316,15 +317,13 @@ export function drawMapRecords(
   }
 }
 
-const whiteKeyedOverlayCache = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
-
 export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEntity, cell: number, icons: Record<number, IconEntry> = {}) {
   if (map.levelType === "dungeon") return;
   ctx.save();
   for (let y = 0; y < MAP_CELLS; y += 1) {
     for (let x = 0; x < MAP_CELLS; x += 1) {
       const value = tileValueAt(map, x, y);
-      if (isSecretWalkableTile(value, map)) {
+      if (showsHiddenWalkableOverlay(value, map)) {
         drawOfficialPathMarker(ctx, x, y, cell);
       }
       if (hasSecretMarkerTile(value, map)) {
@@ -393,45 +392,6 @@ function drawSecretMarker(ctx: CanvasRenderingContext2D, x: number, y: number, c
   ctx.strokeText("S", left + cell * 0.5, top + cell * 0.55);
   ctx.fillText("S", left + cell * 0.5, top + cell * 0.55);
   ctx.restore();
-}
-
-function drawWhiteKeyedOverlayImage(
-  ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-) {
-  const keyed = whiteKeyedOverlay(image);
-  ctx.drawImage(keyed, x, y, width, height);
-}
-
-function whiteKeyedOverlay(image: HTMLImageElement) {
-  const cached = whiteKeyedOverlayCache.get(image);
-  if (cached) return cached;
-  const canvas = document.createElement("canvas");
-  const width = image.naturalWidth || image.width;
-  const height = image.naturalHeight || image.height;
-  canvas.width = Math.max(1, width);
-  canvas.height = Math.max(1, height);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return canvas;
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(image, 0, 0);
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  for (let index = 0; index < data.length; index += 4) {
-    const red = data[index];
-    const green = data[index + 1];
-    const blue = data[index + 2];
-    if (red >= 238 && green >= 238 && blue >= 238) {
-      data[index + 3] = 0;
-    }
-  }
-  ctx.putImageData(imageData, 0, 0);
-  whiteKeyedOverlayCache.set(image, canvas);
-  return canvas;
 }
 
 export function drawMapVisibilityPreview(

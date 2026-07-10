@@ -3,6 +3,11 @@ import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { isReusableDoorPlaceholder } from "../actionPointCapacity";
 import { normalizedEditorMetadata } from "./tilePaletteCommands";
 import { defaultGlobalMacroHooks } from "./scenarioRulesCommands";
+import {
+  clearActionPointMarker,
+  ensureActionPointMarker,
+  updateActionPointMapCell
+} from "../map/actionPointMarkers";
 
 const DOOR_RECORD_BYTES = 40;
 const DOORS_PER_LEVEL = 100;
@@ -99,6 +104,7 @@ export function createStartupTestMacro(project: Project, complexEncounterId?: nu
 }
 
 export function deleteTrigger(project: Project, triggerId: string) {
+  const original = project.triggers.find((trigger) => trigger.id === triggerId);
   let changed = false;
   const removedDisplayNames: string[] = [];
   const nextTriggers = project.triggers.flatMap((trigger) => {
@@ -109,8 +115,21 @@ export function deleteTrigger(project: Project, triggerId: string) {
     return [emptyActionPointPlaceholder(trigger)];
   });
   if (!changed) return project;
+  let maps = project.maps;
+  if (original?.levelType && original.levelIndex != null && original.coordinate && !hasOtherTriggerAt(project, original, original.coordinate.x, original.coordinate.y)) {
+    const levelType = original.levelType;
+    maps = updateActionPointMapCell(
+      maps,
+      levelType,
+      original.levelIndex,
+      original.coordinate.x,
+      original.coordinate.y,
+      (value) => clearActionPointMarker(value, levelType)
+    );
+  }
   return {
     ...project,
+    maps,
     triggers: nextTriggers,
     editorMetadata: removeDisplayNames(project.editorMetadata, removedDisplayNames)
   };
@@ -194,8 +213,12 @@ export function createActionPoint(
       DOOR_RECORD_BYTES
     )
   };
+  const maps = updateActionPointMapCell(project.maps, command.levelType, command.levelIndex, command.x, command.y, (value) =>
+    ensureActionPointMarker(value, command.levelType)
+  );
   return {
     ...project,
+    maps,
     triggers: upsertAllocatedTrigger(project.triggers, trigger, allocation.placeholderId),
     editorMetadata: addDisplayName(project.editorMetadata, trigger.id, command.displayName)
   };
@@ -240,8 +263,24 @@ export function moveActionPoint(project: Project, command: Extract<ProjectComman
     coordinate: { x: command.x, y: command.y },
     provenance: authoredProvenance(nextSource, recordIndex, (command.levelIndex * DOORS_PER_LEVEL + recordIndex) * DOOR_RECORD_BYTES, DOOR_RECORD_BYTES)
   });
+  let maps = project.maps;
+  if (original.levelType && original.levelIndex != null && original.coordinate && !hasOtherTriggerAt(project, original, original.coordinate.x, original.coordinate.y)) {
+    const levelType = original.levelType;
+    maps = updateActionPointMapCell(
+      maps,
+      levelType,
+      original.levelIndex,
+      original.coordinate.x,
+      original.coordinate.y,
+      (value) => clearActionPointMarker(value, levelType)
+    );
+  }
+  maps = updateActionPointMapCell(maps, command.levelType, command.levelIndex, command.x, command.y, (value) =>
+    ensureActionPointMarker(value, command.levelType)
+  );
   return {
     ...project,
+    maps,
     triggers: upsertAllocatedTrigger(
       project.triggers.filter((trigger) => trigger.id !== original.id),
       nextTrigger,
@@ -444,6 +483,17 @@ function packDoorId(levelIndex: number, x: number, y: number) {
 
 function triggerIdFor(source: string, levelIndex: number, recordIndex: number) {
   return `${source}:${levelIndex}:${recordIndex}`;
+}
+
+function hasOtherTriggerAt(project: Project, original: TriggerRecord, x: number, y: number) {
+  return project.triggers.some((trigger) =>
+    trigger.id !== original.id &&
+    trigger.active &&
+    trigger.levelType === original.levelType &&
+    trigger.levelIndex === original.levelIndex &&
+    trigger.coordinate?.x === x &&
+    trigger.coordinate.y === y
+  );
 }
 
 function addDisplayName(metadata: Project["editorMetadata"], entityId: string, displayName?: string) {

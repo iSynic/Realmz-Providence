@@ -1127,6 +1127,8 @@ export type DungeonCellFlag =
 
 export type DungeonCellFlagState = "on" | "off" | "mixed";
 
+export type LandCellSecretState = "normal" | "hidden" | "revealed";
+
 export type ProjectCommand =
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
   | {
@@ -1162,6 +1164,14 @@ export type ProjectCommand =
       levelIndex: number;
       x: number;
       y: number;
+    }
+  | {
+      kind: "setLandCellSecretState";
+      label: string;
+      mapId: string;
+      x: number;
+      y: number;
+      state: LandCellSecretState;
     }
   | {
       kind: "updateTriggerHeader";

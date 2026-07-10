@@ -18,6 +18,7 @@ import { allDivinityOpcodeHelpEntries, divinityHelpEntriesForOpcode, divinityHel
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
+import { actionPointMarkerStateForTrigger, isSecretActionPointState } from "../map/actionPointMarkers";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { buildQuestPresentation, questCategoryLabel, QUEST_CATEGORIES, type QuestFlagModel, type QuestUsage } from "../questUsage";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
@@ -833,6 +834,8 @@ function ScriptAuthoringPanel({
     [project, selectedTrigger, isMacro, selectedEd3Reachability]
   );
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger), selectedCombatMacroContext) : "Action Point";
+  const selectedMarkerState = selectedTrigger && !isMacro ? actionPointMarkerStateForTrigger(project, selectedTrigger) : "none";
+  const selectedIsSecret = isSecretActionPointState(selectedMarkerState);
   const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Extra Action Point";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
@@ -1358,12 +1361,22 @@ function ScriptAuthoringPanel({
               ) : (
                 <div className="script-header-grid">
                   <section className="script-header-group script-header-chance" aria-label="Activation Chance">
-                    <h4>Activation Chance</h4>
+                    <h4>Activation</h4>
                     <NumberField
                       label="%"
                       value={selectedTrigger.percent}
                       onCommit={(percent) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action chance", triggerId: selectedTrigger.id, fields: { percent } })}
                     />
+                    {selectedTrigger.levelType === "land" ? (
+                      <small className="script-ap-secret-status">
+                        {selectedMarkerState === "secret" ? "Hidden Secret via land cell state" : selectedMarkerState === "revealed-secret" ? "Revealed Secret via land cell state" : "Normal land cell; edit Secret Area in Maps"}
+                      </small>
+                    ) : (
+                      <small className="script-ap-dungeon-secret-status">
+                        {selectedIsSecret ? "Secret via Dungeon Allow Move flags" : "Dungeon Draw controls Secret directions"}
+                      </small>
+                    )}
+                    {selectedMarkerState === "revealed-secret" && <small className="script-ap-marker-status">Already revealed</small>}
                   </section>
                   <section className="script-header-group script-header-location" aria-label="Trigger Location">
                     <div className="script-header-title-row">

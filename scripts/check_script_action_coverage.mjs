@@ -886,8 +886,9 @@ if (!semanticTriggersForMap) {
 
 for (const snippet of [
   "selectedCellAfterCommand(state.selectedCell, action.command, state.selectedMapId, state.project, nextProject)",
-  "command.kind !== \"moveActionPoint\"",
-  "selectedCell.x !== original.coordinate.x",
+  "command.kind === \"moveActionPoint\"",
+  "selectedCell.x === original.coordinate.x",
+  "return refreshSelectedCell(selectedCell, selectedMapId, nextProject)",
   "tileValueAt(targetMap, command.x, command.y)"
 ]) {
   if (!editorStore.includes(snippet)) failures.push(`Map Action Point move selection guard is missing: ${snippet}`);

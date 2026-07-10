@@ -45,7 +45,13 @@ const PLAINS_EXACT: Record<number, LandlookTileVisualSemantics> = {
   148: { label: "Well / small landmark", category: "terrain-prop", confidence: "uncertain" },
   149: { label: "Fallen log", category: "terrain-prop", confidence: "likely" },
   168: { label: "Blank / unused land tile", category: "blank", confidence: "likely" },
-  169: { label: "Brown terrain fill", category: "terrain-prop", confidence: "uncertain" }
+  169: { label: "Hidden walkable path", category: "road", confidence: "known", notes: "Divinity marks this stock path tile with the hidden-walkable symbol." },
+  180: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
+  181: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
+  182: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
+  183: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
+  184: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
+  185: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." }
 };
 
 const PLAINS_RANGES: SemanticRange[] = [

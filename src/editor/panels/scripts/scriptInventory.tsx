@@ -5,6 +5,7 @@ import { ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassif
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
 import { ScriptDiagnostic } from "../../scriptValidation";
 import { ed3DiagnosticForTrigger } from "../../scriptDiagnostics";
+import { actionPointMarkerStateForTrigger, isSecretActionPointState } from "../../map/actionPointMarkers";
 
 export const ScriptListItem = memo(function ScriptListItem({
   project,
@@ -203,7 +204,9 @@ export function scriptSubtitle(project: Project, trigger: TriggerRecord) {
   const map = project.maps.find((candidate) => candidate.levelType === trigger.levelType && candidate.index === trigger.levelIndex);
   const mapLabel = map?.name ?? `${trigger.levelType ?? "map"} ${trigger.levelIndex ?? 0}`;
   if (isReusableDoorPlaceholder(trigger)) return `${mapLabel} | reusable slot`;
-  return mapLabel;
+  const markerState = actionPointMarkerStateForTrigger(project, trigger);
+  if (!isSecretActionPointState(markerState)) return mapLabel;
+  return `${mapLabel} | ${markerState === "revealed-secret" ? "revealed secret" : "secret"}`;
 }
 
 export function scriptMatchesQuery(project: Project, trigger: TriggerRecord, query: string) {
