@@ -43,8 +43,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           33,
           34,
           35,
-          36,
-          37,
           38,
           39,
           40,
@@ -59,6 +57,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           49,
           50,
           51,
+          60
+        ],
+        "excluded": [
+          36,
+          37,
           52,
           53,
           54,
@@ -67,7 +70,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           57,
           58,
           59,
-          60,
           105,
           106,
           107,
@@ -77,68 +79,61 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
-        "center": [
-          60,
-          1,
+        "detail": [
           33,
-          40,
+          34,
           35
+        ],
+        "center": [
+          60
         ],
         "candidates": [
           60,
           1,
-          24,
-          38,
           39,
+          38,
+          24,
           3,
-          33,
           4,
-          2,
-          35
+          2
         ],
-        "sampleCount": 141503,
+        "sampleCount": 192466,
         "confidence": "high",
         "maskCandidates": {
           "0": {
             "tiles": [
               24,
               1,
-              111,
-              109,
-              112,
-              110,
               2,
               3
             ],
-            "samples": 1287,
+            "samples": 1428,
             "confidence": "high"
           },
           "1": {
             "tiles": [
               24,
               39,
-              106,
               1,
               20,
               2,
               10,
               6
             ],
-            "samples": 333,
+            "samples": 381,
             "confidence": "medium"
           },
           "2": {
             "tiles": [
-              1,
               38,
-              108,
+              1,
               2,
               24,
               16,
               42,
-              5
+              49
             ],
-            "samples": 293,
+            "samples": 330,
             "confidence": "medium"
           },
           "3": {
@@ -147,26 +142,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               60,
               2,
-              55,
               12,
-              26,
-              54
+              14,
+              26
             ],
-            "samples": 90,
-            "confidence": "low"
+            "samples": 116,
+            "confidence": "medium"
           },
           "4": {
             "tiles": [
               24,
               39,
-              105,
               1,
               20,
-              2,
               60,
+              2,
               48
             ],
-            "samples": 302,
+            "samples": 345,
             "confidence": "medium"
           },
           "5": {
@@ -176,11 +169,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               3,
               20,
-              1,
-              2,
-              22
+              4,
+              1
             ],
-            "samples": 1041,
+            "samples": 1459,
             "confidence": "high"
           },
           "6": {
@@ -191,11 +183,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               45,
               5,
-              46,
-              53
+              25,
+              46
             ],
-            "samples": 90,
-            "confidence": "low"
+            "samples": 111,
+            "confidence": "medium"
           },
           "7": {
             "tiles": [
@@ -203,17 +195,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               39,
               60,
-              2,
-              53,
-              55
+              2
             ],
-            "samples": 18,
+            "samples": 20,
             "confidence": "low"
           },
           "8": {
             "tiles": [
               38,
-              107,
               1,
               24,
               5,
@@ -221,7 +210,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               22,
               45
             ],
-            "samples": 297,
+            "samples": 329,
             "confidence": "medium"
           },
           "9": {
@@ -235,8 +224,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               5
             ],
-            "samples": 92,
-            "confidence": "low"
+            "samples": 110,
+            "confidence": "medium"
           },
           "10": {
             "tiles": [
@@ -246,10 +235,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               22,
               16,
-              6,
-              14
+              6
             ],
-            "samples": 1767,
+            "samples": 2075,
             "confidence": "high"
           },
           "11": {
@@ -260,10 +248,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               3,
               4,
-              16,
-              22
+              16
             ],
-            "samples": 59,
+            "samples": 64,
             "confidence": "low"
           },
           "12": {
@@ -273,12 +260,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               45,
               44,
-              55,
               10,
               23
             ],
-            "samples": 92,
-            "confidence": "low"
+            "samples": 120,
+            "confidence": "medium"
           },
           "13": {
             "tiles": [
@@ -289,7 +275,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               32,
               51
             ],
-            "samples": 15,
+            "samples": 20,
             "confidence": "low"
           },
           "14": {
@@ -300,10 +286,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               26,
               10,
-              16,
-              17
+              16
             ],
-            "samples": 41,
+            "samples": 46,
             "confidence": "low"
           },
           "16": {
@@ -314,24 +299,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               4,
               10,
               20,
-              11,
-              13
+              11
             ],
-            "samples": 129,
+            "samples": 130,
             "confidence": "medium"
           },
           "17": {
             "tiles": [
               39,
               1,
-              24,
               60,
+              24,
+              8,
               51,
-              43,
-              106,
-              8
+              43
             ],
-            "samples": 71,
+            "samples": 76,
             "confidence": "low"
           },
           "18": {
@@ -340,12 +323,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               38,
               60,
-              108,
-              42,
               2,
+              42,
               5
             ],
-            "samples": 63,
+            "samples": 67,
             "confidence": "low"
           },
           "19": {
@@ -356,10 +338,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               49,
               14,
-              48,
-              3
+              3,
+              18
             ],
-            "samples": 223,
+            "samples": 291,
             "confidence": "medium"
           },
           "20": {
@@ -369,25 +351,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               20,
               3,
-              33,
               5,
-              8
+              8,
+              9
             ],
-            "samples": 41,
+            "samples": 44,
             "confidence": "low"
           },
           "21": {
             "tiles": [
               39,
               60,
+              3,
               15,
               1,
               17,
-              3,
-              12,
-              24
+              4
             ],
-            "samples": 104,
+            "samples": 132,
             "confidence": "medium"
           },
           "22": {
@@ -395,26 +376,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               48,
               60,
               1,
-              33,
               10,
               17,
               27
             ],
-            "samples": 60,
+            "samples": 64,
             "confidence": "low"
           },
           "23": {
             "tiles": [
               60,
+              3,
               39,
               48,
               46,
               1,
-              3,
-              33,
+              13,
               2
             ],
-            "samples": 48,
+            "samples": 56,
             "confidence": "low"
           },
           "24": {
@@ -422,11 +402,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               60,
               2,
-              40,
               3,
               7,
               14,
-              22
+              22,
+              25
             ],
             "samples": 21,
             "confidence": "low"
@@ -442,7 +422,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               23,
               28
             ],
-            "samples": 100,
+            "samples": 101,
             "confidence": "medium"
           },
           "26": {
@@ -451,12 +431,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               60,
               1,
-              35,
               2,
-              23,
-              34
+              23
             ],
-            "samples": 165,
+            "samples": 185,
             "confidence": "medium"
           },
           "27": {
@@ -465,24 +443,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               51,
               24,
-              38,
               2,
-              35,
+              38,
               47
             ],
-            "samples": 57,
+            "samples": 60,
             "confidence": "low"
           },
           "30": {
             "tiles": [
-              60,
               1,
+              60,
               10,
               23,
               38,
               42
             ],
-            "samples": 10,
+            "samples": 9,
             "confidence": "low"
           },
           "32": {
@@ -496,7 +473,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               6,
               7
             ],
-            "samples": 142,
+            "samples": 145,
             "confidence": "medium"
           },
           "33": {
@@ -505,10 +482,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               3,
               20,
-              60,
-              35,
               2,
-              6
+              6,
+              14
             ],
             "samples": 38,
             "confidence": "low"
@@ -519,12 +495,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               38,
               49,
-              108,
-              35,
               2,
-              112
+              14
             ],
-            "samples": 72,
+            "samples": 76,
             "confidence": "low"
           },
           "35": {
@@ -532,12 +506,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               49,
               60,
               1,
+              14,
               2,
               8,
               12,
               26
             ],
-            "samples": 88,
+            "samples": 95,
             "confidence": "low"
           },
           "36": {
@@ -545,27 +520,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               1,
               50,
-              5,
               60,
-              24,
-              23,
-              34
+              5,
+              17,
+              24
             ],
-            "samples": 54,
+            "samples": 64,
             "confidence": "low"
           },
           "37": {
             "tiles": [
               39,
               60,
-              1,
               3,
+              1,
               20,
-              55,
-              34,
-              44
+              4
             ],
-            "samples": 124,
+            "samples": 160,
             "confidence": "medium"
           },
           "38": {
@@ -576,38 +548,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               17,
               9,
               48,
-              35,
+              13,
               3
             ],
-            "samples": 241,
+            "samples": 319,
             "confidence": "medium"
           },
           "39": {
             "tiles": [
               60,
               49,
-              39,
+              3,
               46,
+              39,
+              18,
               47,
-              1,
-              33,
-              35
+              1
             ],
-            "samples": 46,
+            "samples": 58,
             "confidence": "low"
           },
           "40": {
             "tiles": [
               1,
               2,
-              34,
               45,
-              109,
               4,
               10,
               11
             ],
-            "samples": 26,
+            "samples": 25,
             "confidence": "low"
           },
           "42": {
@@ -616,12 +586,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               60,
               24,
-              55,
               8,
               14,
-              4
+              2
             ],
-            "samples": 132,
+            "samples": 160,
             "confidence": "medium"
           },
           "44": {
@@ -635,7 +604,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               47,
               48
             ],
-            "samples": 82,
+            "samples": 90,
             "confidence": "low"
           },
           "45": {
@@ -643,10 +612,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               44,
               60,
               1,
-              25,
-              58
+              25
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "46": {
@@ -656,11 +624,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               50,
               9,
-              35,
               19,
               39
             ],
-            "samples": 42,
+            "samples": 43,
             "confidence": "low"
           },
           "48": {
@@ -671,50 +638,43 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               7,
               3,
               10,
-              20,
-              4
+              20
             ],
-            "samples": 31,
+            "samples": 34,
             "confidence": "low"
           },
           "50": {
             "tiles": [
               60,
               38,
-              112,
               1,
-              108,
-              33,
-              40,
-              2
+              2,
+              12
             ],
-            "samples": 34,
+            "samples": 31,
             "confidence": "low"
           },
           "51": {
             "tiles": [
               14,
               60,
-              49,
               26,
-              34,
-              2,
+              49,
               18,
-              33
+              2,
+              11,
+              12
             ],
-            "samples": 365,
+            "samples": 435,
             "confidence": "medium"
           },
           "53": {
             "tiles": [
               39,
               3,
-              55,
-              33,
-              15,
-              52
+              15
             ],
-            "samples": 21,
+            "samples": 26,
             "confidence": "low"
           },
           "54": {
@@ -723,12 +683,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               48,
               25,
-              35,
               9,
               1,
-              33
+              13
             ],
-            "samples": 415,
+            "samples": 482,
             "confidence": "medium"
           },
           "55": {
@@ -736,13 +695,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               3,
               1,
-              18,
               13,
+              18,
               49,
               14,
               17
             ],
-            "samples": 2505,
+            "samples": 3668,
             "confidence": "high"
           },
           "58": {
@@ -750,17 +709,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               60,
               1,
-              35,
               16,
               27
             ],
-            "samples": 50,
+            "samples": 60,
             "confidence": "low"
           },
           "59": {
             "tiles": [
               60,
-              34,
               51,
               1,
               30
@@ -773,27 +730,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               50,
               45,
-              33,
+              1,
               10,
               12,
               15,
               17
             ],
-            "samples": 22,
+            "samples": 24,
             "confidence": "low"
           },
           "63": {
             "tiles": [
               24,
               60,
-              33,
               18,
               44,
               1,
-              10,
-              29
+              29,
+              30
             ],
-            "samples": 60,
+            "samples": 69,
             "confidence": "low"
           },
           "64": {
@@ -807,7 +763,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               4,
               7
             ],
-            "samples": 145,
+            "samples": 148,
             "confidence": "medium"
           },
           "65": {
@@ -816,12 +772,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               3,
               20,
-              2,
               60,
-              33,
-              5
+              2,
+              5,
+              16
             ],
-            "samples": 29,
+            "samples": 30,
             "confidence": "low"
           },
           "66": {
@@ -835,21 +791,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               19
             ],
-            "samples": 20,
+            "samples": 21,
             "confidence": "low"
           },
           "68": {
             "tiles": [
               39,
+              60,
               48,
               1,
-              60,
               24,
-              105,
-              2,
-              25
+              19,
+              2
             ],
-            "samples": 59,
+            "samples": 66,
             "confidence": "low"
           },
           "69": {
@@ -860,51 +815,49 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               4,
               7,
-              18,
-              34
+              18
             ],
-            "samples": 120,
+            "samples": 146,
             "confidence": "medium"
           },
           "70": {
             "tiles": [
               48,
-              60,
               1,
+              60,
               9,
               2,
               6,
               12,
               25
             ],
-            "samples": 97,
+            "samples": 98,
             "confidence": "low"
           },
           "72": {
             "tiles": [
-              51,
               1,
+              51,
               60,
               38,
-              107,
-              40,
               2,
-              28
+              28,
+              40
             ],
-            "samples": 64,
+            "samples": 67,
             "confidence": "low"
           },
           "73": {
             "tiles": [
               51,
               60,
+              16,
               26,
-              34,
               41,
               44,
               47
             ],
-            "samples": 72,
+            "samples": 75,
             "confidence": "low"
           },
           "74": {
@@ -913,12 +866,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               60,
               24,
-              10,
-              34,
-              107,
-              2
+              2,
+              10
             ],
-            "samples": 151,
+            "samples": 172,
             "confidence": "medium"
           },
           "76": {
@@ -929,10 +880,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               5,
               50,
-              35,
               4
             ],
-            "samples": 248,
+            "samples": 321,
             "confidence": "medium"
           },
           "77": {
@@ -940,12 +890,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               51,
               39,
+              4,
               30,
               44,
               2,
-              4
+              15
             ],
-            "samples": 39,
+            "samples": 47,
             "confidence": "low"
           },
           "78": {
@@ -959,7 +910,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               45,
               24
             ],
-            "samples": 48,
+            "samples": 50,
             "confidence": "low"
           },
           "80": {
@@ -979,12 +930,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "81": {
             "tiles": [
               60,
-              35,
               11,
               16,
               32,
-              49,
-              109
+              49
+            ],
+            "samples": 8,
+            "confidence": "low"
+          },
+          "83": {
+            "tiles": [
+              60,
+              18,
+              5
             ],
             "samples": 8,
             "confidence": "low"
@@ -993,24 +951,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               39,
               60,
-              34,
               1,
-              35,
-              42,
-              108
+              42
             ],
-            "samples": 46,
+            "samples": 44,
             "confidence": "low"
           },
           "86": {
             "tiles": [
               48,
               60,
-              1,
-              33,
-              35
+              1
             ],
-            "samples": 130,
+            "samples": 131,
             "confidence": "medium"
           },
           "87": {
@@ -1020,8 +973,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               39,
               46,
-              33,
-              30
+              30,
+              31
             ],
             "samples": 47,
             "confidence": "low"
@@ -1031,8 +984,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               51,
               60,
               2,
-              16,
-              36
+              16
             ],
             "samples": 120,
             "confidence": "medium"
@@ -1043,8 +995,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               14,
-              47,
-              110
+              47
             ],
             "samples": 49,
             "confidence": "low"
@@ -1055,12 +1006,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               7,
               1,
-              34,
-              33,
               2,
               28
             ],
-            "samples": 43,
+            "samples": 45,
             "confidence": "low"
           },
           "93": {
@@ -1068,13 +1017,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               51,
               60,
               15,
-              34,
-              33,
+              4,
               30,
-              44,
-              55
+              44
             ],
-            "samples": 53,
+            "samples": 55,
             "confidence": "low"
           },
           "94": {
@@ -1082,23 +1029,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               48,
               60,
               10,
-              33,
-              35,
+              38,
               6,
               19,
               31
             ],
-            "samples": 34,
+            "samples": 36,
             "confidence": "low"
           },
           "95": {
             "tiles": [
               60,
               48,
+              30,
               31,
               51,
               2,
-              34
+              39
             ],
             "samples": 22,
             "confidence": "low"
@@ -1114,7 +1061,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               60
             ],
-            "samples": 74,
+            "samples": 75,
             "confidence": "low"
           },
           "97": {
@@ -1123,26 +1070,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               3,
               20,
+              60,
               2,
               5,
-              7,
-              10
+              7
             ],
-            "samples": 22,
+            "samples": 23,
             "confidence": "low"
           },
           "100": {
             "tiles": [
-              60,
               1,
+              60,
               39,
               2,
               5,
               10,
-              28,
-              110
+              28
             ],
-            "samples": 76,
+            "samples": 75,
             "confidence": "low"
           },
           "101": {
@@ -1150,10 +1096,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               60,
               18,
-              33,
               28
             ],
-            "samples": 33,
+            "samples": 46,
             "confidence": "low"
           },
           "102": {
@@ -1163,22 +1108,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               48,
               25,
               1,
-              35,
               6,
-              105
+              17
             ],
-            "samples": 312,
+            "samples": 356,
             "confidence": "medium"
           },
           "103": {
             "tiles": [
               60,
-              46,
               49,
-              33,
+              46,
+              18,
               20
             ],
-            "samples": 14,
+            "samples": 18,
             "confidence": "low"
           },
           "106": {
@@ -1188,24 +1132,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               16,
               32,
-              43,
-              57
+              43
             ],
-            "samples": 24,
+            "samples": 27,
             "confidence": "low"
           },
           "108": {
             "tiles": [
               5,
               60,
-              50,
               27,
-              35,
+              50,
               1,
               2,
-              19
+              4
             ],
-            "samples": 317,
+            "samples": 364,
             "confidence": "medium"
           },
           "109": {
@@ -1213,25 +1155,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               44,
               51,
-              30,
-              34,
-              37
+              20,
+              30
             ],
-            "samples": 17,
+            "samples": 19,
             "confidence": "low"
           },
           "110": {
             "tiles": [
               60,
               1,
-              38,
               6,
               10,
+              38,
               9,
-              5,
-              50
+              5
             ],
-            "samples": 2373,
+            "samples": 3380,
             "confidence": "high"
           },
           "111": {
@@ -1239,12 +1179,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               22,
               60,
               1,
-              34,
-              33,
-              51,
-              57
+              51
             ],
-            "samples": 57,
+            "samples": 65,
             "confidence": "low"
           },
           "112": {
@@ -1261,6 +1198,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 13,
             "confidence": "low"
           },
+          "117": {
+            "tiles": [
+              39,
+              60,
+              1
+            ],
+            "samples": 11,
+            "confidence": "low"
+          },
           "118": {
             "tiles": [
               60,
@@ -1268,11 +1214,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               17,
               9,
               48,
-              35,
-              34,
-              33
+              3
             ],
-            "samples": 163,
+            "samples": 210,
             "confidence": "medium"
           },
           "119": {
@@ -1280,14 +1224,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               60,
               3,
-              33,
-              35,
-              34,
-              13,
-              9
+              17,
+              13
             ],
-            "samples": 565,
+            "samples": 667,
             "confidence": "medium"
+          },
+          "123": {
+            "tiles": [
+              51,
+              60,
+              26,
+              1
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "125": {
             "tiles": [
@@ -1304,28 +1255,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               60,
               1,
-              35,
-              34,
               5,
-              17,
-              33
+              17
             ],
-            "samples": 461,
+            "samples": 539,
             "confidence": "medium"
           },
           "127": {
             "tiles": [
               60,
               30,
-              33,
-              35,
-              34,
               18,
               22,
               1
             ],
-            "samples": 935,
-            "confidence": "medium"
+            "samples": 1137,
+            "confidence": "high"
           },
           "128": {
             "tiles": [
@@ -1335,24 +1280,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               20,
               10,
-              15,
-              33
+              15
             ],
-            "samples": 121,
+            "samples": 126,
             "confidence": "medium"
           },
           "129": {
             "tiles": [
               39,
-              60,
               49,
-              106,
-              1,
+              60,
               11,
-              2,
-              3
+              1,
+              16,
+              2
             ],
-            "samples": 61,
+            "samples": 69,
             "confidence": "low"
           },
           "130": {
@@ -1361,8 +1304,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               60,
               8,
-              18,
-              111
+              18
             ],
             "samples": 20,
             "confidence": "low"
@@ -1373,24 +1315,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               60,
               46,
+              11,
               16,
-              25,
-              54,
-              55
+              25
             ],
-            "samples": 86,
+            "samples": 93,
             "confidence": "low"
           },
           "132": {
             "tiles": [
               24,
               1,
-              33,
               2,
               3,
-              105,
-              60,
-              6
+              13,
+              60
             ],
             "samples": 41,
             "confidence": "low"
@@ -1399,39 +1338,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               39,
               60,
-              4,
               13,
-              55,
+              4,
               1,
               7,
               24
             ],
-            "samples": 131,
+            "samples": 170,
             "confidence": "medium"
           },
           "135": {
             "tiles": [
               46,
               1,
-              35,
               2,
               39
             ],
-            "samples": 13,
+            "samples": 15,
             "confidence": "low"
           },
           "136": {
             "tiles": [
-              60,
               50,
-              107,
+              60,
               38,
               1,
               2,
               3,
               8
             ],
-            "samples": 67,
+            "samples": 75,
             "confidence": "low"
           },
           "137": {
@@ -1443,9 +1379,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               51,
               8,
               12,
-              1
+              4
             ],
-            "samples": 231,
+            "samples": 297,
             "confidence": "medium"
           },
           "138": {
@@ -1455,11 +1391,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               60,
               6,
-              55,
               16,
-              33
+              2
             ],
-            "samples": 158,
+            "samples": 180,
             "confidence": "medium"
           },
           "139": {
@@ -1469,36 +1404,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               49,
               24,
               1,
-              3,
               47,
-              35
+              3,
+              2
             ],
-            "samples": 54,
+            "samples": 58,
             "confidence": "low"
           },
           "140": {
             "tiles": [
               50,
               60,
-              35,
               29,
               47
             ],
-            "samples": 72,
+            "samples": 79,
             "confidence": "low"
           },
           "141": {
             "tiles": [
-              60,
               50,
-              39,
-              1,
-              44,
+              60,
               4,
-              28,
-              59
+              39,
+              44,
+              1,
+              29,
+              28
             ],
-            "samples": 62,
+            "samples": 71,
             "confidence": "low"
           },
           "142": {
@@ -1508,17 +1442,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               38
             ],
-            "samples": 9,
-            "confidence": "low"
-          },
-          "143": {
-            "tiles": [
-              60,
-              1,
-              21,
-              45
-            ],
-            "samples": 8,
+            "samples": 11,
             "confidence": "low"
           },
           "144": {
@@ -1532,7 +1456,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               20
             ],
-            "samples": 76,
+            "samples": 75,
             "confidence": "low"
           },
           "145": {
@@ -1540,10 +1464,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               39,
-              109,
               24,
-              106,
               12,
+              14,
               16
             ],
             "samples": 70,
@@ -1568,11 +1491,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               49,
               1,
-              35,
               7,
               2
             ],
-            "samples": 264,
+            "samples": 320,
             "confidence": "medium"
           },
           "148": {
@@ -1594,11 +1516,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               60,
               1,
-              33,
-              23,
-              106
+              3,
+              23
             ],
-            "samples": 50,
+            "samples": 62,
             "confidence": "low"
           },
           "151": {
@@ -1612,7 +1533,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               31
             ],
-            "samples": 25,
+            "samples": 28,
             "confidence": "low"
           },
           "153": {
@@ -1622,11 +1543,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               51,
               1,
-              16,
-              35,
-              2
+              2,
+              16
             ],
-            "samples": 343,
+            "samples": 399,
             "confidence": "medium"
           },
           "154": {
@@ -1634,13 +1554,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               24,
               1,
+              60,
               2,
               10,
-              22,
-              37,
-              50
+              22
             ],
-            "samples": 36,
+            "samples": 39,
             "confidence": "low"
           },
           "155": {
@@ -1651,24 +1570,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               12,
               7,
               38,
-              33,
               11
             ],
-            "samples": 2321,
+            "samples": 3295,
             "confidence": "high"
           },
           "157": {
             "tiles": [
               60,
               50,
+              15,
               1,
               44,
-              35,
               6,
-              15,
               16
             ],
-            "samples": 25,
+            "samples": 29,
             "confidence": "low"
           },
           "158": {
@@ -1686,13 +1603,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               23,
               60,
               1,
-              35,
-              2,
               4,
-              14,
-              34
+              29,
+              39
             ],
-            "samples": 73,
+            "samples": 78,
             "confidence": "low"
           },
           "160": {
@@ -1717,19 +1632,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               47
             ],
-            "samples": 131,
+            "samples": 135,
             "confidence": "medium"
           },
           "165": {
             "tiles": [
               39,
               60,
-              5,
               13,
-              34,
-              50,
-              55,
-              57
+              3,
+              5,
+              50
             ],
             "samples": 46,
             "confidence": "low"
@@ -1737,35 +1650,32 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "166": {
             "tiles": [
               60,
-              35,
               1,
-              13,
-              58
+              9,
+              13
             ],
-            "samples": 9,
+            "samples": 11,
             "confidence": "low"
           },
           "167": {
             "tiles": [
               49,
               60,
+              13,
+              3,
               39,
-              46,
-              56
+              46
             ],
-            "samples": 32,
+            "samples": 33,
             "confidence": "low"
           },
           "169": {
             "tiles": [
               60,
               28,
-              33,
-              12,
-              34,
-              106
+              12
             ],
-            "samples": 10,
+            "samples": 9,
             "confidence": "low"
           },
           "170": {
@@ -1773,26 +1683,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               60,
               1,
-              33,
-              35,
               6,
-              12,
-              34
+              12
             ],
-            "samples": 44,
+            "samples": 50,
             "confidence": "low"
           },
           "171": {
             "tiles": [
-              60,
               49,
+              60,
               12,
               1,
               38,
               3,
               47
             ],
-            "samples": 33,
+            "samples": 30,
             "confidence": "low"
           },
           "172": {
@@ -1802,14 +1709,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               19
             ],
-            "samples": 138,
+            "samples": 142,
             "confidence": "medium"
           },
           "173": {
             "tiles": [
               50,
               60,
-              33
+              29
             ],
             "samples": 28,
             "confidence": "low"
@@ -1820,26 +1727,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               6,
               1,
-              33,
               4,
               24,
               32
             ],
-            "samples": 35,
+            "samples": 31,
             "confidence": "low"
           },
           "175": {
             "tiles": [
               60,
               1,
-              35,
-              33,
               25,
+              29,
               39,
-              49,
-              57
+              49
             ],
-            "samples": 25,
+            "samples": 27,
             "confidence": "low"
           },
           "176": {
@@ -1849,8 +1753,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               20,
               8,
               19,
-              25,
-              107
+              25
             ],
             "samples": 14,
             "confidence": "low"
@@ -1858,15 +1761,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "179": {
             "tiles": [
               60,
-              14,
               26,
+              14,
               11,
               49,
-              1,
-              33,
-              35
+              1
             ],
-            "samples": 149,
+            "samples": 196,
             "confidence": "medium"
           },
           "181": {
@@ -1875,7 +1776,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               16
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "183": {
@@ -1883,23 +1784,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               60,
               3,
-              35,
-              33,
               11,
               17,
-              34
+              39
             ],
-            "samples": 512,
+            "samples": 602,
             "confidence": "medium"
           },
           "186": {
             "tiles": [
               38,
-              1,
               60,
+              1,
               8
             ],
-            "samples": 9,
+            "samples": 12,
             "confidence": "low"
           },
           "187": {
@@ -1908,12 +1807,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               2,
               1,
-              35,
-              8,
-              34,
-              33
+              8
             ],
-            "samples": 440,
+            "samples": 534,
             "confidence": "medium"
           },
           "189": {
@@ -1921,24 +1817,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               50,
               44,
               1,
-              52
+              60
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "191": {
             "tiles": [
               60,
               29,
-              34,
-              35,
-              33,
               23,
               13,
               32
             ],
-            "samples": 841,
-            "confidence": "medium"
+            "samples": 1045,
+            "confidence": "high"
           },
           "192": {
             "tiles": [
@@ -1948,32 +1841,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               3,
               23,
-              48,
-              35
+              48
             ],
-            "samples": 36,
+            "samples": 37,
             "confidence": "low"
           },
           "197": {
             "tiles": [
               39,
+              4,
               24
             ],
-            "samples": 13,
+            "samples": 18,
             "confidence": "low"
           },
           "200": {
             "tiles": [
               60,
-              107,
               1,
-              111,
-              54,
-              33,
               2,
-              7
+              7,
+              38
             ],
-            "samples": 31,
+            "samples": 30,
             "confidence": "low"
           },
           "201": {
@@ -1982,26 +1872,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               51,
               28,
-              35,
-              8,
               20,
-              34
+              8
             ],
-            "samples": 410,
+            "samples": 481,
             "confidence": "medium"
           },
           "202": {
             "tiles": [
               38,
               60,
-              33,
-              35,
               1,
               21,
-              31,
-              55
+              31
             ],
-            "samples": 51,
+            "samples": 59,
             "confidence": "low"
           },
           "203": {
@@ -2010,10 +1895,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               49,
               38,
-              33,
-              35,
               2,
-              7
+              7,
+              27
             ],
             "samples": 24,
             "confidence": "low"
@@ -2022,14 +1906,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               19,
               60,
-              50,
               27,
+              50,
               1,
-              35,
               5,
               6
             ],
-            "samples": 361,
+            "samples": 437,
             "confidence": "medium"
           },
           "205": {
@@ -2043,7 +1926,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               19
             ],
-            "samples": 2379,
+            "samples": 3576,
             "confidence": "high"
           },
           "206": {
@@ -2052,12 +1935,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               48,
               1,
-              33,
               19,
               38,
               50
             ],
-            "samples": 16,
+            "samples": 15,
             "confidence": "low"
           },
           "207": {
@@ -2065,13 +1947,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               21,
               60,
               46,
-              33,
-              35,
-              32,
-              34,
-              53
+              32
             ],
-            "samples": 52,
+            "samples": 60,
             "confidence": "low"
           },
           "208": {
@@ -2091,21 +1969,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               39
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "217": {
             "tiles": [
               60,
               16,
-              8,
               28,
-              51,
-              35,
-              34,
-              33
+              8,
+              51
             ],
-            "samples": 161,
+            "samples": 203,
             "confidence": "medium"
           },
           "218": {
@@ -2113,7 +1988,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               1
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "219": {
@@ -2122,12 +1997,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               2,
               1,
-              35,
-              33,
               11,
               16
             ],
-            "samples": 516,
+            "samples": 601,
             "confidence": "medium"
           },
           "221": {
@@ -2135,28 +2008,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               15,
               60,
               4,
-              34,
-              33,
               20,
-              35,
-              8
+              8,
+              19
             ],
-            "samples": 562,
+            "samples": 657,
             "confidence": "medium"
           },
           "223": {
             "tiles": [
               60,
               31,
-              35,
-              33,
-              34,
               21,
               1,
               30
             ],
-            "samples": 990,
-            "confidence": "medium"
+            "samples": 1188,
+            "confidence": "high"
           },
           "224": {
             "tiles": [
@@ -2183,10 +2051,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               9,
               1,
+              25,
               48,
               49
             ],
-            "samples": 10,
+            "samples": 12,
             "confidence": "low"
           },
           "231": {
@@ -2199,6 +2068,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 9,
             "confidence": "low"
           },
+          "234": {
+            "tiles": [
+              38,
+              1,
+              42
+            ],
+            "samples": 9,
+            "confidence": "low"
+          },
           "235": {
             "tiles": [
               49,
@@ -2207,7 +2085,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               41,
               47
             ],
-            "samples": 9,
+            "samples": 11,
             "confidence": "low"
           },
           "236": {
@@ -2217,11 +2095,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               27,
               5,
               50,
-              35,
-              1,
-              34
+              1
             ],
-            "samples": 174,
+            "samples": 187,
             "confidence": "medium"
           },
           "237": {
@@ -2230,12 +2106,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               4,
               16,
-              35,
-              34,
-              33,
               5
             ],
-            "samples": 531,
+            "samples": 638,
             "confidence": "medium"
           },
           "238": {
@@ -2244,27 +2117,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               9,
-              33,
-              35,
-              19,
-              34
+              19
             ],
-            "samples": 471,
+            "samples": 550,
             "confidence": "medium"
           },
           "239": {
             "tiles": [
               60,
               32,
-              34,
-              33,
-              35,
               20,
               22,
-              59
+              6
             ],
-            "samples": 910,
-            "confidence": "medium"
+            "samples": 1081,
+            "confidence": "high"
           },
           "240": {
             "tiles": [
@@ -2291,22 +2158,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               25
             ],
-            "samples": 67,
+            "samples": 85,
             "confidence": "low"
           },
           "251": {
             "tiles": [
               60,
               2,
-              7,
               1,
+              7,
               12,
               14,
               16,
               28
             ],
-            "samples": 91,
-            "confidence": "low"
+            "samples": 102,
+            "confidence": "medium"
           },
           "253": {
             "tiles": [
@@ -2319,7 +2186,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               27,
               28
             ],
-            "samples": 61,
+            "samples": 73,
             "confidence": "low"
           },
           "254": {
@@ -2331,38 +2198,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               27,
               19,
-              25
+              5
             ],
-            "samples": 65,
+            "samples": 91,
             "confidence": "low"
           },
           "255": {
             "tiles": [
               60,
               1,
-              33,
-              34,
-              35,
               29,
-              30,
-              31
+              30
             ],
-            "samples": 107466,
+            "samples": 149917,
             "confidence": "high"
           }
         },
         "roleCandidates": {
           "northWest": [
             48,
-            17,
             60,
+            17,
             9,
             25,
             1,
-            35,
+            13,
             2,
-            33,
-            13
+            6
           ],
           "north": [
             60,
@@ -2372,30 +2234,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             38,
             48,
             50,
-            35,
             9,
             5
           ],
           "northEast": [
             50,
-            19,
             60,
+            19,
             5,
             27,
             1,
-            35,
-            2,
             6,
-            34
+            4,
+            2
           ],
           "single": [
             24,
             1,
-            111,
-            109,
-            112,
             2,
-            110,
             3,
             20,
             6
@@ -2403,14 +2259,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "center": [
             60,
             1,
-            33,
-            34,
-            35,
-            29,
             30,
+            29,
             32,
-            31,
-            56
+            31
           ],
           "east": [
             60,
@@ -2422,7 +2274,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             51,
             16,
             39,
-            19
+            44
           ],
           "west": [
             60,
@@ -2432,33 +2284,30 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             1,
             49,
             48,
-            17,
             46,
+            17,
             14
           ],
           "south": [
             60,
             2,
-            1,
             7,
+            1,
             12,
             38,
             49,
-            51,
-            33,
-            24
+            51
           ],
           "lineVertical": [
             39,
             60,
-            24,
             3,
+            24,
             1,
-            20,
-            55,
             4,
-            2,
-            15
+            20,
+            13,
+            44
           ],
           "southEast": [
             51,
@@ -2468,27 +2317,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             28,
             2,
             1,
-            35,
-            34,
             12
           ],
           "capNorth": [
             24,
-            1,
             39,
-            106,
+            1,
             60,
-            2,
             20,
+            2,
             3,
-            49,
-            10
+            16,
+            49
           ],
           "capSouth": [
             24,
-            1,
             39,
-            105,
+            1,
             60,
             2,
             20,
@@ -2499,9 +2344,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "capEast": [
             1,
             38,
-            108,
-            60,
             2,
+            60,
             48,
             42,
             49,
@@ -2515,47 +2359,166 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             1,
             22,
             16,
-            6,
-            55,
             2,
+            6,
             14
           ],
           "southWest": [
             49,
-            14,
             60,
+            14,
             26,
             11,
-            1,
             2,
-            35,
-            12,
-            18
+            1,
+            18,
+            7
           ],
           "capWest": [
             1,
             38,
-            107,
             60,
             2,
             51,
-            45,
+            50,
             40,
+            45,
+            5
+          ]
+        },
+        "curatedRoles": {
+          "center": [
+            60
+          ],
+          "north": [
+            3
+          ],
+          "south": [
+            4
+          ],
+          "east": [
+            2
+          ],
+          "west": [
+            1
+          ],
+          "northEast": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "northWest": [
+            9,
+            10,
+            17,
+            18
+          ],
+          "southEast": [
+            7,
+            8,
+            15,
+            16
+          ],
+          "southWest": [
             5,
+            6,
+            19,
+            20
+          ]
+        },
+        "curatedWaterRoles": {},
+        "curatedMasks": {
+          "1": [
+            40
+          ],
+          "2": [
+            41
+          ],
+          "3": [
+            50
+          ],
+          "4": [
+            42
+          ],
+          "5": [
+            38
+          ],
+          "6": [
+            48
+          ],
+          "7": [
+            45
+          ],
+          "8": [
+            43
+          ],
+          "9": [
+            51
+          ],
+          "10": [
+            39
+          ],
+          "11": [
+            44
+          ],
+          "12": [
+            49
+          ],
+          "13": [
+            47
+          ],
+          "14": [
+            46
+          ],
+          "19": [
+            27
+          ],
+          "38": [
+            25
+          ],
+          "58": [
             22
+          ],
+          "76": [
+            26
+          ],
+          "101": [
+            24
+          ],
+          "127": [
+            30
+          ],
+          "137": [
+            28
+          ],
+          "149": [
+            21
+          ],
+          "191": [
+            32
+          ],
+          "202": [
+            23
+          ],
+          "223": [
+            31
+          ],
+          "239": [
+            29
           ]
         },
         "fallbackRoles": {
           "center": 60,
           "single": 60,
           "north": 3,
-          "south": 31,
+          "south": 4,
           "east": 2,
-          "west": 42,
-          "northEast": 4,
-          "northWest": 1,
-          "southEast": 24,
-          "southWest": 21,
+          "west": 1,
+          "northEast": 11,
+          "northWest": 9,
+          "southEast": 7,
+          "southWest": 5,
           "lineHorizontal": 43,
           "lineVertical": 42,
           "capNorth": 4,
@@ -2604,22 +2567,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           92,
           93
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           61
         ],
         "candidates": [
           61,
           80,
-          85,
           84,
+          85,
           81,
           83,
           82,
           77,
           75,
-          78
+          76
         ],
-        "sampleCount": 154725,
+        "sampleCount": 197116,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -2641,69 +2606,69 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               81,
               64,
-              71,
               83,
               62,
-              82,
-              85
+              71,
+              80,
+              82
             ],
-            "samples": 142,
+            "samples": 159,
             "confidence": "medium"
           },
           "2": {
             "tiles": [
               61,
-              78,
               72,
-              77,
+              78,
               66,
-              73,
-              75,
-              65
+              77,
+              67,
+              71,
+              73
             ],
-            "samples": 131,
+            "samples": 142,
             "confidence": "medium"
           },
           "3": {
             "tiles": [
               61,
               71,
-              72,
               73,
+              72,
               65,
               69,
               75,
               83
             ],
-            "samples": 30,
+            "samples": 38,
             "confidence": "low"
           },
           "4": {
             "tiles": [
               61,
               67,
-              83,
               70,
+              83,
+              81,
               82,
               69,
-              80,
-              81
+              80
             ],
-            "samples": 122,
+            "samples": 136,
             "confidence": "medium"
           },
           "5": {
             "tiles": [
               61,
-              85,
               83,
+              85,
               84,
-              80,
               81,
+              80,
               82,
               93
             ],
-            "samples": 1606,
+            "samples": 2083,
             "confidence": "high"
           },
           "6": {
@@ -2713,92 +2678,94 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               67,
               74,
-              84
+              84,
+              85,
+              86
             ],
-            "samples": 27,
+            "samples": 32,
             "confidence": "low"
           },
           "8": {
             "tiles": [
               79,
-              77,
               61,
-              62,
               70,
+              77,
+              62,
               74,
-              69,
-              75
+              68,
+              69
             ],
-            "samples": 134,
+            "samples": 141,
             "confidence": "medium"
           },
           "9": {
             "tiles": [
               61,
-              75,
               62,
+              75,
               81,
+              89,
               74,
-              76,
-              89
+              76
             ],
-            "samples": 22,
+            "samples": 28,
             "confidence": "low"
           },
           "10": {
             "tiles": [
-              61,
               77,
-              79,
+              61,
               78,
-              75,
+              79,
               76,
+              75,
               74,
               91
             ],
-            "samples": 1441,
+            "samples": 1878,
             "confidence": "high"
           },
           "12": {
             "tiles": [
               61,
-              70,
-              69,
               68,
+              69,
+              70,
               76,
               72,
               80,
               81
             ],
-            "samples": 39,
+            "samples": 44,
             "confidence": "low"
           },
           "16": {
             "tiles": [
               72,
-              63,
               64,
+              63,
               65,
               67,
               61,
               66,
               69
             ],
-            "samples": 22,
+            "samples": 23,
             "confidence": "low"
           },
           "17": {
             "tiles": [
-              62,
               64,
+              62,
               63,
               61,
-              85,
               71,
-              81,
-              82
+              85,
+              89,
+              81
             ],
-            "samples": 64,
+            "samples": 70,
             "confidence": "low"
           },
           "18": {
@@ -2818,82 +2785,94 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "19": {
             "tiles": [
               61,
-              73,
               71,
+              73,
               72,
               87,
               84,
-              83,
-              75
+              75,
+              83
             ],
-            "samples": 982,
-            "confidence": "medium"
+            "samples": 1222,
+            "confidence": "high"
+          },
+          "20": {
+            "tiles": [
+              65,
+              80,
+              66,
+              67,
+              69,
+              86
+            ],
+            "samples": 9,
+            "confidence": "low"
           },
           "21": {
             "tiles": [
               61,
-              81,
               82,
+              81,
               80,
               93,
               83,
-              70,
+              85,
               84
             ],
-            "samples": 89,
-            "confidence": "low"
+            "samples": 106,
+            "confidence": "medium"
           },
           "22": {
             "tiles": [
               61,
               65,
-              67,
               66,
+              67,
               78,
               79,
               86
             ],
-            "samples": 13,
+            "samples": 15,
             "confidence": "low"
           },
           "23": {
             "tiles": [
               61,
               85,
-              81,
               84,
+              81,
+              83,
               75,
               82,
-              83,
               91
             ],
-            "samples": 135,
+            "samples": 156,
             "confidence": "medium"
           },
           "25": {
             "tiles": [
               61,
+              64,
               75,
               63,
-              64,
               81,
               82
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "26": {
             "tiles": [
               77,
-              61,
               78,
               79,
+              61,
+              74,
               75,
               65,
-              74,
               76
             ],
-            "samples": 59,
+            "samples": 66,
             "confidence": "low"
           },
           "27": {
@@ -2905,21 +2884,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               92
             ],
-            "samples": 126,
+            "samples": 135,
             "confidence": "medium"
           },
           "32": {
             "tiles": [
               72,
-              69,
               61,
+              69,
+              71,
               67,
               68,
-              71,
               73,
               66
             ],
-            "samples": 22,
+            "samples": 24,
             "confidence": "low"
           },
           "34": {
@@ -2930,81 +2909,83 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               76,
               65,
-              69,
-              77
+              67,
+              69
             ],
-            "samples": 79,
+            "samples": 85,
             "confidence": "low"
           },
           "35": {
             "tiles": [
               73,
-              61,
               72,
-              83
+              61,
+              83,
+              87
             ],
-            "samples": 8,
+            "samples": 13,
             "confidence": "low"
           },
           "36": {
             "tiles": [
               68,
-              69,
               70,
+              69,
               61,
               80,
               84,
-              65,
-              67
+              67,
+              81
             ],
-            "samples": 78,
+            "samples": 84,
             "confidence": "low"
           },
           "37": {
             "tiles": [
-              61,
-              82,
               80,
+              82,
+              61,
               81,
-              85,
+              84,
               93,
-              88,
-              69
+              85,
+              83
             ],
-            "samples": 77,
-            "confidence": "low"
+            "samples": 101,
+            "confidence": "medium"
           },
           "38": {
             "tiles": [
               61,
-              65,
-              67,
               66,
+              67,
+              65,
               86,
               83,
               85,
               79
             ],
-            "samples": 920,
-            "confidence": "medium"
+            "samples": 1145,
+            "confidence": "high"
           },
           "39": {
             "tiles": [
               61,
               84,
-              67,
               85,
+              67,
+              92,
               66,
               71,
-              90,
-              91
+              83
             ],
-            "samples": 142,
+            "samples": 162,
             "confidence": "medium"
           },
           "40": {
             "tiles": [
               73,
+              61,
               63,
               64,
               68,
@@ -3012,7 +2993,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "42": {
@@ -3026,34 +3007,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               91,
               67
             ],
-            "samples": 72,
+            "samples": 98,
             "confidence": "low"
           },
           "44": {
             "tiles": [
               70,
-              81,
               61,
+              81,
+              88,
               69,
               77,
               80,
-              82,
-              88
+              82
             ],
-            "samples": 11,
+            "samples": 13,
             "confidence": "low"
           },
           "46": {
             "tiles": [
               61,
-              78,
               77,
+              78,
               79,
               66,
-              75,
-              88
+              74,
+              69,
+              75
             ],
-            "samples": 126,
+            "samples": 151,
             "confidence": "medium"
           },
           "50": {
@@ -3062,12 +3044,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               65,
               71,
-              72,
               61,
               67,
+              72,
               77
             ],
-            "samples": 30,
+            "samples": 32,
             "confidence": "low"
           },
           "51": {
@@ -3081,8 +3063,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               76
             ],
-            "samples": 891,
-            "confidence": "medium"
+            "samples": 1131,
+            "confidence": "high"
           },
           "53": {
             "tiles": [
@@ -3090,12 +3072,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               81,
               84,
+              85,
               73,
               80,
-              82,
-              85
+              82
             ],
-            "samples": 25,
+            "samples": 31,
             "confidence": "low"
           },
           "54": {
@@ -3107,23 +3089,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               84,
               83,
-              85
+              77
             ],
-            "samples": 850,
-            "confidence": "medium"
+            "samples": 1114,
+            "confidence": "high"
           },
           "55": {
             "tiles": [
               61,
-              85,
               84,
+              85,
               83,
               92,
               66,
               87,
-              86
+              71
             ],
-            "samples": 6786,
+            "samples": 9006,
             "confidence": "high"
           },
           "58": {
@@ -3140,10 +3122,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "59": {
             "tiles": [
               61,
+              74,
               75,
-              74
+              76
             ],
-            "samples": 15,
+            "samples": 20,
             "confidence": "low"
           },
           "62": {
@@ -3154,7 +3137,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               90
             ],
-            "samples": 15,
+            "samples": 18,
             "confidence": "low"
           },
           "63": {
@@ -3162,7 +3145,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               71
             ],
-            "samples": 43,
+            "samples": 47,
             "confidence": "low"
           },
           "64": {
@@ -3179,17 +3162,31 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 26,
             "confidence": "low"
           },
+          "65": {
+            "tiles": [
+              63,
+              64,
+              83,
+              62,
+              70,
+              72,
+              89
+            ],
+            "samples": 10,
+            "confidence": "low"
+          },
           "66": {
             "tiles": [
               65,
               66,
               70,
+              64,
               71,
               73,
               75,
               86
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "68": {
@@ -3203,7 +3200,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               69,
               70
             ],
-            "samples": 66,
+            "samples": 68,
             "confidence": "low"
           },
           "69": {
@@ -3212,23 +3209,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               61,
               84,
+              92,
               82,
               81,
-              87,
-              67
+              87
             ],
-            "samples": 79,
+            "samples": 96,
             "confidence": "low"
           },
           "70": {
             "tiles": [
+              66,
               61,
               65,
-              66,
-              84,
-              67
+              67,
+              84
             ],
-            "samples": 11,
+            "samples": 14,
             "confidence": "low"
           },
           "72": {
@@ -3237,12 +3234,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               61,
               64,
-              79,
               68,
+              79,
               76,
               75
             ],
-            "samples": 65,
+            "samples": 69,
             "confidence": "low"
           },
           "73": {
@@ -3255,7 +3252,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               81
             ],
-            "samples": 14,
+            "samples": 16,
             "confidence": "low"
           },
           "74": {
@@ -3269,7 +3266,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               78
             ],
-            "samples": 63,
+            "samples": 82,
             "confidence": "low"
           },
           "76": {
@@ -3280,11 +3277,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               69,
               88,
               77,
-              80,
-              82
+              82,
+              80
             ],
-            "samples": 949,
-            "confidence": "medium"
+            "samples": 1183,
+            "confidence": "high"
           },
           "77": {
             "tiles": [
@@ -3292,61 +3289,62 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               81,
               82,
+              93,
               90,
               63,
-              65,
-              85
+              65
             ],
-            "samples": 133,
+            "samples": 154,
             "confidence": "medium"
           },
           "78": {
             "tiles": [
               61,
               78,
+              77,
               79,
               88,
               75,
               90,
               91
             ],
-            "samples": 125,
+            "samples": 144,
             "confidence": "medium"
           },
           "83": {
             "tiles": [
               87,
-              61,
               72,
-              74,
               75,
+              61,
+              73,
+              74,
               85,
-              76,
-              89
+              71
             ],
-            "samples": 20,
+            "samples": 25,
             "confidence": "low"
           },
           "85": {
             "tiles": [
               80,
-              81,
               84,
+              81,
               93,
               85
             ],
-            "samples": 12,
+            "samples": 15,
             "confidence": "low"
           },
           "86": {
             "tiles": [
               86,
+              67,
               65,
               66,
-              67,
               61
             ],
-            "samples": 26,
+            "samples": 32,
             "confidence": "low"
           },
           "87": {
@@ -3354,12 +3352,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               83,
               84,
+              85,
               92,
               87,
-              85,
+              66,
               64
             ],
-            "samples": 32,
+            "samples": 39,
             "confidence": "low"
           },
           "89": {
@@ -3368,35 +3367,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               62,
               63,
-              61
+              61,
+              75
             ],
-            "samples": 22,
+            "samples": 28,
             "confidence": "low"
           },
           "91": {
             "tiles": [
               91,
-              89,
               61,
+              89,
               76,
               62,
-              75,
               71,
+              75,
               87
             ],
-            "samples": 26,
+            "samples": 29,
             "confidence": "low"
           },
           "92": {
             "tiles": [
               68,
+              69,
               88,
               61,
+              70,
               80,
-              69,
               77,
-              82,
-              70
+              82
             ],
             "samples": 28,
             "confidence": "low"
@@ -3404,15 +3404,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "93": {
             "tiles": [
               61,
-              89,
               63,
-              80,
               81,
+              82,
+              89,
+              80,
               88,
-              62,
-              82
+              62
             ],
-            "samples": 34,
+            "samples": 39,
             "confidence": "low"
           },
           "94": {
@@ -3421,11 +3421,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               78,
               88,
+              67,
               77,
               65,
-              67
+              79
             ],
-            "samples": 26,
+            "samples": 32,
             "confidence": "low"
           },
           "95": {
@@ -3434,24 +3435,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               91,
               92,
-              86,
-              88
+              88,
+              89
             ],
-            "samples": 149,
+            "samples": 155,
             "confidence": "medium"
           },
           "100": {
             "tiles": [
               66,
-              61,
-              67,
-              69,
-              83,
-              70,
               68,
-              79
+              69,
+              61,
+              65,
+              83,
+              67,
+              70
             ],
-            "samples": 38,
+            "samples": 45,
+            "confidence": "low"
+          },
+          "101": {
+            "tiles": [
+              61,
+              80,
+              81,
+              83,
+              84,
+              85
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "102": {
@@ -3465,7 +3478,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               77
             ],
-            "samples": 705,
+            "samples": 911,
             "confidence": "medium"
           },
           "103": {
@@ -3475,35 +3488,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               86
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "106": {
             "tiles": [
               61,
               75,
-              76,
               77,
+              76,
+              78,
               79,
               74,
-              78,
               90
             ],
-            "samples": 26,
+            "samples": 28,
             "confidence": "low"
           },
           "108": {
             "tiles": [
               68,
-              69,
               70,
+              69,
               88,
               61,
               82,
               81,
-              80
+              77
             ],
-            "samples": 630,
+            "samples": 855,
             "confidence": "medium"
           },
           "109": {
@@ -3511,10 +3524,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               64,
               80,
+              81,
               82,
               89
             ],
-            "samples": 13,
+            "samples": 15,
             "confidence": "low"
           },
           "110": {
@@ -3526,9 +3540,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               86,
               66,
-              88
+              68
             ],
-            "samples": 5696,
+            "samples": 7845,
             "confidence": "high"
           },
           "111": {
@@ -3536,18 +3550,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               70
             ],
-            "samples": 42,
+            "samples": 52,
             "confidence": "low"
           },
           "115": {
             "tiles": [
               72,
-              71,
               73,
-              87,
-              61
+              61,
+              71,
+              84
             ],
-            "samples": 14,
+            "samples": 10,
             "confidence": "low"
           },
           "118": {
@@ -3558,11 +3572,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               86,
               61,
               83,
-              85,
-              77
+              77,
+              85
             ],
-            "samples": 887,
-            "confidence": "medium"
+            "samples": 1137,
+            "confidence": "high"
           },
           "119": {
             "tiles": [
@@ -3573,30 +3587,32 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               92,
               86,
               65,
-              87
+              67
             ],
-            "samples": 882,
-            "confidence": "medium"
+            "samples": 1242,
+            "confidence": "high"
           },
           "121": {
             "tiles": [
               63,
+              61,
               64,
-              89
+              89,
+              93
             ],
-            "samples": 8,
+            "samples": 11,
             "confidence": "low"
           },
           "122": {
             "tiles": [
               76,
-              79,
-              64,
               77,
               78,
+              79,
+              64,
               86
             ],
-            "samples": 8,
+            "samples": 10,
             "confidence": "low"
           },
           "123": {
@@ -3606,9 +3622,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               89,
               72,
-              74
+              74,
+              82
             ],
-            "samples": 15,
+            "samples": 16,
             "confidence": "low"
           },
           "124": {
@@ -3628,14 +3645,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "125": {
             "tiles": [
               93,
+              61,
+              81,
               88,
               89,
-              61,
               68,
-              81,
+              80,
               82
             ],
-            "samples": 13,
+            "samples": 17,
             "confidence": "low"
           },
           "126": {
@@ -3646,38 +3664,38 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               90,
               67,
-              65,
-              86
+              86,
+              65
             ],
-            "samples": 723,
-            "confidence": "medium"
+            "samples": 1009,
+            "confidence": "high"
           },
           "127": {
             "tiles": [
               61,
               90,
               92,
-              77,
+              84,
+              67,
               78,
-              79,
               85,
-              86
+              79
             ],
-            "samples": 2332,
+            "samples": 3173,
             "confidence": "high"
           },
           "128": {
             "tiles": [
               72,
               71,
+              61,
               62,
               64,
               65,
               67,
-              73,
-              77
+              68
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "129": {
@@ -3685,25 +3703,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               71,
               73,
-              82,
               61,
+              82,
               63,
               64,
               81
             ],
-            "samples": 78,
+            "samples": 84,
             "confidence": "low"
           },
           "131": {
             "tiles": [
               61,
               73,
-              71,
               72,
+              71,
               83,
               84
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "133": {
@@ -3713,12 +3731,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               83,
               82,
-              81,
               92,
-              80
+              81,
+              93
             ],
-            "samples": 92,
-            "confidence": "low"
+            "samples": 118,
+            "confidence": "medium"
           },
           "136": {
             "tiles": [
@@ -3728,30 +3746,30 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               64,
               77,
-              62,
-              63
+              63,
+              62
             ],
-            "samples": 74,
+            "samples": 78,
             "confidence": "low"
           },
           "137": {
             "tiles": [
-              61,
               64,
-              62,
+              61,
               63,
+              62,
               89,
               80,
               81,
               76
             ],
-            "samples": 963,
-            "confidence": "medium"
+            "samples": 1201,
+            "confidence": "high"
           },
           "138": {
             "tiles": [
-              77,
               79,
+              77,
               78,
               61,
               76,
@@ -3759,7 +3777,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               74
             ],
-            "samples": 72,
+            "samples": 82,
             "confidence": "low"
           },
           "139": {
@@ -3771,9 +3789,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               63,
               64,
-              72
+              71
             ],
-            "samples": 132,
+            "samples": 146,
             "confidence": "medium"
           },
           "140": {
@@ -3782,10 +3800,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               69,
               70,
+              88,
               77,
               78
             ],
-            "samples": 12,
+            "samples": 21,
             "confidence": "low"
           },
           "141": {
@@ -3794,25 +3813,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               81,
               80,
+              93,
               71,
-              76,
-              83
+              76
             ],
-            "samples": 138,
+            "samples": 160,
             "confidence": "medium"
           },
           "145": {
             "tiles": [
               64,
-              72,
-              61,
+              73,
               62,
               71,
-              73,
+              72,
+              61,
               84,
               74
             ],
-            "samples": 25,
+            "samples": 34,
             "confidence": "low"
           },
           "147": {
@@ -3823,10 +3842,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               61,
               84,
-              75,
-              83
+              83,
+              75
             ],
-            "samples": 673,
+            "samples": 903,
             "confidence": "medium"
           },
           "151": {
@@ -3838,7 +3857,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               92
             ],
-            "samples": 17,
+            "samples": 21,
             "confidence": "low"
           },
           "153": {
@@ -3852,20 +3871,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               80
             ],
-            "samples": 654,
+            "samples": 858,
             "confidence": "medium"
           },
           "154": {
             "tiles": [
               61,
               76,
-              77,
               74,
+              77,
+              75,
               79,
               78,
               91
             ],
-            "samples": 28,
+            "samples": 35,
             "confidence": "low"
           },
           "155": {
@@ -3879,15 +3899,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               64
             ],
-            "samples": 5410,
+            "samples": 7551,
             "confidence": "high"
           },
           "157": {
             "tiles": [
               61,
-              81,
               82,
-              62,
+              81,
               69,
               80,
               87,
@@ -3900,33 +3919,45 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               61
             ],
-            "samples": 37,
+            "samples": 52,
             "confidence": "low"
           },
           "163": {
             "tiles": [
               87,
+              61,
               71,
               73,
-              61,
               72,
               84
             ],
-            "samples": 42,
+            "samples": 51,
+            "confidence": "low"
+          },
+          "164": {
+            "tiles": [
+              68,
+              92,
+              69,
+              70,
+              84,
+              87
+            ],
+            "samples": 9,
             "confidence": "low"
           },
           "166": {
             "tiles": [
+              67,
               86,
               61,
-              67,
               65,
               66,
               71,
               78,
-              92
+              90
             ],
-            "samples": 21,
+            "samples": 24,
             "confidence": "low"
           },
           "167": {
@@ -3935,10 +3966,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               92,
               83,
               84,
+              85,
               86,
               71,
-              85,
-              65
+              87
             ],
             "samples": 41,
             "confidence": "low"
@@ -3949,36 +3980,37 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               63,
               61,
+              62,
               87
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "170": {
             "tiles": [
               75,
-              78,
               76,
+              78,
               77,
               79,
               87,
               90
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "171": {
             "tiles": [
               61,
               91,
-              89,
-              75,
               87,
-              71,
+              89,
               74,
+              75,
+              71,
               76
             ],
-            "samples": 33,
+            "samples": 36,
             "confidence": "low"
           },
           "172": {
@@ -3991,7 +4023,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               81
             ],
-            "samples": 38,
+            "samples": 43,
             "confidence": "low"
           },
           "173": {
@@ -4001,11 +4033,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               93,
               82,
-              70,
               88,
-              63
+              70,
+              64
             ],
-            "samples": 43,
+            "samples": 45,
             "confidence": "low"
           },
           "174": {
@@ -4016,10 +4048,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               86,
               88,
-              68,
               78
             ],
-            "samples": 30,
+            "samples": 32,
             "confidence": "low"
           },
           "175": {
@@ -4032,7 +4063,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               91,
               93
             ],
-            "samples": 135,
+            "samples": 141,
             "confidence": "medium"
           },
           "179": {
@@ -4043,60 +4074,73 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               61,
               83,
-              84,
-              76
+              76,
+              84
             ],
-            "samples": 942,
-            "confidence": "medium"
+            "samples": 1154,
+            "confidence": "high"
           },
           "182": {
             "tiles": [
               66,
               65,
+              61,
               67,
               77,
               84,
               85,
               86
             ],
-            "samples": 18,
+            "samples": 23,
             "confidence": "low"
           },
           "183": {
             "tiles": [
-              85,
               83,
+              85,
               84,
               61,
               92,
               72,
-              87,
-              73
+              73,
+              87
             ],
-            "samples": 964,
-            "confidence": "medium"
+            "samples": 1316,
+            "confidence": "high"
+          },
+          "185": {
+            "tiles": [
+              64,
+              63,
+              89,
+              61,
+              75,
+              81
+            ],
+            "samples": 12,
+            "confidence": "low"
           },
           "187": {
             "tiles": [
               75,
               74,
-              61,
               76,
+              61,
               91,
-              72,
               89,
-              71
+              72,
+              73
             ],
-            "samples": 777,
-            "confidence": "medium"
+            "samples": 1097,
+            "confidence": "high"
           },
           "189": {
             "tiles": [
               61,
               81,
-              89,
-              63,
               88,
+              89,
+              82,
               93
             ],
             "samples": 11,
@@ -4112,48 +4156,49 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               86
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "191": {
             "tiles": [
               61,
               92,
-              83,
-              91,
-              84,
               85,
+              84,
+              91,
+              83,
               87,
-              75
+              66
             ],
-            "samples": 2453,
+            "samples": 3265,
             "confidence": "high"
           },
           "197": {
             "tiles": [
               61,
               80,
-              81,
               84,
+              81,
               66,
               73,
-              85
+              85,
+              92
             ],
-            "samples": 24,
+            "samples": 31,
             "confidence": "low"
           },
           "200": {
             "tiles": [
               70,
-              63,
-              62,
               64,
+              62,
+              63,
               68,
               69,
               76,
               78
             ],
-            "samples": 29,
+            "samples": 37,
             "confidence": "low"
           },
           "201": {
@@ -4167,33 +4212,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               81
             ],
-            "samples": 850,
-            "confidence": "medium"
+            "samples": 1100,
+            "confidence": "high"
           },
           "203": {
             "tiles": [
               61,
-              64,
               74,
+              64,
               75,
               91
             ],
-            "samples": 12,
+            "samples": 15,
             "confidence": "low"
           },
           "204": {
             "tiles": [
-              70,
               68,
+              70,
               69,
               88,
               61,
               80,
-              78,
-              79
+              81,
+              77
             ],
-            "samples": 851,
-            "confidence": "medium"
+            "samples": 1079,
+            "confidence": "high"
           },
           "205": {
             "tiles": [
@@ -4203,30 +4248,40 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               93,
               88,
-              69,
+              89,
               63
             ],
-            "samples": 7111,
+            "samples": 9387,
             "confidence": "high"
+          },
+          "206": {
+            "tiles": [
+              61,
+              77,
+              78,
+              91
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "207": {
             "tiles": [
               61
             ],
-            "samples": 29,
+            "samples": 37,
             "confidence": "low"
           },
           "211": {
             "tiles": [
               72,
-              71,
               73,
-              87,
               61,
+              71,
+              87,
               74,
               91
             ],
-            "samples": 18,
+            "samples": 19,
             "confidence": "low"
           },
           "215": {
@@ -4236,49 +4291,50 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               83,
               84,
+              85,
               87
             ],
-            "samples": 11,
+            "samples": 13,
             "confidence": "low"
           },
           "217": {
             "tiles": [
               64,
-              62,
               63,
+              62,
               89,
               61,
               80,
               74,
               81
             ],
-            "samples": 878,
-            "confidence": "medium"
+            "samples": 1094,
+            "confidence": "high"
           },
           "219": {
             "tiles": [
               76,
-              74,
               75,
+              74,
               61,
               91,
               64,
-              63,
-              62
+              62,
+              63
             ],
-            "samples": 740,
-            "confidence": "medium"
+            "samples": 1037,
+            "confidence": "high"
           },
           "220": {
             "tiles": [
               70,
               68,
-              88,
               69,
+              88,
+              81,
               93,
               61,
-              80,
-              81
+              80
             ],
             "samples": 27,
             "confidence": "low"
@@ -4286,80 +4342,78 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "221": {
             "tiles": [
               80,
-              82,
               81,
+              82,
               61,
               93,
               63,
-              89,
-              64
+              64,
+              88
             ],
-            "samples": 903,
-            "confidence": "medium"
+            "samples": 1275,
+            "confidence": "high"
           },
           "222": {
             "tiles": [
               61,
-              77,
+              79,
               86,
               90,
               64,
               69,
               70,
-              79
+              77
             ],
-            "samples": 15,
+            "samples": 16,
             "confidence": "low"
           },
           "223": {
             "tiles": [
               61,
-              93,
               80,
+              81,
               92,
-              75,
-              76,
+              93,
               82,
+              76,
               88
             ],
-            "samples": 2308,
+            "samples": 3111,
             "confidence": "high"
           },
           "230": {
             "tiles": [
-              66,
               65,
+              66,
               61,
               86,
-              67,
               83,
               88
             ],
-            "samples": 14,
+            "samples": 13,
             "confidence": "low"
           },
           "231": {
             "tiles": [
               61,
               83,
-              65,
               66,
               80,
               84,
               86
             ],
-            "samples": 10,
+            "samples": 9,
             "confidence": "low"
           },
           "233": {
             "tiles": [
               63,
               64,
-              62,
               89,
+              62,
               76
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "235": {
@@ -4368,10 +4422,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               63,
               74,
               75,
-              76,
+              87,
               89
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "236": {
@@ -4381,53 +4435,53 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               88,
               61,
-              78,
               81,
+              78,
               79
             ],
-            "samples": 821,
-            "confidence": "medium"
+            "samples": 1032,
+            "confidence": "high"
           },
           "237": {
             "tiles": [
-              81,
               80,
+              81,
               82,
               61,
               93,
-              69,
+              68,
               70,
-              68
+              69
             ],
-            "samples": 896,
-            "confidence": "medium"
+            "samples": 1242,
+            "confidence": "high"
           },
           "238": {
             "tiles": [
+              77,
               79,
               78,
               61,
-              77,
               90,
-              68,
               69,
-              88
+              88,
+              68
             ],
-            "samples": 684,
+            "samples": 994,
             "confidence": "medium"
           },
           "239": {
             "tiles": [
               61,
               90,
+              82,
               92,
               93,
-              70,
+              78,
               80,
-              91,
-              78
+              81
             ],
-            "samples": 2220,
+            "samples": 3015,
             "confidence": "high"
           },
           "243": {
@@ -4435,118 +4489,121 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               71,
               72,
-              87
+              87,
+              85
             ],
-            "samples": 18,
+            "samples": 19,
             "confidence": "low"
           },
           "245": {
             "tiles": [
               61,
               64,
-              82
+              82,
+              92
             ],
-            "samples": 12,
+            "samples": 16,
             "confidence": "low"
           },
           "246": {
             "tiles": [
               66,
-              65,
+              61,
               86,
-              67
+              67,
+              65
             ],
-            "samples": 23,
+            "samples": 25,
             "confidence": "low"
           },
           "247": {
             "tiles": [
               61,
-              92,
-              83,
               84,
+              83,
+              92,
               85,
               87,
-              66,
+              65,
               86
             ],
-            "samples": 177,
+            "samples": 228,
             "confidence": "medium"
           },
           "249": {
             "tiles": [
+              61,
               63,
               64,
-              62,
-              61
+              62
             ],
-            "samples": 23,
+            "samples": 31,
             "confidence": "low"
           },
           "251": {
             "tiles": [
               61,
               76,
-              74,
               75,
+              74,
               91,
               87,
               64,
               71
             ],
-            "samples": 166,
+            "samples": 248,
             "confidence": "medium"
           },
           "252": {
             "tiles": [
-              68,
               70,
-              88,
-              69
+              68,
+              69,
+              88
             ],
-            "samples": 9,
+            "samples": 11,
             "confidence": "low"
           },
           "253": {
             "tiles": [
               61,
-              93,
               81,
               82,
               80,
+              93,
               89,
-              64,
-              88
+              88,
+              63
             ],
-            "samples": 170,
+            "samples": 210,
             "confidence": "medium"
           },
           "254": {
             "tiles": [
               61,
+              77,
               78,
               79,
               90,
-              77,
               68,
               65,
               66
             ],
-            "samples": 194,
+            "samples": 273,
             "confidence": "medium"
           },
           "255": {
             "tiles": [
               61,
-              91,
               89,
+              91,
               90,
               92,
               86,
-              93,
-              88
+              88,
+              93
             ],
-            "samples": 91211,
+            "samples": 113360,
             "confidence": "high"
           }
         },
@@ -4557,8 +4614,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             65,
             86,
             61,
-            84,
             83,
+            84,
             85,
             78,
             77
@@ -4571,15 +4628,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             90,
             88,
             86,
-            66,
+            67,
             68,
-            67
+            66
           ],
           "lineHorizontal": [
             61,
             77,
-            79,
             78,
+            79,
             76,
             75,
             74,
@@ -4588,39 +4645,39 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             72
           ],
           "capWest": [
-            62,
             68,
-            61,
-            63,
-            69,
+            62,
             64,
+            61,
+            69,
+            63,
             70,
             79,
-            76,
-            77
+            77,
+            76
           ],
           "capEast": [
-            65,
-            66,
             61,
-            73,
-            72,
+            66,
+            65,
             71,
-            77,
+            72,
+            73,
             67,
+            77,
             78,
             75
           ],
           "west": [
             61,
-            85,
             84,
+            85,
             83,
             92,
             87,
             86,
             66,
-            71,
+            67,
             72
           ],
           "center": [
@@ -4633,7 +4690,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             88,
             86,
             87,
-            76
+            81
           ],
           "southEast": [
             64,
@@ -4641,8 +4698,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             62,
             89,
             61,
-            81,
             80,
+            81,
             76,
             74,
             75
@@ -4656,7 +4713,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             88,
             89,
             63,
-            69,
+            68,
             64
           ],
           "southWest": [
@@ -4669,7 +4726,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             84,
             75,
             85,
-            74
+            76
           ],
           "south": [
             61,
@@ -4687,11 +4744,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             68,
             70,
             69,
-            61,
             88,
-            80,
+            61,
             81,
             77,
+            80,
             82,
             79
           ],
@@ -4705,30 +4762,30 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             82,
             93,
             92,
-            73
+            87
           ],
           "capNorth": [
             64,
-            71,
             61,
+            71,
             62,
             72,
             73,
             81,
             63,
             82,
-            85
+            83
           ],
           "capSouth": [
             68,
             61,
             67,
             66,
-            69,
             70,
+            69,
             80,
-            83,
             65,
+            83,
             81
           ],
           "single": [
@@ -4738,23 +4795,95 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             71,
             73,
             67,
-            65,
             68,
-            64,
-            66
+            65,
+            61,
+            64
           ]
         },
+        "curatedRoles": {
+          "center": [
+            61
+          ],
+          "north": [
+            83,
+            84,
+            85
+          ],
+          "south": [
+            80,
+            81,
+            82
+          ],
+          "east": [
+            74,
+            75,
+            76
+          ],
+          "west": [
+            77,
+            78,
+            79
+          ],
+          "northEast": [
+            71,
+            72,
+            73
+          ],
+          "northWest": [
+            65,
+            66,
+            67
+          ],
+          "southEast": [
+            62,
+            63,
+            64
+          ],
+          "southWest": [
+            68,
+            69,
+            70
+          ]
+        },
+        "curatedWaterRoles": {
+          "north": [
+            92
+          ],
+          "south": [
+            93
+          ],
+          "east": [
+            91
+          ],
+          "west": [
+            90
+          ],
+          "northEast": [
+            87
+          ],
+          "northWest": [
+            86
+          ],
+          "southEast": [
+            89
+          ],
+          "southWest": [
+            88
+          ]
+        },
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
           "north": 83,
-          "south": 63,
-          "east": 62,
-          "west": 80,
-          "northEast": 84,
-          "northWest": 81,
-          "southEast": 64,
-          "southWest": 72,
+          "south": 80,
+          "east": 74,
+          "west": 77,
+          "northEast": 71,
+          "northWest": 65,
+          "southEast": 62,
+          "southWest": 68,
           "lineHorizontal": 83,
           "lineVertical": 62,
           "notchNorthEast": 70,
@@ -4775,21 +4904,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           128,
           129
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           121
         ],
         "candidates": [
           121,
-          126,
           127,
+          126,
           129,
+          128,
           124,
-          125,
           123,
-          122,
-          128
+          125,
+          122
         ],
-        "sampleCount": 40845,
+        "sampleCount": 57134,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -4806,22 +4937,45 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 115,
             "confidence": "medium"
           },
-          "5": {
+          "1": {
             "tiles": [
+              122,
+              125,
+              128,
+              121,
               126,
               127
             ],
-            "samples": 14,
+            "samples": 13,
+            "confidence": "low"
+          },
+          "4": {
+            "tiles": [
+              124,
+              121,
+              123,
+              128
+            ],
+            "samples": 16,
+            "confidence": "low"
+          },
+          "5": {
+            "tiles": [
+              127,
+              126,
+              121
+            ],
+            "samples": 45,
             "confidence": "low"
           },
           "19": {
             "tiles": [
               122,
-              127,
               129,
-              121
+              121,
+              127
             ],
-            "samples": 282,
+            "samples": 393,
             "confidence": "medium"
           },
           "23": {
@@ -4830,17 +4984,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               123
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "38": {
             "tiles": [
               123,
+              121,
               128,
-              127,
-              121
+              127
             ],
-            "samples": 261,
+            "samples": 370,
             "confidence": "medium"
           },
           "39": {
@@ -4849,15 +5003,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               122
             ],
-            "samples": 11,
+            "samples": 15,
             "confidence": "low"
           },
           "51": {
             "tiles": [
               122,
+              121,
+              129,
               127
             ],
-            "samples": 304,
+            "samples": 374,
             "confidence": "medium"
           },
           "54": {
@@ -4867,7 +5023,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               127
             ],
-            "samples": 342,
+            "samples": 411,
             "confidence": "medium"
           },
           "55": {
@@ -4878,23 +5034,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               129
             ],
-            "samples": 1531,
+            "samples": 2036,
             "confidence": "high"
           },
           "76": {
             "tiles": [
               124,
               121,
+              128,
               126
             ],
-            "samples": 291,
+            "samples": 396,
             "confidence": "medium"
+          },
+          "77": {
+            "tiles": [
+              121,
+              126,
+              123
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "86": {
             "tiles": [
               123
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "87": {
@@ -4911,7 +5077,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               124
             ],
-            "samples": 15,
+            "samples": 16,
             "confidence": "low"
           },
           "91": {
@@ -4921,7 +5087,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               121
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "93": {
@@ -4940,7 +5106,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               123
             ],
-            "samples": 21,
+            "samples": 22,
             "confidence": "low"
           },
           "95": {
@@ -4952,7 +5118,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               128
             ],
-            "samples": 58,
+            "samples": 64,
             "confidence": "low"
           },
           "102": {
@@ -4961,7 +5127,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               127
             ],
-            "samples": 238,
+            "samples": 302,
             "confidence": "medium"
           },
           "108": {
@@ -4971,7 +5137,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               128
             ],
-            "samples": 217,
+            "samples": 297,
             "confidence": "medium"
           },
           "110": {
@@ -4981,15 +5147,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               123
             ],
-            "samples": 942,
-            "confidence": "medium"
+            "samples": 1288,
+            "confidence": "high"
           },
           "118": {
             "tiles": [
               123,
               121
             ],
-            "samples": 256,
+            "samples": 310,
             "confidence": "medium"
           },
           "119": {
@@ -4999,7 +5165,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               122
             ],
-            "samples": 334,
+            "samples": 432,
             "confidence": "medium"
           },
           "123": {
@@ -5019,7 +5185,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               124
             ],
-            "samples": 237,
+            "samples": 318,
             "confidence": "medium"
           },
           "127": {
@@ -5029,29 +5195,31 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               128,
               124,
               122,
+              123,
               125
             ],
-            "samples": 834,
-            "confidence": "medium"
+            "samples": 1076,
+            "confidence": "high"
           },
           "137": {
             "tiles": [
               125,
-              129,
               121,
+              129,
               126
             ],
-            "samples": 249,
+            "samples": 363,
             "confidence": "medium"
           },
           "147": {
             "tiles": [
               122,
-              129,
               121,
-              123
+              129,
+              123,
+              127
             ],
-            "samples": 227,
+            "samples": 296,
             "confidence": "medium"
           },
           "153": {
@@ -5060,7 +5228,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               126
             ],
-            "samples": 275,
+            "samples": 347,
             "confidence": "medium"
           },
           "155": {
@@ -5071,14 +5239,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               128
             ],
-            "samples": 981,
-            "confidence": "medium"
+            "samples": 1347,
+            "confidence": "high"
           },
           "163": {
             "tiles": [
               122
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "167": {
@@ -5093,16 +5261,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "171": {
             "tiles": [
               129,
-              125
+              125,
+              122
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "172": {
             "tiles": [
               124
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "173": {
@@ -5119,10 +5288,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               128,
               123,
-              121,
-              124
+              124,
+              121
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "175": {
@@ -5131,7 +5300,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               127
             ],
-            "samples": 39,
+            "samples": 49,
             "confidence": "low"
           },
           "179": {
@@ -5140,7 +5309,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               129
             ],
-            "samples": 271,
+            "samples": 307,
             "confidence": "medium"
           },
           "183": {
@@ -5150,7 +5319,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               123
             ],
-            "samples": 319,
+            "samples": 416,
             "confidence": "medium"
           },
           "187": {
@@ -5160,49 +5329,51 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               125
             ],
-            "samples": 242,
+            "samples": 335,
             "confidence": "medium"
           },
           "189": {
             "tiles": [
               126,
               121,
-              125,
-              124
+              124,
+              125
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "191": {
             "tiles": [
               121,
               127,
+              122,
               129,
               126,
-              122,
               123,
               125,
               128
             ],
-            "samples": 848,
-            "confidence": "medium"
+            "samples": 1070,
+            "confidence": "high"
           },
           "201": {
             "tiles": [
               125,
               121,
+              129,
               126
             ],
-            "samples": 312,
+            "samples": 382,
             "confidence": "medium"
           },
           "204": {
             "tiles": [
               124,
+              121,
               126,
-              121
+              128
             ],
-            "samples": 334,
+            "samples": 422,
             "confidence": "medium"
           },
           "205": {
@@ -5213,7 +5384,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               128
             ],
-            "samples": 1475,
+            "samples": 1926,
             "confidence": "high"
           },
           "215": {
@@ -5230,7 +5401,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               129
             ],
-            "samples": 291,
+            "samples": 335,
             "confidence": "medium"
           },
           "219": {
@@ -5241,7 +5412,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               127
             ],
-            "samples": 259,
+            "samples": 360,
             "confidence": "medium"
           },
           "221": {
@@ -5251,7 +5422,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               124
             ],
-            "samples": 280,
+            "samples": 385,
             "confidence": "medium"
           },
           "222": {
@@ -5260,22 +5431,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               124
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "223": {
             "tiles": [
               121,
               126,
+              129,
               127,
               124,
               125,
               128,
-              129,
               122
             ],
-            "samples": 850,
-            "confidence": "medium"
+            "samples": 1095,
+            "confidence": "high"
           },
           "231": {
             "tiles": [
@@ -5284,7 +5455,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               121
             ],
-            "samples": 10,
+            "samples": 11,
             "confidence": "low"
           },
           "236": {
@@ -5292,7 +5463,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               121
             ],
-            "samples": 296,
+            "samples": 338,
             "confidence": "medium"
           },
           "237": {
@@ -5304,7 +5475,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               128
             ],
-            "samples": 357,
+            "samples": 473,
             "confidence": "medium"
           },
           "238": {
@@ -5314,7 +5485,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               123
             ],
-            "samples": 256,
+            "samples": 347,
             "confidence": "medium"
           },
           "239": {
@@ -5323,13 +5494,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               128,
               127,
-              124,
               125,
-              129,
+              123,
+              124,
+              129
+            ],
+            "samples": 1157,
+            "confidence": "high"
+          },
+          "243": {
+            "tiles": [
               122
             ],
-            "samples": 904,
-            "confidence": "medium"
+            "samples": 9,
+            "confidence": "low"
           },
           "247": {
             "tiles": [
@@ -5339,7 +5517,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               126
             ],
-            "samples": 80,
+            "samples": 112,
+            "confidence": "medium"
+          },
+          "249": {
+            "tiles": [
+              125
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "251": {
@@ -5347,10 +5532,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               129,
               121,
               122,
-              125
+              125,
+              127
             ],
-            "samples": 81,
-            "confidence": "low"
+            "samples": 113,
+            "confidence": "medium"
           },
           "253": {
             "tiles": [
@@ -5359,8 +5545,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               125
             ],
-            "samples": 80,
-            "confidence": "low"
+            "samples": 107,
+            "confidence": "medium"
           },
           "254": {
             "tiles": [
@@ -5370,21 +5556,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               129
             ],
-            "samples": 85,
-            "confidence": "low"
+            "samples": 130,
+            "confidence": "medium"
           },
           "255": {
             "tiles": [
               121,
               126,
-              127,
               129,
+              127,
               128,
               123,
               122,
-              125
+              124
             ],
-            "samples": 24708,
+            "samples": 36106,
             "confidence": "high"
           }
         },
@@ -5392,8 +5578,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "northWest": [
             123,
             121,
-            127,
             128,
+            127,
             122
           ],
           "north": [
@@ -5437,9 +5623,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "southWest": [
             122,
+            121,
             129,
             127,
-            121,
             123
           ],
           "south": [
@@ -5447,9 +5633,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             121,
             122,
             125,
+            127,
             123,
             126,
-            127,
             128
           ],
           "east": [
@@ -5458,17 +5644,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             125,
             124,
             127,
-            128
+            128,
+            123
           ],
           "capEast": [
             123,
             122
           ],
           "capWest": [
-            125,
             124,
+            125,
             121,
             122,
+            126,
             128,
             129
           ],
@@ -5478,9 +5666,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             123,
             128
           ],
-          "single": [
-            128,
+          "capNorth": [
+            125,
+            122,
             121,
+            128,
+            126,
+            127
+          ],
+          "single": [
+            121,
+            128,
             129,
             127,
             124,
@@ -5490,22 +5686,58 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             123
           ],
           "lineVertical": [
-            126,
             127,
-            121
+            126,
+            121,
+            122
+          ],
+          "lineHorizontal": [
+            121,
+            128
           ]
         },
+        "curatedRoles": {
+          "center": [
+            121
+          ],
+          "north": [
+            127
+          ],
+          "south": [
+            126
+          ],
+          "east": [
+            129
+          ],
+          "west": [
+            128
+          ],
+          "northEast": [
+            122
+          ],
+          "northWest": [
+            123
+          ],
+          "southEast": [
+            125
+          ],
+          "southWest": [
+            124
+          ]
+        },
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
-          "north": 126,
-          "south": 127,
-          "east": 128,
-          "west": 129,
-          "northEast": 125,
-          "northWest": 124,
-          "southEast": 123,
-          "southWest": 122,
+          "north": 127,
+          "south": 126,
+          "east": 129,
+          "west": 128,
+          "northEast": 122,
+          "northWest": 123,
+          "southEast": 125,
+          "southWest": 124,
           "lineHorizontal": 128,
           "lineVertical": 126,
           "capNorth": 126,
@@ -5594,6 +5826,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           60,
           40,
@@ -5652,6 +5886,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         "confidence": "fallback",
         "maskCandidates": {},
         "roleCandidates": {},
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 60,
           "single": 60,
@@ -5711,6 +5948,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           92,
           93
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           61
         ],
@@ -5753,6 +5992,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         "confidence": "fallback",
         "maskCandidates": {},
         "roleCandidates": {},
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
@@ -5784,6 +6026,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           128,
           129
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           121
         ],
@@ -5802,6 +6046,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         "confidence": "fallback",
         "maskCandidates": {},
         "roleCandidates": {},
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
@@ -5867,8 +6114,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           33,
           34,
           35,
-          36,
-          37,
           38,
           39,
           40,
@@ -5883,6 +6128,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           49,
           50,
           51,
+          60
+        ],
+        "excluded": [
+          36,
+          37,
           52,
           53,
           54,
@@ -5891,7 +6141,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           57,
           58,
           59,
-          60,
           105,
           106,
           107,
@@ -5901,92 +6150,63 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
-        "center": [
-          60,
+        "detail": [
           33,
           34,
-          40,
           35
+        ],
+        "center": [
+          60
         ],
         "candidates": [
           60,
-          33,
-          34,
           39,
-          35,
           38,
           2,
           3,
           1,
           4
         ],
-        "sampleCount": 26484,
+        "sampleCount": 26917,
         "confidence": "high",
         "maskCandidates": {
-          "0": {
-            "tiles": [
-              111,
-              112,
-              110,
-              109,
-              107,
-              105,
-              106,
-              52
-            ],
-            "samples": 683,
-            "confidence": "medium"
-          },
           "1": {
             "tiles": [
-              106,
               39,
-              111,
-              112,
-              110,
               2,
               8,
               43
             ],
-            "samples": 112,
+            "samples": 113,
             "confidence": "medium"
           },
           "2": {
             "tiles": [
-              108,
-              109,
-              110,
-              111,
               38,
               60,
               1,
               16
             ],
-            "samples": 77,
+            "samples": 88,
             "confidence": "low"
           },
           "3": {
             "tiles": [
               49,
               16,
-              32,
-              106
+              32
             ],
-            "samples": 20,
+            "samples": 22,
             "confidence": "low"
           },
           "4": {
             "tiles": [
-              105,
               39,
-              111,
-              112,
               41,
-              109,
               60,
               1
             ],
-            "samples": 111,
+            "samples": 114,
             "confidence": "medium"
           },
           "5": {
@@ -5994,19 +6214,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               60,
               2,
-              112,
-              33,
               4,
-              34,
-              3
+              3,
+              13
             ],
-            "samples": 274,
+            "samples": 281,
             "confidence": "medium"
           },
           "6": {
             "tiles": [
               48,
-              33,
               31,
               60,
               5,
@@ -6026,28 +6243,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "8": {
             "tiles": [
-              107,
-              112,
-              109,
-              110,
               38,
               60,
-              40,
-              1
+              1,
+              14
             ],
-            "samples": 76,
+            "samples": 86,
             "confidence": "low"
           },
           "9": {
             "tiles": [
               51,
-              33,
-              8,
-              53,
-              106,
-              107
+              8
             ],
-            "samples": 26,
+            "samples": 27,
             "confidence": "low"
           },
           "10": {
@@ -6055,13 +6264,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               60,
               1,
-              110,
-              109,
-              35,
-              33,
               2
             ],
-            "samples": 289,
+            "samples": 323,
             "confidence": "medium"
           },
           "12": {
@@ -6071,7 +6276,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               5,
               13
             ],
-            "samples": 20,
+            "samples": 24,
             "confidence": "low"
           },
           "13": {
@@ -6085,11 +6290,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "16": {
             "tiles": [
-              112,
-              110,
-              111,
-              60,
-              109
+              60
             ],
             "samples": 12,
             "confidence": "low"
@@ -6099,9 +6300,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               14,
               51,
               39,
-              106,
               28,
-              109,
               60
             ],
             "samples": 19,
@@ -6109,12 +6308,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "18": {
             "tiles": [
-              108,
               11,
               48,
               60,
-              42,
-              109
+              42
             ],
             "samples": 11,
             "confidence": "low"
@@ -6126,23 +6323,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               11,
               18,
-              35,
               2,
               7
             ],
-            "samples": 174,
+            "samples": 177,
             "confidence": "medium"
           },
           "21": {
             "tiles": [
               39,
-              35,
               60,
-              34,
               3,
               4,
-              15,
-              106
+              15
             ],
             "samples": 47,
             "confidence": "low"
@@ -6151,7 +6344,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               48,
               60,
-              33,
               25
             ],
             "samples": 33,
@@ -6166,7 +6358,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               31,
               39,
-              35
+              14
             ],
             "samples": 22,
             "confidence": "low"
@@ -6184,17 +6376,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               38,
               60,
-              1,
-              52
+              1
             ],
-            "samples": 37,
+            "samples": 38,
             "confidence": "low"
           },
           "27": {
             "tiles": [
               60,
               51,
-              35,
               2,
               30
             ],
@@ -6203,13 +6393,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "34": {
             "tiles": [
-              108,
               9,
               60,
-              49,
-              112
+              49
             ],
-            "samples": 17,
+            "samples": 18,
             "confidence": "low"
           },
           "35": {
@@ -6219,19 +6407,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               26
             ],
-            "samples": 23,
+            "samples": 25,
             "confidence": "low"
           },
           "36": {
             "tiles": [
               50,
               17,
-              105,
               5,
-              35,
               9
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "37": {
@@ -6239,11 +6425,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               20,
               60,
-              33,
               2,
               3
             ],
-            "samples": 34,
+            "samples": 36,
             "confidence": "low"
           },
           "38": {
@@ -6253,11 +6438,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               9,
               6,
-              48,
-              55,
-              105
+              1,
+              48
             ],
-            "samples": 164,
+            "samples": 167,
             "confidence": "medium"
           },
           "39": {
@@ -6266,10 +6450,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               3,
               39,
-              33,
-              35,
               4,
-              13
+              13,
+              14
             ],
             "samples": 24,
             "confidence": "low"
@@ -6278,11 +6461,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               38,
               60,
-              34,
-              1,
-              108
+              1
             ],
-            "samples": 29,
+            "samples": 31,
             "confidence": "low"
           },
           "44": {
@@ -6290,7 +6471,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               50,
               60
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "46": {
@@ -6306,10 +6487,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "50": {
             "tiles": [
-              108,
-              35,
               60,
-              112,
               38,
               48
             ],
@@ -6321,13 +6499,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               14,
               26,
               60,
-              35,
               49,
-              33,
-              34,
               18
             ],
-            "samples": 128,
+            "samples": 132,
             "confidence": "medium"
           },
           "53": {
@@ -6348,12 +6523,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               60,
               48,
-              35,
               13,
-              33,
-              34
+              9
             ],
-            "samples": 112,
+            "samples": 116,
             "confidence": "medium"
           },
           "55": {
@@ -6362,21 +6535,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               13,
               18,
-              34,
               17,
-              14,
-              35
+              14
             ],
-            "samples": 572,
+            "samples": 594,
             "confidence": "medium"
           },
           "58": {
             "tiles": [
               38,
-              33,
+              60,
               2
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "63": {
@@ -6391,12 +6562,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "64": {
             "tiles": [
-              109,
-              110,
-              112,
               60,
-              6,
-              111
+              6
             ],
             "samples": 11,
             "confidence": "low"
@@ -6406,7 +6573,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               48,
               19,
               60,
-              105,
               6,
               17,
               9,
@@ -6418,18 +6584,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "69": {
             "tiles": [
               39,
-              60,
-              33,
-              34,
-              54
+              60
             ],
-            "samples": 39,
+            "samples": 40,
             "confidence": "low"
           },
           "70": {
             "tiles": [
               48,
-              34,
               9
             ],
             "samples": 18,
@@ -6439,9 +6601,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               51,
               5,
-              107,
-              40,
-              111
+              40
             ],
             "samples": 15,
             "confidence": "low"
@@ -6461,7 +6621,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               38,
               60,
-              34,
               2
             ],
             "samples": 33,
@@ -6473,12 +6632,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               5,
               19,
               60,
-              35,
-              1,
-              55,
-              105
+              1
             ],
-            "samples": 171,
+            "samples": 175,
             "confidence": "medium"
           },
           "77": {
@@ -6488,9 +6644,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               20,
               4,
               44,
-              35,
               18,
-              19
+              19,
+              30
             ],
             "samples": 26,
             "confidence": "low"
@@ -6543,9 +6699,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "90": {
             "tiles": [
               38,
-              60,
-              33,
-              35
+              60
             ],
             "samples": 12,
             "confidence": "low"
@@ -6553,9 +6707,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "91": {
             "tiles": [
               51,
-              60,
-              33,
-              34
+              60
             ],
             "samples": 12,
             "confidence": "low"
@@ -6574,8 +6726,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               48,
               4,
-              31,
-              33
+              31
             ],
             "samples": 37,
             "confidence": "low"
@@ -6583,20 +6734,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "100": {
             "tiles": [
               60,
-              19,
-              105,
-              110,
-              34,
-              35
+              19
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "101": {
             "tiles": [
               39,
-              60,
-              35
+              60
             ],
             "samples": 10,
             "confidence": "low"
@@ -6607,26 +6753,30 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               60,
               48,
-              35,
-              34,
-              33,
-              6
+              6,
+              17
             ],
-            "samples": 119,
+            "samples": 120,
             "confidence": "medium"
+          },
+          "103": {
+            "tiles": [
+              60,
+              21,
+              49
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "108": {
             "tiles": [
-              27,
               5,
+              27,
               60,
-              33,
               19,
-              50,
-              34,
-              35
+              50
             ],
-            "samples": 129,
+            "samples": 131,
             "confidence": "medium"
           },
           "110": {
@@ -6635,12 +6785,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               6,
               10,
-              34,
-              35,
-              33,
               19
             ],
-            "samples": 607,
+            "samples": 616,
             "confidence": "medium"
           },
           "111": {
@@ -6649,10 +6796,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               20,
               47,
-              32,
-              58
+              32
             ],
-            "samples": 25,
+            "samples": 26,
             "confidence": "low"
           },
           "118": {
@@ -6660,13 +6806,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               60,
               48,
-              33,
-              34,
               9,
               17,
               6
             ],
-            "samples": 130,
+            "samples": 131,
             "confidence": "medium"
           },
           "119": {
@@ -6674,13 +6818,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               18,
               3,
-              33,
               49,
-              35,
               30,
               48
             ],
-            "samples": 141,
+            "samples": 143,
             "confidence": "medium"
           },
           "126": {
@@ -6688,71 +6830,56 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               10,
-              33,
               17,
               25,
-              34,
               50
             ],
-            "samples": 151,
+            "samples": 152,
             "confidence": "medium"
           },
           "127": {
             "tiles": [
               60,
               30,
-              33,
-              34,
               22,
-              59,
-              35,
               24
             ],
-            "samples": 322,
+            "samples": 327,
             "confidence": "medium"
           },
           "129": {
             "tiles": [
-              35,
               16,
               49,
               60,
-              109,
               11,
-              39,
-              43
+              39
             ],
-            "samples": 18,
+            "samples": 19,
             "confidence": "low"
           },
           "131": {
             "tiles": [
               49,
-              34,
               60
             ],
-            "samples": 27,
+            "samples": 29,
             "confidence": "low"
           },
           "133": {
             "tiles": [
               39,
               60,
-              35,
               2
             ],
-            "samples": 27,
+            "samples": 28,
             "confidence": "low"
           },
           "136": {
             "tiles": [
-              107,
-              111,
               60,
-              34,
               1,
-              8,
-              109
+              8
             ],
             "samples": 11,
             "confidence": "low"
@@ -6764,27 +6891,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               8,
               2,
-              35,
-              55,
-              34
+              4
             ],
-            "samples": 170,
+            "samples": 174,
             "confidence": "medium"
           },
           "138": {
             "tiles": [
               38,
-              33,
-              35,
               60
             ],
-            "samples": 37,
+            "samples": 39,
             "confidence": "low"
           },
           "139": {
             "tiles": [
               49,
-              34,
               60,
               1
             ],
@@ -6794,17 +6916,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "140": {
             "tiles": [
               50,
-              33,
               19
             ],
-            "samples": 23,
+            "samples": 24,
             "confidence": "low"
           },
           "141": {
             "tiles": [
               60,
               50,
-              34,
               4
             ],
             "samples": 9,
@@ -6813,14 +6933,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "145": {
             "tiles": [
               60,
-              106,
-              35,
-              34,
               11,
               14,
               26
             ],
-            "samples": 17,
+            "samples": 18,
             "confidence": "low"
           },
           "147": {
@@ -6829,19 +6946,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               60,
               49,
-              34,
-              33,
               2,
               7
             ],
-            "samples": 121,
+            "samples": 125,
             "confidence": "medium"
           },
           "149": {
             "tiles": [
-              39,
-              33,
-              34
+              39
             ],
             "samples": 10,
             "confidence": "low"
@@ -6863,12 +6976,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               8,
               60,
               51,
-              34,
-              35,
-              33,
+              12,
               16
             ],
-            "samples": 132,
+            "samples": 136,
             "confidence": "medium"
           },
           "155": {
@@ -6877,12 +6988,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               7,
               12,
-              33,
-              34,
-              35,
               49
             ],
-            "samples": 596,
+            "samples": 604,
             "confidence": "medium"
           },
           "157": {
@@ -6899,12 +7007,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               23,
               60,
-              29,
-              33,
-              34,
-              56
+              29
             ],
-            "samples": 27,
+            "samples": 28,
             "confidence": "low"
           },
           "163": {
@@ -6919,17 +7024,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               39,
               60,
-              35,
               4
             ],
-            "samples": 21,
+            "samples": 23,
             "confidence": "low"
           },
           "167": {
             "tiles": [
               60,
               39,
-              34,
               13,
               32,
               46,
@@ -6942,15 +7045,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               38
             ],
-            "samples": 10,
+            "samples": 12,
             "confidence": "low"
           },
           "171": {
             "tiles": [
               60,
-              34,
               12,
-              35,
               28,
               49
             ],
@@ -6960,10 +7061,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "172": {
             "tiles": [
               50,
-              60,
-              35
+              60
             ],
-            "samples": 35,
+            "samples": 36,
             "confidence": "low"
           },
           "173": {
@@ -6972,7 +7072,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               39,
               50,
-              33,
               27,
               44
             ],
@@ -6996,12 +7095,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               11,
               14,
-              33,
               49,
-              34,
               18
             ],
-            "samples": 112,
+            "samples": 113,
             "confidence": "medium"
           },
           "183": {
@@ -7009,13 +7106,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               60,
               3,
-              33,
-              34,
               17,
               25,
               48
             ],
-            "samples": 167,
+            "samples": 169,
             "confidence": "medium"
           },
           "187": {
@@ -7023,37 +7118,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               12,
               2,
-              34,
-              33,
               14,
-              35,
               7
             ],
-            "samples": 161,
+            "samples": 163,
             "confidence": "medium"
           },
           "191": {
             "tiles": [
               60,
               29,
-              33,
-              34,
-              35,
-              59,
-              57,
               2
             ],
-            "samples": 348,
+            "samples": 354,
             "confidence": "medium"
           },
           "200": {
             "tiles": [
-              107,
-              60,
-              35,
-              111,
-              33,
-              34
+              60
             ],
             "samples": 16,
             "confidence": "low"
@@ -7064,21 +7146,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               60,
               51,
-              34,
-              33,
-              35,
               20
             ],
-            "samples": 133,
+            "samples": 135,
             "confidence": "medium"
           },
           "202": {
             "tiles": [
               38,
-              60,
-              55
+              60
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "204": {
@@ -7086,13 +7164,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               27,
               60,
-              35,
               50,
-              33,
               15,
               5
             ],
-            "samples": 131,
+            "samples": 135,
             "confidence": "medium"
           },
           "205": {
@@ -7102,11 +7178,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               15,
               20,
               16,
-              34,
               50,
               19
             ],
-            "samples": 585,
+            "samples": 604,
             "confidence": "medium"
           },
           "207": {
@@ -7114,10 +7189,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               21,
               60,
               4,
-              50,
-              55
+              50
             ],
-            "samples": 18,
+            "samples": 19,
             "confidence": "low"
           },
           "217": {
@@ -7126,12 +7200,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               51,
               8,
-              33,
-              35,
-              34,
               16
             ],
-            "samples": 110,
+            "samples": 112,
             "confidence": "medium"
           },
           "219": {
@@ -7139,13 +7210,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               2,
               7,
-              33,
               26,
-              56,
-              34,
-              16
+              16,
+              28
             ],
-            "samples": 161,
+            "samples": 164,
             "confidence": "medium"
           },
           "221": {
@@ -7153,27 +7222,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               4,
               15,
-              33,
-              35,
               16,
               27,
               29
             ],
-            "samples": 151,
+            "samples": 152,
             "confidence": "medium"
           },
           "223": {
             "tiles": [
               60,
               31,
-              33,
-              34,
-              57,
-              35,
-              23,
-              58
+              23
             ],
-            "samples": 324,
+            "samples": 330,
             "confidence": "medium"
           },
           "236": {
@@ -7182,12 +7244,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               5,
               19,
-              34,
               50,
-              33,
-              35
+              10,
+              17
             ],
-            "samples": 107,
+            "samples": 110,
             "confidence": "medium"
           },
           "237": {
@@ -7195,13 +7256,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               20,
               4,
-              34,
               19,
               5,
               50,
-              33
+              15
             ],
-            "samples": 163,
+            "samples": 166,
             "confidence": "medium"
           },
           "238": {
@@ -7209,27 +7269,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               6,
-              34,
               9,
               19,
-              25,
-              35
+              25
             ],
-            "samples": 170,
+            "samples": 173,
             "confidence": "medium"
           },
           "239": {
             "tiles": [
               60,
               32,
-              33,
-              34,
               20,
-              59,
-              35,
-              57
+              22
             ],
-            "samples": 344,
+            "samples": 351,
             "confidence": "medium"
           },
           "247": {
@@ -7250,8 +7304,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               7,
               14,
               26,
-              32,
-              57
+              32
             ],
             "samples": 28,
             "confidence": "low"
@@ -7260,7 +7313,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               4,
               60,
-              35,
               8
             ],
             "samples": 11,
@@ -7271,7 +7323,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               10,
-              34,
               50
             ],
             "samples": 26,
@@ -7279,43 +7330,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "255": {
             "tiles": [
-              60,
-              33,
-              34,
-              35,
-              58,
-              59,
-              57,
-              56
+              60
             ],
-            "samples": 16059,
+            "samples": 16174,
             "confidence": "high"
           }
         },
         "roleCandidates": {
           "single": [
-            111,
-            112,
-            110,
-            109,
-            107,
-            60,
-            105,
-            106,
-            52,
-            53
+            60
           ],
           "capSouth": [
-            105,
             60,
             39,
-            111,
-            112,
             19,
             48,
             17,
-            50,
-            109
+            50
           ],
           "northWest": [
             25,
@@ -7323,33 +7354,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             60,
             17,
             9,
-            33,
-            34,
-            35,
             6,
             13
           ],
           "capWest": [
-            107,
             60,
-            112,
-            109,
-            110,
             51,
             38,
-            111,
             5,
-            34
+            1
           ],
           "lineVertical": [
             39,
             60,
             2,
-            112,
-            35,
-            33,
             4,
-            34,
             3,
             13
           ],
@@ -7359,21 +7378,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             49,
             14,
             11,
-            34,
-            35,
             18,
-            33,
-            7
+            2
           ],
           "lineHorizontal": [
             38,
             60,
             1,
-            110,
-            33,
-            109,
-            35,
-            34,
             2,
             10
           ],
@@ -7384,21 +7395,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             20,
             51,
             50,
-            35,
-            34,
             19,
             44
           ],
           "capNorth": [
-            106,
             39,
             60,
-            112,
-            111,
-            35,
             14,
             49,
-            110,
             16
           ],
           "north": [
@@ -7406,12 +7410,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             1,
             6,
             10,
-            34,
             50,
             48,
-            33,
-            25,
-            35
+            25
           ],
           "northEast": [
             27,
@@ -7419,84 +7420,183 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             50,
             19,
             5,
-            35,
-            33,
-            34,
             15,
-            1
+            10
           ],
           "capEast": [
-            108,
             60,
-            109,
-            111,
-            110,
-            35,
             9,
             38,
-            112,
             48
           ],
           "center": [
             60,
-            33,
-            34,
-            35,
             31,
             32,
             30,
-            29,
-            58,
-            59
+            29
           ],
           "west": [
             60,
             3,
             13,
             18,
-            34,
-            48,
             49,
-            39,
-            33,
-            35
+            48,
+            39
           ],
           "south": [
             60,
             2,
             12,
             7,
-            33,
-            34,
-            35,
             51,
             49,
             14
           ],
           "southEast": [
             28,
-            51,
             60,
+            51,
             16,
             8,
-            34,
-            35,
-            33,
             2,
             12
+          ]
+        },
+        "curatedRoles": {
+          "center": [
+            60
+          ],
+          "north": [
+            3
+          ],
+          "south": [
+            4
+          ],
+          "east": [
+            2
+          ],
+          "west": [
+            1
+          ],
+          "northEast": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "northWest": [
+            9,
+            10,
+            17,
+            18
+          ],
+          "southEast": [
+            7,
+            8,
+            15,
+            16
+          ],
+          "southWest": [
+            5,
+            6,
+            19,
+            20
+          ]
+        },
+        "curatedWaterRoles": {},
+        "curatedMasks": {
+          "1": [
+            40
+          ],
+          "2": [
+            41
+          ],
+          "3": [
+            50
+          ],
+          "4": [
+            42
+          ],
+          "5": [
+            38
+          ],
+          "6": [
+            48
+          ],
+          "7": [
+            45
+          ],
+          "8": [
+            43
+          ],
+          "9": [
+            51
+          ],
+          "10": [
+            39
+          ],
+          "11": [
+            44
+          ],
+          "12": [
+            49
+          ],
+          "13": [
+            47
+          ],
+          "14": [
+            46
+          ],
+          "19": [
+            27
+          ],
+          "38": [
+            25
+          ],
+          "58": [
+            22
+          ],
+          "76": [
+            26
+          ],
+          "101": [
+            24
+          ],
+          "127": [
+            30
+          ],
+          "137": [
+            28
+          ],
+          "149": [
+            21
+          ],
+          "191": [
+            32
+          ],
+          "202": [
+            23
+          ],
+          "223": [
+            31
+          ],
+          "239": [
+            29
           ]
         },
         "fallbackRoles": {
           "center": 60,
           "single": 60,
           "north": 3,
-          "south": 31,
+          "south": 4,
           "east": 2,
-          "west": 42,
-          "northEast": 4,
-          "northWest": 1,
-          "southEast": 24,
-          "southWest": 21,
+          "west": 1,
+          "northEast": 11,
+          "northWest": 9,
+          "southEast": 7,
+          "southWest": 5,
           "lineHorizontal": 43,
           "lineVertical": 42,
           "capNorth": 4,
@@ -7545,6 +7645,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           92,
           93
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           61
         ],
@@ -7552,29 +7654,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           61,
           80,
           84,
-          81,
           83,
+          81,
           82,
           85,
-          77,
           75,
+          77,
           76
         ],
-        "sampleCount": 237647,
+        "sampleCount": 270809,
         "confidence": "high",
         "maskCandidates": {
           "0": {
             "tiles": [
               61,
-              64,
               66,
+              64,
               69,
               63,
               67,
               72,
               73
             ],
-            "samples": 142,
+            "samples": 144,
             "confidence": "medium"
           },
           "1": {
@@ -7582,13 +7684,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               80,
               85,
-              62,
               73,
+              62,
               82,
               63,
-              81
+              72
             ],
-            "samples": 234,
+            "samples": 245,
             "confidence": "medium"
           },
           "2": {
@@ -7602,7 +7704,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               78
             ],
-            "samples": 212,
+            "samples": 213,
             "confidence": "medium"
           },
           "3": {
@@ -7616,7 +7718,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               84
             ],
-            "samples": 55,
+            "samples": 56,
             "confidence": "low"
           },
           "4": {
@@ -7624,27 +7726,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               80,
               84,
-              82,
-              81,
-              85,
               67,
-              69
+              82,
+              69,
+              81,
+              85
             ],
-            "samples": 234,
+            "samples": 248,
             "confidence": "medium"
           },
           "5": {
             "tiles": [
               61,
               81,
+              80,
+              82,
               83,
               85,
               84,
-              80,
-              82,
               92
             ],
-            "samples": 734,
+            "samples": 867,
             "confidence": "medium"
           },
           "6": {
@@ -7658,28 +7760,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               85
             ],
-            "samples": 48,
+            "samples": 51,
             "confidence": "low"
           },
           "7": {
             "tiles": [
               61
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "8": {
             "tiles": [
               61,
               68,
-              63,
               69,
+              63,
               79,
               70,
               62,
               77
             ],
-            "samples": 215,
+            "samples": 217,
             "confidence": "medium"
           },
           "9": {
@@ -7693,7 +7795,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               63
             ],
-            "samples": 62,
+            "samples": 63,
             "confidence": "low"
           },
           "10": {
@@ -7702,12 +7804,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76,
               74,
-              77,
               79,
+              77,
               78,
               90
             ],
-            "samples": 646,
+            "samples": 770,
             "confidence": "medium"
           },
           "11": {
@@ -7728,7 +7830,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               88
             ],
-            "samples": 50,
+            "samples": 51,
             "confidence": "low"
           },
           "13": {
@@ -7754,26 +7856,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               66,
               61,
+              63,
               73,
               83,
-              63,
               67
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "17": {
             "tiles": [
               63,
               62,
-              64,
               61,
+              64,
               81,
               72,
               73,
               71
             ],
-            "samples": 144,
+            "samples": 149,
             "confidence": "medium"
           },
           "18": {
@@ -7782,12 +7884,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               61,
               65,
-              77,
-              84,
               71,
-              73
+              73,
+              77,
+              84
             ],
-            "samples": 155,
+            "samples": 157,
             "confidence": "medium"
           },
           "19": {
@@ -7801,7 +7903,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               85
             ],
-            "samples": 1613,
+            "samples": 1689,
             "confidence": "high"
           },
           "20": {
@@ -7829,7 +7931,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               92,
               93
             ],
-            "samples": 116,
+            "samples": 122,
             "confidence": "medium"
           },
           "22": {
@@ -7856,7 +7958,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               92
             ],
-            "samples": 231,
+            "samples": 239,
             "confidence": "medium"
           },
           "24": {
@@ -7896,7 +7998,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76
             ],
-            "samples": 67,
+            "samples": 68,
             "confidence": "low"
           },
           "27": {
@@ -7905,12 +8007,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               91,
               62,
-              75,
               64,
+              75,
               76,
               78
             ],
-            "samples": 166,
+            "samples": 170,
             "confidence": "medium"
           },
           "32": {
@@ -7949,7 +8051,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               66
             ],
-            "samples": 141,
+            "samples": 145,
             "confidence": "medium"
           },
           "35": {
@@ -7975,7 +8077,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               85
             ],
-            "samples": 134,
+            "samples": 135,
             "confidence": "medium"
           },
           "37": {
@@ -7984,12 +8086,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               81,
               82,
+              84,
               66,
               69,
-              84,
               83
             ],
-            "samples": 112,
+            "samples": 120,
             "confidence": "medium"
           },
           "38": {
@@ -8003,7 +8105,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               77
             ],
-            "samples": 1601,
+            "samples": 1680,
             "confidence": "high"
           },
           "39": {
@@ -8012,9 +8114,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               83,
               84,
+              71,
               92
             ],
-            "samples": 210,
+            "samples": 219,
             "confidence": "medium"
           },
           "40": {
@@ -8036,9 +8139,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               91,
               90,
               62,
-              77
+              71
             ],
-            "samples": 76,
+            "samples": 82,
             "confidence": "low"
           },
           "44": {
@@ -8064,21 +8167,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               68
             ],
-            "samples": 166,
+            "samples": 174,
             "confidence": "medium"
+          },
+          "49": {
+            "tiles": [
+              61,
+              63,
+              62,
+              82,
+              84,
+              85
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "50": {
             "tiles": [
               61,
-              83,
-              67,
-              66,
-              71,
               73,
-              75,
-              76
+              83,
+              66,
+              67,
+              71,
+              72,
+              75
             ],
-            "samples": 37,
+            "samples": 42,
             "confidence": "low"
           },
           "51": {
@@ -8092,7 +8207,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               83
             ],
-            "samples": 1100,
+            "samples": 1175,
             "confidence": "high"
           },
           "52": {
@@ -8110,15 +8225,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "53": {
             "tiles": [
               61,
+              83,
               85,
               80,
-              83,
               92,
               81,
               82,
               84
             ],
-            "samples": 56,
+            "samples": 58,
             "confidence": "low"
           },
           "54": {
@@ -8132,21 +8247,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               79
             ],
-            "samples": 1195,
+            "samples": 1288,
             "confidence": "high"
           },
           "55": {
             "tiles": [
               61,
               84,
-              85,
               83,
+              85,
               92,
               93,
               67,
               65
             ],
-            "samples": 8932,
+            "samples": 10004,
             "confidence": "high"
           },
           "58": {
@@ -8177,28 +8292,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               78
             ],
-            "samples": 30,
+            "samples": 31,
             "confidence": "low"
           },
           "63": {
             "tiles": [
               61
             ],
-            "samples": 70,
+            "samples": 78,
             "confidence": "low"
           },
           "64": {
             "tiles": [
               62,
               69,
+              61,
               63,
               67,
               68,
               73,
-              77,
-              89
+              77
             ],
-            "samples": 10,
+            "samples": 11,
             "confidence": "low"
           },
           "65": {
@@ -8208,11 +8323,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               63,
               71,
               64,
+              72,
               75,
-              84,
-              72
+              84
             ],
-            "samples": 20,
+            "samples": 21,
             "confidence": "low"
           },
           "66": {
@@ -8240,7 +8355,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               70
             ],
-            "samples": 170,
+            "samples": 171,
             "confidence": "medium"
           },
           "69": {
@@ -8254,7 +8369,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               82
             ],
-            "samples": 71,
+            "samples": 73,
             "confidence": "low"
           },
           "70": {
@@ -8277,12 +8392,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               63,
               62,
               61,
-              76,
               74,
+              76,
               68,
-              78
+              70
             ],
-            "samples": 153,
+            "samples": 159,
             "confidence": "medium"
           },
           "73": {
@@ -8305,23 +8420,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               79,
               90,
-              77
+              77,
+              63
             ],
-            "samples": 74,
+            "samples": 80,
             "confidence": "low"
           },
           "76": {
             "tiles": [
               61,
-              68,
               69,
+              68,
               70,
               80,
               82,
               78,
               79
             ],
-            "samples": 1585,
+            "samples": 1650,
             "confidence": "high"
           },
           "77": {
@@ -8330,9 +8446,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               81,
               82,
-              93
+              93,
+              62
             ],
-            "samples": 201,
+            "samples": 204,
             "confidence": "medium"
           },
           "78": {
@@ -8344,7 +8461,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               88,
               90
             ],
-            "samples": 203,
+            "samples": 213,
             "confidence": "medium"
           },
           "81": {
@@ -8355,7 +8472,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               73
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "82": {
@@ -8364,11 +8481,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               61,
               71,
+              72,
               74,
               85,
               91
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "83": {
@@ -8381,7 +8499,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               92
             ],
-            "samples": 47,
+            "samples": 51,
             "confidence": "low"
           },
           "85": {
@@ -8408,7 +8526,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               85
             ],
-            "samples": 35,
+            "samples": 36,
             "confidence": "low"
           },
           "87": {
@@ -8422,7 +8540,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               72
             ],
-            "samples": 42,
+            "samples": 46,
             "confidence": "low"
           },
           "88": {
@@ -8444,7 +8562,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               63
             ],
-            "samples": 24,
+            "samples": 26,
             "confidence": "low"
           },
           "90": {
@@ -8480,7 +8598,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               88,
               93
             ],
-            "samples": 45,
+            "samples": 54,
             "confidence": "low"
           },
           "93": {
@@ -8494,7 +8612,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               68
             ],
-            "samples": 44,
+            "samples": 45,
             "confidence": "low"
           },
           "94": {
@@ -8505,14 +8623,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               65
             ],
-            "samples": 31,
+            "samples": 33,
             "confidence": "low"
           },
           "95": {
             "tiles": [
               61
             ],
-            "samples": 161,
+            "samples": 160,
             "confidence": "medium"
           },
           "98": {
@@ -8533,11 +8651,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               66,
               67,
-              69,
               70,
+              69,
               78
             ],
-            "samples": 62,
+            "samples": 64,
             "confidence": "low"
           },
           "101": {
@@ -8549,7 +8667,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               83
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "102": {
@@ -8563,8 +8681,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               83
             ],
-            "samples": 987,
-            "confidence": "medium"
+            "samples": 1045,
+            "confidence": "high"
           },
           "103": {
             "tiles": [
@@ -8573,7 +8691,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               85
             ],
-            "samples": 36,
+            "samples": 37,
             "confidence": "low"
           },
           "104": {
@@ -8622,8 +8740,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               81
             ],
-            "samples": 983,
-            "confidence": "medium"
+            "samples": 1046,
+            "confidence": "high"
           },
           "109": {
             "tiles": [
@@ -8632,28 +8750,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               82
             ],
-            "samples": 26,
+            "samples": 29,
             "confidence": "low"
           },
           "110": {
             "tiles": [
               61,
               77,
-              79,
               78,
+              79,
               90,
               67,
               66,
-              68
+              65
             ],
-            "samples": 7398,
+            "samples": 8177,
             "confidence": "high"
           },
           "111": {
             "tiles": [
               61
             ],
-            "samples": 83,
+            "samples": 95,
             "confidence": "low"
           },
           "115": {
@@ -8662,19 +8780,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               61,
               72,
+              67,
               87
             ],
-            "samples": 35,
+            "samples": 45,
             "confidence": "low"
           },
           "117": {
             "tiles": [
               61,
               85,
+              80,
               83,
               92
             ],
-            "samples": 10,
+            "samples": 11,
             "confidence": "low"
           },
           "118": {
@@ -8686,9 +8806,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               84,
               78,
-              77
+              85
             ],
-            "samples": 1107,
+            "samples": 1211,
             "confidence": "high"
           },
           "119": {
@@ -8702,8 +8822,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               65
             ],
-            "samples": 1382,
+            "samples": 1540,
             "confidence": "high"
+          },
+          "122": {
+            "tiles": [
+              61,
+              73,
+              76,
+              77,
+              79,
+              84
+            ],
+            "samples": 9,
+            "confidence": "low"
           },
           "124": {
             "tiles": [
@@ -8711,17 +8843,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               70,
               61,
+              65,
               80
             ],
-            "samples": 36,
+            "samples": 42,
             "confidence": "low"
           },
           "125": {
             "tiles": [
               61,
+              63,
               69
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "126": {
@@ -8735,7 +8869,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               65
             ],
-            "samples": 1186,
+            "samples": 1307,
             "confidence": "high"
           },
           "127": {
@@ -8749,7 +8883,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               63
             ],
-            "samples": 3452,
+            "samples": 3814,
             "confidence": "high"
           },
           "128": {
@@ -8777,7 +8911,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               82
             ],
-            "samples": 139,
+            "samples": 144,
             "confidence": "medium"
           },
           "130": {
@@ -8805,7 +8939,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               75
             ],
-            "samples": 29,
+            "samples": 30,
             "confidence": "low"
           },
           "133": {
@@ -8819,7 +8953,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               70
             ],
-            "samples": 76,
+            "samples": 77,
             "confidence": "low"
           },
           "136": {
@@ -8833,7 +8967,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               62
             ],
-            "samples": 143,
+            "samples": 147,
             "confidence": "medium"
           },
           "137": {
@@ -8847,7 +8981,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               75
             ],
-            "samples": 1582,
+            "samples": 1665,
             "confidence": "high"
           },
           "138": {
@@ -8861,33 +8995,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               74
             ],
-            "samples": 89,
+            "samples": 91,
             "confidence": "low"
           },
           "139": {
             "tiles": [
               61,
               75,
+              74,
               91,
               71,
-              74,
               76
             ],
-            "samples": 175,
+            "samples": 182,
             "confidence": "medium"
           },
           "140": {
             "tiles": [
               61,
-              68,
               70,
+              68,
               79,
               81,
               69,
               78,
               80
             ],
-            "samples": 30,
+            "samples": 32,
             "confidence": "low"
           },
           "141": {
@@ -8898,14 +9032,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               70
             ],
-            "samples": 189,
+            "samples": 195,
             "confidence": "medium"
           },
           "143": {
             "tiles": [
               61
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "145": {
@@ -8919,7 +9053,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               74
             ],
-            "samples": 50,
+            "samples": 52,
             "confidence": "low"
           },
           "147": {
@@ -8933,8 +9067,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               84
             ],
-            "samples": 973,
-            "confidence": "medium"
+            "samples": 1045,
+            "confidence": "high"
           },
           "149": {
             "tiles": [
@@ -8944,7 +9078,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               85
             ],
-            "samples": 19,
+            "samples": 21,
             "confidence": "low"
           },
           "151": {
@@ -8953,7 +9087,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               85
             ],
-            "samples": 37,
+            "samples": 41,
             "confidence": "low"
           },
           "152": {
@@ -8968,16 +9102,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "153": {
             "tiles": [
               64,
-              62,
               63,
+              62,
               61,
               89,
               80,
               81,
               82
             ],
-            "samples": 980,
-            "confidence": "medium"
+            "samples": 1044,
+            "confidence": "high"
           },
           "154": {
             "tiles": [
@@ -8985,12 +9119,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76,
               77,
+              79,
               90,
               91,
-              74,
-              78
+              74
             ],
-            "samples": 47,
+            "samples": 49,
             "confidence": "low"
           },
           "155": {
@@ -9004,7 +9138,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               73
             ],
-            "samples": 7521,
+            "samples": 8264,
             "confidence": "high"
           },
           "157": {
@@ -9013,7 +9147,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               82
             ],
-            "samples": 17,
+            "samples": 19,
             "confidence": "low"
           },
           "159": {
@@ -9022,7 +9156,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               83
             ],
-            "samples": 67,
+            "samples": 75,
             "confidence": "low"
           },
           "162": {
@@ -9046,7 +9180,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               84
             ],
-            "samples": 27,
+            "samples": 30,
             "confidence": "low"
           },
           "165": {
@@ -9055,7 +9189,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               80
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "166": {
@@ -9064,19 +9198,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               61,
               65,
+              79,
               73,
               77,
-              79,
               84
             ],
-            "samples": 44,
+            "samples": 47,
             "confidence": "low"
           },
           "167": {
             "tiles": [
               61,
-              84,
               83,
+              84,
               85,
               71,
               92,
@@ -9089,15 +9223,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "169": {
             "tiles": [
               63,
-              64,
               62,
+              64,
               61,
               75,
+              81,
               93,
-              68,
-              69
+              68
             ],
-            "samples": 50,
+            "samples": 57,
             "confidence": "low"
           },
           "170": {
@@ -9107,18 +9241,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               77
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "171": {
             "tiles": [
               61,
-              74,
               76,
+              74,
               75,
               62
             ],
-            "samples": 62,
+            "samples": 64,
             "confidence": "low"
           },
           "172": {
@@ -9131,7 +9265,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               88
             ],
-            "samples": 27,
+            "samples": 28,
             "confidence": "low"
           },
           "173": {
@@ -9159,7 +9293,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               69,
               70
             ],
-            "samples": 62,
+            "samples": 63,
             "confidence": "low"
           },
           "175": {
@@ -9167,29 +9301,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               91
             ],
-            "samples": 126,
+            "samples": 134,
             "confidence": "medium"
           },
           "179": {
             "tiles": [
               73,
-              71,
               72,
+              71,
               87,
               61,
               83,
               85,
               76
             ],
-            "samples": 949,
-            "confidence": "medium"
+            "samples": 1040,
+            "confidence": "high"
           },
           "181": {
             "tiles": [
               61,
               83
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "182": {
@@ -9201,7 +9335,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               86
             ],
-            "samples": 41,
+            "samples": 43,
             "confidence": "low"
           },
           "183": {
@@ -9215,17 +9349,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               73
             ],
-            "samples": 1306,
+            "samples": 1455,
             "confidence": "high"
           },
           "185": {
             "tiles": [
               64,
               63,
-              62,
-              61
+              61,
+              62
             ],
-            "samples": 37,
+            "samples": 42,
             "confidence": "low"
           },
           "187": {
@@ -9235,11 +9369,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76,
               91,
-              73,
               71,
-              72
+              72,
+              73
             ],
-            "samples": 1198,
+            "samples": 1327,
             "confidence": "high"
           },
           "189": {
@@ -9265,26 +9399,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               61,
               84,
-              71,
               85,
+              71,
               73,
               74,
               83,
               65
             ],
-            "samples": 3236,
+            "samples": 3587,
             "confidence": "high"
           },
           "196": {
             "tiles": [
               61,
+              68,
               69,
               65,
               67,
-              68,
               80
             ],
-            "samples": 8,
+            "samples": 10,
             "confidence": "low"
           },
           "197": {
@@ -9292,32 +9426,32 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               82,
               80,
-              85,
               81,
+              85,
               83,
               84
             ],
-            "samples": 57,
+            "samples": 61,
             "confidence": "low"
           },
           "200": {
             "tiles": [
+              69,
               62,
               63,
-              69,
-              64,
               70,
+              64,
               76,
               82,
-              61
+              68
             ],
-            "samples": 43,
+            "samples": 48,
             "confidence": "low"
           },
           "201": {
             "tiles": [
-              63,
               64,
+              63,
               62,
               61,
               75,
@@ -9325,7 +9459,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               80
             ],
-            "samples": 1186,
+            "samples": 1269,
             "confidence": "high"
           },
           "202": {
@@ -9333,9 +9467,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               76,
               74,
-              77
+              77,
+              79
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "203": {
@@ -9355,10 +9490,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               88,
               79,
-              78,
-              77
+              77,
+              78
             ],
-            "samples": 1139,
+            "samples": 1222,
             "confidence": "high"
           },
           "205": {
@@ -9372,36 +9507,37 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               69
             ],
-            "samples": 8992,
+            "samples": 10086,
             "confidence": "high"
           },
           "206": {
             "tiles": [
               61,
+              69,
               78,
               79,
               88
             ],
-            "samples": 20,
+            "samples": 21,
             "confidence": "low"
           },
           "207": {
             "tiles": [
               61
             ],
-            "samples": 51,
+            "samples": 58,
             "confidence": "low"
           },
           "211": {
             "tiles": [
               72,
-              71,
               73,
+              71,
               61,
               84,
               87
             ],
-            "samples": 36,
+            "samples": 44,
             "confidence": "low"
           },
           "215": {
@@ -9416,16 +9552,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "217": {
             "tiles": [
-              62,
               63,
               64,
+              62,
               61,
               89,
               75,
               82,
               81
             ],
-            "samples": 1100,
+            "samples": 1205,
             "confidence": "high"
           },
           "218": {
@@ -9445,35 +9581,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               91,
               64,
-              62,
-              63
+              63,
+              62
             ],
-            "samples": 1199,
+            "samples": 1332,
             "confidence": "high"
           },
           "220": {
             "tiles": [
-              68,
               69,
+              68,
               61,
               70,
               88
             ],
-            "samples": 40,
+            "samples": 45,
             "confidence": "low"
           },
           "221": {
             "tiles": [
               61,
               80,
-              81,
               82,
+              81,
               93,
+              63,
               64,
-              62,
-              63
+              62
             ],
-            "samples": 1355,
+            "samples": 1514,
             "confidence": "high"
           },
           "222": {
@@ -9493,22 +9629,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76,
               63,
-              80,
-              81,
-              82
+              82,
+              64,
+              80
             ],
-            "samples": 3387,
+            "samples": 3747,
             "confidence": "high"
           },
           "230": {
             "tiles": [
               67,
               65,
-              66,
               61,
+              66,
               85
             ],
-            "samples": 34,
+            "samples": 40,
             "confidence": "low"
           },
           "231": {
@@ -9528,61 +9664,61 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               89
             ],
-            "samples": 37,
+            "samples": 43,
             "confidence": "low"
           },
           "235": {
             "tiles": [
               61,
               75,
+              76,
               63,
               71,
-              76,
               89
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "236": {
             "tiles": [
-              70,
-              68,
               69,
+              68,
+              70,
               88,
               61,
               80,
               78,
               79
             ],
-            "samples": 1010,
+            "samples": 1093,
             "confidence": "high"
           },
           "237": {
             "tiles": [
-              61,
               80,
+              61,
               81,
               82,
               93,
               69,
-              68,
-              92
+              70,
+              68
             ],
-            "samples": 1312,
+            "samples": 1452,
             "confidence": "high"
           },
           "238": {
             "tiles": [
               61,
-              78,
               79,
+              78,
               77,
               90,
               69,
               70,
               68
             ],
-            "samples": 1175,
+            "samples": 1296,
             "confidence": "high"
           },
           "239": {
@@ -9590,13 +9726,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               77,
               79,
-              82,
               78,
+              82,
               80,
-              81,
-              70
+              70,
+              81
             ],
-            "samples": 3287,
+            "samples": 3621,
             "confidence": "high"
           },
           "243": {
@@ -9605,9 +9741,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               71,
               61,
+              75,
               84
             ],
-            "samples": 56,
+            "samples": 74,
             "confidence": "low"
           },
           "245": {
@@ -9616,19 +9753,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               82,
               83,
+              85,
               93
             ],
-            "samples": 11,
+            "samples": 14,
             "confidence": "low"
           },
           "246": {
             "tiles": [
               65,
+              61,
               66,
-              67,
-              61
+              67
             ],
-            "samples": 54,
+            "samples": 66,
             "confidence": "low"
           },
           "247": {
@@ -9642,18 +9780,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               66
             ],
-            "samples": 333,
+            "samples": 368,
             "confidence": "medium"
           },
           "249": {
             "tiles": [
-              63,
               64,
-              62,
+              63,
               61,
+              62,
+              80,
               89
             ],
-            "samples": 46,
+            "samples": 49,
             "confidence": "low"
           },
           "250": {
@@ -9670,12 +9809,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               75,
               74,
-              62,
-              73,
               91,
+              73,
+              62,
               63
             ],
-            "samples": 334,
+            "samples": 387,
             "confidence": "medium"
           },
           "252": {
@@ -9686,35 +9825,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               88
             ],
-            "samples": 46,
+            "samples": 69,
             "confidence": "low"
           },
           "253": {
             "tiles": [
               61,
-              80,
               81,
+              80,
               82,
               93,
               62,
               68,
               69
             ],
-            "samples": 327,
+            "samples": 368,
             "confidence": "medium"
           },
           "254": {
             "tiles": [
               61,
-              78,
               79,
+              78,
               77,
               90,
               67,
               65,
-              70
+              66
             ],
-            "samples": 361,
+            "samples": 409,
             "confidence": "medium"
           },
           "255": {
@@ -9728,7 +9867,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               68
             ],
-            "samples": 151364,
+            "samples": 176182,
             "confidence": "high"
           }
         },
@@ -9748,14 +9887,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "north": [
             61,
             77,
-            79,
             78,
+            79,
             90,
             67,
-            70,
             69,
-            68,
-            65
+            70,
+            66,
+            68
           ],
           "lineHorizontal": [
             61,
@@ -9767,7 +9906,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             79,
             90,
             91,
-            86
+            63
           ],
           "northEast": [
             68,
@@ -9789,18 +9928,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             92,
             93,
             67,
-            72,
             71,
-            73
+            72,
+            65
           ],
           "center": [
             61,
             77,
             78,
-            79,
-            84,
             74,
+            79,
             82,
+            84,
             75,
             85,
             71
@@ -9812,14 +9951,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             74,
             91,
             64,
-            73,
             71,
-            62,
-            63
+            73,
+            63,
+            62
           ],
           "southEast": [
-            63,
             64,
+            63,
             62,
             61,
             89,
@@ -9851,7 +9990,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             64,
             69,
             63,
-            68
+            70
           ],
           "lineVertical": [
             61,
@@ -9871,8 +10010,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             68,
             64,
             69,
-            62,
             70,
+            62,
             79,
             76,
             78
@@ -9918,25 +10057,97 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             73,
             66,
             64,
-            69,
             63,
+            69,
             71,
             72,
-            67,
-            68
+            68,
+            67
           ]
         },
+        "curatedRoles": {
+          "center": [
+            61
+          ],
+          "north": [
+            83,
+            84,
+            85
+          ],
+          "south": [
+            80,
+            81,
+            82
+          ],
+          "east": [
+            74,
+            75,
+            76
+          ],
+          "west": [
+            77,
+            78,
+            79
+          ],
+          "northEast": [
+            71,
+            72,
+            73
+          ],
+          "northWest": [
+            65,
+            66,
+            67
+          ],
+          "southEast": [
+            62,
+            63,
+            64
+          ],
+          "southWest": [
+            68,
+            69,
+            70
+          ]
+        },
+        "curatedWaterRoles": {
+          "north": [
+            92
+          ],
+          "south": [
+            93
+          ],
+          "east": [
+            91
+          ],
+          "west": [
+            90
+          ],
+          "northEast": [
+            87
+          ],
+          "northWest": [
+            86
+          ],
+          "southEast": [
+            89
+          ],
+          "southWest": [
+            88
+          ]
+        },
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
           "north": 83,
-          "south": 63,
-          "east": 62,
-          "west": 80,
-          "northEast": 84,
-          "northWest": 81,
-          "southEast": 64,
-          "southWest": 72,
+          "south": 80,
+          "east": 74,
+          "west": 77,
+          "northEast": 71,
+          "northWest": 65,
+          "southEast": 62,
+          "southWest": 68,
           "lineHorizontal": 83,
           "lineVertical": 62,
           "notchNorthEast": 70,
@@ -9957,6 +10168,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           128,
           129
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           121
         ],
@@ -9965,13 +10178,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           127,
           126,
           128,
-          125,
           129,
+          125,
           123,
           122,
           124
         ],
-        "sampleCount": 4248,
+        "sampleCount": 4301,
         "confidence": "high",
         "maskCandidates": {
           "19": {
@@ -9980,7 +10193,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               129,
               121
             ],
-            "samples": 62,
+            "samples": 64,
             "confidence": "low"
           },
           "38": {
@@ -9989,7 +10202,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               128
             ],
-            "samples": 62,
+            "samples": 64,
             "confidence": "low"
           },
           "51": {
@@ -10016,7 +10229,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               123
             ],
-            "samples": 180,
+            "samples": 185,
             "confidence": "medium"
           },
           "76": {
@@ -10025,7 +10238,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               128
             ],
-            "samples": 66,
+            "samples": 68,
             "confidence": "low"
           },
           "102": {
@@ -10051,11 +10264,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "110": {
             "tiles": [
               128,
+              127,
               121,
               124,
               123
             ],
-            "samples": 173,
+            "samples": 179,
             "confidence": "medium"
           },
           "118": {
@@ -10098,9 +10312,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               129,
               124,
-              121
+              121,
+              126
             ],
-            "samples": 60,
+            "samples": 62,
             "confidence": "low"
           },
           "147": {
@@ -10127,7 +10342,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               122
             ],
-            "samples": 172,
+            "samples": 178,
             "confidence": "medium"
           },
           "179": {
@@ -10189,7 +10404,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               124
             ],
-            "samples": 198,
+            "samples": 203,
             "confidence": "medium"
           },
           "217": {
@@ -10283,7 +10498,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               126
             ],
-            "samples": 1857,
+            "samples": 1878,
             "confidence": "high"
           }
         },
@@ -10316,16 +10531,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "southWest": [
             122,
-            127,
             129,
+            127,
             121,
             123,
             124
           ],
           "southEast": [
             125,
-            129,
             126,
+            129,
             121,
             124,
             128
@@ -10333,10 +10548,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "north": [
             128,
             123,
+            127,
             124,
             121,
-            126,
-            127
+            126
           ],
           "center": [
             121,
@@ -10369,17 +10584,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             128
           ]
         },
+        "curatedRoles": {
+          "center": [
+            121
+          ],
+          "north": [
+            127
+          ],
+          "south": [
+            126
+          ],
+          "east": [
+            129
+          ],
+          "west": [
+            128
+          ],
+          "northEast": [
+            122
+          ],
+          "northWest": [
+            123
+          ],
+          "southEast": [
+            125
+          ],
+          "southWest": [
+            124
+          ]
+        },
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
-          "north": 126,
-          "south": 127,
-          "east": 128,
-          "west": 129,
-          "northEast": 125,
-          "northWest": 124,
-          "southEast": 123,
-          "southWest": 122,
+          "north": 127,
+          "south": 126,
+          "east": 129,
+          "west": 128,
+          "northEast": 122,
+          "northWest": 123,
+          "southEast": 125,
+          "southWest": 124,
           "lineHorizontal": 128,
           "lineVertical": 126,
           "capNorth": 126,
@@ -10468,6 +10714,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           40,
           111,
@@ -10480,14 +10728,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           38,
           39,
-          24,
           25,
-          1,
+          24,
           2,
+          1,
           35,
           37
         ],
-        "sampleCount": 511157,
+        "sampleCount": 551216,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -10496,12 +10744,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               112,
               39,
               25,
-              42,
-              41,
               108,
-              110
+              42,
+              110,
+              107
             ],
-            "samples": 435,
+            "samples": 481,
             "confidence": "medium"
           },
           "1": {
@@ -10510,12 +10758,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               12,
               25,
-              40,
               10,
+              40,
               14,
-              35
+              16
             ],
-            "samples": 408,
+            "samples": 455,
             "confidence": "medium"
           },
           "2": {
@@ -10527,9 +10775,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               9,
               40,
-              41
+              22
             ],
-            "samples": 344,
+            "samples": 371,
             "confidence": "medium"
           },
           "3": {
@@ -10538,12 +10786,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               12,
               18,
-              31,
               37,
+              31,
               40,
               33
             ],
-            "samples": 194,
+            "samples": 241,
             "confidence": "medium"
           },
           "4": {
@@ -10551,13 +10799,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               2,
               40,
-              25,
-              10,
               21,
+              10,
+              25,
               11,
               13
             ],
-            "samples": 432,
+            "samples": 486,
             "confidence": "medium"
           },
           "5": {
@@ -10565,13 +10813,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               38,
               111,
-              60,
               25,
+              60,
               45,
               40,
               46
             ],
-            "samples": 2865,
+            "samples": 3899,
             "confidence": "high"
           },
           "6": {
@@ -10579,13 +10827,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               15,
               111,
               11,
+              36,
               40,
               30,
-              36,
               18,
               39
             ],
-            "samples": 189,
+            "samples": 244,
             "confidence": "medium"
           },
           "7": {
@@ -10599,7 +10847,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               43
             ],
-            "samples": 307,
+            "samples": 377,
             "confidence": "medium"
           },
           "8": {
@@ -10609,11 +10857,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               39,
               9,
-              25,
+              17,
               20,
-              40
+              25
             ],
-            "samples": 414,
+            "samples": 451,
             "confidence": "medium"
           },
           "9": {
@@ -10625,51 +10873,51 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               35,
               1,
               19,
-              27
+              49
             ],
-            "samples": 154,
+            "samples": 203,
             "confidence": "medium"
           },
           "10": {
             "tiles": [
-              24,
               1,
+              24,
               39,
               111,
               40,
               105,
-              7,
-              9
+              9,
+              7
             ],
-            "samples": 1493,
+            "samples": 2024,
             "confidence": "high"
           },
           "11": {
             "tiles": [
               12,
               111,
-              39,
               27,
+              39,
               1,
               2,
               9,
               35
             ],
-            "samples": 147,
+            "samples": 173,
             "confidence": "medium"
           },
           "12": {
             "tiles": [
               13,
               111,
-              11,
               17,
+              11,
               34,
               40,
-              38,
-              3
+              19,
+              38
             ],
-            "samples": 162,
+            "samples": 207,
             "confidence": "medium"
           },
           "13": {
@@ -10683,7 +10931,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               59
             ],
-            "samples": 174,
+            "samples": 218,
             "confidence": "medium"
           },
           "14": {
@@ -10692,12 +10940,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               111,
               24,
-              39,
               1,
+              39,
               41,
               40
             ],
-            "samples": 178,
+            "samples": 220,
             "confidence": "medium"
           },
           "15": {
@@ -10711,7 +10959,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               32
             ],
-            "samples": 170,
+            "samples": 194,
             "confidence": "medium"
           },
           "16": {
@@ -10725,21 +10973,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               28
             ],
-            "samples": 57,
+            "samples": 60,
             "confidence": "low"
           },
           "17": {
             "tiles": [
               111,
               40,
-              31,
               23,
+              31,
               41,
               2,
               24,
               42
             ],
-            "samples": 106,
+            "samples": 113,
             "confidence": "medium"
           },
           "18": {
@@ -10750,10 +10998,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               22,
               40,
               9,
-              16,
-              30
+              107,
+              16
             ],
-            "samples": 125,
+            "samples": 135,
             "confidence": "medium"
           },
           "19": {
@@ -10764,10 +11012,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               4,
               47,
-              51,
-              41
+              16,
+              51
             ],
-            "samples": 804,
+            "samples": 867,
             "confidence": "medium"
           },
           "20": {
@@ -10781,7 +11029,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               18
             ],
-            "samples": 39,
+            "samples": 40,
             "confidence": "low"
           },
           "21": {
@@ -10795,35 +11043,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               59
             ],
-            "samples": 458,
+            "samples": 582,
             "confidence": "medium"
           },
           "22": {
             "tiles": [
               111,
-              30,
               15,
+              30,
               18,
               11,
               2,
               10,
               39
             ],
-            "samples": 64,
+            "samples": 73,
             "confidence": "low"
           },
           "23": {
             "tiles": [
               38,
+              111,
               36,
               40,
-              111,
               2,
               25,
               53,
               47
             ],
-            "samples": 629,
+            "samples": 664,
             "confidence": "medium"
           },
           "24": {
@@ -10837,7 +11085,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               39
             ],
-            "samples": 39,
+            "samples": 38,
             "confidence": "low"
           },
           "25": {
@@ -10851,7 +11099,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               29,
               35
             ],
-            "samples": 47,
+            "samples": 53,
             "confidence": "low"
           },
           "26": {
@@ -10865,33 +11113,34 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               12
             ],
-            "samples": 241,
+            "samples": 311,
             "confidence": "medium"
           },
           "27": {
             "tiles": [
               35,
               111,
-              39,
               1,
+              39,
               4,
               31,
               40,
               27
             ],
-            "samples": 184,
+            "samples": 208,
             "confidence": "medium"
           },
           "28": {
             "tiles": [
               111,
               17,
+              13,
               21,
+              2,
               3,
-              11,
-              13
+              11
             ],
-            "samples": 16,
+            "samples": 18,
             "confidence": "low"
           },
           "29": {
@@ -10905,7 +11154,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               5,
               10
             ],
-            "samples": 35,
+            "samples": 39,
             "confidence": "low"
           },
           "30": {
@@ -10919,21 +11168,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               30
             ],
-            "samples": 30,
+            "samples": 35,
             "confidence": "low"
           },
           "31": {
             "tiles": [
               111,
-              32,
               1,
+              32,
               38,
               2,
               11,
-              31,
-              34
+              19,
+              31
             ],
-            "samples": 92,
+            "samples": 98,
             "confidence": "low"
           },
           "32": {
@@ -10942,12 +11191,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               108,
               40,
               26,
+              112,
               11,
               12,
-              15,
-              25
+              15
             ],
-            "samples": 49,
+            "samples": 50,
             "confidence": "low"
           },
           "33": {
@@ -10961,7 +11210,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               35
             ],
-            "samples": 40,
+            "samples": 42,
             "confidence": "low"
           },
           "34": {
@@ -10975,21 +11224,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               41,
               39
             ],
-            "samples": 132,
+            "samples": 144,
             "confidence": "medium"
           },
           "35": {
             "tiles": [
               111,
               31,
-              12,
               16,
+              12,
               18,
               42,
               40,
               4
             ],
-            "samples": 62,
+            "samples": 71,
             "confidence": "low"
           },
           "36": {
@@ -11000,10 +11249,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               21,
               25,
-              42,
-              43
+              10,
+              42
             ],
-            "samples": 116,
+            "samples": 122,
             "confidence": "medium"
           },
           "37": {
@@ -11014,10 +11263,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               59,
               42,
-              60,
-              45
+              45,
+              10
             ],
-            "samples": 480,
+            "samples": 603,
             "confidence": "medium"
           },
           "38": {
@@ -11031,7 +11280,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               52
             ],
-            "samples": 742,
+            "samples": 801,
             "confidence": "medium"
           },
           "39": {
@@ -11045,7 +11294,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               53,
               48
             ],
-            "samples": 644,
+            "samples": 674,
             "confidence": "medium"
           },
           "40": {
@@ -11053,12 +11302,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1,
               9,
-              33,
               112,
+              33,
               20,
-              109
+              24
             ],
-            "samples": 34,
+            "samples": 37,
             "confidence": "low"
           },
           "41": {
@@ -11072,7 +11321,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               14,
               19
             ],
-            "samples": 14,
+            "samples": 13,
             "confidence": "low"
           },
           "42": {
@@ -11081,12 +11330,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               111,
               41,
-              40,
               9,
+              40,
               7,
               26
             ],
-            "samples": 239,
+            "samples": 315,
             "confidence": "medium"
           },
           "43": {
@@ -11100,7 +11349,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               7,
               8
             ],
-            "samples": 29,
+            "samples": 31,
             "confidence": "low"
           },
           "44": {
@@ -11109,12 +11358,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               1,
               11,
+              17,
               21,
               28,
-              17,
               33
             ],
-            "samples": 40,
+            "samples": 44,
             "confidence": "low"
           },
           "45": {
@@ -11123,12 +11372,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               17,
               60,
+              12,
               19,
               106,
-              38,
-              10
+              38
             ],
-            "samples": 50,
+            "samples": 62,
             "confidence": "low"
           },
           "46": {
@@ -11137,12 +11386,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               111,
               40,
-              3,
-              24,
               1,
+              24,
+              3,
               26
             ],
-            "samples": 268,
+            "samples": 300,
             "confidence": "medium"
           },
           "47": {
@@ -11150,13 +11399,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               32,
               1,
-              38,
               2,
+              38,
               27,
               17,
               16
             ],
-            "samples": 90,
+            "samples": 97,
             "confidence": "low"
           },
           "48": {
@@ -11168,7 +11417,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               45
             ],
-            "samples": 64,
+            "samples": 68,
             "confidence": "low"
           },
           "49": {
@@ -11182,7 +11431,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               12
             ],
-            "samples": 49,
+            "samples": 54,
             "confidence": "low"
           },
           "50": {
@@ -11192,11 +11441,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               22,
               9,
               58,
+              106,
               112,
-              18,
-              106
+              18
             ],
-            "samples": 277,
+            "samples": 309,
             "confidence": "medium"
           },
           "51": {
@@ -11205,12 +11454,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               40,
               24,
-              47,
               2,
+              47,
               41,
               38
             ],
-            "samples": 347,
+            "samples": 371,
             "confidence": "medium"
           },
           "52": {
@@ -11224,7 +11473,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               18
             ],
-            "samples": 43,
+            "samples": 46,
             "confidence": "low"
           },
           "53": {
@@ -11233,12 +11482,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               25,
               111,
-              40,
               2,
+              40,
               60,
               42
             ],
-            "samples": 567,
+            "samples": 608,
             "confidence": "medium"
           },
           "54": {
@@ -11252,7 +11501,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               10
             ],
-            "samples": 344,
+            "samples": 370,
             "confidence": "medium"
           },
           "55": {
@@ -11266,7 +11515,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               53,
               60
             ],
-            "samples": 11395,
+            "samples": 12561,
             "confidence": "high"
           },
           "56": {
@@ -11275,23 +11524,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               9,
               40,
-              12
+              12,
+              112
             ],
-            "samples": 27,
+            "samples": 28,
             "confidence": "low"
           },
           "57": {
             "tiles": [
               111,
               12,
+              2,
               4,
               35,
-              2,
               8,
               9,
-              17
+              14
             ],
-            "samples": 27,
+            "samples": 29,
             "confidence": "low"
           },
           "58": {
@@ -11301,11 +11551,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               7,
               17,
+              22,
               24,
-              39,
-              40
+              39
             ],
-            "samples": 267,
+            "samples": 336,
             "confidence": "medium"
           },
           "59": {
@@ -11317,34 +11567,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               40,
               4,
-              13
+              10
             ],
-            "samples": 88,
-            "confidence": "low"
+            "samples": 104,
+            "confidence": "medium"
           },
           "60": {
             "tiles": [
               111,
               13,
               11,
+              1,
               8,
-              17
+              17,
+              20
             ],
-            "samples": 15,
+            "samples": 22,
             "confidence": "low"
           },
           "61": {
             "tiles": [
               111,
               59,
-              17,
               38,
+              17,
               2,
               12,
               18,
-              19
+              1
             ],
-            "samples": 93,
+            "samples": 98,
             "confidence": "low"
           },
           "62": {
@@ -11353,12 +11605,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               39,
               3,
-              9,
               13,
+              9,
               30,
               40
             ],
-            "samples": 123,
+            "samples": 135,
             "confidence": "medium"
           },
           "63": {
@@ -11367,12 +11619,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               32,
               2,
+              17,
               40,
               1,
-              17,
               60
             ],
-            "samples": 835,
+            "samples": 946,
             "confidence": "medium"
           },
           "64": {
@@ -11386,7 +11638,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               15
             ],
-            "samples": 63,
+            "samples": 67,
             "confidence": "low"
           },
           "65": {
@@ -11396,9 +11648,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               12,
               14,
+              25,
               41,
-              44,
-              46
+              44
             ],
             "samples": 30,
             "confidence": "low"
@@ -11409,9 +11661,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               9,
               40,
-              41
+              41,
+              112
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "67": {
@@ -11434,12 +11687,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               15,
               10,
-              45,
-              1,
               21,
-              40
+              45,
+              40,
+              1
             ],
-            "samples": 101,
+            "samples": 112,
             "confidence": "medium"
           },
           "69": {
@@ -11451,23 +11704,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               45,
               59,
-              46
+              40
             ],
-            "samples": 331,
+            "samples": 425,
             "confidence": "medium"
           },
           "70": {
             "tiles": [
               111,
+              15,
               1,
               11,
-              15,
               3,
               13,
               18,
               28
             ],
-            "samples": 38,
+            "samples": 39,
             "confidence": "low"
           },
           "71": {
@@ -11477,11 +11730,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               18,
               60,
+              1,
               11,
-              38,
-              1
+              15
             ],
-            "samples": 34,
+            "samples": 40,
             "confidence": "low"
           },
           "72": {
@@ -11491,25 +11744,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               40,
               39,
+              20,
               41,
-              42,
-              20
+              42
             ],
-            "samples": 153,
+            "samples": 173,
             "confidence": "medium"
           },
           "73": {
             "tiles": [
               111,
-              12,
               14,
+              12,
               35,
               1,
               2,
               29,
               60
             ],
-            "samples": 50,
+            "samples": 55,
             "confidence": "low"
           },
           "74": {
@@ -11517,69 +11770,69 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               24,
               111,
-              41,
               40,
               9,
+              41,
               7,
               39
             ],
-            "samples": 266,
+            "samples": 345,
             "confidence": "medium"
           },
           "75": {
             "tiles": [
               111,
-              1,
               12,
+              1,
               35,
               9,
               14,
               18,
               19
             ],
-            "samples": 32,
+            "samples": 35,
             "confidence": "low"
           },
           "76": {
             "tiles": [
-              28,
               40,
+              28,
               39,
               25,
               111,
               49,
-              50,
-              5
+              5,
+              50
             ],
-            "samples": 842,
+            "samples": 906,
             "confidence": "medium"
           },
           "77": {
             "tiles": [
-              35,
               111,
+              35,
               2,
               38,
-              40,
               49,
+              40,
               60,
               27
             ],
-            "samples": 252,
+            "samples": 293,
             "confidence": "medium"
           },
           "78": {
             "tiles": [
-              39,
               36,
+              39,
               40,
               111,
               24,
-              5,
               1,
-              28
+              5,
+              11
             ],
-            "samples": 286,
+            "samples": 317,
             "confidence": "medium"
           },
           "79": {
@@ -11587,13 +11840,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1,
               2,
-              60,
-              27,
               40,
-              14,
-              18
+              60,
+              18,
+              27,
+              12
             ],
-            "samples": 75,
+            "samples": 83,
             "confidence": "low"
           },
           "80": {
@@ -11604,7 +11857,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               108
             ],
-            "samples": 25,
+            "samples": 24,
             "confidence": "low"
           },
           "81": {
@@ -11616,7 +11869,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               110
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "82": {
@@ -11639,7 +11892,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               26
             ],
-            "samples": 47,
+            "samples": 49,
             "confidence": "low"
           },
           "84": {
@@ -11652,7 +11905,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               49
             ],
-            "samples": 21,
+            "samples": 22,
             "confidence": "low"
           },
           "85": {
@@ -11666,7 +11919,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               41,
               46
             ],
-            "samples": 58,
+            "samples": 64,
             "confidence": "low"
           },
           "86": {
@@ -11680,7 +11933,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               8
             ],
-            "samples": 63,
+            "samples": 65,
             "confidence": "low"
           },
           "87": {
@@ -11694,7 +11947,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               36
             ],
-            "samples": 114,
+            "samples": 116,
             "confidence": "medium"
           },
           "88": {
@@ -11712,8 +11965,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "89": {
             "tiles": [
-              14,
               111,
+              14,
               1,
               35,
               9,
@@ -11721,13 +11974,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               4,
               23
             ],
-            "samples": 62,
+            "samples": 66,
             "confidence": "low"
           },
           "90": {
             "tiles": [
-              111,
               1,
+              111,
               7,
               40,
               9,
@@ -11735,21 +11988,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               24
             ],
-            "samples": 34,
+            "samples": 42,
             "confidence": "low"
           },
           "91": {
             "tiles": [
               111,
-              31,
               35,
-              9,
+              31,
               1,
+              9,
               4,
               40,
               41
             ],
-            "samples": 73,
+            "samples": 81,
             "confidence": "low"
           },
           "92": {
@@ -11763,7 +12016,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               40
             ],
-            "samples": 44,
+            "samples": 45,
             "confidence": "low"
           },
           "93": {
@@ -11777,7 +12030,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               49,
               10
             ],
-            "samples": 92,
+            "samples": 95,
             "confidence": "low"
           },
           "94": {
@@ -11786,12 +12039,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               5,
               36,
-              49,
               1,
+              11,
               15,
               39
             ],
-            "samples": 69,
+            "samples": 73,
             "confidence": "low"
           },
           "95": {
@@ -11805,7 +12058,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               36
             ],
-            "samples": 213,
+            "samples": 232,
             "confidence": "medium"
           },
           "96": {
@@ -11817,7 +12070,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               109,
               110
             ],
-            "samples": 52,
+            "samples": 54,
             "confidence": "low"
           },
           "97": {
@@ -11830,7 +12083,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               46
             ],
-            "samples": 56,
+            "samples": 57,
             "confidence": "low"
           },
           "98": {
@@ -11850,14 +12103,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "99": {
             "tiles": [
               111,
+              1,
               2,
               4,
               9,
               12,
-              46,
-              112
+              16,
+              46
             ],
-            "samples": 13,
+            "samples": 15,
             "confidence": "low"
           },
           "100": {
@@ -11868,10 +12122,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               112,
               2,
               40,
-              30,
-              39
+              10,
+              30
             ],
-            "samples": 132,
+            "samples": 142,
             "confidence": "medium"
           },
           "101": {
@@ -11879,13 +12133,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               111,
               60,
-              46,
               45,
+              46,
               10,
-              8,
-              40
+              40,
+              8
             ],
-            "samples": 326,
+            "samples": 381,
             "confidence": "medium"
           },
           "102": {
@@ -11899,7 +12153,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               48,
               15
             ],
-            "samples": 246,
+            "samples": 265,
             "confidence": "medium"
           },
           "103": {
@@ -11913,20 +12167,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               10
             ],
-            "samples": 159,
+            "samples": 175,
             "confidence": "medium"
           },
           "104": {
             "tiles": [
-              1,
               111,
+              1,
               9,
               42,
               5,
               6,
               109
             ],
-            "samples": 46,
+            "samples": 50,
             "confidence": "low"
           },
           "105": {
@@ -11945,16 +12199,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "106": {
             "tiles": [
+              24,
               39,
               111,
-              24,
               1,
               40,
               7,
-              41,
-              9
+              9,
+              41
             ],
-            "samples": 257,
+            "samples": 289,
             "confidence": "medium"
           },
           "107": {
@@ -11964,11 +12218,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               12,
               5,
-              8,
               9,
-              17
+              17,
+              18
             ],
-            "samples": 59,
+            "samples": 61,
             "confidence": "low"
           },
           "108": {
@@ -11982,7 +12236,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               42,
               39
             ],
-            "samples": 309,
+            "samples": 329,
             "confidence": "medium"
           },
           "109": {
@@ -11990,13 +12244,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               2,
               49,
-              12,
               28,
+              12,
               10,
               25,
               60
             ],
-            "samples": 109,
+            "samples": 126,
             "confidence": "medium"
           },
           "110": {
@@ -12008,32 +12262,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               7,
               52,
-              41
+              27
             ],
-            "samples": 9484,
+            "samples": 10418,
             "confidence": "high"
           },
           "111": {
             "tiles": [
-              39,
               111,
+              39,
               27,
               35,
               1,
               40,
-              2,
-              12
+              12,
+              2
             ],
-            "samples": 693,
+            "samples": 757,
             "confidence": "medium"
           },
           "112": {
             "tiles": [
               111,
               5,
-              109
+              109,
+              112
             ],
-            "samples": 24,
+            "samples": 26,
             "confidence": "low"
           },
           "113": {
@@ -12042,9 +12297,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               18,
               45,
+              46,
               108
             ],
-            "samples": 17,
+            "samples": 19,
             "confidence": "low"
           },
           "114": {
@@ -12058,7 +12314,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               4,
               7
             ],
-            "samples": 53,
+            "samples": 61,
             "confidence": "low"
           },
           "115": {
@@ -12068,11 +12324,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               4,
               60,
+              24,
               41,
-              38,
-              18
+              38
             ],
-            "samples": 75,
+            "samples": 82,
             "confidence": "low"
           },
           "116": {
@@ -12086,7 +12342,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               45
             ],
-            "samples": 42,
+            "samples": 43,
             "confidence": "low"
           },
           "117": {
@@ -12100,7 +12356,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               44
             ],
-            "samples": 145,
+            "samples": 151,
             "confidence": "medium"
           },
           "118": {
@@ -12111,24 +12367,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               15,
               58,
-              9,
-              10
+              10,
+              2
             ],
-            "samples": 376,
+            "samples": 399,
             "confidence": "medium"
           },
           "119": {
             "tiles": [
               38,
-              40,
               111,
+              40,
               2,
               32,
-              60,
               24,
+              60,
               1
             ],
-            "samples": 1470,
+            "samples": 1636,
             "confidence": "high"
           },
           "120": {
@@ -12139,7 +12395,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               20,
               29
             ],
-            "samples": 23,
+            "samples": 24,
             "confidence": "low"
           },
           "121": {
@@ -12153,7 +12409,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               35
             ],
-            "samples": 43,
+            "samples": 45,
             "confidence": "low"
           },
           "122": {
@@ -12167,21 +12423,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               2
             ],
-            "samples": 104,
+            "samples": 115,
             "confidence": "medium"
           },
           "123": {
             "tiles": [
               111,
-              31,
               2,
-              1,
+              31,
               17,
+              1,
               47,
               39,
               35
             ],
-            "samples": 188,
+            "samples": 218,
             "confidence": "medium"
           },
           "124": {
@@ -12195,21 +12451,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               42
             ],
-            "samples": 60,
+            "samples": 65,
             "confidence": "low"
           },
           "125": {
             "tiles": [
               111,
-              28,
               2,
+              28,
               1,
               12,
               38,
               59,
               60
             ],
-            "samples": 187,
+            "samples": 199,
             "confidence": "medium"
           },
           "126": {
@@ -12223,7 +12479,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               7,
               30
             ],
-            "samples": 1247,
+            "samples": 1382,
             "confidence": "high"
           },
           "127": {
@@ -12235,9 +12491,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               2,
               14,
-              27
+              1
             ],
-            "samples": 2862,
+            "samples": 3199,
             "confidence": "high"
           },
           "128": {
@@ -12245,27 +12501,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               109,
               40,
-              2,
               112,
+              2,
               8,
               9,
               16
             ],
-            "samples": 52,
+            "samples": 55,
             "confidence": "low"
           },
           "129": {
             "tiles": [
               111,
-              40,
-              10,
               2,
+              10,
+              40,
               23,
               29,
               31,
               41
             ],
-            "samples": 78,
+            "samples": 89,
             "confidence": "low"
           },
           "130": {
@@ -12274,23 +12530,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               1,
               40,
-              107
+              107,
+              112
             ],
-            "samples": 30,
+            "samples": 32,
             "confidence": "low"
           },
           "131": {
             "tiles": [
               111,
-              1,
-              12,
               16,
+              12,
+              1,
               40,
               18,
               107,
               3
             ],
-            "samples": 42,
+            "samples": 49,
             "confidence": "low"
           },
           "132": {
@@ -12304,7 +12561,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               46,
               8
             ],
-            "samples": 54,
+            "samples": 57,
             "confidence": "low"
           },
           "133": {
@@ -12312,13 +12569,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               38,
               111,
-              60,
-              40,
               45,
+              40,
+              60,
               10,
-              46
+              17
             ],
-            "samples": 308,
+            "samples": 394,
             "confidence": "medium"
           },
           "134": {
@@ -12326,25 +12583,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               18,
               60,
+              15,
               16,
               19,
               39
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "135": {
             "tiles": [
               111,
+              18,
               60,
               1,
               2,
-              18,
               46,
               15,
               38
             ],
-            "samples": 37,
+            "samples": 43,
             "confidence": "low"
           },
           "136": {
@@ -12358,13 +12616,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               20,
               42
             ],
-            "samples": 150,
+            "samples": 163,
             "confidence": "medium"
           },
           "137": {
             "tiles": [
-              29,
               40,
+              29,
               24,
               25,
               111,
@@ -12372,7 +12630,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               41,
               51
             ],
-            "samples": 828,
+            "samples": 891,
             "confidence": "medium"
           },
           "138": {
@@ -12386,7 +12644,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               52,
               24
             ],
-            "samples": 271,
+            "samples": 335,
             "confidence": "medium"
           },
           "139": {
@@ -12398,9 +12656,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               6,
               29,
               39,
-              33
+              12
             ],
-            "samples": 212,
+            "samples": 235,
             "confidence": "medium"
           },
           "140": {
@@ -12412,23 +12670,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               11,
               3,
-              112
+              45
             ],
-            "samples": 45,
+            "samples": 57,
             "confidence": "low"
           },
           "141": {
             "tiles": [
-              111,
               34,
-              40,
+              111,
               2,
+              40,
               38,
               26,
               60,
               10
             ],
-            "samples": 227,
+            "samples": 257,
             "confidence": "medium"
           },
           "142": {
@@ -12440,23 +12698,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               2,
               13,
-              18
+              15
             ],
-            "samples": 40,
+            "samples": 44,
             "confidence": "low"
           },
           "143": {
             "tiles": [
               111,
-              1,
               2,
+              1,
               6,
+              19,
               60,
               16,
-              19,
               38
             ],
-            "samples": 67,
+            "samples": 74,
             "confidence": "low"
           },
           "144": {
@@ -12466,11 +12724,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               10,
               12,
+              39,
               106,
-              107,
-              110
+              107
             ],
-            "samples": 54,
+            "samples": 57,
             "confidence": "low"
           },
           "145": {
@@ -12478,13 +12736,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               41,
               24,
+              2,
               23,
               1,
-              2,
               109,
-              31
+              10
             ],
-            "samples": 150,
+            "samples": 169,
             "confidence": "medium"
           },
           "146": {
@@ -12495,7 +12753,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               22
             ],
-            "samples": 32,
+            "samples": 33,
             "confidence": "low"
           },
           "147": {
@@ -12507,23 +12765,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               41,
               4,
-              47
+              16
             ],
-            "samples": 294,
+            "samples": 323,
             "confidence": "medium"
           },
           "148": {
             "tiles": [
               111,
+              2,
               19,
               45,
-              2,
-              8,
               10,
               15,
-              27
+              27,
+              34
             ],
-            "samples": 41,
+            "samples": 43,
             "confidence": "low"
           },
           "149": {
@@ -12537,7 +12795,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               8
             ],
-            "samples": 339,
+            "samples": 391,
             "confidence": "medium"
           },
           "150": {
@@ -12551,7 +12809,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               30
             ],
-            "samples": 22,
+            "samples": 24,
             "confidence": "low"
           },
           "151": {
@@ -12559,13 +12817,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               111,
               2,
-              26,
               31,
-              11,
-              40,
-              60
+              26,
+              15,
+              18,
+              40
             ],
-            "samples": 160,
+            "samples": 174,
             "confidence": "medium"
           },
           "152": {
@@ -12573,13 +12831,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1,
               9,
-              42,
               40,
+              42,
               7,
               12,
               14
             ],
-            "samples": 43,
+            "samples": 49,
             "confidence": "low"
           },
           "153": {
@@ -12587,27 +12845,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               29,
               24,
               111,
-              41,
               40,
+              41,
               1,
               25,
               42
             ],
-            "samples": 391,
+            "samples": 410,
             "confidence": "medium"
           },
           "154": {
             "tiles": [
               111,
-              39,
               1,
+              39,
               9,
               41,
               27,
               24,
               40
             ],
-            "samples": 147,
+            "samples": 168,
             "confidence": "medium"
           },
           "155": {
@@ -12619,9 +12877,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               41,
               1,
               51,
-              7
+              36
             ],
-            "samples": 9443,
+            "samples": 10400,
             "confidence": "high"
           },
           "156": {
@@ -12635,7 +12893,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               34
             ],
-            "samples": 24,
+            "samples": 25,
             "confidence": "low"
           },
           "157": {
@@ -12643,13 +12901,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               2,
               41,
-              26,
               29,
+              26,
               1,
               11,
               24
             ],
-            "samples": 102,
+            "samples": 115,
             "confidence": "medium"
           },
           "158": {
@@ -12661,32 +12919,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               41,
               40,
               9,
-              19
+              12
             ],
-            "samples": 69,
+            "samples": 72,
             "confidence": "low"
           },
           "159": {
             "tiles": [
               111,
-              24,
               26,
+              24,
               34,
               41,
               40,
               1,
-              2
+              11
             ],
-            "samples": 682,
+            "samples": 744,
             "confidence": "medium"
           },
           "160": {
             "tiles": [
               111,
               109,
-              40
+              40,
+              112
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "161": {
@@ -12698,7 +12957,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               23,
               45,
               46,
-              106
+              112
             ],
             "samples": 15,
             "confidence": "low"
@@ -12713,13 +12972,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               29,
               39
             ],
-            "samples": 18,
+            "samples": 20,
             "confidence": "low"
           },
           "163": {
             "tiles": [
-              16,
               111,
+              16,
               31,
               1,
               9,
@@ -12727,7 +12986,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               23,
               37
             ],
-            "samples": 59,
+            "samples": 65,
             "confidence": "low"
           },
           "164": {
@@ -12739,13 +12998,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               28
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "165": {
             "tiles": [
-              111,
               2,
+              111,
               59,
               60,
               10,
@@ -12753,7 +13012,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               1
             ],
-            "samples": 46,
+            "samples": 50,
             "confidence": "low"
           },
           "166": {
@@ -12781,7 +13040,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               44,
               35
             ],
-            "samples": 108,
+            "samples": 111,
             "confidence": "medium"
           },
           "168": {
@@ -12795,48 +13054,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               20,
               28
             ],
-            "samples": 22,
+            "samples": 23,
             "confidence": "low"
           },
           "169": {
             "tiles": [
               111,
-              24,
               29,
+              24,
               6,
               10,
+              14,
               41,
-              42,
-              60
+              42
             ],
-            "samples": 41,
+            "samples": 44,
             "confidence": "low"
           },
           "170": {
             "tiles": [
-              111,
               1,
+              111,
               40,
               9,
               24,
               7,
               18
             ],
-            "samples": 41,
+            "samples": 48,
             "confidence": "low"
           },
           "171": {
             "tiles": [
               111,
-              29,
               1,
+              29,
               6,
               37,
-              9,
               24,
-              16
+              9,
+              12
             ],
-            "samples": 76,
+            "samples": 82,
             "confidence": "low"
           },
           "172": {
@@ -12850,7 +13109,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               46,
               40
             ],
-            "samples": 62,
+            "samples": 63,
             "confidence": "low"
           },
           "173": {
@@ -12859,26 +13118,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               29,
               2,
               24,
-              6,
               34,
               40,
+              6,
               17
             ],
-            "samples": 70,
+            "samples": 77,
             "confidence": "low"
           },
           "174": {
             "tiles": [
               111,
               34,
-              30,
               1,
+              30,
+              3,
               16,
               32,
-              39,
-              3
+              39
             ],
-            "samples": 61,
+            "samples": 64,
             "confidence": "low"
           },
           "175": {
@@ -12888,20 +13147,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               16,
               2,
-              30,
               29,
-              38
+              30,
+              3
             ],
-            "samples": 185,
+            "samples": 208,
             "confidence": "medium"
           },
           "176": {
             "tiles": [
               111,
               19,
-              41
+              41,
+              112
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "177": {
@@ -12915,7 +13175,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               23
             ],
-            "samples": 50,
+            "samples": 57,
             "confidence": "low"
           },
           "178": {
@@ -12923,13 +13183,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1,
               9,
-              106,
               22,
+              106,
               107,
               110,
               11
             ],
-            "samples": 74,
+            "samples": 78,
             "confidence": "low"
           },
           "179": {
@@ -12937,13 +13197,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               111,
               40,
-              106,
               1,
+              106,
               41,
               16,
               24
             ],
-            "samples": 404,
+            "samples": 424,
             "confidence": "medium"
           },
           "180": {
@@ -12968,7 +13228,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               45
             ],
-            "samples": 142,
+            "samples": 144,
             "confidence": "medium"
           },
           "182": {
@@ -12977,35 +13237,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               30,
               39,
-              48,
               3,
+              48,
               60,
               17
             ],
-            "samples": 124,
+            "samples": 132,
             "confidence": "medium"
           },
           "183": {
             "tiles": [
               38,
-              40,
               111,
+              40,
               2,
               32,
               39,
               34,
               60
             ],
-            "samples": 1490,
+            "samples": 1663,
             "confidence": "high"
           },
           "184": {
             "tiles": [
               111,
               1,
-              9
+              9,
+              19
             ],
-            "samples": 17,
+            "samples": 23,
             "confidence": "low"
           },
           "185": {
@@ -13015,26 +13276,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               41,
               29,
+              40,
               6,
-              9,
-              40
+              9
             ],
-            "samples": 106,
+            "samples": 116,
             "confidence": "medium"
           },
           "186": {
             "tiles": [
               111,
               1,
-              106,
               9,
+              106,
               16,
               17,
               24,
-              11
+              5
             ],
-            "samples": 94,
-            "confidence": "low"
+            "samples": 105,
+            "confidence": "medium"
           },
           "187": {
             "tiles": [
@@ -13047,7 +13308,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               29,
               36
             ],
-            "samples": 1193,
+            "samples": 1328,
             "confidence": "high"
           },
           "188": {
@@ -13061,7 +13322,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               17,
               2
             ],
-            "samples": 37,
+            "samples": 39,
             "confidence": "low"
           },
           "189": {
@@ -13075,7 +13336,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               6
             ],
-            "samples": 197,
+            "samples": 213,
             "confidence": "medium"
           },
           "190": {
@@ -13089,7 +13350,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               9
             ],
-            "samples": 189,
+            "samples": 209,
             "confidence": "medium"
           },
           "191": {
@@ -13100,10 +13361,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               24,
               2,
-              41,
+              1,
               13
             ],
-            "samples": 2905,
+            "samples": 3249,
             "confidence": "high"
           },
           "192": {
@@ -13116,7 +13377,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               112
             ],
-            "samples": 70,
+            "samples": 80,
             "confidence": "low"
           },
           "193": {
@@ -13128,7 +13389,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               50
             ],
-            "samples": 36,
+            "samples": 39,
             "confidence": "low"
           },
           "194": {
@@ -13138,7 +13399,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               22,
               112
             ],
-            "samples": 23,
+            "samples": 24,
             "confidence": "low"
           },
           "195": {
@@ -13150,7 +13411,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               58,
               112
             ],
-            "samples": 19,
+            "samples": 21,
             "confidence": "low"
           },
           "196": {
@@ -13164,21 +13425,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               45,
               105
             ],
-            "samples": 28,
+            "samples": 30,
             "confidence": "low"
           },
           "197": {
             "tiles": [
               111,
-              38,
               2,
+              38,
               60,
               40,
               59,
-              32,
-              17
+              17,
+              32
             ],
-            "samples": 191,
+            "samples": 230,
             "confidence": "medium"
           },
           "198": {
@@ -13192,7 +13453,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               30
             ],
-            "samples": 28,
+            "samples": 29,
             "confidence": "low"
           },
           "199": {
@@ -13201,12 +13462,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               2,
               17,
-              11,
               18,
+              11,
               19,
               38
             ],
-            "samples": 81,
+            "samples": 86,
             "confidence": "low"
           },
           "200": {
@@ -13220,7 +13481,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               112,
               40
             ],
-            "samples": 289,
+            "samples": 311,
             "confidence": "medium"
           },
           "201": {
@@ -13234,7 +13495,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               43,
               41
             ],
-            "samples": 627,
+            "samples": 648,
             "confidence": "medium"
           },
           "202": {
@@ -13245,10 +13506,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               7,
               33,
-              10,
-              15
+              112,
+              10
             ],
-            "samples": 311,
+            "samples": 392,
             "confidence": "medium"
           },
           "203": {
@@ -13262,7 +13523,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               37
             ],
-            "samples": 126,
+            "samples": 147,
             "confidence": "medium"
           },
           "204": {
@@ -13276,7 +13537,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               43,
               49
             ],
-            "samples": 567,
+            "samples": 582,
             "confidence": "medium"
           },
           "205": {
@@ -13290,7 +13551,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               46
             ],
-            "samples": 11712,
+            "samples": 12948,
             "confidence": "high"
           },
           "206": {
@@ -13298,13 +13559,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1,
               39,
-              33,
               5,
+              33,
               40,
               15,
               18
             ],
-            "samples": 134,
+            "samples": 154,
             "confidence": "medium"
           },
           "207": {
@@ -13318,7 +13579,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               18
             ],
-            "samples": 755,
+            "samples": 846,
             "confidence": "medium"
           },
           "208": {
@@ -13342,7 +13603,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               31
             ],
-            "samples": 49,
+            "samples": 53,
             "confidence": "low"
           },
           "210": {
@@ -13350,21 +13611,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               18
             ],
-            "samples": 18,
+            "samples": 20,
             "confidence": "low"
           },
           "211": {
             "tiles": [
               111,
-              1,
               31,
+              1,
               4,
-              47,
               40,
+              47,
               38,
               8
             ],
-            "samples": 69,
+            "samples": 74,
             "confidence": "low"
           },
           "212": {
@@ -13375,7 +13636,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               17,
               19
             ],
-            "samples": 16,
+            "samples": 18,
             "confidence": "low"
           },
           "213": {
@@ -13387,9 +13648,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               12,
-              46
+              25
             ],
-            "samples": 85,
+            "samples": 97,
             "confidence": "low"
           },
           "214": {
@@ -13403,7 +13664,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               2
             ],
-            "samples": 46,
+            "samples": 49,
             "confidence": "low"
           },
           "215": {
@@ -13412,12 +13673,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               31,
               11,
-              38,
               2,
+              38,
               4,
               47
             ],
-            "samples": 182,
+            "samples": 200,
             "confidence": "medium"
           },
           "216": {
@@ -13431,7 +13692,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               42
             ],
-            "samples": 55,
+            "samples": 58,
             "confidence": "low"
           },
           "217": {
@@ -13441,11 +13702,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               14,
               40,
               25,
-              42,
               1,
+              42,
               105
             ],
-            "samples": 495,
+            "samples": 512,
             "confidence": "medium"
           },
           "218": {
@@ -13457,9 +13718,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               105,
               7,
               18,
-              40
+              24
             ],
-            "samples": 78,
+            "samples": 90,
             "confidence": "low"
           },
           "219": {
@@ -13468,12 +13729,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               111,
               41,
-              36,
               1,
+              36,
               26,
               51
             ],
-            "samples": 1376,
+            "samples": 1504,
             "confidence": "high"
           },
           "220": {
@@ -13487,8 +13748,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               49,
               60
             ],
-            "samples": 97,
-            "confidence": "low"
+            "samples": 102,
+            "confidence": "medium"
           },
           "221": {
             "tiles": [
@@ -13496,12 +13757,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               111,
               42,
-              43,
               2,
+              43,
               60,
               39
             ],
-            "samples": 1360,
+            "samples": 1519,
             "confidence": "high"
           },
           "222": {
@@ -13515,7 +13776,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               5
             ],
-            "samples": 172,
+            "samples": 198,
             "confidence": "medium"
           },
           "223": {
@@ -13523,13 +13784,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               111,
               40,
-              25,
               24,
+              25,
               15,
               1,
               2
             ],
-            "samples": 2938,
+            "samples": 3260,
             "confidence": "high"
           },
           "224": {
@@ -13540,7 +13801,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               109,
               112
             ],
-            "samples": 18,
+            "samples": 17,
             "confidence": "low"
           },
           "225": {
@@ -13554,7 +13815,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               41,
               46
             ],
-            "samples": 27,
+            "samples": 28,
             "confidence": "low"
           },
           "226": {
@@ -13562,7 +13823,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1
             ],
-            "samples": 19,
+            "samples": 23,
             "confidence": "low"
           },
           "227": {
@@ -13576,7 +13837,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               4
             ],
-            "samples": 44,
+            "samples": 48,
             "confidence": "low"
           },
           "228": {
@@ -13587,10 +13848,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               46,
               50,
               3,
-              12,
-              13
+              13,
+              18
             ],
-            "samples": 43,
+            "samples": 44,
             "confidence": "low"
           },
           "229": {
@@ -13598,13 +13859,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               2,
               1,
+              60,
               12,
               59,
-              60,
               46,
               10
             ],
-            "samples": 84,
+            "samples": 91,
             "confidence": "low"
           },
           "230": {
@@ -13618,35 +13879,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               38
             ],
-            "samples": 62,
+            "samples": 66,
             "confidence": "low"
           },
           "231": {
             "tiles": [
               111,
-              30,
               1,
+              30,
+              12,
               38,
               2,
               3,
-              12,
-              48
+              18
             ],
-            "samples": 174,
+            "samples": 195,
             "confidence": "medium"
           },
           "232": {
             "tiles": [
               111,
               1,
+              112,
               7,
               9,
               110,
-              112,
               40,
               6
             ],
-            "samples": 59,
+            "samples": 65,
             "confidence": "low"
           },
           "233": {
@@ -13660,7 +13921,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               6
             ],
-            "samples": 82,
+            "samples": 83,
             "confidence": "low"
           },
           "234": {
@@ -13668,14 +13929,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1,
               39,
-              24,
               9,
+              24,
               18,
               112,
               7
             ],
-            "samples": 96,
-            "confidence": "low"
+            "samples": 112,
+            "confidence": "medium"
           },
           "235": {
             "tiles": [
@@ -13688,7 +13949,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               10
             ],
-            "samples": 185,
+            "samples": 200,
             "confidence": "medium"
           },
           "236": {
@@ -13700,9 +13961,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               42,
               40,
-              43
+              2
             ],
-            "samples": 418,
+            "samples": 436,
             "confidence": "medium"
           },
           "237": {
@@ -13710,13 +13971,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               111,
               40,
+              2,
               42,
               43,
-              2,
-              33,
-              24
+              24,
+              33
             ],
-            "samples": 1379,
+            "samples": 1542,
             "confidence": "high"
           },
           "238": {
@@ -13728,9 +13989,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               37,
               27,
               30,
-              7
+              28
             ],
-            "samples": 1444,
+            "samples": 1587,
             "confidence": "high"
           },
           "239": {
@@ -13744,45 +14005,46 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               1
             ],
-            "samples": 2858,
+            "samples": 3195,
             "confidence": "high"
           },
           "240": {
             "tiles": [
               111,
+              40,
               112,
               10,
               19
             ],
-            "samples": 76,
+            "samples": 90,
             "confidence": "low"
           },
           "241": {
             "tiles": [
               111,
-              19,
               2,
+              19,
               1,
               12,
-              60,
               40,
+              60,
               9
             ],
-            "samples": 90,
-            "confidence": "low"
+            "samples": 100,
+            "confidence": "medium"
           },
           "242": {
             "tiles": [
               111,
               1,
+              40,
               19,
               9,
-              17,
               112,
-              40,
+              17,
               10
             ],
-            "samples": 128,
+            "samples": 145,
             "confidence": "medium"
           },
           "243": {
@@ -13791,12 +14053,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               31,
               2,
+              40,
               10,
               24,
-              19,
-              40
+              19
             ],
-            "samples": 230,
+            "samples": 256,
             "confidence": "medium"
           },
           "244": {
@@ -13804,13 +14066,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               2,
               11,
+              40,
               1,
               19,
               12,
-              46,
-              40
+              46
             ],
-            "samples": 100,
+            "samples": 109,
             "confidence": "medium"
           },
           "245": {
@@ -13818,13 +14080,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               1,
               60,
+              2,
               19,
               59,
-              2,
               11,
               12
             ],
-            "samples": 423,
+            "samples": 470,
             "confidence": "medium"
           },
           "246": {
@@ -13833,12 +14095,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               30,
               2,
+              40,
               3,
               58,
-              40,
               19
             ],
-            "samples": 221,
+            "samples": 256,
             "confidence": "medium"
           },
           "247": {
@@ -13846,28 +14108,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               38,
               1,
-              40,
               2,
+              40,
               32,
               3,
               60
             ],
-            "samples": 1827,
+            "samples": 2094,
             "confidence": "high"
           },
           "248": {
             "tiles": [
               111,
               1,
+              40,
               19,
               58,
               9,
               18,
-              40,
               6
             ],
-            "samples": 96,
-            "confidence": "low"
+            "samples": 112,
+            "confidence": "medium"
           },
           "249": {
             "tiles": [
@@ -13875,12 +14137,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               29,
               2,
+              40,
               24,
               25,
-              6,
-              11
+              6
             ],
-            "samples": 209,
+            "samples": 240,
             "confidence": "medium"
           },
           "250": {
@@ -13892,9 +14154,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               40,
               7,
               19,
-              39
+              58
             ],
-            "samples": 542,
+            "samples": 603,
             "confidence": "medium"
           },
           "251": {
@@ -13902,13 +14164,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               24,
               40,
-              41,
               1,
-              26,
+              41,
               2,
+              26,
               29
             ],
-            "samples": 1910,
+            "samples": 2154,
             "confidence": "high"
           },
           "252": {
@@ -13917,12 +14179,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               28,
               2,
-              19,
               40,
+              19,
               5,
               49
             ],
-            "samples": 220,
+            "samples": 252,
             "confidence": "medium"
           },
           "253": {
@@ -13931,12 +14193,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               40,
               1,
+              2,
               43,
               33,
-              2,
               42
             ],
-            "samples": 1782,
+            "samples": 2038,
             "confidence": "high"
           },
           "254": {
@@ -13945,12 +14207,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               40,
               1,
-              27,
               2,
+              27,
               58,
               28
             ],
-            "samples": 1859,
+            "samples": 2101,
             "confidence": "high"
           },
           "255": {
@@ -13964,7 +14226,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               1
             ],
-            "samples": 398935,
+            "samples": 425491,
             "confidence": "high"
           }
         },
@@ -13976,10 +14238,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             39,
             15,
             1,
+            2,
             48,
             3,
-            2,
-            38
+            11
           ],
           "north": [
             40,
@@ -13987,11 +14249,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             111,
             1,
             24,
-            27,
-            34,
             11,
-            28,
-            36
+            27,
+            2,
+            34,
+            28
           ],
           "lineHorizontal": [
             1,
@@ -14039,18 +14301,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             35,
             34,
             37,
-            36
+            2
           ],
           "east": [
             40,
             25,
             111,
+            2,
             43,
             42,
-            2,
             38,
-            60,
             1,
+            60,
             33
           ],
           "south": [
@@ -14058,12 +14320,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             24,
             111,
             41,
-            39,
             1,
+            39,
             26,
-            29,
-            36,
-            35
+            2,
+            12,
+            29
           ],
           "southWest": [
             111,
@@ -14073,19 +14335,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             16,
             1,
             41,
-            4,
             47,
+            4,
             12
           ],
           "lineVertical": [
             2,
             111,
             38,
-            60,
             25,
+            60,
             59,
-            40,
             45,
+            40,
             10,
             46
           ],
@@ -14099,19 +14361,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             1,
             42,
             41,
-            43
+            2
           ],
           "capEast": [
             111,
             1,
             9,
-            39,
             22,
+            39,
             40,
             24,
             18,
-            41,
-            112
+            112,
+            41
           ],
           "capNorth": [
             111,
@@ -14119,9 +14381,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             10,
             40,
             41,
+            23,
             24,
             12,
-            23,
             25,
             31
           ],
@@ -14130,22 +14392,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             1,
             9,
             39,
-            42,
-            25,
             20,
+            42,
             40,
+            25,
             24,
-            28
+            112
           ],
           "single": [
             111,
             112,
-            110,
             108,
+            110,
             40,
+            107,
             39,
             109,
-            107,
             25,
             42
           ],
@@ -14156,12 +14418,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             21,
             40,
             45,
+            13,
             25,
             46,
-            11,
-            13
+            15
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 40,
           "single": 60,
@@ -14221,36 +14486,38 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           92,
           93
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           61
         ],
         "candidates": [
           78,
+          61,
+          72,
           73,
           71,
-          72,
-          61,
-          89,
           93,
-          77,
+          89,
           88,
+          77,
           90
         ],
-        "sampleCount": 25492,
+        "sampleCount": 30871,
         "confidence": "high",
         "maskCandidates": {
           "0": {
             "tiles": [
-              61,
               76,
+              61,
               77,
               91,
+              75,
               62,
               64,
-              65,
-              75
+              65
             ],
-            "samples": 3616,
+            "samples": 3918,
             "confidence": "high"
           },
           "1": {
@@ -14259,12 +14526,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               76,
               78,
-              71,
               75,
+              71,
               69,
-              62
+              93
             ],
-            "samples": 430,
+            "samples": 441,
             "confidence": "medium"
           },
           "2": {
@@ -14272,13 +14539,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               78,
               76,
-              77,
               71,
+              77,
               62,
               64,
               73
             ],
-            "samples": 348,
+            "samples": 371,
             "confidence": "medium"
           },
           "3": {
@@ -14287,12 +14554,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               73,
               85,
+              61,
               64,
-              72,
-              77,
-              91
+              91,
+              72
             ],
-            "samples": 90,
+            "samples": 98,
             "confidence": "low"
           },
           "4": {
@@ -14303,24 +14570,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               71,
               93,
-              69,
-              64
+              61,
+              69
             ],
-            "samples": 419,
+            "samples": 436,
             "confidence": "medium"
           },
           "5": {
             "tiles": [
-              78,
+              61,
               93,
+              78,
               71,
               73,
               72,
               92,
-              91,
-              79
+              91
             ],
-            "samples": 1350,
+            "samples": 2121,
             "confidence": "high"
           },
           "6": {
@@ -14334,7 +14601,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               80
             ],
-            "samples": 80,
+            "samples": 82,
             "confidence": "low"
           },
           "7": {
@@ -14348,21 +14615,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               70
             ],
-            "samples": 69,
+            "samples": 71,
             "confidence": "low"
           },
           "8": {
             "tiles": [
               61,
+              76,
               77,
               78,
-              76,
               62,
               71,
               64,
-              69
+              74
             ],
-            "samples": 326,
+            "samples": 341,
             "confidence": "medium"
           },
           "9": {
@@ -14372,26 +14639,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               73,
               83,
+              61,
               68,
-              66,
-              72
+              93
             ],
-            "samples": 105,
+            "samples": 113,
             "confidence": "medium"
           },
           "10": {
             "tiles": [
-              78,
               61,
+              78,
               71,
               72,
               73,
               89,
               62,
-              64
+              91
             ],
-            "samples": 612,
-            "confidence": "medium"
+            "samples": 1418,
+            "confidence": "high"
           },
           "11": {
             "tiles": [
@@ -14404,7 +14671,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               82
             ],
-            "samples": 63,
+            "samples": 65,
             "confidence": "low"
           },
           "12": {
@@ -14413,12 +14680,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               73,
               81,
+              61,
               68,
               72,
-              82,
-              91
+              82
             ],
-            "samples": 85,
+            "samples": 91,
             "confidence": "low"
           },
           "13": {
@@ -14427,12 +14694,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               93,
               78,
               71,
+              91,
               72,
               89,
-              65,
-              68
+              65
             ],
-            "samples": 129,
+            "samples": 134,
             "confidence": "medium"
           },
           "14": {
@@ -14446,7 +14713,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               86,
               87
             ],
-            "samples": 55,
+            "samples": 56,
             "confidence": "low"
           },
           "15": {
@@ -14460,21 +14727,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               86,
               89
             ],
-            "samples": 99,
-            "confidence": "low"
+            "samples": 103,
+            "confidence": "medium"
           },
           "16": {
             "tiles": [
-              65,
               61,
+              65,
               77,
               62,
               76,
-              93,
               91,
+              93,
               75
             ],
-            "samples": 156,
+            "samples": 160,
             "confidence": "medium"
           },
           "17": {
@@ -14497,12 +14764,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               64,
               68,
-              71,
               85,
+              71,
               73,
               78
             ],
-            "samples": 35,
+            "samples": 37,
             "confidence": "low"
           },
           "19": {
@@ -14513,10 +14780,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               72,
               78,
-              68,
-              93
+              93,
+              68
             ],
-            "samples": 280,
+            "samples": 339,
             "confidence": "medium"
           },
           "20": {
@@ -14525,12 +14792,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               62,
               66,
+              68,
               69,
               70,
-              73,
-              74
+              71
             ],
-            "samples": 16,
+            "samples": 19,
             "confidence": "low"
           },
           "21": {
@@ -14544,7 +14811,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               61
             ],
-            "samples": 90,
+            "samples": 97,
             "confidence": "low"
           },
           "22": {
@@ -14553,10 +14820,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               91,
               72,
-              68,
-              93
+              93,
+              68
             ],
-            "samples": 19,
+            "samples": 21,
             "confidence": "low"
           },
           "23": {
@@ -14564,13 +14831,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               71,
               73,
-              68,
               72,
+              68,
               86,
               70,
               78
             ],
-            "samples": 29,
+            "samples": 33,
             "confidence": "low"
           },
           "24": {
@@ -14592,27 +14859,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               71,
               73,
+              61,
               82,
               86,
               87,
-              61,
               72
             ],
-            "samples": 89,
+            "samples": 98,
             "confidence": "low"
           },
           "27": {
             "tiles": [
               71,
-              70,
               72,
+              70,
               73,
               78,
               85,
-              90,
-              62
+              87,
+              90
             ],
-            "samples": 19,
+            "samples": 24,
             "confidence": "low"
           },
           "28": {
@@ -14621,7 +14888,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               93
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "29": {
@@ -14650,28 +14917,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               65,
               77,
-              91,
               61,
-              93,
+              91,
               76,
-              64,
-              75
+              93,
+              75,
+              64
             ],
-            "samples": 178,
+            "samples": 183,
             "confidence": "medium"
           },
           "33": {
             "tiles": [
               65,
               93,
-              64,
               71,
+              64,
+              72,
               61,
               62,
-              70,
-              72
+              68
             ],
-            "samples": 24,
+            "samples": 27,
             "confidence": "low"
           },
           "34": {
@@ -14679,13 +14946,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               65,
               68,
+              79,
               73,
               78,
-              79,
               71,
               72
             ],
-            "samples": 37,
+            "samples": 38,
             "confidence": "low"
           },
           "35": {
@@ -14696,7 +14963,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               72
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "36": {
@@ -14710,7 +14977,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               69
             ],
-            "samples": 50,
+            "samples": 51,
             "confidence": "low"
           },
           "37": {
@@ -14720,11 +14987,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               73,
               88,
+              61,
               72,
-              79,
-              89
+              79
             ],
-            "samples": 85,
+            "samples": 95,
             "confidence": "low"
           },
           "38": {
@@ -14736,23 +15003,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               78,
               68,
-              62
+              93
             ],
-            "samples": 268,
+            "samples": 325,
             "confidence": "medium"
           },
           "39": {
             "tiles": [
               71,
               79,
-              80,
               72,
+              80,
               73,
               93,
               86,
               89
             ],
-            "samples": 35,
+            "samples": 38,
             "confidence": "low"
           },
           "40": {
@@ -14761,11 +15028,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               77,
               91,
+              76,
               78,
               80,
               93
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "42": {
@@ -14773,13 +15041,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               78,
               71,
+              61,
               72,
               90,
               77,
-              64,
-              82
+              64
             ],
-            "samples": 76,
+            "samples": 84,
             "confidence": "low"
           },
           "43": {
@@ -14794,37 +15062,38 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               73,
               71,
-              89
+              89,
+              93
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "46": {
             "tiles": [
+              71,
               78,
               72,
               64,
-              71,
-              87,
-              62,
               73,
-              79
+              87,
+              90,
+              62
             ],
-            "samples": 21,
+            "samples": 25,
             "confidence": "low"
           },
           "48": {
             "tiles": [
               93,
-              61,
               78,
+              61,
               75,
               77,
               65,
               68,
               73
             ],
-            "samples": 108,
+            "samples": 111,
             "confidence": "medium"
           },
           "49": {
@@ -14836,9 +15105,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               73,
               77,
-              84
+              78
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "50": {
@@ -14852,7 +15121,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               78
             ],
-            "samples": 138,
+            "samples": 142,
             "confidence": "medium"
           },
           "51": {
@@ -14863,10 +15132,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               65,
               71,
-              70,
-              73
+              73,
+              68
             ],
-            "samples": 44,
+            "samples": 47,
             "confidence": "low"
           },
           "52": {
@@ -14889,40 +15158,40 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               71,
               93,
-              89,
               78,
+              89,
               88,
               68
             ],
-            "samples": 40,
+            "samples": 41,
             "confidence": "low"
           },
           "54": {
             "tiles": [
               79,
               71,
+              68,
+              73,
               80,
               65,
               66,
-              68,
-              72,
-              73
+              72
             ],
-            "samples": 50,
+            "samples": 57,
             "confidence": "low"
           },
           "55": {
             "tiles": [
               88,
               89,
-              78,
               72,
+              78,
               71,
               73,
-              80,
-              86
+              93,
+              80
             ],
-            "samples": 1110,
+            "samples": 1369,
             "confidence": "high"
           },
           "56": {
@@ -14950,7 +15219,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               82
             ],
-            "samples": 77,
+            "samples": 78,
             "confidence": "low"
           },
           "61": {
@@ -14968,40 +15237,40 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               88,
               78,
-              89,
               73,
+              89,
               71,
               80
             ],
-            "samples": 32,
+            "samples": 36,
             "confidence": "low"
           },
           "64": {
             "tiles": [
               77,
-              64,
               91,
+              64,
               76,
               93,
+              61,
               74,
-              73,
-              61
+              73
             ],
-            "samples": 152,
+            "samples": 157,
             "confidence": "medium"
           },
           "65": {
             "tiles": [
+              71,
               73,
               93,
               61,
               64,
-              71,
               75,
-              74,
-              76
+              72,
+              74
             ],
-            "samples": 17,
+            "samples": 19,
             "confidence": "low"
           },
           "66": {
@@ -15028,7 +15297,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               73
             ],
-            "samples": 79,
+            "samples": 78,
             "confidence": "low"
           },
           "69": {
@@ -15037,12 +15306,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               93,
               71,
               78,
+              61,
               89,
               76,
-              64,
-              72
+              64
             ],
-            "samples": 154,
+            "samples": 169,
             "confidence": "medium"
           },
           "70": {
@@ -15073,13 +15342,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               73,
               61,
-              81,
               71,
+              81,
               72,
               75,
               78
             ],
-            "samples": 29,
+            "samples": 35,
             "confidence": "low"
           },
           "73": {
@@ -15090,9 +15359,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               72,
               88,
-              91
+              91,
+              93
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "74": {
@@ -15123,14 +15393,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               81,
               82,
-              73,
               71,
+              73,
               72,
               78,
-              68,
-              86
+              93,
+              68
             ],
-            "samples": 255,
+            "samples": 311,
             "confidence": "medium"
           },
           "77": {
@@ -15140,25 +15410,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               72,
               73,
-              75,
               82,
-              84
+              84,
+              93
             ],
-            "samples": 37,
+            "samples": 39,
             "confidence": "low"
           },
           "78": {
             "tiles": [
-              70,
               71,
-              72,
               73,
+              81,
+              70,
+              72,
               87,
               69,
-              78,
-              81
+              78
             ],
-            "samples": 14,
+            "samples": 19,
             "confidence": "low"
           },
           "80": {
@@ -15175,15 +15445,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 20,
             "confidence": "low"
           },
+          "83": {
+            "tiles": [
+              71,
+              85,
+              73,
+              78,
+              86
+            ],
+            "samples": 9,
+            "confidence": "low"
+          },
           "85": {
             "tiles": [
               71,
               73,
               78,
               89,
+              91,
               93
             ],
-            "samples": 17,
+            "samples": 18,
             "confidence": "low"
           },
           "90": {
@@ -15200,12 +15482,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "92": {
             "tiles": [
               81,
+              71,
               82,
               61,
-              71,
               77
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "96": {
@@ -15213,13 +15495,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               93,
               78,
-              76,
               74,
+              76,
               64,
               77,
               61
             ],
-            "samples": 87,
+            "samples": 89,
             "confidence": "low"
           },
           "97": {
@@ -15239,10 +15521,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               68,
               91,
+              71,
               76,
               89
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "100": {
@@ -15252,11 +15535,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               71,
               93,
-              89,
-              63,
-              66
+              73,
+              74,
+              78
             ],
-            "samples": 122,
+            "samples": 135,
             "confidence": "medium"
           },
           "101": {
@@ -15284,7 +15567,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               76
             ],
-            "samples": 38,
+            "samples": 43,
             "confidence": "low"
           },
           "106": {
@@ -15298,45 +15581,43 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               70
             ],
-            "samples": 60,
+            "samples": 61,
+            "confidence": "low"
+          },
+          "107": {
+            "tiles": [
+              73,
+              78
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "108": {
             "tiles": [
               81,
               72,
-              76,
               71,
+              76,
               73,
               61,
               64,
               68
             ],
-            "samples": 46,
-            "confidence": "low"
-          },
-          "109": {
-            "tiles": [
-              81,
-              82,
-              84,
-              78
-            ],
-            "samples": 8,
+            "samples": 47,
             "confidence": "low"
           },
           "110": {
             "tiles": [
               90,
               87,
-              78,
               72,
+              78,
               71,
               73,
               80,
               82
             ],
-            "samples": 1126,
+            "samples": 1330,
             "confidence": "high"
           },
           "111": {
@@ -15346,11 +15627,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               71,
               93,
+              73,
               72,
-              80,
-              66
+              80
             ],
-            "samples": 53,
+            "samples": 62,
             "confidence": "low"
           },
           "112": {
@@ -15364,7 +15645,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               76
             ],
-            "samples": 19,
+            "samples": 21,
             "confidence": "low"
           },
           "114": {
@@ -15396,13 +15677,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               88,
               72,
               78,
-              89,
-              68,
               71,
+              89,
               73,
+              68,
               82
             ],
-            "samples": 48,
+            "samples": 56,
             "confidence": "low"
           },
           "122": {
@@ -15411,10 +15692,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               71,
               77,
-              72,
-              78
+              78,
+              72
             ],
-            "samples": 14,
+            "samples": 16,
             "confidence": "low"
           },
           "126": {
@@ -15424,11 +15705,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               78,
               71,
+              73,
               81,
-              86,
-              62
+              86
             ],
-            "samples": 74,
+            "samples": 84,
             "confidence": "low"
           },
           "127": {
@@ -15437,12 +15718,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               72,
               73,
+              71,
               87,
               88,
-              71,
               83
             ],
-            "samples": 104,
+            "samples": 111,
             "confidence": "medium"
           },
           "128": {
@@ -15456,7 +15737,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               93,
               75
             ],
-            "samples": 185,
+            "samples": 189,
             "confidence": "medium"
           },
           "129": {
@@ -15493,26 +15774,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               93,
               73,
               91,
+              71,
               75,
               78,
-              61,
-              71
+              61
             ],
-            "samples": 24,
+            "samples": 26,
             "confidence": "low"
           },
           "133": {
             "tiles": [
               73,
-              78,
               93,
+              78,
               71,
               89,
+              61,
               72,
-              62,
-              69
+              62
             ],
-            "samples": 147,
+            "samples": 159,
             "confidence": "medium"
           },
           "134": {
@@ -15547,7 +15828,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               93,
               61
             ],
-            "samples": 38,
+            "samples": 40,
             "confidence": "low"
           },
           "137": {
@@ -15558,10 +15839,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               72,
               78,
-              68,
-              87
+              93,
+              68
             ],
-            "samples": 271,
+            "samples": 329,
             "confidence": "medium"
           },
           "138": {
@@ -15569,27 +15850,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               73,
               78,
+              61,
               87,
               72,
               77,
-              82,
-              86
+              82
             ],
-            "samples": 66,
+            "samples": 75,
             "confidence": "low"
           },
           "139": {
             "tiles": [
-              73,
               71,
+              73,
               83,
+              72,
               90,
               70,
-              72,
               78,
               80
             ],
-            "samples": 16,
+            "samples": 20,
             "confidence": "low"
           },
           "140": {
@@ -15597,10 +15878,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               72,
               78,
-              91,
-              93
+              93,
+              91
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "141": {
@@ -15608,23 +15889,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               72,
               93,
-              68,
               71,
               73,
+              68,
               78,
               84
             ],
-            "samples": 30,
+            "samples": 31,
             "confidence": "low"
           },
           "142": {
             "tiles": [
               73,
               71,
-              70,
-              78
+              78,
+              70
             ],
-            "samples": 22,
+            "samples": 23,
             "confidence": "low"
           },
           "144": {
@@ -15638,7 +15919,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               62
             ],
-            "samples": 83,
+            "samples": 87,
             "confidence": "low"
           },
           "145": {
@@ -15652,7 +15933,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               71
             ],
-            "samples": 106,
+            "samples": 109,
             "confidence": "medium"
           },
           "146": {
@@ -15660,9 +15941,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               91,
               70,
+              78,
               84
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "147": {
@@ -15673,10 +15955,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               62,
               64,
-              74,
-              72
+              72,
+              73
             ],
-            "samples": 41,
+            "samples": 47,
             "confidence": "low"
           },
           "148": {
@@ -15719,13 +16001,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               72,
               78,
-              62,
               71,
+              62,
               73,
               74,
               64
             ],
-            "samples": 47,
+            "samples": 50,
             "confidence": "low"
           },
           "154": {
@@ -15734,40 +16016,40 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               87,
               68,
-              90,
               71,
+              90,
               77,
               72
             ],
-            "samples": 50,
+            "samples": 52,
             "confidence": "low"
           },
           "155": {
             "tiles": [
               87,
               90,
-              78,
               72,
+              78,
               71,
               73,
               84,
               86
             ],
-            "samples": 1134,
+            "samples": 1350,
             "confidence": "high"
           },
           "159": {
             "tiles": [
-              90,
               87,
+              90,
               78,
+              93,
               73,
               80,
-              93,
               70,
               71
             ],
-            "samples": 56,
+            "samples": 58,
             "confidence": "low"
           },
           "160": {
@@ -15790,9 +16072,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               78,
               76,
+              91,
               93
             ],
-            "samples": 26,
+            "samples": 27,
+            "confidence": "low"
+          },
+          "169": {
+            "tiles": [
+              71,
+              83,
+              61,
+              72,
+              78,
+              84
+            ],
+            "samples": 10,
             "confidence": "low"
           },
           "170": {
@@ -15802,7 +16097,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               78
             ],
-            "samples": 21,
+            "samples": 22,
             "confidence": "low"
           },
           "176": {
@@ -15817,6 +16112,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77
             ],
             "samples": 26,
+            "confidence": "low"
+          },
+          "178": {
+            "tiles": [
+              65,
+              77,
+              68,
+              75,
+              89,
+              93
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "179": {
@@ -15835,14 +16142,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               88,
               72,
-              89,
               73,
+              89,
               78,
               71,
-              80,
-              84
+              79,
+              80
             ],
-            "samples": 49,
+            "samples": 57,
             "confidence": "low"
           },
           "186": {
@@ -15850,9 +16157,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               73,
               68,
-              71
+              71,
+              77
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "187": {
@@ -15860,13 +16168,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               90,
               72,
-              78,
               71,
               73,
+              78,
               80,
               93
             ],
-            "samples": 70,
+            "samples": 77,
             "confidence": "low"
           },
           "191": {
@@ -15880,21 +16188,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               81
             ],
-            "samples": 97,
-            "confidence": "low"
+            "samples": 103,
+            "confidence": "medium"
           },
           "192": {
             "tiles": [
               93,
               77,
+              78,
               61,
               75,
-              78,
               68,
               69,
               70
             ],
-            "samples": 117,
+            "samples": 122,
             "confidence": "medium"
           },
           "194": {
@@ -15905,21 +16213,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               73
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "197": {
             "tiles": [
               73,
               68,
-              72,
               78,
+              72,
               71,
               88,
               89,
               61
             ],
-            "samples": 46,
+            "samples": 47,
             "confidence": "low"
           },
           "199": {
@@ -15943,7 +16251,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               88,
               72
             ],
-            "samples": 108,
+            "samples": 112,
             "confidence": "medium"
           },
           "201": {
@@ -15952,12 +16260,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               72,
               77,
-              78,
               68,
-              71,
-              73
+              73,
+              78,
+              71
             ],
-            "samples": 46,
+            "samples": 50,
             "confidence": "low"
           },
           "202": {
@@ -15971,7 +16279,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               82
             ],
-            "samples": 79,
+            "samples": 80,
             "confidence": "low"
           },
           "204": {
@@ -15985,7 +16293,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               77
             ],
-            "samples": 51,
+            "samples": 58,
             "confidence": "low"
           },
           "205": {
@@ -15993,13 +16301,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               88,
               72,
-              78,
               71,
               73,
-              84,
-              82
+              78,
+              93,
+              84
             ],
-            "samples": 1031,
+            "samples": 1296,
             "confidence": "high"
           },
           "207": {
@@ -16007,25 +16315,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               88,
               78,
+              93,
               68,
               84,
               64,
-              72,
-              80
+              72
             ],
-            "samples": 64,
+            "samples": 69,
             "confidence": "low"
           },
           "208": {
             "tiles": [
               93,
+              78,
               68,
               76,
-              78,
               77,
               74
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "213": {
@@ -16058,7 +16366,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               89
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "219": {
@@ -16066,13 +16374,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               90,
               72,
-              73,
               71,
+              73,
               78,
               82,
               70
             ],
-            "samples": 66,
+            "samples": 69,
             "confidence": "low"
           },
           "221": {
@@ -16081,12 +16389,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               88,
               72,
               78,
-              68,
               73,
-              82,
-              86
+              93,
+              68,
+              82
             ],
-            "samples": 71,
+            "samples": 80,
             "confidence": "low"
           },
           "223": {
@@ -16097,10 +16405,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               89,
               90,
-              79,
-              88
+              71,
+              79
             ],
-            "samples": 105,
+            "samples": 108,
             "confidence": "medium"
           },
           "224": {
@@ -16119,29 +16427,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "236": {
             "tiles": [
               81,
+              73,
               78,
               72,
-              73,
               68,
               85,
               71,
               82
             ],
-            "samples": 30,
+            "samples": 31,
             "confidence": "low"
           },
           "237": {
             "tiles": [
               89,
               88,
-              78,
               72,
+              78,
               73,
               71,
-              82,
-              68
+              93,
+              82
             ],
-            "samples": 69,
+            "samples": 78,
             "confidence": "low"
           },
           "238": {
@@ -16155,7 +16463,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               82
             ],
-            "samples": 70,
+            "samples": 75,
             "confidence": "low"
           },
           "239": {
@@ -16166,10 +16474,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               87,
               89,
-              85,
-              88
+              71,
+              85
             ],
-            "samples": 104,
+            "samples": 106,
             "confidence": "medium"
           },
           "240": {
@@ -16181,7 +16489,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               91
             ],
-            "samples": 146,
+            "samples": 148,
             "confidence": "medium"
           },
           "241": {
@@ -16229,26 +16537,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "245": {
             "tiles": [
+              78,
               68,
               76,
               82,
               71,
               72,
-              74,
-              78
+              74
             ],
-            "samples": 11,
+            "samples": 15,
             "confidence": "low"
           },
           "246": {
             "tiles": [
               78,
               68,
+              71,
               72,
               73,
               79
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "247": {
@@ -16260,7 +16569,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               73
             ],
-            "samples": 32,
+            "samples": 33,
             "confidence": "low"
           },
           "248": {
@@ -16278,44 +16587,46 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               78,
               68,
-              72
+              72,
+              71
             ],
-            "samples": 17,
+            "samples": 18,
             "confidence": "low"
           },
           "250": {
             "tiles": [
               78,
+              77,
               88,
               68,
               72,
-              77,
+              73,
               87,
-              90,
-              71
+              90
             ],
-            "samples": 38,
+            "samples": 42,
             "confidence": "low"
           },
           "251": {
             "tiles": [
               78,
               87,
-              90,
               71,
               72,
+              73,
               77,
-              68,
-              73
+              90,
+              68
             ],
-            "samples": 31,
+            "samples": 30,
             "confidence": "low"
           },
           "252": {
             "tiles": [
-              78
+              78,
+              71
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "253": {
@@ -16337,36 +16648,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               68,
               72,
-              71,
               73,
+              71,
               77
             ],
-            "samples": 28,
+            "samples": 27,
             "confidence": "low"
           },
           "255": {
             "tiles": [
               78,
+              72,
               73,
               89,
-              72,
               90,
+              71,
               88,
-              87,
-              84
+              87
             ],
-            "samples": 5500,
+            "samples": 7350,
             "confidence": "high"
           }
         },
         "roleCandidates": {
           "single": [
-            61,
-            76,
             77,
+            76,
+            61,
             91,
-            62,
             75,
+            62,
             65,
             93,
             64,
@@ -16375,14 +16686,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "northWest": [
             79,
             73,
-            78,
             71,
+            78,
             80,
             72,
             68,
+            93,
             66,
-            91,
-            61
+            91
           ],
           "north": [
             90,
@@ -16406,7 +16717,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             68,
             93,
             91,
-            86
+            61
           ],
           "west": [
             88,
@@ -16422,22 +16733,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "center": [
             78,
-            73,
             72,
+            73,
             89,
             90,
             88,
             87,
-            84,
             71,
+            84,
             80
           ],
           "east": [
             89,
             88,
-            78,
             73,
             72,
+            78,
             71,
             93,
             84,
@@ -16447,8 +16758,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "south": [
             87,
             90,
-            78,
             72,
+            78,
             71,
             73,
             70,
@@ -16458,21 +16769,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "southWest": [
             85,
-            73,
             71,
+            73,
             78,
             86,
             72,
             68,
-            64,
             93,
-            77
+            61,
+            64
           ],
           "lineHorizontal": [
+            61,
             78,
             73,
             71,
-            61,
             72,
             77,
             89,
@@ -16489,10 +16800,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             72,
             68,
             77,
-            75,
-            93
+            93,
+            61
           ],
           "lineVertical": [
+            61,
             78,
             93,
             71,
@@ -16500,9 +16812,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             72,
             89,
             88,
-            76,
-            92,
-            62
+            91,
+            76
           ],
           "capWest": [
             61,
@@ -16512,8 +16823,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             71,
             76,
             62,
+            91,
             68,
-            93,
             75
           ],
           "capEast": [
@@ -16530,8 +16841,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "capSouth": [
             66,
-            62,
             76,
+            62,
             64,
             61,
             71,
@@ -16541,18 +16852,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             91
           ],
           "capNorth": [
-            64,
             76,
+            64,
             62,
             77,
             61,
             93,
             78,
             71,
-            69,
-            75
+            75,
+            73
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
@@ -16584,6 +16898,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           128,
           129
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           121
         ],
@@ -16598,7 +16914,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           122,
           121
         ],
-        "sampleCount": 4316,
+        "sampleCount": 4768,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -16609,10 +16925,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               129,
               125,
-              122,
-              124
+              124,
+              122
             ],
-            "samples": 1409,
+            "samples": 1605,
             "confidence": "high"
           },
           "1": {
@@ -16626,7 +16942,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               124
             ],
-            "samples": 231,
+            "samples": 261,
             "confidence": "medium"
           },
           "2": {
@@ -16640,7 +16956,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               124
             ],
-            "samples": 133,
+            "samples": 150,
             "confidence": "medium"
           },
           "3": {
@@ -16660,15 +16976,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "4": {
             "tiles": [
               128,
-              126,
               127,
+              126,
               129,
               125,
               123,
               124,
               122
             ],
-            "samples": 233,
+            "samples": 260,
             "confidence": "medium"
           },
           "5": {
@@ -16682,7 +16998,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               124
             ],
-            "samples": 321,
+            "samples": 382,
             "confidence": "medium"
           },
           "6": {
@@ -16693,7 +17009,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               124
             ],
-            "samples": 17,
+            "samples": 18,
             "confidence": "low"
           },
           "8": {
@@ -16703,11 +17019,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               128,
               123,
               125,
-              122,
               129,
+              122,
               124
             ],
-            "samples": 125,
+            "samples": 142,
             "confidence": "medium"
           },
           "9": {
@@ -16730,8 +17046,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               129,
               128
             ],
-            "samples": 73,
-            "confidence": "low"
+            "samples": 106,
+            "confidence": "medium"
           },
           "12": {
             "tiles": [
@@ -16759,15 +17075,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "16": {
             "tiles": [
-              128,
               127,
+              128,
               126,
               123,
               125,
               124,
               129
             ],
-            "samples": 120,
+            "samples": 129,
             "confidence": "medium"
           },
           "17": {
@@ -16786,37 +17102,37 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               124,
               125,
-              123,
               128,
+              123,
               127,
               126,
               129
             ],
-            "samples": 18,
+            "samples": 19,
             "confidence": "low"
           },
           "19": {
             "tiles": [
               123,
+              125,
               127,
+              126,
               128,
               129,
-              124,
-              125,
-              126
+              124
             ],
-            "samples": 14,
+            "samples": 17,
             "confidence": "low"
           },
           "20": {
             "tiles": [
-              126,
               128,
+              126,
               127,
               123,
               125
             ],
-            "samples": 57,
+            "samples": 60,
             "confidence": "low"
           },
           "21": {
@@ -16837,7 +17153,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               125
             ],
-            "samples": 18,
+            "samples": 17,
             "confidence": "low"
           },
           "32": {
@@ -16850,18 +17166,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               129
             ],
-            "samples": 118,
+            "samples": 125,
             "confidence": "medium"
           },
           "33": {
             "tiles": [
               127,
               128,
-              123,
               124,
               125
             ],
-            "samples": 55,
+            "samples": 56,
             "confidence": "low"
           },
           "34": {
@@ -16877,11 +17192,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "36": {
             "tiles": [
-              123,
               128,
+              123,
+              124,
               125,
               127,
-              124,
               126,
               122
             ],
@@ -16900,15 +17215,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "38": {
             "tiles": [
-              126,
               125,
+              126,
               127,
               129,
               123,
               124,
               128
             ],
-            "samples": 16,
+            "samples": 19,
             "confidence": "low"
           },
           "40": {
@@ -16916,10 +17231,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               127,
               128,
-              123,
-              129
+              129,
+              123
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "48": {
@@ -16930,7 +17245,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               125
             ],
-            "samples": 22,
+            "samples": 24,
             "confidence": "low"
           },
           "55": {
@@ -16941,7 +17256,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               123
             ],
-            "samples": 27,
+            "samples": 28,
             "confidence": "low"
           },
           "64": {
@@ -16951,9 +17266,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               123,
               125,
+              124,
               129
             ],
-            "samples": 135,
+            "samples": 147,
             "confidence": "medium"
           },
           "65": {
@@ -17002,12 +17318,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "72": {
             "tiles": [
               126,
-              123,
               128,
+              123,
               124,
               125
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "76": {
@@ -17015,11 +17331,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               126,
               123,
-              129,
               127,
+              129,
               128
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "77": {
@@ -17065,7 +17381,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               123
             ],
-            "samples": 72,
+            "samples": 73,
             "confidence": "low"
           },
           "97": {
@@ -17075,6 +17391,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127
             ],
             "samples": 14,
+            "confidence": "low"
+          },
+          "106": {
+            "tiles": [
+              126,
+              128,
+              127
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "128": {
@@ -17087,7 +17412,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               124
             ],
-            "samples": 129,
+            "samples": 140,
             "confidence": "medium"
           },
           "129": {
@@ -17121,7 +17446,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               127
             ],
-            "samples": 48,
+            "samples": 49,
             "confidence": "low"
           },
           "133": {
@@ -17135,29 +17460,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "136": {
             "tiles": [
-              123,
               127,
-              126,
-              128,
+              123,
               124,
               125,
+              126,
+              128,
               129,
               122
             ],
-            "samples": 21,
+            "samples": 22,
             "confidence": "low"
           },
           "137": {
             "tiles": [
-              123,
               124,
+              123,
               125,
+              127,
               128,
               129,
-              126,
-              127
+              126
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "144": {
@@ -17181,13 +17506,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "152": {
             "tiles": [
+              128,
               126,
               127,
-              128,
               123,
               125
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "160": {
@@ -17195,11 +17520,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               126,
               128,
-              123,
               124,
               125
             ],
-            "samples": 12,
+            "samples": 11,
             "confidence": "low"
           },
           "169": {
@@ -17232,7 +17556,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               129
             ],
-            "samples": 25,
+            "samples": 26,
             "confidence": "low"
           },
           "197": {
@@ -17254,7 +17578,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               127
             ],
-            "samples": 25,
+            "samples": 26,
             "confidence": "low"
           },
           "255": {
@@ -17273,16 +17597,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             127,
             126,
             123,
-            125,
             129,
+            125,
             124,
             122,
             121
           ],
           "capEast": [
+            126,
             127,
             128,
-            126,
             123,
             125,
             129,
@@ -17295,8 +17619,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             128,
             123,
             125,
-            124,
             129,
+            124,
             122
           ],
           "capSouth": [
@@ -17304,8 +17628,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             126,
             127,
             125,
-            123,
             129,
+            123,
             124,
             122
           ],
@@ -17324,9 +17648,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             128,
             127,
             126,
+            129,
             125,
             123,
-            129,
             124,
             122
           ],
@@ -17336,8 +17660,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             127,
             125,
             126,
-            129,
-            124
+            124,
+            129
           ],
           "northWest": [
             128,
@@ -17361,9 +17685,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "northEast": [
             128,
             126,
-            129,
             125,
             127,
+            129,
             123,
             124
           ],
@@ -17371,8 +17695,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             128,
             127,
             123,
-            124,
             125,
+            124,
             126,
             129,
             121
@@ -17388,16 +17712,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "north": [
             127,
-            124,
             128,
+            124,
             125,
             126,
             123
           ],
           "west": [
             128,
-            126,
             125,
+            126,
             123,
             127
           ],
@@ -17409,13 +17733,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "south": [
             128,
-            124,
             125,
+            124,
             127,
             126,
             129
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
@@ -17515,6 +17842,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           60,
           35,
@@ -17526,15 +17855,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           60,
           39,
           3,
-          36,
           38,
+          36,
           4,
           1,
           2,
           30,
           25
         ],
-        "sampleCount": 10878,
+        "sampleCount": 11595,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -17544,36 +17873,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               109,
               110,
-              107,
               1,
-              48
+              48,
+              52
             ],
-            "samples": 194,
+            "samples": 184,
             "confidence": "medium"
           },
           "1": {
             "tiles": [
               53,
-              36,
               39,
               106,
+              36,
               35,
               28,
-              109,
               110
             ],
-            "samples": 24,
+            "samples": 26,
             "confidence": "low"
           },
           "2": {
             "tiles": [
+              38,
               54,
               36,
-              38,
               108,
-              1
+              1,
+              48
             ],
-            "samples": 17,
+            "samples": 22,
             "confidence": "low"
           },
           "3": {
@@ -17595,7 +17924,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               41
             ],
-            "samples": 26,
+            "samples": 30,
             "confidence": "low"
           },
           "5": {
@@ -17603,12 +17932,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               36,
               60,
-              110,
-              109,
               3,
               106
             ],
-            "samples": 136,
+            "samples": 187,
             "confidence": "medium"
           },
           "6": {
@@ -17617,21 +17944,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               36
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "8": {
             "tiles": [
               55,
-              36,
               38,
+              36,
               107,
-              60,
               1,
-              50,
-              112
+              50
             ],
-            "samples": 22,
+            "samples": 23,
             "confidence": "low"
           },
           "9": {
@@ -17640,19 +17965,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               60
             ],
-            "samples": 9,
+            "samples": 12,
             "confidence": "low"
           },
           "10": {
             "tiles": [
               38,
-              36,
-              35,
-              34,
-              33
+              36
             ],
-            "samples": 67,
-            "confidence": "low"
+            "samples": 142,
+            "confidence": "medium"
           },
           "12": {
             "tiles": [
@@ -17660,21 +17982,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               36
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "19": {
             "tiles": [
               26,
               2,
+              14,
               36,
               60,
               35,
               3,
-              7,
-              14
+              7
             ],
-            "samples": 25,
+            "samples": 28,
             "confidence": "low"
           },
           "21": {
@@ -17683,7 +18005,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               15
             ],
-            "samples": 12,
+            "samples": 17,
             "confidence": "low"
           },
           "26": {
@@ -17692,7 +18014,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               34
             ],
-            "samples": 10,
+            "samples": 14,
             "confidence": "low"
           },
           "37": {
@@ -17702,7 +18024,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               53
             ],
-            "samples": 18,
+            "samples": 23,
             "confidence": "low"
           },
           "38": {
@@ -17716,7 +18038,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               19
             ],
-            "samples": 35,
+            "samples": 40,
             "confidence": "low"
           },
           "42": {
@@ -17726,7 +18048,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               36
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "51": {
@@ -17738,9 +18060,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               11,
               36,
-              49
+              108
             ],
-            "samples": 49,
+            "samples": 54,
             "confidence": "low"
           },
           "54": {
@@ -17752,9 +18074,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               34,
               48,
-              50
+              108
             ],
-            "samples": 46,
+            "samples": 49,
             "confidence": "low"
           },
           "55": {
@@ -17764,11 +18086,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               35,
               34,
-              20,
-              24,
-              25
+              13,
+              18,
+              20
             ],
-            "samples": 206,
+            "samples": 239,
             "confidence": "medium"
           },
           "69": {
@@ -17778,14 +18100,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               18
             ],
-            "samples": 15,
+            "samples": 22,
             "confidence": "low"
           },
           "74": {
             "tiles": [
               38,
               36,
-              34,
               1
             ],
             "samples": 11,
@@ -17795,23 +18116,38 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               27,
               60,
-              36,
               1,
+              19,
+              36,
               5,
               10,
-              15,
-              19
+              15
             ],
-            "samples": 24,
+            "samples": 30,
+            "confidence": "low"
+          },
+          "86": {
+            "tiles": [
+              48
+            ],
+            "samples": 11,
+            "confidence": "low"
+          },
+          "89": {
+            "tiles": [
+              51
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "102": {
             "tiles": [
               60,
               25,
-              9
+              9,
+              48
             ],
-            "samples": 27,
+            "samples": 29,
             "confidence": "low"
           },
           "108": {
@@ -17824,21 +18160,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               15,
               50
             ],
-            "samples": 18,
+            "samples": 22,
             "confidence": "low"
           },
           "110": {
             "tiles": [
               60,
               1,
-              38,
+              48,
+              50,
               6,
-              27,
-              9,
-              22,
-              58
+              38,
+              10,
+              9
             ],
-            "samples": 133,
+            "samples": 172,
             "confidence": "medium"
           },
           "118": {
@@ -17847,15 +18183,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               17,
               36,
+              48,
               35
             ],
-            "samples": 50,
+            "samples": 54,
             "confidence": "low"
           },
           "119": {
             "tiles": [
-              3,
               18,
+              3,
               60,
               33,
               35,
@@ -17863,7 +18200,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               30
             ],
-            "samples": 48,
+            "samples": 53,
             "confidence": "low"
           },
           "126": {
@@ -17888,8 +18225,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               22,
               24
             ],
-            "samples": 123,
+            "samples": 132,
             "confidence": "medium"
+          },
+          "129": {
+            "tiles": [
+              36,
+              60,
+              16,
+              49,
+              53,
+              106
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "133": {
             "tiles": [
@@ -17898,7 +18247,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               36
             ],
-            "samples": 15,
+            "samples": 20,
             "confidence": "low"
           },
           "137": {
@@ -17907,12 +18256,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               2,
               36,
+              16,
               4,
               8,
-              12,
-              20
+              12
             ],
-            "samples": 22,
+            "samples": 24,
             "confidence": "low"
           },
           "138": {
@@ -17920,12 +18269,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               38,
               36
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "140": {
             "tiles": [
               50
+            ],
+            "samples": 8,
+            "confidence": "low"
+          },
+          "141": {
+            "tiles": [
+              60,
+              36,
+              39,
+              4
             ],
             "samples": 8,
             "confidence": "low"
@@ -17939,7 +18298,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               49
             ],
-            "samples": 31,
+            "samples": 35,
             "confidence": "low"
           },
           "153": {
@@ -17951,17 +18310,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               12,
               29
             ],
-            "samples": 25,
+            "samples": 32,
             "confidence": "low"
           },
           "155": {
             "tiles": [
               60,
               2,
-              38,
-              12
+              49,
+              51,
+              12,
+              7,
+              38
             ],
-            "samples": 160,
+            "samples": 196,
             "confidence": "medium"
           },
           "179": {
@@ -17978,15 +18340,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "183": {
             "tiles": [
-              60,
               13,
+              60,
               3,
               35,
               34,
               17,
               26
             ],
-            "samples": 48,
+            "samples": 52,
             "confidence": "low"
           },
           "187": {
@@ -17995,9 +18357,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               60,
               14,
-              38
+              38,
+              51
             ],
-            "samples": 31,
+            "samples": 33,
             "confidence": "low"
           },
           "191": {
@@ -18011,13 +18374,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               24,
               50
             ],
-            "samples": 93,
-            "confidence": "low"
+            "samples": 102,
+            "confidence": "medium"
           },
           "201": {
             "tiles": [
-              60,
               16,
+              60,
               28,
               36,
               51,
@@ -18025,21 +18388,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               7,
               20
             ],
-            "samples": 40,
+            "samples": 50,
+            "confidence": "low"
+          },
+          "202": {
+            "tiles": [
+              38,
+              60
+            ],
+            "samples": 9,
             "confidence": "low"
           },
           "204": {
             "tiles": [
               60,
+              19,
               27,
               15,
               36,
               50,
               1,
-              6,
-              10
+              6
             ],
-            "samples": 37,
+            "samples": 45,
             "confidence": "low"
           },
           "205": {
@@ -18053,7 +18424,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               27
             ],
-            "samples": 267,
+            "samples": 287,
             "confidence": "medium"
           },
           "217": {
@@ -18062,30 +18433,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               16,
               8,
-              35,
               51
             ],
-            "samples": 49,
+            "samples": 48,
             "confidence": "low"
           },
           "219": {
             "tiles": [
               2,
-              60,
               7,
+              60,
               16
             ],
-            "samples": 20,
+            "samples": 23,
             "confidence": "low"
           },
           "221": {
             "tiles": [
               60,
-              4,
               15,
+              4,
               36
             ],
-            "samples": 32,
+            "samples": 38,
             "confidence": "low"
           },
           "223": {
@@ -18094,7 +18464,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               21
             ],
-            "samples": 100,
+            "samples": 115,
             "confidence": "medium"
           },
           "236": {
@@ -18115,7 +18485,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               20,
               29
             ],
-            "samples": 34,
+            "samples": 41,
             "confidence": "low"
           },
           "238": {
@@ -18126,32 +18496,32 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               59
             ],
-            "samples": 21,
+            "samples": 24,
             "confidence": "low"
           },
           "239": {
             "tiles": [
-              32,
               60,
+              32,
               33,
               30,
               49
             ],
-            "samples": 87,
-            "confidence": "low"
+            "samples": 100,
+            "confidence": "medium"
           },
           "255": {
             "tiles": [
               60,
               35,
               34,
+              33,
               57,
               56,
               58,
-              33,
               59
             ],
-            "samples": 8019,
+            "samples": 8289,
             "confidence": "high"
           }
         },
@@ -18162,11 +18532,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             36,
             109,
             110,
-            107,
             1,
             48,
             52,
-            54
+            107
           ],
           "northWest": [
             25,
@@ -18183,25 +18552,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "north": [
             60,
             1,
+            48,
             6,
+            50,
             10,
             38,
-            25,
-            27,
             45,
-            35,
-            33
+            5,
+            9
           ],
           "northEast": [
             27,
             60,
             50,
-            36,
-            5,
-            15,
-            1,
-            10,
             19,
+            5,
+            36,
+            1,
+            15,
+            10,
             34
           ],
           "center": [
@@ -18222,30 +18591,30 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             36,
             15,
             20,
+            44,
             28,
-            16,
-            19,
-            27,
-            29
+            39,
+            51,
+            16
           ],
           "west": [
             3,
             60,
             18,
-            36,
             13,
+            36,
+            46,
             35,
             34,
             33,
-            30,
-            46
+            30
           ],
           "southWest": [
             26,
             60,
             11,
-            49,
             14,
+            49,
             36,
             2,
             18,
@@ -18256,48 +18625,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             60,
             2,
             12,
+            51,
             7,
+            49,
             38,
-            35,
             47,
-            14,
-            16,
-            36
+            35,
+            14
           ],
           "lineVertical": [
             39,
             36,
             60,
-            110,
-            109,
             18,
             3,
             13,
             15,
-            20
+            20,
+            53,
+            106
           ],
           "capNorth": [
             53,
             36,
-            110,
-            106,
             39,
+            106,
             60,
             35,
             8,
-            14,
-            16
+            16,
+            28,
+            49
           ],
           "capSouth": [
-            52,
             39,
+            52,
             36,
-            109,
             60,
             105,
-            17,
             33,
+            5,
             13,
+            17,
             25
           ],
           "southEast": [
@@ -18310,42 +18679,42 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             2,
             12,
             20,
-            35
+            4
           ],
           "lineHorizontal": [
             38,
             36,
-            34,
             60,
             1,
-            35,
-            33,
+            34,
             12,
             57
-          ],
-          "capWest": [
-            55,
-            112,
-            36,
-            38,
-            107,
-            60,
-            50,
-            1
           ],
           "capEast": [
             54,
             36,
-            111,
             38,
+            48,
             108,
             60,
-            48,
             34,
             1,
-            49
+            49,
+            112
+          ],
+          "capWest": [
+            55,
+            38,
+            36,
+            107,
+            60,
+            50,
+            1
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 60,
           "single": 60,
@@ -18405,6 +18774,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           92,
           93
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           61
         ],
@@ -18413,14 +18784,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           80,
           81,
           82,
-          85,
           83,
+          85,
+          78,
           84,
-          65,
-          63,
-          64
+          79,
+          75
         ],
-        "sampleCount": 36598,
+        "sampleCount": 35080,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -18439,16 +18810,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "1": {
             "tiles": [
+              64,
               71,
               72,
-              64,
               73,
               84,
               61,
               75,
               83
             ],
-            "samples": 17,
+            "samples": 19,
             "confidence": "low"
           },
           "2": {
@@ -18471,11 +18842,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               66,
               83,
+              61,
               69,
               70,
               86
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "5": {
@@ -18484,12 +18856,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               82,
               85,
-              84,
               83,
+              84,
               61,
               93
             ],
-            "samples": 274,
+            "samples": 375,
             "confidence": "medium"
           },
           "6": {
@@ -18507,12 +18879,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               69,
               74,
+              61,
               62,
               63,
-              70,
-              88
+              70
             ],
-            "samples": 15,
+            "samples": 16,
             "confidence": "low"
           },
           "9": {
@@ -18524,21 +18896,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               70
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "10": {
             "tiles": [
               75,
               76,
-              78,
               74,
+              78,
               79,
               77,
-              91,
-              61
+              61,
+              91
             ],
-            "samples": 292,
+            "samples": 327,
             "confidence": "medium"
           },
           "12": {
@@ -18548,6 +18920,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               69,
               81,
               88
+            ],
+            "samples": 10,
+            "confidence": "low"
+          },
+          "14": {
+            "tiles": [
+              61,
+              78,
+              79,
+              65,
+              77
             ],
             "samples": 9,
             "confidence": "low"
@@ -18559,11 +18942,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               63,
               71,
               73,
+              61,
               68,
-              83,
-              89
+              72
             ],
-            "samples": 20,
+            "samples": 22,
             "confidence": "low"
           },
           "18": {
@@ -18573,68 +18956,72 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               72,
               71,
+              61,
               62,
               87
             ],
-            "samples": 20,
+            "samples": 21,
             "confidence": "low"
           },
           "19": {
             "tiles": [
-              71,
               61,
+              71,
               73,
               72,
-              87,
               74,
+              87,
               75,
               83
             ],
-            "samples": 113,
+            "samples": 144,
             "confidence": "medium"
           },
           "21": {
             "tiles": [
-              61,
               81,
+              61,
+              80,
               82,
               93,
-              80,
               85
             ],
-            "samples": 20,
+            "samples": 23,
             "confidence": "low"
           },
           "23": {
             "tiles": [
               61,
-              83,
-              84
+              84,
+              83
             ],
-            "samples": 37,
+            "samples": 43,
             "confidence": "low"
           },
           "26": {
             "tiles": [
               77,
-              78,
               79,
+              78,
               61,
-              75
+              74,
+              75,
+              76
             ],
-            "samples": 12,
+            "samples": 17,
             "confidence": "low"
           },
           "27": {
             "tiles": [
               61,
               75,
+              76,
               71,
               73,
               74,
-              76
+              78
             ],
-            "samples": 19,
+            "samples": 26,
             "confidence": "low"
           },
           "34": {
@@ -18656,46 +19043,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               69,
               61,
+              66,
               68,
               71,
-              77,
-              79
+              77
             ],
-            "samples": 15,
+            "samples": 16,
             "confidence": "low"
           },
           "37": {
             "tiles": [
               81,
               61,
+              82,
               93,
-              80,
-              82
+              80
             ],
-            "samples": 20,
+            "samples": 23,
             "confidence": "low"
           },
           "38": {
             "tiles": [
-              65,
               66,
+              65,
               61,
               67,
+              78,
               84,
               86,
-              77,
-              78
+              77
             ],
-            "samples": 113,
+            "samples": 134,
             "confidence": "medium"
           },
           "39": {
             "tiles": [
               61,
               66,
-              72
+              72,
+              84,
+              85
             ],
-            "samples": 30,
+            "samples": 36,
             "confidence": "low"
           },
           "42": {
@@ -18709,7 +19098,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               91
             ],
-            "samples": 21,
+            "samples": 24,
             "confidence": "low"
           },
           "46": {
@@ -18719,7 +19108,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               79
             ],
-            "samples": 26,
+            "samples": 33,
             "confidence": "low"
           },
           "50": {
@@ -18737,16 +19126,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "51": {
             "tiles": [
-              72,
               71,
+              72,
               73,
               87,
               61,
               85,
-              83,
-              84
+              84,
+              75
             ],
-            "samples": 147,
+            "samples": 167,
             "confidence": "medium"
           },
           "53": {
@@ -18755,9 +19144,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               80,
               82,
+              83,
               93
             ],
-            "samples": 8,
+            "samples": 10,
             "confidence": "low"
           },
           "54": {
@@ -18766,12 +19156,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               67,
               86,
-              78,
               61,
-              83,
-              85
+              78,
+              85,
+              83
             ],
-            "samples": 186,
+            "samples": 196,
             "confidence": "medium"
           },
           "55": {
@@ -18785,7 +19175,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               73
             ],
-            "samples": 1209,
+            "samples": 1356,
             "confidence": "high"
           },
           "59": {
@@ -18794,20 +19184,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "63": {
             "tiles": [
               61
             ],
-            "samples": 13,
+            "samples": 18,
             "confidence": "low"
           },
           "68": {
             "tiles": [
-              65,
               68,
+              65,
               67,
               66,
               82,
@@ -18815,7 +19205,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               88
             ],
-            "samples": 22,
+            "samples": 23,
             "confidence": "low"
           },
           "69": {
@@ -18829,7 +19219,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               88
             ],
-            "samples": 17,
+            "samples": 19,
             "confidence": "low"
           },
           "72": {
@@ -18859,55 +19249,56 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "74": {
             "tiles": [
               74,
-              76,
               61,
-              63,
               75,
+              76,
+              63,
               91,
               62,
               64
             ],
-            "samples": 19,
+            "samples": 24,
             "confidence": "low"
           },
           "76": {
             "tiles": [
               68,
-              70,
               61,
               69,
+              70,
               78,
               77,
-              80,
-              79
+              79,
+              80
             ],
-            "samples": 111,
+            "samples": 139,
             "confidence": "medium"
           },
           "77": {
             "tiles": [
               61,
+              82,
               63,
               80,
               81,
-              82,
               88,
               89
             ],
-            "samples": 32,
+            "samples": 37,
             "confidence": "low"
           },
           "78": {
             "tiles": [
               61,
-              77,
               78,
+              77,
+              79,
               65,
               66,
               69,
-              79
+              82
             ],
-            "samples": 33,
+            "samples": 41,
             "confidence": "low"
           },
           "87": {
@@ -18920,6 +19311,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               92
             ],
             "samples": 12,
+            "confidence": "low"
+          },
+          "91": {
+            "tiles": [
+              75,
+              76,
+              61,
+              71,
+              74,
+              87
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "93": {
@@ -18950,7 +19353,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               61
             ],
-            "samples": 35,
+            "samples": 36,
             "confidence": "low"
           },
           "100": {
@@ -18958,10 +19361,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               65,
               67,
+              61,
               63,
               69
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "102": {
@@ -18970,21 +19374,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               66,
               61,
-              86,
               77,
+              86,
               85,
               78
             ],
-            "samples": 125,
+            "samples": 147,
             "confidence": "medium"
           },
           "106": {
             "tiles": [
               61,
               77,
-              78
+              78,
+              79
             ],
-            "samples": 9,
+            "samples": 14,
             "confidence": "low"
           },
           "108": {
@@ -18998,7 +19403,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               81
             ],
-            "samples": 107,
+            "samples": 140,
             "confidence": "medium"
           },
           "110": {
@@ -19012,7 +19417,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               65
             ],
-            "samples": 1009,
+            "samples": 1228,
             "confidence": "high"
           },
           "111": {
@@ -19020,7 +19425,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               69
             ],
-            "samples": 11,
+            "samples": 19,
             "confidence": "low"
           },
           "118": {
@@ -19033,21 +19438,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               85
             ],
-            "samples": 176,
+            "samples": 214,
             "confidence": "medium"
           },
           "119": {
             "tiles": [
-              84,
-              83,
               61,
+              83,
+              84,
               85,
               92,
               65,
               67,
               66
             ],
-            "samples": 194,
+            "samples": 216,
             "confidence": "medium"
           },
           "126": {
@@ -19061,7 +19466,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               66
             ],
-            "samples": 146,
+            "samples": 174,
             "confidence": "medium"
           },
           "127": {
@@ -19072,7 +19477,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               73
             ],
-            "samples": 461,
+            "samples": 548,
             "confidence": "medium"
           },
           "129": {
@@ -19082,35 +19487,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               71,
               73,
+              61,
               63,
               74
             ],
-            "samples": 17,
+            "samples": 19,
             "confidence": "low"
           },
           "131": {
             "tiles": [
               61,
+              71,
               72,
               75,
-              71,
               73
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "133": {
             "tiles": [
               61,
               83,
-              80,
               85,
+              80,
               84,
               63,
               71,
               89
             ],
-            "samples": 25,
+            "samples": 29,
             "confidence": "low"
           },
           "136": {
@@ -19129,8 +19535,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "137": {
             "tiles": [
-              63,
               62,
+              63,
               61,
               64,
               76,
@@ -19138,37 +19544,40 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               89
             ],
-            "samples": 127,
+            "samples": 150,
             "confidence": "medium"
           },
           "138": {
             "tiles": [
               77,
               79,
-              78,
               61,
+              78,
               71,
+              76,
               90
             ],
-            "samples": 15,
+            "samples": 19,
             "confidence": "low"
           },
           "139": {
             "tiles": [
               61,
               74,
-              64
+              64,
+              76
             ],
-            "samples": 22,
+            "samples": 29,
             "confidence": "low"
           },
           "141": {
             "tiles": [
               61,
               68,
+              81,
               88
             ],
-            "samples": 24,
+            "samples": 30,
             "confidence": "low"
           },
           "145": {
@@ -19195,7 +19604,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               84
             ],
-            "samples": 104,
+            "samples": 135,
             "confidence": "medium"
           },
           "153": {
@@ -19209,21 +19618,31 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               82
             ],
-            "samples": 141,
+            "samples": 163,
             "confidence": "medium"
           },
-          "155": {
+          "154": {
             "tiles": [
               61,
               76,
               74,
+              75
+            ],
+            "samples": 8,
+            "confidence": "low"
+          },
+          "155": {
+            "tiles": [
+              61,
               75,
+              74,
+              76,
               91,
               64,
-              89,
+              77,
               71
             ],
-            "samples": 1010,
+            "samples": 1203,
             "confidence": "high"
           },
           "157": {
@@ -19233,6 +19652,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82
             ],
             "samples": 14,
+            "confidence": "low"
+          },
+          "159": {
+            "tiles": [
+              61
+            ],
+            "samples": 12,
             "confidence": "low"
           },
           "173": {
@@ -19248,10 +19674,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "174": {
             "tiles": [
               61,
-              70,
-              79
+              79,
+              70
             ],
-            "samples": 8,
+            "samples": 10,
             "confidence": "low"
           },
           "175": {
@@ -19259,7 +19685,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               84
             ],
-            "samples": 26,
+            "samples": 33,
             "confidence": "low"
           },
           "179": {
@@ -19273,13 +19699,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               75
             ],
-            "samples": 142,
+            "samples": 190,
             "confidence": "medium"
           },
           "183": {
             "tiles": [
-              85,
               61,
+              85,
               83,
               84,
               92,
@@ -19287,8 +19713,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               72
             ],
-            "samples": 170,
+            "samples": 210,
             "confidence": "medium"
+          },
+          "185": {
+            "tiles": [
+              62,
+              63,
+              61,
+              76
+            ],
+            "samples": 10,
+            "confidence": "low"
           },
           "187": {
             "tiles": [
@@ -19298,10 +19734,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               91,
               72,
-              62,
-              63
+              71,
+              62
             ],
-            "samples": 111,
+            "samples": 163,
             "confidence": "medium"
           },
           "191": {
@@ -19309,10 +19745,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               71,
               83,
+              67,
               73,
+              78,
               85
             ],
-            "samples": 378,
+            "samples": 494,
             "confidence": "medium"
           },
           "197": {
@@ -19320,10 +19758,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               83,
               92,
+              81,
               82,
               85
             ],
-            "samples": 9,
+            "samples": 11,
             "confidence": "low"
           },
           "200": {
@@ -19331,13 +19770,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               62,
               64,
-              61,
               63,
+              61,
               78,
               80,
               81
             ],
-            "samples": 22,
+            "samples": 21,
             "confidence": "low"
           },
           "201": {
@@ -19346,26 +19785,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               63,
               62,
               89,
+              61,
               80,
               82,
-              74,
-              61
+              68
             ],
-            "samples": 182,
+            "samples": 202,
             "confidence": "medium"
           },
           "204": {
             "tiles": [
-              68,
               69,
+              68,
               70,
               88,
               81,
-              82,
               61,
-              80
+              82,
+              78
             ],
-            "samples": 157,
+            "samples": 172,
             "confidence": "medium"
           },
           "205": {
@@ -19376,31 +19815,31 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               93,
               64,
-              69,
-              63
+              63,
+              69
             ],
-            "samples": 1138,
+            "samples": 1306,
             "confidence": "high"
           },
           "207": {
             "tiles": [
               61
             ],
-            "samples": 22,
+            "samples": 30,
             "confidence": "low"
           },
           "217": {
             "tiles": [
-              63,
               62,
+              63,
               64,
               89,
-              82,
               61,
+              82,
               80,
               75
             ],
-            "samples": 165,
+            "samples": 186,
             "confidence": "medium"
           },
           "219": {
@@ -19414,7 +19853,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               64
             ],
-            "samples": 166,
+            "samples": 201,
             "confidence": "medium"
           },
           "221": {
@@ -19424,11 +19863,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               61,
               64,
-              62,
               93,
+              62,
               63
             ],
-            "samples": 208,
+            "samples": 238,
             "confidence": "medium"
           },
           "223": {
@@ -19438,17 +19877,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               69,
               70,
-              76
+              74,
+              76,
+              82
             ],
-            "samples": 471,
+            "samples": 556,
             "confidence": "medium"
           },
           "230": {
             "tiles": [
               65,
+              61,
               83
             ],
-            "samples": 8,
+            "samples": 10,
             "confidence": "low"
           },
           "236": {
@@ -19457,26 +19899,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               68,
               88,
-              61,
               82,
+              61,
               80,
               77
             ],
-            "samples": 143,
+            "samples": 182,
             "confidence": "medium"
           },
           "237": {
             "tiles": [
+              61,
               80,
               82,
-              61,
               81,
               93,
               69,
               70,
-              63
+              68
             ],
-            "samples": 178,
+            "samples": 202,
             "confidence": "medium"
           },
           "238": {
@@ -19486,35 +19928,79 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               77,
               68,
-              65,
+              70,
               90,
-              66
+              65
             ],
-            "samples": 126,
+            "samples": 172,
             "confidence": "medium"
           },
           "239": {
             "tiles": [
               61,
-              81,
               62,
               66,
-              68
+              68,
+              77,
+              81,
+              82
             ],
-            "samples": 399,
+            "samples": 496,
             "confidence": "medium"
+          },
+          "241": {
+            "tiles": [
+              61
+            ],
+            "samples": 9,
+            "confidence": "low"
+          },
+          "243": {
+            "tiles": [
+              61,
+              72,
+              73
+            ],
+            "samples": 8,
+            "confidence": "low"
+          },
+          "244": {
+            "tiles": [
+              61
+            ],
+            "samples": 9,
+            "confidence": "low"
+          },
+          "246": {
+            "tiles": [
+              61,
+              65,
+              66
+            ],
+            "samples": 14,
+            "confidence": "low"
           },
           "247": {
             "tiles": [
               61,
               84,
-              83,
               85,
+              83,
               65,
               66,
               67
             ],
-            "samples": 35,
+            "samples": 43,
+            "confidence": "low"
+          },
+          "249": {
+            "tiles": [
+              61,
+              62,
+              63,
+              64
+            ],
+            "samples": 12,
             "confidence": "low"
           },
           "251": {
@@ -19528,18 +20014,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               73
             ],
-            "samples": 47,
+            "samples": 55,
+            "confidence": "low"
+          },
+          "252": {
+            "tiles": [
+              61,
+              70
+            ],
+            "samples": 10,
             "confidence": "low"
           },
           "253": {
             "tiles": [
               61,
-              80,
               81,
               82,
+              80,
               70
             ],
-            "samples": 44,
+            "samples": 57,
             "confidence": "low"
           },
           "254": {
@@ -19547,26 +20041,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               78,
               66,
-              77,
               70,
+              77,
               79,
               88
             ],
-            "samples": 38,
+            "samples": 47,
             "confidence": "low"
           },
           "255": {
             "tiles": [
               61,
+              79,
+              77,
               68,
+              78,
               64,
               65,
-              66,
-              70,
-              73,
-              74
+              66
             ],
-            "samples": 25017,
+            "samples": 21213,
             "confidence": "high"
           }
         },
@@ -19575,22 +20069,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             65,
             67,
             66,
-            86,
             61,
+            86,
+            78,
+            77,
             83,
             85,
-            77,
-            78,
             84
           ],
           "lineHorizontal": [
-            75,
             74,
-            78,
+            75,
             76,
+            78,
             77,
-            79,
             61,
+            79,
             91,
             64,
             71
@@ -19602,58 +20096,58 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             77,
             90,
             65,
-            68,
             70,
             66,
+            68,
             67
           ],
           "northEast": [
             68,
-            69,
             70,
+            69,
             61,
             88,
             81,
             82,
-            80,
             77,
-            78
+            78,
+            79
           ],
           "lineVertical": [
-            80,
             81,
+            80,
             82,
             61,
             85,
-            84,
             83,
+            84,
             93,
             92,
             63
           ],
           "west": [
             61,
-            85,
             83,
+            85,
             84,
             92,
             65,
-            72,
             73,
+            72,
             67,
             66
           ],
           "center": [
             61,
+            77,
+            79,
             83,
             66,
             68,
             73,
+            78,
             62,
-            64,
-            69,
-            70,
-            71
+            64
           ],
           "east": [
             61,
@@ -19676,8 +20170,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             63,
             64,
             72,
-            73,
-            71
+            71,
+            73
           ],
           "southWest": [
             71,
@@ -19686,54 +20180,30 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             61,
             87,
             75,
-            76,
-            83,
+            74,
             85,
-            74
+            76,
+            83
           ],
           "southEast": [
             63,
             62,
             64,
-            89,
             61,
+            89,
             82,
             80,
             76,
             81,
             75
           ],
-          "capEast": [
-            65,
-            67,
-            72,
-            66,
-            71,
-            73,
-            87,
-            78,
-            76,
-            77
-          ],
-          "capWest": [
-            64,
-            63,
-            68,
-            62,
-            70,
-            69,
-            61,
-            74,
-            76,
-            88
-          ],
           "capSouth": [
+            61,
             67,
             65,
             66,
             68,
             69,
-            61,
             82,
             63,
             70,
@@ -19741,15 +20211,39 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "capNorth": [
             64,
+            61,
             72,
-            63,
             73,
             62,
+            63,
             71,
             84,
             68,
-            75,
-            83
+            75
+          ],
+          "capWest": [
+            64,
+            63,
+            68,
+            61,
+            62,
+            70,
+            69,
+            74,
+            76,
+            79
+          ],
+          "capEast": [
+            65,
+            67,
+            72,
+            61,
+            66,
+            71,
+            73,
+            87,
+            78,
+            76
           ],
           "single": [
             63,
@@ -19764,6 +20258,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             62
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
@@ -19795,6 +20292,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           128,
           129
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           121
         ],
@@ -19803,13 +20302,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           126,
           127,
           129,
-          122,
-          124,
           128,
+          124,
+          122,
           123,
           125
         ],
-        "sampleCount": 1505,
+        "sampleCount": 1890,
         "confidence": "high",
         "maskCandidates": {
           "19": {
@@ -19818,7 +20317,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               129
             ],
-            "samples": 14,
+            "samples": 19,
             "confidence": "low"
           },
           "38": {
@@ -19827,14 +20326,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               128
             ],
-            "samples": 10,
+            "samples": 14,
             "confidence": "low"
           },
           "54": {
             "tiles": [
               123
             ],
-            "samples": 16,
+            "samples": 18,
             "confidence": "low"
           },
           "55": {
@@ -19842,7 +20341,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               121
             ],
-            "samples": 107,
+            "samples": 136,
             "confidence": "medium"
           },
           "76": {
@@ -19850,7 +20349,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               128
             ],
-            "samples": 10,
+            "samples": 13,
             "confidence": "low"
           },
           "110": {
@@ -19858,14 +20357,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               128,
               121
             ],
-            "samples": 40,
+            "samples": 56,
             "confidence": "low"
           },
           "118": {
             "tiles": [
               123
             ],
-            "samples": 9,
+            "samples": 11,
             "confidence": "low"
           },
           "119": {
@@ -19873,7 +20372,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               121
             ],
-            "samples": 15,
+            "samples": 17,
+            "confidence": "low"
+          },
+          "126": {
+            "tiles": [
+              128,
+              121
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "127": {
@@ -19883,7 +20390,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               128
             ],
-            "samples": 35,
+            "samples": 40,
             "confidence": "low"
           },
           "137": {
@@ -19892,7 +20399,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               129
             ],
-            "samples": 10,
+            "samples": 14,
             "confidence": "low"
           },
           "155": {
@@ -19901,14 +20408,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               122
             ],
-            "samples": 54,
+            "samples": 62,
             "confidence": "low"
           },
           "179": {
             "tiles": [
               122
             ],
-            "samples": 13,
+            "samples": 17,
             "confidence": "low"
           },
           "183": {
@@ -19916,7 +20423,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               121
             ],
-            "samples": 8,
+            "samples": 11,
             "confidence": "low"
           },
           "187": {
@@ -19925,7 +20432,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               122
             ],
-            "samples": 9,
+            "samples": 11,
             "confidence": "low"
           },
           "191": {
@@ -19935,14 +20442,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               125
             ],
-            "samples": 31,
+            "samples": 39,
+            "confidence": "low"
+          },
+          "201": {
+            "tiles": [
+              125
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "204": {
             "tiles": [
               124
             ],
-            "samples": 8,
+            "samples": 12,
             "confidence": "low"
           },
           "205": {
@@ -19950,8 +20464,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               126,
               121
             ],
-            "samples": 132,
+            "samples": 156,
             "confidence": "medium"
+          },
+          "217": {
+            "tiles": [
+              125
+            ],
+            "samples": 11,
+            "confidence": "low"
+          },
+          "219": {
+            "tiles": [
+              129
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "223": {
             "tiles": [
@@ -19960,21 +20488,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               128
             ],
-            "samples": 20,
+            "samples": 30,
             "confidence": "low"
           },
           "236": {
             "tiles": [
               124
             ],
-            "samples": 15,
+            "samples": 20,
             "confidence": "low"
           },
           "237": {
             "tiles": [
               126
             ],
-            "samples": 8,
+            "samples": 10,
             "confidence": "low"
           },
           "239": {
@@ -19982,7 +20510,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               124
             ],
-            "samples": 32,
+            "samples": 41,
             "confidence": "low"
           },
           "247": {
@@ -19992,6 +20520,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122
             ],
             "samples": 9,
+            "confidence": "low"
+          },
+          "253": {
+            "tiles": [
+              126,
+              125,
+              121,
+              124
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "255": {
@@ -20004,8 +20542,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               123
             ],
-            "samples": 806,
-            "confidence": "medium"
+            "samples": 1019,
+            "confidence": "high"
           }
         },
         "roleCandidates": {
@@ -20063,6 +20601,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             129
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
@@ -20162,6 +20703,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           60,
           33,
@@ -20173,15 +20716,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           60,
           36,
           35,
-          33,
-          34,
+          3,
           38,
-          39,
+          33,
           4,
-          50,
-          49
+          34,
+          39,
+          50
         ],
-        "sampleCount": 15383,
+        "sampleCount": 16780,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -20195,7 +20738,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               54,
               107
             ],
-            "samples": 138,
+            "samples": 139,
             "confidence": "medium"
           },
           "1": {
@@ -20209,21 +20752,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               2
             ],
-            "samples": 38,
+            "samples": 41,
             "confidence": "low"
           },
           "2": {
             "tiles": [
               108,
+              38,
               36,
               109,
               110,
               60,
-              38,
               42,
               54
             ],
-            "samples": 39,
+            "samples": 44,
             "confidence": "low"
           },
           "3": {
@@ -20245,13 +20788,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               111,
               105,
               112,
-              36,
               60,
-              35,
+              36,
               25,
-              39
+              39,
+              35
             ],
-            "samples": 29,
+            "samples": 32,
             "confidence": "low"
           },
           "5": {
@@ -20262,10 +20805,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               34,
               36,
               111,
-              55,
-              105
+              3,
+              55
             ],
-            "samples": 249,
+            "samples": 262,
             "confidence": "medium"
           },
           "6": {
@@ -20279,32 +20822,32 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               31,
               59
             ],
-            "samples": 30,
+            "samples": 31,
             "confidence": "low"
           },
           "7": {
             "tiles": [
               36,
               33,
-              35,
               46,
+              35,
               34
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "8": {
             "tiles": [
               107,
+              38,
               40,
               36,
-              38,
               55,
               109,
               110,
               12
             ],
-            "samples": 36,
+            "samples": 39,
             "confidence": "low"
           },
           "9": {
@@ -20330,7 +20873,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               55,
               60
             ],
-            "samples": 261,
+            "samples": 276,
             "confidence": "medium"
           },
           "11": {
@@ -20339,23 +20882,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               34,
               35,
               60,
-              33
+              33,
+              47
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "12": {
             "tiles": [
               50,
               33,
-              34,
               35,
+              34,
               36,
               60,
               30,
               59
             ],
-            "samples": 36,
+            "samples": 37,
             "confidence": "low"
           },
           "14": {
@@ -20386,14 +20930,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               26,
               60,
+              14,
               36,
               11,
-              14,
               2,
               34,
               3
             ],
-            "samples": 47,
+            "samples": 50,
             "confidence": "low"
           },
           "21": {
@@ -20407,7 +20951,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               4
             ],
-            "samples": 42,
+            "samples": 44,
             "confidence": "low"
           },
           "22": {
@@ -20453,7 +20997,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               33
             ],
-            "samples": 33,
+            "samples": 34,
             "confidence": "low"
           },
           "27": {
@@ -20514,7 +21058,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               4,
               53
             ],
-            "samples": 38,
+            "samples": 39,
             "confidence": "low"
           },
           "38": {
@@ -20523,12 +21067,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               36,
               9,
+              17,
               48,
               35,
-              17,
               13
             ],
-            "samples": 41,
+            "samples": 46,
             "confidence": "low"
           },
           "39": {
@@ -20547,14 +21091,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               38,
               35,
-              33,
-              36,
               34,
+              36,
+              33,
               2,
               60,
               32
             ],
-            "samples": 41,
+            "samples": 42,
             "confidence": "low"
           },
           "44": {
@@ -20563,6 +21107,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               36,
               33,
+              35,
               27
             ],
             "samples": 14,
@@ -20586,10 +21131,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               36,
               6,
+              38,
               42,
               112
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "51": {
@@ -20601,9 +21147,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               18,
               33,
-              2
+              35
             ],
-            "samples": 106,
+            "samples": 120,
             "confidence": "medium"
           },
           "53": {
@@ -20626,9 +21172,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               36,
               10,
-              35
+              13
             ],
-            "samples": 131,
+            "samples": 145,
             "confidence": "medium"
           },
           "55": {
@@ -20642,7 +21188,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               25
             ],
-            "samples": 465,
+            "samples": 526,
             "confidence": "medium"
           },
           "58": {
@@ -20654,7 +21200,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               11
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "63": {
@@ -20668,7 +21214,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               23,
               30
             ],
-            "samples": 27,
+            "samples": 29,
             "confidence": "low"
           },
           "68": {
@@ -20676,10 +21222,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               60,
               105,
+              19,
               25,
               52
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "69": {
@@ -20693,7 +21240,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               105
             ],
-            "samples": 38,
+            "samples": 39,
             "confidence": "low"
           },
           "70": {
@@ -20747,12 +21294,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               19,
               36,
-              1,
               5,
+              1,
               15,
               32
             ],
-            "samples": 50,
+            "samples": 55,
             "confidence": "low"
           },
           "77": {
@@ -20760,13 +21307,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               51,
               4,
+              21,
               27,
               30,
               36,
-              39,
-              44
+              39
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "78": {
@@ -20825,13 +21372,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "90": {
             "tiles": [
-              36,
               38,
+              36,
               60,
               35,
               2
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "91": {
@@ -20839,10 +21386,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               51,
               36,
               7,
+              26,
               38,
               47
             ],
-            "samples": 28,
+            "samples": 29,
             "confidence": "low"
           },
           "93": {
@@ -20899,9 +21447,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               34,
               36,
+              60,
               33
             ],
-            "samples": 12,
+            "samples": 14,
             "confidence": "low"
           },
           "102": {
@@ -20915,18 +21464,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               6,
               13
             ],
-            "samples": 90,
+            "samples": 91,
             "confidence": "low"
           },
           "106": {
             "tiles": [
               36,
-              35,
               38,
+              35,
               33,
               6
             ],
-            "samples": 16,
+            "samples": 15,
             "confidence": "low"
           },
           "108": {
@@ -20940,7 +21489,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               15,
               19
             ],
-            "samples": 66,
+            "samples": 71,
             "confidence": "low"
           },
           "110": {
@@ -20954,7 +21503,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               25
             ],
-            "samples": 342,
+            "samples": 383,
             "confidence": "medium"
           },
           "111": {
@@ -20967,7 +21516,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               51
             ],
-            "samples": 12,
+            "samples": 13,
             "confidence": "low"
           },
           "118": {
@@ -20981,7 +21530,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               13
             ],
-            "samples": 64,
+            "samples": 65,
             "confidence": "low"
           },
           "119": {
@@ -20995,7 +21544,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               49
             ],
-            "samples": 139,
+            "samples": 158,
             "confidence": "medium"
           },
           "122": {
@@ -21050,8 +21599,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               19
             ],
-            "samples": 99,
-            "confidence": "low"
+            "samples": 104,
+            "confidence": "medium"
           },
           "127": {
             "tiles": [
@@ -21064,14 +21613,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               56
             ],
-            "samples": 231,
+            "samples": 251,
             "confidence": "medium"
+          },
+          "129": {
+            "tiles": [
+              36,
+              60,
+              35,
+              14,
+              39
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "131": {
             "tiles": [
               49,
               36,
-              34,
+              60,
               20,
               26,
               32,
@@ -21108,14 +21668,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               28,
               16,
-              2,
               60,
+              2,
               8,
               51,
               34,
               12
             ],
-            "samples": 47,
+            "samples": 51,
             "confidence": "low"
           },
           "138": {
@@ -21185,7 +21745,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               7,
               16
             ],
-            "samples": 90,
+            "samples": 97,
             "confidence": "low"
           },
           "149": {
@@ -21196,7 +21756,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               60
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "153": {
@@ -21210,7 +21770,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               4,
               11
             ],
-            "samples": 95,
+            "samples": 99,
             "confidence": "low"
           },
           "154": {
@@ -21227,16 +21787,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "155": {
             "tiles": [
-              60,
               2,
+              60,
               49,
               11,
               51,
               7,
               8,
-              26
+              12
             ],
-            "samples": 284,
+            "samples": 312,
             "confidence": "medium"
           },
           "159": {
@@ -21250,7 +21810,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               44,
               50
             ],
-            "samples": 15,
+            "samples": 16,
             "confidence": "low"
           },
           "163": {
@@ -21275,12 +21835,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "167": {
             "tiles": [
               49,
-              60,
               13,
+              60,
               46,
               59
             ],
-            "samples": 31,
+            "samples": 32,
             "confidence": "low"
           },
           "170": {
@@ -21291,7 +21851,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               12
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "171": {
@@ -21324,7 +21884,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               29
             ],
-            "samples": 32,
+            "samples": 33,
             "confidence": "low"
           },
           "174": {
@@ -21364,7 +21924,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               57
             ],
-            "samples": 68,
+            "samples": 72,
             "confidence": "low"
           },
           "183": {
@@ -21378,7 +21938,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               25
             ],
-            "samples": 133,
+            "samples": 149,
             "confidence": "medium"
           },
           "186": {
@@ -21400,8 +21960,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               47,
               33
             ],
-            "samples": 98,
-            "confidence": "low"
+            "samples": 106,
+            "confidence": "medium"
           },
           "189": {
             "tiles": [
@@ -21436,7 +21996,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               23,
               32
             ],
-            "samples": 233,
+            "samples": 260,
             "confidence": "medium"
           },
           "197": {
@@ -21469,11 +22029,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               51,
               60,
               36,
-              35,
               20,
+              35,
               7
             ],
-            "samples": 131,
+            "samples": 148,
             "confidence": "medium"
           },
           "202": {
@@ -21483,7 +22043,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               35,
               36
             ],
-            "samples": 18,
+            "samples": 19,
             "confidence": "low"
           },
           "203": {
@@ -21508,8 +22068,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               5,
               6
             ],
-            "samples": 94,
-            "confidence": "low"
+            "samples": 100,
+            "confidence": "medium"
           },
           "205": {
             "tiles": [
@@ -21522,7 +22082,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               16
             ],
-            "samples": 485,
+            "samples": 559,
             "confidence": "medium"
           },
           "207": {
@@ -21560,7 +22120,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               34,
               14
             ],
-            "samples": 70,
+            "samples": 72,
             "confidence": "low"
           },
           "218": {
@@ -21583,7 +22143,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               12
             ],
-            "samples": 106,
+            "samples": 111,
             "confidence": "medium"
           },
           "221": {
@@ -21597,13 +22157,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               27
             ],
-            "samples": 141,
+            "samples": 159,
             "confidence": "medium"
+          },
+          "222": {
+            "tiles": [
+              19,
+              45,
+              48,
+              36,
+              38
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "223": {
             "tiles": [
-              31,
               60,
+              31,
               35,
               33,
               58,
@@ -21611,7 +22182,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               34,
               15
             ],
-            "samples": 242,
+            "samples": 267,
             "confidence": "medium"
           },
           "235": {
@@ -21635,7 +22206,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               35,
               4
             ],
-            "samples": 83,
+            "samples": 86,
             "confidence": "low"
           },
           "237": {
@@ -21649,21 +22220,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               44,
               51
             ],
-            "samples": 115,
+            "samples": 124,
             "confidence": "medium"
           },
           "238": {
             "tiles": [
               6,
-              1,
               60,
+              1,
               36,
               19,
               10,
               15,
               33
             ],
-            "samples": 87,
+            "samples": 96,
             "confidence": "low"
           },
           "239": {
@@ -21673,11 +22244,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               56,
               59,
+              34,
               21,
-              22,
-              34
+              22
             ],
-            "samples": 216,
+            "samples": 235,
             "confidence": "medium"
           },
           "247": {
@@ -21687,25 +22258,25 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               3,
               11,
               17,
+              60,
               1,
-              13,
-              14
+              13
             ],
-            "samples": 27,
+            "samples": 29,
             "confidence": "low"
           },
           "251": {
             "tiles": [
               36,
-              60,
               2,
               12,
+              60,
               7,
               8,
               16,
               38
             ],
-            "samples": 29,
+            "samples": 31,
             "confidence": "low"
           },
           "253": {
@@ -21713,13 +22284,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               4,
               36,
               28,
+              20,
               60,
               15,
-              20,
               39,
               16
             ],
-            "samples": 28,
+            "samples": 30,
             "confidence": "low"
           },
           "254": {
@@ -21727,13 +22298,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               36,
               19,
+              1,
               10,
               27,
-              1,
               6,
               48
             ],
-            "samples": 20,
+            "samples": 21,
             "confidence": "low"
           },
           "255": {
@@ -21747,7 +22318,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               59,
               30
             ],
-            "samples": 7608,
+            "samples": 8442,
             "confidence": "high"
           }
         },
@@ -21759,10 +22330,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             111,
             112,
             110,
-            35,
             25,
-            52,
-            5
+            35,
+            39,
+            52
           ],
           "single": [
             111,
@@ -21803,10 +22374,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "northEast": [
             50,
             27,
-            60,
             19,
-            36,
+            60,
             5,
+            36,
             33,
             35,
             34,
@@ -21815,9 +22386,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "southWest": [
             49,
             26,
+            14,
             60,
             36,
-            14,
             11,
             35,
             34,
@@ -21845,8 +22416,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             48,
             36,
             39,
-            26,
-            46
+            46,
+            26
           ],
           "southEast": [
             51,
@@ -21858,30 +22429,30 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             35,
             34,
             33,
-            2
+            20
           ],
           "capWest": [
             36,
             107,
             60,
-            40,
             38,
+            40,
             55,
+            35,
             109,
             110,
-            111,
-            35
+            111
           ],
           "capEast": [
             36,
             108,
             60,
+            38,
             42,
             109,
             110,
             6,
             11,
-            38,
             54
           ],
           "lineHorizontal": [
@@ -21900,8 +22471,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             60,
             1,
             36,
-            50,
             6,
+            50,
             48,
             10,
             45,
@@ -21912,8 +22483,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             2,
             60,
             12,
-            36,
             7,
+            36,
             49,
             51,
             11,
@@ -21926,9 +22497,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             34,
             33,
             36,
+            3,
             4,
             111,
-            3,
             60,
             18
           ],
@@ -21939,12 +22510,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             111,
             112,
             43,
+            39,
             109,
             14,
-            39,
             33
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 60,
           "single": 60,
@@ -22004,6 +22578,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           92,
           93
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           61
         ],
@@ -22012,14 +22588,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           80,
           81,
           84,
-          85,
           82,
           83,
+          85,
           79,
           78,
           75
         ],
-        "sampleCount": 70601,
+        "sampleCount": 73850,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -22042,12 +22618,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               84,
               72,
+              62,
               63,
               64,
-              82,
-              85
+              82
             ],
-            "samples": 36,
+            "samples": 37,
             "confidence": "low"
           },
           "2": {
@@ -22061,28 +22637,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               72
             ],
-            "samples": 28,
+            "samples": 29,
             "confidence": "low"
           },
           "3": {
             "tiles": [
-              61
+              61,
+              87
             ],
-            "samples": 13,
+            "samples": 14,
             "confidence": "low"
           },
           "4": {
             "tiles": [
               61,
               66,
+              84,
               67,
+              68,
               82,
               83,
-              84,
-              88,
-              65
+              88
             ],
-            "samples": 32,
+            "samples": 33,
             "confidence": "low"
           },
           "5": {
@@ -22090,13 +22667,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               80,
               81,
+              82,
               85,
               84,
-              82,
               83,
               92
             ],
-            "samples": 330,
+            "samples": 342,
             "confidence": "medium"
           },
           "6": {
@@ -22119,7 +22696,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               75
             ],
-            "samples": 21,
+            "samples": 20,
             "confidence": "low"
           },
           "9": {
@@ -22138,11 +22715,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               75,
               77,
-              74,
               79,
+              74,
               66
             ],
-            "samples": 268,
+            "samples": 270,
             "confidence": "medium"
           },
           "11": {
@@ -22201,9 +22778,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               84,
               87,
-              85
+              76
             ],
-            "samples": 265,
+            "samples": 276,
             "confidence": "medium"
           },
           "21": {
@@ -22215,7 +22792,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               85
             ],
-            "samples": 25,
+            "samples": 24,
             "confidence": "low"
           },
           "22": {
@@ -22243,21 +22820,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               79,
               78,
+              76,
               72,
               75,
-              76,
               77
             ],
-            "samples": 30,
+            "samples": 31,
             "confidence": "low"
           },
           "27": {
             "tiles": [
               61,
               74,
-              75
+              75,
+              76
             ],
-            "samples": 35,
+            "samples": 37,
             "confidence": "low"
           },
           "34": {
@@ -22285,7 +22863,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               67
             ],
-            "samples": 31,
+            "samples": 32,
             "confidence": "low"
           },
           "37": {
@@ -22311,7 +22889,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               78
             ],
-            "samples": 229,
+            "samples": 243,
             "confidence": "medium"
           },
           "39": {
@@ -22337,17 +22915,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               73
             ],
-            "samples": 33,
+            "samples": 35,
             "confidence": "low"
           },
           "46": {
             "tiles": [
               61,
               67,
+              77,
               78,
               90
             ],
-            "samples": 47,
+            "samples": 48,
             "confidence": "low"
           },
           "50": {
@@ -22373,7 +22952,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               74
             ],
-            "samples": 309,
+            "samples": 319,
             "confidence": "medium"
           },
           "53": {
@@ -22399,7 +22978,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               78
             ],
-            "samples": 347,
+            "samples": 354,
             "confidence": "medium"
           },
           "55": {
@@ -22413,7 +22992,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               67
             ],
-            "samples": 2614,
+            "samples": 2830,
             "confidence": "high"
           },
           "63": {
@@ -22438,21 +23017,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "69": {
             "tiles": [
               61,
-              83,
               84,
-              65,
+              83,
               85,
+              65,
               68,
               82,
               92
             ],
-            "samples": 28,
+            "samples": 30,
             "confidence": "low"
           },
           "72": {
             "tiles": [
-              61,
               64,
+              61,
               62,
               63,
               76,
@@ -22460,7 +23039,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               70
             ],
-            "samples": 34,
+            "samples": 35,
             "confidence": "low"
           },
           "73": {
@@ -22482,7 +23061,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               76
             ],
-            "samples": 32,
+            "samples": 34,
             "confidence": "low"
           },
           "76": {
@@ -22496,7 +23075,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               80
             ],
-            "samples": 265,
+            "samples": 276,
             "confidence": "medium"
           },
           "77": {
@@ -22507,7 +23086,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               93
             ],
-            "samples": 31,
+            "samples": 33,
             "confidence": "low"
           },
           "78": {
@@ -22517,7 +23096,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               90
             ],
-            "samples": 46,
+            "samples": 48,
             "confidence": "low"
           },
           "83": {
@@ -22535,13 +23114,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "92": {
             "tiles": [
               68,
-              70,
               69,
+              70,
               77,
               82,
               86
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "95": {
@@ -22549,21 +23128,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               85
             ],
-            "samples": 39,
+            "samples": 40,
             "confidence": "low"
           },
           "100": {
             "tiles": [
+              67,
               61,
               65,
-              67,
               69,
-              68,
               70,
+              68,
               79,
               83
             ],
-            "samples": 23,
+            "samples": 25,
             "confidence": "low"
           },
           "101": {
@@ -22585,7 +23164,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               83
             ],
-            "samples": 221,
+            "samples": 226,
             "confidence": "medium"
           },
           "108": {
@@ -22599,7 +23178,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               80
             ],
-            "samples": 222,
+            "samples": 233,
             "confidence": "medium"
           },
           "110": {
@@ -22611,16 +23190,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               68,
               66,
-              69
+              67
             ],
-            "samples": 2089,
+            "samples": 2261,
             "confidence": "high"
           },
           "111": {
             "tiles": [
               61
             ],
-            "samples": 32,
+            "samples": 34,
             "confidence": "low"
           },
           "115": {
@@ -22635,8 +23214,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "118": {
             "tiles": [
-              67,
               65,
+              67,
               66,
               61,
               86,
@@ -22644,13 +23223,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               84
             ],
-            "samples": 297,
+            "samples": 311,
             "confidence": "medium"
           },
           "119": {
             "tiles": [
-              84,
               83,
+              84,
               85,
               61,
               92,
@@ -22658,7 +23237,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               65
             ],
-            "samples": 374,
+            "samples": 386,
             "confidence": "medium"
           },
           "124": {
@@ -22673,16 +23252,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "126": {
             "tiles": [
+              61,
               78,
               79,
-              61,
               77,
               90,
               66,
               67,
               65
             ],
-            "samples": 262,
+            "samples": 275,
             "confidence": "medium"
           },
           "127": {
@@ -22693,7 +23272,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               92
             ],
-            "samples": 905,
+            "samples": 939,
             "confidence": "medium"
           },
           "129": {
@@ -22713,14 +23292,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "133": {
             "tiles": [
               61,
-              85,
               84,
+              85,
               71,
               73,
               83,
               92
             ],
-            "samples": 38,
+            "samples": 39,
             "confidence": "low"
           },
           "136": {
@@ -22741,14 +23320,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               61,
               63,
-              64,
               62,
+              64,
               89,
               81,
               75,
               82
             ],
-            "samples": 275,
+            "samples": 292,
             "confidence": "medium"
           },
           "138": {
@@ -22760,7 +23339,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               69
             ],
-            "samples": 29,
+            "samples": 28,
             "confidence": "low"
           },
           "139": {
@@ -22779,7 +23358,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               93
             ],
-            "samples": 40,
+            "samples": 41,
             "confidence": "low"
           },
           "147": {
@@ -22793,17 +23372,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               74
             ],
-            "samples": 191,
+            "samples": 201,
             "confidence": "medium"
-          },
-          "151": {
-            "tiles": [
-              61,
-              83,
-              84
-            ],
-            "samples": 8,
-            "confidence": "low"
           },
           "153": {
             "tiles": [
@@ -22816,16 +23386,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               81
             ],
-            "samples": 228,
+            "samples": 231,
             "confidence": "medium"
           },
           "154": {
             "tiles": [
               61,
               79,
+              74,
               77
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "155": {
@@ -22839,7 +23410,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               87
             ],
-            "samples": 2155,
+            "samples": 2335,
             "confidence": "high"
           },
           "159": {
@@ -22872,13 +23443,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               73,
               71,
-              87,
               61,
+              87,
               83,
               74,
               76
             ],
-            "samples": 304,
+            "samples": 321,
             "confidence": "medium"
           },
           "182": {
@@ -22887,7 +23458,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               67
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "183": {
@@ -22899,9 +23470,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               92,
               67,
               71,
-              65
+              72
             ],
-            "samples": 370,
+            "samples": 381,
             "confidence": "medium"
           },
           "185": {
@@ -22909,9 +23480,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               64,
               63,
               62,
-              61
+              61,
+              73
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "187": {
@@ -22925,7 +23497,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               72
             ],
-            "samples": 255,
+            "samples": 269,
             "confidence": "medium"
           },
           "191": {
@@ -22935,10 +23507,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               85,
               72,
+              74,
               75,
-              92
+              83
             ],
-            "samples": 868,
+            "samples": 910,
             "confidence": "medium"
           },
           "197": {
@@ -22953,6 +23526,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 13,
             "confidence": "low"
           },
+          "200": {
+            "tiles": [
+              61,
+              63,
+              68,
+              69,
+              70,
+              80
+            ],
+            "samples": 8,
+            "confidence": "low"
+          },
           "201": {
             "tiles": [
               64,
@@ -22962,9 +23547,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               89,
               81,
               74,
-              82
+              80
             ],
-            "samples": 304,
+            "samples": 318,
             "confidence": "medium"
           },
           "204": {
@@ -22972,13 +23557,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               68,
               69,
-              61,
               88,
+              61,
               77,
               78,
               81
             ],
-            "samples": 308,
+            "samples": 319,
             "confidence": "medium"
           },
           "205": {
@@ -22990,29 +23575,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               93,
               62,
               63,
-              70
+              69
             ],
-            "samples": 2673,
+            "samples": 2869,
             "confidence": "high"
           },
           "207": {
             "tiles": [
               61
             ],
-            "samples": 10,
+            "samples": 11,
             "confidence": "low"
           },
           "217": {
             "tiles": [
               62,
-              64,
               63,
+              64,
               89,
               61,
               81,
               80
             ],
-            "samples": 262,
+            "samples": 271,
             "confidence": "medium"
           },
           "219": {
@@ -23026,7 +23611,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               89
             ],
-            "samples": 303,
+            "samples": 315,
             "confidence": "medium"
           },
           "220": {
@@ -23049,10 +23634,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               93,
               64,
-              62,
-              63
+              63,
+              62
             ],
-            "samples": 380,
+            "samples": 405,
             "confidence": "medium"
           },
           "223": {
@@ -23062,18 +23647,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               93
             ],
-            "samples": 863,
+            "samples": 899,
             "confidence": "medium"
           },
           "230": {
             "tiles": [
-              65,
               66,
+              65,
               67,
               61,
               79
             ],
-            "samples": 17,
+            "samples": 18,
             "confidence": "low"
           },
           "233": {
@@ -23097,7 +23682,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               78
             ],
-            "samples": 267,
+            "samples": 280,
             "confidence": "medium"
           },
           "237": {
@@ -23109,23 +23694,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               93,
               70,
               68,
-              69
+              62
             ],
-            "samples": 370,
+            "samples": 388,
             "confidence": "medium"
           },
           "238": {
             "tiles": [
+              79,
               61,
               78,
-              79,
               77,
               90,
               70,
               69,
               68
             ],
-            "samples": 289,
+            "samples": 306,
             "confidence": "medium"
           },
           "239": {
@@ -23134,7 +23719,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               82,
               89
             ],
-            "samples": 864,
+            "samples": 907,
             "confidence": "medium"
           },
           "243": {
@@ -23145,7 +23730,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               92
             ],
-            "samples": 16,
+            "samples": 17,
             "confidence": "low"
           },
           "246": {
@@ -23168,16 +23753,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               92,
               65
             ],
-            "samples": 73,
+            "samples": 78,
             "confidence": "low"
           },
           "249": {
             "tiles": [
-              62,
               63,
+              62,
               64
             ],
-            "samples": 20,
+            "samples": 21,
             "confidence": "low"
           },
           "251": {
@@ -23191,7 +23776,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               73,
               63
             ],
-            "samples": 56,
+            "samples": 57,
             "confidence": "low"
           },
           "252": {
@@ -23212,7 +23797,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               93
             ],
-            "samples": 59,
+            "samples": 60,
             "confidence": "low"
           },
           "254": {
@@ -23226,19 +23811,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               70
             ],
-            "samples": 74,
+            "samples": 78,
             "confidence": "low"
           },
           "255": {
             "tiles": [
               61,
+              75,
               86,
               87,
               88,
               89,
               90
             ],
-            "samples": 48148,
+            "samples": 50118,
             "confidence": "high"
           }
         },
@@ -23270,10 +23856,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "capWest": [
             61,
             63,
-            68,
             64,
-            62,
+            68,
             69,
+            62,
             70,
             88,
             74,
@@ -23299,8 +23885,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             88,
             81,
             78,
-            77,
             82,
+            77,
             80
           ],
           "lineHorizontal": [
@@ -23318,8 +23904,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "west": [
             61,
             84,
-            85,
             83,
+            85,
             92,
             65,
             73,
@@ -23333,11 +23919,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             85,
             71,
             73,
+            75,
             89,
             90,
             92,
-            67,
-            72
+            67
           ],
           "east": [
             61,
@@ -23347,14 +23933,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             93,
             70,
             62,
-            64,
             63,
+            64,
             68
           ],
           "southEast": [
             64,
-            62,
             63,
+            62,
             61,
             89,
             81,
@@ -23377,8 +23963,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "south": [
             61,
-            76,
             75,
+            76,
             74,
             91,
             62,
@@ -23403,13 +23989,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             61,
             81,
             80,
-            85,
-            84,
             82,
+            84,
+            85,
             83,
             92,
             93,
-            65
+            62
           ],
           "capNorth": [
             61,
@@ -23420,8 +24006,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             63,
             80,
             89,
-            71,
-            62
+            62,
+            71
           ],
           "single": [
             61,
@@ -23436,6 +24022,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             85
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
@@ -23467,31 +24056,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           128,
           129
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           121
         ],
         "candidates": [
           121,
           126,
-          123,
           127,
+          123,
           129,
           122,
           128,
           125,
           124
         ],
-        "sampleCount": 5698,
+        "sampleCount": 6889,
         "confidence": "high",
         "maskCandidates": {
           "19": {
             "tiles": [
               122,
-              127,
               121,
+              127,
               129
             ],
-            "samples": 36,
+            "samples": 39,
             "confidence": "low"
           },
           "38": {
@@ -23500,21 +24091,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               127,
               121
             ],
-            "samples": 39,
+            "samples": 43,
             "confidence": "low"
           },
           "51": {
             "tiles": [
               122
             ],
-            "samples": 32,
+            "samples": 38,
             "confidence": "low"
           },
           "54": {
             "tiles": [
               123
             ],
-            "samples": 47,
+            "samples": 58,
             "confidence": "low"
           },
           "55": {
@@ -23525,7 +24116,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               128
             ],
-            "samples": 142,
+            "samples": 188,
             "confidence": "medium"
           },
           "76": {
@@ -23535,7 +24126,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               128,
               121
             ],
-            "samples": 36,
+            "samples": 42,
             "confidence": "low"
           },
           "95": {
@@ -23549,14 +24140,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               123
             ],
-            "samples": 38,
+            "samples": 43,
             "confidence": "low"
           },
           "108": {
             "tiles": [
               124
             ],
-            "samples": 16,
+            "samples": 18,
             "confidence": "low"
           },
           "110": {
@@ -23566,24 +24157,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               123
             ],
-            "samples": 142,
+            "samples": 162,
             "confidence": "medium"
           },
           "118": {
             "tiles": [
               123
             ],
-            "samples": 42,
+            "samples": 49,
             "confidence": "low"
           },
           "119": {
             "tiles": [
               127,
               121,
-              123,
-              122
+              122,
+              123
             ],
-            "samples": 45,
+            "samples": 59,
             "confidence": "low"
           },
           "126": {
@@ -23593,16 +24184,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               121
             ],
-            "samples": 36,
+            "samples": 44,
             "confidence": "low"
           },
           "127": {
             "tiles": [
               121,
               127,
+              124,
               123
             ],
-            "samples": 119,
+            "samples": 149,
             "confidence": "medium"
           },
           "137": {
@@ -23612,7 +24204,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               129
             ],
-            "samples": 32,
+            "samples": 35,
             "confidence": "low"
           },
           "147": {
@@ -23620,7 +24212,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               127
             ],
-            "samples": 31,
+            "samples": 37,
             "confidence": "low"
           },
           "153": {
@@ -23628,7 +24220,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               126
             ],
-            "samples": 33,
+            "samples": 38,
             "confidence": "low"
           },
           "155": {
@@ -23638,14 +24230,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               122
             ],
-            "samples": 132,
+            "samples": 166,
             "confidence": "medium"
           },
           "179": {
             "tiles": [
               122
             ],
-            "samples": 33,
+            "samples": 39,
             "confidence": "low"
           },
           "183": {
@@ -23654,7 +24246,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               122
             ],
-            "samples": 28,
+            "samples": 37,
             "confidence": "low"
           },
           "187": {
@@ -23663,30 +24255,33 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               121
             ],
-            "samples": 28,
+            "samples": 36,
             "confidence": "low"
           },
           "191": {
             "tiles": [
               121,
-              126
+              123,
+              125,
+              126,
+              127
             ],
-            "samples": 92,
-            "confidence": "low"
+            "samples": 117,
+            "confidence": "medium"
           },
           "201": {
             "tiles": [
               125,
               126
             ],
-            "samples": 39,
+            "samples": 43,
             "confidence": "low"
           },
           "204": {
             "tiles": [
               124
             ],
-            "samples": 26,
+            "samples": 31,
             "confidence": "low"
           },
           "205": {
@@ -23696,14 +24291,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               125
             ],
-            "samples": 210,
+            "samples": 270,
             "confidence": "medium"
           },
           "217": {
             "tiles": [
               125
             ],
-            "samples": 30,
+            "samples": 34,
             "confidence": "low"
           },
           "219": {
@@ -23711,7 +24306,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               129,
               125
             ],
-            "samples": 28,
+            "samples": 34,
             "confidence": "low"
           },
           "221": {
@@ -23720,24 +24315,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               125
             ],
-            "samples": 36,
+            "samples": 43,
             "confidence": "low"
           },
           "223": {
             "tiles": [
               121,
-              129,
               126,
+              129,
+              122,
+              125,
               128
             ],
-            "samples": 90,
-            "confidence": "low"
+            "samples": 109,
+            "confidence": "medium"
           },
           "236": {
             "tiles": [
               124
             ],
-            "samples": 31,
+            "samples": 41,
             "confidence": "low"
           },
           "237": {
@@ -23746,24 +24343,46 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               124,
               125
             ],
-            "samples": 26,
+            "samples": 37,
+            "confidence": "low"
+          },
+          "238": {
+            "tiles": [
+              128,
+              124,
+              121,
+              123
+            ],
+            "samples": 15,
             "confidence": "low"
           },
           "239": {
             "tiles": [
               121,
+              125,
               124,
-              126
+              126,
+              128
             ],
-            "samples": 68,
+            "samples": 95,
+            "confidence": "low"
+          },
+          "247": {
+            "tiles": [
+              127,
+              122,
+              123
+            ],
+            "samples": 10,
             "confidence": "low"
           },
           "251": {
             "tiles": [
               129,
-              122
+              122,
+              125
             ],
-            "samples": 8,
+            "samples": 12,
             "confidence": "low"
           },
           "254": {
@@ -23772,16 +24391,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               123,
               124
             ],
-            "samples": 8,
+            "samples": 11,
             "confidence": "low"
           },
           "255": {
             "tiles": [
               121,
               127,
-              128
+              123,
+              125,
+              126,
+              128,
+              124,
+              122
             ],
-            "samples": 3809,
+            "samples": 4562,
             "confidence": "high"
           }
         },
@@ -23799,12 +24423,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "center": [
             121,
-            126,
             127,
+            126,
+            125,
+            123,
+            124,
             128,
             129,
-            123,
-            124
+            122
           ],
           "west": [
             127,
@@ -23822,8 +24448,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "east": [
             126,
             121,
-            125,
-            124
+            124,
+            125
           ],
           "south": [
             129,
@@ -23844,6 +24470,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             124
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
@@ -23943,6 +24572,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           60,
           33,
@@ -23959,10 +24590,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           3,
           58,
           33,
-          50,
-          57
+          1,
+          50
         ],
-        "sampleCount": 7216,
+        "sampleCount": 7471,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -23974,7 +24605,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               36,
               52
             ],
-            "samples": 144,
+            "samples": 147,
             "confidence": "medium"
           },
           "1": {
@@ -24084,14 +24715,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               11,
-              26,
               14,
+              26,
               58,
               35,
               2,
               36
             ],
-            "samples": 30,
+            "samples": 31,
             "confidence": "low"
           },
           "21": {
@@ -24160,7 +24791,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               34,
               59
             ],
-            "samples": 39,
+            "samples": 43,
             "confidence": "low"
           },
           "42": {
@@ -24189,43 +24820,43 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "51": {
             "tiles": [
               60,
-              26,
               14,
+              26,
               18,
               49,
               11,
               34,
               35
             ],
-            "samples": 50,
+            "samples": 54,
             "confidence": "low"
           },
           "54": {
             "tiles": [
               60,
-              25,
               17,
+              25,
               34,
               48,
               58,
               1,
               9
             ],
-            "samples": 39,
+            "samples": 41,
             "confidence": "low"
           },
           "55": {
             "tiles": [
               60,
               3,
-              18,
               56,
+              18,
               57,
               13,
               35,
               25
             ],
-            "samples": 270,
+            "samples": 286,
             "confidence": "medium"
           },
           "69": {
@@ -24266,12 +24897,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               27,
               60,
               1,
+              5,
+              15,
               36,
-              50,
-              57,
-              59
+              50
             ],
-            "samples": 23,
+            "samples": 28,
             "confidence": "low"
           },
           "77": {
@@ -24324,14 +24955,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               25,
               60,
-              6,
               9,
+              6,
               41,
               58,
               1,
-              48
+              10
             ],
-            "samples": 37,
+            "samples": 42,
             "confidence": "low"
           },
           "108": {
@@ -24345,7 +24976,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               34,
               50
             ],
-            "samples": 69,
+            "samples": 70,
             "confidence": "low"
           },
           "110": {
@@ -24359,7 +24990,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               57,
               33
             ],
-            "samples": 225,
+            "samples": 229,
             "confidence": "medium"
           },
           "111": {
@@ -24397,21 +25028,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               58,
               33
             ],
-            "samples": 62,
+            "samples": 66,
             "confidence": "low"
           },
           "126": {
             "tiles": [
               60,
               1,
+              10,
               33,
               17,
               25,
               34,
-              5,
-              6
+              5
             ],
-            "samples": 49,
+            "samples": 55,
             "confidence": "low"
           },
           "127": {
@@ -24425,7 +25056,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               33,
               56
             ],
-            "samples": 115,
+            "samples": 123,
             "confidence": "medium"
           },
           "131": {
@@ -24455,7 +25086,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               57,
               58
             ],
-            "samples": 34,
+            "samples": 36,
             "confidence": "low"
           },
           "138": {
@@ -24492,7 +25123,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               56,
               39
             ],
-            "samples": 11,
+            "samples": 13,
             "confidence": "low"
           },
           "147": {
@@ -24501,26 +25132,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               26,
               59,
-              49,
               7,
+              49,
               56,
               35
             ],
-            "samples": 51,
+            "samples": 54,
             "confidence": "low"
           },
           "153": {
             "tiles": [
               60,
               28,
-              51,
               8,
+              51,
               56,
               59,
               33,
               34
             ],
-            "samples": 58,
+            "samples": 62,
             "confidence": "low"
           },
           "155": {
@@ -24534,18 +25165,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               57,
               58
             ],
-            "samples": 129,
+            "samples": 134,
             "confidence": "medium"
           },
           "159": {
             "tiles": [
-              23,
               60,
+              23,
               56,
               7,
               50
             ],
-            "samples": 15,
+            "samples": 17,
             "confidence": "low"
           },
           "163": {
@@ -24572,7 +25203,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               18
             ],
-            "samples": 40,
+            "samples": 41,
             "confidence": "low"
           },
           "183": {
@@ -24586,7 +25217,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               56,
               11
             ],
-            "samples": 62,
+            "samples": 65,
             "confidence": "low"
           },
           "187": {
@@ -24600,7 +25231,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               34,
               7
             ],
-            "samples": 71,
+            "samples": 74,
             "confidence": "low"
           },
           "191": {
@@ -24614,7 +25245,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               23,
               57
             ],
-            "samples": 146,
+            "samples": 152,
             "confidence": "medium"
           },
           "197": {
@@ -24638,7 +25269,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               57,
               58
             ],
-            "samples": 61,
+            "samples": 64,
             "confidence": "low"
           },
           "202": {
@@ -24661,21 +25292,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               50,
               10
             ],
-            "samples": 40,
+            "samples": 43,
             "confidence": "low"
           },
           "205": {
             "tiles": [
               4,
               60,
-              15,
               56,
+              15,
               35,
               20,
               58,
               19
             ],
-            "samples": 229,
+            "samples": 245,
             "confidence": "medium"
           },
           "207": {
@@ -24684,7 +25315,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               21,
               32
             ],
-            "samples": 8,
+            "samples": 9,
             "confidence": "low"
           },
           "217": {
@@ -24704,15 +25335,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "219": {
             "tiles": [
               60,
+              7,
               56,
               2,
-              7,
               59,
               26,
               58,
               33
             ],
-            "samples": 76,
+            "samples": 81,
             "confidence": "low"
           },
           "221": {
@@ -24726,7 +25357,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               57,
               16
             ],
-            "samples": 83,
+            "samples": 86,
             "confidence": "low"
           },
           "223": {
@@ -24740,7 +25371,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               35,
               2
             ],
-            "samples": 158,
+            "samples": 164,
             "confidence": "medium"
           },
           "236": {
@@ -24768,7 +25399,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               27
             ],
-            "samples": 51,
+            "samples": 57,
             "confidence": "low"
           },
           "238": {
@@ -24782,7 +25413,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               56,
               35
             ],
-            "samples": 64,
+            "samples": 67,
             "confidence": "low"
           },
           "239": {
@@ -24796,7 +25427,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               35,
               15
             ],
-            "samples": 130,
+            "samples": 136,
             "confidence": "medium"
           },
           "251": {
@@ -24837,7 +25468,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               59,
               30
             ],
-            "samples": 3365,
+            "samples": 3472,
             "confidence": "high"
           }
         },
@@ -24858,10 +25489,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             60,
             1,
             6,
+            10,
             25,
             27,
             34,
-            10,
             48,
             50,
             57
@@ -24869,8 +25500,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "northEast": [
             50,
             60,
-            27,
             19,
+            27,
             5,
             35,
             34,
@@ -24938,8 +25569,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             60,
             2,
             12,
-            28,
             7,
+            28,
             26,
             56,
             49,
@@ -24956,7 +25587,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             35,
             18,
             58,
-            2
+            56
           ],
           "capNorth": [
             106,
@@ -24969,15 +25600,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             11,
             49
           ],
-          "capEast": [
-            108,
-            60,
-            38,
-            56,
-            112,
-            42,
-            111
-          ],
           "lineHorizontal": [
             38,
             60,
@@ -24986,6 +25608,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             24,
             57,
             59
+          ],
+          "capEast": [
+            108,
+            60,
+            38,
+            56,
+            112,
+            42,
+            111
           ],
           "lineVertical": [
             39,
@@ -25022,6 +25653,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             50
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 60,
           "single": 60,
@@ -25081,22 +25715,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           92,
           93
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           61
         ],
         "candidates": [
           61,
-          71,
           83,
-          75,
           81,
-          84,
-          70,
           80,
-          62,
-          77
+          85,
+          84,
+          82,
+          75,
+          78,
+          76
         ],
-        "sampleCount": 32517,
+        "sampleCount": 47931,
         "confidence": "high",
         "maskCandidates": {
           "0": {
@@ -25110,21 +25746,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               72
             ],
-            "samples": 77,
+            "samples": 79,
             "confidence": "low"
           },
           "1": {
             "tiles": [
               75,
+              61,
               71,
+              73,
               64,
               72,
-              73,
-              61,
               63,
               76
             ],
-            "samples": 69,
+            "samples": 77,
             "confidence": "low"
           },
           "2": {
@@ -25133,18 +25769,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               71,
               85,
+              61,
               67,
               73,
-              72,
-              65
+              72
             ],
-            "samples": 108,
+            "samples": 114,
             "confidence": "medium"
           },
           "3": {
             "tiles": [
-              61,
               73,
+              61,
               67,
               71,
               74,
@@ -25152,34 +25788,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               87
             ],
-            "samples": 19,
+            "samples": 20,
             "confidence": "low"
           },
           "4": {
             "tiles": [
               66,
               77,
+              61,
               69,
               68,
               78,
               67,
-              61,
               65
             ],
-            "samples": 77,
+            "samples": 84,
             "confidence": "low"
           },
           "5": {
             "tiles": [
               83,
               84,
-              61,
               85,
+              61,
               81,
               82,
-              80
+              80,
+              92
             ],
-            "samples": 152,
+            "samples": 362,
             "confidence": "medium"
           },
           "6": {
@@ -25189,21 +25826,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               86,
               66
             ],
-            "samples": 9,
+            "samples": 11,
             "confidence": "low"
           },
           "8": {
             "tiles": [
               82,
               70,
-              80,
               61,
+              80,
               64,
               81,
               68,
               62
             ],
-            "samples": 91,
+            "samples": 95,
             "confidence": "low"
           },
           "9": {
@@ -25212,7 +25849,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               63
             ],
-            "samples": 8,
+            "samples": 12,
             "confidence": "low"
           },
           "10": {
@@ -25226,18 +25863,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               78,
               86
             ],
-            "samples": 148,
+            "samples": 209,
             "confidence": "medium"
           },
           "12": {
             "tiles": [
-              69,
               61,
+              69,
               64,
               70,
               81
             ],
-            "samples": 13,
+            "samples": 16,
             "confidence": "low"
           },
           "13": {
@@ -25245,13 +25882,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               82
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "17": {
             "tiles": [
-              63,
               61,
+              63,
               62,
               72,
               76,
@@ -25259,67 +25896,80 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               92,
               64
             ],
-            "samples": 32,
+            "samples": 38,
             "confidence": "low"
           },
           "18": {
             "tiles": [
+              61,
               67,
               83,
               66,
               71,
-              61,
               73,
               84,
               65
             ],
-            "samples": 48,
+            "samples": 58,
             "confidence": "low"
           },
           "19": {
             "tiles": [
               61,
-              71,
               73,
+              71,
               72,
               87,
               85,
               75,
               76
             ],
-            "samples": 180,
+            "samples": 256,
             "confidence": "medium"
+          },
+          "20": {
+            "tiles": [
+              61,
+              70,
+              66,
+              67
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "21": {
             "tiles": [
               61,
               81,
+              82,
               80,
-              82
+              84,
+              85
             ],
-            "samples": 18,
+            "samples": 48,
             "confidence": "low"
           },
           "22": {
             "tiles": [
-              86,
               61,
               65,
+              86,
               67,
               79
             ],
-            "samples": 14,
+            "samples": 20,
             "confidence": "low"
           },
           "23": {
             "tiles": [
               61,
+              85,
               71,
-              81,
               84,
+              81,
               92
             ],
-            "samples": 34,
+            "samples": 70,
             "confidence": "low"
           },
           "24": {
@@ -25340,28 +25990,32 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               64
             ],
-            "samples": 13,
+            "samples": 19,
             "confidence": "low"
           },
           "26": {
             "tiles": [
               61,
               78,
-              90,
+              74,
               77,
               79,
+              90,
+              76,
               87
             ],
-            "samples": 41,
+            "samples": 61,
             "confidence": "low"
           },
           "27": {
             "tiles": [
               61,
+              75,
+              74,
               76,
               77
             ],
-            "samples": 33,
+            "samples": 51,
             "confidence": "low"
           },
           "28": {
@@ -25385,6 +26039,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 19,
             "confidence": "low"
           },
+          "33": {
+            "tiles": [
+              61,
+              63,
+              72,
+              64,
+              71,
+              93
+            ],
+            "samples": 13,
+            "confidence": "low"
+          },
           "34": {
             "tiles": [
               72,
@@ -25392,58 +26058,62 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               73,
               66,
+              61,
               65,
-              74,
-              85
+              74
             ],
-            "samples": 47,
+            "samples": 48,
             "confidence": "low"
           },
           "36": {
             "tiles": [
               61,
               69,
-              78,
               70,
+              78,
               88,
               65,
               68,
               80
             ],
-            "samples": 42,
+            "samples": 50,
             "confidence": "low"
           },
           "37": {
             "tiles": [
               61,
-              81,
               82,
+              81,
               80,
-              84
+              83,
+              84,
+              85
             ],
-            "samples": 18,
+            "samples": 42,
             "confidence": "low"
           },
           "38": {
             "tiles": [
               61,
-              65,
-              86,
               67,
+              65,
               66,
+              86,
               78,
               84,
               85
             ],
-            "samples": 186,
+            "samples": 252,
             "confidence": "medium"
           },
           "39": {
             "tiles": [
               61,
-              85
+              83,
+              85,
+              84
             ],
-            "samples": 38,
+            "samples": 69,
             "confidence": "low"
           },
           "42": {
@@ -25453,9 +26123,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               91,
               73,
-              76
+              76,
+              78
             ],
-            "samples": 18,
+            "samples": 32,
             "confidence": "low"
           },
           "43": {
@@ -25463,7 +26134,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               91
             ],
-            "samples": 14,
+            "samples": 15,
             "confidence": "low"
           },
           "44": {
@@ -25474,16 +26145,18 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               88,
               79
             ],
-            "samples": 10,
+            "samples": 13,
             "confidence": "low"
           },
           "46": {
             "tiles": [
               61,
               67,
+              78,
+              79,
               90
             ],
-            "samples": 23,
+            "samples": 42,
             "confidence": "low"
           },
           "50": {
@@ -25497,21 +26170,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               66,
               84
             ],
-            "samples": 32,
+            "samples": 42,
             "confidence": "low"
           },
           "51": {
             "tiles": [
               71,
+              61,
               73,
               72,
-              61,
               87,
               76,
               75,
               83
             ],
-            "samples": 134,
+            "samples": 185,
             "confidence": "medium"
           },
           "52": {
@@ -25519,9 +26192,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               69,
               65,
               67,
+              61,
               86
             ],
-            "samples": 9,
+            "samples": 10,
             "confidence": "low"
           },
           "53": {
@@ -25530,38 +26204,39 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               67,
               71,
               81,
+              84,
               92
             ],
-            "samples": 13,
+            "samples": 19,
             "confidence": "low"
           },
           "54": {
             "tiles": [
-              66,
-              65,
-              67,
-              86,
               61,
+              66,
+              67,
+              65,
+              86,
               77,
               83,
               84
             ],
-            "samples": 143,
+            "samples": 224,
             "confidence": "medium"
           },
           "55": {
             "tiles": [
               61,
               83,
-              84,
               85,
+              84,
               92,
               86,
               67,
               71
             ],
-            "samples": 946,
-            "confidence": "medium"
+            "samples": 1587,
+            "confidence": "high"
           },
           "56": {
             "tiles": [
@@ -25576,16 +26251,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               90
             ],
-            "samples": 36,
+            "samples": 41,
             "confidence": "low"
           },
           "59": {
             "tiles": [
               61,
               62,
-              75
+              75,
+              76
             ],
-            "samples": 41,
+            "samples": 46,
             "confidence": "low"
           },
           "62": {
@@ -25599,7 +26275,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               61
             ],
-            "samples": 54,
+            "samples": 70,
             "confidence": "low"
           },
           "64": {
@@ -25624,7 +26300,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               84,
               79
             ],
-            "samples": 20,
+            "samples": 21,
             "confidence": "low"
           },
           "68": {
@@ -25638,7 +26314,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               77,
               82
             ],
-            "samples": 35,
+            "samples": 42,
             "confidence": "low"
           },
           "69": {
@@ -25648,59 +26324,70 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               84,
               85,
-              92,
-              93
+              80,
+              81,
+              92
             ],
-            "samples": 23,
+            "samples": 44,
             "confidence": "low"
           },
           "70": {
             "tiles": [
+              61,
               84,
               66,
               77,
-              61,
               67,
               86
             ],
-            "samples": 10,
+            "samples": 14,
+            "confidence": "low"
+          },
+          "71": {
+            "tiles": [
+              61,
+              84,
+              92
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "72": {
             "tiles": [
               62,
+              61,
+              70,
               63,
               64,
               68,
-              70,
               82,
-              81,
-              69
+              81
             ],
-            "samples": 49,
+            "samples": 60,
             "confidence": "low"
           },
           "73": {
             "tiles": [
-              62,
               61,
-              89,
-              63
+              62,
+              63,
+              89
             ],
-            "samples": 8,
+            "samples": 15,
             "confidence": "low"
           },
           "74": {
             "tiles": [
               61,
+              75,
+              74,
+              76,
               78,
               67,
-              74,
-              75,
-              76,
+              79,
               91
             ],
-            "samples": 25,
+            "samples": 42,
             "confidence": "low"
           },
           "76": {
@@ -25710,73 +26397,76 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               68,
               88,
-              81,
               78,
+              81,
               82
             ],
-            "samples": 210,
+            "samples": 278,
             "confidence": "medium"
           },
           "77": {
             "tiles": [
               61,
-              64,
               80,
               81,
               84,
+              64,
+              82,
               93
             ],
-            "samples": 36,
+            "samples": 63,
             "confidence": "low"
           },
           "78": {
             "tiles": [
               61,
-              77,
-              78
+              78,
+              77
             ],
-            "samples": 29,
+            "samples": 49,
             "confidence": "low"
           },
           "79": {
             "tiles": [
               61
             ],
-            "samples": 11,
+            "samples": 12,
             "confidence": "low"
           },
           "83": {
             "tiles": [
+              61,
+              73,
               71,
               72,
-              73,
-              61,
               66,
               83,
               92
             ],
-            "samples": 11,
+            "samples": 16,
             "confidence": "low"
           },
           "85": {
             "tiles": [
               61,
+              85,
               80,
+              81,
               92
             ],
-            "samples": 8,
+            "samples": 15,
             "confidence": "low"
           },
           "86": {
             "tiles": [
-              86,
               61,
-              66,
               67,
+              86,
+              66,
               65,
               85
             ],
-            "samples": 11,
+            "samples": 25,
             "confidence": "low"
           },
           "87": {
@@ -25788,18 +26478,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               85,
               92
             ],
-            "samples": 11,
+            "samples": 32,
+            "confidence": "low"
+          },
+          "88": {
+            "tiles": [
+              61,
+              63,
+              64,
+              81
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "89": {
             "tiles": [
-              89,
-              63,
-              64,
               61,
+              64,
+              63,
+              89,
+              62,
               81
             ],
-            "samples": 12,
+            "samples": 28,
             "confidence": "low"
           },
           "91": {
@@ -25811,19 +26512,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               91
             ],
-            "samples": 16,
+            "samples": 24,
             "confidence": "low"
           },
           "92": {
             "tiles": [
+              61,
+              70,
+              68,
               69,
               90,
-              61,
-              68,
-              70,
               78
             ],
-            "samples": 14,
+            "samples": 22,
             "confidence": "low"
           },
           "93": {
@@ -25832,37 +26533,40 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               88,
               63,
+              80,
               82
             ],
-            "samples": 14,
+            "samples": 26,
             "confidence": "low"
           },
           "94": {
             "tiles": [
-              90,
               61,
+              90,
               66,
               67,
               77,
+              79,
               86
             ],
-            "samples": 16,
+            "samples": 25,
             "confidence": "low"
           },
           "95": {
             "tiles": [
               61
             ],
-            "samples": 45,
+            "samples": 80,
             "confidence": "low"
           },
           "98": {
             "tiles": [
               72,
               86,
-              71
+              71,
+              66
             ],
-            "samples": 10,
+            "samples": 12,
             "confidence": "low"
           },
           "100": {
@@ -25876,7 +26580,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               65
             ],
-            "samples": 25,
+            "samples": 33,
             "confidence": "low"
           },
           "101": {
@@ -25886,13 +26590,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               80
             ],
-            "samples": 24,
+            "samples": 28,
             "confidence": "low"
           },
           "102": {
             "tiles": [
-              86,
               65,
+              86,
               66,
               67,
               61,
@@ -25900,25 +26604,37 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               83
             ],
-            "samples": 175,
+            "samples": 239,
             "confidence": "medium"
           },
           "103": {
             "tiles": [
-              61
+              61,
+              85
             ],
-            "samples": 23,
+            "samples": 32,
             "confidence": "low"
           },
           "104": {
             "tiles": [
+              61,
               70,
               77,
               63,
               62,
               64
             ],
-            "samples": 10,
+            "samples": 13,
+            "confidence": "low"
+          },
+          "105": {
+            "tiles": [
+              61,
+              62,
+              63,
+              64
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "108": {
@@ -25926,13 +26642,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               70,
               69,
               88,
+              61,
               68,
               80,
-              61,
               81,
               79
             ],
-            "samples": 145,
+            "samples": 191,
             "confidence": "medium"
           },
           "109": {
@@ -25940,104 +26656,119 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               81
             ],
-            "samples": 15,
+            "samples": 18,
             "confidence": "low"
           },
           "110": {
             "tiles": [
               61,
               79,
-              77,
               78,
+              77,
               90,
               68,
-              86,
-              67
+              67,
+              86
             ],
-            "samples": 987,
-            "confidence": "medium"
+            "samples": 1493,
+            "confidence": "high"
           },
           "111": {
             "tiles": [
               61,
               86
             ],
-            "samples": 35,
+            "samples": 49,
             "confidence": "low"
           },
           "115": {
             "tiles": [
-              71,
               61,
-              72
+              71,
+              72,
+              73
             ],
-            "samples": 9,
+            "samples": 32,
             "confidence": "low"
           },
           "118": {
             "tiles": [
+              61,
               66,
               65,
-              86,
               67,
-              61,
+              86,
               83
             ],
-            "samples": 115,
+            "samples": 226,
             "confidence": "medium"
           },
           "119": {
             "tiles": [
               61,
+              83,
               84,
               85,
               92,
-              83,
               86,
               65,
               71
             ],
-            "samples": 183,
+            "samples": 306,
             "confidence": "medium"
+          },
+          "123": {
+            "tiles": [
+              61,
+              64,
+              74,
+              75
+            ],
+            "samples": 9,
+            "confidence": "low"
           },
           "124": {
             "tiles": [
               61,
               69,
-              88,
+              68,
               70,
+              88,
               86
             ],
-            "samples": 18,
+            "samples": 30,
             "confidence": "low"
           },
           "125": {
             "tiles": [
               61,
+              68,
               93
             ],
-            "samples": 13,
+            "samples": 21,
             "confidence": "low"
           },
           "126": {
             "tiles": [
               61,
               77,
-              90,
               79,
               78,
+              90,
               65,
-              88
+              88,
+              67
             ],
-            "samples": 176,
+            "samples": 287,
             "confidence": "medium"
           },
           "127": {
             "tiles": [
               61,
-              78
+              78,
+              79
             ],
-            "samples": 422,
+            "samples": 709,
             "confidence": "medium"
           },
           "128": {
@@ -26065,7 +26796,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               74,
               87
             ],
-            "samples": 45,
+            "samples": 50,
             "confidence": "low"
           },
           "131": {
@@ -26077,59 +26808,73 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               83
             ],
-            "samples": 14,
+            "samples": 20,
             "confidence": "low"
           },
           "133": {
             "tiles": [
               61,
-              84,
               85,
+              84,
+              80,
               63,
               81,
-              83
+              83,
+              92
             ],
-            "samples": 17,
+            "samples": 38,
+            "confidence": "low"
+          },
+          "134": {
+            "tiles": [
+              61,
+              66,
+              67,
+              84,
+              90
+            ],
+            "samples": 10,
             "confidence": "low"
           },
           "136": {
             "tiles": [
+              61,
               63,
               70,
               62,
-              61,
               68,
               69,
               88,
               64
             ],
-            "samples": 49,
+            "samples": 55,
             "confidence": "low"
           },
           "137": {
             "tiles": [
               61,
-              89,
-              62,
               63,
               64,
+              62,
+              89,
               81,
               80,
               76
             ],
-            "samples": 202,
+            "samples": 246,
             "confidence": "medium"
           },
           "138": {
             "tiles": [
               61,
-              76,
               77,
               78,
               79,
-              64
+              76,
+              64,
+              75
             ],
-            "samples": 23,
+            "samples": 36,
             "confidence": "low"
           },
           "139": {
@@ -26137,27 +26882,42 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               75,
               64,
+              76,
+              77,
               79,
               83
             ],
-            "samples": 35,
+            "samples": 52,
+            "confidence": "low"
+          },
+          "140": {
+            "tiles": [
+              61,
+              78,
+              70,
+              80,
+              88
+            ],
+            "samples": 11,
             "confidence": "low"
           },
           "141": {
             "tiles": [
               61,
-              80,
               93,
-              69
+              80,
+              82,
+              69,
+              83
             ],
-            "samples": 41,
+            "samples": 67,
             "confidence": "low"
           },
           "143": {
             "tiles": [
               61
             ],
-            "samples": 12,
+            "samples": 16,
             "confidence": "low"
           },
           "145": {
@@ -26166,11 +26926,12 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               62,
               64,
               72,
-              71,
               73,
+              71,
+              74,
               75
             ],
-            "samples": 22,
+            "samples": 28,
             "confidence": "low"
           },
           "146": {
@@ -26189,13 +26950,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               72,
               71,
               73,
-              87,
               61,
+              87,
               83,
               85,
               62
             ],
-            "samples": 155,
+            "samples": 187,
             "confidence": "medium"
           },
           "149": {
@@ -26203,7 +26964,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               80
             ],
-            "samples": 31,
+            "samples": 33,
             "confidence": "low"
           },
           "151": {
@@ -26213,7 +26974,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               65,
               71
             ],
-            "samples": 13,
+            "samples": 17,
             "confidence": "low"
           },
           "152": {
@@ -26221,26 +26982,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               69,
               70,
-              80,
               61,
+              80,
               62,
               63
             ],
-            "samples": 20,
+            "samples": 22,
             "confidence": "low"
           },
           "153": {
             "tiles": [
-              62,
+              61,
               64,
               63,
-              61,
+              62,
               89,
               81,
               80,
               82
             ],
-            "samples": 154,
+            "samples": 220,
             "confidence": "medium"
           },
           "154": {
@@ -26250,7 +27011,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               87
             ],
-            "samples": 10,
+            "samples": 13,
             "confidence": "low"
           },
           "155": {
@@ -26260,11 +27021,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               76,
               74,
               91,
-              87,
               63,
+              87,
               71
             ],
-            "samples": 1048,
+            "samples": 1602,
             "confidence": "high"
           },
           "157": {
@@ -26272,14 +27033,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               80
             ],
-            "samples": 14,
+            "samples": 19,
             "confidence": "low"
           },
           "159": {
             "tiles": [
               61
             ],
-            "samples": 48,
+            "samples": 62,
             "confidence": "low"
           },
           "163": {
@@ -26288,18 +27049,27 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               71,
               73
             ],
-            "samples": 10,
+            "samples": 19,
+            "confidence": "low"
+          },
+          "165": {
+            "tiles": [
+              61,
+              82
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "166": {
             "tiles": [
+              61,
               65,
               66,
               67,
               83,
               92
             ],
-            "samples": 10,
+            "samples": 24,
             "confidence": "low"
           },
           "167": {
@@ -26309,19 +27079,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               83,
               92
             ],
-            "samples": 12,
+            "samples": 19,
             "confidence": "low"
           },
           "169": {
             "tiles": [
-              62,
-              63,
-              64,
               61,
+              62,
+              64,
+              63,
               81,
               93
             ],
-            "samples": 9,
+            "samples": 19,
+            "confidence": "low"
+          },
+          "170": {
+            "tiles": [
+              61,
+              74,
+              78
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "171": {
@@ -26333,20 +27112,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               87,
               91
             ],
-            "samples": 23,
+            "samples": 30,
             "confidence": "low"
           },
           "172": {
             "tiles": [
-              88,
               61,
               68,
+              88,
               69,
               70,
               78,
               79
             ],
-            "samples": 9,
+            "samples": 15,
             "confidence": "low"
           },
           "173": {
@@ -26354,42 +27133,44 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               93,
               68,
+              80,
               81
             ],
-            "samples": 18,
+            "samples": 29,
             "confidence": "low"
           },
           "174": {
             "tiles": [
               61,
               90,
-              79,
               77,
+              79,
+              78,
               88
             ],
-            "samples": 27,
+            "samples": 35,
             "confidence": "low"
           },
           "175": {
             "tiles": [
               61
             ],
-            "samples": 46,
+            "samples": 75,
             "confidence": "low"
           },
           "179": {
             "tiles": [
-              73,
-              72,
-              71,
               61,
+              72,
+              73,
+              71,
               87,
               83,
               84,
               85
             ],
-            "samples": 98,
-            "confidence": "low"
+            "samples": 169,
+            "confidence": "medium"
           },
           "181": {
             "tiles": [
@@ -26403,74 +27184,104 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "182": {
             "tiles": [
-              67,
-              65,
+              61,
               66,
+              65,
+              67,
               83,
               92
             ],
-            "samples": 12,
+            "samples": 38,
             "confidence": "low"
           },
           "183": {
             "tiles": [
               61,
               85,
-              83,
               84,
+              83,
               92,
               87,
               67
             ],
-            "samples": 161,
+            "samples": 271,
             "confidence": "medium"
+          },
+          "185": {
+            "tiles": [
+              61,
+              63,
+              64,
+              62,
+              74
+            ],
+            "samples": 18,
+            "confidence": "low"
           },
           "187": {
             "tiles": [
               61,
               74,
               76,
-              91,
               75,
+              91,
               71,
+              72,
               73
             ],
-            "samples": 198,
+            "samples": 285,
             "confidence": "medium"
           },
           "189": {
             "tiles": [
-              61
+              61,
+              80
             ],
-            "samples": 8,
+            "samples": 12,
             "confidence": "low"
           },
           "190": {
             "tiles": [
               61,
               90,
+              65,
+              78,
               79
             ],
-            "samples": 11,
+            "samples": 15,
             "confidence": "low"
           },
           "191": {
             "tiles": [
               61,
+              74,
               67,
               71,
-              74,
+              73,
               75
             ],
-            "samples": 385,
+            "samples": 581,
             "confidence": "medium"
+          },
+          "196": {
+            "tiles": [
+              61,
+              66,
+              68,
+              70,
+              82
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "197": {
             "tiles": [
               61,
-              81
+              81,
+              84,
+              85
             ],
-            "samples": 10,
+            "samples": 18,
             "confidence": "low"
           },
           "200": {
@@ -26481,16 +27292,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               68,
               70,
               75,
-              64,
-              69
+              80,
+              64
             ],
-            "samples": 30,
+            "samples": 34,
             "confidence": "low"
           },
           "201": {
             "tiles": [
-              62,
               61,
+              62,
               63,
               64,
               89,
@@ -26498,7 +27309,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               76
             ],
-            "samples": 137,
+            "samples": 232,
             "confidence": "medium"
           },
           "202": {
@@ -26507,7 +27318,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               90
             ],
-            "samples": 39,
+            "samples": 42,
             "confidence": "low"
           },
           "203": {
@@ -26516,122 +27327,144 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               75,
               89
             ],
-            "samples": 23,
+            "samples": 28,
             "confidence": "low"
           },
           "204": {
             "tiles": [
+              61,
               70,
               68,
-              88,
               69,
-              61,
-              78,
+              88,
               80,
+              78,
               77
             ],
-            "samples": 158,
+            "samples": 218,
             "confidence": "medium"
           },
           "205": {
             "tiles": [
               61,
-              81,
               80,
+              81,
               82,
               93,
               88,
               89,
               62
             ],
-            "samples": 864,
-            "confidence": "medium"
+            "samples": 1541,
+            "confidence": "high"
           },
           "206": {
             "tiles": [
               61,
               77,
-              70
+              70,
+              78
             ],
-            "samples": 33,
+            "samples": 43,
             "confidence": "low"
           },
           "207": {
             "tiles": [
               61
             ],
-            "samples": 47,
+            "samples": 54,
             "confidence": "low"
           },
           "209": {
             "tiles": [
               61,
               81,
+              62,
               64,
               80
             ],
-            "samples": 8,
+            "samples": 15,
             "confidence": "low"
           },
           "211": {
             "tiles": [
               61,
               72,
-              71,
               73,
+              71,
               87,
               62
             ],
-            "samples": 17,
+            "samples": 25,
+            "confidence": "low"
+          },
+          "214": {
+            "tiles": [
+              61,
+              65,
+              66
+            ],
+            "samples": 8,
             "confidence": "low"
           },
           "215": {
             "tiles": [
               61,
+              72,
               83
             ],
-            "samples": 14,
+            "samples": 17,
             "confidence": "low"
           },
           "217": {
             "tiles": [
+              61,
               62,
               64,
               63,
               89,
-              61,
               80,
               82
             ],
-            "samples": 105,
+            "samples": 204,
             "confidence": "medium"
           },
           "219": {
             "tiles": [
               61,
               75,
-              91,
-              76,
               74,
+              76,
+              91,
               89,
               62,
               64
             ],
-            "samples": 213,
+            "samples": 311,
             "confidence": "medium"
+          },
+          "220": {
+            "tiles": [
+              61,
+              70,
+              69,
+              68
+            ],
+            "samples": 26,
+            "confidence": "low"
           },
           "221": {
             "tiles": [
               61,
+              82,
               93,
               80,
-              82,
               81,
               64,
               63,
               88
             ],
-            "samples": 165,
+            "samples": 282,
             "confidence": "medium"
           },
           "223": {
@@ -26641,8 +27474,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               80,
               91
             ],
-            "samples": 401,
+            "samples": 666,
             "confidence": "medium"
+          },
+          "228": {
+            "tiles": [
+              61,
+              82,
+              69,
+              80,
+              88
+            ],
+            "samples": 8,
+            "confidence": "low"
           },
           "229": {
             "tiles": [
@@ -26651,6 +27495,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               81,
               70
             ],
+            "samples": 17,
+            "confidence": "low"
+          },
+          "230": {
+            "tiles": [
+              61,
+              65,
+              66,
+              67
+            ],
             "samples": 16,
             "confidence": "low"
           },
@@ -26658,34 +27512,55 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               61
             ],
-            "samples": 9,
+            "samples": 11,
+            "confidence": "low"
+          },
+          "233": {
+            "tiles": [
+              61,
+              63,
+              64,
+              62,
+              93
+            ],
+            "samples": 30,
+            "confidence": "low"
+          },
+          "235": {
+            "tiles": [
+              61,
+              64,
+              74,
+              76
+            ],
+            "samples": 12,
             "confidence": "low"
           },
           "236": {
             "tiles": [
-              68,
+              61,
               70,
+              68,
               69,
               88,
-              61,
               77,
               80
             ],
-            "samples": 138,
+            "samples": 198,
             "confidence": "medium"
           },
           "237": {
             "tiles": [
               61,
               81,
+              82,
               80,
               93,
-              82,
               89,
               68,
-              70
+              69
             ],
-            "samples": 192,
+            "samples": 292,
             "confidence": "medium"
           },
           "238": {
@@ -26697,9 +27572,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               90,
               86,
               88,
-              68
+              69
             ],
-            "samples": 183,
+            "samples": 274,
             "confidence": "medium"
           },
           "239": {
@@ -26710,26 +27585,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               93
             ],
-            "samples": 463,
+            "samples": 669,
             "confidence": "medium"
           },
           "241": {
             "tiles": [
               61,
-              73,
-              71
+              71,
+              73
             ],
-            "samples": 8,
+            "samples": 10,
             "confidence": "low"
           },
           "243": {
             "tiles": [
-              71,
               72,
               61,
+              71,
               73
             ],
-            "samples": 9,
+            "samples": 32,
             "confidence": "low"
           },
           "245": {
@@ -26739,27 +27614,61 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "samples": 11,
             "confidence": "low"
           },
+          "246": {
+            "tiles": [
+              61,
+              67,
+              65,
+              66,
+              73
+            ],
+            "samples": 30,
+            "confidence": "low"
+          },
           "247": {
             "tiles": [
               61,
-              83,
               85,
+              83,
+              67,
               71,
               92
             ],
-            "samples": 111,
+            "samples": 133,
             "confidence": "medium"
+          },
+          "249": {
+            "tiles": [
+              61,
+              62,
+              63,
+              64,
+              68
+            ],
+            "samples": 28,
+            "confidence": "low"
           },
           "251": {
             "tiles": [
               61,
               76,
               75,
-              73,
               74,
-              63
+              73,
+              63,
+              64
             ],
-            "samples": 77,
+            "samples": 103,
+            "confidence": "medium"
+          },
+          "252": {
+            "tiles": [
+              61,
+              69,
+              68,
+              70
+            ],
+            "samples": 33,
             "confidence": "low"
           },
           "253": {
@@ -26767,13 +27676,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               81,
               82,
-              63,
               80,
+              63,
               93,
-              64,
-              89
+              62,
+              64
             ],
-            "samples": 130,
+            "samples": 153,
             "confidence": "medium"
           },
           "254": {
@@ -26785,7 +27694,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               79,
               86
             ],
-            "samples": 104,
+            "samples": 129,
             "confidence": "medium"
           },
           "255": {
@@ -26793,17 +27702,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               61,
               75
             ],
-            "samples": 19333,
+            "samples": 27806,
             "confidence": "high"
           }
         },
         "roleCandidates": {
           "northWest": [
-            65,
-            66,
-            86,
-            67,
             61,
+            66,
+            65,
+            67,
+            86,
             84,
             83,
             77,
@@ -26812,15 +27721,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "north": [
             61,
-            77,
-            79,
             78,
+            79,
+            77,
             90,
             86,
             88,
-            68,
             67,
-            70
+            68,
+            65
           ],
           "northEast": [
             61,
@@ -26828,17 +27737,17 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             69,
             68,
             88,
-            81,
             80,
+            81,
             78,
-            90,
-            77
+            79,
+            90
           ],
           "west": [
             61,
+            85,
             83,
             84,
-            85,
             92,
             87,
             71,
@@ -26848,26 +27757,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "center": [
             61,
+            78,
             88,
             62,
+            74,
             75,
-            78,
+            79,
             86,
             67,
-            71,
-            74,
-            79
+            71
           ],
           "east": [
             61,
-            81,
             80,
-            93,
             82,
+            81,
+            93,
+            64,
             88,
             89,
             63,
-            64,
             68
           ],
           "south": [
@@ -26877,9 +27786,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             74,
             91,
             71,
-            89,
-            63,
             64,
+            63,
+            89,
             87
           ],
           "southEast": [
@@ -26895,10 +27804,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             74
           ],
           "southWest": [
-            71,
             61,
-            72,
+            71,
             73,
+            72,
             87,
             85,
             75,
@@ -26912,40 +27821,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             71,
             63,
             73,
-            75,
             62,
+            75,
             64,
             81,
-            76
+            74
           ],
           "capSouth": [
             61,
-            69,
             66,
+            69,
             67,
             65,
             68,
-            77,
             70,
+            77,
             78,
             86
           ],
-          "lineVertical": [
-            61,
-            83,
-            84,
-            85,
-            81,
-            82,
-            80,
-            92,
-            67,
-            71
-          ],
           "lineHorizontal": [
             61,
-            76,
             75,
+            76,
             74,
             77,
             79,
@@ -26955,8 +27852,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             87
           ],
           "capEast": [
-            71,
             61,
+            71,
             84,
             73,
             72,
@@ -26970,17 +27867,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             61,
             70,
             62,
-            68,
             63,
+            68,
             82,
             64,
             69,
             80,
             81
           ],
-          "single": [
-            62,
+          "lineVertical": [
             61,
+            83,
+            84,
+            85,
+            81,
+            82,
+            80,
+            92,
+            67,
+            71
+          ],
+          "single": [
+            61,
+            62,
             71,
             69,
             66,
@@ -26991,6 +27900,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             67
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
@@ -27022,6 +27934,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           128,
           129
         ],
+        "excluded": [],
+        "detail": [],
         "center": [
           121
         ],
@@ -27036,35 +27950,35 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           123,
           125
         ],
-        "sampleCount": 2891,
+        "sampleCount": 3106,
         "confidence": "high",
         "maskCandidates": {
           "19": {
             "tiles": [
               122
             ],
-            "samples": 23,
+            "samples": 26,
             "confidence": "low"
           },
           "38": {
             "tiles": [
               123
             ],
-            "samples": 29,
+            "samples": 31,
             "confidence": "low"
           },
           "51": {
             "tiles": [
               122
             ],
-            "samples": 37,
+            "samples": 40,
             "confidence": "low"
           },
           "54": {
             "tiles": [
               123
             ],
-            "samples": 29,
+            "samples": 33,
             "confidence": "low"
           },
           "55": {
@@ -27073,56 +27987,56 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               123
             ],
-            "samples": 99,
-            "confidence": "low"
+            "samples": 105,
+            "confidence": "medium"
           },
           "76": {
             "tiles": [
               124
             ],
-            "samples": 29,
+            "samples": 32,
             "confidence": "low"
           },
           "102": {
             "tiles": [
               123
             ],
-            "samples": 26,
+            "samples": 31,
             "confidence": "low"
           },
           "108": {
             "tiles": [
               124
             ],
-            "samples": 29,
+            "samples": 32,
             "confidence": "low"
           },
           "110": {
             "tiles": [
               128
             ],
-            "samples": 96,
-            "confidence": "low"
+            "samples": 102,
+            "confidence": "medium"
           },
           "118": {
             "tiles": [
               123
             ],
-            "samples": 29,
+            "samples": 34,
             "confidence": "low"
           },
           "119": {
             "tiles": [
               127
             ],
-            "samples": 19,
+            "samples": 21,
             "confidence": "low"
           },
           "126": {
             "tiles": [
               128
             ],
-            "samples": 20,
+            "samples": 23,
             "confidence": "low"
           },
           "127": {
@@ -27130,7 +28044,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               121,
               123
             ],
-            "samples": 75,
+            "samples": 84,
             "confidence": "low"
           },
           "137": {
@@ -27138,21 +28052,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               125,
               129
             ],
-            "samples": 32,
+            "samples": 35,
             "confidence": "low"
           },
           "147": {
             "tiles": [
               122
             ],
-            "samples": 48,
+            "samples": 52,
             "confidence": "low"
           },
           "153": {
             "tiles": [
               125
             ],
-            "samples": 16,
+            "samples": 19,
             "confidence": "low"
           },
           "155": {
@@ -27161,71 +28075,74 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               122,
               125
             ],
-            "samples": 104,
+            "samples": 112,
             "confidence": "medium"
           },
           "179": {
             "tiles": [
               122
             ],
-            "samples": 28,
+            "samples": 29,
             "confidence": "low"
           },
           "183": {
             "tiles": [
               127
             ],
-            "samples": 21,
+            "samples": 23,
             "confidence": "low"
           },
           "187": {
             "tiles": [
-              129
+              129,
+              122
             ],
-            "samples": 33,
+            "samples": 36,
             "confidence": "low"
           },
           "191": {
             "tiles": [
               121
             ],
-            "samples": 102,
+            "samples": 109,
             "confidence": "medium"
           },
           "201": {
             "tiles": [
               125
             ],
-            "samples": 34,
+            "samples": 37,
             "confidence": "low"
           },
           "204": {
             "tiles": [
               124
             ],
-            "samples": 47,
+            "samples": 50,
             "confidence": "low"
           },
           "205": {
             "tiles": [
               126,
-              121
+              121,
+              124
             ],
-            "samples": 101,
+            "samples": 112,
             "confidence": "medium"
           },
           "217": {
             "tiles": [
               125
             ],
-            "samples": 13,
+            "samples": 18,
             "confidence": "low"
           },
           "219": {
             "tiles": [
-              129
+              129,
+              125
             ],
-            "samples": 10,
+            "samples": 11,
             "confidence": "low"
           },
           "221": {
@@ -27239,36 +28156,36 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               121
             ],
-            "samples": 57,
+            "samples": 64,
             "confidence": "low"
           },
           "236": {
             "tiles": [
               124
             ],
-            "samples": 22,
+            "samples": 23,
             "confidence": "low"
           },
           "237": {
             "tiles": [
               126
             ],
-            "samples": 37,
+            "samples": 38,
             "confidence": "low"
           },
           "238": {
             "tiles": [
               128
             ],
-            "samples": 23,
+            "samples": 25,
             "confidence": "low"
           },
           "239": {
             "tiles": [
               121
             ],
-            "samples": 94,
-            "confidence": "low"
+            "samples": 100,
+            "confidence": "medium"
           },
           "255": {
             "tiles": [
@@ -27276,7 +28193,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               128,
               129
             ],
-            "samples": 1479,
+            "samples": 1563,
             "confidence": "high"
           }
         },
@@ -27297,9 +28214,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             128,
             129
           ],
-          "south": [
-            129,
-            122,
+          "east": [
+            126,
+            121,
+            124,
             125
           ],
           "west": [
@@ -27307,18 +28225,22 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             122,
             123
           ],
-          "east": [
-            126,
-            121
+          "southWest": [
+            122
+          ],
+          "south": [
+            129,
+            122,
+            125
           ],
           "southEast": [
             125,
             129
-          ],
-          "southWest": [
-            122
           ]
         },
+        "curatedRoles": {},
+        "curatedWaterRoles": {},
+        "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,

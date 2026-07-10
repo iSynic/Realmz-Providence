@@ -11,7 +11,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 - Scenario identity and contact metadata.
 - Optional caller-provided base template selection without embedding full Providence project JSON in prompt output.
 - Fixed-size Realmz maps, either filled by one tile or supplied as 8,100 tile IDs.
-- Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, `stamp`, `landSecret`, `hiddenWalkable`, and `dungeonPassage`.
+- Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, `stamp`, `terrainGroup`, `landSecret`, `hiddenWalkable`, and `dungeonPassage`.
 - Named map regions that action points can reference with `at`.
 - Messages and quest labels.
 - Battle, treasure, and shop records.
@@ -33,7 +33,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 
 EDCD-backed seed steps create `Data EDCD` settings rows automatically because those Realmz opcodes point at settings, not directly at the visible target.
 
-Map operations are applied in array order. `border` supports inward `thickness`; `room` fills an interior, draws its walls, and replaces wall cells with side/offset doors; `road` and `river` draw a polyline with an optional width; and `stamp` places a rectangular two-dimensional tile pattern. Land maps also support independent `landSecret` hidden/revealed state and named `hiddenWalkable` stock terrain, while dungeon maps support directional `dungeonPassage` movement. Generated Action Points synchronize their land thousand-band or dungeon bitfield marker into the owning map cell without erasing Secret Area or passage state. Operations that extend beyond the 90 x 90 field are rejected rather than clipped. Tile values must fit Realmz's signed 16-bit map-cell range (`-32768..32767`).
+Map operations are applied in array order. `border` supports inward `thickness`; `room` fills an interior, draws its walls, and replaces wall cells with side/offset doors; `road` and `river` draw a polyline with an optional width; and `stamp` places a rectangular two-dimensional tile pattern. `terrainGroup` accepts `water`, `mountains`, or `forest` plus rectangular or path geometry and deterministically compiles it through the checked-in landlook terrain profile, so prompts do not need exact transition tile IDs. Semantic terrain currently supports standard landlooks only. Land maps also support independent `landSecret` hidden/revealed state and named `hiddenWalkable` stock terrain, while dungeon maps support directional `dungeonPassage` movement. Generated Action Points synchronize their land thousand-band or dungeon bitfield marker into the owning map cell without erasing Secret Area or passage state. Operations that extend beyond the 90 x 90 field are rejected rather than clipped. Tile values must fit Realmz's signed 16-bit map-cell range (`-32768..32767`).
 
 `createProjectFromScenarioSeed()` returns an `allocations` report that identifies the selected base template and maps every keyed record to its final Realmz ID or map coordinate target. Callers should use that report for LLM repair loops and UI summaries instead of trying to infer allocated IDs from the generated project.
 
@@ -91,7 +91,8 @@ Rogue encounters use source `Data TD2` records. Their semantic action kinds map 
         { "key": "bell-crossing", "x": 44, "y": 50 }
       ],
       "operations": [
-        { "kind": "road", "points": [{ "x": 38, "y": 50 }, { "x": 50, "y": 50 }], "tile": 4, "width": 3 }
+        { "kind": "road", "points": [{ "x": 38, "y": 50 }, { "x": 50, "y": 50 }], "tile": 4, "width": 3 },
+        { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "rect", "x": 52, "y": 44, "width": 8, "height": 12 } }
       ]
     }
   ],

@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
+const CURATED_TERRAIN_GRAMMAR = JSON.parse(fs.readFileSync(path.join(repoRoot, "src/editor/map/curatedTerrainGrammar.json"), "utf8"));
 
 const SCENARIO_ROOTS = [
   { id: "base", path: "F:/Realmz/base/Realmz/Scenarios", priority: 1 },
@@ -21,6 +22,10 @@ const MIN_ROLE_SAMPLES = 12;
 const MAX_TILE_CANDIDATES = 8;
 const MAX_ROLE_CANDIDATES = 10;
 const MAX_REPORT_MASKS = 12;
+const MAX_TILE_EXAMPLES = 6;
+const MAX_REVIEW_MASKS = 8;
+const MAX_REVIEW_NEIGHBORS = 6;
+const FIRST_REVIEW_BATCH_SIZE = 48;
 
 const TERRAIN_PRESETS = {
   water: {
@@ -109,9 +114,10 @@ const TERRAIN_PRESETS = {
 const corpus = discoverScenarioCorpus();
 const aggregate = analyzeCorpus(corpus.selected);
 const generatedProfiles = buildGeneratedProfiles(aggregate);
+const reviewQueue = buildTerrainReviewQueue(aggregate);
 
 writeJson(path.join(repoRoot, "docs/generated/smart-terrain-corpus.json"), {
-  schemaVersion: 1,
+  schemaVersion: 2,
   generatedAt: new Date().toISOString(),
   scenarioRoots: SCENARIO_ROOTS.map((root) => root.path),
   exclusions: [...EXCLUDED_NAMES],
@@ -126,14 +132,19 @@ writeJson(path.join(repoRoot, "docs/generated/smart-terrain-corpus.json"), {
   })),
   skippedScenarios: corpus.skipped,
   summary: aggregate.summary,
-  profiles: generatedProfiles
+  profiles: generatedProfiles,
+  reviewSummary: reviewQueue.summary
 });
+writeReviewJson(path.join(repoRoot, "docs/generated/smart-terrain-review.json"), reviewQueue);
+writeReviewReport(reviewQueue);
 writeGeneratedProfiles(generatedProfiles);
-writeReport(corpus, aggregate, generatedProfiles);
+writeReport(corpus, aggregate, generatedProfiles, reviewQueue);
 
 console.log(`Analyzed ${corpus.selected.length} authored scenario(s).`);
 console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "src/editor/map/generatedSmartTerrainProfiles.ts"))}`);
 console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/smart-terrain-corpus-report.md"))}`);
+console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/smart-terrain-review.json"))}`);
+console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/smart-terrain-review.md"))}`);
 
 function discoverScenarioCorpus() {
   const byName = new Map();
@@ -218,6 +229,12 @@ function analyzeCorpus(scenarios) {
             increment(profile.tiles, tile);
             increment(profile.roles[role] ??= {}, tile);
             increment(profile.masks[mask] ??= {}, tile);
+            const tileStats = ensureTileStats(profile, tile);
+            tileStats.samples += 1;
+            increment(tileStats.roles, role);
+            increment(tileStats.masks, mask);
+            recordDirectionalNeighbors(tileStats, tiles, x, y);
+            recordTileExample(tileStats, tiles, scenario.name, mapIndex, x, y, role, mask);
             profile.samples += 1;
             if (edgeKind === "deep-interior") increment(profile.deepInterior, tile);
             else if (edgeKind === "near-interior") increment(profile.nearInterior, tile);
@@ -241,15 +258,25 @@ function buildGeneratedProfiles(aggregate) {
     const presets = {};
     for (const [presetId, preset] of Object.entries(TERRAIN_PRESETS)) {
       const stats = aggregate.profiles.get(profileKey(landlook, presetId));
-      const center = centerCandidatesFor(presetId, stats, preset);
+      const curated = curatedTerrainFor(landlook, presetId);
+      const curatedRoles = curated?.roles ?? {};
+      const curatedWaterRoles = curated?.waterRoles ?? {};
+      const curatedMasks = curated?.masks ?? {};
+      const excluded = curated?.excluded ?? [];
+      const detail = curated?.detail ?? [];
+      const allowed = (tiles) => tiles.filter((tile) => !excluded.includes(tile));
+      const structural = (tiles) => allowed(tiles).filter((tile) => !detail.includes(tile));
+      const center = allowed(curatedRoles.center?.length > 0 ? curatedRoles.center : centerCandidatesFor(presetId, stats, preset));
       const maskCandidates = {};
       const roleCandidates = {};
       if (stats) {
         for (const [mask, counts] of Object.entries(stats.masks)) {
           const samples = countTotal(counts);
           if (samples < MIN_MASK_SAMPLES) continue;
+          const tiles = structural(topTiles(counts, MAX_TILE_CANDIDATES, center, presetId));
+          if (tiles.length === 0) continue;
           maskCandidates[mask] = {
-            tiles: topTiles(counts, MAX_TILE_CANDIDATES, center, presetId),
+            tiles,
             samples,
             confidence: confidenceFor(samples)
           };
@@ -257,19 +284,26 @@ function buildGeneratedProfiles(aggregate) {
         for (const [role, counts] of Object.entries(stats.roles)) {
           const samples = countTotal(counts);
           if (samples < MIN_ROLE_SAMPLES) continue;
-          roleCandidates[role] = topTiles(counts, MAX_ROLE_CANDIDATES, center, presetId);
+          const tiles = structural(topTiles(counts, MAX_ROLE_CANDIDATES, center, presetId));
+          if (tiles.length > 0) roleCandidates[role] = tiles;
         }
       }
       presets[presetId] = {
-        family: preset.family,
+        family: allowed(preset.family),
+        excluded,
+        detail,
         center,
-        candidates: stats ? topTiles(stats.tiles, MAX_ROLE_CANDIDATES, center, presetId) : preset.candidatesFallback,
+        candidates: structural(stats ? topTiles(stats.tiles, MAX_ROLE_CANDIDATES, center, presetId) : preset.candidatesFallback),
         sampleCount: stats?.samples ?? 0,
         confidence: confidenceFor(stats?.samples ?? 0),
         maskCandidates,
         roleCandidates,
+        curatedRoles,
+        curatedWaterRoles,
+        curatedMasks,
         fallbackRoles: {
           ...preset.fallbackRoles,
+          ...Object.fromEntries(Object.entries(curatedRoles).filter(([, tiles]) => tiles.length > 0).map(([role, tiles]) => [role, tiles[0]])),
           center: center[0] ?? preset.fallbackRoles.center
         }
       };
@@ -314,11 +348,236 @@ function ensureProfileStats(profileStats, landlook, presetId) {
       nearInterior: {},
       boundary: {},
       excludedDetail: {},
+      tileStats: {},
       examples: []
     };
     profileStats.set(key, stats);
   }
   return stats;
+}
+
+function ensureTileStats(profile, tile) {
+  return profile.tileStats[tile] ??= {
+    samples: 0,
+    roles: {},
+    masks: {},
+    neighbors: { north: {}, east: {}, south: {}, west: {} },
+    examples: []
+  };
+}
+
+function recordDirectionalNeighbors(stats, tiles, x, y) {
+  const directions = [
+    ["north", x, y - 1],
+    ["east", x + 1, y],
+    ["south", x, y + 1],
+    ["west", x - 1, y]
+  ];
+  for (const [direction, xx, yy] of directions) {
+    if (xx < 0 || yy < 0 || xx >= MAP_SIZE || yy >= MAP_SIZE) {
+      increment(stats.neighbors[direction], "outside-map");
+    } else {
+      increment(stats.neighbors[direction], normalizeMapTile(tiles[yy * MAP_SIZE + xx]));
+    }
+  }
+}
+
+function recordTileExample(stats, tiles, scenario, mapIndex, x, y, role, mask) {
+  if (stats.examples.length >= MAX_TILE_EXAMPLES) return;
+  const mapKey = `${scenario}:land:${mapIndex}`;
+  if (stats.examples.some((example) => example.mapKey === mapKey)) return;
+  stats.examples.push({
+    mapKey,
+    scenario,
+    mapIndex,
+    x,
+    y,
+    role,
+    mask,
+    context: contextGrid(tiles, x, y, 2)
+  });
+}
+
+function contextGrid(tiles, centerX, centerY, radius) {
+  const rows = [];
+  for (let y = centerY - radius; y <= centerY + radius; y += 1) {
+    const row = [];
+    for (let x = centerX - radius; x <= centerX + radius; x += 1) {
+      row.push(x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE ? null : normalizeMapTile(tiles[y * MAP_SIZE + x]));
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function buildTerrainReviewQueue(aggregate) {
+  const items = [];
+  for (const stats of aggregate.profiles.values()) {
+    for (const [tileText, tileStats] of Object.entries(stats.tileStats)) {
+      const tile = Number(tileText);
+      const preset = TERRAIN_PRESETS[stats.presetId];
+      const curated = curatedTerrainFor(stats.landlook, stats.presetId);
+      const roles = rankedCounts(tileStats.roles);
+      const masks = rankedCounts(tileStats.masks).slice(0, MAX_REVIEW_MASKS);
+      const dominantRole = roles[0]?.value ?? null;
+      const rolePurity = roles[0] ? roles[0].count / tileStats.samples : 0;
+      const curatedRoles = Object.entries(preset.fallbackRoles)
+        .filter(([, fallbackTile]) => fallbackTile === tile)
+        .map(([role]) => role);
+      const approvedRoles = Object.entries(curated?.roles ?? {})
+        .filter(([, approvedTiles]) => approvedTiles.includes(tile))
+        .map(([role]) => role);
+      const approvedWaterRoles = Object.entries(curated?.waterRoles ?? {})
+        .filter(([, approvedTiles]) => approvedTiles.includes(tile))
+        .map(([role]) => role);
+      const approvedMasks = Object.entries(curated?.masks ?? {})
+        .filter(([, approvedTiles]) => approvedTiles.includes(tile))
+        .map(([mask]) => Number(mask));
+      const humanDetail = (curated?.detail ?? []).includes(tile);
+      const humanExcluded = (curated?.excluded ?? []).includes(tile);
+      const reasons = [];
+      if (tileStats.samples < MIN_ROLE_SAMPLES) reasons.push("insufficient-evidence");
+      if (roles.length > 1 && rolePurity < 0.55) reasons.push("mixed-structural-roles");
+      if (curatedRoles.length > 0 && dominantRole && rolePurity >= 0.65 && tileStats.samples >= 100 && !curatedRoles.includes(dominantRole)) reasons.push("curated-role-disagreement");
+      if (masks.length >= MAX_REVIEW_MASKS && (masks[0]?.count ?? 0) / tileStats.samples < 0.35) reasons.push("many-neighbor-shapes");
+      if (CUSTOM_LANDLOOKS.includes(stats.landlook)) reasons.push("custom-atlas-provisional");
+      if (approvedRoles.length > 0 || approvedWaterRoles.length > 0 || approvedMasks.length > 0 || humanDetail || humanExcluded) reasons.push("human-curated");
+      const priority = reviewPriority(reasons, tileStats.samples, rolePurity);
+      items.push({
+        id: `${stats.landlook}:${stats.presetId}:${tile}`,
+        landlook: stats.landlook,
+        terrain: stats.presetId,
+        terrainLabel: preset.label,
+        tile,
+        priority,
+        reasons,
+        samples: tileStats.samples,
+        dominantRole,
+        rolePurity: round(rolePurity),
+        curatedRoles: approvedRoles,
+        curatedWaterRoles: approvedWaterRoles,
+        curatedMasks: approvedMasks,
+        curatedDisposition: humanExcluded ? "excluded" : humanDetail ? "detail" : approvedRoles.length > 0 || approvedWaterRoles.length > 0 || approvedMasks.length > 0 ? "approved" : "pending",
+        fallbackRoles: curatedRoles,
+        roles: roles.map((entry) => ({ role: entry.value, count: entry.count, share: round(entry.count / tileStats.samples) })),
+        masks: masks.map((entry) => ({ mask: Number(entry.value), count: entry.count, share: round(entry.count / tileStats.samples) })),
+        neighbors: Object.fromEntries(Object.entries(tileStats.neighbors).map(([direction, counts]) => [
+          direction,
+          rankedCounts(counts).slice(0, MAX_REVIEW_NEIGHBORS).map((entry) => ({ tile: entry.value === "outside-map" ? null : Number(entry.value), count: entry.count, share: round(entry.count / tileStats.samples) }))
+        ])),
+        examples: tileStats.examples.map(({ mapKey, ...example }) => example)
+      });
+    }
+  }
+  items.sort((a, b) => reviewPriorityRank(a.priority) - reviewPriorityRank(b.priority)
+    || b.reasons.length - a.reasons.length
+    || a.rolePurity - b.rolePurity
+    || b.samples - a.samples
+    || a.landlook - b.landlook
+    || a.terrain.localeCompare(b.terrain)
+    || a.tile - b.tile);
+  const firstReviewBatch = balancedReviewBatch(items.filter((item) => STANDARD_LANDLOOKS.includes(item.landlook) && !item.reasons.includes("human-curated")), FIRST_REVIEW_BATCH_SIZE);
+  const compactItems = items.map((item) => ({
+    ...item,
+    roles: item.roles.slice(0, 5),
+    masks: item.masks.slice(0, 5),
+    neighbors: Object.fromEntries(Object.entries(item.neighbors).map(([direction, entries]) => [direction, entries.slice(0, 3)])),
+    examples: item.examples.slice(0, 1).map(({ context, ...example }) => example)
+  }));
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    purpose: "Human curation queue for landlook-specific terrain membership and structural tile roles.",
+    reviewInstructions: [
+      "Review critical and high items first; low items are usually stable corpus confirmations.",
+      "Use the 5x5 context grids and source coordinates to distinguish structural transitions from decorative or exceptional placement.",
+      "Record approved roles and exclusions in curated terrain grammar metadata, not in this generated file."
+    ],
+    summary: {
+      items: items.length,
+      byPriority: countBy(items, (item) => item.priority),
+      byTerrain: countBy(items, (item) => item.terrain),
+      requiringReview: items.filter((item) => item.priority === "critical" || item.priority === "high").length,
+      firstReviewBatch: firstReviewBatch.length
+    },
+    firstReviewBatch,
+    items: compactItems
+  };
+}
+
+function reviewPriority(reasons, samples, rolePurity) {
+  if (reasons.includes("human-curated")) return "low";
+  if (reasons.includes("custom-atlas-provisional")) return samples < MIN_ROLE_SAMPLES ? "high" : "medium";
+  if (reasons.includes("curated-role-disagreement")) return "critical";
+  if (reasons.includes("insufficient-evidence") || rolePurity < 0.4) return "high";
+  if (reasons.length > 0 || samples < 100) return "medium";
+  return "low";
+}
+
+function curatedTerrainFor(landlook, presetId) {
+  const landlookGrammar = CURATED_TERRAIN_GRAMMAR.landlooks?.[String(landlook)] ?? null;
+  if (!landlookGrammar) return null;
+  const inherited = landlookGrammar.inherits != null
+    ? curatedTerrainFor(Number(landlookGrammar.inherits), presetId)
+    : null;
+  const own = landlookGrammar[presetId] ?? null;
+  if (!inherited) return own;
+  if (!own) return inherited;
+  return {
+    ...inherited,
+    ...own,
+    roles: { ...(inherited.roles ?? {}), ...(own.roles ?? {}) },
+    waterRoles: { ...(inherited.waterRoles ?? {}), ...(own.waterRoles ?? {}) },
+    masks: { ...(inherited.masks ?? {}), ...(own.masks ?? {}) }
+  };
+}
+
+function balancedReviewBatch(items, limit) {
+  const queues = new Map();
+  for (const item of items) {
+    const key = `${item.landlook}:${item.terrain}`;
+    const queue = queues.get(key) ?? [];
+    queue.push(item);
+    queues.set(key, queue);
+  }
+  const selected = [];
+  const orderedKeys = [...queues.keys()].sort((a, b) => {
+    const [landlookA, terrainA] = a.split(":");
+    const [landlookB, terrainB] = b.split(":");
+    return Number(landlookA) - Number(landlookB) || terrainA.localeCompare(terrainB);
+  });
+  while (selected.length < limit) {
+    let added = false;
+    for (const key of orderedKeys) {
+      const next = queues.get(key)?.shift();
+      if (!next) continue;
+      selected.push(next);
+      added = true;
+      if (selected.length >= limit) break;
+    }
+    if (!added) break;
+  }
+  return selected;
+}
+
+function reviewPriorityRank(priority) {
+  return ({ critical: 0, high: 1, medium: 2, low: 3 })[priority] ?? 4;
+}
+
+function rankedCounts(counts) {
+  return Object.entries(counts ?? {})
+    .map(([value, count]) => ({ value, count }))
+    .sort((a, b) => b.count - a.count || String(a.value).localeCompare(String(b.value), undefined, { numeric: true }));
+}
+
+function countBy(values, keyFor) {
+  const counts = {};
+  for (const value of values) increment(counts, keyFor(value));
+  return counts;
+}
+
+function round(value) {
+  return Math.round(value * 1000) / 1000;
 }
 
 function writeGeneratedProfiles(profiles) {
@@ -333,7 +592,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = ${JSON.stringify(profiles, null,
   fs.writeFileSync(outputPath, body);
 }
 
-function writeReport(corpus, aggregate, profiles) {
+function writeReport(corpus, aggregate, profiles, reviewQueue) {
   const lines = [];
   lines.push("# Smart Terrain Corpus Report");
   lines.push("");
@@ -377,7 +636,68 @@ function writeReport(corpus, aggregate, profiles) {
   lines.push("- Forest smart-brush candidates are limited to `121-129`; `150-154` are reported as tree detail but excluded from generated profiles.");
   lines.push("- Custom landlooks `6-8` are analyzed for evidence but are not enabled because their atlases are scenario-specific.");
   lines.push("");
+  lines.push("## Curation Queue");
+  lines.push("");
+  lines.push(`- Tile/landlook decisions: ${reviewQueue.summary.items}`);
+  lines.push(`- Critical or high priority: ${reviewQueue.summary.requiringReview}`);
+  lines.push(`- Balanced first review batch: ${reviewQueue.summary.firstReviewBatch}`);
+  for (const priority of ["critical", "high", "medium", "low"]) {
+    lines.push(`- ${priority[0].toUpperCase()}${priority.slice(1)}: ${reviewQueue.summary.byPriority[priority] ?? 0}`);
+  }
+  lines.push("");
+  lines.push("The complete review queue, directional neighbor evidence, role distributions, and representative 5x5 map contexts are in `smart-terrain-review.json`.");
+  lines.push("Its `firstReviewBatch` contains a bounded cross-landlook starting set; custom landlooks remain provisional because their atlases are scenario-specific.");
+  lines.push("");
+  lines.push("### Highest-Priority Decisions");
+  lines.push("");
+  for (const item of reviewQueue.items.filter((entry) => entry.priority === "critical" || entry.priority === "high").slice(0, 40)) {
+    lines.push(`- Landlook ${item.landlook} ${item.terrainLabel} tile ${item.tile}: ${item.samples} sample(s), dominant role ${item.dominantRole ?? "none"} (${Math.round(item.rolePurity * 100)}%); ${item.reasons.join(", ") || "review"}.`);
+  }
+  lines.push("");
   const outputPath = path.join(repoRoot, "docs/generated/smart-terrain-corpus-report.md");
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, `${lines.join("\n")}\n`);
+}
+
+function writeReviewReport(reviewQueue) {
+  const lines = [
+    "# Smart Terrain First Review Batch",
+    "",
+    `Generated: ${reviewQueue.generatedAt}`,
+    "",
+    "Review each proposed tile role against the centered tile in the representative 5x5 contexts. Record accepted roles, exclusions, or terrain-family corrections in curated source metadata; this file is generated.",
+    "",
+    "Decision vocabulary: `center`, cardinal edge, corner, line, cap, `single`, `detail`, `exclude`, or `needs-atlas-review`.",
+    ""
+  ];
+  reviewQueue.firstReviewBatch.forEach((item, index) => {
+    lines.push(`## ${index + 1}. Landlook ${item.landlook} ${item.terrainLabel} Tile ${item.tile}`);
+    lines.push("");
+    lines.push(`- Priority: ${item.priority}`);
+    lines.push(`- Evidence: ${item.samples} placement(s)`);
+    lines.push(`- Suggested role: ${item.dominantRole ?? "none"} (${Math.round(item.rolePurity * 100)}%)`);
+    lines.push(`- Human-approved role(s): ${item.curatedRoles.join(", ") || "none"}`);
+    lines.push(`- Legacy fallback role(s): ${item.fallbackRoles.join(", ") || "none"}`);
+    lines.push(`- Review reasons: ${item.reasons.join(", ") || "confirmation"}`);
+    lines.push("- Decision: pending");
+    lines.push("");
+    for (const example of item.examples.slice(0, 3)) {
+      lines.push(`### ${example.scenario}, land ${example.mapIndex}, cell ${example.x},${example.y}`);
+      lines.push("");
+      lines.push(`Observed as ${example.role}, mask ${example.mask}. Center tile is wrapped in brackets.`);
+      lines.push("");
+      lines.push("```text");
+      example.context.forEach((row, rowIndex) => {
+        lines.push(row.map((tile, columnIndex) => {
+          const value = tile === null ? "out" : String(tile);
+          return rowIndex === 2 && columnIndex === 2 ? `[${value.padStart(3, " ")}]` : ` ${value.padStart(3, " ")} `;
+        }).join(" "));
+      });
+      lines.push("```");
+      lines.push("");
+    }
+  });
+  const outputPath = path.join(repoRoot, "docs/generated/smart-terrain-review.md");
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, `${lines.join("\n")}\n`);
 }
@@ -385,6 +705,26 @@ function writeReport(corpus, aggregate, profiles) {
 function writeJson(outputPath, value) {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function writeReviewJson(outputPath, reviewQueue) {
+  const lines = [
+    "{",
+    `  \"schemaVersion\": ${JSON.stringify(reviewQueue.schemaVersion)},`,
+    `  \"generatedAt\": ${JSON.stringify(reviewQueue.generatedAt)},`,
+    `  \"purpose\": ${JSON.stringify(reviewQueue.purpose)},`,
+    `  \"reviewInstructions\": ${JSON.stringify(reviewQueue.reviewInstructions)},`,
+    `  \"summary\": ${JSON.stringify(reviewQueue.summary)},`,
+    "  \"firstReviewBatch\": [",
+    ...reviewQueue.firstReviewBatch.map((item, index) => `    ${JSON.stringify(item)}${index + 1 < reviewQueue.firstReviewBatch.length ? "," : ""}`),
+    "  ],",
+    "  \"items\": [",
+    ...reviewQueue.items.map((item, index) => `    ${JSON.stringify(item)}${index + 1 < reviewQueue.items.length ? "," : ""}`),
+    "  ]",
+    "}"
+  ];
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, `${lines.join("\n")}\n`);
 }
 
 function readLandMap(buffer, mapIndex) {

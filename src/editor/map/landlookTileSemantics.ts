@@ -10,6 +10,7 @@ export type LandlookTileVisualCategory =
   | "graves"
   | "buildings"
   | "terrain-prop"
+  | "cave-transition"
   | "hazard"
   | "open"
   | "blank"
@@ -34,6 +35,38 @@ type SemanticRange = {
 };
 
 const PLAINS_EXACT: Record<number, LandlookTileVisualSemantics> = {
+  1: { label: "Shoreline, land west", category: "water-shore", confidence: "known" },
+  2: { label: "Shoreline, land east", category: "water-shore", confidence: "known" },
+  3: { label: "Shoreline, land north", category: "water-shore", confidence: "known" },
+  4: { label: "Shoreline, land south", category: "water-shore", confidence: "known" },
+  5: { label: "Sloped shoreline, land southwest", category: "water-shore", confidence: "known", notes: "Boundary runs from top midpoint to bottom-right." },
+  6: { label: "Sloped shoreline, land southwest", category: "water-shore", confidence: "known", notes: "Boundary runs from top-left to bottom midpoint." },
+  7: { label: "Sloped shoreline, land southeast", category: "water-shore", confidence: "known", notes: "Boundary runs from top-right to bottom midpoint." },
+  8: { label: "Sloped shoreline, land southeast", category: "water-shore", confidence: "known", notes: "Boundary runs from top midpoint to bottom-left." },
+  9: { label: "Sloped shoreline, land northwest", category: "water-shore", confidence: "known", notes: "Boundary runs from bottom midpoint to top-right." },
+  10: { label: "Sloped shoreline, land northwest", category: "water-shore", confidence: "known", notes: "Boundary runs from bottom-left to top midpoint." },
+  11: { label: "Sloped shoreline, land northeast", category: "water-shore", confidence: "known", notes: "Boundary runs from top-left to bottom midpoint." },
+  12: { label: "Sloped shoreline, land northeast", category: "water-shore", confidence: "known", notes: "Boundary runs from top midpoint to bottom-right." },
+  13: { label: "Sloped shoreline, land northeast", category: "water-shore", confidence: "known", notes: "Boundary runs from top-left to right midpoint." },
+  14: { label: "Sloped shoreline, land northeast", category: "water-shore", confidence: "known", notes: "Boundary runs from left midpoint to bottom-right." },
+  15: { label: "Sloped shoreline, land southeast", category: "water-shore", confidence: "known", notes: "Boundary runs from bottom-left to right midpoint." },
+  16: { label: "Sloped shoreline, land southeast", category: "water-shore", confidence: "known", notes: "Boundary runs from left midpoint to top-right." },
+  17: { label: "Sloped shoreline, land northwest", category: "water-shore", confidence: "known", notes: "Boundary runs from bottom-left to right midpoint." },
+  18: { label: "Sloped shoreline, land northwest", category: "water-shore", confidence: "known", notes: "Boundary runs from left midpoint to top-right." },
+  19: { label: "Sloped shoreline, land southwest", category: "water-shore", confidence: "known", notes: "Boundary runs from top-left to right midpoint." },
+  20: { label: "Sloped shoreline, land southwest", category: "water-shore", confidence: "known", notes: "Boundary runs from left midpoint to bottom-right." },
+  21: { label: "Open water to narrow stream south", category: "water-shore", confidence: "known" },
+  22: { label: "Open water to narrow stream west", category: "water-shore", confidence: "known" },
+  23: { label: "Open water to narrow stream east", category: "water-shore", confidence: "known" },
+  24: { label: "Open water to narrow stream north", category: "water-shore", confidence: "known" },
+  25: { label: "Quarter water southeast", category: "water-shore", confidence: "known" },
+  26: { label: "Quarter water southwest", category: "water-shore", confidence: "known" },
+  27: { label: "Quarter water northeast", category: "water-shore", confidence: "known" },
+  28: { label: "Quarter water northwest", category: "water-shore", confidence: "known" },
+  29: { label: "Inward shoreline corner, land northeast", category: "water-shore", confidence: "known" },
+  30: { label: "Inward shoreline corner, land northwest", category: "water-shore", confidence: "known" },
+  31: { label: "Inward shoreline corner, land southeast", category: "water-shore", confidence: "known" },
+  32: { label: "Inward shoreline corner, land southwest", category: "water-shore", confidence: "known" },
   36: { label: "Blank / unused land tile", category: "blank", confidence: "likely" },
   37: { label: "Blank / unused land tile", category: "blank", confidence: "likely" },
   61: { label: "Solid mountain", category: "mountain-land", confidence: "known", notes: "Full-looking mountain region fill tile for the Plains landlook." },
@@ -41,6 +74,40 @@ const PLAINS_EXACT: Record<number, LandlookTileVisualSemantics> = {
   85: { label: "Mountain to land", category: "mountain-land", confidence: "known", notes: "End of the mountain-to-land atlas run." },
   86: { label: "Mountain to water", category: "mountain-water", confidence: "known", notes: "Start of the mountain-to-water atlas run." },
   93: { label: "Mountain to water", category: "mountain-water", confidence: "known", notes: "End of the mountain-to-water atlas run." },
+  33: { label: "One rock in water", category: "rocks", confidence: "known", notes: "Optional decorative full-water tile." },
+  34: { label: "Two rocks in water", category: "rocks", confidence: "known", notes: "Optional decorative full-water tile." },
+  35: { label: "Several rocks in water", category: "rocks", confidence: "known", notes: "Optional decorative full-water tile." },
+  38: { label: "Narrow stream north/south", category: "water-shore", confidence: "known" },
+  39: { label: "Narrow stream east/west", category: "water-shore", confidence: "known" },
+  40: { label: "Narrow stream to land, land south", category: "water-shore", confidence: "known" },
+  41: { label: "Narrow stream to land, land west", category: "water-shore", confidence: "known" },
+  42: { label: "Narrow stream to land, land north", category: "water-shore", confidence: "known" },
+  43: { label: "Narrow stream to land, land east", category: "water-shore", confidence: "known" },
+  44: { label: "Narrow stream trifork north/west/east", category: "water-shore", confidence: "known", notes: "Land transition is south." },
+  45: { label: "Narrow stream trifork north/east/south", category: "water-shore", confidence: "known", notes: "Land transition is west." },
+  46: { label: "Narrow stream trifork west/south/east", category: "water-shore", confidence: "known", notes: "Land transition is north." },
+  47: { label: "Narrow stream trifork north/west/south", category: "water-shore", confidence: "known", notes: "Land transition is east." },
+  48: { label: "Narrow stream bend south/east", category: "water-shore", confidence: "known" },
+  49: { label: "Narrow stream bend south/west", category: "water-shore", confidence: "known" },
+  50: { label: "Narrow stream bend north/east", category: "water-shore", confidence: "known" },
+  51: { label: "Narrow stream bend north/west", category: "water-shore", confidence: "known" },
+  52: { label: "Grave", category: "graves", confidence: "known" },
+  53: { label: "Grave", category: "graves", confidence: "known" },
+  54: { label: "Grave", category: "graves", confidence: "known" },
+  55: { label: "Solid cobblestones", category: "road", confidence: "known" },
+  56: { label: "Single-tile island in water", category: "terrain-prop", confidence: "known" },
+  57: { label: "Single-tile island in water", category: "terrain-prop", confidence: "known" },
+  58: { label: "Single-tile island in water", category: "terrain-prop", confidence: "known" },
+  59: { label: "Single-tile island in water", category: "terrain-prop", confidence: "known" },
+  60: { label: "Full water", category: "water-shore", confidence: "known", notes: "Normal full-water center tile." },
+  105: { label: "Stream to cave, cave west", category: "cave-transition", confidence: "known" },
+  106: { label: "Stream to cave, cave east", category: "cave-transition", confidence: "known" },
+  107: { label: "Stream to cave, cave south", category: "cave-transition", confidence: "known" },
+  108: { label: "Stream to cave, cave north", category: "cave-transition", confidence: "known" },
+  109: { label: "Land to cave, cave east", category: "cave-transition", confidence: "known" },
+  110: { label: "Land to cave, cave west", category: "cave-transition", confidence: "known" },
+  111: { label: "Land to cave, cave south", category: "cave-transition", confidence: "known" },
+  112: { label: "Land to cave, cave north", category: "cave-transition", confidence: "known" },
   147: { label: "Boat", category: "watercraft", confidence: "known", notes: "Realmz mapstats marks this as boat-required movement." },
   148: { label: "Well / small landmark", category: "terrain-prop", confidence: "uncertain" },
   149: { label: "Fallen log", category: "terrain-prop", confidence: "likely" },
@@ -209,6 +276,7 @@ export function landlookVisualCategoryLabel(category: LandlookTileVisualCategory
     case "graves": return "Graves";
     case "buildings": return "Buildings";
     case "terrain-prop": return "Terrain prop";
+    case "cave-transition": return "Cave transition";
     case "hazard": return "Hazard / ruin";
     case "open": return "Open land";
     case "blank": return "Blank / unused";

@@ -227,7 +227,7 @@ Rule: add aliases in groups with fixture coverage for opcode, ID, EDCD values, a
 
 ## Priority 7: Higher-Level Map Authoring
 
-Status: implemented for deterministic geometry, generated Action Point map markers, land Secret Area state, stock hidden-walkable terrain, and directional dungeon passages; broader semantic terrain selection remains future work.
+Status: implemented for deterministic geometry, generated Action Point map markers, land Secret Area state, stock hidden-walkable terrain, directional dungeon passages, and standard-landlook water/mountain/forest terrain groups. The corpus audit now emits per-tile directional evidence and a bounded human curation batch.
 
 Implemented author-friendly map operations:
 
@@ -247,8 +247,8 @@ Implemented normalizer work:
 
 Still future work:
 
-- `terrainGroup`
-- semantic tile names mapped through landlook metadata
+- complete human review of generated terrain-role suggestions
+- semantic roads and broader semantic tile names mapped through landlook metadata
 - reusable named stamps or map templates
 
 ## Priority 8: Complex, Thief, And Timed Encounters

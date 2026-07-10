@@ -12,7 +12,15 @@
     {
       "levelType": "dungeon",
       "operations": [
-        { "kind": "landSecret", "x": 1, "y": 1, "state": "hidden" }
+        { "kind": "landSecret", "x": 1, "y": 1, "state": "hidden" },
+        { "kind": "terrainGroup", "terrain": "water", "geometry": { "kind": "rect", "x": 3, "y": 3, "width": 4, "height": 4 } }
+      ]
+    },
+    {
+      "levelType": "land",
+      "landlook": 6,
+      "operations": [
+        { "kind": "terrainGroup", "terrain": "lava", "geometry": { "kind": "circle", "x": 5, "y": 5, "radius": 2 } }
       ]
     }
   ]

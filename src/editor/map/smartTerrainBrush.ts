@@ -199,6 +199,13 @@ function smartCandidatesForCell(
   preset: SmartBrushPreset,
   presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]
 ) {
+  const curatedMaskCandidates = filterCandidatesForContext(presetProfile.curatedMasks?.[String(neighborMask)] ?? [], map, cell, context, preset, presetProfile);
+  if (curatedMaskCandidates.length > 0) return { tiles: curatedMaskCandidates, source: "curated-mask", samples: null };
+  const curatedRoleTable = preset === "mountains" && touchesOutsideWater(map, cell, context)
+    ? presetProfile.curatedWaterRoles
+    : presetProfile.curatedRoles;
+  const curatedCandidates = filterCandidatesForContext(curatedRoleTable?.[role] ?? [], map, cell, context, preset, presetProfile);
+  if (curatedCandidates.length > 0) return { tiles: curatedCandidates, source: "curated-role", samples: null };
   const exactEvidence = presetProfile.maskCandidates?.[String(neighborMask)] ?? null;
   const exactCandidates = filterCandidatesForContext(exactEvidence?.tiles ?? [], map, cell, context, preset, presetProfile);
   const roleCandidates = filterCandidatesForContext(presetProfile.roleCandidates?.[role] ?? [], map, cell, context, preset, presetProfile);

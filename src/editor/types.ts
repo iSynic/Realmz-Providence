@@ -60,12 +60,17 @@ export type SmartBrushProfile = {
   landlook: number;
   presets: Record<SmartBrushPreset, {
     family: number[];
+    excluded?: number[];
+    detail?: number[];
     center: number[];
     candidates: number[];
     sampleCount?: number;
     confidence?: "high" | "medium" | "low" | "fallback";
     maskCandidates?: Record<string, SmartBrushCandidateEvidence>;
     roleCandidates?: Partial<Record<SmartBrushRole, number[]>>;
+    curatedRoles?: Partial<Record<SmartBrushRole, number[]>>;
+    curatedWaterRoles?: Partial<Record<SmartBrushRole, number[]>>;
+    curatedMasks?: Record<string, number[]>;
     fallbackRoles: Partial<Record<SmartBrushRole, number>>;
   }>;
 };
