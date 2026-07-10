@@ -19,6 +19,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 - Treasure, shop stock, and item-related AP steps can reference item keys.
 - Normal scenario monster records with generated monster descriptions, keyed item/weapon references, keyed battle placements, and keyed `addSpecialCharacter` / `dropSpecialCharacter` AP references.
 - Simple encounter records with prompt message references, up to four option strings/results, raw encounter action rows, backing-out and attempt-limit fields.
+- Complex encounter records with keyed prompts, physical/word/spell/item/Rogue response routing, four semantic result scripts, and a raw 32-slot fallback.
 - Timed encounter records with schedules, keyed Extra Action Point macros, item/quest requirements, and optional land/dungeon location gates.
 - Action points with up to eight steps.
 - Extra Action Points (`Data ED3`) with up to eight steps, usable as patch sources.
@@ -48,6 +49,8 @@ Combat macro aliases are context-restricted. `battleMacroCriteria` uses opcode 1
 Asset declarations separate runtime references from scenario-owned resources. A `stock` asset stores a resource type and existing Realmz ID; it can be referenced by key but is never copied into `project.assets`. A `custom-library` asset names a stable workspace asset ID and optionally requests a scenario resource ID. Callers pass the available Custom Library assets through `createProjectFromScenarioSeed(..., { customAssets })`; Providence then copies matching non-stock assets into Scenario Assets, allocates scenario-safe IDs when omitted, and rejects missing assets, wrong asset kinds, and invalid picture, sound, or special-land-tile IDs.
 
 Timed encounters use source `Data TD3` records. `day` must be nonzero, `increment` defaults to zero, `percent` defaults to 100, and `macro` resolves a keyed Extra Action Point. Optional item and quest keys compile to their Realmz IDs. Location is either `any` or a land/dungeon level with optional random-rectangle and paired coordinate gates. `alterTimedEncounter` compiles opcode 54 and can change chance, repeat interval, or reset the next activation relative to the current day.
+
+Complex encounters use source `Data ED2` records and expose author concepts instead of parallel storage arrays. `physicalActions` supplies up to eight labels, while `requiredPhysicalActions` uses one-based choice numbers and `physicalResult` selects result 1 through 4. Optional `word`, `spells`, `items`, and `thief` responses route their outcomes to the same four results. Each `results` entry contains up to eight normal semantic AP steps; Providence compiles them into that result's fixed eight-slot script row and allocates any required EDCD settings. Use `actions` only for an explicit raw 32-slot fallback; raw actions and semantic results cannot be combined. Item responses resolve scenario item keys, and AP `complexEncounter` steps resolve complex encounter keys.
 
 ## Example
 

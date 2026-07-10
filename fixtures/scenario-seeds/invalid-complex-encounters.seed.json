@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Complex Encounters" },
+  "complexEncounters": [
+    {
+      "physicalActions": ["Only one choice"],
+      "requiredPhysicalActions": [2],
+      "physicalResult": 5,
+      "word": { "text": "This typed response is deliberately longer than thirty nine characters", "result": 2 },
+      "results": [
+        { "result": 1, "steps": [{ "kind": "message", "message": 1 }] },
+        { "result": 1, "steps": [{ "kind": "message", "message": 2 }] }
+      ],
+      "actions": [
+        { "rawCode": 1, "id": 1 }
+      ]
+    }
+  ]
+}

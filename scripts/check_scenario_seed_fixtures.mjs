@@ -30,6 +30,7 @@ try {
   checkDirectAp(createProjectFromScenarioSeed);
   checkEdcdAp(createProjectFromScenarioSeed);
   checkSimpleEncounter(createProjectFromScenarioSeed);
+  checkComplexEncounters(createProjectFromScenarioSeed);
   checkItems(createProjectFromScenarioSeed);
   checkMonsters(createProjectFromScenarioSeed);
   checkConditionBranches(createProjectFromScenarioSeed);
@@ -129,6 +130,32 @@ function checkSimpleEncounter(createProjectFromScenarioSeed) {
   expect(encounter?.actions?.[1]?.slot === 3 && encounter?.actions?.[1]?.rawCode === -2 && encounter?.actions?.[1]?.id === 260, "simple encounter explicit action slot should be preserved");
   const trigger = result.project.triggers[0];
   expect(trigger?.actions?.[0]?.rawCode === 4 && trigger?.actions?.[0]?.id === 0, "AP should reference keyed simple encounter by allocated ID");
+}
+
+function checkComplexEncounters(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("complex-encounters.seed.json"));
+  expect(result.ok, "complex encounter seed should create a project");
+  if (!result.ok) return;
+  expect(allocationId(result, "complexEncounters", "shrine-puzzle") === 2, "shrine-puzzle should preserve explicit complex encounter ID 2");
+  expect(allocationId(result, "complexEncounters", "raw-complex-fallback") === 0, "raw complex fallback should allocate the first open ID");
+  const encounter = result.project.complexEncounters.find((entry) => entry.id === 2);
+  expect(encounter?.prompt === 0, "complex encounter prompt should resolve its message key");
+  expect(encounter?.texts?.[0] === "Turn the wheel" && encounter?.texts?.[1] === "Pull the lever" && encounter?.texts?.[8] === "awaken", "complex encounter physical and word text should occupy their authored slots");
+  expect(encounter?.groups?.join(",") === "0,1,0,0,0,0,0,0", "complex encounter required physical choices should use one-based author indexes");
+  expect(encounter?.actionResult === 1 && encounter?.wordResult === 2, "complex encounter physical and word routes should preserve result numbers");
+  expect(encounter?.spellIds?.[0] === 17 && encounter?.spellIds?.[1] === 1100 && encounter?.spellResults?.[0] === 3, "complex encounter spell response should preserve its result and pad blank spell slots");
+  expect(encounter?.itemIds?.[0] === 901 && encounter?.itemResults?.[0] === 1, "complex encounter item response should resolve a scenario item key");
+  expect(encounter?.thief === true && encounter?.thiefSuccess === 3 && encounter?.thiefFail === 4, "complex encounter Rogue routing should preserve success and failure results");
+  expect(encounter?.canBackOut === true && encounter?.maxTimes === 3 && encounter?.casteSuccess === -1, "complex encounter limits should be preserved");
+  expect(encounter?.actions?.map((action) => `${action.slot}:${action.rawCode}`).join(",") === "0:1,1:20,8:33,9:21,24:2", "semantic result scripts should compile into the four eight-slot result rows");
+  expect(result.project.extracodes[0]?.values.join(",") === "0,8,9,0,2", "complex result teleport should compile its keyed message into EDCD");
+  expect(result.project.extracodes[1]?.values.join(",") === "25,0,0,0,0", "complex result gold action should compile into EDCD");
+  expect(result.project.extracodes[2]?.values.join(",") === "901,2,1,0,0", "complex result item branch should resolve a keyed complex encounter target");
+  expect(result.project.extracodes[3]?.values.join(",") === "4,4,0,0,0", "complex result battle should compile into EDCD without colliding with later script rows");
+  const rawEncounter = result.project.complexEncounters.find((entry) => entry.id === 0);
+  expect(rawEncounter?.actions?.map((action) => `${action.slot}:${action.rawCode}:${action.id}`).join(",") === "0:1:1,24:24:0", "complex encounter raw action fallback should preserve explicit slots and CODE/ID values");
+  expect(result.project.triggers[0]?.actions?.[0]?.rawCode === 5 && result.project.triggers[0]?.actions?.[0]?.id === 2, "AP should resolve a keyed complex encounter to opcode 5");
+  expect(result.project.validation.errors.length === 0, "complex encounter seed should pass project validation without errors");
 }
 
 function checkItems(createProjectFromScenarioSeed) {
@@ -392,6 +419,16 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(timedEncounters.errors.some((error) => error.includes(".percent")), "timed encounter should reject chance above 100 percent");
     expect(timedEncounters.errors.some((error) => error.includes("x and") && error.includes("y")), "timed encounter should require paired coordinates");
     expect(timedEncounters.errors.some((error) => error.includes("daysUntilNext is required")), "timed encounter mutation should require a reset offset");
+  }
+
+  const complexEncounters = parseScenarioSeed(readSeed("invalid-complex-encounters.seed.json"));
+  expect(!complexEncounters.ok, "invalid complex encounter seed should fail parsing");
+  if (!complexEncounters.ok) {
+    expect(complexEncounters.errors.some((error) => error.includes("physicalResult")), "complex encounter should reject result numbers outside 1 through 4");
+    expect(complexEncounters.errors.some((error) => error.includes("points beyond")), "complex encounter should reject required physical choices that do not exist");
+    expect(complexEncounters.errors.some((error) => error.includes("39 characters")), "complex encounter should enforce Data ED2 text capacity");
+    expect(complexEncounters.errors.some((error) => error.includes("duplicate result")), "complex encounter should reject duplicate result scripts");
+    expect(complexEncounters.errors.some((error) => error.includes("cannot combine raw actions")), "complex encounter should reject mixed raw and semantic result scripts");
   }
 }
 

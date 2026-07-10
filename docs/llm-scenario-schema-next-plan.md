@@ -234,9 +234,9 @@ Implemented combat macro group:
 
 Add remaining high-value AP semantic aliases after fixtures cover the current set.
 
-Next groups:
+Next group:
 
-- complex, thief, and timed encounter records
+- thief encounter records
 
 Rule: add aliases in groups with fixture coverage for opcode, ID, EDCD values, and target resolution.
 
@@ -268,11 +268,11 @@ Still future work:
 
 ## Priority 8: Complex, Thief, And Timed Encounters
 
-Status: timed encounter records and keyed opcode 54 mutation are implemented. Complex and thief encounter seed records remain future work.
+Status: timed and complex encounter records are implemented. Thief encounter seed records remain future work.
 
 After simple encounters are stable:
 
-- Add complex encounter seed records.
+- Add complex encounter seed records. Implemented with physical, typed-word, spell, item, and Rogue response routing; keyed allocation; semantic result scripts; and raw action fallback.
 - Add thief encounter seed records.
 - Add timed encounter seed records. Implemented with schedule, macro, item/quest, and location gates.
 - Reuse AP step aliases for result scripts where possible.
@@ -313,4 +313,4 @@ For phases that affect exportable records, also run:
 
 ## Recommended Next Commit Scope
 
-Continue with complex encounter seed records, then thief encounter records. Keep raw action rows available as the fallback while higher-level encounter scripts are added.
+Continue with thief encounter seed records. Keep raw action rows available as the fallback where a larger encounter family still lacks semantic scripts.

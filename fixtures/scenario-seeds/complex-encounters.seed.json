@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Complex Encounter Seed" },
+  "messages": [
+    { "key": "shrine-prompt", "text": "A wheel, a lever, and an inscription guard the shrine." },
+    { "key": "shrine-opens", "text": "Stone grinds aside and the shrine opens." },
+    { "key": "whisper", "text": "A distant voice answers the word." }
+  ],
+  "items": [
+    { "key": "bronze-key", "itemId": 901, "identifiedName": "Bronze Key" }
+  ],
+  "battles": [
+    { "key": "shrine-guardians", "id": 4 }
+  ],
+  "complexEncounters": [
+    {
+      "key": "shrine-puzzle",
+      "id": 2,
+      "prompt": "shrine-prompt",
+      "physicalActions": ["Turn the wheel", "Pull the lever"],
+      "requiredPhysicalActions": [2],
+      "physicalResult": 1,
+      "word": { "text": "awaken", "result": 2 },
+      "spells": [
+        { "spell": 17, "result": 3 }
+      ],
+      "items": [
+        { "item": "bronze-key", "result": 1 }
+      ],
+      "thief": { "successResult": 3, "failureResult": 4 },
+      "canBackOut": true,
+      "maxTimes": 3,
+      "casteSuccess": -1,
+      "results": [
+        {
+          "result": 1,
+          "steps": [
+            { "kind": "message", "message": "shrine-opens" },
+            { "kind": "teleport", "landLevel": 0, "x": 8, "y": 9, "message": "whisper" }
+          ]
+        },
+        {
+          "result": 2,
+          "steps": [
+            { "kind": "takeGold", "amount": 25 },
+            { "kind": "branchOnItem", "item": "bronze-key", "targetKind": "complexEncounter", "possessedTarget": "raw-complex-fallback" }
+          ]
+        },
+        {
+          "result": 4,
+          "steps": [
+            { "kind": "battle", "battle": "shrine-guardians" }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "raw-complex-fallback",
+      "prompt": "shrine-prompt",
+      "actions": [
+        { "slot": 0, "rawCode": 1, "id": 1 },
+        { "slot": 24, "rawCode": 24, "id": 0 }
+      ]
+    }
+  ],
+  "actionPoints": [
+    {
+      "x": 4,
+      "y": 5,
+      "steps": [
+        { "kind": "complexEncounter", "encounter": "shrine-puzzle" }
+      ]
+    }
+  ]
+}

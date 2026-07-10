@@ -18,7 +18,7 @@ expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the s
 expect(source.includes("export function parseScenarioSeed"), "scenarioSeed.ts must export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");
 
-const requiredRootProperties = ["scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "timedEncounters", "actionPoints", "extraActionPoints"];
+const requiredRootProperties = ["scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "timedEncounters", "actionPoints", "extraActionPoints"];
 for (const key of requiredRootProperties) {
   expect(Object.hasOwn(schema.properties ?? {}, key), `root schema is missing ${key}`);
 }
@@ -93,6 +93,22 @@ const sampleSeed = {
     casteSuccess: 0,
     actions: [{ slot: 0, rawCode: 1, id: 0 }]
   }],
+  complexEncounters: [{
+    key: "first-complex",
+    prompt: "hello",
+    physicalActions: ["Turn the wheel", "Pull the lever"],
+    requiredPhysicalActions: [2],
+    physicalResult: 1,
+    word: { text: "open", result: 2 },
+    spells: [{ spell: 12, result: 3 }],
+    items: [{ item: "bell-clapper", result: 1 }],
+    thief: { successResult: 3, failureResult: 4 },
+    canBackOut: true,
+    results: [
+      { result: 1, steps: [{ kind: "message", message: "hello" }] },
+      { result: 4, steps: [{ kind: "battle", battle: "first-battle" }] }
+    ]
+  }],
   timedEncounters: [{
     key: "bell-clock",
     day: 10,
@@ -125,7 +141,7 @@ const sampleSeed = {
     y: 2,
     steps: [
       { kind: "simpleEncounter", encounter: "first-encounter" },
-      { kind: "complexEncounter", encounter: 2 },
+      { kind: "complexEncounter", encounter: "first-complex" },
       { kind: "sound", sound: "stock-chime" },
       { kind: "picture", picture: "bell-picture" },
       { kind: "scrollingText", text: 1000 },

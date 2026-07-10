@@ -2,6 +2,7 @@ import { actionOptionFor, normalizeStepOpcode } from "./realmzActions";
 import {
   Action,
   BattleRecord,
+  ComplexEncounterRecord,
   EncounterActionRow,
   ExtraCodeRow,
   ItemTextRecord,
@@ -45,11 +46,13 @@ const TREASURE_BYTES = 48;
 const SHOP_BYTES = 3002;
 const ITEM_BYTES = 100;
 const SIMPLE_ENCOUNTER_BYTES = 426;
+const COMPLEX_ENCOUNTER_BYTES = 520;
 const TIMED_ENCOUNTER_BYTES = 40;
 const EXTRACODE_BYTES = 10;
 const DOOR_BYTES = 40;
 const SCENARIO_ITEM_ID_BASE = 800;
 const SCENARIO_ITEM_RECORD_COUNT = 200;
+const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
 
 const PARTY_CONDITION_CODES: Record<Exclude<ScenarioSeedPartyCondition, number>, number> = {
   torchLit: 0,
@@ -88,6 +91,7 @@ export type ScenarioSeed = {
   items?: ScenarioSeedItem[];
   assets?: ScenarioSeedAsset[];
   simpleEncounters?: ScenarioSeedSimpleEncounter[];
+  complexEncounters?: ScenarioSeedComplexEncounter[];
   timedEncounters?: ScenarioSeedTimedEncounter[];
   actionPoints?: ScenarioSeedActionPoint[];
   extraActionPoints?: ScenarioSeedExtraActionPoint[];
@@ -306,6 +310,31 @@ export type ScenarioSeedSimpleEncounter = {
   casteSuccess?: number;
 };
 
+export type ScenarioSeedComplexEncounter = {
+  key?: string;
+  id?: number;
+  prompt?: ScenarioSeedRef;
+  physicalActions?: string[];
+  requiredPhysicalActions?: number[];
+  physicalResult?: ScenarioSeedComplexResultNumber;
+  word?: { text: string; result: ScenarioSeedComplexResultNumber };
+  spells?: Array<{ spell: number; result: ScenarioSeedComplexResultNumber }>;
+  items?: Array<{ item: ScenarioSeedRef; result: ScenarioSeedComplexResultNumber }>;
+  thief?: { successResult: ScenarioSeedComplexResultNumber; failureResult: ScenarioSeedComplexResultNumber };
+  results?: ScenarioSeedComplexResultScript[];
+  actions?: ScenarioSeedEncounterAction[];
+  canBackOut?: boolean;
+  maxTimes?: number;
+  casteSuccess?: number;
+};
+
+export type ScenarioSeedComplexResultNumber = 1 | 2 | 3 | 4;
+
+export type ScenarioSeedComplexResultScript = {
+  result: ScenarioSeedComplexResultNumber;
+  steps: ScenarioSeedStep[];
+};
+
 export type ScenarioSeedEncounterAction = {
   slot?: number;
   rawCode: number;
@@ -486,6 +515,7 @@ export type ScenarioSeedAllocationReport = {
   items: ScenarioSeedAllocationEntry[];
   assets: ScenarioSeedAssetAllocationEntry[];
   simpleEncounters: ScenarioSeedAllocationEntry[];
+  complexEncounters: ScenarioSeedAllocationEntry[];
   timedEncounters: ScenarioSeedAllocationEntry[];
   actionPoints: ScenarioSeedAllocationEntry[];
   extraActionPoints: ScenarioSeedAllocationEntry[];
@@ -609,7 +639,8 @@ type ActionPointTarget = { levelType: LevelType; levelIndex: number; recordIndex
 type ScenarioSeedResolvedAsset = { kind: ManagedAssetKind; resourceType: string; resourceId: number; bundled: boolean };
 type ActionBuildScope =
   | { kind: "map"; levelType: LevelType; levelIndex: number; recordIndex: number }
-  | { kind: "extra"; recordIndex: number };
+  | { kind: "extra"; recordIndex: number }
+  | { kind: "encounter"; encounterType: "complex"; recordIndex: number; result: ScenarioSeedComplexResultNumber };
 
 type BuildContext = {
   errors: string[];
@@ -625,6 +656,7 @@ type BuildContext = {
   items: Map<string, number>;
   assets: Map<string, ScenarioSeedResolvedAsset>;
   simpleEncounters: Map<string, number>;
+  complexEncounters: Map<string, number>;
   timedEncounters: Map<string, number>;
   actionPoints: Map<string, number>;
   actionPointTargets: Map<string, ActionPointTarget>;
@@ -637,7 +669,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   const ctx: ParseContext = { errors: [], warnings: [] };
   const root = requireObject(input, "$", ctx);
   if (!root) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
-  allowKeys(root, "$", ["schemaVersion", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "timedEncounters", "actionPoints", "extraActionPoints"], ctx);
+  allowKeys(root, "$", ["schemaVersion", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "timedEncounters", "actionPoints", "extraActionPoints"], ctx);
 
   const schemaVersion = requireInteger(root.schemaVersion, "$.schemaVersion", ctx);
   if (schemaVersion !== null && schemaVersion !== SCENARIO_SEED_SCHEMA_VERSION) {
@@ -669,6 +701,8 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   if (assets) seed.assets = assets;
   const simpleEncounters = parseArray(root.simpleEncounters, "$.simpleEncounters", ctx, parseSimpleEncounter);
   if (simpleEncounters) seed.simpleEncounters = simpleEncounters;
+  const complexEncounters = parseArray(root.complexEncounters, "$.complexEncounters", ctx, parseComplexEncounter);
+  if (complexEncounters) seed.complexEncounters = complexEncounters;
   const timedEncounters = parseArray(root.timedEncounters, "$.timedEncounters", ctx, parseTimedEncounter);
   if (timedEncounters) seed.timedEncounters = timedEncounters;
   const actionPoints = parseArray(root.actionPoints, "$.actionPoints", ctx, parseActionPoint);
@@ -686,6 +720,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   validateItems(seed.items, ctx);
   validateUniqueIds(seed.assets, "assets", ctx);
   validateUniqueIds(seed.simpleEncounters, "simpleEncounters", ctx);
+  validateUniqueIds(seed.complexEncounters, "complexEncounters", ctx);
   validateUniqueIds(seed.timedEncounters, "timedEncounters", ctx);
   validateUniqueIds(seed.extraActionPoints, "extraActionPoints", ctx);
   validateMaps(seed.maps, ctx);
@@ -762,9 +797,11 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   project.treasures = (seed.treasures ?? []).map((treasure) => buildTreasure(treasure, buildContext));
   project.shops = (seed.shops ?? []).map((shop) => buildShop(shop, buildContext));
   project.simpleEncounters = (seed.simpleEncounters ?? []).map((encounter) => buildSimpleEncounter(encounter, buildContext));
+  const complexBuild = buildComplexEncounters(seed.complexEncounters ?? [], buildContext);
+  project.complexEncounters = complexBuild.records;
   project.timedEncounters = (seed.timedEncounters ?? []).map((encounter) => buildTimedEncounter(encounter, buildContext));
 
-  const triggerBuild = buildTriggers(seed.actionPoints ?? [], seed.extraActionPoints ?? [], buildContext);
+  const triggerBuild = buildTriggers(seed.actionPoints ?? [], seed.extraActionPoints ?? [], buildContext, complexBuild.extracodes);
   project.triggers = triggerBuild.triggers;
   project.extracodes = triggerBuild.extracodes;
   project.validation = validateBrowserProject(project);
@@ -1143,6 +1180,134 @@ function parseSimpleEncounter(input: unknown, path: string, ctx: ParseContext): 
     ...(maxTimes !== undefined ? { maxTimes } : {}),
     ...(casteSuccess !== undefined ? { casteSuccess } : {})
   };
+}
+
+function parseComplexEncounter(input: unknown, path: string, ctx: ParseContext): ScenarioSeedComplexEncounter | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["key", "id", "prompt", "physicalActions", "requiredPhysicalActions", "physicalResult", "word", "spells", "items", "thief", "results", "actions", "canBackOut", "maxTimes", "casteSuccess"], ctx);
+  const key = optionalString(value.key, `${path}.key`, ctx);
+  const id = optionalInteger(value.id, `${path}.id`, ctx);
+  const prompt = optionalRef(value.prompt, `${path}.prompt`, ctx);
+  const physicalActions = parseStringArray(value.physicalActions, `${path}.physicalActions`, ctx);
+  const requiredPhysicalActions = parseIntegerArray(value.requiredPhysicalActions, `${path}.requiredPhysicalActions`, ctx);
+  const physicalResult = optionalComplexResultNumber(value.physicalResult, `${path}.physicalResult`, ctx);
+  const word = value.word === undefined ? undefined : parseComplexWord(value.word, `${path}.word`, ctx);
+  const spells = parseArray(value.spells, `${path}.spells`, ctx, parseComplexSpellResponse);
+  const items = parseArray(value.items, `${path}.items`, ctx, parseComplexItemResponse);
+  const thief = value.thief === undefined ? undefined : parseComplexThiefResponse(value.thief, `${path}.thief`, ctx);
+  const results = parseArray(value.results, `${path}.results`, ctx, parseComplexResultScript);
+  const actions = parseArray(value.actions, `${path}.actions`, ctx, parseEncounterAction);
+  const maxTimes = optionalInteger(value.maxTimes, `${path}.maxTimes`, ctx);
+  const casteSuccess = optionalInteger(value.casteSuccess, `${path}.casteSuccess`, ctx);
+  const canBackOut = optionalBoolean(value.canBackOut, `${path}.canBackOut`, ctx);
+
+  if (physicalActions && physicalActions.length > 8) ctx.errors.push(`${path}.physicalActions can contain at most 8 choices.`);
+  for (const [index, text] of (physicalActions ?? []).entries()) {
+    if (text.length > 39) ctx.errors.push(`${path}.physicalActions[${index}] must be 39 characters or fewer.`);
+  }
+  if (requiredPhysicalActions && requiredPhysicalActions.length > 8) ctx.errors.push(`${path}.requiredPhysicalActions can contain at most 8 choice numbers.`);
+  const requiredSet = new Set<number>();
+  for (const [index, choice] of (requiredPhysicalActions ?? []).entries()) {
+    checkIntegerRange(choice, `${path}.requiredPhysicalActions[${index}]`, 1, 8, ctx);
+    if (requiredSet.has(choice)) ctx.errors.push(`${path}.requiredPhysicalActions contains duplicate choice ${choice}.`);
+    requiredSet.add(choice);
+    if (physicalActions && choice > physicalActions.length) ctx.errors.push(`${path}.requiredPhysicalActions[${index}] points beyond the ${physicalActions.length} physical choices.`);
+  }
+  if ((requiredPhysicalActions?.length ?? 0) > 0 && (physicalActions?.length ?? 0) === 0) ctx.errors.push(`${path}.requiredPhysicalActions requires at least one physicalActions entry.`);
+  if (physicalResult !== undefined && (physicalActions?.length ?? 0) === 0) ctx.errors.push(`${path}.physicalResult requires at least one physicalActions entry.`);
+  if (spells && spells.length > 10) ctx.errors.push(`${path}.spells can contain at most 10 responses.`);
+  if (items && items.length > 5) ctx.errors.push(`${path}.items can contain at most 5 responses.`);
+  if (results && results.length > 4) ctx.errors.push(`${path}.results can contain at most 4 result scripts.`);
+  const resultNumbers = new Set<number>();
+  for (const result of results ?? []) {
+    if (resultNumbers.has(result.result)) ctx.errors.push(`${path}.results contains duplicate result ${result.result}.`);
+    resultNumbers.add(result.result);
+  }
+  if (actions && actions.length > 32) ctx.errors.push(`${path}.actions can contain at most 32 encounter action slots.`);
+  const actionSlots = new Set<number>();
+  for (const [index, action] of (actions ?? []).entries()) {
+    const slot = action.slot ?? index;
+    if (actionSlots.has(slot)) ctx.errors.push(`${path}.actions contains duplicate slot ${slot}.`);
+    actionSlots.add(slot);
+  }
+  if (actions !== undefined && results !== undefined) ctx.errors.push(`${path} cannot combine raw actions with semantic results.`);
+  checkIntegerRange(id, `${path}.id`, 0, null, ctx);
+  checkIntegerRange(maxTimes, `${path}.maxTimes`, -128, 127, ctx);
+  checkIntegerRange(casteSuccess, `${path}.casteSuccess`, -128, 127, ctx);
+  return {
+    ...(key !== undefined ? { key } : {}),
+    ...(id !== undefined ? { id } : {}),
+    ...(prompt !== undefined ? { prompt } : {}),
+    ...(physicalActions ? { physicalActions } : {}),
+    ...(requiredPhysicalActions ? { requiredPhysicalActions } : {}),
+    ...(physicalResult !== undefined ? { physicalResult } : {}),
+    ...(word ? { word } : {}),
+    ...(spells ? { spells } : {}),
+    ...(items ? { items } : {}),
+    ...(thief ? { thief } : {}),
+    ...(results ? { results } : {}),
+    ...(actions ? { actions } : {}),
+    ...(canBackOut !== undefined ? { canBackOut } : {}),
+    ...(maxTimes !== undefined ? { maxTimes } : {}),
+    ...(casteSuccess !== undefined ? { casteSuccess } : {})
+  };
+}
+
+function parseComplexWord(input: unknown, path: string, ctx: ParseContext) {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["text", "result"], ctx);
+  const text = requireString(value.text, `${path}.text`, ctx) ?? "";
+  if (text.length > 39) ctx.errors.push(`${path}.text must be 39 characters or fewer.`);
+  return { text, result: requireComplexResultNumber(value.result, `${path}.result`, ctx) };
+}
+
+function parseComplexSpellResponse(input: unknown, path: string, ctx: ParseContext) {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["spell", "result"], ctx);
+  const spell = requireInteger(value.spell, `${path}.spell`, ctx);
+  checkIntegerRange(spell, `${path}.spell`, 0, 32767, ctx);
+  return { spell: spell ?? 0, result: requireComplexResultNumber(value.result, `${path}.result`, ctx) };
+}
+
+function parseComplexItemResponse(input: unknown, path: string, ctx: ParseContext) {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["item", "result"], ctx);
+  return { item: requireRef(value.item, `${path}.item`, ctx), result: requireComplexResultNumber(value.result, `${path}.result`, ctx) };
+}
+
+function parseComplexThiefResponse(input: unknown, path: string, ctx: ParseContext) {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["successResult", "failureResult"], ctx);
+  return {
+    successResult: requireComplexResultNumber(value.successResult, `${path}.successResult`, ctx),
+    failureResult: requireComplexResultNumber(value.failureResult, `${path}.failureResult`, ctx)
+  };
+}
+
+function parseComplexResultScript(input: unknown, path: string, ctx: ParseContext): ScenarioSeedComplexResultScript | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["result", "steps"], ctx);
+  const steps = parseArray(value.steps, `${path}.steps`, ctx, parseStep) ?? [];
+  if (steps.length === 0) ctx.errors.push(`${path}.steps must contain at least one step.`);
+  if (steps.length > 8) ctx.errors.push(`${path}.steps can contain at most 8 steps.`);
+  return { result: requireComplexResultNumber(value.result, `${path}.result`, ctx), steps };
+}
+
+function optionalComplexResultNumber(input: unknown, path: string, ctx: ParseContext): ScenarioSeedComplexResultNumber | undefined {
+  if (input === undefined) return undefined;
+  return requireComplexResultNumber(input, path, ctx);
+}
+
+function requireComplexResultNumber(input: unknown, path: string, ctx: ParseContext): ScenarioSeedComplexResultNumber {
+  const value = requireInteger(input, path, ctx);
+  checkIntegerRange(value, path, 1, 4, ctx);
+  return (value !== null && value >= 1 && value <= 4 ? value : 1) as ScenarioSeedComplexResultNumber;
 }
 
 function parseEncounterAction(input: unknown, path: string, ctx: ParseContext): ScenarioSeedEncounterAction | null {
@@ -1884,6 +2049,7 @@ function createBuildContext(): BuildContext {
       items: [],
       assets: [],
       simpleEncounters: [],
+      complexEncounters: [],
       timedEncounters: [],
       actionPoints: [],
       extraActionPoints: [],
@@ -1899,6 +2065,7 @@ function createBuildContext(): BuildContext {
     items: new Map(),
     assets: new Map(),
     simpleEncounters: new Map(),
+    complexEncounters: new Map(),
     timedEncounters: new Map(),
     actionPoints: new Map(),
     actionPointTargets: new Map(),
@@ -1917,6 +2084,7 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
   allocateRecordIds(seed.shops ?? [], "shop", context.shops, context.allocations.shops, context);
   allocateItemIds(seed.items ?? [], context);
   allocateRecordIds(seed.simpleEncounters ?? [], "simple encounter", context.simpleEncounters, context.allocations.simpleEncounters, context);
+  allocateRecordIds(seed.complexEncounters ?? [], "complex encounter", context.complexEncounters, context.allocations.complexEncounters, context);
   allocateRecordIds(seed.timedEncounters ?? [], "timed encounter", context.timedEncounters, context.allocations.timedEncounters, context);
   allocateRecordIds(seed.extraActionPoints ?? [], "extra action point", context.extraActionPoints, context.allocations.extraActionPoints, context);
   for (const [index, map] of (seed.maps ?? []).entries()) {
@@ -2044,7 +2212,7 @@ function branchTargetKindCode(kind: ScenarioSeedBranchTargetKind) {
 
 function resolveBranchTarget(ref: ScenarioSeedRef, kind: ScenarioSeedBranchTargetKind, context: BuildContext) {
   if (kind === "simpleEncounter") return resolveRef(ref, context.simpleEncounters, "simple encounter", context);
-  if (kind === "complexEncounter") return numericRef(ref, "complex encounter", context);
+  if (kind === "complexEncounter") return resolveRef(ref, context.complexEncounters, "complex encounter", context);
   return resolveRef(ref, context.actionPoints, "action point", context);
 }
 
@@ -2605,6 +2773,63 @@ function buildSimpleEncounter(seed: ScenarioSeedSimpleEncounter, context: BuildC
   };
 }
 
+function buildComplexEncounters(seeds: ScenarioSeedComplexEncounter[], context: BuildContext): { records: ComplexEncounterRecord[]; extracodes: ExtraCodeRow[] } {
+  let nextEdcdId = 0;
+  const extracodes: ExtraCodeRow[] = [];
+  const allocateEdcdId = () => nextEdcdId++;
+  const records = seeds.map((seed) => buildComplexEncounter(seed, context, allocateEdcdId, extracodes));
+  return { records, extracodes };
+}
+
+function buildComplexEncounter(
+  seed: ScenarioSeedComplexEncounter,
+  context: BuildContext,
+  nextEdcdId: () => number,
+  extracodes: ExtraCodeRow[]
+): ComplexEncounterRecord {
+  const id = seed.id ?? 0;
+  const physicalActions = padStringArray(seed.physicalActions ?? [], 8, "");
+  const requiredPhysicalActions = new Set(seed.requiredPhysicalActions ?? []);
+  const semanticActions = (seed.results ?? []).flatMap((result) => {
+    const scope: ActionBuildScope = { kind: "encounter", encounterType: "complex", recordIndex: id, result: result.result };
+    return result.steps.map((step, index): EncounterActionRow => {
+      const action = buildAction(step, (result.result - 1) * 8 + index, context, nextEdcdId, extracodes, scope);
+      return { slot: action.slot, rawCode: action.rawCode, id: action.id };
+    });
+  });
+  const actions = (seed.actions ?? []).length > 0
+    ? (seed.actions ?? []).map((action, index): EncounterActionRow => ({ slot: action.slot ?? index, rawCode: action.rawCode, id: action.id }))
+    : semanticActions;
+  const spellIds = padArray((seed.spells ?? []).map((response) => response.spell), 10, MAGIC_RESPONSE_BLANK_SPELL_ID);
+  const spellResults = padArray((seed.spells ?? []).map((response) => response.result), 10, 0);
+  const itemIds = padArray((seed.items ?? []).map((response) => resolveItemRef(response.item, context)), 5, 0);
+  const itemResults = padArray((seed.items ?? []).map((response) => response.result), 5, 0);
+  return {
+    id,
+    actions,
+    actionResult: seed.physicalResult ?? 0,
+    wordResult: seed.word?.result ?? 0,
+    groups: Array.from({ length: 8 }, (_, index) => requiredPhysicalActions.has(index + 1) ? 1 : 0),
+    spellIds,
+    spellResults,
+    itemIds,
+    itemResults,
+    choiceResults: [seed.physicalResult ?? 0, 0, 0, 0],
+    wordResults: [seed.word?.result ?? 0, 0, 0, 0],
+    canBackOut: seed.canBackOut ?? false,
+    thief: Boolean(seed.thief),
+    maxTimes: seed.maxTimes ?? 0,
+    casteSuccess: seed.casteSuccess ?? 0,
+    thiefSuccess: seed.thief?.successResult ?? 0,
+    thiefFail: seed.thief?.failureResult ?? 0,
+    prompt: seed.prompt === undefined ? 0 : resolveRef(seed.prompt, context.messages, "message", context),
+    texts: [...physicalActions, seed.word?.text ?? ""],
+    rawBytes: new Array(COMPLEX_ENCOUNTER_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data ED2", id, id * COMPLEX_ENCOUNTER_BYTES, COMPLEX_ENCOUNTER_BYTES)
+  };
+}
+
 function buildTimedEncounter(seed: ScenarioSeedTimedEncounter, context: BuildContext): TimedEncounterRecord {
   const id = seed.id ?? 0;
   const location = seed.location ?? { kind: "any" as const };
@@ -2628,9 +2853,9 @@ function buildTimedEncounter(seed: ScenarioSeedTimedEncounter, context: BuildCon
   };
 }
 
-function buildTriggers(actionPoints: ScenarioSeedActionPoint[], extraActionPoints: ScenarioSeedExtraActionPoint[], context: BuildContext): { triggers: TriggerRecord[]; extracodes: ExtraCodeRow[] } {
-  let nextEdcdId = 0;
-  const extracodes: ExtraCodeRow[] = [];
+function buildTriggers(actionPoints: ScenarioSeedActionPoint[], extraActionPoints: ScenarioSeedExtraActionPoint[], context: BuildContext, initialExtracodes: ExtraCodeRow[] = []): { triggers: TriggerRecord[]; extracodes: ExtraCodeRow[] } {
+  const extracodes: ExtraCodeRow[] = [...initialExtracodes];
+  let nextEdcdId = extracodes.reduce((highest, row) => Math.max(highest, row.id + 1), 0);
   const allocateEdcdId = () => nextEdcdId++;
   const triggers = actionPoints.map((actionPoint, index): TriggerRecord => {
     const mapTarget = actionPoint.map !== undefined ? resolveMapTarget(actionPoint.map, context) : null;
@@ -2685,7 +2910,7 @@ function buildTriggers(actionPoints: ScenarioSeedActionPoint[], extraActionPoint
 function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext, nextEdcdId: () => number, extracodes: ExtraCodeRow[], scope: ActionBuildScope): Action {
   if (step.kind === "message") return describeAction(slot, 1, resolveRef(step.message, context.messages, "message", context));
   if (step.kind === "simpleEncounter") return describeAction(slot, 4, resolveRef(step.encounter, context.simpleEncounters, "simple encounter", context));
-  if (step.kind === "complexEncounter") return describeAction(slot, 5, numericRef(step.encounter, "complex encounter", context));
+  if (step.kind === "complexEncounter") return describeAction(slot, 5, resolveRef(step.encounter, context.complexEncounters, "complex encounter", context));
   if (step.kind === "shop") return describeAction(slot, 6, resolveRef(step.shop, context.shops, "shop", context));
   if (step.kind === "treasure") return describeAction(slot, 10, resolveRef(step.treasure, context.treasures, "treasure", context));
   if (step.kind === "sound") return describeAction(slot, 9, resolveSeedAssetRef(step.sound, "sound", "sound", context));
