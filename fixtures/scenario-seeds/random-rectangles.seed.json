@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Random Rectangles Seed" },
+  "maps": [
+    {
+      "key": "field",
+      "levelType": "land",
+      "index": 0,
+      "fillTile": 1
+    }
+  ],
+  "battles": [
+    { "key": "low-battle", "id": 3 },
+    { "key": "high-battle", "id": 4 }
+  ],
+  "actionPoints": [
+    {
+      "key": "random-rectangle-script",
+      "map": "field",
+      "x": 10,
+      "y": 10,
+      "steps": [
+        {
+          "kind": "alterRandomEncounterRectangle",
+          "level": 0,
+          "rectangle": 2,
+          "encounterRate": 5000,
+          "battleLow": "low-battle",
+          "battleHigh": "high-battle"
+        },
+        {
+          "kind": "alterRandomRectangle",
+          "level": 0,
+          "rectangle": 2,
+          "encounterPercentDelta": -500,
+          "shape": { "mode": "offset", "x": 1, "y": -2 }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Battle Outcomes Seed" },
+  "battles": [
+    { "key": "low-battle", "id": 3 },
+    { "key": "high-battle", "id": 4 }
+  ],
+  "monsters": [
+    { "key": "goblin", "id": 7 },
+    { "key": "archer", "id": 8 }
+  ],
+  "extraActionPoints": [
+    {
+      "key": "coward-macro",
+      "id": 9,
+      "steps": [
+        { "kind": "causeRout", "monsters": ["goblin", "archer"] }
+      ]
+    }
+  ],
+  "actionPoints": [
+    {
+      "key": "battle-outcome-script",
+      "x": 10,
+      "y": 10,
+      "steps": [
+        {
+          "kind": "battleOutcome",
+          "battleLow": "low-battle",
+          "battleHigh": "high-battle",
+          "cowardMacro": "coward-macro",
+          "sound": 200,
+          "message": 10
+        },
+        {
+          "kind": "improvedBattleOutcome",
+          "battleLow": "low-battle",
+          "battleHigh": "high-battle",
+          "sound": 201,
+          "message": 11,
+          "cowardMacro": "coward-macro"
+        }
+      ]
+    }
+  ]
+}

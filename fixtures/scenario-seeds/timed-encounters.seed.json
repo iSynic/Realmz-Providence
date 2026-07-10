@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Timed Encounters Seed" },
+  "quests": [
+    { "key": "heard-bell", "id": 2, "label": "Heard the bell" }
+  ],
+  "items": [
+    { "key": "bell-clapper", "itemId": 901, "identifiedName": "Bell Clapper" }
+  ],
+  "extraActionPoints": [
+    { "key": "toll-macro", "id": 5, "steps": [{ "kind": "message", "message": 10 }] }
+  ],
+  "timedEncounters": [
+    {
+      "key": "bell-clock",
+      "id": 3,
+      "day": 10,
+      "increment": 7,
+      "percent": 50,
+      "macro": "toll-macro",
+      "requiredItem": "bell-clapper",
+      "requiredQuest": "heard-bell",
+      "location": { "kind": "land", "level": 0, "randomRectangle": 2, "x": 10, "y": 11 }
+    }
+  ],
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "alterTimedEncounter", "timedEncounter": "bell-clock", "percent": 75, "increment": 3, "resetFromCurrentDay": true, "daysUntilNext": 2 }
+      ]
+    }
+  ]
+}

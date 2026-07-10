@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Asset Kind" },
+  "assets": [
+    { "key": "bell-picture", "source": "custom-library", "assetId": "asset:workspace:bell", "resourceId": 30000 }
+  ],
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "sound", "sound": "bell-picture" }
+      ]
+    }
+  ]
+}

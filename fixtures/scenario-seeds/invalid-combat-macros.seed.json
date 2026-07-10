@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Combat Macros" },
+  "extraActionPoints": [
+    {
+      "steps": [
+        { "kind": "battleMacroCriteria", "mode": 2, "roundOrPercent": 50, "repeatMode": 2, "macroLow": 1 },
+        { "kind": "destroyRelatedMonsters", "monster": 1, "maxCount": -1 }
+      ]
+    }
+  ]
+}

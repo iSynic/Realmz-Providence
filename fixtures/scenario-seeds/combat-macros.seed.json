@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Combat Macros Seed" },
+  "monsters": [
+    { "key": "goblin", "id": 7 },
+    { "key": "archer", "id": 8 }
+  ],
+  "extraActionPoints": [
+    {
+      "key": "battle-macro",
+      "id": 9,
+      "steps": [
+        {
+          "kind": "battleMacroCriteria",
+          "mode": 0,
+          "roundOrPercent": 1,
+          "repeatMode": 2,
+          "macroLow": "spawn-macro",
+          "macroHigh": "rout-macro"
+        },
+        { "kind": "spawnMonsters", "monster": "goblin", "countOrRandomLimit": -3, "sound": 200, "traitorOverride": 1 },
+        { "kind": "destroyRelatedMonsters", "monster": "archer", "maxCount": 2, "includeTraitorSide": true },
+        { "kind": "continueIfMonsterPresent", "monster": "goblin" }
+      ]
+    },
+    { "key": "spawn-macro", "id": 10, "steps": [{ "kind": "raw", "rawCode": 124, "id": 0 }] },
+    { "key": "rout-macro", "id": 11, "steps": [{ "kind": "raw", "rawCode": 123, "id": 0 }] }
+  ]
+}

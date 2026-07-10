@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Timed Encounters" },
+  "timedEncounters": [
+    {
+      "day": 0,
+      "percent": 101,
+      "macro": 1,
+      "location": { "kind": "land", "level": 0, "x": 10 }
+    }
+  ],
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "alterTimedEncounter", "timedEncounter": 0, "resetFromCurrentDay": true }
+      ]
+    }
+  ]
+}

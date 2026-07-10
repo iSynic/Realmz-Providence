@@ -18,7 +18,7 @@ expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the s
 expect(source.includes("export function parseScenarioSeed"), "scenarioSeed.ts must export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");
 
-const requiredRootProperties = ["scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "simpleEncounters", "actionPoints", "extraActionPoints"];
+const requiredRootProperties = ["scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "timedEncounters", "actionPoints", "extraActionPoints"];
 for (const key of requiredRootProperties) {
   expect(Object.hasOwn(schema.properties ?? {}, key), `root schema is missing ${key}`);
 }
@@ -69,9 +69,20 @@ const sampleSeed = {
   monsters: [{ key: "bell-wight", name: "Bell Wight", description: "A bell-bound guardian.", hitDice: 3, stamina: 12, staminaMax: 12, iconId: 126, exp: 200, attacks: [[1, 6, 0, 0]], items: ["bell-clapper"] }],
   battles: [{ key: "first-battle", placements: [{ x: 6, y: 6, monster: "bell-wight" }] }],
   items: [{ key: "bell-clapper", itemId: 901, identifiedName: "Bell Clapper", iconId: 300, type: 1, cost: 50, weight: 2 }],
+  assets: [
+    { key: "stock-chime", source: "stock", resourceType: "snd ", resourceId: 137 },
+    { key: "bell-picture", source: "custom-library", assetId: "asset:workspace:bell", resourceId: 30000 }
+  ],
   treasures: [{ key: "first-treasure", itemIds: ["bell-clapper"], gold: 10 }],
   shops: [{ key: "first-shop", stock: [{ itemId: "bell-clapper", quantity: 1 }] }],
-  extraActionPoints: [{ key: "replacement-macro", steps: [{ kind: "raw", rawCode: 1, id: 0 }] }],
+  extraActionPoints: [{ key: "replacement-macro", steps: [
+    { kind: "raw", rawCode: 1, id: 0 },
+    { kind: "causeRout", monsters: ["bell-wight"] },
+    { kind: "battleMacroCriteria", mode: 0, roundOrPercent: 1, repeatMode: 2, macroLow: "replacement-macro", macroHigh: "replacement-macro" },
+    { kind: "spawnMonsters", monster: "bell-wight", countOrRandomLimit: -2, sound: 200 },
+    { kind: "destroyRelatedMonsters", monster: "bell-wight", maxCount: 1, includeTraitorSide: true },
+    { kind: "continueIfMonsterPresent", monster: "bell-wight" }
+  ] }],
   simpleEncounters: [{
     key: "first-encounter",
     prompt: "hello",
@@ -81,6 +92,16 @@ const sampleSeed = {
     maxTimes: 1,
     casteSuccess: 0,
     actions: [{ slot: 0, rawCode: 1, id: 0 }]
+  }],
+  timedEncounters: [{
+    key: "bell-clock",
+    day: 10,
+    increment: 7,
+    percent: 50,
+    macro: "replacement-macro",
+    requiredItem: "bell-clapper",
+    requiredQuest: "started",
+    location: { kind: "land", level: 0, randomRectangle: 2, x: 10, y: 11 }
   }],
   actionPoints: [{
     key: "start-ap",
@@ -105,8 +126,8 @@ const sampleSeed = {
     steps: [
       { kind: "simpleEncounter", encounter: "first-encounter" },
       { kind: "complexEncounter", encounter: 2 },
-      { kind: "sound", sound: 200 },
-      { kind: "picture", picture: 300 },
+      { kind: "sound", sound: "stock-chime" },
+      { kind: "picture", picture: "bell-picture" },
       { kind: "scrollingText", text: 1000 },
       { kind: "victoryPoints", amount: 25 },
       { kind: "temple", inflation: 100 },
@@ -185,6 +206,21 @@ const sampleSeed = {
       { kind: "branchOnSpellPoints", scope: "alive", minimum: 5, onFailure: "exitSave", successMacro: "replacement-macro" },
       { kind: "branchOnGameTime", dayAtMost: 10, hourAtMost: 12, successMacro: "replacement-macro", failureMacro: "replacement-macro" }
     ]
+  }, {
+    x: 10,
+    y: 10,
+    steps: [
+      { kind: "alterRandomEncounterRectangle", level: 0, rectangle: 2, encounterRate: 5000, battleLow: "first-battle", battleHigh: "first-battle" },
+      { kind: "alterRandomRectangle", level: 0, rectangle: 2, encounterPercentDelta: -500, shape: { mode: "offset", x: 1, y: -2 } }
+    ]
+  }, {
+    x: 11,
+    y: 11,
+    steps: [
+      { kind: "battleOutcome", battleLow: "first-battle", battleHigh: "first-battle", cowardMacro: "replacement-macro" },
+      { kind: "improvedBattleOutcome", battleLow: "first-battle", cowardMacro: "replacement-macro" },
+      { kind: "alterTimedEncounter", timedEncounter: "bell-clock", percent: 75, increment: 3, resetFromCurrentDay: true, daysUntilNext: 2 }
+    ]
   }]
 };
 validateSampleAgainstSchemaShape(sampleSeed, schema, "$");
@@ -259,9 +295,11 @@ function validateSampleAgainstSchemaShape(value, schemaNode, pathLabel) {
 
 function objectMatchesConst(value, schemaNode) {
   const resolved = resolveRef(schemaNode);
-  const kindSchema = resolved.properties?.kind;
-  if (kindSchema?.const !== undefined) return value?.kind === kindSchema.const;
-  if (kindSchema?.enum) return kindSchema.enum.includes(value?.kind);
+  for (const discriminator of ["kind", "mode", "source"]) {
+    const discriminatorSchema = resolved.properties?.[discriminator];
+    if (discriminatorSchema?.const !== undefined) return value?.[discriminator] === discriminatorSchema.const;
+    if (discriminatorSchema?.enum) return discriminatorSchema.enum.includes(value?.[discriminator]);
+  }
   return false;
 }
 

@@ -152,6 +152,8 @@ Still future work: alternate Monster/Mega sets, monster-library template referen
 
 ## Priority 5: Asset And Library References
 
+Status: implemented for stock Realmz references and caller-provided Providence Custom Library assets.
+
 Add seed references to Providence custom library and reference assets.
 
 Proposed shape:
@@ -164,12 +166,16 @@ Proposed shape:
 }
 ```
 
-Normalizer work:
+Implemented normalizer work:
 
 - Resolve stock Realmz references without bundling.
 - Resolve Providence custom library assets and copy them into scenario assets when needed.
 - Reject or warn when a reference asset is not scenario-legal without bundling.
 - Allow `picture`, `sound`, icon, and monster art fields to reference asset keys.
+
+Current coverage resolves `picture`, `sound`, scrolling text, and sound-bearing AP fields by asset key. Stock resources remain ID-only and are not bundled. Custom Library assets are copied into Scenario Assets with scenario-safe IDs when the caller supplies the current workspace asset list.
+
+Still future work: reference-catalog assets that are not stock Realmz resources, item/monster icon key fields, and persistence hooks that copy desktop workspace payload files into a newly saved project directory.
 
 ## Priority 6: More AP Aliases
 
@@ -206,13 +212,31 @@ Implemented runtime-state group:
 - `changeSpellPoints`
 - `branchOnSpellPoints`
 
+Implemented random encounter rectangle group:
+
+- `alterRandomEncounterRectangle`
+- `alterRandomRectangle`, including unchanged, absolute, offset, and warp geometry modes
+
+Implemented battle outcome and routing group:
+
+- `battleOutcome`
+- `improvedBattleOutcome`
+- `causeRout`, restricted to Extra Action Point battle or monster macros
+- Existing improved `selectiveBattle` coward routing now resolves to Extra Action Points rather than ordinary Action Points
+
+Implemented combat macro group:
+
+- `battleMacroCriteria`
+- `spawnMonsters`
+- `destroyRelatedMonsters`
+- `continueIfMonsterPresent`
+- Combat-only aliases reject ordinary map Action Point context
+
 Add remaining high-value AP semantic aliases after fixtures cover the current set.
 
 Next groups:
 
-- random rectangle mutation and rectangle resizing
-- battle outcome/flee/coward routing variants
-- combat macro-only aliases with explicit macro context
+- complex, thief, and timed encounter records
 
 Rule: add aliases in groups with fixture coverage for opcode, ID, EDCD values, and target resolution.
 
@@ -244,11 +268,13 @@ Still future work:
 
 ## Priority 8: Complex, Thief, And Timed Encounters
 
+Status: timed encounter records and keyed opcode 54 mutation are implemented. Complex and thief encounter seed records remain future work.
+
 After simple encounters are stable:
 
 - Add complex encounter seed records.
 - Add thief encounter seed records.
-- Add timed encounter seed records.
+- Add timed encounter seed records. Implemented with schedule, macro, item/quest, and location gates.
 - Reuse AP step aliases for result scripts where possible.
 
 These should be fixture-gated because the record shapes are larger and easier to misuse.
@@ -287,4 +313,4 @@ For phases that affect exportable records, also run:
 
 ## Recommended Next Commit Scope
 
-Continue Priority 6 with random rectangle mutation and rectangle resizing aliases. Keep raw opcodes available as the fallback while each semantic alias is added.
+Continue with complex encounter seed records, then thief encounter records. Keep raw action rows available as the fallback while higher-level encounter scripts are added.

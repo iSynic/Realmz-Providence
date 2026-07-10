@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Battle Outcomes" },
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "causeRout", "monsters": [1] }
+      ]
+    }
+  ]
+}

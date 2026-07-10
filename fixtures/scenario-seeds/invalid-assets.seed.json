@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Asset References" },
+  "assets": [
+    { "key": "missing-picture", "source": "custom-library", "assetId": "asset:workspace:missing", "resourceId": 10 }
+  ],
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "picture", "picture": "missing-picture" }
+      ]
+    }
+  ]
+}

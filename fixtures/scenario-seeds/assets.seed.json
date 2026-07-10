@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Asset References Seed" },
+  "assets": [
+    { "key": "stock-chime", "source": "stock", "resourceType": "snd ", "resourceId": 137 },
+    { "key": "bell-picture", "source": "custom-library", "assetId": "asset:workspace:bell", "resourceId": 30000 }
+  ],
+  "actionPoints": [
+    {
+      "x": 10,
+      "y": 10,
+      "steps": [
+        { "kind": "sound", "sound": "stock-chime" },
+        { "kind": "picture", "picture": "bell-picture" }
+      ]
+    }
+  ]
+}

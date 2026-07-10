@@ -7,6 +7,8 @@ import {
   ItemTextRecord,
   LevelType,
   MapEntity,
+  ManagedAsset,
+  ManagedAssetKind,
   MessageRecord,
   MonsterDescriptionRecord,
   MonsterRecord,
@@ -18,9 +20,11 @@ import {
   ScenarioItemRecord,
   SimpleEncounterRecord,
   TilesetAsset,
+  TimedEncounterRecord,
   TreasureRecord,
   TriggerRecord
 } from "./types";
+import { nextResourceId } from "./mediaAssets";
 import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./browser/atlasPaths";
 import { createBrowserProject, validateBrowserProject } from "./browser/project";
 import { landlookBaseTile, landlookName, landlookPictId } from "./browser/realmzParser";
@@ -41,6 +45,7 @@ const TREASURE_BYTES = 48;
 const SHOP_BYTES = 3002;
 const ITEM_BYTES = 100;
 const SIMPLE_ENCOUNTER_BYTES = 426;
+const TIMED_ENCOUNTER_BYTES = 40;
 const EXTRACODE_BYTES = 10;
 const DOOR_BYTES = 40;
 const SCENARIO_ITEM_ID_BASE = 800;
@@ -81,7 +86,9 @@ export type ScenarioSeed = {
   treasures?: ScenarioSeedTreasure[];
   shops?: ScenarioSeedShop[];
   items?: ScenarioSeedItem[];
+  assets?: ScenarioSeedAsset[];
   simpleEncounters?: ScenarioSeedSimpleEncounter[];
+  timedEncounters?: ScenarioSeedTimedEncounter[];
   actionPoints?: ScenarioSeedActionPoint[];
   extraActionPoints?: ScenarioSeedExtraActionPoint[];
 };
@@ -122,6 +129,26 @@ export type ScenarioSeedQuest = {
   id?: number;
   label: string;
   note?: string;
+};
+
+export type ScenarioSeedAsset =
+  | { key: string; source: "stock"; resourceType: string; resourceId: number; kind?: ManagedAssetKind }
+  | { key: string; source: "custom-library"; assetId: string; resourceId?: number };
+
+export type ScenarioSeedTimedLocation =
+  | { kind: "any" }
+  | { kind: "land" | "dungeon"; level: number; randomRectangle?: number; x?: number; y?: number };
+
+export type ScenarioSeedTimedEncounter = {
+  key?: string;
+  id?: number;
+  day: number;
+  increment?: number;
+  percent?: number;
+  macro: ScenarioSeedRef;
+  requiredItem?: ScenarioSeedRef;
+  requiredQuest?: ScenarioSeedRef;
+  location?: ScenarioSeedTimedLocation;
 };
 
 export type ScenarioSeedBattle = {
@@ -351,6 +378,11 @@ export type ScenarioSeedTileParameter = "shoreline" | "boatRequired" | "path" | 
 
 export type ScenarioSeedTimeMode = "set" | "offset";
 export type ScenarioSeedBoatStatus = "inBoat" | "notInBoat";
+export type ScenarioSeedRandomRectangleShape =
+  | { mode: "unchanged" }
+  | { mode: "absolute"; left: number; right: number; top: number; bottom: number }
+  | { mode: "offset"; x: number; y: number }
+  | { mode: "warp"; left: number; right: number; top: number; bottom: number };
 
 export type ScenarioSeedStep =
   | { kind: "message"; message: ScenarioSeedRef }
@@ -374,6 +406,14 @@ export type ScenarioSeedStep =
   | { kind: "teleport"; landLevel?: number; x?: number; y?: number; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; teleportOnly?: boolean }
   | { kind: "randomMessage"; low: ScenarioSeedRef; high: ScenarioSeedRef }
   | { kind: "selectiveBattle"; battleLow: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; treasure?: ScenarioSeedRef; improved?: boolean; cowardMacro?: ScenarioSeedRef }
+  | { kind: "battleOutcome"; battleLow: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; cowardMacro?: ScenarioSeedRef; sound?: ScenarioSeedRef; message?: ScenarioSeedRef }
+  | { kind: "improvedBattleOutcome"; battleLow: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; cowardMacro?: ScenarioSeedRef }
+  | { kind: "causeRout"; monsters: ScenarioSeedRef[] }
+  | { kind: "battleMacroCriteria"; mode: 0 | 1 | 2; roundOrPercent: number; repeatMode: 0 | 1 | 2; macroLow: ScenarioSeedRef; macroHigh?: ScenarioSeedRef }
+  | { kind: "spawnMonsters"; monster: ScenarioSeedRef; countOrRandomLimit: number; sound?: ScenarioSeedRef; traitorOverride?: number }
+  | { kind: "destroyRelatedMonsters"; monster: ScenarioSeedRef; maxCount?: number; includeTraitorSide?: boolean }
+  | { kind: "continueIfMonsterPresent"; monster: ScenarioSeedRef }
+  | { kind: "alterTimedEncounter"; timedEncounter: ScenarioSeedRef; percent?: number; increment?: number; resetFromCurrentDay?: boolean; daysUntilNext?: number }
   | { kind: "branchOnQuest"; quest: ScenarioSeedRef; test?: number; branchMode?: number; target?: ScenarioSeedRef; code?: number }
   | { kind: "setQuestFlag"; quest: ScenarioSeedRef }
   | { kind: "questValue"; quest: ScenarioSeedRef; amount: number; branchType?: number; threshold?: number; target?: ScenarioSeedRef }
@@ -404,6 +444,8 @@ export type ScenarioSeedStep =
   | { kind: "alterFatigue"; mode: "maximum" | "minimum" | "percent"; percent?: number }
   | { kind: "changeSpellPoints"; rolls: number; low: number; high: number; take?: boolean; sound?: ScenarioSeedRef; message?: ScenarioSeedRef }
   | { kind: "branchOnSpellPoints"; scope: "picked" | "alive"; minimum: number; onFailure?: "continue" | "exitSave"; successMacro: ScenarioSeedRef }
+  | { kind: "alterRandomEncounterRectangle"; level: number; rectangle: number; encounterRate: number; battleLow?: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; dungeon?: boolean }
+  | { kind: "alterRandomRectangle"; level: number; rectangle: number; encounterPercentDelta?: number; dungeon?: boolean; shape: ScenarioSeedRandomRectangleShape }
   | { kind: "enterExitDungeon"; mode: number; level: number; x: number; y: number; heading: number }
   | { kind: "edcd"; opcode: number; values: number[] }
   | { kind: "raw"; rawCode: number; id: number };
@@ -442,11 +484,21 @@ export type ScenarioSeedAllocationReport = {
   treasures: ScenarioSeedAllocationEntry[];
   shops: ScenarioSeedAllocationEntry[];
   items: ScenarioSeedAllocationEntry[];
+  assets: ScenarioSeedAssetAllocationEntry[];
   simpleEncounters: ScenarioSeedAllocationEntry[];
+  timedEncounters: ScenarioSeedAllocationEntry[];
   actionPoints: ScenarioSeedAllocationEntry[];
   extraActionPoints: ScenarioSeedAllocationEntry[];
   maps: ScenarioSeedMapAllocationEntry[];
   regions: ScenarioSeedRegionAllocationEntry[];
+};
+
+export type ScenarioSeedAssetAllocationEntry = {
+  key: string;
+  source: "stock" | "custom-library";
+  resourceType: string;
+  resourceId: number;
+  bundled: boolean;
 };
 
 export type ScenarioSeedDiagnostic = {
@@ -542,6 +594,7 @@ export type ScenarioSeedProjectResult =
 export type ScenarioSeedProjectOptions = {
   now?: string;
   appVersion?: string;
+  customAssets?: ManagedAsset[];
 };
 
 type ParseContext = {
@@ -553,6 +606,7 @@ type ObjectValue = Record<string, unknown>;
 
 type MapTarget = { levelType: LevelType; index: number; x?: number; y?: number };
 type ActionPointTarget = { levelType: LevelType; levelIndex: number; recordIndex: number };
+type ScenarioSeedResolvedAsset = { kind: ManagedAssetKind; resourceType: string; resourceId: number; bundled: boolean };
 type ActionBuildScope =
   | { kind: "map"; levelType: LevelType; levelIndex: number; recordIndex: number }
   | { kind: "extra"; recordIndex: number };
@@ -569,7 +623,9 @@ type BuildContext = {
   treasures: Map<string, number>;
   shops: Map<string, number>;
   items: Map<string, number>;
+  assets: Map<string, ScenarioSeedResolvedAsset>;
   simpleEncounters: Map<string, number>;
+  timedEncounters: Map<string, number>;
   actionPoints: Map<string, number>;
   actionPointTargets: Map<string, ActionPointTarget>;
   extraActionPoints: Map<string, number>;
@@ -581,7 +637,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   const ctx: ParseContext = { errors: [], warnings: [] };
   const root = requireObject(input, "$", ctx);
   if (!root) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
-  allowKeys(root, "$", ["schemaVersion", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "simpleEncounters", "actionPoints", "extraActionPoints"], ctx);
+  allowKeys(root, "$", ["schemaVersion", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "timedEncounters", "actionPoints", "extraActionPoints"], ctx);
 
   const schemaVersion = requireInteger(root.schemaVersion, "$.schemaVersion", ctx);
   if (schemaVersion !== null && schemaVersion !== SCENARIO_SEED_SCHEMA_VERSION) {
@@ -609,8 +665,12 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   if (shops) seed.shops = shops;
   const items = parseArray(root.items, "$.items", ctx, parseItem);
   if (items) seed.items = items;
+  const assets = parseArray(root.assets, "$.assets", ctx, parseAsset);
+  if (assets) seed.assets = assets;
   const simpleEncounters = parseArray(root.simpleEncounters, "$.simpleEncounters", ctx, parseSimpleEncounter);
   if (simpleEncounters) seed.simpleEncounters = simpleEncounters;
+  const timedEncounters = parseArray(root.timedEncounters, "$.timedEncounters", ctx, parseTimedEncounter);
+  if (timedEncounters) seed.timedEncounters = timedEncounters;
   const actionPoints = parseArray(root.actionPoints, "$.actionPoints", ctx, parseActionPoint);
   if (actionPoints) seed.actionPoints = actionPoints;
   const extraActionPoints = parseArray(root.extraActionPoints, "$.extraActionPoints", ctx, parseExtraActionPoint);
@@ -624,7 +684,9 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   validateUniqueIds(seed.shops, "shops", ctx);
   validateUniqueIds(seed.items, "items", ctx);
   validateItems(seed.items, ctx);
+  validateUniqueIds(seed.assets, "assets", ctx);
   validateUniqueIds(seed.simpleEncounters, "simpleEncounters", ctx);
+  validateUniqueIds(seed.timedEncounters, "timedEncounters", ctx);
   validateUniqueIds(seed.extraActionPoints, "extraActionPoints", ctx);
   validateMaps(seed.maps, ctx);
 
@@ -673,6 +735,8 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
     files: []
   };
 
+  project.assets = buildSeedAssets(seed.assets ?? [], options.customAssets ?? [], buildContext);
+
   if (seed.maps?.length) {
     project.maps = seed.maps.map((map, index) => buildMap(map, index));
     project.randomLevels = seed.maps.map((map, index) => buildRandomLevel(map, index));
@@ -698,6 +762,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   project.treasures = (seed.treasures ?? []).map((treasure) => buildTreasure(treasure, buildContext));
   project.shops = (seed.shops ?? []).map((shop) => buildShop(shop, buildContext));
   project.simpleEncounters = (seed.simpleEncounters ?? []).map((encounter) => buildSimpleEncounter(encounter, buildContext));
+  project.timedEncounters = (seed.timedEncounters ?? []).map((encounter) => buildTimedEncounter(encounter, buildContext));
 
   const triggerBuild = buildTriggers(seed.actionPoints ?? [], seed.extraActionPoints ?? [], buildContext);
   project.triggers = triggerBuild.triggers;
@@ -724,6 +789,91 @@ function parseScenario(input: unknown, path: string, ctx: ParseContext): Scenari
     ...(optionalString(value.web, `${path}.web`, ctx) !== undefined ? { web: optionalString(value.web, `${path}.web`, ctx) } : {}),
     ...(optionalString(value.description, `${path}.description`, ctx) !== undefined ? { description: optionalString(value.description, `${path}.description`, ctx) } : {})
   };
+}
+
+function parseAsset(input: unknown, path: string, ctx: ParseContext): ScenarioSeedAsset | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  const source = requireString(value.source, `${path}.source`, ctx);
+  if (source === "stock") {
+    allowKeys(value, path, ["key", "source", "resourceType", "resourceId", "kind"], ctx);
+    const kind = optionalManagedAssetKind(value.kind, `${path}.kind`, ctx);
+    return {
+      key: requireString(value.key, `${path}.key`, ctx) ?? "asset",
+      source,
+      resourceType: requireString(value.resourceType, `${path}.resourceType`, ctx) ?? "????",
+      resourceId: requireInteger(value.resourceId, `${path}.resourceId`, ctx) ?? 0,
+      ...(kind !== undefined ? { kind } : {})
+    };
+  }
+  if (source === "custom-library") {
+    allowKeys(value, path, ["key", "source", "assetId", "resourceId"], ctx);
+    const resourceId = optionalInteger(value.resourceId, `${path}.resourceId`, ctx);
+    return {
+      key: requireString(value.key, `${path}.key`, ctx) ?? "asset",
+      source,
+      assetId: requireString(value.assetId, `${path}.assetId`, ctx) ?? "missing",
+      ...(resourceId !== undefined ? { resourceId } : {})
+    };
+  }
+  allowKeys(value, path, ["key", "source", "resourceType", "resourceId", "kind", "assetId"], ctx);
+  ctx.errors.push(`${path}.source must be stock or custom-library.`);
+  return null;
+}
+
+function parseTimedEncounter(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTimedEncounter | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["key", "id", "day", "increment", "percent", "macro", "requiredItem", "requiredQuest", "location"], ctx);
+  const key = optionalString(value.key, `${path}.key`, ctx);
+  const id = optionalInteger(value.id, `${path}.id`, ctx);
+  const day = requireInteger(value.day, `${path}.day`, ctx);
+  const increment = optionalInteger(value.increment, `${path}.increment`, ctx);
+  const percent = optionalInteger(value.percent, `${path}.percent`, ctx);
+  const requiredItem = optionalRef(value.requiredItem, `${path}.requiredItem`, ctx);
+  const requiredQuest = optionalRef(value.requiredQuest, `${path}.requiredQuest`, ctx);
+  const location = value.location === undefined ? undefined : parseTimedLocation(value.location, `${path}.location`, ctx);
+  checkIntegerRange(id, `${path}.id`, 0, 32767, ctx);
+  checkIntegerRange(day, `${path}.day`, 1, 32767, ctx);
+  checkIntegerRange(increment, `${path}.increment`, 0, 32767, ctx);
+  checkIntegerRange(percent, `${path}.percent`, 0, 100, ctx);
+  return {
+    ...(key !== undefined ? { key } : {}),
+    ...(id !== undefined ? { id } : {}),
+    day: day ?? 1,
+    ...(increment !== undefined ? { increment } : {}),
+    ...(percent !== undefined ? { percent } : {}),
+    macro: requireRef(value.macro, `${path}.macro`, ctx),
+    ...(requiredItem !== undefined ? { requiredItem } : {}),
+    ...(requiredQuest !== undefined ? { requiredQuest } : {}),
+    ...(location !== undefined ? { location } : {})
+  };
+}
+
+function parseTimedLocation(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTimedLocation {
+  const value = requireObject(input, path, ctx);
+  if (!value) return { kind: "any" };
+  const kind = requireString(value.kind, `${path}.kind`, ctx);
+  if (kind === "any") {
+    allowKeys(value, path, ["kind"], ctx);
+    return { kind };
+  }
+  if (kind === "land" || kind === "dungeon") {
+    allowKeys(value, path, ["kind", "level", "randomRectangle", "x", "y"], ctx);
+    const level = requireInteger(value.level, `${path}.level`, ctx);
+    const randomRectangle = optionalInteger(value.randomRectangle, `${path}.randomRectangle`, ctx);
+    const x = optionalInteger(value.x, `${path}.x`, ctx);
+    const y = optionalInteger(value.y, `${path}.y`, ctx);
+    checkIntegerRange(level, `${path}.level`, 0, 32767, ctx);
+    checkIntegerRange(randomRectangle, `${path}.randomRectangle`, 0, 19, ctx);
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    if ((x === undefined) !== (y === undefined)) ctx.errors.push(`${path}.x and ${path}.y must be provided together.`);
+    return { kind, level: level ?? 0, ...(randomRectangle !== undefined ? { randomRectangle } : {}), ...(x !== undefined ? { x } : {}), ...(y !== undefined ? { y } : {}) };
+  }
+  allowKeys(value, path, ["kind", "level", "randomRectangle", "x", "y"], ctx);
+  ctx.errors.push(`${path}.kind must be any, land, or dungeon.`);
+  return { kind: "any" };
 }
 
 function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeedMap | null {
@@ -1358,6 +1508,79 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
       ...(optionalBoolean(value.improved, `${path}.improved`, ctx) !== undefined ? { improved: optionalBoolean(value.improved, `${path}.improved`, ctx) } : {})
     };
   }
+  if (kind === "battleOutcome") {
+    allowKeys(value, path, ["kind", "battleLow", "battleHigh", "cowardMacro", "sound", "message"], ctx);
+    return {
+      kind,
+      battleLow: requireRef(value.battleLow, `${path}.battleLow`, ctx),
+      ...optionalRefField(value, "battleHigh", path, ctx),
+      ...optionalRefField(value, "cowardMacro", path, ctx),
+      ...optionalRefField(value, "sound", path, ctx),
+      ...optionalRefField(value, "message", path, ctx)
+    };
+  }
+  if (kind === "improvedBattleOutcome") {
+    allowKeys(value, path, ["kind", "battleLow", "battleHigh", "sound", "message", "cowardMacro"], ctx);
+    return {
+      kind,
+      battleLow: requireRef(value.battleLow, `${path}.battleLow`, ctx),
+      ...optionalRefField(value, "battleHigh", path, ctx),
+      ...optionalRefField(value, "sound", path, ctx),
+      ...optionalRefField(value, "message", path, ctx),
+      ...optionalRefField(value, "cowardMacro", path, ctx)
+    };
+  }
+  if (kind === "causeRout") {
+    allowKeys(value, path, ["kind", "monsters"], ctx);
+    const monsters = parseRefArray(value.monsters, `${path}.monsters`, ctx) ?? [];
+    if (monsters.length < 1) ctx.errors.push(`${path}.monsters must contain at least one monster reference.`);
+    if (monsters.length > 5) ctx.errors.push(`${path}.monsters can contain at most five monster references.`);
+    return { kind, monsters };
+  }
+  if (kind === "battleMacroCriteria") {
+    allowKeys(value, path, ["kind", "mode", "roundOrPercent", "repeatMode", "macroLow", "macroHigh"], ctx);
+    const mode = requireInteger(value.mode, `${path}.mode`, ctx);
+    const roundOrPercent = requireInteger(value.roundOrPercent, `${path}.roundOrPercent`, ctx);
+    const repeatMode = requireInteger(value.repeatMode, `${path}.repeatMode`, ctx);
+    const macroHigh = optionalRef(value.macroHigh, `${path}.macroHigh`, ctx);
+    checkIntegerRange(mode, `${path}.mode`, 0, 2, ctx);
+    checkIntegerRange(roundOrPercent, `${path}.roundOrPercent`, 0, 32767, ctx);
+    checkIntegerRange(repeatMode, `${path}.repeatMode`, 0, 2, ctx);
+    if (repeatMode === 2 && macroHigh === undefined) ctx.errors.push(`${path}.macroHigh is required when repeatMode is 2 (random macro).`);
+    return { kind, mode: (mode === 1 ? 1 : mode === 2 ? 2 : 0), roundOrPercent: roundOrPercent ?? 0, repeatMode: (repeatMode === 1 ? 1 : repeatMode === 2 ? 2 : 0), macroLow: requireRef(value.macroLow, `${path}.macroLow`, ctx), ...(macroHigh !== undefined ? { macroHigh } : {}) };
+  }
+  if (kind === "spawnMonsters") {
+    allowKeys(value, path, ["kind", "monster", "countOrRandomLimit", "sound", "traitorOverride"], ctx);
+    const countOrRandomLimit = requireInteger(value.countOrRandomLimit, `${path}.countOrRandomLimit`, ctx);
+    const traitorOverride = optionalInteger(value.traitorOverride, `${path}.traitorOverride`, ctx);
+    checkIntegerRange(countOrRandomLimit, `${path}.countOrRandomLimit`, -32768, 32767, ctx);
+    checkIntegerRange(traitorOverride, `${path}.traitorOverride`, 0, 127, ctx);
+    return { kind, monster: requireRef(value.monster, `${path}.monster`, ctx), countOrRandomLimit: countOrRandomLimit ?? 0, ...optionalRefField(value, "sound", path, ctx), ...(traitorOverride !== undefined ? { traitorOverride } : {}) };
+  }
+  if (kind === "destroyRelatedMonsters") {
+    allowKeys(value, path, ["kind", "monster", "maxCount", "includeTraitorSide"], ctx);
+    const maxCount = optionalInteger(value.maxCount, `${path}.maxCount`, ctx);
+    const includeTraitorSide = optionalBoolean(value.includeTraitorSide, `${path}.includeTraitorSide`, ctx);
+    checkIntegerRange(maxCount, `${path}.maxCount`, 0, 32767, ctx);
+    return { kind, monster: requireRef(value.monster, `${path}.monster`, ctx), ...(maxCount !== undefined ? { maxCount } : {}), ...(includeTraitorSide !== undefined ? { includeTraitorSide } : {}) };
+  }
+  if (kind === "continueIfMonsterPresent") {
+    allowKeys(value, path, ["kind", "monster"], ctx);
+    return { kind, monster: requireRef(value.monster, `${path}.monster`, ctx) };
+  }
+  if (kind === "alterTimedEncounter") {
+    allowKeys(value, path, ["kind", "timedEncounter", "percent", "increment", "resetFromCurrentDay", "daysUntilNext"], ctx);
+    const percent = optionalInteger(value.percent, `${path}.percent`, ctx);
+    const increment = optionalInteger(value.increment, `${path}.increment`, ctx);
+    const resetFromCurrentDay = optionalBoolean(value.resetFromCurrentDay, `${path}.resetFromCurrentDay`, ctx);
+    const daysUntilNext = optionalInteger(value.daysUntilNext, `${path}.daysUntilNext`, ctx);
+    checkIntegerRange(percent, `${path}.percent`, 0, 100, ctx);
+    checkIntegerRange(increment, `${path}.increment`, 0, 32767, ctx);
+    checkIntegerRange(daysUntilNext, `${path}.daysUntilNext`, 0, 32767, ctx);
+    if (resetFromCurrentDay && daysUntilNext === undefined) ctx.errors.push(`${path}.daysUntilNext is required when resetFromCurrentDay is true.`);
+    if (!resetFromCurrentDay && daysUntilNext !== undefined) ctx.errors.push(`${path}.daysUntilNext is only valid when resetFromCurrentDay is true.`);
+    return { kind, timedEncounter: requireRef(value.timedEncounter, `${path}.timedEncounter`, ctx), ...(percent !== undefined ? { percent } : {}), ...(increment !== undefined ? { increment } : {}), ...(resetFromCurrentDay !== undefined ? { resetFromCurrentDay } : {}), ...(daysUntilNext !== undefined ? { daysUntilNext } : {}) };
+  }
   if (kind === "branchOnQuest") {
     allowKeys(value, path, ["kind", "quest", "test", "branchMode", "target", "code"], ctx);
     return { kind, quest: requireRef(value.quest, `${path}.quest`, ctx), ...optionalNumberField(value, "test", path, ctx), ...optionalNumberField(value, "branchMode", path, ctx), ...optionalRefField(value, "target", path, ctx), ...optionalNumberField(value, "code", path, ctx) };
@@ -1602,6 +1825,32 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
     checkIntegerRange(minimum, `${path}.minimum`, 0, 32767, ctx);
     return { kind, scope, minimum: minimum ?? 0, ...(onFailure !== undefined ? { onFailure } : {}), successMacro: requireRef(value.successMacro, `${path}.successMacro`, ctx) };
   }
+  if (kind === "alterRandomEncounterRectangle") {
+    allowKeys(value, path, ["kind", "level", "rectangle", "encounterRate", "battleLow", "battleHigh", "dungeon"], ctx);
+    const level = requireInteger(value.level, `${path}.level`, ctx);
+    const rectangle = requireInteger(value.rectangle, `${path}.rectangle`, ctx);
+    const encounterRate = requireInteger(value.encounterRate, `${path}.encounterRate`, ctx);
+    const battleLow = optionalRef(value.battleLow, `${path}.battleLow`, ctx);
+    const battleHigh = optionalRef(value.battleHigh, `${path}.battleHigh`, ctx);
+    const dungeon = optionalBoolean(value.dungeon, `${path}.dungeon`, ctx);
+    checkIntegerRange(level, `${path}.level`, 0, 32767, ctx);
+    checkIntegerRange(rectangle, `${path}.rectangle`, 0, 19, ctx);
+    checkIntegerRange(encounterRate, `${path}.encounterRate`, -1, 10000, ctx);
+    if ((battleLow === undefined) !== (battleHigh === undefined)) ctx.errors.push(`${path}.battleLow and ${path}.battleHigh must be provided together.`);
+    return { kind, level: level ?? 0, rectangle: rectangle ?? 0, encounterRate: encounterRate ?? 0, ...(battleLow !== undefined ? { battleLow } : {}), ...(battleHigh !== undefined ? { battleHigh } : {}), ...(dungeon !== undefined ? { dungeon } : {}) };
+  }
+  if (kind === "alterRandomRectangle") {
+    allowKeys(value, path, ["kind", "level", "rectangle", "encounterPercentDelta", "dungeon", "shape"], ctx);
+    const level = requireInteger(value.level, `${path}.level`, ctx);
+    const rectangle = requireInteger(value.rectangle, `${path}.rectangle`, ctx);
+    const encounterPercentDelta = optionalInteger(value.encounterPercentDelta, `${path}.encounterPercentDelta`, ctx);
+    const dungeon = optionalBoolean(value.dungeon, `${path}.dungeon`, ctx);
+    const shape = parseRandomRectangleShape(value.shape, `${path}.shape`, ctx);
+    checkIntegerRange(level, `${path}.level`, 0, 32767, ctx);
+    checkIntegerRange(rectangle, `${path}.rectangle`, 0, 19, ctx);
+    checkIntegerRange(encounterPercentDelta, `${path}.encounterPercentDelta`, -10000, 10000, ctx);
+    return { kind, level: level ?? 0, rectangle: rectangle ?? 0, ...(encounterPercentDelta !== undefined ? { encounterPercentDelta } : {}), ...(dungeon !== undefined ? { dungeon } : {}), shape };
+  }
   if (kind === "enterExitDungeon") {
     allowKeys(value, path, ["kind", "mode", "level", "x", "y", "heading"], ctx);
     return { kind, mode: requireInteger(value.mode, `${path}.mode`, ctx) ?? 0, level: requireInteger(value.level, `${path}.level`, ctx) ?? 0, x: requireInteger(value.x, `${path}.x`, ctx) ?? 0, y: requireInteger(value.y, `${path}.y`, ctx) ?? 0, heading: requireInteger(value.heading, `${path}.heading`, ctx) ?? 0 };
@@ -1633,7 +1882,9 @@ function createBuildContext(): BuildContext {
       treasures: [],
       shops: [],
       items: [],
+      assets: [],
       simpleEncounters: [],
+      timedEncounters: [],
       actionPoints: [],
       extraActionPoints: [],
       maps: [],
@@ -1646,7 +1897,9 @@ function createBuildContext(): BuildContext {
     treasures: new Map(),
     shops: new Map(),
     items: new Map(),
+    assets: new Map(),
     simpleEncounters: new Map(),
+    timedEncounters: new Map(),
     actionPoints: new Map(),
     actionPointTargets: new Map(),
     extraActionPoints: new Map(),
@@ -1664,6 +1917,7 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
   allocateRecordIds(seed.shops ?? [], "shop", context.shops, context.allocations.shops, context);
   allocateItemIds(seed.items ?? [], context);
   allocateRecordIds(seed.simpleEncounters ?? [], "simple encounter", context.simpleEncounters, context.allocations.simpleEncounters, context);
+  allocateRecordIds(seed.timedEncounters ?? [], "timed encounter", context.timedEncounters, context.allocations.timedEncounters, context);
   allocateRecordIds(seed.extraActionPoints ?? [], "extra action point", context.extraActionPoints, context.allocations.extraActionPoints, context);
   for (const [index, map] of (seed.maps ?? []).entries()) {
     const levelType = map.levelType ?? "land";
@@ -1859,12 +2113,33 @@ function tileParameterCode(parameter: ScenarioSeedTileParameter) {
   return TILE_PARAMETER_CODES[parameter];
 }
 
+function randomRectangleShapeCode(shape: ScenarioSeedRandomRectangleShape) {
+  return shape.mode === "unchanged" ? -1 : shape.mode === "absolute" ? 0 : shape.mode === "offset" ? 1 : 2;
+}
+
+function randomRectangleShapeValues(shape: ScenarioSeedRandomRectangleShape) {
+  if (shape.mode === "unchanged") return [0, 0, 0, 0, 0];
+  if (shape.mode === "absolute") return [shape.left, shape.right, shape.top, shape.bottom, 0];
+  if (shape.mode === "offset") return [shape.x, shape.y, 0, 0, 0];
+  return [shape.left, shape.right, shape.top, shape.bottom, 0];
+}
+
 function numericRef(ref: ScenarioSeedRef, label: string, context: BuildContext) {
   if (typeof ref === "number") return ref;
   const parsed = Number(ref);
   if (Number.isInteger(parsed)) return parsed;
   addDiagnostic(context, "error", "non-numeric-reference", `${label} reference "${ref}" must be numeric in this seed version.`, label, ref);
   return 0;
+}
+
+function resolveSeedAssetRef(ref: ScenarioSeedRef, expectedKind: ManagedAssetKind, label: string, context: BuildContext) {
+  if (typeof ref === "number") return ref;
+  const asset = context.assets.get(ref);
+  if (!asset) return numericRef(ref, label, context);
+  if (asset.kind !== expectedKind) {
+    addDiagnostic(context, "error", "asset-kind-mismatch", `Asset "${ref}" is ${asset.kind}, but this ${label} field requires ${expectedKind}.`, "asset", ref);
+  }
+  return asset.resourceId;
 }
 
 function resolveMapTarget(ref: ScenarioSeedRef, context: BuildContext): MapTarget | null {
@@ -2054,6 +2329,71 @@ function buildTilesets(maps: MapEntity[]): TilesetAsset[] {
       custom: landlook >= 6 && landlook <= 8
     };
   });
+}
+
+function buildSeedAssets(seedAssets: ScenarioSeedAsset[], customAssets: ManagedAsset[], context: BuildContext): ManagedAsset[] {
+  const projectAssets: ManagedAsset[] = [];
+  for (const seedAsset of seedAssets) {
+    if (seedAsset.source === "stock") {
+      const resolved = {
+        kind: seedAsset.kind ?? managedAssetKindForResourceType(seedAsset.resourceType),
+        resourceType: seedAsset.resourceType,
+        resourceId: seedAsset.resourceId,
+        bundled: false
+      };
+      context.assets.set(seedAsset.key, resolved);
+      context.allocations.assets.push({ key: seedAsset.key, source: seedAsset.source, resourceType: resolved.resourceType, resourceId: resolved.resourceId, bundled: false });
+      continue;
+    }
+
+    const source = customAssets.find((asset) => asset.id === seedAsset.assetId);
+    if (!source) {
+      addDiagnostic(context, "error", "unresolved-asset-reference", `Custom Library asset "${seedAsset.assetId}" was not provided to the scenario seed compiler.`, "asset", seedAsset.key);
+      continue;
+    }
+    if (source.libraryScope !== "custom-library") {
+      addDiagnostic(context, "error", "invalid-asset-source", `Asset "${seedAsset.assetId}" is not a Custom Library asset.`, "asset", seedAsset.key);
+      continue;
+    }
+    const resourceId = seedAsset.resourceId ?? nextResourceId(projectAssets, source.kind);
+    validateScenarioAssetResourceId(source.kind, resourceId, seedAsset.key, context);
+    if (projectAssets.some((asset) => asset.resourceType === source.resourceType && asset.resourceId === resourceId)) {
+      addDiagnostic(context, "error", "duplicate-asset-resource", `Asset "${seedAsset.key}" duplicates ${source.resourceType} resource ID ${resourceId}.`, "asset", seedAsset.key);
+      continue;
+    }
+    const managed: ManagedAsset = {
+      ...source,
+      id: `asset:seed:${slugify(seedAsset.key)}`,
+      resourceId,
+      libraryScope: "scenario",
+      linkedEntity: source.kind === "special-land-tile" ? `special-land-tile:${resourceId}` : source.linkedEntity,
+      provenance: `${source.provenance}; copied from Providence Custom Library by scenario seed`
+    };
+    projectAssets.push(managed);
+    context.assets.set(seedAsset.key, { kind: managed.kind, resourceType: managed.resourceType, resourceId, bundled: true });
+    context.allocations.assets.push({ key: seedAsset.key, source: seedAsset.source, resourceType: managed.resourceType, resourceId, bundled: true });
+  }
+  return projectAssets;
+}
+
+function managedAssetKindForResourceType(resourceType: string): ManagedAssetKind {
+  const normalized = resourceType.trim().toLowerCase();
+  if (normalized === "pict") return "picture";
+  if (normalized === "cicn") return "icon";
+  if (normalized === "snd") return "sound";
+  if (normalized === "text" || normalized === "str#" || normalized === "styl") return "text";
+  return "other";
+}
+
+function validateScenarioAssetResourceId(kind: ManagedAssetKind, resourceId: number, key: string, context: BuildContext) {
+  const valid = kind === "picture"
+    ? resourceId >= 30000 && resourceId <= 30128
+    : kind === "sound"
+      ? resourceId >= 200 && resourceId <= 500
+      : kind === "special-land-tile"
+        ? resourceId < 0
+        : true;
+  if (!valid) addDiagnostic(context, "error", "invalid-scenario-asset-id", `Asset "${key}" uses resource ID ${resourceId}, which is outside the scenario range for ${kind} assets.`, "asset", key);
 }
 
 function buildBattle(seed: ScenarioSeedBattle, context: BuildContext): BattleRecord {
@@ -2265,6 +2605,29 @@ function buildSimpleEncounter(seed: ScenarioSeedSimpleEncounter, context: BuildC
   };
 }
 
+function buildTimedEncounter(seed: ScenarioSeedTimedEncounter, context: BuildContext): TimedEncounterRecord {
+  const id = seed.id ?? 0;
+  const location = seed.location ?? { kind: "any" as const };
+  return {
+    id,
+    day: seed.day,
+    increment: seed.increment ?? 0,
+    percent: seed.percent ?? 100,
+    door: resolveRef(seed.macro, context.extraActionPoints, "extra action point", context),
+    requiredLevel: location.kind === "any" ? -1 : location.level,
+    requiredRandomRect: location.kind === "any" ? -1 : location.randomRectangle ?? -1,
+    requiredX: location.kind === "any" ? -1 : location.x ?? -1,
+    requiredY: location.kind === "any" ? -1 : location.y ?? -1,
+    requiredItem: seed.requiredItem === undefined ? -1 : resolveItemRef(seed.requiredItem, context),
+    requiredQuest: seed.requiredQuest === undefined ? -1 : resolveRef(seed.requiredQuest, context.quests, "quest", context),
+    locationKind: location.kind,
+    stuff: [location.kind === "land" ? 1 : location.kind === "dungeon" ? 2 : 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    rawBytes: new Array(TIMED_ENCOUNTER_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data TD3", id, id * TIMED_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES)
+  };
+}
+
 function buildTriggers(actionPoints: ScenarioSeedActionPoint[], extraActionPoints: ScenarioSeedExtraActionPoint[], context: BuildContext): { triggers: TriggerRecord[]; extracodes: ExtraCodeRow[] } {
   let nextEdcdId = 0;
   const extracodes: ExtraCodeRow[] = [];
@@ -2325,9 +2688,9 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
   if (step.kind === "complexEncounter") return describeAction(slot, 5, numericRef(step.encounter, "complex encounter", context));
   if (step.kind === "shop") return describeAction(slot, 6, resolveRef(step.shop, context.shops, "shop", context));
   if (step.kind === "treasure") return describeAction(slot, 10, resolveRef(step.treasure, context.treasures, "treasure", context));
-  if (step.kind === "sound") return describeAction(slot, 9, numericRef(step.sound, "sound", context));
-  if (step.kind === "picture") return describeAction(slot, 27, numericRef(step.picture, "picture", context));
-  if (step.kind === "scrollingText") return describeAction(slot, 62, numericRef(step.text, "scrolling text", context));
+  if (step.kind === "sound") return describeAction(slot, 9, resolveSeedAssetRef(step.sound, "sound", "sound", context));
+  if (step.kind === "picture") return describeAction(slot, 27, resolveSeedAssetRef(step.picture, "picture", "picture", context));
+  if (step.kind === "scrollingText") return describeAction(slot, 62, resolveSeedAssetRef(step.text, "text", "scrolling text", context));
   if (step.kind === "victoryPoints") return describeAction(slot, 11, step.amount);
   if (step.kind === "temple") return describeAction(slot, 32, step.inflation);
   if (step.kind === "banking") return describeAction(slot, 49, step.shop === undefined ? 0 : resolveRef(step.shop, context.shops, "shop", context));
@@ -2343,7 +2706,7 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
     return buildEdcdAction(slot, 2, [
       resolveRef(step.battle, context.battles, "battle", context),
       step.battleHigh === undefined ? resolveRef(step.battle, context.battles, "battle", context) : resolveRef(step.battleHigh, context.battles, "battle", context),
-      step.sound === undefined ? 0 : numericRef(step.sound, "sound", context),
+      step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context),
       step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context),
       step.reviveParty ? 10 : 0
     ], nextEdcdId, extracodes);
@@ -2353,7 +2716,7 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
       step.landLevel ?? -1,
       step.x ?? -1,
       step.y ?? -1,
-      step.sound === undefined ? 0 : numericRef(step.sound, "sound", context),
+      step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context),
       step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)
     ], nextEdcdId, extracodes);
   }
@@ -2363,20 +2726,67 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
     return buildEdcdAction(slot, opcode, [
       resolveRef(step.battleLow, context.battles, "battle", context),
       step.battleHigh === undefined ? resolveRef(step.battleLow, context.battles, "battle", context) : resolveRef(step.battleHigh, context.battles, "battle", context),
-      step.sound === undefined ? 0 : numericRef(step.sound, "sound", context),
+      step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context),
       step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context),
-      step.improved ? (step.cowardMacro === undefined ? 0 : resolveRef(step.cowardMacro, context.actionPoints, "action point", context)) : (step.treasure === undefined ? 0 : resolveRef(step.treasure, context.treasures, "treasure", context))
+      step.improved ? (step.cowardMacro === undefined ? 0 : resolveRef(step.cowardMacro, context.extraActionPoints, "extra action point", context)) : (step.treasure === undefined ? 0 : resolveRef(step.treasure, context.treasures, "treasure", context))
     ], nextEdcdId, extracodes);
   }
+  if (step.kind === "battleOutcome") return buildEdcdAction(slot, 56, [
+    resolveRef(step.battleLow, context.battles, "battle", context),
+    step.battleHigh === undefined ? resolveRef(step.battleLow, context.battles, "battle", context) : resolveRef(step.battleHigh, context.battles, "battle", context),
+    step.cowardMacro === undefined ? -1 : resolveRef(step.cowardMacro, context.extraActionPoints, "extra action point", context),
+    step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context),
+    step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)
+  ], nextEdcdId, extracodes);
+  if (step.kind === "improvedBattleOutcome") return buildEdcdAction(slot, 107, [
+    resolveRef(step.battleLow, context.battles, "battle", context),
+    step.battleHigh === undefined ? resolveRef(step.battleLow, context.battles, "battle", context) : resolveRef(step.battleHigh, context.battles, "battle", context),
+    step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context),
+    step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context),
+    step.cowardMacro === undefined ? 0 : resolveRef(step.cowardMacro, context.extraActionPoints, "extra action point", context)
+  ], nextEdcdId, extracodes);
+  if (step.kind === "causeRout") {
+    if (scope.kind !== "extra") addDiagnostic(context, "error", "invalid-action-point-context", "causeRout can only be authored inside a battle or monster Extra Action Point macro.", "action point");
+    return buildEdcdAction(slot, 123, step.monsters.map((monster) => resolveMonsterRef(monster, context)), nextEdcdId, extracodes);
+  }
+  if (step.kind === "battleMacroCriteria") {
+    if (scope.kind !== "extra") addDiagnostic(context, "error", "invalid-action-point-context", "battleMacroCriteria can only be authored inside a battle or monster Extra Action Point macro.", "action point");
+    return buildEdcdAction(slot, 126, [
+      step.mode,
+      step.roundOrPercent,
+      step.repeatMode,
+      resolveRef(step.macroLow, context.extraActionPoints, "extra action point", context),
+      step.macroHigh === undefined ? 0 : resolveRef(step.macroHigh, context.extraActionPoints, "extra action point", context)
+    ], nextEdcdId, extracodes);
+  }
+  if (step.kind === "spawnMonsters") {
+    if (scope.kind !== "extra") addDiagnostic(context, "error", "invalid-action-point-context", "spawnMonsters can only be authored inside a battle or monster Extra Action Point macro.", "action point");
+    return buildEdcdAction(slot, 124, [0, resolveMonsterRef(step.monster, context), step.countOrRandomLimit, step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context), step.traitorOverride ?? 0], nextEdcdId, extracodes);
+  }
+  if (step.kind === "destroyRelatedMonsters") {
+    if (scope.kind !== "extra") addDiagnostic(context, "error", "invalid-action-point-context", "destroyRelatedMonsters can only be authored inside a battle or monster Extra Action Point macro.", "action point");
+    return buildEdcdAction(slot, 125, [resolveMonsterRef(step.monster, context), step.maxCount ?? 0, 0, 0, step.includeTraitorSide ? 1 : 0], nextEdcdId, extracodes);
+  }
+  if (step.kind === "continueIfMonsterPresent") {
+    if (scope.kind !== "extra") addDiagnostic(context, "error", "invalid-action-point-context", "continueIfMonsterPresent can only be authored inside a battle or monster Extra Action Point macro.", "action point");
+    return describeAction(slot, 127, resolveMonsterRef(step.monster, context));
+  }
+  if (step.kind === "alterTimedEncounter") return buildEdcdAction(slot, 54, [
+    resolveRef(step.timedEncounter, context.timedEncounters, "timed encounter", context),
+    step.percent ?? -1,
+    step.increment ?? -1,
+    step.resetFromCurrentDay ? 1 : 0,
+    step.resetFromCurrentDay ? step.daysUntilNext ?? 0 : -1
+  ], nextEdcdId, extracodes);
   if (step.kind === "branchOnQuest") return buildEdcdAction(slot, 46, [resolveRef(step.quest, context.quests, "quest", context), step.test ?? 0, step.branchMode ?? 0, step.target === undefined ? 0 : resolveRef(step.target, context.actionPoints, "action point", context), step.code ?? 0], nextEdcdId, extracodes);
   if (step.kind === "questValue") return buildEdcdAction(slot, 76, [resolveRef(step.quest, context.quests, "quest", context), step.amount, step.branchType ?? 0, step.threshold ?? 0, step.target === undefined ? 0 : resolveRef(step.target, context.actionPoints, "action point", context)], nextEdcdId, extracodes);
   if (step.kind === "branchOnQuestValue") return buildEdcdAction(slot, 77, [resolveRef(step.quest, context.quests, "quest", context), step.testValue ?? 0, step.branchType ?? 0, step.lessThanTarget === undefined ? 0 : resolveRef(step.lessThanTarget, context.actionPoints, "action point", context), step.equalOrGreaterTarget === undefined ? 0 : resolveRef(step.equalOrGreaterTarget, context.actionPoints, "action point", context)], nextEdcdId, extracodes);
-  if (step.kind === "branchOnRandom") return buildEdcdAction(slot, 85, [step.mode ?? 0, step.low, step.high, step.sound === undefined ? 0 : numericRef(step.sound, "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
+  if (step.kind === "branchOnRandom") return buildEdcdAction(slot, 85, [step.mode ?? 0, step.low, step.high, step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
   if (step.kind === "branchOnPercent") return buildEdcdAction(slot, 42, [step.percent, step.successBehavior ?? 0, step.branchMode ?? 0, step.target === undefined ? 0 : resolveRef(step.target, context.actionPoints, "action point", context), step.code ?? 0], nextEdcdId, extracodes);
   if (step.kind === "changeTile") return buildEdcdAction(slot, 12, [step.level ?? 0, step.x, step.y, step.tile, step.dungeon ? 1 : 0], nextEdcdId, extracodes);
-  if (step.kind === "healHurtParty") return buildEdcdAction(slot, step.picked ? 15 : 16, [step.multiplier, step.low, step.high, step.sound === undefined ? 0 : numericRef(step.sound, "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
+  if (step.kind === "healHurtParty") return buildEdcdAction(slot, step.picked ? 15 : 16, [step.multiplier, step.low, step.high, step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
   if (step.kind === "takeGold") return buildEdcdAction(slot, 33, [step.amount, step.failureMarker ?? 0, 0, 0, 0], nextEdcdId, extracodes);
-  if (step.kind === "giveCondition") return buildEdcdAction(slot, 43, [step.who ?? 0, step.condition, step.duration, step.sound === undefined ? 0 : numericRef(step.sound, "sound", context), 0], nextEdcdId, extracodes);
+  if (step.kind === "giveCondition") return buildEdcdAction(slot, 43, [step.who ?? 0, step.condition, step.duration, step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context), 0], nextEdcdId, extracodes);
   if (step.kind === "awardRandomItems") return buildEdcdAction(slot, 65, [step.count, resolveItemRef(step.lowItem, context), resolveItemRef(step.highItem, context), 0, 0], nextEdcdId, extracodes);
   if (step.kind === "branchOnItem") {
     const targetKind = step.targetKind ?? "actionPoint";
@@ -2452,8 +2862,16 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
   if (step.kind === "branchOnGameTime") return buildEdcdAction(slot, 64, [step.dayAtMost ?? -1, step.hourAtMost ?? -1, 0, resolveRef(step.successMacro, context.extraActionPoints, "extra action point", context), resolveRef(step.failureMacro, context.extraActionPoints, "extra action point", context)], nextEdcdId, extracodes);
   if (step.kind === "boatCampStatus") return buildEdcdAction(slot, 103, [boatStatusCode(step.continueBoat), campingStatusCode(step.continueCamping), step.setBoat === undefined ? 0 : step.setBoat === "inBoat" ? 1 : 2, 0, 0], nextEdcdId, extracodes);
   if (step.kind === "alterFatigue") return buildEdcdAction(slot, 68, [step.mode === "maximum" ? 1 : step.mode === "minimum" ? 2 : 3, 0, step.percent ?? 0, 0, 0], nextEdcdId, extracodes);
-  if (step.kind === "changeSpellPoints") return buildEdcdAction(slot, 74, [step.take ? -step.rolls : step.rolls, step.sound === undefined ? step.low : numericRef(step.sound, "sound", context), step.high, step.sound === undefined ? 0 : numericRef(step.sound, "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
+  if (step.kind === "changeSpellPoints") return buildEdcdAction(slot, 74, [step.take ? -step.rolls : step.rolls, step.sound === undefined ? step.low : resolveSeedAssetRef(step.sound, "sound", "sound", context), step.high, step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context), step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)], nextEdcdId, extracodes);
   if (step.kind === "branchOnSpellPoints") return buildEdcdAction(slot, 75, [step.scope === "picked" ? 1 : 2, step.minimum, step.onFailure === "exitSave" ? 1 : 0, 0, resolveRef(step.successMacro, context.extraActionPoints, "extra action point", context)], nextEdcdId, extracodes);
+  if (step.kind === "alterRandomEncounterRectangle") return buildEdcdAction(slot, step.dungeon ? -23 : 23, [step.level, step.rectangle, step.encounterRate, step.battleLow === undefined ? -1 : resolveRef(step.battleLow, context.battles, "battle", context), step.battleHigh === undefined ? -1 : resolveRef(step.battleHigh, context.battles, "battle", context)], nextEdcdId, extracodes);
+  if (step.kind === "alterRandomRectangle") {
+    const firstId = nextEdcdId();
+    pushEdcdRow(firstId, [step.level, step.rectangle, step.dungeon ? 1 : 0, step.encounterPercentDelta ?? 0, randomRectangleShapeCode(step.shape)], extracodes);
+    const secondId = nextEdcdId();
+    pushEdcdRow(secondId, randomRectangleShapeValues(step.shape), extracodes);
+    return describeAction(slot, 92, firstId);
+  }
   if (step.kind === "enterExitDungeon") return buildEdcdAction(slot, 37, [step.mode, step.level, step.x, step.y, step.heading], nextEdcdId, extracodes);
   if (step.kind === "edcd") return buildEdcdAction(slot, step.opcode, padArray(step.values, 5, 0), nextEdcdId, extracodes);
   return describeAction(slot, 0, 0);
@@ -2461,12 +2879,12 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
 
 function buildEdcdAction(slot: number, opcode: number, values: number[], nextEdcdId: () => number, extracodes: ExtraCodeRow[]) {
   const id = nextEdcdId();
-  extracodes.push({
-    id,
-    values: padArray(values, 5, 0),
-    provenance: authoredProvenance("Data EDCD", id, id * EXTRACODE_BYTES, EXTRACODE_BYTES)
-  });
+  pushEdcdRow(id, values, extracodes);
   return describeAction(slot, opcode, id);
+}
+
+function pushEdcdRow(id: number, values: number[], extracodes: ExtraCodeRow[]) {
+  extracodes.push({ id, values: padArray(values, 5, 0), provenance: authoredProvenance("Data EDCD", id, id * EXTRACODE_BYTES, EXTRACODE_BYTES) });
 }
 
 function describeAction(slot: number, rawCode: number, id: number): Action {
@@ -2693,6 +3111,13 @@ function optionalBoolean(input: unknown, path: string, ctx: ParseContext): boole
   return undefined;
 }
 
+function optionalManagedAssetKind(input: unknown, path: string, ctx: ParseContext): ManagedAssetKind | undefined {
+  if (input === undefined) return undefined;
+  if (input === "picture" || input === "icon" || input === "special-land-tile" || input === "sound" || input === "text" || input === "other") return input;
+  ctx.errors.push(`${path} must be picture, icon, special-land-tile, sound, text, or other.`);
+  return undefined;
+}
+
 function optionalLevelType(input: unknown, path: string, ctx: ParseContext): LevelType | undefined {
   if (input === undefined) return undefined;
   if (input === "land" || input === "dungeon") return input;
@@ -2774,6 +3199,52 @@ function optionalSpellFailure(input: unknown, path: string, ctx: ParseContext): 
   if (input === "continue" || input === "exitSave") return input;
   ctx.errors.push(`${path} must be continue or exitSave.`);
   return undefined;
+}
+
+function parseRandomRectangleShape(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRandomRectangleShape {
+  const value = requireObject(input, path, ctx);
+  if (!value) return { mode: "unchanged" };
+  const mode = requireString(value.mode, `${path}.mode`, ctx);
+  if (mode === "unchanged") {
+    allowKeys(value, path, ["mode"], ctx);
+    return { mode };
+  }
+  if (mode === "absolute") {
+    allowKeys(value, path, ["mode", "left", "right", "top", "bottom"], ctx);
+    const left = requireInteger(value.left, `${path}.left`, ctx);
+    const right = requireInteger(value.right, `${path}.right`, ctx);
+    const top = requireInteger(value.top, `${path}.top`, ctx);
+    const bottom = requireInteger(value.bottom, `${path}.bottom`, ctx);
+    checkIntegerRange(left, `${path}.left`, 0, 89, ctx);
+    checkIntegerRange(right, `${path}.right`, 0, 89, ctx);
+    checkIntegerRange(top, `${path}.top`, 0, 89, ctx);
+    checkIntegerRange(bottom, `${path}.bottom`, 0, 89, ctx);
+    if (left !== null && right !== null && left > right) ctx.errors.push(`${path}.left must not exceed ${path}.right.`);
+    if (top !== null && bottom !== null && top > bottom) ctx.errors.push(`${path}.top must not exceed ${path}.bottom.`);
+    return { mode, left: left ?? 0, right: right ?? 0, top: top ?? 0, bottom: bottom ?? 0 };
+  }
+  if (mode === "offset") {
+    allowKeys(value, path, ["mode", "x", "y"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    checkIntegerRange(x, `${path}.x`, -89, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, -89, 89, ctx);
+    return { mode, x: x ?? 0, y: y ?? 0 };
+  }
+  if (mode === "warp") {
+    allowKeys(value, path, ["mode", "left", "right", "top", "bottom"], ctx);
+    const left = requireInteger(value.left, `${path}.left`, ctx);
+    const right = requireInteger(value.right, `${path}.right`, ctx);
+    const top = requireInteger(value.top, `${path}.top`, ctx);
+    const bottom = requireInteger(value.bottom, `${path}.bottom`, ctx);
+    checkIntegerRange(left, `${path}.left`, -89, 89, ctx);
+    checkIntegerRange(right, `${path}.right`, -89, 89, ctx);
+    checkIntegerRange(top, `${path}.top`, -89, 89, ctx);
+    checkIntegerRange(bottom, `${path}.bottom`, -89, 89, ctx);
+    return { mode, left: left ?? 0, right: right ?? 0, top: top ?? 0, bottom: bottom ?? 0 };
+  }
+  ctx.errors.push(`${path}.mode must be unchanged, absolute, offset, or warp.`);
+  return { mode: "unchanged" };
 }
 
 function boatStatusCode(status: ScenarioSeedBoatStatus | undefined) {

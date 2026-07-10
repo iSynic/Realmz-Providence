@@ -15,13 +15,15 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 - Messages and quest labels.
 - Battle, treasure, and shop records.
 - Scenario item records in the custom item range `800..999`, with generated item text records when names/descriptions are supplied.
+- Stock Realmz resource references and Providence Custom Library asset references through keyed `assets` declarations.
 - Treasure, shop stock, and item-related AP steps can reference item keys.
 - Normal scenario monster records with generated monster descriptions, keyed item/weapon references, keyed battle placements, and keyed `addSpecialCharacter` / `dropSpecialCharacter` AP references.
 - Simple encounter records with prompt message references, up to four option strings/results, raw encounter action rows, backing-out and attempt-limit fields.
+- Timed encounter records with schedules, keyed Extra Action Point macros, item/quest requirements, and optional land/dungeon location gates.
 - Action points with up to eight steps.
 - Extra Action Points (`Data ED3`) with up to eight steps, usable as patch sources.
 - Prompt-safe direct AP steps: `message`, `simpleEncounter`, `complexEncounter`, `shop`, `treasure`, `sound`, `picture`, `scrollingText`, `victoryPoints`, `temple`, `banking`, `displayMap`, `pickCharacters`, `returnGosub`, `popStack`, `addSpecialCharacter`, `dropSpecialCharacter`, `setQuestFlag`, `copyActionPointSteps`, `enableActionPoint`, `disableActionPoint`, and `raw`.
-- Prompt-safe EDCD-backed AP steps: `battle`, `teleport`, `randomMessage`, `selectiveBattle`, `branchOnQuest`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `branchOnItem`, `branchOnItemCharges`, `dropItems`, `changeItemCharges`, `replaceItems`, `branchOnPartyCondition`, `branchOnCharacterCondition`, `branchOnTileParameter`, `patchActionPoint`, `enterExitDungeon`, and `edcd`.
+- Prompt-safe EDCD-backed AP steps: `battle`, `teleport`, `randomMessage`, `selectiveBattle`, `battleOutcome`, `improvedBattleOutcome`, `causeRout`, `battleMacroCriteria`, `spawnMonsters`, `destroyRelatedMonsters`, `alterTimedEncounter`, `branchOnQuest`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `branchOnItem`, `branchOnItemCharges`, `dropItems`, `changeItemCharges`, `replaceItems`, `branchOnPartyCondition`, `branchOnCharacterCondition`, `branchOnTileParameter`, `patchActionPoint`, `alterRandomEncounterRectangle`, `alterRandomRectangle`, `enterExitDungeon`, and `edcd`.
 
 EDCD-backed seed steps create `Data EDCD` settings rows automatically because those Realmz opcodes point at settings, not directly at the visible target.
 
@@ -36,6 +38,16 @@ Condition branches use source-backed runtime behavior. `branchOnPartyCondition` 
 Action-point mutation steps are context-aware. `copyActionPointSteps` copies action slots from another Action Point on the same map; `enableActionPoint` and `disableActionPoint` write opcode 13's percent state for a map target; and `patchActionPoint` copies the action slots from a keyed `extraActionPoints` (`Data ED3`) record into a map Action Point. Opcode 13's single-target field cannot address Action Point 0 because Realmz uses zero as its no-single-target sentinel.
 
 Runtime-state aliases are also available: `setDarkLevel` changes the current land level's dark state (LOS fields remain raw-only because the audited dispatcher does not consume them); `alterGameTime` sets or offsets day/hour/minute; `branchOnGameTime` targets keyed Extra Action Points; `boatCampStatus` checks boat/camping state and can set boat state; `alterFatigue` applies Realmz's maximum, minimum, or percentage mode; `changeSpellPoints` applies random rolls to picked characters; and `branchOnSpellPoints` tests picked or alive characters and branches to a keyed Extra Action Point.
+
+Random encounter regions have two semantic aliases. `alterRandomEncounterRectangle` changes a land or dungeon rectangle's encounter rate and optionally its battle range; `dungeon: true` selects Realmz's signed dungeon opcode. `alterRandomRectangle` changes the encounter percentage and emits the paired settings rows required for rectangle geometry. Its `shape` can be `unchanged`, `absolute`, `offset`, or `warp`, with coordinate validation kept inside the 90 x 90 map bounds.
+
+Battle outcome aliases keep Realmz's field order out of prompt output. `battleOutcome` uses opcode 56 and branches to an Extra Action Point when the party flees or cowards out; without a coward macro it preserves Realmz's backstep behavior. `improvedBattleOutcome` uses opcode 107 and places the optional coward macro in its fifth field. `causeRout` uses opcode 123 and is restricted to Extra Action Point battle or monster macros, with up to five keyed monster references.
+
+Combat macro aliases are context-restricted. `battleMacroCriteria` uses opcode 126 to activate a fixed or random Extra Action Point after a round, by chance, or on flee/failure. `spawnMonsters` uses opcode 124 with optional random counts, sounds, and traitor overrides; `destroyRelatedMonsters` uses opcode 125; and `continueIfMonsterPresent` uses direct opcode 127. These steps are rejected in ordinary map Action Points.
+
+Asset declarations separate runtime references from scenario-owned resources. A `stock` asset stores a resource type and existing Realmz ID; it can be referenced by key but is never copied into `project.assets`. A `custom-library` asset names a stable workspace asset ID and optionally requests a scenario resource ID. Callers pass the available Custom Library assets through `createProjectFromScenarioSeed(..., { customAssets })`; Providence then copies matching non-stock assets into Scenario Assets, allocates scenario-safe IDs when omitted, and rejects missing assets, wrong asset kinds, and invalid picture, sound, or special-land-tile IDs.
+
+Timed encounters use source `Data TD3` records. `day` must be nonzero, `increment` defaults to zero, `percent` defaults to 100, and `macro` resolves a keyed Extra Action Point. Optional item and quest keys compile to their Realmz IDs. Location is either `any` or a land/dungeon level with optional random-rectangle and paired coordinate gates. `alterTimedEncounter` compiles opcode 54 and can change chance, repeat interval, or reset the next activation relative to the current day.
 
 ## Example
 

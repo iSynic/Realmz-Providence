@@ -16,7 +16,9 @@
     "treasures": { "type": "array", "items": { "$ref": "#/$defs/treasure" } },
     "shops": { "type": "array", "items": { "$ref": "#/$defs/shop" } },
     "items": { "type": "array", "items": { "$ref": "#/$defs/item" } },
+    "assets": { "type": "array", "items": { "$ref": "#/$defs/asset" } },
     "simpleEncounters": { "type": "array", "items": { "$ref": "#/$defs/simpleEncounter" } },
+    "timedEncounters": { "type": "array", "items": { "$ref": "#/$defs/timedEncounter" } },
     "actionPoints": { "type": "array", "items": { "$ref": "#/$defs/actionPoint" } },
     "extraActionPoints": { "type": "array", "items": { "$ref": "#/$defs/extraActionPoint" } }
   },
@@ -35,6 +37,76 @@
     },
     "key": { "type": "string", "minLength": 1, "maxLength": 128 },
     "mapTile": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+    "asset": {
+      "oneOf": [
+        { "$ref": "#/$defs/stockAsset" },
+        { "$ref": "#/$defs/customLibraryAsset" }
+      ]
+    },
+    "stockAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "source", "resourceType", "resourceId"],
+      "properties": {
+        "key": { "$ref": "#/$defs/key" },
+        "source": { "const": "stock" },
+        "resourceType": { "type": "string", "minLength": 1, "maxLength": 4 },
+        "resourceId": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "kind": { "enum": ["picture", "icon", "special-land-tile", "sound", "text", "other"] }
+      }
+    },
+    "customLibraryAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "source", "assetId"],
+      "properties": {
+        "key": { "$ref": "#/$defs/key" },
+        "source": { "const": "custom-library" },
+        "assetId": { "type": "string", "minLength": 1 },
+        "resourceId": { "type": "integer", "minimum": -32768, "maximum": 32767 }
+      }
+    },
+    "timedLocation": {
+      "oneOf": [
+        { "$ref": "#/$defs/timedAnyLocation" },
+        { "$ref": "#/$defs/timedSpecificLocation" }
+      ]
+    },
+    "timedAnyLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": { "kind": { "const": "any" } }
+    },
+    "timedSpecificLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "level"],
+      "properties": {
+        "kind": { "enum": ["land", "dungeon"] },
+        "level": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "randomRectangle": { "type": "integer", "minimum": 0, "maximum": 19 },
+        "x": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 89 }
+      },
+      "allOf": [{ "if": { "required": ["x"] }, "then": { "required": ["y"] } }, { "if": { "required": ["y"] }, "then": { "required": ["x"] } }]
+    },
+    "timedEncounter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["day", "macro"],
+      "properties": {
+        "key": { "$ref": "#/$defs/key" },
+        "id": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "day": { "type": "integer", "minimum": 1, "maximum": 32767 },
+        "increment": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "percent": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "macro": { "$ref": "#/$defs/idRef" },
+        "requiredItem": { "$ref": "#/$defs/idRef" },
+        "requiredQuest": { "$ref": "#/$defs/idRef" },
+        "location": { "$ref": "#/$defs/timedLocation" }
+      }
+    },
     "scenario": {
       "type": "object",
       "additionalProperties": false,
@@ -469,6 +541,14 @@
         { "$ref": "#/$defs/teleportStep" },
         { "$ref": "#/$defs/randomMessageStep" },
         { "$ref": "#/$defs/selectiveBattleStep" },
+        { "$ref": "#/$defs/battleOutcomeStep" },
+        { "$ref": "#/$defs/improvedBattleOutcomeStep" },
+        { "$ref": "#/$defs/causeRoutStep" },
+        { "$ref": "#/$defs/battleMacroCriteriaStep" },
+        { "$ref": "#/$defs/spawnMonstersStep" },
+        { "$ref": "#/$defs/destroyRelatedMonstersStep" },
+        { "$ref": "#/$defs/continueIfMonsterPresentStep" },
+        { "$ref": "#/$defs/alterTimedEncounterStep" },
         { "$ref": "#/$defs/branchOnQuestStep" },
         { "$ref": "#/$defs/setQuestFlagStep" },
         { "$ref": "#/$defs/questValueStep" },
@@ -499,6 +579,8 @@
         { "$ref": "#/$defs/alterFatigueStep" },
         { "$ref": "#/$defs/changeSpellPointsStep" },
         { "$ref": "#/$defs/branchOnSpellPointsStep" },
+        { "$ref": "#/$defs/alterRandomEncounterRectangleStep" },
+        { "$ref": "#/$defs/alterRandomRectangleStep" },
         { "$ref": "#/$defs/enterExitDungeonStep" },
         { "$ref": "#/$defs/edcdStep" },
         { "$ref": "#/$defs/rawStep" }
@@ -525,6 +607,14 @@
     "teleportStep": { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "teleport" }, "landLevel": { "type": "integer" }, "x": { "type": "integer" }, "y": { "type": "integer" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" }, "teleportOnly": { "type": "boolean" } } },
     "randomMessageStep": { "type": "object", "additionalProperties": false, "required": ["kind", "low", "high"], "properties": { "kind": { "const": "randomMessage" }, "low": { "$ref": "#/$defs/idRef" }, "high": { "$ref": "#/$defs/idRef" } } },
     "selectiveBattleStep": { "type": "object", "additionalProperties": false, "required": ["kind", "battleLow"], "properties": { "kind": { "const": "selectiveBattle" }, "battleLow": { "$ref": "#/$defs/idRef" }, "battleHigh": { "$ref": "#/$defs/idRef" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" }, "treasure": { "$ref": "#/$defs/idRef" }, "improved": { "type": "boolean" }, "cowardMacro": { "$ref": "#/$defs/idRef" } } },
+    "battleOutcomeStep": { "type": "object", "additionalProperties": false, "required": ["kind", "battleLow"], "properties": { "kind": { "const": "battleOutcome" }, "battleLow": { "$ref": "#/$defs/idRef" }, "battleHigh": { "$ref": "#/$defs/idRef" }, "cowardMacro": { "$ref": "#/$defs/idRef" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" } } },
+    "improvedBattleOutcomeStep": { "type": "object", "additionalProperties": false, "required": ["kind", "battleLow"], "properties": { "kind": { "const": "improvedBattleOutcome" }, "battleLow": { "$ref": "#/$defs/idRef" }, "battleHigh": { "$ref": "#/$defs/idRef" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" }, "cowardMacro": { "$ref": "#/$defs/idRef" } } },
+    "causeRoutStep": { "type": "object", "additionalProperties": false, "required": ["kind", "monsters"], "properties": { "kind": { "const": "causeRout" }, "monsters": { "type": "array", "minItems": 1, "maxItems": 5, "items": { "$ref": "#/$defs/idRef" } } } },
+    "battleMacroCriteriaStep": { "type": "object", "additionalProperties": false, "required": ["kind", "mode", "roundOrPercent", "repeatMode", "macroLow"], "properties": { "kind": { "const": "battleMacroCriteria" }, "mode": { "type": "integer", "minimum": 0, "maximum": 2 }, "roundOrPercent": { "type": "integer", "minimum": 0, "maximum": 32767 }, "repeatMode": { "type": "integer", "minimum": 0, "maximum": 2 }, "macroLow": { "$ref": "#/$defs/idRef" }, "macroHigh": { "$ref": "#/$defs/idRef" } }, "allOf": [{ "if": { "properties": { "repeatMode": { "const": 2 } } }, "then": { "required": ["macroHigh"] } }] },
+    "spawnMonstersStep": { "type": "object", "additionalProperties": false, "required": ["kind", "monster", "countOrRandomLimit"], "properties": { "kind": { "const": "spawnMonsters" }, "monster": { "$ref": "#/$defs/idRef" }, "countOrRandomLimit": { "type": "integer", "minimum": -32768, "maximum": 32767 }, "sound": { "$ref": "#/$defs/idRef" }, "traitorOverride": { "type": "integer", "minimum": 0, "maximum": 127 } } },
+    "destroyRelatedMonstersStep": { "type": "object", "additionalProperties": false, "required": ["kind", "monster"], "properties": { "kind": { "const": "destroyRelatedMonsters" }, "monster": { "$ref": "#/$defs/idRef" }, "maxCount": { "type": "integer", "minimum": 0, "maximum": 32767 }, "includeTraitorSide": { "type": "boolean" } } },
+    "continueIfMonsterPresentStep": { "type": "object", "additionalProperties": false, "required": ["kind", "monster"], "properties": { "kind": { "const": "continueIfMonsterPresent" }, "monster": { "$ref": "#/$defs/idRef" } } },
+    "alterTimedEncounterStep": { "type": "object", "additionalProperties": false, "required": ["kind", "timedEncounter"], "properties": { "kind": { "const": "alterTimedEncounter" }, "timedEncounter": { "$ref": "#/$defs/idRef" }, "percent": { "type": "integer", "minimum": 0, "maximum": 100 }, "increment": { "type": "integer", "minimum": 0, "maximum": 32767 }, "resetFromCurrentDay": { "type": "boolean" }, "daysUntilNext": { "type": "integer", "minimum": 0, "maximum": 32767 } }, "allOf": [{ "if": { "required": ["resetFromCurrentDay"], "properties": { "resetFromCurrentDay": { "const": true } } }, "then": { "required": ["daysUntilNext"] } }] },
     "branchOnQuestStep": { "type": "object", "additionalProperties": false, "required": ["kind", "quest"], "properties": { "kind": { "const": "branchOnQuest" }, "quest": { "$ref": "#/$defs/idRef" }, "test": { "type": "integer" }, "branchMode": { "type": "integer" }, "target": { "$ref": "#/$defs/idRef" }, "code": { "type": "integer" } } },
     "setQuestFlagStep": { "type": "object", "additionalProperties": false, "required": ["kind"], "anyOf": [{ "required": ["quest"] }, { "required": ["questId"] }], "properties": { "kind": { "const": "setQuestFlag" }, "quest": { "$ref": "#/$defs/idRef" }, "questId": { "$ref": "#/$defs/idRef" } } },
     "questValueStep": { "type": "object", "additionalProperties": false, "required": ["kind", "quest", "amount"], "properties": { "kind": { "const": "questValue" }, "quest": { "$ref": "#/$defs/idRef" }, "amount": { "type": "integer" }, "branchType": { "type": "integer" }, "threshold": { "type": "integer" }, "target": { "$ref": "#/$defs/idRef" } } },
@@ -779,6 +869,84 @@
         "minimum": { "type": "integer", "minimum": 0, "maximum": 32767 },
         "onFailure": { "enum": ["continue", "exitSave"] },
         "successMacro": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "alterRandomEncounterRectangleStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "level", "rectangle", "encounterRate"],
+      "allOf": [
+        { "anyOf": [{ "required": ["battleLow", "battleHigh"] }, { "not": { "anyOf": [{ "required": ["battleLow"] }, { "required": ["battleHigh"] }] } }] }
+      ],
+      "properties": {
+        "kind": { "const": "alterRandomEncounterRectangle" },
+        "level": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "rectangle": { "type": "integer", "minimum": 0, "maximum": 19 },
+        "encounterRate": { "type": "integer", "minimum": -1, "maximum": 10000 },
+        "battleLow": { "$ref": "#/$defs/idRef" },
+        "battleHigh": { "$ref": "#/$defs/idRef" },
+        "dungeon": { "type": "boolean" }
+      }
+    },
+    "randomRectangleShape": {
+      "oneOf": [
+        { "$ref": "#/$defs/randomRectangleUnchanged" },
+        { "$ref": "#/$defs/randomRectangleAbsolute" },
+        { "$ref": "#/$defs/randomRectangleOffset" },
+        { "$ref": "#/$defs/randomRectangleWarp" }
+      ]
+    },
+    "randomRectangleUnchanged": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode"],
+      "properties": { "mode": { "const": "unchanged" } }
+    },
+    "randomRectangleAbsolute": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "left", "right", "top", "bottom"],
+      "properties": {
+        "mode": { "const": "absolute" },
+        "left": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "right": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "top": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "bottom": { "type": "integer", "minimum": 0, "maximum": 89 }
+      }
+    },
+    "randomRectangleOffset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "x", "y"],
+      "properties": {
+        "mode": { "const": "offset" },
+        "x": { "type": "integer", "minimum": -89, "maximum": 89 },
+        "y": { "type": "integer", "minimum": -89, "maximum": 89 }
+      }
+    },
+    "randomRectangleWarp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "left", "right", "top", "bottom"],
+      "properties": {
+        "mode": { "const": "warp" },
+        "left": { "type": "integer", "minimum": -89, "maximum": 89 },
+        "right": { "type": "integer", "minimum": -89, "maximum": 89 },
+        "top": { "type": "integer", "minimum": -89, "maximum": 89 },
+        "bottom": { "type": "integer", "minimum": -89, "maximum": 89 }
+      }
+    },
+    "alterRandomRectangleStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "level", "rectangle", "shape"],
+      "properties": {
+        "kind": { "const": "alterRandomRectangle" },
+        "level": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "rectangle": { "type": "integer", "minimum": 0, "maximum": 19 },
+        "encounterPercentDelta": { "type": "integer", "minimum": -10000, "maximum": 10000 },
+        "dungeon": { "type": "boolean" },
+        "shape": { "$ref": "#/$defs/randomRectangleShape" }
       }
     },
     "enterExitDungeonStep": { "type": "object", "additionalProperties": false, "required": ["kind", "mode", "level", "x", "y", "heading"], "properties": { "kind": { "const": "enterExitDungeon" }, "mode": { "type": "integer" }, "level": { "type": "integer" }, "x": { "type": "integer" }, "y": { "type": "integer" }, "heading": { "type": "integer" } } },

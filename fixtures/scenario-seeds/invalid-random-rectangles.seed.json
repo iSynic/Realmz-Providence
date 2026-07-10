@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Random Rectangles" },
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        {
+          "kind": "alterRandomEncounterRectangle",
+          "level": 0,
+          "rectangle": 20,
+          "encounterRate": 5000,
+          "battleLow": 3
+        },
+        {
+          "kind": "alterRandomRectangle",
+          "level": 0,
+          "rectangle": 1,
+          "shape": { "mode": "absolute", "left": 80, "right": 10, "top": 0, "bottom": 5 }
+        }
+      ]
+    }
+  ]
+}

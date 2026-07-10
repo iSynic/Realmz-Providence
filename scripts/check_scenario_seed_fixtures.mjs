@@ -35,6 +35,11 @@ try {
   checkConditionBranches(createProjectFromScenarioSeed);
   checkActionPointMutations(createProjectFromScenarioSeed);
   checkRuntimeState(createProjectFromScenarioSeed);
+  checkRandomRectangles(createProjectFromScenarioSeed);
+  checkBattleOutcomes(createProjectFromScenarioSeed);
+  checkCombatMacros(createProjectFromScenarioSeed);
+  checkAssets(createProjectFromScenarioSeed);
+  checkTimedEncounters(createProjectFromScenarioSeed);
   checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed);
 } finally {
   fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -213,6 +218,73 @@ function checkRuntimeState(createProjectFromScenarioSeed) {
   expect(rows[6] === "10,12,0,0,1", "branchOnGameTime should resolve success and failure Extra Action Point keys");
 }
 
+function checkRandomRectangles(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("random-rectangles.seed.json"));
+  expect(result.ok, "random rectangle seed should create a project");
+  if (!result.ok) return;
+  const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:0"));
+  expect(actionCodes(trigger).join(",") === "23,92", "random rectangle AP should emit rate and shape opcodes");
+  const rows = trigger.actions.map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(rows[0] === "0,2,5000,3,4", "random encounter rectangle should resolve rate and battle range IDs");
+  expect(rows[1] === "0,2,0,-500,1", "random rectangle should encode its encounter delta and offset mode");
+  expect(result.project.extracodes[2]?.values.join(",") === "1,-2,0,0,0", "random rectangle should allocate a consecutive geometry row");
+}
+
+function checkBattleOutcomes(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("battle-outcomes.seed.json"));
+  expect(result.ok, "battle outcomes seed should create a project");
+  if (!result.ok) return;
+  const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:0"));
+  expect(actionCodes(trigger).join(",") === "56,107", "battle outcome AP should emit standard and improved outcome opcodes");
+  const rows = trigger.actions.map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(rows[0] === "3,4,9,200,10", "battleOutcome should resolve battles, Extra AP, sound, and message in source order");
+  expect(rows[1] === "3,4,201,11,9", "improvedBattleOutcome should resolve its coward macro in the fifth field");
+  const macro = result.project.triggers.find((entry) => entry.id.includes("macro:9"));
+  expect(actionCodes(macro).join(",") === "123", "causeRout should emit opcode 123 inside the Extra Action Point macro");
+  expect(result.project.extracodes.find((row) => row.id === macro.actions[0]?.id)?.values.join(",") === "7,8,0,0,0", "causeRout should resolve keyed monster IDs into five EDCD fields");
+}
+
+function checkCombatMacros(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("combat-macros.seed.json"));
+  expect(result.ok, "combat macro seed should create a project");
+  if (!result.ok) return;
+  const macro = result.project.triggers.find((entry) => entry.id.includes("macro:9"));
+  expect(actionCodes(macro).join(",") === "126,124,125,127", "combat macro seed should emit criteria, spawn, destroy, and presence opcodes");
+  const rows = macro.actions.slice(0, 3).map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(rows[0] === "0,1,2,10,11", "battleMacroCriteria should resolve its random macro range");
+  expect(rows[1] === "0,7,-3,200,1", "spawnMonsters should encode random count, sound, and traitor override");
+  expect(rows[2] === "8,2,0,0,1", "destroyRelatedMonsters should encode the monster limit and allied-side override");
+  expect(macro.actions[3]?.id === 7, "continueIfMonsterPresent should resolve its direct monster ID");
+}
+
+function checkAssets(createProjectFromScenarioSeed) {
+  const customAsset = mockCustomAsset("asset:workspace:bell", "picture", "PICT", 42);
+  const result = createProjectFromScenarioSeed(readSeed("assets.seed.json"), { customAssets: [customAsset] });
+  expect(result.ok, "asset reference seed should create a project when its Custom Library asset is provided");
+  if (!result.ok) return;
+  expect(result.project.assets.length === 1, "stock asset references should not create scenario assets");
+  expect(result.project.assets[0]?.resourceId === 30000 && result.project.assets[0]?.libraryScope === "scenario", "Custom Library picture should copy into Scenario Assets with its requested scenario ID");
+  expect(result.allocations.assets.map((asset) => `${asset.key}:${asset.resourceId}:${asset.bundled}`).join(",") === "stock-chime:137:false,bell-picture:30000:true", "asset allocations should distinguish stock references from bundled assets");
+  const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:0"));
+  expect(actionCodes(trigger).join(",") === "9,27", "asset reference AP should emit sound and picture opcodes");
+  expect(trigger.actions.map((action) => action.id).join(",") === "137,30000", "asset keys should resolve to stock and scenario resource IDs");
+}
+
+function checkTimedEncounters(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("timed-encounters.seed.json"));
+  expect(result.ok, "timed encounter seed should create a project");
+  if (!result.ok) return;
+  const timed = result.project.timedEncounters[0];
+  expect(timed?.id === 3 && timed.day === 10 && timed.increment === 7 && timed.percent === 50, "timed encounter should preserve its schedule");
+  expect(timed?.door === 5 && timed.requiredItem === 901 && timed.requiredQuest === 2, "timed encounter should resolve its macro, item, and quest keys");
+  expect(timed?.locationKind === "land" && timed.requiredLevel === 0 && timed.requiredRandomRect === 2 && timed.requiredX === 10 && timed.requiredY === 11, "timed encounter should encode its location gates");
+  expect(timed?.stuff.join(",") === "1,0,0,0,0,0,0,0,0,0", "timed encounter should encode land location and zero unknown compatibility fields");
+  expect(allocationId(result, "timedEncounters", "bell-clock") === 3, "bell-clock should preserve explicit timed encounter ID 3");
+  const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:0"));
+  expect(actionCodes(trigger).join(",") === "54", "timed encounter mutation AP should emit opcode 54");
+  expect(result.project.extracodes.find((row) => row.id === trigger.actions[0]?.id)?.values.join(",") === "3,75,3,1,2", "alterTimedEncounter should resolve its record and schedule mutation fields");
+}
+
 function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
   const unknown = parseScenarioSeed(readSeed("invalid-unknown-key.seed.json"));
   expect(!unknown.ok, "unknown-key seed should fail parsing");
@@ -273,10 +345,85 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(runtimeState.errors.some((error) => error.includes("low must not exceed")), "spell point rolls should reject an inverted range");
     expect(runtimeState.errors.some((error) => error.includes("must provide a boat/camping check")), "boat/camp status should require an operation");
   }
+
+  const randomRectangles = parseScenarioSeed(readSeed("invalid-random-rectangles.seed.json"));
+  expect(!randomRectangles.ok, "invalid random rectangle seed should fail parsing");
+  if (!randomRectangles.ok) {
+    expect(randomRectangles.errors.some((error) => error.includes("rectangle")), "random rectangle should reject an out-of-range rectangle index");
+    expect(randomRectangles.errors.some((error) => error.includes("battleLow and") && error.includes("battleHigh")), "random encounter rectangle should require both battle range references");
+    expect(randomRectangles.errors.some((error) => error.includes("left must not exceed") && error.includes("right")), "absolute random rectangle should reject inverted horizontal bounds");
+  }
+
+  const causeRoutContext = createProjectFromScenarioSeed(readSeed("invalid-battle-outcomes.seed.json"));
+  expect(!causeRoutContext.ok, "causeRout in a map Action Point should fail project creation");
+  if (!causeRoutContext.ok) expect(causeRoutContext.diagnostics.some((diagnostic) => diagnostic.code === "invalid-action-point-context"), "causeRout context failure should return a structured diagnostic");
+
+  const causeRoutRange = parseScenarioSeed(readSeed("invalid-cause-rout.seed.json"));
+  expect(!causeRoutRange.ok, "causeRout with more than five monsters should fail parsing");
+  if (!causeRoutRange.ok) expect(causeRoutRange.errors.some((error) => error.includes("at most five")), "causeRout should enforce its five-monster limit");
+
+  const combatMacros = parseScenarioSeed(readSeed("invalid-combat-macros.seed.json"));
+  expect(!combatMacros.ok, "invalid combat macro settings should fail parsing");
+  if (!combatMacros.ok) {
+    expect(combatMacros.errors.some((error) => error.includes("macroHigh is required")), "random battle macro criteria should require a high macro reference");
+    expect(combatMacros.errors.some((error) => error.includes("maxCount")), "destroy related monsters should reject a negative maximum count");
+  }
+
+  const combatMacroContext = createProjectFromScenarioSeed(readSeed("invalid-combat-macro-context.seed.json"));
+  expect(!combatMacroContext.ok, "combat macro steps in a map Action Point should fail project creation");
+  if (!combatMacroContext.ok) expect(combatMacroContext.diagnostics.some((diagnostic) => diagnostic.code === "invalid-action-point-context"), "combat macro context failure should return a structured diagnostic");
+
+  const missingAsset = createProjectFromScenarioSeed(readSeed("invalid-assets.seed.json"));
+  expect(!missingAsset.ok, "missing Custom Library asset should fail project creation");
+  if (!missingAsset.ok) expect(missingAsset.diagnostics.some((diagnostic) => diagnostic.code === "unresolved-asset-reference"), "missing Custom Library asset should return a structured diagnostic");
+
+  const invalidAssetId = createProjectFromScenarioSeed(readSeed("invalid-assets.seed.json"), { customAssets: [mockCustomAsset("asset:workspace:missing", "picture", "PICT", 42)] });
+  expect(!invalidAssetId.ok, "out-of-range scenario picture ID should fail project creation");
+  if (!invalidAssetId.ok) expect(invalidAssetId.diagnostics.some((diagnostic) => diagnostic.code === "invalid-scenario-asset-id"), "invalid scenario asset ID should return a structured diagnostic");
+
+  const assetKind = createProjectFromScenarioSeed(readSeed("invalid-asset-kind.seed.json"), { customAssets: [mockCustomAsset("asset:workspace:bell", "picture", "PICT", 42)] });
+  expect(!assetKind.ok, "picture asset used as a sound should fail project creation");
+  if (!assetKind.ok) expect(assetKind.diagnostics.some((diagnostic) => diagnostic.code === "asset-kind-mismatch"), "asset kind mismatch should return a structured diagnostic");
+
+  const timedEncounters = parseScenarioSeed(readSeed("invalid-timed-encounters.seed.json"));
+  expect(!timedEncounters.ok, "invalid timed encounter seed should fail parsing");
+  if (!timedEncounters.ok) {
+    expect(timedEncounters.errors.some((error) => error.includes(".day")), "timed encounter should reject day zero");
+    expect(timedEncounters.errors.some((error) => error.includes(".percent")), "timed encounter should reject chance above 100 percent");
+    expect(timedEncounters.errors.some((error) => error.includes("x and") && error.includes("y")), "timed encounter should require paired coordinates");
+    expect(timedEncounters.errors.some((error) => error.includes("daysUntilNext is required")), "timed encounter mutation should require a reset offset");
+  }
 }
 
 function readSeed(name) {
   return JSON.parse(fs.readFileSync(path.join(fixturesDir, name), "utf8"));
+}
+
+function mockCustomAsset(id, kind, resourceType, resourceId) {
+  return {
+    id,
+    label: "Fixture Asset",
+    kind,
+    resourceType,
+    resourceId,
+    fileName: "fixture.bin",
+    originalPath: "data:application/octet-stream;base64,AA==",
+    previewPath: "data:application/octet-stream;base64,AA==",
+    resourcePath: "data:application/octet-stream;base64,AA==",
+    mimeType: "application/octet-stream",
+    bytes: 1,
+    sha256: "fixture",
+    width: null,
+    height: null,
+    durationMs: null,
+    sampleRate: null,
+    channels: null,
+    exportState: "ready",
+    libraryScope: "custom-library",
+    provenance: "fixture",
+    linkedEntity: null,
+    conversion: null
+  };
 }
 
 function expect(condition, message) {

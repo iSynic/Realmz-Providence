@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Combat Macro Context" },
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "spawnMonsters", "monster": 1, "countOrRandomLimit": 1 }
+      ]
+    }
+  ]
+}
