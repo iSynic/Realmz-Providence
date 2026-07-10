@@ -21,6 +21,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::default_storage_paths,
             commands::create_project,
+            commands::copy_project_template_payloads,
             commands::open_workspace,
             commands::save_workspace,
             commands::import_divinity_libraries,

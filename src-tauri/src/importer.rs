@@ -366,6 +366,45 @@ pub fn save_project(project_dir: impl AsRef<Path>, project: &ProvidenceProject) 
     serde_json::to_writer(writer, &ProjectFile::from(project)).with_json_path(&project_path)
 }
 
+pub fn copy_project_template_payloads(
+    source_project_dir: impl AsRef<Path>,
+    target_project_dir: impl AsRef<Path>,
+) -> Result<()> {
+    let source_project_dir = source_project_dir.as_ref();
+    let target_project_dir = target_project_dir.as_ref();
+    let source_canonical = source_project_dir
+        .canonicalize()
+        .with_path(source_project_dir)?;
+    let target_canonical = target_project_dir
+        .canonicalize()
+        .with_path(target_project_dir)?;
+    if source_canonical == target_canonical {
+        return Err(ProvidenceError::message(
+            "Template source and generated project directories must be different.",
+        ));
+    }
+    if !source_project_dir.join(PROJECT_FILE_NAME).is_file() {
+        return Err(ProvidenceError::message(format!(
+            "Template project '{}' does not contain {}.",
+            source_project_dir.display(),
+            PROJECT_FILE_NAME
+        )));
+    }
+    for payload_dir in [RAW_SOURCES_DIR, ASSETS_DIR] {
+        let source = source_project_dir.join(payload_dir);
+        let target = target_project_dir.join(payload_dir);
+        if source.is_dir() {
+            crate::evidence::copy_dir_contents(&source, &target)?;
+        } else {
+            if target.exists() {
+                fs::remove_dir_all(&target).with_path(&target)?;
+            }
+            fs::create_dir_all(&target).with_path(&target)?;
+        }
+    }
+    Ok(())
+}
+
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 struct ProjectFile<'a> {
@@ -2123,9 +2162,11 @@ mod tests {
                 && level.landlook == 0
                 && level.raw_values.len() == RANDLEVEL_BYTES / 2
         }));
-        assert!(project.asset_catalog.tilesets.iter().any(|tileset| {
-            tileset.id == "landlook-0" && tileset.base_tile == Some(156)
-        }));
+        assert!(project
+            .asset_catalog
+            .tilesets
+            .iter()
+            .any(|tileset| { tileset.id == "landlook-0" && tileset.base_tile == Some(156) }));
         assert!(
             project.validation.ok,
             "seeded new project should validate cleanly: {:?}",
@@ -2134,6 +2175,70 @@ mod tests {
         assert!(
             project_dir.join(PROJECT_FILE_NAME).is_file(),
             "created project should still be saved to disk"
+        );
+    }
+
+    #[test]
+    fn copy_project_template_payloads_preserves_generated_project_metadata() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source_dir = temp.path().join("Template.providence");
+        let target_dir = temp.path().join("Generated.providence");
+        create_project("Template".to_string(), &source_dir).expect("create template");
+        create_project("Generated".to_string(), &target_dir).expect("create generated project");
+        fs::create_dir_all(source_dir.join(RAW_SOURCES_DIR).join("nested"))
+            .expect("create raw source fixture");
+        fs::write(
+            source_dir
+                .join(RAW_SOURCES_DIR)
+                .join("nested")
+                .join("Data LD"),
+            [1_u8, 2, 3, 4],
+        )
+        .expect("write raw source fixture");
+        fs::create_dir_all(source_dir.join(ASSETS_DIR).join(ICONS_DIR))
+            .expect("create asset fixture");
+        fs::write(
+            source_dir
+                .join(ASSETS_DIR)
+                .join(ICONS_DIR)
+                .join("fixture.bin"),
+            [5_u8, 6, 7],
+        )
+        .expect("write asset fixture");
+        let target_project_json = fs::read(target_dir.join(PROJECT_FILE_NAME))
+            .expect("read target project json before copy");
+
+        copy_project_template_payloads(&source_dir, &target_dir).expect("copy template payloads");
+
+        assert_eq!(
+            fs::read(
+                target_dir
+                    .join(RAW_SOURCES_DIR)
+                    .join("nested")
+                    .join("Data LD")
+            )
+            .expect("read copied raw source"),
+            vec![1_u8, 2, 3, 4]
+        );
+        assert_eq!(
+            fs::read(
+                target_dir
+                    .join(ASSETS_DIR)
+                    .join(ICONS_DIR)
+                    .join("fixture.bin")
+            )
+            .expect("read copied asset"),
+            vec![5_u8, 6, 7]
+        );
+        assert_eq!(
+            fs::read(target_dir.join(PROJECT_FILE_NAME))
+                .expect("read target project json after copy"),
+            target_project_json,
+            "template payload copy must not replace generated project metadata"
+        );
+        assert!(
+            copy_project_template_payloads(&target_dir, &target_dir).is_err(),
+            "template copy must reject identical source and target directories"
         );
     }
 

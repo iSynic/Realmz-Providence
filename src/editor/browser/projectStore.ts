@@ -54,6 +54,20 @@ export async function saveBrowserProject(project: Project, rawSources?: BrowserR
   return snapshot;
 }
 
+export async function saveNewBrowserProject(project: Project, rawSources?: BrowserRawSourceSnapshot | null) {
+  const baseKey = browserProjectKey(project);
+  const db = await openProjectDb();
+  let key = baseKey;
+  for (let suffix = 2; await getSnapshot(db, key); suffix += 1) {
+    key = browserProjectKey({
+      ...project,
+      scenario: { ...project.scenario, projectPath: browserProjectKeyWithSuffix(baseKey, suffix) }
+    });
+  }
+  db.close();
+  return saveBrowserProject({ ...project, scenario: { ...project.scenario, projectPath: key } }, rawSources);
+}
+
 export async function loadActiveBrowserProject(options: { includeSuppressed?: boolean } = {}) {
   if (!options.includeSuppressed && activeProjectRestoreSuppressed()) return null;
   const key = activeProjectKey();
@@ -109,6 +123,12 @@ function rememberActiveProject(key: string) {
 function safeBrowserProjectName(name: string) {
   const safeName = name.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
   return safeName || "Untitled Scenario";
+}
+
+function browserProjectKeyWithSuffix(key: string, suffix: number) {
+  return key.endsWith(".providence")
+    ? `${key.slice(0, -".providence".length)} ${suffix}.providence`
+    : `${key} ${suffix}`;
 }
 
 function openProjectDb(): Promise<IDBDatabase> {

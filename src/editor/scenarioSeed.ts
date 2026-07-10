@@ -2809,7 +2809,6 @@ function allocateRecordIds<T extends { id?: number; key?: string }>(records: T[]
     if (record.id === undefined) {
       record.id = nextOpenId(used, minimumId);
       used.add(record.id);
-      if (record.key) context.warnings.push(`Allocated ${label} "${record.key}" to ID ${record.id}.`);
     }
     if (record.key) {
       addKey(keys, record.key, record.id, label, context);
@@ -2831,7 +2830,6 @@ function allocateItemIds(records: ScenarioSeedItem[], context: BuildContext) {
     if (item.id === undefined) {
       item.id = nextOpenId(usedRows);
       usedRows.add(item.id);
-      if (item.key) context.warnings.push(`Allocated item "${item.key}" to item ID ${SCENARIO_ITEM_ID_BASE + item.id}.`);
     }
     if (item.itemId === undefined) item.itemId = SCENARIO_ITEM_ID_BASE + item.id;
     if (item.id < 0 || item.id >= SCENARIO_ITEM_RECORD_COUNT || item.itemId < SCENARIO_ITEM_ID_BASE || item.itemId >= SCENARIO_ITEM_ID_BASE + SCENARIO_ITEM_RECORD_COUNT) {

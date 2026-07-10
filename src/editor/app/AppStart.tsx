@@ -1,5 +1,7 @@
-import { BookOpen, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, BookOpen, Braces, CheckCircle2, Clipboard, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
+import { ScenarioSeedPreflightOutcome, ScenarioSeedTemplateSelection } from "../scenarioSeedReport";
 
 const NEW_PROJECT_DIALOG_HELP =
   "A Providence project is its own folder package. New projects start with an editable land level 0; import a Realmz scenario before authoring project content.";
@@ -10,51 +12,189 @@ const PROJECT_START_HELP =
 const PROJECT_RUNTIME_HELP =
   "Desktop projects can save, export, and use native folder dialogs. Browser preview opens Providence ZIP packages, saves locally, and uses folder support only where the browser exposes it.";
 
+type ProjectCreationMode = "blank" | "scenario-json";
+
 export function ProjectNameDialog({
   value,
   onChange,
   onCancel,
-  onCreate
+  onCreate,
+  templateProjectName,
+  onValidateSeed,
+  onCreateFromSeed
 }: {
   value: string;
   onChange: (value: string) => void;
   onCancel: () => void;
-  onCreate: () => void;
+  onCreate: () => void | Promise<void>;
+  templateProjectName: string | null;
+  onValidateSeed: (seedJson: string, template: ScenarioSeedTemplateSelection) => Promise<ScenarioSeedPreflightOutcome>;
+  onCreateFromSeed: (seedJson: string, template: ScenarioSeedTemplateSelection) => Promise<ScenarioSeedPreflightOutcome>;
 }) {
+  const [mode, setMode] = useState<ProjectCreationMode>("blank");
+  const [seedJson, setSeedJson] = useState(() => starterScenarioSeed(value));
+  const [preflight, setPreflight] = useState<ScenarioSeedPreflightOutcome | null>(null);
+  const [workingAction, setWorkingAction] = useState<"validate" | "create" | null>(null);
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "failed">("idle");
+  const [templateSelection, setTemplateSelection] = useState<ScenarioSeedTemplateSelection>("seed");
+
+  async function submitProject() {
+    if (mode === "blank") {
+      await onCreate();
+      return;
+    }
+    setWorkingAction("create");
+    try {
+      const outcome = await onCreateFromSeed(seedJson, templateSelection);
+      if (!outcome.ok) setPreflight(outcome);
+    } finally {
+      setWorkingAction(null);
+    }
+  }
+
+  async function validateSeed() {
+    setWorkingAction("validate");
+    setCopyStatus("idle");
+    try {
+      setPreflight(await onValidateSeed(seedJson, templateSelection));
+    } finally {
+      setWorkingAction(null);
+    }
+  }
+
+  async function copyReport() {
+    if (!preflight || !navigator.clipboard) {
+      setCopyStatus("failed");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(preflight.reportJson);
+      setCopyStatus("copied");
+    } catch {
+      setCopyStatus("failed");
+    }
+  }
+
   return (
     <div className="modal-backdrop" role="presentation">
       <form
-        className="project-name-dialog"
+        className={`project-name-dialog${mode === "scenario-json" ? " scenario-json" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-project-dialog-title"
         onSubmit={(event) => {
           event.preventDefault();
-          onCreate();
+          void submitProject();
         }}
       >
         <div className="panel-header">
           <TutorialTip title="New Providence Project" body={NEW_PROJECT_DIALOG_HELP} side="below">
-            <span>New Providence Project</span>
+            <span id="new-project-dialog-title">New Providence Project</span>
           </TutorialTip>
         </div>
         <div className="project-name-dialog-body">
-          <label>
-            <TutorialTip title="Project Name" body={PROJECT_NAME_HELP} side="below">
-              <span>Project Name</span>
-            </TutorialTip>
-            <input autoFocus value={value} onChange={(event) => onChange(event.currentTarget.value)} />
-          </label>
-          <p>Providence will create this project under the default project directory with an editable land level 0.</p>
+          <div className="project-create-modes" role="tablist" aria-label="Project creation mode">
+            <button className={mode === "blank" ? "active" : ""} type="button" role="tab" aria-selected={mode === "blank"} onClick={() => setMode("blank")}>
+              <FilePlus2 size={14} /> Blank Project
+            </button>
+            <button className={mode === "scenario-json" ? "active" : ""} type="button" role="tab" aria-selected={mode === "scenario-json"} onClick={() => setMode("scenario-json")}>
+              <Braces size={14} /> Scenario JSON
+            </button>
+          </div>
+          {mode === "blank" ? (
+            <>
+              <label>
+                <TutorialTip title="Project Name" body={PROJECT_NAME_HELP} side="below">
+                  <span>Project Name</span>
+                </TutorialTip>
+                <input autoFocus value={value} onChange={(event) => onChange(event.currentTarget.value)} />
+              </label>
+              <p>Providence will create this project under the default project directory with an editable land level 0.</p>
+            </>
+          ) : (
+            <>
+              <label className="scenario-seed-template-field">
+                <span>Template Source</span>
+                <select
+                  value={templateSelection}
+                  onChange={(event) => {
+                    setTemplateSelection(event.currentTarget.value as ScenarioSeedTemplateSelection);
+                    setPreflight(null);
+                    setCopyStatus("idle");
+                  }}
+                >
+                  <option value="seed">Use Scenario JSON</option>
+                  {templateProjectName && <option value="current-project">Current Project: {templateProjectName}</option>}
+                </select>
+              </label>
+              <label className="scenario-seed-field">
+                <span>Scenario Seed JSON</span>
+                <textarea
+                  autoFocus
+                  value={seedJson}
+                  spellCheck={false}
+                  onChange={(event) => {
+                    setSeedJson(event.currentTarget.value);
+                    setPreflight(null);
+                    setCopyStatus("idle");
+                  }}
+                />
+              </label>
+              {preflight && (preflight.errors.length > 0 || preflight.warnings.length > 0) && (
+                <div className="scenario-seed-diagnostics" role="alert" aria-label="Scenario JSON diagnostics">
+                  {preflight.errors.map((message, index) => <span className="error" key={`error-${index}`}><AlertTriangle size={13} /> {message}</span>)}
+                  {preflight.warnings.map((message, index) => <span className="warning" key={`warning-${index}`}><AlertTriangle size={13} /> {message}</span>)}
+                </div>
+              )}
+              {preflight && (
+                <div className={`scenario-seed-preflight ${preflight.ok ? "ok" : "error"}`} aria-label="Scenario JSON validation report">
+                  <div className="scenario-seed-preflight-heading">
+                    {preflight.ok ? <CheckCircle2 size={15} /> : <AlertTriangle size={15} />}
+                    <strong>{preflight.ok ? "Ready to create" : "Needs repair"}</strong>
+                    {preflight.allocationSummary && (
+                      <span>{preflight.allocationSummary.total.toLocaleString()} allocation(s) | base {preflight.allocationSummary.baseTemplate}</span>
+                    )}
+                    <button className="btn btn-ghost" type="button" onClick={() => void copyReport()}>
+                      <Clipboard size={13} /> {copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy Failed" : "Copy Report"}
+                    </button>
+                  </div>
+                  {preflight.allocationSummary && preflight.allocationSummary.families.length > 0 && (
+                    <div className="scenario-seed-allocation-summary">
+                      {preflight.allocationSummary.families.map((family) => (
+                        <span key={family.key}>{family.label} <b>{family.count.toLocaleString()}</b></span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className="project-name-dialog-actions">
-          <button className="btn btn-ghost" type="button" onClick={onCancel}>
+          <button className="btn btn-ghost" type="button" onClick={onCancel} disabled={workingAction !== null}>
             Cancel
           </button>
-          <button className="btn btn-primary" type="submit" disabled={!value.trim()}>
-            Create Project
+          {mode === "scenario-json" && (
+            <button className="btn btn-secondary" type="button" onClick={() => void validateSeed()} disabled={workingAction !== null || !seedJson.trim()}>
+              {workingAction === "validate" ? "Validating..." : "Validate JSON"}
+            </button>
+          )}
+          <button className="btn btn-primary" type="submit" disabled={workingAction !== null || (mode === "blank" ? !value.trim() : !seedJson.trim() || preflight?.ok === false)}>
+            {workingAction === "create" ? "Creating..." : mode === "blank" ? "Create Project" : "Create From JSON"}
           </button>
         </div>
       </form>
     </div>
   );
+}
+
+function starterScenarioSeed(projectName: string) {
+  return JSON.stringify({
+    schemaVersion: 1,
+    scenario: {
+      name: projectName.trim() || "Untitled Scenario"
+    }
+  }, null, 2);
 }
 
 export function CloseProjectDialog({

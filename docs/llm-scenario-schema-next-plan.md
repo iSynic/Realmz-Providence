@@ -16,6 +16,7 @@ Add a structured allocation report to `createProjectFromScenarioSeed()`.
 - Include explicit IDs and allocated IDs so callers can map every key to the final Realmz ID.
 - Include unresolved references in structured diagnostics, not only string errors.
 - Keep string `warnings` for UI display, but add machine-readable data for LLM repair loops.
+- Keep successful allocation notices in `allocations`; do not duplicate them as warnings.
 
 Add golden seed fixtures.
 
@@ -153,7 +154,9 @@ Implemented normalizer work:
 
 Current coverage resolves `picture`, `sound`, scrolling text, and sound-bearing AP fields by asset key. Stock resources remain ID-only and are not bundled. Custom Library assets are copied into Scenario Assets with scenario-safe IDs when the caller supplies the current workspace asset list.
 
-Still future work: reference-catalog assets that are not stock Realmz resources and persistence hooks that copy desktop workspace payload files into a newly saved project directory. Item and monster icon key fields are implemented.
+The New Project Scenario JSON workflow supplies the active Custom Library to the compiler. Browser projects retain browser-managed asset payloads, while desktop projects materialize each referenced Custom Library payload through Providence's native workspace-to-project copy command using the compiler-assigned scenario resource ID.
+
+Still future work: reference-catalog assets that are not stock Realmz resources. Item and monster icon key fields are implemented.
 
 ## Priority 6: More AP Aliases
 
@@ -220,10 +223,6 @@ Implemented encounter group:
 - Lock tumblers and Open Lock spell chance.
 - Complex Encounter Rogue links now resolve keyed `Data TD2` records; the unconsumed `thieffail` compatibility byte remains zero.
 
-Next group:
-
-- Template source selection and reusable authoring presets for generated projects.
-
 Rule: add aliases in groups with fixture coverage for opcode, ID, EDCD values, and target resolution.
 
 ## Priority 7: Higher-Level Map Authoring
@@ -268,7 +267,7 @@ These should be fixture-gated because the record shapes are larger and easier to
 
 ## Priority 9: Template Source Selection
 
-Status: implemented for the blank base and caller-provided Providence project templates.
+Status: implemented for the blank base, caller-provided Providence project templates, and the active project as a host-selected template.
 
 Generated scenarios can initialize from:
 
@@ -294,10 +293,38 @@ Implemented behavior:
 - New EDCD settings append after inherited rows to avoid collisions across template and generated scripts.
 - The allocation report identifies the selected template key.
 
+Implemented host behavior:
+
+- Scenario JSON offers `Use Scenario JSON` and `Current Project` template sources when a project is open.
+- `Use Scenario JSON` honors the seed's `baseTemplate`, including the registered `current-project` key.
+- `Current Project` overrides the seed template selection explicitly and reports `current-project` in allocations.
+- Browser generation carries the template's stored raw-source snapshot into a collision-free new browser project key.
+- Desktop generation copies only package payload roots (`raw-sources` and `assets`, including nested tile atlases) into the new package; the generated `project.json` remains authoritative.
+
 Still host-level work:
 
-- Persist and restore raw-source payloads that live outside imported project JSON.
-- Expose a template picker and registry management UI when prompt-based generation is added to the application.
+- A reusable named-template registry beyond the currently open project.
+- Template package import and selection when no project is open.
+
+## Priority 10: Application Workflow
+
+Status: implemented for Scenario JSON creation, preflight, repair reports, and current-project template selection; reusable named templates remain future work.
+
+- New Project offers Blank Project and Scenario JSON modes.
+- Scenario JSON is parsed and compiled before any project package is created.
+- Parse, schema, reference, and build failures stay in the dialog for repair.
+- Validate JSON runs the same compiler path without persisting a project, summarizes allocated record families, and displays validation warnings before creation.
+- Copy Report writes a versioned machine-readable report with errors, warnings, structured diagnostics, and full allocation entries for an LLM repair pass.
+- Browser projects are saved through the browser project store.
+- Browser project creation uses collision-free storage keys instead of overwriting an existing project with the same scenario name.
+- Desktop projects receive a real unique package path, normal project directories, saved project data, and materialized Custom Library asset payloads.
+- Successful generation opens the normal Providence workbench and reports generated map, Action Point, and warning counts.
+
+Still future work:
+
+- Reusable named-template registry management beyond the current-project choice.
+- Optional file export for the repair report in addition to clipboard copy.
+- Template package import and payload restoration when the template is not already the current project.
 
 ## Acceptance Gates
 

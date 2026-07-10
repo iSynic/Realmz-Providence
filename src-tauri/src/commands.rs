@@ -2,6 +2,7 @@ use crate::error::{ProvidenceError, Result};
 use crate::exporter::{export_project as export_project_impl, ExportReport};
 use crate::importer::{
     build_project_semantic_schema as build_project_semantic_schema_impl,
+    copy_project_template_payloads as copy_project_template_payloads_impl,
     create_project as create_project_impl, import_scenario as import_scenario_impl,
     import_scenario_into_project as import_scenario_into_project_impl,
     open_project as open_project_impl,
@@ -73,6 +74,14 @@ pub fn default_storage_paths(app: tauri::AppHandle) -> Result<DefaultStoragePath
 #[tauri::command]
 pub fn create_project(project_name: String, project_dir: String) -> Result<ProvidenceProject> {
     create_project_impl(project_name, project_dir)
+}
+
+#[tauri::command]
+pub fn copy_project_template_payloads(
+    source_project_dir: String,
+    target_project_dir: String,
+) -> Result<()> {
+    copy_project_template_payloads_impl(source_project_dir, target_project_dir)
 }
 
 #[tauri::command]

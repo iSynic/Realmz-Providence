@@ -294,6 +294,8 @@ export function App() {
   const {
     showNewProjectDialog,
     createNewProject,
+    validateScenarioSeedJson,
+    createProjectFromSeedJson,
     chooseExistingProject,
     resumeBrowserProject,
     closeProject,
@@ -773,6 +775,9 @@ export function App() {
             dispatch({ type: "setStatus", status: "New project cancelled" });
           }}
           onCreate={() => createNewProject()}
+          templateProjectName={state.project?.scenario.name ?? null}
+          onValidateSeed={validateScenarioSeedJson}
+          onCreateFromSeed={createProjectFromSeedJson}
         />
       )}
       {closeProjectDialogOpen && state.project && (

@@ -5,11 +5,13 @@ import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSour
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { browserProjectPackageFileName, createBrowserProjectPackageZip } from "../browser/projectPackage";
-import { allowActiveBrowserProjectRestore, loadActiveBrowserProject, loadBrowserProjectRawSources, saveBrowserProject, suppressActiveBrowserProjectRestore } from "../browser/projectStore";
+import { allowActiveBrowserProjectRestore, loadActiveBrowserProject, loadBrowserProjectRawSources, saveBrowserProject, saveNewBrowserProject, suppressActiveBrowserProjectRestore } from "../browser/projectStore";
 import { createBrowserScenarioPackageZip } from "../browser/scenarioPackage";
 import { persistBrowserIconLibraryEntries } from "../iconLibrary";
 import { LibraryDraftSpec, createLibraryDraft, updateLibraryDraft } from "../libraryDrafts";
 import { persistBrowserMonsterLibraryEntries } from "../monsterLibrary";
+import { createProjectFromScenarioSeed, parseScenarioSeed, ScenarioSeed, ScenarioSeedProjectResult } from "../scenarioSeed";
+import { createScenarioSeedPreflightOutcome, ScenarioSeedPreflightOutcome, ScenarioSeedTemplateSelection } from "../scenarioSeedReport";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { BenchmarkReport, ExportReport, LibraryCatalog, Project, ScenarioTarget, ValidationReport } from "../types";
 import { commandError } from "../utils";
@@ -77,7 +79,7 @@ export function useProjectLifecycleActions({
     if (!desktopRuntime) {
       const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(projectName));
       try {
-        const snapshot = await saveBrowserProject(project);
+        const snapshot = await saveNewBrowserProject(project);
         setProjectDir(snapshot.key);
         setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
         dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
@@ -361,6 +363,163 @@ export function useProjectLifecycleActions({
     }
   }
 
+  function compileScenarioSeedJson(seedJson: string, templateSelection: ScenarioSeedTemplateSelection):
+    | { ok: true; seed: ScenarioSeed; result: Extract<ScenarioSeedProjectResult, { ok: true }>; outcome: ScenarioSeedPreflightOutcome }
+    | { ok: false; outcome: ScenarioSeedPreflightOutcome } {
+    let seedInput: unknown;
+    try {
+      seedInput = JSON.parse(seedJson);
+    } catch (error) {
+      const errors = [`Invalid JSON: ${commandError(error)}`];
+      return {
+        ok: false,
+        outcome: createScenarioSeedPreflightOutcome({
+          errors,
+          warnings: [],
+          diagnostics: [{ severity: "error", code: "invalid-json", message: errors[0] }]
+        })
+      };
+    }
+
+    const parsed = parseScenarioSeed(seedInput);
+    if (!parsed.ok) {
+      return {
+        ok: false,
+        outcome: createScenarioSeedPreflightOutcome({
+          errors: parsed.errors,
+          warnings: parsed.warnings,
+          diagnostics: parsed.errors.map((message) => ({ severity: "error", code: "parse-error", message }))
+        })
+      };
+    }
+
+    const customAssets = state.workspace?.customAssets ?? [];
+    const seed = templateSelection === "current-project"
+      ? { ...parsed.seed, baseTemplate: "current-project" }
+      : parsed.seed;
+    const result = createProjectFromScenarioSeed(seed, {
+      customAssets,
+      libraryCatalog: state.workspace?.activeLibraryCatalog ?? state.libraryCatalog,
+      ...(state.project ? { baseTemplates: { "current-project": state.project } } : {})
+    });
+    if (!result.ok) {
+      return {
+        ok: false,
+        outcome: createScenarioSeedPreflightOutcome({
+          errors: result.errors,
+          warnings: result.warnings,
+          diagnostics: result.diagnostics,
+          allocations: result.allocations
+        })
+      };
+    }
+    return {
+      ok: true,
+      seed,
+      result,
+      outcome: createScenarioSeedPreflightOutcome({
+        errors: [],
+        warnings: result.warnings,
+        diagnostics: result.diagnostics,
+        allocations: result.allocations
+      })
+    };
+  }
+
+  async function validateScenarioSeedJson(seedJson: string, templateSelection: ScenarioSeedTemplateSelection) {
+    const compiled = compileScenarioSeedJson(seedJson, templateSelection);
+    const outcome = compiled.outcome;
+    const allocationCount = outcome.allocationSummary?.total ?? 0;
+    dispatch({
+      type: "setStatus",
+      status: outcome.ok
+        ? `Scenario JSON is valid: ${allocationCount.toLocaleString()} allocation(s), ${outcome.warnings.length.toLocaleString()} warning(s).`
+        : `Scenario JSON needs repair: ${outcome.errors.length.toLocaleString()} error(s).`
+    });
+    return outcome;
+  }
+
+  async function createProjectFromSeedJson(seedJson: string, templateSelection: ScenarioSeedTemplateSelection) {
+    const compiled = compileScenarioSeedJson(seedJson, templateSelection);
+    if (!compiled.ok) {
+      dispatch({ type: "setStatus", status: `Scenario JSON needs repair: ${compiled.outcome.errors.length.toLocaleString()} error(s).` });
+      return compiled.outcome;
+    }
+    const { result, seed: parsedSeed } = compiled;
+    const customAssets = state.workspace?.customAssets ?? [];
+    const usesCurrentTemplate = result.allocations.baseTemplate === "current-project";
+
+    try {
+      if (!desktopRuntime) {
+        const project = await ensureBrowserReferenceTileAttributes(result.project);
+        const templateRawSources = usesCurrentTemplate && state.project
+          ? await loadBrowserProjectRawSources(state.project)
+          : null;
+        const snapshot = await saveNewBrowserProject(project, templateRawSources);
+        setProjectDir(snapshot.key);
+        setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
+        dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
+        dispatch({ type: "setTab", tab: "maps" });
+        setProjectDialogOpen(false);
+        dispatch({ type: "setStatus", status: scenarioSeedCreatedStatus(snapshot.project, result.warnings.length) });
+        return compiled.outcome;
+      }
+
+      const requestedProjectDir = defaultProjectPath(roots.project, result.project.scenario.name);
+      dispatch({ type: "setStatus", status: "Creating project from Scenario JSON..." });
+      const shell = await invoke<Project>("create_project", {
+        projectName: result.project.scenario.name,
+        projectDir: requestedProjectDir
+      });
+      const targetProjectDir = shell.scenario.projectPath || requestedProjectDir;
+      if (usesCurrentTemplate) {
+        if (!state.project || !projectDir) throw new Error("The selected current-project template is no longer available.");
+        await invoke("copy_project_template_payloads", {
+          sourceProjectDir: projectDir,
+          targetProjectDir
+        });
+      }
+      const customAllocations = result.allocations.assets.filter((asset) => asset.source === "custom-library");
+      const customResourceKeys = new Set(customAllocations.map((asset) => `${asset.resourceType}:${asset.resourceId}`));
+      let project: Project = {
+        ...result.project,
+        appVersion: shell.appVersion,
+        scenario: { ...result.project.scenario, projectPath: targetProjectDir },
+        source: { ...result.project.source, rawSourcesDir: shell.source.rawSourcesDir || "raw-sources" },
+        assets: result.project.assets.filter((asset) => !customResourceKeys.has(`${asset.resourceType}:${asset.resourceId}`))
+      };
+      project = await invoke<Project>("save_project", { projectDir: targetProjectDir, project });
+      for (const allocation of customAllocations) {
+        const seedAsset = parsedSeed.assets?.find((asset) => asset.key === allocation.key && asset.source === "custom-library");
+        const sourceAsset = seedAsset?.source === "custom-library" ? customAssets.find((asset) => asset.id === seedAsset.assetId) : null;
+        if (!sourceAsset) throw new Error(`Custom Library asset for ${allocation.key} is no longer available.`);
+        project = await invoke<Project>("copy_workspace_asset_to_project", {
+          workspaceDir,
+          projectDir: targetProjectDir,
+          project,
+          asset: sourceAsset,
+          resourceId: allocation.resourceId
+        });
+      }
+      setProjectDir(targetProjectDir);
+      setExportDir(defaultExportPath(roots.export, project.scenario.name));
+      dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
+      dispatch({ type: "setTab", tab: "maps" });
+      setProjectDialogOpen(false);
+      dispatch({ type: "setStatus", status: scenarioSeedCreatedStatus(project, result.warnings.length) });
+      return compiled.outcome;
+    } catch (error) {
+      const errors = [`Project creation failed: ${commandError(error)}`];
+      dispatch({ type: "setStatus", status: errors[0] });
+      return createScenarioSeedPreflightOutcome({
+        errors,
+        warnings: result.warnings,
+        diagnostics: [...result.diagnostics, { severity: "error", code: "persistence-error", message: errors[0] }],
+        allocations: result.allocations
+      });
+    }
+  }
+
   async function exportProject(scenarioTarget: ScenarioTarget = "providence-portable-folder") {
     if (!state.project) return;
     if (!desktopRuntime) {
@@ -480,6 +639,8 @@ export function useProjectLifecycleActions({
   return {
     showNewProjectDialog,
     createNewProject,
+    validateScenarioSeedJson,
+    createProjectFromSeedJson,
     chooseExistingProject,
     resumeBrowserProject,
     closeProject,
@@ -497,6 +658,11 @@ export function useProjectLifecycleActions({
     validateProject,
     benchmarkProject
   };
+}
+
+function scenarioSeedCreatedStatus(project: Project, warningCount: number) {
+  const warningSuffix = warningCount > 0 ? ` with ${warningCount.toLocaleString()} warning(s)` : "";
+  return `Created ${project.scenario.name} from Scenario JSON: ${project.maps.length.toLocaleString()} map(s), ${project.triggers.length.toLocaleString()} action point(s)${warningSuffix}`;
 }
 
 function downloadBrowserProjectJson(project: Project) {

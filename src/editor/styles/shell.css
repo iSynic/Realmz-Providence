@@ -2838,12 +2838,58 @@ button.documents-source-chip {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.58);
 }
 
+.project-name-dialog.scenario-json {
+  width: min(780px, 100%);
+  max-height: min(820px, calc(100vh - 48px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
 
 
 .project-name-dialog-body {
   display: grid;
   gap: 11px;
   padding: 14px;
+}
+
+.project-name-dialog.scenario-json .project-name-dialog-body {
+  min-height: 0;
+  overflow: auto;
+}
+
+.project-create-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid #303a46;
+  border-radius: 6px;
+  background: #0f1216;
+}
+
+.project-create-modes button {
+  min-width: 0;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #93a0ad;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.project-create-modes button:hover,
+.project-create-modes button.active {
+  border-color: #365f80;
+  background: #162534;
+  color: #e9f4ff;
 }
 
 
@@ -2871,6 +2917,152 @@ button.documents-source-chip {
   text-transform: none;
   letter-spacing: 0;
   outline: none;
+}
+
+.project-name-dialog-body .scenario-seed-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 340px;
+  resize: vertical;
+  padding: 11px 12px;
+  border: 1px solid #3a414b;
+  border-radius: 5px;
+  background: #0b0f13;
+  color: #d9e8f5;
+  font-family: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  outline: none;
+  tab-size: 2;
+}
+
+.project-name-dialog-body .scenario-seed-template-field select {
+  min-width: 0;
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid #3a414b;
+  border-radius: 5px;
+  background: #0f1216;
+  color: #d9e8f5;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0;
+  outline: none;
+}
+
+.project-name-dialog-body .scenario-seed-template-field select:focus {
+  border-color: #4f9ad7;
+  box-shadow: 0 0 0 2px rgba(79, 154, 215, 0.18);
+}
+
+.project-name-dialog-body .scenario-seed-field textarea:focus {
+  border-color: #4f9ad7;
+  box-shadow: 0 0 0 2px rgba(79, 154, 215, 0.18);
+}
+
+.scenario-seed-diagnostics {
+  max-height: 170px;
+  display: grid;
+  gap: 5px;
+  overflow: auto;
+  padding: 9px 10px;
+  border: 1px solid #5b4430;
+  border-radius: 5px;
+  background: #1b1611;
+}
+
+.scenario-seed-diagnostics span {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+  color: #e4b25f;
+  font-size: 11px;
+  line-height: 1.45;
+  letter-spacing: 0;
+}
+
+.scenario-seed-diagnostics span.error {
+  color: #ff8f86;
+}
+
+.scenario-seed-diagnostics svg {
+  margin-top: 1px;
+}
+
+.scenario-seed-preflight {
+  display: grid;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid #534238;
+  border-radius: 5px;
+  background: #15130f;
+}
+
+.scenario-seed-preflight.ok {
+  border-color: #315c50;
+  background: #101916;
+}
+
+.scenario-seed-preflight-heading {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 16px auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  color: #d7a45e;
+  font-size: 11px;
+}
+
+.scenario-seed-preflight.ok .scenario-seed-preflight-heading {
+  color: #7fd6b9;
+}
+
+.scenario-seed-preflight-heading > span {
+  min-width: 0;
+  overflow: hidden;
+  color: #92a0ad;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scenario-seed-preflight-heading .btn {
+  min-height: 27px;
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+.scenario-seed-allocation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.scenario-seed-allocation-summary span {
+  padding: 3px 6px;
+  border: 1px solid #2d4653;
+  border-radius: 4px;
+  background: #101820;
+  color: #91a8b8;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.scenario-seed-allocation-summary b {
+  color: #d8ebf7;
+}
+
+@media (max-width: 520px) {
+  .scenario-seed-preflight-heading {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+  }
+
+  .scenario-seed-preflight-heading > span {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    white-space: normal;
+  }
 }
 
 

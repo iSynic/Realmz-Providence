@@ -8,6 +8,8 @@ Next implementation plan: [`docs/llm-scenario-schema-next-plan.md`](llm-scenario
 
 - `schemas/scenario-seed.schema.json` defines the first prompt-facing seed.
 - `src/editor/scenarioSeed.ts` validates and expands that seed into a `Project`.
+- New Project exposes the seed compiler through a Scenario JSON mode in both browser and desktop runtimes, with inline validation failures before persistence.
+- Scenario JSON can use the current project as its base template while preserving browser raw snapshots or desktop package payload directories.
 - Supported content: scenario metadata, keyed maps, map regions, map drawing operations, messages, quests, battles, Normal scenario monsters and descriptions, treasures, shops, scenario items and item text, stock and Custom Library asset references, simple and timed encounters, Extra Action Points, and semantic AP seed aliases.
 - Supported map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, `stamp`, `landSecret`, `hiddenWalkable`, and `dungeonPassage`.
 - Supported AP seed aliases: `message`, `battle`, `simpleEncounter`, `complexEncounter`, `shop`, `treasure`, `sound`, `picture`, `scrollingText`, `victoryPoints`, `temple`, `banking`, `displayMap`, `pickCharacters`, `returnGosub`, `popStack`, `addSpecialCharacter`, `dropSpecialCharacter`, `teleport`, `randomMessage`, `selectiveBattle`, `battleOutcome`, `improvedBattleOutcome`, `causeRout`, `battleMacroCriteria`, `spawnMonsters`, `destroyRelatedMonsters`, `continueIfMonsterPresent`, `alterTimedEncounter`, `branchOnQuest`, `setQuestFlag`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `branchOnItem`, `branchOnItemCharges`, `dropItems`, `changeItemCharges`, `replaceItems`, `branchOnPartyCondition`, `branchOnCharacterCondition`, `branchOnTileParameter`, `copyActionPointSteps`, `enableActionPoint`, `disableActionPoint`, `patchActionPoint`, `setDarkLevel`, `alterGameTime`, `branchOnGameTime`, `boatCampStatus`, `alterFatigue`, `changeSpellPoints`, `branchOnSpellPoints`, `alterRandomEncounterRectangle`, `alterRandomRectangle`, `enterExitDungeon`, `edcd`, and `raw`.
@@ -139,6 +141,8 @@ Return structured diagnostics from seed parsing and project creation:
 
 This should support an LLM repair loop: feed the diagnostics back to the model and ask for a corrected seed, while never accepting partial invalid data silently.
 
+Status: the compiler returns structured diagnostics and allocations. New Project can preflight Scenario JSON without persistence, keeps parse/schema/build errors in the dialog, summarizes allocated families, and copies a versioned machine-readable report for correction. Optional report file export remains future host work.
+
 ## Phase 8: Fixtures And Gates
 
 Add golden seed fixtures that assert:
@@ -150,9 +154,6 @@ Add golden seed fixtures that assert:
 - browser scenario package export succeeds for generated fixtures
 - existing AP coverage stays complete for manual opcodes 1-127 plus signed aliases
 
-## Open Decisions
+## Remaining Design Decision
 
-- Whether seed aliases should use `key` everywhere, or allow strings directly in ID fields.
-- Whether first automatic ID allocation should use low IDs or scenario-safe reserved ranges by record type.
-- How much map generation should be deterministic templates versus prompt-supplied operations.
-- Whether generated scenarios should start from an empty project shell or from a selected scenario/template package.
+- How much higher-level map generation should use reusable deterministic templates versus prompt-supplied semantic terrain operations.

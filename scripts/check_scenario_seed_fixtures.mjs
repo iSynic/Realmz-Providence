@@ -67,6 +67,7 @@ function checkMinimal(createProjectFromScenarioSeed, parseScenarioSeed) {
   const result = createProjectFromScenarioSeed(seed, { now: "2026-07-10T00:00:00.000Z", appVersion: "fixture" });
   expect(result.ok, "minimal keyed seed should create a project");
   if (!result.ok) return;
+  expect(!result.warnings.some((warning) => warning.startsWith("Allocated ")), "allocation report entries should not be duplicated as warnings");
   expect(result.project.messages.length === 1, "minimal seed should create one message");
   expect(allocationId(result, "messages", "hello") === 0, "hello message should allocate to ID 0");
   expect(allocationId(result, "quests", "started") === 0, "started quest should allocate to ID 0");
