@@ -6,10 +6,10 @@ use crate::project::{
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
-    write_door_file, write_extracodes, write_fields, write_global_macro_hooks, write_land_layout,
-    write_macro_file, write_map_records, write_messages, write_monster_descriptions,
-    write_monster_set, write_monsters, write_option_labels, write_race_overrides,
-    write_random_levels, write_scenario_contact_info, write_scenario_items,
+    write_door_file_for_levels, write_extracodes, write_fields, write_global_macro_hooks,
+    write_land_layout, write_macro_file, write_map_records, write_messages,
+    write_monster_descriptions, write_monster_set, write_monsters, write_option_labels,
+    write_race_overrides, write_random_levels, write_scenario_contact_info, write_scenario_items,
     write_scenario_restrictions, write_scenario_shell, write_scenario_support_file, write_shops,
     write_simple_encounters, write_spell_overrides, write_thief_encounters, write_tile_solids,
     write_timed_encounters, write_treasures, DOOR_BYTES, EXTRACODE_BYTES,
@@ -160,13 +160,29 @@ pub fn export_project(
     write_if_nonempty(
         output_dir,
         "Data DD",
-        write_door_file(&project.triggers, LevelType::Land)?,
+        write_door_file_for_levels(
+            &project.triggers,
+            LevelType::Land,
+            project
+                .maps
+                .iter()
+                .filter(|map| map.level_type == LevelType::Land)
+                .count(),
+        )?,
         &mut written_files,
     )?;
     write_if_nonempty(
         output_dir,
         "Data DDD",
-        write_door_file(&project.triggers, LevelType::Dungeon)?,
+        write_door_file_for_levels(
+            &project.triggers,
+            LevelType::Dungeon,
+            project
+                .maps
+                .iter()
+                .filter(|map| map.level_type == LevelType::Dungeon)
+                .count(),
+        )?,
         &mut written_files,
     )?;
     write_if_nonempty(
@@ -264,7 +280,11 @@ pub fn export_project(
     write_fixed_if_nonempty(
         output_dir,
         "Data NI",
-        write_scenario_items(&project.scenario_items)?,
+        overlay_zero_filled_fixed_capacity(
+            "Data NI",
+            write_scenario_items(&project.scenario_items)?,
+            &raw_dir,
+        )?,
         crate::realmz::ITEM_BYTES,
         &raw_dir,
         &mut written_files,
@@ -426,6 +446,23 @@ fn write_fixed_if_nonempty(
         }
     }
     write_if_nonempty(output_dir, name, bytes, written)
+}
+
+fn overlay_zero_filled_fixed_capacity(
+    name: &str,
+    bytes: Vec<u8>,
+    raw_dir: &Path,
+) -> Result<Vec<u8>> {
+    let raw_path = raw_dir.join(name);
+    if bytes.is_empty() || !raw_path.is_file() {
+        return Ok(bytes);
+    }
+    let mut raw = fs::read(&raw_path).with_path(&raw_path)?;
+    if raw.len() <= bytes.len() || raw.iter().any(|byte| *byte != 0) {
+        return Ok(bytes);
+    }
+    raw[..bytes.len()].copy_from_slice(&bytes);
+    Ok(raw)
 }
 
 fn preserve_imported_fixed_length(

@@ -37,6 +37,7 @@ export function parseResourceFork(original: Uint8Array): ResourceEntry[] {
   if (typeListOffset + 2 > buffer.byteLength) return [];
   const rawTypeCount = u16At(buffer, typeListOffset);
   if (rawTypeCount === null) return [];
+  if (rawTypeCount === 0xffff) return [];
 
   const resources: ResourceEntry[] = [];
   for (let typeIndex = 0; typeIndex <= rawTypeCount; typeIndex += 1) {
@@ -125,7 +126,7 @@ export function writeResourceFork(entries: ResourceForkUpdate[]) {
   const nameListStart = refListStart + refListLength;
 
   const typeList: number[] = [];
-  pushU16(typeList, Math.max(0, sortedGroups.length - 1));
+  pushU16(typeList, sortedGroups.length === 0 ? 0xffff : sortedGroups.length - 1);
   let refCursor = refListStart;
   for (const [resourceType, group] of sortedGroups) {
     pushAscii(typeList, resourceType);

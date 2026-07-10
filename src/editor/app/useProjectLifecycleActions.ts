@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Dispatch } from "react";
 import { isBrowserPickerAbort, pickBrowserProjectSource, pickBrowserScenarioSource } from "../browser/fsAccess";
+import { attachGeneratedScenarioBaseline } from "../browser/generatedScenarioBaseline";
 import { createBrowserWorkspace, importBrowserLibrary } from "../browser/library";
 import { benchmarkBrowserProject, createBrowserProject, ensureBrowserReferenceTileAttributes, importBrowserScenario, openBrowserProject, validateBrowserProject } from "../browser/project";
 import { browserProjectPackageFileName, createBrowserProjectPackageZip } from "../browser/projectPackage";
@@ -77,9 +78,11 @@ export function useProjectLifecycleActions({
     setProjectDialogOpen(false);
     const targetProjectDir = defaultProjectPath(roots.project, projectName);
     if (!desktopRuntime) {
-      const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(projectName));
+      let project = await ensureBrowserReferenceTileAttributes(createBrowserProject(projectName));
       try {
-        const snapshot = await saveNewBrowserProject(project);
+        const generated = await attachGeneratedScenarioBaseline(project);
+        project = generated.project;
+        const snapshot = await saveNewBrowserProject(project, generated.rawSources);
         setProjectDir(snapshot.key);
         setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
         dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
@@ -122,8 +125,10 @@ export function useProjectLifecycleActions({
         } catch (error) {
           if (!isMissingProjectJson(error)) throw error;
           if (handle.kind === "project-zip-file") throw error;
-          const project = await ensureBrowserReferenceTileAttributes(createBrowserProject(handle.name));
-          const snapshot = await saveBrowserProject(project);
+          const browserProject = await ensureBrowserReferenceTileAttributes(createBrowserProject(handle.name));
+          const generated = await attachGeneratedScenarioBaseline(browserProject);
+          const project = generated.project;
+          const snapshot = await saveBrowserProject(project, generated.rawSources);
           setProjectDir(snapshot.key);
           setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
           dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
@@ -451,11 +456,16 @@ export function useProjectLifecycleActions({
 
     try {
       if (!desktopRuntime) {
-        const project = await ensureBrowserReferenceTileAttributes(result.project);
-        const templateRawSources = usesCurrentTemplate && state.project
+        let project = await ensureBrowserReferenceTileAttributes(result.project);
+        let rawSources = usesCurrentTemplate && state.project
           ? await loadBrowserProjectRawSources(state.project)
           : null;
-        const snapshot = await saveNewBrowserProject(project, templateRawSources);
+        if (!usesCurrentTemplate) {
+          const generated = await attachGeneratedScenarioBaseline(project);
+          project = generated.project;
+          rawSources = generated.rawSources;
+        }
+        const snapshot = await saveNewBrowserProject(project, rawSources);
         setProjectDir(snapshot.key);
         setExportDir(defaultExportPath(roots.export, snapshot.project.scenario.name));
         dispatch({ type: "setProject", project: snapshot.project, selectedMapId: snapshot.project.maps[0]?.id ?? null });
@@ -485,7 +495,13 @@ export function useProjectLifecycleActions({
         ...result.project,
         appVersion: shell.appVersion,
         scenario: { ...result.project.scenario, projectPath: targetProjectDir },
-        source: { ...result.project.source, rawSourcesDir: shell.source.rawSourcesDir || "raw-sources" },
+        source: usesCurrentTemplate
+          ? { ...result.project.source, rawSourcesDir: shell.source.rawSourcesDir || "raw-sources" }
+          : {
+              ...result.project.source,
+              rawSourcesDir: shell.source.rawSourcesDir || "raw-sources",
+              files: shell.source.files
+            },
         assets: result.project.assets.filter((asset) => !customResourceKeys.has(`${asset.resourceType}:${asset.resourceId}`))
       };
       project = await invoke<Project>("save_project", { projectDir: targetProjectDir, project });

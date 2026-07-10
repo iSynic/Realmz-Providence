@@ -235,9 +235,12 @@ export function writeRandomLevels(levels: RandomLevel[], levelType: LevelType) {
   return output;
 }
 
-export function writeDoorFile(triggers: TriggerRecord[], levelType: LevelType) {
+export function writeDoorFile(triggers: TriggerRecord[], levelType: LevelType, minimumLevelCount = 0) {
   const selected = triggers.filter((trigger) => trigger.levelType === levelType);
-  const levelCount = selected.reduce((max, trigger) => Math.max(max, (trigger.levelIndex ?? -1) + 1), 0);
+  const levelCount = selected.reduce(
+    (max, trigger) => Math.max(max, (trigger.levelIndex ?? -1) + 1),
+    minimumLevelCount
+  );
   const output = new Uint8Array(levelCount * DOOR_LEVEL_RECORD_BYTES);
   for (const trigger of selected) {
     if (trigger.levelIndex == null) {

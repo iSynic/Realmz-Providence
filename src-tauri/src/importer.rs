@@ -54,10 +54,10 @@ pub fn create_project(
             security_backup: None,
         },
         source: SourceSnapshot {
-            source_path: String::new(),
+            source_path: format!("generated://{}", scenario_id(&project_name)),
             raw_sources_dir: RAW_SOURCES_DIR.to_string(),
             files: Vec::new(),
-            immutable: true,
+            immutable: false,
         },
         maps: vec![default_land_map()],
         land_layout: None,
@@ -95,9 +95,126 @@ pub fn create_project(
         semantic_schema: SemanticSchema::default(),
         validation: ValidationReport::default(),
     };
+    project.source.files = seed_generated_raw_sources(&project_dir, &project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
+}
+
+fn seed_generated_raw_sources(
+    project_dir: &Path,
+    project: &ProvidenceProject,
+) -> Result<Vec<SourceFile>> {
+    const SCENARIO_SUPPORT_BYTES: usize = 600;
+    const SCENARIO_ITEM_TABLE_BYTES: usize = 200 * crate::realmz::ITEM_BYTES;
+    const TILE_SOLIDS_BYTES: usize = 1024;
+    const EMPTY_RUNTIME_TABLES: &[&str] = &[
+        "Data DL", "Data RDD", "Data SD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD",
+    ];
+
+    let shell = project.scenario.shell.as_ref().ok_or_else(|| {
+        ProvidenceError::message("Generated scenarios require scenario shell metadata.")
+    })?;
+    let shell_name = if shell.source_file.trim().is_empty() {
+        project.scenario.name.as_str()
+    } else {
+        shell.source_file.as_str()
+    };
+    let shell_bytes = crate::realmz::write_scenario_shell(shell)?;
+    let land_level_count = project
+        .maps
+        .iter()
+        .filter(|map| map.level_type == LevelType::Land)
+        .count()
+        .max(1);
+    let dungeon_level_count = project
+        .maps
+        .iter()
+        .filter(|map| map.level_type == LevelType::Dungeon)
+        .count();
+    let mut entries = vec![
+        (
+            shell_name.to_string(),
+            shell_bytes.clone(),
+            SourceFileRole::SupportedBinary,
+            true,
+        ),
+        (
+            "Scenario".to_string(),
+            vec![0; SCENARIO_SUPPORT_BYTES],
+            SourceFileRole::PassThrough,
+            false,
+        ),
+        (
+            "Scenario.rsrc".to_string(),
+            crate::resource_fork::write_resource_fork(&[])?,
+            SourceFileRole::ResourceFork,
+            false,
+        ),
+        (
+            "Data CS".to_string(),
+            shell_bytes,
+            SourceFileRole::SupportedBinary,
+            true,
+        ),
+        (
+            "Data DD".to_string(),
+            crate::realmz::write_door_file_for_levels(
+                &project.triggers,
+                LevelType::Land,
+                land_level_count,
+            )?,
+            SourceFileRole::SupportedBinary,
+            true,
+        ),
+        (
+            "Data DDD".to_string(),
+            crate::realmz::write_door_file_for_levels(
+                &project.triggers,
+                LevelType::Dungeon,
+                dungeon_level_count,
+            )?,
+            SourceFileRole::SupportedBinary,
+            true,
+        ),
+        (
+            "Data NI".to_string(),
+            vec![0; SCENARIO_ITEM_TABLE_BYTES],
+            SourceFileRole::SupportedBinary,
+            true,
+        ),
+        (
+            "Data Solids".to_string(),
+            vec![0; TILE_SOLIDS_BYTES],
+            SourceFileRole::SupportedBinary,
+            true,
+        ),
+    ];
+    entries.extend(EMPTY_RUNTIME_TABLES.iter().map(|name| {
+        (
+            (*name).to_string(),
+            Vec::new(),
+            SourceFileRole::SupportedBinary,
+            true,
+        )
+    }));
+    entries.sort_by(|left, right| left.0.cmp(&right.0));
+
+    let raw_dir = project_dir.join(RAW_SOURCES_DIR);
+    let mut files = Vec::with_capacity(entries.len());
+    for (name, bytes, role, editable) in entries {
+        let path = raw_dir.join(&name);
+        fs::write(&path, &bytes).with_path(&path)?;
+        files.push(SourceFile {
+            name: name.clone(),
+            relative_path: name,
+            bytes: bytes.len() as u64,
+            sha256: sha256_hex(&bytes),
+            role,
+            editable,
+        });
+    }
+    Ok(files)
 }
 
 fn unique_project_target(project_name: &str, requested_dir: &Path) -> (String, PathBuf) {
@@ -2175,6 +2292,102 @@ mod tests {
         assert!(
             project_dir.join(PROJECT_FILE_NAME).is_file(),
             "created project should still be saved to disk"
+        );
+    }
+
+    #[test]
+    fn create_project_seeds_exportable_realmz_runtime_files() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Starter.providence");
+        let mut project =
+            create_project("Starter".to_string(), &project_dir).expect("create project");
+        let raw_dir = project_dir.join(RAW_SOURCES_DIR);
+
+        for (name, expected_bytes) in [
+            ("Starter", 316),
+            ("Scenario", 600),
+            ("Data CS", 316),
+            ("Data DD", crate::realmz::DOOR_LEVEL_BYTES),
+            ("Data DDD", 0),
+            ("Data DL", 0),
+            ("Data RDD", 0),
+            ("Data SD", 0),
+            ("Data TD2", 0),
+            ("Data TD3", 0),
+            ("Data ED", 0),
+            ("Data ED2", 0),
+            ("Data MD", 0),
+            ("Data NI", 200 * crate::realmz::ITEM_BYTES),
+            ("Data Solids", 1024),
+        ] {
+            assert_eq!(
+                fs::metadata(raw_dir.join(name))
+                    .unwrap_or_else(|_| panic!("missing generated raw source {name}"))
+                    .len() as usize,
+                expected_bytes,
+                "unexpected generated size for {name}"
+            );
+        }
+        let resource_bytes = fs::read(raw_dir.join("Scenario.rsrc")).expect("resource fork");
+        assert!(
+            resource_bytes.len() >= 46,
+            "empty resource fork should be structurally valid"
+        );
+        assert!(crate::resource_fork::parse_resource_fork_entries(&resource_bytes).is_empty());
+        assert!(project.source.files.iter().any(|file| {
+            file.name == "Scenario.rsrc" && matches!(file.role, SourceFileRole::ResourceFork)
+        }));
+
+        let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
+            .into_iter()
+            .next()
+            .expect("blank item record");
+        item.authored = true;
+        item.item_id = 901;
+        project.scenario_items.push(item);
+
+        let output_dir = temp.path().join("Starter");
+        crate::exporter::export_project(
+            &project_dir,
+            &project,
+            &output_dir,
+            ScenarioTarget::WindowsRealmzFolder,
+        )
+        .expect("export generated project");
+        assert_eq!(
+            fs::metadata(output_dir.join("Data LD"))
+                .expect("Data LD")
+                .len() as usize,
+            FIELD_BYTES
+        );
+        assert_eq!(
+            fs::metadata(output_dir.join("Data RD"))
+                .expect("Data RD")
+                .len() as usize,
+            RANDLEVEL_BYTES
+        );
+        assert_eq!(
+            fs::metadata(output_dir.join("Data DD"))
+                .expect("Data DD")
+                .len() as usize,
+            crate::realmz::DOOR_LEVEL_BYTES
+        );
+        assert_eq!(
+            fs::metadata(output_dir.join("Data NI"))
+                .expect("Data NI")
+                .len() as usize,
+            200 * crate::realmz::ITEM_BYTES
+        );
+        let reimport_dir = temp.path().join("Reimported.providence");
+        let reimported =
+            import_scenario(&output_dir, &reimport_dir).expect("reimport generated export");
+        assert_eq!(
+            reimported
+                .maps
+                .iter()
+                .filter(|map| map.level_type == LevelType::Land)
+                .count(),
+            1
         );
     }
 

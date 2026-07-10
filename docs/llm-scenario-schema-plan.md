@@ -10,6 +10,7 @@ Next implementation plan: [`docs/llm-scenario-schema-next-plan.md`](llm-scenario
 - `src/editor/scenarioSeed.ts` validates and expands that seed into a `Project`.
 - New Project exposes the seed compiler through a Scenario JSON mode in both browser and desktop runtimes, with inline validation failures before persistence.
 - Scenario JSON can use the current project as its base template while preserving browser raw snapshots or desktop package payload directories.
+- Blank and prompt-created projects now include a generated, content-neutral Realmz runtime baseline. Browser and desktop exports contain the required startup files, fixed item capacity, scenario shell/support files, and one door table per authored map without borrowing another scenario's data.
 - Supported content: scenario metadata, keyed maps, map regions, map drawing operations, messages, quests, battles, Normal scenario monsters and descriptions, treasures, shops, scenario items and item text, stock and Custom Library asset references, simple and timed encounters, Extra Action Points, and semantic AP seed aliases.
 - Supported map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, `stamp`, `landSecret`, `hiddenWalkable`, and `dungeonPassage`.
 - Supported AP seed aliases: `message`, `battle`, `simpleEncounter`, `complexEncounter`, `shop`, `treasure`, `sound`, `picture`, `scrollingText`, `victoryPoints`, `temple`, `banking`, `displayMap`, `pickCharacters`, `returnGosub`, `popStack`, `addSpecialCharacter`, `dropSpecialCharacter`, `teleport`, `randomMessage`, `selectiveBattle`, `battleOutcome`, `improvedBattleOutcome`, `causeRout`, `battleMacroCriteria`, `spawnMonsters`, `destroyRelatedMonsters`, `continueIfMonsterPresent`, `alterTimedEncounter`, `branchOnQuest`, `setQuestFlag`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `branchOnItem`, `branchOnItemCharges`, `dropItems`, `changeItemCharges`, `replaceItems`, `branchOnPartyCondition`, `branchOnCharacterCondition`, `branchOnTileParameter`, `copyActionPointSteps`, `enableActionPoint`, `disableActionPoint`, `patchActionPoint`, `setDarkLevel`, `alterGameTime`, `branchOnGameTime`, `boatCampStatus`, `alterFatigue`, `changeSpellPoints`, `branchOnSpellPoints`, `alterRandomEncounterRectangle`, `alterRandomRectangle`, `enterExitDungeon`, `edcd`, and `raw`.
@@ -153,6 +154,8 @@ Add golden seed fixtures that assert:
 - generated project validation succeeds
 - browser scenario package export succeeds for generated fixtures
 - existing AP coverage stays complete for manual opcodes 1-127 plus signed aliases
+
+Status: seed fixtures, browser package fixtures, and a generated-runtime-baseline gate are implemented. The generated baseline check compiles Scenario JSON with authored content, creates a browser Realmz package, and verifies the startup file contract and fixed record capacities. Desktop coverage creates a blank project, exports it, and reimports the result through Providence.
 
 ## Remaining Design Decision
 

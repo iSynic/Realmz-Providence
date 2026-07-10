@@ -285,7 +285,8 @@ The seed should eventually support:
 
 Implemented behavior:
 
-- `blank` remains the default and uses Providence's normal new-project shell.
+- `blank` remains the default and uses Providence's normal new-project shell plus a generated, content-neutral Realmz runtime source baseline.
+- Blank browser and desktop projects can export without an imported scenario. The baseline supplies required empty startup tables, a valid empty resource fork, the fixed 200-row scenario item table, and generated shell/door scaffolding.
 - Other keys resolve only through the caller's `baseTemplates` registry; unavailable keys fail with a structured diagnostic.
 - Providence clones the selected project so generation cannot mutate the reusable template.
 - Omitted record families inherit from the template; explicitly present families replace inherited records, including explicit empty arrays.
@@ -334,6 +335,7 @@ Every phase should pass:
 - `npm run typecheck`
 - `npm run build`
 - targeted fixture script for generated seed projects
+- `node scripts/check_generated_scenario_baseline.mjs`
 - `git diff --check`
 
 For phases that affect exportable records, also run:

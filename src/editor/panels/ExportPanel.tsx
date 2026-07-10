@@ -11,7 +11,6 @@ import {
   generatedRuntimeCaches,
   resourceGaps,
   sourceByName,
-  sourcePassThroughList,
   unresolvedLinks
 } from "../semanticGraph";
 
@@ -363,6 +362,7 @@ function exportDiagnostics(
   if (
     !context.desktopRuntime &&
     context.browserTarget !== "project-zip" &&
+    !hasGeneratedBrowserBaseline(project) &&
     context.plan.exportableSources.length === 0 &&
     context.plan.passThroughSources.length === 0
   ) {
@@ -411,15 +411,17 @@ function exportPlan(project: Project | null) {
       unresolvedLinks: 0,
       blockedObjects: 0,
       managedAssets: 0,
-      exportableSources: [] as NonNullable<ReturnType<typeof sourceByName>>[],
-      passThroughSources: [] as ReturnType<typeof sourcePassThroughList>
+      exportableSources: [] as ExportPlanSource[],
+      passThroughSources: [] as ExportPlanSource[]
     };
   }
   const blocked = blockedSemanticObjects(project);
   const exportableSources = project.validation.exportableFiles
-    .map((name) => sourceByName(project, name))
-    .filter(Boolean) as NonNullable<ReturnType<typeof sourceByName>>[];
-  const passThroughSources = sourcePassThroughList(project);
+    .map((name) => exportPlanSource(project, name))
+    .filter(Boolean) as ExportPlanSource[];
+  const passThroughSources = project.validation.passThroughFiles
+    .map((name) => exportPlanSource(project, name))
+    .filter(Boolean) as ExportPlanSource[];
   return {
     editableRecords: editableSemanticRecords(project).length,
     passThroughFiles: project.validation.passThroughFiles.length,
@@ -432,4 +434,29 @@ function exportPlan(project: Project | null) {
     exportableSources,
     passThroughSources
   };
+}
+
+type ExportPlanSource = {
+  id: string;
+  name: string;
+  bytes: number;
+  origin: string;
+};
+
+function exportPlanSource(project: Project, name: string): ExportPlanSource | null {
+  const semanticSource = sourceByName(project, name);
+  if (semanticSource) return semanticSource;
+  if (!hasGeneratedBrowserBaseline(project)) return null;
+  const sourceFile = project.source.files.find((file) => file.name === name);
+  if (!sourceFile) return null;
+  return {
+    id: `source:file:${sourceFile.name}`,
+    name: sourceFile.name,
+    bytes: sourceFile.bytes,
+    origin: "generated Realmz runtime baseline"
+  };
+}
+
+function hasGeneratedBrowserBaseline(project: Project) {
+  return project.source.rawSourcesDir === "generated-runtime" && project.source.files.length > 0;
 }

@@ -326,16 +326,26 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
       bytes: preserveMalformedRawTail("Data RDD", writeRandomLevels(project.randomLevels, "dungeon"), RANDOM_LEVEL_RECORD_BYTES, rawFiles)
     });
   }
-  if (project.triggers.some((trigger) => trigger.levelType === "land")) {
+  if (project.maps.some((map) => map.levelType === "land") || project.triggers.some((trigger) => trigger.levelType === "land")) {
     writes.push({
       path: "Data DD",
-      bytes: preserveMalformedRawTail("Data DD", writeDoorFile(project.triggers, "land"), DOOR_LEVEL_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail(
+        "Data DD",
+        writeDoorFile(project.triggers, "land", project.maps.filter((map) => map.levelType === "land").length),
+        DOOR_LEVEL_RECORD_BYTES,
+        rawFiles
+      )
     });
   }
-  if (project.triggers.some((trigger) => trigger.levelType === "dungeon")) {
+  if (project.maps.some((map) => map.levelType === "dungeon") || project.triggers.some((trigger) => trigger.levelType === "dungeon")) {
     writes.push({
       path: "Data DDD",
-      bytes: preserveMalformedRawTail("Data DDD", writeDoorFile(project.triggers, "dungeon"), DOOR_LEVEL_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail(
+        "Data DDD",
+        writeDoorFile(project.triggers, "dungeon", project.maps.filter((map) => map.levelType === "dungeon").length),
+        DOOR_LEVEL_RECORD_BYTES,
+        rawFiles
+      )
     });
   }
   if (project.triggers.some((trigger) => trigger.source === "Data ED3")) {
@@ -384,7 +394,7 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
   if (project.scenarioItems.length > 0) {
     writes.push({
       path: "Data NI",
-      bytes: preserveMalformedRawTail("Data NI", writeScenarioItems(project.scenarioItems), ITEM_RECORD_BYTES, rawFiles)
+      bytes: preserveZeroFilledRawCapacity("Data NI", writeScenarioItems(project.scenarioItems), ITEM_RECORD_BYTES, rawFiles)
     });
   }
   if (project.treasures.length > 0) {
@@ -794,6 +804,16 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
   output.set(raw.slice(bytes.byteLength), bytes.byteLength);
+  return output;
+}
+
+function preserveZeroFilledRawCapacity(fileName: string, bytes: Uint8Array, recordBytes: number, rawFiles: BrowserRawSourceFile[]) {
+  const raw = rawSourceBytes(fileName, rawFiles);
+  if (!raw || raw.byteLength <= bytes.byteLength || raw.some((byte) => byte !== 0)) {
+    return preserveMalformedRawTail(fileName, bytes, recordBytes, rawFiles);
+  }
+  const output = new Uint8Array(raw);
+  output.set(bytes);
   return output;
 }
 

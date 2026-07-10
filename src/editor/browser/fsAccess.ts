@@ -13,7 +13,7 @@ export type BrowserRawSourceCaptureConfidence = "captured" | "manifest" | "deriv
 
 export type BrowserRawSourceSnapshot = {
   schemaVersion?: number;
-  sourceKind?: "browser-scenario-import" | "providence-project-package";
+  sourceKind?: "browser-scenario-import" | "providence-project-package" | "generated-scenario-baseline";
   capturedAt: string;
   rootName: string;
   targetPlatform?: BrowserRawSourceTargetPlatform;
@@ -451,7 +451,7 @@ function parseRawSourcesManifest(file: ProjectPackageFile | undefined): RawSourc
   }
 }
 
-async function sha256Hex(bytes: Uint8Array) {
+export async function sha256Hex(bytes: Uint8Array) {
   if (crypto.subtle) {
     const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
     const digest = await crypto.subtle.digest("SHA-256", buffer);

@@ -1990,6 +1990,14 @@ fn parse_door(
 }
 
 pub fn write_door_file(triggers: &[TriggerRecord], level_type: LevelType) -> Result<Vec<u8>> {
+    write_door_file_for_levels(triggers, level_type, 0)
+}
+
+pub fn write_door_file_for_levels(
+    triggers: &[TriggerRecord],
+    level_type: LevelType,
+    minimum_level_count: usize,
+) -> Result<Vec<u8>> {
     let selected: Vec<&TriggerRecord> = triggers
         .iter()
         .filter(|trigger| trigger.level_type == Some(level_type))
@@ -1999,7 +2007,8 @@ pub fn write_door_file(triggers: &[TriggerRecord], level_type: LevelType) -> Res
         .filter_map(|trigger| trigger.level_index)
         .max()
         .map(|index| index + 1)
-        .unwrap_or(0);
+        .unwrap_or(0)
+        .max(minimum_level_count);
     let mut output = vec![0u8; level_count * DOOR_LEVEL_BYTES];
     for trigger in selected {
         let level_index = trigger.level_index.ok_or_else(|| {

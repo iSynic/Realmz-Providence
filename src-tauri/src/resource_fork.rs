@@ -88,6 +88,9 @@ pub fn parse_resource_fork_entries(buffer: &[u8]) -> Vec<ResourceForkEntry> {
     let Some(raw_type_count) = u16_safe(buffer, type_list_offset) else {
         return Vec::new();
     };
+    if raw_type_count == u16::MAX as usize {
+        return Vec::new();
+    }
     let mut entries = Vec::new();
     for type_index in 0..=raw_type_count {
         let type_offset = type_list_offset + 2 + type_index * 8;
@@ -184,7 +187,14 @@ pub fn write_resource_fork(entries: &[ResourceForkEntry]) -> Result<Vec<u8>> {
     let name_list_start = ref_list_start + ref_list_len;
 
     let mut type_list = Vec::new();
-    push_u16(&mut type_list, type_count.saturating_sub(1));
+    push_u16(
+        &mut type_list,
+        if type_count == 0 {
+            u16::MAX as usize
+        } else {
+            type_count - 1
+        },
+    );
     let mut ref_cursor = ref_list_start;
     for (resource_type, entries) in &grouped {
         type_list.extend_from_slice(resource_type.as_bytes());
@@ -1415,6 +1425,16 @@ fn u32_safe(buffer: &[u8], offset: usize) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn empty_resource_fork_uses_standard_empty_type_list() {
+        let bytes = write_resource_fork(&[]).expect("write empty resource fork");
+        assert!(bytes.len() >= 46);
+        assert!(parse_resource_fork_entries(&bytes).is_empty());
+        let map_offset = u32_safe(&bytes, 4).expect("map offset");
+        let type_list_offset = map_offset + u16_safe(&bytes, map_offset + 24).expect("type list");
+        assert_eq!(u16_safe(&bytes, type_list_offset), Some(u16::MAX as usize));
+    }
 
     #[test]
     fn resource_fork_preserves_and_replaces_entries() {
