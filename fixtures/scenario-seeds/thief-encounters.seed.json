@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Rogue Encounter Seed" },
+  "messages": [
+    { "key": "vault-prompt", "text": "A trapped lock seals the old vault." },
+    { "key": "rogue-success", "text": "The attempt succeeds." },
+    { "key": "rogue-failure", "text": "The attempt fails." }
+  ],
+  "assets": [
+    { "key": "lock-click", "source": "stock", "resourceType": "snd ", "resourceId": 137 }
+  ],
+  "thiefEncounters": [
+    {
+      "key": "vault-lock",
+      "actions": [
+        { "kind": "acrobaticAct", "modifier": 1, "success": { "result": 1, "message": "rogue-success" }, "failure": { "result": 4, "message": "rogue-failure" } },
+        { "kind": "detectTrap", "modifier": 2, "success": { "result": 1, "sound": "lock-click" }, "failure": { "result": 4 } },
+        { "kind": "disarmTrap", "modifier": 3, "success": { "result": 2 }, "failure": { "result": 4 } },
+        { "kind": "hearNoise", "modifier": 4, "success": { "result": 1 }, "failure": { "result": 4 } },
+        { "kind": "forceLock", "modifier": 5, "success": { "result": 2 }, "failure": { "result": 4 } },
+        { "kind": "moveSilently", "modifier": 6, "success": { "result": 3 }, "failure": { "result": 4 } },
+        { "kind": "pickLock", "modifier": 7, "success": { "result": 1 }, "failure": { "result": 4 } },
+        { "kind": "pickPocket", "modifier": 8, "success": { "result": 2 }, "failure": { "result": 4 } }
+      ],
+      "prompt": "vault-prompt",
+      "trap": {
+        "armed": true,
+        "rogueOnly": false,
+        "damage": { "low": 3, "high": 9 },
+        "sound": "lock-click",
+        "spell": 17,
+        "spellPower": 5,
+        "disarmChancePerLevel": 6
+      },
+      "lock": { "tumblers": 5, "openChancePerLevel": 7 }
+    }
+  ]
+}

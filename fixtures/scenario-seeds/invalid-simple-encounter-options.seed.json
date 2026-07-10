@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Semantic Simple Encounters" },
+  "simpleEncounters": [
+    {
+      "options": [
+        {
+          "label": "This option label is deliberately made longer than the seventy nine bytes available in a simple encounter display buffer",
+          "steps": []
+        }
+      ],
+      "texts": ["Raw text cannot be mixed with semantic options"],
+      "choiceResults": [1, -4, 5],
+      "actions": [
+        { "slot": 0, "rawCode": 1, "id": 0 },
+        { "slot": 0, "rawCode": 1, "id": 1 }
+      ]
+    }
+  ]
+}

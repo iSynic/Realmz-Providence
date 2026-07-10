@@ -18,7 +18,7 @@ expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the s
 expect(source.includes("export function parseScenarioSeed"), "scenarioSeed.ts must export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");
 
-const requiredRootProperties = ["scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "timedEncounters", "actionPoints", "extraActionPoints"];
+const requiredRootProperties = ["baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "actionPoints", "extraActionPoints"];
 for (const key of requiredRootProperties) {
   expect(Object.hasOwn(schema.properties ?? {}, key), `root schema is missing ${key}`);
 }
@@ -44,6 +44,7 @@ for (const kind of schemaStepKinds) {
 
 const sampleSeed = {
   schemaVersion: 1,
+  baseTemplate: "blank",
   scenario: { name: "Schema Check" },
   maps: [{
     key: "road",
@@ -86,12 +87,25 @@ const sampleSeed = {
   simpleEncounters: [{
     key: "first-encounter",
     prompt: "hello",
-    texts: ["Continue", "Leave"],
-    choiceResults: [1, 0],
+    options: [
+      { label: "Continue", steps: [{ kind: "message", message: "hello" }] },
+      { label: "Leave", steps: [{ kind: "message", message: "bye" }] }
+    ],
     canBackOut: true,
     maxTimes: 1,
-    casteSuccess: 0,
-    actions: [{ slot: 0, rawCode: 1, id: 0 }]
+    casteSuccess: 0
+  }],
+  thiefEncounters: [{
+    key: "first-rogue",
+    prompt: "hello",
+    actions: [{
+      kind: "detectTrap",
+      modifier: 5,
+      success: { result: 1, message: "hello", sound: "stock-chime" },
+      failure: { result: 4, message: "bye" }
+    }],
+    trap: { armed: true, rogueOnly: true, damage: { low: 2, high: 6 }, sound: "stock-chime", spell: 17, spellPower: 3, disarmChancePerLevel: 8 },
+    lock: { tumblers: 4, openChancePerLevel: 10 }
   }],
   complexEncounters: [{
     key: "first-complex",
@@ -102,7 +116,7 @@ const sampleSeed = {
     word: { text: "open", result: 2 },
     spells: [{ spell: 12, result: 3 }],
     items: [{ item: "bell-clapper", result: 1 }],
-    thief: { successResult: 3, failureResult: 4 },
+    thief: { encounter: "first-rogue" },
     canBackOut: true,
     results: [
       { result: 1, steps: [{ kind: "message", message: "hello" }] },

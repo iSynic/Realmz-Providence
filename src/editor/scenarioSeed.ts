@@ -20,6 +20,7 @@ import {
   ShopRecord,
   ScenarioItemRecord,
   SimpleEncounterRecord,
+  ThiefEncounterRecord,
   TilesetAsset,
   TimedEncounterRecord,
   TreasureRecord,
@@ -47,12 +48,24 @@ const SHOP_BYTES = 3002;
 const ITEM_BYTES = 100;
 const SIMPLE_ENCOUNTER_BYTES = 426;
 const COMPLEX_ENCOUNTER_BYTES = 520;
+const THIEF_ENCOUNTER_BYTES = 118;
 const TIMED_ENCOUNTER_BYTES = 40;
 const EXTRACODE_BYTES = 10;
 const DOOR_BYTES = 40;
 const SCENARIO_ITEM_ID_BASE = 800;
 const SCENARIO_ITEM_RECORD_COUNT = 200;
 const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
+
+const ROGUE_ACTION_SLOTS: Record<ScenarioSeedRogueActionKind, number> = {
+  acrobaticAct: 0,
+  detectTrap: 1,
+  disarmTrap: 2,
+  hearNoise: 3,
+  forceLock: 4,
+  moveSilently: 5,
+  pickLock: 6,
+  pickPocket: 7
+};
 
 const PARTY_CONDITION_CODES: Record<Exclude<ScenarioSeedPartyCondition, number>, number> = {
   torchLit: 0,
@@ -80,6 +93,7 @@ export type ScenarioSeedRef = number | string;
 
 export type ScenarioSeed = {
   schemaVersion: typeof SCENARIO_SEED_SCHEMA_VERSION;
+  baseTemplate?: string;
   scenario: ScenarioSeedScenario;
   maps?: ScenarioSeedMap[];
   messages?: ScenarioSeedMessage[];
@@ -92,6 +106,7 @@ export type ScenarioSeed = {
   assets?: ScenarioSeedAsset[];
   simpleEncounters?: ScenarioSeedSimpleEncounter[];
   complexEncounters?: ScenarioSeedComplexEncounter[];
+  thiefEncounters?: ScenarioSeedThiefEncounter[];
   timedEncounters?: ScenarioSeedTimedEncounter[];
   actionPoints?: ScenarioSeedActionPoint[];
   extraActionPoints?: ScenarioSeedExtraActionPoint[];
@@ -302,12 +317,18 @@ export type ScenarioSeedSimpleEncounter = {
   key?: string;
   id?: number;
   prompt?: ScenarioSeedRef;
+  options?: ScenarioSeedSimpleEncounterOption[];
   texts?: string[];
   actions?: ScenarioSeedEncounterAction[];
   choiceResults?: number[];
   canBackOut?: boolean;
   maxTimes?: number;
   casteSuccess?: number;
+};
+
+export type ScenarioSeedSimpleEncounterOption = {
+  label: string;
+  steps: ScenarioSeedStep[];
 };
 
 export type ScenarioSeedComplexEncounter = {
@@ -320,12 +341,55 @@ export type ScenarioSeedComplexEncounter = {
   word?: { text: string; result: ScenarioSeedComplexResultNumber };
   spells?: Array<{ spell: number; result: ScenarioSeedComplexResultNumber }>;
   items?: Array<{ item: ScenarioSeedRef; result: ScenarioSeedComplexResultNumber }>;
-  thief?: { successResult: ScenarioSeedComplexResultNumber; failureResult: ScenarioSeedComplexResultNumber };
+  thief?: { encounter: ScenarioSeedRef };
   results?: ScenarioSeedComplexResultScript[];
   actions?: ScenarioSeedEncounterAction[];
   canBackOut?: boolean;
   maxTimes?: number;
   casteSuccess?: number;
+};
+
+export type ScenarioSeedRogueActionKind =
+  | "acrobaticAct"
+  | "detectTrap"
+  | "disarmTrap"
+  | "hearNoise"
+  | "forceLock"
+  | "moveSilently"
+  | "pickLock"
+  | "pickPocket";
+
+export type ScenarioSeedRogueOutcome = {
+  result?: ScenarioSeedComplexResultNumber;
+  message?: ScenarioSeedRef;
+  sound?: ScenarioSeedRef;
+};
+
+export type ScenarioSeedRogueAction = {
+  kind: ScenarioSeedRogueActionKind;
+  modifier?: number;
+  success: ScenarioSeedRogueOutcome;
+  failure: ScenarioSeedRogueOutcome;
+};
+
+export type ScenarioSeedThiefEncounter = {
+  key?: string;
+  id?: number;
+  prompt?: ScenarioSeedRef;
+  actions?: ScenarioSeedRogueAction[];
+  trap?: {
+    armed?: boolean;
+    rogueOnly?: boolean;
+    damage?: { low: number; high: number };
+    sound?: ScenarioSeedRef;
+    spell?: number;
+    spellPower?: number;
+    disarmChancePerLevel?: number;
+  };
+  lock?: {
+    tumblers?: number;
+    openChancePerLevel?: number;
+  };
 };
 
 export type ScenarioSeedComplexResultNumber = 1 | 2 | 3 | 4;
@@ -506,6 +570,7 @@ export type ScenarioSeedRegionAllocationEntry = {
 };
 
 export type ScenarioSeedAllocationReport = {
+  baseTemplate: string;
   messages: ScenarioSeedAllocationEntry[];
   quests: ScenarioSeedAllocationEntry[];
   battles: ScenarioSeedAllocationEntry[];
@@ -516,6 +581,7 @@ export type ScenarioSeedAllocationReport = {
   assets: ScenarioSeedAssetAllocationEntry[];
   simpleEncounters: ScenarioSeedAllocationEntry[];
   complexEncounters: ScenarioSeedAllocationEntry[];
+  thiefEncounters: ScenarioSeedAllocationEntry[];
   timedEncounters: ScenarioSeedAllocationEntry[];
   actionPoints: ScenarioSeedAllocationEntry[];
   extraActionPoints: ScenarioSeedAllocationEntry[];
@@ -625,6 +691,7 @@ export type ScenarioSeedProjectOptions = {
   now?: string;
   appVersion?: string;
   customAssets?: ManagedAsset[];
+  baseTemplates?: Record<string, Project>;
 };
 
 type ParseContext = {
@@ -640,7 +707,7 @@ type ScenarioSeedResolvedAsset = { kind: ManagedAssetKind; resourceType: string;
 type ActionBuildScope =
   | { kind: "map"; levelType: LevelType; levelIndex: number; recordIndex: number }
   | { kind: "extra"; recordIndex: number }
-  | { kind: "encounter"; encounterType: "complex"; recordIndex: number; result: ScenarioSeedComplexResultNumber };
+  | { kind: "encounter"; encounterType: "simple" | "complex"; recordIndex: number; result: ScenarioSeedComplexResultNumber };
 
 type BuildContext = {
   errors: string[];
@@ -657,6 +724,7 @@ type BuildContext = {
   assets: Map<string, ScenarioSeedResolvedAsset>;
   simpleEncounters: Map<string, number>;
   complexEncounters: Map<string, number>;
+  thiefEncounters: Map<string, number>;
   timedEncounters: Map<string, number>;
   actionPoints: Map<string, number>;
   actionPointTargets: Map<string, ActionPointTarget>;
@@ -669,15 +737,17 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   const ctx: ParseContext = { errors: [], warnings: [] };
   const root = requireObject(input, "$", ctx);
   if (!root) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
-  allowKeys(root, "$", ["schemaVersion", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "timedEncounters", "actionPoints", "extraActionPoints"], ctx);
+  allowKeys(root, "$", ["schemaVersion", "baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "actionPoints", "extraActionPoints"], ctx);
 
   const schemaVersion = requireInteger(root.schemaVersion, "$.schemaVersion", ctx);
   if (schemaVersion !== null && schemaVersion !== SCENARIO_SEED_SCHEMA_VERSION) {
     ctx.errors.push(`$.schemaVersion must be ${SCENARIO_SEED_SCHEMA_VERSION}.`);
   }
   const scenario = parseScenario(root.scenario, "$.scenario", ctx);
+  const baseTemplate = root.baseTemplate === undefined ? undefined : requireString(root.baseTemplate, "$.baseTemplate", ctx);
   const seed: ScenarioSeed = {
     schemaVersion: SCENARIO_SEED_SCHEMA_VERSION,
+    ...(baseTemplate ? { baseTemplate } : {}),
     scenario: scenario ?? { name: "Untitled Scenario" }
   };
 
@@ -703,6 +773,8 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   if (simpleEncounters) seed.simpleEncounters = simpleEncounters;
   const complexEncounters = parseArray(root.complexEncounters, "$.complexEncounters", ctx, parseComplexEncounter);
   if (complexEncounters) seed.complexEncounters = complexEncounters;
+  const thiefEncounters = parseArray(root.thiefEncounters, "$.thiefEncounters", ctx, parseThiefEncounter);
+  if (thiefEncounters) seed.thiefEncounters = thiefEncounters;
   const timedEncounters = parseArray(root.timedEncounters, "$.timedEncounters", ctx, parseTimedEncounter);
   if (timedEncounters) seed.timedEncounters = timedEncounters;
   const actionPoints = parseArray(root.actionPoints, "$.actionPoints", ctx, parseActionPoint);
@@ -721,6 +793,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   validateUniqueIds(seed.assets, "assets", ctx);
   validateUniqueIds(seed.simpleEncounters, "simpleEncounters", ctx);
   validateUniqueIds(seed.complexEncounters, "complexEncounters", ctx);
+  validateUniqueIds(seed.thiefEncounters, "thiefEncounters", ctx);
   validateUniqueIds(seed.timedEncounters, "timedEncounters", ctx);
   validateUniqueIds(seed.extraActionPoints, "extraActionPoints", ctx);
   validateMaps(seed.maps, ctx);
@@ -735,44 +808,56 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
 
   const now = options.now ?? new Date().toISOString();
   const seed = parsed.seed;
-  const buildContext = createBuildContext();
+  const baseTemplate = seed.baseTemplate ?? "blank";
+  const buildContext = createBuildContext(baseTemplate);
+  const project = createScenarioSeedBaseProject(seed.scenario.name, baseTemplate, options, buildContext);
+  if (!project) {
+    return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
+  }
   allocateSeedIds(seed, buildContext);
   if (buildContext.errors.length > 0) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
-  const project = createBrowserProject(seed.scenario.name);
   project.schemaVersion = PROJECT_SCHEMA_VERSION;
   project.appVersion = options.appVersion ?? "scenario-seed";
+  const scenarioDefaults = createBrowserProject(seed.scenario.name).scenario;
+  const scenarioShell = project.scenario.shell ?? scenarioDefaults.shell;
+  const contactInfo = project.scenario.contactInfo ?? scenarioDefaults.contactInfo;
   project.scenario = {
     ...project.scenario,
-    id: seed.scenario.id,
+    id: seed.scenario.id ?? project.scenario.id,
     name: seed.scenario.name,
     projectPath: `seed://${slugify(seed.scenario.name)}.providence`,
     importedAt: now,
-    contactInfo: project.scenario.contactInfo
+    shell: scenarioShell
+      ? { ...scenarioShell, sourceFile: seed.scenario.name, authored: true }
+      : null,
+    contactInfo: contactInfo
       ? {
-          ...project.scenario.contactInfo,
+          ...contactInfo,
           scenarioName: seed.scenario.name,
-          version: seed.scenario.version ?? project.scenario.contactInfo.version,
-          date: seed.scenario.date ?? project.scenario.contactInfo.date,
-          author: seed.scenario.author ?? project.scenario.contactInfo.author,
-          email: seed.scenario.email ?? project.scenario.contactInfo.email,
-          web: seed.scenario.web ?? project.scenario.contactInfo.web,
-          description: seed.scenario.description ?? project.scenario.contactInfo.description,
+          version: seed.scenario.version ?? contactInfo.version,
+          date: seed.scenario.date ?? contactInfo.date,
+          author: seed.scenario.author ?? contactInfo.author,
+          email: seed.scenario.email ?? contactInfo.email,
+          web: seed.scenario.web ?? contactInfo.web,
+          description: seed.scenario.description ?? contactInfo.description,
           authored: true
         }
       : null
   };
   project.source = {
     sourcePath: `seed://${slugify(seed.scenario.name)}`,
-    rawSourcesDir: "scenario-seed",
+    rawSourcesDir: baseTemplate === "blank" ? "scenario-seed" : project.source.rawSourcesDir || "scenario-seed",
     immutable: false,
-    files: []
+    files: baseTemplate === "blank" ? [] : [...(project.source.files ?? [])]
   };
 
-  project.assets = buildSeedAssets(seed.assets ?? [], options.customAssets ?? [], buildContext);
+  if (seed.assets !== undefined) {
+    project.assets = buildSeedAssets(seed.assets, options.customAssets ?? [], buildContext);
+  }
 
-  if (seed.maps?.length) {
+  if (seed.maps !== undefined) {
     project.maps = seed.maps.map((map, index) => buildMap(map, index));
     project.randomLevels = seed.maps.map((map, index) => buildRandomLevel(map, index));
     project.assetCatalog = {
@@ -781,34 +866,66 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
     };
   }
 
-  project.messages = (seed.messages ?? []).map((message) => ({
-    id: message.id ?? 0,
-    text: message.text,
-    rawBytes: new Array(MESSAGE_BYTES).fill(0),
-    authored: true,
-    provenance: authoredProvenance("Data SD2", message.id ?? 0, (message.id ?? 0) * MESSAGE_BYTES, MESSAGE_BYTES)
-  }));
-  project.questLabels = (seed.quests ?? []).map((quest): QuestLabel => ({ id: quest.id ?? 0, label: quest.label, ...(quest.note !== undefined ? { note: quest.note } : {}) })).sort((a, b) => a.id - b.id);
-  project.monsters = (seed.monsters ?? []).map((monster) => buildMonster(monster, buildContext));
-  project.monsterDescriptions = (seed.monsters ?? []).map(buildMonsterDescription).filter((record): record is MonsterDescriptionRecord => record !== null);
-  project.battles = (seed.battles ?? []).map((battle) => buildBattle(battle, buildContext));
-  project.scenarioItems = (seed.items ?? []).map(buildItem);
-  project.itemTexts = (seed.items ?? []).map(buildItemText).filter((record): record is ItemTextRecord => record !== null);
-  project.treasures = (seed.treasures ?? []).map((treasure) => buildTreasure(treasure, buildContext));
-  project.shops = (seed.shops ?? []).map((shop) => buildShop(shop, buildContext));
-  project.simpleEncounters = (seed.simpleEncounters ?? []).map((encounter) => buildSimpleEncounter(encounter, buildContext));
-  const complexBuild = buildComplexEncounters(seed.complexEncounters ?? [], buildContext);
-  project.complexEncounters = complexBuild.records;
-  project.timedEncounters = (seed.timedEncounters ?? []).map((encounter) => buildTimedEncounter(encounter, buildContext));
+  if (seed.messages !== undefined) {
+    project.messages = seed.messages.map((message) => ({
+      id: message.id ?? 0,
+      text: message.text,
+      rawBytes: new Array(MESSAGE_BYTES).fill(0),
+      authored: true,
+      provenance: authoredProvenance("Data SD2", message.id ?? 0, (message.id ?? 0) * MESSAGE_BYTES, MESSAGE_BYTES)
+    }));
+  }
+  if (seed.quests !== undefined) project.questLabels = seed.quests.map((quest): QuestLabel => ({ id: quest.id ?? 0, label: quest.label, ...(quest.note !== undefined ? { note: quest.note } : {}) })).sort((a, b) => a.id - b.id);
+  if (seed.monsters !== undefined) {
+    project.monsters = seed.monsters.map((monster) => buildMonster(monster, buildContext));
+    project.monsterDescriptions = seed.monsters.map(buildMonsterDescription).filter((record): record is MonsterDescriptionRecord => record !== null);
+  }
+  if (seed.battles !== undefined) project.battles = seed.battles.map((battle) => buildBattle(battle, buildContext));
+  if (seed.items !== undefined) {
+    project.scenarioItems = seed.items.map(buildItem);
+    project.itemTexts = seed.items.map(buildItemText).filter((record): record is ItemTextRecord => record !== null);
+  }
+  if (seed.treasures !== undefined) project.treasures = seed.treasures.map((treasure) => buildTreasure(treasure, buildContext));
+  if (seed.shops !== undefined) project.shops = seed.shops.map((shop) => buildShop(shop, buildContext));
+
+  const baseMapTriggers = project.triggers.filter((trigger) => trigger.source !== "Data ED3");
+  const baseExtraActionPoints = project.triggers.filter((trigger) => trigger.source === "Data ED3");
+  const simpleBuild = buildSimpleEncounters(seed.simpleEncounters ?? [], buildContext, project.extracodes);
+  if (seed.simpleEncounters !== undefined) project.simpleEncounters = simpleBuild.records;
+  if (seed.thiefEncounters !== undefined) project.thiefEncounters = seed.thiefEncounters.map((encounter) => buildThiefEncounter(encounter, buildContext));
+  const complexBuild = buildComplexEncounters(seed.complexEncounters ?? [], buildContext, simpleBuild.extracodes);
+  if (seed.complexEncounters !== undefined) project.complexEncounters = complexBuild.records;
+  if (seed.timedEncounters !== undefined) project.timedEncounters = seed.timedEncounters.map((encounter) => buildTimedEncounter(encounter, buildContext));
 
   const triggerBuild = buildTriggers(seed.actionPoints ?? [], seed.extraActionPoints ?? [], buildContext, complexBuild.extracodes);
-  project.triggers = triggerBuild.triggers;
+  const generatedMapTriggers = triggerBuild.triggers.filter((trigger) => trigger.source !== "Data ED3");
+  const generatedExtraActionPoints = triggerBuild.triggers.filter((trigger) => trigger.source === "Data ED3");
+  project.triggers = [
+    ...(seed.actionPoints === undefined ? baseMapTriggers : generatedMapTriggers),
+    ...(seed.extraActionPoints === undefined ? baseExtraActionPoints : generatedExtraActionPoints)
+  ];
   project.extracodes = triggerBuild.extracodes;
   project.validation = validateBrowserProject(project);
   if (buildContext.errors.length > 0) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings, ...project.validation.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
   return { ok: true, project, warnings: [...parsed.warnings, ...buildContext.warnings, ...project.validation.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
+}
+
+function createScenarioSeedBaseProject(projectName: string, baseTemplate: string, options: ScenarioSeedProjectOptions, context: BuildContext): Project | null {
+  if (baseTemplate === "blank") return createBrowserProject(projectName);
+  const templates = options.baseTemplates;
+  if (!templates || !Object.prototype.hasOwnProperty.call(templates, baseTemplate)) {
+    addDiagnostic(context, "error", "unresolved-base-template", `Base template "${baseTemplate}" was not provided by the caller.`, "base template", baseTemplate);
+    return null;
+  }
+  const template = templates[baseTemplate];
+  try {
+    return JSON.parse(JSON.stringify(template)) as Project;
+  } catch {
+    addDiagnostic(context, "error", "invalid-base-template", `Base template "${baseTemplate}" could not be cloned as Providence project data.`, "base template", baseTemplate);
+    return null;
+  }
 }
 
 function parseScenario(input: unknown, path: string, ctx: ParseContext): ScenarioSeedScenario | null {
@@ -1150,10 +1267,11 @@ function parseItem(input: unknown, path: string, ctx: ParseContext): ScenarioSee
 function parseSimpleEncounter(input: unknown, path: string, ctx: ParseContext): ScenarioSeedSimpleEncounter | null {
   const value = requireObject(input, path, ctx);
   if (!value) return null;
-  allowKeys(value, path, ["key", "id", "prompt", "texts", "actions", "choiceResults", "canBackOut", "maxTimes", "casteSuccess"], ctx);
+  allowKeys(value, path, ["key", "id", "prompt", "options", "texts", "actions", "choiceResults", "canBackOut", "maxTimes", "casteSuccess"], ctx);
   const key = optionalString(value.key, `${path}.key`, ctx);
   const id = optionalInteger(value.id, `${path}.id`, ctx);
   const prompt = optionalRef(value.prompt, `${path}.prompt`, ctx);
+  const options = parseArray(value.options, `${path}.options`, ctx, parseSimpleEncounterOption);
   const texts = parseStringArray(value.texts, `${path}.texts`, ctx);
   const actions = parseArray(value.actions, `${path}.actions`, ctx, parseEncounterAction);
   const choiceResults = parseIntegerArray(value.choiceResults, `${path}.choiceResults`, ctx);
@@ -1164,8 +1282,22 @@ function parseSimpleEncounter(input: unknown, path: string, ctx: ParseContext): 
     if (text.length > 79) ctx.errors.push(`${path}.texts[${index}] must be 79 characters or fewer.`);
   }
   if (actions && actions.length > 32) ctx.errors.push(`${path}.actions can contain at most 32 encounter action slots.`);
+  const actionSlots = new Set<number>();
+  for (const [index, action] of (actions ?? []).entries()) {
+    const slot = action.slot ?? index;
+    if (actionSlots.has(slot)) ctx.errors.push(`${path}.actions contains duplicate slot ${slot}.`);
+    actionSlots.add(slot);
+  }
   if (choiceResults && choiceResults.length > 4) ctx.errors.push(`${path}.choiceResults can contain at most 4 result entries.`);
-  for (const [index, result] of (choiceResults ?? []).entries()) checkIntegerRange(result, `${path}.choiceResults[${index}]`, 0, 255, ctx);
+  for (const [index, result] of (choiceResults ?? []).entries()) {
+    if (result === -4 && index === 0) continue;
+    checkIntegerRange(result, `${path}.choiceResults[${index}]`, 0, 4, ctx);
+  }
+  if (options && options.length === 0) ctx.errors.push(`${path}.options must contain at least one option.`);
+  if (options && options.length > 4) ctx.errors.push(`${path}.options can contain at most 4 options.`);
+  if (options !== undefined && (texts !== undefined || actions !== undefined || choiceResults !== undefined)) {
+    ctx.errors.push(`${path} cannot combine semantic options with raw texts, actions, or choiceResults.`);
+  }
   checkIntegerRange(id, `${path}.id`, 0, null, ctx);
   checkIntegerRange(maxTimes, `${path}.maxTimes`, -128, 127, ctx);
   checkIntegerRange(casteSuccess, `${path}.casteSuccess`, -128, 127, ctx);
@@ -1173,12 +1305,141 @@ function parseSimpleEncounter(input: unknown, path: string, ctx: ParseContext): 
     ...(key !== undefined ? { key } : {}),
     ...(id !== undefined ? { id } : {}),
     ...(prompt !== undefined ? { prompt } : {}),
+    ...(options ? { options } : {}),
     ...(texts ? { texts } : {}),
     ...(actions ? { actions } : {}),
     ...(choiceResults ? { choiceResults } : {}),
     ...(optionalBoolean(value.canBackOut, `${path}.canBackOut`, ctx) !== undefined ? { canBackOut: optionalBoolean(value.canBackOut, `${path}.canBackOut`, ctx) } : {}),
     ...(maxTimes !== undefined ? { maxTimes } : {}),
     ...(casteSuccess !== undefined ? { casteSuccess } : {})
+  };
+}
+
+function parseSimpleEncounterOption(input: unknown, path: string, ctx: ParseContext): ScenarioSeedSimpleEncounterOption | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["label", "steps"], ctx);
+  const label = requireString(value.label, `${path}.label`, ctx) ?? "";
+  const steps = parseArray(value.steps, `${path}.steps`, ctx, parseStep) ?? [];
+  if (label.length > 79) ctx.errors.push(`${path}.label must be 79 characters or fewer.`);
+  if (steps.length === 0) ctx.errors.push(`${path}.steps must contain at least one step.`);
+  if (steps.length > 8) ctx.errors.push(`${path}.steps can contain at most 8 steps.`);
+  return { label, steps };
+}
+
+function parseThiefEncounter(input: unknown, path: string, ctx: ParseContext): ScenarioSeedThiefEncounter | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["key", "id", "prompt", "actions", "trap", "lock"], ctx);
+  const key = optionalString(value.key, `${path}.key`, ctx);
+  const id = optionalInteger(value.id, `${path}.id`, ctx);
+  const prompt = optionalRef(value.prompt, `${path}.prompt`, ctx);
+  const actions = parseArray(value.actions, `${path}.actions`, ctx, parseRogueAction);
+  const trap = value.trap === undefined ? undefined : parseRogueTrap(value.trap, `${path}.trap`, ctx);
+  const lock = value.lock === undefined ? undefined : parseRogueLock(value.lock, `${path}.lock`, ctx);
+  checkIntegerRange(id, `${path}.id`, 1, 127, ctx);
+  if (actions && actions.length > 8) ctx.errors.push(`${path}.actions can contain at most 8 Rogue actions.`);
+  const actionKinds = new Set<ScenarioSeedRogueActionKind>();
+  for (const action of actions ?? []) {
+    if (actionKinds.has(action.kind)) ctx.errors.push(`${path}.actions contains duplicate action ${action.kind}.`);
+    actionKinds.add(action.kind);
+  }
+  return {
+    ...(key !== undefined ? { key } : {}),
+    ...(id !== undefined ? { id } : {}),
+    ...(prompt !== undefined ? { prompt } : {}),
+    ...(actions ? { actions } : {}),
+    ...(trap ? { trap } : {}),
+    ...(lock ? { lock } : {})
+  };
+}
+
+function parseRogueAction(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRogueAction | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["kind", "modifier", "success", "failure"], ctx);
+  const rawKind = requireString(value.kind, `${path}.kind`, ctx);
+  const kind = rawKind && Object.prototype.hasOwnProperty.call(ROGUE_ACTION_SLOTS, rawKind)
+    ? rawKind as ScenarioSeedRogueActionKind
+    : "acrobaticAct";
+  if (rawKind && !Object.prototype.hasOwnProperty.call(ROGUE_ACTION_SLOTS, rawKind)) {
+    ctx.errors.push(`${path}.kind must be one of ${Object.keys(ROGUE_ACTION_SLOTS).join(", ")}.`);
+  }
+  const modifier = optionalInteger(value.modifier, `${path}.modifier`, ctx);
+  checkIntegerRange(modifier, `${path}.modifier`, -128, 127, ctx);
+  return {
+    kind,
+    ...(modifier !== undefined ? { modifier } : {}),
+    success: parseRogueOutcome(value.success, `${path}.success`, ctx),
+    failure: parseRogueOutcome(value.failure, `${path}.failure`, ctx)
+  };
+}
+
+function parseRogueOutcome(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRogueOutcome {
+  const value = requireObject(input, path, ctx);
+  if (!value) return {};
+  allowKeys(value, path, ["result", "message", "sound"], ctx);
+  const result = optionalComplexResultNumber(value.result, `${path}.result`, ctx);
+  const message = optionalRef(value.message, `${path}.message`, ctx);
+  const sound = optionalRef(value.sound, `${path}.sound`, ctx);
+  if (result === undefined && message === undefined && sound === undefined) {
+    ctx.errors.push(`${path} must provide a result, message, or sound.`);
+  }
+  return {
+    ...(result !== undefined ? { result } : {}),
+    ...(message !== undefined ? { message } : {}),
+    ...(sound !== undefined ? { sound } : {})
+  };
+}
+
+function parseRogueTrap(input: unknown, path: string, ctx: ParseContext): NonNullable<ScenarioSeedThiefEncounter["trap"]> | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["armed", "rogueOnly", "damage", "sound", "spell", "spellPower", "disarmChancePerLevel"], ctx);
+  const armed = optionalBoolean(value.armed, `${path}.armed`, ctx);
+  const rogueOnly = optionalBoolean(value.rogueOnly, `${path}.rogueOnly`, ctx);
+  const damage = value.damage === undefined ? undefined : parseRogueDamage(value.damage, `${path}.damage`, ctx);
+  const sound = optionalRef(value.sound, `${path}.sound`, ctx);
+  const spell = optionalInteger(value.spell, `${path}.spell`, ctx);
+  const spellPower = optionalInteger(value.spellPower, `${path}.spellPower`, ctx);
+  const disarmChancePerLevel = optionalInteger(value.disarmChancePerLevel, `${path}.disarmChancePerLevel`, ctx);
+  checkIntegerRange(spell, `${path}.spell`, 0, 32767, ctx);
+  checkIntegerRange(spellPower, `${path}.spellPower`, 0, 32767, ctx);
+  checkIntegerRange(disarmChancePerLevel, `${path}.disarmChancePerLevel`, 0, 100, ctx);
+  return {
+    ...(armed !== undefined ? { armed } : {}),
+    ...(rogueOnly !== undefined ? { rogueOnly } : {}),
+    ...(damage ? { damage } : {}),
+    ...(sound !== undefined ? { sound } : {}),
+    ...(spell !== undefined ? { spell } : {}),
+    ...(spellPower !== undefined ? { spellPower } : {}),
+    ...(disarmChancePerLevel !== undefined ? { disarmChancePerLevel } : {})
+  };
+}
+
+function parseRogueDamage(input: unknown, path: string, ctx: ParseContext): { low: number; high: number } | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["low", "high"], ctx);
+  const low = requireInteger(value.low, `${path}.low`, ctx);
+  const high = requireInteger(value.high, `${path}.high`, ctx);
+  checkIntegerRange(low, `${path}.low`, 0, 32767, ctx);
+  checkIntegerRange(high, `${path}.high`, 0, 32767, ctx);
+  if (low !== null && high !== null && low > high) ctx.errors.push(`${path}.low must not exceed ${path}.high.`);
+  return { low: low ?? 0, high: high ?? 0 };
+}
+
+function parseRogueLock(input: unknown, path: string, ctx: ParseContext): NonNullable<ScenarioSeedThiefEncounter["lock"]> | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["tumblers", "openChancePerLevel"], ctx);
+  const tumblers = optionalInteger(value.tumblers, `${path}.tumblers`, ctx);
+  const openChancePerLevel = optionalInteger(value.openChancePerLevel, `${path}.openChancePerLevel`, ctx);
+  checkIntegerRange(tumblers, `${path}.tumblers`, 0, 6, ctx);
+  checkIntegerRange(openChancePerLevel, `${path}.openChancePerLevel`, 0, 100, ctx);
+  return {
+    ...(tumblers !== undefined ? { tumblers } : {}),
+    ...(openChancePerLevel !== undefined ? { openChancePerLevel } : {})
   };
 }
 
@@ -1282,11 +1543,10 @@ function parseComplexItemResponse(input: unknown, path: string, ctx: ParseContex
 function parseComplexThiefResponse(input: unknown, path: string, ctx: ParseContext) {
   const value = requireObject(input, path, ctx);
   if (!value) return null;
-  allowKeys(value, path, ["successResult", "failureResult"], ctx);
-  return {
-    successResult: requireComplexResultNumber(value.successResult, `${path}.successResult`, ctx),
-    failureResult: requireComplexResultNumber(value.failureResult, `${path}.failureResult`, ctx)
-  };
+  allowKeys(value, path, ["encounter"], ctx);
+  const encounter = requireRef(value.encounter, `${path}.encounter`, ctx);
+  if (typeof encounter === "number") checkIntegerRange(encounter, `${path}.encounter`, 1, 127, ctx);
+  return { encounter };
 }
 
 function parseComplexResultScript(input: unknown, path: string, ctx: ParseContext): ScenarioSeedComplexResultScript | null {
@@ -2034,12 +2294,13 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
   return null;
 }
 
-function createBuildContext(): BuildContext {
+function createBuildContext(baseTemplate = "blank"): BuildContext {
   return {
     errors: [],
     warnings: [],
     diagnostics: [],
     allocations: {
+      baseTemplate,
       messages: [],
       quests: [],
       battles: [],
@@ -2050,6 +2311,7 @@ function createBuildContext(): BuildContext {
       assets: [],
       simpleEncounters: [],
       complexEncounters: [],
+      thiefEncounters: [],
       timedEncounters: [],
       actionPoints: [],
       extraActionPoints: [],
@@ -2066,6 +2328,7 @@ function createBuildContext(): BuildContext {
     assets: new Map(),
     simpleEncounters: new Map(),
     complexEncounters: new Map(),
+    thiefEncounters: new Map(),
     timedEncounters: new Map(),
     actionPoints: new Map(),
     actionPointTargets: new Map(),
@@ -2085,6 +2348,7 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
   allocateItemIds(seed.items ?? [], context);
   allocateRecordIds(seed.simpleEncounters ?? [], "simple encounter", context.simpleEncounters, context.allocations.simpleEncounters, context);
   allocateRecordIds(seed.complexEncounters ?? [], "complex encounter", context.complexEncounters, context.allocations.complexEncounters, context);
+  allocateRecordIds(seed.thiefEncounters ?? [], "Rogue encounter", context.thiefEncounters, context.allocations.thiefEncounters, context, 1);
   allocateRecordIds(seed.timedEncounters ?? [], "timed encounter", context.timedEncounters, context.allocations.timedEncounters, context);
   allocateRecordIds(seed.extraActionPoints ?? [], "extra action point", context.extraActionPoints, context.allocations.extraActionPoints, context);
   for (const [index, map] of (seed.maps ?? []).entries()) {
@@ -2124,12 +2388,12 @@ function actionPointTargetForSeed(actionPoint: ScenarioSeedActionPoint, recordIn
   };
 }
 
-function allocateRecordIds<T extends { id?: number; key?: string }>(records: T[], label: string, keys: Map<string, number>, allocationEntries: ScenarioSeedAllocationEntry[], context: BuildContext) {
+function allocateRecordIds<T extends { id?: number; key?: string }>(records: T[], label: string, keys: Map<string, number>, allocationEntries: ScenarioSeedAllocationEntry[], context: BuildContext, minimumId = 0) {
   const used = new Set(records.map((record) => record.id).filter((id): id is number => id !== undefined));
   for (const record of records) {
     const explicit = record.id !== undefined;
     if (record.id === undefined) {
-      record.id = nextOpenId(used);
+      record.id = nextOpenId(used, minimumId);
       used.add(record.id);
       if (record.key) context.warnings.push(`Allocated ${label} "${record.key}" to ID ${record.id}.`);
     }
@@ -2176,8 +2440,8 @@ function allocateItemIds(records: ScenarioSeedItem[], context: BuildContext) {
   }
 }
 
-function nextOpenId(used: Set<number>) {
-  let id = 0;
+function nextOpenId(used: Set<number>, minimumId = 0) {
+  let id = minimumId;
   while (used.has(id)) id++;
   return id;
 }
@@ -2752,30 +3016,107 @@ function buildItemText(seed: ScenarioSeedItem): ItemTextRecord | null {
   };
 }
 
-function buildSimpleEncounter(seed: ScenarioSeedSimpleEncounter, context: BuildContext): SimpleEncounterRecord {
+function buildSimpleEncounters(seeds: ScenarioSeedSimpleEncounter[], context: BuildContext, initialExtracodes: ExtraCodeRow[] = []): { records: SimpleEncounterRecord[]; extracodes: ExtraCodeRow[] } {
+  let nextEdcdId = initialExtracodes.reduce((highest, row) => Math.max(highest, row.id + 1), 0);
+  const extracodes: ExtraCodeRow[] = [...initialExtracodes];
+  const allocateEdcdId = () => nextEdcdId++;
+  const records = seeds.map((seed) => buildSimpleEncounter(seed, context, allocateEdcdId, extracodes));
+  return { records, extracodes };
+}
+
+function buildSimpleEncounter(
+  seed: ScenarioSeedSimpleEncounter,
+  context: BuildContext,
+  nextEdcdId: () => number,
+  extracodes: ExtraCodeRow[]
+): SimpleEncounterRecord {
   const id = seed.id ?? 0;
+  const semanticActions = (seed.options ?? []).flatMap((option, optionIndex) => {
+    const result = (optionIndex + 1) as ScenarioSeedComplexResultNumber;
+    const scope: ActionBuildScope = { kind: "encounter", encounterType: "simple", recordIndex: id, result };
+    return option.steps.map((step, stepIndex): EncounterActionRow => {
+      const action = buildAction(step, optionIndex * 8 + stepIndex, context, nextEdcdId, extracodes, scope);
+      return { slot: action.slot, rawCode: action.rawCode, id: action.id };
+    });
+  });
+  const actions = (seed.actions ?? []).length > 0
+    ? (seed.actions ?? []).map((action, index): EncounterActionRow => ({
+        slot: action.slot ?? index,
+        rawCode: action.rawCode,
+        id: action.id
+      }))
+    : semanticActions;
   return {
     id,
-    actions: (seed.actions ?? []).map((action, index): EncounterActionRow => ({
-      slot: action.slot ?? index,
-      rawCode: action.rawCode,
-      id: action.id
-    })),
-    choiceResults: padArray(seed.choiceResults ?? [], 4, 0),
+    actions,
+    choiceResults: seed.options
+      ? padArray(seed.options.map((_, index) => index + 1), 4, 0)
+      : padArray(seed.choiceResults ?? [], 4, 0),
     canBackOut: seed.canBackOut ?? false,
     maxTimes: seed.maxTimes ?? 0,
     casteSuccess: seed.casteSuccess ?? 0,
     prompt: seed.prompt === undefined ? 0 : resolveRef(seed.prompt, context.messages, "message", context),
-    texts: padStringArray(seed.texts ?? [], 4, ""),
+    texts: padStringArray(seed.options?.map((option) => option.label) ?? seed.texts ?? [], 4, ""),
     rawBytes: new Array(SIMPLE_ENCOUNTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data ED", id, id * SIMPLE_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES)
   };
 }
 
-function buildComplexEncounters(seeds: ScenarioSeedComplexEncounter[], context: BuildContext): { records: ComplexEncounterRecord[]; extracodes: ExtraCodeRow[] } {
-  let nextEdcdId = 0;
-  const extracodes: ExtraCodeRow[] = [];
+function buildThiefEncounter(seed: ScenarioSeedThiefEncounter, context: BuildContext): ThiefEncounterRecord {
+  const id = seed.id ?? 1;
+  const typeFlags = new Array<boolean>(10).fill(false);
+  const modifiers = new Array<number>(8).fill(0);
+  const successCodes = new Array<number>(8).fill(0);
+  const failureCodes = new Array<number>(8).fill(0);
+  const successText = new Array<number>(8).fill(0);
+  const failureText = new Array<number>(8).fill(0);
+  const successSounds = new Array<number>(8).fill(0);
+  const failureSounds = new Array<number>(8).fill(0);
+
+  for (const action of seed.actions ?? []) {
+    const slot = ROGUE_ACTION_SLOTS[action.kind];
+    typeFlags[slot] = true;
+    modifiers[slot] = action.modifier ?? 0;
+    successCodes[slot] = action.success.result ?? 0;
+    failureCodes[slot] = action.failure.result ?? 0;
+    successText[slot] = action.success.message === undefined ? 0 : resolveRef(action.success.message, context.messages, "message", context);
+    failureText[slot] = action.failure.message === undefined ? 0 : resolveRef(action.failure.message, context.messages, "message", context);
+    successSounds[slot] = action.success.sound === undefined ? 0 : resolveSeedAssetRef(action.success.sound, "sound", "sound", context);
+    failureSounds[slot] = action.failure.sound === undefined ? 0 : resolveSeedAssetRef(action.failure.sound, "sound", "sound", context);
+  }
+
+  typeFlags[8] = seed.trap?.rogueOnly ?? false;
+  typeFlags[9] = seed.trap?.armed ?? false;
+  return {
+    id,
+    typeFlags,
+    modifiers,
+    successCodes,
+    failureCodes,
+    successText,
+    failureText,
+    successSounds,
+    failureSounds,
+    spell: seed.trap?.spell ?? 0,
+    lowDamage: seed.trap?.damage?.low ?? 0,
+    highDamage: seed.trap?.damage?.high ?? 0,
+    tumblers: seed.lock?.tumblers ?? 0,
+    prompts: [
+      seed.prompt === undefined ? 0 : resolveRef(seed.prompt, context.messages, "message", context),
+      seed.trap?.sound === undefined ? 0 : resolveSeedAssetRef(seed.trap.sound, "sound", "sound", context),
+      seed.trap?.spellPower ?? 0
+    ],
+    promptSounds: [0, seed.lock?.openChancePerLevel ?? 0, seed.trap?.disarmChancePerLevel ?? 0],
+    rawBytes: new Array(THIEF_ENCOUNTER_BYTES).fill(0),
+    authored: true,
+    provenance: authoredProvenance("Data TD2", id, id * THIEF_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES)
+  };
+}
+
+function buildComplexEncounters(seeds: ScenarioSeedComplexEncounter[], context: BuildContext, initialExtracodes: ExtraCodeRow[] = []): { records: ComplexEncounterRecord[]; extracodes: ExtraCodeRow[] } {
+  let nextEdcdId = initialExtracodes.reduce((highest, row) => Math.max(highest, row.id + 1), 0);
+  const extracodes: ExtraCodeRow[] = [...initialExtracodes];
   const allocateEdcdId = () => nextEdcdId++;
   const records = seeds.map((seed) => buildComplexEncounter(seed, context, allocateEdcdId, extracodes));
   return { records, extracodes };
@@ -2820,8 +3161,8 @@ function buildComplexEncounter(
     thief: Boolean(seed.thief),
     maxTimes: seed.maxTimes ?? 0,
     casteSuccess: seed.casteSuccess ?? 0,
-    thiefSuccess: seed.thief?.successResult ?? 0,
-    thiefFail: seed.thief?.failureResult ?? 0,
+    thiefSuccess: seed.thief === undefined ? 0 : resolveRef(seed.thief.encounter, context.thiefEncounters, "Rogue encounter", context),
+    thiefFail: 0,
     prompt: seed.prompt === undefined ? 0 : resolveRef(seed.prompt, context.messages, "message", context),
     texts: [...physicalActions, seed.word?.text ?? ""],
     rawBytes: new Array(COMPLEX_ENCOUNTER_BYTES).fill(0),

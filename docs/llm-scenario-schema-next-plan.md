@@ -40,36 +40,9 @@ Implemented fixture coverage lives in `fixtures/scenario-seeds` and is checked b
 
 ## Priority 2: Simple Encounter Records
 
-Status: implemented for the current raw simple encounter record shape.
+Status: implemented with semantic option scripts and an explicit raw fallback.
 
 Seed-supported shape:
-
-```json
-{
-  "key": "guard-parley",
-  "prompt": "guard-warning",
-  "texts": ["Pay", "Fight"],
-  "choiceResults": [1, 2],
-  "actions": [
-    { "slot": 0, "rawCode": 33, "id": 10 },
-    { "slot": 1, "rawCode": 2, "id": 0 }
-  ],
-  "canBackOut": true,
-  "maxTimes": 0
-}
-```
-
-Implemented normalizer work:
-
-- Allocates simple encounter IDs and reports them in `allocations.simpleEncounters`.
-- Resolves prompt messages by key or numeric ID.
-- Emits `Data ED`-compatible simple encounter records with option text, choice results, raw encounter actions, backing-out, attempt-limit, and caste-success fields.
-- Allows AP `simpleEncounter` steps to reference simple encounters by key.
-- Adds fixture coverage for simple encounter AP launch, prompt resolution, option results, and raw encounter action rows.
-
-Still future work: higher-level option scripts that compile semantic AP aliases into the existing encounter action/result structure.
-
-Future proposed shape:
 
 ```json
 {
@@ -84,10 +57,15 @@ Future proposed shape:
 }
 ```
 
-Future normalizer work:
+Implemented normalizer work:
 
-- Convert option scripts into the existing simple encounter action/result structure.
-- Add fixtures for semantic option-result scripts.
+- Allocates simple encounter IDs and reports them in `allocations.simpleEncounters`.
+- Resolves prompt messages by key or numeric ID.
+- Compiles up to four semantic options into `Data ED` display text, one-based choice results, and fixed eight-step result rows.
+- Shares EDCD allocation across Simple Encounter, Complex Encounter, and Action Point scripts so generated settings references cannot collide.
+- Retains `texts`, `choiceResults`, and `actions` as an exclusive raw fallback for evidence-backed low-level authoring.
+- Allows AP `simpleEncounter` steps to reference simple encounters by key.
+- Adds fixture coverage for semantic option compilation, raw fallback preservation, AP launch, prompt resolution, shared EDCD allocation, and invalid mixed forms.
 
 ## Priority 3: Items And Item Text
 
@@ -234,9 +212,17 @@ Implemented combat macro group:
 
 Add remaining high-value AP semantic aliases after fixtures cover the current set.
 
+Implemented encounter group:
+
+- Thief/Rogue encounter records with keyed `Data TD2` allocation.
+- All eight source-backed Rogue action slots with semantic names and success/failure result, message, and sound outcomes.
+- Trap state, scope, damage, sound, spell, power, and Disarm Trap spell chance.
+- Lock tumblers and Open Lock spell chance.
+- Complex Encounter Rogue links now resolve keyed `Data TD2` records; the unconsumed `thieffail` compatibility byte remains zero.
+
 Next group:
 
-- thief encounter records
+- Template source selection and reusable authoring presets for generated projects.
 
 Rule: add aliases in groups with fixture coverage for opcode, ID, EDCD values, and target resolution.
 
@@ -268,24 +254,27 @@ Still future work:
 
 ## Priority 8: Complex, Thief, And Timed Encounters
 
-Status: timed and complex encounter records are implemented. Thief encounter seed records remain future work.
+Status: simple, complex, Rogue, and timed encounter records are implemented and fixture-backed.
 
 After simple encounters are stable:
 
-- Add complex encounter seed records. Implemented with physical, typed-word, spell, item, and Rogue response routing; keyed allocation; semantic result scripts; and raw action fallback.
-- Add thief encounter seed records.
-- Add timed encounter seed records. Implemented with schedule, macro, item/quest, and location gates.
+- Simple encounters compile semantic option scripts and retain an exclusive raw action fallback.
+- Complex encounters support physical, typed-word, spell, item, and Rogue response routing; keyed allocation; semantic result scripts; and raw action fallback.
+- Rogue encounters cover all eight source-backed action slots plus trap and lock settings.
+- Timed encounters support schedules, macros, item/quest gates, and location gates.
 - Reuse AP step aliases for result scripts where possible.
 
 These should be fixture-gated because the record shapes are larger and easier to misuse.
 
 ## Priority 9: Template Source Selection
 
-Decide how generated scenarios are initialized:
+Status: implemented for the blank base and caller-provided Providence project templates.
+
+Generated scenarios can initialize from:
 
 - empty browser shell
 - selected Providence scenario template
-- imported scenario baseline
+- imported scenario baseline supplied by the host as a Providence project
 
 The seed should eventually support:
 
@@ -295,7 +284,20 @@ The seed should eventually support:
 }
 ```
 
-Template choice affects available stock assets, default records, rules, and export behavior.
+Implemented behavior:
+
+- `blank` remains the default and uses Providence's normal new-project shell.
+- Other keys resolve only through the caller's `baseTemplates` registry; unavailable keys fail with a structured diagnostic.
+- Providence clones the selected project so generation cannot mutate the reusable template.
+- Omitted record families inherit from the template; explicitly present families replace inherited records, including explicit empty arrays.
+- Map Action Points and Extra Action Points inherit or replace independently.
+- New EDCD settings append after inherited rows to avoid collisions across template and generated scripts.
+- The allocation report identifies the selected template key.
+
+Still host-level work:
+
+- Persist and restore raw-source payloads that live outside imported project JSON.
+- Expose a template picker and registry management UI when prompt-based generation is added to the application.
 
 ## Acceptance Gates
 
@@ -313,4 +315,4 @@ For phases that affect exportable records, also run:
 
 ## Recommended Next Commit Scope
 
-Continue with thief encounter seed records. Keep raw action rows available as the fallback where a larger encounter family still lacks semantic scripts.
+Commit the Rogue encounter, semantic Simple Encounter, and base-template increments together after reviewing the expanded seed contract.

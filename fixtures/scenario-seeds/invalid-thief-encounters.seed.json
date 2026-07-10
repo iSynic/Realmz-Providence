@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Invalid Rogue Encounters" },
+  "thiefEncounters": [
+    {
+      "id": 0,
+      "actions": [
+        {
+          "kind": "detectTrap",
+          "modifier": 129,
+          "success": {},
+          "failure": { "result": 4 }
+        },
+        {
+          "kind": "detectTrap",
+          "success": { "result": 1 },
+          "failure": { "result": 4 }
+        }
+      ],
+      "trap": {
+        "damage": { "low": 10, "high": 2 },
+        "disarmChancePerLevel": 101
+      },
+      "lock": { "tumblers": 7 }
+    }
+  ]
+}

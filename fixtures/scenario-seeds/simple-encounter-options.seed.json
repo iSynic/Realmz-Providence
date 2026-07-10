@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "scenario": { "name": "Semantic Simple Encounter Seed" },
+  "messages": [
+    { "key": "gate-prompt", "text": "The gatekeeper bars the road." },
+    { "key": "gate-paid", "text": "The gatekeeper accepts the toll." },
+    { "key": "gate-left", "text": "The party leaves the gate." }
+  ],
+  "battles": [
+    { "key": "gate-guards", "id": 2 }
+  ],
+  "simpleEncounters": [
+    {
+      "key": "gate-choice",
+      "prompt": "gate-prompt",
+      "options": [
+        {
+          "label": "Pay ten gold",
+          "steps": [
+            { "kind": "takeGold", "amount": 10 },
+            { "kind": "message", "message": "gate-paid" }
+          ]
+        },
+        {
+          "label": "Fight the guards",
+          "steps": [
+            { "kind": "battle", "battle": "gate-guards" }
+          ]
+        },
+        {
+          "label": "Leave",
+          "steps": [
+            { "kind": "message", "message": "gate-left" }
+          ]
+        }
+      ],
+      "canBackOut": true,
+      "maxTimes": 2
+    }
+  ],
+  "complexEncounters": [
+    {
+      "key": "gate-riddle",
+      "prompt": "gate-prompt",
+      "physicalActions": ["Touch the gate"],
+      "physicalResult": 1,
+      "results": [
+        {
+          "result": 1,
+          "steps": [
+            { "kind": "teleport", "landLevel": 0, "x": 8, "y": 9, "message": "gate-left" }
+          ]
+        }
+      ]
+    }
+  ],
+  "actionPoints": [
+    {
+      "x": 4,
+      "y": 5,
+      "steps": [
+        { "kind": "simpleEncounter", "encounter": "gate-choice" },
+        { "kind": "complexEncounter", "encounter": "gate-riddle" },
+        { "kind": "takeGold", "amount": 1 }
+      ]
+    }
+  ]
+}

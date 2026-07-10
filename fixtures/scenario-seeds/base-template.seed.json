@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "baseTemplate": "starter",
+  "scenario": {
+    "name": "Generated From Starter",
+    "author": "Providence"
+  },
+  "quests": [],
+  "actionPoints": [
+    {
+      "x": 4,
+      "y": 5,
+      "steps": [
+        { "kind": "message", "message": 77 },
+        { "kind": "takeGold", "amount": 1 }
+      ]
+    }
+  ]
+}

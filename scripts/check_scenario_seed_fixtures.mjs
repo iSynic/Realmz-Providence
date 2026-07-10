@@ -26,11 +26,14 @@ try {
   const { createProjectFromScenarioSeed, parseScenarioSeed } = requireFromFixture(modulePath);
 
   checkMinimal(createProjectFromScenarioSeed, parseScenarioSeed);
+  checkBaseTemplate(createProjectFromScenarioSeed);
   checkMapOperations(createProjectFromScenarioSeed);
   checkDirectAp(createProjectFromScenarioSeed);
   checkEdcdAp(createProjectFromScenarioSeed);
   checkSimpleEncounter(createProjectFromScenarioSeed);
+  checkSimpleEncounterOptions(createProjectFromScenarioSeed);
   checkComplexEncounters(createProjectFromScenarioSeed);
+  checkThiefEncounters(createProjectFromScenarioSeed);
   checkItems(createProjectFromScenarioSeed);
   checkMonsters(createProjectFromScenarioSeed);
   checkConditionBranches(createProjectFromScenarioSeed);
@@ -67,6 +70,40 @@ function checkMinimal(createProjectFromScenarioSeed, parseScenarioSeed) {
   expect(allocationId(result, "actionPoints", "start-ap") === 0, "start-ap should allocate to record 0");
   expect(result.project.triggers[0]?.coordinate?.x === 10 && result.project.triggers[0]?.coordinate?.y === 12, "start-ap should use named region coordinates");
   expect(actionCodes(result.project.triggers[0]).join(",") === "1,47", "minimal AP should emit message and set quest opcodes");
+}
+
+function checkBaseTemplate(createProjectFromScenarioSeed) {
+  const templateResult = createProjectFromScenarioSeed({
+    schemaVersion: 1,
+    scenario: { name: "Starter Baseline" },
+    messages: [{ id: 77, text: "Template message" }],
+    quests: [{ id: 44, label: "Template quest" }],
+    actionPoints: [{ recordIndex: 8, x: 1, y: 1, steps: [{ kind: "message", message: 77 }] }],
+    extraActionPoints: [{ id: 9, steps: [{ kind: "takeGold", amount: 2 }] }]
+  });
+  expect(templateResult.ok, "base template fixture should create its caller-provided starter project");
+  if (!templateResult.ok) return;
+  const template = templateResult.project;
+  template.maps[0].tiles[0] = 222;
+  template.scenario.shell.recLevel = 7;
+  template.source.rawSourcesDir = "template-raw";
+  template.assets = [{ ...mockCustomAsset("asset:template:picture", "picture", "PICT", 30000), libraryScope: "scenario" }];
+
+  const result = createProjectFromScenarioSeed(readSeed("base-template.seed.json"), { baseTemplates: { starter: template } });
+  expect(result.ok, "seed should create a project from a caller-provided base template");
+  if (!result.ok) return;
+  expect(result.allocations.baseTemplate === "starter", "allocation report should identify the selected base template");
+  expect(result.project.scenario.name === "Generated From Starter" && result.project.scenario.shell?.sourceFile === "Generated From Starter", "template scenario identity should be rewritten for the generated project");
+  expect(result.project.scenario.shell?.recLevel === 7, "omitted scenario shell fields should inherit from the base template");
+  expect(result.project.maps[0]?.tiles?.[0] === 222, "omitted map family should inherit from the base template");
+  expect(result.project.messages.some((message) => message.id === 77 && message.text === "Template message"), "omitted message family should inherit from the base template");
+  expect(result.project.questLabels.length === 0, "an explicitly declared empty family should replace inherited template records");
+  expect(result.project.assets[0]?.id === "asset:template:picture", "omitted asset family should inherit scenario assets from the base template");
+  expect(result.project.source.rawSourcesDir === "template-raw", "template raw-source metadata should remain available as baseline evidence");
+  expect(result.project.triggers.filter((trigger) => trigger.source !== "Data ED3").length === 1, "declared map Action Points should replace template map Action Points");
+  expect(result.project.triggers.some((trigger) => trigger.source === "Data ED3" && trigger.recordIndex === 9), "omitted Extra Action Points should inherit from the template");
+  expect(result.project.extracodes.map((row) => `${row.id}:${row.values[0]}`).join(",") === "0:2,1:1", "new EDCD settings should append after inherited template rows");
+  expect(template.scenario.name === "Starter Baseline" && template.scenario.shell?.sourceFile === "Starter Baseline" && template.maps[0]?.tiles?.[0] === 222, "template selection should not mutate the caller-provided project");
 }
 
 function checkMapOperations(createProjectFromScenarioSeed) {
@@ -132,6 +169,19 @@ function checkSimpleEncounter(createProjectFromScenarioSeed) {
   expect(trigger?.actions?.[0]?.rawCode === 4 && trigger?.actions?.[0]?.id === 0, "AP should reference keyed simple encounter by allocated ID");
 }
 
+function checkSimpleEncounterOptions(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("simple-encounter-options.seed.json"));
+  expect(result.ok, "semantic simple encounter seed should create a project");
+  if (!result.ok) return;
+  const encounter = result.project.simpleEncounters[0];
+  expect(encounter?.texts?.join("|") === "Pay ten gold|Fight the guards|Leave|", "semantic simple options should populate the four display buffers");
+  expect(encounter?.choiceResults?.join(",") === "1,2,3,0", "semantic simple options should map in order to result rows 1 through 3");
+  expect(encounter?.actions?.map((action) => `${action.slot}:${action.rawCode}:${action.id}`).join(",") === "0:33:0,1:1:1,8:2:1,16:1:2", "semantic simple option steps should compile into fixed eight-slot result rows");
+  expect(result.project.extracodes.map((row) => `${row.id}:${row.values.join(",")}`).join("|") === "0:10,0,0,0,0|1:2,2,0,0,0|2:0,8,9,0,2|3:1,0,0,0,0", "Simple, Complex, and AP semantic steps should share one collision-free EDCD allocation sequence");
+  expect(result.project.triggers[0]?.actions?.map((action) => `${action.rawCode}:${action.id}`).join(",") === "4:0,5:0,33:3", "AP should resolve both keyed encounters and retain the shared EDCD row ID");
+  expect(result.project.validation.errors.length === 0, "semantic simple encounter seed should pass project validation without errors");
+}
+
 function checkComplexEncounters(createProjectFromScenarioSeed) {
   const result = createProjectFromScenarioSeed(readSeed("complex-encounters.seed.json"));
   expect(result.ok, "complex encounter seed should create a project");
@@ -145,7 +195,8 @@ function checkComplexEncounters(createProjectFromScenarioSeed) {
   expect(encounter?.actionResult === 1 && encounter?.wordResult === 2, "complex encounter physical and word routes should preserve result numbers");
   expect(encounter?.spellIds?.[0] === 17 && encounter?.spellIds?.[1] === 1100 && encounter?.spellResults?.[0] === 3, "complex encounter spell response should preserve its result and pad blank spell slots");
   expect(encounter?.itemIds?.[0] === 901 && encounter?.itemResults?.[0] === 1, "complex encounter item response should resolve a scenario item key");
-  expect(encounter?.thief === true && encounter?.thiefSuccess === 3 && encounter?.thiefFail === 4, "complex encounter Rogue routing should preserve success and failure results");
+  expect(allocationId(result, "thiefEncounters", "shrine-rogue") === 3, "shrine-rogue should preserve explicit Rogue encounter ID 3");
+  expect(encounter?.thief === true && encounter?.thiefSuccess === 3 && encounter?.thiefFail === 0, "complex encounter Rogue routing should point to Data TD2 and clear the unconsumed legacy byte");
   expect(encounter?.canBackOut === true && encounter?.maxTimes === 3 && encounter?.casteSuccess === -1, "complex encounter limits should be preserved");
   expect(encounter?.actions?.map((action) => `${action.slot}:${action.rawCode}`).join(",") === "0:1,1:20,8:33,9:21,24:2", "semantic result scripts should compile into the four eight-slot result rows");
   expect(result.project.extracodes[0]?.values.join(",") === "0,8,9,0,2", "complex result teleport should compile its keyed message into EDCD");
@@ -156,6 +207,27 @@ function checkComplexEncounters(createProjectFromScenarioSeed) {
   expect(rawEncounter?.actions?.map((action) => `${action.slot}:${action.rawCode}:${action.id}`).join(",") === "0:1:1,24:24:0", "complex encounter raw action fallback should preserve explicit slots and CODE/ID values");
   expect(result.project.triggers[0]?.actions?.[0]?.rawCode === 5 && result.project.triggers[0]?.actions?.[0]?.id === 2, "AP should resolve a keyed complex encounter to opcode 5");
   expect(result.project.validation.errors.length === 0, "complex encounter seed should pass project validation without errors");
+}
+
+function checkThiefEncounters(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("thief-encounters.seed.json"));
+  expect(result.ok, "Rogue encounter seed should create a project");
+  if (!result.ok) return;
+  expect(allocationId(result, "thiefEncounters", "vault-lock") === 1, "Rogue encounter allocation should start at runtime-safe ID 1");
+  const encounter = result.project.thiefEncounters[0];
+  expect(encounter?.id === 1, "Rogue encounter should use its allocated Data TD2 record ID");
+  expect(encounter?.typeFlags?.slice(0, 8).every(Boolean), "all eight source-backed Rogue actions should be enabled");
+  expect(encounter?.typeFlags?.[8] === false && encounter?.typeFlags?.[9] === true, "Rogue encounter should encode party trap scope and armed state");
+  expect(encounter?.modifiers?.join(",") === "1,2,3,4,5,6,7,8", "Rogue action kinds should map to the eight Realmz slots in source order");
+  expect(encounter?.successCodes?.join(",") === "1,1,2,1,2,3,1,2", "Rogue success results should compile into Data TD2 result slots");
+  expect(encounter?.failureCodes?.every((value) => value === 4), "Rogue failure results should compile into all eight slots");
+  expect(encounter?.successText?.[0] === 1 && encounter?.failureText?.[0] === 2, "Rogue outcome messages should resolve keyed strings");
+  expect(encounter?.successSounds?.[1] === 137, "Rogue outcome sounds should resolve stock asset keys");
+  expect(encounter?.prompts?.join(",") === "0,137,5", "Rogue prompt, trap sound, and spell power should occupy the source-backed prompt fields");
+  expect(encounter?.promptSounds?.join(",") === "0,7,6", "Rogue Open Lock and Disarm spell chances should occupy their source-backed support fields");
+  expect(encounter?.spell === 17 && encounter?.lowDamage === 3 && encounter?.highDamage === 9 && encounter?.tumblers === 5, "Rogue trap and lock settings should be preserved");
+  expect(encounter?.rawBytes?.length === 118 && encounter?.authored === true, "Rogue encounter should carry an authored 118-byte Data TD2 backing record");
+  expect(result.project.validation.errors.length === 0, "Rogue encounter seed should pass project validation without errors");
 }
 
 function checkItems(createProjectFromScenarioSeed) {
@@ -412,6 +484,10 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
   expect(!assetKind.ok, "picture asset used as a sound should fail project creation");
   if (!assetKind.ok) expect(assetKind.diagnostics.some((diagnostic) => diagnostic.code === "asset-kind-mismatch"), "asset kind mismatch should return a structured diagnostic");
 
+  const missingTemplate = createProjectFromScenarioSeed(readSeed("invalid-base-template.seed.json"));
+  expect(!missingTemplate.ok, "an unavailable base template should fail project creation");
+  if (!missingTemplate.ok) expect(missingTemplate.diagnostics.some((diagnostic) => diagnostic.code === "unresolved-base-template"), "missing base template should return a structured diagnostic");
+
   const timedEncounters = parseScenarioSeed(readSeed("invalid-timed-encounters.seed.json"));
   expect(!timedEncounters.ok, "invalid timed encounter seed should fail parsing");
   if (!timedEncounters.ok) {
@@ -429,6 +505,29 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(complexEncounters.errors.some((error) => error.includes("39 characters")), "complex encounter should enforce Data ED2 text capacity");
     expect(complexEncounters.errors.some((error) => error.includes("duplicate result")), "complex encounter should reject duplicate result scripts");
     expect(complexEncounters.errors.some((error) => error.includes("cannot combine raw actions")), "complex encounter should reject mixed raw and semantic result scripts");
+  }
+
+  const simpleOptions = parseScenarioSeed(readSeed("invalid-simple-encounter-options.seed.json"));
+  expect(!simpleOptions.ok, "invalid semantic simple encounter seed should fail parsing");
+  if (!simpleOptions.ok) {
+    expect(simpleOptions.errors.some((error) => error.includes("79 characters")), "simple option labels should enforce the Data ED display buffer capacity");
+    expect(simpleOptions.errors.some((error) => error.includes("at least one step")), "simple options should require a nonempty script");
+    expect(simpleOptions.errors.some((error) => error.includes("cannot combine semantic options")), "simple encounters should reject mixed semantic and raw forms");
+    expect(simpleOptions.errors.some((error) => error.includes("choiceResults[1]")), "the -4 auto-run sentinel should be rejected outside Option 1");
+    expect(simpleOptions.errors.some((error) => error.includes("choiceResults[2]")), "simple encounter results should reject rows above 4");
+    expect(simpleOptions.errors.some((error) => error.includes("duplicate slot")), "raw simple encounter actions should reject duplicate slots");
+  }
+
+  const thiefEncounters = parseScenarioSeed(readSeed("invalid-thief-encounters.seed.json"));
+  expect(!thiefEncounters.ok, "invalid Rogue encounter seed should fail parsing");
+  if (!thiefEncounters.ok) {
+    expect(thiefEncounters.errors.some((error) => error.includes(".id")), "Rogue encounter should reject record ID zero");
+    expect(thiefEncounters.errors.some((error) => error.includes("modifier")), "Rogue encounter should reject modifiers outside signed-byte range");
+    expect(thiefEncounters.errors.some((error) => error.includes("must provide a result")), "Rogue outcomes should require visible behavior");
+    expect(thiefEncounters.errors.some((error) => error.includes("duplicate action")), "Rogue encounter should reject duplicate semantic action slots");
+    expect(thiefEncounters.errors.some((error) => error.includes("low must not exceed")), "Rogue trap damage should reject an inverted range");
+    expect(thiefEncounters.errors.some((error) => error.includes("disarmChancePerLevel")), "Rogue trap spell chance should reject values above 100");
+    expect(thiefEncounters.errors.some((error) => error.includes("tumblers")), "Rogue lock should reject more than six tumblers");
   }
 }
 

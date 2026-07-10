@@ -9,6 +9,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 ## Supported Seed Content
 
 - Scenario identity and contact metadata.
+- Optional caller-provided base template selection without embedding full Providence project JSON in prompt output.
 - Fixed-size Realmz maps, either filled by one tile or supplied as 8,100 tile IDs.
 - Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, and `stamp`.
 - Named map regions that action points can reference with `at`.
@@ -18,8 +19,9 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 - Stock Realmz resource references and Providence Custom Library asset references through keyed `assets` declarations.
 - Treasure, shop stock, and item-related AP steps can reference item keys.
 - Normal scenario monster records with generated monster descriptions, keyed item/weapon references, keyed battle placements, and keyed `addSpecialCharacter` / `dropSpecialCharacter` AP references.
-- Simple encounter records with prompt message references, up to four option strings/results, raw encounter action rows, backing-out and attempt-limit fields.
+- Simple encounter records with up to four semantic option scripts, shared EDCD allocation, and an exclusive raw record fallback.
 - Complex encounter records with keyed prompts, physical/word/spell/item/Rogue response routing, four semantic result scripts, and a raw 32-slot fallback.
+- Rogue encounter records with all eight source-backed action tests, success/failure result routing, keyed text and sound feedback, trap effects, and lock settings.
 - Timed encounter records with schedules, keyed Extra Action Point macros, item/quest requirements, and optional land/dungeon location gates.
 - Action points with up to eight steps.
 - Extra Action Points (`Data ED3`) with up to eight steps, usable as patch sources.
@@ -30,7 +32,9 @@ EDCD-backed seed steps create `Data EDCD` settings rows automatically because th
 
 Map operations are applied in array order. `border` supports inward `thickness`; `room` fills an interior, draws its walls, and replaces wall cells with side/offset doors; `road` and `river` draw a polyline with an optional width; and `stamp` places a rectangular two-dimensional tile pattern. Operations that extend beyond the 90 x 90 field are rejected rather than clipped. Tile values must fit Realmz's signed 16-bit map-cell range (`-32768..32767`).
 
-`createProjectFromScenarioSeed()` returns an `allocations` report that maps every keyed record to its final Realmz ID or map coordinate target. Callers should use that report for LLM repair loops and UI summaries instead of trying to infer allocated IDs from the generated project.
+`createProjectFromScenarioSeed()` returns an `allocations` report that identifies the selected base template and maps every keyed record to its final Realmz ID or map coordinate target. Callers should use that report for LLM repair loops and UI summaries instead of trying to infer allocated IDs from the generated project.
+
+`baseTemplate` defaults to `blank`. Any other value must match a caller-provided project in `createProjectFromScenarioSeed(..., { baseTemplates })`; Providence clones that project before applying the seed. Omitted seed families inherit the template family, while an explicitly present family, including an empty array, replaces it. Map Action Points and Extra Action Points inherit or replace independently. Existing template EDCD rows are preserved and newly compiled settings append after the highest inherited ID. Inherited records and assets do not carry seed keys, so new seed content references them by numeric Realmz ID; key references apply to records declared in the current seed. Imported scenarios can serve as caller-provided templates after import, but the host remains responsible for retaining any external raw-source payloads associated with that project.
 
 Item possession and charge branches use `targetKind` values `actionPoint`, `simpleEncounter`, or `complexEncounter`. `branchOnItem` defaults missing-item behavior to `continue`; use `missingBehavior: "branch"` with a target or `missingBehavior: "message"` with a message key for the other Realmz behaviors. In `branchOnItemCharges`, an omitted `enoughTarget` or `insufficientTarget` compiles to `-1`, meaning continue the current script for that outcome. Item mutation is split into `dropItems`, `changeItemCharges`, and `replaceItems`, so prompt output never needs to supply opcode 22's numeric mutation mode.
 
@@ -50,13 +54,18 @@ Asset declarations separate runtime references from scenario-owned resources. A 
 
 Timed encounters use source `Data TD3` records. `day` must be nonzero, `increment` defaults to zero, `percent` defaults to 100, and `macro` resolves a keyed Extra Action Point. Optional item and quest keys compile to their Realmz IDs. Location is either `any` or a land/dungeon level with optional random-rectangle and paired coordinate gates. `alterTimedEncounter` compiles opcode 54 and can change chance, repeat interval, or reset the next activation relative to the current day.
 
-Complex encounters use source `Data ED2` records and expose author concepts instead of parallel storage arrays. `physicalActions` supplies up to eight labels, while `requiredPhysicalActions` uses one-based choice numbers and `physicalResult` selects result 1 through 4. Optional `word`, `spells`, `items`, and `thief` responses route their outcomes to the same four results. Each `results` entry contains up to eight normal semantic AP steps; Providence compiles them into that result's fixed eight-slot script row and allocates any required EDCD settings. Use `actions` only for an explicit raw 32-slot fallback; raw actions and semantic results cannot be combined. Item responses resolve scenario item keys, and AP `complexEncounter` steps resolve complex encounter keys.
+Simple encounters use source `Data ED` records. `options` accepts one to four labels with normal semantic AP `steps`; Providence assigns each option to its corresponding result row and compiles up to eight steps into that row. EDCD-backed steps share the same allocation sequence used by Complex Encounters and later Action Points. Use `texts`, `choiceResults`, and `actions` only as an explicit raw fallback; semantic and raw forms cannot be combined. Raw choice results are limited to result rows `1..4`, zero for an unavailable option, and the source-backed `-4` auto-run Result 4 sentinel in Option 1 only.
+
+Complex encounters use source `Data ED2` records and expose author concepts instead of parallel storage arrays. `physicalActions` supplies up to eight labels, while `requiredPhysicalActions` uses one-based choice numbers and `physicalResult` selects result 1 through 4. Optional `word`, `spells`, and `items` responses route their outcomes to the same four results. A `thief` response names a keyed `thiefEncounters` record; the Rogue encounter's action outcomes return result numbers into these result columns. Each `results` entry contains up to eight normal semantic AP steps; Providence compiles them into that result's fixed eight-slot script row and allocates any required EDCD settings. Use `actions` only for an explicit raw 32-slot fallback; raw actions and semantic results cannot be combined. Item responses resolve scenario item keys, and AP `complexEncounter` steps resolve complex encounter keys.
+
+Rogue encounters use source `Data TD2` records. Their semantic action kinds map in Realmz source order: `acrobaticAct`, `detectTrap`, `disarmTrap`, `hearNoise`, `forceLock`, `moveSilently`, `pickLock`, and `pickPocket`. Every enabled action requires success and failure behavior, and each outcome can return result 1 through 4, display a keyed message, play a keyed sound, or combine those effects. `trap` controls armed state, party scope, damage, sound, spell, spell power, and Disarm Trap spell chance. `lock` controls the six-tumbler maximum and Open Lock spell chance. Generated Rogue IDs start at 1 and are limited to 127 because the Complex Encounter link is a signed byte and Realmz treats zero as a non-persistent target.
 
 ## Example
 
 ```json
 {
   "schemaVersion": 1,
+  "baseTemplate": "blank",
   "scenario": {
     "name": "The Bell Under Bywater",
     "author": "Providence",
@@ -143,12 +152,18 @@ Complex encounters use source `Data ED2` records and expose author concepts inst
     {
       "key": "bell-choice",
       "prompt": "bell-hums",
-      "texts": ["Listen", "Leave"],
-      "choiceResults": [1, 0],
+      "options": [
+        {
+          "label": "Listen",
+          "steps": [{ "kind": "message", "message": "bell-hums" }]
+        },
+        {
+          "label": "Leave",
+          "steps": [{ "kind": "message", "message": "arrival-cold" }]
+        }
+      ],
       "canBackOut": true,
-      "actions": [
-        { "slot": 0, "rawCode": 1, "id": 0 }
-      ]
+      "maxTimes": 0
     }
   ],
   "actionPoints": [

@@ -12,6 +12,29 @@
   "battles": [
     { "key": "shrine-guardians", "id": 4 }
   ],
+  "thiefEncounters": [
+    {
+      "key": "shrine-rogue",
+      "id": 3,
+      "prompt": "shrine-prompt",
+      "actions": [
+        {
+          "kind": "detectTrap",
+          "modifier": 5,
+          "success": { "result": 3, "message": "whisper" },
+          "failure": { "result": 4 }
+        },
+        {
+          "kind": "pickLock",
+          "modifier": -10,
+          "success": { "result": 1, "message": "shrine-opens" },
+          "failure": { "result": 4 }
+        }
+      ],
+      "trap": { "armed": true, "rogueOnly": true, "damage": { "low": 2, "high": 8 }, "sound": 200, "spell": 17, "spellPower": 4, "disarmChancePerLevel": 8 },
+      "lock": { "tumblers": 4, "openChancePerLevel": 12 }
+    }
+  ],
   "complexEncounters": [
     {
       "key": "shrine-puzzle",
@@ -27,7 +50,7 @@
       "items": [
         { "item": "bronze-key", "result": 1 }
       ],
-      "thief": { "successResult": 3, "failureResult": 4 },
+      "thief": { "encounter": "shrine-rogue" },
       "canBackOut": true,
       "maxTimes": 3,
       "casteSuccess": -1,

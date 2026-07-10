@@ -7,6 +7,7 @@
   "required": ["schemaVersion", "scenario"],
   "properties": {
     "schemaVersion": { "const": 1 },
+    "baseTemplate": { "type": "string", "minLength": 1, "maxLength": 128 },
     "scenario": { "$ref": "#/$defs/scenario" },
     "maps": { "type": "array", "items": { "$ref": "#/$defs/map" } },
     "messages": { "type": "array", "items": { "$ref": "#/$defs/message" } },
@@ -19,6 +20,7 @@
     "assets": { "type": "array", "items": { "$ref": "#/$defs/asset" } },
     "simpleEncounters": { "type": "array", "items": { "$ref": "#/$defs/simpleEncounter" } },
     "complexEncounters": { "type": "array", "items": { "$ref": "#/$defs/complexEncounter" } },
+    "thiefEncounters": { "type": "array", "items": { "$ref": "#/$defs/thiefEncounter" } },
     "timedEncounters": { "type": "array", "items": { "$ref": "#/$defs/timedEncounter" } },
     "actionPoints": { "type": "array", "items": { "$ref": "#/$defs/actionPoint" } },
     "extraActionPoints": { "type": "array", "items": { "$ref": "#/$defs/extraActionPoint" } }
@@ -465,16 +467,38 @@
     "simpleEncounter": {
       "type": "object",
       "additionalProperties": false,
+      "not": {
+        "anyOf": [
+          { "required": ["options", "texts"] },
+          { "required": ["options", "actions"] },
+          { "required": ["options", "choiceResults"] }
+        ]
+      },
       "properties": {
         "key": { "$ref": "#/$defs/key" },
         "id": { "type": "integer", "minimum": 0 },
         "prompt": { "$ref": "#/$defs/idRef" },
+        "options": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "$ref": "#/$defs/simpleEncounterOption" } },
         "texts": { "type": "array", "maxItems": 4, "items": { "type": "string", "maxLength": 79 } },
         "actions": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/encounterAction" } },
-        "choiceResults": { "type": "array", "maxItems": 4, "items": { "type": "integer", "minimum": 0, "maximum": 255 } },
+        "choiceResults": {
+          "type": "array",
+          "maxItems": 4,
+          "prefixItems": [{ "type": "integer", "enum": [-4, 0, 1, 2, 3, 4] }],
+          "items": { "type": "integer", "minimum": 0, "maximum": 4 }
+        },
         "canBackOut": { "type": "boolean" },
         "maxTimes": { "type": "integer", "minimum": -128, "maximum": 127 },
         "casteSuccess": { "type": "integer", "minimum": -128, "maximum": 127 }
+      }
+    },
+    "simpleEncounterOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "steps"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1, "maxLength": 79 },
+        "steps": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/step" } }
       }
     },
     "complexResultNumber": { "type": "integer", "enum": [1, 2, 3, 4] },
@@ -530,10 +554,81 @@
     "complexThiefResponse": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["successResult", "failureResult"],
+      "required": ["encounter"],
       "properties": {
-        "successResult": { "$ref": "#/$defs/complexResultNumber" },
-        "failureResult": { "$ref": "#/$defs/complexResultNumber" }
+        "encounter": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1, "maximum": 127 },
+            { "type": "string", "minLength": 1 }
+          ]
+        }
+      }
+    },
+    "thiefEncounter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": { "$ref": "#/$defs/key" },
+        "id": { "type": "integer", "minimum": 1, "maximum": 127 },
+        "prompt": { "$ref": "#/$defs/idRef" },
+        "actions": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/rogueAction" } },
+        "trap": { "$ref": "#/$defs/rogueTrap" },
+        "lock": { "$ref": "#/$defs/rogueLock" }
+      }
+    },
+    "rogueAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "success", "failure"],
+      "properties": {
+        "kind": { "enum": ["acrobaticAct", "detectTrap", "disarmTrap", "hearNoise", "forceLock", "moveSilently", "pickLock", "pickPocket"] },
+        "modifier": { "type": "integer", "minimum": -128, "maximum": 127 },
+        "success": { "$ref": "#/$defs/rogueOutcome" },
+        "failure": { "$ref": "#/$defs/rogueOutcome" }
+      }
+    },
+    "rogueOutcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "anyOf": [
+        { "required": ["result"] },
+        { "required": ["message"] },
+        { "required": ["sound"] }
+      ],
+      "properties": {
+        "result": { "$ref": "#/$defs/complexResultNumber" },
+        "message": { "$ref": "#/$defs/idRef" },
+        "sound": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "rogueTrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "armed": { "type": "boolean" },
+        "rogueOnly": { "type": "boolean" },
+        "damage": { "$ref": "#/$defs/rogueDamage" },
+        "sound": { "$ref": "#/$defs/idRef" },
+        "spell": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "spellPower": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "disarmChancePerLevel": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "rogueDamage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["low", "high"],
+      "properties": {
+        "low": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "high": { "type": "integer", "minimum": 0, "maximum": 32767 }
+      }
+    },
+    "rogueLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tumblers": { "type": "integer", "minimum": 0, "maximum": 6 },
+        "openChancePerLevel": { "type": "integer", "minimum": 0, "maximum": 100 }
       }
     },
     "complexResultScript": {

@@ -360,11 +360,11 @@ const ROGUE_ACTION_LABELS = [
   "Acrobatic Act",
   "Detect Trap",
   "Disarm Trap",
+  "Hear Noise",
   "Force Lock",
+  "Move Silently",
   "Pick Lock",
-  "Pick Pocket",
-  "Open Lock Magic",
-  "Rogue Support"
+  "Pick Pocket"
 ];
 
 function validateEncounterActions(project: Project, recordType: RealmzTargetRecordKind, recordId: number, actions: Array<{ slot: number; rawCode: number; id: number }>, catalog?: LibraryCatalog | null) {

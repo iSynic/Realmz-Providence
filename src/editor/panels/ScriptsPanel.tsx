@@ -5407,7 +5407,7 @@ function EncounterResultFlowOverview({
   );
 }
 
-const ROGUE_PRIMARY_ACTIONS = 5;
+const ROGUE_PRIMARY_ACTIONS = 8;
 const ROGUE_DISARM_TRAP_SLOT = 2;
 const ROGUE_OPEN_LOCK_SLOT = 6;
 
@@ -6088,11 +6088,11 @@ const ROGUE_ACTION_LABELS = [
   "Acrobatic Act",
   "Detect Trap",
   "Disarm Trap",
+  "Hear Noise",
   "Force Lock",
+  "Move Silently",
   "Pick Lock",
-  "Pick Pocket",
-  "Open Lock Magic",
-  "Rogue Support"
+  "Pick Pocket"
 ];
 
 function ThiefEncounterShell({

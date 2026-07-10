@@ -80,7 +80,7 @@ Providence should edit source `Data TD2` / `Data TD3`, while showing runtime/cac
 
 ### Thief Runtime Semantics
 
-The thief UI enables action buttons by checking character skill, `type[action]`, and `modifer[action]`. Success and failure paths show the paired text/sound fields and return a result code when present.
+The thief UI enables action buttons by checking character skill, `type[action]`, and `modifer[action]`. The eight slots follow the character skill order: Acrobatic Act, Detect Trap, Disarm Trap, Hear Noise, Force Lock, Move Silently, Pick Lock, and Pick Pocket. Success and failure paths show the paired text/sound fields and return a result code when present.
 
 Trap behavior is stateful:
 
@@ -147,7 +147,7 @@ The cheap source pass found the classic runtime location gate reading `dotime.st
 - Keep source `Data TD2` and `Data TD3` separate from runtime `CT`, `CTD3`, and saved `Data H1`.
 - Complex Encounter editor should link `thiefsuccess` directly to `Data TD2`.
 - Timed Encounter editor should show schedule, chance, macro target, item/quest requirements, and location gates.
-- Thief Encounter editor should start as a guided trap/lock/pick/disarm form, with raw state flags visible because Divinity labels are still needed.
+- Thief Encounter editor should expose all eight source-backed action rows plus guided trap, lock, Pick Lock, and Disarm Trap spell paths.
 - Runtime mutation opcodes should be labeled as effects that alter runtime caches, not source records.
 - `Data TD2` writer should be fixture-gated because the legacy converter touches byte arrays in broad endian-conversion calls.
 
@@ -167,7 +167,7 @@ The cheap source pass found the classic runtime location gate reading `dotime.st
 
 ## Divinity Evidence Still Needed
 
-- Thief action button labels for the eight action slots and ten type flags.
+- Exact Divinity presentation for the two state flags and three support-sound fields.
 - Exact labels for prompt/sound support fields.
 - Whether Divinity treats `day` as absolute day-of-year, relative days, or a UI abstraction.
 - Timed encounter `stuff[1..9]` meanings.
@@ -177,5 +177,5 @@ The cheap source pass found the classic runtime location gate reading `dotime.st
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
 - Add a Timed Encounter editor before a full Thief editor; its fields are cleaner and directly source-backed.
-- Add a Thief Encounter editor once Divinity labels or fixture edits confirm the action/type flags.
+- Keep Rogue Encounter fixtures covering all eight action slots and the two runtime-mutated state flags.
 - Update Complex Encounter target pickers to link `thiefsuccess` to `Data TD2`.
