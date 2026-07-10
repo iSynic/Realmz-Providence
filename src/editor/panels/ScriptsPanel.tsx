@@ -92,6 +92,15 @@ function defaultDraftForProject(project: Project, definition: ScriptActionDefini
   return { rawCode: draft.rawCode, id: nextUnusedEdcdRowId(project) };
 }
 
+type EdcdStepDraft = {
+  values: [number, number, number, number, number];
+  dirty: boolean;
+};
+
+function edcdDraftValuesEqual(left?: readonly number[], right?: readonly number[]) {
+  return [0, 1, 2, 3, 4].every((index) => Number(left?.[index] ?? 0) === Number(right?.[index] ?? 0));
+}
+
 type SelectedEdcdUsage = {
   rowId?: number;
   shape?: string;
@@ -501,6 +510,7 @@ function ScriptAuthoringPanel({
   );
   const projectMaps = project?.maps ?? [];
   const [draft, setDraft] = useState<Record<string, { rawCode: number; id: number }>>({});
+  const [edcdStepDrafts, setEdcdStepDrafts] = useState<Record<string, EdcdStepDraft>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<ScriptActionCategoryFilter>("All");
   const [opcodeQuery, setOpcodeQuery] = useState("");
@@ -745,6 +755,12 @@ function ScriptAuthoringPanel({
     ? selectedDraft.rawCode !== selectedAction.rawCode || selectedDraft.id !== selectedAction.id
     : selectedDraft.rawCode !== 0 || selectedDraft.id !== 0;
   const selectedOption = actionOptionFor(selectedDraft.rawCode);
+  const selectedEdcdDraftKey = selectedTrigger && selectedOption.edcdShape
+    ? `${selectedKey}:${selectedDraft.rawCode}:${selectedDraft.id}:${selectedOption.edcdShape}`
+    : "";
+  const selectedEdcdDraftPrefix = selectedTrigger ? `${selectedKey}:` : "";
+  const selectedEdcdStepDraft = selectedEdcdDraftKey ? edcdStepDrafts[selectedEdcdDraftKey] : undefined;
+  const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty);
   const selectedDefinition = scriptActionDefinitionFor(selectedDraft.rawCode);
   const edcdUsages = useMemo(
     () => project && activeTabKind === "settings-rows" ? buildEdcdRowUsages(project, catalog) : [],
@@ -846,6 +862,15 @@ function ScriptAuthoringPanel({
     : projectMaps;
   const issueCounts = issueCountsBySlot(triggerDiagnostics);
   const setSelectedDraft = useCallback((values: { rawCode: number; id: number }) => setDraft((current) => ({ ...current, [selectedKey]: values })), [selectedKey]);
+  const updateSelectedEdcdDraft = useCallback((values: number[], dirty: boolean) => {
+    if (!selectedEdcdDraftKey) return;
+    const normalized = normalizeEdcdValues(values);
+    setEdcdStepDrafts((current) => {
+      const previous = current[selectedEdcdDraftKey];
+      if (previous?.dirty === dirty && edcdDraftValuesEqual(previous.values, normalized)) return current;
+      return { ...current, [selectedEdcdDraftKey]: { values: normalized, dirty } };
+    });
+  }, [selectedEdcdDraftKey]);
   const discardSelectedDraft = useCallback(() => {
     setDraft((current) => {
       if (!(selectedKey in current)) return current;
@@ -853,25 +878,47 @@ function ScriptAuthoringPanel({
       delete next[selectedKey];
       return next;
     });
-  }, [selectedKey]);
+    setEdcdStepDrafts((current) => {
+      if (!selectedEdcdDraftPrefix || !Object.keys(current).some((key) => key.startsWith(selectedEdcdDraftPrefix))) return current;
+      const next = { ...current };
+      for (const key of Object.keys(next)) {
+        if (key.startsWith(selectedEdcdDraftPrefix)) delete next[key];
+      }
+      return next;
+    });
+  }, [selectedEdcdDraftPrefix, selectedKey]);
   const applySelectedSlot = useCallback(() => {
     if (!selectedTrigger || !onApplyCommand) return false;
-    onApplyCommand({
-      kind: "updateActionSlot",
-      label: `Update slot ${selectedSlot}`,
-      triggerId: selectedTrigger.id,
-      slot: selectedSlot,
-      rawCode: selectedDraft.rawCode,
-      id: selectedDraft.id
-    });
+    if (selectedOption.edcdShape) {
+      const edcdValues = selectedEdcdStepDraft?.values
+        ?? normalizeEdcdValues(selectedEdcdUsageModel?.values ?? selectedDefinition.defaultDraft.parameters);
+      onApplyCommand({
+        kind: "applyRealmzScriptStep",
+        label: `Update slot ${selectedSlot}`,
+        triggerId: selectedTrigger.id,
+        slot: selectedSlot,
+        opcode: selectedDraft.rawCode,
+        id: selectedDraft.id,
+        edcdValues
+      });
+    } else {
+      onApplyCommand({
+        kind: "updateActionSlot",
+        label: `Update slot ${selectedSlot}`,
+        triggerId: selectedTrigger.id,
+        slot: selectedSlot,
+        rawCode: selectedDraft.rawCode,
+        id: selectedDraft.id
+      });
+    }
     discardSelectedDraft();
     return true;
-  }, [discardSelectedDraft, onApplyCommand, selectedDraft.id, selectedDraft.rawCode, selectedSlot, selectedTrigger]);
+  }, [discardSelectedDraft, onApplyCommand, selectedDefinition.defaultDraft.parameters, selectedDraft.id, selectedDraft.rawCode, selectedEdcdStepDraft?.values, selectedEdcdUsageModel?.values, selectedOption.edcdShape, selectedSlot, selectedTrigger]);
   const requestDraftNavigation = useCallback((label: string, action: () => void) => {
     confirmBeforeDraftDiscard(label, action);
   }, [confirmBeforeDraftDiscard]);
   useEffect(() => {
-    if (!selectedTrigger || !selectedDraftDirty) return;
+    if (!selectedTrigger || !selectedStepDirty) return;
     return registerDraftGuard({
       id: `script-step:${selectedTrigger.id}:${selectedSlot}`,
       surface: "scripts",
@@ -880,7 +927,7 @@ function ScriptAuthoringPanel({
       apply: applySelectedSlot,
       discard: discardSelectedDraft
     });
-  }, [applySelectedSlot, discardSelectedDraft, project, registerDraftGuard, selectedAction, selectedDefinition, selectedDraft, selectedDraftDirty, selectedSlot, selectedTrigger]);
+  }, [applySelectedSlot, discardSelectedDraft, project, registerDraftGuard, selectedAction, selectedDefinition, selectedDraft, selectedSlot, selectedStepDirty, selectedTrigger]);
   const handleSelectTrigger = useCallback((trigger: TriggerRecord) => {
     if (trigger.id === selectedTrigger?.id) return;
     requestDraftNavigation(`select ${scriptLabel(project, trigger)}`, () => performSelectTrigger(trigger));
@@ -1002,7 +1049,7 @@ function ScriptAuthoringPanel({
         type="button"
         className="btn btn-danger btn-xs icon-only"
         title="Clear step"
-        disabled={!selectedAction && !selectedDraftDirty}
+        disabled={!selectedAction && !selectedStepDirty}
         onClick={clearSelectedStep}
       >
         <X size={12} />
@@ -1019,9 +1066,9 @@ function ScriptAuthoringPanel({
       )}
       <button
         type="button"
-        className={`btn btn-primary btn-xs script-apply-button${selectedDraftDirty ? " is-dirty" : ""}`}
-        title={selectedDraftDirty ? "Apply this step to the script." : "This step is already applied."}
-        disabled={!selectedDraftDirty}
+        className={`btn btn-primary btn-xs script-apply-button${selectedStepDirty ? " is-dirty" : ""}`}
+        title={selectedStepDirty ? "Apply this step to the script." : "This step is already applied."}
+        disabled={!selectedStepDirty}
         onClick={applySelectedSlot}
       >
         <Save size={12} /> Apply Step
@@ -1049,7 +1096,7 @@ function ScriptAuthoringPanel({
       catalog={catalog}
       selectedSlot={selectedSlot}
       selectedDraft={selectedDraft}
-      selectedDraftDirty={selectedDraftDirty}
+      selectedDraftDirty={selectedStepDirty}
       selectedSlotApplied={Boolean(selectedAction) && !selectedDraftDirty}
       selectedOption={selectedOption}
       selectedDefinition={selectedDefinition}
@@ -1078,6 +1125,7 @@ function ScriptAuthoringPanel({
       onPreviewEntity={previewEntity}
       onOpenTool={openTargetTool}
       onOpenMapCoordinate={previewMapCoordinate}
+      onEdcdDraftChange={updateSelectedEdcdDraft}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -2678,6 +2726,7 @@ function SelectedStepDetail({
   onPreviewEntity,
   onOpenTool,
   onOpenMapCoordinate,
+  onEdcdDraftChange,
   onApplyCommand
 }: {
   project: Project;
@@ -2722,6 +2771,7 @@ function SelectedStepDetail({
   onPreviewEntity: (entity: SelectedEntity) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  onEdcdDraftChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
@@ -2850,12 +2900,14 @@ function SelectedStepDetail({
       onSelectEntity={onSelectEntity}
       onOpenText={(editor) => onOpenTool?.("text", editor)}
       onOpenMapCoordinate={onOpenMapCoordinate}
+      onDraftValuesChange={onEdcdDraftChange}
       onStepOpcodeChange={(rawCode) => {
         if (rawCode !== 23 && rawCode !== -23) return;
         if (selectedDraft.rawCode === rawCode) return;
         onSetSelectedDraft({ ...selectedDraft, rawCode });
       }}
       onApplyCommand={onApplyCommand}
+      showActionButtons={settingsEditorPresentation !== "selected-step"}
       presentation={settingsEditorPresentation}
     />
   ) : null;

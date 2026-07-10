@@ -937,7 +937,9 @@ for (const snippet of [
   "ScriptDestructiveActionDialog",
   "setPendingDestructiveAction",
   "const clearSelectedStep = () =>",
-  "disabled={!selectedAction && !selectedDraftDirty}",
+  "const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty);",
+  "disabled={!selectedAction && !selectedStepDirty}",
+  "kind: \"applyRealmzScriptStep\"",
   "onClick={clearSelectedStep}",
   "onClick={clearSelectedScript}"
 ]) {

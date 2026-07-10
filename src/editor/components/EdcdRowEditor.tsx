@@ -43,7 +43,9 @@ export function EdcdRowEditor({
   onOpenText,
   onOpenMapCoordinate,
   onStepOpcodeChange,
+  onDraftValuesChange,
   onApplyCommand,
+  showActionButtons = true,
   presentation = "inventory"
 }: {
   project: Project;
@@ -60,7 +62,9 @@ export function EdcdRowEditor({
   onOpenText?: (editor: "messages" | "option-labels") => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onStepOpcodeChange?: (rawCode: number) => void;
+  onDraftValuesChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  showActionButtons?: boolean;
   presentation?: EdcdRowEditorPresentation;
 }) {
   const rowId = edcdUsage?.rowId ?? (fallbackShape ? Math.max(0, fallbackRowId) : null);
@@ -75,22 +79,33 @@ export function EdcdRowEditor({
     const rawValues = row?.values ?? [];
     return [0, 1, 2, 3, 4].map((index) => Number(semanticValues[index] ?? rawValues[index] ?? fallbackInitialValues?.[index] ?? 0));
   }, [edcdUsage, fallbackInitialValues, row]);
+  const opcode = edcdUsage?.opcode ?? fallbackOpcode;
+  const rowExists = Boolean(row);
+  const initialDraftKey = `${rowId ?? "none"}:${shape ?? "none"}:${opcode ?? "none"}:${rowExists ? "stored" : "missing"}:${initialValues.join("|")}`;
   const [draft, setDraft] = useState(initialValues.map(String));
   const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
 
   useEffect(() => {
     setDraft(initialValues.map(String));
-  }, [initialValues]);
+  }, [initialDraftKey]);
+
+  const numericDraft = useMemo(() => draft.map((value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }), [draft]);
+  const changed = numericDraft.some((value, index) => value !== initialValues[index]);
+  const needsSelectedStepApply = !rowExists || changed;
+  const canApplySettings = Boolean(onApplyCommand) && (!rowExists || changed);
+  const settingsActionLabel = rowExists ? "Apply Settings" : "Create Settings";
+  const settingsCommandLabel = rowExists ? `Update settings ${rowId}` : `Create settings ${rowId}`;
+
+  useEffect(() => {
+    if (rowId == null || !shape) return;
+    onDraftValuesChange?.(numericDraft, needsSelectedStepApply);
+  }, [needsSelectedStepApply, numericDraft, onDraftValuesChange, rowId, shape]);
 
   if (rowId == null || !shape) return null;
   const shapeId = shape;
-
-  const numericDraft = draft.map((value) => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  });
-  const opcode = edcdUsage?.opcode ?? fallbackOpcode;
-  const changed = numericDraft.some((value, index) => value !== initialValues[index]);
   const fieldMetadata = fieldNames.map((name, index) => {
     const metadata = parameterLabels?.find((label) => label.index === index);
     return {
@@ -125,7 +140,9 @@ export function EdcdRowEditor({
         selectedSlotLabel={selectedSlotLabel}
         onSelectEntity={onSelectEntity}
         onOpenText={onOpenText}
+        onDraftValuesChange={onDraftValuesChange}
         onApplyCommand={onApplyCommand}
+        showActionButtons={showActionButtons}
         presentation={presentation}
       />
     );
@@ -136,17 +153,17 @@ export function EdcdRowEditor({
       <button
         type="button"
         className="btn btn-primary btn-xs"
-        disabled={!onApplyCommand || !changed}
+        disabled={!canApplySettings}
         onClick={() => onApplyCommand?.({
           kind: "updateEdcdRow",
-          label: `Update settings ${rowId}`,
+          label: settingsCommandLabel,
           rowId,
           values: numericDraft
         })}
       >
-        <Save size={12} /> Apply Settings
+        <Save size={12} /> {settingsActionLabel}
       </button>
-      {row && (
+      {rowExists && (
         <button
           type="button"
           className="btn btn-danger btn-xs"
@@ -163,10 +180,10 @@ export function EdcdRowEditor({
         {!row && (
           <EmptyState
             compact
-            title={presentation === "selected-step" ? "Authoring fields not created yet" : "Settings not created yet"}
+            title={presentation === "selected-step" ? "Step fields are ready to apply" : "Settings not created yet"}
             body={presentation === "selected-step"
-              ? `Applying this ${selectedSlotLabel} will create its editable fields.`
-              : `This ${selectedSlotLabel} will use settings ${rowId}. Applying the guided settings below will create that row.`}
+              ? `Choose values below, then Apply Step to store them for this ${selectedSlotLabel}.`
+              : `This ${selectedSlotLabel} will use settings ${rowId}. Create settings to store the guided values below.`}
           />
         )}
         {showGuidedSummary && (
@@ -214,9 +231,11 @@ export function EdcdRowEditor({
   if (presentation === "selected-step") {
     return (
       <>
-        <div className="edcd-selected-step-action-strip">
-          {actionButtons}
-        </div>
+        {showActionButtons && (
+          <div className="edcd-selected-step-action-strip">
+            {actionButtons}
+          </div>
+        )}
         <div className="realmz-current-step-authoring-subpane">
           {editorBody}
         </div>
@@ -1771,7 +1790,9 @@ function ChoiceDialogEditor({
   selectedSlotLabel,
   onSelectEntity,
   onOpenText,
+  onDraftValuesChange,
   onApplyCommand,
+  showActionButtons = true,
   presentation = "inventory"
 }: {
   project: Project;
@@ -1783,20 +1804,27 @@ function ChoiceDialogEditor({
   selectedSlotLabel: string;
   onSelectEntity?: (entity: SelectedEntity) => void;
   onOpenText?: (editor: "messages" | "option-labels") => void;
+  onDraftValuesChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
+  showActionButtons?: boolean;
   presentation?: EdcdRowEditorPresentation;
 }) {
+  const initialDraftKey = `${rowId}:${rowExists ? "stored" : "missing"}:${initialValues.join("|")}`;
   const [draft, setDraft] = useState(initialValues.map(String));
 
   useEffect(() => {
     setDraft(initialValues.map(String));
-  }, [initialValues]);
+  }, [initialDraftKey]);
 
-  const numericDraft = draft.map((value) => {
+  const numericDraft = useMemo(() => draft.map((value) => {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : 0;
-  });
+  }), [draft]);
   const changed = numericDraft.some((value, index) => value !== initialValues[index]);
+  const needsSelectedStepApply = !rowExists || changed;
+  const canApplyChoice = Boolean(onApplyCommand) && (!rowExists || changed);
+  const choiceActionLabel = rowExists ? "Apply Choice" : "Create Choice";
+  const choiceCommandLabel = rowExists ? `Update choice dialog ${rowId}` : `Create choice dialog ${rowId}`;
   const continueValue = numericDraft[0] ?? 0;
   const branchMode = numericDraft[1] ?? 0;
   const branchKind = choiceBranchTargetKind(branchMode);
@@ -1809,20 +1837,24 @@ function ChoiceDialogEditor({
     setDraft(next);
   };
 
+  useEffect(() => {
+    onDraftValuesChange?.(numericDraft, needsSelectedStepApply);
+  }, [needsSelectedStepApply, numericDraft, onDraftValuesChange]);
+
   const actionButtons = (
     <>
       <button
         type="button"
         className="btn btn-primary btn-xs"
-        disabled={!onApplyCommand || !changed}
+        disabled={!canApplyChoice}
         onClick={() => onApplyCommand?.({
           kind: "updateEdcdRow",
-          label: `Update choice dialog ${rowId}`,
+          label: choiceCommandLabel,
           rowId,
           values: numericDraft
         })}
       >
-        <Save size={12} /> Apply Choice
+        <Save size={12} /> {choiceActionLabel}
       </button>
       {rowExists && (
         <button
@@ -1841,10 +1873,10 @@ function ChoiceDialogEditor({
         {!rowExists && (
           <EmptyState
             compact
-            title={presentation === "selected-step" ? "Choice fields not created yet" : "Missing choice dialog settings"}
+            title={presentation === "selected-step" ? "Choice fields are ready to apply" : "Missing choice dialog settings"}
             body={presentation === "selected-step"
-              ? `Applying this ${selectedSlotLabel} will create the stored choice fields it needs.`
-              : `This ${selectedSlotLabel} uses choice dialog ${rowId}. Applying values here will create it.`}
+              ? `Choose values below, then Apply Step to store them for this ${selectedSlotLabel}.`
+              : `This ${selectedSlotLabel} uses choice dialog ${rowId}. Create choice settings to store the values below.`}
           />
         )}
         <div className="choice-dialog-grid">
@@ -1937,9 +1969,11 @@ function ChoiceDialogEditor({
   if (presentation === "selected-step") {
     return (
       <>
-        <div className="edcd-selected-step-action-strip">
-          {actionButtons}
-        </div>
+        {showActionButtons && (
+          <div className="edcd-selected-step-action-strip">
+            {actionButtons}
+          </div>
+        )}
         <div className="realmz-current-step-authoring-subpane">
           {editorBody}
         </div>
