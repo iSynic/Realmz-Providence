@@ -403,7 +403,7 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
       const rowId = Math.max(0, action.id);
       const row = project.extracodes.find((candidate) => candidate.id === rowId);
       if (!row) {
-        issues.push(slotIssue("warning", recordType, recordId, action.slot, "missing-settings", "Missing settings.", `${actionOptionFor(action.rawCode).shortLabel} needs settings ${rowId}; create them before relying on this behavior.`));
+        issues.push(slotIssue("warning", recordType, recordId, action.slot, "missing-settings", "Missing settings.", `Settings ${rowId} are missing. Open this step, choose its values, and apply it to create them.`));
       } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
         issues.push(slotIssue("error", recordType, recordId, action.slot, "malformed-settings", "Settings are malformed.", `Settings ${rowId} must contain five finite numeric values.`));
       } else {
@@ -423,6 +423,9 @@ function validateEncounterActions(project: Project, recordType: RealmzTargetReco
             ));
           }
         }
+      }
+      if (code === 92 && !project.extracodes.some((candidate) => candidate.id === rowId + 1)) {
+        issues.push(slotIssue("warning", recordType, recordId, action.slot, "missing-secondary-settings", "Missing secondary settings.", `Settings ${rowId + 1} are missing. Open this step, choose its secondary shape values, and apply it to create them.`));
       }
     }
     issues.push(...validateReference(project, recordType, recordId, `Action row ${action.slot}`, code, action.id, action.slot, catalog));

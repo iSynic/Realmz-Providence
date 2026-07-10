@@ -44,6 +44,7 @@ export function EdcdRowEditor({
   onOpenMapCoordinate,
   onStepOpcodeChange,
   onDraftValuesChange,
+  onSecondaryDraftValuesChange,
   onApplyCommand,
   showActionButtons = true,
   presentation = "inventory"
@@ -63,6 +64,7 @@ export function EdcdRowEditor({
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onStepOpcodeChange?: (rawCode: number) => void;
   onDraftValuesChange?: (values: number[], dirty: boolean) => void;
+  onSecondaryDraftValuesChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   showActionButtons?: boolean;
   presentation?: EdcdRowEditorPresentation;
@@ -201,10 +203,33 @@ export function EdcdRowEditor({
         )}
         {edcdUsage?.secondaryRowId != null && (
           <div className="edcd-secondary-row">
-            <FieldRow label="Secondary Settings" value={edcdUsage.secondaryRowId} />
-            {edcdUsage.secondaryFields?.map((field, index) => (
-              <FieldRow key={`${edcdUsage.secondaryRowId}-${index}`} label={humanizeFieldName(field.name ?? `param${index}`)} value={field.value ?? 0} />
-            ))}
+            <header className="edcd-secondary-row-header">
+              <span>Secondary Settings {edcdUsage.secondaryRowId}</span>
+              <strong>Random Area Bounds</strong>
+            </header>
+            <EdcdRowEditor
+              project={project}
+              catalog={catalog}
+              edcdUsage={{
+                rowId: edcdUsage.secondaryRowId,
+                shape: edcdUsage.secondaryShape ?? "random-region-shape-details",
+                opcode,
+                fields: edcdUsage.secondaryFields
+              }}
+              fallbackRowId={edcdUsage.secondaryRowId}
+              fallbackShape={edcdUsage.secondaryShape ?? "random-region-shape-details"}
+              fallbackFieldNames={edcdUsage.secondaryFields?.map((field, index) => field.name ?? `param${index}`)}
+              fallbackInitialValues={edcdUsage.secondaryFields?.map((field) => Number(field.value ?? 0))}
+              fallbackOpcode={opcode}
+              selectedSlotLabel={`${selectedSlotLabel} secondary shape`}
+              onSelectEntity={onSelectEntity}
+              onOpenText={onOpenText}
+              onOpenMapCoordinate={onOpenMapCoordinate}
+              onDraftValuesChange={onSecondaryDraftValuesChange}
+              onApplyCommand={onApplyCommand}
+              showActionButtons={showActionButtons && presentation !== "selected-step"}
+              presentation="selected-step"
+            />
           </div>
         )}
         {edcdUsage?.diagnostics?.map((diagnostic) => (

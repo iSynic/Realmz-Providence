@@ -5931,11 +5931,35 @@
 
 .edcd-secondary-row {
   display: grid;
-  gap: 0;
+  gap: 7px;
   border: 1px solid #2a3541;
   border-radius: 5px;
   background: #0d1319;
   padding: 7px;
+}
+
+.edcd-secondary-row-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  color: #8fb9d9;
+}
+
+.edcd-secondary-row-header span {
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.edcd-secondary-row-header strong {
+  color: #d8e5ef;
+  font-size: 12px;
+}
+
+.edcd-secondary-row .realmz-current-step-authoring-subpane {
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .settings-rows-workbench {

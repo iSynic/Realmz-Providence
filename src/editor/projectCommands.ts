@@ -204,7 +204,13 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "deleteQuestContextSource") return deleteQuestContextSource(project, command.sourceId);
   if (command.kind === "applyRealmzScriptStep") {
     const withSlot = updateActionSlot(project, command.triggerId, command.slot, command.opcode, command.id);
-    return command.edcdValues ? updateEdcdRow(withSlot, command.id, command.edcdValues) : withSlot;
+    const withPrimarySettings = command.edcdValues ? updateEdcdRow(withSlot, command.id, command.edcdValues) : withSlot;
+    if (Math.abs(command.opcode) !== 92) return withPrimarySettings;
+    const secondaryRowId = command.id + 1;
+    const secondaryValues = command.secondaryEdcdValues
+      ?? withPrimarySettings.extracodes.find((row) => row.id === secondaryRowId)?.values
+      ?? [0, 0, 0, 0, 0];
+    return updateEdcdRow(withPrimarySettings, secondaryRowId, secondaryValues);
   }
   if (command.kind === "renameEditorEntity") return renameEditorEntity(project, command.entityId, command.displayName);
   if (command.kind === "updateScenarioShell") return updateScenarioShell(project, command.changes);

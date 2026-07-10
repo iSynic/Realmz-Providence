@@ -95,6 +95,8 @@ function defaultDraftForProject(project: Project, definition: ScriptActionDefini
 type EdcdStepDraft = {
   values: [number, number, number, number, number];
   dirty: boolean;
+  secondaryValues?: [number, number, number, number, number];
+  secondaryDirty?: boolean;
 };
 
 function edcdDraftValuesEqual(left?: readonly number[], right?: readonly number[]) {
@@ -760,7 +762,7 @@ function ScriptAuthoringPanel({
     : "";
   const selectedEdcdDraftPrefix = selectedTrigger ? `${selectedKey}:` : "";
   const selectedEdcdStepDraft = selectedEdcdDraftKey ? edcdStepDrafts[selectedEdcdDraftKey] : undefined;
-  const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty);
+  const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty || selectedEdcdStepDraft?.secondaryDirty);
   const selectedDefinition = scriptActionDefinitionFor(selectedDraft.rawCode);
   const edcdUsages = useMemo(
     () => project && activeTabKind === "settings-rows" ? buildEdcdRowUsages(project, catalog) : [],
@@ -868,9 +870,27 @@ function ScriptAuthoringPanel({
     setEdcdStepDrafts((current) => {
       const previous = current[selectedEdcdDraftKey];
       if (previous?.dirty === dirty && edcdDraftValuesEqual(previous.values, normalized)) return current;
-      return { ...current, [selectedEdcdDraftKey]: { values: normalized, dirty } };
+      return { ...current, [selectedEdcdDraftKey]: { ...previous, values: normalized, dirty } };
     });
   }, [selectedEdcdDraftKey]);
+  const updateSelectedSecondaryEdcdDraft = useCallback((values: number[], dirty: boolean) => {
+    if (!selectedEdcdDraftKey || selectedEdcdUsageModel?.secondaryRowId == null) return;
+    const normalized = normalizeEdcdValues(values);
+    const fallbackPrimary = normalizeEdcdValues(selectedEdcdUsageModel.values ?? selectedDefinition.defaultDraft.parameters);
+    setEdcdStepDrafts((current) => {
+      const previous = current[selectedEdcdDraftKey];
+      if (previous?.secondaryDirty === dirty && previous.secondaryValues && edcdDraftValuesEqual(previous.secondaryValues, normalized)) return current;
+      return {
+        ...current,
+        [selectedEdcdDraftKey]: {
+          values: previous?.values ?? fallbackPrimary,
+          dirty: previous?.dirty ?? false,
+          secondaryValues: normalized,
+          secondaryDirty: dirty
+        }
+      };
+    });
+  }, [selectedDefinition.defaultDraft.parameters, selectedEdcdDraftKey, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.values]);
   const discardSelectedDraft = useCallback(() => {
     setDraft((current) => {
       if (!(selectedKey in current)) return current;
@@ -892,6 +912,9 @@ function ScriptAuthoringPanel({
     if (selectedOption.edcdShape) {
       const edcdValues = selectedEdcdStepDraft?.values
         ?? normalizeEdcdValues(selectedEdcdUsageModel?.values ?? selectedDefinition.defaultDraft.parameters);
+      const secondaryEdcdValues = selectedEdcdUsageModel?.secondaryRowId == null
+        ? undefined
+        : selectedEdcdStepDraft?.secondaryValues ?? normalizeEdcdValues(selectedEdcdUsageModel.secondaryValues ?? undefined);
       onApplyCommand({
         kind: "applyRealmzScriptStep",
         label: `Update slot ${selectedSlot}`,
@@ -899,7 +922,8 @@ function ScriptAuthoringPanel({
         slot: selectedSlot,
         opcode: selectedDraft.rawCode,
         id: selectedDraft.id,
-        edcdValues
+        edcdValues,
+        secondaryEdcdValues
       });
     } else {
       onApplyCommand({
@@ -913,7 +937,7 @@ function ScriptAuthoringPanel({
     }
     discardSelectedDraft();
     return true;
-  }, [discardSelectedDraft, onApplyCommand, selectedDefinition.defaultDraft.parameters, selectedDraft.id, selectedDraft.rawCode, selectedEdcdStepDraft?.values, selectedEdcdUsageModel?.values, selectedOption.edcdShape, selectedSlot, selectedTrigger]);
+  }, [discardSelectedDraft, onApplyCommand, selectedDefinition.defaultDraft.parameters, selectedDraft.id, selectedDraft.rawCode, selectedEdcdStepDraft?.secondaryValues, selectedEdcdStepDraft?.values, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.secondaryValues, selectedEdcdUsageModel?.values, selectedOption.edcdShape, selectedSlot, selectedTrigger]);
   const requestDraftNavigation = useCallback((label: string, action: () => void) => {
     confirmBeforeDraftDiscard(label, action);
   }, [confirmBeforeDraftDiscard]);
@@ -1126,6 +1150,7 @@ function ScriptAuthoringPanel({
       onOpenTool={openTargetTool}
       onOpenMapCoordinate={previewMapCoordinate}
       onEdcdDraftChange={updateSelectedEdcdDraft}
+      onSecondaryEdcdDraftChange={updateSelectedSecondaryEdcdDraft}
       onApplyCommand={onApplyCommand}
     />
   ) : null;
@@ -2727,6 +2752,7 @@ function SelectedStepDetail({
   onOpenTool,
   onOpenMapCoordinate,
   onEdcdDraftChange,
+  onSecondaryEdcdDraftChange,
   onApplyCommand
 }: {
   project: Project;
@@ -2772,6 +2798,7 @@ function SelectedStepDetail({
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onEdcdDraftChange?: (values: number[], dirty: boolean) => void;
+  onSecondaryEdcdDraftChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
@@ -2901,6 +2928,7 @@ function SelectedStepDetail({
       onOpenText={(editor) => onOpenTool?.("text", editor)}
       onOpenMapCoordinate={onOpenMapCoordinate}
       onDraftValuesChange={onEdcdDraftChange}
+      onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}
       onStepOpcodeChange={(rawCode) => {
         if (rawCode !== 23 && rawCode !== -23) return;
         if (selectedDraft.rawCode === rawCode) return;

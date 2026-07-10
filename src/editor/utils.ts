@@ -287,11 +287,11 @@ function targetFromSemanticDiagnostic(diagnostic: Project["semanticSchema"]["dia
 function semanticDiagnosticDetail(diagnostic: Project["semanticSchema"]["diagnostics"][number]) {
   if (diagnostic.type === "missing-edcd-row") {
     const rowId = diagnostic.data.rowId;
-    return `Create Action Settings ${rowId} or change this step to a valid Settings row.`;
+    return `Open this step, choose its values, and apply it to create Action Settings ${rowId}; or change the step to a valid Settings row.`;
   }
   if (diagnostic.type === "missing-secondary-edcd-row") {
     const rowId = diagnostic.data.secondaryRowId;
-    return `Create secondary Action Settings ${rowId} or repair the action shape before relying on this step.`;
+    return `Open this step, choose its secondary shape values, and apply it to create Action Settings ${rowId}; or repair the action shape.`;
   }
   return diagnostic.confidence ? `Confidence: ${diagnostic.confidence}.` : undefined;
 }

@@ -940,9 +940,11 @@ for (const snippet of [
   "ScriptDestructiveActionDialog",
   "setPendingDestructiveAction",
   "const clearSelectedStep = () =>",
-  "const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty);",
+  "const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty || selectedEdcdStepDraft?.secondaryDirty);",
   "disabled={!selectedAction && !selectedStepDirty}",
   "kind: \"applyRealmzScriptStep\"",
+  "secondaryEdcdValues",
+  "onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}",
   "onClick={clearSelectedStep}",
   "onClick={clearSelectedScript}"
 ]) {

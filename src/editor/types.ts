@@ -1318,7 +1318,7 @@ export type ProjectCommand =
   | { kind: "deleteQuestThread"; label: string; threadId: string }
   | { kind: "addQuestContextSource"; label: string; source: QuestContextSource }
   | { kind: "deleteQuestContextSource"; label: string; sourceId: string }
-  | { kind: "applyRealmzScriptStep"; label: string; triggerId: string; slot: number; opcode: number; id: number; edcdValues?: number[] }
+  | { kind: "applyRealmzScriptStep"; label: string; triggerId: string; slot: number; opcode: number; id: number; edcdValues?: number[]; secondaryEdcdValues?: number[] }
   | { kind: "updateScenarioShell"; label: string; changes: Partial<ScenarioShell> }
   | { kind: "updateScenarioSecurityCodes"; label: string; shellChanges: Partial<ScenarioShell>; backupChanges?: Partial<ScenarioShell> }
   | { kind: "updateScenarioContactInfo"; label: string; changes: Partial<ScenarioContactInfo> }

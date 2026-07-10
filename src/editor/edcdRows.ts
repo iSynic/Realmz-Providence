@@ -35,6 +35,10 @@ export type EdcdRowUsage = {
   statusLabel: string;
   summary: string;
   warnings: string[];
+  secondaryRowId: number | null;
+  secondaryRow: ExtraCodeRow | null;
+  secondaryShape: string | null;
+  secondaryValues: [number, number, number, number, number] | null;
 };
 
 export type EdcdRowFilter = "all" | EdcdRowStatus;
@@ -103,7 +107,7 @@ export function buildEdcdRowUsages(project: Project, catalog?: LibraryCatalog | 
   }
 
   const ids = new Set<number>([...rows.keys(), ...callersByRow.keys()]);
-  return [...ids].sort((a, b) => a - b).map((rowId) => buildEdcdRowUsage(project, catalog, rowId, rows.get(rowId) ?? null, callersByRow.get(rowId) ?? []));
+  return [...ids].sort((a, b) => a - b).map((rowId) => buildEdcdRowUsage(project, catalog, rowId, rows, rows.get(rowId) ?? null, callersByRow.get(rowId) ?? []));
 }
 
 function addCaller(
@@ -127,6 +131,17 @@ function addCaller(
   const existing = callersByRow.get(rowId) ?? [];
   existing.push(caller);
   callersByRow.set(rowId, existing);
+  if (normalizeStepOpcode(action.rawCode) === 92) {
+    const secondaryCaller: EdcdRowCaller = {
+      ...caller,
+      actionLabel: `${caller.actionLabel} Shape Details`,
+      actionShortLabel: `${caller.actionShortLabel} Shape Details`,
+      shape: "random-region-shape-details"
+    };
+    const secondaryCallers = callersByRow.get(rowId + 1) ?? [];
+    secondaryCallers.push(secondaryCaller);
+    callersByRow.set(rowId + 1, secondaryCallers);
+  }
 }
 
 export function edcdUsageForRow(project: Project, catalog: LibraryCatalog | null | undefined, rowId: number) {
@@ -140,6 +155,15 @@ export function edcdUsageForAction(project: Project, catalog: LibraryCatalog | n
   const definition = scriptActionDefinitionFor(rawCode);
   const values = normalizeEdcdValues(row?.values ?? definition.defaultDraft.parameters);
   const status: EdcdRowStatus = row ? "in-use" : "missing";
+  const secondaryRowId = normalizeStepOpcode(rawCode) === 92 ? rowId + 1 : null;
+  const secondaryRow = secondaryRowId == null
+    ? null
+    : (project.extracodes ?? []).find((candidate) => candidate.id === secondaryRowId) ?? null;
+  const secondaryShape = secondaryRowId == null ? null : "random-region-shape-details";
+  const warnings = row ? [] : [`Settings #${rowId} are missing. Choose values in the calling step and apply it to create them.`];
+  if (secondaryRowId != null && !secondaryRow) {
+    warnings.push(`Settings #${secondaryRowId} are missing. Choose the secondary shape values in the calling step and apply it to create them.`);
+  }
   return {
     rowId,
     row,
@@ -153,7 +177,11 @@ export function edcdUsageForAction(project: Project, catalog: LibraryCatalog | n
     status,
     statusLabel: labelForStatus(status),
     summary: scriptActionSummary(project, catalog, { rawCode, id: rowId, parameters: values }, ""),
-    warnings: row ? [] : [`An action step uses Settings #${rowId}, but those settings are missing.`]
+    warnings,
+    secondaryRowId,
+    secondaryRow,
+    secondaryShape,
+    secondaryValues: secondaryRowId == null ? null : normalizeEdcdValues(secondaryRow?.values)
   };
 }
 
@@ -171,6 +199,7 @@ function buildEdcdRowUsage(
   project: Project,
   catalog: LibraryCatalog | null | undefined,
   rowId: number,
+  rows: Map<number, ExtraCodeRow>,
   row: ExtraCodeRow | null,
   callers: EdcdRowCaller[]
 ): EdcdRowUsage {
@@ -183,6 +212,12 @@ function buildEdcdRowUsage(
   const values = normalizeEdcdValues(row?.values ?? fallbackValues);
   const status = statusFor(row, callers, possibleShapes);
   const warnings = warningsFor(status, rowId, callers, possibleShapes);
+  const hasSecondaryShape = primaryShape === "random-region-shape-mutation" && normalizeStepOpcode(primaryOpcode ?? 0) === 92;
+  const secondaryRowId = hasSecondaryShape ? rowId + 1 : null;
+  const secondaryRow = secondaryRowId == null ? null : rows.get(secondaryRowId) ?? null;
+  if (secondaryRowId != null && !secondaryRow) {
+    warnings.push(`Settings #${secondaryRowId} are missing. Choose the secondary shape values in the calling step and apply it to create them.`);
+  }
   return {
     rowId,
     row,
@@ -196,7 +231,11 @@ function buildEdcdRowUsage(
     status,
     statusLabel: labelForStatus(status),
     summary: summaryForUsage(project, catalog, rowId, primaryOpcode, values, row, callers, status),
-    warnings
+    warnings,
+    secondaryRowId,
+    secondaryRow,
+    secondaryShape: secondaryRowId == null ? null : "random-region-shape-details",
+    secondaryValues: secondaryRowId == null ? null : normalizeEdcdValues(secondaryRow?.values)
   };
 }
 
@@ -236,7 +275,7 @@ function summaryForUsage(
 }
 
 function warningsFor(status: EdcdRowStatus, rowId: number, callers: EdcdRowCaller[], possibleShapes: string[]) {
-  if (status === "missing") return [`An action step uses Settings #${rowId}, but those settings are missing.`];
+  if (status === "missing") return [`Settings #${rowId} are missing. Open the calling step, choose its values, and apply it to create them.`];
   if (status === "conflict") return [`Settings #${rowId} are used by different action types: ${possibleShapes.join(", ")}.`];
   if (status === "shared") return [`Settings #${rowId} are shared by ${callers.length} steps. Editing them changes every caller.`];
   if (status === "unused") return [`Settings #${rowId} are not used by any current script step.`];
@@ -258,6 +297,14 @@ export function edcdUsageToEditorUsage(usage: EdcdRowUsage, fallbackShape?: stri
       ? (edcdFieldNamesForShape(shape) ?? ["param0", "param1", "param2", "param3", "param4"]).map((name, index) => ({ name, value: values[index] ?? 0 }))
       : undefined,
     diagnostics: usage.warnings,
-    summary: usage.summary
+    summary: usage.summary,
+    ...(usage.secondaryRowId != null && usage.secondaryShape
+      ? {
+          secondaryRowId: usage.secondaryRowId,
+          secondaryShape: usage.secondaryShape,
+          secondaryFields: (edcdFieldNamesForShape(usage.secondaryShape) ?? ["param0", "param1", "param2", "param3", "param4"])
+            .map((name, index) => ({ name, value: usage.secondaryValues?.[index] ?? 0 }))
+        }
+      : {})
   };
 }

@@ -78,7 +78,7 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
     const rowId = Math.max(0, id);
     const row = project.extracodes.find((candidate) => candidate.id === rowId);
     if (!row) {
-      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-settings", "Missing settings.", `${option.shortLabel} needs settings ${rowId}; create them before relying on this behavior.`));
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-settings", "Missing settings.", `Settings ${rowId} are missing. Choose the values below and Apply Step to create them.`));
     } else if (row.values.length !== 5 || row.values.some((value) => !Number.isFinite(value))) {
       diagnostics.push(slotIssue("error", trigger.id, slot, "malformed-settings", "Settings are malformed.", `Settings ${rowId} must contain five finite numeric values.`));
     } else {
@@ -97,6 +97,9 @@ function validateAction(project: Project, trigger: TriggerRecord, slot: number, 
           ));
         }
       }
+    }
+    if (code === 92 && !project.extracodes.some((candidate) => candidate.id === rowId + 1)) {
+      diagnostics.push(slotIssue("warning", trigger.id, slot, "missing-secondary-settings", "Missing secondary settings.", `Settings ${rowId + 1} are missing. Choose the secondary shape values below and Apply Step to create them.`));
     }
   }
 

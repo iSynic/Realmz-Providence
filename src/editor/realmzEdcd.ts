@@ -40,6 +40,7 @@ const EDCD_FIELDS_BY_SHAPE: Record<string, string[]> = {
   "random-message": ["messageLow", "messageHigh", "unused", "unused", "unused"],
   "random-region-mutation": ["level", "randomRegion", "percent", "battleLowOrKeep", "battleHighOrKeep"],
   "random-region-shape-mutation": ["level", "rect", "isDungeon", "percentDelta", "shapeMode"],
+  "random-region-shape-details": ["shapeX1", "shapeY1", "shapeX2", "shapeY2", "shapeFlags"],
   "range-branch": ["testA", "testB", "falseBehavior", "branchMode", "target"],
   "render-mutation": ["landlook", "isDark", "targetLandLevel", "unused", "unused"],
   "improved-selective-battle": ["battleLow", "battleHigh", "sound", "message", "cowardMacro"],
