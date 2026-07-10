@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "EDCD AP Seed"
+  },
+  "maps": [
+    { "key": "map", "levelType": "land", "index": 0, "fillTile": 1 }
+  ],
+  "messages": [
+    { "key": "before", "text": "A battle starts." },
+    { "key": "after", "text": "The road bends away." }
+  ],
+  "quests": [
+    { "key": "quest", "label": "Quest value" }
+  ],
+  "battles": [
+    { "key": "battle", "dist": 4 }
+  ],
+  "treasures": [
+    { "key": "reward", "gold": 10 }
+  ],
+  "actionPoints": [
+    {
+      "key": "branch-target",
+      "x": 2,
+      "y": 2,
+      "steps": [
+        { "kind": "message", "message": "after" }
+      ]
+    },
+    {
+      "key": "edcd",
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "battle", "battle": "battle", "message": "before" },
+        { "kind": "teleport", "landLevel": 0, "x": 3, "y": 4, "message": "after" },
+        { "kind": "randomMessage", "low": "before", "high": "after" },
+        { "kind": "selectiveBattle", "battleLow": "battle", "treasure": "reward" },
+        { "kind": "branchOnQuest", "quest": "quest", "target": "branch-target" },
+        { "kind": "questValue", "quest": "quest", "amount": 1, "target": "branch-target" },
+        { "kind": "branchOnRandom", "low": 1, "high": 100, "message": "before" },
+        { "kind": "changeTile", "x": 5, "y": 6, "tile": 7 }
+      ]
+    }
+  ]
+}

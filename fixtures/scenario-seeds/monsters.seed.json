@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Monster Seed"
+  },
+  "maps": [
+    {
+      "key": "arena",
+      "levelType": "land",
+      "index": 0,
+      "landlook": 0,
+      "fillTile": 1,
+      "regions": [
+        { "key": "summon", "x": 20, "y": 20 }
+      ]
+    }
+  ],
+  "messages": [
+    { "key": "warning", "text": "A bell-bound guardian steps out of the dust." }
+  ],
+  "items": [
+    {
+      "key": "rusted-bell",
+      "itemId": 902,
+      "identifiedName": "Rusted Bell",
+      "description": "A cracked bell carried by a guardian.",
+      "iconId": 301
+    }
+  ],
+  "monsters": [
+    {
+      "key": "bell-wight",
+      "id": 7,
+      "name": "Bell Wight",
+      "description": "An old temple guardian bound to the buried bell.",
+      "hitDice": 4,
+      "stamina": 18,
+      "staminaMax": 18,
+      "agility": 12,
+      "armor": 3,
+      "iconId": 126,
+      "exp": 200,
+      "attackCount": 1,
+      "attacks": [[1, 8, 0, 0]],
+      "money": [12, 1, 0],
+      "items": ["rusted-bell"],
+      "weapon": "rusted-bell"
+    }
+  ],
+  "battles": [
+    {
+      "key": "bell-fight",
+      "placements": [
+        { "x": 6, "y": 6, "monster": "bell-wight" },
+        { "x": 7, "y": 6, "monster": "bell-wight", "friendly": true }
+      ],
+      "messageBefore": 0,
+      "dist": 3
+    }
+  ],
+  "actionPoints": [
+    {
+      "key": "summon-ap",
+      "map": "arena",
+      "at": "summon",
+      "steps": [
+        { "kind": "message", "message": "warning" },
+        { "kind": "battle", "battle": "bell-fight" },
+        { "kind": "addSpecialCharacter", "monster": "bell-wight" },
+        { "kind": "dropSpecialCharacter", "monster": "bell-wight" }
+      ]
+    }
+  ]
+}

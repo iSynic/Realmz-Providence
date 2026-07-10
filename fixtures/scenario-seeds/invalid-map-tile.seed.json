@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Map Tile"
+  },
+  "maps": [
+    {
+      "operations": [
+        { "kind": "fill", "tile": 40000 }
+      ]
+    }
+  ]
+}

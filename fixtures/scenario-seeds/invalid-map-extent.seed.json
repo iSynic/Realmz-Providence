@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Map Extent"
+  },
+  "maps": [
+    {
+      "operations": [
+        { "kind": "room", "x": 88, "y": 10, "width": 4, "height": 4, "wallTile": 1, "floorTile": 2 }
+      ]
+    }
+  ]
+}

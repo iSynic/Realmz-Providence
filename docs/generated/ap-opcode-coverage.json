@@ -16,26 +16,24 @@
   },
   "gapCounts": {
     "combat-macro-only": 1,
-    "covered-in-current-ui": 101,
+    "covered-in-current-ui": 102,
     "intentionally-preserved": 11,
     "legacy-compatible": 3,
-    "needs-manual-evidence": 1,
     "step-only-no-options": 13
   },
   "confidenceCounts": {
-    "catalog-only": 2,
-    "manual-backed": 65,
+    "catalog-only": 1,
+    "manual-backed": 66,
     "manual-plus-preservation": 10,
     "source-backed": 53
   },
   "controlStatusCounts": {
-    "needs-evidence": 1,
-    "ok": 409
+    "ok": 410
   },
   "expectedControlCounts": {
     "advanced-preserved": 74,
-    "compact-select": 72,
-    "narrow-number": 133,
+    "compact-select": 71,
+    "narrow-number": 134,
     "search-target": 113,
     "step-only": 17,
     "toggle": 1
@@ -179,20 +177,24 @@
       "opcode": -14,
       "title": "Pick Inverse Characters",
       "status": "authorable-now",
-      "gapStatus": "needs-manual-evidence",
-      "evidenceConfidence": "catalog-only",
-      "note": "",
+      "gapStatus": "covered-in-current-ui",
+      "evidenceConfidence": "manual-backed",
+      "note": "Manual-backed signed pick variant. Providence preserves/writes the signed opcode and direct ID; Realmz applies the picked-character behavior at runtime.",
       "manual": {
-        "resourceIds": [],
-        "title": "",
-        "idField": "",
-        "use": "",
-        "options": "",
-        "extraCodes": ""
+        "resourceIds": [
+          141
+        ],
+        "title": "Pick Characters",
+        "idField": "Number of characters to pick",
+        "use": "This will allow you to select characters then have specific actions that will affect only those who have been picked.",
+        "options": "A negative value for ID will allow the player to only pick those PCs who are currently conscious or animated.",
+        "extraCodes": "None"
       },
       "manualNoOptions": false,
       "manualNoneStepOnly": false,
-      "relatedOpcodes": [],
+      "relatedOpcodes": [
+        14
+      ],
       "providenceFields": [
         {
           "index": null,
@@ -211,8 +213,8 @@
           "targetFamily": "direct-id",
           "expectedControl": "narrow-number",
           "implementedSurface": "Direct CODE/ID numeric field",
-          "status": "needs-evidence",
-          "evidence": "catalog-only"
+          "status": "ok",
+          "evidence": "manual-backed"
         }
       ],
       "edcdBacked": false,
@@ -501,14 +503,14 @@
           "index": 3,
           "label": "Prompt, Left Side (Optional)",
           "internalName": "promptA",
-          "targetFamily": "message-or-option-label",
+          "targetFamily": "message",
           "preserved": false
         },
         {
           "index": 4,
           "label": "Prompt, Right Side (Optional)",
           "internalName": "promptB",
-          "targetFamily": "message-or-option-label",
+          "targetFamily": "message",
           "preserved": false
         }
       ],
@@ -551,9 +553,9 @@
           "internalName": "promptA",
           "index": 3,
           "storage": "data-edcd-parameter-row",
-          "targetFamily": "message-or-option-label",
+          "targetFamily": "message",
           "expectedControl": "search-target",
-          "implementedSurface": "EdcdSelectTargetField target picker",
+          "implementedSurface": "EdcdSearchTargetField",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -562,9 +564,9 @@
           "internalName": "promptB",
           "index": 4,
           "storage": "data-edcd-parameter-row",
-          "targetFamily": "message-or-option-label",
+          "targetFamily": "message",
           "expectedControl": "search-target",
-          "implementedSurface": "EdcdSelectTargetField target picker",
+          "implementedSurface": "EdcdSearchTargetField",
           "status": "ok",
           "evidence": "source-backed"
         }
@@ -2816,8 +2818,8 @@
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "map-item",
-          "expectedControl": "compact-select",
+          "targetFamily": "direct-id",
+          "expectedControl": "narrow-number",
           "implementedSurface": "Direct CODE/ID numeric field",
           "status": "ok",
           "evidence": "manual-backed"

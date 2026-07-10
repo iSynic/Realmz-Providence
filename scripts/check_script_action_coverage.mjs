@@ -275,15 +275,18 @@ for (const [label, expectedControl, targetFamily] of [
   }
 }
 
-const noManualEvidence = coverageEntry(-14);
-if (noManualEvidence?.gapStatus !== "needs-manual-evidence") {
-  failures.push("Opcode -14 should stay marked needs-manual-evidence until a source/manual backing is found.");
+const inversePick = coverageEntry(-14);
+if (inversePick?.gapStatus !== "covered-in-current-ui") {
+  failures.push("Opcode -14 should be covered as the manual-backed signed Pick Characters variant.");
 }
-if (!hasAuthoringControl(noManualEvidence, "ID", "narrow-number", "direct-id")) {
-  failures.push("Opcode -14 should retain a direct ID control audit while its behavior stays evidence-gated.");
+if (inversePick?.evidenceConfidence !== "manual-backed") {
+  failures.push("Opcode -14 should inherit manual-backed confidence from opcode 14.");
 }
-if (!(noManualEvidence?.authoringControls ?? []).some((control) => control.status === "needs-evidence")) {
-  failures.push("Opcode -14 should have an authoring control marked needs-evidence.");
+if (!hasAuthoringControl(inversePick, "ID", "narrow-number", "direct-id")) {
+  failures.push("Opcode -14 should retain a direct ID control audit.");
+}
+if (!(inversePick?.authoringControls ?? []).every((control) => control.status === "ok")) {
+  failures.push("Opcode -14 controls should audit as ok.");
 }
 
 for (const opcode of [25, 26, 34, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102]) {

@@ -150,6 +150,9 @@ function classify(entry, state) {
 }
 
 function coverageNote(entry, status) {
+  if (entry.opcode === -14) {
+    return "Manual-backed signed pick variant. Providence preserves/writes the signed opcode and direct ID; Realmz applies the picked-character behavior at runtime.";
+  }
   if (entry.opcode === 121) {
     return "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and treats macro/combat surfaces as the intentional authoring path.";
   }
@@ -166,6 +169,7 @@ function coverageTitle(entry) {
 }
 
 function manualHelpEntriesFor(code) {
+  if (code === -14) return manualHelpEntriesFor(14);
   const resourceIds = manualHelp.byCode[String(code)] ?? [];
   return resourceIds.map((id) => manualEntriesByResource.get(id)).filter(Boolean);
 }

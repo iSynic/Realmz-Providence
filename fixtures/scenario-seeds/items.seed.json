@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Item Seed"
+  },
+  "maps": [
+    {
+      "key": "field",
+      "levelType": "land",
+      "index": 0,
+      "landlook": 0,
+      "fillTile": 1,
+      "regions": [
+        { "key": "cache", "x": 6, "y": 7 }
+      ]
+    }
+  ],
+  "messages": [
+    { "key": "cache-found", "text": "A small bronze clapper rests here." }
+  ],
+  "items": [
+    {
+      "key": "bronze-clapper",
+      "itemId": 901,
+      "unidentifiedName": "Bronze Token",
+      "identifiedName": "Bronze Clapper",
+      "description": "A heavy clapper from a buried bell.",
+      "iconId": 300,
+      "type": 1,
+      "cost": 50,
+      "weight": 2,
+      "damage": 6,
+      "magical": 1
+    }
+  ],
+  "treasures": [
+    {
+      "key": "cache-treasure",
+      "itemIds": ["bronze-clapper"],
+      "gold": 25
+    }
+  ],
+  "shops": [
+    {
+      "key": "curio-shop",
+      "stock": [
+        { "itemId": "bronze-clapper", "quantity": 2 }
+      ],
+      "inflation": 10
+    }
+  ],
+  "actionPoints": [
+    {
+      "key": "cache-ap",
+      "map": "field",
+      "at": "cache",
+      "steps": [
+        { "kind": "message", "message": "cache-found" },
+        { "kind": "treasure", "treasure": "cache-treasure" },
+        { "kind": "shop", "shop": "curio-shop" },
+        { "kind": "awardRandomItems", "count": 1, "lowItem": "bronze-clapper", "highItem": "bronze-clapper" }
+      ]
+    }
+  ]
+}

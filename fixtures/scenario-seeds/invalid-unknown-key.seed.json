@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Unknown Key"
+  },
+  "messages": [
+    { "key": "hello", "text": "Hello.", "unexpected": true }
+  ]
+}

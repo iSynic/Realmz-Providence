@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Simple Encounter Seed"
+  },
+  "maps": [
+    {
+      "key": "field",
+      "levelType": "land",
+      "index": 0,
+      "landlook": 0,
+      "fillTile": 1,
+      "regions": [
+        { "key": "door", "x": 14, "y": 9 }
+      ]
+    }
+  ],
+  "messages": [
+    { "key": "door-prompt", "text": "A locked shrine door blocks the path." },
+    { "key": "door-opens", "text": "The shrine door opens." }
+  ],
+  "simpleEncounters": [
+    {
+      "key": "door-choice",
+      "prompt": "door-prompt",
+      "texts": ["Try the latch", "Step away"],
+      "choiceResults": [1, 0],
+      "canBackOut": true,
+      "maxTimes": 3,
+      "casteSuccess": -1,
+      "actions": [
+        { "slot": 0, "rawCode": 1, "id": 1 },
+        { "slot": 3, "rawCode": -2, "id": 260 }
+      ]
+    }
+  ],
+  "actionPoints": [
+    {
+      "key": "door-ap",
+      "map": "field",
+      "at": "door",
+      "steps": [
+        { "kind": "simpleEncounter", "encounter": "door-choice" }
+      ]
+    }
+  ]
+}

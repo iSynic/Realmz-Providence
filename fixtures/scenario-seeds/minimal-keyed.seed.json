@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Minimal Keyed Seed"
+  },
+  "maps": [
+    {
+      "key": "field",
+      "levelType": "land",
+      "index": 0,
+      "landlook": 0,
+      "fillTile": 1,
+      "regions": [
+        { "key": "start", "x": 10, "y": 12 }
+      ]
+    }
+  ],
+  "messages": [
+    { "key": "hello", "text": "A small scenario starts here." }
+  ],
+  "quests": [
+    { "key": "started", "label": "Started the seed" }
+  ],
+  "actionPoints": [
+    {
+      "key": "start-ap",
+      "map": "field",
+      "at": "start",
+      "steps": [
+        { "kind": "message", "message": "hello" },
+        { "kind": "setQuestFlag", "quest": "started" }
+      ]
+    }
+  ]
+}

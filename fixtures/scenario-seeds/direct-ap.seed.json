@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Direct AP Seed"
+  },
+  "maps": [
+    { "key": "map", "levelType": "land", "index": 0, "fillTile": 1 }
+  ],
+  "messages": [
+    { "key": "hello", "text": "Hello." }
+  ],
+  "treasures": [
+    { "key": "cache", "gold": 25 }
+  ],
+  "shops": [
+    { "key": "shop", "stock": [{ "itemId": 901, "quantity": 1 }] }
+  ],
+  "actionPoints": [
+    {
+      "key": "direct",
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "message", "message": "hello" },
+        { "kind": "sound", "sound": 200 },
+        { "kind": "picture", "picture": 300 },
+        { "kind": "shop", "shop": "shop" },
+        { "kind": "treasure", "treasure": "cache" },
+        { "kind": "victoryPoints", "amount": 15 },
+        { "kind": "pickCharacters", "count": 2, "inverse": true },
+        { "kind": "returnGosub" }
+      ]
+    }
+  ]
+}

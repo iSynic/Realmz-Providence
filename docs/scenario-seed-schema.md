@@ -1,0 +1,154 @@
+# Scenario Seed Schema
+
+Providence can harden prompt-generated scenario creation by asking a model for a small scenario seed instead of the full `.providence/project.json` shape. The seed is strict, author-facing JSON. `src/editor/scenarioSeed.ts` validates it, rejects unknown fields, and expands it into the current `Project` format with Realmz-sized records, inferred provenance, EDCD settings rows, default map data, structured allocation output, and the normal browser project validator.
+
+Schema: [`schemas/scenario-seed.schema.json`](../schemas/scenario-seed.schema.json)
+
+Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.md)
+
+## Supported Seed Content
+
+- Scenario identity and contact metadata.
+- Fixed-size Realmz maps, either filled by one tile or supplied as 8,100 tile IDs.
+- Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, and `stamp`.
+- Named map regions that action points can reference with `at`.
+- Messages and quest labels.
+- Battle, treasure, and shop records.
+- Scenario item records in the custom item range `800..999`, with generated item text records when names/descriptions are supplied.
+- Treasure, shop stock, and `awardRandomItems` steps can reference item keys.
+- Normal scenario monster records with generated monster descriptions, keyed item/weapon references, keyed battle placements, and keyed `addSpecialCharacter` / `dropSpecialCharacter` AP references.
+- Simple encounter records with prompt message references, up to four option strings/results, raw encounter action rows, backing-out and attempt-limit fields.
+- Action points with up to eight steps.
+- Prompt-safe direct AP steps: `message`, `simpleEncounter`, `complexEncounter`, `shop`, `treasure`, `sound`, `picture`, `scrollingText`, `victoryPoints`, `temple`, `banking`, `displayMap`, `pickCharacters`, `returnGosub`, `popStack`, `addSpecialCharacter`, `dropSpecialCharacter`, `setQuestFlag`, and `raw`.
+- Prompt-safe EDCD-backed AP steps: `battle`, `teleport`, `randomMessage`, `selectiveBattle`, `branchOnQuest`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `enterExitDungeon`, and `edcd`.
+
+EDCD-backed seed steps create `Data EDCD` settings rows automatically because those Realmz opcodes point at settings, not directly at the visible target.
+
+Map operations are applied in array order. `border` supports inward `thickness`; `room` fills an interior, draws its walls, and replaces wall cells with side/offset doors; `road` and `river` draw a polyline with an optional width; and `stamp` places a rectangular two-dimensional tile pattern. Operations that extend beyond the 90 x 90 field are rejected rather than clipped. Tile values must fit Realmz's signed 16-bit map-cell range (`-32768..32767`).
+
+`createProjectFromScenarioSeed()` returns an `allocations` report that maps every keyed record to its final Realmz ID or map coordinate target. Callers should use that report for LLM repair loops and UI summaries instead of trying to infer allocated IDs from the generated project.
+
+## Example
+
+```json
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "The Bell Under Bywater",
+    "author": "Providence",
+    "version": "0.1",
+    "description": "A small test scenario generated from a prompt-safe seed."
+  },
+  "maps": [
+    {
+      "key": "bywater-road",
+      "levelType": "land",
+      "index": 0,
+      "name": "Bywater Road",
+      "landlook": 0,
+      "fillTile": 1,
+      "regions": [
+        { "key": "bell-crossing", "x": 44, "y": 50 }
+      ],
+      "operations": [
+        { "kind": "road", "points": [{ "x": 38, "y": 50 }, { "x": 50, "y": 50 }], "tile": 4, "width": 3 }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "key": "bell-hums",
+      "text": "A bronze bell hums below the road."
+    },
+    {
+      "key": "arrival-cold",
+      "text": "The air snaps cold as the party arrives."
+    }
+  ],
+  "quests": [
+    {
+      "key": "heard-bell",
+      "label": "Heard the buried bell"
+    }
+  ],
+  "battles": [
+    {
+      "key": "bell-guardians",
+      "dist": 4,
+      "placements": [
+        { "x": 6, "y": 6, "monster": "bell-wight" }
+      ],
+      "messageBefore": 1
+    }
+  ],
+  "monsters": [
+    {
+      "key": "bell-wight",
+      "name": "Bell Wight",
+      "description": "An old temple guardian bound to the buried bell.",
+      "hitDice": 3,
+      "stamina": 12,
+      "staminaMax": 12,
+      "agility": 12,
+      "iconId": 126,
+      "exp": 200,
+      "attacks": [[1, 6, 0, 0]],
+      "items": ["bell-clapper"]
+    }
+  ],
+  "treasures": [
+    {
+      "key": "bell-cache",
+      "itemIds": ["bell-clapper"],
+      "gold": 50
+    }
+  ],
+  "items": [
+    {
+      "key": "bell-clapper",
+      "itemId": 901,
+      "identifiedName": "Bronze Clapper",
+      "description": "A heavy clapper from a buried temple bell.",
+      "iconId": 300,
+      "type": 1,
+      "cost": 50,
+      "weight": 2
+    }
+  ],
+  "simpleEncounters": [
+    {
+      "key": "bell-choice",
+      "prompt": "bell-hums",
+      "texts": ["Listen", "Leave"],
+      "choiceResults": [1, 0],
+      "canBackOut": true,
+      "actions": [
+        { "slot": 0, "rawCode": 1, "id": 0 }
+      ]
+    }
+  ],
+  "actionPoints": [
+    {
+      "key": "bell-crossing-ap",
+      "map": "bywater-road",
+      "at": "bell-crossing",
+      "steps": [
+        { "kind": "message", "message": "bell-hums" },
+        { "kind": "battle", "battle": "bell-guardians", "message": "bell-hums" },
+        { "kind": "setQuestFlag", "quest": "heard-bell" },
+        { "kind": "treasure", "treasure": "bell-cache" },
+        { "kind": "simpleEncounter", "encounter": "bell-choice" },
+        { "kind": "teleport", "landLevel": 0, "x": 45, "y": 50, "message": "arrival-cold" }
+      ]
+    }
+  ]
+}
+```
+
+## Prompting Guidance
+
+Ask a model to emit only this seed JSON. Do not ask for full Providence project JSON: the full project includes raw record preservation, parser diagnostics, semantic indices, resource catalogs, and editor metadata that should be constructed by Providence, not invented by a prompt.
+
+For first-pass generation, prefer a small number of maps, messages, and APs. Use `raw` only when the prompt has a known Realmz opcode and ID that Providence does not yet expose as a prompt-safe step.
+
+Golden examples live in [`fixtures/scenario-seeds`](../fixtures/scenario-seeds). Run `node scripts/check_scenario_seed_fixtures.mjs` to verify parser failures, allocation output, map operations, AP opcodes, and EDCD row generation.

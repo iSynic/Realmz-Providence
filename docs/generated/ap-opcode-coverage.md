@@ -13,29 +13,27 @@ Generated from Providence's action catalog, the Divinity/manual opcode crosswalk
 ## Audit Triage
 
 - combat-macro-only: 1
-- covered-in-current-ui: 101
+- covered-in-current-ui: 102
 - intentionally-preserved: 11
 - legacy-compatible: 3
-- needs-manual-evidence: 1
 - step-only-no-options: 13
 
 ## Evidence Confidence
 
-- catalog-only: 2
-- manual-backed: 65
+- catalog-only: 1
+- manual-backed: 66
 - manual-plus-preservation: 10
 - source-backed: 53
 
 ## Authoring Control Audit
 
-- needs-evidence: 1
-- ok: 409
+- ok: 410
 
 ## Expected Controls
 
 - advanced-preserved: 74
-- compact-select: 72
-- narrow-number: 133
+- compact-select: 71
+- narrow-number: 134
 - search-target: 113
 - step-only: 17
 - toggle: 1
@@ -45,11 +43,11 @@ Generated from Providence's action catalog, the Divinity/manual opcode crosswalk
 | Opcode | Gap | Confidence | Title | Manual ID | Providence Fields | Authoring Controls | Storage | Related | Chooser | Notes |
 | ---: | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | -23 | covered-in-current-ui | source-backed | Alter Random Rectangle Information of a Land Level | Extra Codes ID | Land Level ID; Rectangle Number To Alter; New X ‘s In 10,000; New Battle Range Low -> battle; New Battle Range High -> battle | Land Level ID: narrow-number; Rectangle Number To Alter: narrow-number; New X ‘s In 10,000: narrow-number; New Battle Range Low: search-target -> battle; New Battle Range High: search-target -> battle | Data EDCD | 23 | Hidden chooser alias of 23; Providence shows one Change Random Encounter Area action; selecting a dungeon map target writes -23, and selecting a land map target writes 23. |  |
-| -14 | needs-manual-evidence | catalog-only | Pick Inverse Characters | ID | ID -> direct-id | ID: narrow-number -> direct-id [needs-evidence] | direct-id |  |  |  |
+| -14 | covered-in-current-ui | manual-backed | Pick Inverse Characters | Number of characters to pick | ID -> direct-id | ID: narrow-number -> direct-id | direct-id | 14 |  | Manual-backed signed pick variant. Providence preserves/writes the signed opcode and direct ID; Realmz applies the picked-character behavior at runtime. |
 | 0 | intentionally-preserved | catalog-only | Empty | ID | Step only | Step only: step-only | direct-id |  |  |  |
 | 1 | covered-in-current-ui | manual-backed | Display String | String Number to Display | String Number To Display -> message | String Number To Display: search-target -> message | message |  |  |  |
 | 2 | covered-in-current-ui | source-backed | Battle | Extra Codes ID | Battle Number -> battle; Battle High -> battle; Sound To Play Before Battle -> sound; String To Display Before Battle -> message; Revive Party Flag | Battle Number: search-target -> battle; Battle High: search-target -> battle; Sound To Play Before Battle: search-target -> sound; String To Display Before Battle: search-target -> message; Revive Party Flag: compact-select | Data EDCD |  |  | Field 2 is normally the optional pre-battle sound. When field 4 equals 10, Realmz revives the party after a loss and then calls loaddoor2(field 2), so the same field is the Extra Action Point to run on revived losses. Divinity warns not to specify an optional sound for revive battles. |
-| 3 | covered-in-current-ui | source-backed | Player Option | Extra Codes ID | Reply Polarity; Branch Mode; X-AP/Branch No. Of Encounter (0-3) -> extra-action-point-or-encounter; Prompt, Left Side (Optional) -> message-or-option-label; Prompt, Right Side (Optional) -> message-or-option-label | Reply Polarity: compact-select; Branch Mode: compact-select; X-AP/Branch No. Of Encounter (0-3): search-target -> extra-action-point-or-encounter; Prompt, Left Side (Optional): search-target -> message-or-option-label; Prompt, Right Side (Optional): search-target -> message-or-option-label | Data EDCD |  |  |  |
+| 3 | covered-in-current-ui | source-backed | Player Option | Extra Codes ID | Reply Polarity; Branch Mode; X-AP/Branch No. Of Encounter (0-3) -> extra-action-point-or-encounter; Prompt, Left Side (Optional) -> message; Prompt, Right Side (Optional) -> message | Reply Polarity: compact-select; Branch Mode: compact-select; X-AP/Branch No. Of Encounter (0-3): search-target -> extra-action-point-or-encounter; Prompt, Left Side (Optional): search-target -> message; Prompt, Right Side (Optional): search-target -> message | Data EDCD |  |  |  |
 | 4 | covered-in-current-ui | manual-backed | Simple Encounter | Simple Encounter ID | Simple Encounter ID -> simple-encounter | Simple Encounter ID: search-target -> simple-encounter | simple-encounter |  |  |  |
 | 5 | covered-in-current-ui | manual-backed | Complex Encounter | Complex Encounter ID | Complex Encounter ID -> complex-encounter | Complex Encounter ID: search-target -> complex-encounter | complex-encounter |  |  |  |
 | 6 | covered-in-current-ui | manual-backed | Load shop | Shop ID | Shop ID -> shop | Shop ID: search-target -> shop | shop |  |  |  |
@@ -75,7 +73,7 @@ Generated from Providence's action catalog, the Divinity/manual opcode crosswalk
 | 26 | step-only-no-options | manual-backed | Get Click | None | Step only | Step only: step-only | direct-id |  |  |  |
 | 27 | covered-in-current-ui | manual-backed | Display Picture | Picture Resource ID to display | Picture Resource ID To Display -> picture | Picture Resource ID To Display: search-target -> picture | picture |  |  |  |
 | 28 | covered-in-current-ui | manual-backed | Redraw Screen | 0 = Enable Camping 1 = Disable Camping | ID -> direct-id | ID: narrow-number -> direct-id | direct-id |  |  |  |
-| 29 | covered-in-current-ui | manual-backed | Give / Display Map | Map Number to give or display. | Map Number To Give Or Display -> direct-id | Map Number To Give Or Display: compact-select -> map-item | direct-id |  |  |  |
+| 29 | covered-in-current-ui | manual-backed | Give / Display Map | Map Number to give or display. | Map Number To Give Or Display -> direct-id | Map Number To Give Or Display: narrow-number -> direct-id | direct-id |  |  |  |
 | 30 | covered-in-current-ui | source-backed | Pick on Check Vs. Attribute / Special Abilities | Extra Codes ID | Signed Ability / Attribute; +/- Modifer; Who To Check; Attribute Flag | Signed Ability / Attribute: compact-select; +/- Modifer: narrow-number; Who To Check: compact-select; Attribute Flag: compact-select; Preserved Value 5: advanced-preserved | Data EDCD |  |  | Realmz uses abs(extracode[0]) for the ability/attribute index. A negative value reverses the picked-character result after the check. |
 | 31 | covered-in-current-ui | source-backed | Branch on Check Vs. Attribute • Special Abilities | Extra Codes ID | Ability / Attribute -> extra-action-point-or-encounter; +/- Modifer -> extra-action-point-or-encounter; Attribute Flag -> extra-action-point-or-encounter; Branch To X-AP On Success -> extra-action-point-or-encounter; Branch To X-AP On Fail Note -> extra-action-point-or-encounter | Ability / Attribute: compact-select; +/- Modifer: narrow-number; Attribute Flag: compact-select; Branch To X-AP On Success: search-target -> extra-action-point; Branch To X-AP On Fail Note: search-target -> extra-action-point | Data EDCD |  |  |  |
 | 32 | covered-in-current-ui | manual-backed | Offer Temple | Inflation Rate of Temple (100 = 100% or Normal Prices) | Inflation Rate Of Temple -> direct-id | Inflation Rate Of Temple: narrow-number -> direct-id | direct-id |  |  |  |

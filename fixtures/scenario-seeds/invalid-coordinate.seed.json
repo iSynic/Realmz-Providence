@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Coordinate"
+  },
+  "actionPoints": [
+    {
+      "x": 90,
+      "y": 1,
+      "steps": [
+        { "kind": "raw", "rawCode": 100, "id": 0 }
+      ]
+    }
+  ]
+}
