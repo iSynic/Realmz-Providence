@@ -145,6 +145,24 @@ const sampleSeed = {
       { kind: "enterExitDungeon", mode: 0, level: 0, x: 1, y: 1, heading: 1 },
       { kind: "edcd", opcode: 85, values: [0, 1, 10, 0, 0] }
     ]
+  }, {
+    x: 6,
+    y: 6,
+    steps: [
+      { kind: "branchOnItem", item: "bell-clapper", possessedTarget: "start-ap", missingBehavior: "message", missingTarget: "hello" },
+      { kind: "branchOnItemCharges", item: "bell-clapper", minimumCharges: 2, enoughTarget: "start-ap" },
+      { kind: "dropItems", item: "bell-clapper", count: 1 },
+      { kind: "changeItemCharges", item: "bell-clapper", amount: -1 },
+      { kind: "replaceItems", item: "bell-clapper", replacementItem: "bell-clapper" }
+    ]
+  }, {
+    x: 7,
+    y: 7,
+    steps: [
+      { kind: "branchOnPartyCondition", condition: "freeFallLevitate", target: "start-ap" },
+      { kind: "branchOnCharacterCondition", condition: 9, selector: "picked", successTarget: "start-ap", failureTarget: "extra-ap" },
+      { kind: "branchOnTileParameter", test: "path", trueTarget: "extra-ap" }
+    ]
   }]
 };
 validateSampleAgainstSchemaShape(sampleSeed, schema, "$");

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Item Steps"
+  },
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "branchOnItem", "item": 901, "possessedTarget": 0, "missingBehavior": "message" },
+        { "kind": "branchOnItemCharges", "item": 901, "minimumCharges": 2 },
+        { "kind": "dropItems", "item": 901, "count": 0 },
+        { "kind": "changeItemCharges", "item": 901, "amount": 40000 }
+      ]
+    }
+  ]
+}

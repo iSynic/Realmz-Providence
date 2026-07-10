@@ -26,6 +26,12 @@
         { "type": "string", "minLength": 1 }
       ]
     },
+    "nonzeroIdRef": {
+      "oneOf": [
+        { "type": "integer", "not": { "const": 0 } },
+        { "type": "string", "minLength": 1 }
+      ]
+    },
     "key": { "type": "string", "minLength": 1, "maxLength": 128 },
     "mapTile": { "type": "integer", "minimum": -32768, "maximum": 32767 },
     "scenario": {
@@ -463,6 +469,14 @@
         { "$ref": "#/$defs/takeGoldStep" },
         { "$ref": "#/$defs/giveConditionStep" },
         { "$ref": "#/$defs/awardRandomItemsStep" },
+        { "$ref": "#/$defs/branchOnItemStep" },
+        { "$ref": "#/$defs/branchOnItemChargesStep" },
+        { "$ref": "#/$defs/dropItemsStep" },
+        { "$ref": "#/$defs/changeItemChargesStep" },
+        { "$ref": "#/$defs/replaceItemsStep" },
+        { "$ref": "#/$defs/branchOnPartyConditionStep" },
+        { "$ref": "#/$defs/branchOnCharacterConditionStep" },
+        { "$ref": "#/$defs/branchOnTileParameterStep" },
         { "$ref": "#/$defs/enterExitDungeonStep" },
         { "$ref": "#/$defs/edcdStep" },
         { "$ref": "#/$defs/rawStep" }
@@ -500,6 +514,126 @@
     "takeGoldStep": { "type": "object", "additionalProperties": false, "required": ["kind", "amount"], "properties": { "kind": { "const": "takeGold" }, "amount": { "type": "integer" }, "failureMarker": { "type": "integer" } } },
     "giveConditionStep": { "type": "object", "additionalProperties": false, "required": ["kind", "condition", "duration"], "properties": { "kind": { "const": "giveCondition" }, "who": { "type": "integer" }, "condition": { "type": "integer" }, "duration": { "type": "integer" }, "sound": { "$ref": "#/$defs/idRef" } } },
     "awardRandomItemsStep": { "type": "object", "additionalProperties": false, "required": ["kind", "count", "lowItem", "highItem"], "properties": { "kind": { "const": "awardRandomItems" }, "count": { "type": "integer" }, "lowItem": { "$ref": "#/$defs/idRef" }, "highItem": { "$ref": "#/$defs/idRef" } } },
+    "branchOnItemStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "item", "possessedTarget"],
+      "allOf": [
+        {
+          "if": { "required": ["missingBehavior"], "properties": { "missingBehavior": { "enum": ["branch", "message"] } } },
+          "then": { "required": ["missingTarget"] }
+        },
+        {
+          "if": { "anyOf": [{ "not": { "required": ["missingBehavior"] } }, { "properties": { "missingBehavior": { "const": "continue" } } }] },
+          "then": { "not": { "required": ["missingTarget"] } }
+        }
+      ],
+      "properties": {
+        "kind": { "const": "branchOnItem" },
+        "item": { "$ref": "#/$defs/idRef" },
+        "targetKind": { "enum": ["actionPoint", "simpleEncounter", "complexEncounter"] },
+        "possessedTarget": { "$ref": "#/$defs/idRef" },
+        "missingBehavior": { "enum": ["branch", "continue", "message"] },
+        "missingTarget": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "branchOnItemChargesStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "item", "minimumCharges"],
+      "anyOf": [{ "required": ["enoughTarget"] }, { "required": ["insufficientTarget"] }],
+      "properties": {
+        "kind": { "const": "branchOnItemCharges" },
+        "item": { "$ref": "#/$defs/idRef" },
+        "minimumCharges": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "targetKind": { "enum": ["actionPoint", "simpleEncounter", "complexEncounter"] },
+        "enoughTarget": { "$ref": "#/$defs/idRef" },
+        "insufficientTarget": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "dropItemsStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "item"],
+      "properties": { "kind": { "const": "dropItems" }, "item": { "$ref": "#/$defs/idRef" }, "count": { "type": "integer", "minimum": 1, "maximum": 32767 } }
+    },
+    "changeItemChargesStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "item", "amount"],
+      "properties": {
+        "kind": { "const": "changeItemCharges" },
+        "item": { "$ref": "#/$defs/idRef" },
+        "amount": { "type": "integer", "minimum": -32768, "maximum": 32767 },
+        "count": { "type": "integer", "minimum": 1, "maximum": 32767 }
+      }
+    },
+    "replaceItemsStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "item", "replacementItem"],
+      "properties": {
+        "kind": { "const": "replaceItems" },
+        "item": { "$ref": "#/$defs/idRef" },
+        "replacementItem": { "$ref": "#/$defs/idRef" },
+        "count": { "type": "integer", "minimum": 1, "maximum": 32767 }
+      }
+    },
+    "branchOnPartyConditionStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "condition", "target"],
+      "properties": {
+        "kind": { "const": "branchOnPartyCondition" },
+        "condition": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0, "maximum": 8 },
+            { "enum": ["torchLit", "waterworld", "dragonHide", "discoverSecret", "wizardEye", "search", "freeFallLevitate", "sentry", "charmResistance"] }
+          ]
+        },
+        "when": { "enum": ["present", "absent"] },
+        "targetKind": { "enum": ["actionPoint", "simpleEncounter", "complexEncounter"] },
+        "target": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "branchOnCharacterConditionStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "condition", "successTarget", "failureTarget"],
+      "properties": {
+        "kind": { "const": "branchOnCharacterCondition" },
+        "condition": { "type": "integer", "minimum": 0, "maximum": 39 },
+        "selector": {
+          "oneOf": [
+            { "enum": ["party", "picked"] },
+            { "type": "integer", "minimum": 1, "maximum": 6 }
+          ]
+        },
+        "successTarget": { "$ref": "#/$defs/idRef" },
+        "failureTarget": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "branchOnTileParameterStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "test"],
+      "anyOf": [{ "required": ["falseTarget"] }, { "required": ["trueTarget"] }],
+      "allOf": [
+        {
+          "if": { "properties": { "test": { "const": "tileId" } } },
+          "then": { "required": ["tile"] },
+          "else": { "not": { "required": ["tile"] } }
+        }
+      ],
+      "properties": {
+        "kind": { "const": "branchOnTileParameter" },
+        "test": { "enum": ["shoreline", "boatRequired", "path", "blocksLos", "flyFloatRequired", "forest", "tileId"] },
+        "tile": { "type": "integer", "minimum": 0, "maximum": 200 },
+        "targetKind": { "enum": ["actionPoint", "simpleEncounter", "complexEncounter"] },
+        "falseTarget": { "$ref": "#/$defs/nonzeroIdRef" },
+        "trueTarget": { "$ref": "#/$defs/nonzeroIdRef" }
+      }
+    },
     "enterExitDungeonStep": { "type": "object", "additionalProperties": false, "required": ["kind", "mode", "level", "x", "y", "heading"], "properties": { "kind": { "const": "enterExitDungeon" }, "mode": { "type": "integer" }, "level": { "type": "integer" }, "x": { "type": "integer" }, "y": { "type": "integer" }, "heading": { "type": "integer" } } },
     "edcdStep": { "type": "object", "additionalProperties": false, "required": ["kind", "opcode", "values"], "properties": { "kind": { "const": "edcd" }, "opcode": { "type": "integer" }, "values": { "type": "array", "maxItems": 5, "items": { "type": "integer" } } } },
     "rawStep": { "type": "object", "additionalProperties": false, "required": ["kind", "rawCode", "id"], "properties": { "kind": { "const": "raw" }, "rawCode": { "type": "integer" }, "id": { "type": "integer" } } }

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Condition Steps"
+  },
+  "actionPoints": [
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [
+        { "kind": "branchOnPartyCondition", "condition": 9, "target": 1 },
+        { "kind": "branchOnCharacterCondition", "condition": 2, "selector": 0, "successTarget": 1, "failureTarget": 2 },
+        { "kind": "branchOnTileParameter", "test": "path", "tile": 130, "trueTarget": 1 },
+        { "kind": "branchOnTileParameter", "test": "tileId", "trueTarget": 0 }
+      ]
+    }
+  ]
+}

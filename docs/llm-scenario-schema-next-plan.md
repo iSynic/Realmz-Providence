@@ -173,12 +173,26 @@ Normalizer work:
 
 ## Priority 6: More AP Aliases
 
-Add remaining high-value AP semantic aliases after fixtures cover the current 35.
+Status: item possession, aggregate charge branching, and drop/charge/replace item mutation aliases are implemented and fixture-backed.
+
+Implemented item group:
+
+- `branchOnItem`
+- `branchOnItemCharges`
+- `dropItems`
+- `changeItemCharges`
+- `replaceItems`
+
+Implemented condition group:
+
+- `branchOnPartyCondition`
+- `branchOnCharacterCondition`
+- `branchOnTileParameter`
+
+Add remaining high-value AP semantic aliases after fixtures cover the current set.
 
 Next groups:
 
-- item possession, item charges, item mutation
-- party condition, character condition, tile parameter branches
 - action point enable/disable, AP copy, AP patch
 - dark/LOS, camping/boat status, game time, fatigue, spell points
 - random rectangle mutation and rectangle resizing
@@ -258,4 +272,4 @@ For phases that affect exportable records, also run:
 
 ## Recommended Next Commit Scope
 
-Continue Priority 6 with one fixture-gated AP alias group, starting with item possession, item charges, and item mutation. Keep raw opcodes available as the fallback while each semantic alias is added.
+Continue Priority 6 with action-point enable/disable, AP copy, and AP patch aliases. Keep raw opcodes available as the fallback while each semantic alias is added.

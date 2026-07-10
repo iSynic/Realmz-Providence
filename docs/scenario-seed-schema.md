@@ -15,18 +15,22 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 - Messages and quest labels.
 - Battle, treasure, and shop records.
 - Scenario item records in the custom item range `800..999`, with generated item text records when names/descriptions are supplied.
-- Treasure, shop stock, and `awardRandomItems` steps can reference item keys.
+- Treasure, shop stock, and item-related AP steps can reference item keys.
 - Normal scenario monster records with generated monster descriptions, keyed item/weapon references, keyed battle placements, and keyed `addSpecialCharacter` / `dropSpecialCharacter` AP references.
 - Simple encounter records with prompt message references, up to four option strings/results, raw encounter action rows, backing-out and attempt-limit fields.
 - Action points with up to eight steps.
 - Prompt-safe direct AP steps: `message`, `simpleEncounter`, `complexEncounter`, `shop`, `treasure`, `sound`, `picture`, `scrollingText`, `victoryPoints`, `temple`, `banking`, `displayMap`, `pickCharacters`, `returnGosub`, `popStack`, `addSpecialCharacter`, `dropSpecialCharacter`, `setQuestFlag`, and `raw`.
-- Prompt-safe EDCD-backed AP steps: `battle`, `teleport`, `randomMessage`, `selectiveBattle`, `branchOnQuest`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `enterExitDungeon`, and `edcd`.
+- Prompt-safe EDCD-backed AP steps: `battle`, `teleport`, `randomMessage`, `selectiveBattle`, `branchOnQuest`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `branchOnItem`, `branchOnItemCharges`, `dropItems`, `changeItemCharges`, `replaceItems`, `branchOnPartyCondition`, `branchOnCharacterCondition`, `branchOnTileParameter`, `enterExitDungeon`, and `edcd`.
 
 EDCD-backed seed steps create `Data EDCD` settings rows automatically because those Realmz opcodes point at settings, not directly at the visible target.
 
 Map operations are applied in array order. `border` supports inward `thickness`; `room` fills an interior, draws its walls, and replaces wall cells with side/offset doors; `road` and `river` draw a polyline with an optional width; and `stamp` places a rectangular two-dimensional tile pattern. Operations that extend beyond the 90 x 90 field are rejected rather than clipped. Tile values must fit Realmz's signed 16-bit map-cell range (`-32768..32767`).
 
 `createProjectFromScenarioSeed()` returns an `allocations` report that maps every keyed record to its final Realmz ID or map coordinate target. Callers should use that report for LLM repair loops and UI summaries instead of trying to infer allocated IDs from the generated project.
+
+Item possession and charge branches use `targetKind` values `actionPoint`, `simpleEncounter`, or `complexEncounter`. `branchOnItem` defaults missing-item behavior to `continue`; use `missingBehavior: "branch"` with a target or `missingBehavior: "message"` with a message key for the other Realmz behaviors. In `branchOnItemCharges`, an omitted `enoughTarget` or `insufficientTarget` compiles to `-1`, meaning continue the current script for that outcome. Item mutation is split into `dropItems`, `changeItemCharges`, and `replaceItems`, so prompt output never needs to supply opcode 22's numeric mutation mode.
+
+Condition branches use source-backed runtime behavior. `branchOnPartyCondition` accepts numeric conditions `0..8` or semantic names such as `freeFallLevitate`, with `when` set to `present` or `absent`. `branchOnCharacterCondition` checks condition slots `0..39` against the whole `party`, the currently `picked` characters, or a manual-compatible numeric position `1..6`; both outcomes must name an action point. `branchOnTileParameter` accepts `shoreline`, `boatRequired`, `path`, `blocksLos`, `flyFloatRequired`, `forest`, or `tileId`. A `tileId` test requires a normalized standard landlook tile from `0..200`. Realmz reserves target ID `0` as “no branch” for opcode 78, so explicit or keyed tile-branch destinations that resolve to zero are rejected.
 
 ## Example
 

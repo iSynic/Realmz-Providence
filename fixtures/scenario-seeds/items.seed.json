@@ -31,6 +31,16 @@
       "weight": 2,
       "damage": 6,
       "magical": 1
+    },
+    {
+      "key": "silver-clapper",
+      "itemId": 902,
+      "identifiedName": "Silver Clapper",
+      "description": "A replacement clapper with a clear, bright tone.",
+      "iconId": 301,
+      "type": 1,
+      "cost": 80,
+      "weight": 2
     }
   ],
   "treasures": [
@@ -59,6 +69,32 @@
         { "kind": "treasure", "treasure": "cache-treasure" },
         { "kind": "shop", "shop": "curio-shop" },
         { "kind": "awardRandomItems", "count": 1, "lowItem": "bronze-clapper", "highItem": "bronze-clapper" }
+      ]
+    },
+    {
+      "key": "item-logic-ap",
+      "map": "field",
+      "x": 8,
+      "y": 7,
+      "steps": [
+        {
+          "kind": "branchOnItem",
+          "item": "bronze-clapper",
+          "targetKind": "actionPoint",
+          "possessedTarget": "cache-ap",
+          "missingBehavior": "message",
+          "missingTarget": "cache-found"
+        },
+        {
+          "kind": "branchOnItemCharges",
+          "item": "bronze-clapper",
+          "minimumCharges": 2,
+          "targetKind": "actionPoint",
+          "enoughTarget": "cache-ap"
+        },
+        { "kind": "dropItems", "item": "bronze-clapper", "count": 2 },
+        { "kind": "changeItemCharges", "item": "bronze-clapper", "amount": -3 },
+        { "kind": "replaceItems", "item": "bronze-clapper", "replacementItem": "silver-clapper" }
       ]
     }
   ]

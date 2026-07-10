@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Invalid Zero Key Target"
+  },
+  "actionPoints": [
+    {
+      "key": "zero-ap",
+      "x": 0,
+      "y": 0,
+      "steps": [{ "kind": "raw", "rawCode": 100, "id": 0 }]
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "steps": [{ "kind": "branchOnTileParameter", "test": "path", "trueTarget": "zero-ap" }]
+    }
+  ]
+}

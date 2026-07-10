@@ -45,6 +45,28 @@ const EXTRACODE_BYTES = 10;
 const SCENARIO_ITEM_ID_BASE = 800;
 const SCENARIO_ITEM_RECORD_COUNT = 200;
 
+const PARTY_CONDITION_CODES: Record<Exclude<ScenarioSeedPartyCondition, number>, number> = {
+  torchLit: 0,
+  waterworld: 1,
+  dragonHide: 2,
+  discoverSecret: 3,
+  wizardEye: 4,
+  search: 5,
+  freeFallLevitate: 6,
+  sentry: 7,
+  charmResistance: 8
+};
+
+const TILE_PARAMETER_CODES: Record<ScenarioSeedTileParameter, number> = {
+  shoreline: 1,
+  boatRequired: 2,
+  path: 3,
+  blocksLos: 4,
+  flyFloatRequired: 5,
+  forest: 6,
+  tileId: 7
+};
+
 export type ScenarioSeedRef = number | string;
 
 export type ScenarioSeed = {
@@ -301,6 +323,24 @@ export type ScenarioSeedRoomDoor = {
   tile: number;
 };
 
+export type ScenarioSeedBranchTargetKind = "actionPoint" | "simpleEncounter" | "complexEncounter";
+
+export type ScenarioSeedPartyCondition =
+  | number
+  | "torchLit"
+  | "waterworld"
+  | "dragonHide"
+  | "discoverSecret"
+  | "wizardEye"
+  | "search"
+  | "freeFallLevitate"
+  | "sentry"
+  | "charmResistance";
+
+export type ScenarioSeedCharacterSelector = "party" | "picked" | number;
+
+export type ScenarioSeedTileParameter = "shoreline" | "boatRequired" | "path" | "blocksLos" | "flyFloatRequired" | "forest" | "tileId";
+
 export type ScenarioSeedStep =
   | { kind: "message"; message: ScenarioSeedRef }
   | { kind: "battle"; battle: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; reviveParty?: boolean }
@@ -334,6 +374,14 @@ export type ScenarioSeedStep =
   | { kind: "takeGold"; amount: number; failureMarker?: number }
   | { kind: "giveCondition"; who?: number; condition: number; duration: number; sound?: ScenarioSeedRef }
   | { kind: "awardRandomItems"; count: number; lowItem: ScenarioSeedRef; highItem: ScenarioSeedRef }
+  | { kind: "branchOnItem"; item: ScenarioSeedRef; targetKind?: ScenarioSeedBranchTargetKind; possessedTarget: ScenarioSeedRef; missingBehavior?: "branch" | "continue" | "message"; missingTarget?: ScenarioSeedRef }
+  | { kind: "branchOnItemCharges"; item: ScenarioSeedRef; minimumCharges: number; targetKind?: ScenarioSeedBranchTargetKind; enoughTarget?: ScenarioSeedRef; insufficientTarget?: ScenarioSeedRef }
+  | { kind: "dropItems"; item: ScenarioSeedRef; count?: number }
+  | { kind: "changeItemCharges"; item: ScenarioSeedRef; amount: number; count?: number }
+  | { kind: "replaceItems"; item: ScenarioSeedRef; replacementItem: ScenarioSeedRef; count?: number }
+  | { kind: "branchOnPartyCondition"; condition: ScenarioSeedPartyCondition; when?: "present" | "absent"; targetKind?: ScenarioSeedBranchTargetKind; target: ScenarioSeedRef }
+  | { kind: "branchOnCharacterCondition"; condition: number; selector?: ScenarioSeedCharacterSelector; successTarget: ScenarioSeedRef; failureTarget: ScenarioSeedRef }
+  | { kind: "branchOnTileParameter"; test: ScenarioSeedTileParameter; tile?: number; targetKind?: ScenarioSeedBranchTargetKind; falseTarget?: ScenarioSeedRef; trueTarget?: ScenarioSeedRef }
   | { kind: "enterExitDungeon"; mode: number; level: number; x: number; y: number; heading: number }
   | { kind: "edcd"; opcode: number; values: number[] }
   | { kind: "raw"; rawCode: number; id: number };
@@ -1310,6 +1358,105 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
     allowKeys(value, path, ["kind", "count", "lowItem", "highItem"], ctx);
     return { kind, count: requireInteger(value.count, `${path}.count`, ctx) ?? 0, lowItem: requireRef(value.lowItem, `${path}.lowItem`, ctx), highItem: requireRef(value.highItem, `${path}.highItem`, ctx) };
   }
+  if (kind === "branchOnItem") {
+    allowKeys(value, path, ["kind", "item", "targetKind", "possessedTarget", "missingBehavior", "missingTarget"], ctx);
+    const targetKind = optionalBranchTargetKind(value.targetKind, `${path}.targetKind`, ctx);
+    const missingBehavior = optionalItemMissingBehavior(value.missingBehavior, `${path}.missingBehavior`, ctx);
+    const missingTarget = optionalRef(value.missingTarget, `${path}.missingTarget`, ctx);
+    if ((missingBehavior === "branch" || missingBehavior === "message") && missingTarget === undefined) {
+      ctx.errors.push(`${path}.missingTarget is required when missingBehavior is ${missingBehavior}.`);
+    }
+    if ((missingBehavior === undefined || missingBehavior === "continue") && missingTarget !== undefined) {
+      ctx.errors.push(`${path}.missingTarget is only valid when missingBehavior is branch or message.`);
+    }
+    return {
+      kind,
+      item: requireRef(value.item, `${path}.item`, ctx),
+      ...(targetKind !== undefined ? { targetKind } : {}),
+      possessedTarget: requireRef(value.possessedTarget, `${path}.possessedTarget`, ctx),
+      ...(missingBehavior !== undefined ? { missingBehavior } : {}),
+      ...(missingTarget !== undefined ? { missingTarget } : {})
+    };
+  }
+  if (kind === "branchOnItemCharges") {
+    allowKeys(value, path, ["kind", "item", "minimumCharges", "targetKind", "enoughTarget", "insufficientTarget"], ctx);
+    const minimumCharges = requireInteger(value.minimumCharges, `${path}.minimumCharges`, ctx);
+    const targetKind = optionalBranchTargetKind(value.targetKind, `${path}.targetKind`, ctx);
+    const enoughTarget = optionalRef(value.enoughTarget, `${path}.enoughTarget`, ctx);
+    const insufficientTarget = optionalRef(value.insufficientTarget, `${path}.insufficientTarget`, ctx);
+    checkIntegerRange(minimumCharges, `${path}.minimumCharges`, 0, 32767, ctx);
+    if (enoughTarget === undefined && insufficientTarget === undefined) ctx.errors.push(`${path} must provide enoughTarget, insufficientTarget, or both.`);
+    return {
+      kind,
+      item: requireRef(value.item, `${path}.item`, ctx),
+      minimumCharges: minimumCharges ?? 0,
+      ...(targetKind !== undefined ? { targetKind } : {}),
+      ...(enoughTarget !== undefined ? { enoughTarget } : {}),
+      ...(insufficientTarget !== undefined ? { insufficientTarget } : {})
+    };
+  }
+  if (kind === "dropItems") {
+    allowKeys(value, path, ["kind", "item", "count"], ctx);
+    const count = optionalInteger(value.count, `${path}.count`, ctx);
+    checkIntegerRange(count, `${path}.count`, 1, 32767, ctx);
+    return { kind, item: requireRef(value.item, `${path}.item`, ctx), ...(count !== undefined ? { count } : {}) };
+  }
+  if (kind === "changeItemCharges") {
+    allowKeys(value, path, ["kind", "item", "amount", "count"], ctx);
+    const amount = requireInteger(value.amount, `${path}.amount`, ctx);
+    const count = optionalInteger(value.count, `${path}.count`, ctx);
+    checkIntegerRange(amount, `${path}.amount`, -32768, 32767, ctx);
+    checkIntegerRange(count, `${path}.count`, 1, 32767, ctx);
+    return { kind, item: requireRef(value.item, `${path}.item`, ctx), amount: amount ?? 0, ...(count !== undefined ? { count } : {}) };
+  }
+  if (kind === "replaceItems") {
+    allowKeys(value, path, ["kind", "item", "replacementItem", "count"], ctx);
+    const count = optionalInteger(value.count, `${path}.count`, ctx);
+    checkIntegerRange(count, `${path}.count`, 1, 32767, ctx);
+    return { kind, item: requireRef(value.item, `${path}.item`, ctx), replacementItem: requireRef(value.replacementItem, `${path}.replacementItem`, ctx), ...(count !== undefined ? { count } : {}) };
+  }
+  if (kind === "branchOnPartyCondition") {
+    allowKeys(value, path, ["kind", "condition", "when", "targetKind", "target"], ctx);
+    const condition = requirePartyCondition(value.condition, `${path}.condition`, ctx);
+    const when = optionalPresenceTest(value.when, `${path}.when`, ctx);
+    const targetKind = optionalBranchTargetKind(value.targetKind, `${path}.targetKind`, ctx);
+    return { kind, condition, ...(when !== undefined ? { when } : {}), ...(targetKind !== undefined ? { targetKind } : {}), target: requireRef(value.target, `${path}.target`, ctx) };
+  }
+  if (kind === "branchOnCharacterCondition") {
+    allowKeys(value, path, ["kind", "condition", "selector", "successTarget", "failureTarget"], ctx);
+    const condition = requireInteger(value.condition, `${path}.condition`, ctx);
+    const selector = optionalCharacterSelector(value.selector, `${path}.selector`, ctx);
+    checkIntegerRange(condition, `${path}.condition`, 0, 39, ctx);
+    return {
+      kind,
+      condition: condition ?? 0,
+      ...(selector !== undefined ? { selector } : {}),
+      successTarget: requireRef(value.successTarget, `${path}.successTarget`, ctx),
+      failureTarget: requireRef(value.failureTarget, `${path}.failureTarget`, ctx)
+    };
+  }
+  if (kind === "branchOnTileParameter") {
+    allowKeys(value, path, ["kind", "test", "tile", "targetKind", "falseTarget", "trueTarget"], ctx);
+    const test = requireTileParameter(value.test, `${path}.test`, ctx);
+    const tile = optionalInteger(value.tile, `${path}.tile`, ctx);
+    const targetKind = optionalBranchTargetKind(value.targetKind, `${path}.targetKind`, ctx);
+    const falseTarget = optionalRef(value.falseTarget, `${path}.falseTarget`, ctx);
+    const trueTarget = optionalRef(value.trueTarget, `${path}.trueTarget`, ctx);
+    checkIntegerRange(tile, `${path}.tile`, 0, 200, ctx);
+    if (test === "tileId" && tile === undefined) ctx.errors.push(`${path}.tile is required when test is tileId.`);
+    if (test !== "tileId" && tile !== undefined) ctx.errors.push(`${path}.tile is only valid when test is tileId.`);
+    if (falseTarget === undefined && trueTarget === undefined) ctx.errors.push(`${path} must provide falseTarget, trueTarget, or both.`);
+    if (falseTarget === 0) ctx.errors.push(`${path}.falseTarget cannot be 0 because Realmz uses zero as the no-branch sentinel.`);
+    if (trueTarget === 0) ctx.errors.push(`${path}.trueTarget cannot be 0 because Realmz uses zero as the no-branch sentinel.`);
+    return {
+      kind,
+      test,
+      ...(tile !== undefined ? { tile } : {}),
+      ...(targetKind !== undefined ? { targetKind } : {}),
+      ...(falseTarget !== undefined ? { falseTarget } : {}),
+      ...(trueTarget !== undefined ? { trueTarget } : {})
+    };
+  }
   if (kind === "enterExitDungeon") {
     allowKeys(value, path, ["kind", "mode", "level", "x", "y", "heading"], ctx);
     return { kind, mode: requireInteger(value.mode, `${path}.mode`, ctx) ?? 0, level: requireInteger(value.level, `${path}.level`, ctx) ?? 0, x: requireInteger(value.x, `${path}.x`, ctx) ?? 0, y: requireInteger(value.y, `${path}.y`, ctx) ?? 0, heading: requireInteger(value.heading, `${path}.heading`, ctx) ?? 0 };
@@ -1471,6 +1618,36 @@ function resolveItemRef(ref: ScenarioSeedRef, context: BuildContext) {
 
 function resolveMonsterRef(ref: ScenarioSeedRef, context: BuildContext) {
   return resolveRef(ref, context.monsters, "monster", context);
+}
+
+function branchTargetKindCode(kind: ScenarioSeedBranchTargetKind) {
+  return kind === "simpleEncounter" ? 1 : kind === "complexEncounter" ? 2 : 0;
+}
+
+function resolveBranchTarget(ref: ScenarioSeedRef, kind: ScenarioSeedBranchTargetKind, context: BuildContext) {
+  if (kind === "simpleEncounter") return resolveRef(ref, context.simpleEncounters, "simple encounter", context);
+  if (kind === "complexEncounter") return numericRef(ref, "complex encounter", context);
+  return resolveRef(ref, context.actionPoints, "action point", context);
+}
+
+function resolveNonzeroBranchTarget(ref: ScenarioSeedRef, kind: ScenarioSeedBranchTargetKind, field: string, context: BuildContext) {
+  const resolved = resolveBranchTarget(ref, kind, context);
+  if (resolved === 0) {
+    addDiagnostic(context, "error", "zero-sentinel-target", `Tile parameter ${field} resolves to ID 0, which Realmz reserves as no branch.`, "action point");
+  }
+  return resolved;
+}
+
+function partyConditionCode(condition: ScenarioSeedPartyCondition) {
+  return typeof condition === "number" ? condition : PARTY_CONDITION_CODES[condition];
+}
+
+function characterSelectorCode(selector: ScenarioSeedCharacterSelector) {
+  return selector === "party" ? 0 : selector === "picked" ? -1 : selector;
+}
+
+function tileParameterCode(parameter: ScenarioSeedTileParameter) {
+  return TILE_PARAMETER_CODES[parameter];
 }
 
 function numericRef(ref: ScenarioSeedRef, label: string, context: BuildContext) {
@@ -1973,6 +2150,57 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
   if (step.kind === "takeGold") return buildEdcdAction(slot, 33, [step.amount, step.failureMarker ?? 0, 0, 0, 0], nextEdcdId, extracodes);
   if (step.kind === "giveCondition") return buildEdcdAction(slot, 43, [step.who ?? 0, step.condition, step.duration, step.sound === undefined ? 0 : numericRef(step.sound, "sound", context), 0], nextEdcdId, extracodes);
   if (step.kind === "awardRandomItems") return buildEdcdAction(slot, 65, [step.count, resolveItemRef(step.lowItem, context), resolveItemRef(step.highItem, context), 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "branchOnItem") {
+    const targetKind = step.targetKind ?? "actionPoint";
+    const missingBehavior = step.missingBehavior ?? "continue";
+    return buildEdcdAction(slot, 21, [
+      resolveItemRef(step.item, context),
+      branchTargetKindCode(targetKind),
+      missingBehavior === "branch" ? 0 : missingBehavior === "message" ? 2 : 1,
+      resolveBranchTarget(step.possessedTarget, targetKind, context),
+      step.missingTarget === undefined ? 0 : missingBehavior === "message" ? resolveRef(step.missingTarget, context.messages, "message", context) : resolveBranchTarget(step.missingTarget, targetKind, context)
+    ], nextEdcdId, extracodes);
+  }
+  if (step.kind === "branchOnItemCharges") {
+    const targetKind = step.targetKind ?? "actionPoint";
+    return buildEdcdAction(slot, 67, [
+      resolveItemRef(step.item, context),
+      branchTargetKindCode(targetKind),
+      step.minimumCharges,
+      step.enoughTarget === undefined ? -1 : resolveBranchTarget(step.enoughTarget, targetKind, context),
+      step.insufficientTarget === undefined ? -1 : resolveBranchTarget(step.insufficientTarget, targetKind, context)
+    ], nextEdcdId, extracodes);
+  }
+  if (step.kind === "dropItems") return buildEdcdAction(slot, 22, [resolveItemRef(step.item, context), step.count ?? 1, 1, 0, 0], nextEdcdId, extracodes);
+  if (step.kind === "changeItemCharges") return buildEdcdAction(slot, 22, [resolveItemRef(step.item, context), step.count ?? 1, 2, step.amount, 0], nextEdcdId, extracodes);
+  if (step.kind === "replaceItems") return buildEdcdAction(slot, 22, [resolveItemRef(step.item, context), step.count ?? 1, 3, 0, resolveItemRef(step.replacementItem, context)], nextEdcdId, extracodes);
+  if (step.kind === "branchOnPartyCondition") {
+    const targetKind = step.targetKind ?? "actionPoint";
+    return buildEdcdAction(slot, 40, [
+      step.when === "absent" ? 2 : 1,
+      branchTargetKindCode(targetKind) + 1,
+      resolveBranchTarget(step.target, targetKind, context),
+      partyConditionCode(step.condition),
+      0
+    ], nextEdcdId, extracodes);
+  }
+  if (step.kind === "branchOnCharacterCondition") return buildEdcdAction(slot, 81, [
+    step.condition,
+    characterSelectorCode(step.selector ?? "party"),
+    0,
+    resolveRef(step.successTarget, context.actionPoints, "action point", context),
+    resolveRef(step.failureTarget, context.actionPoints, "action point", context)
+  ], nextEdcdId, extracodes);
+  if (step.kind === "branchOnTileParameter") {
+    const targetKind = step.targetKind ?? "actionPoint";
+    return buildEdcdAction(slot, 78, [
+      tileParameterCode(step.test),
+      step.test === "tileId" ? step.tile ?? 0 : 0,
+      branchTargetKindCode(targetKind),
+      step.falseTarget === undefined ? 0 : resolveNonzeroBranchTarget(step.falseTarget, targetKind, "falseTarget", context),
+      step.trueTarget === undefined ? 0 : resolveNonzeroBranchTarget(step.trueTarget, targetKind, "trueTarget", context)
+    ], nextEdcdId, extracodes);
+  }
   if (step.kind === "enterExitDungeon") return buildEdcdAction(slot, 37, [step.mode, step.level, step.x, step.y, step.heading], nextEdcdId, extracodes);
   if (step.kind === "edcd") return buildEdcdAction(slot, step.opcode, padArray(step.values, 5, 0), nextEdcdId, extracodes);
   return describeAction(slot, 0, 0);
@@ -2217,6 +2445,56 @@ function optionalLevelType(input: unknown, path: string, ctx: ParseContext): Lev
   if (input === "land" || input === "dungeon") return input;
   ctx.errors.push(`${path} must be "land" or "dungeon".`);
   return undefined;
+}
+
+function optionalBranchTargetKind(input: unknown, path: string, ctx: ParseContext): ScenarioSeedBranchTargetKind | undefined {
+  if (input === undefined) return undefined;
+  if (input === "actionPoint" || input === "simpleEncounter" || input === "complexEncounter") return input;
+  ctx.errors.push(`${path} must be actionPoint, simpleEncounter, or complexEncounter.`);
+  return undefined;
+}
+
+function optionalItemMissingBehavior(input: unknown, path: string, ctx: ParseContext): "branch" | "continue" | "message" | undefined {
+  if (input === undefined) return undefined;
+  if (input === "branch" || input === "continue" || input === "message") return input;
+  ctx.errors.push(`${path} must be branch, continue, or message.`);
+  return undefined;
+}
+
+function requirePartyCondition(input: unknown, path: string, ctx: ParseContext): ScenarioSeedPartyCondition {
+  if (Number.isInteger(input)) {
+    const condition = input as number;
+    checkIntegerRange(condition, path, 0, 8, ctx);
+    return condition;
+  }
+  if (typeof input === "string" && Object.prototype.hasOwnProperty.call(PARTY_CONDITION_CODES, input)) return input as Exclude<ScenarioSeedPartyCondition, number>;
+  ctx.errors.push(`${path} must be a party condition name or integer from 0 through 8.`);
+  return 0;
+}
+
+function optionalPresenceTest(input: unknown, path: string, ctx: ParseContext): "present" | "absent" | undefined {
+  if (input === undefined) return undefined;
+  if (input === "present" || input === "absent") return input;
+  ctx.errors.push(`${path} must be present or absent.`);
+  return undefined;
+}
+
+function optionalCharacterSelector(input: unknown, path: string, ctx: ParseContext): ScenarioSeedCharacterSelector | undefined {
+  if (input === undefined) return undefined;
+  if (input === "party" || input === "picked") return input;
+  if (Number.isInteger(input)) {
+    const selector = input as number;
+    checkIntegerRange(selector, path, 1, 6, ctx);
+    return selector;
+  }
+  ctx.errors.push(`${path} must be party, picked, or a character position from 1 through 6.`);
+  return undefined;
+}
+
+function requireTileParameter(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTileParameter {
+  if (typeof input === "string" && Object.prototype.hasOwnProperty.call(TILE_PARAMETER_CODES, input)) return input as ScenarioSeedTileParameter;
+  ctx.errors.push(`${path} must be shoreline, boatRequired, path, blocksLos, flyFloatRequired, forest, or tileId.`);
+  return "path";
 }
 
 function checkIntegerRange(value: number | null | undefined, path: string, min: number | null, max: number | null, ctx: ParseContext) {

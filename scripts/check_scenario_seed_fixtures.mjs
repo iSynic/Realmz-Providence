@@ -32,6 +32,7 @@ try {
   checkSimpleEncounter(createProjectFromScenarioSeed);
   checkItems(createProjectFromScenarioSeed);
   checkMonsters(createProjectFromScenarioSeed);
+  checkConditionBranches(createProjectFromScenarioSeed);
   checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed);
 } finally {
   fs.rmSync(tmpDir, { recursive: true, force: true });
@@ -128,6 +129,7 @@ function checkItems(createProjectFromScenarioSeed) {
   expect(result.ok, "item seed should create a project");
   if (!result.ok) return;
   expect(allocationId(result, "items", "bronze-clapper") === 901, "bronze-clapper should allocate to scenario item ID 901");
+  expect(allocationId(result, "items", "silver-clapper") === 902, "silver-clapper should allocate to scenario item ID 902");
   const item = result.project.scenarioItems[0];
   expect(item?.id === 101 && item?.itemId === 901, "scenario item should use Data NI row 101 for item ID 901");
   expect(item?.iconId === 300 && item?.type === 1 && item?.cost === 50 && item?.weight === 2, "scenario item numeric fields should be preserved");
@@ -137,6 +139,14 @@ function checkItems(createProjectFromScenarioSeed) {
   expect(result.project.shops[0]?.itemIds?.[0] === 901 && result.project.shops[0]?.quantities?.[0] === 2, "shop should resolve item key and quantity");
   const award = result.project.extracodes.find((row) => row.values[0] === 1 && row.values[1] === 901 && row.values[2] === 901);
   expect(Boolean(award), "awardRandomItems AP should resolve item keys into EDCD values");
+  const itemLogic = result.project.triggers[1];
+  expect(actionCodes(itemLogic).join(",") === "21,67,22,22,22", "item logic AP should emit possession, charge branch, and item mutation opcodes");
+  const itemRows = itemLogic.actions.map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(itemRows[0] === "901,0,2,0,0", "branchOnItem should resolve the item, action point, and missing message keys");
+  expect(itemRows[1] === "901,0,2,0,-1", "branchOnItemCharges should encode omitted failure target as continue current script");
+  expect(itemRows[2] === "901,2,1,0,0", "dropItems should compile to item mutation mode 1");
+  expect(itemRows[3] === "901,1,2,-3,0", "changeItemCharges should compile to item mutation mode 2 with a signed delta");
+  expect(itemRows[4] === "901,1,3,0,902", "replaceItems should resolve both item keys and compile to mutation mode 3");
 }
 
 function checkMonsters(createProjectFromScenarioSeed) {
@@ -156,6 +166,19 @@ function checkMonsters(createProjectFromScenarioSeed) {
   const actions = result.project.triggers[0]?.actions ?? [];
   expect(actions[2]?.rawCode === 89 && actions[2]?.id === 7, "addSpecialCharacter should resolve monster key");
   expect(actions[3]?.rawCode === 88 && actions[3]?.id === 7, "dropSpecialCharacter should resolve monster key");
+}
+
+function checkConditionBranches(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("condition-branches.seed.json"));
+  expect(result.ok, "condition branch seed should create a project");
+  if (!result.ok) return;
+  const trigger = result.project.triggers[3];
+  expect(actionCodes(trigger).join(",") === "40,81,78,78", "condition branch AP should emit party, character, and tile parameter opcodes");
+  const rows = trigger.actions.map((action) => result.project.extracodes.find((row) => row.id === action.id)?.values.join(","));
+  expect(rows[0] === "1,1,1,6,0", "party condition branch should encode present free-fall/levitate and resolve its AP target");
+  expect(rows[1] === "9,-1,0,1,2", "character condition branch should encode picked characters and both AP targets");
+  expect(rows[2] === "3,0,0,2,1", "tile path branch should encode attribute test and false/true AP targets");
+  expect(rows[3] === "7,130,2,0,4", "specific tile branch should encode tile ID and complex encounter target");
 }
 
 function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
@@ -180,6 +203,31 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
   const mapTile = parseScenarioSeed(readSeed("invalid-map-tile.seed.json"));
   expect(!mapTile.ok, "out-of-range map tile should fail parsing");
   if (!mapTile.ok) expect(mapTile.errors.some((error) => error.includes("32767")), "invalid map tile should explain the signed 16-bit maximum");
+
+  const itemSteps = parseScenarioSeed(readSeed("invalid-item-steps.seed.json"));
+  expect(!itemSteps.ok, "invalid item semantic steps should fail parsing");
+  if (!itemSteps.ok) {
+    expect(itemSteps.errors.some((error) => error.includes("missingTarget is required")), "item branch should require a missing message or branch target");
+    expect(itemSteps.errors.some((error) => error.includes("must provide enoughTarget")), "item charge branch should require at least one outcome target");
+    expect(itemSteps.errors.some((error) => error.includes("$.actionPoints[0].steps[2].count")), "item mutation should reject a zero count");
+    expect(itemSteps.errors.some((error) => error.includes("$.actionPoints[0].steps[3].amount")), "item charge mutation should reject values outside signed 16-bit range");
+  }
+
+  const conditionSteps = parseScenarioSeed(readSeed("invalid-condition-steps.seed.json"));
+  expect(!conditionSteps.ok, "invalid condition semantic steps should fail parsing");
+  if (!conditionSteps.ok) {
+    expect(conditionSteps.errors.some((error) => error.includes("steps[0].condition")), "party condition branch should reject condition 9");
+    expect(conditionSteps.errors.some((error) => error.includes("steps[1].selector")), "character condition branch should reject numeric selector 0");
+    expect(conditionSteps.errors.some((error) => error.includes("tile is only valid")), "tile attribute branch should reject an irrelevant tile ID");
+    expect(conditionSteps.errors.some((error) => error.includes("tile is required")), "specific tile branch should require a tile ID");
+    expect(conditionSteps.errors.some((error) => error.includes("no-branch sentinel")), "tile branch should reject explicit target ID 0");
+  }
+
+  const zeroKeyTarget = createProjectFromScenarioSeed(readSeed("invalid-zero-key-target.seed.json"));
+  expect(!zeroKeyTarget.ok, "tile branch key resolving to target ID 0 should fail project creation");
+  if (!zeroKeyTarget.ok) {
+    expect(zeroKeyTarget.diagnostics.some((diagnostic) => diagnostic.code === "zero-sentinel-target"), "zero-key tile branch should return a structured zero-sentinel-target diagnostic");
+  }
 }
 
 function readSeed(name) {

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Condition Branches Seed"
+  },
+  "actionPoints": [
+    {
+      "key": "reserved-zero",
+      "x": 0,
+      "y": 0,
+      "steps": [{ "kind": "raw", "rawCode": 100, "id": 0 }]
+    },
+    {
+      "key": "success-ap",
+      "x": 1,
+      "y": 1,
+      "steps": [{ "kind": "raw", "rawCode": 100, "id": 0 }]
+    },
+    {
+      "key": "failure-ap",
+      "x": 2,
+      "y": 2,
+      "steps": [{ "kind": "raw", "rawCode": 100, "id": 0 }]
+    },
+    {
+      "key": "condition-logic",
+      "x": 3,
+      "y": 3,
+      "steps": [
+        { "kind": "branchOnPartyCondition", "condition": "freeFallLevitate", "when": "present", "target": "success-ap" },
+        { "kind": "branchOnCharacterCondition", "condition": 9, "selector": "picked", "successTarget": "success-ap", "failureTarget": "failure-ap" },
+        { "kind": "branchOnTileParameter", "test": "path", "falseTarget": "failure-ap", "trueTarget": "success-ap" },
+        { "kind": "branchOnTileParameter", "test": "tileId", "tile": 130, "targetKind": "complexEncounter", "trueTarget": 4 }
+      ]
+    }
+  ]
+}
