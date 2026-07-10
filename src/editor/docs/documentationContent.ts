@@ -1191,7 +1191,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Use the Action Point tool for placement and the Scripts tool for deeper opcode editing.",
           "Use the map Selection Inspector to set a land cell to Normal, Hidden Secret, or Revealed Secret. Moving or clearing an Action Point does not move or erase that cell state.",
-          "Providence marks stock hidden-walkable tiles 169 and 180-185 on both the map and tile palette. That visual aid does not by itself make the cell a Hidden Secret Area.",
+          "Providence marks landlook-specific hidden-walkable art on both the map and tile palette: Plains uses 169 and 180-185; Castle uses 59-65 and 96. The visual aid does not by itself make the cell a Hidden Secret Area.",
           "Overlay filters can show all Action Points or isolate links by encounters, quests, map mutation, battle, text, and unresolved opcodes.",
           "Use Global Search for AP IDs, macro IDs, text IDs, and battle IDs when jumping between the map overlay and the script body."
         ]

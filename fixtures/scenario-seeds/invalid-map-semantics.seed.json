@@ -20,7 +20,8 @@
       "levelType": "land",
       "landlook": 6,
       "operations": [
-        { "kind": "terrainGroup", "terrain": "lava", "geometry": { "kind": "circle", "x": 5, "y": 5, "radius": 2 } }
+        { "kind": "terrainGroup", "terrain": "lava", "geometry": { "kind": "circle", "x": 5, "y": 5, "radius": 2 } },
+        { "kind": "hiddenWalkable", "x": 6, "y": 6, "tile": 169 }
       ]
     }
   ]

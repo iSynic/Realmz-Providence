@@ -23,7 +23,7 @@ function TileSwatchComponent({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [hiddenWalkableMarker, setHiddenWalkableMarker] = useState<HTMLImageElement | null>(null);
   const metadata = useMemo(() => classifyTileValue(tile, tileset, [], icons), [icons, tile, tileset]);
-  const showHiddenWalkable = tileset?.landlook !== -1 && isStockHiddenWalkableTile(tile);
+  const showHiddenWalkable = isStockHiddenWalkableTile(tile, tileset?.landlook);
 
   useEffect(() => {
     if (!showHiddenWalkable || typeof Image === "undefined") {

@@ -50,6 +50,17 @@
       "operations": [
         { "kind": "dungeonPassage", "x": 4, "y": 4, "directions": ["north", "south"] }
       ]
+    },
+    {
+      "key": "castle-secret-map",
+      "levelType": "land",
+      "index": 1,
+      "landlook": 4,
+      "fillTile": 111,
+      "operations": [
+        { "kind": "hiddenWalkable", "x": 1, "y": 1, "tile": 59 },
+        { "kind": "hiddenWalkable", "x": 2, "y": 1 }
+      ]
     }
   ],
   "actionPoints": [

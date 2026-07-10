@@ -112,13 +112,27 @@ const PLAINS_EXACT: Record<number, LandlookTileVisualSemantics> = {
   148: { label: "Well / small landmark", category: "terrain-prop", confidence: "uncertain" },
   149: { label: "Fallen log", category: "terrain-prop", confidence: "likely" },
   168: { label: "Blank / unused land tile", category: "blank", confidence: "likely" },
-  169: { label: "Hidden walkable path", category: "road", confidence: "known", notes: "Divinity marks this stock path tile with the hidden-walkable symbol." },
-  180: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
-  181: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
-  182: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
-  183: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
-  184: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." },
-  185: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks stock tiles 180-185 with the hidden-walkable symbol." }
+};
+
+const PLAINS_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> = {
+  169: { label: "Hidden walkable path", category: "road", confidence: "known", notes: "Divinity marks this Plains path tile with the hidden-walkable symbol." },
+  180: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
+  181: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
+  182: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
+  183: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
+  184: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
+  185: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." }
+};
+
+const CASTLE_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> = {
+  59: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  60: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  61: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  62: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  63: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  64: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  65: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  96: { label: "Hidden walkable castle floor", category: "road", confidence: "known" }
 };
 
 const PLAINS_RANGES: SemanticRange[] = [
@@ -149,7 +163,7 @@ type LandlookVisualProfile = {
 };
 
 const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> = {
-  0: { exact: PLAINS_EXACT, ranges: PLAINS_RANGES },
+  0: { exact: { ...PLAINS_EXACT, ...PLAINS_HIDDEN_WALKABLE_EXACT }, ranges: PLAINS_RANGES },
   2: { exact: PLAINS_EXACT, ranges: PLAINS_RANGES },
   3: {
     exact: {
@@ -172,7 +186,8 @@ const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> =
     exact: {
       ...PLAINS_EXACT,
       61: { label: "Solid masonry / wall fill", category: "mountain-land", confidence: "likely", notes: "Castle atlas slot aligned with the terrain-wall family, not literal mountains." },
-      147: { label: "Moat boat / watercraft", category: "watercraft", confidence: "known" }
+      147: { label: "Moat boat / watercraft", category: "watercraft", confidence: "known" },
+      ...CASTLE_HIDDEN_WALKABLE_EXACT
     },
     ranges: relabelRanges(PLAINS_RANGES, {
       "water-shore": "Moat / water transition",

@@ -41,6 +41,7 @@ import { landlookBaseTile, landlookName, landlookPictId } from "./browser/realmz
 import { clearActionPointMarker, ensureActionPointMarker, landCellSecretState, setLandCellSecretState } from "./map/actionPointMarkers";
 import { setDungeonCellFlags } from "./map/dungeonCellFlags";
 import { GENERATED_SMART_TERRAIN_PROFILES } from "./map/generatedSmartTerrainProfiles";
+import { defaultStockHiddenWalkableTile, isStockHiddenWalkableTile } from "./map/secrets";
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
 import { copyCurrentMonsterToAllSets, generateMonsterVariants } from "./projectCommands/targetRecordCommands";
 import { createCasteOverride, createRaceOverride, createSpellOverride } from "./projectCommands/scenarioRulesCommands";
@@ -551,7 +552,7 @@ export type ScenarioSeedTerrainGeometry =
   | { kind: "rect"; x: number; y: number; width: number; height: number }
   | { kind: "path"; points: ScenarioSeedPoint[]; width?: number };
 
-export type ScenarioSeedHiddenWalkableTile = 169 | 180 | 181 | 182 | 183 | 184 | 185;
+export type ScenarioSeedHiddenWalkableTile = 59 | 60 | 61 | 62 | 63 | 64 | 65 | 96 | 169 | 180 | 181 | 182 | 183 | 184 | 185;
 export type ScenarioSeedDungeonDirection = "north" | "east" | "south" | "west";
 
 export type ScenarioSeedRoomDoor = {
@@ -1356,6 +1357,14 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
       && !GENERATED_SMART_TERRAIN_PROFILES.some((profile) => profile.landlook === (landlook ?? 0))) {
     ctx.errors.push(`${path}.landlook ${landlook ?? 0} does not have a checked-in semantic terrain profile.`);
   }
+  for (let operationIndex = 0; operationIndex < (operations ?? []).length; operationIndex++) {
+    const operation = operations?.[operationIndex];
+    if (operation?.kind !== "hiddenWalkable") continue;
+    const mapLandlook = landlook ?? 0;
+    if (operation.tile !== undefined ? !isStockHiddenWalkableTile(operation.tile, mapLandlook) : defaultStockHiddenWalkableTile(mapLandlook) === null) {
+      ctx.errors.push(`${path}.operations[${operationIndex}] hiddenWalkable is not valid for landlook ${mapLandlook}; use that landlook's stock concealed-walkable tiles.`);
+    }
+  }
   return {
     ...(key !== undefined ? { key } : {}),
     ...(levelType !== undefined ? { levelType } : {}),
@@ -2066,7 +2075,7 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
     checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
     if (tile !== undefined && !isHiddenWalkableTile(tile)) {
-      ctx.errors.push(`${path}.tile must be one of the stock hidden-walkable tiles: 169 or 180 through 185.`);
+      ctx.errors.push(`${path}.tile must be one of the known stock hidden-walkable tiles: Castle 59-65 or 96; Plains 169 or 180-185.`);
     }
     return { kind, x: x ?? 0, y: y ?? 0, ...(tile !== undefined && isHiddenWalkableTile(tile) ? { tile } : {}) };
   }
@@ -2142,7 +2151,7 @@ function parseDungeonDirection(input: unknown, path: string, ctx: ParseContext):
 }
 
 function isHiddenWalkableTile(value: number): value is ScenarioSeedHiddenWalkableTile {
-  return value === 169 || (value >= 180 && value <= 185);
+  return (value >= 59 && value <= 65) || value === 96 || value === 169 || (value >= 180 && value <= 185);
 }
 
 function parseRoomDoor(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRoomDoor | null {
@@ -3177,7 +3186,7 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
   }
   if (operation.kind === "hiddenWalkable") {
     const index = operation.y * MAP_SIZE + operation.x;
-    tiles[index] = setLandCellSecretState(operation.tile ?? 169, landCellSecretState(tiles[index]), false);
+    tiles[index] = setLandCellSecretState(operation.tile ?? defaultStockHiddenWalkableTile(mapContext.landlook) ?? 169, landCellSecretState(tiles[index]), false);
     return;
   }
   if (operation.kind === "dungeonPassage") {

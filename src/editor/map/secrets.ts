@@ -2,19 +2,27 @@ import { MapEntity } from "../types";
 import { actionPointMarkerState, landCellSecretState } from "./actionPointMarkers";
 
 const DUNGEON_SECRET_DIRECTION_MASK = 0x0f00;
-const STOCK_HIDDEN_WALKABLE_TILES = new Set([169, 180, 181, 182, 183, 184, 185]);
+const STOCK_HIDDEN_WALKABLE_TILES = new Map<number, ReadonlySet<number>>([
+  [0, new Set([169, 180, 181, 182, 183, 184, 185])],
+  [4, new Set([59, 60, 61, 62, 63, 64, 65, 96])]
+]);
 
 export function isSecretWalkableTile(value: number, map: MapEntity) {
   if (isDungeonTopDownMap(map)) return hasDungeonSecretDirection(value);
-  return landCellSecretState(value) !== "normal" && isStockHiddenWalkableTile(value);
+  return landCellSecretState(value) !== "normal" && isStockHiddenWalkableTile(value, map.render.landlook);
 }
 
 export function isConcealedWalkableTerrain(value: number, map: MapEntity) {
-  return !isDungeonTopDownMap(map) && isStockHiddenWalkableTile(value);
+  return !isDungeonTopDownMap(map) && isStockHiddenWalkableTile(value, map.render.landlook);
 }
 
-export function isStockHiddenWalkableTile(value: number) {
-  return STOCK_HIDDEN_WALKABLE_TILES.has(normalizedTileBase(value));
+export function isStockHiddenWalkableTile(value: number, landlook: number | null | undefined) {
+  return landlook != null && Boolean(STOCK_HIDDEN_WALKABLE_TILES.get(landlook)?.has(normalizedTileBase(value)));
+}
+
+export function defaultStockHiddenWalkableTile(landlook: number | null | undefined) {
+  const tiles = landlook != null ? STOCK_HIDDEN_WALKABLE_TILES.get(landlook) : null;
+  return tiles ? [...tiles][0] ?? null : null;
 }
 
 export function showsHiddenWalkableOverlay(value: number, map: MapEntity) {

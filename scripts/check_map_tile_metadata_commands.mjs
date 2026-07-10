@@ -154,7 +154,7 @@ function checkActionPointMarkerEncoding(markers) {
 function checkHiddenWalkableOverlay(secretTiles, metadata) {
   const map = landMap(0, 0);
   for (const tile of [169, 180, 181, 182, 183, 184, 185]) {
-    assert(secretTiles.isStockHiddenWalkableTile(tile), `Land tile ${tile} should be part of the stock hidden-walkable set.`);
+    assert(secretTiles.isStockHiddenWalkableTile(tile, 0), `Plains tile ${tile} should be part of the stock hidden-walkable set.`);
     assert(secretTiles.isConcealedWalkableTerrain(tile, map), `Land tile ${tile} should remain identified as concealed walk-through terrain.`);
     assert(secretTiles.showsHiddenWalkableOverlay(tile, map), `Unbanded land tile ${tile} should remain visible in the hidden-walkable overlay.`);
     assert(metadata.classifyTileValue(tile, standardTileset(0), [], {}).label.toLowerCase().includes("hidden walkable"), `Land tile ${tile} should be labeled as hidden walkable in the palette.`);
@@ -164,11 +164,29 @@ function checkHiddenWalkableOverlay(secretTiles, metadata) {
   assert(secretTiles.showsHiddenWalkableOverlay(3181, map), "A hidden Secret Area using tile 181 should receive the hidden-walkable overlay.");
   assert(!secretTiles.showsHiddenWalkableOverlay(179, map), "Adjacent stock tile 179 should not receive the hidden-walkable overlay.");
   assert(!secretTiles.showsHiddenWalkableOverlay(186, map), "Adjacent stock tile 186 should not receive the hidden-walkable overlay.");
+  const castle = landMap(0, 4);
+  for (const tile of [169, 180, 181, 182, 183, 184, 185]) {
+    assert(!secretTiles.isStockHiddenWalkableTile(tile, 4), `Castle tile ${tile} should not be part of the Plains hidden-walkable set.`);
+    assert(!secretTiles.showsHiddenWalkableOverlay(tile, castle), `Castle tile ${tile} should not receive a hidden-walkable overlay.`);
+    assert(!metadata.classifyTileValue(tile, standardTileset(4), [], {}).label.toLowerCase().includes("hidden walkable"), `Castle tile ${tile} should not be labeled as hidden walkable.`);
+  }
+  assert(!secretTiles.showsHiddenWalkableOverlay(3169, castle), "A Castle Secret Area should use its normal secret marker without the Plains hidden-walkable overlay.");
+  assert(secretTiles.hasSecretMarkerTile(3169, castle), "A Castle Secret Area should retain its ordinary hidden-area marker.");
+  for (const tile of [59, 60, 61, 62, 63, 64, 65, 96]) {
+    assert(secretTiles.isStockHiddenWalkableTile(tile, 4), `Castle tile ${tile} should be part of its hidden-walkable set.`);
+    assert(secretTiles.showsHiddenWalkableOverlay(tile, castle), `Castle tile ${tile} should receive the hidden-walkable overlay.`);
+    assert(metadata.classifyTileValue(tile, standardTileset(4), [], {}).label.toLowerCase().includes("hidden walkable"), `Castle tile ${tile} should be labeled as hidden walkable.`);
+    assert(!secretTiles.isStockHiddenWalkableTile(tile, 0), `Castle hidden-walkable tile ${tile} should not be applied to Plains.`);
+  }
+  assert(secretTiles.defaultStockHiddenWalkableTile(0) === 169, "Plains hidden-walkable authoring should default to tile 169.");
+  assert(secretTiles.defaultStockHiddenWalkableTile(4) === 59, "Castle hidden-walkable authoring should default to tile 59.");
+  assert(secretTiles.showsHiddenWalkableOverlay(3059, castle), "A hidden Castle passage should retain its hidden-walkable overlay.");
+  assert(secretTiles.hasSecretMarkerTile(3059, castle), "A hidden Castle passage should also retain its ordinary Secret Area marker.");
 }
 
 function checkHiddenWalkablePaletteSource() {
   const swatchSource = fs.readFileSync(path.join(root, "src/editor/components/TileSwatch.tsx"), "utf8");
-  for (const snippet of ["isStockHiddenWalkableTile(tile)", "drawWhiteKeyedOverlayImage", "/divinity-manual/assets/pict2007.png"]) {
+  for (const snippet of ["isStockHiddenWalkableTile(tile, tileset?.landlook)", "drawWhiteKeyedOverlayImage", "/divinity-manual/assets/pict2007.png"]) {
     assert(swatchSource.includes(snippet), `Tile palette hidden-walkable marker is missing: ${snippet}`);
   }
   const keyedSource = fs.readFileSync(path.join(root, "src/editor/map/whiteKeyedOverlay.ts"), "utf8");
