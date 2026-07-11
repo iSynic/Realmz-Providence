@@ -124,6 +124,64 @@ const PLAINS_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> 
   185: { label: "Combat-clearing structure", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." }
 };
 
+const SWAMP_EXACT: Record<number, LandlookTileVisualSemantics> = {
+  36: { label: "Open swamp ground", category: "open", confidence: "known", notes: "Plain brown swamp ground; unlike the aligned Plains slot, this is not a blank tile." },
+  37: { label: "Open swamp ground", category: "open", confidence: "known", notes: "Alternate plain brown swamp ground; unused in the current scenario corpus." },
+  52: { label: "Closed coffin with crucifix", category: "graves", confidence: "known" },
+  53: { label: "Open coffin", category: "graves", confidence: "known" },
+  54: { label: "Closed coffin without crucifix", category: "graves", confidence: "known", notes: "Can also serve visually as a closed chest." },
+  55: { label: "Red bog patch", category: "terrain-prop", confidence: "likely", notes: "A solid red-brown patch replacing the aligned Plains cobblestone tile." },
+  60: { label: "Full swamp water", category: "water-shore", confidence: "known", notes: "Normal full swamp-water center tile." },
+  61: { label: "Solid bog bank", category: "mountain-land", confidence: "known", notes: "Full dark bog-bank or dense-growth fill aligned with the Plains mountain family." },
+  115: { label: "Spiked barrier over swamp water", category: "buildings", confidence: "likely" },
+  116: { label: "Spiked swamp barrier transition", category: "buildings", confidence: "likely", notes: "Bank-and-water variant of the spiked barrier family." },
+  117: { label: "Spiked swamp barrier transition", category: "buildings", confidence: "likely", notes: "Mirrored bank-and-water variant of the spiked barrier family." },
+  118: { label: "Lone swamp tree", category: "tree-detail", confidence: "known", notes: "Realmz marks this as swamp forest type 4." },
+  119: { label: "Two swamp trees", category: "tree-detail", confidence: "known", notes: "Realmz marks this as swamp forest type 4." },
+  120: { label: "Three swamp trees", category: "tree-detail", confidence: "known", notes: "Realmz marks this as swamp forest type 4." },
+  149: { label: "Large dead swamp stump", category: "tree-detail", confidence: "known" },
+  150: { label: "Tall yellow swamp grass", category: "tree-detail", confidence: "known" },
+  151: { label: "Split dead swamp tree", category: "tree-detail", confidence: "known", notes: "Solid and line-of-sight blocking." },
+  152: { label: "Dead swamp stump", category: "tree-detail", confidence: "known" },
+  153: { label: "Large mossy swamp boulder", category: "rocks", confidence: "likely", notes: "Solid and line-of-sight blocking." },
+  154: { label: "Large dead swamp tree", category: "tree-detail", confidence: "known" },
+  155: { label: "Plain swamp ground", category: "open", confidence: "known" },
+  156: { label: "Swamp ground with faint grass", category: "open", confidence: "likely" },
+  157: { label: "Swamp ground with grass tufts", category: "open", confidence: "known" },
+  158: { label: "Swamp ground with several grass tufts", category: "open", confidence: "known" },
+  159: { label: "Swamp ground with one dark pool", category: "terrain-prop", confidence: "likely" },
+  160: { label: "Swamp ground with two dark pools", category: "terrain-prop", confidence: "likely" },
+  161: { label: "Small rock and dead brush", category: "rocks", confidence: "likely" },
+  162: { label: "Small swamp branch", category: "terrain-prop", confidence: "likely" },
+  163: { label: "Dead swamp stump and rock", category: "rocks", confidence: "likely" },
+  164: { label: "Single small swamp rock", category: "rocks", confidence: "known" },
+  165: { label: "Two swamp rocks", category: "rocks", confidence: "known" },
+  166: { label: "Three swamp rocks", category: "rocks", confidence: "known" },
+  167: { label: "Swamp rock pile", category: "rocks", confidence: "known" },
+  168: { label: "Blank / unused swamp tile", category: "blank", confidence: "known" },
+  169: { label: "Hidden walkable bog path", category: "road", confidence: "known", notes: "Dense bog artwork that Realmz marks walkable and as a runtime path, matching the aligned Plains hidden-walkable slot." },
+  170: { label: "Swamp hut", category: "buildings", confidence: "known" },
+  171: { label: "Swamp hut with green-capped tower", category: "buildings", confidence: "known" },
+  172: { label: "Swamp hut with pink-capped tower", category: "buildings", confidence: "known" },
+  173: { label: "Small tower hut with green window", category: "buildings", confidence: "known" },
+  174: { label: "Small tower hut with red window", category: "buildings", confidence: "known" },
+  175: { label: "Two connected tiny huts", category: "buildings", confidence: "known", notes: "Two connected huts with yellow windows." },
+  176: { label: "Three connected tiny huts", category: "buildings", confidence: "known", notes: "Three connected huts with yellow windows." },
+  177: { label: "Sturdy tent with lantern post", category: "buildings", confidence: "known" },
+  178: { label: "Two sturdy tents", category: "buildings", confidence: "known" },
+  179: { label: "Canopy-suspended swamp hut", category: "buildings", confidence: "known", notes: "Small hut suspended in a canopy of trees." },
+  180: { label: "Combat-clearing bog wall", category: "buildings", confidence: "known", notes: "Solid dark bog terrain during land exploration; its Realmz combat build expands into non-solid swamp ground." },
+  181: { label: "Combat-clearing bog wall, west edge", category: "buildings", confidence: "known", notes: "Solid during land exploration and open in Realmz combat expansion." },
+  182: { label: "Combat-clearing bog wall transition", category: "buildings", confidence: "known", notes: "Solid during land exploration and open in Realmz combat expansion." },
+  183: { label: "Combat-clearing bog wall, east edge", category: "buildings", confidence: "known", notes: "Solid during land exploration and open in Realmz combat expansion." },
+  184: { label: "Combat-clearing north-south masonry path", category: "buildings", confidence: "known", notes: "Solid and line-of-sight blocking during land exploration; its Realmz combat build expands into non-solid terrain." },
+  185: { label: "Combat-clearing east-west masonry path", category: "buildings", confidence: "known", notes: "Solid and line-of-sight blocking during land exploration; its Realmz combat build expands into non-solid terrain." },
+  186: { label: "Small swamp hut", category: "buildings", confidence: "known" },
+  187: { label: "Large swamp grave or tomb", category: "graves", confidence: "known" },
+  188: { label: "Swamp grave or tomb cluster", category: "graves", confidence: "known" },
+  189: { label: "Swamp grave or tomb cluster", category: "graves", confidence: "known" }
+};
+
 const CASTLE_WALL_EXACT: Record<number, LandlookTileVisualSemantics> = {
   1: { label: "Straight north-south gray wall", category: "buildings", confidence: "known", notes: "Gray brick wall with north-south continuity; land west and east." },
   2: { label: "South-facing east-west gray wall", category: "buildings", confidence: "known", notes: "Gray brick wall with east-west continuity; land north. The projected south-facing brick facade extends through the southern part of the tile." },
@@ -420,7 +478,7 @@ const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> =
   9: {
     exact: {
       ...PLAINS_EXACT,
-      61: { label: "Solid bog bank", category: "mountain-land", confidence: "likely", notes: "Swamp atlas slot aligned with the raised-terrain fill family." },
+      ...SWAMP_EXACT,
       147: { label: "Swamp boat / skiff", category: "watercraft", confidence: "known" }
     },
     ranges: relabelRanges(PLAINS_RANGES, {

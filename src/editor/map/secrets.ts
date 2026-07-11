@@ -4,11 +4,13 @@ import { actionPointMarkerState, landCellSecretState } from "./actionPointMarker
 const DUNGEON_SECRET_DIRECTION_MASK = 0x0f00;
 const STOCK_HIDDEN_WALKABLE_TILES = new Map<number, ReadonlySet<number>>([
   [0, new Set([169])],
-  [4, new Set([96])]
+  [4, new Set([96])],
+  [9, new Set([169])]
 ]);
 const STOCK_COMBAT_CLEARING_TILES = new Map<number, ReadonlySet<number>>([
   [0, new Set([180, 181, 182, 183, 184, 185])],
-  [4, new Set([59, 60, 61, 62, 63, 64, 65])]
+  [4, new Set([59, 60, 61, 62, 63, 64, 65])],
+  [9, new Set([180, 181, 182, 183, 184, 185])]
 ]);
 
 export function isSecretWalkableTile(value: number, map: MapEntity) {

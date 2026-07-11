@@ -29,6 +29,7 @@ try {
   checkActionPointMarkerEncoding(actionPointMarkers);
   checkHiddenWalkableOverlay(secretTiles, metadata);
   checkCastleWallSemantics(visualSemantics);
+  checkSwampSemantics(visualSemantics);
   checkHiddenWalkablePaletteSource();
   checkLandActionPointCommands(commands, scriptCommands, actionPointMarkers);
   checkDungeonActionPointCommands(commands, scriptCommands, actionPointMarkers);
@@ -201,6 +202,38 @@ function checkHiddenWalkableOverlay(secretTiles, metadata) {
     assert(!secretTiles.isStockCombatClearingTile(tile, 4), `Castle rug tile ${tile} should not be classified as combat clearing.`);
   }
   assert(secretTiles.hasSecretMarkerTile(3059, castle), "A marked Castle wall should independently retain its ordinary Secret Area marker.");
+
+  const swamp = landMap(0, 9);
+  assert(secretTiles.isStockHiddenWalkableTile(169, 9), "Swamp tile 169 should be the stock hidden-walkable bog path.");
+  assert(secretTiles.showsHiddenWalkableOverlay(169, swamp), "Swamp tile 169 should receive the hidden-walkable overlay.");
+  assert(secretTiles.defaultStockHiddenWalkableTile(9) === 169, "Swamp hidden-walkable authoring should default to tile 169.");
+  for (const tile of [180, 181, 182, 183, 184, 185]) {
+    assert(secretTiles.isStockCombatClearingTile(tile, 9), `Swamp tile ${tile} should be combat-clearing terrain.`);
+    assert(secretTiles.showsCombatClearingOverlay(tile, swamp), `Swamp tile ${tile} should receive the combat-clearing overlay.`);
+  }
+  assert(secretTiles.defaultStockCombatClearingTile(9) === 180, "Swamp combat-clearing authoring should default to tile 180.");
+}
+
+function checkSwampSemantics({ landlookTileVisualSemantics }) {
+  assert(landlookTileVisualSemantics(36, 9)?.label === "Open swamp ground", "Swamp tile 36 should not inherit the Plains blank-tile label.");
+  assert(landlookTileVisualSemantics(52, 9)?.label === "Closed coffin with crucifix", "Swamp tile 52 should be the crucifix-marked closed coffin.");
+  assert(landlookTileVisualSemantics(53, 9)?.label === "Open coffin", "Swamp tile 53 should be the open coffin.");
+  assert(landlookTileVisualSemantics(54, 9)?.notes?.includes("closed chest"), "Swamp tile 54 should preserve its alternate closed-chest use.");
+  assert(landlookTileVisualSemantics(55, 9)?.label === "Red bog patch", "Swamp tile 55 should not inherit the Plains cobblestone label.");
+  assert(landlookTileVisualSemantics(60, 9)?.label === "Full swamp water", "Swamp tile 60 should identify the full swamp-water center.");
+  assert(landlookTileVisualSemantics(105, 9)?.label === "Stream to cave, cave west", "Swamp tile 105 should retain the solved Plains transition identity.");
+  assert(landlookTileVisualSemantics(112, 9)?.label === "Land to cave, cave north", "Swamp tile 112 should retain the solved Plains transition identity.");
+  assert(landlookTileVisualSemantics(118, 9)?.label === "Lone swamp tree", "Swamp tile 118 should be the lone-tree variant.");
+  assert(landlookTileVisualSemantics(119, 9)?.label === "Two swamp trees", "Swamp tile 119 should be the two-tree variant.");
+  assert(landlookTileVisualSemantics(120, 9)?.label === "Three swamp trees", "Swamp tile 120 should be the three-tree variant.");
+  assert(landlookTileVisualSemantics(149, 9)?.label === "Large dead swamp stump", "Swamp tile 149 should not inherit the Plains fallen-log label.");
+  assert(landlookTileVisualSemantics(169, 9)?.label === "Hidden walkable bog path", "Swamp tile 169 should identify its hidden-walkable role.");
+  assert(landlookTileVisualSemantics(180, 9)?.label === "Combat-clearing bog wall", "Swamp tile 180 should identify its combat-clearing role.");
+  assert(landlookTileVisualSemantics(170, 9)?.label === "Swamp hut", "Swamp tile 170 should be the basic hut.");
+  assert(landlookTileVisualSemantics(177, 9)?.label === "Sturdy tent with lantern post", "Swamp tile 177 should be the lantern-post tent.");
+  assert(landlookTileVisualSemantics(179, 9)?.notes?.includes("canopy of trees"), "Swamp tile 179 should be the canopy-suspended hut.");
+  assert(landlookTileVisualSemantics(187, 9)?.category === "graves", "Swamp tile 187 should retain its grave or tomb role.");
+  assert(landlookTileVisualSemantics(190, 9)?.category === "buildings", "Swamp tile 190 should retain the aligned settlement-building role.");
 }
 
 function checkCastleWallSemantics({ landlookTileVisualSemantics }) {
