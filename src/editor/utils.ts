@@ -5,7 +5,8 @@ import {
   SelectedEntity,
   SemanticEntity,
   SemanticLink,
-  SemanticRecord
+  SemanticRecord,
+  TriggerRecord
 } from "./types";
 import { directSemanticLinksFor, labelForSelectedId } from "./directRecordIndex";
 import { semanticEntityById, semanticIndex, semanticLinksForId, semanticRecordById } from "./semanticIndex";
@@ -27,6 +28,10 @@ export function mapEntityId(levelType: LevelType, index: number) {
 export function triggerEntityId(levelType: LevelType | null, levelIndex: number | null, recordIndex: number, source: string) {
   if (source === "Data ED3") return `macro:${recordIndex}`;
   return `trigger:${levelType ?? "unknown"}:${levelIndex ?? 0}:${recordIndex}`;
+}
+
+export function actionSlotEntityId(trigger: Pick<TriggerRecord, "levelType" | "levelIndex" | "recordIndex" | "source">, slot: number) {
+  return `action-slot:${triggerEntityId(trigger.levelType, trigger.levelIndex, trigger.recordIndex, trigger.source)}:${slot}`;
 }
 
 export function selectedEntityForSemantic(entity: SemanticEntity): SelectedEntity {

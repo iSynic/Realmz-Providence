@@ -1,7 +1,7 @@
 import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Eye, Plus, Save, Trash2, Volume2, X } from "lucide-react";
 import { Action, ComplexEncounterRecord, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, SimpleEncounterRecord, TriggerRecord } from "../types";
-import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
+import { actionSlotEntityId, linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
@@ -469,7 +469,7 @@ function ScriptEditorTabs({
 }
 
 function actionSlotSelectionId(trigger: TriggerRecord, slot: number) {
-  return `action-slot:${triggerSelectionId(trigger)}:${slot}`;
+  return actionSlotEntityId(trigger, slot);
 }
 
 function actionSlotIndexFromSelection(entityId: string | null | undefined) {

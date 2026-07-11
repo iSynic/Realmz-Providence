@@ -4,8 +4,7 @@ import { EditorState } from "../store";
 import { CustomMapStamp, DungeonCellFlag, EditorTool, IconEntry, LandCellSecretState, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRecord, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPlan, SmartBrushPreset, TileAttributeFlag, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
 import { mapRecordContainsCell, mapTileIndex, randomRectContainsCell, randomRectEntityId, tileValueAt } from "../map/geometry";
 import { rectCells, regionCellCount } from "../map/regionPaint";
-import { actionSlotEntitiesForTriggerRecord } from "../semanticGraph";
-import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
+import { compactValue, linksFor, mapEntityId, selectEntityFromId, semanticLabel, actionSlotEntityId, triggerEntityId } from "../utils";
 import { InfoGrid } from "./InfoGrid";
 import { CellTileEvidence, MapCapabilityPanel } from "./MapAffordances";
 import { PaintPalettePanel } from "./TileSelectionBar";
@@ -2470,12 +2469,10 @@ function LandCellSecretEditor({
 function ActionPointStepTable({
   project,
   trigger,
-  slots,
   onSelectEntity
 }: {
   project: Project | null;
   trigger: TriggerRecord;
-  slots: ReturnType<typeof actionSlotEntitiesForTriggerRecord>;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   return (
@@ -2490,29 +2487,19 @@ function ActionPointStepTable({
         </div>
         {Array.from({ length: 8 }, (_, step) => {
           const action = trigger.actions.find((candidate) => candidate.slot === step);
-          const slotEntity = slots.find((slot) => Number(slot.summary.slot) === step);
           const label = action ? mapInspectorActionSummary(project, action) : "Empty";
-          const content = (
-            <>
-              <span>{step}</span>
-              <span>{action?.rawCode ?? 0}{action?.gosub ? "*" : ""}</span>
-              <span>{action?.id ?? 0}</span>
-              <span>{label}</span>
-            </>
-          );
-          return slotEntity ? (
+          return (
             <button
               key={step}
               className={action ? "filled" : ""}
               type="button"
-              onClick={() => onSelectEntity(selectEntityFromId(slotEntity.id))}
+              onClick={() => onSelectEntity(selectEntityFromId(actionSlotEntityId(trigger, step)))}
             >
-              {content}
+              <span>{step}</span>
+              <span>{action?.rawCode ?? 0}{action?.gosub ? "*" : ""}</span>
+              <span>{action?.id ?? 0}</span>
+              <span>{label}</span>
             </button>
-          ) : (
-            <div key={step} className={action ? "filled" : ""}>
-              {content}
-            </div>
           );
         })}
       </div>
@@ -2639,7 +2626,6 @@ function TriggerSelectionDetails({
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenScripts: (entity: SelectedEntity) => void;
 }) {
-  const slots = actionSlotEntitiesForTriggerRecord(project, trigger);
   const isActionPoint = trigger.source !== "Data ED3" && trigger.levelType && trigger.levelIndex != null;
   const markerState = actionPointMarkerStateForTrigger(project, trigger);
   const secret = isSecretActionPointState(markerState);
@@ -2735,7 +2721,7 @@ function TriggerSelectionDetails({
           </button>
         </div>
       )}
-      <ActionPointStepTable project={project} trigger={trigger} slots={slots} onSelectEntity={onSelectEntity} />
+      <ActionPointStepTable project={project} trigger={trigger} onSelectEntity={onSelectEntity} />
     </div>
   );
 }
