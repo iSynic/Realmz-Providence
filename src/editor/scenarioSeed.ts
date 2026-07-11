@@ -41,6 +41,7 @@ import { landlookBaseTile, landlookName, landlookPictId } from "./browser/realmz
 import { clearActionPointMarker, ensureActionPointMarker, landCellSecretState, setLandCellSecretState } from "./map/actionPointMarkers";
 import { setDungeonCellFlags } from "./map/dungeonCellFlags";
 import { GENERATED_SMART_TERRAIN_PROFILES } from "./map/generatedSmartTerrainProfiles";
+import { isScenarioSeedNamedStampName, namedLandStampVariants, resolveNamedLandStamp, type ScenarioSeedNamedStampName } from "./map/namedLandStamps";
 import { isScenarioSeedNamedTileName, namedLandTileVariants, resolveNamedLandTile, type ScenarioSeedNamedTileName } from "./map/namedLandTiles";
 import { defaultStockCombatClearingTile, defaultStockHiddenWalkableTile, isStockCombatClearingTile, isStockHiddenWalkableTile } from "./map/secrets";
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
@@ -542,6 +543,7 @@ export type ScenarioSeedMapOperation =
   | { kind: "room"; x: number; y: number; width: number; height: number; wallTile: number; floorTile: number; doors?: ScenarioSeedRoomDoor[] }
   | { kind: "road" | "river"; points: ScenarioSeedPoint[]; tile: number; width?: number }
   | { kind: "stamp"; x: number; y: number; tiles: number[][] }
+  | { kind: "namedStamp"; x: number; y: number; name: ScenarioSeedNamedStampName; variant?: number }
   | { kind: "namedTile"; x: number; y: number; name: ScenarioSeedNamedTileName; variant?: number }
   | { kind: "terrainGroup"; terrain: SmartBrushPreset; geometry: ScenarioSeedTerrainGeometry }
   | { kind: "landSecret"; x: number; y: number; state: LandCellSecretState }
@@ -1378,6 +1380,19 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
         ctx.errors.push(`${path}.operations[${operationIndex}].variant must be between 1 and ${variants.length} for named tile "${operation.name}" on landlook ${mapLandlook}.`);
       }
     }
+    if (operation?.kind === "namedStamp") {
+      const variants = namedLandStampVariants(mapLandlook, operation.name);
+      if (variants.length === 0) {
+        ctx.errors.push(`${path}.operations[${operationIndex}] named stamp "${operation.name}" is not available for landlook ${mapLandlook}.`);
+      } else if ((operation.variant ?? 1) > variants.length) {
+        ctx.errors.push(`${path}.operations[${operationIndex}].variant must be between 1 and ${variants.length} for named stamp "${operation.name}" on landlook ${mapLandlook}.`);
+      } else {
+        const stamp = resolveNamedLandStamp(mapLandlook, operation.name, operation.variant ?? 1);
+        if (stamp && (operation.x + stamp.width > MAP_SIZE || operation.y + stamp.height > MAP_SIZE)) {
+          ctx.errors.push(`${path}.operations[${operationIndex}] named stamp "${operation.name}" footprint ${stamp.width} x ${stamp.height} extends past the 90 x 90 map.`);
+        }
+      }
+    }
   }
   return {
     ...(key !== undefined ? { key } : {}),
@@ -2080,6 +2095,26 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
       ...(variant !== undefined ? { variant } : {})
     };
   }
+  if (kind === "namedStamp") {
+    allowKeys(value, path, ["kind", "x", "y", "name", "variant"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    const name = requireString(value.name, `${path}.name`, ctx);
+    const variant = optionalInteger(value.variant, `${path}.variant`, ctx);
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    checkIntegerRange(variant, `${path}.variant`, 1, null, ctx);
+    if (name !== null && !isScenarioSeedNamedStampName(name)) {
+      ctx.errors.push(`${path}.name must be a supported stable named land stamp from the scenario schema.`);
+    }
+    return {
+      kind,
+      x: x ?? 0,
+      y: y ?? 0,
+      name: name !== null && isScenarioSeedNamedStampName(name) ? name : "bed",
+      ...(variant !== undefined ? { variant } : {})
+    };
+  }
   if (kind === "terrainGroup") {
     allowKeys(value, path, ["kind", "terrain", "geometry"], ctx);
     const terrain = requireString(value.terrain, `${path}.terrain`, ctx);
@@ -2136,14 +2171,14 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     if (new Set(directions).size !== directions.length) ctx.errors.push(`${path}.directions cannot contain duplicates.`);
     return { kind, x: x ?? 0, y: y ?? 0, directions };
   }
-  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, stamp, namedTile, terrainGroup, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
+  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, stamp, namedStamp, namedTile, terrainGroup, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
   return null;
 }
 
 function validateMapOperationLevelTypes(operations: ScenarioSeedMapOperation[], levelType: LevelType, path: string, ctx: ParseContext) {
   for (let index = 0; index < operations.length; index++) {
     const kind = operations[index].kind;
-    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedTile" || kind === "terrainGroup") && levelType !== "land") {
+    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedStamp" || kind === "namedTile" || kind === "terrainGroup") && levelType !== "land") {
       ctx.errors.push(`${path}.operations[${index}].kind ${kind} is only valid on land maps.`);
     }
     if (kind === "dungeonPassage" && levelType !== "dungeon") {
@@ -3230,6 +3265,15 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
   if (operation.kind === "namedTile") {
     const tile = resolveNamedLandTile(mapContext.landlook, operation.name, operation.variant ?? 1);
     if (tile !== null) setTile(tiles, operation.x, operation.y, tile, mapContext.levelType);
+    return;
+  }
+  if (operation.kind === "namedStamp") {
+    const stamp = resolveNamedLandStamp(mapContext.landlook, operation.name, operation.variant ?? 1);
+    if (stamp) {
+      for (const cell of stamp.cells) {
+        setTile(tiles, operation.x + cell.dx, operation.y + cell.dy, cell.tile, mapContext.levelType);
+      }
+    }
     return;
   }
   if (operation.kind === "terrainGroup") {

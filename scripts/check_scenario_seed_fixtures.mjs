@@ -136,6 +136,7 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 20, 12) === 21 && tileAt(tiles, 22, 13) === 26, "stamp should preserve its two-dimensional tile pattern");
   expect(tileAt(tiles, 80, 11) === 111, "named tile placement should resolve a Plains cave transition without exposing its tile ID");
   expect(tileAt(tiles, 81, 12) === 54, "named tile placement should resolve its 1-based audited variant");
+  expect(tileAt(tiles, 82, 20) === -75 && tileAt(tiles, 83, 20) === -74 && tileAt(tiles, 82, 21) === -73 && tileAt(tiles, 83, 21) === -72, "named stamps should place the complete audited special-tile footprint");
   expect(tiles[80 * 90 + 11] === 111, "land map operations should store asymmetric coordinates in Realmz column-major order");
   expect(tileAt(tiles, 43, 23) === 60, "semantic water terrain should use the learned plains center tile");
   expect(tileAt(tiles, 40, 20) === 25, "semantic water terrain should compile a southeast-connected quarter-water corner to tile 25");
@@ -153,6 +154,8 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   const castleTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === 1)?.tiles ?? [];
   expect(tileAt(castleTiles, 1, 1) === 59 && tileAt(castleTiles, 2, 1) === 96, "Castle operations should keep combat-clearing tile 59 distinct from default hidden-walkable tile 96");
   expect(tileAt(castleTiles, 10, 20) === 146 && tileAt(castleTiles, 11, 21) === 155, "Castle named tiles should resolve audited fixtures and variants");
+  expect(tileAt(castleTiles, 20, 30) === 158 && tileAt(castleTiles, 21, 30) === 161 && tileAt(castleTiles, 22, 30) === 162, "named stamp variants should place the audited food-table composition");
+  expect(tileAt(castleTiles, 30, 30) === 187 && tileAt(castleTiles, 31, 30) === 188 && tileAt(castleTiles, 30, 31) === 190 && tileAt(castleTiles, 31, 31) === 191, "named stamps should place the audited north-wall open door composition");
   const semanticLandlooks = [
     { index: 2, name: "Desert", hidden: [169, 184], combat: [180, 185] },
     { index: 3, name: "Swamp", hidden: [169], combat: [180] },
@@ -167,6 +170,9 @@ function checkMapOperations(createProjectFromScenarioSeed) {
     landlook.combat.forEach((tile, offset) => expect(tileAt(semanticTiles, 40 + landlook.hidden.length + offset, 10) === tile, `${landlook.name} combat-clearing operation should preserve tile ${tile}`));
     const expectedNamedTile = landlook.name === "Desert" ? 130 : landlook.name === "Swamp" ? 188 : 160;
     expect(tileAt(semanticTiles, 50, 10) === expectedNamedTile, `${landlook.name} named tile should resolve the selected landlook-specific variant`);
+    if (landlook.name === "Snow") {
+      expect(tileAt(semanticTiles, 55, 10) === 153 && tileAt(semanticTiles, 55, 11) === 154, "Snow named stamps should resolve a landlook-compatible tall-tree variant");
+    }
   }
 }
 
@@ -565,6 +571,11 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(mapSemantics.errors.some((error) => error.includes("variant must be between 1 and 3")), "named tiles should reject unavailable variants");
     expect(mapSemantics.errors.some((error) => error.includes("supported stable named land tile")), "named tiles should reject unknown names");
     expect(mapSemantics.errors.some((error) => error.includes("named tile \"open-ground\" is not available for landlook 6")), "named tiles should reject names unavailable for a landlook");
+    expect(mapSemantics.errors.some((error) => error.includes("namedStamp is only valid on land maps")), "named stamps should reject dungeon maps");
+    expect(mapSemantics.errors.some((error) => error.includes("named stamp \"bed\" is not available for landlook 0")), "named stamps should reject landlook-incompatible compositions");
+    expect(mapSemantics.errors.some((error) => error.includes("footprint 2 x 2 extends past the 90 x 90 map")), "named stamps should reject footprints that cross the map boundary");
+    expect(mapSemantics.errors.some((error) => error.includes("supported stable named land stamp")), "named stamps should reject unknown names");
+    expect(mapSemantics.errors.some((error) => error.includes("variant must be between 1 and 1 for named stamp \"yellow-house\"")), "named stamps should reject unavailable variants");
   }
 
   const causeRoutContext = createProjectFromScenarioSeed(readSeed("invalid-battle-outcomes.seed.json"));

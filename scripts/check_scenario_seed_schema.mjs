@@ -7,11 +7,15 @@ const schemaPath = path.join(root, "schemas", "scenario-seed.schema.json");
 const docsPath = path.join(root, "docs", "scenario-seed-schema.md");
 const sourcePath = path.join(root, "src", "editor", "scenarioSeed.ts");
 const namedTilesPath = path.join(root, "src", "editor", "map", "namedLandTiles.ts");
+const namedStampsPath = path.join(root, "src", "editor", "map", "namedLandStamps.ts");
+const builtInStampsPath = path.join(root, "src", "editor", "map", "builtInMapStamps.ts");
 
 const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
 const docs = fs.readFileSync(docsPath, "utf8");
 const source = fs.readFileSync(sourcePath, "utf8");
 const namedTilesSource = fs.readFileSync(namedTilesPath, "utf8");
+const namedStampsSource = fs.readFileSync(namedStampsPath, "utf8");
+const builtInStampsSource = fs.readFileSync(builtInStampsPath, "utf8");
 const failures = [];
 
 expect(schema.properties?.schemaVersion?.const === 1, "schemaVersion must be const 1");
@@ -63,6 +67,25 @@ if (namedTileMatch) {
   expect(JSON.stringify(schemaNames) === JSON.stringify(sourceNames), "namedTileName schema enum must exactly match the runtime registry");
 }
 
+const namedStampMatch = namedStampsSource.match(/SCENARIO_SEED_NAMED_STAMP_NAMES\s*=\s*(\[[\s\S]*?\])\s*as const/);
+expect(Boolean(namedStampMatch), "named land stamp source must expose its stable vocabulary");
+if (namedStampMatch) {
+  const sourceNames = JSON.parse(namedStampMatch[1]);
+  const schemaNames = schema.$defs.namedStampName?.enum ?? [];
+  expect(JSON.stringify(schemaNames) === JSON.stringify(sourceNames), "namedStampName schema enum must exactly match the runtime registry");
+  const mappingMatch = namedStampsSource.match(/NAMED_STAMP_IDS[^=]*=\s*(\{[\s\S]*?\});/);
+  expect(Boolean(mappingMatch), "named land stamp source must map every stable name to built-in stamp IDs");
+  if (mappingMatch) {
+    const mapping = JSON.parse(mappingMatch[1]);
+    expect(JSON.stringify(Object.keys(mapping)) === JSON.stringify(sourceNames), "named stamp mapping keys must exactly match the stable vocabulary");
+    const builtInIds = new Set([...builtInStampsSource.matchAll(/\bid:\s*"([^"]+)"/g)].map((match) => match[1]));
+    for (const [name, ids] of Object.entries(mapping)) {
+      expect(Array.isArray(ids) && ids.length > 0, `named stamp ${name} must provide at least one variant`);
+      for (const id of ids) expect(builtInIds.has(id), `named stamp ${name} references missing built-in stamp ${id}`);
+    }
+  }
+}
+
 const sampleSeed = {
   schemaVersion: 1,
   baseTemplate: "blank",
@@ -84,6 +107,7 @@ const sampleSeed = {
       { kind: "road", points: [{ x: 30, y: 30 }, { x: 35, y: 30 }], tile: 11, width: 3 },
       { kind: "river", points: [{ x: 40, y: 40 }, { x: 40, y: 45 }], tile: 12, width: 2 },
       { kind: "stamp", x: 50, y: 50, tiles: [[13, 14], [15, 16]] },
+      { kind: "namedStamp", x: 54, y: 54, name: "yellow-house" },
       { kind: "namedTile", x: 58, y: 58, name: "grave", variant: 2 },
       { kind: "terrainGroup", terrain: "forest", geometry: { kind: "rect", x: 70, y: 70, width: 4, height: 4 } },
       { kind: "combatClearing", x: 60, y: 60, tile: 181 },

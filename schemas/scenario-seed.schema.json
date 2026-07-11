@@ -229,6 +229,7 @@
         { "$ref": "#/$defs/roomOperation" },
         { "$ref": "#/$defs/routeOperation" },
         { "$ref": "#/$defs/stampOperation" },
+        { "$ref": "#/$defs/namedStampOperation" },
         { "$ref": "#/$defs/namedTileOperation" },
         { "$ref": "#/$defs/terrainGroupOperation" },
         { "$ref": "#/$defs/landSecretOperation" },
@@ -472,6 +473,48 @@
         "platform-lava",
         "magic-bubble"
       ]
+    },
+    "namedStampName": {
+      "enum": [
+        "tall-tree",
+        "tall-stone-column",
+        "sarcophagus",
+        "bed",
+        "long-table",
+        "torture-rack",
+        "yellow-bed",
+        "tall-purple-throne",
+        "stone-gargoyle-west",
+        "coffin",
+        "purple-altar",
+        "open-door-north-wall",
+        "open-door-west-wall",
+        "open-door-east-wall",
+        "dome",
+        "yellow-house",
+        "small-castle",
+        "red-building",
+        "temple",
+        "gold-hall",
+        "stone-arch",
+        "stone-hall",
+        "wooden-lookout-tower",
+        "red-tower",
+        "green-gate",
+        "gnarled-root"
+      ]
+    },
+    "namedStampOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "x", "y", "name"],
+      "properties": {
+        "kind": { "const": "namedStamp" },
+        "x": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "name": { "$ref": "#/$defs/namedStampName" },
+        "variant": { "type": "integer", "minimum": 1 }
+      }
     },
     "namedTileOperation": {
       "type": "object",

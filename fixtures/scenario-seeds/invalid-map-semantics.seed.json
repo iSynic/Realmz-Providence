@@ -9,7 +9,10 @@
         { "kind": "hiddenWalkable", "x": 2, "y": 2, "tile": 170 },
         { "kind": "combatClearing", "x": 3, "y": 2, "tile": 169 },
         { "kind": "namedTile", "x": 4, "y": 2, "name": "grave", "variant": 99 },
-        { "kind": "namedTile", "x": 5, "y": 2, "name": "not-a-real-tile" }
+        { "kind": "namedTile", "x": 5, "y": 2, "name": "not-a-real-tile" },
+        { "kind": "namedStamp", "x": 6, "y": 2, "name": "bed" },
+        { "kind": "namedStamp", "x": 89, "y": 89, "name": "yellow-house" },
+        { "kind": "namedStamp", "x": 8, "y": 2, "name": "not-a-real-stamp" }
       ]
     },
     {
@@ -17,7 +20,8 @@
       "operations": [
         { "kind": "landSecret", "x": 1, "y": 1, "state": "hidden" },
         { "kind": "terrainGroup", "terrain": "water", "geometry": { "kind": "rect", "x": 3, "y": 3, "width": 4, "height": 4 } },
-        { "kind": "namedTile", "x": 5, "y": 5, "name": "open-ground" }
+        { "kind": "namedTile", "x": 5, "y": 5, "name": "open-ground" },
+        { "kind": "namedStamp", "x": 6, "y": 6, "name": "temple" }
       ]
     },
     {
@@ -27,7 +31,8 @@
         { "kind": "terrainGroup", "terrain": "lava", "geometry": { "kind": "circle", "x": 5, "y": 5, "radius": 2 } },
         { "kind": "hiddenWalkable", "x": 6, "y": 6, "tile": 169 },
         { "kind": "combatClearing", "x": 7, "y": 6, "tile": 180 },
-        { "kind": "namedTile", "x": 8, "y": 6, "name": "open-ground" }
+        { "kind": "namedTile", "x": 8, "y": 6, "name": "open-ground" },
+        { "kind": "namedStamp", "x": 9, "y": 6, "name": "yellow-house", "variant": 99 }
       ]
     }
   ]

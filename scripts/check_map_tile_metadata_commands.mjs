@@ -263,6 +263,8 @@ function checkLandlookPaintGroupsAndStamps(paintGroups, stamps) {
   assert(plainsStamps.some((stamp) => stamp.id === "tree-pair-151-152"), "Plains should offer its reviewed two-cell tree stamp.");
   assert(!castleStamps.some((stamp) => stamp.id === "tree-pair-151-152"), "Castle should not inherit the unrelated Plains tree stamp by tile number alone.");
   assert(castleStamps.some((stamp) => stamp.id === "castle-sarcophagus-153-154" && stamp.category === "furnishings"), "Castle should offer audited paired furnishings as landlook-specific stamps.");
+  assert(castleStamps.some((stamp) => stamp.id === "castle-long-table-food-158-161-162" && stamp.cells.map((cell) => cell.tile).join(",") === "158,161,162"), "Castle should offer the audited long-table food variant.");
+  assert(castleStamps.some((stamp) => stamp.id === "castle-open-door-north-wall-187-191" && stamp.cells.length === 4), "Castle should offer the audited four-cell north-wall open door stamp.");
   assert(!desertStamps.some((stamp) => stamp.category === "vegetation"), "Desert should not inherit unverified Plains tree-pair stamps.");
   assert(snowStamps.some((stamp) => stamp.id === "tree-pair-153-154"), "Snow should retain its functionally aligned tree-pair stamps.");
 }

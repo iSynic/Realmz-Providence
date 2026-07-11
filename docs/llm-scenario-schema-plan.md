@@ -47,7 +47,7 @@ The normalizer allocates Realmz numeric IDs and preserves explicit numeric IDs w
 
 ## Phase 2: Map Primitives
 
-Status: implemented for fill, rectangle, line, path, border, room, wide road/river paths, rectangular stamps, named regions, stable landlook-aware named tile placement, reviewed Plains/Alternate Plains/Subterranean/Desert/Swamp/Snow water-mountain-forest terrain groups, land Secret Area state, landlook-specific stock hidden-walkable and combat-clearing terrain, directional dungeon passages, and generated Action Point map markers. The generated all-tile adjacency audit now supplies per-landlook usage, exact raw variants, directional neighbor weights, and authored examples as review evidence. Map operations reject out-of-bounds geometry, unknown or landlook-incompatible named tiles, unavailable variants, and non-serializable signed 16-bit tile values. Remaining work: semantic roads and reusable named stamp templates.
+Status: implemented for fill, rectangle, line, path, border, room, wide road/river paths, rectangular stamps, named regions, stable landlook-aware named tile placement, reusable audited named stamps, reviewed Plains/Alternate Plains/Subterranean/Desert/Swamp/Snow water-mountain-forest terrain groups, land Secret Area state, landlook-specific stock hidden-walkable and combat-clearing terrain, directional dungeon passages, and generated Action Point map markers. The generated all-tile adjacency audit now supplies per-landlook usage, exact raw variants, directional neighbor weights, and authored examples as review evidence. Map operations reject out-of-bounds geometry, unknown or landlook-incompatible named content, unavailable variants, and non-serializable signed 16-bit tile values. Remaining work: semantic roads.
 
 Do not require prompts to emit 8,100 tiles for normal map authoring. Add map operations:
 
@@ -59,6 +59,7 @@ Do not require prompts to emit 8,100 tiles for normal map authoring. Add map ope
 - `border`
 - `region`
 - `namedTile`
+- `namedStamp`
 - generated Action Point placement and map-cell marker synchronization
 
 The normalizer applies implemented operations into the fixed 90x90 tile array. Named regions are reusable coordinate references for AP placement and future encounter logic.
