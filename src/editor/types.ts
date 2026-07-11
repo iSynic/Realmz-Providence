@@ -50,7 +50,7 @@ export type SmartBrushRole =
   | "notchNorthWest"
   | "notchSouthEast"
   | "notchSouthWest";
-export type SmartBrushProfileConfidence = "corpus-ranked" | "pixel-ranked" | "curated-fallback" | "unsupported";
+export type SmartBrushProfileConfidence = "reviewed-rules" | "corpus-ranked" | "pixel-ranked" | "curated-fallback" | "unsupported";
 export type SmartBrushCandidateEvidence = {
   tiles: number[];
   samples: number;

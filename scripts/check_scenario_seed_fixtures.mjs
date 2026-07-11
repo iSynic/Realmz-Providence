@@ -126,7 +126,7 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 5, 6) === 9, "path operation should write tile 9 at 5,6");
   expect(tileAt(tiles, 7, 7) === 9, "path operation should write tile 9 at 7,7");
   expect(tileAt(tiles, 10, 4) === 10 && tileAt(tiles, 11, 4) === 10, "border thickness should paint both left edge columns");
-  expect(tileAt(tiles, 12, 4) === 1, "border operation should preserve its interior");
+  expect(tileAt(tiles, 12, 4) === 156, "border operation should preserve its interior");
   expect(tileAt(tiles, 20, 2) === 11, "room operation should paint wall tiles");
   expect(tileAt(tiles, 22, 4) === 12, "room operation should paint floor tiles");
   expect(tileAt(tiles, 23, 2) === 13, "room north door should replace its wall tile");
@@ -152,7 +152,7 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 75, 30) === 42 && tileAt(tiles, 75, 34) === 40, "semantic one-cell water paths should compile directional land-transition caps");
   expect(tileAt(tiles, 30, 12) === 3181, "combat-clearing terrain should retain its authored hidden Secret Area state and Action Point marker");
   expect(tileAt(tiles, 31, 12) === 2169, "default hidden walkable terrain should support an already revealed Secret Area state without an Action Point");
-  expect(tileAt(tiles, 32, 12) === 1001, "generated land Action Points should write the normal trigger marker into their map cell");
+  expect(tileAt(tiles, 32, 12) === 1156, "generated land Action Points should write the normal trigger marker into their map cell");
   const dungeonTiles = result.project.maps.find((map) => map.levelType === "dungeon")?.tiles ?? [];
   expect(tileAt(dungeonTiles, 4, 4, "dungeon") === 0x1501, "generated dungeon Action Points should preserve directional secret-passage flags and add the trigger marker");
   expect(tileAt(dungeonTiles, 7, 4, "dungeon") === 77 && dungeonTiles[4 * 90 + 7] === 77, "dungeon map operations should retain row-major storage");

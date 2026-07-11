@@ -9,9 +9,9 @@
       "levelType": "land",
       "index": 0,
       "landlook": 0,
-      "fillTile": 1,
+      "fillTile": 156,
       "operations": [
-        { "kind": "fill", "tile": 1 },
+        { "kind": "fill", "tile": 156 },
         { "kind": "rect", "x": 2, "y": 2, "width": 3, "height": 2, "tile": 7 },
         { "kind": "line", "x1": 0, "y1": 0, "x2": 4, "y2": 0, "tile": 8 },
         { "kind": "path", "points": [{ "x": 5, "y": 5 }, { "x": 5, "y": 7 }, { "x": 7, "y": 7 }], "tile": 9 },

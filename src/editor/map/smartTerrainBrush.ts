@@ -13,14 +13,19 @@ import {
 import { mapTileIndex, tileValueAt } from "./geometry";
 import { GENERATED_SMART_TERRAIN_PROFILES } from "./generatedSmartTerrainProfiles";
 import { atlasBaseTile, normalizeAtlasTile, tileIconCandidates } from "./renderValues";
+import { alignSmartTerrainPlacementEdges, SmartTerrainEdge, SmartTerrainEdgeSignature } from "./smartTerrainAlignment";
+import {
+  SmartTerrainShapeContext,
+  smartTerrainContextForCell,
+  smartTerrainMaskContext,
+  smartTerrainNeighborMask,
+  smartTerrainRoleFromContext,
+  smartTerrainTileConnects
+} from "./smartTerrainTopology";
 import { clearTileForMap } from "./tileClear";
 
 const TILE_SIZE = 32;
 
-const WATER_FAMILY = [
-  ...range(1, 60),
-  ...range(105, 112)
-];
 const MOUNTAIN_LAND_FAMILY = range(61, 85);
 const MOUNTAIN_WATER_FAMILY = range(86, 93);
 const FOREST_FAMILY = range(121, 129);
@@ -37,17 +42,6 @@ type RegionSignature = Record<SignatureKey, number>;
 type SignatureKey = "fill" | "center" | "north" | "south" | "east" | "west" | "northWest" | "northEast" | "southWest" | "southEast";
 type TileSignature = RegionSignature & { tile: number };
 
-type ShapeContext = {
-  n: boolean;
-  s: boolean;
-  e: boolean;
-  w: boolean;
-  ne: boolean;
-  nw: boolean;
-  se: boolean;
-  sw: boolean;
-};
-
 const ZERO_SIGNATURE: RegionSignature = {
   fill: 0,
   center: 0,
@@ -62,6 +56,7 @@ const ZERO_SIGNATURE: RegionSignature = {
 };
 
 const signatureCache = new WeakMap<HTMLImageElement, Map<string, TileSignature | null>>();
+const edgeSignatureCache = new WeakMap<HTMLImageElement, Map<string, SmartTerrainEdgeSignature | null>>();
 
 export function smartBrushProfileForTileset(tileset: TilesetAsset | null) {
   const landlook = tileset?.landlook;
@@ -83,17 +78,13 @@ export function buildSmartTerrainChanges(
   const presetProfile = profile.presets[preset];
   if (!presetProfile) return emptyPlan("The selected smart terrain preset is not available for this landlook.");
   const cells = uniqueMaskCells(mask, map);
-  if (cells.length === 0) return emptyPlan("Draw a smart terrain mask on the map.");
+  const fallbackConfidence = smartTerrainFallbackConfidence(presetProfile, atlas);
+  if (cells.length === 0) return emptyPlan("Draw a smart terrain mask on the map.", reviewedTerrainRulesAvailable(presetProfile) ? "reviewed-rules" : fallbackConfidence);
 
   const clearTile = clearTileForMap(map, tileset);
   const maskSet = new Set(cells.map(maskKey));
   const planCells: SmartBrushPlan["cells"] = [];
   const skipped: SmartBrushMaskCell[] = [];
-  const confidence = presetProfile.confidence && presetProfile.confidence !== "fallback"
-    ? "corpus-ranked"
-    : atlas
-      ? "pixel-ranked"
-      : "curated-fallback";
 
   for (const cell of cells) {
     const from = tileValueAt(map, cell.x, cell.y);
@@ -101,20 +92,80 @@ export function buildSmartTerrainChanges(
       skipped.push(cell);
       continue;
     }
-    const context = shapeContext(cell, maskSet);
-    const role = resolveSmartTerrainRoleFromContext(context);
+    const context = smartTerrainContextForCell(cell.x, cell.y, maskSet, presetProfile, (x, y) => (
+      x < 0 || y < 0 || x >= map.width || y >= map.height ? null : tileValueAt(map, x, y)
+    ));
+    const role = smartTerrainRoleFromContext(context);
     const match = resolveSmartTerrainMatch(map, cell, context, maskSet, preset, profile, tileset, atlas);
     const index = mapTileIndex(map, cell.x, cell.y);
     planCells.push({ ...cell, index, from, to: match.tile, role, score: match.score, neighborMask: match.neighborMask, source: match.source, samples: match.samples });
   }
 
+  const alignedCells = preset === "water" && atlas
+    ? alignWaterTerrainEdges(planCells, map, presetProfile, tileset, atlas)
+    : planCells;
+
   return {
-    cells: planCells,
+    cells: alignedCells,
     skipped,
-    changedCount: planCells.filter((cell) => cell.from !== cell.to).length,
+    changedCount: alignedCells.filter((cell) => cell.from !== cell.to).length,
     skippedCount: skipped.length,
-    profileConfidence: confidence,
+    profileConfidence: alignedCells.length > 0 && alignedCells.every((cell) => ["center", "curated-mask", "curated-role"].includes(cell.source ?? ""))
+      ? "reviewed-rules"
+      : fallbackConfidence,
     reason: null
+  };
+}
+
+function alignWaterTerrainEdges(
+  cells: SmartBrushPlan["cells"],
+  map: MapEntity,
+  presetProfile: SmartBrushProfile["presets"]["water"],
+  tileset: TilesetAsset | null,
+  atlas: AtlasEntry
+) {
+  const placements = cells.map((cell) => ({
+    x: cell.x,
+    y: cell.y,
+    tile: cell.to,
+    candidates: cell.source === "curated-role"
+      ? presetProfile.curatedRoles?.[cell.role] ?? [cell.to]
+      : [cell.to]
+  }));
+  const cellsByKey = new Map(cells.map((cell) => [maskKey(cell), cell]));
+  const signatures = (tile: number) => {
+    const normalized = normalizeAtlasTile(tile, atlasBaseTile(tileset?.baseTile ?? atlas.asset.baseTile, tileset?.custom ?? atlas.asset.custom));
+    if (!presetProfile.family.includes(normalized)) return null;
+    return tileEdgeSignatureFor(normalized, "water", tileset, atlas);
+  };
+  const selected = alignSmartTerrainPlacementEdges(
+    placements,
+    (x, y) => x < 0 || y < 0 || x >= map.width || y >= map.height ? null : tileValueAt(map, x, y),
+    signatures,
+    (tile, placement) => Math.abs(hashString(`${map.id}:water:${placement.x}:${placement.y}:edge:${tile}`)),
+    (tile, placement) => {
+      const cell = cellsByKey.get(maskKey(placement));
+      const signature = cell ? tileSignatureFor(tile, "water", tileset, atlas) : null;
+      if (!cell || !signature) return 0.25;
+      const desired = desiredSignatureForContext(shapeContextFromNeighborMask(cell.neighborMask ?? 0));
+      const shapeError = 1 - scoreSignature(signature, desired, cell.role);
+      const fillError = Math.abs(signature.fill - desired.fill);
+      return shapeError * 0.18 + fillError * 0.22;
+    }
+  );
+  return cells.map((cell) => ({ ...cell, to: selected.get(maskKey(cell)) ?? cell.to }));
+}
+
+function shapeContextFromNeighborMask(mask: number): SmartTerrainShapeContext {
+  return {
+    n: Boolean(mask & 1),
+    e: Boolean(mask & 2),
+    s: Boolean(mask & 4),
+    w: Boolean(mask & 8),
+    ne: Boolean(mask & 16),
+    se: Boolean(mask & 32),
+    sw: Boolean(mask & 64),
+    nw: Boolean(mask & 128)
   };
 }
 
@@ -140,13 +191,13 @@ export function resolveSmartTerrainTile(
 }
 
 export function resolveSmartTerrainRole(cell: SmartBrushMaskCell, maskSet: Set<string>): SmartBrushRole {
-  return resolveSmartTerrainRoleFromContext(shapeContext(cell, maskSet));
+  return smartTerrainRoleFromContext(smartTerrainMaskContext(cell.x, cell.y, maskSet));
 }
 
 function resolveSmartTerrainMatch(
   map: MapEntity,
   cell: SmartBrushMaskCell,
-  context: ShapeContext,
+  context: SmartTerrainShapeContext,
   maskSet: Set<string>,
   preset: SmartBrushPreset,
   profile: SmartBrushProfile,
@@ -154,17 +205,21 @@ function resolveSmartTerrainMatch(
   atlas: AtlasEntry | null
 ) {
   const presetProfile = profile.presets[preset];
-  const role = resolveSmartTerrainRoleFromContext(context);
-  const neighborMask = smartNeighborMask(context);
+  const role = smartTerrainRoleFromContext(context);
+  const neighborMask = smartTerrainNeighborMask(context);
   const interiorDistance = distanceToMaskBoundary(cell, maskSet);
   if (interiorDistance >= 2) {
     const tile = centerTileForCell(presetProfile, map.id, preset, cell);
     return { tile, score: 1, neighborMask, source: "center", samples: presetProfile.sampleCount ?? null };
   }
 
-  const candidateEvidence = smartCandidatesForCell(map, cell, context, neighborMask, role, preset, presetProfile);
+  const candidateEvidence = smartCandidatesForCell(map, cell, context, neighborMask, role, preset, profile, presetProfile);
+  if (candidateEvidence.source === "curated-mask" || candidateEvidence.source === "curated-role") {
+    const tile = seededPick(candidateEvidence.tiles, map.id, preset, cell, `${candidateEvidence.source}:${role}:${neighborMask}`);
+    return { tile, score: null, neighborMask, source: candidateEvidence.source, samples: candidateEvidence.samples };
+  }
   const candidates = atlas
-    ? broadShapeCandidatesForContext(map, cell, context, preset, presetProfile)
+    ? broadShapeCandidatesForContext(map, cell, context, preset, profile, presetProfile)
     : candidateEvidence.tiles;
   const fallbackTile = tileForSmartRole(presetProfile, role);
   if (!atlas) {
@@ -193,25 +248,26 @@ function resolveSmartTerrainMatch(
 function smartCandidatesForCell(
   map: MapEntity,
   cell: SmartBrushMaskCell,
-  context: ShapeContext,
+  context: SmartTerrainShapeContext,
   neighborMask: number,
   role: SmartBrushRole,
   preset: SmartBrushPreset,
+  profile: SmartBrushProfile,
   presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]
 ) {
-  const curatedMaskCandidates = filterCandidatesForContext(presetProfile.curatedMasks?.[String(neighborMask)] ?? [], map, cell, context, preset, presetProfile);
+  const curatedMaskCandidates = filterCandidatesForContext(presetProfile.curatedMasks?.[String(neighborMask)] ?? [], map, cell, context, preset, profile, presetProfile);
   if (curatedMaskCandidates.length > 0) return { tiles: curatedMaskCandidates, source: "curated-mask", samples: null };
-  const curatedRoleTable = preset === "mountains" && touchesOutsideWater(map, cell, context)
+  const curatedRoleTable = preset === "mountains" && touchesOutsideWater(map, cell, context, profile.presets.water)
     ? presetProfile.curatedWaterRoles
     : presetProfile.curatedRoles;
-  const curatedCandidates = filterCandidatesForContext(curatedRoleTable?.[role] ?? [], map, cell, context, preset, presetProfile);
+  const curatedCandidates = filterCandidatesForContext(curatedRoleTable?.[role] ?? [], map, cell, context, preset, profile, presetProfile);
   if (curatedCandidates.length > 0) return { tiles: curatedCandidates, source: "curated-role", samples: null };
   const exactEvidence = presetProfile.maskCandidates?.[String(neighborMask)] ?? null;
-  const exactCandidates = filterCandidatesForContext(exactEvidence?.tiles ?? [], map, cell, context, preset, presetProfile);
-  const roleCandidates = filterCandidatesForContext(presetProfile.roleCandidates?.[role] ?? [], map, cell, context, preset, presetProfile);
+  const exactCandidates = filterCandidatesForContext(exactEvidence?.tiles ?? [], map, cell, context, preset, profile, presetProfile);
+  const roleCandidates = filterCandidatesForContext(presetProfile.roleCandidates?.[role] ?? [], map, cell, context, preset, profile, presetProfile);
   const combined = uniqueNumbers([...roleCandidates, ...exactCandidates]);
   if (combined.length > 0) return { tiles: combined, source: exactCandidates.length > 0 ? "corpus-mask-prior" : "corpus-role", samples: exactEvidence?.samples ?? null };
-  const fallbackCandidates = filterCandidatesForContext(presetProfile.candidates, map, cell, context, preset, presetProfile);
+  const fallbackCandidates = filterCandidatesForContext(presetProfile.candidates, map, cell, context, preset, profile, presetProfile);
   if (fallbackCandidates.length > 0) return { tiles: fallbackCandidates, source: "corpus-family", samples: null };
   return { tiles: [tileForSmartRole(presetProfile, role)], source: "fallback", samples: null };
 }
@@ -219,11 +275,12 @@ function smartCandidatesForCell(
 function broadShapeCandidatesForContext(
   map: MapEntity,
   cell: SmartBrushMaskCell,
-  context: ShapeContext,
+  context: SmartTerrainShapeContext,
   preset: SmartBrushPreset,
+  profile: SmartBrushProfile,
   presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]
 ) {
-  return filterCandidatesForContext(presetProfile.family, map, cell, context, preset, presetProfile);
+  return filterCandidatesForContext(presetProfile.family, map, cell, context, preset, profile, presetProfile);
 }
 
 function corpusCandidateBias(tile: number, evidence: { tiles: number[] }) {
@@ -236,13 +293,14 @@ function filterCandidatesForContext(
   candidates: number[],
   map: MapEntity,
   cell: SmartBrushMaskCell,
-  context: ShapeContext,
+  context: SmartTerrainShapeContext,
   preset: SmartBrushPreset,
+  profile: SmartBrushProfile,
   presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]
 ) {
   let out = candidates.filter((tile) => !presetProfile.center.includes(tile));
   if (preset === "mountains") {
-    const preferred = touchesOutsideWater(map, cell, context) ? MOUNTAIN_WATER_FAMILY : MOUNTAIN_LAND_FAMILY;
+    const preferred = touchesOutsideWater(map, cell, context, profile.presets.water) ? MOUNTAIN_WATER_FAMILY : MOUNTAIN_LAND_FAMILY;
     const narrowed = out.filter((tile) => preferred.includes(tile));
     if (narrowed.length > 0) out = narrowed;
   }
@@ -255,20 +313,25 @@ function filterCandidatesForContext(
   return out.length > 0 ? out : candidates;
 }
 
-function touchesOutsideWater(map: MapEntity, cell: SmartBrushMaskCell, context: ShapeContext) {
+function touchesOutsideWater(
+  map: MapEntity,
+  cell: SmartBrushMaskCell,
+  context: SmartTerrainShapeContext,
+  waterProfile: SmartBrushProfile["presets"]["water"]
+) {
   const checks = [
-    !context.n ? [cell.x, cell.y - 1] : null,
-    !context.s ? [cell.x, cell.y + 1] : null,
-    !context.e ? [cell.x + 1, cell.y] : null,
-    !context.w ? [cell.x - 1, cell.y] : null,
-    !context.ne ? [cell.x + 1, cell.y - 1] : null,
-    !context.nw ? [cell.x - 1, cell.y - 1] : null,
-    !context.se ? [cell.x + 1, cell.y + 1] : null,
-    !context.sw ? [cell.x - 1, cell.y + 1] : null
-  ].filter((value): value is number[] => Boolean(value));
-  return checks.some(([x, y]) => {
+    !context.n ? [cell.x, cell.y - 1, 4] : null,
+    !context.s ? [cell.x, cell.y + 1, 1] : null,
+    !context.e ? [cell.x + 1, cell.y, 8] : null,
+    !context.w ? [cell.x - 1, cell.y, 2] : null,
+    !context.ne ? [cell.x + 1, cell.y - 1, 64] : null,
+    !context.nw ? [cell.x - 1, cell.y - 1, 32] : null,
+    !context.se ? [cell.x + 1, cell.y + 1, 128] : null,
+    !context.sw ? [cell.x - 1, cell.y + 1, 16] : null
+  ].filter((value): value is [number, number, number] => Boolean(value));
+  return checks.some(([x, y, connectionBit]) => {
     if (x < 0 || y < 0 || x >= map.width || y >= map.height) return false;
-    return WATER_FAMILY.includes(tileValueAt(map, x, y));
+    return smartTerrainTileConnects(tileValueAt(map, x, y), waterProfile, connectionBit);
   });
 }
 
@@ -283,6 +346,75 @@ function tileSignatureFor(tile: number, preset: SmartBrushPreset, tileset: Tiles
   const signature = computeTileSignature(tile, preset, tileset, atlas);
   atlasMap.set(key, signature);
   return signature;
+}
+
+function tileEdgeSignatureFor(tile: number, preset: SmartBrushPreset, tileset: TilesetAsset | null, atlas: AtlasEntry) {
+  let atlasMap = edgeSignatureCache.get(atlas.image);
+  if (!atlasMap) {
+    atlasMap = new Map();
+    edgeSignatureCache.set(atlas.image, atlasMap);
+  }
+  const key = `${atlas.asset.id}:${tile}:${preset}`;
+  if (atlasMap.has(key)) return atlasMap.get(key) ?? null;
+  const signature = computeTileEdgeSignature(tile, preset, tileset, atlas);
+  atlasMap.set(key, signature);
+  return signature;
+}
+
+function computeTileEdgeSignature(tile: number, preset: SmartBrushPreset, tileset: TilesetAsset | null, atlas: AtlasEntry): SmartTerrainEdgeSignature | null {
+  const asset = atlas.asset;
+  const normalized = normalizeAtlasTile(tile, atlasBaseTile(tileset?.baseTile ?? asset.baseTile, tileset?.custom ?? asset.custom));
+  const index = normalized - 1;
+  const column = index % asset.columns;
+  const row = Math.floor(index / asset.columns);
+  if (column < 0 || row < 0 || column >= asset.columns || row >= asset.rows) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = TILE_SIZE;
+  canvas.height = TILE_SIZE;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+  context.imageSmoothingEnabled = false;
+  context.drawImage(
+    atlas.image,
+    column * asset.tileWidth,
+    row * asset.tileHeight,
+    asset.tileWidth,
+    asset.tileHeight,
+    0,
+    0,
+    TILE_SIZE,
+    TILE_SIZE
+  );
+  const data = context.getImageData(0, 0, TILE_SIZE, TILE_SIZE).data;
+  const predicate = terrainPixelPredicate(preset);
+  return {
+    north: terrainEdgeProfile(data, "north", predicate),
+    east: terrainEdgeProfile(data, "east", predicate),
+    south: terrainEdgeProfile(data, "south", predicate),
+    west: terrainEdgeProfile(data, "west", predicate)
+  };
+}
+
+function terrainEdgeProfile(data: Uint8ClampedArray, edge: SmartTerrainEdge, predicate: (pixel: number[]) => boolean) {
+  const segmentCount = 8;
+  const segmentSize = TILE_SIZE / segmentCount;
+  const depth = 3;
+  const profile: number[] = [];
+  for (let segment = 0; segment < segmentCount; segment += 1) {
+    let hits = 0;
+    let total = 0;
+    for (let along = segment * segmentSize; along < (segment + 1) * segmentSize; along += 1) {
+      for (let inward = 0; inward < depth; inward += 1) {
+        const x = edge === "west" ? inward : edge === "east" ? TILE_SIZE - 1 - inward : along;
+        const y = edge === "north" ? inward : edge === "south" ? TILE_SIZE - 1 - inward : along;
+        if (predicate(pixelAt(data, x, y))) hits += 1;
+        total += 1;
+      }
+    }
+    profile.push(total > 0 ? hits / total : 0);
+  }
+  return profile;
 }
 
 function computeTileSignature(tile: number, preset: SmartBrushPreset, tileset: TilesetAsset | null, atlas: AtlasEntry): TileSignature | null {
@@ -373,7 +505,7 @@ function regionFraction(
   return total > 0 ? hits / total : 0;
 }
 
-function desiredSignatureForContext(context: ShapeContext): RegionSignature {
+function desiredSignatureForContext(context: SmartTerrainShapeContext): RegionSignature {
   const cardinals = [context.n, context.s, context.e, context.w].filter(Boolean).length;
   const diagonal = [context.ne, context.nw, context.se, context.sw].filter(Boolean).length;
   const boundary = cardinals < 4;
@@ -439,30 +571,6 @@ function capBias(primary: number, opposite: number, sideA: number, sideB: number
   return 0;
 }
 
-function shapeContext(cell: SmartBrushMaskCell, maskSet: Set<string>): ShapeContext {
-  return {
-    n: hasMaskCell(maskSet, cell.x, cell.y - 1),
-    s: hasMaskCell(maskSet, cell.x, cell.y + 1),
-    e: hasMaskCell(maskSet, cell.x + 1, cell.y),
-    w: hasMaskCell(maskSet, cell.x - 1, cell.y),
-    ne: hasMaskCell(maskSet, cell.x + 1, cell.y - 1),
-    nw: hasMaskCell(maskSet, cell.x - 1, cell.y - 1),
-    se: hasMaskCell(maskSet, cell.x + 1, cell.y + 1),
-    sw: hasMaskCell(maskSet, cell.x - 1, cell.y + 1)
-  };
-}
-
-function smartNeighborMask(context: ShapeContext) {
-  return (context.n ? 1 : 0)
-    | (context.e ? 2 : 0)
-    | (context.s ? 4 : 0)
-    | (context.w ? 8 : 0)
-    | (context.ne ? 16 : 0)
-    | (context.se ? 32 : 0)
-    | (context.sw ? 64 : 0)
-    | (context.nw ? 128 : 0);
-}
-
 function distanceToMaskBoundary(cell: SmartBrushMaskCell, maskSet: Set<string>) {
   for (let distance = 0; distance <= 4; distance += 1) {
     for (let y = cell.y - distance; y <= cell.y + distance; y += 1) {
@@ -475,36 +583,7 @@ function distanceToMaskBoundary(cell: SmartBrushMaskCell, maskSet: Set<string>) 
   return 5;
 }
 
-function resolveSmartTerrainRoleFromContext(context: ShapeContext): SmartBrushRole {
-  const outside = [
-    !context.n ? "north" : null,
-    !context.s ? "south" : null,
-    !context.e ? "east" : null,
-    !context.w ? "west" : null
-  ].filter(Boolean) as Array<"north" | "south" | "east" | "west">;
-
-  if (outside.length === 0) {
-    return "center";
-  }
-  if (outside.length === 1) return outside[0];
-  if (outside.length === 2) {
-    if (!context.n && !context.s) return "lineHorizontal";
-    if (!context.e && !context.w) return "lineVertical";
-    if (!context.n && !context.e) return "northEast";
-    if (!context.n && !context.w) return "northWest";
-    if (!context.s && !context.e) return "southEast";
-    if (!context.s && !context.w) return "southWest";
-  }
-  if (outside.length === 3) {
-    if (context.n) return "capNorth";
-    if (context.s) return "capSouth";
-    if (context.e) return "capEast";
-    if (context.w) return "capWest";
-  }
-  return "single";
-}
-
-function isNarrowContext(context: ShapeContext) {
+function isNarrowContext(context: SmartTerrainShapeContext) {
   const cardinals = [context.n, context.s, context.e, context.w].filter(Boolean).length;
   return cardinals <= 2;
 }
@@ -564,13 +643,27 @@ function maskKey(cell: SmartBrushMaskCell) {
   return `${cell.x}:${cell.y}`;
 }
 
-function emptyPlan(reason: string): SmartBrushPlan {
+function smartTerrainFallbackConfidence(
+  presetProfile: SmartBrushProfile["presets"][SmartBrushPreset],
+  atlas: AtlasEntry | null
+): SmartBrushProfileConfidence {
+  if (presetProfile.confidence && presetProfile.confidence !== "fallback") return "corpus-ranked";
+  return atlas ? "pixel-ranked" : "curated-fallback";
+}
+
+function reviewedTerrainRulesAvailable(presetProfile: SmartBrushProfile["presets"][SmartBrushPreset]) {
+  return Object.keys(presetProfile.curatedMasks ?? {}).length > 0
+    || Object.keys(presetProfile.curatedRoles ?? {}).length > 0
+    || Object.keys(presetProfile.curatedWaterRoles ?? {}).length > 0;
+}
+
+function emptyPlan(reason: string, profileConfidence: SmartBrushProfileConfidence = "unsupported"): SmartBrushPlan {
   return {
     cells: [],
     skipped: [],
     changedCount: 0,
     skippedCount: 0,
-    profileConfidence: "unsupported",
+    profileConfidence,
     reason
   };
 }

@@ -1,6 +1,6 @@
 # Realmz Providence
 
-Providence is a modern scenario editor for Realmz. The current release is 0.2.1.
+Providence is a modern scenario editor for Realmz. The current release is 0.3.0.
 
 It is trying to do two things at once:
 
@@ -10,6 +10,19 @@ It is trying to do two things at once:
 That second part matters. Realmz scenarios contain a lot of classic Mac-era binary data, resource forks, packed records, and runtime quirks. Providence treats the original files as evidence, keeps unknown data visible or preserved, and only writes the parts we understand well enough to edit safely.
 
 The app is built with React/Vite on the frontend and Tauri/Rust on the desktop side.
+
+## 0.3.0 Highlights
+
+The 0.3.0 release adds a prompt-safe scenario creation contract and turns the map editor's accumulated Realmz terrain knowledge into practical semantic authoring tools.
+
+- **Scenario JSON generation** can now create validated Providence projects from a compact prompt-oriented schema instead of requiring callers to construct internal project JSON. Generated projects attach a Realmz runtime baseline and export through both Windows and Mac browser package paths.
+- **Action Point generation** covers the complete documented opcode range, negative carry-through values, prompt-safe semantic aliases, settings-backed actions, runtime branch targets, timed events, encounters, items, conditions, and keyed cross-record references.
+- **Generated scenario content** now includes messages, maps, Action Points, simple and complex encounters, battles, treasures, shops, monsters, items, rules, custom assets, named regions, and deterministic ID allocation reports for repair loops.
+- **Semantic map operations** add stable named tiles, reusable named stamps, semantic roads, water, mountains, forests, secret areas, hidden-walkable terrain, combat-clearing terrain, and directional dungeon passages without requiring prompts to know raw Realmz tile IDs.
+- **Audited terrain knowledge** now documents the functional and visual roles of Plains, Subterranean, Castle, Desert, Swamp, and Snow tiles, including cave transitions, structures, props, hidden paths, combat-clearing structures, and Castle architectural pieces.
+- **Smart Brushes** now use reviewed directional rules before corpus or pixel fallback. Narrow streams select exact ends, straights, bends, and forks; new terrain joins compatible existing terrain; shoreline variants are resolved together so shared edges meet and oversized triangular spikes are avoided.
+- **Map palettes and overlays** distinguish hidden-walkable terrain from combat-clearing terrain, scope those behaviors by landlook, provide landlook-specific authoring categories, merge duplicate advanced tile sources, and expose an all-tiles palette.
+- **Generation smoke coverage** compiles representative scenarios across eight feature lanes and validates 16 Windows/Mac browser package exports, with focused regression coverage for semantic terrain topology and loaded-atlas Smart Brush behavior.
 
 ## 0.2.1 Hotfix
 
@@ -65,8 +78,10 @@ Providence can currently:
 - create and open `.providence` project packages
 - import Realmz scenario folders
 - browse and edit maps and Player Maps
-- paint land/dungeon tiles and special land/icon-backed tiles
+- paint land/dungeon tiles and special land/icon-backed tiles with semantic terrain brushes, named tiles, and reusable stamps
+- author hidden/revealed Secret Areas, hidden-walkable terrain, combat-clearing terrain, and directional dungeon passages
 - author custom landlooks and reusable map stamps
+- generate validated, exportable Providence projects from the prompt-safe Scenario JSON schema
 - edit Action Points and reusable action data
 - edit scenario strings, option labels, TEXT resources, and styled scrolling text
 - inspect and edit encounters, battles, monsters, economy records, rules, and scenario metadata

@@ -1784,7 +1784,7 @@ function PaintModePanel({
               ["Mask Cells", smartBrushMask.length],
               ["Will Change", smartBrushPlan.changedCount],
               ["Preserved", smartBrushPlan.skippedCount],
-              ["Profile", smartBrushPlan.profileConfidence === "corpus-ranked" ? "corpus ranked" : smartBrushPlan.profileConfidence === "pixel-ranked" ? "pixel ranked" : smartBrushPlan.profileConfidence === "curated-fallback" ? "curated fallback" : "unsupported"],
+              ["Profile", smartBrushPlan.profileConfidence === "reviewed-rules" ? "reviewed rules" : smartBrushPlan.profileConfidence === "corpus-ranked" ? "corpus ranked" : smartBrushPlan.profileConfidence === "pixel-ranked" ? "pixel ranked" : smartBrushPlan.profileConfidence === "curated-fallback" ? "curated fallback" : "unsupported"],
               ["Landlook", selectedTileset?.landlook ?? "none"]
             ]}
           />

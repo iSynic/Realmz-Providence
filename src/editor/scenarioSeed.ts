@@ -44,6 +44,7 @@ import { GENERATED_SMART_TERRAIN_PROFILES } from "./map/generatedSmartTerrainPro
 import { isScenarioSeedNamedStampName, namedLandStampVariants, resolveNamedLandStamp, type ScenarioSeedNamedStampName } from "./map/namedLandStamps";
 import { isScenarioSeedNamedTileName, namedLandTileVariants, resolveNamedLandTile, type ScenarioSeedNamedTileName } from "./map/namedLandTiles";
 import { semanticRoadTile, supportsSemanticRoads } from "./map/semanticRoads";
+import { smartTerrainContextForCell, smartTerrainNeighborMask, smartTerrainRoleFromContext, smartTerrainTileConnects } from "./map/smartTerrainTopology";
 import { defaultStockCombatClearingTile, defaultStockHiddenWalkableTile, isStockCombatClearingTile, isStockHiddenWalkableTile } from "./map/secrets";
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
 import { copyCurrentMonsterToAllSets, generateMonsterVariants } from "./projectCommands/targetRecordCommands";
@@ -3369,10 +3370,13 @@ function applyTerrainGroup(
   if (!profile) return;
   const cells = terrainGeometryCells(operation.geometry);
   const maskSet = new Set(cells.map(({ x, y }) => `${x}:${y}`));
+  const terrainProfile = profile.presets[operation.terrain];
   for (const cell of cells) {
-    const context = terrainShapeContext(cell.x, cell.y, maskSet);
-    const role = terrainRoleFromContext(context);
-    const mask = terrainNeighborMask(context);
+    const context = smartTerrainContextForCell(cell.x, cell.y, maskSet, terrainProfile, (x, y) => (
+      x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE ? null : tiles[mapStorageTileIndex(mapContext.levelType, x, y)]
+    ));
+    const role = smartTerrainRoleFromContext(context);
+    const mask = smartTerrainNeighborMask(context);
     const tile = semanticTerrainTile(tiles, cell.x, cell.y, operation.terrain, role, mask, maskSet, profile, mapContext.mapSeed, mapContext.levelType);
     setTile(tiles, cell.x, cell.y, tile, mapContext.levelType);
   }
@@ -3423,39 +3427,6 @@ function linePoints(start: ScenarioSeedPoint, end: ScenarioSeedPoint) {
   }
 }
 
-type TerrainShapeContext = { n: boolean; e: boolean; s: boolean; w: boolean; ne: boolean; se: boolean; sw: boolean; nw: boolean };
-
-function terrainShapeContext(x: number, y: number, maskSet: Set<string>): TerrainShapeContext {
-  const has = (xx: number, yy: number) => maskSet.has(`${xx}:${yy}`);
-  return { n: has(x, y - 1), e: has(x + 1, y), s: has(x, y + 1), w: has(x - 1, y), ne: has(x + 1, y - 1), se: has(x + 1, y + 1), sw: has(x - 1, y + 1), nw: has(x - 1, y - 1) };
-}
-
-function terrainNeighborMask(context: TerrainShapeContext) {
-  return (context.n ? 1 : 0) | (context.e ? 2 : 0) | (context.s ? 4 : 0) | (context.w ? 8 : 0)
-    | (context.ne ? 16 : 0) | (context.se ? 32 : 0) | (context.sw ? 64 : 0) | (context.nw ? 128 : 0);
-}
-
-function terrainRoleFromContext(context: TerrainShapeContext): SmartBrushRole {
-  const outside = [!context.n ? "north" : null, !context.s ? "south" : null, !context.e ? "east" : null, !context.w ? "west" : null].filter((value): value is "north" | "south" | "east" | "west" => value !== null);
-  if (outside.length === 0) return "center";
-  if (outside.length === 1) return outside[0];
-  if (outside.length === 2) {
-    if (!context.n && !context.s) return "lineHorizontal";
-    if (!context.e && !context.w) return "lineVertical";
-    if (!context.n && !context.e) return "northEast";
-    if (!context.n && !context.w) return "northWest";
-    if (!context.s && !context.e) return "southEast";
-    if (!context.s && !context.w) return "southWest";
-  }
-  if (outside.length === 3) {
-    if (context.n) return "capNorth";
-    if (context.s) return "capSouth";
-    if (context.e) return "capEast";
-    if (context.w) return "capWest";
-  }
-  return "single";
-}
-
 function semanticTerrainTile(
   tiles: number[], x: number, y: number, terrain: SmartBrushPreset, role: SmartBrushRole, mask: number,
   maskSet: Set<string>, profile: SmartBrushProfile, mapSeed: string, levelType: LevelType
@@ -3464,7 +3435,7 @@ function semanticTerrainTile(
   if (terrainDistanceToBoundary(x, y, maskSet) >= 2) return seededTerrainPick(terrainProfile.center, mapSeed, terrain, x, y, "center");
   const curatedMask = terrainProfile.curatedMasks?.[String(mask)] ?? [];
   if (curatedMask.length > 0) return seededTerrainPick(curatedMask, mapSeed, terrain, x, y, `curated-mask:${mask}`);
-  const curatedRoleTable = terrain === "mountains" && terrainTouchesWater(tiles, x, y, maskSet, levelType)
+  const curatedRoleTable = terrain === "mountains" && terrainTouchesWater(tiles, x, y, maskSet, levelType, profile.presets.water)
     ? terrainProfile.curatedWaterRoles
     : terrainProfile.curatedRoles;
   const curated = curatedRoleTable?.[role] ?? [];
@@ -3473,7 +3444,7 @@ function semanticTerrainTile(
   const roleCandidates = terrainProfile.roleCandidates?.[role] ?? [];
   let candidates = [...new Set([...roleCandidates, ...exact])].filter((tile) => !terrainProfile.center.includes(tile));
   if (terrain === "mountains") {
-    const waterEdge = terrainTouchesWater(tiles, x, y, maskSet, levelType);
+    const waterEdge = terrainTouchesWater(tiles, x, y, maskSet, levelType, profile.presets.water);
     const narrowed = candidates.filter((tile) => waterEdge ? tile >= 86 && tile <= 93 : tile >= 61 && tile <= 85);
     if (narrowed.length > 0) candidates = narrowed;
   }
@@ -3493,14 +3464,20 @@ function terrainDistanceToBoundary(x: number, y: number, maskSet: Set<string>) {
   return 2;
 }
 
-function terrainTouchesWater(tiles: number[], x: number, y: number, maskSet: Set<string>, levelType: LevelType) {
-  const neighbors = [[x, y - 1], [x + 1, y], [x, y + 1], [x - 1, y]];
-  return neighbors.some(([xx, yy]) => !maskSet.has(`${xx}:${yy}`) && xx >= 0 && yy >= 0 && xx < MAP_SIZE && yy < MAP_SIZE && isWaterTerrainTile(tiles[mapStorageTileIndex(levelType, xx, yy)]));
-}
-
-function isWaterTerrainTile(tile: number) {
-  const normalized = Math.abs(tile) % 1000;
-  return (normalized >= 1 && normalized <= 60) || (normalized >= 105 && normalized <= 112);
+function terrainTouchesWater(
+  tiles: number[],
+  x: number,
+  y: number,
+  maskSet: Set<string>,
+  levelType: LevelType,
+  waterProfile: SmartBrushProfile["presets"]["water"]
+) {
+  const neighbors = [[x, y - 1, 4], [x + 1, y, 8], [x, y + 1, 1], [x - 1, y, 2]];
+  return neighbors.some(([xx, yy, connectionBit]) => (
+    !maskSet.has(`${xx}:${yy}`)
+    && xx >= 0 && yy >= 0 && xx < MAP_SIZE && yy < MAP_SIZE
+    && smartTerrainTileConnects(tiles[mapStorageTileIndex(levelType, xx, yy)], waterProfile, connectionBit)
+  ));
 }
 
 function seededTerrainPick(candidates: number[], mapSeed: string, terrain: SmartBrushPreset, x: number, y: number, salt: string) {

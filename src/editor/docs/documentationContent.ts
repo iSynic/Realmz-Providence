@@ -1110,11 +1110,14 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         paragraphs: [
           "Smart terrain is a beta implementation for land maps with supported standard landlooks. It is useful for roughing in mountains, water, and forest, but the edge resolver is still being refined and should be reviewed before release-quality maps are exported.",
           "Draw the full intended region, preview the resolved result, then apply it as ordinary undoable tile edits.",
-          "Mountains, water, and forest use curated tile families plus atlas-derived shape matching. Interior cells should become full terrain; boundary cells should choose edges, corners, notches, and narrow-line fallbacks that fit the mask."
+          "Mountains, water, and forest use reviewed directional rules first, then corpus and atlas-derived shape matching only where no reviewed rule exists. Interior cells become full terrain; boundary cells choose audited edges, corners, notches, stream ends, straight channels, bends, and forks that fit the mask.",
+          "New brush strokes also join audited terrain already beside the mask. Directional semantics distinguish the terrain-facing and open-facing sides of shoreline, ridge, and forest transition tiles instead of treating every tile in a family as connected on every side.",
+          "When a reviewed shoreline role has several sloped variants, Providence resolves the preview as a group and compares their rendered shared edges. It keeps the semantic role fixed while choosing variants whose water and land boundaries meet across adjacent tiles, then favors the variant whose fill and corner coverage best match the drawn mask so oversized triangular spikes are avoided."
         ],
         points: [
           "Presets currently cover Mountains, Water, and Trees / Forest.",
           "Smart terrain preserves roads, buildings, special/icon tiles, Action Point markers, and unrelated terrain.",
+          "Realmz Secret Area and Action Point state bands are normalized when adjoining terrain is recognized.",
           "Re-running Smart over the same family is allowed so rough output can be reshaped.",
           "Mountains currently have the strongest profile; water and forest remain useful but need manual inspection and touch-up.",
           "Custom landlooks are intentionally unsupported until Providence can analyze or author their own smart profiles."
