@@ -31,6 +31,7 @@ try {
   checkCastleWallSemantics(visualSemantics);
   checkSwampSemantics(visualSemantics);
   checkSnowSemantics(visualSemantics);
+  checkDesertSemantics(visualSemantics);
   checkHiddenWalkablePaletteSource();
   checkLandActionPointCommands(commands, scriptCommands, actionPointMarkers);
   checkDungeonActionPointCommands(commands, scriptCommands, actionPointMarkers);
@@ -223,6 +224,19 @@ function checkHiddenWalkableOverlay(secretTiles, metadata) {
     assert(secretTiles.showsCombatClearingOverlay(tile, snow), `Snow tile ${tile} should receive the combat-clearing overlay.`);
   }
   assert(secretTiles.defaultStockCombatClearingTile(10) === 180, "Snow combat-clearing authoring should default to tile 180.");
+
+  const desert = landMap(0, 5);
+  for (const tile of [169, 184]) {
+    assert(secretTiles.isStockHiddenWalkableTile(tile, 5), `Desert tile ${tile} should be hidden-walkable terrain.`);
+    assert(secretTiles.showsHiddenWalkableOverlay(tile, desert), `Desert tile ${tile} should receive the hidden-walkable overlay.`);
+    assert(!secretTiles.isStockCombatClearingTile(tile, 5), `Walkable Desert tile ${tile} should not be mislabeled as combat-clearing.`);
+  }
+  assert(secretTiles.defaultStockHiddenWalkableTile(5) === 169, "Desert hidden-walkable authoring should default to tile 169.");
+  for (const tile of [180, 181, 182, 183, 185]) {
+    assert(secretTiles.isStockCombatClearingTile(tile, 5), `Desert tile ${tile} should be combat-clearing terrain.`);
+    assert(secretTiles.showsCombatClearingOverlay(tile, desert), `Desert tile ${tile} should receive the combat-clearing overlay.`);
+  }
+  assert(secretTiles.defaultStockCombatClearingTile(5) === 180, "Desert combat-clearing authoring should default to tile 180.");
 }
 
 function checkSwampSemantics({ landlookTileVisualSemantics }) {
@@ -265,6 +279,26 @@ function checkSnowSemantics({ landlookTileVisualSemantics }) {
   assert(landlookTileVisualSemantics(184, 10)?.notes?.includes("line-of-sight blocking"), "Snow tile 184 should preserve its source-backed LOS blocking behavior.");
   assert(landlookTileVisualSemantics(185, 10)?.notes?.includes("does not block line of sight"), "Snow tile 185 should preserve its LOS exception.");
   assert(landlookTileVisualSemantics(187, 10)?.category === "graves", "Snow tile 187 should retain the aligned graveyard role.");
+}
+
+function checkDesertSemantics({ landlookTileVisualSemantics }) {
+  assert(landlookTileVisualSemantics(36, 5)?.label === "Open desert sand", "Desert tile 36 should not inherit the Plains blank-tile label.");
+  assert(landlookTileVisualSemantics(52, 5)?.category === "water-shore", "Desert tile 52 should be an oasis pool rather than a Plains grave.");
+  assert(landlookTileVisualSemantics(94, 5)?.label === "North-south desert briar wall", "Desert tile 94 should identify the briar-wall family.");
+  assert(landlookTileVisualSemantics(105, 5)?.label === "Stream to cave, cave west", "Desert tile 105 should retain the solved transition identity.");
+  assert(landlookTileVisualSemantics(113, 5)?.notes?.includes("Walkable but line-of-sight blocking"), "Desert tile 113 should preserve its walkable LOS-blocking passage behavior.");
+  assert(landlookTileVisualSemantics(118, 5)?.label === "Lone palm tree", "Desert tile 118 should be the lone-palm variant.");
+  assert(landlookTileVisualSemantics(121, 5)?.label === "Solid palm grove", "Desert tile 121 should identify the palm-grove center.");
+  assert(landlookTileVisualSemantics(148, 5)?.notes?.includes("Solid and line-of-sight blocking"), "Desert tile 148 should preserve its solid palm-cluster behavior.");
+  assert(landlookTileVisualSemantics(168, 5)?.category === "buildings", "Desert tile 168 should be an arch rather than a Plains blank tile.");
+  assert(landlookTileVisualSemantics(169, 5)?.label === "Hidden walkable desert ridge", "Desert tile 169 should identify its hidden-walkable role.");
+  assert(landlookTileVisualSemantics(180, 5)?.label === "Combat-clearing desert mountain-to-land fill", "Desert tile 180 should identify its combat-clearing role.");
+  assert(landlookTileVisualSemantics(184, 5)?.notes?.includes("already open during land exploration"), "Desert tile 184 should be hidden walkable rather than combat-clearing.");
+  assert(landlookTileVisualSemantics(185, 5)?.label === "Combat-clearing east-west desert briar wall", "Desert tile 185 should identify its combat-clearing wall role.");
+  assert(landlookTileVisualSemantics(187, 5)?.category === "tree-detail", "Desert tile 187 should be vegetation rather than a Plains grave.");
+  assert(landlookTileVisualSemantics(191, 5)?.label === "Plain desert sand", "Desert tile 191 should identify the source-defined base sand.");
+  assert(landlookTileVisualSemantics(193, 5)?.category === "water-shore", "Desert tile 193 should be an oasis pool rather than a Plains house.");
+  assert(landlookTileVisualSemantics(195, 5)?.confidence === "uncertain", "Desert tile 195 should preserve uncertainty about the bright sand effect.");
 }
 
 function checkCastleWallSemantics({ landlookTileVisualSemantics }) {

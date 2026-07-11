@@ -5,12 +5,14 @@ const DUNGEON_SECRET_DIRECTION_MASK = 0x0f00;
 const STOCK_HIDDEN_WALKABLE_TILES = new Map<number, ReadonlySet<number>>([
   [0, new Set([169])],
   [4, new Set([96])],
+  [5, new Set([169, 184])],
   [9, new Set([169])],
   [10, new Set([169])]
 ]);
 const STOCK_COMBAT_CLEARING_TILES = new Map<number, ReadonlySet<number>>([
   [0, new Set([180, 181, 182, 183, 184, 185])],
   [4, new Set([59, 60, 61, 62, 63, 64, 65])],
+  [5, new Set([180, 181, 182, 183, 185])],
   [9, new Set([180, 181, 182, 183, 184, 185])],
   [10, new Set([180, 181, 182, 183, 184, 185])]
 ]);
