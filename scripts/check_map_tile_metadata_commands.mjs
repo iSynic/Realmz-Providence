@@ -196,6 +196,10 @@ function checkHiddenWalkableOverlay(secretTiles, metadata) {
   assert(secretTiles.defaultStockCombatClearingTile(0) === 180, "Plains combat-clearing authoring should default to tile 180.");
   assert(secretTiles.defaultStockCombatClearingTile(4) === 59, "Castle combat-clearing authoring should default to tile 59.");
   assert(secretTiles.showsCombatClearingOverlay(3059, castle), "A marked Castle wall should retain its combat-clearing overlay.");
+  for (const tile of [78, 79, 80]) {
+    assert(!secretTiles.isStockHiddenWalkableTile(tile, 4), `Castle rug tile ${tile} should not be classified as hidden walkable.`);
+    assert(!secretTiles.isStockCombatClearingTile(tile, 4), `Castle rug tile ${tile} should not be classified as combat clearing.`);
+  }
   assert(secretTiles.hasSecretMarkerTile(3059, castle), "A marked Castle wall should independently retain its ordinary Secret Area marker.");
 }
 
@@ -213,6 +217,55 @@ function checkCastleWallSemantics({ landlookTileVisualSemantics }) {
   assert(landlookTileVisualSemantics(33, 4)?.notes?.includes("southwest and southeast corners"), "Castle tile 33 should preserve its south-facing projection exception.");
   assert(landlookTileVisualSemantics(36, 4)?.notes?.includes("southeast corner instead of floor"), "Castle tile 36 should preserve its projection exception.");
   assert(landlookTileVisualSemantics(37, 4)?.notes?.includes("southwest corner instead of floor"), "Castle tile 37 should preserve its mirrored projection exception.");
+  assert(landlookTileVisualSemantics(66, 4)?.notes?.includes("Horizontal mirror of Castle tile 49"), "Castle tile 66 should preserve its mirror relationship to tile 49.");
+  assert(landlookTileVisualSemantics(67, 4)?.category === "blank", "Castle tile 67 should be identified as the likely non-authoring white tile.");
+  assert(landlookTileVisualSemantics(68, 4)?.label === "Pit", "Castle tile 68 should be identified as a pit.");
+  assert(landlookTileVisualSemantics(69, 4)?.label === "Stairway descending underground", "Castle tile 69 should be identified as the descending stairway.");
+  assert(landlookTileVisualSemantics(70, 4)?.label === "Dark acid pit", "Castle tile 70 should be identified as the dark pit with acid at the bottom.");
+  assert(landlookTileVisualSemantics(71, 4)?.label === "Lava", "Castle tile 71 should be identified as lava.");
+  assert(landlookTileVisualSemantics(72, 4)?.confidence === "likely", "Castle tile 72 should preserve the tentative acid identification.");
+  assert(landlookTileVisualSemantics(73, 4)?.label === "Shallow water", "Castle tile 73 should be identified as shallow water.");
+  assert(landlookTileVisualSemantics(74, 4)?.notes?.includes("north-south with a portcullis"), "Castle tile 74 should be the north-south portcullis passage.");
+  assert(landlookTileVisualSemantics(75, 4)?.notes?.includes("east-west with a portcullis"), "Castle tile 75 should be the east-west portcullis passage.");
+  assert(landlookTileVisualSemantics(76, 4)?.notes?.includes("north-south with a wooden door"), "Castle tile 76 should be the north-south wooden-door passage.");
+  assert(landlookTileVisualSemantics(77, 4)?.notes?.includes("east-west with a wooden door"), "Castle tile 77 should be the east-west wooden-door passage.");
+  assert(landlookTileVisualSemantics(78, 4)?.label === "Red rug center", "Castle tile 78 should be the red rug center rather than hidden-wall terrain.");
+  assert(landlookTileVisualSemantics(79, 4)?.notes?.includes("outside left and top edges"), "Castle tile 79 should preserve its outside northwest embroidery.");
+  assert(landlookTileVisualSemantics(80, 4)?.notes?.includes("inside bottom and right corners"), "Castle tile 80 should preserve its inside-corner embroidery.");
+  assert(landlookTileVisualSemantics(81, 4)?.label === "Red rug southwest outside corner", "Castle tile 81 should be the southwest outside rug corner.");
+  assert(landlookTileVisualSemantics(82, 4)?.label === "Red rug southwest inside corner", "Castle tile 82 should be the southwest inside rug corner.");
+  assert(landlookTileVisualSemantics(83, 4)?.label === "Red rug southeast outside corner", "Castle tile 83 should be the southeast outside rug corner.");
+  assert(landlookTileVisualSemantics(84, 4)?.label === "Red rug southeast inside corner", "Castle tile 84 should be the southeast inside rug corner.");
+  assert(landlookTileVisualSemantics(85, 4)?.label === "Red rug northeast outside corner", "Castle tile 85 should be the northeast outside rug corner.");
+  assert(landlookTileVisualSemantics(86, 4)?.label === "Red rug northeast inside corner", "Castle tile 86 should be the northeast inside rug corner.");
+  assert(landlookTileVisualSemantics(87, 4)?.label === "Red rug east edge", "Castle tile 87 should be the east rug edge.");
+  assert(landlookTileVisualSemantics(88, 4)?.label === "Red rug north edge", "Castle tile 88 should be the north rug edge.");
+  assert(landlookTileVisualSemantics(89, 4)?.label === "Red rug south edge", "Castle tile 89 should be the south rug edge.");
+  assert(landlookTileVisualSemantics(90, 4)?.label === "Red rug west edge", "Castle tile 90 should be the west rug edge.");
+  assert(landlookTileVisualSemantics(91, 4)?.notes?.includes("pit tile 68"), "Castle tile 91 should preserve its covered-pit combat expansion.");
+  assert(landlookTileVisualSemantics(92, 4)?.label === "Double wooden door", "Castle tile 92 should be the double wooden door.");
+  assert(landlookTileVisualSemantics(93, 4)?.label === "Horizontal wooden floor or bridge", "Castle tile 93 should preserve its horizontal orientation.");
+  assert(landlookTileVisualSemantics(94, 4)?.label === "Vertical wooden floor or bridge", "Castle tile 94 should preserve its vertical orientation.");
+  assert(landlookTileVisualSemantics(95, 4)?.label === "Gray marble floor", "Castle tile 95 should be gray marble floor.");
+  assert(landlookTileVisualSemantics(96, 4)?.label === "Hidden walkable thick red-black wall", "Castle tile 96 should be identified as a hidden-walkable wall rather than floor.");
+  assert(landlookTileVisualSemantics(97, 4)?.label === "Broken stone floor", "Castle tile 97 should be broken stone floor.");
+  assert(landlookTileVisualSemantics(98, 4)?.label === "Stained stone floor", "Castle tile 98 should be stained stone floor.");
+  for (const tile of [99, 100, 101, 102, 103, 104]) {
+    assert(landlookTileVisualSemantics(tile, 4)?.confidence === "likely", `Castle white-feature tile ${tile} should remain tentative pending bench/inlay confirmation.`);
+  }
+  for (const tile of [105, 106, 107, 108, 109, 110]) {
+    assert(landlookTileVisualSemantics(tile, 4)?.confidence === "likely", `Castle white-feature tile ${tile} should preserve the stool/inlay uncertainty.`);
+  }
+  assert(landlookTileVisualSemantics(111, 4)?.label === "Plain cobblestone floor", "Castle tile 111 should be plain cobblestone floor.");
+  assert(landlookTileVisualSemantics(112, 4)?.label === "Cobblestone with single bloodstain", "Castle tile 112 should have one bloodstain.");
+  assert(landlookTileVisualSemantics(113, 4)?.label === "Cobblestone with multiple bloodstains", "Castle tile 113 should have multiple bloodstains.");
+  assert(landlookTileVisualSemantics(114, 4)?.notes?.includes("slime or acid"), "Castle tile 114 should preserve the green stain interpretation.");
+  assert(landlookTileVisualSemantics(115, 4)?.label === "Cobblestone with single scroll", "Castle tile 115 should contain one scroll.");
+  assert(landlookTileVisualSemantics(116, 4)?.label === "Cobblestone with single skull", "Castle tile 116 should contain one skull.");
+  assert(landlookTileVisualSemantics(117, 4)?.notes?.includes("equipment, treasure"), "Castle tile 117 should preserve the equipment or treasure interpretation.");
+  assert(landlookTileVisualSemantics(118, 4)?.label === "Large machine, lever up", "Castle tile 118 should be the machine with its lever up.");
+  assert(landlookTileVisualSemantics(119, 4)?.label === "Large machine, lever down", "Castle tile 119 should be the machine with its lever down.");
+  assert(landlookTileVisualSemantics(120, 4)?.notes?.includes("effect or stain"), "Castle tile 120 should preserve the blue magical effect or stain interpretation.");
   assert(landlookTileVisualSemantics(1, 0)?.category === "water-shore", "Castle wall semantics should not replace Plains shoreline semantics.");
 }
 

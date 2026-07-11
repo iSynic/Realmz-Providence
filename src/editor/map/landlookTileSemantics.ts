@@ -167,6 +167,63 @@ const CASTLE_WALL_EXACT: Record<number, LandlookTileVisualSemantics> = {
   40: { label: "Solid thick red-black wall", category: "buildings", confidence: "known", notes: "Solid thick red/black outer-wall fill with no land. Perspective filler may touch tile edges without indicating a traversable connection." }
 };
 
+const CASTLE_FEATURE_EXACT: Record<number, LandlookTileVisualSemantics> = {
+  66: { label: "Mirrored masonry wall transition", category: "buildings", confidence: "known", notes: "Horizontal mirror of Castle tile 49. Realmz marks the tile solid and line-of-sight blocking." },
+  67: { label: "Pure white tile", category: "blank", confidence: "known", notes: "Pure white atlas tile, probably not intended for scenario authoring despite having walkable runtime metadata." },
+  68: { label: "Pit", category: "hazard", confidence: "known", notes: "Pit terrain. Realmz requires flight or floating movement." },
+  69: { label: "Stairway descending underground", category: "buildings", confidence: "known", notes: "Gray masonry stairway descending into the ground. Realmz marks the tile walkable." },
+  70: { label: "Dark acid pit", category: "hazard", confidence: "known", notes: "Dark pit with acid at the bottom. Realmz requires flight or floating movement." },
+  71: { label: "Lava", category: "hazard", confidence: "known", notes: "Lava hazard requiring special movement or flight." },
+  72: { label: "Acid pool", category: "hazard", confidence: "likely", notes: "Green liquid hazard, likely acid. It uses the same restricted movement behavior as lava." },
+  73: { label: "Shallow water", category: "water-shore", confidence: "known", notes: "Shallow blue water that Realmz marks normally walkable." },
+  74: { label: "North-south portcullis passage", category: "buildings", confidence: "known", notes: "Walk-through masonry passage running north-south with a portcullis. Walkable, but blocks line of sight." },
+  75: { label: "East-west portcullis passage", category: "buildings", confidence: "known", notes: "Walk-through masonry passage running east-west with a portcullis. Walkable, but blocks line of sight." },
+  76: { label: "North-south wooden-door passage", category: "buildings", confidence: "known", notes: "Walk-through masonry passage running north-south with a wooden door. Walkable, but blocks line of sight." },
+  77: { label: "East-west wooden-door passage", category: "buildings", confidence: "known", notes: "Walk-through masonry passage running east-west with a wooden door. Walkable, but blocks line of sight." },
+  78: { label: "Red rug center", category: "terrain-prop", confidence: "known", notes: "Center fill for the red rug family." },
+  79: { label: "Red rug northwest outside edge", category: "terrain-prop", confidence: "known", notes: "Northwest rug tile with gold embroidery on the outside left and top edges." },
+  80: { label: "Red rug northwest inside corner", category: "terrain-prop", confidence: "known", notes: "Northwest rug tile with gold embroidery on the inside bottom and right corners." },
+  81: { label: "Red rug southwest outside corner", category: "terrain-prop", confidence: "known", notes: "Southwest outside rug corner with gold embroidery on the left and bottom edges." },
+  82: { label: "Red rug southwest inside corner", category: "terrain-prop", confidence: "known", notes: "Southwest inside rug corner with gold embroidery on the top and right edges." },
+  83: { label: "Red rug southeast outside corner", category: "terrain-prop", confidence: "known", notes: "Southeast outside rug corner with gold embroidery on the right and bottom edges." },
+  84: { label: "Red rug southeast inside corner", category: "terrain-prop", confidence: "known", notes: "Southeast inside rug corner with gold embroidery on the top and left edges." },
+  85: { label: "Red rug northeast outside corner", category: "terrain-prop", confidence: "known", notes: "Northeast outside rug corner with gold embroidery on the top and right edges." },
+  86: { label: "Red rug northeast inside corner", category: "terrain-prop", confidence: "known", notes: "Northeast inside rug corner with gold embroidery on the bottom and left edges." },
+  87: { label: "Red rug east edge", category: "terrain-prop", confidence: "known", notes: "Straight rug edge with gold embroidery on the right side." },
+  88: { label: "Red rug north edge", category: "terrain-prop", confidence: "known", notes: "Straight rug edge with gold embroidery on the top side." },
+  89: { label: "Red rug south edge", category: "terrain-prop", confidence: "known", notes: "Straight rug edge with gold embroidery on the bottom side." },
+  90: { label: "Red rug west edge", category: "terrain-prop", confidence: "known", notes: "Straight rug edge with gold embroidery on the left side." },
+  91: { label: "Square floor hatch or covered pit", category: "hazard", confidence: "known", notes: "Square hatch set into stone floor. Its Realmz combat expansion places pit tile 68 in the center." },
+  92: { label: "Double wooden door", category: "buildings", confidence: "known", notes: "Double wooden door set into stone floor." },
+  93: { label: "Horizontal wooden floor or bridge", category: "terrain-prop", confidence: "known", notes: "Horizontal wooden floor or bridge section." },
+  94: { label: "Vertical wooden floor or bridge", category: "terrain-prop", confidence: "known", notes: "Vertical wooden floor or bridge section." },
+  95: { label: "Gray marble floor", category: "open", confidence: "known" },
+  97: { label: "Broken stone floor", category: "rocks", confidence: "known", notes: "Stone floor with broken stones." },
+  98: { label: "Stained stone floor", category: "terrain-prop", confidence: "known", notes: "Stone floor with stains." },
+  99: { label: "Cobblestone with west white feature", category: "terrain-prop", confidence: "likely", notes: "Likely a white bench on the west side; it may instead be one segment of a joinable decorative inlay." },
+  100: { label: "Cobblestone with east white feature", category: "terrain-prop", confidence: "likely", notes: "Likely a white bench on the east side; it may instead be one segment of a joinable decorative inlay." },
+  101: { label: "Cobblestone with north white feature", category: "terrain-prop", confidence: "likely", notes: "Likely a white bench on the north side; it may instead be one segment of a joinable decorative inlay." },
+  102: { label: "Cobblestone with south white feature", category: "terrain-prop", confidence: "likely", notes: "Likely a white bench on the south side; it may instead be one segment of a joinable decorative inlay." },
+  103: { label: "Cobblestone with southwest white feature", category: "terrain-prop", confidence: "likely", notes: "Likely a white stool in the southwest; it may instead be part of a joinable decorative inlay." },
+  104: { label: "Cobblestone with northwest white feature", category: "terrain-prop", confidence: "likely", notes: "Likely a white stool in the northwest; it may instead be part of a joinable decorative inlay." },
+  105: { label: "Cobblestone with southeast white feature", category: "terrain-prop", confidence: "likely", notes: "White stool or decorative inlay in the southeast." },
+  106: { label: "Cobblestone with northeast white feature", category: "terrain-prop", confidence: "likely", notes: "White stool or decorative inlay in the northeast." },
+  107: { label: "Cobblestone with north-east white feature", category: "terrain-prop", confidence: "likely", notes: "Joined white bench or decorative inlay on the north and east sides." },
+  108: { label: "Cobblestone with north-west white feature", category: "terrain-prop", confidence: "likely", notes: "Joined white bench or decorative inlay on the north and west sides." },
+  109: { label: "Cobblestone with south-east white feature", category: "terrain-prop", confidence: "likely", notes: "Joined white bench or decorative inlay on the south and east sides." },
+  110: { label: "Cobblestone with south-west white feature", category: "terrain-prop", confidence: "likely", notes: "Joined white bench or decorative inlay on the south and west sides." },
+  111: { label: "Plain cobblestone floor", category: "open", confidence: "known" },
+  112: { label: "Cobblestone with single bloodstain", category: "terrain-prop", confidence: "known" },
+  113: { label: "Cobblestone with multiple bloodstains", category: "terrain-prop", confidence: "known" },
+  114: { label: "Cobblestone with green stains", category: "hazard", confidence: "known", notes: "Green slime or acid stains on cobblestone floor." },
+  115: { label: "Cobblestone with single scroll", category: "terrain-prop", confidence: "known" },
+  116: { label: "Cobblestone with single skull", category: "terrain-prop", confidence: "known" },
+  117: { label: "Cobblestone with equipment pile", category: "terrain-prop", confidence: "known", notes: "Pile of equipment, treasure, or miscellaneous items on cobblestone floor." },
+  118: { label: "Large machine, lever up", category: "buildings", confidence: "known", notes: "Large solid machine with its lever in the up position. Blocks line of sight." },
+  119: { label: "Large machine, lever down", category: "buildings", confidence: "known", notes: "Large solid machine with its lever in the down position. Blocks line of sight." },
+  120: { label: "Cobblestone with blue magical effect", category: "terrain-prop", confidence: "known", notes: "Blue magical effect or stain on cobblestone floor." }
+};
+
 const CASTLE_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> = {
   59: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
   60: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
@@ -175,7 +232,7 @@ const CASTLE_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> 
   63: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
   64: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
   65: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
-  96: { label: "Hidden walkable castle floor", category: "road", confidence: "known" }
+  96: { label: "Hidden walkable thick red-black wall", category: "buildings", confidence: "known", notes: "Thick red/black wall artwork that Realmz marks walkable and as a runtime path." }
 };
 
 const PLAINS_RANGES: SemanticRange[] = [
@@ -229,6 +286,7 @@ const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> =
     exact: {
       ...PLAINS_EXACT,
       ...CASTLE_WALL_EXACT,
+      ...CASTLE_FEATURE_EXACT,
       61: { label: "Solid masonry / wall fill", category: "mountain-land", confidence: "likely", notes: "Castle atlas slot aligned with the terrain-wall family, not literal mountains." },
       147: { label: "Moat boat / watercraft", category: "watercraft", confidence: "known" },
       ...CASTLE_HIDDEN_WALKABLE_EXACT
