@@ -12,7 +12,10 @@
         { "kind": "namedTile", "x": 5, "y": 2, "name": "not-a-real-tile" },
         { "kind": "namedStamp", "x": 6, "y": 2, "name": "bed" },
         { "kind": "namedStamp", "x": 89, "y": 89, "name": "yellow-house" },
-        { "kind": "namedStamp", "x": 8, "y": 2, "name": "not-a-real-stamp" }
+        { "kind": "namedStamp", "x": 8, "y": 2, "name": "not-a-real-stamp" },
+        { "kind": "semanticRoad", "paths": [] },
+        { "kind": "semanticRoad", "paths": [[{ "x": 10, "y": 10 }, { "x": 10, "y": 10 }]] },
+        { "kind": "semanticRoad", "paths": [[{ "x": 11, "y": 11 }, { "x": 12, "y": 12 }]] }
       ]
     },
     {
@@ -21,7 +24,15 @@
         { "kind": "landSecret", "x": 1, "y": 1, "state": "hidden" },
         { "kind": "terrainGroup", "terrain": "water", "geometry": { "kind": "rect", "x": 3, "y": 3, "width": 4, "height": 4 } },
         { "kind": "namedTile", "x": 5, "y": 5, "name": "open-ground" },
-        { "kind": "namedStamp", "x": 6, "y": 6, "name": "temple" }
+        { "kind": "namedStamp", "x": 6, "y": 6, "name": "temple" },
+        { "kind": "semanticRoad", "paths": [[{ "x": 10, "y": 10 }, { "x": 12, "y": 10 }]] }
+      ]
+    },
+    {
+      "levelType": "land",
+      "landlook": 4,
+      "operations": [
+        { "kind": "semanticRoad", "paths": [[{ "x": 10, "y": 10 }, { "x": 12, "y": 10 }]] }
       ]
     },
     {
@@ -32,7 +43,8 @@
         { "kind": "hiddenWalkable", "x": 6, "y": 6, "tile": 169 },
         { "kind": "combatClearing", "x": 7, "y": 6, "tile": 180 },
         { "kind": "namedTile", "x": 8, "y": 6, "name": "open-ground" },
-        { "kind": "namedStamp", "x": 9, "y": 6, "name": "yellow-house", "variant": 99 }
+        { "kind": "namedStamp", "x": 9, "y": 6, "name": "yellow-house", "variant": 99 },
+        { "kind": "semanticRoad", "paths": [[{ "x": 10, "y": 10 }, { "x": 12, "y": 10 }]] }
       ]
     }
   ]

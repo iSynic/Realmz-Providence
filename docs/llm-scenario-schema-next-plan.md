@@ -235,6 +235,7 @@ Implemented author-friendly map operations:
 - `room`
 - `road`
 - `river`
+- `semanticRoad`
 - `stamp`
 - `namedTile`
 - `namedStamp`
@@ -247,10 +248,11 @@ Implemented normalizer work:
 - Reject operations that cross the 90 x 90 field boundary instead of silently clipping them.
 - Reject map tile values outside the signed 16-bit Realmz field range.
 
-Still future work:
+Remaining expansion work:
 
 - complete human review of generated terrain-role suggestions
-- semantic roads and expansion of the stable named tile vocabulary as more audited roles are approved
+- expand the stable named tile and stamp vocabularies as more audited roles are approved
+- audit bridge-transition grammars before any semantic road operation infers bridges from water crossings
 - broader named map templates after their tile relationships are audited
 
 ## Priority 8: Complex, Thief, And Timed Encounters

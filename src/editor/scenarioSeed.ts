@@ -43,6 +43,7 @@ import { setDungeonCellFlags } from "./map/dungeonCellFlags";
 import { GENERATED_SMART_TERRAIN_PROFILES } from "./map/generatedSmartTerrainProfiles";
 import { isScenarioSeedNamedStampName, namedLandStampVariants, resolveNamedLandStamp, type ScenarioSeedNamedStampName } from "./map/namedLandStamps";
 import { isScenarioSeedNamedTileName, namedLandTileVariants, resolveNamedLandTile, type ScenarioSeedNamedTileName } from "./map/namedLandTiles";
+import { semanticRoadTile, supportsSemanticRoads } from "./map/semanticRoads";
 import { defaultStockCombatClearingTile, defaultStockHiddenWalkableTile, isStockCombatClearingTile, isStockHiddenWalkableTile } from "./map/secrets";
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
 import { copyCurrentMonsterToAllSets, generateMonsterVariants } from "./projectCommands/targetRecordCommands";
@@ -542,6 +543,7 @@ export type ScenarioSeedMapOperation =
   | { kind: "border"; x: number; y: number; width: number; height: number; tile: number; thickness?: number }
   | { kind: "room"; x: number; y: number; width: number; height: number; wallTile: number; floorTile: number; doors?: ScenarioSeedRoomDoor[] }
   | { kind: "road" | "river"; points: ScenarioSeedPoint[]; tile: number; width?: number }
+  | { kind: "semanticRoad"; paths: ScenarioSeedPoint[][] }
   | { kind: "stamp"; x: number; y: number; tiles: number[][] }
   | { kind: "namedStamp"; x: number; y: number; name: ScenarioSeedNamedStampName; variant?: number }
   | { kind: "namedTile"; x: number; y: number; name: ScenarioSeedNamedTileName; variant?: number }
@@ -1372,6 +1374,9 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
     if (operation?.kind === "combatClearing" && (operation.tile !== undefined ? !isStockCombatClearingTile(operation.tile, mapLandlook) : defaultStockCombatClearingTile(mapLandlook) === null)) {
       ctx.errors.push(`${path}.operations[${operationIndex}] combatClearing is not valid for landlook ${mapLandlook}; use that landlook's stock solid tiles with non-solid combat builds.`);
     }
+    if (operation?.kind === "semanticRoad" && !supportsSemanticRoads(mapLandlook)) {
+      ctx.errors.push(`${path}.operations[${operationIndex}] semanticRoad is not valid for landlook ${mapLandlook}; use an audited outdoor landlook or explicit tile operations.`);
+    }
     if (operation?.kind === "namedTile") {
       const variants = namedLandTileVariants(mapLandlook, operation.name);
       if (variants.length === 0) {
@@ -2057,6 +2062,12 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     }
     return { kind, points, tile: requireMapTile(value.tile, `${path}.tile`, ctx) ?? 0, ...(width !== undefined ? { width } : {}) };
   }
+  if (kind === "semanticRoad") {
+    allowKeys(value, path, ["kind", "paths"], ctx);
+    const paths = parseArray(value.paths, `${path}.paths`, ctx, parseSemanticRoadPath) ?? [];
+    if (paths.length === 0) ctx.errors.push(`${path}.paths must contain at least one road path.`);
+    return { kind, paths };
+  }
   if (kind === "stamp") {
     allowKeys(value, path, ["kind", "x", "y", "tiles"], ctx);
     const x = requireInteger(value.x, `${path}.x`, ctx);
@@ -2171,14 +2182,29 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     if (new Set(directions).size !== directions.length) ctx.errors.push(`${path}.directions cannot contain duplicates.`);
     return { kind, x: x ?? 0, y: y ?? 0, directions };
   }
-  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, stamp, namedStamp, namedTile, terrainGroup, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
+  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, semanticRoad, stamp, namedStamp, namedTile, terrainGroup, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
   return null;
+}
+
+function parseSemanticRoadPath(input: unknown, path: string, ctx: ParseContext) {
+  const points = parseArray(input, path, ctx, parsePoint) ?? [];
+  if (points.length < 2) ctx.errors.push(`${path} must contain at least two points.`);
+  for (let index = 1; index < points.length; index++) {
+    const previous = points[index - 1];
+    const point = points[index];
+    if (previous.x === point.x && previous.y === point.y) {
+      ctx.errors.push(`${path}[${index}] must differ from the previous point.`);
+    } else if (previous.x !== point.x && previous.y !== point.y) {
+      ctx.errors.push(`${path}[${index - 1}] to ${path}[${index}] must be horizontal or vertical.`);
+    }
+  }
+  return points;
 }
 
 function validateMapOperationLevelTypes(operations: ScenarioSeedMapOperation[], levelType: LevelType, path: string, ctx: ParseContext) {
   for (let index = 0; index < operations.length; index++) {
     const kind = operations[index].kind;
-    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedStamp" || kind === "namedTile" || kind === "terrainGroup") && levelType !== "land") {
+    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedStamp" || kind === "namedTile" || kind === "terrainGroup" || kind === "semanticRoad") && levelType !== "land") {
       ctx.errors.push(`${path}.operations[${index}].kind ${kind} is only valid on land maps.`);
     }
     if (kind === "dungeonPassage" && levelType !== "dungeon") {
@@ -3254,6 +3280,10 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
     drawPath(tiles, operation.points, operation.tile, operation.width ?? 1, mapContext.levelType);
     return;
   }
+  if (operation.kind === "semanticRoad") {
+    applySemanticRoad(tiles, operation, mapContext.levelType);
+    return;
+  }
   if (operation.kind === "stamp") {
     for (let row = 0; row < operation.tiles.length; row++) {
       for (let column = 0; column < operation.tiles[row].length; column++) {
@@ -3304,6 +3334,29 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
       allowMoveSouth: directions.has("south"),
       allowMoveWest: directions.has("west")
     });
+  }
+}
+
+function applySemanticRoad(
+  tiles: number[],
+  operation: Extract<ScenarioSeedMapOperation, { kind: "semanticRoad" }>,
+  levelType: LevelType
+) {
+  const cells = new Map<string, ScenarioSeedPoint>();
+  for (const path of operation.paths) {
+    for (let index = 1; index < path.length; index++) {
+      for (const point of linePoints(path[index - 1], path[index])) cells.set(`${point.x}:${point.y}`, point);
+    }
+  }
+  const cellKeys = new Set(cells.keys());
+  for (const cell of [...cells.values()].sort((a, b) => a.y - b.y || a.x - b.x)) {
+    let mask = 0;
+    if (cellKeys.has(`${cell.x}:${cell.y - 1}`)) mask |= 1;
+    if (cellKeys.has(`${cell.x + 1}:${cell.y}`)) mask |= 2;
+    if (cellKeys.has(`${cell.x}:${cell.y + 1}`)) mask |= 4;
+    if (cellKeys.has(`${cell.x - 1}:${cell.y}`)) mask |= 8;
+    const tile = semanticRoadTile(mask);
+    if (tile !== null) setTile(tiles, cell.x, cell.y, tile, levelType);
   }
 }
 

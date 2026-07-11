@@ -106,6 +106,7 @@ const sampleSeed = {
       { kind: "room", x: 20, y: 20, width: 8, height: 6, wallTile: 8, floorTile: 9, doors: [{ side: "north", offset: 3, tile: 10 }] },
       { kind: "road", points: [{ x: 30, y: 30 }, { x: 35, y: 30 }], tile: 11, width: 3 },
       { kind: "river", points: [{ x: 40, y: 40 }, { x: 40, y: 45 }], tile: 12, width: 2 },
+      { kind: "semanticRoad", paths: [[{ x: 30, y: 35 }, { x: 35, y: 35 }], [{ x: 33, y: 32 }, { x: 33, y: 38 }]] },
       { kind: "stamp", x: 50, y: 50, tiles: [[13, 14], [15, 16]] },
       { kind: "namedStamp", x: 54, y: 54, name: "yellow-house" },
       { kind: "namedTile", x: 58, y: 58, name: "grave", variant: 2 },

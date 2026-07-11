@@ -11,7 +11,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 - Scenario identity and contact metadata.
 - Optional caller-provided base template selection without embedding full Providence project JSON in prompt output.
 - Fixed-size Realmz maps, either filled by one tile or supplied as 8,100 tile IDs.
-- Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, `stamp`, `namedStamp`, `namedTile`, `terrainGroup`, `landSecret`, `hiddenWalkable`, `combatClearing`, and `dungeonPassage`.
+- Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `road`, `river`, `semanticRoad`, `stamp`, `namedStamp`, `namedTile`, `terrainGroup`, `landSecret`, `hiddenWalkable`, `combatClearing`, and `dungeonPassage`.
 - Named map regions that action points can reference with `at`.
 - Messages and quest labels.
 - Battle, treasure, and shop records.
@@ -33,7 +33,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 
 EDCD-backed seed steps create `Data EDCD` settings rows automatically because those Realmz opcodes point at settings, not directly at the visible target.
 
-Map operations are applied in array order. `border` supports inward `thickness`; `room` fills an interior, draws its walls, and replaces wall cells with side/offset doors; `road` and `river` draw a polyline with an optional width; and `stamp` places a rectangular two-dimensional tile pattern. `namedStamp` places a reusable audited multi-tile composition by stable name, with its `{x, y}` coordinate as the top-left anchor. Its vocabulary includes Castle furnishings and open doors plus stock special-tile buildings and landmarks. `long-table` and `tall-tree` provide 1-based variants. The parser rejects unknown names, landlook-incompatible compositions, unavailable variants, dungeon placement, and footprints crossing the map edge. The registry resolves through the same built-in definitions used by the map painter and is implemented in [`src/editor/map/namedLandStamps.ts`](../src/editor/map/namedLandStamps.ts).
+Map operations are applied in array order. `border` supports inward `thickness`; `room` fills an interior, draws its walls, and replaces wall cells with side/offset doors; raw `road` and `river` draw a polyline with an explicit tile and optional width; and `stamp` places a rectangular two-dimensional tile pattern. `semanticRoad` accepts one or more orthogonal `paths` and compiles their combined topology into audited endpoint, straight, bend, T-junction, and four-way road tiles. Put every path that should join into one operation. It supports Plains, Alternate Plains, Subterranean, Desert, Swamp, and Snow; Castle and custom landlooks are rejected until their road grammars are audited. Bridges remain explicit named tiles or stamps rather than being inferred from surrounding water. `namedStamp` places a reusable audited multi-tile composition by stable name, with its `{x, y}` coordinate as the top-left anchor. Its vocabulary includes Castle furnishings and open doors plus stock special-tile buildings and landmarks. `long-table` and `tall-tree` provide 1-based variants. The parser rejects unknown names, landlook-incompatible compositions, unavailable variants, dungeon placement, and footprints crossing the map edge. The registry resolves through the same built-in definitions used by the map painter and is implemented in [`src/editor/map/namedLandStamps.ts`](../src/editor/map/namedLandStamps.ts).
 
 `namedTile` places one audited semantic tile by stable name and resolves it through the map's landlook, so a prompt can request `land-to-cave-cave-south`, `grave`, `alchemy-table`, or another registry name without knowing the numeric tile ID. Optional `variant` is 1-based and selects among visually interchangeable or audited alternatives. The parser rejects unknown names, names unavailable for the selected landlook, and unavailable variants rather than substituting a plausible tile. The complete stable vocabulary is enforced by the JSON Schema and implemented in [`src/editor/map/namedLandTiles.ts`](../src/editor/map/namedLandTiles.ts).
 
@@ -95,7 +95,13 @@ Rogue encounters use source `Data TD2` records. Their semantic action kinds map 
         { "key": "bell-crossing", "x": 44, "y": 50 }
       ],
       "operations": [
-        { "kind": "road", "points": [{ "x": 38, "y": 50 }, { "x": 50, "y": 50 }], "tile": 4, "width": 3 },
+        {
+          "kind": "semanticRoad",
+          "paths": [
+            [{ "x": 38, "y": 50 }, { "x": 50, "y": 50 }],
+            [{ "x": 44, "y": 46 }, { "x": 44, "y": 54 }]
+          ]
+        },
         { "kind": "namedStamp", "x": 40, "y": 46, "name": "wooden-lookout-tower" },
         { "kind": "namedTile", "x": 44, "y": 49, "name": "land-to-cave-cave-south" },
         { "kind": "namedTile", "x": 46, "y": 52, "name": "grave", "variant": 2 },

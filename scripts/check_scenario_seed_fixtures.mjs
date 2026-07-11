@@ -133,6 +133,11 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 26, 6) === 14, "room east door should replace its wall tile");
   expect(tileAt(tiles, 4, 11) === 15 && tileAt(tiles, 4, 13) === 15, "wide road should paint its full width");
   expect(tileAt(tiles, 10, 14) === 16 && tileAt(tiles, 11, 14) === 16, "even-width river should paint deterministically toward positive coordinates");
+  expect(tileAt(tiles, 73, 40) === 134, "semantic roads should compile a four-way junction from crossing paths");
+  expect(tileAt(tiles, 72, 40) === 132 && tileAt(tiles, 73, 39) === 133, "semantic roads should compile horizontal and vertical straight tiles");
+  expect(tileAt(tiles, 70, 40) === 143 && tileAt(tiles, 76, 40) === 145 && tileAt(tiles, 73, 37) === 144 && tileAt(tiles, 73, 43) === 146, "semantic roads should orient all four endpoint tiles toward their neighbors");
+  expect(tileAt(tiles, 60, 44) === 142 && tileAt(tiles, 50, 55) === 139 && tileAt(tiles, 40, 55) === 140 && tileAt(tiles, 34, 55) === 141, "semantic roads should compile all four directional bends");
+  expect(tileAt(tiles, 73, 50) === 136 && tileAt(tiles, 73, 60) === 135 && tileAt(tiles, 60, 65) === 137 && tileAt(tiles, 50, 65) === 138, "semantic roads should compile all four directional T-junctions");
   expect(tileAt(tiles, 20, 12) === 21 && tileAt(tiles, 22, 13) === 26, "stamp should preserve its two-dimensional tile pattern");
   expect(tileAt(tiles, 80, 11) === 111, "named tile placement should resolve a Plains cave transition without exposing its tile ID");
   expect(tileAt(tiles, 81, 12) === 54, "named tile placement should resolve its 1-based audited variant");
@@ -173,6 +178,11 @@ function checkMapOperations(createProjectFromScenarioSeed) {
     if (landlook.name === "Snow") {
       expect(tileAt(semanticTiles, 55, 10) === 153 && tileAt(semanticTiles, 55, 11) === 154, "Snow named stamps should resolve a landlook-compatible tall-tree variant");
     }
+    expect(tileAt(semanticTiles, 60, 10) === 143 && tileAt(semanticTiles, 61, 10) === 132 && tileAt(semanticTiles, 62, 10) === 145, `${landlook.name} semantic roads should use the aligned audited road grammar`);
+  }
+  for (const landlook of [{ index: 5, name: "Alternate Plains" }, { index: 6, name: "Subterranean" }]) {
+    const semanticTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === landlook.index)?.tiles ?? [];
+    expect(tileAt(semanticTiles, 10, 10) === 143 && tileAt(semanticTiles, 11, 10) === 132 && tileAt(semanticTiles, 12, 10) === 145, `${landlook.name} semantic roads should use the aligned audited road grammar`);
   }
 }
 
@@ -576,6 +586,12 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(mapSemantics.errors.some((error) => error.includes("footprint 2 x 2 extends past the 90 x 90 map")), "named stamps should reject footprints that cross the map boundary");
     expect(mapSemantics.errors.some((error) => error.includes("supported stable named land stamp")), "named stamps should reject unknown names");
     expect(mapSemantics.errors.some((error) => error.includes("variant must be between 1 and 1 for named stamp \"yellow-house\"")), "named stamps should reject unavailable variants");
+    expect(mapSemantics.errors.some((error) => error.includes("semanticRoad is only valid on land maps")), "semantic roads should reject dungeon maps");
+    expect(mapSemantics.errors.some((error) => error.includes("paths must contain at least one road path")), "semantic roads should require at least one path");
+    expect(mapSemantics.errors.some((error) => error.includes("must differ from the previous point")), "semantic roads should reject collapsed path segments");
+    expect(mapSemantics.errors.some((error) => error.includes("must be horizontal or vertical")), "semantic roads should reject diagonal path segments");
+    expect(mapSemantics.errors.some((error) => error.includes("semanticRoad is not valid for landlook 4")), "semantic roads should reject Castle's unrelated tile grammar");
+    expect(mapSemantics.errors.some((error) => error.includes("semanticRoad is not valid for landlook 6")), "semantic roads should reject unaudited custom landlooks");
   }
 
   const causeRoutContext = createProjectFromScenarioSeed(readSeed("invalid-battle-outcomes.seed.json"));
