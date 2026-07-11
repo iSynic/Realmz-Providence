@@ -134,11 +134,12 @@ Useful checks while working:
 
 ```powershell
 npm run typecheck
+npm run smoke:scenario-generation
 npm run test:rust
 npm run check
 ```
 
-`npm run check` is the broad pass: TypeScript, Action Point coverage, frontend build, and Rust tests. The release gate scripts add packaging-oriented checks and optional editor smokes.
+`npm run smoke:scenario-generation` compiles representative Scenario JSON fixtures, validates the generated Providence projects, attaches the generated Realmz runtime baseline, and exports both Windows and Mac browser packages. `npm run check` is the broad pass: TypeScript, Action Point coverage, frontend build, and Rust tests. The release gate scripts add packaging-oriented checks and optional editor smokes.
 
 There are also smoke and archaeology scripts under `scripts/`. Many of those assume the local Realmz/Providence development environment and are mostly for deeper validation work.
 

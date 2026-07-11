@@ -211,4 +211,4 @@ Ask a model to emit only this seed JSON. Do not ask for full Providence project 
 
 For first-pass generation, prefer a small number of maps, messages, and APs. Use `raw` only when the prompt has a known Realmz opcode and ID that Providence does not yet expose as a prompt-safe step.
 
-Golden examples live in [`fixtures/scenario-seeds`](../fixtures/scenario-seeds). Run `node scripts/check_scenario_seed_fixtures.mjs` to verify parser failures, allocation output, map operations, AP opcodes, and EDCD row generation.
+Golden examples live in [`fixtures/scenario-seeds`](../fixtures/scenario-seeds). Run `node scripts/check_scenario_seed_fixtures.mjs` to verify parser failures, allocation output, map operations, AP opcodes, and EDCD row generation. Run `npm run smoke:scenario-generation` for the representative compile, preflight, project-validation, generated-runtime, and Windows/Mac package-export matrix.

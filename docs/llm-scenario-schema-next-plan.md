@@ -336,6 +336,7 @@ Still future work:
 Every phase should pass:
 
 - `node scripts/check_scenario_seed_schema.mjs`
+- `npm run smoke:scenario-generation`
 - `npm run typecheck`
 - `npm run build`
 - targeted fixture script for generated seed projects

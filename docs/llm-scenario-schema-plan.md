@@ -158,7 +158,7 @@ Add golden seed fixtures that assert:
 - browser scenario package export succeeds for generated fixtures
 - existing AP coverage stays complete for manual opcodes 1-127 plus signed aliases
 
-Status: seed fixtures, browser package fixtures, and a generated-runtime-baseline gate are implemented. The generated baseline check compiles Scenario JSON with authored content, creates a browser Realmz package, and verifies the startup file contract and fixed record capacities. Desktop coverage creates a blank project, exports it, and reimports the result through Providence.
+Status: seed fixtures, browser package fixtures, a generated-runtime-baseline gate, and a representative generation smoke matrix are implemented. The smoke matrix covers core keyed generation, semantic maps, encounters, timed behavior, rules overrides, Monster Library copying, Custom Library assets, and template inheritance. Every lane runs through compilation, versioned preflight reporting, project validation, generated runtime attachment, and both Windows and Mac browser package export. The generated baseline check separately verifies the startup file contract and fixed record capacities. Desktop coverage creates a blank project, exports it, and reimports the result through Providence.
 
 ## Remaining Design Decision
 
