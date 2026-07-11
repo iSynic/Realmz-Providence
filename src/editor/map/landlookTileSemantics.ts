@@ -182,6 +182,56 @@ const SWAMP_EXACT: Record<number, LandlookTileVisualSemantics> = {
   189: { label: "Swamp grave or tomb cluster", category: "graves", confidence: "known" }
 };
 
+const SNOW_EXACT: Record<number, LandlookTileVisualSemantics> = {
+  36: { label: "Open snow ground", category: "open", confidence: "known", notes: "Plain snow ground; unlike the aligned Plains slot, this is not a blank tile." },
+  37: { label: "Open snow ground", category: "open", confidence: "known", notes: "Alternate plain snow ground; unused in the current scenario corpus." },
+  60: { label: "Full icy water", category: "water-shore", confidence: "known", notes: "Normal full-water center tile for the Snow landlook." },
+  61: { label: "Solid snowy ridge", category: "mountain-land", confidence: "known", notes: "Full snowy ridge or mountain fill aligned with the Plains mountain family." },
+  115: { label: "Snow bridge over water", category: "road", confidence: "likely" },
+  116: { label: "Snow bridge and shore transition", category: "road", confidence: "likely" },
+  117: { label: "Snow bridge and shore transition", category: "road", confidence: "likely", notes: "Mirrored bridge-and-shore variant." },
+  118: { label: "Lone snow tree", category: "tree-detail", confidence: "known", notes: "Realmz marks this as Snow forest type 5." },
+  119: { label: "Two snow trees", category: "tree-detail", confidence: "known", notes: "Realmz marks this as Snow forest type 5." },
+  120: { label: "Three snow trees", category: "tree-detail", confidence: "known", notes: "Realmz marks this as Snow forest type 5." },
+  149: { label: "Snow-covered boulder", category: "rocks", confidence: "known" },
+  150: { label: "Bare snow bush", category: "tree-detail", confidence: "known" },
+  151: { label: "Large bare snow bush", category: "tree-detail", confidence: "known", notes: "Solid and line-of-sight blocking." },
+  152: { label: "Leafless snow tree", category: "tree-detail", confidence: "known" },
+  153: { label: "Tall snow-covered evergreen", category: "tree-detail", confidence: "known", notes: "Solid and line-of-sight blocking." },
+  154: { label: "Broad snow-covered evergreen", category: "tree-detail", confidence: "known" },
+  155: { label: "Plain decorative snow ground", category: "open", confidence: "known" },
+  156: { label: "Decorative snow with light grass", category: "open", confidence: "known" },
+  157: { label: "Decorative snow with grass", category: "open", confidence: "known" },
+  158: { label: "Decorative snow with several grass patches", category: "open", confidence: "known" },
+  159: { label: "Decorative snow with exposed ice", category: "open", confidence: "known", notes: "Walkable decoration in Snow's source-defined open-ground range, not the aligned Plains rock range." },
+  160: { label: "Decorative icy snow with rocks", category: "open", confidence: "known", notes: "Walkable decoration in Snow's source-defined open-ground range, not the aligned Plains rock range." },
+  161: { label: "Scattered snow-covered rocks", category: "rocks", confidence: "likely" },
+  162: { label: "Two snow-covered boulders", category: "rocks", confidence: "likely" },
+  163: { label: "Large and small snow-covered rocks", category: "rocks", confidence: "likely" },
+  164: { label: "One snow-covered rock", category: "rocks", confidence: "known" },
+  165: { label: "Two snow-covered rocks", category: "rocks", confidence: "known" },
+  166: { label: "Several snow-covered rocks", category: "rocks", confidence: "known" },
+  167: { label: "Large snow-covered rock", category: "rocks", confidence: "known" },
+  168: { label: "Blank / unused snow tile", category: "blank", confidence: "known" },
+  169: { label: "Hidden walkable snowy ridge", category: "road", confidence: "known", notes: "Dense icy ridge artwork that Realmz marks walkable and as a runtime path, matching the aligned Plains hidden-walkable slot." },
+  170: { label: "Snow-covered hut", category: "buildings", confidence: "known" },
+  171: { label: "Snow hut with small capped tower", category: "buildings", confidence: "likely" },
+  172: { label: "Snow hut with colored-capped tower", category: "buildings", confidence: "likely" },
+  173: { label: "Small snow tower hut with green window", category: "buildings", confidence: "likely" },
+  174: { label: "Small snow tower hut with red window", category: "buildings", confidence: "likely" },
+  175: { label: "Two connected tiny snow huts", category: "buildings", confidence: "known" },
+  176: { label: "Three connected tiny snow huts", category: "buildings", confidence: "known" },
+  177: { label: "Sturdy snow tent with post", category: "buildings", confidence: "likely" },
+  178: { label: "Two sturdy snow tents", category: "buildings", confidence: "known" },
+  179: { label: "Canopy-suspended snow hut", category: "buildings", confidence: "likely", notes: "Small snow-covered hut suspended among leafless trees." },
+  180: { label: "Combat-clearing snowy mountain-to-land fill", category: "mountain-land", confidence: "known", notes: "Solid snowy mountain terrain during land exploration; its Realmz combat build expands into non-solid snow ground." },
+  181: { label: "Combat-clearing snowy mountain-to-land west edge", category: "mountain-land", confidence: "known", notes: "Solid during land exploration and open in Realmz combat expansion." },
+  182: { label: "Combat-clearing snowy mountain-to-land transition", category: "mountain-land", confidence: "known", notes: "Solid during land exploration and open in Realmz combat expansion." },
+  183: { label: "Combat-clearing snowy mountain-to-land east edge", category: "mountain-land", confidence: "known", notes: "Solid during land exploration and open in Realmz combat expansion." },
+  184: { label: "Combat-clearing north-south snow wall", category: "buildings", confidence: "known", notes: "Solid and line-of-sight blocking during land exploration; its Realmz combat build expands into non-solid terrain." },
+  185: { label: "Combat-clearing east-west snow wall", category: "buildings", confidence: "known", notes: "Solid during land exploration but, uniquely, does not block line of sight; its Realmz combat build expands into non-solid terrain." }
+};
+
 const CASTLE_WALL_EXACT: Record<number, LandlookTileVisualSemantics> = {
   1: { label: "Straight north-south gray wall", category: "buildings", confidence: "known", notes: "Gray brick wall with north-south continuity; land west and east." },
   2: { label: "South-facing east-west gray wall", category: "buildings", confidence: "known", notes: "Gray brick wall with east-west continuity; land north. The projected south-facing brick facade extends through the southern part of the tile." },
@@ -495,7 +545,7 @@ const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> =
   10: {
     exact: {
       ...PLAINS_EXACT,
-      61: { label: "Solid snowy ridge", category: "mountain-land", confidence: "likely", notes: "Snow atlas slot aligned with the mountain/ridge fill family." },
+      ...SNOW_EXACT,
       147: { label: "Snow boat / watercraft", category: "watercraft", confidence: "known" }
     },
     ranges: relabelRanges(PLAINS_RANGES, {

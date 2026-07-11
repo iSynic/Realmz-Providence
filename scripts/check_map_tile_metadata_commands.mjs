@@ -30,6 +30,7 @@ try {
   checkHiddenWalkableOverlay(secretTiles, metadata);
   checkCastleWallSemantics(visualSemantics);
   checkSwampSemantics(visualSemantics);
+  checkSnowSemantics(visualSemantics);
   checkHiddenWalkablePaletteSource();
   checkLandActionPointCommands(commands, scriptCommands, actionPointMarkers);
   checkDungeonActionPointCommands(commands, scriptCommands, actionPointMarkers);
@@ -212,6 +213,16 @@ function checkHiddenWalkableOverlay(secretTiles, metadata) {
     assert(secretTiles.showsCombatClearingOverlay(tile, swamp), `Swamp tile ${tile} should receive the combat-clearing overlay.`);
   }
   assert(secretTiles.defaultStockCombatClearingTile(9) === 180, "Swamp combat-clearing authoring should default to tile 180.");
+
+  const snow = landMap(0, 10);
+  assert(secretTiles.isStockHiddenWalkableTile(169, 10), "Snow tile 169 should be the stock hidden-walkable snowy ridge.");
+  assert(secretTiles.showsHiddenWalkableOverlay(169, snow), "Snow tile 169 should receive the hidden-walkable overlay.");
+  assert(secretTiles.defaultStockHiddenWalkableTile(10) === 169, "Snow hidden-walkable authoring should default to tile 169.");
+  for (const tile of [180, 181, 182, 183, 184, 185]) {
+    assert(secretTiles.isStockCombatClearingTile(tile, 10), `Snow tile ${tile} should be combat-clearing terrain.`);
+    assert(secretTiles.showsCombatClearingOverlay(tile, snow), `Snow tile ${tile} should receive the combat-clearing overlay.`);
+  }
+  assert(secretTiles.defaultStockCombatClearingTile(10) === 180, "Snow combat-clearing authoring should default to tile 180.");
 }
 
 function checkSwampSemantics({ landlookTileVisualSemantics }) {
@@ -234,6 +245,26 @@ function checkSwampSemantics({ landlookTileVisualSemantics }) {
   assert(landlookTileVisualSemantics(179, 9)?.notes?.includes("canopy of trees"), "Swamp tile 179 should be the canopy-suspended hut.");
   assert(landlookTileVisualSemantics(187, 9)?.category === "graves", "Swamp tile 187 should retain its grave or tomb role.");
   assert(landlookTileVisualSemantics(190, 9)?.category === "buildings", "Swamp tile 190 should retain the aligned settlement-building role.");
+}
+
+function checkSnowSemantics({ landlookTileVisualSemantics }) {
+  assert(landlookTileVisualSemantics(36, 10)?.label === "Open snow ground", "Snow tile 36 should not inherit the Plains blank-tile label.");
+  assert(landlookTileVisualSemantics(52, 10)?.label === "Grave", "Snow tile 52 should retain the aligned Plains grave role.");
+  assert(landlookTileVisualSemantics(105, 10)?.label === "Stream to cave, cave west", "Snow tile 105 should retain the solved Plains transition identity.");
+  assert(landlookTileVisualSemantics(115, 10)?.category === "road", "Snow tile 115 should be a bridge rather than inherit the Plains fire/hazard range.");
+  assert(landlookTileVisualSemantics(118, 10)?.label === "Lone snow tree", "Snow tile 118 should be the lone-tree variant.");
+  assert(landlookTileVisualSemantics(119, 10)?.label === "Two snow trees", "Snow tile 119 should be the two-tree variant.");
+  assert(landlookTileVisualSemantics(120, 10)?.label === "Three snow trees", "Snow tile 120 should be the three-tree variant.");
+  assert(landlookTileVisualSemantics(149, 10)?.label === "Snow-covered boulder", "Snow tile 149 should not inherit the Plains fallen-log label.");
+  assert(landlookTileVisualSemantics(155, 10)?.label === "Plain decorative snow ground", "Snow tile 155 should identify the decorative open-snow range.");
+  assert(landlookTileVisualSemantics(159, 10)?.notes?.includes("Walkable decoration"), "Snow tile 159 should remain decorative walkable open ground.");
+  assert(landlookTileVisualSemantics(160, 10)?.label === "Decorative icy snow with rocks", "Snow tile 160 should preserve its icy snow and rock decoration.");
+  assert(landlookTileVisualSemantics(169, 10)?.label === "Hidden walkable snowy ridge", "Snow tile 169 should identify its hidden-walkable role.");
+  assert(landlookTileVisualSemantics(175, 10)?.label === "Two connected tiny snow huts", "Snow tile 175 should retain the connected-hut grammar.");
+  assert(landlookTileVisualSemantics(180, 10)?.label === "Combat-clearing snowy mountain-to-land fill", "Snow tile 180 should identify its mountain-to-land combat-clearing role.");
+  assert(landlookTileVisualSemantics(184, 10)?.notes?.includes("line-of-sight blocking"), "Snow tile 184 should preserve its source-backed LOS blocking behavior.");
+  assert(landlookTileVisualSemantics(185, 10)?.notes?.includes("does not block line of sight"), "Snow tile 185 should preserve its LOS exception.");
+  assert(landlookTileVisualSemantics(187, 10)?.category === "graves", "Snow tile 187 should retain the aligned graveyard role.");
 }
 
 function checkCastleWallSemantics({ landlookTileVisualSemantics }) {
