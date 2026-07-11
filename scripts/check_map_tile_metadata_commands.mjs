@@ -344,6 +344,26 @@ function checkCastleWallSemantics({ landlookTileVisualSemantics }) {
   assert(landlookTileVisualSemantics(178, 4)?.label === "Bottom half of tall purple throne", "Castle tile 178 should be the throne bottom.");
   assert(landlookTileVisualSemantics(179, 4)?.label === "Top of west-facing stone gargoyle", "Castle tile 179 should be the gargoyle top.");
   assert(landlookTileVisualSemantics(180, 4)?.label === "Bottom of west-facing stone gargoyle", "Castle tile 180 should be the gargoyle bottom.");
+  assert(landlookTileVisualSemantics(181, 4)?.label === "Stone platform surrounded by water", "Castle tile 181 should be the water-surrounded stone platform.");
+  assert(landlookTileVisualSemantics(182, 4)?.label === "Stone platform surrounded by acid", "Castle tile 182 should be the acid-surrounded stone platform.");
+  assert(landlookTileVisualSemantics(183, 4)?.label === "Black stone platform surrounded by lava", "Castle tile 183 should be the lava-surrounded black platform.");
+  assert(landlookTileVisualSemantics(184, 4)?.notes?.includes("blocking line of sight"), "Castle tile 184 should preserve the runed bubble LOS behavior.");
+  assert(landlookTileVisualSemantics(185, 4)?.label === "Left half of coffin", "Castle tile 185 should be the coffin left half.");
+  assert(landlookTileVisualSemantics(186, 4)?.label === "Right half of coffin", "Castle tile 186 should be the coffin right half.");
+  assert(landlookTileVisualSemantics(187, 4)?.label === "North-wall open door, upper left component", "Castle tile 187 should be the upper-left north-wall door component.");
+  assert(landlookTileVisualSemantics(188, 4)?.label === "North-wall open door, upper right component", "Castle tile 188 should be the upper-right north-wall door component.");
+  assert(landlookTileVisualSemantics(189, 4)?.label === "North-wall east end cap", "Castle tile 189 should be the north-wall east end cap.");
+  assert(landlookTileVisualSemantics(190, 4)?.notes?.includes("Vertical counterpart of tile 187"), "Castle tile 190 should be the lower counterpart of tile 187.");
+  assert(landlookTileVisualSemantics(191, 4)?.notes?.includes("Vertical counterpart of tile 188"), "Castle tile 191 should be the lower counterpart of tile 188.");
+  assert(landlookTileVisualSemantics(192, 4)?.notes?.includes("Vertical counterpart of tile 189"), "Castle tile 192 should be the counterpart of the north-wall end cap.");
+  assert(landlookTileVisualSemantics(193, 4)?.label === "West-wall open door, upper component", "Castle tile 193 should be the upper west-wall door component.");
+  assert(landlookTileVisualSemantics(194, 4)?.label === "East-wall open door, upper component", "Castle tile 194 should be the upper east-wall door component.");
+  assert(landlookTileVisualSemantics(195, 4)?.label === "West-wall open door, lower component", "Castle tile 195 should be the lower west-wall door component.");
+  assert(landlookTileVisualSemantics(196, 4)?.label === "East-wall open door, lower component", "Castle tile 196 should be the lower east-wall door component.");
+  assert(landlookTileVisualSemantics(197, 4)?.label === "Cobblestone to east black wall", "Castle tile 197 should transition from cobblestone to an east wall.");
+  assert(landlookTileVisualSemantics(198, 4)?.label === "Cobblestone to west black wall", "Castle tile 198 should mirror the tile 197 wall transition.");
+  assert(landlookTileVisualSemantics(199, 4)?.confidence === "likely", "Castle tile 199 should preserve uncertainty about the purple object's exact purpose.");
+  assert(landlookTileVisualSemantics(200, 4)?.notes?.includes("paired with tile 199"), "Castle tile 200 should be paired with tile 199.");
   assert(landlookTileVisualSemantics(1, 0)?.category === "water-shore", "Castle wall semantics should not replace Plains shoreline semantics.");
 }
 

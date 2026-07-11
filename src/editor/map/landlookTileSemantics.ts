@@ -299,7 +299,27 @@ const CASTLE_FEATURE_EXACT: Record<number, LandlookTileVisualSemantics> = {
   177: { label: "Top half of tall purple throne", category: "terrain-prop", confidence: "known", notes: "This half blocks line of sight." },
   178: { label: "Bottom half of tall purple throne", category: "terrain-prop", confidence: "known" },
   179: { label: "Top of west-facing stone gargoyle", category: "terrain-prop", confidence: "known", notes: "Top half of a stone dragon or gargoyle facing west." },
-  180: { label: "Bottom of west-facing stone gargoyle", category: "terrain-prop", confidence: "known", notes: "Bottom half of a stone dragon or gargoyle facing west." }
+  180: { label: "Bottom of west-facing stone gargoyle", category: "terrain-prop", confidence: "known", notes: "Bottom half of a stone dragon or gargoyle facing west." },
+  181: { label: "Stone platform surrounded by water", category: "water-shore", confidence: "known", notes: "Large gray stone platform surrounded by water." },
+  182: { label: "Stone platform surrounded by acid", category: "hazard", confidence: "known", notes: "Large gray stone platform surrounded by acid." },
+  183: { label: "Black stone platform surrounded by lava", category: "hazard", confidence: "known", notes: "Large black stone platform surrounded by lava." },
+  184: { label: "Magic bubble with runes", category: "terrain-prop", confidence: "known", notes: "Runed magical bubble. Realmz marks this tile as blocking line of sight." },
+  185: { label: "Left half of coffin", category: "terrain-prop", confidence: "known" },
+  186: { label: "Right half of coffin", category: "terrain-prop", confidence: "known" },
+  187: { label: "North-wall open door, upper left component", category: "buildings", confidence: "known", notes: "Left side of the upper half of a long open door swinging from a north wall. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76." },
+  188: { label: "North-wall open door, upper right component", category: "buildings", confidence: "known", notes: "Right side of the upper half where the open door meets the north wall. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76." },
+  189: { label: "North-wall east end cap", category: "buildings", confidence: "known", notes: "Right end cap terminating the north wall to the east. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76." },
+  190: { label: "North-wall open door, lower left component", category: "buildings", confidence: "known", notes: "Vertical counterpart of tile 187 and the lower paired half of the long open door. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76." },
+  191: { label: "North-wall open door, lower right component", category: "buildings", confidence: "known", notes: "Vertical counterpart of tile 188 and the lower paired half where the door meets the wall. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76." },
+  192: { label: "North-wall east end-cap counterpart", category: "buildings", confidence: "known", notes: "Vertical counterpart of tile 189. Used directly in authored maps and in Realmz's combat expansion for tiles 74 and 76." },
+  193: { label: "West-wall open door, upper component", category: "buildings", confidence: "known", notes: "Upper half of a door swinging north from a west wall. Also commonly used as surrounding wall fill. Realmz uses it in the combat expansion for tiles 75 and 77." },
+  194: { label: "East-wall open door, upper component", category: "buildings", confidence: "known", notes: "Upper half of a door swinging north from an east wall. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77." },
+  195: { label: "West-wall open door, lower component", category: "buildings", confidence: "known", notes: "Lower half of the open door where it meets the west wall. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77." },
+  196: { label: "East-wall open door, lower component", category: "buildings", confidence: "known", notes: "Lower half of the open door where it meets the east wall. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77." },
+  197: { label: "Cobblestone to east black wall", category: "buildings", confidence: "known", notes: "Cobblestone or land on the left transitions to thick black wall on the right. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77." },
+  198: { label: "Cobblestone to west black wall", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 197: thick black wall on the left and cobblestone or land on the right. Used directly in authored maps and in Realmz's combat expansion for tiles 75 and 77." },
+  199: { label: "Left half of purple altar or sarcophagus", category: "terrain-prop", confidence: "likely", notes: "Left half of a purple altar, bench, or sarcophagus-like object." },
+  200: { label: "Right half of purple altar or sarcophagus", category: "terrain-prop", confidence: "likely", notes: "Right half of the purple object paired with tile 199." }
 };
 
 const CASTLE_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> = {
