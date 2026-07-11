@@ -164,7 +164,25 @@ const CASTLE_WALL_EXACT: Record<number, LandlookTileVisualSemantics> = {
   37: { label: "Northeast thick wall with projected southwest face", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 36: thick red/black wall northeast meets gray walls with south and west continuity. South-facing projection shows wall in the southwest corner instead of floor." },
   38: { label: "Deep thick wall south, land north", category: "buildings", confidence: "known", notes: "Thick red/black wall region south with a gray north-facing boundary and land north; a deeper projected variant of the south wall boundary." },
   39: { label: "Deep thick wall east, land west", category: "buildings", confidence: "known", notes: "Thick red/black wall region east with a gray west-facing boundary and land west; a deeper projected wall variant." },
-  40: { label: "Solid thick red-black wall", category: "buildings", confidence: "known", notes: "Solid thick red/black outer-wall fill with no land. Perspective filler may touch tile edges without indicating a traversable connection." }
+  40: { label: "Solid thick red-black wall", category: "buildings", confidence: "known", notes: "Solid thick red/black outer-wall fill with no land. Perspective filler may touch tile edges without indicating a traversable connection." },
+  41: { label: "East-facing torch on thick wall", category: "buildings", confidence: "known", notes: "Thick red/black north-south wall with an east-facing gray facade and torch. Land or floor east." },
+  42: { label: "South-facing torch on thick wall", category: "buildings", confidence: "known", notes: "Thick red/black east-west wall with a south-facing gray facade and torch. Land or floor south." },
+  43: { label: "Purple curtains on thick south wall", category: "buildings", confidence: "known", notes: "Thick red/black east-west wall with purple curtains on its south-facing wall. Land or floor south." },
+  44: { label: "Purple curtains on gray south wall", category: "buildings", confidence: "known", notes: "Gray east-west wall with purple curtains on its south face. Land north and south." },
+  45: { label: "Red curtains on gray south wall", category: "buildings", confidence: "known", notes: "Gray east-west wall with red curtains on its south face. Land north and south." },
+  46: { label: "Green curtains on gray south wall", category: "buildings", confidence: "known", notes: "Gray east-west wall with green curtains on its south face. Land north and south." },
+  47: { label: "Gray wall with southwest thick-wall pocket", category: "buildings", confidence: "known", notes: "South-facing gray east-west wall with continuity west, east, and south. Thick red/black pocket southwest; land north." },
+  48: { label: "Gray wall with southeast thick-wall pocket", category: "buildings", confidence: "known", notes: "Horizontal mirror of Castle tile 47. Thick red/black pocket southeast; land north." },
+  49: { label: "Vertical mirror of southeast pocket wall", category: "buildings", confidence: "known", notes: "Vertical mirror of Castle tile 48." },
+  50: { label: "Tunnel through thick south wall", category: "cave-transition", confidence: "known", notes: "Thick red/black east-west wall with a south-facing brick facade and tunnel. The tunnel enters from land to the south." },
+  51: { label: "East-facing fountain wall", category: "buildings", confidence: "known", notes: "Thick red/black wall west with a gray north-south facade and fountain on its east side. Land east." },
+  52: { label: "West-facing fountain wall", category: "buildings", confidence: "known", notes: "Horizontal mirror of Castle tile 51. Thick wall east, fountain on the west side, and land west." },
+  53: { label: "North-facing teal fountain wall", category: "buildings", confidence: "known", notes: "Thick red/black wall south with a teal or green fountain facing north." },
+  54: { label: "South-facing lava skull wall", category: "hazard", confidence: "known", notes: "Inset skull rock at the south midpoint of a thick red/black wall spews lava south. Land or lava south." },
+  55: { label: "East-facing lava skull wall", category: "hazard", confidence: "known", notes: "Thick red/black north-south wall west with an inset skull rock spewing lava east." },
+  56: { label: "West-facing lava skull wall", category: "hazard", confidence: "known", notes: "Horizontal mirror of Castle tile 55; the skull rock spews lava west." },
+  57: { label: "North-facing lava skull wall", category: "hazard", confidence: "known", notes: "Vertical mirror of Castle tile 54; the skull rock spews lava north." },
+  58: { label: "East-ascending stone stairway", category: "buildings", confidence: "known", notes: "Gray stone stairway running west-east; the east side ascends." }
 };
 
 const CASTLE_FEATURE_EXACT: Record<number, LandlookTileVisualSemantics> = {
