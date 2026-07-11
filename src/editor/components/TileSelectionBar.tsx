@@ -4,7 +4,7 @@ import { CustomMapStamp, IconEntry, LibraryAsset, MapEntity, MapPaintVariation, 
 import { classifyTileValue, isDivinityVisualPathTile, standardTileValues, tileAttributeGroup } from "../map/tileMetadata";
 import { landlookGroupById, landlookGroupTiles, landlookTileGroups } from "../map/paintGroups";
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, tileIconCandidates } from "../map/renderValues";
-import { builtInStampToMapStamp, customMapStampToMapStamp, MapStamp, superTileStampsForMap } from "../map/superTileStamps";
+import { builtInStampToMapStamp, customMapStampToMapStamp, MapStamp, MapStampCategory, superTileStampsForMap } from "../map/superTileStamps";
 import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
 import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resourceResolver";
 import { tileColor } from "./TileSprite";
@@ -19,13 +19,14 @@ const FALLBACK_TILE_CHOICES = [
 const TILE_DRAG_THRESHOLD = 6;
 
 const PALETTE_MODE_HELP: Record<TilePaletteCategory, string> = {
+  all: "Every available landlook, special/icon, custom-palette, and map-used advanced tile value, with duplicates removed.",
   landlook: "Standard Realmz landlook or dungeon atlas tiles for the selected map renderer.",
-  special: "Negative special land cicn tiles and icon-backed map values, including large structures and landmarks.",
+  special: "Curated special land, icon-backed, and map-used advanced values that are not part of the current landlook atlas.",
   super: "Stamp Library: built-in super tiles, project stamps, and global stamps for multi-cell map brushes.",
   custom: "Project-saved named tile buckets. Drag tiles from any palette tab into the reveal dock to collect them.",
   used: "Every raw tile value already present on the current map, including values outside the visible atlas range.",
   attributes: "Tiles grouped by decoded behavior such as solid, walkable, shore/water, path, boat, LOS, forest, and combat evidence.",
-  raw: "Advanced compatibility values and map-used raw values for auditing or expert painting."
+  raw: "Legacy internal alias for the merged Special / Advanced palette."
 };
 
 type PaintPalettePanelProps = {
@@ -61,10 +62,10 @@ type PaintPalettePanelProps = {
 type SpecialIconFilter = "structures" | "placeable" | "actors" | "used" | "all";
 
 const PALETTE_MODE_OPTIONS: Array<{ id: TilePaletteCategory; label: string }> = [
+  { id: "all", label: "All" },
   { id: "landlook", label: "Landlook" },
-  { id: "special", label: "Special / Icons" },
+  { id: "special", label: "Special / Advanced" },
   { id: "super", label: "Stamps" },
-  { id: "raw", label: "Raw / Advanced" },
   { id: "custom", label: "Custom" }
 ];
 
@@ -125,11 +126,27 @@ export function PaintPalettePanel({
     if (mode !== "used" && mode !== "attributes") return [];
     return usedTilesForMap(map);
   }, [map, mode]);
-  const rawTiles = useMemo(() => (mode === "raw" ? rawTilesForMap(map, tileset) : []), [map, mode, tileset]);
+  const rawTiles = useMemo(() => (mode === "all" || mode === "special" || mode === "raw" ? rawTilesForMap(map, tileset) : []), [map, mode, tileset]);
   const specialTiles = useMemo(
-    () => (mode === "special" ? specialTilesForPalette(project ?? null, map, libraryAssets, icons, specialFilter) : []),
+    () => (mode === "all" || mode === "special" || mode === "raw"
+      ? specialTilesForPalette(project ?? null, map, libraryAssets, icons, mode === "all" || mode === "raw" ? "all" : specialFilter)
+      : []),
     [icons, libraryAssets, map, mode, project, specialFilter]
   );
+  const specialAdvancedTiles = useMemo(() => {
+    const advanced = new Set(specialTiles);
+    if (mode === "all" || mode === "raw" || specialFilter === "all") {
+      rawTiles.forEach((tile) => advanced.add(tile));
+    } else if (mode === "special" && specialFilter === "used") {
+      usedTilesForMap(map).filter((tile) => !standardTiles.includes(tile)).forEach((tile) => advanced.add(tile));
+    }
+    return [...advanced].sort((a, b) => tileSort(a, b, tileset));
+  }, [map, mode, rawTiles, specialFilter, specialTiles, standardTiles, tileset]);
+  const allAvailableTiles = useMemo(() => {
+    const values = new Set([...standardTiles, ...specialAdvancedTiles]);
+    customPalettes.forEach((palette) => palette.tiles.forEach((tile) => values.add(tile)));
+    return [...values].sort((a, b) => tileSort(a, b, tileset));
+  }, [customPalettes, specialAdvancedTiles, standardTiles, tileset]);
   const attributeTiles = useMemo(() => {
     if (mode !== "attributes") return [];
     const candidates = [...new Set([...standardTiles, ...usedTiles])].sort((a, b) => a - b);
@@ -142,14 +159,14 @@ export function PaintPalettePanel({
     return [...new Set([...tiles, ...specialStructureTilesForPalette(project ?? null, libraryAssets, icons)])].sort((a, b) => a - b);
   }, [activePaintGroupId, icons, libraryAssets, project, tileAttributes, tileset]);
   const paletteTiles = useMemo(() => {
+    if (mode === "all") return allAvailableTiles;
     if (mode === "used") return usedTiles;
-    if (mode === "raw") return rawTiles;
-    if (mode === "special") return specialTiles;
+    if (mode === "raw" || mode === "special") return specialAdvancedTiles;
     if (mode === "attributes") return attributeTiles;
     if (mode === "custom") return activeCustomPalette?.tiles ?? [];
     if (mode === "super") return [];
     return groupedStandardTiles;
-  }, [activeCustomPalette, attributeTiles, groupedStandardTiles, mode, rawTiles, specialTiles, usedTiles]);
+  }, [activeCustomPalette, allAvailableTiles, attributeTiles, groupedStandardTiles, mode, specialAdvancedTiles, usedTiles]);
   const [query, setQuery] = useState("");
   const buttonRefs = useRef(new Map<number, HTMLButtonElement>());
   const focusTile = inspectedTile ?? selectedTile;
@@ -174,6 +191,8 @@ export function PaintPalettePanel({
   const activeAttributeFilter = ATTRIBUTE_FILTERS.find((filter) => filter.id === attributeFilter) ?? ATTRIBUTE_FILTERS[0];
   const activeVariationLabel = mode === "custom"
     ? activeCustomPalette?.name ?? "Custom Palette"
+    : mode === "all"
+      ? "All Available"
     : mode === "special"
       ? activeSpecialFilter.label
       : mode === "attributes"
@@ -181,22 +200,22 @@ export function PaintPalettePanel({
         : mode === "used"
           ? "Used Here"
           : mode === "raw"
-            ? "Raw / Advanced"
+            ? "Special / Advanced"
             : activeGroup.label;
   const activeVariationTiles = useMemo(
     () => {
       if (mode === "custom") return activeCustomPalette?.tiles ?? [];
-      if (mode === "special") return specialTiles;
+      if (mode === "all") return allAvailableTiles;
+      if (mode === "special" || mode === "raw") return specialAdvancedTiles;
       if (mode === "used") return usedTiles;
       if (mode === "attributes") return attributeTiles;
-      if (mode === "raw") return rawTiles;
       return landlookGroupTiles(tileset, activePaintGroupId, tileAttributes, icons);
     },
-    [activeCustomPalette, activePaintGroupId, attributeTiles, icons, mode, rawTiles, specialTiles, tileAttributes, tileset, usedTiles]
+    [activeCustomPalette, activePaintGroupId, allAvailableTiles, attributeTiles, icons, mode, specialAdvancedTiles, tileAttributes, tileset, usedTiles]
   );
 
   useEffect(() => {
-    if (variant === "sidebar" && (mode === "used" || mode === "attributes")) onSetMode("raw");
+    if (variant === "sidebar" && (mode === "used" || mode === "attributes" || mode === "raw")) onSetMode("special");
   }, [mode, onSetMode, variant]);
 
   useEffect(() => {
@@ -318,7 +337,7 @@ export function PaintPalettePanel({
         <label className="paint-palette-select-row">
           <span>Category</span>
           <select
-            value={activePaintGroupId}
+            value={activeGroup.id}
             onChange={(event) => onSetActivePaintGroup(event.currentTarget.value)}
             aria-label="Landlook tile category"
           >
@@ -453,6 +472,7 @@ export function PaintPalettePanel({
 }
 
 type StampLibraryScope = "all" | "built-in" | "project" | "global";
+type StampCategoryFilter = "all" | MapStampCategory;
 const STAMP_PALETTE_PREVIEW_CELL = 22;
 
 function StampLibrary({
@@ -485,12 +505,23 @@ function StampLibrary({
   onSetGlobalMapStamps?: (stamps: CustomMapStamp[]) => void;
 }) {
   const [scope, setScope] = useState<StampLibraryScope>("all");
+  const [category, setCategory] = useState<StampCategoryFilter>("all");
   const [editing, setEditing] = useState<{ source: "project" | "global"; id: string; draft: CustomMapStamp } | null>(null);
   const [editTool, setEditTool] = useState<"paint" | "erase">("paint");
-  const visibleStamps = scope === "all" ? stamps : stamps.filter((stamp) => stamp.source === scope);
+  const categoryOptions = useMemo(() => {
+    const present = new Set(stamps.map((stamp) => stamp.category));
+    return STAMP_CATEGORIES.filter((item) => item.id === "all" || present.has(item.id));
+  }, [stamps]);
+  const visibleStamps = stamps.filter((stamp) =>
+    (scope === "all" || stamp.source === scope) &&
+    (category === "all" || stamp.category === category)
+  );
   const selectedStamp = stamps.find((stamp) => stamp.id === selectedStampId) ?? null;
   const customSelected = selectedStamp?.source === "project" || selectedStamp?.source === "global" ? selectedStamp : null;
   const captureDisabled = !project || !map || !selectedRegion;
+  useEffect(() => {
+    if (!categoryOptions.some((item) => item.id === category)) setCategory("all");
+  }, [category, categoryOptions]);
   const createFromSelection = () => {
     if (!project || !map || !selectedRegion) return;
     const fallbackName = `Stamp ${(project.editorMetadata?.mapStamps?.length ?? 0) + 1}`;
@@ -570,6 +601,14 @@ function StampLibrary({
   };
   return (
     <div className="stamp-palette-section">
+      <label className="paint-palette-select-row">
+        <span>Category</span>
+        <select value={category} onChange={(event) => setCategory(event.currentTarget.value as StampCategoryFilter)} aria-label="Stamp category">
+          {categoryOptions.map((item) => (
+            <option key={item.id} value={item.id}>{item.label}</option>
+          ))}
+        </select>
+      </label>
       <div className="stamp-library-toolbar">
         <div className="stamp-scope-tabs" role="toolbar" aria-label="Stamp library filter">
           {STAMP_SCOPES.map((item) => (
@@ -757,6 +796,15 @@ const STAMP_SCOPES: Array<{ id: StampLibraryScope; label: string }> = [
   { id: "built-in", label: "Built In" },
   { id: "project", label: "Project" },
   { id: "global", label: "Global" }
+];
+
+const STAMP_CATEGORIES: Array<{ id: StampCategoryFilter; label: string }> = [
+  { id: "all", label: "All Stamps" },
+  { id: "vegetation", label: "Vegetation" },
+  { id: "structures", label: "Structures" },
+  { id: "furnishings", label: "Furnishings & Props" },
+  { id: "special", label: "Special" },
+  { id: "custom", label: "Custom" }
 ];
 
 function stampBounds(stamp: MapStamp) {
@@ -1051,10 +1099,10 @@ const ATTRIBUTE_FILTERS: Array<{ id: TileAttributeFlag | "all"; label: string; h
 ];
 
 const SPECIAL_ICON_FILTERS: Array<{ id: SpecialIconFilter; label: string; hint: string }> = [
-  { id: "all", label: "All", hint: "All currently exposed special/icon paint values, including special land and actor-style cicn art." },
+  { id: "all", label: "All Special / Advanced", hint: "Curated special/icon values plus map-used and compatibility values outside the current landlook." },
   { id: "structures", label: "Structures", hint: "Large Realmz building, landmark, and town-piece special land icons." },
   { id: "actors", label: "NPCs / Creatures", hint: "Broader cicn actor, corpse, monster, and creature art exposed as negative map-field aliases for special/icon painting." },
-  { id: "placeable", label: "Special Land", hint: "Project/library special land tiles and negative icon values commonly authored as map field values." },
+  { id: "placeable", label: "Special Land", hint: "Project/library special land tiles and curated negative icon values used as map field values." },
   { id: "used", label: "Used Here", hint: "Special/icon-backed values already used in the current map." },
 ];
 
@@ -1086,28 +1134,23 @@ function specialTilesForPalette(
     if (asset.kind === "special-land-tile") placeable.add(asset.resourceId);
   }
   for (const asset of project?.assetCatalog.icons ?? []) {
-    const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
-    placeable.add(value);
+    if (isActorOrCreatureIconId(Math.abs(asset.resourceId))) actors.add(Math.abs(asset.resourceId));
+    else placeable.add(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId);
   }
   for (const asset of libraryAssets) {
     if (!isPaintableSpecialLandAsset(asset)) continue;
     if (asset.resourceId == null) continue;
-    const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
-    if (isActorOrCreatureIconId(Math.abs(asset.resourceId))) actors.add(value);
-    else placeable.add(value);
+    if (isActorOrCreatureIconId(Math.abs(asset.resourceId))) actors.add(Math.abs(asset.resourceId));
+    else placeable.add(asset.resourceId < 0 ? asset.resourceId : -asset.resourceId);
   }
   for (const tile of PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES) {
-    placeable.add(tile);
+    if (hasLoadedTileIcon(tile, icons)) placeable.add(tile);
   }
   for (const tile of PAINTABLE_REFERENCE_ACTOR_ICON_VALUES) {
-    actors.add(tile);
+    if (hasLoadedTileIcon(tile, icons)) actors.add(tile);
   }
   for (const tile of map?.tiles ?? []) {
     if (tile < 0 || tileIconCandidates(tile).length > 0) used.add(tile);
-  }
-  for (const id of Object.keys(icons ?? {})) {
-    const tile = Number(id);
-    if (Number.isFinite(tile) && tile < 0) placeable.add(tile);
   }
   const values = new Set<number>();
   if (filter === "structures" || filter === "all") for (const value of structures) values.add(value);
@@ -1122,7 +1165,7 @@ function specialStructureTilesForPalette(
   libraryAssets: LibraryAsset[],
   icons?: Record<number, IconEntry>
 ) {
-  const values = new Set<number>(SPECIAL_STRUCTURE_TILE_VALUES);
+  const values = new Set<number>(SPECIAL_STRUCTURE_TILE_VALUES.filter((tile) => hasLoadedTileIcon(tile, icons)));
   for (const asset of project?.assets ?? []) {
     if (asset.kind !== "special-land-tile" || asset.resourceType !== "cicn") continue;
     if (isSpecialStructureTileValue(asset.resourceId)) values.add(asset.resourceId);
@@ -1137,11 +1180,11 @@ function specialStructureTilesForPalette(
     const value = asset.resourceId < 0 ? asset.resourceId : -asset.resourceId;
     if (isSpecialStructureTileValue(value)) values.add(value);
   }
-  for (const id of Object.keys(icons ?? {})) {
-    const value = Number(id);
-    if (Number.isFinite(value) && isSpecialStructureTileValue(value)) values.add(value);
-  }
   return [...values].sort((a, b) => a - b);
+}
+
+function hasLoadedTileIcon(tile: number, icons?: Record<number, IconEntry>) {
+  return tileIconCandidates(tile).some((candidate) => Boolean(icons?.[candidate]?.image));
 }
 
 function isSpecialStructureTileValue(value: number) {

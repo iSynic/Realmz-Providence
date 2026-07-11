@@ -26,6 +26,8 @@ const MAX_TILE_EXAMPLES = 6;
 const MAX_REVIEW_MASKS = 8;
 const MAX_REVIEW_NEIGHBORS = 6;
 const FIRST_REVIEW_BATCH_SIZE = 48;
+const MAX_ADJACENCY_NEIGHBORS = 5;
+const MAX_ADJACENCY_EXAMPLES = 2;
 
 const TERRAIN_PRESETS = {
   water: {
@@ -115,6 +117,7 @@ const corpus = discoverScenarioCorpus();
 const aggregate = analyzeCorpus(corpus.selected);
 const generatedProfiles = buildGeneratedProfiles(aggregate);
 const reviewQueue = buildTerrainReviewQueue(aggregate);
+const tileAdjacencyAudit = buildTileAdjacencyAudit(aggregate);
 
 writeJson(path.join(repoRoot, "docs/generated/smart-terrain-corpus.json"), {
   schemaVersion: 2,
@@ -137,6 +140,8 @@ writeJson(path.join(repoRoot, "docs/generated/smart-terrain-corpus.json"), {
 });
 writeReviewJson(path.join(repoRoot, "docs/generated/smart-terrain-review.json"), reviewQueue);
 writeReviewReport(reviewQueue);
+writeAdjacencyJson(path.join(repoRoot, "docs/generated/map-tile-adjacency-audit.json"), tileAdjacencyAudit);
+writeTileAdjacencyReport(tileAdjacencyAudit);
 writeGeneratedProfiles(generatedProfiles);
 writeReport(corpus, aggregate, generatedProfiles, reviewQueue);
 
@@ -145,6 +150,8 @@ console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "src/editor/map
 console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/smart-terrain-corpus-report.md"))}`);
 console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/smart-terrain-review.json"))}`);
 console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/smart-terrain-review.md"))}`);
+console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/map-tile-adjacency-audit.json"))}`);
+console.log(`Wrote ${path.relative(repoRoot, path.join(repoRoot, "docs/generated/map-tile-adjacency-audit.md"))}`);
 
 function discoverScenarioCorpus() {
   const byName = new Map();
@@ -186,6 +193,7 @@ function discoverScenarioCorpus() {
 
 function analyzeCorpus(scenarios) {
   const profileStats = new Map();
+  const tileUsageStats = new Map();
   const summary = {
     scenarios: scenarios.length,
     landMaps: 0,
@@ -207,6 +215,7 @@ function analyzeCorpus(scenarios) {
       summary.landlooks[landlook] = (summary.landlooks[landlook] ?? 0) + 1;
 
       const tiles = readLandMap(dataLd, mapIndex);
+      recordMapTileUsage(tileUsageStats, tiles, scenario.name, mapIndex, landlook);
       for (const [presetId, preset] of Object.entries(TERRAIN_PRESETS)) {
         const family = new Set(preset.family);
         const detail = new Set(preset.excludedDetail ?? []);
@@ -248,8 +257,227 @@ function analyzeCorpus(scenarios) {
   }
   return {
     summary,
-    profiles: profileStats
+    profiles: profileStats,
+    tileUsageStats
   };
+}
+
+function recordMapTileUsage(statsByTile, tiles, scenario, mapIndex, landlook) {
+  const mapKey = `${scenario}:land:${mapIndex}`;
+  for (let y = 0; y < MAP_SIZE; y += 1) {
+    for (let x = 0; x < MAP_SIZE; x += 1) {
+      const rawTile = tiles[y * MAP_SIZE + x];
+      const tile = normalizePaintIdentity(rawTile);
+      const key = `${landlook}:${tile}`;
+      const stats = statsByTile.get(key) ?? {
+        landlook,
+        tile,
+        samples: 0,
+        rawValues: {},
+        scenarios: new Set(),
+        maps: new Set(),
+        neighbors: { north: {}, east: {}, south: {}, west: {} },
+        examples: []
+      };
+      stats.samples += 1;
+      increment(stats.rawValues, rawTile);
+      stats.scenarios.add(scenario);
+      stats.maps.add(mapKey);
+      recordAllDirectionalNeighbors(stats, tiles, x, y);
+      if (stats.examples.length < MAX_ADJACENCY_EXAMPLES && !stats.examples.some((example) => example.mapKey === mapKey)) {
+        stats.examples.push({ mapKey, scenario, mapIndex, x, y, rawTile });
+      }
+      statsByTile.set(key, stats);
+    }
+  }
+}
+
+function recordAllDirectionalNeighbors(stats, tiles, x, y) {
+  const directions = [
+    ["north", x, y - 1],
+    ["east", x + 1, y],
+    ["south", x, y + 1],
+    ["west", x - 1, y]
+  ];
+  for (const [direction, xx, yy] of directions) {
+    const neighbor = xx < 0 || yy < 0 || xx >= MAP_SIZE || yy >= MAP_SIZE
+      ? "outside-map"
+      : normalizePaintIdentity(tiles[yy * MAP_SIZE + xx]);
+    increment(stats.neighbors[direction], neighbor);
+  }
+}
+
+function buildTileAdjacencyAudit(aggregate) {
+  const rawStats = [...aggregate.tileUsageStats.values()];
+  const standardStats = rawStats.filter((stats) => stats.tile >= 1 && stats.tile <= 200);
+  const nonstandardByTile = new Map();
+  for (const stats of rawStats.filter((entry) => entry.tile < 1 || entry.tile > 200)) {
+    const merged = nonstandardByTile.get(stats.tile) ?? emptyMergedTileStats(stats.tile);
+    mergeTileUsageStats(merged, stats);
+    nonstandardByTile.set(stats.tile, merged);
+  }
+  const auditedNonstandard = [...nonstandardByTile.values()].filter((stats) =>
+    isReferencePaintIdentity(stats.tile) || stats.scenarios.size >= 2
+  );
+  const entries = [...standardStats, ...auditedNonstandard]
+    .sort((a, b) => (a.landlook ?? Number.MAX_SAFE_INTEGER) - (b.landlook ?? Number.MAX_SAFE_INTEGER) || a.tile - b.tile)
+    .map(serializeTileUsageStats);
+  const byLandlook = Object.entries(aggregate.summary.landlooks)
+    .map(([landlookText, mapCount]) => {
+      const landlook = Number(landlookText);
+      const tiles = rawStats.filter((entry) => entry.landlook === landlook);
+      return {
+        landlook,
+        mapCount,
+        distinctTileIdentities: tiles.length,
+        placements: tiles.reduce((sum, entry) => sum + entry.samples, 0)
+      };
+    })
+    .sort((a, b) => a.landlook - b.landlook);
+  return {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    purpose: "Directional authored-map adjacency and usage evidence for every normalized paint tile identity.",
+    caution: "Frequency is evidence for review, not permission to expose a resource as paintable or to change semantic terrain rules automatically.",
+    summary: {
+      scenarios: aggregate.summary.scenarios,
+      landMaps: aggregate.summary.landMaps,
+      placements: aggregate.summary.landMaps * MAP_SIZE * MAP_SIZE,
+      auditedPlacements: entries.reduce((sum, entry) => sum + entry.placements, 0),
+      observedLandlookTileIdentities: rawStats.length,
+      auditedEntries: entries.length,
+      auditedNonstandardIdentities: auditedNonstandard.length,
+      lowEvidenceNonstandardIdentitiesOmitted: nonstandardByTile.size - auditedNonstandard.length,
+      byLandlook
+    },
+    entries
+  };
+}
+
+function emptyMergedTileStats(tile) {
+  return {
+    landlook: null,
+    tile,
+    samples: 0,
+    rawValues: {},
+    scenarios: new Set(),
+    maps: new Set(),
+    landlooks: {},
+    neighbors: { north: {}, east: {}, south: {}, west: {} },
+    examples: []
+  };
+}
+
+function mergeTileUsageStats(target, source) {
+  target.samples += source.samples;
+  increment(target.landlooks, source.landlook, source.samples);
+  mergeCounts(target.rawValues, source.rawValues);
+  source.scenarios.forEach((scenario) => target.scenarios.add(scenario));
+  source.maps.forEach((map) => target.maps.add(map));
+  for (const direction of ["north", "east", "south", "west"]) mergeCounts(target.neighbors[direction], source.neighbors[direction]);
+  for (const example of source.examples) {
+    if (target.examples.length >= MAX_ADJACENCY_EXAMPLES) break;
+    if (!target.examples.some((candidate) => candidate.mapKey === example.mapKey)) target.examples.push(example);
+  }
+}
+
+function mergeCounts(target, source) {
+  for (const [value, count] of Object.entries(source)) increment(target, value, count);
+}
+
+function serializeTileUsageStats(stats) {
+  return {
+    landlook: stats.landlook,
+    ...(stats.landlooks ? { landlooks: rankedAuditCounts(stats.landlooks, stats.samples) } : {}),
+    tile: stats.tile,
+    placements: stats.samples,
+    scenarioCount: stats.scenarios.size,
+    mapCount: stats.maps.size,
+    rawValues: rankedAuditCounts(stats.rawValues, stats.samples).slice(0, 10),
+    neighbors: Object.fromEntries(Object.entries(stats.neighbors).map(([direction, counts]) => [
+      direction,
+      rankedAuditCounts(counts, stats.samples).slice(0, MAX_ADJACENCY_NEIGHBORS)
+    ])),
+    examples: stats.examples.map(({ mapKey: _mapKey, ...example }) => example)
+  };
+}
+
+function isReferencePaintIdentity(tile) {
+  return inRange(tile, -223, -212)
+    || inRange(tile, -209, -200)
+    || inRange(tile, -195, -164)
+    || inRange(tile, -99, -90)
+    || tile === -83
+    || inRange(tile, -79, -50)
+    || inRange(tile, -47, -25)
+    || inRange(tile, -19, -15)
+    || tile === -11
+    || inRange(tile, -5, -1)
+    || inRange(tile, 379, 461)
+    || inRange(tile, 464, 496)
+    || inRange(tile, 500, 590)
+    || inRange(tile, 600, 619)
+    || inRange(tile, 692, 824);
+}
+
+function inRange(value, start, end) {
+  return value >= start && value <= end;
+}
+
+function rankedAuditCounts(counts, total) {
+  return rankedCounts(counts).map(({ value, count }) => ({
+    value: value === "outside-map" ? value : Number(value),
+    count,
+    share: round(count / total)
+  }));
+}
+
+function writeTileAdjacencyReport(audit) {
+  const lines = [
+    "# Authored Map Tile Adjacency Audit",
+    "",
+    `Generated: ${audit.generatedAt}`,
+    "",
+    audit.purpose,
+    "",
+    `**Guardrail:** ${audit.caution}`,
+    "",
+    "## Coverage",
+    "",
+    `- Scenarios: ${audit.summary.scenarios}`,
+    `- Land maps: ${audit.summary.landMaps}`,
+    `- Tile placements: ${audit.summary.placements}`,
+    `- Observed landlook/tile identities: ${audit.summary.observedLandlookTileIdentities}`,
+    `- Audited standard and reusable nonstandard entries: ${audit.summary.auditedEntries}`,
+    `- Low-evidence nonstandard identities omitted from detailed adjacency: ${audit.summary.lowEvidenceNonstandardIdentitiesOmitted}`,
+    "",
+    "| Landlook | Maps | Distinct tiles | Placements |",
+    "| ---: | ---: | ---: | ---: |",
+    ...audit.summary.byLandlook.map((entry) => `| ${entry.landlook} | ${entry.mapCount} | ${entry.distinctTileIdentities} | ${entry.placements} |`),
+    "",
+    "## Most Used Negative Special Tiles",
+    "",
+    "| Tile | Placements | Scenarios | Maps | Most common N / E / S / W neighbors |",
+    "| ---: | ---: | ---: | ---: | --- |"
+  ];
+  const specialEntries = audit.entries
+    .filter((entry) => entry.tile < 0)
+    .sort((a, b) => b.placements - a.placements || a.tile - b.tile)
+    .slice(0, 50);
+  for (const entry of specialEntries) {
+    const neighbors = ["north", "east", "south", "west"]
+      .map((direction) => entry.neighbors[direction][0]?.value ?? "none")
+      .join(" / ");
+    lines.push(`| ${entry.tile} | ${entry.placements} | ${entry.scenarioCount} | ${entry.mapCount} | ${neighbors} |`);
+  }
+  lines.push(
+    "",
+    "The JSON companion contains exact raw-value distributions, ranked directional neighbors with counts and shares, and representative authored coordinates for every observed tile identity.",
+    ""
+  );
+  const outputPath = path.join(repoRoot, "docs/generated/map-tile-adjacency-audit.md");
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, `${lines.join("\n")}\n`);
 }
 
 function buildGeneratedProfiles(aggregate) {
@@ -691,7 +919,7 @@ function writeReviewReport(reviewQueue) {
         lines.push(row.map((tile, columnIndex) => {
           const value = tile === null ? "out" : String(tile);
           return rowIndex === 2 && columnIndex === 2 ? `[${value.padStart(3, " ")}]` : ` ${value.padStart(3, " ")} `;
-        }).join(" "));
+        }).join(" ").trimEnd());
       });
       lines.push("```");
       lines.push("");
@@ -705,6 +933,23 @@ function writeReviewReport(reviewQueue) {
 function writeJson(outputPath, value) {
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function writeAdjacencyJson(outputPath, audit) {
+  const lines = [
+    "{",
+    `  "schemaVersion": ${JSON.stringify(audit.schemaVersion)},`,
+    `  "generatedAt": ${JSON.stringify(audit.generatedAt)},`,
+    `  "purpose": ${JSON.stringify(audit.purpose)},`,
+    `  "caution": ${JSON.stringify(audit.caution)},`,
+    `  "summary": ${JSON.stringify(audit.summary)},`,
+    "  \"entries\": [",
+    ...audit.entries.map((entry, index) => `    ${JSON.stringify(entry)}${index + 1 < audit.entries.length ? "," : ""}`),
+    "  ]",
+    "}"
+  ];
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, `${lines.join("\n")}\n`);
 }
 
 function writeReviewJson(outputPath, reviewQueue) {
@@ -811,14 +1056,21 @@ function normalizeMapTile(value) {
   return tile > 200 ? tile : Math.max(1, tile);
 }
 
+function normalizePaintIdentity(value) {
+  if (value >= 0) return normalizeMapTile(value);
+  let tile = value;
+  while (tile < -999) tile += 1000;
+  return tile;
+}
+
 function clearRealmzShortBit(value, bit) {
   const unsigned = value & 0xffff;
   const cleared = unsigned & ~(1 << (15 - bit));
   return cleared >= 0x8000 ? cleared - 0x10000 : cleared;
 }
 
-function increment(counts, tile) {
-  counts[tile] = (counts[tile] ?? 0) + 1;
+function increment(counts, tile, amount = 1) {
+  counts[tile] = (counts[tile] ?? 0) + amount;
 }
 
 function countTotal(counts) {

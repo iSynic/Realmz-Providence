@@ -61,6 +61,50 @@
         { "kind": "combatClearing", "x": 1, "y": 1, "tile": 59 },
         { "kind": "hiddenWalkable", "x": 2, "y": 1 }
       ]
+    },
+    {
+      "key": "desert-semantic-map",
+      "levelType": "land",
+      "index": 2,
+      "landlook": 5,
+      "fillTile": 191,
+      "operations": [
+        { "kind": "terrainGroup", "terrain": "water", "geometry": { "kind": "rect", "x": 10, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "terrainGroup", "terrain": "mountains", "geometry": { "kind": "rect", "x": 20, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "rect", "x": 30, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "hiddenWalkable", "x": 40, "y": 10 },
+        { "kind": "hiddenWalkable", "x": 41, "y": 10, "tile": 184 },
+        { "kind": "combatClearing", "x": 42, "y": 10 },
+        { "kind": "combatClearing", "x": 43, "y": 10, "tile": 185 }
+      ]
+    },
+    {
+      "key": "swamp-semantic-map",
+      "levelType": "land",
+      "index": 3,
+      "landlook": 9,
+      "fillTile": 155,
+      "operations": [
+        { "kind": "terrainGroup", "terrain": "water", "geometry": { "kind": "rect", "x": 10, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "terrainGroup", "terrain": "mountains", "geometry": { "kind": "rect", "x": 20, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "rect", "x": 30, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "hiddenWalkable", "x": 40, "y": 10 },
+        { "kind": "combatClearing", "x": 41, "y": 10 }
+      ]
+    },
+    {
+      "key": "snow-semantic-map",
+      "levelType": "land",
+      "index": 4,
+      "landlook": 10,
+      "fillTile": 155,
+      "operations": [
+        { "kind": "terrainGroup", "terrain": "water", "geometry": { "kind": "rect", "x": 10, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "terrainGroup", "terrain": "mountains", "geometry": { "kind": "rect", "x": 20, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "rect", "x": 30, "y": 10, "width": 5, "height": 5 } },
+        { "kind": "hiddenWalkable", "x": 40, "y": 10 },
+        { "kind": "combatClearing", "x": 41, "y": 10 }
+      ]
     }
   ],
   "actionPoints": [

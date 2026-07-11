@@ -553,7 +553,7 @@ export type ScenarioSeedTerrainGeometry =
   | { kind: "rect"; x: number; y: number; width: number; height: number }
   | { kind: "path"; points: ScenarioSeedPoint[]; width?: number };
 
-export type ScenarioSeedHiddenWalkableTile = 96 | 169;
+export type ScenarioSeedHiddenWalkableTile = 96 | 169 | 184;
 export type ScenarioSeedCombatClearingTile = 59 | 60 | 61 | 62 | 63 | 64 | 65 | 180 | 181 | 182 | 183 | 184 | 185;
 export type ScenarioSeedDungeonDirection = "north" | "east" | "south" | "west";
 
@@ -2079,7 +2079,7 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
     checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
     if (tile !== undefined && !isHiddenWalkableTile(tile)) {
-      ctx.errors.push(`${path}.tile must be one of the known stock hidden-walkable tiles: Castle 96 or Plains 169.`);
+      ctx.errors.push(`${path}.tile must be one of the known stock hidden-walkable tiles (IDs 96, 169, or 184); landlook validation is applied separately.`);
     }
     return { kind, x: x ?? 0, y: y ?? 0, ...(tile !== undefined && isHiddenWalkableTile(tile) ? { tile } : {}) };
   }
@@ -2091,7 +2091,7 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
     checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
     if (tile !== undefined && !isCombatClearingTile(tile)) {
-      ctx.errors.push(`${path}.tile must be one of the known stock combat-clearing tiles: Castle 59-65 or Plains 180-185.`);
+      ctx.errors.push(`${path}.tile must be one of the known stock combat-clearing tiles (IDs 59-65 or 180-185); landlook validation is applied separately.`);
     }
     return { kind, x: x ?? 0, y: y ?? 0, ...(tile !== undefined && isCombatClearingTile(tile) ? { tile } : {}) };
   }
@@ -2167,7 +2167,7 @@ function parseDungeonDirection(input: unknown, path: string, ctx: ParseContext):
 }
 
 function isHiddenWalkableTile(value: number): value is ScenarioSeedHiddenWalkableTile {
-  return value === 96 || value === 169;
+  return value === 96 || value === 169 || value === 184;
 }
 
 function isCombatClearingTile(value: number): value is ScenarioSeedCombatClearingTile {

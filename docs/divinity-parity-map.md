@@ -100,11 +100,13 @@ Blank scenario creation is still a later slice because minimum resource-fork def
 
 Maps now follows the Divinity mental model that terrain tiles, special land tiles, icon-backed values, and raw used values are all placeable Realmz map-field values. The Paint palette is the single authoring surface for those values:
 
-- `Landlook Tiles`: standard atlas-backed land or dungeon tiles.
-- `Special / Icons`: negative `cicn`/special land values from project assets, library evidence, icon resources, and values already used by the current map.
-- `Used In This Map`: every raw value present on the current level.
-- `Attributes`: decoded metadata groups where Providence has source-backed evidence.
-- `Raw / Advanced`: compatibility values and map-used values outside the visible atlas range.
+- `All`: a deduplicated union of the current landlook, curated special/icon values, map-used advanced values, and project custom-palette tiles.
+- `Landlook`: standard atlas-backed land or dungeon tiles, organized into broad categories unique to the selected landlook.
+- `Special / Advanced`: curated negative `cicn`/special land values, actor-style icon values, and map-used compatibility values outside the visible atlas range. Merely loading a Divinity or Realmz icon resource does not make it paintable.
+- `Stamps`: landlook-aware built-in multi-tile structures plus project and global custom stamps.
+- `Custom`: author-maintained project tile collections.
+
+Source-backed attribute filters remain available through tile inspection workflows. The generated authored-map adjacency audit records usage, exact raw variants, and directional neighbors for terrain review without treating frequency as permission to expose arbitrary resources.
 
 The current source-backed tile attribute layer is split deliberately. Standard positive land tiles use landlook `mapstats` from Realmz `* BD` files for movement sound, movement cost, solidity, shore/path behavior, boat/water requirements, LOS blocking, fly/float script flags, and combat/forest hints. Scenario `Data Solids` is retained as the special negative/icon tile solidity table for raw values like `-35` or `-223`; it is not the full Divinity Standard Land Tile Editor table. The documentation section can link to these anchors: `#maps-v4-contract`, `#compatibility-rules`, `#tile-values`, `#special-land-tiles`, `#tile-attributes`, and the local source evidence in `F:\Realmz Scenario Utility\docs\scenario-format`.
 

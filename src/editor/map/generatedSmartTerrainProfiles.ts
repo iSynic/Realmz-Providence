@@ -5792,8 +5792,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           33,
           34,
           35,
-          36,
-          37,
           38,
           39,
           40,
@@ -5808,6 +5806,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           49,
           50,
           51,
+          60
+        ],
+        "excluded": [
+          36,
+          37,
           52,
           53,
           54,
@@ -5816,7 +5819,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           57,
           58,
           59,
-          60,
           105,
           106,
           107,
@@ -5826,14 +5828,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
-        "excluded": [],
-        "detail": [],
-        "center": [
-          60,
-          40,
-          35,
+        "detail": [
+          33,
           34,
-          33
+          35
+        ],
+        "center": [
+          60
         ],
         "candidates": [
           1,
@@ -5886,20 +5887,139 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         "confidence": "fallback",
         "maskCandidates": {},
         "roleCandidates": {},
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            60
+          ],
+          "north": [
+            3
+          ],
+          "south": [
+            4
+          ],
+          "east": [
+            2
+          ],
+          "west": [
+            1
+          ],
+          "northEast": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "northWest": [
+            9,
+            10,
+            17,
+            18
+          ],
+          "southEast": [
+            7,
+            8,
+            15,
+            16
+          ],
+          "southWest": [
+            5,
+            6,
+            19,
+            20
+          ]
+        },
         "curatedWaterRoles": {},
-        "curatedMasks": {},
+        "curatedMasks": {
+          "1": [
+            40
+          ],
+          "2": [
+            41
+          ],
+          "3": [
+            50
+          ],
+          "4": [
+            42
+          ],
+          "5": [
+            38
+          ],
+          "6": [
+            48
+          ],
+          "7": [
+            45
+          ],
+          "8": [
+            43
+          ],
+          "9": [
+            51
+          ],
+          "10": [
+            39
+          ],
+          "11": [
+            44
+          ],
+          "12": [
+            49
+          ],
+          "13": [
+            47
+          ],
+          "14": [
+            46
+          ],
+          "19": [
+            27
+          ],
+          "38": [
+            25
+          ],
+          "58": [
+            22
+          ],
+          "76": [
+            26
+          ],
+          "101": [
+            24
+          ],
+          "127": [
+            30
+          ],
+          "137": [
+            28
+          ],
+          "149": [
+            21
+          ],
+          "191": [
+            32
+          ],
+          "202": [
+            23
+          ],
+          "223": [
+            31
+          ],
+          "239": [
+            29
+          ]
+        },
         "fallbackRoles": {
           "center": 60,
           "single": 60,
           "north": 3,
-          "south": 31,
+          "south": 4,
           "east": 2,
-          "west": 42,
-          "northEast": 4,
-          "northWest": 1,
-          "southEast": 24,
-          "southWest": 21,
+          "west": 1,
+          "northEast": 11,
+          "northWest": 9,
+          "southEast": 7,
+          "southWest": 5,
           "lineHorizontal": 43,
           "lineVertical": 42,
           "capNorth": 4,
@@ -5992,20 +6112,89 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         "confidence": "fallback",
         "maskCandidates": {},
         "roleCandidates": {},
-        "curatedRoles": {},
-        "curatedWaterRoles": {},
+        "curatedRoles": {
+          "center": [
+            61
+          ],
+          "north": [
+            83,
+            84,
+            85
+          ],
+          "south": [
+            80,
+            81,
+            82
+          ],
+          "east": [
+            74,
+            75,
+            76
+          ],
+          "west": [
+            77,
+            78,
+            79
+          ],
+          "northEast": [
+            71,
+            72,
+            73
+          ],
+          "northWest": [
+            65,
+            66,
+            67
+          ],
+          "southEast": [
+            62,
+            63,
+            64
+          ],
+          "southWest": [
+            68,
+            69,
+            70
+          ]
+        },
+        "curatedWaterRoles": {
+          "north": [
+            92
+          ],
+          "south": [
+            93
+          ],
+          "east": [
+            91
+          ],
+          "west": [
+            90
+          ],
+          "northEast": [
+            87
+          ],
+          "northWest": [
+            86
+          ],
+          "southEast": [
+            89
+          ],
+          "southWest": [
+            88
+          ]
+        },
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
           "north": 83,
-          "south": 63,
-          "east": 62,
-          "west": 80,
-          "northEast": 84,
-          "northWest": 81,
-          "southEast": 64,
-          "southWest": 72,
+          "south": 80,
+          "east": 74,
+          "west": 77,
+          "northEast": 71,
+          "northWest": 65,
+          "southEast": 62,
+          "southWest": 68,
           "lineHorizontal": 83,
           "lineVertical": 62,
           "notchNorthEast": 70,
@@ -6046,20 +6235,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         "confidence": "fallback",
         "maskCandidates": {},
         "roleCandidates": {},
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            121
+          ],
+          "north": [
+            127
+          ],
+          "south": [
+            126
+          ],
+          "east": [
+            129
+          ],
+          "west": [
+            128
+          ],
+          "northEast": [
+            122
+          ],
+          "northWest": [
+            123
+          ],
+          "southEast": [
+            125
+          ],
+          "southWest": [
+            124
+          ]
+        },
         "curatedWaterRoles": {},
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
-          "north": 126,
-          "south": 127,
-          "east": 128,
-          "west": 129,
-          "northEast": 125,
-          "northWest": 124,
-          "southEast": 123,
-          "southWest": 122,
+          "north": 127,
+          "south": 126,
+          "east": 129,
+          "west": 128,
+          "northEast": 122,
+          "northWest": 123,
+          "southEast": 125,
+          "southWest": 124,
           "lineHorizontal": 128,
           "lineVertical": 126,
           "capNorth": 126,
@@ -17808,8 +18025,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           33,
           34,
           35,
-          36,
-          37,
           38,
           39,
           40,
@@ -17824,6 +18039,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           49,
           50,
           51,
+          60
+        ],
+        "excluded": [
+          36,
+          37,
           52,
           53,
           54,
@@ -17832,7 +18052,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           57,
           58,
           59,
-          60,
           105,
           106,
           107,
@@ -17842,21 +18061,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
-        "excluded": [],
-        "detail": [],
-        "center": [
-          60,
-          35,
+        "detail": [
+          33,
           34,
-          40,
-          33
+          35
+        ],
+        "center": [
+          60
         ],
         "candidates": [
           60,
           39,
           3,
           38,
-          36,
           4,
           1,
           2,
@@ -17868,27 +18085,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         "maskCandidates": {
           "0": {
             "tiles": [
-              112,
-              111,
-              36,
-              109,
-              110,
               1,
-              48,
-              52
+              48
             ],
             "samples": 184,
             "confidence": "medium"
           },
           "1": {
             "tiles": [
-              53,
               39,
-              106,
-              36,
-              35,
-              28,
-              110
+              28
             ],
             "samples": 26,
             "confidence": "low"
@@ -17896,9 +18102,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "2": {
             "tiles": [
               38,
-              54,
-              36,
-              108,
               1,
               48
             ],
@@ -17908,19 +18111,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "3": {
             "tiles": [
               49,
-              36,
-              46,
-              54
+              46
             ],
             "samples": 10,
             "confidence": "low"
           },
           "4": {
             "tiles": [
-              52,
               39,
-              36,
-              105,
               60,
               41
             ],
@@ -17930,10 +18128,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "5": {
             "tiles": [
               39,
-              36,
               60,
-              3,
-              106
+              3
             ],
             "samples": 187,
             "confidence": "medium"
@@ -17941,18 +18137,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "6": {
             "tiles": [
               48,
-              9,
-              36
+              9
             ],
             "samples": 9,
             "confidence": "low"
           },
           "8": {
             "tiles": [
-              55,
               38,
-              36,
-              107,
               1,
               50
             ],
@@ -17962,7 +18154,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "9": {
             "tiles": [
               51,
-              36,
               60
             ],
             "samples": 12,
@@ -17970,17 +18161,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "10": {
             "tiles": [
-              38,
-              36
+              38
             ],
             "samples": 142,
             "confidence": "medium"
           },
           "12": {
             "tiles": [
-              50,
-              33,
-              36
+              50
             ],
             "samples": 10,
             "confidence": "low"
@@ -17990,9 +18178,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               2,
               14,
-              36,
               60,
-              35,
               3,
               7
             ],
@@ -18002,7 +18188,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "21": {
             "tiles": [
               39,
-              36,
               15
             ],
             "samples": 17,
@@ -18010,9 +18195,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "26": {
             "tiles": [
-              38,
-              36,
-              34
+              38
             ],
             "samples": 14,
             "confidence": "low"
@@ -18020,9 +18203,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "37": {
             "tiles": [
               39,
-              36,
-              60,
-              53
+              60
             ],
             "samples": 23,
             "confidence": "low"
@@ -18032,7 +18213,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               17,
               9,
-              36,
               60,
               1,
               3,
@@ -18045,8 +18225,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               38,
               60,
-              1,
-              36
+              1
             ],
             "samples": 10,
             "confidence": "low"
@@ -18057,10 +18236,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               60,
               18,
-              33,
-              11,
-              36,
-              108
+              11
             ],
             "samples": 54,
             "confidence": "low"
@@ -18072,9 +18248,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               9,
-              34,
-              48,
-              108
+              48
             ],
             "samples": 49,
             "confidence": "low"
@@ -18083,9 +18257,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               3,
               60,
-              36,
-              35,
-              34,
               13,
               18,
               20
@@ -18097,7 +18268,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               39,
               60,
-              36,
               18
             ],
             "samples": 22,
@@ -18106,7 +18276,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "74": {
             "tiles": [
               38,
-              36,
               1
             ],
             "samples": 11,
@@ -18118,7 +18287,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               19,
-              36,
               5,
               10,
               15
@@ -18155,7 +18323,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               5,
               27,
-              34,
               10,
               15,
               50
@@ -18182,9 +18349,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               25,
               60,
               17,
-              36,
-              48,
-              35
+              48
             ],
             "samples": 54,
             "confidence": "low"
@@ -18194,9 +18359,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               3,
               60,
-              33,
-              35,
-              34,
               25,
               30
             ],
@@ -18218,24 +18380,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               30,
               60,
-              35,
-              34,
-              33,
               18,
               22,
-              24
+              24,
+              31
             ],
             "samples": 132,
             "confidence": "medium"
           },
           "129": {
             "tiles": [
-              36,
               60,
               16,
-              49,
-              53,
-              106
+              49
             ],
             "samples": 8,
             "confidence": "low"
@@ -18244,8 +18401,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               39,
               60,
-              13,
-              36
+              13
             ],
             "samples": 20,
             "confidence": "low"
@@ -18255,7 +18411,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               60,
               2,
-              36,
               16,
               4,
               8,
@@ -18266,8 +18421,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "138": {
             "tiles": [
-              38,
-              36
+              38
             ],
             "samples": 10,
             "confidence": "low"
@@ -18282,7 +18436,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "141": {
             "tiles": [
               60,
-              36,
               39,
               4
             ],
@@ -18332,7 +18485,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               11,
               14,
-              36,
               49
             ],
             "samples": 21,
@@ -18343,8 +18495,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               60,
               3,
-              35,
-              34,
               17,
               26
             ],
@@ -18367,8 +18517,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               29,
-              33,
-              34,
               12,
               23,
               24,
@@ -18382,7 +18530,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               60,
               28,
-              36,
               51,
               2,
               7,
@@ -18405,7 +18552,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               27,
               15,
-              36,
               50,
               1,
               6
@@ -18417,7 +18563,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               4,
-              36,
               28,
               15,
               16,
@@ -18452,8 +18597,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               15,
-              4,
-              36
+              4
             ],
             "samples": 38,
             "confidence": "low"
@@ -18492,9 +18636,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               1,
-              6,
-              33,
-              59
+              6
             ],
             "samples": 24,
             "confidence": "low"
@@ -18503,7 +18645,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               32,
-              33,
               30,
               49
             ],
@@ -18512,14 +18653,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "255": {
             "tiles": [
-              60,
-              35,
-              34,
-              33,
-              57,
-              56,
-              58,
-              59
+              60
             ],
             "samples": 8289,
             "confidence": "high"
@@ -18527,15 +18661,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         },
         "roleCandidates": {
           "single": [
-            112,
-            111,
-            36,
-            109,
-            110,
             1,
-            48,
-            52,
-            107
+            48
           ],
           "northWest": [
             25,
@@ -18543,11 +18670,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             17,
             48,
             9,
-            36,
             1,
-            35,
-            34,
-            3
+            3,
+            13,
+            19
           ],
           "north": [
             60,
@@ -18567,28 +18693,21 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             50,
             19,
             5,
-            36,
             1,
             15,
             10,
-            34
+            6
           ],
           "center": [
             60,
             30,
             31,
             32,
-            29,
-            35,
-            34,
-            33,
-            57,
-            56
+            29
           ],
           "east": [
             60,
             4,
-            36,
             15,
             20,
             44,
@@ -18602,11 +18721,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             60,
             18,
             13,
-            36,
             46,
-            35,
-            34,
-            33,
             30
           ],
           "southWest": [
@@ -18615,11 +18730,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             11,
             14,
             49,
-            36,
             2,
             18,
             3,
-            35
+            7
           ],
           "south": [
             60,
@@ -18630,28 +18744,20 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             49,
             38,
             47,
-            35,
             14
           ],
           "lineVertical": [
             39,
-            36,
             60,
             18,
             3,
             13,
             15,
-            20,
-            53,
-            106
+            20
           ],
           "capNorth": [
-            53,
-            36,
             39,
-            106,
             60,
-            35,
             8,
             16,
             28,
@@ -18659,11 +18765,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "capSouth": [
             39,
-            52,
-            36,
             60,
-            105,
-            33,
             5,
             13,
             17,
@@ -18675,7 +18777,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             51,
             16,
             8,
-            36,
             2,
             12,
             20,
@@ -18683,49 +18784,157 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "lineHorizontal": [
             38,
-            36,
             60,
             1,
-            34,
-            12,
-            57
+            12
           ],
           "capEast": [
-            54,
-            36,
             38,
             48,
-            108,
             60,
-            34,
             1,
-            49,
-            112
+            49
           ],
           "capWest": [
-            55,
             38,
-            36,
-            107,
             60,
             50,
             1
           ]
         },
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            60
+          ],
+          "north": [
+            3
+          ],
+          "south": [
+            4
+          ],
+          "east": [
+            2
+          ],
+          "west": [
+            1
+          ],
+          "northEast": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "northWest": [
+            9,
+            10,
+            17,
+            18
+          ],
+          "southEast": [
+            7,
+            8,
+            15,
+            16
+          ],
+          "southWest": [
+            5,
+            6,
+            19,
+            20
+          ]
+        },
         "curatedWaterRoles": {},
-        "curatedMasks": {},
+        "curatedMasks": {
+          "1": [
+            40
+          ],
+          "2": [
+            41
+          ],
+          "3": [
+            50
+          ],
+          "4": [
+            42
+          ],
+          "5": [
+            38
+          ],
+          "6": [
+            48
+          ],
+          "7": [
+            45
+          ],
+          "8": [
+            43
+          ],
+          "9": [
+            51
+          ],
+          "10": [
+            39
+          ],
+          "11": [
+            44
+          ],
+          "12": [
+            49
+          ],
+          "13": [
+            47
+          ],
+          "14": [
+            46
+          ],
+          "19": [
+            27
+          ],
+          "38": [
+            25
+          ],
+          "58": [
+            22
+          ],
+          "76": [
+            26
+          ],
+          "101": [
+            24
+          ],
+          "127": [
+            30
+          ],
+          "137": [
+            28
+          ],
+          "149": [
+            21
+          ],
+          "191": [
+            32
+          ],
+          "202": [
+            23
+          ],
+          "223": [
+            31
+          ],
+          "239": [
+            29
+          ]
+        },
         "fallbackRoles": {
           "center": 60,
           "single": 60,
           "north": 3,
-          "south": 31,
+          "south": 4,
           "east": 2,
-          "west": 42,
-          "northEast": 4,
-          "northWest": 1,
-          "southEast": 24,
-          "southWest": 21,
+          "west": 1,
+          "northEast": 11,
+          "northWest": 9,
+          "southEast": 7,
+          "southWest": 5,
           "lineHorizontal": 43,
           "lineVertical": 42,
           "capNorth": 4,
@@ -20258,20 +20467,89 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             62
           ]
         },
-        "curatedRoles": {},
-        "curatedWaterRoles": {},
+        "curatedRoles": {
+          "center": [
+            61
+          ],
+          "north": [
+            83,
+            84,
+            85
+          ],
+          "south": [
+            80,
+            81,
+            82
+          ],
+          "east": [
+            74,
+            75,
+            76
+          ],
+          "west": [
+            77,
+            78,
+            79
+          ],
+          "northEast": [
+            71,
+            72,
+            73
+          ],
+          "northWest": [
+            65,
+            66,
+            67
+          ],
+          "southEast": [
+            62,
+            63,
+            64
+          ],
+          "southWest": [
+            68,
+            69,
+            70
+          ]
+        },
+        "curatedWaterRoles": {
+          "north": [
+            92
+          ],
+          "south": [
+            93
+          ],
+          "east": [
+            91
+          ],
+          "west": [
+            90
+          ],
+          "northEast": [
+            87
+          ],
+          "northWest": [
+            86
+          ],
+          "southEast": [
+            89
+          ],
+          "southWest": [
+            88
+          ]
+        },
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
           "north": 83,
-          "south": 63,
-          "east": 62,
-          "west": 80,
-          "northEast": 84,
-          "northWest": 81,
-          "southEast": 64,
-          "southWest": 72,
+          "south": 80,
+          "east": 74,
+          "west": 77,
+          "northEast": 71,
+          "northWest": 65,
+          "southEast": 62,
+          "southWest": 68,
           "lineHorizontal": 83,
           "lineVertical": 62,
           "notchNorthEast": 70,
@@ -20601,20 +20879,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             129
           ]
         },
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            121
+          ],
+          "north": [
+            127
+          ],
+          "south": [
+            126
+          ],
+          "east": [
+            129
+          ],
+          "west": [
+            128
+          ],
+          "northEast": [
+            122
+          ],
+          "northWest": [
+            123
+          ],
+          "southEast": [
+            125
+          ],
+          "southWest": [
+            124
+          ]
+        },
         "curatedWaterRoles": {},
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
-          "north": 126,
-          "south": 127,
-          "east": 128,
-          "west": 129,
-          "northEast": 125,
-          "northWest": 124,
-          "southEast": 123,
-          "southWest": 122,
+          "north": 127,
+          "south": 126,
+          "east": 129,
+          "west": 128,
+          "northEast": 122,
+          "northWest": 123,
+          "southEast": 125,
+          "southWest": 124,
           "lineHorizontal": 128,
           "lineVertical": 126,
           "capNorth": 126,
@@ -20669,8 +20975,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           33,
           34,
           35,
-          36,
-          37,
           38,
           39,
           40,
@@ -20685,6 +20989,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           49,
           50,
           51,
+          60
+        ],
+        "excluded": [
+          36,
+          37,
           52,
           53,
           54,
@@ -20693,7 +21002,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           57,
           58,
           59,
-          60,
           105,
           106,
           107,
@@ -20703,80 +21011,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
-        "excluded": [],
-        "detail": [],
-        "center": [
-          60,
+        "detail": [
           33,
           34,
-          40,
           35
+        ],
+        "center": [
+          60
         ],
         "candidates": [
           60,
-          36,
-          35,
           3,
           38,
-          33,
           4,
-          34,
           39,
           50
         ],
         "sampleCount": 16780,
         "confidence": "high",
         "maskCandidates": {
-          "0": {
-            "tiles": [
-              111,
-              112,
-              109,
-              110,
-              36,
-              52,
-              54,
-              107
-            ],
-            "samples": 139,
-            "confidence": "medium"
-          },
           "1": {
             "tiles": [
-              106,
-              111,
-              112,
               60,
-              36,
               43,
-              33,
-              2
+              2,
+              26
             ],
             "samples": 41,
             "confidence": "low"
           },
           "2": {
             "tiles": [
-              108,
               38,
-              36,
-              109,
-              110,
               60,
-              42,
-              54
+              42
             ],
             "samples": 44,
             "confidence": "low"
           },
           "3": {
             "tiles": [
-              35,
               49,
-              36,
-              34,
               60,
-              33,
               18,
               32
             ],
@@ -20785,14 +21061,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "4": {
             "tiles": [
-              111,
-              105,
-              112,
               60,
-              36,
               25,
-              39,
-              35
+              39
             ],
             "samples": 32,
             "confidence": "low"
@@ -20800,13 +21071,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "5": {
             "tiles": [
               39,
-              35,
-              33,
-              34,
-              36,
-              111,
-              3,
-              55
+              3
             ],
             "samples": 262,
             "confidence": "medium"
@@ -20814,37 +21079,23 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "6": {
             "tiles": [
               48,
-              33,
-              34,
-              35,
-              36,
               60,
-              31,
-              59
+              31
             ],
             "samples": 31,
             "confidence": "low"
           },
           "7": {
             "tiles": [
-              36,
-              33,
-              46,
-              35,
-              34
+              46
             ],
             "samples": 13,
             "confidence": "low"
           },
           "8": {
             "tiles": [
-              107,
               38,
               40,
-              36,
-              55,
-              109,
-              110,
               12
             ],
             "samples": 39,
@@ -20853,11 +21104,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "9": {
             "tiles": [
               51,
-              60,
-              33,
-              34,
-              35,
-              36
+              60
             ],
             "samples": 26,
             "confidence": "low"
@@ -20865,12 +21112,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "10": {
             "tiles": [
               38,
-              35,
-              33,
-              34,
               2,
-              36,
-              55,
               60
             ],
             "samples": 276,
@@ -20878,11 +21120,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "11": {
             "tiles": [
-              36,
-              34,
-              35,
               60,
-              33,
               47
             ],
             "samples": 12,
@@ -20891,34 +21129,24 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "12": {
             "tiles": [
               50,
-              33,
-              35,
-              34,
-              36,
               60,
-              30,
-              59
+              30
             ],
             "samples": 37,
             "confidence": "low"
           },
           "14": {
             "tiles": [
-              36,
               45,
-              33,
-              60,
-              34
+              60
             ],
             "samples": 16,
             "confidence": "low"
           },
           "17": {
             "tiles": [
-              36,
               43,
               60,
-              106,
               14,
               18,
               39
@@ -20931,10 +21159,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               60,
               14,
-              36,
               11,
               2,
-              34,
               3
             ],
             "samples": 50,
@@ -20943,11 +21169,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "21": {
             "tiles": [
               39,
-              36,
-              33,
-              35,
-              34,
-              106,
               3,
               4
             ],
@@ -20957,9 +21178,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "22": {
             "tiles": [
               48,
-              36,
-              33,
-              34,
               25
             ],
             "samples": 23,
@@ -20968,7 +21186,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "23": {
             "tiles": [
               3,
-              36,
               48,
               39,
               60,
@@ -20981,21 +21198,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "25": {
             "tiles": [
-              51,
-              36,
-              33,
-              35
+              51
             ],
             "samples": 16,
             "confidence": "low"
           },
           "26": {
             "tiles": [
-              38,
-              35,
-              34,
-              36,
-              33
+              38
             ],
             "samples": 34,
             "confidence": "low"
@@ -21003,7 +21213,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "27": {
             "tiles": [
               51,
-              36,
               2,
               18
             ],
@@ -21013,10 +21222,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "34": {
             "tiles": [
               60,
-              36,
-              108,
-              34,
-              35,
               6,
               11,
               49
@@ -21026,23 +21231,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "35": {
             "tiles": [
-              49,
-              35,
-              33,
-              34,
-              36
+              49
             ],
             "samples": 21,
             "confidence": "low"
           },
           "36": {
             "tiles": [
-              36,
-              35,
-              5,
-              59,
-              105,
-              110
+              5
             ],
             "samples": 8,
             "confidence": "low"
@@ -21050,13 +21246,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "37": {
             "tiles": [
               39,
-              35,
-              33,
-              34,
-              36,
               3,
-              4,
-              53
+              4
             ],
             "samples": 39,
             "confidence": "low"
@@ -21065,11 +21256,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               25,
               60,
-              36,
               9,
               17,
               48,
-              35,
               13
             ],
             "samples": 46,
@@ -21080,7 +21269,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               49,
               3,
-              36,
               39,
               46
             ],
@@ -21090,10 +21278,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "42": {
             "tiles": [
               38,
-              35,
-              34,
-              36,
-              33,
               2,
               60,
               32
@@ -21105,9 +21289,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               50,
               60,
-              36,
-              33,
-              35,
               27
             ],
             "samples": 14,
@@ -21115,7 +21296,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "46": {
             "tiles": [
-              36,
               29,
               50,
               60,
@@ -21129,11 +21309,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "50": {
             "tiles": [
               60,
-              36,
               6,
               38,
-              42,
-              112
+              42
             ],
             "samples": 9,
             "confidence": "low"
@@ -21144,20 +21322,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               49,
               60,
               26,
-              36,
               18,
-              33,
-              35
+              2
             ],
             "samples": 120,
             "confidence": "medium"
           },
           "53": {
             "tiles": [
-              35,
-              33,
-              34,
-              36,
               39
             ],
             "samples": 17,
@@ -21170,7 +21342,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               48,
               60,
               9,
-              36,
               10,
               13
             ],
@@ -21194,9 +21365,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "58": {
             "tiles": [
               38,
-              36,
               60,
-              35,
               1,
               11
             ],
@@ -21206,9 +21375,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "63": {
             "tiles": [
               24,
-              36,
               60,
-              58,
               3,
               9,
               23,
@@ -21219,12 +21386,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "68": {
             "tiles": [
-              36,
               60,
-              105,
               19,
-              25,
-              52
+              25
             ],
             "samples": 12,
             "confidence": "low"
@@ -21232,13 +21396,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "69": {
             "tiles": [
               39,
-              36,
-              33,
-              34,
-              35,
               4,
-              18,
-              105
+              18
             ],
             "samples": 39,
             "confidence": "low"
@@ -21246,8 +21405,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "70": {
             "tiles": [
               48,
-              60,
-              36
+              60
             ],
             "samples": 13,
             "confidence": "low"
@@ -21255,10 +21413,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "72": {
             "tiles": [
               60,
-              35,
-              36,
-              5,
-              107
+              5
             ],
             "samples": 9,
             "confidence": "low"
@@ -21266,9 +21421,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "73": {
             "tiles": [
               51,
-              35,
-              36,
-              34,
               30
             ],
             "samples": 25,
@@ -21277,10 +21429,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "74": {
             "tiles": [
               38,
-              35,
-              34,
-              36,
-              33,
               2,
               60,
               7
@@ -21293,7 +21441,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               27,
               60,
               19,
-              36,
               5,
               1,
               15,
@@ -21310,7 +21457,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               21,
               27,
               30,
-              36,
               39
             ],
             "samples": 17,
@@ -21318,14 +21464,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "78": {
             "tiles": [
-              36,
               60,
               38,
               48,
-              34,
               1,
               2,
-              10
+              10,
+              31
             ],
             "samples": 16,
             "confidence": "low"
@@ -21333,19 +21478,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "85": {
             "tiles": [
               39,
-              34,
               60,
-              35,
-              18,
-              36
+              18
             ],
             "samples": 13,
             "confidence": "low"
           },
           "86": {
             "tiles": [
-              48,
-              36
+              48
             ],
             "samples": 70,
             "confidence": "low"
@@ -21354,9 +21495,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               48,
               18,
-              36,
               39,
-              34,
               30,
               46
             ],
@@ -21373,9 +21512,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "90": {
             "tiles": [
               38,
-              36,
               60,
-              35,
               2
             ],
             "samples": 10,
@@ -21384,7 +21521,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "91": {
             "tiles": [
               51,
-              36,
               7,
               26,
               38,
@@ -21397,7 +21533,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               51,
               15,
-              36,
               60,
               39,
               14
@@ -21408,7 +21543,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "94": {
             "tiles": [
               48,
-              36,
               60,
               19,
               45
@@ -21422,10 +21556,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               48,
               30,
               31,
-              36,
-              33,
-              35,
-              34
+              24
             ],
             "samples": 26,
             "confidence": "low"
@@ -21433,22 +21564,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "100": {
             "tiles": [
               60,
-              110,
-              17,
-              36,
-              105
+              17
             ],
             "samples": 9,
             "confidence": "low"
           },
           "101": {
             "tiles": [
-              35,
               39,
-              34,
-              36,
-              60,
-              33
+              60
             ],
             "samples": 14,
             "confidence": "low"
@@ -21459,7 +21583,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               48,
               9,
-              36,
               1,
               6,
               13
@@ -21469,10 +21592,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "106": {
             "tiles": [
-              36,
               38,
-              35,
-              33,
               6
             ],
             "samples": 15,
@@ -21484,7 +21604,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               50,
               27,
               60,
-              36,
               10,
               15,
               19
@@ -21496,7 +21615,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               1,
-              36,
               50,
               48,
               6,
@@ -21513,7 +21631,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               3,
               25,
-              36,
               51
             ],
             "samples": 13,
@@ -21525,7 +21642,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               17,
               48,
-              35,
               6,
               9,
               13
@@ -21540,7 +21656,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               48,
               14,
-              36,
               25,
               49
             ],
@@ -21550,7 +21665,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "122": {
             "tiles": [
               38,
-              36,
               11
             ],
             "samples": 11,
@@ -21558,7 +21672,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "123": {
             "tiles": [
-              36,
               47,
               49,
               51,
@@ -21569,7 +21682,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "124": {
             "tiles": [
-              36,
               5,
               19,
               50
@@ -21580,7 +21692,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "125": {
             "tiles": [
               44,
-              36,
               51,
               47,
               50
@@ -21594,7 +21705,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               10,
               17,
-              36,
               48,
               13,
               19
@@ -21606,21 +21716,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               30,
               60,
-              34,
-              35,
-              17,
-              36,
-              33,
-              56
+              17
             ],
             "samples": 251,
             "confidence": "medium"
           },
           "129": {
             "tiles": [
-              36,
               60,
-              35,
               14,
               39
             ],
@@ -21630,7 +21733,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "131": {
             "tiles": [
               49,
-              36,
               60,
               20,
               26,
@@ -21643,23 +21745,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "133": {
             "tiles": [
               39,
-              34,
-              35,
-              33,
               4,
-              16,
-              36
+              16
             ],
             "samples": 43,
             "confidence": "low"
           },
           "136": {
             "tiles": [
-              36,
-              107,
-              60,
-              55,
-              56
+              60
             ],
             "samples": 11,
             "confidence": "low"
@@ -21672,8 +21766,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               8,
               51,
-              34,
-              12
+              12,
+              20
             ],
             "samples": 51,
             "confidence": "low"
@@ -21681,10 +21775,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "138": {
             "tiles": [
               38,
-              35,
-              36,
-              33,
-              34,
               1
             ],
             "samples": 28,
@@ -21692,7 +21782,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "139": {
             "tiles": [
-              36,
               49,
               60
             ],
@@ -21702,11 +21791,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "140": {
             "tiles": [
               50,
-              33,
-              36,
-              34,
-              60,
-              35
+              60
             ],
             "samples": 24,
             "confidence": "low"
@@ -21714,7 +21799,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "141": {
             "tiles": [
               50,
-              36,
               4,
               39,
               60,
@@ -21726,8 +21810,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "145": {
             "tiles": [
-              36,
-              109,
               60,
               8
             ],
@@ -21740,8 +21822,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               49,
               60,
-              36,
-              35,
               7,
               16
             ],
@@ -21751,9 +21831,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "149": {
             "tiles": [
               39,
-              34,
-              33,
-              36,
               60
             ],
             "samples": 17,
@@ -21765,8 +21842,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               51,
               28,
               60,
-              36,
-              35,
               4,
               11
             ],
@@ -21775,12 +21850,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "154": {
             "tiles": [
-              34,
-              33,
-              36,
               38,
-              60,
-              35
+              60
             ],
             "samples": 19,
             "confidence": "low"
@@ -21803,8 +21874,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               23,
               60,
-              36,
-              33,
               2,
               11,
               44,
@@ -21817,7 +21886,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               49,
               26,
-              36,
               11
             ],
             "samples": 80,
@@ -21825,9 +21893,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "165": {
             "tiles": [
-              39,
-              34,
-              35
+              39
             ],
             "samples": 11,
             "confidence": "low"
@@ -21837,17 +21903,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               49,
               13,
               60,
-              46,
-              59
+              46
             ],
             "samples": 32,
             "confidence": "low"
           },
           "170": {
             "tiles": [
-              36,
               38,
-              33,
               60,
               12
             ],
@@ -21858,7 +21921,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               49,
               12,
-              36,
               1,
               28,
               47
@@ -21870,7 +21932,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               50,
               29,
-              36,
               27
             ],
             "samples": 81,
@@ -21880,7 +21941,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               50,
               20,
-              36,
               60,
               29
             ],
@@ -21890,7 +21950,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "174": {
             "tiles": [
               50,
-              36,
               6,
               29,
               38,
@@ -21903,10 +21962,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               50,
-              57,
-              58,
-              34,
-              35,
               4,
               39
             ],
@@ -21918,11 +21973,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               26,
               60,
               11,
-              36,
               14,
               49,
-              18,
-              57
+              18
             ],
             "samples": 72,
             "confidence": "low"
@@ -21932,7 +21985,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               13,
               60,
               3,
-              36,
               49,
               11,
               18,
@@ -21943,7 +21995,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "186": {
             "tiles": [
-              36,
               38
             ],
             "samples": 10,
@@ -21954,18 +22005,16 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               12,
               2,
               60,
-              36,
               49,
               11,
               47,
-              33
+              14
             ],
             "samples": 106,
             "confidence": "medium"
           },
           "189": {
             "tiles": [
-              36,
               44,
               28,
               15,
@@ -21977,7 +22026,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "190": {
             "tiles": [
-              36,
               50,
               45,
               6
@@ -21989,10 +22037,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               29,
-              36,
-              35,
-              34,
-              33,
               23,
               32
             ],
@@ -22001,10 +22045,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "197": {
             "tiles": [
-              33,
-              34,
-              35,
-              36,
               39,
               3
             ],
@@ -22013,11 +22053,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "200": {
             "tiles": [
-              36,
               60,
-              111,
-              1,
-              107
+              1
             ],
             "samples": 15,
             "confidence": "low"
@@ -22028,9 +22065,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               51,
               60,
-              36,
               20,
-              35,
               7
             ],
             "samples": 148,
@@ -22038,17 +22073,13 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "202": {
             "tiles": [
-              38,
-              34,
-              35,
-              36
+              38
             ],
             "samples": 19,
             "confidence": "low"
           },
           "203": {
             "tiles": [
-              36,
               60,
               28,
               38,
@@ -22063,8 +22094,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               50,
               60,
               27,
-              36,
-              35,
               5,
               6
             ],
@@ -22079,7 +22108,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               51,
               20,
               15,
-              36,
               16
             ],
             "samples": 559,
@@ -22090,8 +22118,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               21,
               60,
               4,
-              36,
-              35,
               32,
               15,
               16
@@ -22101,7 +22127,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "215": {
             "tiles": [
-              36,
               46,
               39,
               3
@@ -22116,18 +22141,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               16,
               51,
               8,
-              36,
-              34,
-              14
+              14,
+              20
             ],
             "samples": 72,
             "confidence": "low"
           },
           "218": {
             "tiles": [
-              36,
-              38,
-              35
+              38
             ],
             "samples": 9,
             "confidence": "low"
@@ -22165,7 +22187,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               45,
               48,
-              36,
               38
             ],
             "samples": 8,
@@ -22175,11 +22196,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               31,
-              35,
-              33,
-              58,
               30,
-              34,
               15
             ],
             "samples": 267,
@@ -22188,7 +22205,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "235": {
             "tiles": [
               49,
-              36,
               47,
               16
             ],
@@ -22202,9 +22218,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               50,
               5,
-              34,
-              35,
-              4
+              4,
+              8,
+              15
             ],
             "samples": 86,
             "confidence": "low"
@@ -22228,11 +22244,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               6,
               60,
               1,
-              36,
               19,
               10,
               15,
-              33
+              5
             ],
             "samples": 96,
             "confidence": "low"
@@ -22241,10 +22256,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               32,
-              33,
-              56,
-              59,
-              34,
               21,
               22
             ],
@@ -22254,7 +22265,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "247": {
             "tiles": [
               18,
-              36,
               3,
               11,
               17,
@@ -22267,7 +22277,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "251": {
             "tiles": [
-              36,
               2,
               12,
               60,
@@ -22282,7 +22291,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "253": {
             "tiles": [
               4,
-              36,
               28,
               20,
               60,
@@ -22296,7 +22304,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "254": {
             "tiles": [
               60,
-              36,
               19,
               1,
               10,
@@ -22310,12 +22317,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "255": {
             "tiles": [
               60,
-              33,
-              34,
-              35,
-              56,
               29,
-              59,
               30
             ],
             "samples": 8442,
@@ -22324,27 +22326,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
         },
         "roleCandidates": {
           "capSouth": [
-            36,
-            105,
             60,
-            111,
-            112,
-            110,
             25,
-            35,
-            39,
-            52
+            39
           ],
           "single": [
-            111,
-            36,
-            112,
-            109,
-            110,
-            52,
-            54,
-            53,
-            107,
             6
           ],
           "northWest": [
@@ -22352,24 +22338,15 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             25,
             60,
             17,
-            36,
             9,
-            33,
-            35,
-            34,
             13
           ],
           "center": [
             60,
-            33,
             30,
-            35,
-            34,
             31,
             29,
-            32,
-            36,
-            56
+            32
           ],
           "northEast": [
             50,
@@ -22377,10 +22354,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             19,
             60,
             5,
-            36,
-            33,
-            35,
-            34,
             15
           ],
           "southWest": [
@@ -22388,12 +22361,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             26,
             14,
             60,
-            36,
             11,
-            35,
-            34,
             18,
-            33
+            2
           ],
           "east": [
             60,
@@ -22402,7 +22372,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             20,
             50,
             51,
-            36,
             39,
             44,
             16
@@ -22414,7 +22383,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             13,
             49,
             48,
-            36,
             39,
             46,
             26
@@ -22425,66 +22393,43 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             16,
             8,
             60,
-            36,
-            35,
-            34,
-            33,
             20
           ],
           "capWest": [
-            36,
-            107,
             60,
             38,
-            40,
-            55,
-            35,
-            109,
-            110,
-            111
+            40
           ],
           "capEast": [
-            36,
-            108,
             60,
             38,
             42,
-            109,
-            110,
             6,
-            11,
-            54
+            11
           ],
           "lineHorizontal": [
             38,
-            36,
-            35,
-            34,
-            33,
             2,
             60,
-            55,
             1,
             11
           ],
           "north": [
             60,
             1,
-            36,
             6,
             50,
             48,
             10,
             45,
             19,
-            33
+            17
           ],
           "south": [
             2,
             60,
             12,
             7,
-            36,
             49,
             51,
             11,
@@ -22493,43 +22438,152 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           ],
           "lineVertical": [
             39,
-            35,
-            34,
-            33,
-            36,
             3,
             4,
-            111,
             60,
             18
           ],
           "capNorth": [
-            36,
-            106,
             60,
-            111,
-            112,
             43,
             39,
-            109,
             14,
-            33
+            2
           ]
         },
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            60
+          ],
+          "north": [
+            3
+          ],
+          "south": [
+            4
+          ],
+          "east": [
+            2
+          ],
+          "west": [
+            1
+          ],
+          "northEast": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "northWest": [
+            9,
+            10,
+            17,
+            18
+          ],
+          "southEast": [
+            7,
+            8,
+            15,
+            16
+          ],
+          "southWest": [
+            5,
+            6,
+            19,
+            20
+          ]
+        },
         "curatedWaterRoles": {},
-        "curatedMasks": {},
+        "curatedMasks": {
+          "1": [
+            40
+          ],
+          "2": [
+            41
+          ],
+          "3": [
+            50
+          ],
+          "4": [
+            42
+          ],
+          "5": [
+            38
+          ],
+          "6": [
+            48
+          ],
+          "7": [
+            45
+          ],
+          "8": [
+            43
+          ],
+          "9": [
+            51
+          ],
+          "10": [
+            39
+          ],
+          "11": [
+            44
+          ],
+          "12": [
+            49
+          ],
+          "13": [
+            47
+          ],
+          "14": [
+            46
+          ],
+          "19": [
+            27
+          ],
+          "38": [
+            25
+          ],
+          "58": [
+            22
+          ],
+          "76": [
+            26
+          ],
+          "101": [
+            24
+          ],
+          "127": [
+            30
+          ],
+          "137": [
+            28
+          ],
+          "149": [
+            21
+          ],
+          "191": [
+            32
+          ],
+          "202": [
+            23
+          ],
+          "223": [
+            31
+          ],
+          "239": [
+            29
+          ]
+        },
         "fallbackRoles": {
           "center": 60,
           "single": 60,
           "north": 3,
-          "south": 31,
+          "south": 4,
           "east": 2,
-          "west": 42,
-          "northEast": 4,
-          "northWest": 1,
-          "southEast": 24,
-          "southWest": 21,
+          "west": 1,
+          "northEast": 11,
+          "northWest": 9,
+          "southEast": 7,
+          "southWest": 5,
           "lineHorizontal": 43,
           "lineVertical": 42,
           "capNorth": 4,
@@ -24022,20 +24076,89 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             85
           ]
         },
-        "curatedRoles": {},
-        "curatedWaterRoles": {},
+        "curatedRoles": {
+          "center": [
+            61
+          ],
+          "north": [
+            83,
+            84,
+            85
+          ],
+          "south": [
+            80,
+            81,
+            82
+          ],
+          "east": [
+            74,
+            75,
+            76
+          ],
+          "west": [
+            77,
+            78,
+            79
+          ],
+          "northEast": [
+            71,
+            72,
+            73
+          ],
+          "northWest": [
+            65,
+            66,
+            67
+          ],
+          "southEast": [
+            62,
+            63,
+            64
+          ],
+          "southWest": [
+            68,
+            69,
+            70
+          ]
+        },
+        "curatedWaterRoles": {
+          "north": [
+            92
+          ],
+          "south": [
+            93
+          ],
+          "east": [
+            91
+          ],
+          "west": [
+            90
+          ],
+          "northEast": [
+            87
+          ],
+          "northWest": [
+            86
+          ],
+          "southEast": [
+            89
+          ],
+          "southWest": [
+            88
+          ]
+        },
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
           "north": 83,
-          "south": 63,
-          "east": 62,
-          "west": 80,
-          "northEast": 84,
-          "northWest": 81,
-          "southEast": 64,
-          "southWest": 72,
+          "south": 80,
+          "east": 74,
+          "west": 77,
+          "northEast": 71,
+          "northWest": 65,
+          "southEast": 62,
+          "southWest": 68,
           "lineHorizontal": 83,
           "lineVertical": 62,
           "notchNorthEast": 70,
@@ -24470,20 +24593,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             124
           ]
         },
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            121
+          ],
+          "north": [
+            127
+          ],
+          "south": [
+            126
+          ],
+          "east": [
+            129
+          ],
+          "west": [
+            128
+          ],
+          "northEast": [
+            122
+          ],
+          "northWest": [
+            123
+          ],
+          "southEast": [
+            125
+          ],
+          "southWest": [
+            124
+          ]
+        },
         "curatedWaterRoles": {},
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
-          "north": 126,
-          "south": 127,
-          "east": 128,
-          "west": 129,
-          "northEast": 125,
-          "northWest": 124,
-          "southEast": 123,
-          "southWest": 122,
+          "north": 127,
+          "south": 126,
+          "east": 129,
+          "west": 128,
+          "northEast": 122,
+          "northWest": 123,
+          "southEast": 125,
+          "southWest": 124,
           "lineHorizontal": 128,
           "lineVertical": 126,
           "capNorth": 126,
@@ -24538,8 +24689,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           33,
           34,
           35,
-          36,
-          37,
           38,
           39,
           40,
@@ -24554,6 +24703,11 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           49,
           50,
           51,
+          60
+        ],
+        "excluded": [
+          36,
+          37,
           52,
           53,
           54,
@@ -24562,7 +24716,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           57,
           58,
           59,
-          60,
           105,
           106,
           107,
@@ -24572,45 +24725,28 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           111,
           112
         ],
-        "excluded": [],
-        "detail": [],
-        "center": [
-          60,
+        "detail": [
           33,
-          56,
-          40,
+          34,
           35
+        ],
+        "center": [
+          60
         ],
         "candidates": [
           60,
           39,
           38,
-          56,
           4,
           3,
-          58,
-          33,
           1,
           50
         ],
         "sampleCount": 7471,
         "confidence": "high",
         "maskCandidates": {
-          "0": {
-            "tiles": [
-              109,
-              112,
-              111,
-              110,
-              36,
-              52
-            ],
-            "samples": 147,
-            "confidence": "medium"
-          },
           "1": {
             "tiles": [
-              106,
               14,
               39,
               60,
@@ -24621,10 +24757,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "2": {
             "tiles": [
-              108,
               38,
-              60,
-              111
+              60
             ],
             "samples": 12,
             "confidence": "low"
@@ -24638,7 +24772,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "4": {
             "tiles": [
-              105,
               39,
               60,
               13,
@@ -24652,9 +24785,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               39,
               3,
-              105,
-              60,
-              59
+              60
             ],
             "samples": 122,
             "confidence": "medium"
@@ -24662,7 +24793,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "6": {
             "tiles": [
               48,
-              35,
               25
             ],
             "samples": 14,
@@ -24670,10 +24800,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "8": {
             "tiles": [
-              107,
               38,
-              45,
-              112
+              45
             ],
             "samples": 9,
             "confidence": "low"
@@ -24681,9 +24809,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "9": {
             "tiles": [
               51,
-              56,
-              60,
-              59
+              60
             ],
             "samples": 17,
             "confidence": "low"
@@ -24704,7 +24830,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "18": {
             "tiles": [
-              108,
               60,
               42
             ],
@@ -24717,10 +24842,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               11,
               14,
               26,
-              58,
-              35,
-              2,
-              36
+              2
             ],
             "samples": 31,
             "confidence": "low"
@@ -24728,11 +24850,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "21": {
             "tiles": [
               39,
-              106,
-              60,
-              33,
-              56,
-              34
+              60
             ],
             "samples": 22,
             "confidence": "low"
@@ -24740,10 +24858,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "22": {
             "tiles": [
               48,
-              33,
               60,
-              25,
-              58
+              25
             ],
             "samples": 17,
             "confidence": "low"
@@ -24758,8 +24874,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "26": {
             "tiles": [
               38,
-              60,
-              58
+              60
             ],
             "samples": 17,
             "confidence": "low"
@@ -24785,11 +24900,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               17,
               60,
               25,
-              35,
               9,
-              10,
-              34,
-              59
+              10
             ],
             "samples": 43,
             "confidence": "low"
@@ -24810,8 +24922,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           },
           "50": {
             "tiles": [
-              108,
-              112,
               60
             ],
             "samples": 8,
@@ -24825,8 +24935,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               18,
               49,
               11,
-              34,
-              35
+              2
             ],
             "samples": 54,
             "confidence": "low"
@@ -24836,9 +24945,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               17,
               25,
-              34,
               48,
-              58,
               1,
               9
             ],
@@ -24849,11 +24956,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               3,
-              56,
               18,
-              57,
               13,
-              35,
               25
             ],
             "samples": 286,
@@ -24864,17 +24968,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               39,
               60,
               3,
-              18,
-              57
+              18
             ],
             "samples": 22,
-            "confidence": "low"
-          },
-          "72": {
-            "tiles": [
-              107
-            ],
-            "samples": 12,
             "confidence": "low"
           },
           "73": {
@@ -24899,7 +24995,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               5,
               15,
-              36,
               50
             ],
             "samples": 28,
@@ -24918,17 +25013,14 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "85": {
             "tiles": [
               39,
-              60,
-              57,
-              59
+              60
             ],
             "samples": 15,
             "confidence": "low"
           },
           "86": {
             "tiles": [
-              48,
-              56
+              48
             ],
             "samples": 14,
             "confidence": "low"
@@ -24945,8 +25037,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               30,
-              51,
-              58
+              51
             ],
             "samples": 12,
             "confidence": "low"
@@ -24958,7 +25049,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               9,
               6,
               41,
-              58,
               1,
               10
             ],
@@ -24970,10 +25060,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               5,
               60,
               27,
-              35,
-              57,
-              56,
-              34,
               50
             ],
             "samples": 70,
@@ -24986,9 +25072,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               6,
               10,
               25,
-              27,
-              57,
-              33
+              27
             ],
             "samples": 229,
             "confidence": "medium"
@@ -25008,11 +25092,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               25,
               9,
-              33,
               17,
-              58,
-              3,
-              34
+              3
             ],
             "samples": 40,
             "confidence": "low"
@@ -25022,11 +25103,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               18,
               3,
-              56,
               14,
-              57,
-              58,
-              33
+              25
             ],
             "samples": 66,
             "confidence": "low"
@@ -25036,10 +25114,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               1,
               10,
-              33,
               17,
               25,
-              34,
               5
             ],
             "samples": 55,
@@ -25052,9 +25128,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               10,
               22,
               31,
-              59,
-              33,
-              56
+              3,
+              29
             ],
             "samples": 123,
             "confidence": "medium"
@@ -25081,10 +25156,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               28,
               8,
-              2,
-              35,
-              57,
-              58
+              2
             ],
             "samples": 36,
             "confidence": "low"
@@ -25092,8 +25164,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "138": {
             "tiles": [
               38,
-              60,
-              57
+              60
             ],
             "samples": 19,
             "confidence": "low"
@@ -25109,7 +25180,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               29,
-              58,
               3,
               50
             ],
@@ -25119,8 +25189,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "145": {
             "tiles": [
               60,
-              109,
-              56,
               39
             ],
             "samples": 13,
@@ -25131,11 +25199,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               11,
               26,
-              59,
               7,
-              49,
-              56,
-              35
+              49
             ],
             "samples": 54,
             "confidence": "low"
@@ -25145,11 +25210,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               28,
               8,
-              51,
-              56,
-              59,
-              33,
-              34
+              51
             ],
             "samples": 62,
             "confidence": "low"
@@ -25161,9 +25222,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               28,
               7,
               12,
-              26,
-              57,
-              58
+              26
             ],
             "samples": 134,
             "confidence": "medium"
@@ -25172,7 +25231,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               23,
-              56,
               7,
               50
             ],
@@ -25198,8 +25256,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               26,
               49,
-              33,
-              56,
               11,
               18
             ],
@@ -25210,12 +25266,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               13,
-              35,
               3,
-              33,
-              57,
-              56,
-              11
+              11,
+              26
             ],
             "samples": 65,
             "confidence": "low"
@@ -25227,8 +25280,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               2,
               26,
               28,
-              35,
-              34,
               7
             ],
             "samples": 74,
@@ -25238,12 +25289,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               29,
-              56,
-              58,
-              34,
               3,
-              23,
-              57
+              23
             ],
             "samples": 152,
             "confidence": "medium"
@@ -25264,10 +25311,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               20,
               28,
-              51,
-              35,
-              57,
-              58
+              51
             ],
             "samples": 64,
             "confidence": "low"
@@ -25275,8 +25319,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "202": {
             "tiles": [
               38,
-              60,
-              59
+              60
             ],
             "samples": 8,
             "confidence": "low"
@@ -25286,8 +25329,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               19,
               60,
               27,
-              33,
-              35,
               6,
               50,
               10
@@ -25299,11 +25340,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               4,
               60,
-              56,
               15,
-              35,
               20,
-              58,
               19
             ],
             "samples": 245,
@@ -25322,9 +25360,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               28,
-              59,
               8,
-              35,
               12,
               16,
               20
@@ -25336,12 +25372,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               7,
-              56,
               2,
-              59,
               26,
-              58,
-              33
+              8
             ],
             "samples": 81,
             "confidence": "low"
@@ -25351,10 +25384,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               15,
               19,
-              33,
-              56,
               4,
-              57,
               16
             ],
             "samples": 86,
@@ -25364,12 +25394,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               31,
-              57,
-              56,
               16,
-              33,
-              35,
-              2
+              2,
+              30
             ],
             "samples": 164,
             "confidence": "medium"
@@ -25379,11 +25406,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               60,
               27,
               19,
-              34,
-              56,
               5,
-              50,
-              59
+              50
             ],
             "samples": 24,
             "confidence": "low"
@@ -25394,10 +25418,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               20,
               4,
               28,
-              33,
-              56,
               16,
-              27
+              27,
+              32
             ],
             "samples": 57,
             "confidence": "low"
@@ -25409,9 +25432,8 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               1,
               27,
               13,
-              34,
-              56,
-              35
+              10,
+              25
             ],
             "samples": 67,
             "confidence": "low"
@@ -25420,12 +25442,9 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             "tiles": [
               60,
               32,
-              56,
               29,
-              58,
-              33,
-              35,
-              15
+              15,
+              27
             ],
             "samples": 136,
             "confidence": "medium"
@@ -25449,7 +25468,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
               6,
               25,
               27,
-              34,
               9,
               19,
               31
@@ -25460,12 +25478,6 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
           "255": {
             "tiles": [
               60,
-              33,
-              56,
-              58,
-              34,
-              57,
-              59,
               30
             ],
             "samples": 3472,
@@ -25479,11 +25491,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             60,
             17,
             9,
-            35,
-            58,
-            34,
-            6,
-            33
+            6
           ],
           "north": [
             60,
@@ -25492,44 +25500,29 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             10,
             25,
             27,
-            34,
             48,
-            50,
-            57
+            50
           ],
           "northEast": [
             50,
             60,
             19,
             27,
-            5,
-            35,
-            34,
-            57,
-            56,
-            59
+            5
           ],
           "west": [
             60,
             3,
             18,
             13,
-            56,
             46,
-            57,
             39,
-            35,
-            33
+            25
           ],
           "center": [
             60,
-            56,
             30,
-            33,
-            58,
             32,
-            57,
-            34,
             29,
             31
           ],
@@ -25538,20 +25531,10 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             4,
             15,
             20,
-            56,
             44,
             19,
             39,
-            35,
             50
-          ],
-          "single": [
-            109,
-            112,
-            111,
-            110,
-            36,
-            52
           ],
           "southEast": [
             60,
@@ -25559,11 +25542,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             16,
             28,
             8,
-            59,
-            35,
-            20,
-            56,
-            57
+            20
           ],
           "south": [
             60,
@@ -25572,10 +25551,7 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             7,
             28,
             26,
-            56,
-            49,
-            57,
-            59
+            49
           ],
           "southWest": [
             60,
@@ -25583,40 +25559,26 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             26,
             11,
             14,
-            59,
-            35,
             18,
-            58,
-            56
+            2
           ],
           "capNorth": [
-            106,
             60,
             39,
             43,
             14,
-            109,
-            56,
             11,
             49
           ],
           "lineHorizontal": [
             38,
             60,
-            58,
-            56,
-            24,
-            57,
-            59
+            24
           ],
           "capEast": [
-            108,
             60,
             38,
-            56,
-            112,
-            42,
-            111
+            42
           ],
           "lineVertical": [
             39,
@@ -25624,28 +25586,19 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             3,
             13,
             18,
-            57,
-            59,
-            105,
-            106,
-            33
+            24
           ],
           "capWest": [
-            107,
-            111,
             60,
             38,
-            40,
             5,
             16,
             27,
-            45,
-            59
+            40,
+            45
           ],
           "capSouth": [
-            105,
             39,
-            110,
             60,
             41,
             13,
@@ -25653,20 +25606,139 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             50
           ]
         },
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            60
+          ],
+          "north": [
+            3
+          ],
+          "south": [
+            4
+          ],
+          "east": [
+            2
+          ],
+          "west": [
+            1
+          ],
+          "northEast": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "northWest": [
+            9,
+            10,
+            17,
+            18
+          ],
+          "southEast": [
+            7,
+            8,
+            15,
+            16
+          ],
+          "southWest": [
+            5,
+            6,
+            19,
+            20
+          ]
+        },
         "curatedWaterRoles": {},
-        "curatedMasks": {},
+        "curatedMasks": {
+          "1": [
+            40
+          ],
+          "2": [
+            41
+          ],
+          "3": [
+            50
+          ],
+          "4": [
+            42
+          ],
+          "5": [
+            38
+          ],
+          "6": [
+            48
+          ],
+          "7": [
+            45
+          ],
+          "8": [
+            43
+          ],
+          "9": [
+            51
+          ],
+          "10": [
+            39
+          ],
+          "11": [
+            44
+          ],
+          "12": [
+            49
+          ],
+          "13": [
+            47
+          ],
+          "14": [
+            46
+          ],
+          "19": [
+            27
+          ],
+          "38": [
+            25
+          ],
+          "58": [
+            22
+          ],
+          "76": [
+            26
+          ],
+          "101": [
+            24
+          ],
+          "127": [
+            30
+          ],
+          "137": [
+            28
+          ],
+          "149": [
+            21
+          ],
+          "191": [
+            32
+          ],
+          "202": [
+            23
+          ],
+          "223": [
+            31
+          ],
+          "239": [
+            29
+          ]
+        },
         "fallbackRoles": {
           "center": 60,
           "single": 60,
           "north": 3,
-          "south": 31,
+          "south": 4,
           "east": 2,
-          "west": 42,
-          "northEast": 4,
-          "northWest": 1,
-          "southEast": 24,
-          "southWest": 21,
+          "west": 1,
+          "northEast": 11,
+          "northWest": 9,
+          "southEast": 7,
+          "southWest": 5,
           "lineHorizontal": 43,
           "lineVertical": 42,
           "capNorth": 4,
@@ -27900,20 +27972,89 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             67
           ]
         },
-        "curatedRoles": {},
-        "curatedWaterRoles": {},
+        "curatedRoles": {
+          "center": [
+            61
+          ],
+          "north": [
+            83,
+            84,
+            85
+          ],
+          "south": [
+            80,
+            81,
+            82
+          ],
+          "east": [
+            74,
+            75,
+            76
+          ],
+          "west": [
+            77,
+            78,
+            79
+          ],
+          "northEast": [
+            71,
+            72,
+            73
+          ],
+          "northWest": [
+            65,
+            66,
+            67
+          ],
+          "southEast": [
+            62,
+            63,
+            64
+          ],
+          "southWest": [
+            68,
+            69,
+            70
+          ]
+        },
+        "curatedWaterRoles": {
+          "north": [
+            92
+          ],
+          "south": [
+            93
+          ],
+          "east": [
+            91
+          ],
+          "west": [
+            90
+          ],
+          "northEast": [
+            87
+          ],
+          "northWest": [
+            86
+          ],
+          "southEast": [
+            89
+          ],
+          "southWest": [
+            88
+          ]
+        },
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 61,
           "single": 61,
           "north": 83,
-          "south": 63,
-          "east": 62,
-          "west": 80,
-          "northEast": 84,
-          "northWest": 81,
-          "southEast": 64,
-          "southWest": 72,
+          "south": 80,
+          "east": 74,
+          "west": 77,
+          "northEast": 71,
+          "northWest": 65,
+          "southEast": 62,
+          "southWest": 68,
           "lineHorizontal": 83,
           "lineVertical": 62,
           "notchNorthEast": 70,
@@ -28238,20 +28379,48 @@ export const GENERATED_SMART_TERRAIN_PROFILES = [
             129
           ]
         },
-        "curatedRoles": {},
+        "curatedRoles": {
+          "center": [
+            121
+          ],
+          "north": [
+            127
+          ],
+          "south": [
+            126
+          ],
+          "east": [
+            129
+          ],
+          "west": [
+            128
+          ],
+          "northEast": [
+            122
+          ],
+          "northWest": [
+            123
+          ],
+          "southEast": [
+            125
+          ],
+          "southWest": [
+            124
+          ]
+        },
         "curatedWaterRoles": {},
         "curatedMasks": {},
         "fallbackRoles": {
           "center": 121,
           "single": 121,
-          "north": 126,
-          "south": 127,
-          "east": 128,
-          "west": 129,
-          "northEast": 125,
-          "northWest": 124,
-          "southEast": 123,
-          "southWest": 122,
+          "north": 127,
+          "south": 126,
+          "east": 129,
+          "west": 128,
+          "northEast": 122,
+          "northWest": 123,
+          "southEast": 125,
+          "southWest": 124,
           "lineHorizontal": 128,
           "lineVertical": 126,
           "capNorth": 126,

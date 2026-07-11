@@ -367,7 +367,7 @@
         "kind": { "const": "hiddenWalkable" },
         "x": { "type": "integer", "minimum": 0, "maximum": 89 },
         "y": { "type": "integer", "minimum": 0, "maximum": 89 },
-        "tile": { "enum": [96, 169] }
+        "tile": { "enum": [96, 169, 184] }
       }
     },
     "combatClearingOperation": {

@@ -1,6 +1,6 @@
 # Smart Terrain Corpus Report
 
-Generated: 2026-07-10T21:44:16.164Z
+Generated: 2026-07-11T19:44:05.764Z
 
 ## Scenario Corpus
 
@@ -75,7 +75,7 @@ Generated: 2026-07-10T21:44:16.164Z
 ### Landlook 2
 
 - Water: 0 sample(s), fallback confidence
-  - Center candidates: 60, 40, 35, 34, 33
+  - Center candidates: 60
   - Top candidates: 1, 2, 3, 4, 5, 6, 7, 8
 - Mountains: 0 sample(s), fallback confidence
   - Center candidates: 61
@@ -183,20 +183,20 @@ Generated: 2026-07-10T21:44:16.164Z
 ### Landlook 5
 
 - Water: 11595 sample(s), high confidence
-  - Center candidates: 60, 35, 34, 40, 33
-  - Top candidates: 60, 39, 3, 38, 36, 4, 1, 2
-  - Mask 255: 8289 sample(s), high, tiles 60, 35, 34, 33, 57, 56, 58, 59
-  - Mask 205: 287 sample(s), medium, tiles 60, 4, 36, 28, 15, 16, 19, 27
-  - Mask 55: 239 sample(s), medium, tiles 3, 60, 36, 35, 34, 13, 18, 20
+  - Center candidates: 60
+  - Top candidates: 60, 39, 3, 38, 4, 1, 2, 30
+  - Mask 255: 8289 sample(s), high, tiles 60
+  - Mask 205: 287 sample(s), medium, tiles 60, 4, 28, 15, 16, 19, 27
+  - Mask 55: 239 sample(s), medium, tiles 3, 60, 13, 18, 20
   - Mask 155: 196 sample(s), medium, tiles 60, 2, 49, 51, 12, 7, 38
-  - Mask 5: 187 sample(s), medium, tiles 39, 36, 60, 3, 106
-  - Mask 0: 184 sample(s), medium, tiles 112, 111, 36, 109, 110, 1, 48, 52
+  - Mask 5: 187 sample(s), medium, tiles 39, 60, 3
+  - Mask 0: 184 sample(s), medium, tiles 1, 48
   - Mask 110: 172 sample(s), medium, tiles 60, 1, 48, 50, 6, 38, 10, 9
-  - Mask 10: 142 sample(s), medium, tiles 38, 36
-  - Mask 127: 132 sample(s), medium, tiles 30, 60, 35, 34, 33, 18, 22, 24
+  - Mask 10: 142 sample(s), medium, tiles 38
+  - Mask 127: 132 sample(s), medium, tiles 30, 60, 18, 22, 24, 31
   - Mask 223: 115 sample(s), medium, tiles 60, 31, 21
-  - Mask 191: 102 sample(s), medium, tiles 60, 29, 33, 34, 12, 23, 24, 50
-  - Mask 239: 100 sample(s), medium, tiles 60, 32, 33, 30, 49
+  - Mask 191: 102 sample(s), medium, tiles 60, 29, 12, 23, 24, 50
+  - Mask 239: 100 sample(s), medium, tiles 60, 32, 30, 49
 - Mountains: 35080 sample(s), high confidence
   - Center candidates: 61
   - Top candidates: 61, 80, 81, 82, 83, 85, 78, 84
@@ -231,19 +231,19 @@ Generated: 2026-07-10T21:44:16.164Z
 ### Landlook 9
 
 - Water: 16780 sample(s), high confidence
-  - Center candidates: 60, 33, 34, 40, 35
-  - Top candidates: 60, 36, 35, 3, 38, 33, 4, 34
-  - Mask 255: 8442 sample(s), high, tiles 60, 33, 34, 35, 56, 29, 59, 30
-  - Mask 205: 559 sample(s), medium, tiles 60, 4, 50, 51, 20, 15, 36, 16
+  - Center candidates: 60
+  - Top candidates: 60, 3, 38, 4, 39, 50
+  - Mask 255: 8442 sample(s), high, tiles 60, 29, 30
+  - Mask 205: 559 sample(s), medium, tiles 60, 4, 50, 51, 20, 15, 16
   - Mask 55: 526 sample(s), medium, tiles 3, 60, 13, 48, 49, 18, 26, 25
-  - Mask 110: 383 sample(s), medium, tiles 60, 1, 36, 50, 48, 6, 10, 25
+  - Mask 110: 383 sample(s), medium, tiles 60, 1, 50, 48, 6, 10, 25
   - Mask 155: 312 sample(s), medium, tiles 2, 60, 49, 11, 51, 7, 8, 12
-  - Mask 10: 276 sample(s), medium, tiles 38, 35, 33, 34, 2, 36, 55, 60
-  - Mask 223: 267 sample(s), medium, tiles 60, 31, 35, 33, 58, 30, 34, 15
-  - Mask 5: 262 sample(s), medium, tiles 39, 35, 33, 34, 36, 111, 3, 55
-  - Mask 191: 260 sample(s), medium, tiles 60, 29, 36, 35, 34, 33, 23, 32
-  - Mask 127: 251 sample(s), medium, tiles 30, 60, 34, 35, 17, 36, 33, 56
-  - Mask 239: 235 sample(s), medium, tiles 60, 32, 33, 56, 59, 34, 21, 22
+  - Mask 10: 276 sample(s), medium, tiles 38, 2, 60
+  - Mask 223: 267 sample(s), medium, tiles 60, 31, 30, 15
+  - Mask 5: 262 sample(s), medium, tiles 39, 3
+  - Mask 191: 260 sample(s), medium, tiles 60, 29, 23, 32
+  - Mask 127: 251 sample(s), medium, tiles 30, 60, 17
+  - Mask 239: 235 sample(s), medium, tiles 60, 32, 21, 22
   - Mask 221: 159 sample(s), medium, tiles 15, 4, 60, 20, 39, 8, 16, 27
 - Mountains: 73850 sample(s), high confidence
   - Center candidates: 61
@@ -279,20 +279,20 @@ Generated: 2026-07-10T21:44:16.164Z
 ### Landlook 10
 
 - Water: 7471 sample(s), high confidence
-  - Center candidates: 60, 33, 56, 40, 35
-  - Top candidates: 60, 39, 38, 56, 4, 3, 58, 33
-  - Mask 255: 3472 sample(s), high, tiles 60, 33, 56, 58, 34, 57, 59, 30
-  - Mask 55: 286 sample(s), medium, tiles 60, 3, 56, 18, 57, 13, 35, 25
-  - Mask 205: 245 sample(s), medium, tiles 4, 60, 56, 15, 35, 20, 58, 19
-  - Mask 110: 229 sample(s), medium, tiles 60, 1, 6, 10, 25, 27, 57, 33
-  - Mask 223: 164 sample(s), medium, tiles 60, 31, 57, 56, 16, 33, 35, 2
-  - Mask 191: 152 sample(s), medium, tiles 60, 29, 56, 58, 34, 3, 23, 57
+  - Center candidates: 60
+  - Top candidates: 60, 39, 38, 4, 3, 1, 50
+  - Mask 255: 3472 sample(s), high, tiles 60, 30
+  - Mask 55: 286 sample(s), medium, tiles 60, 3, 18, 13, 25
+  - Mask 205: 245 sample(s), medium, tiles 4, 60, 15, 20, 19
+  - Mask 110: 229 sample(s), medium, tiles 60, 1, 6, 10, 25, 27
+  - Mask 223: 164 sample(s), medium, tiles 60, 31, 16, 2, 30
+  - Mask 191: 152 sample(s), medium, tiles 60, 29, 3, 23
   - Mask 10: 148 sample(s), medium, tiles 38
-  - Mask 0: 147 sample(s), medium, tiles 109, 112, 111, 110, 36, 52
-  - Mask 239: 136 sample(s), medium, tiles 60, 32, 56, 29, 58, 33, 35, 15
-  - Mask 155: 134 sample(s), medium, tiles 60, 2, 28, 7, 12, 26, 57, 58
-  - Mask 127: 123 sample(s), medium, tiles 60, 30, 10, 22, 31, 59, 33, 56
-  - Mask 5: 122 sample(s), medium, tiles 39, 3, 105, 60, 59
+  - Mask 239: 136 sample(s), medium, tiles 60, 32, 29, 15, 27
+  - Mask 155: 134 sample(s), medium, tiles 60, 2, 28, 7, 12, 26
+  - Mask 127: 123 sample(s), medium, tiles 60, 30, 10, 22, 31, 3, 29
+  - Mask 5: 122 sample(s), medium, tiles 39, 3, 60
+  - Mask 221: 86 sample(s), low, tiles 60, 15, 19, 4, 16
 - Mountains: 47931 sample(s), high confidence
   - Center candidates: 61
   - Top candidates: 61, 83, 81, 80, 85, 84, 82, 75
@@ -333,56 +333,56 @@ Generated: 2026-07-10T21:44:16.164Z
 ## Curation Queue
 
 - Tile/landlook decisions: 976
-- Critical or high priority: 143
+- Critical or high priority: 55
 - Balanced first review batch: 48
-- Critical: 54
-- High: 89
-- Medium: 538
-- Low: 295
+- Critical: 4
+- High: 51
+- Medium: 364
+- Low: 557
 
 The complete review queue, directional neighbor evidence, role distributions, and representative 5x5 map contexts are in `smart-terrain-review.json`.
 Its `firstReviewBatch` contains a bounded cross-landlook starting set; custom landlooks remain provisional because their atlases are scenario-specific.
 
 ### Highest-Priority Decisions
 
-- Landlook 10 Mountains tile 62: 268 sample(s), dominant role southEast (70%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 10 Mountains tile 70: 282 sample(s), dominant role northEast (71%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 10 Mountains tile 63: 238 sample(s), dominant role southEast (72%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 10 Mountains tile 73: 246 sample(s), dominant role southWest (72%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 10 Mountains tile 69: 253 sample(s), dominant role northEast (74%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 5 Mountains tile 63: 264 sample(s), dominant role southEast (77%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 5 Mountains tile 73: 199 sample(s), dominant role southWest (79%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 5 Mountains tile 70: 212 sample(s), dominant role northEast (81%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 5 Mountains tile 69: 206 sample(s), dominant role northEast (83%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Forest tile 124: 153 sample(s), dominant role northEast (84%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 5 Mountains tile 62: 237 sample(s), dominant role southEast (85%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Water tile 28: 118 sample(s), dominant role southEast (86%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Forest tile 125: 168 sample(s), dominant role southEast (86%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Forest tile 123: 223 sample(s), dominant role northWest (87%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Mountains tile 70: 339 sample(s), dominant role northEast (88%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Mountains tile 73: 290 sample(s), dominant role southWest (88%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Mountains tile 69: 311 sample(s), dominant role northEast (88%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Mountains tile 62: 328 sample(s), dominant role southEast (89%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 9 Mountains tile 63: 327 sample(s), dominant role southEast (90%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 10 Forest tile 125: 113 sample(s), dominant role southEast (96%); curated-role-disagreement, many-neighbor-shapes.
-- Landlook 10 Forest tile 123: 134 sample(s), dominant role northWest (97%); curated-role-disagreement, many-neighbor-shapes.
 - Landlook 4 Mountains tile 83: 337 sample(s), dominant role southEast (66%); curated-role-disagreement.
 - Landlook 4 Mountains tile 81: 324 sample(s), dominant role northEast (68%); curated-role-disagreement.
-- Landlook 10 Mountains tile 81: 393 sample(s), dominant role east (68%); curated-role-disagreement.
 - Landlook 4 Mountains tile 69: 287 sample(s), dominant role single (69%); curated-role-disagreement.
-- Landlook 5 Mountains tile 81: 392 sample(s), dominant role east (69%); curated-role-disagreement.
 - Landlook 4 Forest tile 123: 485 sample(s), dominant role single (70%); curated-role-disagreement.
-- Landlook 5 Mountains tile 80: 393 sample(s), dominant role east (70%); curated-role-disagreement.
-- Landlook 10 Mountains tile 80: 392 sample(s), dominant role east (73%); curated-role-disagreement.
-- Landlook 5 Mountains tile 83: 342 sample(s), dominant role west (76%); curated-role-disagreement.
-- Landlook 5 Mountains tile 84: 312 sample(s), dominant role west (79%); curated-role-disagreement.
-- Landlook 9 Water tile 2: 227 sample(s), dominant role south (82%); curated-role-disagreement.
-- Landlook 9 Water tile 1: 210 sample(s), dominant role north (82%); curated-role-disagreement.
-- Landlook 9 Mountains tile 83: 632 sample(s), dominant role west (85%); curated-role-disagreement.
-- Landlook 9 Mountains tile 81: 705 sample(s), dominant role east (86%); curated-role-disagreement.
-- Landlook 9 Mountains tile 84: 671 sample(s), dominant role west (86%); curated-role-disagreement.
-- Landlook 9 Mountains tile 80: 713 sample(s), dominant role east (87%); curated-role-disagreement.
-- Landlook 9 Water tile 4: 310 sample(s), dominant role east (88%); curated-role-disagreement.
-- Landlook 9 Water tile 3: 332 sample(s), dominant role west (90%); curated-role-disagreement.
-- Landlook 9 Forest tile 127: 240 sample(s), dominant role west (90%); curated-role-disagreement.
+- Landlook 8 Mountains tile 70: 10 sample(s), dominant role northEast (50%); insufficient-evidence, mixed-structural-roles, many-neighbor-shapes, custom-atlas-provisional.
+- Landlook 8 Water tile 19: 8 sample(s), dominant role east (25%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 8 Water tile 8: 10 sample(s), dominant role capSouth (30%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 8 Water tile 54: 3 sample(s), dominant role east (33%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 8 Water tile 107: 3 sample(s), dominant role capNorth (33%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 8 Water tile 109: 3 sample(s), dominant role lineVertical (33%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 7 Water tile 40: 5 sample(s), dominant role capWest (40%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 8 Water tile 108: 4 sample(s), dominant role single (50%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 6 Water tile 53: 2 sample(s), dominant role capEast (50%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 8 Water tile 110: 2 sample(s), dominant role lineVertical (50%); insufficient-evidence, mixed-structural-roles, custom-atlas-provisional.
+- Landlook 4 Mountains tile 70: 123 sample(s), dominant role south (16%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Mountains tile 71: 1977 sample(s), dominant role lineVertical (20%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 12: 524 sample(s), dominant role south (22%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 112: 288 sample(s), dominant role single (22%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 17: 608 sample(s), dominant role east (22%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Mountains tile 73: 2217 sample(s), dominant role center (23%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 19: 257 sample(s), dominant role center (24%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Mountains tile 68: 384 sample(s), dominant role single (24%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 18: 562 sample(s), dominant role west (27%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 11: 487 sample(s), dominant role north (28%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 58: 320 sample(s), dominant role center (28%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 5: 186 sample(s), dominant role northEast (29%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 107: 93 sample(s), dominant role single (30%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 109: 81 sample(s), dominant role single (31%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 49: 234 sample(s), dominant role northEast (33%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 1: 6081 sample(s), dominant role lineHorizontal (33%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Mountains tile 61: 2839 sample(s), dominant role lineHorizontal (33%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 10: 691 sample(s), dominant role lineVertical (33%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Mountains tile 92: 80 sample(s), dominant role single (34%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 6: 183 sample(s), dominant role southEast (35%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 105: 265 sample(s), dominant role lineHorizontal (35%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 106: 97 sample(s), dominant role southWest (35%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 3: 193 sample(s), dominant role northWest (35%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 9: 551 sample(s), dominant role lineHorizontal (35%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 23: 96 sample(s), dominant role capNorth (35%); mixed-structural-roles, many-neighbor-shapes.
+- Landlook 4 Water tile 15: 468 sample(s), dominant role northWest (38%); mixed-structural-roles, many-neighbor-shapes.
 

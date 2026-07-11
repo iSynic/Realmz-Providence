@@ -11,98 +11,88 @@ export type LandlookTileGroup = {
   hint: string;
 };
 
-export const LANDLOOK_TILE_GROUPS: LandlookTileGroup[] = [
-  { id: "all", label: "All", ranges: [[1, Number.MAX_SAFE_INTEGER]], hint: "Show every tile in the current landlook." },
-  { id: "terrain", label: "Terrain", ranges: [[1, 60], [105, 112], [155, 158]], categories: ["water-shore", "open", "terrain-prop"], hint: "General land, water, open, and non-mountain terrain tiles." },
-  { id: "mountain", label: "Mountains", ranges: [[61, 93]], categories: ["mountain-land", "mountain-water"], hint: "Divinity mountain tiles: 61-85 blend mountain into land; 86-93 blend mountain into water." },
-  { id: "mountain-land", label: "Mountain / Land", ranges: [[61, 85]], categories: ["mountain-land"], hint: "Mountain-to-land edge and fill tiles 61-85." },
-  { id: "mountain-water", label: "Mountain / Water", ranges: [[86, 93]], categories: ["mountain-water"], hint: "Mountain-to-water edge tiles 86-93." },
-  { id: "roads", label: "Roads", ranges: [[130, 146]], categories: ["road"], flags: ["path"], hint: "Road/path-looking atlas tiles plus any source-backed runtime path tiles." },
-  { id: "trees", label: "Trees / Forest", ranges: [[118, 129], [150, 154]], categories: ["forest", "tree-detail"], flags: ["forest"], hint: "Forest transition tiles and decorative tree-detail tiles." },
-  { id: "forest", label: "Forest Fill", ranges: [[118, 129]], categories: ["forest"], flags: ["forest"], hint: "Contiguous forest transition tiles, separate from decorative tree detail." },
-  { id: "tree-detail", label: "Tree Detail", ranges: [[150, 154]], categories: ["tree-detail"], hint: "Decorative tree/detail pieces that should not be used as smart-forest fill." },
-  { id: "boats", label: "Boats", ranges: [[147, 147]], categories: ["watercraft"], flags: ["boat-required"], hint: "Watercraft and source-backed boat-required movement tiles." },
-  { id: "open", label: "Open", ranges: [[155, 158]], categories: ["open"], hint: "Divinity open range tiles 155-158." },
-  { id: "rocks", label: "Rocks / Rubble", ranges: [[159, 167]], categories: ["rocks"], hint: "Divinity rubble range and adjacent terrain-object tiles." },
-  { id: "structures", label: "Structures", ranges: [[113, 114], [170, 186], [190, 200]], categories: ["buildings"], hint: "Gates, large building pieces, landmarks, and settlement building tiles." },
-  { id: "graves", label: "Graves", ranges: [[187, 189]], categories: ["graves"], hint: "Grave and graveyard tiles." },
-  { id: "houses", label: "Houses", ranges: [[190, 200]], categories: ["buildings"], hint: "Divinity house range tiles 190-200." }
+const allGroup = (label = "All"): LandlookTileGroup => ({
+  id: "all",
+  label,
+  ranges: [[1, Number.MAX_SAFE_INTEGER]],
+  hint: "Show every tile in the current landlook."
+});
+
+const PLAINS_GROUPS: LandlookTileGroup[] = [
+  allGroup(),
+  { id: "terrain", label: "Land & Water", ranges: [[1, 60], [105, 117], [147, 158]], hint: "Shorelines, streams, open ground, water, caves, bridges, boats, and general terrain." },
+  { id: "barriers", label: "Mountains & Ridges", ranges: [[61, 104]], hint: "Mountain edges, fills, mountain-to-water transitions, and cave approaches." },
+  { id: "routes", label: "Roads & Routes", ranges: [[113, 117], [130, 147]], flags: ["path", "boat-required"], hint: "Gates, roads, crossings, bridges, and watercraft." },
+  { id: "vegetation", label: "Trees & Vegetation", ranges: [[118, 129], [149, 154]], flags: ["forest"], hint: "Forest transitions, individual trees, and vegetation details." },
+  { id: "structures", label: "Structures & Settlements", ranges: [[168, 200]], categories: ["buildings", "graves"], hint: "Walls, landmarks, graveyards, houses, settlements, and icon-backed structures." },
+  { id: "props", label: "Props & Special", ranges: [[33, 35], [52, 59], [148, 148], [155, 169], [180, 189]], hint: "Decorative terrain, rocks, objects, hidden terrain, and combat-clearing pieces." }
 ];
 
-const STANDARD_LANDLOOK_GROUP_OVERRIDES: Record<number, Partial<Record<string, Partial<LandlookTileGroup>>>> = {
-  3: {
-    terrain: { label: "Cavern Terrain", hint: "Underground water, floor, and cavern terrain slots for the Subterranean atlas." },
-    mountain: { label: "Cave Walls", hint: "Wall/rock terrain slots aligned with the Plains mountain families; verify individual cave shapes visually." },
-    "mountain-land": { label: "Wall / Floor", hint: "Cave wall-to-floor edge and fill slots." },
-    "mountain-water": { label: "Wall / Water", hint: "Cave wall-to-water edge slots." },
-    roads: { label: "Paths / Bridges", hint: "Cavern path, bridge, and route art plus source-backed runtime path tiles." },
-    trees: { label: "Cave Growth", hint: "Underground growth transition/detail slots where present in this atlas." },
-    forest: { label: "Growth Fill", hint: "Contiguous underground growth transition slots." },
-    "tree-detail": { label: "Growth Detail", hint: "Decorative underground growth/detail slots." },
-    rocks: { label: "Cave Rubble", hint: "Cave rocks, rubble, and terrain-object slots." },
-    structures: { label: "Underground Structures", hint: "Doors, gates, built pieces, and underground landmark slots." },
-    houses: { label: "Built Pieces", hint: "Structure slots in the settlement/building range." }
-  },
-  4: {
-    terrain: { label: "Castle Terrain", hint: "Moat, floor, courtyard, and non-wall terrain slots for the Castle atlas." },
-    mountain: { label: "Masonry Walls", hint: "Castle wall/masonry terrain slots aligned with the mountain families; these are not literal mountains." },
-    "mountain-land": { label: "Wall / Floor", hint: "Masonry wall-to-floor edge and fill slots." },
-    "mountain-water": { label: "Wall / Moat", hint: "Masonry wall-to-water/moat edge slots." },
-    roads: { label: "Roads / Walls", hint: "Castle road, wall, bridge, and route-looking art plus source-backed runtime path tiles." },
-    trees: { label: "Courtyard Greenery", hint: "Courtyard vegetation transition/detail slots where present in this atlas." },
-    forest: { label: "Greenery Fill", hint: "Contiguous courtyard vegetation transition slots." },
-    "tree-detail": { label: "Greenery Detail", hint: "Decorative courtyard vegetation/detail slots." },
-    rocks: { label: "Stone Rubble", hint: "Stone rubble and courtyard prop slots." },
-    graves: { label: "Tombs / Memorials", hint: "Tomb, memorial, and graveyard slots." },
-    structures: { label: "Castle Structures", hint: "Gates, towers, masonry building pieces, and castle landmarks." },
-    houses: { label: "Buildings", hint: "Castle building range slots." }
-  },
-  5: {
-    terrain: { label: "Desert Terrain", hint: "Oasis, sand, and desert terrain slots." },
-    mountain: { label: "Ridges / Dunes", hint: "Desert ridge, rock, and dune slots aligned with the mountain families." },
-    "mountain-land": { label: "Ridge / Sand", hint: "Rock/dune-to-sand edge and fill slots." },
-    "mountain-water": { label: "Ridge / Oasis", hint: "Rock/dune-to-water edge slots." },
-    roads: { label: "Roads / Trails", hint: "Desert road, trail, bridge, and path-looking art plus runtime path tiles." },
-    trees: { label: "Scrub / Palms", hint: "Desert scrub, palm, and vegetation transition/detail slots." },
-    forest: { label: "Scrub Fill", hint: "Contiguous desert vegetation transition slots." },
-    "tree-detail": { label: "Scrub Detail", hint: "Decorative desert scrub/palm detail slots." },
-    rocks: { label: "Desert Rocks", hint: "Desert rocks, rubble, and terrain-object slots." },
-    structures: { label: "Desert Structures", hint: "Desert gates, landmarks, buildings, and settlement pieces." },
-    houses: { label: "Desert Buildings", hint: "Desert building range slots." }
-  },
-  9: {
-    terrain: { label: "Swamp Terrain", hint: "Swamp water, bog, open ground, and non-bank terrain slots." },
-    mountain: { label: "Bog Banks", hint: "Raised bog bank terrain slots aligned with the mountain families." },
-    "mountain-land": { label: "Bank / Ground", hint: "Bog bank-to-ground edge and fill slots." },
-    "mountain-water": { label: "Bank / Water", hint: "Bog bank-to-water edge slots." },
-    roads: { label: "Paths / Bridges", hint: "Swamp path, bridge, and route-looking art plus runtime path tiles." },
-    trees: { label: "Swamp Trees", hint: "Swamp tree transition and decorative detail slots." },
-    forest: { label: "Swamp Tree Fill", hint: "Contiguous swamp tree transition slots." },
-    "tree-detail": { label: "Swamp Tree Detail", hint: "Decorative swamp tree/detail slots." },
-    rocks: { label: "Muck / Rubble", hint: "Swamp rocks, muck, and terrain-object slots." },
-    structures: { label: "Swamp Structures", hint: "Swamp gates, landmarks, buildings, and settlement pieces." },
-    houses: { label: "Swamp Buildings", hint: "Swamp building range slots." }
-  },
-  10: {
-    terrain: { label: "Snow Terrain", hint: "Ice, snow, water, and non-ridge terrain slots." },
-    mountain: { label: "Snowy Ridges", hint: "Snow ridge and icy mountain slots aligned with the mountain families." },
-    "mountain-land": { label: "Ridge / Snow", hint: "Snowy ridge-to-snow edge and fill slots." },
-    "mountain-water": { label: "Ridge / Water", hint: "Snowy ridge-to-water edge slots." },
-    roads: { label: "Roads / Snow Trails", hint: "Snow road, trail, bridge, and path-looking art plus runtime path tiles." },
-    trees: { label: "Snow Forest", hint: "Snow forest transition and decorative detail slots." },
-    forest: { label: "Snow Forest Fill", hint: "Contiguous snow forest transition slots." },
-    "tree-detail": { label: "Snow Tree Detail", hint: "Decorative snow tree/detail slots." },
-    rocks: { label: "Snow Rocks", hint: "Snow rocks, rubble, and terrain-object slots." },
-    structures: { label: "Snow Structures", hint: "Snow gates, landmarks, buildings, and settlement pieces." },
-    houses: { label: "Snow Buildings", hint: "Snow building range slots." }
-  }
+const SUBTERRANEAN_GROUPS: LandlookTileGroup[] = [
+  allGroup(),
+  { id: "terrain", label: "Cavern Floor & Water", ranges: [[1, 60], [105, 117], [147, 158]], hint: "Cavern shorelines, streams, floor, water, crossings, and open terrain." },
+  { id: "barriers", label: "Cave Walls & Ridges", ranges: [[61, 104]], hint: "Cave wall edges, fills, wall-to-water transitions, and cave entrances." },
+  { id: "routes", label: "Paths & Bridges", ranges: [[113, 117], [130, 147]], flags: ["path", "boat-required"], hint: "Underground gates, paths, crossings, bridges, and watercraft." },
+  { id: "vegetation", label: "Cave Growth", ranges: [[118, 129], [149, 154]], flags: ["forest"], hint: "Contiguous cave growth and decorative underground vegetation." },
+  { id: "structures", label: "Underground Structures", ranges: [[168, 200]], categories: ["buildings", "graves"], hint: "Built passages, landmarks, tombs, settlements, and icon-backed structures." },
+  { id: "props", label: "Rubble & Special", ranges: [[33, 35], [52, 59], [148, 148], [155, 169], [180, 189]], hint: "Cavern objects, rubble, hidden terrain, and combat-clearing pieces." }
+];
+
+const CASTLE_GROUPS: LandlookTileGroup[] = [
+  allGroup(),
+  { id: "terrain", label: "Floors & Terrain", ranges: [[68, 73], [78, 117], [155, 155], [181, 184]], hint: "Stone, cobblestone, rugs, liquids, platforms, and other floor terrain." },
+  { id: "barriers", label: "Walls & Passages", ranges: [[1, 67], [74, 77], [96, 96], [187, 198]], flags: ["blocks-los"], hint: "Gray masonry, thick walls, doors, portcullises, tunnels, and hidden-walkable wall pieces." },
+  { id: "routes", label: "Doors, Stairs & Routes", ranges: [[50, 50], [58, 58], [69, 69], [74, 77], [91, 96], [134, 135], [187, 198]], hint: "Entrances, stairs, hatches, passages, doors, ladders, and route transitions." },
+  { id: "structures", label: "Structures & Tombs", ranges: [[41, 58], [74, 77], [91, 96], [118, 119], [134, 135], [141, 144], [149, 154], [167, 200]], hint: "Architectural features, machines, columns, tombs, doors, monuments, and icon-backed structures." },
+  { id: "props", label: "Furnishings & Props", ranges: [[97, 140], [144, 180], [199, 200]], hint: "Floor details, furniture, storage, equipment, statues, beds, tables, and paired decorative objects." },
+  { id: "special", label: "Hazards & Special", ranges: [[54, 57], [68, 73], [91, 96], [112, 120], [168, 168], [181, 184]], hint: "Pits, lava, acid, magic, traps, hidden terrain, combat-clearing walls, and unusual effects." }
+];
+
+const DESERT_GROUPS: LandlookTileGroup[] = [
+  allGroup(),
+  { id: "terrain", label: "Sand & Water", ranges: [[1, 60], [105, 117], [155, 167], [191, 200]], hint: "Shorelines, streams, oasis water, sand, open ground, and general desert terrain." },
+  { id: "barriers", label: "Ridges & Briars", ranges: [[61, 114], [168, 169], [180, 185]], hint: "Rock ridges, ridge-to-water transitions, caves, briar walls, and concealed or combat-clearing barriers." },
+  { id: "routes", label: "Roads & Trails", ranges: [[113, 117], [130, 147], [169, 169], [184, 185]], flags: ["path", "boat-required"], hint: "Gates, desert roads, trails, crossings, bridges, and watercraft." },
+  { id: "vegetation", label: "Palms & Vegetation", ranges: [[118, 129], [148, 160], [186, 190]], flags: ["forest"], hint: "Palm groves, individual vegetation, cactus, and desert plant details." },
+  { id: "structures", label: "Oases & Settlements", ranges: [[168, 179], [186, 200]], categories: ["buildings", "graves"], hint: "Oases, landmarks, huts, settlements, graves, and icon-backed structures." },
+  { id: "props", label: "Props & Special", ranges: [[33, 35], [52, 59], [147, 167], [180, 200]], hint: "Rocks, desert details, objects, hidden terrain, combat-clearing pieces, and unusual features." }
+];
+
+const SWAMP_GROUPS: LandlookTileGroup[] = [
+  allGroup(),
+  { id: "terrain", label: "Bog & Water", ranges: [[1, 60], [105, 117], [155, 167]], hint: "Swamp shorelines, channels, open bog, water, crossings, and general ground." },
+  { id: "barriers", label: "Banks & Caves", ranges: [[61, 114], [168, 169], [180, 185]], hint: "Bog banks, bank-to-water transitions, cave approaches, concealed terrain, and combat-clearing barriers." },
+  { id: "routes", label: "Paths & Bridges", ranges: [[113, 117], [130, 147], [169, 169]], flags: ["path", "boat-required"], hint: "Swamp paths, gates, crossings, bridges, and watercraft." },
+  { id: "vegetation", label: "Trees & Swamp Growth", ranges: [[118, 129], [148, 167]], flags: ["forest"], hint: "Tree groves, individual trees, pools, rocks, and swamp-specific vegetation." },
+  { id: "structures", label: "Huts & Settlements", ranges: [[168, 179], [187, 200]], categories: ["buildings", "graves"], hint: "Huts, tents, tree dwellings, graves, settlements, and icon-backed structures." },
+  { id: "props", label: "Props & Special", ranges: [[33, 37], [52, 59], [148, 169], [180, 189]], hint: "Coffins, decorative bog terrain, objects, hidden terrain, and combat-clearing pieces." }
+];
+
+const SNOW_GROUPS: LandlookTileGroup[] = [
+  allGroup(),
+  { id: "terrain", label: "Snow, Ice & Water", ranges: [[1, 60], [105, 117], [155, 160]], hint: "Snowy shorelines, streams, ice, open snow, crossings, and decorative ground." },
+  { id: "barriers", label: "Snowy Ridges & Caves", ranges: [[61, 114], [168, 169], [180, 185]], hint: "Snowy ridges, ridge-to-water transitions, caves, concealed terrain, and combat-clearing walls." },
+  { id: "routes", label: "Roads & Snow Trails", ranges: [[113, 117], [130, 147], [169, 169]], flags: ["path", "boat-required"], hint: "Snow roads, trails, gates, crossings, bridges, and watercraft." },
+  { id: "vegetation", label: "Snow Forest & Growth", ranges: [[118, 129], [148, 167]], flags: ["forest"], hint: "Snow forest transitions, individual trees, icy rocks, and winter vegetation." },
+  { id: "structures", label: "Winter Settlements", ranges: [[168, 179], [186, 200]], categories: ["buildings", "graves"], hint: "Winter landmarks, settlements, graves, buildings, and icon-backed structures." },
+  { id: "props", label: "Props & Special", ranges: [[33, 35], [52, 59], [148, 169], [180, 189]], hint: "Decorative snow, rocks, objects, hidden terrain, and combat-clearing pieces." }
+];
+
+const STOCK_LANDLOOK_GROUPS: Record<number, LandlookTileGroup[]> = {
+  0: PLAINS_GROUPS,
+  2: PLAINS_GROUPS,
+  3: SUBTERRANEAN_GROUPS,
+  4: CASTLE_GROUPS,
+  5: DESERT_GROUPS,
+  9: SWAMP_GROUPS,
+  10: SNOW_GROUPS
 };
+
+export const LANDLOOK_TILE_GROUPS = PLAINS_GROUPS;
 
 export function landlookTileGroups(tileset?: TilesetAsset | null) {
   const landlook = tileset?.landlook ?? 0;
-  const overrides = STANDARD_LANDLOOK_GROUP_OVERRIDES[landlook] ?? (tileset?.custom ? customLandlookGroupOverrides(tileset) : null);
-  if (!overrides) return LANDLOOK_TILE_GROUPS;
-  return LANDLOOK_TILE_GROUPS.map((group) => ({ ...group, ...overrides[group.id] }));
+  return STOCK_LANDLOOK_GROUPS[landlook] ?? customLandlookGroups(tileset);
 }
 
 export function landlookGroupById(groupId: string | null | undefined, tileset?: TilesetAsset | null) {
@@ -145,18 +135,15 @@ export function landlookGroupIncludesTile(
   return Boolean(group.flags?.some((flag) => flags.includes(flag)));
 }
 
-function customLandlookGroupOverrides(tileset: TilesetAsset): Partial<Record<string, Partial<LandlookTileGroup>>> {
-  return {
-    terrain: { label: "Custom Terrain", hint: `Custom atlas ${tileset.name}: terrain slots are range-based until this custom landlook is labeled.` },
-    mountain: { label: "Custom Terrain 61-93", hint: "Custom atlas slots 61-93. Verify visually; these may not be mountains." },
-    "mountain-land": { label: "Custom 61-85", hint: "Custom atlas slots 61-85. Verify visually before treating them as terrain edges." },
-    "mountain-water": { label: "Custom 86-93", hint: "Custom atlas slots 86-93. Verify visually before treating them as water edges." },
-    roads: { label: "Custom Roads / Path", hint: "Custom atlas road/path-looking slots plus source-backed runtime path tiles." },
-    trees: { label: "Custom Vegetation", hint: "Custom atlas vegetation/detail slots by conventional range; verify visually." },
-    forest: { label: "Custom Vegetation Fill", hint: "Custom atlas slots 118-129 by conventional range; verify visually." },
-    "tree-detail": { label: "Custom Detail", hint: "Custom atlas slots 150-154 by conventional range; verify visually." },
-    rocks: { label: "Custom Rocks / Props", hint: "Custom atlas slots 159-167 by conventional range; verify visually." },
-    structures: { label: "Custom Structures", hint: "Custom atlas structure ranges plus scenario special/icon structure tiles." },
-    houses: { label: "Custom Buildings", hint: "Custom atlas slots 190-200 by conventional range; verify visually." }
-  };
+function customLandlookGroups(tileset?: TilesetAsset | null): LandlookTileGroup[] {
+  const name = tileset?.name ?? "Custom landlook";
+  return [
+    allGroup(),
+    { id: "terrain", label: "Terrain & Water", ranges: [[1, 60], [105, 117], [155, 158]], hint: `${name}: conventional terrain ranges; verify custom art visually.` },
+    { id: "barriers", label: "Walls & Barriers", ranges: [[61, 104]], hint: `${name}: conventional barrier ranges; verify custom art visually.` },
+    { id: "routes", label: "Routes & Crossings", ranges: [[113, 117], [130, 147]], flags: ["path", "boat-required"], hint: `${name}: conventional route ranges plus source-backed path and boat behavior.` },
+    { id: "vegetation", label: "Vegetation", ranges: [[118, 129], [149, 154]], flags: ["forest"], hint: `${name}: conventional vegetation ranges plus source-backed forest behavior.` },
+    { id: "structures", label: "Structures", ranges: [[168, 200]], categories: ["buildings", "graves"], hint: `${name}: conventional structure ranges plus icon-backed structures.` },
+    { id: "props", label: "Props & Special", ranges: [[148, 167], [180, 189]], hint: `${name}: conventional prop and special ranges; verify custom art visually.` }
+  ];
 }

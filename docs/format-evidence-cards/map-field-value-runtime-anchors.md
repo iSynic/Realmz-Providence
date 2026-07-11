@@ -31,7 +31,7 @@ This directly supports the Maps right sidebar, tile meaning inspector, palette g
 | Layer | Source-backed behavior | Providence implication |
 | --- | --- | --- |
 | Standard terrain | Positive values in the visible terrain range render from the current landlook atlas and resolve `mapstats` attributes after note/path/thousand-band normalization. | Show as normal placeable landlook tiles with attribute grouping. |
-| Negative special/icon | Negative values render as current landlook base terrain plus a `cicn` icon candidate. `Data Solids[-rawValue]` can make raw `-1..-998` special tiles solid. | Keep in the unified tile palette as `Special Land / Icons`; do not call them a separate overlay schema. |
+| Negative special/icon | Negative values render as current landlook base terrain plus a `cicn` icon candidate. `Data Solids[-rawValue]` can make raw `-1..-998` special tiles solid. | Keep curated or scenario-used values in the unified `Special / Advanced` palette; loading an unrelated negative resource ID is not sufficient evidence that it is map-placeable. |
 | Positive thousand band | Values over `999` are reduced by subtracting `1000` bands after clearing note/path bits; movement treats remaining bands as door/action/secret state. | Label as Realmz field state, not just "raw preserved"; warn before authoring arbitrary high positive values. |
 | Note marker bit | Positive values can carry a note marker bit; rendering clears it before terrain lookup and draws note overlay art. | Show as a field-state badge and keep map-note links contextual. |
 | Path marker bit | Positive values can carry a path marker bit; runtime sets it when the party walks over path-capable terrain. | Treat as runtime/save-state-like evidence unless the user explicitly authors the raw value. |
@@ -55,8 +55,7 @@ Providence should therefore classify `-1091` as a special/icon value with normal
 ## Providence Follow-Up
 
 - Add a `MapFieldValueProfile` or equivalent inspector model for selected cells: raw value, normalized terrain, icon candidates, note/path bits, positive state band, secret/door suspicion, attribute profile, and evidence source.
-- Keep palette authoring focused on standard terrain and negative special/icon values; put arbitrary positive high values in `Raw / Advanced`.
+- Keep the default palette focused on a deduplicated union of standard terrain and evidence-backed special/icon values; put arbitrary positive high and imported compatibility values in `Special / Advanced`.
 - Add warnings for authored positive values over `999` unless created through a known Action Point, secret, note, or path workflow.
 - Treat path marker bits as runtime mutation evidence by default.
 - Link map records and map notes from note-marked cells once Divinity/source evidence proves the exact note marker relationship.
-

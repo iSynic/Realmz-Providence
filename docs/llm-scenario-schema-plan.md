@@ -47,7 +47,7 @@ The normalizer allocates Realmz numeric IDs and preserves explicit numeric IDs w
 
 ## Phase 2: Map Primitives
 
-Status: implemented for fill, rectangle, line, path, border, room, wide road/river paths, rectangular stamps, named regions, standard-landlook water/mountain/forest terrain groups, land Secret Area state, stock hidden-walkable terrain, directional dungeon passages, and generated Action Point map markers. Map operations reject out-of-bounds geometry and non-serializable signed 16-bit tile values. Remaining work: terrain curation, semantic roads, and reusable templates.
+Status: implemented for fill, rectangle, line, path, border, room, wide road/river paths, rectangular stamps, named regions, reviewed Plains/Alternate Plains/Subterranean/Desert/Swamp/Snow water-mountain-forest terrain groups, land Secret Area state, landlook-specific stock hidden-walkable and combat-clearing terrain, directional dungeon passages, and generated Action Point map markers. The generated all-tile adjacency audit now supplies per-landlook usage, exact raw variants, directional neighbor weights, and authored examples as review evidence. Map operations reject out-of-bounds geometry and non-serializable signed 16-bit tile values. Remaining work: semantic roads, stable named tile placement, and reusable named stamp templates.
 
 Do not require prompts to emit 8,100 tiles for normal map authoring. Add map operations:
 

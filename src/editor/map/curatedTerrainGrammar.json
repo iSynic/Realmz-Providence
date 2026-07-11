@@ -104,10 +104,35 @@
         }
       }
     },
+    "2": {
+      "inherits": "0",
+      "notes": [
+        "Alternate Plains tiles preserve the reviewed Plains terrain topology one-for-one."
+      ]
+    },
     "3": {
       "inherits": "0",
       "notes": [
         "Subterranean tiles 1-129 preserve the reviewed Plains terrain topology one-for-one while substituting underground materials."
+      ]
+    },
+    "5": {
+      "inherits": "0",
+      "notes": [
+        "Desert shoreline, ridge, and palm-grove families preserve the reviewed Plains water, mountain, and forest topology one-for-one.",
+        "Desert decorative, wall, vegetation, structure, and oasis slots outside those three families use Desert-specific semantics and must not inherit Plains labels."
+      ]
+    },
+    "9": {
+      "inherits": "0",
+      "notes": [
+        "Swamp water, bog-bank, and tree-grove families preserve the reviewed Plains water, mountain, and forest topology one-for-one."
+      ]
+    },
+    "10": {
+      "inherits": "0",
+      "notes": [
+        "Snow water, snowy-ridge, and forest families preserve the reviewed Plains water, mountain, and forest topology one-for-one."
       ]
     }
   }

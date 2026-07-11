@@ -148,6 +148,19 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(dungeonTiles, 4, 4) === 0x1501, "generated dungeon Action Points should preserve directional secret-passage flags and add the trigger marker");
   const castleTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === 1)?.tiles ?? [];
   expect(tileAt(castleTiles, 1, 1) === 59 && tileAt(castleTiles, 2, 1) === 96, "Castle operations should keep combat-clearing tile 59 distinct from default hidden-walkable tile 96");
+  const semanticLandlooks = [
+    { index: 2, name: "Desert", hidden: [169, 184], combat: [180, 185] },
+    { index: 3, name: "Swamp", hidden: [169], combat: [180] },
+    { index: 4, name: "Snow", hidden: [169], combat: [180] }
+  ];
+  for (const landlook of semanticLandlooks) {
+    const semanticTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === landlook.index)?.tiles ?? [];
+    expect(tileAt(semanticTiles, 12, 12) === 60, `${landlook.name} semantic water should use the reviewed center tile`);
+    expect(tileAt(semanticTiles, 22, 12) === 61, `${landlook.name} semantic barriers should use the reviewed mountain/bank/ridge center tile`);
+    expect(tileAt(semanticTiles, 32, 12) === 121, `${landlook.name} semantic forest should use the reviewed grove center tile`);
+    landlook.hidden.forEach((tile, offset) => expect(tileAt(semanticTiles, 40 + offset, 10) === tile, `${landlook.name} hidden-walkable operation should preserve tile ${tile}`));
+    landlook.combat.forEach((tile, offset) => expect(tileAt(semanticTiles, 40 + landlook.hidden.length + offset, 10) === tile, `${landlook.name} combat-clearing operation should preserve tile ${tile}`));
+  }
 }
 
 function checkDirectAp(createProjectFromScenarioSeed) {

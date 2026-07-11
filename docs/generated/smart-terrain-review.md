@@ -1,6 +1,6 @@
 # Smart Terrain First Review Batch
 
-Generated: 2026-07-10T21:44:16.125Z
+Generated: 2026-07-11T19:44:02.947Z
 
 Review each proposed tile role against the centered tile in the representative 5x5 contexts. Record accepted roles, exclusions, or terrain-family corrections in curated source metadata; this file is generated.
 
@@ -21,11 +21,11 @@ Decision vocabulary: `center`, cardinal edge, corner, line, cap, `single`, `deta
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
-  38    25    98   111   111 
-  38    25   111   111   111 
-  38    25  [123]  111   120 
-  35    37    39    39    39 
-  40    40    40    40    40 
+  38    25    98   111   111
+  38    25   111   111   111
+  38    25  [123]  111   120
+  35    37    39    39    39
+  40    40    40    40    40
 ```
 
 ### Assault on Giant Mountain, land 4, cell 11,10
@@ -33,11 +33,11 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as capEast, mask 2. Center tile is wrapped in brackets.
 
 ```text
- 111    77   111   111    77 
- 111    18    61    61    17 
- 111     2  [123]  123    77 
-   1    19    61    61    17 
- 111    60   -97   111    77 
+ 111    77   111   111    77
+ 111    18    61    61    17
+ 111     2  [123]  123    77
+   1    19    61    61    17
+ 111    60   -97   111    77
 ```
 
 ### Assault on Giant Mountain, land 5, cell 52,7
@@ -45,11 +45,11 @@ Observed as capEast, mask 2. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
- 164   111   112    48    28 
- 111   163   111    38    42 
- 152   164  [123]   38    25 
-   1    61     1    32    33 
- 141   142   143    38    42 
+ 164   111   112    48    28
+ 111   163   111    38    42
+ 152   164  [123]   38    25
+   1    61     1    32    33
+ 141   142   143    38    42
 ```
 
 ## 2. Landlook 4 Mountains Tile 83
@@ -67,11 +67,11 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as southEast, mask 201. Center tile is wrapped in brackets.
 
 ```text
-  78    78    89    48    35 
-  78    78    89    38    40 
-  78    80  [ 83]   38    40 
-  87    83   152    38    40 
- 143    30    39    35    40 
+  78    78    89    48    35
+  78    78    89    38    40
+  78    80  [ 83]   38    40
+  87    83   152    38    40
+ 143    30    39    35    40
 ```
 
 ### Assault on Giant Mountain, land 5, cell 79,19
@@ -79,11 +79,11 @@ Observed as southEast, mask 201. Center tile is wrapped in brackets.
 Observed as southEast, mask 9. Center tile is wrapped in brackets.
 
 ```text
-  88    95    89    38    40 
-  88    95    89    38    40 
-  85    87  [ 83]   38    40 
- 111   111   111    38    40 
- 152   152   173    38    40 
+  88    95    89    38    40
+  88    95    89    38    40
+  85    87  [ 83]   38    40
+ 111   111   111    38    40
+ 152   152   173    38    40
 ```
 
 ### Assault on Giant Mountain, land 6, cell 41,15
@@ -91,11 +91,11 @@ Observed as southEast, mask 9. Center tile is wrapped in brackets.
 Observed as northWest, mask 118. Center tile is wrapped in brackets.
 
 ```text
-  40    40    33    76    32 
-  40    36    29    87    31 
-  36    29  [ 83]   78    85 
-  29    83    84    78    86 
-  83    84    21    78    21 
+  40    40    33    76    32
+  40    36    29    87    31
+  36    29  [ 83]   78    85
+  29    83    84    78    86
+  83    84    21    78    21
 ```
 
 ## 3. Landlook 4 Water Tile 12
@@ -113,11 +113,11 @@ Observed as northWest, mask 118. Center tile is wrapped in brackets.
 Observed as lineVertical, mask 101. Center tile is wrapped in brackets.
 
 ```text
-   2   163     2   163     2 
-   2   164     2   164     2 
-  18    76  [ 12]   76    12 
-  60   111   111   111   111 
-  18     1     1    13   112 
+   2   163     2   163     2
+   2   164     2   164     2
+  18    76  [ 12]   76    12
+  60   111   111   111   111
+  18     1     1    13   112
 ```
 
 ### Assault on Giant Mountain, land 5, cell 3,3
@@ -125,11 +125,11 @@ Observed as lineVertical, mask 101. Center tile is wrapped in brackets.
 Observed as lineHorizontal, mask 250. Center tile is wrapped in brackets.
 
 ```text
-  98   140    10   111   111 
- 111   111    77   111   111 
-  76    11  [ 12]   13   111 
- 111     2   120    60   111 
- 111     2    98    60   111 
+  98   140    10   111   111
+ 111   111    77   111   111
+  76    11  [ 12]   13   111
+ 111     2   120    60   111
+ 111     2    98    60   111
 ```
 
 ### Assault on Giant Mountain, land 6, cell 10,6
@@ -137,428 +137,14 @@ Observed as lineHorizontal, mask 250. Center tile is wrapped in brackets.
 Observed as capWest, mask 152. Center tile is wrapped in brackets.
 
 ```text
-  31    41    26    41    26 
- 111   111    77   111    77 
-  15     1  [ 12]   74    12 
-  60   152   126   126   126 
-  49   169   127   176   127 
+  31    41    26    41    26
+ 111   111    77   111    77
+  15     1  [ 12]   74    12
+  60   152   126   126   126
+  49   169   127   176   127
 ```
 
-## 4. Landlook 5 Forest Tile 127
-
-- Priority: critical
-- Evidence: 135 placement(s)
-- Suggested role: west (93%)
-- Human-approved role(s): none
-- Legacy fallback role(s): south, capSouth
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### City of Port Hyrtin, land 2, cell 77,72
-
-Observed as west, mask 55. Center tile is wrapped in brackets.
-
-```text
-  70   149   154    11    23 
-  61    70   123   124    39 
-  61    82  [127]  126    39 
-  61    81   127   126    39 
-  61    62   127   126    39 
-```
-
-### Dark Portal, land 5, cell 42,8
-
-Observed as west, mask 55. Center tile is wrapped in brackets.
-
-```text
- 191   192   191   191   191 
- 154   191   123   128   128 
- 192   192  [127]  121   121 
- 191   191   127   121   121 
- 154   192   127   121   121 
-```
-
-### Dark Portal, land 7, cell 50,25
-
-Observed as west, mask 119. Center tile is wrapped in brackets.
-
-```text
-  60    31    28   123   124 
-   7    28   123   121   126 
- 191   191  [127]  121   126 
- 128   128   121   121   126 
- 121   121   121   129   125 
-```
-
-## 5. Landlook 5 Mountains Tile 63
-
-- Priority: critical
-- Evidence: 264 placement(s)
-- Suggested role: southEast (77%)
-- Human-approved role(s): none
-- Legacy fallback role(s): south
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### City of Port Hyrtin, land 2, cell 44,3
-
-Observed as southEast, mask 153. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    61    75    61 
-  61    75  [ 63]  191    72 
-  63   191   191   191   191 
- 191   191   191   191   191 
-```
-
-### Dark Portal, land 5, cell 12,11
-
-Observed as southEast, mask 153. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    61    76    76 
-  74    75  [ 63]  191   191 
- 192   192   191   191   191 
-  48    50    48    50    48 
-```
-
-### Dark Portal, land 7, cell 31,22
-
-Observed as southEast, mask 25. Center tile is wrapped in brackets.
-
-```text
- 169    61    61    61    61 
- 169   169    61    61    61 
-  74    74  [ 63]  191   191 
- 192   192   192   192   191 
- 192   191   191   191   191 
-```
-
-## 6. Landlook 5 Water Tile 3
-
-- Priority: critical
-- Evidence: 213 placement(s)
-- Suggested role: west (97%)
-- Human-approved role(s): none
-- Legacy fallback role(s): north, capSouth
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### City of Port Hyrtin, land 2, cell 67,47
-
-Observed as west, mask 55. Center tile is wrapped in brackets.
-
-```text
- 174   149   154     9     1 
- 172   188    25    30    60 
- 179   173  [  3]   60    60 
- 175   194     3    60    60 
- 188   178     3    60    60 
-```
-
-### Dark Portal, land 5, cell 76,6
-
-Observed as west, mask 55. Center tile is wrapped in brackets.
-
-```text
-  80   192   191    18    60 
-  81   192    17    60    60 
-  80   191  [  3]   60    60 
-  82   192     3    35    60 
-  80   192     3    60    34 
-```
-
-### Dark Portal, land 7, cell 43,20
-
-Observed as west, mask 55. Center tile is wrapped in brackets.
-
-```text
- 192   192   192   163   192 
- 191   192    17     6     5 
- 192   191  [  3]   60    60 
- 191   191    18    60    60 
- 191   192    13    60    60 
-```
-
-## 7. Landlook 9 Forest Tile 124
-
-- Priority: critical
-- Evidence: 153 placement(s)
-- Suggested role: northEast (84%)
-- Human-approved role(s): none
-- Legacy fallback role(s): northWest, notchNorthWest
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Assault on Giant Mountain, land 2, cell 20,60
-
-Observed as northEast, mask 108. Center tile is wrapped in brackets.
-
-```text
- 155   161   158   -16   158 
- 160   158   164   158   118 
- 159   123  [124]  120   156 
- 123   121   121   124   158 
- 121   121   121   121   124 
-```
-
-### City of Port Hyrtin, land 5, cell 32,24
-
-Observed as northEast, mask 108. Center tile is wrapped in brackets.
-
-```text
- 155   155   159   165    71 
- 120   119   157   118   156 
- 128   128  [124]  155   164 
- 121   121   121   124   155 
- 121   121   121   121   124 
-```
-
-### Dark Portal, land 8, cell 6,13
-
-Observed as northEast, mask 236. Center tile is wrapped in brackets.
-
-```text
- 121   126   120   119   796 
- 121   126   120   796   120 
- 121   121  [124]  119   119 
- 121   121   121   128   128 
- 121   121   121   121   121 
-```
-
-## 8. Landlook 9 Mountains Tile 70
-
-- Priority: critical
-- Evidence: 339 placement(s)
-- Suggested role: northEast (88%)
-- Human-approved role(s): none
-- Legacy fallback role(s): notchNorthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Assault on Giant Mountain, land 2, cell 6,2
-
-Observed as east, mask 237. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    74   105 
-  61    61    63    25    22 
-  61    61  [ 70]   14    56 
-  61    61    61    69    13 
-  61    61    61    80     3 
-```
-
-### City of Bywater, land 3, cell 23,5
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    64   161 
-  61    61    62   -63   -61 
-  61    61  [ 70]  -62   -1060 
-  61    61    82   164   190 
-  61    61    80   163   190 
-```
-
-### City of Port Hyrtin, land 5, cell 47,14
-
-Observed as northEast, mask 108. Center tile is wrapped in brackets.
-
-```text
- 155   157   155   155   155 
- 160   155   164   164   155 
-  78    78  [ 70]  160   166 
-  61    61    61    69   164 
-  61    61    61    61    78 
-```
-
-## 9. Landlook 9 Water Tile 28
-
-- Priority: critical
-- Evidence: 118 placement(s)
-- Suggested role: southEast (86%)
-- Human-approved role(s): none
-- Legacy fallback role(s): notchNorthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Assault on Giant Mountain, land 2, cell 13,33
-
-Observed as southEast, mask 201. Center tile is wrapped in brackets.
-
-```text
-  32    27    73    61    61 
-  57    32    27    72    61 
-  60    31  [ 28]   65    61 
-  31    28    65    61    61 
-  32    27    83    61    61 
-```
-
-### City of Bywater, land 3, cell 60,20
-
-Observed as southEast, mask 153. Center tile is wrapped in brackets.
-
-```text
-  60    60    15   -1016   160 
-  60    60    21    38    38 
-   2     2  [ 28]  160   156 
- 159   155   159   156   159 
-  79    70   166   156   157 
-```
-
-### Dark Portal, land 8, cell 46,19
-
-Observed as southEast, mask 201. Center tile is wrapped in brackets.
-
-```text
-  87    89    19   132   155 
-  60    60    21   130    38 
-  60    31  [ 28]  132   158 
-  60     4    94   114    94 
-  60     4   156   157   157 
-```
-
-## 10. Landlook 10 Forest Tile 125
-
-- Priority: critical
-- Evidence: 113 placement(s)
-- Suggested role: southEast (96%)
-- Human-approved role(s): none
-- Legacy fallback role(s): northEast, notchNorthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Dark Portal, land 12, cell 76,31
-
-Observed as south, mask 219. Center tile is wrapped in brackets.
-
-```text
- 121   121   121   121   121 
- 121   121   121   121   121 
- 121   121  [125]  122   121 
- 121   125   119   156   122 
- 125   120   156   120   156 
-```
-
-### Dungeon Map Test, land 0, cell 25,16
-
-Observed as southEast, mask 137. Center tile is wrapped in brackets.
-
-```text
- 121   121   126   155   120 
- 121   121   126   155   156 
- 122   129  [125]  155   157 
- 155   155   155   119   158 
- 155   158   155   155   118 
-```
-
-### Half Truth, land 5, cell 82,26
-
-Observed as southEast, mask 201. Center tile is wrapped in brackets.
-
-```text
- 128   124    73    61    61 
- 121   121   124    85    61 
- 121   121  [125]   73    74 
- 121   126   118   162   163 
- 121   126   120   120   118 
-```
-
-## 11. Landlook 10 Mountains Tile 62
-
-- Priority: critical
-- Evidence: 268 placement(s)
-- Suggested role: southEast (70%)
-- Human-approved role(s): none
-- Legacy fallback role(s): east, lineVertical
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Dagger of Shine, land 5, cell 48,15
-
-Observed as southEast, mask 153. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    61    76    75 
-  74    75  [ 62]  166   155 
- 166   166   162   158   155 
- 155   155   150   155   155 
-```
-
-### Dark Portal, land 11, cell 68,2
-
-Observed as southEast, mask 153. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    61    74    74 
-  72    74  [ 62]  155   156 
- 156   156   156   156    67 
-  77    79    79    79    61 
-```
-
-### Dark Portal, land 12, cell 48,19
-
-Observed as south, mask 155. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  76    61    61    61    61 
- 156    71  [ 62]   72    61 
- 155   -1016   158   158    71 
- 155   158   157   157   158 
-```
-
-## 12. Landlook 10 Water Tile 4
-
-- Priority: critical
-- Evidence: 118 placement(s)
-- Suggested role: east (98%)
-- Human-approved role(s): none
-- Legacy fallback role(s): northEast, capNorth
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### Dagger of Shine, land 5, cell 47,43
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-  60    87   181    75    61 
-  60    60    19   155    73 
-  60    60  [  4]  -177   -175 
-  60    60     4   -176   -1174 
-  60    60    20   155   -1016 
-```
-
-### Dark Portal, land 12, cell 56,39
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-  60    20   118   200   155 
-  60    60    19   118   158 
-  60    60  [  4]  118   158 
-  60    60     4   118   191 
-  60    60    16   118   156 
-```
-
-### Half Truth, land 5, cell 19,27
-
-Observed as east, mask 237. Center tile is wrapped in brackets.
-
-```text
-  87    91    64   155   155 
-  60    60    19   160   155 
-  60    60  [  4]  155   155 
-  60    60    32    27    25 
-  58    60    60    32    30 
-```
-
-## 13. Landlook 4 Forest Tile 124
+## 4. Landlook 4 Forest Tile 124
 
 - Priority: medium
 - Evidence: 138 placement(s)
@@ -573,11 +159,11 @@ Observed as east, mask 237. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
-  38    25   170   111   145 
-  38    25   170   111   127 
-  35    25  [124]  111   111 
-  40    25   176   111   111 
-  26     6    11    76     9 
+  38    25   170   111   145
+  38    25   170   111   127
+  35    25  [124]  111   111
+  40    25   176   111   111
+  26     6    11    76     9
 ```
 
 ### Assault on Giant Mountain, land 5, cell 67,14
@@ -585,11 +171,11 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
-  36    24    24    34    25 
-  25   111   111    38    42 
-  25   111  [124]   38    25 
-  65   111   111    38    25 
-  37    39    39    35    42 
+  36    24    24    34    25
+  25   111   111    38    42
+  25   111  [124]   38    25
+  65   111   111    38    25
+  37    39    39    35    42
 ```
 
 ### Assault on Giant Mountain, land 6, cell 73,4
@@ -597,14 +183,14 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as capEast, mask 18. Center tile is wrapped in brackets.
 
 ```text
-   2   136   136   111    15 
-  10   111   111   125    60 
-  75   111  [124]  125     2 
-  19     1     1    61    17 
-  75   111   124   136    16 
+   2   136   136   111    15
+  10   111   111   125    60
+  75   111  [124]  125     2
+  19     1     1    61    17
+  75   111   124   136    16
 ```
 
-## 14. Landlook 4 Mountains Tile 81
+## 5. Landlook 4 Mountains Tile 81
 
 - Priority: critical
 - Evidence: 324 placement(s)
@@ -619,11 +205,11 @@ Observed as capEast, mask 18. Center tile is wrapped in brackets.
 Observed as northEast, mask 108. Center tile is wrapped in brackets.
 
 ```text
-  41    41    34    40    40 
- 142   143    31    24    34 
-  90    90  [ 81]  152    38 
-  78    78    86    81    38 
-  78    78    78    89    38 
+  41    41    34    40    40
+ 142   143    31    24    34
+  90    90  [ 81]  152    38
+  78    78    86    81    38
+  78    78    78    89    38
 ```
 
 ### Assault on Giant Mountain, land 5, cell 79,16
@@ -631,11 +217,11 @@ Observed as northEast, mask 108. Center tile is wrapped in brackets.
 Observed as northEast, mask 12. Center tile is wrapped in brackets.
 
 ```text
-   9    32    40    40    40 
- 111    31    24    34    40 
-  79    90  [ 81]   38    40 
-  88    95    89    38    40 
-  88    95    89    38    40 
+   9    32    40    40    40
+ 111    31    24    34    40
+  79    90  [ 81]   38    40
+  88    95    89    38    40
+  88    95    89    38    40
 ```
 
 ### Assault on Giant Mountain, land 6, cell 39,19
@@ -643,14 +229,14 @@ Observed as northEast, mask 12. Center tile is wrapped in brackets.
 Observed as southWest, mask 179. Center tile is wrapped in brackets.
 
 ```text
-  26    29    83    84    21 
-  60    89    78    78    45 
-  27    28  [ 81]   82    16 
-  40    37    28    81    82 
-  40    40    37    28    81 
+  26    29    83    84    21
+  60    89    78    78    45
+  27    28  [ 81]   82    16
+  40    37    28    81    82
+  40    40    37    28    81
 ```
 
-## 15. Landlook 4 Water Tile 112
+## 6. Landlook 4 Water Tile 112
 
 - Priority: high
 - Evidence: 288 placement(s)
@@ -665,11 +251,11 @@ Observed as southWest, mask 179. Center tile is wrapped in brackets.
 Observed as center, mask 191. Center tile is wrapped in brackets.
 
 ```text
-  12    76    12    13   397 
- 111   111   111    16    76 
-   1    13  [112]  111   111 
- 111    77   111   111    98 
-   1    17   111   111    97 
+  12    76    12    13   397
+ 111   111   111    16    76
+   1    13  [112]  111   111
+ 111    77   111   111    98
+   1    17   111   111    97
 ```
 
 ### Assault on Giant Mountain, land 5, cell 52,5
@@ -677,11 +263,11 @@ Observed as center, mask 191. Center tile is wrapped in brackets.
 Observed as north, mask 46. Center tile is wrapped in brackets.
 
 ```text
-  24    41    24    26    24 
- 163   113   113    75   111 
- 164   111  [112]   48    28 
- 111   163   111    38    42 
- 152   164   123    38    25 
+  24    41    24    26    24
+ 163   113   113    75   111
+ 164   111  [112]   48    28
+ 111   163   111    38    42
+ 152   164   123    38    25
 ```
 
 ### Assault on Giant Mountain, land 6, cell 15,18
@@ -689,428 +275,14 @@ Observed as north, mask 46. Center tile is wrapped in brackets.
 Observed as south, mask 187. Center tile is wrapped in brackets.
 
 ```text
- 111   111    38    40    40 
-   1    11     4    41    24 
-  97     8  [112]  111   111 
- 111    75    98   111   111 
-  30    27    28   111   111 
+ 111   111    38    40    40
+   1    11     4    41    24
+  97     8  [112]  111   111
+ 111    75    98   111   111
+  30    27    28   111   111
 ```
 
-## 16. Landlook 5 Forest Tile 126
-
-- Priority: critical
-- Evidence: 137 placement(s)
-- Suggested role: east (95%)
-- Human-approved role(s): none
-- Legacy fallback role(s): north, lineVertical, capNorth
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### City of Port Hyrtin, land 2, cell 83,71
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-   7     8   188    84    61 
- 123   128   124    85    61 
- 121   121  [126]   85    61 
- 121   121   126    71    61 
- 121   121   126   191    73 
-```
-
-### Dark Portal, land 5, cell 51,8
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-  38    38    38    38    45 
- 128   128   124   120    39 
- 121   121  [126]  192    39 
- 121   121   126   192    39 
- 121   121   126   191    39 
-```
-
-### Dark Portal, land 7, cell 52,24
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-  19   192   165    73    61 
-  28   123   124   191    72 
- 123   121  [126]  191   192 
- 127   121   126   191   191 
- 121   121   126   191   191 
-```
-
-## 17. Landlook 5 Mountains Tile 73
-
-- Priority: critical
-- Evidence: 199 placement(s)
-- Suggested role: southWest (79%)
-- Human-approved role(s): none
-- Legacy fallback role(s): notchSouthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### City of Port Hyrtin, land 2, cell 25,4
-
-Observed as southWest, mask 147. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  76    76    61    61    61 
- 166   191  [ 73]   74    75 
- 191   191   191   191   162 
- 191   191   191   191   191 
-```
-
-### Dark Portal, land 5, cell 68,2
-
-Observed as southWest, mask 179. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  75    75    61    61    61 
- 192   191  [ 73]   61    61 
- 192   191   191    83    61 
- 191   192   191    71    61 
-```
-
-### Dark Portal, land 7, cell 18,15
-
-Observed as southWest, mask 83. Center tile is wrapped in brackets.
-
-```text
- 192   191    83    61    61 
- 192   192    83    61    61 
- 186   191  [ 73]   75    61 
-  65    69   191   191    71 
-  61    61    68   191   191 
-```
-
-## 18. Landlook 5 Water Tile 4
-
-- Priority: critical
-- Evidence: 114 placement(s)
-- Suggested role: east (99%)
-- Human-approved role(s): none
-- Legacy fallback role(s): northEast, capNorth
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### Dark Portal, land 5, cell 67,9
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-  33    20   191   191   192 
-  60    60    19   192   192 
-  60    60  [  4]  191   192 
-  60    60     4   191   191 
-  60    60     4   191   191 
-```
-
-### Dark Portal, land 7, cell 49,20
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
- 192   191   192   191    84 
-   1     1    27   192    71 
-  60    60  [  4]  191   191 
-  60    60    20   191   192 
-  60    60    60    19   192 
-```
-
-### Destroy the Necronomicon, land 3, cell 7,3
-
-Observed as east, mask 221. Center tile is wrapped in brackets.
-
-```text
-  60    60    33    15   191 
-  60    60    31    28   191 
-  60    60  [  4]  192   187 
-  60    31    28   173   192 
-  31    28   191   190   165 
-```
-
-## 19. Landlook 9 Forest Tile 125
-
-- Priority: critical
-- Evidence: 168 placement(s)
-- Suggested role: southEast (86%)
-- Human-approved role(s): none
-- Legacy fallback role(s): northEast, notchNorthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### City of Port Hyrtin, land 5, cell 36,30
-
-Observed as southEast, mask 201. Center tile is wrapped in brackets.
-
-```text
- 121   121   126    84    61 
- 121   121   126    84    61 
- 121   121  [125]   83    61 
- 121   126    67    61    61 
- 121   125    85    61    61 
-```
-
-### Dark Portal, land 8, cell 6,7
-
-Observed as southEast, mask 217. Center tile is wrapped in brackets.
-
-```text
- 121   121   121   121   121 
- 121   121   121   129   129 
- 121   121  [125]  120   119 
- 121   126   120   796   120 
- 121   126   119   120   796 
-```
-
-### Destroy the Necronomicon, land 4, cell 41,17
-
-Observed as southEast, mask 201. Center tile is wrapped in brackets.
-
-```text
- 158   121   126   157   118 
- 123   121   126   119   158 
- 121   121  [125]  158   158 
- 121   126   158   158   118 
- 121   126   119   158   158 
-```
-
-## 20. Landlook 9 Mountains Tile 73
-
-- Priority: critical
-- Evidence: 290 placement(s)
-- Suggested role: southWest (88%)
-- Human-approved role(s): none
-- Legacy fallback role(s): notchSouthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Assault on Giant Mountain, land 2, cell 30,3
-
-Observed as center, mask 191. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    61    61    61 
-  61    62  [ 73]   61    61 
-  63   157    65    61    61 
- 158   165    71    61    61 
-```
-
-### City of Bywater, land 3, cell 13,1
-
-Observed as southWest, mask 179. Center tile is wrapped in brackets.
-
-```text
- out   out   out   out   out 
-  74    74    61    61    61 
- 162   167  [ 73]   61    61 
- 163   162   164    73    61 
- 165   165   164   161    73 
-```
-
-### City of Port Hyrtin, land 5, cell 46,3
-
-Observed as southWest, mask 179. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  76    76    61    61    61 
- 155   164  [ 73]   61    61 
- 155   155   155    73    74 
- 155   159   161   155   155 
-```
-
-## 21. Landlook 9 Water Tile 2
-
-- Priority: critical
-- Evidence: 227 placement(s)
-- Suggested role: south (82%)
-- Human-approved role(s): none
-- Legacy fallback role(s): east, capWest
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### City of Bywater, land 3, cell 58,20
-
-Observed as south, mask 155. Center tile is wrapped in brackets.
-
-```text
-   3    60    60    60    15 
-   3    60    60    60    21 
-  14     7  [  2]    2    28 
-  69   160   159   155   159 
-  61    78    79    70   166 
-```
-
-### City of Port Hyrtin, land 5, cell 81,75
-
-Observed as south, mask 155. Center tile is wrapped in brackets.
-
-```text
-  60    60    60    60    60 
-  60    60    60    60    60 
-  60     7  [  2]    2     2 
-  90    70   167   155   150 
-  61    61    69   155   161 
-```
-
-### Dark Portal, land 8, cell 78,32
-
-Observed as south, mask 155. Center tile is wrapped in brackets.
-
-```text
- 157    13    60    15   156 
- 157     3    60     4   158 
-  19    26  [  2]   28   158 
-  20   158   155   158   156 
-  60    19   156   156   123 
-```
-
-## 22. Landlook 10 Forest Tile 123
-
-- Priority: critical
-- Evidence: 134 placement(s)
-- Suggested role: northWest (97%)
-- Human-approved role(s): none
-- Legacy fallback role(s): southEast, notchSouthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Dark Portal, land 12, cell 74,25
-
-Observed as northWest, mask 102. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    75    76    76 
-  61    62  [123]  128   124 
-  63   123   121   121   126 
- 123   121   121   121   121 
-```
-
-### Dungeon Map Test, land 0, cell 21,8
-
-Observed as northWest, mask 102. Center tile is wrapped in brackets.
-
-```text
- 158   156   158   155   156 
- 155   119   157   157   156 
- 118   119  [123]  128   124 
- 120   123   121   121   121 
- 123   121   121   121   121 
-```
-
-### Half Truth, land 5, cell 75,22
-
-Observed as northWest, mask 102. Center tile is wrapped in brackets.
-
-```text
-  78    68   155   155    42 
-  61    82   155   155   155 
-  61    62  [123]  128   124 
-  62   123   121   121   121 
- 128   121   121   121   121 
-```
-
-## 23. Landlook 10 Mountains Tile 70
-
-- Priority: critical
-- Evidence: 282 placement(s)
-- Suggested role: northEast (71%)
-- Human-approved role(s): none
-- Legacy fallback role(s): notchNorthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Dagger of Shine, land 5, cell 54,21
-
-Observed as northEast, mask 108. Center tile is wrapped in brackets.
-
-```text
- 155   155   155   155   155 
- 155   155   155   155   155 
-  65    77  [ 70]  155   155 
-  61    61    61    70   155 
-  61    61    61    61    79 
-```
-
-### Dark Portal, land 11, cell 73,3
-
-Observed as northEast, mask 76. Center tile is wrapped in brackets.
-
-```text
-  74    74    75    74    61 
- 157   157   155   156    84 
-  78    79  [ 70]  157    72 
-  61    76    64   158   157 
-  64   158   158    67    79 
-```
-
-### Dark Portal, land 12, cell 47,23
-
-Observed as capWest, mask 72. Center tile is wrapped in brackets.
-
-```text
-  82   155   158   157   157 
-  81   157   157   156   158 
-  61    78  [ 70]  158    66 
-  61    61   169   180    61 
-  61    61   169    61    61 
-```
-
-## 24. Landlook 10 Water Tile 35
-
-- Priority: high
-- Evidence: 56 placement(s)
-- Suggested role: center (16%)
-- Human-approved role(s): none
-- Legacy fallback role(s): none
-- Review reasons: mixed-structural-roles, many-neighbor-shapes
-- Decision: pending
-
-### Half Truth, land 5, cell 21,57
-
-Observed as center, mask 255. Center tile is wrapped in brackets.
-
-```text
-  91    89    60    60    60 
-  60    60    60    60    60 
-  60    60  [ 35]   60    60 
-  88    60    60    60    60 
-  93    60    60    34    60 
-```
-
-### Lord of the Abyss, land 5, cell 81,32
-
-Observed as east, mask 205. Center tile is wrapped in brackets.
-
-```text
-   1     1     1   117     1 
-  60    60    60   115    60 
-  60    60  [ 35]  115    60 
-  60    60    60   115    60 
-  60    60    60   115    60 
-```
-
-### Price of Power, land 1, cell 64,1
-
-Observed as northWest, mask 38. Center tile is wrapped in brackets.
-
-```text
- out   out   out   out   out 
-  61    61    91    91    91 
-  61    93  [ 35]   60    35 
-  75    89    60    33    60 
-  17    34    60    60    60 
-```
-
-## 25. Landlook 4 Forest Tile 128
+## 7. Landlook 4 Forest Tile 128
 
 - Priority: medium
 - Evidence: 1636 placement(s)
@@ -1125,11 +297,11 @@ Observed as northWest, mask 38. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
-  39    28   111    23    31 
-  40    42   486   111   111 
-  24    29  [128]   21    30 
- 111   111   111     2    38 
-  39    39    39    27    35 
+  39    28   111    23    31
+  40    42   486   111   111
+  24    29  [128]   21    30
+ 111   111   111     2    38
+  39    39    39    27    35
 ```
 
 ### Assault on Giant Mountain, land 4, cell 13,18
@@ -1137,11 +309,11 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as capSouth, mask 4. Center tile is wrapped in brackets.
 
 ```text
- 111   111    77   111   111 
-   1    11    12     1    11 
- 137     2  [128]  111    77 
- 138     2   127   111    16 
- 136     2   111   111   111 
+ 111   111    77   111   111
+   1    11    12     1    11
+ 137     2  [128]  111    77
+ 138     2   127   111    16
+ 136     2   111   111   111
 ```
 
 ### Assault on Giant Mountain, land 6, cell 70,58
@@ -1149,14 +321,14 @@ Observed as capSouth, mask 4. Center tile is wrapped in brackets.
 Observed as lineVertical, mask 5. Center tile is wrapped in brackets.
 
 ```text
- 127   158   126   158    10 
- 126   159   126   161    45 
- 127   159  [128]  159    45 
- 126   161   126   159    10 
- 128   162   128   162    45 
+ 127   158   126   158    10
+ 126   159   126   161    45
+ 127   159  [128]  159    45
+ 126   161   126   159    10
+ 128   162   128   162    45
 ```
 
-## 26. Landlook 4 Mountains Tile 69
+## 8. Landlook 4 Mountains Tile 69
 
 - Priority: critical
 - Evidence: 287 placement(s)
@@ -1171,11 +343,11 @@ Observed as lineVertical, mask 5. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
- 111    98    38    40    40 
-   1     1    32    40    40 
- 111   111  [ 69]   40    40 
-   1     1    32    40    40 
- 111   111    38    40    40 
+ 111    98    38    40    40
+   1     1    32    40    40
+ 111   111  [ 69]   40    40
+   1     1    32    40    40
+ 111   111    38    40    40
 ```
 
 ### Assault on Giant Mountain, land 5, cell 30,5
@@ -1183,11 +355,11 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
- 111   111   111    38    40 
- 111    95    95    38    40 
- 111    95  [ 69]   38    40 
-  39    39    39    35    40 
-  40    40    40    40    40 
+ 111   111   111    38    40
+ 111    95    95    38    40
+ 111    95  [ 69]   38    40
+  39    39    39    35    40
+  40    40    40    40    40
 ```
 
 ### Assault on Giant Mountain, land 6, cell 7,37
@@ -1195,14 +367,14 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as capWest, mask 200. Center tile is wrapped in brackets.
 
 ```text
-  86    81    38    40    40 
-  78    86    38    40    36 
-  78    80  [ 69]   40    25 
-  80    83    38    40    37 
-  83    30    35    40    40 
+  86    81    38    40    40
+  78    86    38    40    36
+  78    80  [ 69]   40    25
+  80    83    38    40    37
+  83    30    35    40    40
 ```
 
-## 27. Landlook 4 Water Tile 17
+## 9. Landlook 4 Water Tile 17
 
 - Priority: high
 - Evidence: 608 placement(s)
@@ -1217,11 +389,11 @@ Observed as capWest, mask 200. Center tile is wrapped in brackets.
 Observed as north, mask 190. Center tile is wrapped in brackets.
 
 ```text
- 157   111     2   111     2 
- 111   111    77   111     2 
-  15     1  [ 17]  111     2 
-   2   140     2   111     2 
-  14   140     2   111     2 
+ 157   111     2   111     2
+ 111   111    77   111     2
+  15     1  [ 17]  111     2
+   2   140     2   111     2
+  14   140     2   111     2
 ```
 
 ### Assault on Giant Mountain, land 5, cell 17,13
@@ -1229,11 +401,11 @@ Observed as north, mask 190. Center tile is wrapped in brackets.
 Observed as lineHorizontal, mask 250. Center tile is wrapped in brackets.
 
 ```text
-  36    24    26     6    76 
-  42   111    77   111   111 
-  33     1  [ 17]  111   152 
-  42   111    77   111   111 
-  33     1    17   111   152 
+  36    24    26     6    76
+  42   111    77   111   111
+  33     1  [ 17]  111   152
+  42   111    77   111   111
+  33     1    17   111   152
 ```
 
 ### Assault on Giant Mountain, land 6, cell 75,5
@@ -1241,428 +413,14 @@ Observed as lineHorizontal, mask 250. Center tile is wrapped in brackets.
 Observed as lineVertical, mask 37. Center tile is wrapped in brackets.
 
 ```text
- 111   125    60   130   132 
- 124   125     2   130   133 
-   1    61  [ 17]  129   133 
- 124   136    16     1    74 
- 111   136   136   136   111 
+ 111   125    60   130   132
+ 124   125     2   130   133
+   1    61  [ 17]  129   133
+ 124   136    16     1    74
+ 111   136   136   136   111
 ```
 
-## 28. Landlook 5 Forest Tile 122
-
-- Priority: medium
-- Evidence: 62 placement(s)
-- Suggested role: southWest (71%)
-- Human-approved role(s): none
-- Legacy fallback role(s): southWest, notchSouthWest
-- Review reasons: many-neighbor-shapes
-- Decision: pending
-
-### City of Port Hyrtin, land 2, cell 75,80
-
-Observed as southWest, mask 51. Center tile is wrapped in brackets.
-
-```text
-  61    81   127   121   121 
-  61    81   127   121   121 
-  61    80  [122]  121   121 
-  61    61    69   122   121 
-  61    61    61    69   122 
-```
-
-### Dark Portal, land 5, cell 48,26
-
-Observed as southWest, mask 179. Center tile is wrapped in brackets.
-
-```text
- 121   121   121   121   121 
- 129   129   121   121   121 
- 191   192  [122]  121   121 
- 192   191   192   127   121 
- 191   192   191   127   121 
-```
-
-### Dark Portal, land 7, cell 47,29
-
-Observed as southWest, mask 19. Center tile is wrapped in brackets.
-
-```text
- 164   161   127   121   121 
-  70   189   127   121   121 
-  61    70  [122]  129   125 
-  61    61    79    70   191 
-  61    61    61    61    79 
-```
-
-## 29. Landlook 5 Mountains Tile 70
-
-- Priority: critical
-- Evidence: 212 placement(s)
-- Suggested role: northEast (81%)
-- Human-approved role(s): none
-- Legacy fallback role(s): notchNorthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### City of Port Hyrtin, land 2, cell 7,5
-
-Observed as northEast, mask 76. Center tile is wrapped in brackets.
-
-```text
-  74    76    75    76    61 
- 133   133   133   141    85 
-  78    79  [ 70]  132    84 
-  61    61    80   132    83 
-  61    61    81   132    83 
-```
-
-### Dark Portal, land 5, cell 65,30
-
-Observed as northEast, mask 204. Center tile is wrapped in brackets.
-
-```text
-  69   149   154   192    85 
-  61    68   148   156    85 
-  61    61  [ 70]  191    83 
-  61    61    61   114    61 
-  75    75    62   191    85 
-```
-
-### Dark Portal, land 7, cell 1,8
-
-Observed as northEast, mask 108. Center tile is wrapped in brackets.
-
-```text
- out   191   191   191   191 
- out   191   191   191   191 
- out    77  [ 70]  191   162 
- out    61    61    70   191 
- out    61    61    61    77 
-```
-
-## 30. Landlook 5 Water Tile 36
-
-- Priority: high
-- Evidence: 169 placement(s)
-- Suggested role: single (23%)
-- Human-approved role(s): none
-- Legacy fallback role(s): none
-- Review reasons: mixed-structural-roles, many-neighbor-shapes
-- Decision: pending
-
-### Elemental Strife, land 1, cell 54,14
-
-Observed as single, mask 0. Center tile is wrapped in brackets.
-
-```text
- 165   187   188   190   189 
- 166   191   191   149   155 
- 192   192  [ 36]  191   191 
- 192   191   177   192   192 
- 192   192   119   191   191 
-```
-
-### Journey into the Mire, land 1, cell 45,8
-
-Observed as capEast, mask 2. Center tile is wrapped in brackets.
-
-```text
-  75    62   192   192   191 
- 192   191   191   192   191 
- 192   192  [ 36]   36    36 
- 191   191   190   190   194 
- 191   192   187   187   187 
-```
-
-### Mithril Vault, land 5, cell 15,34
-
-Observed as capSouth, mask 36. Center tile is wrapped in brackets.
-
-```text
- 191   191   192   191   191 
-  94    98   191   191   191 
- 191    95  [ 36]  191   191 
- 191    95    36    36   192 
- 191   113    36    36   191 
-```
-
-## 31. Landlook 9 Forest Tile 123
-
-- Priority: critical
-- Evidence: 223 placement(s)
-- Suggested role: northWest (87%)
-- Human-approved role(s): none
-- Legacy fallback role(s): southEast, notchSouthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Assault on Giant Mountain, land 2, cell 19,60
-
-Observed as northWest, mask 102. Center tile is wrapped in brackets.
-
-```text
- 160   155   161   158   -16 
- 158   160   158   164   158 
- 158   159  [123]  124   120 
- 159   123   121   121   124 
- 123   121   121   121   121 
-```
-
-### City of Port Hyrtin, land 5, cell 27,24
-
-Observed as northWest, mask 102. Center tile is wrapped in brackets.
-
-```text
-  61    82   160   162   157 
-  61    64   120   155   119 
-  81   118  [123]  128   128 
-  81   123   121   121   121 
-  64   127   121   121   121 
-```
-
-### Dark Portal, land 8, cell 11,13
-
-Observed as northWest, mask 118. Center tile is wrapped in brackets.
-
-```text
- 120   119   120   127   121 
- 118   119   119   127   121 
- 120   119  [123]  121   121 
- 128   128   121   121   121 
- 121   121   121   121   121 
-```
-
-## 32. Landlook 9 Mountains Tile 69
-
-- Priority: critical
-- Evidence: 311 placement(s)
-- Suggested role: northEast (88%)
-- Human-approved role(s): none
-- Legacy fallback role(s): notchNorthWest
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Assault on Giant Mountain, land 2, cell 7,3
-
-Observed as northEast, mask 204. Center tile is wrapped in brackets.
-
-```text
-  61    63    25    22    27 
-  61    70    14    56    16 
-  61    61  [ 69]   13    19 
-  61    61    80     3    16 
-  61    61    82     3    19 
-```
-
-### City of Bywater, land 3, cell 49,6
-
-Observed as northEast, mask 204. Center tile is wrapped in brackets.
-
-```text
- 158   157   156   155   156 
-  66    68   156   155   157 
-  61    61  [ 69]  158   155 
-  61    61    81   197   158 
-  61    61    80   156    67 
-```
-
-### City of Port Hyrtin, land 5, cell 62,11
-
-Observed as northEast, mask 76. Center tile is wrapped in brackets.
-
-```text
- 165   155   155   155   160 
- 155   155   157   166   155 
-  79    77  [ 69]  155   155 
-  61    61    82   167   155 
-  61    61    61    78    69 
-```
-
-## 33. Landlook 9 Water Tile 1
-
-- Priority: critical
-- Evidence: 210 placement(s)
-- Suggested role: north (82%)
-- Human-approved role(s): none
-- Legacy fallback role(s): northWest, capEast
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### Assault on Giant Mountain, land 2, cell 7,28
-
-Observed as north, mask 238. Center tile is wrapped in brackets.
-
-```text
-  20   158    83    61    61 
-  13    19    72    75    75 
-   3    32  [  1]    1     1 
-  18    60    33    35    60 
-  60    56    60    60    34 
-```
-
-### City of Bywater, land 3, cell 64,18
-
-Observed as north, mask 126. Center tile is wrapped in brackets.
-
-```text
- 158   160   160   156   156 
- 158   156   156    25    27 
- 160    25  [  1]   30     4 
-  38    24    34    33     4 
- 156    26     2     2    28 
-```
-
-### City of Port Hyrtin, land 5, cell 83,66
-
-Observed as north, mask 110. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    63   155 
-  61    76    64   160   155 
-  64    25  [  1]    1   117 
-   1    30    60    60   115 
-  60    60    60    60   115 
-```
-
-## 34. Landlook 10 Forest Tile 124
-
-- Priority: critical
-- Evidence: 139 placement(s)
-- Suggested role: northEast (99%)
-- Human-approved role(s): none
-- Legacy fallback role(s): northWest, notchNorthWest
-- Review reasons: curated-role-disagreement
-- Decision: pending
-
-### Dark Portal, land 12, cell 76,25
-
-Observed as northEast, mask 76. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  75    76    76    61    61 
- 123   128  [124]   84    61 
- 121   121   126    71    64 
- 121   121   121   128   128 
-```
-
-### Dungeon Map Test, land 0, cell 23,8
-
-Observed as northEast, mask 108. Center tile is wrapped in brackets.
-
-```text
- 158   155   156   156   167 
- 157   157   156   118   156 
- 123   128  [124]  120   119 
- 121   121   121   124   120 
- 121   121   121   121   124 
-```
-
-### Half Truth, land 5, cell 77,22
-
-Observed as northEast, mask 108. Center tile is wrapped in brackets.
-
-```text
- 155   155    42    51    85 
- 155   155   155   118    83 
- 123   128  [124]  160    72 
- 121   121   121   128   124 
- 121   121   121   121   121 
-```
-
-## 35. Landlook 10 Mountains Tile 63
-
-- Priority: critical
-- Evidence: 238 placement(s)
-- Suggested role: southEast (72%)
-- Human-approved role(s): none
-- Legacy fallback role(s): south
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
-- Decision: pending
-
-### Dagger of Shine, land 5, cell 56,13
-
-Observed as southEast, mask 153. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    61    74    61 
-  75    75  [ 63]  158    71 
- 155   155   157   162   160 
- 155   155   155   155   160 
-```
-
-### Dark Portal, land 11, cell 53,3
-
-Observed as southEast, mask 217. Center tile is wrapped in brackets.
-
-```text
- 169    61    61    61    61 
-  61    61    61    75    61 
-  61    61  [ 63]  155    84 
-  61    62   155   156    83 
-  62   158   155   157    73 
-```
-
-### Dark Portal, land 12, cell 72,26
-
-Observed as southEast, mask 217. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    75 
-  61    61    61    62   123 
-  61    61  [ 63]  123   121 
-  61    62   123   121   121 
-  82   123   121   121   121 
-```
-
-## 36. Landlook 10 Water Tile 24
-
-- Priority: high
-- Evidence: 8 placement(s)
-- Suggested role: center (50%)
-- Human-approved role(s): none
-- Legacy fallback role(s): southEast
-- Review reasons: insufficient-evidence, mixed-structural-roles
-- Decision: pending
-
-### Hax, land 5, cell 35,13
-
-Observed as center, mask 63. Center tile is wrapped in brackets.
-
-```text
- 157    95     3    31    29 
- 154    95     3    32    30 
-  38    38  [ 24]   60    60 
- 141    95     3    60    31 
- 132    95     3    60    32 
-```
-
-### Mithril Vault, land 6, cell 4,86
-
-Observed as lineHorizontal, mask 58. Center tile is wrapped in brackets.
-
-```text
-  90    90    88    60    60 
-  61    61    89    60    60 
-  61   108  [ 24]   60    57 
-  61    61    88    59    60 
-  61    61    61    90    90 
-```
-
-### Price of Power, land 1, cell 64,43
-
-Observed as center, mask 63. Center tile is wrapped in brackets.
-
-```text
- 155   160    17    35    87 
- 158   156     3    60    60 
-  38    38  [ 24]   60    60 
- 157   158     3    60    60 
- 160   156    18    34    60 
-```
-
-## 37. Landlook 4 Forest Tile 125
+## 10. Landlook 4 Forest Tile 125
 
 - Priority: medium
 - Evidence: 257 placement(s)
@@ -1677,11 +435,11 @@ Observed as center, mask 63. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
- out   out   out   out   out 
-  36    24    24    24    24 
-  25   152  [125]  486   111 
-  25   496   495   111   111 
-  25   139   466   111   111 
+ out   out   out   out   out
+  36    24    24    24    24
+  25   152  [125]  486   111
+  25   496   495   111   111
+  25   139   466   111   111
 ```
 
 ### Assault on Giant Mountain, land 5, cell 11,10
@@ -1689,11 +447,11 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
- 111    38    40    40    40 
- 111    47    24    34    40 
- 111    77  [125]   38    40 
-  15    12     3    35    40 
-  14   136    38    40    40 
+ 111    38    40    40    40
+ 111    47    24    34    40
+ 111    77  [125]   38    40
+  15    12     3    35    40
+  14   136    38    40    40
 ```
 
 ### Assault on Giant Mountain, land 6, cell 74,3
@@ -1701,14 +459,14 @@ Observed as single, mask 0. Center tile is wrapped in brackets.
 Observed as capSouth, mask 68. Center tile is wrapped in brackets.
 
 ```text
- 139   136   137   111   137 
- 136   136   111    15     1 
- 111   111  [125]   60   130 
- 111   124   125     2   130 
-   1     1    61    17   129 
+ 139   136   137   111   137
+ 136   136   111    15     1
+ 111   111  [125]   60   130
+ 111   124   125     2   130
+   1     1    61    17   129
 ```
 
-## 38. Landlook 4 Mountains Tile 70
+## 11. Landlook 4 Mountains Tile 70
 
 - Priority: high
 - Evidence: 123 placement(s)
@@ -1723,11 +481,11 @@ Observed as capSouth, mask 68. Center tile is wrapped in brackets.
 Observed as capSouth, mask 20. Center tile is wrapped in brackets.
 
 ```text
-  40    42   111   111   111 
-  40    33     7    74     9 
-  40    25  [ 70]  102    73 
-  40    42    70   102    73 
-  40    25    98   103    99 
+  40    42   111   111   111
+  40    33     7    74     9
+  40    25  [ 70]  102    73
+  40    42    70   102    73
+  40    25    98   103    99
 ```
 
 ### Assault on Giant Mountain, land 6, cell 76,41
@@ -1735,11 +493,11 @@ Observed as capSouth, mask 20. Center tile is wrapped in brackets.
 Observed as capEast, mask 2. Center tile is wrapped in brackets.
 
 ```text
- 111    38    40    40    40 
- 111    47    41    41    34 
- 111     2  [ 70]   91    38 
- 111     2   111   111    38 
- 111    77   111   111    38 
+ 111    38    40    40    40
+ 111    47    41    41    34
+ 111     2  [ 70]   91    38
+ 111     2   111   111    38
+ 111    77   111   111    38
 ```
 
 ### City of Bywater, land 4, cell 9,36
@@ -1747,14 +505,14 @@ Observed as capEast, mask 2. Center tile is wrapped in brackets.
 Observed as southWest, mask 3. Center tile is wrapped in brackets.
 
 ```text
-  96    40    96    40    40 
-  64    26    64    51    24 
- 111    60  [ 70]   72   182 
- 111    60   182   182   182 
- 111    60    72    72   182 
+  96    40    96    40    40
+  64    26    64    51    24
+ 111    60  [ 70]   72   182
+ 111    60   182   182   182
+ 111    60    72    72   182
 ```
 
-## 39. Landlook 4 Water Tile 19
+## 12. Landlook 4 Water Tile 19
 
 - Priority: high
 - Evidence: 257 placement(s)
@@ -1769,11 +527,11 @@ Observed as southWest, mask 3. Center tile is wrapped in brackets.
 Observed as center, mask 255. Center tile is wrapped in brackets.
 
 ```text
- 111   111    38    40    40 
- 111   111    38    40    40 
-  76     9  [ 19]   24    24 
- 111   111     2   111   145 
-  28   486    77   111   127 
+ 111   111    38    40    40
+ 111   111    38    40    40
+  76     9  [ 19]   24    24
+ 111   111     2   111   145
+  28   486    77   111   127
 ```
 
 ### Assault on Giant Mountain, land 4, cell 10,11
@@ -1781,11 +539,11 @@ Observed as center, mask 255. Center tile is wrapped in brackets.
 Observed as east, mask 205. Center tile is wrapped in brackets.
 
 ```text
-   2   111    18    61    61 
-   2   111     2   123   123 
-  12     1  [ 19]   61    61 
- 111   111    60   -97   111 
-  13   111    18     1     1 
+   2   111    18    61    61
+   2   111     2   123   123
+  12     1  [ 19]   61    61
+ 111   111    60   -97   111
+  13   111    18     1     1
 ```
 
 ### Assault on Giant Mountain, land 5, cell 57,14
@@ -1793,412 +551,1666 @@ Observed as east, mask 205. Center tile is wrapped in brackets.
 Observed as west, mask 151. Center tile is wrapped in brackets.
 
 ```text
- 123   384    97    38    40 
-  13   111    30    35    40 
-  18    74  [ 19]   24    41 
-  77    93     2   146   111 
-  49    93    60   145   111 
+ 123   384    97    38    40
+  13   111    30    35    40
+  18    74  [ 19]   24    41
+  77    93     2   146   111
+  49    93    60   145   111
 ```
 
-## 40. Landlook 5 Forest Tile 125
+## 13. Landlook 4 Forest Tile 126
 
 - Priority: medium
-- Evidence: 51 placement(s)
-- Suggested role: southEast (77%)
+- Evidence: 987 placement(s)
+- Suggested role: single (49%)
 - Human-approved role(s): none
-- Legacy fallback role(s): northEast, notchNorthEast
-- Review reasons: many-neighbor-shapes
+- Legacy fallback role(s): north, lineVertical, capNorth
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
 - Decision: pending
 
-### City of Port Hyrtin, land 2, cell 87,83
+### Assault on Giant Mountain, land 4, cell 40,5
 
-Observed as southEast, mask 201. Center tile is wrapped in brackets.
-
-```text
- 127   121   126    83    61 
- 127   121   126    84    61 
- 127   121  [125]   83    61 
- 122   125    65    61    61 
- 163    66    61    61    61 
-```
-
-### Dark Portal, land 5, cell 51,18
-
-Observed as southEast, mask 201. Center tile is wrapped in brackets.
+Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
- 121   121   126   118    39 
- 121   121   126   118    39 
- 121   121  [125]  192    39 
- 121   125   118   192    46 
- 126   120   191   191    39 
+  15     1     1    13   111
+  77   111   111     2   111
+  60   158  [126]    2   111
+  60   162   170     2   111
+  16     1     1    14   111
 ```
 
-### Dark Portal, land 7, cell 52,27
+### Assault on Giant Mountain, land 5, cell 9,2
 
-Observed as southEast, mask 137. Center tile is wrapped in brackets.
+Observed as single, mask 0. Center tile is wrapped in brackets.
 
 ```text
- 127   121   126   191   191 
- 121   121   126   191   191 
- 121   129  [125]  191   191 
- 125   -59   -1057   191   191 
- 191   -58   -56   191    66 
+  26    41    24    26    24
+   2   111   111    77    93
+  77   111  [126]    2    93
+   2   111   158     2    93
+  10   111   162    48    39
 ```
 
-## 41. Landlook 5 Mountains Tile 69
+### Assault on Giant Mountain, land 6, cell 10,7
 
-- Priority: critical
-- Evidence: 206 placement(s)
-- Suggested role: northEast (83%)
+Observed as northWest, mask 6. Center tile is wrapped in brackets.
+
+```text
+ 111   111    77   111    77
+  15     1    12    74    12
+  60   152  [126]  126   126
+  49   169   127   176   127
+  43   170   127   127   127
+```
+
+## 14. Landlook 4 Mountains Tile 71
+
+- Priority: high
+- Evidence: 1977 placement(s)
+- Suggested role: lineVertical (20%)
 - Human-approved role(s): none
-- Legacy fallback role(s): notchNorthWest
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
 - Decision: pending
 
-### City of Port Hyrtin, land 2, cell 12,15
+### Assault on Giant Mountain, land 6, cell 69,17
 
-Observed as northEast, mask 236. Center tile is wrapped in brackets.
-
-```text
- 133   133   141    73    61 
-  78    70   142   141    73 
-  61    61  [ 69]  142   133 
-  61    61    61    78    68 
-  61    61    61    61    61 
-```
-
-### Dark Portal, land 5, cell 63,28
-
-Observed as northEast, mask 236. Center tile is wrapped in brackets.
+Observed as capSouth, mask 4. Center tile is wrapped in brackets.
 
 ```text
-  61    61    62   196   191 
-  61    81   150   158   191 
-  61    61  [ 69]  149   154 
-  61    61    61    68   148 
-  61    61    61    61    70 
+  94    94    94    94    93
+  76     1     1     3    39
+  97   110  [ 71]   38    40
+ 111   102    71    57    40
+ 120   109    71    47    41
 ```
 
-### Dark Portal, land 7, cell 64,12
+### Castle in the Clouds, land 5, cell 17,27
+
+Observed as northWest, mask 102. Center tile is wrapped in brackets.
+
+```text
+  29   111   111   111   111
+ 117   105   100   100   106
+ 100   109  [ 71]   71   101
+  71    71    71    71   101
+  99   110    71    71   101
+```
+
+### Castle in the Clouds, land 7, cell 62,20
+
+Observed as northWest, mask 6. Center tile is wrapped in brackets.
+
+```text
+ 111     2   176   111   111
+ 111     2   100   100   100
+ 111    60  [ 71]   71    71
+ 111    60    71   183    71
+ 111     2    71    71    71
+```
+
+## 15. Landlook 4 Water Tile 18
+
+- Priority: high
+- Evidence: 562 placement(s)
+- Suggested role: west (27%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Assault on Giant Mountain, land 4, cell 10,3
+
+Observed as east, mask 237. Center tile is wrapped in brackets.
+
+```text
+   2   111     2   163     2
+   2   111     2   164     2
+   2   111  [ 18]   76    12
+   2   111    60   111   111
+   2   111    18     1     1
+```
+
+### Assault on Giant Mountain, land 5, cell 4,6
+
+Observed as center, mask 31. Center tile is wrapped in brackets.
+
+```text
+   2   120    60   111   111
+   2    98    60   111   111
+  14   111  [ 18]    1    74
+ 111   126    60   129    91
+ 137   148    10   131   111
+```
+
+### Assault on Giant Mountain, land 6, cell 66,16
+
+Observed as east, mask 205. Center tile is wrapped in brackets.
+
+```text
+  10   111    60    93    31
+  75   111    10    94    94
+   8   111  [ 18]   76     1
+  17   111     2    97   110
+  10   111    10   111   102
+```
+
+## 16. Landlook 4 Forest Tile 127
+
+- Priority: medium
+- Evidence: 936 placement(s)
+- Suggested role: single (54%)
+- Human-approved role(s): none
+- Legacy fallback role(s): south, capSouth
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 75,26
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+  24    24    24    34    40
+ 170   111   145    38    40
+ 170   111  [127]   38    40
+ 124   111   111    38    40
+ 176   111   111    38    40
+```
+
+### Assault on Giant Mountain, land 4, cell 39,9
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ 111    16     1     1    14
+ 111   111   111   111   111
+ 131   131  [127]  176   111
+   1     1    11     1    76
+ 111   111     2   149   111
+```
+
+### Assault on Giant Mountain, land 5, cell 9,5
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+   2   111   158     2    93
+  10   111   162    48    39
+  60   152  [127]   38    40
+  12     9    76    32    40
+ 152   111   111    38    40
+```
+
+## 17. Landlook 4 Mountains Tile 73
+
+- Priority: high
+- Evidence: 2217 placement(s)
+- Suggested role: center (23%)
+- Human-approved role(s): none
+- Legacy fallback role(s): notchSouthEast
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 62,17
+
+Observed as north, mask 110. Center tile is wrapped in brackets.
+
+```text
+ 111   111    40    40    40
+ 111   111   111   111   111
+  72    72  [ 73]   73    73
+  72    73    73    73    73
+  72    72    73    73    73
+```
+
+### Assault on Giant Mountain, land 5, cell 63,9
+
+Observed as capSouth, mask 132. Center tile is wrapped in brackets.
+
+```text
+ 111   111   111    38    40
+   7    74     9    32    40
+  70   102  [ 73]   53    40
+  70   102    73    38    40
+  98   103    99    38    40
+```
+
+### Castle in the Clouds, land 5, cell 46,72
+
+Observed as capEast, mask 2. Center tile is wrapped in brackets.
+
+```text
+  98   111   111   111   111
+   1     1     1     1     1
+ 111   111  [ 73]   73    73
+  39    39    39    39    39
+  40    40    40    40    40
+```
+
+## 18. Landlook 4 Water Tile 11
+
+- Priority: high
+- Evidence: 487 placement(s)
+- Suggested role: north (28%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 73,29
+
+Observed as northEast, mask 188. Center tile is wrapped in brackets.
+
+```text
+  35    25   124   111   111
+  40    25   176   111   111
+  26     6  [ 11]   76     9
+   2   152    10   111   111
+  77   111    48    28   486
+```
+
+### Assault on Giant Mountain, land 4, cell 39,10
+
+Observed as north, mask 78. Center tile is wrapped in brackets.
+
+```text
+ 111   111   111   111   111
+ 131   131   127   176   111
+   1     1  [ 11]    1    76
+ 111   111     2   149   111
+ 111   111     2   149   152
+```
+
+### Assault on Giant Mountain, land 5, cell 2,3
+
+Observed as west, mask 199. Center tile is wrapped in brackets.
+
+```text
+  25    98   140    10   111
+  25   111   111    77   111
+  25    76  [ 11]   12    13
+  25   111     2   120    60
+  25   111     2    98    60
+```
+
+## 19. Landlook 4 Forest Tile 129
+
+- Priority: medium
+- Evidence: 235 placement(s)
+- Suggested role: single (52%)
+- Human-approved role(s): none
+- Legacy fallback role(s): west, capWest
+- Review reasons: mixed-structural-roles
+- Decision: pending
+
+### Araman's Ring, land 1, cell 10,1
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ out   out   out   out   out
+  24    24    24    24    24
+ 111   111  [129]  111   111
+  97   111   111    97   111
+ 111   111   111   111   111
+```
+
+### Assault on Giant Mountain, land 4, cell 31,1
+
+Observed as capSouth, mask 4. Center tile is wrapped in brackets.
+
+```text
+ out   out   out   out   out
+  40    36    24    24    24
+  40    25  [129]  111   111
+  40    25   129   111   111
+  40    25   129   111   111
+```
+
+### Assault on Giant Mountain, land 5, cell 5,7
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+  98    60   111   111    60
+ 111    18     1    74    12
+ 126    60  [129]   91   152
+ 148    10   131   111   111
+ 137    10   145   111   111
+```
+
+## 20. Landlook 4 Mountains Tile 68
+
+- Priority: high
+- Evidence: 384 placement(s)
+- Suggested role: single (24%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 28,1
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ out   out   out   out   out
+  24    24    24    34    40
+ 111   111  [ 68]   38    40
+ 111   111   111    38    40
+ 111   111    98    38    40
+```
+
+### City of Bywater, land 4, cell 7,39
+
+Observed as single, mask 64. Center tile is wrapped in brackets.
+
+```text
+  59    65   111    60   182
+  38    25   111    60    72
+  38    25  [ 68]   60    72
+  59    65   111    16     1
+  35    25   111   111   111
+```
+
+### City of Bywater, land 6, cell 69,16
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ 111    91    91    91    91
+  76    11     1     1     9
+ 111    10  [ 68]  111   111
+ 111    60   111   111   111
+ 111     2   111   111   111
+```
+
+## 21. Landlook 4 Water Tile 58
+
+- Priority: high
+- Evidence: 320 placement(s)
+- Suggested role: center (28%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 69,26
+
+Observed as northEast, mask 252. Center tile is wrapped in brackets.
+
+```text
+  72    36    29   111    38
+  72    25    98   111    38
+  72    25  [ 58]   97    38
+  72    37    39    39    35
+  72    40    40    40    40
+```
+
+### Assault on Giant Mountain, land 5, cell 15,4
+
+Observed as north, mask 110. Center tile is wrapped in brackets.
+
+```text
+  41    24    24    24    41
+  94    94    94    94    94
+  39    28  [ 58]   39    39
+  40    40    40    40    40
+  40    40    40    40    40
+```
+
+### Assault on Giant Mountain, land 6, cell 4,13
+
+Observed as center, mask 255. Center tile is wrapped in brackets.
+
+```text
+  40    40    25   111     2
+  40    36    29   111     2
+  40    42  [ 58]  111    77
+  40    37    25   111     2
+  40    40    42   111    16
+```
+
+## 22. Landlook 4 Forest Tile 122
+
+- Priority: medium
+- Evidence: 81 placement(s)
+- Suggested role: single (53%)
+- Human-approved role(s): none
+- Legacy fallback role(s): southWest, notchSouthWest
+- Review reasons: mixed-structural-roles
+- Decision: pending
+
+### City of Bywater, land 4, cell 1,64
+
+Observed as capSouth, mask 4. Center tile is wrapped in brackets.
+
+```text
+ out    25   136   136     2
+ out    33     1     1    12
+ out    25  [122]  111   111
+ out    25   122   111   111
+ out    25   122   111   111
+```
+
+### City of Bywater, land 7, cell 30,52
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+  40    40    40    40    40
+  36    41    41    41    34
+  25   111  [122]  107    38
+  37    39    28   111    38
+  40    40    25    91    38
+```
+
+### City of Port Hyrtin, land 8, cell 45,5
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+  36    24    24    24    24
+  25    95    95    95    80
+  42    95  [122]   95    89
+  25    95    95    95    89
+  42    95   122    95    89
+```
+
+## 23. Landlook 4 Mountains Tile 61
+
+- Priority: high
+- Evidence: 2839 placement(s)
+- Suggested role: lineHorizontal (33%)
+- Human-approved role(s): none
+- Legacy fallback role(s): center, single
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Assault on Giant Mountain, land 4, cell 3,6
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ 156   156   111    15     1
+ 157   157   111     2   140
+   1     1  [ 61]   14   140
+ 156   156   151   151   111
+ 157   157   111   111   111
+```
+
+### Assault on Giant Mountain, land 5, cell 51,8
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+  25   111   163   111    38
+  42   152   164   123    38
+  33     1  [ 61]    1    32
+  43   141   142   143    38
+  43   -200   -202   -204    59
+```
+
+### Assault on Giant Mountain, land 6, cell 58,5
+
+Observed as capEast, mask 2. Center tile is wrapped in brackets.
+
+```text
+  40    25   138   138   138
+  40    25   138   138   138
+  40    33  [ 61]   61    61
+  40    25   139   137   137
+  40    25   139   137   137
+```
+
+## 24. Landlook 4 Water Tile 5
+
+- Priority: high
+- Evidence: 186 placement(s)
+- Suggested role: northEast (29%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 73,50
+
+Observed as east, mask 253. Center tile is wrapped in brackets.
+
+```text
+ 111   103    99    99    99
+ 152   111   111   111   111
+  39    39  [  5]   76     3
+  40    40    25   111    38
+  40    40    25   111    38
+```
+
+### Assault on Giant Mountain, land 5, cell 18,4
 
 Observed as northEast, mask 76. Center tile is wrapped in brackets.
 
 ```text
- 191   191   192   166   191 
-  70   166   192   191   192 
-  61    78  [ 69]  191   191 
-  61    61    80   191   192 
-  61    61    61    77    69 
+  24    41    24    24    24
+  94    94    94    94    94
+  39    39  [  5]   76     3
+  40    40    25    93    38
+  40    40    42    94    38
 ```
 
-## 42. Landlook 5 Water Tile 107
+### Assault on Giant Mountain, land 6, cell 19,13
+
+Observed as northEast, mask 108. Center tile is wrapped in brackets.
+
+```text
+  41    66   144   161    93
+ 111    75   144   162    94
+  39    27  [  5]   76     9
+  40    40    25   111   111
+  40    40    25   111   111
+```
+
+## 25. Landlook 4 Forest Tile 121
+
+- Priority: medium
+- Evidence: 13 placement(s)
+- Suggested role: single (69%)
+- Human-approved role(s): none
+- Legacy fallback role(s): center, single
+- Review reasons: confirmation
+- Decision: pending
+
+### City of Bywater, land 4, cell 9,18
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+  38    36    24    34    40
+  38    25   111    38    40
+  38    25  [121]   38    40
+  38    37    39    35    40
+  31    24    24    34    40
+```
+
+### City of Port Hyrtin, land 8, cell 86,26
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ 111   111    58     2   111
+   1     1     1    17   111
+ 155   155  [121]    2    58
+  39    39    39    27    39
+  40    40    40    40    40
+```
+
+### Grilochs Revenge, land 8, cell 48,43
+
+Observed as lineVertical, mask 5. Center tile is wrapped in brackets.
+
+```text
+  40    25   111   138   111
+  40    25   126   111   111
+  40    25  [121]  111   111
+  40    25   121   111   111
+  40    25   121   111   111
+```
+
+## 26. Landlook 4 Mountains Tile 92
 
 - Priority: high
-- Evidence: 7 placement(s)
-- Suggested role: capWest (57%)
+- Evidence: 80 placement(s)
+- Suggested role: single (34%)
 - Human-approved role(s): none
 - Legacy fallback role(s): none
-- Review reasons: insufficient-evidence
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
 - Decision: pending
 
-### Destroy the Necronomicon, land 3, cell 69,35
+### Araman's Ring, land 1, cell 70,32
 
-Observed as capWest, mask 72. Center tile is wrapped in brackets.
-
-```text
-  71    61    61    61    61 
- 191    71    61    61    61 
-  27    48  [107]   61    61 
-  21    51    83    61    61 
-  28    66    61    61    61 
-```
-
-### Search for the Lost City, land 3, cell 88,5
-
-Observed as capWest, mask 72. Center tile is wrapped in brackets.
+Observed as single, mask 16. Center tile is wrapped in brackets.
 
 ```text
- 113   192   191    85   out 
-  99   191    65    61   out 
- 191    48  [107]   61   out 
- 192    39    72    61   out 
-  38    51   192    83   out 
+  40    25   134     2   152
+  40    42   111    77   111
+  40    25  [ 92]    2   111
+  40    37    39    49   111
+  40    36    24     6    13
 ```
 
-## 43. Landlook 9 Forest Tile 127
+### Assault on Giant Mountain, land 5, cell 3,80
 
-- Priority: critical
-- Evidence: 240 placement(s)
-- Suggested role: west (90%)
+Observed as lineVertical, mask 5. Center tile is wrapped in brackets.
+
+```text
+  40    37    62    39    39
+  40    36    64    41    41
+  40    25  [ 92]  120    92
+  40    25    92   111    92
+  40    25    92   111    92
+```
+
+### City of Bywater, land 4, cell 17,20
+
+Observed as capSouth, mask 4. Center tile is wrapped in brackets.
+
+```text
+  40    25   127   126   127
+  40    25   111   -99   111
+  40    42  [ 92]  111   111
+  40    25    92   111   111
+  40    25    92   111   111
+```
+
+## 27. Landlook 4 Water Tile 107
+
+- Priority: high
+- Evidence: 93 placement(s)
+- Suggested role: single (30%)
 - Human-approved role(s): none
-- Legacy fallback role(s): south, capSouth
-- Review reasons: curated-role-disagreement
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
 - Decision: pending
 
-### Assault on Giant Mountain, land 2, cell 17,63
+### Araman's Ring, land 1, cell 76,45
 
-Observed as west, mask 55. Center tile is wrapped in brackets.
-
-```text
-  61    81   159   123   121 
-  61    82   123   121   121 
-  61    81  [127]  121   121 
-  61    82   127   121   121 
-  61    80   122   121   121 
-```
-
-### City of Port Hyrtin, land 5, cell 26,26
-
-Observed as west, mask 119. Center tile is wrapped in brackets.
+Observed as southWest, mask 51. Center tile is wrapped in brackets.
 
 ```text
-  61    81   118   123   128 
-  61    81   123   121   121 
-  74    64  [127]  121   121 
- 123   128   121   121   121 
- 121   121   121   121   121 
+ 111   111    91    31    24
+ 100   100   106   111   111
+  73    73  [107]   30    39
+ 181    73    73    53    40
+  73    73   108    31    24
 ```
 
-### Dark Portal, land 8, cell 12,8
+### Assault on Giant Mountain, land 6, cell 65,7
 
-Observed as west, mask 183. Center tile is wrapped in brackets.
+Observed as southWest, mask 35. Center tile is wrapped in brackets.
 
 ```text
- 129   121   121   121   121 
- 120   122   121   121   121 
- 119   120  [127]  121   121 
- 120   119   127   121   121 
- 155   120   127   121   121 
+  20    95    95    95    95
+  95    95   108    99   110
+  95    95  [107]   21   109
+  99    99    99    10    99
+ 180    15    76    19    76
 ```
 
-## 44. Landlook 9 Mountains Tile 62
+### Begining of the End, land 2, cell 12,87
 
-- Priority: critical
-- Evidence: 328 placement(s)
-- Suggested role: southEast (89%)
+Observed as northEast, mask 236. Center tile is wrapped in brackets.
+
+```text
+ 155     2   101   155   159
+ 155     2   101   155   162
+ 180     2  [107]  100   100
+  39    27    39    39    39
+  40    40    40    40    40
+```
+
+## 28. Landlook 4 Mountains Tile 93
+
+- Priority: medium
+- Evidence: 1306 placement(s)
+- Suggested role: lineVertical (42%)
 - Human-approved role(s): none
-- Legacy fallback role(s): east, lineVertical
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
 - Decision: pending
 
-### Assault on Giant Mountain, land 2, cell 60,1
+### Assault on Giant Mountain, land 5, cell 11,1
 
-Observed as south, mask 251. Center tile is wrapped in brackets.
+Observed as northEast, mask 12. Center tile is wrapped in brackets.
 
 ```text
- out   out   out   out   out 
-  61    61    61    61    61 
-  61    61  [ 62]   85    61 
-  61    82   -1016    83    61 
-  61    81   156    85    61 
+ out   out   out   out   out
+  24    26    24    34    40
+ 111    77  [ 93]   38    40
+ 126     2    93    31    41
+ 158     2    93    94    94
 ```
 
-### City of Bywater, land 3, cell 4,2
+### Assault on Giant Mountain, land 6, cell 21,5
+
+Observed as single, mask 32. Center tile is wrapped in brackets.
+
+```text
+  40    40    40    40    40
+  41    41    41    41    41
+ 144   158  [ 93]   94    93
+ 144   159    94    93    94
+ 144   161    93    94    93
+```
+
+### City of Bywater, land 6, cell 6,83
+
+Observed as northWest, mask 38. Center tile is wrapped in brackets.
+
+```text
+  29   111    30    39    39
+ 111   152    31    41    24
+ 111   111  [ 93]   93    93
+ 111   111    93    93    93
+ 111   152    30    39    39
+```
+
+## 29. Landlook 4 Water Tile 109
+
+- Priority: high
+- Evidence: 81 placement(s)
+- Suggested role: single (31%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Assault on Giant Mountain, land 6, cell 67,7
+
+Observed as southEast, mask 73. Center tile is wrapped in brackets.
+
+```text
+  95    95    95    95    22
+ 108    99   110    95    95
+ 107    21  [109]   95    95
+  99    10    99    99    99
+  76    19    76    13   179
+```
+
+### Begining of the End, land 2, cell 16,87
+
+Observed as capEast, mask 114. Center tile is wrapped in brackets.
+
+```text
+ 159   155   102     2   155
+ 162   155   102     2   155
+ 100   100  [109]    2   155
+  39    39    62    27    62
+  40    40    96    96    96
+```
+
+### Castle in the Clouds, land 5, cell 16,27
+
+Observed as capNorth, mask 1. Center tile is wrapped in brackets.
+
+```text
+  36    29   111   111   111
+  25   117   105   100   100
+  25   100  [109]   71    71
+  54    71    71    71    71
+  25    99   110    71    71
+```
+
+## 30. Landlook 4 Mountains Tile 86
+
+- Priority: medium
+- Evidence: 318 placement(s)
+- Suggested role: center (44%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 66,42
+
+Observed as center, mask 239. Center tile is wrapped in brackets.
+
+```text
+ 142   143    31    24    34
+  90    90    81   152    38
+  78    78  [ 86]   81    38
+  78    78    78    89    38
+  78    78    78    89    47
+```
+
+### Assault on Giant Mountain, land 6, cell 43,16
+
+Observed as south, mask 235. Center tile is wrapped in brackets.
+
+```text
+  29    87    31    34    40
+  83    78    85    31    34
+  84    78  [ 86]   85    31
+  21    78    21    86    85
+  45   111    46    78    78
+```
+
+### City of Bywater, land 4, cell 25,7
+
+Observed as center, mask 255. Center tile is wrapped in brackets.
+
+```text
+  79    90    90    90    90
+  88    78    80    82    78
+  88    78  [ 86]   84    78
+  85    87    87    87    87
+ 111   111   -99   111   111
+```
+
+## 31. Landlook 4 Water Tile 49
+
+- Priority: high
+- Evidence: 234 placement(s)
+- Suggested role: northEast (33%)
+- Human-approved role(s): none
+- Legacy fallback role(s): notchSouthEast
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 71,33
+
+Observed as center, mask 127. Center tile is wrapped in brackets.
+
+```text
+  42   111    77   111    48
+  25    92     2   111    47
+  37    39  [ 49]  111    23
+  36    24     6    13   111
+  25   131   130     2   111
+```
+
+### Assault on Giant Mountain, land 5, cell 24,4
+
+Observed as northEast, mask 92. Center tile is wrapped in brackets.
+
+```text
+  24    24    66   111   111
+  94    94    77   111   111
+  39    39  [ 49]   97   111
+  40    40    42    98    97
+  40    40    37    39    39
+```
+
+### Assault on Giant Mountain, land 6, cell 8,8
+
+Observed as east, mask 205. Center tile is wrapped in brackets.
+
+```text
+ 111   111    15     1    12
+ 111   111    60   152   126
+  30    39  [ 49]  169   127
+  38    40    43   170   127
+  47    24     6     1    11
+```
+
+## 32. Landlook 4 Mountains Tile 82
+
+- Priority: medium
+- Evidence: 310 placement(s)
+- Suggested role: center (45%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 64,45
+
+Observed as center, mask 191. Center tile is wrapped in brackets.
+
+```text
+  88    78    78    78    78
+  88    78    78    78    78
+  85    87  [ 82]   78    78
+ 177   178    88    78    78
+  79    90    84    78    78
+```
+
+### Assault on Giant Mountain, land 6, cell 40,19
+
+Observed as east, mask 173. Center tile is wrapped in brackets.
+
+```text
+  29    83    84    21    78
+  89    78    78    45   111
+  28    81  [ 82]   16     9
+  37    28    81    82    78
+  40    37    28    81    78
+```
+
+### City of Bywater, land 4, cell 26,6
+
+Observed as center, mask 255. Center tile is wrapped in brackets.
+
+```text
+  23    91    23   111   111
+  90    90    90    90    81
+  78    80  [ 82]   78    89
+  78    86    84    78    89
+  87    87    87    87    83
+```
+
+## 33. Landlook 4 Water Tile 1
+
+- Priority: high
+- Evidence: 6081 placement(s)
+- Suggested role: lineHorizontal (33%)
+- Human-approved role(s): none
+- Legacy fallback role(s): northWest, capEast
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 61,27
+
+Observed as south, mask 139. Center tile is wrapped in brackets.
+
+```text
+  72     8   111   111   111
+  72     8   111   135   111
+  72    16  [  1]    1     1
+  72    72    72    72    72
+  72    72    36    24    34
+```
+
+### Assault on Giant Mountain, land 4, cell 39,3
+
+Observed as center, mask 191. Center tile is wrapped in brackets.
+
+```text
+ 111   111   111   111   111
+ 111   111   111   111   111
+ 111    15  [  1]    1    13
+ 111    77   111   111     2
+ 111    60   158   126     2
+```
+
+### Assault on Giant Mountain, land 5, cell 5,6
 
 Observed as southEast, mask 217. Center tile is wrapped in brackets.
 
 ```text
-  61    61    61    61    61 
-  61    61    61    75    63 
-  61    61  [ 62]  161   162 
-  61    63   165   167   162 
-  64   162   166   165   162 
+ 120    60   111   111    10
+  98    60   111   111    60
+ 111    18  [  1]   74    12
+ 126    60   129    91   152
+ 148    10   131   111   111
 ```
 
-### City of Port Hyrtin, land 5, cell 41,3
+## 34. Landlook 4 Mountains Tile 80
 
-Observed as southEast, mask 153. Center tile is wrapped in brackets.
-
-```text
-  61    61    61    61    61 
-  61    61    61    75    75 
-  74    76  [ 62]  155   158 
- 167   155   159   157   155 
- 161   155   155   155   167 
-```
-
-## 45. Landlook 9 Water Tile 4
-
-- Priority: critical
-- Evidence: 310 placement(s)
-- Suggested role: east (88%)
+- Priority: medium
+- Evidence: 284 placement(s)
+- Suggested role: center (51%)
 - Human-approved role(s): none
-- Legacy fallback role(s): northEast, capNorth
-- Review reasons: curated-role-disagreement
+- Legacy fallback role(s): west
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
 - Decision: pending
 
-### Assault on Giant Mountain, land 2, cell 5,14
+### Araman's Ring, land 1, cell 66,50
+
+Observed as center, mask 223. Center tile is wrapped in brackets.
+
+```text
+  78    78    78    89    48
+  78    78    78    89    38
+  78    78  [ 80]   83    38
+  87    87    83   152    38
+ 142   143    30    39    35
+```
+
+### Assault on Giant Mountain, land 5, cell 6,76
 
 Observed as east, mask 205. Center tile is wrapped in brackets.
 
 ```text
-  80   158    18    16    85 
-  81    17    15    67    61 
-  82     3  [  4]   84    61 
-  80     3     4   182   169 
-  62    18     4    85    61 
+  83    84    78    16    76
+  84    78    78   111   111
+  78    78  [ 80]  105   100
+  78    80    79   102    73
+  39    39    39    39    62
 ```
 
-### City of Bywater, land 3, cell 66,18
+### Assault on Giant Mountain, land 6, cell 44,19
+
+Observed as west, mask 87. Center tile is wrapped in brackets.
+
+```text
+  78    21    86    85    31
+ 111    46    78    78    88
+   9    14  [ 80]   79    30
+  78    80    79    30    35
+  78    79    30    35    40
+```
+
+## 35. Landlook 4 Water Tile 10
+
+- Priority: high
+- Evidence: 691 placement(s)
+- Suggested role: lineVertical (33%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 73,30
+
+Observed as west, mask 231. Center tile is wrapped in brackets.
+
+```text
+  40    25   176   111   111
+  26     6    11    76     9
+   2   152  [ 10]  111   111
+  77   111    48    28   486
+   2   111    47    29   111
+```
+
+### Assault on Giant Mountain, land 5, cell 3,1
+
+Observed as southWest, mask 243. Center tile is wrapped in brackets.
+
+```text
+ out   out   out   out   out
+  76    24    26    24    41
+  98   140  [ 10]  111   111
+ 111   111    77   111   111
+  76    11    12    13   111
+```
+
+### Assault on Giant Mountain, land 6, cell 65,2
+
+Observed as center, mask 191. Center tile is wrapped in brackets.
+
+```text
+  41    24    26    76    26
+ 111   111     2   111     2
+ 111   111  [ 10]  111    10
+ 105   100    23   111    23
+ 102    95    95    95    95
+```
+
+## 36. Landlook 4 Mountains Tile 89
+
+- Priority: medium
+- Evidence: 1244 placement(s)
+- Suggested role: east (47%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles
+- Decision: pending
+
+### Araman's Ring, land 1, cell 67,43
 
 Observed as east, mask 205. Center tile is wrapped in brackets.
 
 ```text
- 160   156   156   156   156 
- 156    25    27   157   158 
-   1    30  [  4]  160   157 
-  34    33     4   156   155 
-   2     2    28   156   158 
+  90    81   152    38    40
+  78    86    81    38    40
+  78    78  [ 89]   38    40
+  78    78    89    47    34
+  78    78    89    23    31
 ```
 
-### Dark Portal, land 8, cell 40,3
+### Assault on Giant Mountain, land 5, cell 79,17
 
-Observed as east, mask 205. Center tile is wrapped in brackets.
+Observed as lineVertical, mask 133. Center tile is wrapped in brackets.
 
 ```text
-  60    87    74    61    75 
-  60    60    19    95   165 
-  60    60  [  4]   95    65 
-  60    60     4    95    83 
-  60    60     4    95    84 
+ 111    31    24    34    40
+  79    90    81    38    40
+  88    95  [ 89]   38    40
+  88    95    89    38    40
+  85    87    83    38    40
 ```
 
-## 46. Landlook 10 Forest Tile 129
+### Assault on Giant Mountain, land 6, cell 38,18
 
-- Priority: critical
-- Evidence: 158 placement(s)
-- Suggested role: south (99%)
+Observed as capEast, mask 50. Center tile is wrapped in brackets.
+
+```text
+  34    40    36    29    83
+  31    26    29    83    84
+ 143    60  [ 89]   78    78
+  30    27    28    81    82
+  35    40    37    28    81
+```
+
+## 37. Landlook 4 Water Tile 6
+
+- Priority: high
+- Evidence: 183 placement(s)
+- Suggested role: southEast (35%)
 - Human-approved role(s): none
-- Legacy fallback role(s): west, capWest
-- Review reasons: curated-role-disagreement
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
 - Decision: pending
 
-### Dark Portal, land 12, cell 79,32
+### Araman's Ring, land 1, cell 72,29
 
-Observed as south, mask 155. Center tile is wrapped in brackets.
-
-```text
- 121   121   121   121   121 
- 122   121   121   121   121 
- 156   122  [129]  129   125 
- 120   156    67    78    79 
- 119    66    61    61    61 
-```
-
-### Dungeon Map Test, land 0, cell 21,13
-
-Observed as south, mask 187. Center tile is wrapped in brackets.
+Observed as south, mask 235. Center tile is wrapped in brackets.
 
 ```text
- 127   121   121   121   121 
- 122   121   121   121   121 
- 120   122  [129]  121   121 
- 118   118   118   127   121 
- 158   119   118   122   121 
+  39    35    25   124   111
+  40    40    25   176   111
+  24    26  [  6]   11    76
+ 134     2   152    10   111
+ 111    77   111    48    28
 ```
 
-### Half Truth, land 5, cell 78,25
+### Assault on Giant Mountain, land 5, cell 18,11
 
-Observed as south, mask 251. Center tile is wrapped in brackets.
+Observed as northEast, mask 172. Center tile is wrapped in brackets.
 
 ```text
- 121   121   128   124    72 
- 121   121   121   121   128 
- 121   121  [129]  121   121 
- 121   126   158   127   121 
- 121   121   128   121   121 
+  40    40    42    93    38
+  40    40   -192   -191   -190
+  24    26  [  6]   76     4
+ 111    77   111   111   111
+   1    17   111   152   111
 ```
 
-## 47. Landlook 10 Mountains Tile 73
+### Assault on Giant Mountain, land 6, cell 8,10
 
-- Priority: critical
-- Evidence: 246 placement(s)
-- Suggested role: southWest (72%)
+Observed as center, mask 143. Center tile is wrapped in brackets.
+
+```text
+  30    39    49   169   127
+  38    40    43   170   127
+  47    24  [  6]    1    11
+   2   152   111   152     2
+   2   111   111   137    60
+```
+
+## 38. Landlook 4 Mountains Tile 66
+
+- Priority: medium
+- Evidence: 198 placement(s)
+- Suggested role: capSouth (49%)
 - Human-approved role(s): none
-- Legacy fallback role(s): notchSouthEast
-- Review reasons: curated-role-disagreement, many-neighbor-shapes
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles
 - Decision: pending
 
-### Dagger of Shine, land 5, cell 59,14
+### Assault on Giant Mountain, land 5, cell 24,2
+
+Observed as capSouth, mask 4. Center tile is wrapped in brackets.
+
+```text
+  40    40    36    41    24
+  40    40    42   152   111
+  24    24  [ 66]  111   111
+  94    94    77   111   111
+  39    39    49    97   111
+```
+
+### Assault on Giant Mountain, land 6, cell 18,11
+
+Observed as capSouth, mask 4. Center tile is wrapped in brackets.
+
+```text
+  40    40    25   144   159
+  40    40    25   144   159
+  24    41  [ 66]  144   161
+ 111   111    75   144   162
+  39    39    27     5    76
+```
+
+### Castle in the Clouds, land 5, cell 33,45
+
+Observed as single, mask 16. Center tile is wrapped in brackets.
+
+```text
+  40    40    25   111   111
+  40    40    33    61    61
+  24    24  [ 66]  111   111
+ 111   111     2   111    91
+ 111   111     2   111   111
+```
+
+## 39. Landlook 4 Water Tile 105
+
+- Priority: high
+- Evidence: 265 placement(s)
+- Suggested role: lineHorizontal (35%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 72,44
+
+Observed as southEast, mask 25. Center tile is wrapped in brackets.
+
+```text
+  36    24    41     6    76
+  43   152   111   111   111
+  43   111  [105]  100   100
+  29   490   102    73    73
+  91   111   102    73   181
+```
+
+### Assault on Giant Mountain, land 5, cell 75,7
+
+Observed as southEast, mask 217. Center tile is wrapped in brackets.
+
+```text
+  40    40    40    40    40
+  40    36    24    24    24
+  40    25  [105]  100   106
+  41    29   102    95   101
+  93    93   102    95   101
+```
+
+### Assault on Giant Mountain, land 6, cell 63,3
+
+Observed as southEast, mask 217. Center tile is wrapped in brackets.
+
+```text
+   2    98   111   111     2
+   2   111   111   111    10
+  10   111  [105]  100    23
+  77   111   102    95    95
+  19     1    20    95    95
+```
+
+## 40. Landlook 4 Mountains Tile 88
+
+- Priority: medium
+- Evidence: 1165 placement(s)
+- Suggested role: west (51%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles
+- Decision: pending
+
+### Araman's Ring, land 1, cell 62,43
+
+Observed as west, mask 55. Center tile is wrapped in brackets.
+
+```text
+  40    25   152    79    90
+  40    43    79    84    78
+  40    43  [ 88]   78    78
+  40    43    88    78    78
+  40    42    85    87    82
+```
+
+### Assault on Giant Mountain, land 5, cell 77,17
+
+Observed as lineVertical, mask 21. Center tile is wrapped in brackets.
+
+```text
+ 113   111   111    31    24
+ 116   111    79    90    81
+ 152   475  [ 88]   95    89
+ 475   176    88    95    89
+  28   111    85    87    83
+```
+
+### Assault on Giant Mountain, land 6, cell 46,18
+
+Observed as capWest, mask 200. Center tile is wrapped in brackets.
+
+```text
+  85    31    34    40    40
+  86    85    31    34    40
+  78    78  [ 88]   38    96
+  80    79    30    35    40
+  79    30    35    40    40
+```
+
+## 41. Landlook 4 Water Tile 106
+
+- Priority: high
+- Evidence: 97 placement(s)
+- Suggested role: southWest (35%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 76,44
+
+Observed as northWest, mask 182. Center tile is wrapped in brackets.
+
+```text
+  76     4    41    34    40
+ 111   111    91    31    24
+ 100   100  [106]  111   111
+  73    73   107    30    39
+ 181    73    73    53    40
+```
+
+### Assault on Giant Mountain, land 5, cell 77,7
 
 Observed as southWest, mask 179. Center tile is wrapped in brackets.
 
 ```text
-  74    61    61    61    61 
- 158    71    61    61    61 
- 162   160  [ 73]   61    61 
- 155   160   155    85    61 
- 155   155   156    73    75 
+  40    40    40    40    40
+  24    24    24    34    40
+ 105   100  [106]   38    40
+ 102    95   101    38    40
+ 102    95   101    38    40
 ```
 
-### Dark Portal, land 11, cell 86,2
+### Assault on Giant Mountain, land 6, cell 69,3
 
-Observed as center, mask 191. Center tile is wrapped in brackets.
+Observed as southWest, mask 179. Center tile is wrapped in brackets.
 
 ```text
-  61    61    61    61    61 
-  61    61    61    61    61 
-  61    64  [ 73]   61    61 
-  63   -1002    67    61    61 
- 156    67    61    61    61 
+   2   111   111    97     2
+  10   111   111   111     2
+  23   100  [106]  111    10
+  95    95   101   111    75
+  95    95    22     1    19
 ```
 
-### Dark Portal, land 12, cell 77,42
+## 42. Landlook 4 Mountains Tile 72
 
-Observed as southWest, mask 19. Center tile is wrapped in brackets.
-
-```text
- 156   156    85    61    61 
- 155   158    83    61    61 
- 157   158  [ 73]   74    63 
- 119   157   156   156   155 
- 158   158   118   157   158 
-```
-
-## 48. Landlook 10 Water Tile 45
-
-- Priority: high
-- Evidence: 6 placement(s)
-- Suggested role: north (50%)
+- Priority: medium
+- Evidence: 2456 placement(s)
+- Suggested role: center (51%)
 - Human-approved role(s): none
-- Legacy fallback role(s): none
-- Review reasons: insufficient-evidence, mixed-structural-roles
+- Legacy fallback role(s): southWest, notchSouthWest
+- Review reasons: mixed-structural-roles
 - Decision: pending
 
-### Hax, land 5, cell 50,51
+### Araman's Ring, land 1, cell 59,17
 
-Observed as center, mask 191. Center tile is wrapped in brackets.
+Observed as northWest, mask 38. Center tile is wrapped in brackets.
 
 ```text
-  56    60    60    60    31 
-  11    23     2     2    28 
- 158    49  [ 45]   50   158 
- 155   155    39    49    50 
- 155   158    39   155    49 
+ 111   111   111   111   111
+ 111   111   111   111   111
+ 111   111  [ 72]   72    72
+ 111   111    72    72    73
+  72    72    72    72    72
 ```
 
-### Price of Power, land 1, cell 71,23
+### City of Bywater, land 4, cell 10,36
 
-Observed as north, mask 158. Center tile is wrapped in brackets.
+Observed as capWest, mask 136. Center tile is wrapped in brackets.
 
 ```text
-  49    50   156    39   127 
- 155    39   155    39   127 
- 157    49  [ 45]   51   127 
- 155   155    39   155   127 
- 160   155    39   158   127 
+  40    96    40    40    40
+  26    64    51    24    24
+  60    70  [ 72]  182    72
+  60   182   182   182    72
+  60    72    72   182    72
 ```
 
-### War in the Sword Lands, land 4, cell 71,12
+### City of Bywater, land 7, cell 1,31
 
-Observed as north, mask 142. Center tile is wrapped in brackets.
+Observed as northWest, mask 38. Center tile is wrapped in brackets.
 
 ```text
-  50   157   159   156   158 
-  49    50   164   156    48 
- 158    49  [ 45]   38    51 
- 156   157    39   158   165 
- 160   167    39   163    67 
+ out    25   111   175   111
+ out    25   107   100   106
+ out    50  [ 72]   72   107
+ out    50    72    72    72
+ out    50    72    72    72
+```
+
+## 43. Landlook 4 Water Tile 3
+
+- Priority: high
+- Evidence: 193 placement(s)
+- Suggested role: northWest (35%)
+- Human-approved role(s): none
+- Legacy fallback role(s): north, capSouth
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 75,50
+
+Observed as west, mask 247. Center tile is wrapped in brackets.
+
+```text
+  99    99    99   104   111
+ 111   111   111   111    30
+   5    76  [  3]   39    35
+  25   111    38    40    40
+  25   111    38    40    40
+```
+
+### Assault on Giant Mountain, land 4, cell 40,32
+
+Observed as center, mask 255. Center tile is wrapped in brackets.
+
+```text
+ 111     2   111    16    76
+ 111     2   111   111   111
+ 111    16  [  3]   39    39
+ 111   111    38    40    40
+ 111   111    38    40    40
+```
+
+### Assault on Giant Mountain, land 5, cell 20,4
+
+Observed as northWest, mask 38. Center tile is wrapped in brackets.
+
+```text
+  24    24    24    41    24
+  94    94    94    94    94
+   5    76  [  3]   39    39
+  25    93    38    40    40
+  42    94    38    40    40
+```
+
+## 44. Landlook 4 Mountains Tile 90
+
+- Priority: medium
+- Evidence: 1145 placement(s)
+- Suggested role: north (51%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles
+- Decision: pending
+
+### Araman's Ring, land 1, cell 64,41
+
+Observed as north, mask 110. Center tile is wrapped in brackets.
+
+```text
+  40    36    41    41    34
+  24    29   142   143    31
+ 152    79  [ 90]   90    81
+  79    84    78    78    86
+  88    78    78    78    78
+```
+
+### Assault on Giant Mountain, land 5, cell 78,16
+
+Observed as lineHorizontal, mask 106. Center tile is wrapped in brackets.
+
+```text
+  76     9    32    40    40
+ 111   111    31    24    34
+ 111    79  [ 90]   81    38
+ 475    88    95    89    38
+ 176    88    95    89    38
+```
+
+### Assault on Giant Mountain, land 6, cell 42,22
+
+Observed as lineVertical, mask 149. Center tile is wrapped in brackets.
+
+```text
+  81    82    78    80    79
+  28    81    78    79    30
+  37    28  [ 90]   30    35
+  40    33    76    32    40
+  36    29   111    31    34
+```
+
+## 45. Landlook 4 Water Tile 9
+
+- Priority: high
+- Evidence: 551 placement(s)
+- Suggested role: lineHorizontal (35%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 75,29
+
+Observed as west, mask 247. Center tile is wrapped in brackets.
+
+```text
+ 124   111   111    38    40
+ 176   111   111    38    40
+  11    76  [  9]   19    24
+  10   111   111     2   111
+  48    28   486    77   111
+```
+
+### Assault on Giant Mountain, land 5, cell 8,6
+
+Observed as northEast, mask 172. Center tile is wrapped in brackets.
+
+```text
+ 111    10   111   162    48
+ 111    60   152   127    38
+  74    12  [  9]   76    32
+  91   152   111   111    38
+ 111   111   111   111    38
+```
+
+### Assault on Giant Mountain, land 6, cell 21,13
+
+Observed as northWest, mask 102. Center tile is wrapped in brackets.
+
+```text
+ 144   161    93    94    93
+ 144   162    94    93    94
+   5    76  [  9]   11     1
+  25   111   111     2   111
+  25   111   111    75   111
+```
+
+## 46. Landlook 4 Mountains Tile 62
+
+- Priority: medium
+- Evidence: 608 placement(s)
+- Suggested role: single (52%)
+- Human-approved role(s): none
+- Legacy fallback role(s): east, lineVertical
+- Review reasons: mixed-structural-roles
+- Decision: pending
+
+### Assault on Giant Mountain, land 5, cell 17,70
+
+Observed as capSouth, mask 4. Center tile is wrapped in brackets.
+
+```text
+  42   -218   -217   -218   -217
+  25   -219   -216   -219   -216
+  37    39  [ 62]   39    39
+  26    24    64    41    24
+   2   142   143   152   152
+```
+
+### Assault on Giant Mountain, land 6, cell 75,11
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ 136   136   111   137   138
+  39    28   111   138   138
+  40    37  [ 62]   39    39
+  40    40    96    40    40
+  41    41    64    34    40
+```
+
+### Begining of the End, land 2, cell 16,88
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ 162   155   102     2   155
+ 100   100   109     2   155
+  39    39  [ 62]   27    62
+  40    40    96    96    96
+ out   out   out   out   out
+```
+
+## 47. Landlook 4 Water Tile 23
+
+- Priority: high
+- Evidence: 96 placement(s)
+- Suggested role: capNorth (35%)
+- Human-approved role(s): none
+- Legacy fallback role(s): none
+- Review reasons: mixed-structural-roles, many-neighbor-shapes
+- Decision: pending
+
+### Araman's Ring, land 1, cell 73,33
+
+Observed as center, mask 255. Center tile is wrapped in brackets.
+
+```text
+  77   111    48    28   486
+   2   111    47    29   111
+  49   111  [ 23]  111    30
+   6    13   111   111    47
+ 130     2   111   111     2
+```
+
+### Assault on Giant Mountain, land 6, cell 65,3
+
+Observed as southWest, mask 147. Center tile is wrapped in brackets.
+
+```text
+ 111   111     2   111     2
+ 111   111    10   111    10
+ 105   100  [ 23]  111    23
+ 102    95    95    95    95
+  20    95    95    95    95
+```
+
+### Castle in the Clouds, land 5, cell 7,63
+
+Observed as center, mask 111. Center tile is wrapped in brackets.
+
+```text
+ 178   111   111   111   111
+ 499   481    15    61    61
+ 143   111  [ 23]  111   111
+ 111   111   111   111   111
+ 111   111   111   111   111
+```
+
+## 48. Landlook 4 Mountains Tile 64
+
+- Priority: medium
+- Evidence: 558 placement(s)
+- Suggested role: single (53%)
+- Human-approved role(s): none
+- Legacy fallback role(s): southEast
+- Review reasons: mixed-structural-roles
+- Decision: pending
+
+### Assault on Giant Mountain, land 5, cell 17,71
+
+Observed as capNorth, mask 1. Center tile is wrapped in brackets.
+
+```text
+  25   -219   -216   -219   -216
+  37    39    62    39    39
+  26    24  [ 64]   41    24
+   2   142   143   152   152
+  75   111    95    78    95
+```
+
+### Assault on Giant Mountain, land 6, cell 75,13
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+  40    37    62    39    39
+  40    40    96    40    40
+  41    41  [ 64]   34    40
+ 111   111   173    31    34
+ 111   111   111   140    38
+```
+
+### City of Bywater, land 4, cell 7,35
+
+Observed as single, mask 0. Center tile is wrapped in brackets.
+
+```text
+ 111    59    96    40    96
+  39    35    96    40    96
+  34    36  [ 64]   26    64
+  38    25   111    60    70
+  59    65   111    60   182
 ```
 

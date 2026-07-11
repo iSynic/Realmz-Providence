@@ -18,6 +18,7 @@ try {
   const secretTiles = await server.ssrLoadModule("/src/editor/map/secrets.ts");
   const metadata = await server.ssrLoadModule("/src/editor/map/tileMetadata.ts");
   const paintGroups = await server.ssrLoadModule("/src/editor/map/paintGroups.ts");
+  const superTileStamps = await server.ssrLoadModule("/src/editor/map/superTileStamps.ts");
   const renderValues = await server.ssrLoadModule("/src/editor/map/renderValues.ts");
   const visualSemantics = await server.ssrLoadModule("/src/editor/map/landlookTileSemantics.ts");
   const browserProject = await server.ssrLoadModule("/src/editor/browser/project.ts");
@@ -32,6 +33,9 @@ try {
   checkSwampSemantics(visualSemantics);
   checkSnowSemantics(visualSemantics);
   checkDesertSemantics(visualSemantics);
+  checkLandlookPaintGroupsAndStamps(paintGroups, superTileStamps);
+  checkPaintPaletteConsolidation();
+  checkTileAdjacencyAudit();
   checkHiddenWalkablePaletteSource();
   checkLandActionPointCommands(commands, scriptCommands, actionPointMarkers);
   checkDungeonActionPointCommands(commands, scriptCommands, actionPointMarkers);
@@ -237,6 +241,51 @@ function checkHiddenWalkableOverlay(secretTiles, metadata) {
     assert(secretTiles.showsCombatClearingOverlay(tile, desert), `Desert tile ${tile} should receive the combat-clearing overlay.`);
   }
   assert(secretTiles.defaultStockCombatClearingTile(5) === 180, "Desert combat-clearing authoring should default to tile 180.");
+}
+
+function checkLandlookPaintGroupsAndStamps(paintGroups, stamps) {
+  const plainsGroups = paintGroups.landlookTileGroups(standardTileset(0));
+  const castleGroups = paintGroups.landlookTileGroups(standardTileset(4));
+  const desertGroups = paintGroups.landlookTileGroups(standardTileset(5));
+  const swampGroups = paintGroups.landlookTileGroups(standardTileset(9));
+  const snowGroups = paintGroups.landlookTileGroups(standardTileset(10));
+  assert(plainsGroups.map((group) => group.id).join(",") === "all,terrain,barriers,routes,vegetation,structures,props", "Plains paint filters should use the broad outdoor authoring groups.");
+  assert(castleGroups.map((group) => group.id).join(",") === "all,terrain,barriers,routes,structures,props,special", "Castle paint filters should replace outdoor vegetation with architectural and special groups.");
+  assert(castleGroups.find((group) => group.id === "barriers")?.label === "Walls & Passages", "Castle barriers should be labeled as walls and passages rather than mountains.");
+  assert(desertGroups.find((group) => group.id === "vegetation")?.label === "Palms & Vegetation", "Desert should expose a landlook-specific vegetation group.");
+  assert(swampGroups.find((group) => group.id === "structures")?.label === "Huts & Settlements", "Swamp should expose a landlook-specific structure group.");
+  assert(snowGroups.find((group) => group.id === "terrain")?.label === "Snow, Ice & Water", "Snow should expose a landlook-specific terrain group.");
+
+  const plainsStamps = stamps.superTileStampsForMap(landMap(0, 0), standardTileset(0));
+  const castleStamps = stamps.superTileStampsForMap(landMap(0, 4), standardTileset(4));
+  const desertStamps = stamps.superTileStampsForMap(landMap(0, 5), standardTileset(5));
+  const snowStamps = stamps.superTileStampsForMap(landMap(0, 10), standardTileset(10));
+  assert(plainsStamps.some((stamp) => stamp.id === "tree-pair-151-152"), "Plains should offer its reviewed two-cell tree stamp.");
+  assert(!castleStamps.some((stamp) => stamp.id === "tree-pair-151-152"), "Castle should not inherit the unrelated Plains tree stamp by tile number alone.");
+  assert(castleStamps.some((stamp) => stamp.id === "castle-sarcophagus-153-154" && stamp.category === "furnishings"), "Castle should offer audited paired furnishings as landlook-specific stamps.");
+  assert(!desertStamps.some((stamp) => stamp.category === "vegetation"), "Desert should not inherit unverified Plains tree-pair stamps.");
+  assert(snowStamps.some((stamp) => stamp.id === "tree-pair-153-154"), "Snow should retain its functionally aligned tree-pair stamps.");
+}
+
+function checkPaintPaletteConsolidation() {
+  const source = fs.readFileSync(path.join(root, "src/editor/components/TileSelectionBar.tsx"), "utf8");
+  assert(source.includes('{ id: "all", label: "All" }'), "Paint palette should expose a deduplicated All mode.");
+  assert(source.includes('{ id: "special", label: "Special / Advanced" }'), "Paint palette should merge special/icon and raw compatibility values.");
+  assert(!source.includes('{ id: "raw", label: "Raw / Advanced" }'), "Paint palette should not retain a separate Raw / Advanced tab.");
+  assert(source.includes("const values = new Set([...standardTiles, ...specialAdvancedTiles])"), "All Available should deduplicate landlook and special/advanced tile values.");
+  assert(!source.includes("Object.keys(icons ?? {})"), "Loaded negative icon resources should not automatically become paintable map values.");
+}
+
+function checkTileAdjacencyAudit() {
+  const auditPath = path.join(root, "docs/generated/map-tile-adjacency-audit.json");
+  assert(fs.existsSync(auditPath), "All-tile directional adjacency audit should be generated.");
+  if (!fs.existsSync(auditPath)) return;
+  const audit = JSON.parse(fs.readFileSync(auditPath, "utf8"));
+  assert(audit.summary?.placements === audit.summary?.landMaps * 90 * 90, "Adjacency audit should count every authored land-map cell exactly once.");
+  assert(audit.entries?.every((entry) => ["north", "east", "south", "west"].every((direction) => Array.isArray(entry.neighbors?.[direction]))), "Adjacency audit entries should retain independent directional neighbor rankings.");
+  assert(!audit.entries?.some((entry) => entry.tile === -20132), "Unused Divinity resource -20132 should not appear as an authored paint identity.");
+  const normalized132 = audit.entries?.find((entry) => entry.tile === -132 && entry.landlook === null);
+  assert(normalized132?.rawValues?.some((entry) => entry.value === -23132), "Adjacency audit should preserve exact raw variants behind normalized special tile -132.");
 }
 
 function checkSwampSemantics({ landlookTileVisualSemantics }) {
@@ -664,7 +713,7 @@ function checkCustomMapstatsAttributeSync({ updateCustomLandTileAttributes }, { 
   const meaning = classifyTileValue(147, customTileset(), next.tileAttributes, {});
   assert(meaning.visual?.category === "watercraft", "tile 147 no longer classifies as watercraft");
   assert(tileAttributeGroup(meaning.attributes, 147, customTileset()).includes("boat-required"), "tile 147 behavior grouping does not include boat-required");
-  assert(landlookGroupTiles(customTileset(), "boats", next.tileAttributes, {}).includes(147), "boat palette group does not include source-backed/custom tile 147");
+  assert(landlookGroupTiles(customTileset(), "routes", next.tileAttributes, {}).includes(147), "route palette group does not include source-backed/custom boat tile 147");
 }
 
 function checkCustomCombatBuildSync({ updateCustomLandTileCombatBuild }, { classifyTileValue }) {
@@ -873,6 +922,25 @@ function checkDefaultBrowserProject({ createBrowserProject }, { isProjectEmpty }
   assert(project.randomLevels.some((level) => level.levelType === "land" && level.levelIndex === 0 && level.landlook === 0), "Browser New Project should create the matching land random-level row.");
   assert(project.assetCatalog?.tilesets?.some((tileset) => tileset.id === "landlook-0" && tileset.baseTile === 156), "Browser New Project should include the Plains tileset metadata.");
   assert(isProjectEmpty(project), "Untouched browser starter project should still be import-safe.");
+  const generatedBaselineProject = {
+    ...project,
+    source: {
+      ...project.source,
+      sourcePath: "generated://starter",
+      rawSourcesDir: "generated-runtime",
+      files: [{ name: "Scenario", relativePath: "Scenario", bytes: 600, sha256: "generated", role: "pass-through", editable: false }]
+    }
+  };
+  assert(isProjectEmpty(generatedBaselineProject), "Generated runtime baseline files should not prevent importing into an untouched starter project.");
+  const importedSourceProject = {
+    ...project,
+    source: {
+      ...project.source,
+      sourcePath: "F:/Realmz/Scenarios/Tutorial",
+      files: [{ name: "Data LD", relativePath: "Data LD", bytes: 16200, sha256: "imported", role: "supported-binary", editable: true }]
+    }
+  };
+  assert(!isProjectEmpty(importedSourceProject), "Captured files from an imported Realmz scenario should keep replacement import disabled.");
   const editedProject = { ...project, maps: [{ ...land, tiles: [1, ...land.tiles.slice(1)] }] };
   assert(!isProjectEmpty(editedProject), "Starter project should stop being import-safe after a map edit.");
 }

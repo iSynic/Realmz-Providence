@@ -1191,7 +1191,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Use the Action Point tool for placement and the Scripts tool for deeper opcode editing.",
           "Use the map Selection Inspector to set a land cell to Normal, Hidden Secret, or Revealed Secret. Moving or clearing an Action Point does not move or erase that cell state.",
-          "Providence separates concealed walk-through terrain from solid structures that clear when Realmz builds a combat map. The red Divinity-style marker identifies genuinely walkable Plains 169 and Castle 96. A translucent green treatment identifies solid Plains 180-185 and Castle 59-65 whose 3 x 3 combat builds are entirely non-solid. The Secrets and Combat Clearing controls in Map Overlays show these independently. Neither visual aid makes the cell a Hidden Secret Area.",
+          "Providence separates concealed walk-through terrain from solid structures that clear when Realmz builds a combat map. The red Divinity-style marker identifies genuinely walkable terrain using each landlook's audited tile set. A translucent green treatment identifies solid exploration terrain whose 3 x 3 combat build clears to walkable cells. The Secrets and Combat Clearing controls in Map Overlays show these independently. Neither visual aid makes the cell a Hidden Secret Area.",
           "Overlay filters can show all Action Points or isolate links by encounters, quests, map mutation, battle, text, and unresolved opcodes.",
           "Use Global Search for AP IDs, macro IDs, text IDs, and battle IDs when jumping between the map overlay and the script body."
         ]

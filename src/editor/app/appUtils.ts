@@ -101,12 +101,16 @@ export function isProjectEmpty(project: Project) {
     (project.maps.length === 0 || hasOnlyStarterLandMap(project)) &&
     (project.randomLevels.length === 0 || hasOnlyStarterLandRandomLevel(project)) &&
     project.landLayout == null &&
-    project.source.files.length === 0 &&
+    (project.source.files.length === 0 || hasOnlyGeneratedStarterSources(project)) &&
     (project.semanticSchema?.records ?? []).length === 0 &&
     (project.semanticSchema?.entities ?? []).length === 0 &&
     project.records.alignments.length === 0 &&
     Object.keys(project.records.counts).length === 0
   );
+}
+
+function hasOnlyGeneratedStarterSources(project: Project) {
+  return project.source.sourcePath.startsWith("generated://");
 }
 
 function hasOnlyStarterLandMap(project: Project) {

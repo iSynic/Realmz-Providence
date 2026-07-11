@@ -9,11 +9,13 @@ export type SuperTileStampCell = {
 };
 
 export type MapStampSource = "built-in" | "project" | "global";
+export type MapStampCategory = "vegetation" | "structures" | "furnishings" | "special" | "custom";
 
 export type MapStamp = {
   id: string;
   label: string;
   source: MapStampSource;
+  category: MapStampCategory;
   description: string;
   width?: number;
   height?: number;
@@ -32,7 +34,8 @@ export type SuperTileStamp = {
   id: string;
   label: string;
   source?: "built-in";
-  category: "trees" | "structures";
+  category: MapStampCategory;
+  landlooks?: number[];
   description: string;
   cells: SuperTileStampCell[];
 };
@@ -41,7 +44,8 @@ export const SUPER_TILE_STAMPS: SuperTileStamp[] = [
   {
     id: "tree-pair-151-152",
     label: "Tree 151/152",
-    category: "trees",
+    category: "vegetation",
+    landlooks: [0, 2, 3, 10],
     description: "Vertical two-cell Realmz tree art with the leafy crown above the trunk.",
     cells: [
       { dx: 0, dy: 0, tile: 151 },
@@ -51,11 +55,123 @@ export const SUPER_TILE_STAMPS: SuperTileStamp[] = [
   {
     id: "tree-pair-153-154",
     label: "Tree 153/154",
-    category: "trees",
+    category: "vegetation",
+    landlooks: [0, 2, 3, 10],
     description: "Vertical two-cell Realmz tree art with the leafy crown above the trunk.",
     cells: [
       { dx: 0, dy: 0, tile: 153 },
       { dx: 0, dy: 1, tile: 154 }
+    ]
+  },
+  {
+    id: "castle-column-142-143",
+    label: "Tall Stone Column 142/143",
+    category: "structures",
+    landlooks: [4],
+    description: "Two-cell Castle stone column with the top above the base.",
+    cells: [
+      { dx: 0, dy: 0, tile: 142 },
+      { dx: 0, dy: 1, tile: 143 }
+    ]
+  },
+  {
+    id: "castle-sarcophagus-153-154",
+    label: "Sarcophagus 153/154",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Side-by-side Castle sarcophagus halves.",
+    cells: [
+      { dx: 0, dy: 0, tile: 153 },
+      { dx: 1, dy: 0, tile: 154 }
+    ]
+  },
+  {
+    id: "castle-bed-156-157",
+    label: "Bed 156/157",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Side-by-side halves of a Castle bed.",
+    cells: [
+      { dx: 0, dy: 0, tile: 156 },
+      { dx: 1, dy: 0, tile: 157 }
+    ]
+  },
+  {
+    id: "castle-long-table-158-162",
+    label: "Long Table 158/159/162",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Three-cell Castle table with left end, plain center, and right end.",
+    cells: [
+      { dx: 0, dy: 0, tile: 158 },
+      { dx: 1, dy: 0, tile: 159 },
+      { dx: 2, dy: 0, tile: 162 }
+    ]
+  },
+  {
+    id: "castle-torture-rack-163-164",
+    label: "Torture Rack 163/164",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Side-by-side halves of a Castle torture rack.",
+    cells: [
+      { dx: 0, dy: 0, tile: 163 },
+      { dx: 1, dy: 0, tile: 164 }
+    ]
+  },
+  {
+    id: "castle-yellow-bed-165-166",
+    label: "Yellow Bed 165/166",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Side-by-side halves of a yellow Castle bed.",
+    cells: [
+      { dx: 0, dy: 0, tile: 165 },
+      { dx: 1, dy: 0, tile: 166 }
+    ]
+  },
+  {
+    id: "castle-purple-throne-177-178",
+    label: "Tall Purple Throne 177/178",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Two-cell Castle throne with the upper half above the seat.",
+    cells: [
+      { dx: 0, dy: 0, tile: 177 },
+      { dx: 0, dy: 1, tile: 178 }
+    ]
+  },
+  {
+    id: "castle-gargoyle-179-180",
+    label: "Stone Gargoyle 179/180",
+    category: "structures",
+    landlooks: [4],
+    description: "Two-cell west-facing Castle stone dragon or gargoyle.",
+    cells: [
+      { dx: 0, dy: 0, tile: 179 },
+      { dx: 0, dy: 1, tile: 180 }
+    ]
+  },
+  {
+    id: "castle-coffin-185-186",
+    label: "Coffin 185/186",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Side-by-side halves of a Castle coffin.",
+    cells: [
+      { dx: 0, dy: 0, tile: 185 },
+      { dx: 1, dy: 0, tile: 186 }
+    ]
+  },
+  {
+    id: "castle-purple-object-199-200",
+    label: "Purple Altar 199/200",
+    category: "furnishings",
+    landlooks: [4],
+    description: "Paired halves of the Castle purple altar, bench, or sarcophagus object.",
+    cells: [
+      { dx: 0, dy: 0, tile: 199 },
+      { dx: 1, dy: 0, tile: 200 }
     ]
   },
   {
@@ -199,10 +315,11 @@ export const SUPER_TILE_STAMPS: SuperTileStamp[] = [
 export function superTileStampsForMap(map: MapEntity | null, tileset: TilesetAsset | null) {
   if (!map || map.levelType !== "land") return [];
   const standardTiles = new Set(standardTileValues(tileset));
-  return SUPER_TILE_STAMPS.filter((stamp) => {
-    if (stamp.category !== "trees") return true;
-    return stamp.cells.every((cell) => standardTiles.has(cell.tile));
-  });
+  const landlook = tileset?.landlook ?? map.render.landlook ?? 0;
+  return SUPER_TILE_STAMPS.filter((stamp) =>
+    (!stamp.landlooks || stamp.landlooks.includes(landlook)) &&
+    stamp.cells.every((cell) => cell.tile < 0 || standardTiles.has(cell.tile))
+  );
 }
 
 export function superTileStampById(id: string | null | undefined, map: MapEntity | null, tileset: TilesetAsset | null) {
@@ -215,6 +332,7 @@ export function customMapStampToMapStamp(stamp: CustomMapStamp, source: "project
     id: `${source}:${stamp.id}`,
     label: stamp.name,
     source,
+    category: "custom",
     description: `${source === "project" ? "Project" : "Global"} custom stamp. ${stamp.width} x ${stamp.height}.`,
     width: stamp.width,
     height: stamp.height,
