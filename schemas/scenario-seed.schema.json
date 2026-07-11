@@ -231,6 +231,7 @@
         { "$ref": "#/$defs/stampOperation" },
         { "$ref": "#/$defs/landSecretOperation" },
         { "$ref": "#/$defs/hiddenWalkableOperation" },
+        { "$ref": "#/$defs/combatClearingOperation" },
         { "$ref": "#/$defs/dungeonPassageOperation" }
       ]
     },
@@ -366,7 +367,18 @@
         "kind": { "const": "hiddenWalkable" },
         "x": { "type": "integer", "minimum": 0, "maximum": 89 },
         "y": { "type": "integer", "minimum": 0, "maximum": 89 },
-        "tile": { "enum": [169, 180, 181, 182, 183, 184, 185] }
+        "tile": { "enum": [96, 169] }
+      }
+    },
+    "combatClearingOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "x", "y"],
+      "properties": {
+        "kind": { "const": "combatClearing" },
+        "x": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "tile": { "enum": [59, 60, 61, 62, 63, 64, 65, 180, 181, 182, 183, 184, 185] }
       }
     },
     "dungeonPassageOperation": {

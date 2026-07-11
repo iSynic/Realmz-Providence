@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { classifyTileValue } from "../map/tileMetadata";
 import { AtlasEntry, IconEntry, TilesetAsset } from "../types";
 import { drawTileSprite, tileColor } from "./TileSprite";
-import { isStockHiddenWalkableTile } from "../map/secrets";
+import { isStockCombatClearingTile, isStockHiddenWalkableTile } from "../map/secrets";
 import { drawWhiteKeyedOverlayImage } from "../map/whiteKeyedOverlay";
 
 function TileSwatchComponent({
@@ -24,6 +24,7 @@ function TileSwatchComponent({
   const [hiddenWalkableMarker, setHiddenWalkableMarker] = useState<HTMLImageElement | null>(null);
   const metadata = useMemo(() => classifyTileValue(tile, tileset, [], icons), [icons, tile, tileset]);
   const showHiddenWalkable = isStockHiddenWalkableTile(tile, tileset?.landlook);
+  const showCombatClearing = isStockCombatClearingTile(tile, tileset?.landlook);
 
   useEffect(() => {
     if (!showHiddenWalkable || typeof Image === "undefined") {
@@ -58,7 +59,7 @@ function TileSwatchComponent({
   }, [allowIconFallback, atlas, hiddenWalkableMarker, icons, showHiddenWalkable, tile]);
 
   return (
-    <span className={`tile-swatch tile-kind-${metadata.kind}`} aria-hidden="true">
+    <span className={`tile-swatch tile-kind-${metadata.kind}${showCombatClearing ? " tile-swatch--combat-clearing" : ""}`} aria-hidden="true">
       <canvas ref={canvasRef} width={32} height={32} />
       {showBadge && <span className="tile-swatch-badge">{tile}</span>}
     </span>

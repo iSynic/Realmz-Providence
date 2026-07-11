@@ -19,6 +19,7 @@ try {
   const metadata = await server.ssrLoadModule("/src/editor/map/tileMetadata.ts");
   const paintGroups = await server.ssrLoadModule("/src/editor/map/paintGroups.ts");
   const renderValues = await server.ssrLoadModule("/src/editor/map/renderValues.ts");
+  const visualSemantics = await server.ssrLoadModule("/src/editor/map/landlookTileSemantics.ts");
   const browserProject = await server.ssrLoadModule("/src/editor/browser/project.ts");
   const appUtilsModule = await server.ssrLoadModule("/src/editor/app/appUtils.ts");
 
@@ -27,6 +28,7 @@ try {
   checkDungeonCellFlagCommand(commands);
   checkActionPointMarkerEncoding(actionPointMarkers);
   checkHiddenWalkableOverlay(secretTiles, metadata);
+  checkCastleWallSemantics(visualSemantics);
   checkHiddenWalkablePaletteSource();
   checkLandActionPointCommands(commands, scriptCommands, actionPointMarkers);
   checkDungeonActionPointCommands(commands, scriptCommands, actionPointMarkers);
@@ -153,15 +155,21 @@ function checkActionPointMarkerEncoding(markers) {
 
 function checkHiddenWalkableOverlay(secretTiles, metadata) {
   const map = landMap(0, 0);
-  for (const tile of [169, 180, 181, 182, 183, 184, 185]) {
-    assert(secretTiles.isStockHiddenWalkableTile(tile, 0), `Plains tile ${tile} should be part of the stock hidden-walkable set.`);
-    assert(secretTiles.isConcealedWalkableTerrain(tile, map), `Land tile ${tile} should remain identified as concealed walk-through terrain.`);
-    assert(secretTiles.showsHiddenWalkableOverlay(tile, map), `Unbanded land tile ${tile} should remain visible in the hidden-walkable overlay.`);
-    assert(metadata.classifyTileValue(tile, standardTileset(0), [], {}).label.toLowerCase().includes("hidden walkable"), `Land tile ${tile} should be labeled as hidden walkable in the palette.`);
+  assert(secretTiles.isStockHiddenWalkableTile(169, 0), "Plains tile 169 should be the stock hidden-walkable tile.");
+  assert(secretTiles.isConcealedWalkableTerrain(169, map), "Plains tile 169 should remain identified as concealed walk-through terrain.");
+  assert(secretTiles.showsHiddenWalkableOverlay(169, map), "Plains tile 169 should receive the hidden-walkable overlay.");
+  assert(metadata.classifyTileValue(169, standardTileset(0), [], {}).label.toLowerCase().includes("hidden walkable"), "Plains tile 169 should be labeled as hidden walkable.");
+  for (const tile of [180, 181, 182, 183, 184, 185]) {
+    assert(!secretTiles.isStockHiddenWalkableTile(tile, 0), `Plains tile ${tile} should not be mislabeled as hidden walkable.`);
+    assert(secretTiles.isStockCombatClearingTile(tile, 0), `Plains tile ${tile} should be a combat-clearing structure.`);
+    assert(secretTiles.showsCombatClearingOverlay(tile, map), `Plains tile ${tile} should receive the combat-clearing overlay.`);
+    assert(!secretTiles.showsHiddenWalkableOverlay(tile, map), `Plains tile ${tile} should not receive the hidden-walkable overlay.`);
+    assert(metadata.classifyTileValue(tile, standardTileset(0), [], {}).label.toLowerCase().includes("combat-clearing"), `Plains tile ${tile} should be labeled as combat-clearing.`);
   }
   assert(!secretTiles.isSecretWalkableTile(169, map), "Unbanded land tile 169 should not be mislabeled as an authored Secret Area.");
   assert(secretTiles.showsHiddenWalkableOverlay(3169, map), "A hidden Secret Area using tile 169 should receive the hidden-walkable overlay.");
-  assert(secretTiles.showsHiddenWalkableOverlay(3181, map), "A hidden Secret Area using tile 181 should receive the hidden-walkable overlay.");
+  assert(secretTiles.showsCombatClearingOverlay(3181, map), "A marked Plains combat-clearing structure should retain its combat overlay.");
+  assert(!secretTiles.showsHiddenWalkableOverlay(3181, map), "A marked Plains combat-clearing structure should not become hidden walkable.");
   assert(!secretTiles.showsHiddenWalkableOverlay(179, map), "Adjacent stock tile 179 should not receive the hidden-walkable overlay.");
   assert(!secretTiles.showsHiddenWalkableOverlay(186, map), "Adjacent stock tile 186 should not receive the hidden-walkable overlay.");
   const castle = landMap(0, 4);
@@ -172,25 +180,54 @@ function checkHiddenWalkableOverlay(secretTiles, metadata) {
   }
   assert(!secretTiles.showsHiddenWalkableOverlay(3169, castle), "A Castle Secret Area should use its normal secret marker without the Plains hidden-walkable overlay.");
   assert(secretTiles.hasSecretMarkerTile(3169, castle), "A Castle Secret Area should retain its ordinary hidden-area marker.");
-  for (const tile of [59, 60, 61, 62, 63, 64, 65, 96]) {
-    assert(secretTiles.isStockHiddenWalkableTile(tile, 4), `Castle tile ${tile} should be part of its hidden-walkable set.`);
-    assert(secretTiles.showsHiddenWalkableOverlay(tile, castle), `Castle tile ${tile} should receive the hidden-walkable overlay.`);
-    assert(metadata.classifyTileValue(tile, standardTileset(4), [], {}).label.toLowerCase().includes("hidden walkable"), `Castle tile ${tile} should be labeled as hidden walkable.`);
-    assert(!secretTiles.isStockHiddenWalkableTile(tile, 0), `Castle hidden-walkable tile ${tile} should not be applied to Plains.`);
+  assert(secretTiles.isStockHiddenWalkableTile(96, 4), "Castle tile 96 should be the stock hidden-walkable floor.");
+  assert(secretTiles.showsHiddenWalkableOverlay(96, castle), "Castle tile 96 should receive the hidden-walkable overlay.");
+  assert(metadata.classifyTileValue(96, standardTileset(4), [], {}).label.toLowerCase().includes("hidden walkable"), "Castle tile 96 should be labeled as hidden walkable.");
+  for (const tile of [59, 60, 61, 62, 63, 64, 65]) {
+    assert(!secretTiles.isStockHiddenWalkableTile(tile, 4), `Castle tile ${tile} should not be mislabeled as hidden walkable.`);
+    assert(secretTiles.isStockCombatClearingTile(tile, 4), `Castle tile ${tile} should be a combat-clearing wall.`);
+    assert(secretTiles.showsCombatClearingOverlay(tile, castle), `Castle tile ${tile} should receive the combat-clearing overlay.`);
+    assert(!secretTiles.showsHiddenWalkableOverlay(tile, castle), `Castle tile ${tile} should not receive the hidden-walkable overlay.`);
+    assert(metadata.classifyTileValue(tile, standardTileset(4), [], {}).label.toLowerCase().includes("combat-clearing"), `Castle tile ${tile} should be labeled as combat-clearing.`);
+    assert(!secretTiles.isStockCombatClearingTile(tile, 0), `Castle combat-clearing tile ${tile} should not be applied to Plains.`);
   }
   assert(secretTiles.defaultStockHiddenWalkableTile(0) === 169, "Plains hidden-walkable authoring should default to tile 169.");
-  assert(secretTiles.defaultStockHiddenWalkableTile(4) === 59, "Castle hidden-walkable authoring should default to tile 59.");
-  assert(secretTiles.showsHiddenWalkableOverlay(3059, castle), "A hidden Castle passage should retain its hidden-walkable overlay.");
-  assert(secretTiles.hasSecretMarkerTile(3059, castle), "A hidden Castle passage should also retain its ordinary Secret Area marker.");
+  assert(secretTiles.defaultStockHiddenWalkableTile(4) === 96, "Castle hidden-walkable authoring should default to tile 96.");
+  assert(secretTiles.defaultStockCombatClearingTile(0) === 180, "Plains combat-clearing authoring should default to tile 180.");
+  assert(secretTiles.defaultStockCombatClearingTile(4) === 59, "Castle combat-clearing authoring should default to tile 59.");
+  assert(secretTiles.showsCombatClearingOverlay(3059, castle), "A marked Castle wall should retain its combat-clearing overlay.");
+  assert(secretTiles.hasSecretMarkerTile(3059, castle), "A marked Castle wall should independently retain its ordinary Secret Area marker.");
+}
+
+function checkCastleWallSemantics({ landlookTileVisualSemantics }) {
+  for (let tile = 1; tile <= 40; tile += 1) {
+    const visual = landlookTileVisualSemantics(tile, 4);
+    assert(visual?.confidence === "known", `Castle wall tile ${tile} should have reviewed exact semantics.`);
+    assert(visual?.category === "buildings", `Castle wall tile ${tile} should be classified as castle architecture.`);
+  }
+  assert(landlookTileVisualSemantics(18, 4)?.notes?.includes("Land north"), "Castle tile 18 should record land north of its east-west-south wall junction.");
+  assert(landlookTileVisualSemantics(20, 4)?.notes?.includes("expected southern neighbor is land"), "Castle tile 20 should distinguish logical termination from perspective artwork.");
+  assert(landlookTileVisualSemantics(21, 4)?.label.includes("West end-cap"), "Castle tile 21 should be the west wall terminator.");
+  assert(landlookTileVisualSemantics(23, 4)?.label.includes("East end-cap"), "Castle tile 23 should be the horizontal mirror of tile 21.");
+  assert(landlookTileVisualSemantics(32, 4)?.notes?.includes("west, east, and north"), "Castle tile 32 should preserve its reviewed gray-wall continuity.");
+  assert(landlookTileVisualSemantics(33, 4)?.notes?.includes("southwest and southeast corners"), "Castle tile 33 should preserve its south-facing projection exception.");
+  assert(landlookTileVisualSemantics(36, 4)?.notes?.includes("southeast corner instead of floor"), "Castle tile 36 should preserve its projection exception.");
+  assert(landlookTileVisualSemantics(37, 4)?.notes?.includes("southwest corner instead of floor"), "Castle tile 37 should preserve its mirrored projection exception.");
+  assert(landlookTileVisualSemantics(1, 0)?.category === "water-shore", "Castle wall semantics should not replace Plains shoreline semantics.");
 }
 
 function checkHiddenWalkablePaletteSource() {
   const swatchSource = fs.readFileSync(path.join(root, "src/editor/components/TileSwatch.tsx"), "utf8");
-  for (const snippet of ["isStockHiddenWalkableTile(tile, tileset?.landlook)", "drawWhiteKeyedOverlayImage", "/divinity-manual/assets/pict2007.png"]) {
+  for (const snippet of ["isStockHiddenWalkableTile(tile, tileset?.landlook)", "isStockCombatClearingTile(tile, tileset?.landlook)", "tile-swatch--combat-clearing", "drawWhiteKeyedOverlayImage", "/divinity-manual/assets/pict2007.png"]) {
     assert(swatchSource.includes(snippet), `Tile palette hidden-walkable marker is missing: ${snippet}`);
   }
   const keyedSource = fs.readFileSync(path.join(root, "src/editor/map/whiteKeyedOverlay.ts"), "utf8");
   assert(keyedSource.includes("data[index + 3] = 0"), "Tile palette hidden-walkable marker should key the PICT's white pixels to transparency.");
+  const filterSource = fs.readFileSync(path.join(root, "src/editor/components/MapViewFilters.tsx"), "utf8");
+  assert(filterSource.includes('flag: "showCombatClearingOverlays"'), "Map Overlays should expose a dedicated combat-clearing toggle.");
+  assert(filterSource.includes('label: "Combat Clearing"'), "The combat-clearing toggle should have an author-facing label.");
+  const canvasSource = fs.readFileSync(path.join(root, "src/editor/components/MapCanvas.tsx"), "utf8");
+  assert(canvasSource.includes("viewOptions.showCombatClearingOverlays) drawCombatClearingOverlay"), "Map rendering should gate the combat-clearing wash independently.");
 }
 
 function checkLandActionPointCommands(mapCommands, commands, markers) {

@@ -63,7 +63,7 @@ const sampleSeed = {
       { kind: "road", points: [{ x: 30, y: 30 }, { x: 35, y: 30 }], tile: 11, width: 3 },
       { kind: "river", points: [{ x: 40, y: 40 }, { x: 40, y: 45 }], tile: 12, width: 2 },
       { kind: "stamp", x: 50, y: 50, tiles: [[13, 14], [15, 16]] },
-      { kind: "hiddenWalkable", x: 60, y: 60, tile: 181 },
+      { kind: "combatClearing", x: 60, y: 60, tile: 181 },
       { kind: "landSecret", x: 60, y: 60, state: "hidden" }
     ]
   }, {

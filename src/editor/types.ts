@@ -131,7 +131,8 @@ export type MapViewFlag =
   | "showBattleOverlays"
   | "showTextOverlays"
   | "showUnknownOverlays"
-  | "showSecretOverlays";
+  | "showSecretOverlays"
+  | "showCombatClearingOverlays";
 
 export type MapViewOptions = Record<MapViewFlag, boolean>;
 

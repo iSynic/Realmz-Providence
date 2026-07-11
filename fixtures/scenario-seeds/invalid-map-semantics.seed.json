@@ -6,7 +6,8 @@
       "levelType": "land",
       "operations": [
         { "kind": "dungeonPassage", "x": 1, "y": 1, "directions": ["north", "north"] },
-        { "kind": "hiddenWalkable", "x": 2, "y": 2, "tile": 170 }
+        { "kind": "hiddenWalkable", "x": 2, "y": 2, "tile": 170 },
+        { "kind": "combatClearing", "x": 3, "y": 2, "tile": 169 }
       ]
     },
     {
@@ -21,7 +22,8 @@
       "landlook": 6,
       "operations": [
         { "kind": "terrainGroup", "terrain": "lava", "geometry": { "kind": "circle", "x": 5, "y": 5, "radius": 2 } },
-        { "kind": "hiddenWalkable", "x": 6, "y": 6, "tile": 169 }
+        { "kind": "hiddenWalkable", "x": 6, "y": 6, "tile": 169 },
+        { "kind": "combatClearing", "x": 7, "y": 6, "tile": 180 }
       ]
     }
   ]

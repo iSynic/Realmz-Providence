@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { EditorTool, MapEntity, MapHudAnchor, RandomLevel, SemanticEntity, TriggerRecord } from "../types";
 import { mapRecordContainsCell, mapRecordTerrainFootprint, randomRectCellBounds, randomRectContainsCell, tileValueAt } from "../map/geometry";
-import { hasSecretPathTile, isConcealedWalkableTerrain, isSecretWalkableTile } from "../map/secrets";
+import { hasSecretPathTile, isCombatClearingTerrain, isConcealedWalkableTerrain, isSecretWalkableTile } from "../map/secrets";
 import { landCellSecretState } from "../map/actionPointMarkers";
 import { triggerOverlayKind } from "../map/drawMapCanvas";
 
@@ -129,6 +129,7 @@ function secretHoverTags(value: number, map: MapEntity) {
   if (secretState === "revealed") tags.push("revealed secret area");
   if (isSecretWalkableTile(value, map)) tags.push("secret passage terrain");
   if (isConcealedWalkableTerrain(value, map)) tags.push("concealed walk-through terrain");
+  if (isCombatClearingTerrain(value, map)) tags.push("solid on land map; clears to open ground in combat");
   else if (hasSecretPathTile(value, map)) tags.push("encoded passability flag");
   return tags;
 }

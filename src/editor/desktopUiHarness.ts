@@ -469,6 +469,7 @@ async function runMapVisualHarness({
     dispatch({ type: "setMapViewFlag", flag: "showRealTiles", value: true });
     dispatch({ type: "setMapViewFlag", flag: "showRealmzCoordinates", value: false });
     dispatch({ type: "setMapViewFlag", flag: "showSecretOverlays", value: false });
+    dispatch({ type: "setMapViewFlag", flag: "showCombatClearingOverlays", value: false });
     dispatch({ type: "setShowTriggers", value: false });
     dispatch({ type: "setShowRandomRects", value: false });
     dispatch({ type: "setShowMapRecords", value: false });

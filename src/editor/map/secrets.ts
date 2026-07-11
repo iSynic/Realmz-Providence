@@ -3,8 +3,12 @@ import { actionPointMarkerState, landCellSecretState } from "./actionPointMarker
 
 const DUNGEON_SECRET_DIRECTION_MASK = 0x0f00;
 const STOCK_HIDDEN_WALKABLE_TILES = new Map<number, ReadonlySet<number>>([
-  [0, new Set([169, 180, 181, 182, 183, 184, 185])],
-  [4, new Set([59, 60, 61, 62, 63, 64, 65, 96])]
+  [0, new Set([169])],
+  [4, new Set([96])]
+]);
+const STOCK_COMBAT_CLEARING_TILES = new Map<number, ReadonlySet<number>>([
+  [0, new Set([180, 181, 182, 183, 184, 185])],
+  [4, new Set([59, 60, 61, 62, 63, 64, 65])]
 ]);
 
 export function isSecretWalkableTile(value: number, map: MapEntity) {
@@ -25,8 +29,25 @@ export function defaultStockHiddenWalkableTile(landlook: number | null | undefin
   return tiles ? [...tiles][0] ?? null : null;
 }
 
+export function isStockCombatClearingTile(value: number, landlook: number | null | undefined) {
+  return landlook != null && Boolean(STOCK_COMBAT_CLEARING_TILES.get(landlook)?.has(normalizedTileBase(value)));
+}
+
+export function isCombatClearingTerrain(value: number, map: MapEntity) {
+  return !isDungeonTopDownMap(map) && isStockCombatClearingTile(value, map.render.landlook);
+}
+
+export function defaultStockCombatClearingTile(landlook: number | null | undefined) {
+  const tiles = landlook != null ? STOCK_COMBAT_CLEARING_TILES.get(landlook) : null;
+  return tiles ? [...tiles][0] ?? null : null;
+}
+
 export function showsHiddenWalkableOverlay(value: number, map: MapEntity) {
   return isConcealedWalkableTerrain(value, map) || isSecretWalkableTile(value, map);
+}
+
+export function showsCombatClearingOverlay(value: number, map: MapEntity) {
+  return isCombatClearingTerrain(value, map);
 }
 
 export function hasSecretMarkerTile(value: number, map: MapEntity) {

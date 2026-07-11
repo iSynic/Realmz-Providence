@@ -141,13 +141,13 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 65, 20) >= 121 && tileAt(tiles, 65, 20) <= 129, "semantic forest terrain should compile its corner to a structural forest tile");
   expect(tileAt(tiles, 75, 32) === 38, "semantic one-cell water paths should compile north/south segments to narrow stream tile 38");
   expect(tileAt(tiles, 75, 30) === 42 && tileAt(tiles, 75, 34) === 40, "semantic one-cell water paths should compile directional land-transition caps");
-  expect(tileAt(tiles, 30, 12) === 3181, "hidden walkable terrain should retain its authored hidden Secret Area state and Action Point marker");
+  expect(tileAt(tiles, 30, 12) === 3181, "combat-clearing terrain should retain its authored hidden Secret Area state and Action Point marker");
   expect(tileAt(tiles, 31, 12) === 2169, "default hidden walkable terrain should support an already revealed Secret Area state without an Action Point");
   expect(tileAt(tiles, 32, 12) === 1001, "generated land Action Points should write the normal trigger marker into their map cell");
   const dungeonTiles = result.project.maps.find((map) => map.levelType === "dungeon")?.tiles ?? [];
   expect(tileAt(dungeonTiles, 4, 4) === 0x1501, "generated dungeon Action Points should preserve directional secret-passage flags and add the trigger marker");
   const castleTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === 1)?.tiles ?? [];
-  expect(tileAt(castleTiles, 1, 1) === 59 && tileAt(castleTiles, 2, 1) === 59, "Castle hidden-walkable operations should accept tile 59 and use it as the landlook default");
+  expect(tileAt(castleTiles, 1, 1) === 59 && tileAt(castleTiles, 2, 1) === 96, "Castle operations should keep combat-clearing tile 59 distinct from default hidden-walkable tile 96");
 }
 
 function checkDirectAp(createProjectFromScenarioSeed) {
@@ -533,12 +533,14 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(mapSemantics.errors.some((error) => error.includes("dungeonPassage is only valid on dungeon maps")), "land maps should reject dungeon passage operations");
     expect(mapSemantics.errors.some((error) => error.includes("landSecret is only valid on land maps")), "dungeon maps should reject land Secret Area operations");
     expect(mapSemantics.errors.some((error) => error.includes("stock hidden-walkable tiles")), "hiddenWalkable should reject non-semantic tile IDs");
+    expect(mapSemantics.errors.some((error) => error.includes("stock combat-clearing tiles")), "combatClearing should reject hidden-walkable and unrelated tile IDs");
     expect(mapSemantics.errors.some((error) => error.includes("cannot contain duplicates")), "dungeon passage directions should reject duplicates");
     expect(mapSemantics.errors.some((error) => error.includes("terrainGroup is only valid on land maps")), "semantic terrain should reject dungeon maps");
     expect(mapSemantics.errors.some((error) => error.includes("terrain must be water, mountains, or forest")), "semantic terrain should reject unknown terrain groups");
     expect(mapSemantics.errors.some((error) => error.includes("geometry.kind must be rect or path")), "semantic terrain should reject unsupported geometry");
     expect(mapSemantics.errors.some((error) => error.includes("does not have a checked-in semantic terrain profile")), "semantic terrain should reject custom landlooks without curated profiles");
     expect(mapSemantics.errors.some((error) => error.includes("hiddenWalkable is not valid for landlook 6")), "stock hidden-walkable terrain should reject landlooks without a known concealed-walkable set");
+    expect(mapSemantics.errors.some((error) => error.includes("combatClearing is not valid for landlook 6")), "combat-clearing terrain should reject landlooks without a known source-backed set");
   }
 
   const causeRoutContext = createProjectFromScenarioSeed(readSeed("invalid-battle-outcomes.seed.json"));

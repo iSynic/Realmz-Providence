@@ -29,12 +29,13 @@ import {
 import { clampScroll, mapCellFromTileIndex, MAP_CELLS } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
 import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
-import { hasSecretMarkerTile, showsHiddenWalkableOverlay } from "../map/secrets";
+import { hasSecretMarkerTile, showsCombatClearingOverlay, showsHiddenWalkableOverlay } from "../map/secrets";
 import { loadMapOverlaySprites } from "../map/mapOverlaySprites";
 import { ScrollArea } from "../ui";
 import {
   drawBaseMap,
   drawBaseMapCell,
+  drawCombatClearingOverlay,
   drawCoordinateLabels,
   drawHover,
   drawMapRecords,
@@ -348,11 +349,11 @@ export function RealmzMapCanvas({
     onPreviewPaintChange: previewPaintChange,
     onResetPaintPreview: resetPaintPreview
   });
-  const secretOverlayDependency = useMemo(
-    () => viewOptions.showSecretOverlays ? secretOverlaySignature(map) : "secrets-off",
-    [map.tiles, map.levelType, map.render.mode, viewOptions.showSecretOverlays]
+  const terrainOverlayDependency = useMemo(
+    () => `${viewOptions.showSecretOverlays ? secretOverlaySignature(map) : "secrets-off"}:${viewOptions.showCombatClearingOverlays ? combatClearingOverlaySignature(map) : "combat-clearing-off"}`,
+    [map.tiles, map.levelType, map.render.mode, viewOptions.showSecretOverlays, viewOptions.showCombatClearingOverlays]
   );
-  const overlayMapDependency = previewMode !== "off" ? map : `${map.id}:${secretOverlayDependency}`;
+  const overlayMapDependency = previewMode !== "off" ? map : `${map.id}:${terrainOverlayDependency}`;
 
   useEffect(() => {
     const canvas = baseCanvasRef.current;
@@ -405,6 +406,7 @@ export function RealmzMapCanvas({
       drawRandomRectangles(ctx, map, randomLevel, selectedEntity, cell);
     }
     if (viewOptions.showSecretOverlays) drawSecretTileOverlay(ctx, map, cell, icons);
+    if (viewOptions.showCombatClearingOverlays) drawCombatClearingOverlay(ctx, map, cell);
     if (previewMode !== "off") drawMapVisibilityPreview(ctx, map, tileset, tileAttributes, cell, previewMode, previewFocalPoint);
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, map, mapRecords, selectedEntity, cell);
@@ -436,6 +438,7 @@ export function RealmzMapCanvas({
     smartBrushDrawing,
     regionPreview,
     viewOptions.showSecretOverlays,
+    viewOptions.showCombatClearingOverlays,
     previewMode,
     previewFocalPoint,
     tileAttributes,
@@ -690,6 +693,14 @@ function secretOverlaySignature(map: MapEntity) {
     if (showsHiddenWalkableOverlay(value, map)) marker |= 1;
     if (hasSecretMarkerTile(value, map)) marker |= 2;
     hash = Math.imul(hash ^ marker, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function combatClearingOverlaySignature(map: MapEntity) {
+  let hash = map.levelType === "dungeon" || map.render.mode === "dungeon-top-down" ? 0x811c9dc5 : 0x45d9f3b;
+  for (const value of map.tiles) {
+    hash = Math.imul(hash ^ (showsCombatClearingOverlay(value, map) ? 1 : 0), 16777619);
   }
   return (hash >>> 0).toString(36);
 }

@@ -116,22 +116,65 @@ const PLAINS_EXACT: Record<number, LandlookTileVisualSemantics> = {
 
 const PLAINS_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> = {
   169: { label: "Hidden walkable path", category: "road", confidence: "known", notes: "Divinity marks this Plains path tile with the hidden-walkable symbol." },
-  180: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
-  181: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
-  182: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
-  183: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
-  184: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." },
-  185: { label: "Hidden walkable path segment", category: "road", confidence: "known", notes: "Divinity marks Plains tiles 180-185 with the hidden-walkable symbol." }
+  180: { label: "Combat-clearing structure", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  181: { label: "Combat-clearing structure", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  182: { label: "Combat-clearing structure", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  183: { label: "Combat-clearing structure", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  184: { label: "Combat-clearing structure", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  185: { label: "Combat-clearing structure", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." }
+};
+
+const CASTLE_WALL_EXACT: Record<number, LandlookTileVisualSemantics> = {
+  1: { label: "Straight north-south gray wall", category: "buildings", confidence: "known", notes: "Gray brick wall with north-south continuity; land west and east." },
+  2: { label: "South-facing east-west gray wall", category: "buildings", confidence: "known", notes: "Gray brick wall with east-west continuity; land north. The projected south-facing brick facade extends through the southern part of the tile." },
+  3: { label: "Gray wall to southeast thick wall", category: "buildings", confidence: "known", notes: "Gray wall runs north-south and branches east from the center into thick red/black wall in the southeast. Land west with a small northeast corner pocket." },
+  4: { label: "Gray wall to southwest thick wall", category: "buildings", confidence: "known", notes: "Gray wall runs north-south and branches west from the center into thick red/black wall in the southwest. Land east with a small northwest corner pocket." },
+  5: { label: "Gray wall with southwest thick-wall junction", category: "buildings", confidence: "known", notes: "Gray wall runs north-south and branches west from the center into thick red/black wall in the southwest. Land west with a small northwest corner pocket." },
+  6: { label: "Gray wall with southwest room corner", category: "buildings", confidence: "known", notes: "Gray north-south wall with red/black rock in the small northwest corner; the southwest corner is the northeast corner of a room. Land east." },
+  7: { label: "East-facing wall lever", category: "buildings", confidence: "known", notes: "Gray north-south wall facing east with a lever or switch slot at the east midpoint. Land east and west." },
+  8: { label: "South-facing wall lever", category: "buildings", confidence: "known", notes: "Gray east-west wall facing south with a lever or switch slot at the south midpoint. Land north." },
+  9: { label: "East-facing wall torch", category: "buildings", confidence: "known", notes: "Gray north-south wall facing east with a torch at the east midpoint. Land east and west." },
+  10: { label: "South-facing wall torch", category: "buildings", confidence: "known", notes: "Gray east-west wall facing south with a torch at the south midpoint. Land north." },
+  11: { label: "Gray southeast wall junction", category: "buildings", confidence: "known", notes: "Topology matches tile 3, but a south-facing east-west gray wall occupies the southeast corner instead of thick red/black wall. Land west with a small northeast corner pocket." },
+  12: { label: "Gray southwest wall junction", category: "buildings", confidence: "known", notes: "Topology matches tile 4, but a south-facing east-west gray wall occupies the southwest corner instead of thick red/black wall. Land east with a small northwest corner pocket." },
+  13: { label: "Gray north-east wall corner", category: "buildings", confidence: "known", notes: "Gray wall runs from the north midpoint to center, then from center to the east midpoint. South-facing wall perspective; land west with a small northeast corner pocket." },
+  14: { label: "Gray north-west wall corner", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 13: wall runs from the north midpoint to center, then west. South-facing wall perspective; land east with a small northwest corner pocket." },
+  15: { label: "Gray south-east wall corner", category: "buildings", confidence: "known", notes: "Gray wall runs from the south midpoint to center, then east. South-facing wall perspective; land north and west." },
+  16: { label: "Gray south-west wall corner", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 15: wall runs from the south midpoint to center, then west. South-facing wall perspective; land north and east." },
+  17: { label: "Gray north-east-west wall junction", category: "buildings", confidence: "known", notes: "Three-way wall with continuity north, east, and west. South-facing wall perspective; land in small northwest and northeast corner pockets." },
+  18: { label: "Gray east-west-south wall junction", category: "buildings", confidence: "known", notes: "South-facing gray east-west wall with continuity east, west, and south. Land north." },
+  19: { label: "Gray four-way wall junction", category: "buildings", confidence: "known", notes: "Cross wall with north, east, south, and west continuity. South-facing wall perspective; land in small northwest and northeast corner pockets." },
+  20: { label: "South end-cap for north-south gray wall", category: "buildings", confidence: "known", notes: "Wall connects north and terminates south; the expected southern neighbor is land. Land east and west. Perspective masonry reaches the south edge despite not continuing south." },
+  21: { label: "West end-cap for east-west gray wall", category: "buildings", confidence: "known", notes: "South-facing wall extends from the east midpoint to center and terminates west. Land north and west; projected facade may extend to the tile edge without logical continuity." },
+  22: { label: "North end-cap for north-south gray wall", category: "buildings", confidence: "known", notes: "Wall connects south and terminates north. Land west, north, and east; the oblique projection emphasizes the east side of the wall." },
+  23: { label: "East end-cap for east-west gray wall", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 21: south-facing wall extends from the west midpoint to center and terminates east. Land north and east." },
+  24: { label: "Thick wall west, land east", category: "buildings", confidence: "known", notes: "Thick red/black wall region west with a gray east-facing boundary and land east. Wall continuity north, south, and west." },
+  25: { label: "Thick wall north, land south", category: "buildings", confidence: "known", notes: "Thick red/black wall region north with a gray south-facing boundary and land south. Wall continuity north, east, and west." },
+  26: { label: "Northwest land pocket with southwest wall", category: "buildings", confidence: "known", notes: "Based on tile 24, but land is limited to a small northwest corner pocket and a south-facing east-west gray wall occupies the southwest corner." },
+  27: { label: "Northeast land pocket with southeast wall", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 26: land is limited to a small northeast corner pocket and a south-facing east-west gray wall occupies the southeast corner." },
+  28: { label: "Thick wall northeast, land southwest", category: "buildings", confidence: "known", notes: "Thick red/black northeast outside corner with gray west- and south-facing boundaries. Land southwest; wall continuity north and east." },
+  29: { label: "Thick wall northwest, land southeast", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 28: thick red/black northwest outside corner with gray east- and south-facing boundaries. Land southeast; wall continuity north and west." },
+  30: { label: "Thick wall southeast, land northwest", category: "buildings", confidence: "known", notes: "Thick red/black southeast outside corner with gray north- and west-facing boundaries. Land northwest; wall continuity south and east." },
+  31: { label: "Thick wall southwest, land northeast", category: "buildings", confidence: "known", notes: "Thick red/black southwest outside corner with gray north- and east-facing boundaries. Land northeast; wall continuity south and west." },
+  32: { label: "Thick wall south with north junction", category: "buildings", confidence: "known", notes: "Thick red/black wall fills the bottom half. Gray wall continuity west, east, and north." },
+  33: { label: "Thick wall north with south junction", category: "buildings", confidence: "known", notes: "Vertical counterpart of tile 32: thick red/black wall fills the top half with gray wall continuity west, east, and south. South-facing projection shows wall rather than floor in the southwest and southeast corners." },
+  34: { label: "Southwest thick wall with northeast pocket", category: "buildings", confidence: "known", notes: "Thick red/black wall southwest meets gray walls with north and east continuity. Land in a small northeast corner pocket." },
+  35: { label: "Southeast thick wall with northwest pocket", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 34: thick red/black wall southeast meets gray walls with north and west continuity. Land in a small northwest corner pocket." },
+  36: { label: "Northwest thick wall with projected southeast face", category: "buildings", confidence: "known", notes: "Vertical counterpart of tile 34: thick red/black wall northwest meets gray walls with south and east continuity. South-facing projection shows wall in the southeast corner instead of floor." },
+  37: { label: "Northeast thick wall with projected southwest face", category: "buildings", confidence: "known", notes: "Horizontal mirror of tile 36: thick red/black wall northeast meets gray walls with south and west continuity. South-facing projection shows wall in the southwest corner instead of floor." },
+  38: { label: "Deep thick wall south, land north", category: "buildings", confidence: "known", notes: "Thick red/black wall region south with a gray north-facing boundary and land north; a deeper projected variant of the south wall boundary." },
+  39: { label: "Deep thick wall east, land west", category: "buildings", confidence: "known", notes: "Thick red/black wall region east with a gray west-facing boundary and land west; a deeper projected wall variant." },
+  40: { label: "Solid thick red-black wall", category: "buildings", confidence: "known", notes: "Solid thick red/black outer-wall fill with no land. Perspective filler may touch tile edges without indicating a traversable connection." }
 };
 
 const CASTLE_HIDDEN_WALKABLE_EXACT: Record<number, LandlookTileVisualSemantics> = {
-  59: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
-  60: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
-  61: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
-  62: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
-  63: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
-  64: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
-  65: { label: "Hidden walkable castle passage", category: "road", confidence: "known" },
+  59: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  60: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  61: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  62: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  63: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  64: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
+  65: { label: "Combat-clearing castle wall", category: "buildings", confidence: "known", notes: "Solid during land exploration; its Realmz combat build expands entirely into non-solid ground." },
   96: { label: "Hidden walkable castle floor", category: "road", confidence: "known" }
 };
 
@@ -185,6 +228,7 @@ const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> =
   4: {
     exact: {
       ...PLAINS_EXACT,
+      ...CASTLE_WALL_EXACT,
       61: { label: "Solid masonry / wall fill", category: "mountain-land", confidence: "likely", notes: "Castle atlas slot aligned with the terrain-wall family, not literal mountains." },
       147: { label: "Moat boat / watercraft", category: "watercraft", confidence: "known" },
       ...CASTLE_HIDDEN_WALKABLE_EXACT

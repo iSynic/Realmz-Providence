@@ -481,7 +481,8 @@ const PLAYER_MAP_PREVIEW_VIEW_OPTIONS: MapViewOptions = {
   showBattleOverlays: false,
   showTextOverlays: false,
   showUnknownOverlays: false,
-  showSecretOverlays: false
+  showSecretOverlays: false,
+  showCombatClearingOverlays: false
 };
 
 function PlayerMapPreview({

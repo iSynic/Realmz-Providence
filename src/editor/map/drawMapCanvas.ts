@@ -8,7 +8,7 @@ import {
   randomRectEntityId,
   tileValueAt
 } from "./geometry";
-import { hasSecretMarkerTile, showsHiddenWalkableOverlay } from "./secrets";
+import { hasSecretMarkerTile, showsCombatClearingOverlay, showsHiddenWalkableOverlay } from "./secrets";
 import { triggerEntityId } from "../utils";
 import { drawTileSprite, tileColor } from "../components/TileSprite";
 import { classifyTileValue } from "./tileMetadata";
@@ -331,6 +331,28 @@ export function drawSecretTileOverlay(ctx: CanvasRenderingContext2D, map: MapEnt
       }
     }
   }
+  ctx.restore();
+}
+
+export function drawCombatClearingOverlay(ctx: CanvasRenderingContext2D, map: MapEntity, cell: number) {
+  if (map.levelType === "dungeon") return;
+  ctx.save();
+  for (let y = 0; y < MAP_CELLS; y += 1) {
+    for (let x = 0; x < MAP_CELLS; x += 1) {
+      if (showsCombatClearingOverlay(tileValueAt(map, x, y), map)) {
+        drawCombatClearingMarker(ctx, x, y, cell);
+      }
+    }
+  }
+  ctx.restore();
+}
+
+function drawCombatClearingMarker(ctx: CanvasRenderingContext2D, x: number, y: number, cell: number) {
+  const left = x * cell;
+  const top = y * cell;
+  ctx.save();
+  ctx.fillStyle = "rgba(22, 196, 103, 0.16)";
+  ctx.fillRect(left, top, cell, cell);
   ctx.restore();
 }
 

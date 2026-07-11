@@ -29,7 +29,13 @@ const DISPLAY_FILTERS: OverlayFilter[] = [
     flag: "showSecretOverlays",
     label: "Secrets",
     title: "Secret Tile Overlay",
-    body: "Show official-style Realmz secret and passable marker overlays on top of the underlying tile art. These markers do not replace the map tile itself."
+    body: "Show official-style Realmz hidden-walkable and Secret Area markers on top of the underlying tile art. These markers do not replace the map tile itself."
+  },
+  {
+    flag: "showCombatClearingOverlays",
+    label: "Combat Clearing",
+    title: "Combat-Clearing Terrain",
+    body: "Highlight solid land tiles whose Realmz combat-map expansion becomes open ground. This is separate from hidden-walkable terrain and Secret Areas."
   }
 ];
 

@@ -4633,6 +4633,34 @@
   text-shadow: 0 1px 1px #000;
 }
 
+.tile-swatch--combat-clearing::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(22, 196, 103, 0.12);
+  animation: combat-clearing-pulse 4s ease-in-out infinite;
+}
+
+@keyframes combat-clearing-pulse {
+  0%,
+  100% {
+    background: rgba(22, 196, 103, 0.08);
+  }
+
+  50% {
+    background: rgba(22, 196, 103, 0.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile-swatch--combat-clearing::after {
+    animation: none;
+    background: rgba(22, 196, 103, 0.15);
+  }
+}
+
 
 
 .tile-label {
