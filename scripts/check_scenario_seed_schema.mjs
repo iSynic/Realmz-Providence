@@ -6,10 +6,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const schemaPath = path.join(root, "schemas", "scenario-seed.schema.json");
 const docsPath = path.join(root, "docs", "scenario-seed-schema.md");
 const sourcePath = path.join(root, "src", "editor", "scenarioSeed.ts");
+const namedTilesPath = path.join(root, "src", "editor", "map", "namedLandTiles.ts");
 
 const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
 const docs = fs.readFileSync(docsPath, "utf8");
 const source = fs.readFileSync(sourcePath, "utf8");
+const namedTilesSource = fs.readFileSync(namedTilesPath, "utf8");
 const failures = [];
 
 expect(schema.properties?.schemaVersion?.const === 1, "schemaVersion must be const 1");
@@ -42,6 +44,25 @@ for (const kind of schemaStepKinds) {
   expect(docs.includes(`\`${kind}\``) || docs.includes(kind), `docs must mention ${kind} steps`);
 }
 
+const mapOperationDefs = schema.$defs.mapOperation.oneOf.map((entry) => entry.$ref.split("/").at(-1));
+for (const defName of mapOperationDefs) {
+  const kindSchema = schema.$defs?.[defName]?.properties?.kind;
+  const kinds = kindSchema?.const ? [kindSchema.const] : kindSchema?.enum ?? [];
+  expect(kinds.length > 0, `${defName} must declare a kind const or enum`);
+  for (const kind of kinds) {
+    expect(source.includes(`kind: "${kind}"`) || source.includes(`kind === "${kind}"`), `scenarioSeed.ts must handle ${kind} map operations`);
+    expect(docs.includes(`\`${kind}\``), `docs must mention ${kind} map operations`);
+  }
+}
+
+const namedTileMatch = namedTilesSource.match(/SCENARIO_SEED_NAMED_TILE_NAMES\s*=\s*(\[[\s\S]*?\])\s*as const/);
+expect(Boolean(namedTileMatch), "named land tile source must expose its stable vocabulary");
+if (namedTileMatch) {
+  const sourceNames = JSON.parse(namedTileMatch[1]);
+  const schemaNames = schema.$defs.namedTileName?.enum ?? [];
+  expect(JSON.stringify(schemaNames) === JSON.stringify(sourceNames), "namedTileName schema enum must exactly match the runtime registry");
+}
+
 const sampleSeed = {
   schemaVersion: 1,
   baseTemplate: "blank",
@@ -63,6 +84,8 @@ const sampleSeed = {
       { kind: "road", points: [{ x: 30, y: 30 }, { x: 35, y: 30 }], tile: 11, width: 3 },
       { kind: "river", points: [{ x: 40, y: 40 }, { x: 40, y: 45 }], tile: 12, width: 2 },
       { kind: "stamp", x: 50, y: 50, tiles: [[13, 14], [15, 16]] },
+      { kind: "namedTile", x: 58, y: 58, name: "grave", variant: 2 },
+      { kind: "terrainGroup", terrain: "forest", geometry: { kind: "rect", x: 70, y: 70, width: 4, height: 4 } },
       { kind: "combatClearing", x: 60, y: 60, tile: 181 },
       { kind: "landSecret", x: 60, y: 60, state: "hidden" }
     ]

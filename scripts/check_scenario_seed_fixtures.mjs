@@ -102,7 +102,7 @@ function checkBaseTemplate(createProjectFromScenarioSeed) {
   expect(result.project.scenario.shell?.recLevel === 7, "omitted scenario shell fields should inherit from the base template");
   expect(result.project.maps[0]?.tiles?.[0] === 222, "omitted map family should inherit from the base template");
   expect(result.project.maps[0]?.tiles?.[1 * 90 + 1] === 3156, "replacing an inherited Action Point should preserve an independent hidden land Secret Area at its old coordinate");
-  const replacementMarker = result.project.maps[0]?.tiles?.[5 * 90 + 4];
+  const replacementMarker = tileAt(result.project.maps[0]?.tiles ?? [], 4, 5);
   expect(replacementMarker === 1156, `replacement Action Points should synchronize their normal trigger markers into inherited maps (got ${replacementMarker})`);
   expect(result.project.messages.some((message) => message.id === 77 && message.text === "Template message"), "omitted message family should inherit from the base template");
   expect(result.project.questLabels.length === 0, "an explicitly declared empty family should replace inherited template records");
@@ -134,6 +134,9 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 4, 11) === 15 && tileAt(tiles, 4, 13) === 15, "wide road should paint its full width");
   expect(tileAt(tiles, 10, 14) === 16 && tileAt(tiles, 11, 14) === 16, "even-width river should paint deterministically toward positive coordinates");
   expect(tileAt(tiles, 20, 12) === 21 && tileAt(tiles, 22, 13) === 26, "stamp should preserve its two-dimensional tile pattern");
+  expect(tileAt(tiles, 80, 11) === 111, "named tile placement should resolve a Plains cave transition without exposing its tile ID");
+  expect(tileAt(tiles, 81, 12) === 54, "named tile placement should resolve its 1-based audited variant");
+  expect(tiles[80 * 90 + 11] === 111, "land map operations should store asymmetric coordinates in Realmz column-major order");
   expect(tileAt(tiles, 43, 23) === 60, "semantic water terrain should use the learned plains center tile");
   expect(tileAt(tiles, 40, 20) === 25, "semantic water terrain should compile a southeast-connected quarter-water corner to tile 25");
   expect(tileAt(tiles, 55, 23) >= 61 && tileAt(tiles, 55, 23) <= 85, "semantic mountain terrain should use a land-edge mountain tile away from water");
@@ -145,9 +148,11 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 31, 12) === 2169, "default hidden walkable terrain should support an already revealed Secret Area state without an Action Point");
   expect(tileAt(tiles, 32, 12) === 1001, "generated land Action Points should write the normal trigger marker into their map cell");
   const dungeonTiles = result.project.maps.find((map) => map.levelType === "dungeon")?.tiles ?? [];
-  expect(tileAt(dungeonTiles, 4, 4) === 0x1501, "generated dungeon Action Points should preserve directional secret-passage flags and add the trigger marker");
+  expect(tileAt(dungeonTiles, 4, 4, "dungeon") === 0x1501, "generated dungeon Action Points should preserve directional secret-passage flags and add the trigger marker");
+  expect(tileAt(dungeonTiles, 7, 4, "dungeon") === 77 && dungeonTiles[4 * 90 + 7] === 77, "dungeon map operations should retain row-major storage");
   const castleTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === 1)?.tiles ?? [];
   expect(tileAt(castleTiles, 1, 1) === 59 && tileAt(castleTiles, 2, 1) === 96, "Castle operations should keep combat-clearing tile 59 distinct from default hidden-walkable tile 96");
+  expect(tileAt(castleTiles, 10, 20) === 146 && tileAt(castleTiles, 11, 21) === 155, "Castle named tiles should resolve audited fixtures and variants");
   const semanticLandlooks = [
     { index: 2, name: "Desert", hidden: [169, 184], combat: [180, 185] },
     { index: 3, name: "Swamp", hidden: [169], combat: [180] },
@@ -160,6 +165,8 @@ function checkMapOperations(createProjectFromScenarioSeed) {
     expect(tileAt(semanticTiles, 32, 12) === 121, `${landlook.name} semantic forest should use the reviewed grove center tile`);
     landlook.hidden.forEach((tile, offset) => expect(tileAt(semanticTiles, 40 + offset, 10) === tile, `${landlook.name} hidden-walkable operation should preserve tile ${tile}`));
     landlook.combat.forEach((tile, offset) => expect(tileAt(semanticTiles, 40 + landlook.hidden.length + offset, 10) === tile, `${landlook.name} combat-clearing operation should preserve tile ${tile}`));
+    const expectedNamedTile = landlook.name === "Desert" ? 130 : landlook.name === "Swamp" ? 188 : 160;
+    expect(tileAt(semanticTiles, 50, 10) === expectedNamedTile, `${landlook.name} named tile should resolve the selected landlook-specific variant`);
   }
 }
 
@@ -554,6 +561,10 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(mapSemantics.errors.some((error) => error.includes("does not have a checked-in semantic terrain profile")), "semantic terrain should reject custom landlooks without curated profiles");
     expect(mapSemantics.errors.some((error) => error.includes("hiddenWalkable is not valid for landlook 6")), "stock hidden-walkable terrain should reject landlooks without a known concealed-walkable set");
     expect(mapSemantics.errors.some((error) => error.includes("combatClearing is not valid for landlook 6")), "combat-clearing terrain should reject landlooks without a known source-backed set");
+    expect(mapSemantics.errors.some((error) => error.includes("namedTile is only valid on land maps")), "named tiles should reject dungeon maps");
+    expect(mapSemantics.errors.some((error) => error.includes("variant must be between 1 and 3")), "named tiles should reject unavailable variants");
+    expect(mapSemantics.errors.some((error) => error.includes("supported stable named land tile")), "named tiles should reject unknown names");
+    expect(mapSemantics.errors.some((error) => error.includes("named tile \"open-ground\" is not available for landlook 6")), "named tiles should reject names unavailable for a landlook");
   }
 
   const causeRoutContext = createProjectFromScenarioSeed(readSeed("invalid-battle-outcomes.seed.json"));
@@ -721,6 +732,6 @@ function actionCodes(trigger) {
   return (trigger?.actions ?? []).map((action) => action.rawCode);
 }
 
-function tileAt(tiles, x, y) {
-  return tiles[y * 90 + x];
+function tileAt(tiles, x, y, levelType = "land") {
+  return tiles[levelType === "dungeon" ? y * 90 + x : x * 90 + y];
 }

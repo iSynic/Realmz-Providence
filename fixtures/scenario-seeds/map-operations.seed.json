@@ -32,6 +32,8 @@
         { "kind": "road", "points": [{ "x": 2, "y": 12 }, { "x": 6, "y": 12 }], "tile": 15, "width": 3 },
         { "kind": "river", "points": [{ "x": 10, "y": 12 }, { "x": 10, "y": 16 }], "tile": 16, "width": 2 },
         { "kind": "stamp", "x": 20, "y": 12, "tiles": [[21, 22, 23], [24, 25, 26]] },
+        { "kind": "namedTile", "x": 80, "y": 11, "name": "land-to-cave-cave-south" },
+        { "kind": "namedTile", "x": 81, "y": 12, "name": "grave", "variant": 3 },
         { "kind": "terrainGroup", "terrain": "water", "geometry": { "kind": "rect", "x": 40, "y": 20, "width": 7, "height": 7 } },
         { "kind": "terrainGroup", "terrain": "mountains", "geometry": { "kind": "path", "points": [{ "x": 55, "y": 20 }, { "x": 55, "y": 26 }], "width": 3 } },
         { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "rect", "x": 65, "y": 20, "width": 5, "height": 5 } },
@@ -48,7 +50,8 @@
       "index": 0,
       "fillTile": 1,
       "operations": [
-        { "kind": "dungeonPassage", "x": 4, "y": 4, "directions": ["north", "south"] }
+        { "kind": "dungeonPassage", "x": 4, "y": 4, "directions": ["north", "south"] },
+        { "kind": "rect", "x": 7, "y": 4, "width": 1, "height": 1, "tile": 77 }
       ]
     },
     {
@@ -59,7 +62,9 @@
       "fillTile": 111,
       "operations": [
         { "kind": "combatClearing", "x": 1, "y": 1, "tile": 59 },
-        { "kind": "hiddenWalkable", "x": 2, "y": 1 }
+        { "kind": "hiddenWalkable", "x": 2, "y": 1 },
+        { "kind": "namedTile", "x": 10, "y": 20, "name": "alchemy-table" },
+        { "kind": "namedTile", "x": 11, "y": 21, "name": "open-ground", "variant": 2 }
       ]
     },
     {
@@ -75,7 +80,8 @@
         { "kind": "hiddenWalkable", "x": 40, "y": 10 },
         { "kind": "hiddenWalkable", "x": 41, "y": 10, "tile": 184 },
         { "kind": "combatClearing", "x": 42, "y": 10 },
-        { "kind": "combatClearing", "x": 43, "y": 10, "tile": 185 }
+        { "kind": "combatClearing", "x": 43, "y": 10, "tile": 185 },
+        { "kind": "namedTile", "x": 50, "y": 10, "name": "bridge-over-water", "variant": 2 }
       ]
     },
     {
@@ -89,7 +95,8 @@
         { "kind": "terrainGroup", "terrain": "mountains", "geometry": { "kind": "rect", "x": 20, "y": 10, "width": 5, "height": 5 } },
         { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "rect", "x": 30, "y": 10, "width": 5, "height": 5 } },
         { "kind": "hiddenWalkable", "x": 40, "y": 10 },
-        { "kind": "combatClearing", "x": 41, "y": 10 }
+        { "kind": "combatClearing", "x": 41, "y": 10 },
+        { "kind": "namedTile", "x": 50, "y": 10, "name": "grave", "variant": 2 }
       ]
     },
     {
@@ -103,7 +110,8 @@
         { "kind": "terrainGroup", "terrain": "mountains", "geometry": { "kind": "rect", "x": 20, "y": 10, "width": 5, "height": 5 } },
         { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "rect", "x": 30, "y": 10, "width": 5, "height": 5 } },
         { "kind": "hiddenWalkable", "x": 40, "y": 10 },
-        { "kind": "combatClearing", "x": 41, "y": 10 }
+        { "kind": "combatClearing", "x": 41, "y": 10 },
+        { "kind": "namedTile", "x": 50, "y": 10, "name": "open-ground", "variant": 6 }
       ]
     }
   ],
