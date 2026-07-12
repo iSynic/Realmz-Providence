@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Eye, Plus, Save, Trash2, Volume2, X } from "lucide-react";
 import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
-import { actionSlotEntityId, linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
+import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
@@ -15,7 +15,7 @@ import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepO
 import { edcdFieldNamesForShape } from "../realmzEdcd";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
 import { divinityHelpForOpcode } from "../divinityOpcodeHelp";
-import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
+import { ScriptDiagnostic, validateActionDraft } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 import { actionPointMarkerStateForTrigger, isSecretActionPointState } from "../map/actionPointMarkers";
@@ -88,6 +88,27 @@ import {
   rogueSpellPathSummary
 } from "./scripts/ThiefEncounterShell";
 import { TimedEncounterShell, timedEncounterEligibilitySummary } from "./scripts/TimedEncounterShell";
+import { InlineMessageTargetEditor } from "./scripts/InlineMessageTargetEditor";
+import { ScriptDiagnostics } from "./scripts/ScriptDiagnostics";
+import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./scripts/actionPointDiagnostics";
+import { defaultDraftForProject, edcdDraftValuesEqual, type EdcdStepDraft } from "./scripts/actionPointDraft";
+import { actionSlotIndexFromSelection, actionSlotSelectionId, includeSelectedTrigger } from "./scripts/actionPointSelection";
+import {
+  actionAuthoringStateDetail,
+  actionAuthoringStateLabel,
+  actionSettingsFieldLabel,
+  actionSettingsTitleForStep,
+  actionStorageLabel,
+  authorSettingsWarning,
+  combatMacroActionNote,
+  combatMacroActionOpcodes,
+  combatMacroContextBody,
+  combatMacroContextLabel,
+  combatMacroContextTitle,
+  humanActionValueLabel,
+  type CombatMacroContext,
+  type CombatMacroReference
+} from "./scripts/actionPointPresentation";
 import { updateArraySlot } from "./scripts/arraySlots";
 
 const MONSTER_TRAIT_LABELS = [
@@ -108,31 +129,6 @@ function shouldSuppressInlineTargetRecordPanel(recordType: RealmzTargetRecordKin
   return recordType === "simpleEncounter" || recordType === "complexEncounter";
 }
 
-function includeSelectedTrigger(records: TriggerRecord[], selected: TriggerRecord | null, limit: number) {
-  const cappedLimit = Math.max(0, limit);
-  const visible = records.slice(0, cappedLimit);
-  if (!selected || visible.some((record) => record.id === selected.id)) return visible;
-  if (!records.some((record) => record.id === selected.id)) return visible;
-  return [selected, ...visible];
-}
-
-function defaultDraftForProject(project: Project, definition: ScriptActionDefinition) {
-  const draft = definition.defaultDraft;
-  if (!draft.parameters || draft.id !== 0) return { rawCode: draft.rawCode, id: draft.id };
-  return { rawCode: draft.rawCode, id: nextUnusedEdcdRowId(project) };
-}
-
-type EdcdStepDraft = {
-  values: [number, number, number, number, number];
-  dirty: boolean;
-  secondaryValues?: [number, number, number, number, number];
-  secondaryDirty?: boolean;
-};
-
-function edcdDraftValuesEqual(left?: readonly number[], right?: readonly number[]) {
-  return [0, 1, 2, 3, 4].every((index) => Number(left?.[index] ?? 0) === Number(right?.[index] ?? 0));
-}
-
 type SelectedEdcdUsage = {
   rowId?: number;
   shape?: string;
@@ -143,23 +139,6 @@ type SelectedEdcdUsage = {
   secondaryFields?: { name?: string; value?: number }[];
   diagnostics?: string[];
   summary?: string;
-};
-
-type CombatMacroContextKind = "battle" | "monster" | "mixed";
-
-type CombatMacroReference = {
-  kind: "battle" | "monster";
-  key: string;
-  label: string;
-  detail: string;
-  entity?: SelectedEntity;
-  runnable?: boolean;
-};
-
-type CombatMacroContext = {
-  kind: CombatMacroContextKind;
-  references: CombatMacroReference[];
-  rootType: string | null;
 };
 
 type PendingScriptDestructiveAction = {
@@ -225,48 +204,6 @@ const ROGUE_ENCOUNTER_SOURCE_HELP =
   "Rogue Encounters are Data TD2 source records for locks, traps, search, and thief-skill actions. Runtime can mark traps detected, disabled, or sprung without changing this source record.";
 const TIMED_ENCOUNTER_SOURCE_HELP =
   "Time Encounters are Data TD3 source records. Realmz checks schedule, chance, location, item, and quest gates, then runs the Extra Action Point target when everything matches.";
-const scriptDiagnosticCache = new WeakMap<TriggerRecord, { key: string; diagnostics: ScriptDiagnostic[] }>();
-const objectIdentity = new WeakMap<object, number>();
-let nextObjectIdentity = 1;
-
-function refKey(value: object | null | undefined) {
-  if (!value) return "none";
-  const existing = objectIdentity.get(value);
-  if (existing) return existing;
-  const next = nextObjectIdentity++;
-  objectIdentity.set(value, next);
-  return next;
-}
-
-function scriptDiagnosticDependencyKey(project: Project, catalog?: LibraryCatalog | null) {
-  return [
-    refKey(catalog ?? null),
-    refKey(project.triggers),
-    refKey(project.extracodes),
-    refKey(project.messages),
-    refKey(project.battles),
-    refKey(project.monsters),
-    refKey(project.treasures),
-    refKey(project.shops),
-    refKey(project.simpleEncounters),
-    refKey(project.complexEncounters),
-    refKey(project.thiefEncounters),
-    refKey(project.timedEncounters),
-    refKey(project.questLabels),
-    refKey(project.assets),
-    refKey(project.maps),
-    refKey(project.mapRecords)
-  ].join("|");
-}
-
-function cachedValidateScriptTrigger(project: Project, trigger: TriggerRecord, catalog: LibraryCatalog | null | undefined, dependencyKey: string) {
-  const cached = scriptDiagnosticCache.get(trigger);
-  if (cached?.key === dependencyKey) return cached.diagnostics;
-  const diagnostics = validateScriptTrigger(project, trigger, catalog);
-  scriptDiagnosticCache.set(trigger, { key: dependencyKey, diagnostics });
-  return diagnostics;
-}
-
 function authorFacingExtraActionKind(classification: string, combatMacroContext?: CombatMacroContext | null) {
   if (combatMacroContext?.kind === "battle") return "Battle Macro";
   if (combatMacroContext?.kind === "monster") return "Monster Macro";
@@ -325,54 +262,6 @@ function combatMacroContextFor(project: Project, trigger: TriggerRecord, reachab
     references: uniqueReferences,
     rootType
   };
-}
-
-function combatMacroContextTitle(context: CombatMacroContext) {
-  if (context.kind === "battle") return "Battle Macro";
-  if (context.kind === "monster") return "Monster Macro";
-  return "Combat Macro";
-}
-
-function combatMacroContextBody(context: CombatMacroContext) {
-  if (context.kind === "battle") {
-    return "Realmz checks an assigned battle macro after each combat round. Code 126 is the battle criteria gate and is often the first step; if its criteria pass, the remaining steps execute in battle context.";
-  }
-  if (context.kind === "monster") {
-    return "Realmz runs an assigned monster macro when that monster dies. Monster macro actions can target the dead monster position, the killer, or related active combat monsters depending on the opcode.";
-  }
-  return "This Extra Action Point is referenced from both battle and monster combat paths. Keep battle-round criteria and monster-death effects explicit when mixing those flows.";
-}
-
-function combatMacroContextLabel(context: CombatMacroContext) {
-  const battleCount = context.references.filter((reference) => reference.kind === "battle").length;
-  const monsterCount = context.references.filter((reference) => reference.kind === "monster").length;
-  if (battleCount && monsterCount) return `${battleCount} battle / ${monsterCount} monster reference(s)`;
-  if (battleCount) return `${battleCount} battle reference(s)`;
-  if (monsterCount) return `${monsterCount} monster reference(s)`;
-  return context.rootType ? `Reachability: ${context.rootType}` : "Combat reachability";
-}
-
-function combatMacroActionOpcodes(context: CombatMacroContext | null) {
-  if (!context) return [];
-  if (context.kind === "battle") return [126, 127, 121, 123, 124, 125, 120];
-  if (context.kind === "monster") return [119, 122, 127, 121, 123, 124, 125, 120, 17];
-  return [126, 119, 122, 127, 121, 123, 124, 125, 120, 17];
-}
-
-function combatMacroActionNote(opcode: number, context: CombatMacroContext | null) {
-  if (!context) return null;
-  const code = normalizeStepOpcode(opcode);
-  if (code === 126) return "Battle macro criteria: Realmz checks this after each combat round before continuing the rest of the macro.";
-  if (code === 119) return "Monster macro revive: an NPC killed in combat returns after combat with 1 stamina.";
-  if (code === 122) return "Monster macro fumble: affects the creature that killed this monster.";
-  if (code === 17 && context.kind !== "battle") return "In a monster death macro, Realmz uses the destroyed monster's position for the spell target.";
-  if (code === 121) return "Combat macro action: de-animates lower unintelligent undead in monster or battle macro context.";
-  if (code === 123) return "Combat macro action: routes matching active monsters away from the fight.";
-  if (code === 124) return "Combat macro action: spawns replacement monsters from the macro's combat context.";
-  if (code === 125) return "Combat macro action: destroys related active monsters.";
-  if (code === 127) return "Combat macro condition: continue only while the selected monster is still present.";
-  if (code === 120) return "Combat mutation: changes an active monster or NPC icon/traitor value during combat.";
-  return null;
 }
 
 export function ScriptsPanel({
@@ -469,16 +358,6 @@ function ScriptEditorTabs({
   );
 }
 
-function actionSlotSelectionId(trigger: TriggerRecord, slot: number) {
-  return actionSlotEntityId(trigger, slot);
-}
-
-function actionSlotIndexFromSelection(entityId: string | null | undefined) {
-  if (!entityId?.startsWith("action-slot:")) return null;
-  const slot = Number(entityId.slice(entityId.lastIndexOf(":") + 1));
-  return Number.isInteger(slot) ? slot : null;
-}
-
 function ScriptAuthoringPanel({
   project,
   catalog,
@@ -551,7 +430,7 @@ function ScriptAuthoringPanel({
   useEffect(() => {
     selectedScriptButtonRef.current?.scrollIntoView({ block: "nearest" });
   }, [selectedEntity?.id, inventoryFilter, scriptQuery, scripts.length]);
-  const diagnosticDependencyKey = useMemo(() => project ? scriptDiagnosticDependencyKey(project, catalog) : "", [project, catalog]);
+  const diagnosticDependencyKey = useMemo(() => project ? actionPointDiagnosticDependencyKey(project, catalog) : "", [project, catalog]);
   useEffect(() => {
     setWarningScanReady(false);
     if (inventoryFilter !== "warnings") return;
@@ -562,7 +441,7 @@ function ScriptAuthoringPanel({
     const map = new Map<string, ScriptDiagnostic[]>();
     if (!project || inventoryFilter !== "warnings" || !warningScanReady) return map;
     for (const trigger of scripts) {
-      const diagnostics = cachedValidateScriptTrigger(project, trigger, catalog, diagnosticDependencyKey);
+      const diagnostics = validateActionPointTriggerCached(project, trigger, catalog, diagnosticDependencyKey);
       if (hasScriptWarning(diagnostics)) map.set(trigger.id, diagnostics);
     }
     return map;
@@ -722,7 +601,7 @@ function ScriptAuthoringPanel({
     const map = new Map(fullWarningDiagnosticsById);
     if (!project) return map;
     if (selectedDiagnosticsReady && selectedTrigger && !map.has(selectedTrigger.id)) {
-      map.set(selectedTrigger.id, cachedValidateScriptTrigger(project, selectedTrigger, catalog, diagnosticDependencyKey));
+      map.set(selectedTrigger.id, validateActionPointTriggerCached(project, selectedTrigger, catalog, diagnosticDependencyKey));
     }
     return map;
   }, [project, selectedTrigger, selectedDiagnosticsReady, catalog, diagnosticDependencyKey, fullWarningDiagnosticsById]);
@@ -2605,11 +2484,6 @@ function selectEntityForFlowTarget(target: { targetKind: string; value: number }
   return selectEntityFromId(`${target.targetKind}:${target.value}`);
 }
 
-function humanActionValueLabel(label: string) {
-  const clean = label.replace(/\bID\b/g, "Value").replace(/\bNumber\b/g, "Value").replace(/\s+/g, " ").trim();
-  return clean && clean !== "Value" ? clean : "Value";
-}
-
 function scriptDraftGuardSummary(
   project: Project,
   trigger: TriggerRecord,
@@ -2627,87 +2501,6 @@ function scriptDraftGuardSummary(
     `Applied: ${appliedLabel}`,
     `Draft: ${definition.shortLabel} (CODE ${draft.rawCode}, ID ${draft.id})`
   ];
-}
-
-function actionAuthoringStateLabel(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
-  if (definition.opcode === 121 && combatMacroContext) return "Combat macro action";
-  if (definition.opcode === 121) return "Macro-only imported action";
-  if ([84, 98, 99].includes(definition.opcode)) return "Legacy registration action";
-  if (definition.shortLabel === "Inert Imported Action") return "Inert imported action";
-  if (definition.validationPosture === "no-effect") return "Preserve-only / no normal effect";
-  if (definition.authoringLevel === "first-class") return "Friendly editor";
-  if (definition.authoringLevel === "guided") return "Guided settings editor";
-  if (definition.authoringLevel === "advanced") return "Unmodeled action";
-  return "Empty step";
-}
-
-function actionAuthoringStateDetail(definition: ScriptActionDefinition, combatMacroContext?: CombatMacroContext | null) {
-  if (definition.opcode === 121) {
-    if (combatMacroContext) return "This action is meaningful in the selected battle or monster macro. Providence edits the same CODE/ID and Action Settings while keeping Extra Action Point storage unchanged.";
-    return "Realmz source performs this only during combat. Ordinary AP imports are preserved here and are not routine Action Point authoring backlog; use monster or battle macro surfaces for intentional authoring.";
-  }
-  if ([84, 98, 99].includes(definition.opcode)) {
-    return "Divinity documents these registration actions without an authored ID or E-Code value. Placing the step runs the legacy registration behavior; modern open-source Realmz keeps related dispatchers but comments out enforcement.";
-  }
-  if (definition.shortLabel === "Inert Imported Action") {
-    return "This is a documented Not Used opcode. Providence keeps the imported CODE/ID value, but it is not normal authoring behavior.";
-  }
-  if (definition.validationPosture === "no-effect") {
-    return "Realmz does not expose normal runtime behavior for this dispatcher row. Providence preserves the stored CODE/ID values, but routine authoring is disabled.";
-  }
-  if (definition.authoringLevel === "first-class") {
-    return "Providence knows the target type and can edit this as normal scenario behavior.";
-  }
-  if (definition.authoringLevel === "guided") {
-    return "Providence edits the attached Action Settings with named fields, while keeping the original storage row and file format intact.";
-  }
-  if (definition.authoringLevel === "advanced") {
-    return "Providence recognizes and preserves the stored values, but this action does not yet have a complete friendly authoring form.";
-  }
-  return "Realmz skips empty slots.";
-}
-
-function actionStorageLabel(definition: ScriptActionDefinition) {
-  if (definition.storage === "direct-code-id") return "Direct CODE / ID";
-  if (definition.storage === "data-edcd-parameter-row") return "Action Settings";
-  if (definition.storage === "data-ed3-direct") return "Extra Action Point";
-  if (definition.storage === "same-map-action-point-copy") return "Same-map Action Point copy";
-  return definition.storage;
-}
-
-function actionSettingsTitleForShape(edcdShape?: string | null, fallback = "Action Settings") {
-  const normalized = edcdShape?.toLowerCase();
-  const titles: Record<string, string> = {
-    "action-data-patching": "Action Code Replacement",
-    battle: "Battle Setup",
-    choice: "Choice Dialog",
-    "random-message": "Message Range",
-    teleport: "Movement",
-    "party-condition-branch": "Condition Branch",
-    "force-branch": "Branch Target",
-    "percent-branch": "Percent Branch",
-    "condition-branch": "Condition Branch",
-    "random-region-shape-mutation": "Random Area Shape",
-    fumble: "Fumble Result"
-  };
-  return normalized ? titles[normalized] ?? fallback : fallback;
-}
-
-function actionSettingsTitleForStep(definition: ScriptActionDefinition, edcdShape?: string) {
-  return actionSettingsTitleForShape(edcdShape, definition.target?.label ?? "Action Settings");
-}
-
-function actionSettingsFieldLabel(title: string) {
-  return title.endsWith("Settings") ? title : `${title} Settings`;
-}
-
-function authorSettingsWarning(usage: EdcdRowUsage, title: string, warning: string) {
-  const label = actionSettingsFieldLabel(title).toLowerCase();
-  if (usage.status === "missing") return `This step references ${label} that do not exist yet. Applying the fields below will create them.`;
-  if (usage.status === "shared") return `These ${label} are shared by ${usage.callers.length} steps. Editing them changes every caller.`;
-  if (usage.status === "conflict") return `These settings are used by different action types: ${usage.possibleShapes.join(", ")}. Duplicate before editing if that is not intentional.`;
-  if (usage.status === "unused") return `These ${label} are stored but not called by another script yet.`;
-  return warning.replace(/\bSettings\s*#?\d+\b/gi, "these settings");
 }
 
 function useTargetPreviewUrl(option: ScriptTargetOption | null, opcode: number, project: Project, desktopRuntime: boolean, projectDir: string, workspaceDir: string) {
@@ -3944,46 +3737,6 @@ export function TargetRecordEditor({
   return null;
 }
 
-function InlineMessageTargetEditor({
-  project,
-  targetId,
-  onApplyCommand
-}: {
-  project: Project;
-  targetId: number;
-  onApplyCommand?: (command: ProjectCommand) => void;
-}) {
-  if (!Number.isInteger(targetId) || targetId <= 0) return null;
-  const record = project.messages?.find((candidate) => candidate.id === targetId);
-  return (
-    <div className="inline-message-target-editor">
-      {record ? (
-        <label className="script-target-wide-field">
-          <span>Text</span>
-          <textarea
-            key={`inline-message:${targetId}`}
-            defaultValue={record.text}
-            maxLength={255}
-            onBlur={(event) => onApplyCommand?.({ kind: "updateMessageRecord", label: "Update string", id: targetId, changes: { text: event.currentTarget.value } })}
-          />
-          <small>{record.text.length}/255 bytes before Classic encoding</small>
-        </label>
-      ) : (
-        <div className="inline-message-target-missing">
-          <small>This step points at string {targetId}, but that string does not exist yet.</small>
-          <button
-            type="button"
-            className="btn btn-secondary btn-xs"
-            onClick={() => onApplyCommand?.({ kind: "createTargetRecord", label: "Create string", recordType: "message", id: targetId })}
-          >
-            Create String
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function InlineTargetShell({
   title,
   exists,
@@ -4911,31 +4664,6 @@ function MapCoordinateJumpButton({
     >
       <Eye size={12} />
     </button>
-  );
-}
-
-function ScriptDiagnostics({ issues }: { issues: ScriptDiagnostic[] }) {
-  if (issues.length === 0) {
-    return (
-      <div className="script-diagnostics ok">
-        <span>Ready</span>
-        <strong>No script blockers detected for this selection.</strong>
-      </div>
-    );
-  }
-  return (
-    <div className="script-diagnostics">
-      {issues.slice(0, 5).map((issue) => (
-        <div key={issue.id} className={`script-diagnostic ${issue.severity}`}>
-          <AlertTriangle size={13} />
-          <span>
-            <strong>{issue.slot != null ? `Slot ${issue.slot}: ${issue.message}` : issue.message}</strong>
-            <small>{issue.detail}</small>
-          </span>
-        </div>
-      ))}
-      {issues.length > 5 && <small className="script-diagnostic-more">{issues.length - 5} more issue(s) in this script.</small>}
-    </div>
   );
 }
 
