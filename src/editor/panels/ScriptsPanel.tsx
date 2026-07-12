@@ -79,20 +79,15 @@ import {
   resultStatusLabel,
   rogueActionHasOutcomeData,
   shortSnippet,
-  updateEncounterActionRow,
   type EncounterDecisionSource
 } from "./scripts/encounterFlow";
-import { EncounterResultActionMatrix } from "./scripts/EncounterResultActionMatrix";
 import { useEncounterSoundPreviewUrl } from "./scripts/EncounterResultSoundPreview";
-import { EncounterResponseEditor } from "./scripts/EncounterResponseEditor";
-import { EncounterPromptStringEditor } from "./scripts/EncounterPromptStringEditor";
+import { EncounterShell } from "./scripts/EncounterShell";
 import {
-  EncounterCopyPanel,
-  EncounterCopyRoutePreview,
-  encounterCopyResponseSections,
-  encounterCopyResultSections,
-  type EncounterCopySource
-} from "./scripts/EncounterCopyPanel";
+  EncounterRecordPicker,
+  encounterEntityId
+} from "./scripts/EncounterRecordPicker";
+import { InlineNumberField } from "./scripts/InlineNumberField";
 import { updateArraySlot } from "./scripts/arraySlots";
 import { spellReferenceOptions } from "./scripts/encounterResponseOptions";
 
@@ -231,10 +226,6 @@ const ROGUE_ENCOUNTER_SOURCE_HELP =
   "Rogue Encounters are Data TD2 source records for locks, traps, search, and thief-skill actions. Runtime can mark traps detected, disabled, or sprung without changing this source record.";
 const TIMED_ENCOUNTER_SOURCE_HELP =
   "Time Encounters are Data TD3 source records. Realmz checks schedule, chance, location, item, and quest gates, then runs the Extra Action Point target when everything matches.";
-const ENCOUNTER_SETUP_HELP =
-  "Encounter setup owns the shared source fields: prompt string, back-out behavior, max attempts, and caste-success value. The prompt is a central String; option labels below are inline buffers.";
-const COMPLEX_THIEF_BRANCH_HELP =
-  "The complex thief branch links into a Rogue Encounter. That rogue scene decides which lock, trap, and thief actions are available, then returns result numbers into this Complex Encounter's result script columns.";
 const ROGUE_ACTION_TESTS_HELP =
   "Rogue action rows control which Divinity thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome.";
 const ROGUE_TRAP_HELP =
@@ -3326,6 +3317,8 @@ export function TargetRecordEditor({
             onSelectEditor={onSelectEditor}
             onSelectEncounterRecordType={onSelectEncounterRecordType}
             onApplyCommand={onApplyCommand}
+            targetExists={(recordType, id) => targetRecordExists(project, recordType, id)}
+            renderRecordPreview={(targetType, id) => encounterResultRecordPreview(project, catalog, targetType, id)}
           />
         )}
       </InlineTargetShell>
@@ -3371,6 +3364,8 @@ export function TargetRecordEditor({
             onSelectEditor={onSelectEditor}
             onSelectEncounterRecordType={onSelectEncounterRecordType}
             onApplyCommand={onApplyCommand}
+            targetExists={(recordType, id) => targetRecordExists(project, recordType, id)}
+            renderRecordPreview={(targetType, id) => encounterResultRecordPreview(project, catalog, targetType, id)}
           />
         )}
       </InlineTargetShell>
@@ -4322,442 +4317,10 @@ function encounterResultRecordPreview(
   return record ? <EncounterTargetCard project={project} recordType="timedEncounter" id={targetId} record={record} /> : null;
 }
 
-function encounterEntityId(recordType: "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter", id: number) {
-  if (recordType === "simpleEncounter") return `encounter:simple:${id}`;
-  if (recordType === "complexEncounter") return `encounter:complex:${id}`;
-  if (recordType === "thiefEncounter") return `thief:${id}`;
-  return `time:${id}`;
-}
-
-type EncounterRecordPickerType = "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter";
-
-function encounterRecordsForType(project: Project, recordType: EncounterRecordPickerType): Array<{ id: number }> {
-  const records =
-    recordType === "simpleEncounter" ? project.simpleEncounters :
-    recordType === "complexEncounter" ? project.complexEncounters :
-    recordType === "thiefEncounter" ? project.thiefEncounters :
-    project.timedEncounters;
-  return [...(records ?? [])].sort((a, b) => a.id - b.id);
-}
-
-function encounterRecordLabel(recordType: EncounterRecordPickerType, id: number) {
-  if (recordType === "simpleEncounter") return `Simple Encounter ${id}`;
-  if (recordType === "complexEncounter") return `Complex Encounter ${id}`;
-  if (recordType === "thiefEncounter") return `Rogue Encounter ${id}`;
-  return `Time Encounter ${id}`;
-}
-
-function EncounterRecordPicker({
-  project,
-  recordType,
-  id,
-  onSelectEntity,
-  className = ""
-}: {
-  project: Project;
-  recordType: EncounterRecordPickerType;
-  id: number;
-  onSelectEntity?: (entity: SelectedEntity) => void;
-  className?: string;
-}) {
-  const records = encounterRecordsForType(project, recordType);
-  return (
-    <div className={`encounter-record-picker-row${className ? ` ${className}` : ""}`}>
-      <label className="encounter-record-picker">
-        <span>Encounter Record</span>
-        <select
-          aria-label={`${encounterRecordLabel(recordType, id)} picker`}
-          value={id}
-          disabled={!onSelectEntity || records.length <= 1}
-          onChange={(event) => {
-            const nextId = Number(event.currentTarget.value);
-            if (!Number.isInteger(nextId) || nextId === id) return;
-            onSelectEntity?.(selectEntityFromId(encounterEntityId(recordType, nextId)));
-          }}
-        >
-          {records.map((record) => (
-            <option key={record.id} value={record.id}>{encounterRecordLabel(recordType, record.id)}</option>
-          ))}
-        </select>
-      </label>
-    </div>
-  );
-}
-
 function messageSnippet(project: Project, id: number) {
   if (id <= 0) return "";
   const text = project.messages?.find((record) => record.id === id)?.text ?? "";
   return text ? `Prompt ${id}: ${shortSnippet(text, 84)}` : `Prompt string ${id}`;
-}
-
-function EncounterShell({
-  project,
-  recordKind,
-  id,
-  texts,
-  prompt,
-  canBackOut,
-  maxTimes,
-  casteSuccess,
-  actionResult = 0,
-  wordResult = 0,
-  groups = [],
-  spellIds = [],
-  spellResults = [],
-  itemIds = [],
-  itemResults = [],
-  choiceResults,
-  wordResults,
-  thief,
-  thiefSuccess,
-  actions,
-  catalog,
-  desktopRuntime = false,
-  projectDir = "",
-  workspaceDir = "",
-  onSelectEntity,
-  onSelectEditor,
-  onSelectEncounterRecordType,
-  onApplyCommand
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  desktopRuntime?: boolean;
-  projectDir?: string;
-  workspaceDir?: string;
-  recordKind: "simple" | "complex";
-  id: number;
-  texts: string[];
-  prompt: number;
-  canBackOut: boolean;
-  maxTimes: number;
-  casteSuccess: number;
-  actionResult?: number;
-  wordResult?: number;
-  groups?: number[];
-  spellIds?: number[];
-  spellResults?: number[];
-  itemIds?: number[];
-  itemResults?: number[];
-  choiceResults: number[];
-  wordResults?: number[];
-  thief?: boolean;
-  thiefSuccess?: number;
-  actions: EncounterActionRow[];
-  onSelectEntity?: (entity: SelectedEntity) => void;
-  onSelectEditor?: (editor: string) => void;
-  onSelectEncounterRecordType?: (recordType: RealmzTargetRecordKind) => void;
-  onApplyCommand?: (command: ProjectCommand) => void;
-}) {
-  const encounterRecordType: "simpleEncounter" | "complexEncounter" = recordKind === "simple" ? "simpleEncounter" : "complexEncounter";
-  const update = (changes: Record<string, unknown>) => {
-    if (recordKind === "simple") {
-      onApplyCommand?.({ kind: "updateSimpleEncounterRecord", label: "Update simple encounter", id, changes });
-    } else {
-      onApplyCommand?.({ kind: "updateComplexEncounterRecord", label: "Update complex encounter", id, changes });
-    }
-  };
-  const [selectedResultIndex, setSelectedResultIndex] = useState<number | null>(null);
-  const rogueRecord = recordKind === "complex" && thiefSuccess !== undefined
-    ? project.thiefEncounters?.find((candidate) => candidate.id === thiefSuccess)
-    : undefined;
-  const resultFlowSources = useMemo(() => buildEncounterDecisionSources({
-    recordKind,
-    texts,
-    actionResult,
-    wordResult,
-    groups,
-    spellIds,
-    spellResults,
-    itemIds,
-    itemResults,
-    choiceResults,
-    wordResults,
-    thief: Boolean(thief),
-    rogueId: thiefSuccess ?? 0,
-    rogueRecord,
-    actions
-  }), [
-    actionResult,
-    actions,
-    choiceResults,
-    groups,
-    itemIds,
-    itemResults,
-    recordKind,
-    rogueRecord,
-    spellIds,
-    spellResults,
-    texts,
-    thief,
-    thiefSuccess,
-    wordResult,
-    wordResults
-  ]);
-  const resultFlowWarningCount = resultFlowSources.filter((source) => source.status !== "visible" && source.result !== 0).length;
-  const resultFlowPreviewSections = useMemo(() => {
-    const previewSource = (recordKind === "simple"
-      ? {
-        id,
-        prompt,
-        texts,
-        choiceResults,
-        actions,
-        canBackOut,
-        maxTimes,
-        casteSuccess
-      }
-      : {
-        id,
-        prompt,
-        texts,
-        actions,
-        actionResult,
-        wordResult,
-        groups,
-        spellIds,
-        spellResults,
-        itemIds,
-        itemResults,
-        choiceResults,
-        wordResults,
-        canBackOut,
-        maxTimes,
-        casteSuccess,
-        thief: Boolean(thief),
-        thiefSuccess: thiefSuccess ?? 0,
-        thiefFail: 0
-      }) as EncounterCopySource;
-    return [
-      ...encounterCopyResponseSections(project, catalog, recordKind, previewSource),
-      ...encounterCopyResultSections(previewSource, resultFlowSources)
-    ];
-  }, [actionResult, actions, canBackOut, casteSuccess, catalog, choiceResults, groups, id, itemIds, itemResults, maxTimes, project, prompt, recordKind, resultFlowSources, spellIds, spellResults, texts, thief, thiefSuccess, wordResult, wordResults]);
-  const [promptEditorOpen, setPromptEditorOpen] = useState(false);
-  const [copyPanelOpen, setCopyPanelOpen] = useState(false);
-  const promptId = Math.abs(prompt);
-  const promptRecord = promptId > 0 ? project.messages?.find((record) => record.id === promptId) ?? null : null;
-  const [rogueTargetDraft, setRogueTargetDraft] = useState(thiefSuccess ?? 0);
-  useEffect(() => {
-    setRogueTargetDraft(thiefSuccess ?? 0);
-  }, [thiefSuccess]);
-  const rogueRecords = recordKind === "complex" ? encounterRecordsForType(project, "thiefEncounter") : [];
-  const rogueTargetRecord = rogueRecords.find((candidate) => candidate.id === rogueTargetDraft);
-  const roguePickerRecords = rogueTargetRecord || rogueTargetDraft == null
-    ? rogueRecords
-    : [{ id: rogueTargetDraft }, ...rogueRecords];
-  const canOpenRogueEncounter = Boolean(thief) && Boolean(rogueTargetRecord);
-  return (
-    <>
-      <div className="script-target-grid encounter-record-grid">
-        <section className="encounter-setup-panel">
-          <EncounterRecordPicker project={project} recordType={encounterRecordType} id={id} onSelectEntity={onSelectEntity} />
-          <div className="encounter-setup-bar">
-            <label className="encounter-setup-inline-field encounter-prompt-inline-field">
-              <TutorialTip title="Prompt String" body={ENCOUNTER_SETUP_HELP} side="below">
-                <span>Prompt String</span>
-              </TutorialTip>
-              <InlineNumberField ariaLabel="Prompt String ID" value={prompt} onCommit={(value) => update({ prompt: value })} />
-            </label>
-            <button
-              type="button"
-              className="btn btn-secondary btn-xs"
-              disabled={promptId <= 0}
-              onClick={() => setPromptEditorOpen(true)}
-            >
-              Edit String
-            </button>
-            <span className="encounter-setup-divider" aria-hidden="true" />
-            <button
-              type="button"
-              className="btn btn-secondary btn-xs"
-              onClick={() => setCopyPanelOpen(true)}
-            >
-              Copy From
-            </button>
-            <span className="encounter-setup-divider" aria-hidden="true" />
-            <label className="encounter-setup-inline-field encounter-checkbox-inline-field">
-              <span>Can Back Out</span>
-              <input type="checkbox" checked={canBackOut} onChange={(event) => update({ canBackOut: event.currentTarget.checked })} />
-            </label>
-            {recordKind === "complex" && (
-              <>
-                <span className="encounter-setup-divider" aria-hidden="true" />
-                <div className="encounter-rogue-toggle-control">
-                  <TutorialTip title="Rogue Encounter" body={COMPLEX_THIEF_BRANCH_HELP} side="below">
-                    <span className="encounter-rogue-toggle-label">Has Rogue Encounter</span>
-                  </TutorialTip>
-                  <input
-                    className="encounter-rogue-toggle-checkbox"
-                    type="checkbox"
-                    aria-label="Has Rogue Encounter"
-                    checked={Boolean(thief)}
-                    onChange={(event) => update({ thief: event.currentTarget.checked })}
-                  />
-                </div>
-                {thief && (
-                  <>
-                    <span className="encounter-setup-divider" aria-hidden="true" />
-                    <label className="encounter-setup-inline-field encounter-rogue-inline-field">
-                      <span>Rogue Encounter</span>
-                      <select
-                        aria-label="Rogue Encounter ID"
-                        className="encounter-setup-select"
-                        value={rogueTargetDraft}
-                        onChange={(event) => {
-                          const nextId = Number(event.currentTarget.value);
-                          if (!Number.isInteger(nextId)) return;
-                          setRogueTargetDraft(nextId);
-                          update({ thiefSuccess: nextId });
-                        }}
-                      >
-                        {roguePickerRecords.map((record) => (
-                          <option key={record.id} value={record.id}>
-                            {record.id}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-xs"
-                      disabled={!canOpenRogueEncounter}
-                      onClick={() => {
-                        if (!canOpenRogueEncounter) return;
-                        onSelectEncounterRecordType?.("thiefEncounter");
-                        onSelectEditor?.("rogue");
-                        onSelectEntity?.(selectEntityFromId(`thief:${rogueTargetDraft}`));
-                      }}
-                    >
-                      Go to Rogue Encounter
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-            <span className="encounter-setup-divider" aria-hidden="true" />
-            <label className="encounter-setup-inline-field encounter-max-times-inline-field">
-              <span>Max Times</span>
-              <InlineNumberField ariaLabel="Max Times" value={maxTimes} onCommit={(value) => update({ maxTimes: value })} />
-            </label>
-          </div>
-        </section>
-      {recordKind === "simple" ? (
-        <>
-          <EncounterResponseEditor
-            project={project}
-            catalog={catalog}
-            recordKind={recordKind}
-            texts={texts}
-            actionResult={actionResult}
-            wordResult={wordResult}
-            groups={groups}
-            spellIds={spellIds}
-            spellResults={spellResults}
-            itemIds={itemIds}
-            itemResults={itemResults}
-            choiceResults={choiceResults}
-            actions={actions}
-            onTextCommit={(slot, text) => update({ texts: updateArraySlot(texts, slot, text, recordKind === "simple" ? 4 : 9) })}
-            onChoiceCommit={(slot, value) => update({ choiceResults: updateArraySlot(choiceResults, slot, value, 4) })}
-            onComplexCommit={(changes) => update(changes)}
-          />
-          <EncounterResultActionMatrix
-            project={project}
-            catalog={catalog}
-            actions={actions}
-            title="Result Action Columns"
-            description="Simple encounters store eight CODE/ID steps for each of the four result numbers, matching the Divinity editor columns."
-            decisionSources={resultFlowSources}
-            selectedResultIndex={selectedResultIndex}
-            onSelectResult={setSelectedResultIndex}
-            onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
-            onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
-            targetExists={(recordType, targetId) => targetRecordExists(project, recordType, targetId)}
-            renderRecordPreview={(targetType, targetId) => encounterResultRecordPreview(project, catalog, targetType, targetId)}
-            previewContext={{ desktopRuntime, projectDir, workspaceDir }}
-          />
-          <CollapsibleSection
-            title="Result Flow Summary"
-            eyebrow="qa"
-            count={resultFlowWarningCount > 0 ? `${resultFlowWarningCount} warning${resultFlowWarningCount === 1 ? "" : "s"}` : `${resultFlowSources.length} path${resultFlowSources.length === 1 ? "" : "s"}`}
-            density="compact"
-            className="encounter-flow-summary-section"
-            defaultOpen={false}
-          >
-            <EncounterCopyRoutePreview sections={resultFlowPreviewSections} />
-          </CollapsibleSection>
-        </>
-      ) : (
-        <>
-          <section className="encounter-responses-panel">
-            <header>
-              <div>
-                <strong>Encounter Responses</strong>
-                <small>Define what the party can say, choose, use, cast, or attempt, then route each response to a result script.</small>
-              </div>
-            </header>
-            <EncounterResponseEditor
-              project={project}
-              catalog={catalog}
-              recordKind={recordKind}
-              texts={texts}
-              actionResult={actionResult}
-              wordResult={wordResult}
-              groups={groups}
-              spellIds={spellIds}
-              spellResults={spellResults}
-              itemIds={itemIds}
-              itemResults={itemResults}
-              choiceResults={choiceResults}
-              actions={actions}
-              onTextCommit={(slot, text) => update({ texts: updateArraySlot(texts, slot, text, 9) })}
-              onChoiceCommit={(slot, value) => update({ choiceResults: updateArraySlot(choiceResults, slot, value, 4) })}
-              onComplexCommit={(changes) => update(changes)}
-            />
-          </section>
-          <EncounterResultActionMatrix
-            project={project}
-            catalog={catalog}
-            actions={actions}
-            title="Result Scripts"
-            description="Each result column holds the actions players see after a matching response succeeds."
-            decisionSources={resultFlowSources}
-            selectedResultIndex={selectedResultIndex}
-            onSelectResult={setSelectedResultIndex}
-            onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
-            onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
-            targetExists={(recordType, targetId) => targetRecordExists(project, recordType, targetId)}
-            renderRecordPreview={(targetType, targetId) => encounterResultRecordPreview(project, catalog, targetType, targetId)}
-            previewContext={{ desktopRuntime, projectDir, workspaceDir }}
-          />
-        </>
-      )}
-      </div>
-      {promptEditorOpen && promptId > 0 && (
-        <EncounterPromptStringEditor
-          id={promptId}
-          record={promptRecord}
-          onClose={() => setPromptEditorOpen(false)}
-          onSelectEntity={onSelectEntity}
-          onApplyCommand={onApplyCommand}
-        />
-      )}
-      {copyPanelOpen && (
-      <EncounterCopyPanel
-        project={project}
-        catalog={catalog}
-        recordKind={recordKind}
-        currentId={id}
-        onClose={() => setCopyPanelOpen(false)}
-          onApply={(changes) => {
-            update(changes);
-            setCopyPanelOpen(false);
-          }}
-        />
-      )}
-    </>
-  );
 }
 
 function rogueOutcomeSummary(record: Project["thiefEncounters"][number], slot: number) {
@@ -6267,31 +5830,6 @@ function NumberField({
         }}
       />
     </label>
-  );
-}
-
-function InlineNumberField({ ariaLabel, value, onCommit, title }: { ariaLabel: string; value: number; onCommit: (value: number) => void; title?: string }) {
-  const [draft, setDraft] = useState(String(value));
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-  const commit = () => {
-    const next = Number(draft);
-    if (Number.isFinite(next) && next !== value) onCommit(next);
-  };
-  return (
-    <input
-      className="inline-number-field"
-      type="number"
-      aria-label={ariaLabel}
-      title={title}
-      value={draft}
-      onChange={(event) => setDraft(event.currentTarget.value)}
-      onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === "Enter") event.currentTarget.blur();
-      }}
-    />
   );
 }
 
