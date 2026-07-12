@@ -21,6 +21,8 @@ const actionPointModulePaths = [
   "useActionPointStepDrafts.ts"
 ].map((filename) => path.join(root, "src/editor/panels/scripts", filename));
 const itemIdFieldPath = path.join(root, "src/editor/panels/scripts/ItemIdField.tsx");
+const storyFlagsWorkbenchPath = path.join(root, "src/editor/panels/scripts/StoryFlagsWorkbench.tsx");
+const actionSettingsWorkbenchPath = path.join(root, "src/editor/panels/scripts/ActionSettingsWorkbench.tsx");
 const timedEncounterShellPath = path.join(root, "src/editor/panels/scripts/TimedEncounterShell.tsx");
 const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
 const encountersCssPath = path.join(root, "src/editor/styles/encounters.css");
@@ -61,6 +63,8 @@ const tutorialScriptsFixturePath = path.join(root, "tmp/editor-smoke-runs/202605
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
 const actionPointSurface = [panel, ...actionPointModulePaths.map((filePath) => fs.readFileSync(filePath, "utf8"))].join("\n");
+const storyFlagsWorkbench = fs.readFileSync(storyFlagsWorkbenchPath, "utf8");
+const actionSettingsWorkbench = fs.readFileSync(actionSettingsWorkbenchPath, "utf8");
 const itemIdField = fs.readFileSync(itemIdFieldPath, "utf8");
 const timedEncounterShell = fs.readFileSync(timedEncounterShellPath, "utf8");
 const scriptsCss = [scriptsCssPath, encountersCssPath].map((filePath) => fs.readFileSync(filePath, "utf8")).join("\n");
@@ -934,7 +938,7 @@ for (const snippet of [
   "Context Notes",
   "Author Note"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing story flag usage UI: ${snippet}`);
+  if (!storyFlagsWorkbench.includes(snippet)) failures.push(`Scripts panel is missing story flag usage UI: ${snippet}`);
 }
 if (!actionPointSurface.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
 
@@ -1142,7 +1146,7 @@ for (const snippet of [
   "Simple Encounter ${caller.triggerRecordIndex}",
   "Complex Encounter ${caller.triggerRecordIndex}"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Action Settings caller labels do not cover encounter scripts: ${snippet}`);
+  if (!actionSettingsWorkbench.includes(snippet)) failures.push(`Action Settings caller labels do not cover encounter scripts: ${snippet}`);
 }
 
 for (const snippet of [
