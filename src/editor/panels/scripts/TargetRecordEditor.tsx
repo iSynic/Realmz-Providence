@@ -1669,4 +1669,3 @@ function targetRecordExists(project: Project, recordType: RealmzTargetRecordKind
     project.questLabels;
   return Boolean((records ?? []).some((record) => record.id === id));
 }
-

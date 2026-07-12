@@ -6,6 +6,7 @@ const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatal
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const actionPointModulePaths = [
   "ActionPointActionChooser.tsx",
+  "ActionPointAuthoringPanel.tsx",
   "ActionPointCreateBar.tsx",
   "ActionPointEvidence.tsx",
   "ActionPointInlineTargetEditor.tsx",
@@ -628,7 +629,7 @@ for (const snippet of [
 if (edcdTargets.includes("targetKind === \"scrollingText\") return (project.messages")) {
   failures.push("EDCD target resolution must not treat scrolling TEXT as ordinary Data SD2 messages.");
 }
-for (const source of [panel, combatPanel]) {
+for (const source of [actionPointSurface, combatPanel]) {
   if (!source.includes("target.targetKind === \"scrollingText\") return selectEntityFromId(`resource:TEXT:${target.value}`);")) {
     failures.push("Flow target opening must deep-link scrolling text to resource:TEXT:<id>.");
   }
@@ -935,7 +936,7 @@ for (const snippet of [
 ]) {
   if (!panel.includes(snippet)) failures.push(`Scripts panel is missing story flag usage UI: ${snippet}`);
 }
-if (!panel.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
+if (!actionPointSurface.includes("moveSelectedStep")) failures.push("Scripts panel does not preserve selected step during move.");
 
 for (const snippet of [
   "useDraftChangeGuards",
