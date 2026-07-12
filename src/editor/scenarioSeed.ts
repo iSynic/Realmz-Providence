@@ -26,8 +26,6 @@ import {
   ScenarioSpellOverride,
   SimpleEncounterRecord,
   SmartBrushPreset,
-  SmartBrushProfile,
-  SmartBrushRole,
   ThiefEncounterRecord,
   TilesetAsset,
   TimedEncounterRecord,
@@ -44,7 +42,8 @@ import { GENERATED_SMART_TERRAIN_PROFILES } from "./map/generatedSmartTerrainPro
 import { isScenarioSeedNamedStampName, namedLandStampVariants, resolveNamedLandStamp, type ScenarioSeedNamedStampName } from "./map/namedLandStamps";
 import { isScenarioSeedNamedTileName, namedLandTileVariants, resolveNamedLandTile, type ScenarioSeedNamedTileName } from "./map/namedLandTiles";
 import { semanticRoadTile, supportsSemanticRoads } from "./map/semanticRoads";
-import { smartTerrainContextForCell, smartTerrainNeighborMask, smartTerrainRoleFromContext, smartTerrainTileConnects } from "./map/smartTerrainTopology";
+import { buildSmartTerrainChanges } from "./map/smartTerrainBrush";
+import { normalizeSmartTerrainTile } from "./map/smartTerrainTopology";
 import { defaultStockCombatClearingTile, defaultStockHiddenWalkableTile, isStockCombatClearingTile, isStockHiddenWalkableTile } from "./map/secrets";
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
 import { copyCurrentMonsterToAllSets, generateMonsterVariants } from "./projectCommands/targetRecordCommands";
@@ -187,12 +186,19 @@ export type ScenarioSeedCaste = {
 export type ScenarioSeedScenario = {
   id?: string;
   name: string;
+  start?: ScenarioSeedStart;
   author?: string;
   version?: string;
   date?: string;
   email?: string;
   web?: string;
   description?: string;
+};
+
+export type ScenarioSeedStart = {
+  landLevel: number;
+  x: number;
+  y: number;
 };
 
 export type ScenarioSeedMap = {
@@ -545,10 +551,13 @@ export type ScenarioSeedMapOperation =
   | { kind: "room"; x: number; y: number; width: number; height: number; wallTile: number; floorTile: number; doors?: ScenarioSeedRoomDoor[] }
   | { kind: "road" | "river"; points: ScenarioSeedPoint[]; tile: number; width?: number }
   | { kind: "semanticRoad"; paths: ScenarioSeedPoint[][] }
+  | { kind: "semanticRoute"; connections: string[][]; style?: "direct" | "natural" }
   | { kind: "stamp"; x: number; y: number; tiles: number[][] }
   | { kind: "namedStamp"; x: number; y: number; name: ScenarioSeedNamedStampName; variant?: number }
   | { kind: "namedTile"; x: number; y: number; name: ScenarioSeedNamedTileName; variant?: number }
   | { kind: "terrainGroup"; terrain: SmartBrushPreset; geometry: ScenarioSeedTerrainGeometry }
+  | { kind: "landmass"; x: number; y: number; radiusX: number; radiusY: number; roughness?: number }
+  | { kind: "castleRoom"; x: number; y: number; width: number; height: number; floorVariant?: number; doors?: ScenarioSeedCastleRoomDoor[] }
   | { kind: "landSecret"; x: number; y: number; state: LandCellSecretState }
   | { kind: "hiddenWalkable"; x: number; y: number; tile?: ScenarioSeedHiddenWalkableTile }
   | { kind: "combatClearing"; x: number; y: number; tile?: ScenarioSeedCombatClearingTile }
@@ -558,7 +567,13 @@ export type ScenarioSeedPoint = { x: number; y: number };
 
 export type ScenarioSeedTerrainGeometry =
   | { kind: "rect"; x: number; y: number; width: number; height: number }
-  | { kind: "path"; points: ScenarioSeedPoint[]; width?: number };
+  | { kind: "path"; points: ScenarioSeedPoint[]; width?: number }
+  | { kind: "blob"; x: number; y: number; radiusX: number; radiusY: number; roughness?: number };
+
+export type ScenarioSeedCastleRoomDoor = {
+  side: "north" | "south" | "west" | "east";
+  offset: number;
+};
 
 export type ScenarioSeedHiddenWalkableTile = 96 | 169 | 184;
 export type ScenarioSeedCombatClearingTile = 59 | 60 | 61 | 62 | 63 | 64 | 65 | 180 | 181 | 182 | 183 | 184 | 185;
@@ -615,7 +630,7 @@ export type ScenarioSeedStep =
   | { kind: "popStack" }
   | { kind: "addSpecialCharacter"; monster: ScenarioSeedRef }
   | { kind: "dropSpecialCharacter"; monster: ScenarioSeedRef }
-  | { kind: "teleport"; landLevel?: number; x?: number; y?: number; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; teleportOnly?: boolean }
+  | { kind: "teleport"; landLevel?: number; map?: ScenarioSeedRef; at?: ScenarioSeedRef; x?: number; y?: number; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; teleportOnly?: boolean }
   | { kind: "randomMessage"; low: ScenarioSeedRef; high: ScenarioSeedRef }
   | { kind: "selectiveBattle"; battleLow: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; sound?: ScenarioSeedRef; message?: ScenarioSeedRef; treasure?: ScenarioSeedRef; improved?: boolean; cowardMacro?: ScenarioSeedRef }
   | { kind: "battleOutcome"; battleLow: ScenarioSeedRef; battleHigh?: ScenarioSeedRef; cowardMacro?: ScenarioSeedRef; sound?: ScenarioSeedRef; message?: ScenarioSeedRef }
@@ -994,6 +1009,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   if ((seed.castes?.length ?? 0) > 30) ctx.errors.push("$.castes can contain at most 30 override records.");
   validateUniqueIds(seed.extraActionPoints, "extraActionPoints", ctx);
   validateMaps(seed.maps, ctx);
+  validateScenarioStart(seed.scenario, seed.maps, ctx);
 
   if (ctx.errors.length > 0) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
   return { ok: true, seed, warnings: ctx.warnings };
@@ -1012,6 +1028,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
   allocateSeedIds(seed, buildContext);
+  addSeedTopologyDiagnostics(seed, buildContext);
   if (buildContext.errors.length > 0) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
@@ -1027,7 +1044,18 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
     projectPath: `seed://${slugify(seed.scenario.name)}.providence`,
     importedAt: now,
     shell: scenarioShell
-      ? { ...scenarioShell, sourceFile: seed.scenario.name, authored: true }
+      ? {
+          ...scenarioShell,
+          ...(seed.scenario.start
+            ? {
+                landLevel: seed.scenario.start.landLevel,
+                lookX: seed.scenario.start.x,
+                lookY: seed.scenario.start.y
+              }
+            : {}),
+          sourceFile: seed.scenario.name,
+          authored: true
+        }
       : null,
     contactInfo: contactInfo
       ? {
@@ -1055,7 +1083,8 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   }
 
   if (seed.maps !== undefined) {
-    project.maps = seed.maps.map((map, index) => buildMap(map, index));
+    project.maps = seed.maps.map((map, index) => buildMap(map, index, buildContext));
+    addSeedMapPlacementDiagnostics(seed, project.maps, buildContext);
     project.randomLevels = seed.maps.map((map, index) => buildRandomLevel(map, index));
     project.assetCatalog = {
       ...project.assetCatalog,
@@ -1163,11 +1192,13 @@ function createScenarioSeedBaseProject(projectName: string, baseTemplate: string
 function parseScenario(input: unknown, path: string, ctx: ParseContext): ScenarioSeedScenario | null {
   const value = requireObject(input, path, ctx);
   if (!value) return null;
-  allowKeys(value, path, ["id", "name", "author", "version", "date", "email", "web", "description"], ctx);
+  allowKeys(value, path, ["id", "name", "start", "author", "version", "date", "email", "web", "description"], ctx);
   const name = requireString(value.name, `${path}.name`, ctx);
+  const start = parseScenarioStart(value.start, `${path}.start`, ctx);
   return {
     ...(optionalString(value.id, `${path}.id`, ctx) !== undefined ? { id: optionalString(value.id, `${path}.id`, ctx) } : {}),
     name: name ?? "Untitled Scenario",
+    ...(start ? { start } : {}),
     ...(optionalString(value.author, `${path}.author`, ctx) !== undefined ? { author: optionalString(value.author, `${path}.author`, ctx) } : {}),
     ...(optionalString(value.version, `${path}.version`, ctx) !== undefined ? { version: optionalString(value.version, `${path}.version`, ctx) } : {}),
     ...(optionalString(value.date, `${path}.date`, ctx) !== undefined ? { date: optionalString(value.date, `${path}.date`, ctx) } : {}),
@@ -1175,6 +1206,21 @@ function parseScenario(input: unknown, path: string, ctx: ParseContext): Scenari
     ...(optionalString(value.web, `${path}.web`, ctx) !== undefined ? { web: optionalString(value.web, `${path}.web`, ctx) } : {}),
     ...(optionalString(value.description, `${path}.description`, ctx) !== undefined ? { description: optionalString(value.description, `${path}.description`, ctx) } : {})
   };
+}
+
+function parseScenarioStart(input: unknown, path: string, ctx: ParseContext): ScenarioSeedStart | undefined {
+  if (input === undefined) return undefined;
+  const value = requireObject(input, path, ctx);
+  if (!value) return undefined;
+  allowKeys(value, path, ["landLevel", "x", "y"], ctx);
+  const landLevel = requireInteger(value.landLevel, `${path}.landLevel`, ctx);
+  const x = requireInteger(value.x, `${path}.x`, ctx);
+  const y = requireInteger(value.y, `${path}.y`, ctx);
+  checkIntegerRange(landLevel, `${path}.landLevel`, 0, null, ctx);
+  checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+  checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+  if (landLevel === null || x === null || y === null) return undefined;
+  return { landLevel, x, y };
 }
 
 function parseAsset(input: unknown, path: string, ctx: ParseContext): ScenarioSeedAsset | null {
@@ -1362,10 +1408,11 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
   checkIntegerRange(fillTile, `${path}.fillTile`, MAP_TILE_MIN, MAP_TILE_MAX, ctx);
   tiles?.forEach((tile, tileIndex) => checkIntegerRange(tile, `${path}.tiles[${tileIndex}]`, MAP_TILE_MIN, MAP_TILE_MAX, ctx));
   validateMapOperationLevelTypes(operations ?? [], levelType ?? "land", path, ctx);
-  if ((operations ?? []).some((operation) => operation.kind === "terrainGroup")
+  if ((operations ?? []).some((operation) => operation.kind === "terrainGroup" || operation.kind === "landmass")
       && !GENERATED_SMART_TERRAIN_PROFILES.some((profile) => profile.landlook === (landlook ?? 0))) {
     ctx.errors.push(`${path}.landlook ${landlook ?? 0} does not have a checked-in semantic terrain profile.`);
   }
+  const regionKeys = new Set((regions ?? []).map((region) => region.key));
   for (let operationIndex = 0; operationIndex < (operations ?? []).length; operationIndex++) {
     const operation = operations?.[operationIndex];
     const mapLandlook = landlook ?? 0;
@@ -1375,8 +1422,18 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
     if (operation?.kind === "combatClearing" && (operation.tile !== undefined ? !isStockCombatClearingTile(operation.tile, mapLandlook) : defaultStockCombatClearingTile(mapLandlook) === null)) {
       ctx.errors.push(`${path}.operations[${operationIndex}] combatClearing is not valid for landlook ${mapLandlook}; use that landlook's stock solid tiles with non-solid combat builds.`);
     }
-    if (operation?.kind === "semanticRoad" && !supportsSemanticRoads(mapLandlook)) {
-      ctx.errors.push(`${path}.operations[${operationIndex}] semanticRoad is not valid for landlook ${mapLandlook}; use an audited outdoor landlook or explicit tile operations.`);
+    if ((operation?.kind === "semanticRoad" || operation?.kind === "semanticRoute") && !supportsSemanticRoads(mapLandlook)) {
+      ctx.errors.push(`${path}.operations[${operationIndex}] ${operation.kind} is not valid for landlook ${mapLandlook}; use an audited outdoor landlook or explicit tile operations.`);
+    }
+    if (operation?.kind === "semanticRoute") {
+      for (const [connectionIndex, connection] of operation.connections.entries()) {
+        for (const region of connection) {
+          if (!regionKeys.has(region)) ctx.errors.push(`${path}.operations[${operationIndex}].connections[${connectionIndex}] references unknown map region "${region}".`);
+        }
+      }
+    }
+    if (operation?.kind === "castleRoom" && mapLandlook !== 4) {
+      ctx.errors.push(`${path}.operations[${operationIndex}] castleRoom is only valid for Castle landlook 4.`);
     }
     if (operation?.kind === "namedTile") {
       const variants = namedLandTileVariants(mapLandlook, operation.name);
@@ -2069,6 +2126,14 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     if (paths.length === 0) ctx.errors.push(`${path}.paths must contain at least one road path.`);
     return { kind, paths };
   }
+  if (kind === "semanticRoute") {
+    allowKeys(value, path, ["kind", "connections", "style"], ctx);
+    const connections = parseArray(value.connections, `${path}.connections`, ctx, parseSemanticRouteConnection) ?? [];
+    const style = optionalString(value.style, `${path}.style`, ctx);
+    if (connections.length === 0) ctx.errors.push(`${path}.connections must contain at least one region-key chain.`);
+    if (style !== undefined && style !== "direct" && style !== "natural") ctx.errors.push(`${path}.style must be direct or natural.`);
+    return { kind, connections, ...(style === "direct" || style === "natural" ? { style } : {}) };
+  }
   if (kind === "stamp") {
     allowKeys(value, path, ["kind", "x", "y", "tiles"], ctx);
     const x = requireInteger(value.x, `${path}.x`, ctx);
@@ -2136,6 +2201,43 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     const geometry = parseTerrainGeometry(value.geometry, `${path}.geometry`, ctx);
     return { kind, terrain: terrain === "mountains" || terrain === "forest" ? terrain : "water", geometry: geometry ?? { kind: "rect", x: 0, y: 0, width: 1, height: 1 } };
   }
+  if (kind === "landmass") {
+    allowKeys(value, path, ["kind", "x", "y", "radiusX", "radiusY", "roughness"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    const radiusX = requireInteger(value.radiusX, `${path}.radiusX`, ctx);
+    const radiusY = requireInteger(value.radiusY, `${path}.radiusY`, ctx);
+    const roughness = optionalInteger(value.roughness, `${path}.roughness`, ctx);
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    checkIntegerRange(radiusX, `${path}.radiusX`, 3, 44, ctx);
+    checkIntegerRange(radiusY, `${path}.radiusY`, 3, 44, ctx);
+    checkIntegerRange(roughness, `${path}.roughness`, 0, 100, ctx);
+    if (x !== null && radiusX !== null && (x - radiusX < 1 || x + radiusX > 88)) ctx.errors.push(`${path} must leave at least one water cell on the west and east map edges.`);
+    if (y !== null && radiusY !== null && (y - radiusY < 1 || y + radiusY > 88)) ctx.errors.push(`${path} must leave at least one water cell on the north and south map edges.`);
+    return { kind, x: x ?? 45, y: y ?? 45, radiusX: radiusX ?? 30, radiusY: radiusY ?? 30, ...(roughness !== undefined ? { roughness } : {}) };
+  }
+  if (kind === "castleRoom") {
+    allowKeys(value, path, ["kind", "x", "y", "width", "height", "floorVariant", "doors"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    const width = requireInteger(value.width, `${path}.width`, ctx);
+    const height = requireInteger(value.height, `${path}.height`, ctx);
+    const floorVariant = optionalInteger(value.floorVariant, `${path}.floorVariant`, ctx);
+    const doors = parseArray(value.doors, `${path}.doors`, ctx, parseCastleRoomDoor) ?? [];
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    checkIntegerRange(width, `${path}.width`, 3, 90, ctx);
+    checkIntegerRange(height, `${path}.height`, 3, 90, ctx);
+    checkIntegerRange(floorVariant, `${path}.floorVariant`, 1, 2, ctx);
+    checkMapRectBounds(x, y, width, height, path, ctx);
+    for (let index = 0; index < doors.length; index++) {
+      const door = doors[index];
+      const limit = door.side === "north" || door.side === "south" ? width : height;
+      if (limit !== null && door.offset >= limit) ctx.errors.push(`${path}.doors[${index}].offset must be less than the room's ${door.side === "north" || door.side === "south" ? "width" : "height"}.`);
+    }
+    return { kind, x: x ?? 0, y: y ?? 0, width: width ?? 3, height: height ?? 3, ...(floorVariant !== undefined ? { floorVariant } : {}), ...(value.doors !== undefined ? { doors } : {}) };
+  }
   if (kind === "landSecret") {
     allowKeys(value, path, ["kind", "x", "y", "state"], ctx);
     const x = requireInteger(value.x, `${path}.x`, ctx);
@@ -2183,7 +2285,7 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     if (new Set(directions).size !== directions.length) ctx.errors.push(`${path}.directions cannot contain duplicates.`);
     return { kind, x: x ?? 0, y: y ?? 0, directions };
   }
-  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, semanticRoad, stamp, namedStamp, namedTile, terrainGroup, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
+  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, semanticRoad, semanticRoute, stamp, namedStamp, namedTile, terrainGroup, landmass, castleRoom, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
   return null;
 }
 
@@ -2202,10 +2304,17 @@ function parseSemanticRoadPath(input: unknown, path: string, ctx: ParseContext) 
   return points;
 }
 
+function parseSemanticRouteConnection(input: unknown, path: string, ctx: ParseContext) {
+  const regions = parseArray(input, path, ctx, (value, valuePath, valueCtx) => requireString(value, valuePath, valueCtx)) ?? [];
+  if (regions.length < 2) ctx.errors.push(`${path} must contain at least two region keys.`);
+  if (new Set(regions).size !== regions.length) ctx.errors.push(`${path} cannot repeat a region key.`);
+  return regions;
+}
+
 function validateMapOperationLevelTypes(operations: ScenarioSeedMapOperation[], levelType: LevelType, path: string, ctx: ParseContext) {
   for (let index = 0; index < operations.length; index++) {
     const kind = operations[index].kind;
-    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedStamp" || kind === "namedTile" || kind === "terrainGroup" || kind === "semanticRoad") && levelType !== "land") {
+    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedStamp" || kind === "namedTile" || kind === "terrainGroup" || kind === "landmass" || kind === "castleRoom" || kind === "semanticRoad" || kind === "semanticRoute") && levelType !== "land") {
       ctx.errors.push(`${path}.operations[${index}].kind ${kind} is only valid on land maps.`);
     }
     if (kind === "dungeonPassage" && levelType !== "dungeon") {
@@ -2247,7 +2356,23 @@ function parseTerrainGeometry(input: unknown, path: string, ctx: ParseContext): 
     });
     return { kind, points, ...(width !== undefined ? { width } : {}) };
   }
-  ctx.errors.push(`${path}.kind must be rect or path.`);
+  if (kind === "blob") {
+    allowKeys(value, path, ["kind", "x", "y", "radiusX", "radiusY", "roughness"], ctx);
+    const x = requireInteger(value.x, `${path}.x`, ctx);
+    const y = requireInteger(value.y, `${path}.y`, ctx);
+    const radiusX = requireInteger(value.radiusX, `${path}.radiusX`, ctx);
+    const radiusY = requireInteger(value.radiusY, `${path}.radiusY`, ctx);
+    const roughness = optionalInteger(value.roughness, `${path}.roughness`, ctx);
+    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
+    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
+    checkIntegerRange(radiusX, `${path}.radiusX`, 1, 44, ctx);
+    checkIntegerRange(radiusY, `${path}.radiusY`, 1, 44, ctx);
+    checkIntegerRange(roughness, `${path}.roughness`, 0, 100, ctx);
+    if (x !== null && radiusX !== null && (x - radiusX < 0 || x + radiusX >= MAP_SIZE)) ctx.errors.push(`${path}.radiusX extends past the map edge.`);
+    if (y !== null && radiusY !== null && (y - radiusY < 0 || y + radiusY >= MAP_SIZE)) ctx.errors.push(`${path}.radiusY extends past the map edge.`);
+    return { kind, x: x ?? 45, y: y ?? 45, radiusX: radiusX ?? 5, radiusY: radiusY ?? 5, ...(roughness !== undefined ? { roughness } : {}) };
+  }
+  ctx.errors.push(`${path}.kind must be rect, path, or blob.`);
   return null;
 }
 
@@ -2277,6 +2402,19 @@ function parseRoomDoor(input: unknown, path: string, ctx: ParseContext): Scenari
   }
   checkIntegerRange(offset, `${path}.offset`, 0, 89, ctx);
   return { side: side === "south" || side === "west" || side === "east" ? side : "north", offset: offset ?? 0, tile: requireMapTile(value.tile, `${path}.tile`, ctx) ?? 0 };
+}
+
+function parseCastleRoomDoor(input: unknown, path: string, ctx: ParseContext): ScenarioSeedCastleRoomDoor | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["side", "offset"], ctx);
+  const side = requireString(value.side, `${path}.side`, ctx);
+  const offset = requireInteger(value.offset, `${path}.offset`, ctx);
+  if (side !== null && side !== "north" && side !== "south" && side !== "west" && side !== "east") {
+    ctx.errors.push(`${path}.side must be one of north, south, west, east.`);
+  }
+  checkIntegerRange(offset, `${path}.offset`, 0, 89, ctx);
+  return { side: side === "south" || side === "west" || side === "east" ? side : "north", offset: offset ?? 0 };
 }
 
 function parseMapTileRow(input: unknown, path: string, ctx: ParseContext): number[] | null {
@@ -2433,8 +2571,10 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
     return { kind, monster: requireRef(value.monster, `${path}.monster`, ctx) };
   }
   if (kind === "teleport") {
-    allowKeys(value, path, ["kind", "landLevel", "x", "y", "sound", "message", "teleportOnly"], ctx);
+    allowKeys(value, path, ["kind", "landLevel", "map", "at", "x", "y", "sound", "message", "teleportOnly"], ctx);
     const landLevel = optionalInteger(value.landLevel, `${path}.landLevel`, ctx);
+    const map = optionalRef(value.map, `${path}.map`, ctx);
+    const at = optionalRef(value.at, `${path}.at`, ctx);
     const x = optionalInteger(value.x, `${path}.x`, ctx);
     const y = optionalInteger(value.y, `${path}.y`, ctx);
     const sound = optionalRef(value.sound, `${path}.sound`, ctx);
@@ -2442,9 +2582,15 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
     checkIntegerRange(landLevel, `${path}.landLevel`, -1, null, ctx);
     checkIntegerRange(x, `${path}.x`, -1, 89, ctx);
     checkIntegerRange(y, `${path}.y`, -1, 89, ctx);
+    if ((x === undefined) !== (y === undefined)) ctx.errors.push(`${path}.x and ${path}.y must be provided together.`);
+    if (landLevel !== undefined && map !== undefined) ctx.errors.push(`${path}.landLevel and ${path}.map cannot both be provided.`);
+    if (at !== undefined && (landLevel !== undefined || x !== undefined || y !== undefined)) ctx.errors.push(`${path}.at replaces landLevel, x, and y; do not provide both destination forms.`);
+    if (map !== undefined && at === undefined && (x === undefined || y === undefined)) ctx.errors.push(`${path}.map requires x and y unless at names a region.`);
     return {
       kind,
       ...(landLevel !== undefined ? { landLevel } : {}),
+      ...(map !== undefined ? { map } : {}),
+      ...(at !== undefined ? { at } : {}),
       ...(x !== undefined ? { x } : {}),
       ...(y !== undefined ? { y } : {}),
       ...(sound !== undefined ? { sound } : {}),
@@ -2968,6 +3114,70 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
   }
 }
 
+function addSeedTopologyDiagnostics(seed: ScenarioSeed, context: BuildContext) {
+  const placements = (seed.actionPoints ?? []).map((actionPoint, index) => {
+    const mapTarget = actionPoint.map === undefined ? null : typeof actionPoint.map === "number" ? { levelType: "land" as const, index: actionPoint.map } : context.maps.get(actionPoint.map) ?? null;
+    const regionTarget = actionPoint.at === undefined || typeof actionPoint.at !== "string" ? null : context.regions.get(actionPoint.at) ?? null;
+    return {
+      key: actionPoint.key ?? `Action Point ${actionPoint.recordIndex ?? index}`,
+      levelType: actionPoint.levelType ?? regionTarget?.levelType ?? mapTarget?.levelType ?? "land",
+      levelIndex: actionPoint.levelIndex ?? regionTarget?.index ?? mapTarget?.index ?? 0,
+      x: actionPoint.x ?? regionTarget?.x ?? mapTarget?.x ?? 0,
+      y: actionPoint.y ?? regionTarget?.y ?? mapTarget?.y ?? 0,
+      firstStep: actionPoint.steps[0]
+    };
+  });
+  const byCoordinate = new Map(placements.map((placement) => [`${placement.levelType}:${placement.levelIndex}:${placement.x}:${placement.y}`, placement]));
+  for (const [index, actionPoint] of (seed.actionPoints ?? []).entries()) {
+    for (const step of actionPoint.steps) {
+      if (step.kind !== "teleport") continue;
+      const regionTarget = step.at === undefined || typeof step.at !== "string" ? null : context.regions.get(step.at) ?? null;
+      const mapTarget = step.map === undefined ? null : typeof step.map === "number" ? { levelType: "land" as const, index: step.map } : context.maps.get(step.map) ?? null;
+      const levelType = regionTarget?.levelType ?? mapTarget?.levelType ?? "land";
+      const levelIndex = regionTarget?.index ?? mapTarget?.index ?? step.landLevel;
+      const x = regionTarget?.x ?? step.x;
+      const y = regionTarget?.y ?? step.y;
+      if (levelIndex === undefined || x === undefined || y === undefined || levelIndex < 0 || x < 0 || y < 0) continue;
+      const target = byCoordinate.get(`${levelType}:${levelIndex}:${x}:${y}`);
+      if (!target) continue;
+      const source = actionPoint.key ?? `Action Point ${actionPoint.recordIndex ?? index}`;
+      const suffix = target.firstStep?.kind === "teleport" ? " Its first step teleports again, creating an immediate return or teleport chain." : "";
+      addDiagnostic(context, "warning", "teleport-destination-action-point", `${source} teleports directly onto ${target.key}.${suffix}`, "action point", source);
+    }
+  }
+}
+
+function addSeedMapPlacementDiagnostics(seed: ScenarioSeed, maps: MapEntity[], context: BuildContext) {
+  const warnIfWater = (label: string, levelType: LevelType, levelIndex: number, x: number, y: number) => {
+    if (levelType !== "land" || x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return;
+    const map = maps.find((entry) => entry.levelType === levelType && entry.index === levelIndex);
+    if (!map || map.render.landlook === null || !supportsSemanticRoads(map.render.landlook)) return;
+    const profile = GENERATED_SMART_TERRAIN_PROFILES.find((entry) => entry.landlook === map.render.landlook);
+    const tile = map ? normalizeSmartTerrainTile(map.tiles[mapStorageTileIndex(levelType, x, y)]) : null;
+    if (tile === null || !profile?.presets.water.family.includes(tile)) return;
+    addDiagnostic(context, "warning", "site-on-water", `${label} is placed on water at land level ${levelIndex}, (${x}, ${y}).`, "map site", label);
+  };
+
+  if (seed.scenario.start) {
+    warnIfWater("Scenario start", "land", seed.scenario.start.landLevel, seed.scenario.start.x, seed.scenario.start.y);
+  }
+  for (const [index, actionPoint] of (seed.actionPoints ?? []).entries()) {
+    const mapTarget = actionPoint.map === undefined
+      ? null
+      : typeof actionPoint.map === "number"
+        ? { levelType: "land" as const, index: actionPoint.map }
+        : context.maps.get(actionPoint.map) ?? null;
+    const regionTarget = actionPoint.at === undefined || typeof actionPoint.at !== "string" ? null : context.regions.get(actionPoint.at) ?? null;
+    warnIfWater(
+      actionPoint.key ?? `Action Point ${actionPoint.recordIndex ?? index}`,
+      actionPoint.levelType ?? regionTarget?.levelType ?? mapTarget?.levelType ?? "land",
+      actionPoint.levelIndex ?? regionTarget?.index ?? mapTarget?.index ?? 0,
+      actionPoint.x ?? regionTarget?.x ?? mapTarget?.x ?? 0,
+      actionPoint.y ?? regionTarget?.y ?? mapTarget?.y ?? 0
+    );
+  }
+}
+
 function actionPointTargetForSeed(actionPoint: ScenarioSeedActionPoint, recordIndex: number, context: BuildContext): ActionPointTarget {
   const mapTarget = actionPoint.map === undefined
     ? undefined
@@ -3191,14 +3401,15 @@ function addDiagnostic(context: BuildContext, severity: "error" | "warning", cod
   else context.warnings.push(message);
 }
 
-function buildMap(seed: ScenarioSeedMap, fallbackIndex: number): MapEntity {
+function buildMap(seed: ScenarioSeedMap, fallbackIndex: number, buildContext?: BuildContext): MapEntity {
   const levelType = seed.levelType ?? "land";
   const index = seed.index ?? fallbackIndex;
   const source = levelType === "land" ? "Data LD" : "Data D";
   const landlook = seed.landlook ?? 0;
   const fillTile = seed.fillTile ?? landlookBaseTile(landlook) ?? 1;
   const tiles = seed.tiles ? [...seed.tiles] : new Array(MAP_SIZE * MAP_SIZE).fill(fillTile);
-  for (const operation of seed.operations ?? []) applyMapOperation(tiles, operation, { landlook, levelType, mapSeed: `${levelType}:${index}` });
+  const regions = new Map((seed.regions ?? []).map((region) => [region.key, { x: region.x, y: region.y }]));
+  for (const operation of seed.operations ?? []) applyMapOperation(tiles, operation, { landlook, levelType, mapSeed: `${levelType}:${index}`, regions, buildContext });
   return {
     id: `${levelType}:${index}`,
     levelType,
@@ -3230,7 +3441,7 @@ function buildRandomLevel(seed: ScenarioSeedMap, fallbackIndex: number): RandomL
   };
 }
 
-type MapBuildContext = { landlook: number; levelType: LevelType; mapSeed: string };
+type MapBuildContext = { landlook: number; levelType: LevelType; mapSeed: string; regions: Map<string, ScenarioSeedPoint>; buildContext?: BuildContext };
 
 function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation, mapContext: MapBuildContext) {
   if (operation.kind === "fill") {
@@ -3285,6 +3496,10 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
     applySemanticRoad(tiles, operation, mapContext.levelType);
     return;
   }
+  if (operation.kind === "semanticRoute") {
+    applySemanticRoute(tiles, operation, mapContext);
+    return;
+  }
   if (operation.kind === "stamp") {
     for (let row = 0; row < operation.tiles.length; row++) {
       for (let column = 0; column < operation.tiles[row].length; column++) {
@@ -3309,6 +3524,45 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
   }
   if (operation.kind === "terrainGroup") {
     applyTerrainGroup(tiles, operation, mapContext);
+    return;
+  }
+  if (operation.kind === "landmass") {
+    const landCells = terrainGeometryCells({ kind: "blob", x: operation.x, y: operation.y, radiusX: operation.radiusX, radiusY: operation.radiusY, roughness: operation.roughness }, mapContext.mapSeed, "landmass");
+    const landMask = new Set(landCells.map((cell) => `${cell.x}:${cell.y}`));
+    const waterCells: ScenarioSeedPoint[] = [];
+    for (let y = 0; y < MAP_SIZE; y++) {
+      for (let x = 0; x < MAP_SIZE; x++) if (!landMask.has(`${x}:${y}`)) waterCells.push({ x, y });
+    }
+    applyTerrainCells(tiles, waterCells, "water", mapContext);
+    const waterCenter = GENERATED_SMART_TERRAIN_PROFILES.find((entry) => entry.landlook === mapContext.landlook)?.presets.water.center[0] ?? 60;
+    for (let inset = 0; inset < 2; inset++) {
+      for (let coordinate = 0; coordinate < MAP_SIZE; coordinate++) {
+        setTile(tiles, coordinate, inset, waterCenter, mapContext.levelType);
+        setTile(tiles, coordinate, MAP_SIZE - 1 - inset, waterCenter, mapContext.levelType);
+        setTile(tiles, inset, coordinate, waterCenter, mapContext.levelType);
+        setTile(tiles, MAP_SIZE - 1 - inset, coordinate, waterCenter, mapContext.levelType);
+      }
+    }
+    return;
+  }
+  if (operation.kind === "castleRoom") {
+    const floor = resolveNamedLandTile(mapContext.landlook, "open-ground", operation.floorVariant ?? 1) ?? 111;
+    const wallNorthSouth = resolveNamedLandTile(mapContext.landlook, "castle-wall-north-south") ?? 1;
+    const wallEastWest = resolveNamedLandTile(mapContext.landlook, "castle-wall-east-west") ?? 2;
+    const doorNorthSouth = resolveNamedLandTile(mapContext.landlook, "wooden-door-north-south") ?? 76;
+    const doorEastWest = resolveNamedLandTile(mapContext.landlook, "wooden-door-east-west") ?? 77;
+    for (let y = operation.y + 1; y < operation.y + operation.height - 1; y++) {
+      for (let x = operation.x + 1; x < operation.x + operation.width - 1; x++) setTile(tiles, x, y, floor, mapContext.levelType);
+    }
+    drawLine(tiles, operation.x, operation.y, operation.x + operation.width - 1, operation.y, wallEastWest, 1, mapContext.levelType);
+    drawLine(tiles, operation.x, operation.y + operation.height - 1, operation.x + operation.width - 1, operation.y + operation.height - 1, wallEastWest, 1, mapContext.levelType);
+    drawLine(tiles, operation.x, operation.y, operation.x, operation.y + operation.height - 1, wallNorthSouth, 1, mapContext.levelType);
+    drawLine(tiles, operation.x + operation.width - 1, operation.y, operation.x + operation.width - 1, operation.y + operation.height - 1, wallNorthSouth, 1, mapContext.levelType);
+    for (const door of operation.doors ?? []) {
+      const x = door.side === "west" ? operation.x : door.side === "east" ? operation.x + operation.width - 1 : operation.x + door.offset;
+      const y = door.side === "north" ? operation.y : door.side === "south" ? operation.y + operation.height - 1 : operation.y + door.offset;
+      setTile(tiles, x, y, door.side === "north" || door.side === "south" ? doorEastWest : doorNorthSouth, mapContext.levelType);
+    }
     return;
   }
   if (operation.kind === "landSecret") {
@@ -3349,8 +3603,13 @@ function applySemanticRoad(
       for (const point of linePoints(path[index - 1], path[index])) cells.set(`${point.x}:${point.y}`, point);
     }
   }
-  const cellKeys = new Set(cells.keys());
-  for (const cell of [...cells.values()].sort((a, b) => a.y - b.y || a.x - b.x)) {
+  applySemanticRoadCells(tiles, [...cells.values()], levelType);
+}
+
+function applySemanticRoadCells(tiles: number[], cells: ScenarioSeedPoint[], levelType: LevelType) {
+  const uniqueCells = new Map(cells.map((cell) => [`${cell.x}:${cell.y}`, cell]));
+  const cellKeys = new Set(uniqueCells.keys());
+  for (const cell of [...uniqueCells.values()].sort((a, b) => a.y - b.y || a.x - b.x)) {
     let mask = 0;
     if (cellKeys.has(`${cell.x}:${cell.y - 1}`)) mask |= 1;
     if (cellKeys.has(`${cell.x + 1}:${cell.y}`)) mask |= 2;
@@ -3361,43 +3620,231 @@ function applySemanticRoad(
   }
 }
 
+function applySemanticRoute(
+  tiles: number[],
+  operation: Extract<ScenarioSeedMapOperation, { kind: "semanticRoute" }>,
+  mapContext: MapBuildContext
+) {
+  const cells = new Map<string, ScenarioSeedPoint>();
+  for (const [connectionIndex, connection] of operation.connections.entries()) {
+    for (let index = 1; index < connection.length; index++) {
+      const start = mapContext.regions.get(connection[index - 1]);
+      const end = mapContext.regions.get(connection[index]);
+      if (!start || !end) continue;
+      const route = terrainAwareRoute(tiles, start, end, operation.style ?? "natural", mapContext, `${connectionIndex}:${index}`);
+      if (route.length === 0) {
+        if (mapContext.buildContext) {
+          addDiagnostic(
+            mapContext.buildContext,
+            "warning",
+            "semantic-route-unreachable",
+            `Map ${mapContext.mapSeed} cannot route from region "${connection[index - 1]}" to "${connection[index]}" without crossing blocked terrain.`,
+            "map",
+            mapContext.mapSeed
+          );
+        }
+        continue;
+      }
+      for (const cell of route) cells.set(`${cell.x}:${cell.y}`, cell);
+    }
+  }
+  applySemanticRoadCells(tiles, [...cells.values()], mapContext.levelType);
+}
+
+function terrainAwareRoute(
+  tiles: number[], start: ScenarioSeedPoint, end: ScenarioSeedPoint, style: "direct" | "natural",
+  mapContext: MapBuildContext, salt: string
+) {
+  const checkpoints = [start];
+  const distance = Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
+  if (style === "natural" && distance >= 12) {
+    const horizontal = Math.abs(end.x - start.x) >= Math.abs(end.y - start.y);
+    const fractions = distance >= 28 ? [1 / 3, 2 / 3] : [1 / 2];
+    const offsetLimit = Math.min(4, Math.max(1, Math.floor(distance / 12)));
+    for (const [checkpointIndex, fraction] of fractions.entries()) {
+      const hash = deterministicHash(`${mapContext.mapSeed}:route:${salt}:${checkpointIndex}`);
+      const magnitude = 1 + hash % offsetLimit;
+      const offset = (Math.floor(hash / offsetLimit) % 2 === 0 ? 1 : -1) * magnitude;
+      const candidate = {
+        x: clampMapCoordinate(Math.round(start.x + (end.x - start.x) * fraction) + (horizontal ? 0 : offset)),
+        y: clampMapCoordinate(Math.round(start.y + (end.y - start.y) * fraction) + (horizontal ? offset : 0))
+      };
+      checkpoints.push(nearestRouteCell(tiles, candidate, mapContext));
+    }
+  }
+  checkpoints.push(end);
+  const route: ScenarioSeedPoint[] = [];
+  for (let index = 1; index < checkpoints.length; index++) {
+    const segment = findTerrainRoute(tiles, checkpoints[index - 1], checkpoints[index], mapContext, `${salt}:${index}`);
+    route.push(...(index === 1 ? segment : segment.slice(1)));
+  }
+  return route;
+}
+
+function findTerrainRoute(tiles: number[], start: ScenarioSeedPoint, end: ScenarioSeedPoint, mapContext: MapBuildContext, salt: string) {
+  type RouteDirection = "north" | "east" | "south" | "west" | "start";
+  const startKey = `${start.x}:${start.y}:start`;
+  const open = new Map<string, { point: ScenarioSeedPoint; direction: RouteDirection; score: number }>([
+    [startKey, { point: start, direction: "start", score: 0 }]
+  ]);
+  const cameFrom = new Map<string, string>();
+  const cost = new Map<string, number>([[startKey, 0]]);
+  while (open.size > 0) {
+    const [currentKey, currentEntry] = [...open.entries()].sort((a, b) => a[1].score - b[1].score || deterministicHash(`${mapContext.mapSeed}:${salt}:${a[0]}`) - deterministicHash(`${mapContext.mapSeed}:${salt}:${b[0]}`))[0];
+    open.delete(currentKey);
+    if (currentEntry.point.x === end.x && currentEntry.point.y === end.y) return reconstructRoute(cameFrom, currentKey);
+    for (const neighbor of cardinalNeighbors(currentEntry.point)) {
+      if (neighbor.x < 0 || neighbor.y < 0 || neighbor.x >= MAP_SIZE || neighbor.y >= MAP_SIZE) continue;
+      const direction = routeDirection(currentEntry.point, neighbor);
+      const neighborKey = `${neighbor.x}:${neighbor.y}:${direction}`;
+      const endpoint = (neighbor.x === end.x && neighbor.y === end.y) || (neighbor.x === start.x && neighbor.y === start.y);
+      const stepCost = routeCellCost(tiles, neighbor, mapContext, endpoint);
+      if (!Number.isFinite(stepCost)) continue;
+      const turnCost = currentEntry.direction !== "start" && currentEntry.direction !== direction ? 2.25 : 0;
+      const nextCost = (cost.get(currentKey) ?? Number.POSITIVE_INFINITY) + stepCost + turnCost;
+      if (nextCost >= (cost.get(neighborKey) ?? Number.POSITIVE_INFINITY)) continue;
+      cameFrom.set(neighborKey, currentKey);
+      cost.set(neighborKey, nextCost);
+      const heuristic = Math.abs(end.x - neighbor.x) + Math.abs(end.y - neighbor.y);
+      open.set(neighborKey, { point: neighbor, direction, score: nextCost + heuristic });
+    }
+  }
+  return [];
+}
+
+function routeDirection(from: ScenarioSeedPoint, to: ScenarioSeedPoint): "north" | "east" | "south" | "west" {
+  if (to.y < from.y) return "north";
+  if (to.x > from.x) return "east";
+  if (to.y > from.y) return "south";
+  return "west";
+}
+
+function routeCellCost(tiles: number[], point: ScenarioSeedPoint, mapContext: MapBuildContext, endpoint: boolean) {
+  if (endpoint) return 1;
+  const profile = GENERATED_SMART_TERRAIN_PROFILES.find((entry) => entry.landlook === mapContext.landlook);
+  const tile = normalizeSmartTerrainTile(tiles[mapStorageTileIndex(mapContext.levelType, point.x, point.y)]);
+  if (tile === null) return 7;
+  if (profile?.presets.water.family.includes(tile) || profile?.presets.mountains.family.includes(tile)) return Number.POSITIVE_INFINITY;
+  if (profile?.presets.forest.family.includes(tile)) return 3;
+  if (tile >= 130 && tile <= 146) return 0.35;
+  return 1;
+}
+
+function nearestRouteCell(tiles: number[], candidate: ScenarioSeedPoint, mapContext: MapBuildContext) {
+  for (let radius = 0; radius <= 8; radius++) {
+    const candidates: ScenarioSeedPoint[] = [];
+    for (let y = candidate.y - radius; y <= candidate.y + radius; y++) {
+      for (let x = candidate.x - radius; x <= candidate.x + radius; x++) {
+        if (Math.max(Math.abs(x - candidate.x), Math.abs(y - candidate.y)) !== radius || x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) continue;
+        candidates.push({ x, y });
+      }
+    }
+    const passable = candidates.find((point) => Number.isFinite(routeCellCost(tiles, point, mapContext, false)));
+    if (passable) return passable;
+  }
+  return candidate;
+}
+
+function reconstructRoute(cameFrom: Map<string, string>, endKey: string) {
+  const route: ScenarioSeedPoint[] = [];
+  let key: string | undefined = endKey;
+  while (key) {
+    const [x, y] = key.split(":").slice(0, 2).map(Number);
+    route.push({ x, y });
+    key = cameFrom.get(key);
+  }
+  return route.reverse();
+}
+
+function cardinalNeighbors(point: ScenarioSeedPoint) {
+  return [{ x: point.x, y: point.y - 1 }, { x: point.x + 1, y: point.y }, { x: point.x, y: point.y + 1 }, { x: point.x - 1, y: point.y }];
+}
+
+function clampMapCoordinate(value: number) {
+  return Math.max(1, Math.min(MAP_SIZE - 2, value));
+}
+
 function applyTerrainGroup(
   tiles: number[],
   operation: Extract<ScenarioSeedMapOperation, { kind: "terrainGroup" }>,
   mapContext: MapBuildContext
 ) {
-  const profile = GENERATED_SMART_TERRAIN_PROFILES.find((entry) => entry.landlook === mapContext.landlook);
-  if (!profile) return;
-  const cells = terrainGeometryCells(operation.geometry);
-  const maskSet = new Set(cells.map(({ x, y }) => `${x}:${y}`));
-  const terrainProfile = profile.presets[operation.terrain];
-  for (const cell of cells) {
-    const context = smartTerrainContextForCell(cell.x, cell.y, maskSet, terrainProfile, (x, y) => (
-      x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE ? null : tiles[mapStorageTileIndex(mapContext.levelType, x, y)]
-    ));
-    const role = smartTerrainRoleFromContext(context);
-    const mask = smartTerrainNeighborMask(context);
-    const tile = semanticTerrainTile(tiles, cell.x, cell.y, operation.terrain, role, mask, maskSet, profile, mapContext.mapSeed, mapContext.levelType);
-    setTile(tiles, cell.x, cell.y, tile, mapContext.levelType);
-  }
+  const cells = terrainGeometryCells(operation.geometry, mapContext.mapSeed, operation.terrain);
+  applyTerrainCells(tiles, cells, operation.terrain, mapContext);
 }
 
-function terrainGeometryCells(geometry: ScenarioSeedTerrainGeometry) {
+function applyTerrainCells(tiles: number[], cells: ScenarioSeedPoint[], terrain: SmartBrushPreset, mapContext: MapBuildContext) {
+  const map: MapEntity = {
+    id: mapContext.mapSeed,
+    levelType: mapContext.levelType,
+    source: mapContext.levelType === "land" ? "Data LD" : "Data D",
+    index: Number(mapContext.mapSeed.split(":")[1] ?? 0),
+    name: mapContext.mapSeed,
+    width: MAP_SIZE,
+    height: MAP_SIZE,
+    tiles,
+    render: { tilesetId: `landlook-${mapContext.landlook}`, landlook: mapContext.landlook, mode: "outdoor-landlook" }
+  };
+  const tileset: TilesetAsset = {
+    id: `landlook-${mapContext.landlook}`,
+    landlook: mapContext.landlook,
+    name: landlookName(mapContext.landlook),
+    source: "scenario-seed",
+    available: true,
+    imagePath: null,
+    pictId: landlookPictId(mapContext.landlook),
+    tileWidth: 32,
+    tileHeight: 32,
+    columns: 20,
+    rows: 10,
+    custom: false,
+    baseTile: 1
+  };
+  const plan = buildSmartTerrainChanges(map, cells, terrain, tileset, null);
+  for (const cell of plan.cells) setTile(tiles, cell.x, cell.y, cell.to, mapContext.levelType);
+}
+
+function terrainGeometryCells(geometry: ScenarioSeedTerrainGeometry, mapSeed = "map", salt = "terrain") {
   const cells = new Map<string, ScenarioSeedPoint>();
-  const addSquare = (centerX: number, centerY: number, width: number) => {
-    const before = Math.floor((width - 1) / 2);
-    const after = width - before - 1;
-    for (let y = centerY - before; y <= centerY + after; y++) {
-      for (let x = centerX - before; x <= centerX + after; x++) cells.set(`${x}:${y}`, { x, y });
+  const addDisc = (centerX: number, centerY: number, width: number) => {
+    const radius = Math.max(0, (width - 1) / 2);
+    const extent = Math.ceil(radius);
+    for (let y = centerY - extent; y <= centerY + extent; y++) {
+      for (let x = centerX - extent; x <= centerX + extent; x++) {
+        if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) continue;
+        if (Math.hypot(x - centerX, y - centerY) <= radius + 0.35) cells.set(`${x}:${y}`, { x, y });
+      }
     }
   };
   if (geometry.kind === "rect") {
     for (let y = geometry.y; y < geometry.y + geometry.height; y++) {
       for (let x = geometry.x; x < geometry.x + geometry.width; x++) cells.set(`${x}:${y}`, { x, y });
     }
-  } else {
+  } else if (geometry.kind === "path") {
     for (let index = 1; index < geometry.points.length; index++) {
-      for (const point of linePoints(geometry.points[index - 1], geometry.points[index])) addSquare(point.x, point.y, geometry.width ?? 1);
+      for (const point of linePoints(geometry.points[index - 1], geometry.points[index])) addDisc(point.x, point.y, geometry.width ?? 1);
+    }
+  } else {
+    const roughness = (geometry.roughness ?? 35) / 100;
+    const sectors = 24;
+    const radialNoise = Array.from({ length: sectors }, (_, index) => {
+      const hash = deterministicHash(`${mapSeed}:${salt}:blob:${index}`);
+      return ((hash % 2001) / 1000 - 1) * roughness * 0.22;
+    });
+    for (let y = geometry.y - geometry.radiusY; y <= geometry.y + geometry.radiusY; y++) {
+      for (let x = geometry.x - geometry.radiusX; x <= geometry.x + geometry.radiusX; x++) {
+        if (x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) continue;
+        const dx = (x - geometry.x) / geometry.radiusX;
+        const dy = (y - geometry.y) / geometry.radiusY;
+        const angle = (Math.atan2(dy, dx) + Math.PI * 2) % (Math.PI * 2);
+        const position = angle / (Math.PI * 2) * sectors;
+        const first = Math.floor(position) % sectors;
+        const second = (first + 1) % sectors;
+        const blend = position - Math.floor(position);
+        const smoothBlend = blend * blend * (3 - 2 * blend);
+        const boundary = 1 + radialNoise[first] * (1 - smoothBlend) + radialNoise[second] * smoothBlend;
+        if (Math.hypot(dx, dy) <= boundary) cells.set(`${x}:${y}`, { x, y });
+      }
     }
   }
   return [...cells.values()].sort((a, b) => a.y - b.y || a.x - b.x);
@@ -3427,65 +3874,10 @@ function linePoints(start: ScenarioSeedPoint, end: ScenarioSeedPoint) {
   }
 }
 
-function semanticTerrainTile(
-  tiles: number[], x: number, y: number, terrain: SmartBrushPreset, role: SmartBrushRole, mask: number,
-  maskSet: Set<string>, profile: SmartBrushProfile, mapSeed: string, levelType: LevelType
-) {
-  const terrainProfile = profile.presets[terrain];
-  if (terrainDistanceToBoundary(x, y, maskSet) >= 2) return seededTerrainPick(terrainProfile.center, mapSeed, terrain, x, y, "center");
-  const curatedMask = terrainProfile.curatedMasks?.[String(mask)] ?? [];
-  if (curatedMask.length > 0) return seededTerrainPick(curatedMask, mapSeed, terrain, x, y, `curated-mask:${mask}`);
-  const curatedRoleTable = terrain === "mountains" && terrainTouchesWater(tiles, x, y, maskSet, levelType, profile.presets.water)
-    ? terrainProfile.curatedWaterRoles
-    : terrainProfile.curatedRoles;
-  const curated = curatedRoleTable?.[role] ?? [];
-  if (curated.length > 0) return seededTerrainPick(curated, mapSeed, terrain, x, y, `curated:${role}`);
-  const exact = terrainProfile.maskCandidates?.[String(mask)]?.tiles ?? [];
-  const roleCandidates = terrainProfile.roleCandidates?.[role] ?? [];
-  let candidates = [...new Set([...roleCandidates, ...exact])].filter((tile) => !terrainProfile.center.includes(tile));
-  if (terrain === "mountains") {
-    const waterEdge = terrainTouchesWater(tiles, x, y, maskSet, levelType, profile.presets.water);
-    const narrowed = candidates.filter((tile) => waterEdge ? tile >= 86 && tile <= 93 : tile >= 61 && tile <= 85);
-    if (narrowed.length > 0) candidates = narrowed;
-  }
-  if (terrain === "forest") candidates = candidates.filter((tile) => tile >= 121 && tile <= 129);
-  const fallback = terrainProfile.fallbackRoles[role] ?? terrainProfile.center[0] ?? terrainProfile.family[0];
-  return candidates.length > 0 ? seededTerrainPick(candidates, mapSeed, terrain, x, y, `${role}:${mask}`) : fallback;
-}
-
-function terrainDistanceToBoundary(x: number, y: number, maskSet: Set<string>) {
-  for (let distance = 1; distance <= 2; distance++) {
-    for (let yy = y - distance; yy <= y + distance; yy++) {
-      for (let xx = x - distance; xx <= x + distance; xx++) {
-        if (Math.max(Math.abs(xx - x), Math.abs(yy - y)) === distance && !maskSet.has(`${xx}:${yy}`)) return distance - 1;
-      }
-    }
-  }
-  return 2;
-}
-
-function terrainTouchesWater(
-  tiles: number[],
-  x: number,
-  y: number,
-  maskSet: Set<string>,
-  levelType: LevelType,
-  waterProfile: SmartBrushProfile["presets"]["water"]
-) {
-  const neighbors = [[x, y - 1, 4], [x + 1, y, 8], [x, y + 1, 1], [x - 1, y, 2]];
-  return neighbors.some(([xx, yy, connectionBit]) => (
-    !maskSet.has(`${xx}:${yy}`)
-    && xx >= 0 && yy >= 0 && xx < MAP_SIZE && yy < MAP_SIZE
-    && smartTerrainTileConnects(tiles[mapStorageTileIndex(levelType, xx, yy)], waterProfile, connectionBit)
-  ));
-}
-
-function seededTerrainPick(candidates: number[], mapSeed: string, terrain: SmartBrushPreset, x: number, y: number, salt: string) {
-  if (candidates.length === 0) return 1;
-  const source = `${mapSeed}:${terrain}:${x}:${y}:${salt}`;
+function deterministicHash(source: string) {
   let hash = 2166136261;
   for (let index = 0; index < source.length; index++) hash = Math.imul(hash ^ source.charCodeAt(index), 16777619);
-  return candidates[(hash >>> 0) % candidates.length];
+  return hash >>> 0;
 }
 
 function syncActionPointMarkers(maps: MapEntity[], triggers: TriggerRecord[]) {
@@ -4109,10 +4501,15 @@ function buildAction(step: ScenarioSeedStep, slot: number, context: BuildContext
     ], nextEdcdId, extracodes);
   }
   if (step.kind === "teleport") {
+    const regionTarget = step.at === undefined ? null : resolveRegionTarget(step.at, context);
+    const mapTarget = step.map === undefined ? null : resolveMapTarget(step.map, context);
+    if (regionTarget && mapTarget && (regionTarget.levelType !== mapTarget.levelType || regionTarget.index !== mapTarget.index)) {
+      addDiagnostic(context, "error", "teleport-region-map-mismatch", `Teleport region "${String(step.at)}" is not on map "${String(step.map)}".`, "teleport");
+    }
     return buildEdcdAction(slot, step.teleportOnly ? 45 : 20, [
-      step.landLevel ?? -1,
-      step.x ?? -1,
-      step.y ?? -1,
+      regionTarget?.index ?? mapTarget?.index ?? step.landLevel ?? -1,
+      regionTarget?.x ?? step.x ?? -1,
+      regionTarget?.y ?? step.y ?? -1,
       step.sound === undefined ? 0 : resolveSeedAssetRef(step.sound, "sound", "sound", context),
       step.message === undefined ? 0 : resolveRef(step.message, context.messages, "message", context)
     ], nextEdcdId, extracodes);
@@ -4351,6 +4748,12 @@ function validateMaps(maps: ScenarioSeedMap[] | undefined, ctx: ParseContext) {
       keys.add(map.key);
     }
   }
+}
+
+function validateScenarioStart(scenario: ScenarioSeedScenario, maps: ScenarioSeedMap[] | undefined, ctx: ParseContext) {
+  if (!scenario.start || maps === undefined) return;
+  const resolves = maps.some((map, index) => (map.levelType ?? "land") === "land" && (map.index ?? index) === scenario.start?.landLevel);
+  if (!resolves) ctx.errors.push(`$.scenario.start.landLevel ${scenario.start.landLevel} does not resolve to a declared land map.`);
 }
 
 function validateUniqueIds(values: Array<{ id?: number; key?: string }> | undefined, label: string, ctx: ParseContext) {

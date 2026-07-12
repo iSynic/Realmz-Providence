@@ -89,7 +89,7 @@ if (namedStampMatch) {
 const sampleSeed = {
   schemaVersion: 1,
   baseTemplate: "blank",
-  scenario: { name: "Schema Check" },
+  scenario: { name: "Schema Check", start: { landLevel: 0, x: 1, y: 1 } },
   maps: [{
     key: "road",
     levelType: "land",

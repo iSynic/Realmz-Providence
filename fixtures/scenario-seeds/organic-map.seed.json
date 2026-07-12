@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Organic Map Seed",
+    "start": { "landLevel": 0, "x": 18, "y": 45 }
+  },
+  "maps": [
+    {
+      "key": "island",
+      "levelType": "land",
+      "index": 0,
+      "landlook": 0,
+      "fillTile": 156,
+      "regions": [
+        { "key": "landing", "x": 18, "y": 45 },
+        { "key": "landing-return", "x": 19, "y": 45 },
+        { "key": "village", "x": 42, "y": 44 },
+        { "key": "lighthouse", "x": 61, "y": 28 }
+      ],
+      "operations": [
+        { "kind": "landmass", "x": 45, "y": 45, "radiusX": 34, "radiusY": 30, "roughness": 55 },
+        { "kind": "terrainGroup", "terrain": "mountains", "geometry": { "kind": "blob", "x": 59, "y": 20, "radiusX": 9, "radiusY": 6, "roughness": 45 } },
+        { "kind": "terrainGroup", "terrain": "forest", "geometry": { "kind": "blob", "x": 28, "y": 62, "radiusX": 8, "radiusY": 6, "roughness": 50 } },
+        {
+          "kind": "semanticRoute",
+          "style": "natural",
+          "connections": [
+            ["landing", "village", "lighthouse"]
+          ]
+        }
+      ]
+    },
+    {
+      "key": "tower",
+      "levelType": "land",
+      "index": 1,
+      "landlook": 4,
+      "fillTile": 32,
+      "regions": [
+        { "key": "tower-arrival", "x": 20, "y": 25 },
+        { "key": "tower-exit", "x": 20, "y": 26 }
+      ],
+      "operations": [
+        {
+          "kind": "castleRoom",
+          "x": 10,
+          "y": 10,
+          "width": 21,
+          "height": 18,
+          "doors": [{ "side": "south", "offset": 10 }]
+        }
+      ]
+    }
+  ],
+  "messages": [
+    { "key": "enter", "text": "Enter the lighthouse." }
+  ],
+  "actionPoints": [
+    {
+      "key": "enter-tower",
+      "map": "island",
+      "at": "lighthouse",
+      "steps": [
+        { "kind": "message", "message": "enter" },
+        { "kind": "teleport", "at": "tower-arrival" }
+      ]
+    },
+    {
+      "key": "exit-tower",
+      "map": "tower",
+      "at": "tower-exit",
+      "steps": [
+        { "kind": "teleport", "at": "landing-return" }
+      ]
+    }
+  ]
+}

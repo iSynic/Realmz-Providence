@@ -120,12 +120,23 @@
       "properties": {
         "id": { "type": "string", "minLength": 1, "maxLength": 128 },
         "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "start": { "$ref": "#/$defs/scenarioStart" },
         "author": { "type": "string", "maxLength": 64 },
         "version": { "type": "string", "maxLength": 32 },
         "date": { "type": "string", "maxLength": 32 },
         "email": { "type": "string", "maxLength": 128 },
         "web": { "type": "string", "maxLength": 128 },
         "description": { "type": "string", "maxLength": 4096 }
+      }
+    },
+    "scenarioStart": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["landLevel", "x", "y"],
+      "properties": {
+        "landLevel": { "type": "integer", "minimum": 0 },
+        "x": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 89 }
       }
     },
     "spell": {
@@ -229,10 +240,13 @@
         { "$ref": "#/$defs/roomOperation" },
         { "$ref": "#/$defs/routeOperation" },
         { "$ref": "#/$defs/semanticRoadOperation" },
+        { "$ref": "#/$defs/semanticRouteOperation" },
         { "$ref": "#/$defs/stampOperation" },
         { "$ref": "#/$defs/namedStampOperation" },
         { "$ref": "#/$defs/namedTileOperation" },
         { "$ref": "#/$defs/terrainGroupOperation" },
+        { "$ref": "#/$defs/landmassOperation" },
+        { "$ref": "#/$defs/castleRoomOperation" },
         { "$ref": "#/$defs/landSecretOperation" },
         { "$ref": "#/$defs/hiddenWalkableOperation" },
         { "$ref": "#/$defs/combatClearingOperation" },
@@ -347,6 +361,22 @@
           "minItems": 1,
           "items": { "$ref": "#/$defs/roadPath" }
         }
+      }
+    },
+    "regionKeyChain": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/key" }
+    },
+    "semanticRouteOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "connections"],
+      "properties": {
+        "kind": { "const": "semanticRoute" },
+        "connections": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/regionKeyChain" } },
+        "style": { "enum": ["direct", "natural"] }
       }
     },
     "stampOperation": {
@@ -570,10 +600,24 @@
         "width": { "type": "integer", "minimum": 1, "maximum": 15 }
       }
     },
+    "terrainBlobGeometry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "x", "y", "radiusX", "radiusY"],
+      "properties": {
+        "kind": { "const": "blob" },
+        "x": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "radiusX": { "type": "integer", "minimum": 1, "maximum": 44 },
+        "radiusY": { "type": "integer", "minimum": 1, "maximum": 44 },
+        "roughness": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
     "terrainGeometry": {
       "oneOf": [
         { "$ref": "#/$defs/terrainRectGeometry" },
-        { "$ref": "#/$defs/terrainPathGeometry" }
+        { "$ref": "#/$defs/terrainPathGeometry" },
+        { "$ref": "#/$defs/terrainBlobGeometry" }
       ]
     },
     "terrainGroupOperation": {
@@ -584,6 +628,42 @@
         "kind": { "const": "terrainGroup" },
         "terrain": { "$ref": "#/$defs/terrainPreset" },
         "geometry": { "$ref": "#/$defs/terrainGeometry" }
+      }
+    },
+    "landmassOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "x", "y", "radiusX", "radiusY"],
+      "properties": {
+        "kind": { "const": "landmass" },
+        "x": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "radiusX": { "type": "integer", "minimum": 3, "maximum": 44 },
+        "radiusY": { "type": "integer", "minimum": 3, "maximum": 44 },
+        "roughness": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "castleRoomDoor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["side", "offset"],
+      "properties": {
+        "side": { "enum": ["north", "south", "west", "east"] },
+        "offset": { "type": "integer", "minimum": 0, "maximum": 89 }
+      }
+    },
+    "castleRoomOperation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "x", "y", "width", "height"],
+      "properties": {
+        "kind": { "const": "castleRoom" },
+        "x": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "y": { "type": "integer", "minimum": 0, "maximum": 89 },
+        "width": { "type": "integer", "minimum": 3, "maximum": 90 },
+        "height": { "type": "integer", "minimum": 3, "maximum": 90 },
+        "floorVariant": { "type": "integer", "minimum": 1, "maximum": 2 },
+        "doors": { "type": "array", "items": { "$ref": "#/$defs/castleRoomDoor" } }
       }
     },
     "landSecretOperation": {
@@ -1139,7 +1219,7 @@
     "popStackStep": { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "popStack" } } },
     "addSpecialCharacterStep": { "type": "object", "additionalProperties": false, "required": ["kind", "monster"], "properties": { "kind": { "const": "addSpecialCharacter" }, "monster": { "$ref": "#/$defs/idRef" } } },
     "dropSpecialCharacterStep": { "type": "object", "additionalProperties": false, "required": ["kind", "monster"], "properties": { "kind": { "const": "dropSpecialCharacter" }, "monster": { "$ref": "#/$defs/idRef" } } },
-    "teleportStep": { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "teleport" }, "landLevel": { "type": "integer" }, "x": { "type": "integer" }, "y": { "type": "integer" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" }, "teleportOnly": { "type": "boolean" } } },
+    "teleportStep": { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "const": "teleport" }, "landLevel": { "type": "integer" }, "map": { "$ref": "#/$defs/idRef" }, "at": { "$ref": "#/$defs/idRef" }, "x": { "type": "integer" }, "y": { "type": "integer" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" }, "teleportOnly": { "type": "boolean" } } },
     "randomMessageStep": { "type": "object", "additionalProperties": false, "required": ["kind", "low", "high"], "properties": { "kind": { "const": "randomMessage" }, "low": { "$ref": "#/$defs/idRef" }, "high": { "$ref": "#/$defs/idRef" } } },
     "selectiveBattleStep": { "type": "object", "additionalProperties": false, "required": ["kind", "battleLow"], "properties": { "kind": { "const": "selectiveBattle" }, "battleLow": { "$ref": "#/$defs/idRef" }, "battleHigh": { "$ref": "#/$defs/idRef" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" }, "treasure": { "$ref": "#/$defs/idRef" }, "improved": { "type": "boolean" }, "cowardMacro": { "$ref": "#/$defs/idRef" } } },
     "battleOutcomeStep": { "type": "object", "additionalProperties": false, "required": ["kind", "battleLow"], "properties": { "kind": { "const": "battleOutcome" }, "battleLow": { "$ref": "#/$defs/idRef" }, "battleHigh": { "$ref": "#/$defs/idRef" }, "cowardMacro": { "$ref": "#/$defs/idRef" }, "sound": { "$ref": "#/$defs/idRef" }, "message": { "$ref": "#/$defs/idRef" } } },

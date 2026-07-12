@@ -28,6 +28,7 @@ try {
   checkMinimal(createProjectFromScenarioSeed, parseScenarioSeed);
   checkBaseTemplate(createProjectFromScenarioSeed);
   checkMapOperations(createProjectFromScenarioSeed);
+  checkOrganicMapOperations(createProjectFromScenarioSeed);
   checkDirectAp(createProjectFromScenarioSeed);
   checkEdcdAp(createProjectFromScenarioSeed);
   checkSimpleEncounter(createProjectFromScenarioSeed);
@@ -69,11 +70,20 @@ function checkMinimal(createProjectFromScenarioSeed, parseScenarioSeed) {
   if (!result.ok) return;
   expect(!result.warnings.some((warning) => warning.startsWith("Allocated ")), "allocation report entries should not be duplicated as warnings");
   expect(result.project.messages.length === 1, "minimal seed should create one message");
+  expect(result.project.scenario.shell?.landLevel === 0 && result.project.scenario.shell.lookX === 10 && result.project.scenario.shell.lookY === 12, "minimal seed should author Startup Info from scenario.start");
   expect(allocationId(result, "messages", "hello") === 0, "hello message should allocate to ID 0");
   expect(allocationId(result, "quests", "started") === 0, "started quest should allocate to ID 0");
   expect(allocationId(result, "actionPoints", "start-ap") === 0, "start-ap should allocate to record 0");
   expect(result.project.triggers[0]?.coordinate?.x === 10 && result.project.triggers[0]?.coordinate?.y === 12, "start-ap should use named region coordinates");
   expect(actionCodes(result.project.triggers[0]).join(",") === "1,47", "minimal AP should emit message and set quest opcodes");
+
+  const invalidStart = parseScenarioSeed({
+    schemaVersion: 1,
+    scenario: { name: "Invalid Start", start: { landLevel: 2, x: 90, y: 0 } },
+    maps: [{ levelType: "land", index: 0 }]
+  });
+  expect(!invalidStart.ok && invalidStart.errors.some((error) => error.includes("$.scenario.start.x must be less than or equal to 89")), "scenario.start should reject coordinates outside the Realmz map");
+  expect(!invalidStart.ok && invalidStart.errors.some((error) => error.includes("does not resolve to a declared land map")), "scenario.start should resolve to a declared land map");
 }
 
 function checkBaseTemplate(createProjectFromScenarioSeed) {
@@ -184,6 +194,69 @@ function checkMapOperations(createProjectFromScenarioSeed) {
     const semanticTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === landlook.index)?.tiles ?? [];
     expect(tileAt(semanticTiles, 10, 10) === 143 && tileAt(semanticTiles, 11, 10) === 132 && tileAt(semanticTiles, 12, 10) === 145, `${landlook.name} semantic roads should use the aligned audited road grammar`);
   }
+}
+
+function checkOrganicMapOperations(createProjectFromScenarioSeed) {
+  const result = createProjectFromScenarioSeed(readSeed("organic-map.seed.json"));
+  expect(result.ok, "organic map seed should create a project");
+  if (!result.ok) return;
+  const island = result.project.maps.find((map) => map.id === "land:0");
+  const tiles = island?.tiles ?? [];
+  expect(tileAt(tiles, 0, 0) === 60 && tileAt(tiles, 89, 89) === 60, "landmass should surround the generated island with full water");
+  const coastXs = [];
+  for (let y = 22; y <= 68; y++) {
+    for (let x = 0; x < 45; x++) {
+      if (tileAt(tiles, x, y) !== 60) {
+        coastXs.push(x);
+        break;
+      }
+    }
+  }
+  expect(new Set(coastXs).size >= 6, "rough landmass should produce a varied coastline instead of one rectangular edge");
+  expect(tileAt(tiles, 28, 62) === 121, "blob forest should retain a reviewed center tile");
+  expect(tileAt(tiles, 20, 56) === 156, "blob forest should not fill its complete bounding rectangle");
+  const normalized = tiles.map((tile) => Math.abs(tile) % 1000);
+  expect(normalized.filter((tile) => tile >= 130 && tile <= 146).length >= 30, "semanticRoute should connect named regions with audited road tiles");
+  expect(normalized.some((tile) => tile >= 135 && tile <= 142), "natural semanticRoute should include at least one bend or junction");
+
+  const tower = result.project.maps.find((map) => map.id === "land:1")?.tiles ?? [];
+  expect(tileAt(tower, 11, 11) === 111, "castleRoom should resolve its interior floor semantically");
+  expect(tileAt(tower, 15, 10) === 2 && tileAt(tower, 10, 15) === 1, "castleRoom should resolve directional east-west and north-south walls");
+  expect(tileAt(tower, 20, 27) === 77, "castleRoom should resolve a south-wall door without a raw tile ID");
+  expect(result.project.extracodes.some((row) => row.values[0] === 1 && row.values[1] === 20 && row.values[2] === 25), "named teleport destinations should resolve the target map and region coordinates");
+  expect(!result.diagnostics.some((diagnostic) => diagnostic.code === "teleport-destination-action-point"), "separate arrival and exit regions should avoid teleport-chain warnings");
+
+  const collision = createProjectFromScenarioSeed({
+    schemaVersion: 1,
+    scenario: { name: "Teleport Collision" },
+    maps: [{
+      key: "field",
+      levelType: "land",
+      index: 0,
+      regions: [{ key: "entry", x: 10, y: 10 }, { key: "exit", x: 11, y: 10 }]
+    }],
+    actionPoints: [
+      { key: "enter-ap", map: "field", at: "entry", steps: [{ kind: "teleport", at: "exit" }] },
+      { key: "exit-ap", map: "field", at: "exit", steps: [{ kind: "teleport", at: "entry" }] }
+    ]
+  });
+  expect(collision.ok && collision.diagnostics.some((diagnostic) => diagnostic.code === "teleport-destination-action-point"), "teleports that land on teleport Action Points should return a structured topology warning");
+
+  const blockedRoute = createProjectFromScenarioSeed({
+    schemaVersion: 1,
+    scenario: { name: "Blocked Route", start: { landLevel: 0, x: 5, y: 5 } },
+    maps: [{
+      key: "water",
+      levelType: "land",
+      index: 0,
+      landlook: 0,
+      fillTile: 60,
+      regions: [{ key: "west", x: 5, y: 5 }, { key: "east", x: 10, y: 5 }],
+      operations: [{ kind: "semanticRoute", connections: [["west", "east"]] }]
+    }]
+  });
+  expect(blockedRoute.ok && blockedRoute.diagnostics.some((diagnostic) => diagnostic.code === "semantic-route-unreachable"), "semantic routes blocked by terrain should warn instead of drawing through it");
+  expect(blockedRoute.ok && blockedRoute.diagnostics.some((diagnostic) => diagnostic.code === "site-on-water"), "scenario starts placed on water should return a structured site warning");
 }
 
 function checkDirectAp(createProjectFromScenarioSeed) {
@@ -573,7 +646,7 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(mapSemantics.errors.some((error) => error.includes("cannot contain duplicates")), "dungeon passage directions should reject duplicates");
     expect(mapSemantics.errors.some((error) => error.includes("terrainGroup is only valid on land maps")), "semantic terrain should reject dungeon maps");
     expect(mapSemantics.errors.some((error) => error.includes("terrain must be water, mountains, or forest")), "semantic terrain should reject unknown terrain groups");
-    expect(mapSemantics.errors.some((error) => error.includes("geometry.kind must be rect or path")), "semantic terrain should reject unsupported geometry");
+    expect(mapSemantics.errors.some((error) => error.includes("geometry.kind must be rect, path, or blob")), "semantic terrain should reject unsupported geometry");
     expect(mapSemantics.errors.some((error) => error.includes("does not have a checked-in semantic terrain profile")), "semantic terrain should reject custom landlooks without curated profiles");
     expect(mapSemantics.errors.some((error) => error.includes("hiddenWalkable is not valid for landlook 6")), "stock hidden-walkable terrain should reject landlooks without a known concealed-walkable set");
     expect(mapSemantics.errors.some((error) => error.includes("combatClearing is not valid for landlook 6")), "combat-clearing terrain should reject landlooks without a known source-backed set");

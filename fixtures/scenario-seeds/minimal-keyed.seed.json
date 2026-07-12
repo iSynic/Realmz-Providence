@@ -1,7 +1,8 @@
 {
   "schemaVersion": 1,
   "scenario": {
-    "name": "Minimal Keyed Seed"
+    "name": "Minimal Keyed Seed",
+    "start": { "landLevel": 0, "x": 10, "y": 12 }
   },
   "maps": [
     {

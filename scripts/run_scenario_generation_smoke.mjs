@@ -67,6 +67,16 @@ try {
       }
     },
     {
+      name: "organic-maps",
+      fixture: "organic-map.seed.json",
+      expectedWrites: ["Data LD", "Data RD", "Data EDCD", "Data DD"],
+      inspect: (result) => {
+        expect(result.project.maps.length === 2, "organic-maps: expected island and Castle interior maps");
+        expect(result.project.triggers.length === 2, "organic-maps: expected linked entry and exit Action Points");
+        expect(!result.diagnostics.some((diagnostic) => diagnostic.code === "teleport-destination-action-point"), "organic-maps: expected distinct teleport arrival and exit cells");
+      }
+    },
+    {
       name: "encounters",
       fixture: "complex-encounters.seed.json",
       expectedWrites: ["Data SD2", "Data NI", "Data BD", "Data ED2", "Data TD2", "Data EDCD", "Data DD"],
