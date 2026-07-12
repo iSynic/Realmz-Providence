@@ -13,7 +13,8 @@ const actionPointModulePaths = [
   "ActionPointStepToolbar.tsx",
   "SelectedActionPointStepEditor.tsx",
   "actionPointPresentation.ts",
-  "actionPointStepCommands.ts"
+  "actionPointStepCommands.ts",
+  "useActionPointStepDrafts.ts"
 ].map((filename) => path.join(root, "src/editor/panels/scripts", filename));
 const itemIdFieldPath = path.join(root, "src/editor/panels/scripts/ItemIdField.tsx");
 const timedEncounterShellPath = path.join(root, "src/editor/panels/scripts/TimedEncounterShell.tsx");

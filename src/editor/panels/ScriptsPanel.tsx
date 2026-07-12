@@ -4,7 +4,7 @@ import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatal
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
-import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
+import { buildEdcdRowUsages, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
 import { resolveSignedMessageTarget, targetPickerConfig } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
 import { useIconPreviewUrl } from "../previewUrls";
@@ -86,18 +86,7 @@ import { ActionPointRecordHeader } from "./scripts/ActionPointRecordHeader";
 import { ActionPointStepList } from "./scripts/ActionPointStepList";
 import { ActionPointStepToolbar } from "./scripts/ActionPointStepToolbar";
 import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./scripts/actionPointDiagnostics";
-import { edcdDraftValuesEqual, type EdcdStepDraft } from "./scripts/actionPointDraft";
-import { actionSlotIndexFromSelection, actionSlotSelectionId, includeSelectedTrigger } from "./scripts/actionPointSelection";
-import {
-  actionPointSlotDraft,
-  actionPointStepApplyCommand,
-  actionPointStepDraftDirty,
-  actionPointStepDraftKey,
-  removeActionPointEdcdDrafts,
-  removeActionPointStepDraft,
-  swapActionPointStepDrafts,
-  type ActionPointStepDrafts
-} from "./scripts/actionPointStepCommands";
+import { actionSlotSelectionId, includeSelectedTrigger } from "./scripts/actionPointSelection";
 import {
   combatMacroContextBody,
   combatMacroContextLabel,
@@ -105,6 +94,7 @@ import {
   type CombatMacroContext,
   type CombatMacroReference
 } from "./scripts/actionPointPresentation";
+import { useActionPointStepDrafts } from "./scripts/useActionPointStepDrafts";
 import { updateArraySlot } from "./scripts/arraySlots";
 
 const MONSTER_TRAIT_LABELS = [
@@ -371,15 +361,12 @@ function ScriptAuthoringPanel({
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const { registerDraftGuard, confirmBeforeDraftDiscard } = useDraftChangeGuards();
   const activeTabKind = scriptTabKind(activeEditor);
   const scripts = useMemo(
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
     [project, activeEditor]
   );
   const projectMaps = project?.maps ?? [];
-  const [draft, setDraft] = useState<ActionPointStepDrafts>({});
-  const [edcdStepDrafts, setEdcdStepDrafts] = useState<Record<string, EdcdStepDraft>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<ScriptActionCategoryFilter>("All");
   const [opcodeQuery, setOpcodeQuery] = useState("");
@@ -555,23 +542,18 @@ function ScriptAuthoringPanel({
     setSelectedScriptId(trigger.id);
     onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
   }, [onSelectEntity]);
-  const performSelectStepSlot = useCallback((slot: number) => {
-    setSelectedSlot(slot);
-    if (selectedTrigger) {
-      onSelectEntity(selectEntityFromId(actionSlotSelectionId(selectedTrigger, slot)));
-    }
-  }, [onSelectEntity, selectedTrigger]);
-  useEffect(() => {
-    const slot = actionSlotIndexFromSelection(selectedEntity?.id);
-    if (slot == null || slot < 0 || slot > 7 || slot === selectedSlot) return;
-    if (!selectedTrigger || !triggerMatchesSelection(selectedTrigger, selectedEntity?.id ?? "")) return;
-    setSelectedSlot(slot);
-  }, [selectedEntity?.id, selectedSlot, selectedTrigger]);
-  useEffect(() => {
-    if (!selectedTrigger) return;
-    if (selectedSlot >= 0 && selectedSlot <= 7) return;
-    setSelectedSlot(selectedTrigger.actions[0]?.slot ?? 0);
-  }, [selectedTrigger?.id, selectedSlot, selectedTrigger]);
+  const stepDrafts = useActionPointStepDrafts({
+    project,
+    catalog,
+    selectedTrigger,
+    selectedSlot,
+    setSelectedSlot,
+    selectedEntityId: selectedEntity?.id,
+    categoryFilter,
+    opcodeQuery,
+    onSelectEntity,
+    onApplyCommand
+  });
   const visibleScripts = useMemo(
     () => includeSelectedTrigger(filteredScripts, selectedTrigger, visibleScriptLimit),
     [filteredScripts, selectedTrigger, visibleScriptLimit]
@@ -616,40 +598,18 @@ function ScriptAuthoringPanel({
     : selectedMapCapacity?.canCreate
       ? "Create an Action Point on the selected map, reusing the first empty slot when possible."
       : "This map has no reusable Action Point slots. Clear an existing Action Point to reuse its fixed Realmz record.";
-  const slotDraft = (slot: number, action?: Action) => actionPointSlotDraft(draft, selectedTrigger?.id, slot, action);
-  const selectedAction = selectedTrigger?.actions.find((candidate) => candidate.slot === selectedSlot);
-  const selectedKey = actionPointStepDraftKey(selectedTrigger?.id, selectedSlot);
-  const selectedDraft = slotDraft(selectedSlot, selectedAction);
-  const selectedDraftDirty = actionPointStepDraftDirty(selectedDraft, selectedAction);
-  const selectedOption = actionOptionFor(selectedDraft.rawCode);
-  const selectedEdcdDraftKey = selectedTrigger && selectedOption.edcdShape
-    ? `${selectedKey}:${selectedDraft.rawCode}:${selectedDraft.id}:${selectedOption.edcdShape}`
-    : "";
-  const selectedEdcdDraftPrefix = selectedTrigger ? `${selectedKey}:` : "";
-  const selectedEdcdStepDraft = selectedEdcdDraftKey ? edcdStepDrafts[selectedEdcdDraftKey] : undefined;
-  const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty || selectedEdcdStepDraft?.secondaryDirty);
-  const selectedDefinition = scriptActionDefinitionFor(selectedDraft.rawCode);
+  const {
+    slotDraft, selectedAction, selectedDraft, selectedDraftDirty, selectedOption, selectedStepDirty, selectedDefinition,
+    filteredDefinitions, selectedEdcdUsageModel, selectedEdcdUsage, selectedSlotDiagnostics, selectedEdcdRowId,
+    setSelectedDraft, updateSelectedEdcdDraft, updateSelectedSecondaryEdcdDraft, discardSelectedDraft, applySelectedSlot,
+    requestDraftNavigation, selectStepSlot, moveSelectedStep
+  } = stepDrafts;
   const edcdUsages = useMemo(
-    () => project && activeTabKind === "settings-rows" ? buildEdcdRowUsages(project, catalog) : [],
+    () => activeTabKind === "settings-rows" ? buildEdcdRowUsages(project, catalog) : [],
     [project, catalog, activeTabKind]
   );
-  const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery);
   const selectedSlotEntity: SemanticEntity | undefined = undefined;
-  const selectedEdcdUsageModel = useMemo(
-    () => selectedOption.edcdShape ? edcdUsageForAction(project, catalog, selectedDraft.rawCode, Math.max(0, selectedDraft.id)) : null,
-    [catalog, project, selectedDraft.id, selectedDraft.rawCode, selectedOption.edcdShape]
-  );
-  const selectedEdcdUsage: SelectedEdcdUsage | undefined = selectedEdcdUsageModel
-    ? edcdUsageToEditorUsage(selectedEdcdUsageModel, selectedOption.edcdShape)
-    : undefined;
   const triggerDiagnostics = selectedTrigger ? visibleDiagnosticsById.get(selectedTrigger.id) ?? [] : [];
-  const selectedSlotDiagnostics = useMemo(
-    () => selectedTrigger
-      ? validateActionDraft(project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog)
-      : [],
-    [project, selectedTrigger, selectedSlot, selectedDraft.rawCode, selectedDraft.id, catalog]
-  );
-  const selectedEdcdRowId = selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null;
   if (activeTabKind === "settings-rows") {
     return (
       <SettingsRowsPanel
@@ -730,79 +690,10 @@ function ScriptAuthoringPanel({
     ? projectMaps.filter((map) => map.levelType === (selectedTrigger.levelType ?? "land"))
     : projectMaps;
   const issueCounts = issueCountsBySlot(triggerDiagnostics);
-  const setSelectedDraft = useCallback((values: { rawCode: number; id: number }) => setDraft((current) => ({ ...current, [selectedKey]: values })), [selectedKey]);
-  const updateSelectedEdcdDraft = useCallback((values: number[], dirty: boolean) => {
-    if (!selectedEdcdDraftKey) return;
-    const normalized = normalizeEdcdValues(values);
-    setEdcdStepDrafts((current) => {
-      const previous = current[selectedEdcdDraftKey];
-      if (previous?.dirty === dirty && edcdDraftValuesEqual(previous.values, normalized)) return current;
-      return { ...current, [selectedEdcdDraftKey]: { ...previous, values: normalized, dirty } };
-    });
-  }, [selectedEdcdDraftKey]);
-  const updateSelectedSecondaryEdcdDraft = useCallback((values: number[], dirty: boolean) => {
-    if (!selectedEdcdDraftKey || selectedEdcdUsageModel?.secondaryRowId == null) return;
-    const normalized = normalizeEdcdValues(values);
-    const fallbackPrimary = normalizeEdcdValues(selectedEdcdUsageModel.values ?? selectedDefinition.defaultDraft.parameters);
-    setEdcdStepDrafts((current) => {
-      const previous = current[selectedEdcdDraftKey];
-      if (previous?.secondaryDirty === dirty && previous.secondaryValues && edcdDraftValuesEqual(previous.secondaryValues, normalized)) return current;
-      return {
-        ...current,
-        [selectedEdcdDraftKey]: {
-          values: previous?.values ?? fallbackPrimary,
-          dirty: previous?.dirty ?? false,
-          secondaryValues: normalized,
-          secondaryDirty: dirty
-        }
-      };
-    });
-  }, [selectedDefinition.defaultDraft.parameters, selectedEdcdDraftKey, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.values]);
-  const discardSelectedDraft = useCallback(() => {
-    setDraft((current) => removeActionPointStepDraft(current, selectedKey));
-    setEdcdStepDrafts((current) => removeActionPointEdcdDrafts(current, selectedEdcdDraftPrefix));
-  }, [selectedEdcdDraftPrefix, selectedKey]);
-  const applySelectedSlot = useCallback(() => {
-    if (!selectedTrigger || !onApplyCommand) return false;
-    const edcdValues = selectedOption.edcdShape
-      ? selectedEdcdStepDraft?.values ?? normalizeEdcdValues(selectedEdcdUsageModel?.values ?? selectedDefinition.defaultDraft.parameters)
-      : undefined;
-    const secondaryEdcdValues = selectedOption.edcdShape && selectedEdcdUsageModel?.secondaryRowId != null
-      ? selectedEdcdStepDraft?.secondaryValues ?? normalizeEdcdValues(selectedEdcdUsageModel.secondaryValues ?? undefined)
-      : undefined;
-    onApplyCommand(actionPointStepApplyCommand({
-      triggerId: selectedTrigger.id,
-      slot: selectedSlot,
-      draft: { rawCode: selectedDraft.rawCode, id: selectedDraft.id },
-      edcdShape: selectedOption.edcdShape,
-      edcdValues,
-      secondaryEdcdValues
-    }));
-    discardSelectedDraft();
-    return true;
-  }, [discardSelectedDraft, onApplyCommand, selectedDefinition.defaultDraft.parameters, selectedDraft.id, selectedDraft.rawCode, selectedEdcdStepDraft?.secondaryValues, selectedEdcdStepDraft?.values, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.secondaryValues, selectedEdcdUsageModel?.values, selectedOption.edcdShape, selectedSlot, selectedTrigger]);
-  const requestDraftNavigation = useCallback((label: string, action: () => void) => {
-    confirmBeforeDraftDiscard(label, action);
-  }, [confirmBeforeDraftDiscard]);
-  useEffect(() => {
-    if (!selectedTrigger || !selectedStepDirty) return;
-    return registerDraftGuard({
-      id: `script-step:${selectedTrigger.id}:${selectedSlot}`,
-      surface: "scripts",
-      title: `${scriptLabel(project, selectedTrigger)} - Step ${selectedSlot + 1}`,
-      summary: scriptDraftGuardSummary(project, selectedTrigger, selectedSlot, selectedAction, selectedDraft, selectedDefinition),
-      apply: applySelectedSlot,
-      discard: discardSelectedDraft
-    });
-  }, [applySelectedSlot, discardSelectedDraft, project, registerDraftGuard, selectedAction, selectedDefinition, selectedDraft, selectedSlot, selectedStepDirty, selectedTrigger]);
   const handleSelectTrigger = useCallback((trigger: TriggerRecord) => {
     if (trigger.id === selectedTrigger?.id) return;
     requestDraftNavigation(`select ${scriptLabel(project, trigger)}`, () => performSelectTrigger(trigger));
   }, [performSelectTrigger, project, requestDraftNavigation, selectedTrigger?.id]);
-  const selectStepSlot = useCallback((slot: number) => {
-    if (slot === selectedSlot) return;
-    requestDraftNavigation(`select step ${slot + 1}`, () => performSelectStepSlot(slot));
-  }, [performSelectStepSlot, requestDraftNavigation, selectedSlot]);
   const previewEntity = useCallback((entity: SelectedEntity) => {
     setPreviewTarget({
       kind: "entity",
@@ -857,12 +748,6 @@ function ScriptAuthoringPanel({
         onApplyCommand?.({ kind: "deleteTrigger", label: isMacro ? deleteMacroLabel : "Clear Action Point", triggerId: selectedTrigger.id });
       }
     });
-  };
-  const moveSelectedStep = (toSlot: number) => {
-    if (!selectedTrigger || toSlot < 0 || toSlot > 7 || toSlot === selectedSlot) return;
-    setDraft((current) => swapActionPointStepDrafts(current, selectedTrigger.id, selectedSlot, toSlot));
-    performSelectStepSlot(toSlot);
-    onApplyCommand?.({ kind: "swapActionSlots", label: "Move step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot });
   };
   const moveSelectedActionPoint = (fields: Partial<{ levelType: LevelType; levelIndex: number; x: number; y: number }>) => {
     if (!selectedTrigger || isMacro) return;
@@ -2230,25 +2115,6 @@ function selectEntityForFlowTarget(target: { targetKind: string; value: number }
   if (target.targetKind === "mapRecord") return selectEntityFromId(`map-record:${target.value}`);
   if (target.targetKind === "item") return selectEntityFromId(`item:${target.value}`);
   return selectEntityFromId(`${target.targetKind}:${target.value}`);
-}
-
-function scriptDraftGuardSummary(
-  project: Project,
-  trigger: TriggerRecord,
-  slot: number,
-  applied: Action | undefined,
-  draft: { rawCode: number; id: number },
-  definition: ScriptActionDefinition
-) {
-  const appliedLabel = applied
-    ? `${scriptActionDefinitionFor(applied.rawCode).shortLabel} (CODE ${applied.rawCode}, ID ${applied.id})`
-    : "Empty";
-  return [
-    `Script: ${scriptLabel(project, trigger)}`,
-    `Step: ${slot + 1}`,
-    `Applied: ${appliedLabel}`,
-    `Draft: ${definition.shortLabel} (CODE ${draft.rawCode}, ID ${draft.id})`
-  ];
 }
 
 export function TargetRecordEditor({
