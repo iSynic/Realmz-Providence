@@ -104,6 +104,17 @@ try {
   expectStreamCell(horizontalStream, 14, 10, 8, 43, "horizontal stream east endpoint");
   expect(horizontalStream.profileConfidence === "reviewed-rules", "a fully audited horizontal stream should report reviewed-rule confidence");
 
+  const broadNorthEastCorner = planForMask(buildSmartTerrainChanges, tileset, [
+    { x: 20, y: 20 }, { x: 19, y: 20 }, { x: 20, y: 21 }, { x: 19, y: 21 }
+  ], "water");
+  expectStreamCell(broadNorthEastCorner, 20, 20, 76, 26, "broad water northeast shoreline corner");
+  const broadNorthEastNotch = planForMask(buildSmartTerrainChanges, tileset, [
+    { x: 19, y: 19 }, { x: 20, y: 19 },
+    { x: 19, y: 20 }, { x: 20, y: 20 }, { x: 21, y: 20 },
+    { x: 19, y: 21 }, { x: 20, y: 21 }, { x: 21, y: 21 }
+  ], "water");
+  expectStreamCell(broadNorthEastNotch, 20, 20, 239, 29, "broad water northeast shoreline notch");
+
   const narrowStreamRules = new Map([
     [1, 40], [2, 41], [3, 50], [4, 42], [5, 38], [6, 48], [7, 45],
     [8, 43], [9, 51], [10, 39], [11, 44], [12, 49], [13, 47], [14, 46]
@@ -115,6 +126,14 @@ try {
 
   const adjoiningForest = planForExistingTile(buildSmartTerrainChanges, tileset, 9, 10, 121, 10, 10, "forest");
   expect(adjoiningForest.neighborMask === 8 && adjoiningForest.to >= 121 && adjoiningForest.to <= 129, "forest should resolve against adjoining reviewed forest terrain");
+  const diagonalForestGap = planForMask(buildSmartTerrainChanges, tileset, [
+    { x: 10, y: 9 }, { x: 11, y: 9 },
+    { x: 9, y: 10 }, { x: 10, y: 10 }, { x: 11, y: 10 },
+    { x: 9, y: 11 }, { x: 10, y: 11 }, { x: 11, y: 11 }
+  ], "forest");
+  const diagonalForestCell = diagonalForestGap.cells.find((entry) => entry.x === 10 && entry.y === 10);
+  expect(diagonalForestCell?.neighborMask === 127, "forest interior with one missing diagonal should retain its exact topology mask");
+  expect(diagonalForestCell?.role === "center" && diagonalForestCell?.to === 121 && diagonalForestCell?.source === "center", "forest interior with one missing diagonal should use solid center art");
 
   const mountainMask = [
     { x: 10, y: 9 }, { x: 11, y: 9 },

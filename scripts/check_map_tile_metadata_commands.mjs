@@ -29,6 +29,7 @@ try {
   checkDungeonCellFlagCommand(commands);
   checkActionPointMarkerEncoding(actionPointMarkers);
   checkHiddenWalkableOverlay(secretTiles, metadata);
+  checkPlainsRoadSemantics(visualSemantics);
   checkCastleWallSemantics(visualSemantics);
   checkSwampSemantics(visualSemantics);
   checkSnowSemantics(visualSemantics);
@@ -276,6 +277,13 @@ function checkPaintPaletteConsolidation() {
   assert(!source.includes('{ id: "raw", label: "Raw / Advanced" }'), "Paint palette should not retain a separate Raw / Advanced tab.");
   assert(source.includes("const values = new Set([...standardTiles, ...specialAdvancedTiles])"), "All Available should deduplicate landlook and special/advanced tile values.");
   assert(!source.includes("Object.keys(icons ?? {})"), "Loaded negative icon resources should not automatically become paintable map values.");
+}
+
+function checkPlainsRoadSemantics({ landlookTileVisualSemantics }) {
+  assert(landlookTileVisualSemantics(139, 0)?.label === "Road bend east/south", "Plains tile 139 should bend east/south.");
+  assert(landlookTileVisualSemantics(140, 0)?.label === "Road bend north/west", "Plains tile 140 should bend north/west.");
+  assert(landlookTileVisualSemantics(141, 0)?.label === "Road bend north/east", "Plains tile 141 should bend north/east.");
+  assert(landlookTileVisualSemantics(142, 0)?.label === "Road bend south/west", "Plains tile 142 should bend south/west.");
 }
 
 function checkTileAdjacencyAudit() {

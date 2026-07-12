@@ -13,6 +13,7 @@
         { "kind": "namedStamp", "x": 6, "y": 2, "name": "bed" },
         { "kind": "namedStamp", "x": 89, "y": 89, "name": "yellow-house" },
         { "kind": "namedStamp", "x": 8, "y": 2, "name": "not-a-real-stamp" },
+        { "kind": "namedStamp", "x": 8, "y": 4, "name": "yellow-house", "region": "missing-anchor" },
         { "kind": "semanticRoad", "paths": [] },
         { "kind": "semanticRoad", "paths": [[{ "x": 10, "y": 10 }, { "x": 10, "y": 10 }]] },
         { "kind": "semanticRoad", "paths": [[{ "x": 11, "y": 11 }, { "x": 12, "y": 12 }]] }

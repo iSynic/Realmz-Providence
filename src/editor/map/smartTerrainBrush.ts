@@ -95,7 +95,7 @@ export function buildSmartTerrainChanges(
     const context = smartTerrainContextForCell(cell.x, cell.y, maskSet, presetProfile, (x, y) => (
       x < 0 || y < 0 || x >= map.width || y >= map.height ? null : tileValueAt(map, x, y)
     ));
-    const role = smartTerrainRoleFromContext(context);
+    const role = smartTerrainRoleForPreset(context, preset);
     const match = resolveSmartTerrainMatch(map, cell, context, maskSet, preset, profile, tileset, atlas);
     const index = mapTileIndex(map, cell.x, cell.y);
     planCells.push({ ...cell, index, from, to: match.tile, role, score: match.score, neighborMask: match.neighborMask, source: match.source, samples: match.samples });
@@ -205,12 +205,17 @@ function resolveSmartTerrainMatch(
   atlas: AtlasEntry | null
 ) {
   const presetProfile = profile.presets[preset];
-  const role = smartTerrainRoleFromContext(context);
+  const role = smartTerrainRoleForPreset(context, preset);
   const neighborMask = smartTerrainNeighborMask(context);
   const interiorDistance = distanceToMaskBoundary(cell, maskSet);
-  if (interiorDistance >= 2) {
+  if (interiorDistance >= 2 || (preset !== "water" && role === "center")) {
     const tile = centerTileForCell(presetProfile, map.id, preset, cell);
     return { tile, score: 1, neighborMask, source: "center", samples: presetProfile.sampleCount ?? null };
+  }
+
+  const reviewedWaterTile = preset === "water" ? reviewedBroadWaterTile(context, role) : null;
+  if (reviewedWaterTile !== null) {
+    return { tile: reviewedWaterTile, score: 1, neighborMask, source: "curated-mask", samples: null };
   }
 
   const candidateEvidence = smartCandidatesForCell(map, cell, context, neighborMask, role, preset, profile, presetProfile);
@@ -243,6 +248,26 @@ function resolveSmartTerrainMatch(
   const close = scored.filter((entry) => entry.score >= best - 0.04).slice(0, 4);
   const picked = seededPick(close, map.id, preset, cell, role);
   return { ...picked, neighborMask, source: candidateEvidence.source, samples: candidateEvidence.samples };
+}
+
+function smartTerrainRoleForPreset(context: SmartTerrainShapeContext, preset: SmartBrushPreset): SmartBrushRole {
+  // Opaque mountain and forest fills should not expose an edge solely because a
+  // diagonal cell is absent. Water keeps diagonal notches because they are an
+  // audited part of shoreline topology.
+  if (preset !== "water" && context.n && context.e && context.s && context.w) return "center";
+  return smartTerrainRoleFromContext(context);
+}
+
+function reviewedBroadWaterTile(context: SmartTerrainShapeContext, role: SmartBrushRole) {
+  if (role === "northEast" && context.s && context.w && context.sw) return 26;
+  if (role === "northWest" && context.s && context.e && context.se) return 25;
+  if (role === "southEast" && context.n && context.w && context.nw) return 28;
+  if (role === "southWest" && context.n && context.e && context.ne) return 27;
+  if (role === "notchNorthEast") return 29;
+  if (role === "notchNorthWest") return 30;
+  if (role === "notchSouthEast") return 31;
+  if (role === "notchSouthWest") return 32;
+  return null;
 }
 
 function smartCandidatesForCell(

@@ -553,9 +553,10 @@ export type ScenarioSeedMapOperation =
   | { kind: "semanticRoad"; paths: ScenarioSeedPoint[][] }
   | { kind: "semanticRoute"; connections: string[][]; style?: "direct" | "natural" }
   | { kind: "stamp"; x: number; y: number; tiles: number[][] }
-  | { kind: "namedStamp"; x: number; y: number; name: ScenarioSeedNamedStampName; variant?: number }
-  | { kind: "namedTile"; x: number; y: number; name: ScenarioSeedNamedTileName; variant?: number }
+  | { kind: "namedStamp"; x: number; y: number; name: ScenarioSeedNamedStampName; variant?: number; region?: string; anchor?: ScenarioSeedStampAnchor }
+  | { kind: "namedTile"; x: number; y: number; name: ScenarioSeedNamedTileName; variant?: number; region?: string }
   | { kind: "terrainGroup"; terrain: SmartBrushPreset; geometry: ScenarioSeedTerrainGeometry }
+  | { kind: "naturalScatter"; geometry: ScenarioSeedTerrainGeometry; density?: number; spacing?: number }
   | { kind: "landmass"; x: number; y: number; radiusX: number; radiusY: number; roughness?: number }
   | { kind: "castleRoom"; x: number; y: number; width: number; height: number; floorVariant?: number; doors?: ScenarioSeedCastleRoomDoor[] }
   | { kind: "landSecret"; x: number; y: number; state: LandCellSecretState }
@@ -573,7 +574,10 @@ export type ScenarioSeedTerrainGeometry =
 export type ScenarioSeedCastleRoomDoor = {
   side: "north" | "south" | "west" | "east";
   offset: number;
+  region?: string;
 };
+
+export type ScenarioSeedStampAnchor = "northWest" | "northEast" | "southWest" | "southEast";
 
 export type ScenarioSeedHiddenWalkableTile = 96 | 169 | 184;
 export type ScenarioSeedCombatClearingTile = 59 | 60 | 61 | 62 | 63 | 64 | 65 | 180 | 181 | 182 | 183 | 184 | 185;
@@ -1413,6 +1417,10 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
     ctx.errors.push(`${path}.landlook ${landlook ?? 0} does not have a checked-in semantic terrain profile.`);
   }
   const regionKeys = new Set((regions ?? []).map((region) => region.key));
+  for (const operationRegion of mapOperationRegions(operations ?? [], landlook ?? 0)) {
+    if (regionKeys.has(operationRegion.key)) ctx.errors.push(`${path} declares map region "${operationRegion.key}" more than once.`);
+    regionKeys.add(operationRegion.key);
+  }
   for (let operationIndex = 0; operationIndex < (operations ?? []).length; operationIndex++) {
     const operation = operations?.[operationIndex];
     const mapLandlook = landlook ?? 0;
@@ -1424,6 +1432,9 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
     }
     if ((operation?.kind === "semanticRoad" || operation?.kind === "semanticRoute") && !supportsSemanticRoads(mapLandlook)) {
       ctx.errors.push(`${path}.operations[${operationIndex}] ${operation.kind} is not valid for landlook ${mapLandlook}; use an audited outdoor landlook or explicit tile operations.`);
+    }
+    if (operation?.kind === "naturalScatter" && !supportsSemanticRoads(mapLandlook)) {
+      ctx.errors.push(`${path}.operations[${operationIndex}] naturalScatter is not valid for landlook ${mapLandlook}; use an audited outdoor landlook or explicit named tiles.`);
     }
     if (operation?.kind === "semanticRoute") {
       for (const [connectionIndex, connection] of operation.connections.entries()) {
@@ -2153,11 +2164,12 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     return { kind, x: x ?? 0, y: y ?? 0, tiles };
   }
   if (kind === "namedTile") {
-    allowKeys(value, path, ["kind", "x", "y", "name", "variant"], ctx);
+    allowKeys(value, path, ["kind", "x", "y", "name", "variant", "region"], ctx);
     const x = requireInteger(value.x, `${path}.x`, ctx);
     const y = requireInteger(value.y, `${path}.y`, ctx);
     const name = requireString(value.name, `${path}.name`, ctx);
     const variant = optionalInteger(value.variant, `${path}.variant`, ctx);
+    const region = optionalString(value.region, `${path}.region`, ctx);
     checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
     checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
     checkIntegerRange(variant, `${path}.variant`, 1, null, ctx);
@@ -2169,27 +2181,36 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
       x: x ?? 0,
       y: y ?? 0,
       name: name !== null && isScenarioSeedNamedTileName(name) ? name : "open-ground",
-      ...(variant !== undefined ? { variant } : {})
+      ...(variant !== undefined ? { variant } : {}),
+      ...(region !== undefined ? { region } : {})
     };
   }
   if (kind === "namedStamp") {
-    allowKeys(value, path, ["kind", "x", "y", "name", "variant"], ctx);
+    allowKeys(value, path, ["kind", "x", "y", "name", "variant", "region", "anchor"], ctx);
     const x = requireInteger(value.x, `${path}.x`, ctx);
     const y = requireInteger(value.y, `${path}.y`, ctx);
     const name = requireString(value.name, `${path}.name`, ctx);
     const variant = optionalInteger(value.variant, `${path}.variant`, ctx);
+    const region = optionalString(value.region, `${path}.region`, ctx);
+    const anchor = optionalString(value.anchor, `${path}.anchor`, ctx);
     checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
     checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
     checkIntegerRange(variant, `${path}.variant`, 1, null, ctx);
     if (name !== null && !isScenarioSeedNamedStampName(name)) {
       ctx.errors.push(`${path}.name must be a supported stable named land stamp from the scenario schema.`);
     }
+    if ((region === undefined) !== (anchor === undefined)) ctx.errors.push(`${path}.region and ${path}.anchor must be provided together.`);
+    if (anchor !== undefined && anchor !== "northWest" && anchor !== "northEast" && anchor !== "southWest" && anchor !== "southEast") {
+      ctx.errors.push(`${path}.anchor must be northWest, northEast, southWest, or southEast.`);
+    }
     return {
       kind,
       x: x ?? 0,
       y: y ?? 0,
       name: name !== null && isScenarioSeedNamedStampName(name) ? name : "bed",
-      ...(variant !== undefined ? { variant } : {})
+      ...(variant !== undefined ? { variant } : {}),
+      ...(region !== undefined ? { region } : {}),
+      ...(anchor === "northWest" || anchor === "northEast" || anchor === "southWest" || anchor === "southEast" ? { anchor } : {})
     };
   }
   if (kind === "terrainGroup") {
@@ -2200,6 +2221,20 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     }
     const geometry = parseTerrainGeometry(value.geometry, `${path}.geometry`, ctx);
     return { kind, terrain: terrain === "mountains" || terrain === "forest" ? terrain : "water", geometry: geometry ?? { kind: "rect", x: 0, y: 0, width: 1, height: 1 } };
+  }
+  if (kind === "naturalScatter") {
+    allowKeys(value, path, ["kind", "geometry", "density", "spacing"], ctx);
+    const geometry = parseTerrainGeometry(value.geometry, `${path}.geometry`, ctx);
+    const density = optionalInteger(value.density, `${path}.density`, ctx);
+    const spacing = optionalInteger(value.spacing, `${path}.spacing`, ctx);
+    checkIntegerRange(density, `${path}.density`, 1, 20, ctx);
+    checkIntegerRange(spacing, `${path}.spacing`, 1, 8, ctx);
+    return {
+      kind,
+      geometry: geometry ?? { kind: "rect", x: 0, y: 0, width: 1, height: 1 },
+      ...(density !== undefined ? { density } : {}),
+      ...(spacing !== undefined ? { spacing } : {})
+    };
   }
   if (kind === "landmass") {
     allowKeys(value, path, ["kind", "x", "y", "radiusX", "radiusY", "roughness"], ctx);
@@ -2285,7 +2320,7 @@ function parseMapOperation(input: unknown, path: string, ctx: ParseContext): Sce
     if (new Set(directions).size !== directions.length) ctx.errors.push(`${path}.directions cannot contain duplicates.`);
     return { kind, x: x ?? 0, y: y ?? 0, directions };
   }
-  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, semanticRoad, semanticRoute, stamp, namedStamp, namedTile, terrainGroup, landmass, castleRoom, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
+  ctx.errors.push(`${path}.kind must be one of fill, rect, line, path, border, room, road, river, semanticRoad, semanticRoute, stamp, namedStamp, namedTile, terrainGroup, naturalScatter, landmass, castleRoom, landSecret, hiddenWalkable, combatClearing, dungeonPassage.`);
   return null;
 }
 
@@ -2314,7 +2349,7 @@ function parseSemanticRouteConnection(input: unknown, path: string, ctx: ParseCo
 function validateMapOperationLevelTypes(operations: ScenarioSeedMapOperation[], levelType: LevelType, path: string, ctx: ParseContext) {
   for (let index = 0; index < operations.length; index++) {
     const kind = operations[index].kind;
-    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedStamp" || kind === "namedTile" || kind === "terrainGroup" || kind === "landmass" || kind === "castleRoom" || kind === "semanticRoad" || kind === "semanticRoute") && levelType !== "land") {
+    if ((kind === "landSecret" || kind === "hiddenWalkable" || kind === "combatClearing" || kind === "namedStamp" || kind === "namedTile" || kind === "terrainGroup" || kind === "naturalScatter" || kind === "landmass" || kind === "castleRoom" || kind === "semanticRoad" || kind === "semanticRoute") && levelType !== "land") {
       ctx.errors.push(`${path}.operations[${index}].kind ${kind} is only valid on land maps.`);
     }
     if (kind === "dungeonPassage" && levelType !== "dungeon") {
@@ -2407,14 +2442,15 @@ function parseRoomDoor(input: unknown, path: string, ctx: ParseContext): Scenari
 function parseCastleRoomDoor(input: unknown, path: string, ctx: ParseContext): ScenarioSeedCastleRoomDoor | null {
   const value = requireObject(input, path, ctx);
   if (!value) return null;
-  allowKeys(value, path, ["side", "offset"], ctx);
+  allowKeys(value, path, ["side", "offset", "region"], ctx);
   const side = requireString(value.side, `${path}.side`, ctx);
   const offset = requireInteger(value.offset, `${path}.offset`, ctx);
+  const region = optionalString(value.region, `${path}.region`, ctx);
   if (side !== null && side !== "north" && side !== "south" && side !== "west" && side !== "east") {
     ctx.errors.push(`${path}.side must be one of north, south, west, east.`);
   }
   checkIntegerRange(offset, `${path}.offset`, 0, 89, ctx);
-  return { side: side === "south" || side === "west" || side === "east" ? side : "north", offset: offset ?? 0 };
+  return { side: side === "south" || side === "west" || side === "east" ? side : "north", offset: offset ?? 0, ...(region !== undefined ? { region } : {}) };
 }
 
 function parseMapTileRow(input: unknown, path: string, ctx: ParseContext): number[] | null {
@@ -3103,6 +3139,10 @@ function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
       addKey(context.regions, region.key, { levelType, index: levelIndex, x: region.x, y: region.y }, "region", context);
       context.allocations.regions.push({ key: region.key, ...(map.key ? { mapKey: map.key } : {}), levelType, index: levelIndex, x: region.x, y: region.y });
     }
+    for (const region of mapOperationRegions(map.operations ?? [], map.landlook ?? 0)) {
+      addKey(context.regions, region.key, { levelType, index: levelIndex, x: region.x, y: region.y }, "region", context);
+      context.allocations.regions.push({ key: region.key, ...(map.key ? { mapKey: map.key } : {}), levelType, index: levelIndex, x: region.x, y: region.y });
+    }
   }
   for (const [index, actionPoint] of (seed.actionPoints ?? []).entries()) {
     const recordIndex = actionPoint.recordIndex ?? index;
@@ -3395,6 +3435,46 @@ function resolveRegionTarget(ref: ScenarioSeedRef, context: BuildContext): (MapT
   return null;
 }
 
+function mapOperationRegions(operations: ScenarioSeedMapOperation[], landlook: number): Array<{ key: string; x: number; y: number }> {
+  const regions: Array<{ key: string; x: number; y: number }> = [];
+  for (const operation of operations) {
+    if (operation.kind === "namedTile" && operation.region) {
+      regions.push({ key: operation.region, x: operation.x, y: operation.y });
+      continue;
+    }
+    if (operation.kind === "namedStamp" && operation.region && operation.anchor) {
+      const stamp = resolveNamedLandStamp(landlook, operation.name, operation.variant ?? 1);
+      if (!stamp) continue;
+      const east = operation.anchor === "northEast" || operation.anchor === "southEast";
+      const south = operation.anchor === "southWest" || operation.anchor === "southEast";
+      regions.push({
+        key: operation.region,
+        x: operation.x + (east ? stamp.width - 1 : 0),
+        y: operation.y + (south ? stamp.height - 1 : 0)
+      });
+      continue;
+    }
+    if (operation.kind === "castleRoom") {
+      for (const door of operation.doors ?? []) {
+        if (!door.region) continue;
+        const point = castleRoomDoorPoint(operation, door);
+        regions.push({ key: door.region, ...point });
+      }
+    }
+  }
+  return regions;
+}
+
+function castleRoomDoorPoint(
+  operation: Extract<ScenarioSeedMapOperation, { kind: "castleRoom" }>,
+  door: ScenarioSeedCastleRoomDoor
+) {
+  return {
+    x: door.side === "west" ? operation.x : door.side === "east" ? operation.x + operation.width - 1 : operation.x + door.offset,
+    y: door.side === "north" ? operation.y : door.side === "south" ? operation.y + operation.height - 1 : operation.y + door.offset
+  };
+}
+
 function addDiagnostic(context: BuildContext, severity: "error" | "warning", code: string, message: string, family?: string, key?: string) {
   context.diagnostics.push({ severity, code, message, ...(family ? { family } : {}), ...(key ? { key } : {}) });
   if (severity === "error") context.errors.push(message);
@@ -3406,9 +3486,12 @@ function buildMap(seed: ScenarioSeedMap, fallbackIndex: number, buildContext?: B
   const index = seed.index ?? fallbackIndex;
   const source = levelType === "land" ? "Data LD" : "Data D";
   const landlook = seed.landlook ?? 0;
-  const fillTile = seed.fillTile ?? landlookBaseTile(landlook) ?? 1;
+  const fillTile = seed.fillTile ?? (landlook === 4 ? 40 : landlookBaseTile(landlook) ?? 1);
   const tiles = seed.tiles ? [...seed.tiles] : new Array(MAP_SIZE * MAP_SIZE).fill(fillTile);
-  const regions = new Map((seed.regions ?? []).map((region) => [region.key, { x: region.x, y: region.y }]));
+  const regions = new Map([
+    ...(seed.regions ?? []).map((region) => [region.key, { x: region.x, y: region.y }] as const),
+    ...mapOperationRegions(seed.operations ?? [], landlook).map((region) => [region.key, { x: region.x, y: region.y }] as const)
+  ]);
   for (const operation of seed.operations ?? []) applyMapOperation(tiles, operation, { landlook, levelType, mapSeed: `${levelType}:${index}`, regions, buildContext });
   return {
     id: `${levelType}:${index}`,
@@ -3510,6 +3593,30 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
   }
   if (operation.kind === "namedTile") {
     const tile = resolveNamedLandTile(mapContext.landlook, operation.name, operation.variant ?? 1);
+    const existing = normalizeSmartTerrainTile(tiles[mapStorageTileIndex(mapContext.levelType, operation.x, operation.y)]);
+    if (operation.name === "boat" && mapContext.buildContext) {
+      const profile = GENERATED_SMART_TERRAIN_PROFILES.find((entry) => entry.landlook === mapContext.landlook);
+      if (existing === null || !profile?.presets.water.family.includes(existing)) {
+        addDiagnostic(
+          mapContext.buildContext,
+          "warning",
+          "boat-off-water",
+          `Map ${mapContext.mapSeed} places a boat at (${operation.x}, ${operation.y}) outside reviewed water terrain.`,
+          "map",
+          mapContext.mapSeed
+        );
+      }
+    }
+    if (operation.name === "grave" && existing !== null && existing >= 130 && existing <= 146 && mapContext.buildContext) {
+      addDiagnostic(
+        mapContext.buildContext,
+        "warning",
+        "feature-over-road",
+        `Map ${mapContext.mapSeed} places a grave at (${operation.x}, ${operation.y}) over an authored road; place it beside the route instead.`,
+        "map",
+        mapContext.mapSeed
+      );
+    }
     if (tile !== null) setTile(tiles, operation.x, operation.y, tile, mapContext.levelType);
     return;
   }
@@ -3524,6 +3631,10 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
   }
   if (operation.kind === "terrainGroup") {
     applyTerrainGroup(tiles, operation, mapContext);
+    return;
+  }
+  if (operation.kind === "naturalScatter") {
+    applyNaturalScatter(tiles, operation, mapContext);
     return;
   }
   if (operation.kind === "landmass") {
@@ -3547,20 +3658,24 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
   }
   if (operation.kind === "castleRoom") {
     const floor = resolveNamedLandTile(mapContext.landlook, "open-ground", operation.floorVariant ?? 1) ?? 111;
-    const wallNorthSouth = resolveNamedLandTile(mapContext.landlook, "castle-wall-north-south") ?? 1;
-    const wallEastWest = resolveNamedLandTile(mapContext.landlook, "castle-wall-east-west") ?? 2;
     const doorNorthSouth = resolveNamedLandTile(mapContext.landlook, "wooden-door-north-south") ?? 76;
     const doorEastWest = resolveNamedLandTile(mapContext.landlook, "wooden-door-east-west") ?? 77;
+    // These Castle transitions face the room while retaining solid tile 40 beyond it.
+    const walls = { north: 65, east: 39, south: 38, west: 64 } as const;
+    const corners = { northWest: 36, northEast: 37, southWest: 34, southEast: 35 } as const;
     for (let y = operation.y + 1; y < operation.y + operation.height - 1; y++) {
       for (let x = operation.x + 1; x < operation.x + operation.width - 1; x++) setTile(tiles, x, y, floor, mapContext.levelType);
     }
-    drawLine(tiles, operation.x, operation.y, operation.x + operation.width - 1, operation.y, wallEastWest, 1, mapContext.levelType);
-    drawLine(tiles, operation.x, operation.y + operation.height - 1, operation.x + operation.width - 1, operation.y + operation.height - 1, wallEastWest, 1, mapContext.levelType);
-    drawLine(tiles, operation.x, operation.y, operation.x, operation.y + operation.height - 1, wallNorthSouth, 1, mapContext.levelType);
-    drawLine(tiles, operation.x + operation.width - 1, operation.y, operation.x + operation.width - 1, operation.y + operation.height - 1, wallNorthSouth, 1, mapContext.levelType);
+    drawLine(tiles, operation.x, operation.y, operation.x + operation.width - 1, operation.y, walls.north, 1, mapContext.levelType);
+    drawLine(tiles, operation.x, operation.y + operation.height - 1, operation.x + operation.width - 1, operation.y + operation.height - 1, walls.south, 1, mapContext.levelType);
+    drawLine(tiles, operation.x, operation.y, operation.x, operation.y + operation.height - 1, walls.west, 1, mapContext.levelType);
+    drawLine(tiles, operation.x + operation.width - 1, operation.y, operation.x + operation.width - 1, operation.y + operation.height - 1, walls.east, 1, mapContext.levelType);
+    setTile(tiles, operation.x, operation.y, corners.northWest, mapContext.levelType);
+    setTile(tiles, operation.x + operation.width - 1, operation.y, corners.northEast, mapContext.levelType);
+    setTile(tiles, operation.x, operation.y + operation.height - 1, corners.southWest, mapContext.levelType);
+    setTile(tiles, operation.x + operation.width - 1, operation.y + operation.height - 1, corners.southEast, mapContext.levelType);
     for (const door of operation.doors ?? []) {
-      const x = door.side === "west" ? operation.x : door.side === "east" ? operation.x + operation.width - 1 : operation.x + door.offset;
-      const y = door.side === "north" ? operation.y : door.side === "south" ? operation.y + operation.height - 1 : operation.y + door.offset;
+      const { x, y } = castleRoomDoorPoint(operation, door);
       setTile(tiles, x, y, door.side === "north" || door.side === "south" ? doorEastWest : doorNorthSouth, mapContext.levelType);
     }
     return;
@@ -3572,6 +3687,24 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
   }
   if (operation.kind === "hiddenWalkable") {
     const index = mapStorageTileIndex(mapContext.levelType, operation.x, operation.y);
+    if (mapContext.buildContext) {
+      const profile = GENERATED_SMART_TERRAIN_PROFILES.find((entry) => entry.landlook === mapContext.landlook);
+      const existing = normalizeSmartTerrainTile(tiles[index]);
+      const structural = existing !== null && (
+        profile?.presets.mountains.family.includes(existing)
+        || profile?.presets.forest.family.includes(existing)
+      );
+      if (profile && supportsSemanticRoads(mapContext.landlook) && !structural) {
+        addDiagnostic(
+          mapContext.buildContext,
+          "warning",
+          "hidden-walkable-isolated",
+          `Map ${mapContext.mapSeed} places hidden-walkable terrain at (${operation.x}, ${operation.y}) outside a reviewed mountain or forest structure.`,
+          "map",
+          mapContext.mapSeed
+        );
+      }
+    }
     tiles[index] = setLandCellSecretState(operation.tile ?? defaultStockHiddenWalkableTile(mapContext.landlook) ?? 169, landCellSecretState(tiles[index]), false);
     return;
   }
@@ -3764,6 +3897,127 @@ function clampMapCoordinate(value: number) {
   return Math.max(1, Math.min(MAP_SIZE - 2, value));
 }
 
+type NaturalScatterPalette = {
+  ground: number[];
+  plants: number[];
+  landmarks: number[];
+  tallTrees: boolean;
+};
+
+const NATURAL_SCATTER_PALETTES: Record<number, NaturalScatterPalette> = {
+  0: { ground: [155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167], plants: [118, 119, 120, 149], landmarks: [148], tallTrees: true },
+  2: { ground: [155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167], plants: [118, 119, 120, 149], landmarks: [148], tallTrees: true },
+  3: { ground: [155, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167], plants: [118, 119, 120, 149], landmarks: [148], tallTrees: true },
+  5: { ground: [159, 160, 161, 162, 163, 164, 165, 166, 167], plants: [118, 119, 120, 154, 155, 156, 157, 158, 186, 187, 188, 189, 190], landmarks: [], tallTrees: false },
+  9: { ground: [156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167], plants: [118, 119, 120, 149, 150, 152, 154], landmarks: [], tallTrees: false },
+  10: { ground: [156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167], plants: [118, 119, 120, 149, 150, 152, 154], landmarks: [], tallTrees: true }
+};
+
+function applyNaturalScatter(
+  tiles: number[],
+  operation: Extract<ScenarioSeedMapOperation, { kind: "naturalScatter" }>,
+  mapContext: MapBuildContext
+) {
+  const palette = NATURAL_SCATTER_PALETTES[mapContext.landlook];
+  if (!palette) return;
+  const openTiles = new Set(namedLandTileVariants(mapContext.landlook, "open-ground"));
+  const density = operation.density ?? 2;
+  const spacing = operation.spacing ?? 3;
+  const geometryCells = terrainGeometryCells(operation.geometry, mapContext.mapSeed, "natural-scatter");
+  const candidates = geometryCells
+    .filter((cell) => deterministicHash(`${mapContext.mapSeed}:natural-scatter:present:${cell.x}:${cell.y}`) % 100 < density)
+    .sort((a, b) => deterministicHash(`${mapContext.mapSeed}:natural-scatter:order:${a.x}:${a.y}`) - deterministicHash(`${mapContext.mapSeed}:natural-scatter:order:${b.x}:${b.y}`));
+  const placed: ScenarioSeedPoint[] = [];
+  let placedLandmark = false;
+  let placedTallTree = false;
+  for (const cell of candidates) {
+    if (!isScatterOpenCell(tiles, cell.x, cell.y, mapContext, openTiles)) continue;
+    if (placed.some((other) => Math.max(Math.abs(other.x - cell.x), Math.abs(other.y - cell.y)) < spacing)) continue;
+    if (isNearScatterProtectedCell(tiles, cell, mapContext)) continue;
+    const hash = deterministicHash(`${mapContext.mapSeed}:natural-scatter:feature:${cell.x}:${cell.y}`);
+    const selector = hash % 100;
+    if (selector >= 96 && palette.tallTrees) {
+      const variants = namedLandStampVariants(mapContext.landlook, "tall-tree");
+      const stamp = resolveNamedLandStamp(mapContext.landlook, "tall-tree", variants.length > 0 ? hash % variants.length + 1 : 1);
+      if (stamp && stamp.cells.every((stampCell) => {
+        const stampPoint = { x: cell.x + stampCell.dx, y: cell.y + stampCell.dy };
+        return isScatterOpenCell(tiles, stampPoint.x, stampPoint.y, mapContext, openTiles)
+          && !isNearScatterProtectedCell(tiles, stampPoint, mapContext);
+      })) {
+        for (const stampCell of stamp.cells) setTile(tiles, cell.x + stampCell.dx, cell.y + stampCell.dy, stampCell.tile, mapContext.levelType);
+        placed.push(cell);
+        placedTallTree = true;
+      }
+      continue;
+    }
+    const choices = selector < 60
+      ? palette.ground
+      : selector < 94
+        ? palette.plants
+        : palette.landmarks.length > 0
+          ? palette.landmarks
+          : palette.ground;
+    if (choices.length === 0) continue;
+    setTile(tiles, cell.x, cell.y, choices[hash % choices.length], mapContext.levelType);
+    placed.push(cell);
+    if (choices === palette.landmarks) placedLandmark = true;
+  }
+  const reserves = geometryCells
+    .sort((a, b) => deterministicHash(`${mapContext.mapSeed}:natural-scatter:reserve:${a.x}:${a.y}`) - deterministicHash(`${mapContext.mapSeed}:natural-scatter:reserve:${b.x}:${b.y}`));
+  if (!placedLandmark && palette.landmarks.length > 0 && placed.length >= 8) {
+    const cell = reserves.find((candidate) => isScatterReserveCell(tiles, candidate, mapContext, openTiles, placed, spacing));
+    if (cell) {
+      const hash = deterministicHash(`${mapContext.mapSeed}:natural-scatter:landmark:${cell.x}:${cell.y}`);
+      setTile(tiles, cell.x, cell.y, palette.landmarks[hash % palette.landmarks.length], mapContext.levelType);
+      placed.push(cell);
+    }
+  }
+  if (!placedTallTree && palette.tallTrees && placed.length >= 12) {
+    for (const cell of reserves) {
+      if (!isScatterReserveCell(tiles, cell, mapContext, openTiles, placed, spacing)) continue;
+      const variants = namedLandStampVariants(mapContext.landlook, "tall-tree");
+      const hash = deterministicHash(`${mapContext.mapSeed}:natural-scatter:tall-tree:${cell.x}:${cell.y}`);
+      const stamp = resolveNamedLandStamp(mapContext.landlook, "tall-tree", variants.length > 0 ? hash % variants.length + 1 : 1);
+      if (!stamp || !stamp.cells.every((stampCell) => {
+        const stampPoint = { x: cell.x + stampCell.dx, y: cell.y + stampCell.dy };
+        return isScatterOpenCell(tiles, stampPoint.x, stampPoint.y, mapContext, openTiles)
+          && !isNearScatterProtectedCell(tiles, stampPoint, mapContext);
+      })) continue;
+      for (const stampCell of stamp.cells) setTile(tiles, cell.x + stampCell.dx, cell.y + stampCell.dy, stampCell.tile, mapContext.levelType);
+      break;
+    }
+  }
+}
+
+function isScatterReserveCell(
+  tiles: number[], cell: ScenarioSeedPoint, mapContext: MapBuildContext,
+  openTiles: Set<number>, placed: ScenarioSeedPoint[], spacing: number
+) {
+  return isScatterOpenCell(tiles, cell.x, cell.y, mapContext, openTiles)
+    && !isNearScatterProtectedCell(tiles, cell, mapContext)
+    && !placed.some((other) => Math.max(Math.abs(other.x - cell.x), Math.abs(other.y - cell.y)) < spacing);
+}
+
+function isScatterOpenCell(
+  tiles: number[], x: number, y: number, mapContext: MapBuildContext, openTiles: Set<number>
+) {
+  if (x < 1 || y < 1 || x >= MAP_SIZE - 1 || y >= MAP_SIZE - 1) return false;
+  const tile = normalizeSmartTerrainTile(tiles[mapStorageTileIndex(mapContext.levelType, x, y)]);
+  return tile !== null && openTiles.has(tile);
+}
+
+function isNearScatterProtectedCell(tiles: number[], cell: ScenarioSeedPoint, mapContext: MapBuildContext) {
+  if ([...mapContext.regions.values()].some((region) => Math.max(Math.abs(region.x - cell.x), Math.abs(region.y - cell.y)) <= 3)) return true;
+  for (let y = cell.y - 1; y <= cell.y + 1; y++) {
+    for (let x = cell.x - 1; x <= cell.x + 1; x++) {
+      const raw = tiles[mapStorageTileIndex(mapContext.levelType, x, y)];
+      const tile = normalizeSmartTerrainTile(raw);
+      if (raw < 0 || (tile !== null && tile >= 130 && tile <= 146)) return true;
+    }
+  }
+  return false;
+}
+
 function applyTerrainGroup(
   tiles: number[],
   operation: Extract<ScenarioSeedMapOperation, { kind: "terrainGroup" }>,
@@ -3846,8 +4100,35 @@ function terrainGeometryCells(geometry: ScenarioSeedTerrainGeometry, mapSeed = "
         if (Math.hypot(dx, dy) <= boundary) cells.set(`${x}:${y}`, { x, y });
       }
     }
+    smoothBlobMask(cells, geometry);
   }
   return [...cells.values()].sort((a, b) => a.y - b.y || a.x - b.x);
+}
+
+function smoothBlobMask(
+  cells: Map<string, ScenarioSeedPoint>,
+  geometry: Extract<ScenarioSeedTerrainGeometry, { kind: "blob" }>
+) {
+  const next = new Map(cells);
+  const minX = Math.max(0, geometry.x - geometry.radiusX);
+  const maxX = Math.min(MAP_SIZE - 1, geometry.x + geometry.radiusX);
+  const minY = Math.max(0, geometry.y - geometry.radiusY);
+  const maxY = Math.min(MAP_SIZE - 1, geometry.y + geometry.radiusY);
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      let neighbors = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          if ((dx !== 0 || dy !== 0) && cells.has(`${x + dx}:${y + dy}`)) neighbors += 1;
+        }
+      }
+      const key = `${x}:${y}`;
+      if (cells.has(key) && neighbors <= 3) next.delete(key);
+      else if (!cells.has(key) && neighbors >= 5) next.set(key, { x, y });
+    }
+  }
+  cells.clear();
+  for (const [key, cell] of next) cells.set(key, cell);
 }
 
 function linePoints(start: ScenarioSeedPoint, end: ScenarioSeedPoint) {

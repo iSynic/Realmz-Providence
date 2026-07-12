@@ -146,7 +146,7 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 73, 40) === 134, "semantic roads should compile a four-way junction from crossing paths");
   expect(tileAt(tiles, 72, 40) === 132 && tileAt(tiles, 73, 39) === 133, "semantic roads should compile horizontal and vertical straight tiles");
   expect(tileAt(tiles, 70, 40) === 143 && tileAt(tiles, 76, 40) === 145 && tileAt(tiles, 73, 37) === 144 && tileAt(tiles, 73, 43) === 146, "semantic roads should orient all four endpoint tiles toward their neighbors");
-  expect(tileAt(tiles, 60, 44) === 142 && tileAt(tiles, 50, 55) === 139 && tileAt(tiles, 40, 55) === 140 && tileAt(tiles, 34, 55) === 141, "semantic roads should compile all four directional bends");
+  expect(tileAt(tiles, 60, 44) === 141 && tileAt(tiles, 50, 55) === 139 && tileAt(tiles, 40, 55) === 140 && tileAt(tiles, 34, 55) === 142, "semantic roads should compile all four visually verified directional bends");
   expect(tileAt(tiles, 73, 50) === 136 && tileAt(tiles, 73, 60) === 135 && tileAt(tiles, 60, 65) === 137 && tileAt(tiles, 50, 65) === 138, "semantic roads should compile all four directional T-junctions");
   expect(tileAt(tiles, 20, 12) === 21 && tileAt(tiles, 22, 13) === 26, "stamp should preserve its two-dimensional tile pattern");
   expect(tileAt(tiles, 80, 11) === 111, "named tile placement should resolve a Plains cave transition without exposing its tile ID");
@@ -218,11 +218,40 @@ function checkOrganicMapOperations(createProjectFromScenarioSeed) {
   const normalized = tiles.map((tile) => Math.abs(tile) % 1000);
   expect(normalized.filter((tile) => tile >= 130 && tile <= 146).length >= 30, "semanticRoute should connect named regions with audited road tiles");
   expect(normalized.some((tile) => tile >= 135 && tile <= 142), "natural semanticRoute should include at least one bend or junction");
+  expect(Math.abs(tileAt(tiles, 61, 28)) === 1033, "stamp-owned regions should place Action Points on the selected special-tile anchor");
+  expect(tileAt(tiles, 70, 60) === 111, "named tile-owned regions should preserve the semantic portal tile");
+  expect(result.allocations.regions.some((region) => region.key === "cave-door" && region.x === 70 && region.y === 60), "named tile-owned regions should be included in allocation reports");
+  const decorated = normalized.filter((tile) => (tile >= 118 && tile <= 120) || (tile >= 148 && tile <= 154) || (tile >= 159 && tile <= 167));
+  expect(decorated.length >= 10, "naturalScatter should add a sparse mix of reviewed natural details");
+  expect(normalized.includes(148), "naturalScatter should retain an occasional landmark in a sufficiently large decorated area");
+  expect(normalized.includes(151) && normalized.includes(152) || normalized.includes(153) && normalized.includes(154), "naturalScatter should retain a coherent tall-tree stamp in a sufficiently large compatible area");
+  const repeated = createProjectFromScenarioSeed(readSeed("organic-map.seed.json"));
+  expect(repeated.ok && JSON.stringify(repeated.project.maps[0]?.tiles) === JSON.stringify(tiles), "naturalScatter and organic terrain should be deterministic for the same seed");
+
+  const smoothed = createProjectFromScenarioSeed({
+    schemaVersion: 1,
+    scenario: { name: "Smoothed Blob" },
+    maps: [{
+      levelType: "land",
+      index: 0,
+      landlook: 0,
+      fillTile: 156,
+      operations: [{ kind: "terrainGroup", terrain: "mountains", geometry: { kind: "blob", x: 30, y: 18, radiusX: 14, radiusY: 5, roughness: 35 } }]
+    }]
+  });
+  expect(smoothed.ok, "smoothed mountain blob should compile");
+  if (smoothed.ok) {
+    const smoothedTiles = smoothed.project.maps[0]?.tiles ?? [];
+    expect(tileAt(smoothedTiles, 16, 17) === 156, "blob smoothing should remove unsupported three-neighbor mountain caps");
+    expect(tileAt(smoothedTiles, 17, 17) >= 77 && tileAt(smoothedTiles, 17, 17) <= 79, "blob smoothing should expose the remaining mountain edge toward the west");
+  }
 
   const tower = result.project.maps.find((map) => map.id === "land:1")?.tiles ?? [];
+  expect(tileAt(tower, 0, 0) === 40, "Castle seed maps should preserve solid tile 40 outside semantic rooms");
   expect(tileAt(tower, 11, 11) === 111, "castleRoom should resolve its interior floor semantically");
-  expect(tileAt(tower, 15, 10) === 2 && tileAt(tower, 10, 15) === 1, "castleRoom should resolve directional east-west and north-south walls");
-  expect(tileAt(tower, 20, 27) === 77, "castleRoom should resolve a south-wall door without a raw tile ID");
+  expect(tileAt(tower, 15, 10) === 65 && tileAt(tower, 30, 15) === 39 && tileAt(tower, 15, 27) === 38 && tileAt(tower, 10, 15) === 64, "castleRoom should resolve all solid-void wall transitions");
+  expect(tileAt(tower, 10, 10) === 36 && tileAt(tower, 30, 10) === 37 && tileAt(tower, 10, 27) === 34 && tileAt(tower, 30, 27) === 35, "castleRoom should resolve all solid-void corner transitions");
+  expect(tileAt(tower, 20, 27) === 1077, "castleRoom door-owned regions should orient the door and place its Action Point on that cell");
   expect(result.project.extracodes.some((row) => row.values[0] === 1 && row.values[1] === 20 && row.values[2] === 25), "named teleport destinations should resolve the target map and region coordinates");
   expect(!result.diagnostics.some((diagnostic) => diagnostic.code === "teleport-destination-action-point"), "separate arrival and exit regions should avoid teleport-chain warnings");
 
@@ -257,6 +286,40 @@ function checkOrganicMapOperations(createProjectFromScenarioSeed) {
   });
   expect(blockedRoute.ok && blockedRoute.diagnostics.some((diagnostic) => diagnostic.code === "semantic-route-unreachable"), "semantic routes blocked by terrain should warn instead of drawing through it");
   expect(blockedRoute.ok && blockedRoute.diagnostics.some((diagnostic) => diagnostic.code === "site-on-water"), "scenario starts placed on water should return a structured site warning");
+
+  const misplacedTerrainFeature = createProjectFromScenarioSeed({
+    schemaVersion: 1,
+    scenario: { name: "Misplaced Terrain Feature" },
+    maps: [{
+      key: "field",
+      levelType: "land",
+      index: 0,
+      landlook: 0,
+      fillTile: 156,
+      operations: [
+        { kind: "namedTile", x: 10, y: 10, name: "boat" },
+        { kind: "hiddenWalkable", x: 11, y: 10 }
+      ]
+    }]
+  });
+  expect(misplacedTerrainFeature.ok && misplacedTerrainFeature.diagnostics.some((diagnostic) => diagnostic.code === "boat-off-water"), "boats placed away from reviewed water should return a structured warning");
+  expect(misplacedTerrainFeature.ok && misplacedTerrainFeature.diagnostics.some((diagnostic) => diagnostic.code === "hidden-walkable-isolated"), "isolated hidden-walkable terrain should return a structured warning");
+
+  const graveOnRoad = createProjectFromScenarioSeed({
+    schemaVersion: 1,
+    scenario: { name: "Grave On Road" },
+    maps: [{
+      levelType: "land",
+      index: 0,
+      landlook: 0,
+      fillTile: 156,
+      operations: [
+        { kind: "semanticRoad", paths: [[{ x: 10, y: 10 }, { x: 12, y: 10 }]] },
+        { kind: "namedTile", x: 11, y: 10, name: "grave" }
+      ]
+    }]
+  });
+  expect(graveOnRoad.ok && graveOnRoad.diagnostics.some((diagnostic) => diagnostic.code === "feature-over-road"), "graves that overwrite semantic roads should return a structured placement warning");
 }
 
 function checkDirectAp(createProjectFromScenarioSeed) {
@@ -659,6 +722,7 @@ function checkInvalid(createProjectFromScenarioSeed, parseScenarioSeed) {
     expect(mapSemantics.errors.some((error) => error.includes("footprint 2 x 2 extends past the 90 x 90 map")), "named stamps should reject footprints that cross the map boundary");
     expect(mapSemantics.errors.some((error) => error.includes("supported stable named land stamp")), "named stamps should reject unknown names");
     expect(mapSemantics.errors.some((error) => error.includes("variant must be between 1 and 1 for named stamp \"yellow-house\"")), "named stamps should reject unavailable variants");
+    expect(mapSemantics.errors.some((error) => error.includes("region and") && error.includes("anchor must be provided together")), "named stamp regions should require an explicit footprint anchor");
     expect(mapSemantics.errors.some((error) => error.includes("semanticRoad is only valid on land maps")), "semantic roads should reject dungeon maps");
     expect(mapSemantics.errors.some((error) => error.includes("paths must contain at least one road path")), "semantic roads should require at least one path");
     expect(mapSemantics.errors.some((error) => error.includes("must differ from the previous point")), "semantic roads should reject collapsed path segments");

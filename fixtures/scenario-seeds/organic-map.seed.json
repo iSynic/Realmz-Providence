@@ -14,8 +14,7 @@
       "regions": [
         { "key": "landing", "x": 18, "y": 45 },
         { "key": "landing-return", "x": 19, "y": 45 },
-        { "key": "village", "x": 42, "y": 44 },
-        { "key": "lighthouse", "x": 61, "y": 28 }
+        { "key": "village", "x": 42, "y": 44 }
       ],
       "operations": [
         { "kind": "landmass", "x": 45, "y": 45, "radiusX": 34, "radiusY": 30, "roughness": 55 },
@@ -27,7 +26,10 @@
           "connections": [
             ["landing", "village", "lighthouse"]
           ]
-        }
+        },
+        { "kind": "namedStamp", "x": 60, "y": 27, "name": "red-tower", "region": "lighthouse", "anchor": "southEast" },
+        { "kind": "namedTile", "x": 70, "y": 60, "name": "land-to-cave-cave-south", "region": "cave-door" },
+        { "kind": "naturalScatter", "geometry": { "kind": "rect", "x": 14, "y": 16, "width": 62, "height": 60 }, "density": 2, "spacing": 3 }
       ]
     },
     {
@@ -35,10 +37,8 @@
       "levelType": "land",
       "index": 1,
       "landlook": 4,
-      "fillTile": 32,
       "regions": [
-        { "key": "tower-arrival", "x": 20, "y": 25 },
-        { "key": "tower-exit", "x": 20, "y": 26 }
+        { "key": "tower-arrival", "x": 20, "y": 25 }
       ],
       "operations": [
         {
@@ -47,7 +47,7 @@
           "y": 10,
           "width": 21,
           "height": 18,
-          "doors": [{ "side": "south", "offset": 10 }]
+          "doors": [{ "side": "south", "offset": 10, "region": "tower-exit" }]
         }
       ]
     }
