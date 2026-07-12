@@ -1,5 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Eye, Plus, Save, Trash2, X } from "lucide-react";
+import { AlertTriangle, Copy, Eye, Plus, Trash2, X } from "lucide-react";
 import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
@@ -8,7 +8,6 @@ import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsa
 import { resolveSignedMessageTarget, targetPickerConfig } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
 import { useIconPreviewUrl } from "../previewUrls";
-import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
 import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "../realmzActions";
@@ -37,7 +36,6 @@ import {
   SCRIPT_INVENTORY_FILTERS,
   ScriptListItem,
   actionBelongsTo,
-  actionSummary,
   filterScriptsByInventory,
   hasScriptWarning,
   issueCountsBySlot,
@@ -59,7 +57,6 @@ import {
   actionDefinitionsForCategory,
   scriptActionDefinitionFor,
   scriptActionSummary,
-  scriptStepBranchHint,
   scriptStepFlowRoutes,
   type ScriptActionCategoryFilter,
   type ScriptActionDefinition
@@ -85,6 +82,9 @@ import {
 import { TimedEncounterShell, timedEncounterEligibilitySummary } from "./scripts/TimedEncounterShell";
 import { ScriptDiagnostics } from "./scripts/ScriptDiagnostics";
 import { SelectedActionPointStepEditor } from "./scripts/SelectedActionPointStepEditor";
+import { ActionPointRecordHeader } from "./scripts/ActionPointRecordHeader";
+import { ActionPointStepList } from "./scripts/ActionPointStepList";
+import { ActionPointStepToolbar } from "./scripts/ActionPointStepToolbar";
 import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./scripts/actionPointDiagnostics";
 import { edcdDraftValuesEqual, type EdcdStepDraft } from "./scripts/actionPointDraft";
 import { actionSlotIndexFromSelection, actionSlotSelectionId, includeSelectedTrigger } from "./scripts/actionPointSelection";
@@ -160,16 +160,8 @@ const SCRIPT_WORKBENCH_HELP =
   "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, Action Settings, targets, diagnostics, and source evidence.";
 const CREATE_AP_HELP =
   "Creates a map or dungeon Action Point at the chosen cell. Realmz stores these as fixed records, so Providence reuses empty slots instead of shifting later record IDs.";
-const SAME_AS_TRIGGER_DESTINATION_HELP =
-  "This after-script destination exactly matches the trigger cell, so Providence shows it as a read-only mirror here. To make it separate, select this Action Point on Maps, expand After Script Destination, and edit Level/X/Y there.";
 const INVENTORY_FILTER_HELP =
   "Use Current Map while authoring one area, Active for non-empty records, Reusable for cleared fixed slots, Warnings before release, and All when tracing links across the scenario.";
-const SCRIPT_RECORD_HELP =
-  "This selected record is the source-backed script container. Map Action Points have chance/location/goto fields; Extra Action Points store only the eight steps until another script calls them.";
-const CLEAR_SCRIPT_HELP =
-  "Clear keeps Realmz's fixed record shape intact. Clearing a map Action Point makes the slot reusable; deleting an Extra Action Point uses the safe row command for that reusable script.";
-const STEP_LIST_HELP =
-  "Realmz scripts have eight ordered CODE/ID slots. Select a slot to edit it, then apply the draft; moving, duplicating, or clearing a step affects only that selected slot.";
 const TARGET_DRAWER_HELP =
   "Target opens context for the record selected by this step. Small records such as strings can be edited here; larger records such as encounters, battles, shops, treasures, and monsters open in their primary workbench.";
 const FLOW_PREVIEW_HELP =
@@ -925,46 +917,19 @@ function ScriptAuthoringPanel({
     </button>
   );
   const stepDetailActions = selectedTrigger ? (
-    <>
-      {detailSurfaceButton}
-      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Move step up" disabled={selectedSlot === 0} onClick={() => moveSelectedStep(selectedSlot - 1)}>
-        <ArrowUp size={12} />
-      </button>
-      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Move step down" disabled={selectedSlot === 7} onClick={() => moveSelectedStep(selectedSlot + 1)}>
-        <ArrowDown size={12} />
-      </button>
-      <button type="button" className="btn btn-secondary btn-xs icon-only" title="Duplicate step to next position" disabled={!selectedAction || selectedSlot === 7} onClick={() => onApplyCommand?.({ kind: "duplicateActionSlot", label: "Duplicate step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot + 1 })}>
-        <CopyPlus size={12} />
-      </button>
-      <button
-        type="button"
-        className="btn btn-danger btn-xs icon-only"
-        title="Clear step"
-        disabled={!selectedAction && !selectedStepDirty}
-        onClick={clearSelectedStep}
-      >
-        <X size={12} />
-      </button>
-      {directTargetDrawerAvailable && (
-        <button
-          type="button"
-          className={`btn btn-secondary btn-xs${targetDrawerOpen ? " active" : ""}`}
-          title={targetDrawerOpen ? "Hide target details" : "Open the selected target details"}
-          onClick={() => setTargetDrawerOpen(!targetDrawerOpen)}
-        >
-          Target
-        </button>
-      )}
-      <button
-        type="button"
-        className={`btn btn-primary btn-xs script-apply-button${selectedStepDirty ? " is-dirty" : ""}`}
-        title={selectedStepDirty ? "Apply this step to the script." : "This step is already applied."}
-        disabled={!selectedStepDirty}
-        onClick={applySelectedSlot}
-      >
-        <Save size={12} /> Apply Step
-      </button>
-    </>
+    <ActionPointStepToolbar
+      surfaceButton={detailSurfaceButton}
+      selectedSlot={selectedSlot}
+      hasSelectedAction={Boolean(selectedAction)}
+      selectedStepDirty={selectedStepDirty}
+      targetDrawerAvailable={directTargetDrawerAvailable}
+      targetDrawerOpen={targetDrawerOpen}
+      onMove={moveSelectedStep}
+      onDuplicate={() => onApplyCommand?.({ kind: "duplicateActionSlot", label: "Duplicate step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot: selectedSlot + 1 })}
+      onClear={clearSelectedStep}
+      onToggleTargetDrawer={() => setTargetDrawerOpen(!targetDrawerOpen)}
+      onApply={applySelectedSlot}
+    />
   ) : null;
   const targetEditorPanel = selectedTrigger && targetDrawerOpen && directTargetDrawerAvailable ? (
     <TargetRecordEditor
@@ -1181,219 +1146,47 @@ function ScriptAuthoringPanel({
         <div className="realmz-script-form">
           {selectedTrigger ? (
             <>
-              <div className="script-record-header">
-                <label className="script-name-field">
-                  <TutorialTip title="Selected Script Record" body={SCRIPT_RECORD_HELP} side="below">
-                    <span>Name</span>
-                  </TutorialTip>
-                  <input
-                    key={selectedTrigger.id}
-                    defaultValue={scriptLabel(project, selectedTrigger)}
-                    onBlur={(event) => {
-                      const displayName = event.currentTarget.value.trim();
-                      if (displayName && displayName !== scriptLabel(project, selectedTrigger)) {
-                        onApplyCommand?.({ kind: "renameEditorEntity", label: "Rename script", entityId: selectedTrigger.id, displayName });
-                      }
-                    }}
-                  />
-                </label>
-                <div className="script-record-actions">
-                  <button className="btn btn-secondary btn-xs" type="button" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
-                    <Copy size={12} /> Duplicate
-                  </button>
-                  <TutorialTip title={isMacro ? "Delete Extra Action Point" : "Clear Action Point"} body={CLEAR_SCRIPT_HELP} side="below">
-                    <button
-                      className="btn btn-danger btn-xs"
-                      type="button"
-                      title={isMacro ? "Delete this Extra Action Point" : "Clear this Action Point record so it can be reused"}
-                      onClick={clearSelectedScript}
-                    >
-                      <Trash2 size={12} /> {isMacro ? deleteMacroLabel : "Clear Action Point"}
-                    </button>
-                  </TutorialTip>
-                </div>
-              </div>
-              <ScriptDiagnostics issues={triggerDiagnostics.filter((issue) => issue.slot == null)} />
-              {isMacro ? (
-                <>
-                  {selectedCombatMacroContext && (
-                    <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={openTargetEntity} />
-                  )}
-                </>
-              ) : (
-                <div className="script-header-grid">
-                  <section className="script-header-group script-header-chance" aria-label="Activation Chance">
-                    <h4>Activation</h4>
-                    <NumberField
-                      label="%"
-                      value={selectedTrigger.percent}
-                      onCommit={(percent) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action chance", triggerId: selectedTrigger.id, fields: { percent } })}
-                    />
-                    {selectedTrigger.levelType === "land" ? (
-                      <small className="script-ap-secret-status">
-                        {selectedMarkerState === "secret" ? "Hidden Secret via land cell state" : selectedMarkerState === "revealed-secret" ? "Revealed Secret via land cell state" : "Normal land cell; edit Secret Area in Maps"}
-                      </small>
-                    ) : (
-                      <small className="script-ap-dungeon-secret-status">
-                        {selectedIsSecret ? "Secret via Dungeon Allow Move flags" : "Dungeon Draw controls Secret directions"}
-                      </small>
-                    )}
-                    {selectedMarkerState === "revealed-secret" && <small className="script-ap-marker-status">Already revealed</small>}
-                  </section>
-                  <section className="script-header-group script-header-location" aria-label="Trigger Location">
-                    <div className="script-header-title-row">
-                      <h4>Trigger Location</h4>
-                    </div>
-                    <div className="script-header-fields">
-                      <label className="script-header-map-field script-header-inline-field">
-                        <span>Map</span>
-                        <select
-                          value={moveMapKey}
-                          onChange={(event) => {
-                            const [levelType, levelIndex] = event.currentTarget.value.split(":");
-                            moveSelectedActionPoint({ levelType: levelType as LevelType, levelIndex: Number(levelIndex) });
-                          }}
-                        >
-                          {projectMaps.map((map) => (
-                            <option key={map.id} value={`${map.levelType}:${map.index}`}>{map.name}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <NumberField
-                        label="X"
-                        value={selectedTrigger.coordinate?.x ?? selectedTrigger.targetX ?? 0}
-                        onCommit={(x) => moveSelectedActionPoint({ x })}
-                      />
-                      <NumberField
-                        label="Y"
-                        value={selectedTrigger.coordinate?.y ?? selectedTrigger.targetY ?? 0}
-                        onCommit={(y) => moveSelectedActionPoint({ y })}
-                      />
-                      <MapCoordinateJumpButton
-                        target={triggerLocationMapTarget}
-                        maps={projectMaps}
-                        label="Open trigger location on Maps"
-                        onOpenMapCoordinate={previewMapCoordinate}
-                      />
-                    </div>
-                  </section>
-                  <section className={`script-header-group script-header-destination${destinationMatchesTrigger ? " is-same" : ""}`} aria-label="After Script Destination">
-                    <div className="script-header-title-row">
-                      <div className="script-header-summary-label">
-                        <h4>After Script Destination</h4>
-                        {destinationMatchesTrigger && (
-                          <TutorialTip title="Same As Trigger" body={SAME_AS_TRIGGER_DESTINATION_HELP} side="below">
-                            <small>Same as trigger</small>
-                          </TutorialTip>
-                        )}
-                      </div>
-                    </div>
-                    <div className="script-header-fields">
-                      <label className="script-header-map-field script-header-inline-field">
-                        <span>Map</span>
-                        <select
-                          value={afterScriptMapKey}
-                          disabled={destinationMatchesTrigger}
-                          onChange={(event) => {
-                            const [, levelIndex] = event.currentTarget.value.split(":");
-                            onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target level", triggerId: selectedTrigger.id, fields: { landid: Number(levelIndex) } });
-                          }}
-                        >
-                          {afterScriptMaps.map((map) => (
-                            <option key={map.id} value={`${map.levelType}:${map.index}`}>{map.name}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <NumberField
-                        label="X"
-                        value={selectedTrigger.targetX ?? 0}
-                        disabled={destinationMatchesTrigger}
-                        onCommit={(targetX) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target X", triggerId: selectedTrigger.id, fields: { targetX } })}
-                      />
-                      <NumberField
-                        label="Y"
-                        value={selectedTrigger.targetY ?? 0}
-                        disabled={destinationMatchesTrigger}
-                        onCommit={(targetY) => onApplyCommand?.({ kind: "updateTriggerHeader", label: "Update action target Y", triggerId: selectedTrigger.id, fields: { targetY } })}
-                      />
-                      <MapCoordinateJumpButton
-                        target={afterScriptMapTarget}
-                        maps={projectMaps}
-                        label="Open after-script destination on Maps"
-                        onOpenMapCoordinate={previewMapCoordinate}
-                      />
-                    </div>
-                  </section>
-                </div>
-              )}
+              <ActionPointRecordHeader
+                trigger={selectedTrigger}
+                currentName={scriptLabel(project, selectedTrigger)}
+                isMacro={isMacro}
+                deleteMacroLabel={deleteMacroLabel}
+                diagnostics={triggerDiagnostics.filter((issue) => issue.slot == null)}
+                macroContextCard={selectedCombatMacroContext ? (
+                  <CombatMacroContextCard context={selectedCombatMacroContext} onSelectEntity={openTargetEntity} />
+                ) : undefined}
+                markerState={selectedMarkerState}
+                isSecret={selectedIsSecret}
+                projectMaps={projectMaps}
+                moveMapKey={moveMapKey}
+                afterScriptMaps={afterScriptMaps}
+                afterScriptMapKey={afterScriptMapKey}
+                destinationMatchesTrigger={destinationMatchesTrigger}
+                triggerLocationTarget={triggerLocationMapTarget}
+                afterScriptTarget={afterScriptMapTarget}
+                onRename={(displayName) => onApplyCommand?.({ kind: "renameEditorEntity", label: "Rename script", entityId: selectedTrigger.id, displayName })}
+                onDuplicate={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}
+                onClear={clearSelectedScript}
+                onUpdateHeader={(label, fields) => onApplyCommand?.({ kind: "updateTriggerHeader", label, triggerId: selectedTrigger.id, fields })}
+                onMoveActionPoint={moveSelectedActionPoint}
+                onOpenMapCoordinate={previewMapCoordinate}
+              />
               <div className="realmz-visual-script-scroll" aria-label="Script step authoring area">
                 <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}`}>
-                  <PanelSection
-                    title="Steps"
-                    eyebrow={`${usedStepCount} of 8 used`}
-                    count="8 max"
-                    density="compact"
-                    scroll
-                    className="script-steps-panel"
-                    actions={firstEmptyStep != null ? (
-                      <button type="button" className="btn btn-primary btn-xs" onClick={() => selectStepSlot(firstEmptyStep)}>
-                        <Plus size={12} /> Add Step
-                      </button>
+                  <ActionPointStepList
+                    project={project}
+                    catalog={catalog}
+                    trigger={selectedTrigger}
+                    selectedSlot={selectedSlot}
+                    usedStepCount={usedStepCount}
+                    firstEmptyStep={firstEmptyStep}
+                    issueCounts={issueCounts}
+                    slotDraft={slotDraft}
+                    onSelectSlot={selectStepSlot}
+                    flowPreview={showInlineFlowPreview ? (
+                      <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={openTargetEntity} />
                     ) : undefined}
-                  >
-                    <p className="field-help">
-                      <TutorialTip title="Eight Step Slots" body={STEP_LIST_HELP} side="below">
-                        <span>Each card is one ordered Realmz CODE/ID slot.</span>
-                      </TutorialTip>
-                    </p>
-                    <ScrollArea className="realmz-step-list" aria-label="Script steps">
-                      {Array.from({ length: 8 }, (_, slot) => {
-                        const action = selectedTrigger.actions.find((candidate) => candidate.slot === slot);
-                        const current = slotDraft(slot, action);
-                        const option = actionOptionFor(current.rawCode);
-                        const definition = scriptActionDefinitionFor(current.rawCode);
-                        const changed = action ? current.rawCode !== action.rawCode || current.id !== action.id : current.rawCode !== 0 || current.id !== 0;
-                        const slotIssues = issueCounts.get(slot) ?? { errors: 0, warnings: 0 };
-                        const branchHint = scriptStepBranchHint(current.rawCode, current.id);
-                        const issueCount = slotIssues.errors + slotIssues.warnings;
-                        const storageTitle = [
-                          `CODE ${current.rawCode}`,
-                          `ID ${current.id}`,
-                          option.edcdShape ? "uses Action Settings" : "",
-                          issueCount > 0 ? `${issueCount} validation ${issueCount === 1 ? "issue" : "issues"}` : ""
-                        ].filter(Boolean).join(" | ");
-                        return (
-                          <button
-                            key={slot}
-                            className={`realmz-step-card${slot === selectedSlot ? " selected" : ""}${changed ? " dirty" : ""}${slotIssues.errors ? " has-error" : slotIssues.warnings ? " has-warning" : ""}`}
-                            type="button"
-                            onClick={() => selectStepSlot(slot)}
-                            style={{ borderColor: categoryColor(option.category) }}
-                          >
-                            <span className="slot-index">{slot + 1}</span>
-                            <span className="script-step-main">
-                              <strong>{definition.shortLabel}</strong>
-                              <small>{scriptActionSummary(project, catalog, current, actionSummary(action))}</small>
-                              {branchHint && <small className="script-step-branch-hint">{branchHint}</small>}
-                            </span>
-                            <span className="script-step-storage" title={storageTitle} aria-label={storageTitle}>
-                              <span>
-                                <small>CODE</small>
-                                <strong>{current.rawCode}</strong>
-                              </span>
-                              <span>
-                                <small>ID</small>
-                                <strong>{current.id}</strong>
-                              </span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </ScrollArea>
-                    {showInlineFlowPreview && (
-                        <ScriptFlowPreview project={project} catalog={catalog} trigger={selectedTrigger} onSelectEntity={openTargetEntity} />
-                    )}
-                  </PanelSection>
+                  />
                   {!floatingDetail && (
                     <PanelSection title="Current Step" eyebrow={`slot ${selectedSlot + 1} | ${selectedDefinition.category}`} scroll className="script-current-step-panel" actions={stepDetailActions}>
                       {stepDetailBody}
@@ -4093,43 +3886,6 @@ function targetRecordExists(project: Project, recordType: RealmzTargetRecordKind
 
 function isScriptsBenchmarkMode() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("benchmarkScripts");
-}
-
-function MapCoordinateJumpButton({
-  target,
-  maps,
-  label,
-  onOpenMapCoordinate
-}: {
-  target: MapCoordinateTarget | null;
-  maps: Project["maps"];
-  label: string;
-  onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
-}) {
-  const map = target
-    ? maps.find((candidate) => candidate.levelType === target.levelType && candidate.index === target.levelIndex) ?? null
-    : null;
-  const title = target
-    ? map
-      ? `${label}: ${map.name} ${target.x}, ${target.y}`
-      : `No ${target.levelType} level ${target.levelIndex} exists for ${target.x}, ${target.y}.`
-    : "No map coordinate is selected.";
-  return (
-    <button
-      type="button"
-      className="btn btn-secondary btn-xs icon-only script-coordinate-jump"
-      title={title}
-      disabled={!target || !map || !onOpenMapCoordinate}
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!target || !map) return;
-        onOpenMapCoordinate?.(target);
-      }}
-    >
-      <Eye size={12} />
-    </button>
-  );
 }
 
 function clampRealmzCoordinate(value: number) {
