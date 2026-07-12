@@ -1,6 +1,6 @@
 # Realmz Providence
 
-Providence is a modern scenario editor for Realmz. The current release is 0.3.1.
+Providence is a modern scenario editor for Realmz. The current release is 0.3.2.
 
 It is trying to do two things at once:
 
@@ -10,6 +10,15 @@ It is trying to do two things at once:
 That second part matters. Realmz scenarios contain a lot of classic Mac-era binary data, resource forks, packed records, and runtime quirks. Providence treats the original files as evidence, keeps unknown data visible or preserved, and only writes the parts we understand well enough to edit safely.
 
 The app is built with React/Vite on the frontend and Tauri/Rust on the desktop side.
+
+## 0.3.2 Packaging Update
+
+The 0.3.2 release makes the smaller online Windows installer the primary download while retaining a separately named offline installer.
+
+- The standard Windows setup downloads Microsoft's Evergreen WebView2 bootstrapper only when the runtime is missing.
+- Windows 10 and 11 systems that already have WebView2 install Providence without downloading another runtime copy.
+- The offline setup continues to bundle the complete WebView2 installer for disconnected or archival use.
+- Release builds now produce and verify both Windows variants so an offline build cannot accidentally replace the primary online artifact.
 
 ## 0.3.1 Update
 

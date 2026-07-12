@@ -1,7 +1,7 @@
 {
   "name": "realmz-providence",
   "productName": "Realmz Providence",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Modern Realmz scenario editor and creator.",
   "private": true,
   "type": "module",
@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "dist": "tauri build",
+    "dist:windows:release": "powershell -ExecutionPolicy Bypass -File scripts/build_windows_release_variants.ps1",
     "release:patch-gate": "powershell -ExecutionPolicy Bypass -File scripts/run_patch_release_gate.ps1",
     "release:patch-gate:desktop-smoke": "powershell -ExecutionPolicy Bypass -File scripts/run_patch_release_gate.ps1 -RunDesktopSmokes",
     "release:patch-gate:skip-desktop": "powershell -ExecutionPolicy Bypass -File scripts/run_patch_release_gate.ps1 -SkipDesktopGate",

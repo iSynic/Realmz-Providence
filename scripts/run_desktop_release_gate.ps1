@@ -74,12 +74,13 @@ Invoke-Step "Frontend production build" {
 }
 
 if (-not $SkipWindows) {
-  Invoke-Step "Windows desktop build" {
-    npm run dist
+  Invoke-Step "Windows desktop variants" {
+    npm run dist:windows:release
   }
 
   Invoke-Step "Windows artifacts" {
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\nsis\Realmz Providence_${version}_x64-setup.exe" -StartedAt $startedAt
+    Assert-FreshArtifact -Path "src-tauri\target\release\bundle\nsis\Realmz Providence_${version}_x64-offline-setup.exe" -StartedAt $startedAt
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\msi\Realmz Providence_${version}_x64_en-US.msi" -StartedAt $startedAt
   }
 
