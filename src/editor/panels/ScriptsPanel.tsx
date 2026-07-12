@@ -4062,7 +4062,7 @@ function TargetSummaryCard({
 }) {
   const entityId = `${recordType}:${id}`;
   const editorLabel = recordType === "battle" || recordType === "monster" ? "Combat" : "Economy";
-  const open = () => onSelectEntity?.(selectEntityFromId(entityId));
+  const open = onSelectEntity ? () => onSelectEntity(selectEntityFromId(entityId)) : undefined;
   if (recordType === "battle") {
     const battle = record as Project["battles"][number];
     const monsterSlots = battle.grid.filter(Boolean).length;
@@ -4143,7 +4143,7 @@ function EncounterTargetCard({
   onSelectEntity?: (entity: SelectedEntity) => void;
 }) {
   const entityId = encounterEntityId(recordType, id);
-  const open = () => onSelectEntity?.({ type: "encounter", id: entityId });
+  const open = onSelectEntity ? () => onSelectEntity({ type: "encounter", id: entityId }) : undefined;
   if (recordType === "simpleEncounter") {
     const simple = record as Project["simpleEncounters"][number];
     const sources = buildEncounterDecisionSources({
@@ -4229,16 +4229,18 @@ function EncounterTargetCard({
   );
 }
 
-function EncounterTargetCardHeader({ title, subtitle, onOpen, buttonLabel = "Open in Encounters" }: { title: string; subtitle: string; onOpen: () => void; buttonLabel?: string }) {
+function EncounterTargetCardHeader({ title, subtitle, onOpen, buttonLabel = "Open in Encounters" }: { title: string; subtitle: string; onOpen?: () => void; buttonLabel?: string }) {
   return (
     <header className="encounter-target-card-header">
       <div>
         <strong>{title}</strong>
         <small>{subtitle}</small>
       </div>
-      <button type="button" className="btn btn-primary btn-xs" onClick={onOpen}>
-        {buttonLabel}
-      </button>
+      {onOpen && (
+        <button type="button" className="btn btn-primary btn-xs" onClick={onOpen}>
+          {buttonLabel}
+        </button>
+      )}
     </header>
   );
 }
@@ -5503,6 +5505,7 @@ function EncounterResultActionMatrix({
 }) {
   const [codeHelperOpen, setCodeHelperOpen] = useState(false);
   const [soundPreviewOpen, setSoundPreviewOpen] = useState(false);
+  const [targetPreview, setTargetPreview] = useState<{ slot: number; opcode: number; value: number } | null>(null);
   const [codeHelperSelectedCode, setCodeHelperSelectedCode] = useState(1);
   const [focusedResultCode, setFocusedResultCode] = useState<number | null>(null);
   const openCodeHelper = () => {
@@ -5557,6 +5560,7 @@ function EncounterResultActionMatrix({
                   onUpdate={(changes) => onUpdate(slot, changes)}
                   onFocusCode={(code) => setFocusedResultCode(resultActionBaseCode(code))}
                   onCreateTarget={onCreateTarget}
+                  onPreviewTarget={(opcode, value) => setTargetPreview({ slot, opcode, value })}
                 />
               );
             })}
@@ -5577,6 +5581,19 @@ function EncounterResultActionMatrix({
           catalog={catalog}
           previewContext={previewContext}
           onClose={() => setSoundPreviewOpen(false)}
+        />
+      )}
+      {targetPreview && (
+        <EncounterResultTargetPreviewPanel
+          project={project}
+          catalog={catalog}
+          preview={targetPreview}
+          previewContext={previewContext}
+          onChange={(value) => {
+            onUpdate(targetPreview.slot, { id: value });
+            setTargetPreview((current) => current ? { ...current, value } : null);
+          }}
+          onClose={() => setTargetPreview(null)}
         />
       )}
     </section>
@@ -5709,6 +5726,225 @@ function useEncounterSoundPreviewUrl(
   );
 }
 
+function EncounterResultTargetPreviewPanel({
+  project,
+  catalog,
+  preview,
+  previewContext,
+  onChange,
+  onClose
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  preview: { slot: number; opcode: number; value: number };
+  previewContext: PreviewRuntimeContext;
+  onChange: (value: number) => void;
+  onClose: () => void;
+}) {
+  const opcode = resultActionBaseCode(preview.opcode);
+  const targetId = resolveSignedMessageTarget(opcode, preview.value);
+  const targetType = realmzScriptStepDescriptorFor(opcode).targetType;
+  const option = targetOptionForOpcodeValue(project, opcode, preview.value, catalog);
+  const action = actionOptionFor(opcode);
+  const picker = targetPickerConfig(opcode);
+  const title = option?.label ?? `${picker?.label ?? action.shortLabel} ${targetId}`;
+  const targetTypeLabel = picker?.label ?? (targetType ? targetType.replace(/([a-z])([A-Z])/g, "$1 $2") : "Referenced resource");
+  const detail = [option?.detail, option?.summary, option?.compatibility, option?.sourceState]
+    .filter(Boolean)
+    .join(" | ");
+  return (
+    <FloatingWorkbenchPanel
+      title={title}
+      eyebrow={`Result CODE ${opcode} | ID ${preview.value}`}
+      storageKey="encounters.resultTargetPreview.position"
+      defaultWidth={620}
+      defaultHeight={480}
+      minWidth={420}
+      minHeight={300}
+      className="encounter-result-target-preview-panel"
+      actions={(
+        <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Close target preview" title="Close" onClick={onClose}>
+          <X size={12} />
+        </button>
+      )}
+    >
+      <div className="encounter-result-target-preview-body">
+        <header>
+          <div>
+            <strong>{action.shortLabel}</strong>
+            <small>Read-only preview. Selecting the eye does not leave this encounter.</small>
+          </div>
+          <span>{targetTypeLabel}</span>
+        </header>
+        {picker && (
+          <div className="encounter-result-target-picker">
+            <TargetPicker
+              project={project}
+              catalog={catalog}
+              opcode={opcode}
+              value={preview.value}
+              onChange={onChange}
+              showDetail={false}
+              showTargetCount={false}
+              previewContext={previewContext}
+            />
+          </div>
+        )}
+        {detail && <p className="encounter-result-target-preview-detail">{detail}</p>}
+        <EncounterResultTargetPreviewContent
+          project={project}
+          catalog={catalog}
+          opcode={opcode}
+          targetId={targetId}
+          targetType={targetType}
+          option={option}
+          previewContext={previewContext}
+        />
+      </div>
+    </FloatingWorkbenchPanel>
+  );
+}
+
+function EncounterResultTargetPreviewContent({
+  project,
+  catalog,
+  opcode,
+  targetId,
+  targetType,
+  option,
+  previewContext
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  opcode: number;
+  targetId: number;
+  targetType?: RealmzTargetRecordKind;
+  option: ScriptTargetOption | null;
+  previewContext: PreviewRuntimeContext;
+}) {
+  if (targetType === "message") {
+    const record = project.messages?.find((candidate) => candidate.id === targetId);
+    return record ? (
+      <section className="encounter-result-message-preview">
+        <strong>String {targetId}</strong>
+        <p>{record.text || "This string is empty."}</p>
+      </section>
+    ) : <EmptyState compact title={`String ${targetId} is missing`} body="Create or select a stored string before relying on this result." />;
+  }
+  if (targetType === "battle") {
+    const record = project.battles?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <TargetSummaryCard project={project} catalog={catalog} recordType="battle" id={targetId} record={record} />
+      : <EmptyState compact title={`Battle ${targetId} is missing`} body="Choose an existing battle or create this target." />;
+  }
+  if (targetType === "monster") {
+    const record = project.monsters?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <TargetSummaryCard project={project} catalog={catalog} recordType="monster" id={targetId} record={record} />
+      : <EmptyState compact title={`Monster ${targetId} is missing`} body="Choose an existing monster or create this target." />;
+  }
+  if (targetType === "treasure") {
+    const record = project.treasures?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <TargetSummaryCard project={project} catalog={catalog} recordType="treasure" id={targetId} record={record} />
+      : <EmptyState compact title={`Treasure ${targetId} is missing`} body="Choose an existing treasure or create this target." />;
+  }
+  if (targetType === "shop") {
+    const record = project.shops?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <TargetSummaryCard project={project} catalog={catalog} recordType="shop" id={targetId} record={record} />
+      : <EmptyState compact title={`Shop ${targetId} is missing`} body="Choose an existing shop or create this target." />;
+  }
+  if (targetType === "simpleEncounter") {
+    const record = project.simpleEncounters?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <EncounterTargetCard project={project} recordType="simpleEncounter" id={targetId} record={record} />
+      : <EmptyState compact title={`Simple Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
+  }
+  if (targetType === "complexEncounter") {
+    const record = project.complexEncounters?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <EncounterTargetCard project={project} recordType="complexEncounter" id={targetId} record={record} />
+      : <EmptyState compact title={`Complex Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
+  }
+  if (targetType === "thiefEncounter") {
+    const record = project.thiefEncounters?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <EncounterTargetCard project={project} recordType="thiefEncounter" id={targetId} record={record} />
+      : <EmptyState compact title={`Rogue Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
+  }
+  if (targetType === "timedEncounter") {
+    const record = project.timedEncounters?.find((candidate) => candidate.id === targetId);
+    return record
+      ? <EncounterTargetCard project={project} recordType="timedEncounter" id={targetId} record={record} />
+      : <EmptyState compact title={`Time Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
+  }
+  if (targetType === "questLabel") {
+    const record = project.questLabels?.find((candidate) => candidate.id === targetId);
+    return record ? (
+      <section className="encounter-result-message-preview">
+        <strong>{record.label || `Quest ${targetId}`}</strong>
+        <p>{record.note || `Story flag ${targetId} has no author note.`}</p>
+      </section>
+    ) : <EmptyState compact title={`Story Flag ${targetId} is unnamed`} body="Name this story flag before relying on it in a result." />;
+  }
+  return (
+    <EncounterResultResourcePreview
+      project={project}
+      opcode={opcode}
+      targetId={targetId}
+      option={option}
+      previewContext={previewContext}
+    />
+  );
+}
+
+function EncounterResultResourcePreview({
+  project,
+  opcode,
+  targetId,
+  option,
+  previewContext
+}: {
+  project: Project;
+  opcode: number;
+  targetId: number;
+  option: ScriptTargetOption | null;
+  previewContext: PreviewRuntimeContext;
+}) {
+  const resourceType = opcode === 9 ? "snd " : opcode === 27 ? "PICT" : null;
+  const previewUrl = useResolvedPreviewUrl(
+    option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
+    option?.managedAsset ?? null,
+    option?.libraryAsset ?? null,
+    { ...previewContext, project, resourceType, resourceId: Math.abs(targetId) }
+  );
+  const isAudio = opcode === 9 || option?.previewMimeType?.startsWith("audio/");
+  const isImage = opcode === 27 || option?.previewMimeType?.startsWith("image/");
+  if (!option) {
+    return <EmptyState compact title="No preview available" body={`Providence could not resolve ID ${targetId} to a stored target for this action.`} />;
+  }
+  return (
+    <section className="encounter-result-resource-preview">
+      <strong>{option.label}</strong>
+      {isImage && previewUrl && <img src={previewUrl} alt={`Preview of ${option.label}`} />}
+      {isAudio && (
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          disabled={!previewUrl}
+          title={previewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
+          onClick={() => previewUrl && playPreviewUrl(previewUrl)}
+        >
+          <Volume2 size={13} /> Play
+        </button>
+      )}
+      {!previewUrl && (isAudio || isImage) && <small>No media preview is available for this reference.</small>}
+      {!isAudio && !isImage && <p>{option.summary || option.detail || "No additional preview details are available."}</p>}
+    </section>
+  );
+}
+
 function SimpleEncounterActionCell({
   project,
   catalog,
@@ -5716,7 +5952,8 @@ function SimpleEncounterActionCell({
   row,
   onUpdate,
   onFocusCode,
-  onCreateTarget
+  onCreateTarget,
+  onPreviewTarget
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -5725,6 +5962,7 @@ function SimpleEncounterActionCell({
   onUpdate: (changes: Partial<EncounterActionRow>) => void;
   onFocusCode: (code: number) => void;
   onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
+  onPreviewTarget: (opcode: number, value: number) => void;
 }) {
   const baseCode = resultActionBaseCode(row.rawCode);
   const isNegativeAction = row.rawCode < 0;
@@ -5734,6 +5972,9 @@ function SimpleEncounterActionCell({
   const resolvedValue = resolveSignedMessageTarget(baseCode, row.id);
   const canCreate = Boolean(targetType && resolvedValue > 0 && !selected);
   const populated = row.rawCode !== 0 || row.id !== 0;
+  const canPreview = baseCode !== 0 && Boolean(
+    selected || (targetType && targetRecordExists(project, targetType, resolvedValue))
+  );
   const options = resultActionOptionsFor(baseCode);
   const resolvedTitle = selected
     ? [selected.label, signedTargetBehaviorLabel(baseCode, row.id)].filter(Boolean).join(" | ")
@@ -5776,23 +6017,41 @@ function SimpleEncounterActionCell({
           onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
         />
       </label>
-      {canCreate && (
-        <button type="button" className="btn btn-secondary btn-xs" onClick={() => targetType && onCreateTarget(targetType, resolvedValue)}>
-          Create {resolvedValue}
-        </button>
-      )}
-      {populated && (
-        <button
-          type="button"
-          className="encounter-action-clear"
-          title="Clear"
-          aria-label={`Clear result action ${slot}`}
-          onClick={() => onUpdate({ rawCode: 0, id: 0 })}
-        >
-          <X size={12} />
-        </button>
-      )}
-      {!populated && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
+      <div className="encounter-action-row-actions">
+        {canCreate ? (
+          <button
+            type="button"
+            className="encounter-action-create"
+            title={`Create ${targetType} ${resolvedValue}`}
+            aria-label={`Create result action ${slot} target`}
+            onClick={() => targetType && onCreateTarget(targetType, resolvedValue)}
+          >
+            <Plus size={12} />
+          </button>
+        ) : canPreview ? (
+          <button
+            type="button"
+            className="encounter-action-preview"
+            title={`Preview ${selected?.label ?? `${targetType} ${resolvedValue}`}`}
+            aria-label={`Preview result action ${slot} target`}
+            onClick={() => onPreviewTarget(baseCode, row.id)}
+          >
+            <Eye size={12} />
+          </button>
+        ) : <span className="encounter-action-preview-placeholder" aria-hidden="true" />}
+        {populated && (
+          <button
+            type="button"
+            className="encounter-action-clear"
+            title="Clear"
+            aria-label={`Clear result action ${slot}`}
+            onClick={() => onUpdate({ rawCode: 0, id: 0 })}
+          >
+            <X size={12} />
+          </button>
+        )}
+        {!populated && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
+      </div>
     </div>
   );
 }
@@ -6935,6 +7194,7 @@ function ComplexEncounterResponseGrid({
   onResultsCommit: (values: number[]) => void;
 }) {
   const [activeDraftSlots, setActiveDraftSlots] = useState<Set<number>>(() => new Set());
+  const [pickerSlot, setPickerSlot] = useState<number | null>(null);
   const blankId = kind === "magic" ? MAGIC_RESPONSE_BLANK_SPELL_ID : 0;
   const isBlankStoredValue = (slot: number) => {
     const id = ids[slot] ?? 0;
@@ -6988,34 +7248,220 @@ function ComplexEncounterResponseGrid({
                 onCommit={(value) => onIdsCommit(updateArraySlot(ids, slot, value, count))}
               />
             ) : (
-              <ItemIdField
+              <ComplexEncounterItemResponseField
                 project={project}
                 catalog={catalog}
-                label="Item"
+                responseNumber={slot + 1}
                 value={ids[slot] ?? 0}
                 onCommit={(value) => onIdsCommit(updateArraySlot(ids, slot, value, count))}
-                compact
               />
             )}
-            {hasStoredValue(slot) && (
+            <div className="encounter-action-row-actions complex-encounter-response-actions">
               <button
                 type="button"
-                className="encounter-action-clear"
-                title="Clear"
-                aria-label={`Clear ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
-                onClick={() => {
-                  onIdsCommit(updateArraySlot(ids, slot, blankId, count));
-                  onResultsCommit(updateArraySlot(results, slot, 0, count));
-                }}
+                className="encounter-action-preview"
+                title={`Browse ${kind === "magic" ? "spells and scrolls" : "items"}`}
+                aria-label={`Browse ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
+                onClick={() => setPickerSlot(slot)}
               >
-                <X size={12} />
+                <Eye size={12} />
               </button>
-            )}
-            {!hasStoredValue(slot) && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
+              {hasStoredValue(slot) && (
+                <button
+                  type="button"
+                  className="encounter-action-clear"
+                  title="Clear"
+                  aria-label={`Clear ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
+                  onClick={() => {
+                    onIdsCommit(updateArraySlot(ids, slot, blankId, count));
+                    onResultsCommit(updateArraySlot(results, slot, 0, count));
+                  }}
+                >
+                  <X size={12} />
+                </button>
+              )}
+              {!hasStoredValue(slot) && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
+            </div>
           </div>
         ))}
       </div>
+      {pickerSlot != null && (
+        <ComplexEncounterResponsePickerPanel
+          key={`${kind}-${pickerSlot}`}
+          project={project}
+          catalog={catalog}
+          kind={kind}
+          responseNumber={pickerSlot + 1}
+          value={ids[pickerSlot] ?? 0}
+          onChange={(value) => onIdsCommit(updateArraySlot(ids, pickerSlot, value, count))}
+          onClose={() => setPickerSlot(null)}
+        />
+      )}
     </section>
+  );
+}
+
+function deduplicatedItemResponseOptions(project: Project, catalog?: LibraryCatalog | null) {
+  const seen = new Set<number>();
+  return itemReferenceOptions(project, catalog).filter((option) => {
+    if (seen.has(option.value)) return false;
+    seen.add(option.value);
+    return true;
+  });
+}
+
+function ComplexEncounterItemResponseField({
+  project,
+  catalog,
+  responseNumber,
+  value,
+  onCommit
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  responseNumber: number;
+  value: number;
+  onCommit: (value: number) => void;
+}) {
+  const options = useMemo(() => deduplicatedItemResponseOptions(project, catalog), [catalog, project]);
+  const selected = options.find((option) => option.value === value) ?? null;
+  const selectedDetail = selected
+    ? [selected.label, selected.detail, selected.sourceState].filter(Boolean).join(" | ")
+    : value === 0
+      ? "No item response selected"
+      : `Imported item ID ${value}`;
+  return (
+    <label className="complex-encounter-item-response-field" title={selectedDetail}>
+      <select value={String(value)} aria-label={`Item response ${responseNumber}`} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
+        <option value="0">No item</option>
+        {value !== 0 && !selected && <option value={String(value)}>{`Item ${value}`}</option>}
+        {options.map((option) => (
+          <option key={option.key} value={String(option.value)}>{itemOptionDisplayName(option)}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function ComplexEncounterResponsePickerPanel({
+  project,
+  catalog,
+  kind,
+  responseNumber,
+  value,
+  onChange,
+  onClose
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  kind: "magic" | "item";
+  responseNumber: number;
+  value: number;
+  onChange: (value: number) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const spellOptions = useMemo(() => spellReferenceOptions(project, catalog), [catalog, project]);
+  const itemOptions = useMemo(() => deduplicatedItemResponseOptions(project, catalog), [catalog, project]);
+  const normalizedQuery = query.trim();
+  const selectedSpell = kind === "magic" ? spellOptions.find((option) => option.value === value) ?? null : null;
+  const selectedItem = kind === "item" ? itemOptions.find((option) => option.value === value) ?? null : null;
+  const filteredSpells = useMemo(() => {
+    if (kind !== "magic") return [];
+    if (!normalizedQuery) return spellOptions;
+    const needle = normalizedQuery.toLowerCase();
+    const numericQuery = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
+    return spellOptions.filter((option) =>
+      option.value === numericQuery
+      || option.label.toLowerCase().includes(needle)
+      || option.detail.toLowerCase().includes(needle)
+    );
+  }, [kind, normalizedQuery, spellOptions]);
+  const filteredItems = useMemo(() => {
+    if (kind !== "item") return [];
+    return normalizedQuery ? filterItemTargetOptions(itemOptions, normalizedQuery) : itemOptions;
+  }, [itemOptions, kind, normalizedQuery]);
+  const visibleSpells = filteredSpells.slice(0, 100);
+  const visibleItems = filteredItems.slice(0, 100);
+  const totalMatches = kind === "magic" ? filteredSpells.length : filteredItems.length;
+  const selectedLabel = kind === "magic"
+    ? selectedSpell?.label ?? (value === 0 || value === MAGIC_RESPONSE_BLANK_SPELL_ID ? "No spell or scroll selected" : `Unknown spell/scroll ${value}`)
+    : selectedItem ? itemOptionDisplayName(selectedItem) : value === 0 ? "No item selected" : `Item ${value}`;
+  const selectedDetail = kind === "magic"
+    ? selectedSpell?.detail ?? (value === 0 || value === MAGIC_RESPONSE_BLANK_SPELL_ID ? "This response does not test a spell or scroll." : `Imported spell/scroll ID ${value}`)
+    : selectedItem
+      ? [selectedItem.detail, selectedItem.sourceState].filter(Boolean).join(" | ")
+      : itemReferenceDetail(project, value, catalog);
+  const responseLabel = kind === "magic" ? "Magic Response" : "Item Response";
+  return (
+    <FloatingWorkbenchPanel
+      title={`${responseLabel} ${responseNumber}`}
+      eyebrow={kind === "magic" ? "Spell / Scroll Picker" : "Item Picker"}
+      storageKey={`encounters.${kind}ResponsePicker.position`}
+      defaultWidth={620}
+      defaultHeight={560}
+      minWidth={420}
+      minHeight={320}
+      className="complex-encounter-response-picker-panel"
+      actions={(
+        <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label={`Close ${responseLabel.toLowerCase()} picker`} title="Close" onClick={onClose}>
+          <X size={12} />
+        </button>
+      )}
+    >
+      <div className="complex-encounter-response-picker-body">
+        <section className={`complex-encounter-response-current${value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID) ? " is-empty" : ""}`}>
+          <span>Current Selection</span>
+          <strong>{selectedLabel}</strong>
+          <small>{selectedDetail}</small>
+        </section>
+        <label className="complex-encounter-response-search">
+          <span>{kind === "magic" ? "Search spells, scrolls, and spell classes" : "Search items"}</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder={kind === "magic" ? "Search spell, class, or ID..." : "Search item name, category, or ID..."}
+            aria-label={`Search ${responseLabel.toLowerCase()} options`}
+          />
+        </label>
+        <div className="complex-encounter-response-picker-summary">
+          <span>{totalMatches} match{totalMatches === 1 ? "" : "es"}</span>
+          {totalMatches > 100 && <small>Showing the first 100. Refine the search to narrow the list.</small>}
+        </div>
+        <div className="complex-encounter-response-picker-results">
+          <button
+            type="button"
+            className={value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID) ? "selected" : ""}
+            onClick={() => onChange(0)}
+          >
+            <b>-</b>
+            <span>
+              <strong>{kind === "magic" ? "No spell or scroll" : "No item"}</strong>
+              <small>Do not require this response target.</small>
+            </span>
+          </button>
+          {kind === "magic" ? visibleSpells.map((option) => (
+            <button key={option.key} type="button" className={option.value === value ? "selected" : ""} onClick={() => onChange(option.value)}>
+              <b>{option.value}</b>
+              <span>
+                <strong>{option.label}</strong>
+                <small>{option.detail}</small>
+              </span>
+            </button>
+          )) : visibleItems.map((option) => (
+            <button key={option.key} type="button" className={option.value === value ? "selected" : ""} onClick={() => onChange(option.value)}>
+              <b>{itemCategoryBadge(option.category)}</b>
+              <span>
+                <strong>{itemOptionDisplayName(option)} <em>#{option.value}</em></strong>
+                <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
+              </span>
+            </button>
+          ))}
+          {totalMatches === 0 && <EmptyState compact title="No matches" body="Try a name, category, or numeric ID from the response list." />}
+        </div>
+      </div>
+    </FloatingWorkbenchPanel>
   );
 }
 
@@ -7062,7 +7508,8 @@ function EncounterResultNumberField({
 
 function SpellResponseField({ project, catalog, label, value, onCommit }: { project: Project; catalog?: LibraryCatalog | null; label: string; value: number; onCommit: (value: number) => void }) {
   const options = useMemo(() => spellReferenceOptions(project, catalog), [project, catalog]);
-  const selected = options.find((option) => option.value === value);
+  const displayValue = value === MAGIC_RESPONSE_BLANK_SPELL_ID ? 0 : value;
+  const selected = options.find((option) => option.value === displayValue);
   const visible = useMemo(() => {
     const next = options.slice(0, 260);
     if (selected && !next.some((option) => option.value === selected.value)) return [selected, ...next.slice(0, 219)];
@@ -7071,14 +7518,14 @@ function SpellResponseField({ project, catalog, label, value, onCommit }: { proj
   return (
     <label className="script-spell-response-field compact">
       <span>{label}</span>
-      <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
+      <select value={displayValue} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
         <option value={0}>No spell or scroll</option>
-        {value !== 0 && !options.some((option) => option.value === value) && <option value={value}>Unknown spell/scroll {value}</option>}
+        {displayValue !== 0 && !options.some((option) => option.value === displayValue) && <option value={displayValue}>Unknown spell/scroll {displayValue}</option>}
         {visible.map((option) => (
           <option key={option.key} value={option.value}>{option.label}</option>
         ))}
       </select>
-      <small>{selected ? selected.detail : value ? `Unknown spell/scroll ${value}` : "No spell or scroll selected."}</small>
+      <small>{selected ? selected.detail : displayValue ? `Unknown spell/scroll ${displayValue}` : "No spell or scroll selected."}</small>
     </label>
   );
 }

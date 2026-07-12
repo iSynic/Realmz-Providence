@@ -1,6 +1,6 @@
 # Realmz Providence
 
-Providence is a modern scenario editor for Realmz. The current release is 0.3.0.
+Providence is a modern scenario editor for Realmz. The current release is 0.3.1.
 
 It is trying to do two things at once:
 
@@ -10,6 +10,18 @@ It is trying to do two things at once:
 That second part matters. Realmz scenarios contain a lot of classic Mac-era binary data, resource forks, packed records, and runtime quirks. Providence treats the original files as evidence, keeps unknown data visible or preserved, and only writes the parts we understand well enough to edit safely.
 
 The app is built with React/Vite on the frontend and Tauri/Rust on the desktop side.
+
+## 0.3.1 Update
+
+The 0.3.1 update hardens generated scenario maps and makes Complex Encounter responses faster to author and inspect.
+
+- **Generated map composition** now supports organic terrain regions, coherent forests and mountain borders, sparse landlook-aware decoration, safer roads, and better placement of structures, ships, caves, and their Action Points.
+- **Portal and Action Point placement** keeps door and cave teleports on their actual entrance tiles, places nearby points of interest more deliberately, and makes map Selection Inspector steps immediately navigable without first opening the Scripts tool.
+- **Runtime landlooks** are now written into generated browser scenario packages, preventing Castle and other non-Plains levels from appearing with corrupted Plains tiles in Realmz.
+- **Castle generation** uses solid outer fill, reviewed wall-facing transitions, corner pieces, and correctly oriented doors.
+- **Complex Encounter responses** use compact inline item choices, fixed-width action controls, and floating searchable pickers for spell, scroll, item, string, battle, treasure, shop, and other referenced result targets.
+- **Response previews** show the selected record in place instead of navigating away, while Magic and Item pickers search their complete catalogs by name, category, details, or ID.
+- **Compatibility display** recognizes Realmz's blank Magic Response sentinel as an empty spell/scroll selection while preserving its stored value.
 
 ## 0.3.0 Highlights
 

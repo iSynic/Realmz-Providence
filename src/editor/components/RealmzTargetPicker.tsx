@@ -87,7 +87,7 @@ export function TargetPicker({
   opcode: number;
   value: number;
   onChange: (id: number) => void;
-  onInspect: (entity: SelectedEntity) => void;
+  onInspect?: (entity: SelectedEntity) => void;
   onCreate?: (recordType: RealmzTargetRecordKind, id?: number) => void;
   emptyLabel?: string;
   showSearch?: boolean;
@@ -196,7 +196,7 @@ export function TargetPicker({
               <strong>{selected ? selected.label : hasCurrentValue ? targetFallbackLabel(config.label, resolvedValue) : emptyLabel ?? `No ${config.label.toLowerCase()} selected`}</strong>
               {selectedDetail && <small>{selectedDetail}</small>}
             </div>
-            {selected?.entity && (
+            {selected?.entity && onInspect && (
               <button className="btn btn-secondary btn-xs icon-only target-picker-open-button" type="button" title={`Open ${selected.label}`} onClick={() => onInspect(selected.entity!)}>
                 <Eye size={12} />
               </button>
@@ -249,7 +249,7 @@ export function TargetPicker({
                 </option>
               ))}
             </select>
-            {selected?.entity && (
+            {selected?.entity && onInspect && (
               <button
                 className="btn btn-secondary btn-xs icon-only target-picker-open-button"
                 type="button"
@@ -285,7 +285,7 @@ export function TargetPicker({
           <Volume2 size={12} /> Play
         </button>
       )}
-      {normalizeStepOpcode(opcode) === 27 && selected && selectedPreviewUrl && (
+      {normalizeStepOpcode(opcode) === 27 && selected && selectedPreviewUrl && onInspect && (
         <button
           className="realmz-target-picker-preview"
           type="button"
@@ -366,6 +366,7 @@ export function targetPickerConfig(opcode: number) {
   if (actionOptionFor(code).edcdShape) return null;
   const configs: Record<number, { label: string; hint: string; recordType?: RealmzTargetRecordKind; searchable?: boolean; searchPlaceholder?: string }> = {
     1: { label: "String Target", hint: "Select the scenario string this action displays.", recordType: "message", searchPlaceholder: "Search string # or text..." },
+    2: { label: "Battle Target", hint: "Select the battle record this action starts.", recordType: "battle", searchPlaceholder: "Search battle # or details..." },
     4: { label: "Simple Encounter", hint: "Select a simple encounter record.", recordType: "simpleEncounter" },
     5: { label: "Complex Encounter", hint: "Select a complex encounter record.", recordType: "complexEncounter" },
     6: { label: "Shop Target", hint: "Select a shop record.", recordType: "shop" },
