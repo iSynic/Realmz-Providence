@@ -1,5 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   decodeClassicTextPreviewBytes,
   decodeClassicTextPreviewString,

@@ -15,7 +15,8 @@ import {
   classicStyleBytesFromRuns,
   cssHexToClassicRgb,
   parseClassicStyleRuns,
-  u16FromBytes
+  u16FromBytes,
+  type StyledTextEditChange
 } from "../components/StyledTextPreview";
 import {
   CLASSIC_AUTHOR_FONT_OPTIONS,
@@ -37,7 +38,6 @@ import {
   type ClassicStyleRunDraft,
   type TextSelectionRange
 } from "../textStyleAuthoring";
-import type { StyledTextEditChange } from "../components/StyledTextPreview";
 import {
   classicTextBytesFromDisplayString,
   decodeClassicTextPreviewBytes,

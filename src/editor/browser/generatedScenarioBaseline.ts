@@ -4,8 +4,7 @@ import {
   writeDoorFile,
   writeScenarioShell
 } from "./binaryWriters";
-import type { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
-import { sha256Hex } from "./fsAccess";
+import { sha256Hex, type BrowserRawSourceFile, type BrowserRawSourceSnapshot } from "./fsAccess";
 import { validateBrowserProject } from "./project";
 import { writeResourceFork } from "./resourceFork";
 

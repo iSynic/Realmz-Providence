@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { EditorState } from "../../store";
 import { IconEntry, ManagedAsset, Project, ProjectCommand, ResourceAsset, TileAttributeFlag, TilesetAsset } from "../../types";
 import { LandlookTileVisualCategory, landlookVisualCategoryLabel } from "../../map/landlookTileSemantics";

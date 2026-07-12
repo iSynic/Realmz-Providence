@@ -8,6 +8,13 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "desktop": "tauri dev",
+    "lint": "node scripts/check_eslint_baseline.mjs",
+    "lint:report": "eslint \"src/**/*.{ts,tsx}\"",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "check:guardrail-self-tests": "node scripts/check_eslint_baseline.mjs --self-test && node scripts/check_module_size_baseline.mjs --self-test",
+    "check:module-sizes": "node scripts/check_module_size_baseline.mjs",
+    "check:refactor-guardrails": "npm run check:guardrail-self-tests && npm run lint && npm run test:unit && npm run check:module-sizes",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "dist": "tauri build",
@@ -81,7 +88,7 @@
     "smoke:scenario-generation": "node scripts/run_scenario_generation_smoke.mjs",
     "check:scenario-seed": "node scripts/check_scenario_seed_schema.mjs && node scripts/check_scenario_seed_fixtures.mjs && node scripts/check_scenario_seed_report.mjs && npm run smoke:scenario-generation",
     "check:evidence-lab": "node scripts/check_evidence_lab_policy.mjs",
-    "check": "npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
+    "check": "npm run check:refactor-guardrails && npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",
@@ -95,7 +102,11 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "typescript-eslint": "^8.63.0",
+    "vite": "^5.4.11",
+    "vitest": "^3.2.7"
   }
 }

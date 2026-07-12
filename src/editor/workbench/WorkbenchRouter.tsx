@@ -1,9 +1,8 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
-import { Issue } from "../types";
 import {
   LazyCombatPanel as CombatPanel,
   LazyExportPanel as ExportPanel,

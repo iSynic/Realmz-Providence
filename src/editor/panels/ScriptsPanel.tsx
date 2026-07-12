@@ -2903,7 +2903,7 @@ function SelectedStepDetail({
   const actionChooserDefinitionMatchesDraft = (definition: ScriptActionDefinition) => {
     return canonicalActionChooserOpcode(definition.opcode) === canonicalActionChooserOpcode(selectedDraft.rawCode);
   };
-  const useActionDefinition = (definition: ScriptActionDefinition) => {
+  const selectActionDefinition = (definition: ScriptActionDefinition) => {
     onSetSelectedDraft(draftForNewDefinition(definitionForActionChooserUse(definition)));
     setActionChooserOpen(false);
   };
@@ -3058,7 +3058,7 @@ function SelectedStepDetail({
                         type="button"
                         className={actionChooserDefinitionMatchesDraft(definition) ? "selected" : ""}
                         title={combatMacroActionNote(definition.opcode, combatMacroContext) ?? definition.description}
-                        onClick={() => useActionDefinition(definition)}
+                        onClick={() => selectActionDefinition(definition)}
                       >
                         <strong>{definition.shortLabel}</strong>
                         <span>{definition.opcode}</span>
@@ -3074,7 +3074,7 @@ function SelectedStepDetail({
                     type="button"
                     title={`${actionDefinitionPathLabel(definition)}. ${definition.summary}`}
                     className={actionChooserDefinitionMatchesDraft(definition) ? "selected" : ""}
-                    onClick={() => useActionDefinition(definition)}
+                    onClick={() => selectActionDefinition(definition)}
                   >
                     <strong>{categoryFilter === "All" ? actionDefinitionPathLabel(definition) : definition.label}</strong>
                     <span>{definition.summary}</span>

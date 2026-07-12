@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties, KeyboardEvent, PointerEvent, ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 
 type ResizeEdge = "left" | "right";
 

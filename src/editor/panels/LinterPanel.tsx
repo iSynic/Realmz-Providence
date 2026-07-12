@@ -1,13 +1,11 @@
 import { CheckCircle2, XCircle } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Issue, Project, SelectedEntity } from "../types";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
 import { assetFallbacks, blockedSemanticObjects, entityById, generatedRuntimeCaches, recordById, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
-import { loadScenarioCoverageManifest } from "../scenarioCoverage";
-import type { ScenarioCoverageManifest } from "../scenarioCoverage";
+import { loadScenarioCoverageManifest, type ScenarioCoverageManifest } from "../scenarioCoverage";
 import { ScrollArea } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
 import { ED3_CLASSIFICATION_ORDER, ed3ClassificationCounts, ed3DiagnosticSummaries, ed3RiskySummaries } from "../scriptDiagnostics";

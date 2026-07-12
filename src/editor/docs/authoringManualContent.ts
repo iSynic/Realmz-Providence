@@ -1,13 +1,14 @@
-import type {
-  DocumentationCallout,
-  DocumentationCard,
-  DocumentationGroup,
-  DocumentationReference,
-  DocumentationSection,
-  DocumentationTopic,
-  DocumentationVisualSlot
+import {
+  DIVINITY_CHAPTERS,
+  MARKDOWN_REFERENCES,
+  type DocumentationCallout,
+  type DocumentationCard,
+  type DocumentationGroup,
+  type DocumentationReference,
+  type DocumentationSection,
+  type DocumentationTopic,
+  type DocumentationVisualSlot
 } from "./documentationContent";
-import { DIVINITY_CHAPTERS, MARKDOWN_REFERENCES } from "./documentationContent";
 
 export type {
   DocumentationCallout,
