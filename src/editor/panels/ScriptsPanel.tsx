@@ -5,7 +5,7 @@ import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "..
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
-import { TargetPicker, filterTargetOptions, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetPickerConfig, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { filterTargetOptions, resolveSignedMessageTarget, signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
 import { useIconPreviewUrl, useResolvedPreviewUrl } from "../previewUrls";
 import { categoryColor } from "../components/TileSprite";
@@ -89,17 +89,15 @@ import {
 import { TimedEncounterShell, timedEncounterEligibilitySummary } from "./scripts/TimedEncounterShell";
 import { ActionPointActionChooser } from "./scripts/ActionPointActionChooser";
 import { ActionPointDirectTargetField } from "./scripts/ActionPointDirectTargetField";
+import { ActionPointInlineTargetEditor } from "./scripts/ActionPointInlineTargetEditor";
+import { ActionPointSettingsEditor } from "./scripts/ActionPointSettingsEditor";
 import { ActionPointStepReference } from "./scripts/ActionPointStepReference";
 import { ActionPointTargetPreview } from "./scripts/ActionPointTargetPreview";
-import { InlineMessageTargetEditor } from "./scripts/InlineMessageTargetEditor";
 import { ScriptDiagnostics } from "./scripts/ScriptDiagnostics";
 import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./scripts/actionPointDiagnostics";
 import { defaultDraftForProject, edcdDraftValuesEqual, type EdcdStepDraft } from "./scripts/actionPointDraft";
 import { actionSlotIndexFromSelection, actionSlotSelectionId, includeSelectedTrigger } from "./scripts/actionPointSelection";
 import {
-  actionSettingsFieldLabel,
-  actionSettingsTitleForStep,
-  authorSettingsWarning,
   combatMacroActionNote,
   combatMacroContextBody,
   combatMacroContextLabel,
@@ -2666,10 +2664,6 @@ function SelectedStepDetail({
   const selectedTargetPickerConfig = targetPickerConfig(selectedDraft.rawCode);
   const hasInlineTargetPicker = !isEdcdBackedStep && Boolean(selectedTargetPickerConfig);
   const isStepOnlyAction = selectedDefinition.formKind === "step-only";
-  const inlineMessageTargetId = selectedTargetPickerConfig?.recordType === "message"
-    ? resolveSignedMessageTarget(selectedDraft.rawCode, selectedDraft.id)
-    : 0;
-  const hasInlineMessageEditor = inlineMessageTargetId > 0;
   const previewCanExpand = Boolean(
     !hasInlineTargetPicker && selectedTargetPreview && [
       selectedTargetPreview.detail,
@@ -2679,8 +2673,6 @@ function SelectedStepDetail({
       previewBehavior
     ].filter(Boolean).join(" ").length > 96
   );
-  const authorSettingsTitle = actionSettingsTitleForStep(selectedDefinition, selectedOption.edcdShape);
-  const authorSettingsLabel = actionSettingsFieldLabel(authorSettingsTitle);
   const definitionForActionChooserUse = (definition: ScriptActionDefinition) => {
     const canonicalOpcode = canonicalActionChooserOpcode(definition.opcode);
     if (canonicalOpcode !== 23) return definition;
@@ -2691,83 +2683,6 @@ function SelectedStepDetail({
     onSetSelectedDraft(draftForNewDefinition(definitionForActionChooserUse(definition)));
     setActionChooserOpen(false);
   };
-  const duplicateSettingsForStep = () => {
-    if (!isEdcdBackedStep) return;
-    const nextId = nextUnusedEdcdRowId(project);
-    const values = normalizeEdcdValues(selectedRowUsage?.values ?? selectedDefaultEdcdValues);
-    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate ${authorSettingsLabel}`, rowId: nextId, values });
-    onSetSelectedDraft({ ...selectedDraft, id: nextId });
-    if (selectedSlotApplied) {
-      onApplyCommand?.({
-        kind: "updateActionSlot",
-        label: `Use ${authorSettingsLabel}`,
-        triggerId: selectedTriggerId,
-        slot: selectedSlot,
-        rawCode: selectedDraft.rawCode,
-        id: nextId
-      });
-    }
-  };
-  const settingsEditorPresentation = isEdcdBackedStep ? "selected-step" : "inventory";
-  const settingsEditorContent = (isEdcdBackedStep || selectedEdcdUsage) ? (
-    <EdcdRowEditor
-      project={project}
-      catalog={catalog}
-      edcdUsage={selectedEdcdUsage}
-      fallbackRowId={selectedDraft.id}
-      fallbackShape={selectedOption.edcdShape}
-      fallbackFieldNames={edcdFieldNamesForShape(selectedOption.edcdShape)}
-      fallbackInitialValues={selectedDefaultEdcdValues}
-      fallbackOpcode={selectedDraft.rawCode}
-      parameterLabels={selectedParameterLabels}
-      selectedSlotLabel={`step ${selectedSlot + 1}`}
-      onSelectEntity={onSelectEntity}
-      onOpenText={(editor) => onOpenTool?.("text", editor)}
-      onOpenMapCoordinate={onOpenMapCoordinate}
-      onDraftValuesChange={onEdcdDraftChange}
-      onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}
-      onStepOpcodeChange={(rawCode) => {
-        if (rawCode !== 23 && rawCode !== -23) return;
-        if (selectedDraft.rawCode === rawCode) return;
-        onSetSelectedDraft({ ...selectedDraft, rawCode });
-      }}
-      onApplyCommand={onApplyCommand}
-      showActionButtons={settingsEditorPresentation !== "selected-step"}
-      presentation={settingsEditorPresentation}
-    />
-  ) : null;
-  const settingsEditor = settingsEditorContent && settingsEditorPresentation === "inventory" ? (
-    <div className="realmz-current-step-authoring-subpane">
-      {settingsEditorContent}
-    </div>
-  ) : settingsEditorContent;
-  const inlineTargetPicker = hasInlineTargetPicker ? (
-    <div className="realmz-current-step-target">
-      <TargetPicker
-        project={project}
-        catalog={catalog}
-        opcode={selectedDraft.rawCode}
-        value={selectedDraft.id}
-        showDetail={!hasInlineMessageEditor}
-        previewContext={{ desktopRuntime, projectDir, workspaceDir }}
-        onChange={(id) => onSetSelectedDraft({ ...selectedDraft, id })}
-        onInspect={onPreviewEntity}
-        onCreate={(recordType, id) => {
-          const targetId = id ?? nextAuthorableTargetId(project, recordType);
-          onApplyCommand?.({ kind: "createTargetRecord", label: `Create ${recordType}`, recordType, id: targetId });
-          onSetSelectedDraft({ ...selectedDraft, id: signedTargetValueForSelection(selectedDraft.rawCode, selectedDraft.id, targetId) });
-        }}
-      />
-      {hasInlineMessageEditor && (
-        <InlineMessageTargetEditor
-          project={project}
-          targetId={inlineMessageTargetId}
-          onApplyCommand={onApplyCommand}
-        />
-      )}
-      {!hasInlineMessageEditor && targetRecordPanel}
-    </div>
-  ) : null;
   return (
     <div className="realmz-step-detail selected-step-detail">
       {selectedDraftDirty && (
@@ -2830,7 +2745,20 @@ function SelectedStepDetail({
             onPreviewEntity={onPreviewEntity}
           />
         )}
-        {inlineTargetPicker}
+        <ActionPointInlineTargetEditor
+          project={project}
+          catalog={catalog}
+          rawCode={selectedDraft.rawCode}
+          id={selectedDraft.id}
+          enabled={hasInlineTargetPicker}
+          desktopRuntime={desktopRuntime}
+          projectDir={projectDir}
+          workspaceDir={workspaceDir}
+          targetRecordPanel={targetRecordPanel}
+          onSetSelectedDraft={onSetSelectedDraft}
+          onPreviewEntity={onPreviewEntity}
+          onApplyCommand={onApplyCommand}
+        />
         {!isEdcdBackedStep && !hasInlineTargetPicker && !isStepOnlyAction && (
           <ActionPointDirectTargetField
             selectedSlot={selectedSlot}
@@ -2845,15 +2773,27 @@ function SelectedStepDetail({
             onPreviewEntity={onPreviewEntity}
           />
         )}
-        {isEdcdBackedStep && selectedRowUsage?.warnings.map((warning) => (
-          <p key={warning} className="field-warning">{authorSettingsWarning(selectedRowUsage, authorSettingsTitle, warning)}</p>
-        ))}
-        {isEdcdBackedStep && selectedRowUsage?.status === "shared" && (
-          <button type="button" className="btn btn-secondary btn-xs duplicate-settings-button" onClick={duplicateSettingsForStep}>
-            <Copy size={12} /> Duplicate {authorSettingsTitle} For This Step
-          </button>
-        )}
-        {settingsEditor}
+        <ActionPointSettingsEditor
+          project={project}
+          catalog={catalog}
+          selectedSlot={selectedSlot}
+          selectedDraft={selectedDraft}
+          selectedSlotApplied={selectedSlotApplied}
+          selectedDefinition={selectedDefinition}
+          selectedEdcdUsage={selectedEdcdUsage}
+          selectedRowUsage={selectedRowUsage}
+          selectedTriggerId={selectedTriggerId}
+          edcdShape={selectedOption.edcdShape}
+          defaultValues={selectedDefaultEdcdValues}
+          parameterLabels={selectedParameterLabels}
+          onSetSelectedDraft={onSetSelectedDraft}
+          onSelectEntity={onSelectEntity}
+          onOpenText={(editor) => onOpenTool?.("text", editor)}
+          onOpenMapCoordinate={onOpenMapCoordinate}
+          onDraftValuesChange={onEdcdDraftChange}
+          onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}
+          onApplyCommand={onApplyCommand}
+        />
         {!hasInlineTargetPicker && targetRecordPanel && (
           <div className="realmz-current-step-authoring-subpane target-record-subpane">
             {targetRecordPanel}
