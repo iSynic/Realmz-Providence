@@ -1,0 +1,359 @@
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Eye } from "lucide-react";
+import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig, type ScriptTargetOption } from "../../components/RealmzTargetPicker";
+import { categoryColor } from "../../components/TileSprite";
+import { divinityHelpForOpcode } from "../../divinityOpcodeHelp";
+import type { EdcdRowUsage } from "../../edcdRows";
+import { opcodeIdMeaning, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
+import { useResolvedPreviewUrl } from "../../previewUrls";
+import { actionOptionFor, normalizeStepOpcode } from "../../realmzActions";
+import type { ScriptDiagnostic } from "../../scriptValidation";
+import type { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../../types";
+import { EmptyState } from "../../ui";
+import { ActionPointActionChooser } from "./ActionPointActionChooser";
+import { ActionPointDirectTargetField } from "./ActionPointDirectTargetField";
+import { ActionPointInlineTargetEditor } from "./ActionPointInlineTargetEditor";
+import { ActionPointSettingsEditor } from "./ActionPointSettingsEditor";
+import { ActionPointStepReference } from "./ActionPointStepReference";
+import { ActionPointTargetPreview } from "./ActionPointTargetPreview";
+import { ScriptDiagnostics } from "./ScriptDiagnostics";
+import { defaultDraftForProject } from "./actionPointDraft";
+import {
+  combatMacroActionNote,
+  combatMacroContextTitle,
+  humanActionValueLabel,
+  type CombatMacroContext
+} from "./actionPointPresentation";
+import {
+  actionDefinitionPathLabel,
+  canonicalActionChooserOpcode,
+  scriptActionDefinitionFor,
+  type ScriptActionCategoryFilter,
+  type ScriptActionDefinition
+} from "./scriptActionCatalog";
+
+type SelectedEdcdUsage = {
+  rowId?: number;
+  shape?: string;
+  fields?: { name?: string; value?: number }[];
+  secondaryRowId?: number;
+  secondaryShape?: string;
+  secondaryFields?: { name?: string; value?: number }[];
+  diagnostics?: string[];
+  summary?: string;
+};
+
+function useTargetPreviewUrl(
+  option: ScriptTargetOption | null,
+  opcode: number,
+  project: Project,
+  desktopRuntime: boolean,
+  projectDir: string,
+  workspaceDir: string
+) {
+  const code = normalizeStepOpcode(opcode);
+  const resourceType = code === 9 ? "snd " : code === 27 ? targetPreviewResourceType(option) : null;
+  return useResolvedPreviewUrl(
+    resourceType ? option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null : null,
+    resourceType ? option?.managedAsset ?? null : null,
+    resourceType ? option?.libraryAsset ?? null : null,
+    { desktopRuntime, projectDir, workspaceDir, project, resourceType, resourceId: resourceType ? option?.value ?? null : null }
+  );
+}
+
+function targetPreviewResourceType(option: ScriptTargetOption | null) {
+  const managedType = option?.managedAsset?.resourceType?.trim();
+  if (managedType) return managedType;
+  const libraryType = option?.libraryAsset?.resourceType?.trim();
+  if (libraryType) return libraryType;
+  const entityId = option?.entity?.id ?? "";
+  const match = entityId.match(/^resource:([^:]+):/);
+  return match?.[1]?.trim() || "PICT";
+}
+
+export function SelectedActionPointStepEditor({
+  project,
+  catalog,
+  selectedSlot,
+  selectedDraft,
+  selectedDraftDirty,
+  selectedSlotApplied,
+  selectedOption,
+  selectedDefinition,
+  selectedEdcdUsage,
+  selectedRowUsage,
+  selectedTriggerId,
+  selectedEdcdRowId,
+  selectedSlotDiagnostics,
+  combatMacroContext,
+  categoryFilter,
+  opcodeQuery,
+  filteredDefinitions,
+  desktopRuntime,
+  projectDir,
+  workspaceDir,
+  targetRecordPanel,
+  targetRecordAvailable,
+  targetRecordOpen,
+  onShowTargetRecord,
+  onSetCategoryFilter,
+  onSetOpcodeQuery,
+  onSetSelectedDraft,
+  onSelectEntity,
+  onPreviewEntity,
+  onOpenTool,
+  onOpenMapCoordinate,
+  onEdcdDraftChange,
+  onSecondaryEdcdDraftChange,
+  onApplyCommand
+}: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  selectedSlot: number;
+  selectedDraft: { rawCode: number; id: number };
+  selectedDraftDirty: boolean;
+  selectedSlotApplied: boolean;
+  selectedOption: ReturnType<typeof actionOptionFor>;
+  selectedDefinition: ScriptActionDefinition;
+  selectedEdcdUsage?: SelectedEdcdUsage;
+  selectedRowUsage?: EdcdRowUsage | null;
+  selectedTriggerId: string;
+  selectedEdcdRowId: number | null;
+  selectedSlotDiagnostics: ScriptDiagnostic[];
+  combatMacroContext?: CombatMacroContext | null;
+  categoryFilter: ScriptActionCategoryFilter;
+  opcodeQuery: string;
+  filteredDefinitions: ScriptActionDefinition[];
+  desktopRuntime: boolean;
+  projectDir: string;
+  workspaceDir: string;
+  targetRecordPanel?: ReactNode;
+  targetRecordAvailable?: boolean;
+  targetRecordOpen?: boolean;
+  onShowTargetRecord?: () => void;
+  onSetCategoryFilter: (category: ScriptActionCategoryFilter) => void;
+  onSetOpcodeQuery: (query: string) => void;
+  onSetSelectedDraft: (values: { rawCode: number; id: number }) => void;
+  onSelectEntity: (entity: SelectedEntity) => void;
+  onPreviewEntity: (entity: SelectedEntity) => void;
+  onOpenTool?: (tab: "text", editor: string) => void;
+  onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  onEdcdDraftChange?: (values: number[], dirty: boolean) => void;
+  onSecondaryEdcdDraftChange?: (values: number[], dirty: boolean) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const [previewExpanded, setPreviewExpanded] = useState(false);
+  const [actionChooserOpen, setActionChooserOpen] = useState(false);
+  const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
+  const selectedIdLabel = selectedDefinition.target?.label ?? humanActionValueLabel(opcodeIdMeaning(selectedDraft.rawCode));
+  const selectedDefaultEdcdValues = selectedDefinition.defaultDraft.parameters;
+  const selectedParameterLabels = selectedDefinition.parameters.length > 0
+    ? selectedDefinition.parameters.map((parameter) => ({
+      index: parameter.index,
+      label: parameter.label,
+      help: parameter.help,
+      internalName: parameter.internalName,
+      preserved: parameter.preserved,
+      targetFamily: parameter.targetFamily
+    }))
+    : parameterLabelsForOpcode(selectedDraft.rawCode);
+  const visibleParameters = selectedDefinition.parameters.filter((parameter) => !parameter.preserved);
+  const selectedTargetPreview = useMemo(() => {
+    if (!selectedDefinition.target || selectedDefinition.target.targetFamily === "parameter-row") return null;
+    return targetOptionForOpcodeValue(project, selectedDraft.rawCode, selectedDraft.id, catalog);
+  }, [catalog, project, selectedDefinition.target, selectedDraft.id, selectedDraft.rawCode]);
+  const selectedTargetPreviewUrl = useTargetPreviewUrl(
+    selectedTargetPreview,
+    selectedDraft.rawCode,
+    project,
+    desktopRuntime,
+    projectDir,
+    workspaceDir
+  );
+  useEffect(() => {
+    setPreviewExpanded(false);
+  }, [selectedSlot, selectedDraft.rawCode, selectedDraft.id]);
+  useEffect(() => {
+    setActionChooserOpen(false);
+  }, [selectedSlot]);
+  const selectedCombatMacroActionNote = combatMacroActionNote(selectedDefinition.opcode, combatMacroContext ?? null);
+  const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
+  const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
+  const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
+  const isSameMapActionPointStep = normalizeStepOpcode(selectedDraft.rawCode) === 8;
+  const selectedTriggerRecord = useMemo(
+    () => project.triggers.find((trigger) => trigger.id === selectedTriggerId) ?? null,
+    [project.triggers, selectedTriggerId]
+  );
+  const sameMapActionPointTarget = useMemo(() => {
+    if (!isSameMapActionPointStep || !selectedTriggerRecord?.levelType || selectedTriggerRecord.levelIndex == null) return null;
+    return project.triggers.find((candidate) =>
+      candidate.source !== "Data ED3" &&
+      candidate.levelType === selectedTriggerRecord.levelType &&
+      candidate.levelIndex === selectedTriggerRecord.levelIndex &&
+      candidate.recordIndex === selectedDraft.id
+    ) ?? null;
+  }, [isSameMapActionPointStep, project.triggers, selectedDraft.id, selectedTriggerRecord]);
+  const sameMapActionPointJumpTitle = sameMapActionPointTarget
+    ? `Open Action Point ${sameMapActionPointTarget.recordIndex} on this map.`
+    : selectedTriggerRecord?.levelType && selectedTriggerRecord.levelIndex != null
+      ? `No Action Point ${selectedDraft.id} exists on this map.`
+      : "This script is not attached to a map, so there is no same-map Action Point to open.";
+  const hasInlineTargetPicker = !isEdcdBackedStep && Boolean(targetPickerConfig(selectedDraft.rawCode));
+  const isStepOnlyAction = selectedDefinition.formKind === "step-only";
+  const previewCanExpand = Boolean(
+    !hasInlineTargetPicker && selectedTargetPreview && [
+      selectedTargetPreview.detail,
+      selectedTargetPreview.summary,
+      selectedTargetPreview.compatibility,
+      selectedTargetPreview.sourceState,
+      previewBehavior
+    ].filter(Boolean).join(" ").length > 96
+  );
+  const definitionForActionChooserUse = (definition: ScriptActionDefinition) => {
+    const canonicalOpcode = canonicalActionChooserOpcode(definition.opcode);
+    if (canonicalOpcode !== 23) return definition;
+    if (selectedDraft.rawCode === -23 || selectedTriggerRecord?.levelType === "dungeon") return scriptActionDefinitionFor(-23);
+    return definition;
+  };
+  const selectActionDefinition = (definition: ScriptActionDefinition) => {
+    onSetSelectedDraft(defaultDraftForProject(project, definitionForActionChooserUse(definition)));
+    setActionChooserOpen(false);
+  };
+
+  return (
+    <div className="realmz-step-detail selected-step-detail">
+      {selectedDraftDirty && (
+        <div className="script-draft-warning" role="status">
+          <strong>Step changes ready</strong>
+          <span>Apply this step to update the script.</span>
+        </div>
+      )}
+      <ScriptDiagnostics issues={selectedSlotDiagnostics} />
+      <div className={`realmz-current-opcode${previewExpanded ? " expanded" : ""}`} style={{ borderColor: categoryColor(selectedOption.category) }}>
+        <header className="realmz-current-opcode-header">
+          <div>
+            <strong>{actionDefinitionPathLabel(selectedDefinition)}</strong>
+            <span>{selectedDefinition.categoryLabel}</span>
+          </div>
+          <button
+            type="button"
+            className="btn btn-secondary btn-xs"
+            onClick={() => {
+              setActionChooserOpen((current) => {
+                const nextOpen = !current;
+                if (nextOpen) onSetCategoryFilter(selectedDraft.rawCode === 0 ? "All" : selectedDefinition.category);
+                return nextOpen;
+              });
+            }}
+          >
+            {selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}
+          </button>
+        </header>
+        {actionChooserOpen && (
+          <ActionPointActionChooser
+            selectedRawCode={selectedDraft.rawCode}
+            categoryFilter={categoryFilter}
+            opcodeQuery={opcodeQuery}
+            filteredDefinitions={filteredDefinitions}
+            combatMacroContext={combatMacroContext}
+            onSetCategoryFilter={onSetCategoryFilter}
+            onSetOpcodeQuery={onSetOpcodeQuery}
+            onSelectDefinition={selectActionDefinition}
+            onClose={() => setActionChooserOpen(false)}
+          />
+        )}
+        <p>{selectedDefinition.summary}</p>
+        {selectedCombatMacroActionNote && combatMacroContext && (
+          <div className="combat-macro-action-note">
+            <span>{combatMacroContextTitle(combatMacroContext)}</span>
+            <small>{selectedCombatMacroActionNote}</small>
+          </div>
+        )}
+        {!hasInlineTargetPicker && selectedTargetPreview && (
+          <ActionPointTargetPreview
+            option={selectedTargetPreview}
+            previewUrl={selectedTargetPreviewUrl}
+            definition={selectedDefinition}
+            rawCode={selectedDraft.rawCode}
+            behavior={previewBehavior}
+            canExpand={previewCanExpand}
+            expanded={previewExpanded}
+            onToggleExpanded={() => setPreviewExpanded((current) => !current)}
+            onPreviewEntity={onPreviewEntity}
+          />
+        )}
+        <ActionPointInlineTargetEditor
+          project={project}
+          catalog={catalog}
+          rawCode={selectedDraft.rawCode}
+          id={selectedDraft.id}
+          enabled={hasInlineTargetPicker}
+          desktopRuntime={desktopRuntime}
+          projectDir={projectDir}
+          workspaceDir={workspaceDir}
+          targetRecordPanel={targetRecordPanel}
+          onSetSelectedDraft={onSetSelectedDraft}
+          onPreviewEntity={onPreviewEntity}
+          onApplyCommand={onApplyCommand}
+        />
+        {!isEdcdBackedStep && !hasInlineTargetPicker && !isStepOnlyAction && (
+          <ActionPointDirectTargetField
+            selectedSlot={selectedSlot}
+            rawCode={selectedDraft.rawCode}
+            id={selectedDraft.id}
+            definition={selectedDefinition}
+            idLabel={selectedIdLabel}
+            sameMapActionPointStep={isSameMapActionPointStep}
+            sameMapTarget={sameMapActionPointTarget}
+            sameMapJumpTitle={sameMapActionPointJumpTitle}
+            onChange={onSetSelectedDraft}
+            onPreviewEntity={onPreviewEntity}
+          />
+        )}
+        <ActionPointSettingsEditor
+          project={project}
+          catalog={catalog}
+          selectedSlot={selectedSlot}
+          selectedDraft={selectedDraft}
+          selectedSlotApplied={selectedSlotApplied}
+          selectedDefinition={selectedDefinition}
+          selectedEdcdUsage={selectedEdcdUsage}
+          selectedRowUsage={selectedRowUsage}
+          selectedTriggerId={selectedTriggerId}
+          edcdShape={selectedOption.edcdShape}
+          defaultValues={selectedDefaultEdcdValues}
+          parameterLabels={selectedParameterLabels}
+          onSetSelectedDraft={onSetSelectedDraft}
+          onSelectEntity={onSelectEntity}
+          onOpenText={(editor) => onOpenTool?.("text", editor)}
+          onOpenMapCoordinate={onOpenMapCoordinate}
+          onDraftValuesChange={onEdcdDraftChange}
+          onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}
+          onApplyCommand={onApplyCommand}
+        />
+        {!hasInlineTargetPicker && targetRecordPanel && (
+          <div className="realmz-current-step-authoring-subpane target-record-subpane">{targetRecordPanel}</div>
+        )}
+        {!hasInlineTargetPicker && targetRecordAvailable && !targetRecordOpen && !targetRecordPanel && (
+          <div className="realmz-current-step-authoring-subpane target-record-restore-subpane">
+            <button type="button" className="btn btn-secondary btn-xs" onClick={onShowTargetRecord}>
+              <Eye size={12} /> Show Target Details
+            </button>
+          </div>
+        )}
+      </div>
+      <ActionPointStepReference
+        definition={selectedDefinition}
+        combatMacroContext={combatMacroContext}
+        rawCode={selectedDraft.rawCode}
+        id={selectedDraft.id}
+        settingLabels={settingLabels}
+        edcdRowId={selectedEdcdRowId}
+        rowUsage={selectedRowUsage}
+        divinityHelp={selectedDivinityHelp}
+      />
+      {!selectedSlotApplied && <EmptyState compact title="Step not applied yet" body="Apply this step to update the script." />}
+    </div>
+  );
+}
