@@ -3,6 +3,7 @@
 @import "./editor/styles/maps.css";
 @import "./editor/styles/assets.css";
 @import "./editor/styles/scripts.css";
+@import "./editor/styles/encounters.css";
 @import "./editor/styles/rules.css";
 @import "./editor/styles/combat.css";
 
