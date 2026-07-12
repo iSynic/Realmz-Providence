@@ -1,5 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Eye, Plus, Save, Trash2, Volume2, X } from "lucide-react";
+import { AlertTriangle, ArrowDown, ArrowUp, Copy, CopyPlus, Eye, Plus, Save, Trash2, X } from "lucide-react";
 import { Action, Ed3ReachabilityRow, EncounterActionRow, LevelType, LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, QuestThread, RealmzTargetRecordKind, ScriptDetailSurface, ScriptInventoryFilter, SelectedEntity, SemanticEntity, TriggerRecord } from "../types";
 import { linksFor, selectEntityFromId, semanticLabel, triggerEntityId } from "../utils";
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
@@ -7,7 +7,7 @@ import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
 import { TargetPicker, filterTargetOptions, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetPickerConfig, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
-import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl } from "../previewUrls";
+import { useIconPreviewUrl, useResolvedPreviewUrl } from "../previewUrls";
 import { categoryColor } from "../components/TileSprite";
 import { CollapsibleSection, EmptyState, FieldRow, FloatingWorkbenchPanel, PanelSection, ScrollArea } from "../ui";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
@@ -58,7 +58,6 @@ import {
 } from "./scripts/scriptInventory";
 import {
   SCRIPT_ACTION_DEFINITIONS,
-  SCRIPT_ACTION_CATEGORY_FILTERS,
   actionDefinitionPathLabel,
   actionDefinitionsForCategory,
   canonicalActionChooserOpcode,
@@ -88,20 +87,20 @@ import {
   rogueSpellPathSummary
 } from "./scripts/ThiefEncounterShell";
 import { TimedEncounterShell, timedEncounterEligibilitySummary } from "./scripts/TimedEncounterShell";
+import { ActionPointActionChooser } from "./scripts/ActionPointActionChooser";
+import { ActionPointDirectTargetField } from "./scripts/ActionPointDirectTargetField";
+import { ActionPointStepReference } from "./scripts/ActionPointStepReference";
+import { ActionPointTargetPreview } from "./scripts/ActionPointTargetPreview";
 import { InlineMessageTargetEditor } from "./scripts/InlineMessageTargetEditor";
 import { ScriptDiagnostics } from "./scripts/ScriptDiagnostics";
 import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./scripts/actionPointDiagnostics";
 import { defaultDraftForProject, edcdDraftValuesEqual, type EdcdStepDraft } from "./scripts/actionPointDraft";
 import { actionSlotIndexFromSelection, actionSlotSelectionId, includeSelectedTrigger } from "./scripts/actionPointSelection";
 import {
-  actionAuthoringStateDetail,
-  actionAuthoringStateLabel,
   actionSettingsFieldLabel,
   actionSettingsTitleForStep,
-  actionStorageLabel,
   authorSettingsWarning,
   combatMacroActionNote,
-  combatMacroActionOpcodes,
   combatMacroContextBody,
   combatMacroContextLabel,
   combatMacroContextTitle,
@@ -192,8 +191,6 @@ const TECHNICAL_DETAILS_HELP =
   "Technical Details shows the raw Realmz storage: source file, record index, door ID, selected slot, applied and draft CODE/ID, Action Settings storage row, dispatcher status, and semantic links.";
 const TARGET_PICKER_HELP =
   "The target picker resolves the selected opcode's expected record type and can create safe source-backed shells when Providence has a writer for that target family.";
-const ACTION_CHOOSER_HELP =
-  "Choose Action changes only the selected step draft. Apply Step is still required before the script record is updated.";
 const SETTINGS_HELP =
   "Action Settings hold the extra fields for actions whose CODE/ID slot is too small. Pick the storage row from its caller when possible; Providence names the fields for the selected action and keeps imported storage stable.";
 const SIMPLE_ENCOUNTER_SOURCE_HELP =
@@ -2644,10 +2641,6 @@ function SelectedStepDetail({
     setActionChooserOpen(false);
   }, [selectedSlot]);
   const selectedCombatMacroActionNote = combatMacroActionNote(selectedDefinition.opcode, combatMacroContext ?? null);
-  const combatMacroActionDefinitions = useMemo(
-    () => combatMacroActionOpcodes(combatMacroContext ?? null).map((opcode) => scriptActionDefinitionFor(opcode)),
-    [combatMacroContext]
-  );
   const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
   const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
   const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
@@ -2693,9 +2686,6 @@ function SelectedStepDetail({
     if (canonicalOpcode !== 23) return definition;
     if (selectedDraft.rawCode === -23 || selectedTriggerRecord?.levelType === "dungeon") return scriptActionDefinitionFor(-23);
     return definition;
-  };
-  const actionChooserDefinitionMatchesDraft = (definition: ScriptActionDefinition) => {
-    return canonicalActionChooserOpcode(definition.opcode) === canonicalActionChooserOpcode(selectedDraft.rawCode);
   };
   const selectActionDefinition = (definition: ScriptActionDefinition) => {
     onSetSelectedDraft(draftForNewDefinition(definitionForActionChooserUse(definition)));
@@ -2808,76 +2798,17 @@ function SelectedStepDetail({
           </button>
         </header>
         {actionChooserOpen && (
-          <div className="script-action-chooser action-chooser-dropdown" role="dialog" aria-label="Choose action for selected step">
-            <header>
-              <div>
-                <TutorialTip title="Choose Action" body={ACTION_CHOOSER_HELP} side="below">
-                  <strong>{selectedDraft.rawCode === 0 ? "Choose Action" : "Change Action"}</strong>
-                </TutorialTip>
-              </div>
-              <button type="button" className="btn btn-secondary btn-xs icon-only" title="Close action chooser" onClick={() => setActionChooserOpen(false)}>
-                <X size={12} />
-              </button>
-            </header>
-            <div className="realmz-opcode-catalog">
-              <div className="realmz-step-category-bar">
-                {SCRIPT_ACTION_CATEGORY_FILTERS.map((category) => (
-                  <button
-                    key={category}
-                    type="button"
-                    className={categoryFilter === category ? "active" : ""}
-                    onClick={() => onSetCategoryFilter(category)}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-              <input
-                className="realmz-opcode-search"
-                value={opcodeQuery}
-                onChange={(event) => onSetOpcodeQuery(event.currentTarget.value)}
-                placeholder="Search actions, targets, and settings..."
-                aria-label="Search script actions"
-              />
-              {combatMacroContext && combatMacroActionDefinitions.length > 0 && (
-                <div className="combat-macro-action-strip">
-                  <header>
-                    <strong>Combat Macro Actions</strong>
-                    <small>{combatMacroContextTitle(combatMacroContext)}</small>
-                  </header>
-                  <div>
-                    {combatMacroActionDefinitions.map((definition) => (
-                      <button
-                        key={definition.opcode}
-                        type="button"
-                        className={actionChooserDefinitionMatchesDraft(definition) ? "selected" : ""}
-                        title={combatMacroActionNote(definition.opcode, combatMacroContext) ?? definition.description}
-                        onClick={() => selectActionDefinition(definition)}
-                      >
-                        <strong>{definition.shortLabel}</strong>
-                        <span>{definition.opcode}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="realmz-step-picker-grid action-chooser-grid">
-                {filteredDefinitions.map((definition) => (
-                  <button
-                    key={definition.opcode}
-                    type="button"
-                    title={`${actionDefinitionPathLabel(definition)}. ${definition.summary}`}
-                    className={actionChooserDefinitionMatchesDraft(definition) ? "selected" : ""}
-                    onClick={() => selectActionDefinition(definition)}
-                  >
-                    <strong>{categoryFilter === "All" ? actionDefinitionPathLabel(definition) : definition.label}</strong>
-                    <span>{definition.summary}</span>
-                    <small>{actionChooserDefinitionMatchesDraft(definition) ? "Current action" : definition.categoryLabel}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <ActionPointActionChooser
+            selectedRawCode={selectedDraft.rawCode}
+            categoryFilter={categoryFilter}
+            opcodeQuery={opcodeQuery}
+            filteredDefinitions={filteredDefinitions}
+            combatMacroContext={combatMacroContext}
+            onSetCategoryFilter={onSetCategoryFilter}
+            onSetOpcodeQuery={onSetOpcodeQuery}
+            onSelectDefinition={selectActionDefinition}
+            onClose={() => setActionChooserOpen(false)}
+          />
         )}
         <p>{selectedDefinition.summary}</p>
         {selectedCombatMacroActionNote && combatMacroContext && (
@@ -2887,83 +2818,32 @@ function SelectedStepDetail({
           </div>
         )}
         {!hasInlineTargetPicker && selectedTargetPreview && (
-          <div className="realmz-selected-target-preview">
-            <span>{selectedDefinition.target?.label ?? "Target"}</span>
-            <strong>{selectedTargetPreview.label}</strong>
-            <p>{selectedTargetPreview.detail}</p>
-            {selectedTargetPreview.summary && <small>{selectedTargetPreview.summary}</small>}
-            {previewBehavior && <small>{previewBehavior}</small>}
-            {normalizeStepOpcode(selectedDraft.rawCode) === 27 && selectedTargetPreviewUrl && (
-              <button
-                type="button"
-                className="realmz-picture-preview-button"
-                title="Picture preview"
-                onClick={() => selectedTargetPreview?.entity && onPreviewEntity(selectedTargetPreview.entity)}
-              >
-                <img src={selectedTargetPreviewUrl} alt={selectedTargetPreview.label} />
-              </button>
-            )}
-            {normalizeStepOpcode(selectedDraft.rawCode) === 27 && !selectedTargetPreviewUrl && (
-              <small className="realmz-preview-unavailable">Picture preview loading or unavailable for this PICT variant.</small>
-            )}
-            {normalizeStepOpcode(selectedDraft.rawCode) === 9 && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-xs realmz-sound-preview-button"
-                disabled={!selectedTargetPreviewUrl}
-                title={selectedTargetPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
-                onClick={() => selectedTargetPreviewUrl && playPreviewUrl(selectedTargetPreviewUrl)}
-              >
-                <Volume2 size={12} /> Play
-              </button>
-            )}
-          </div>
-        )}
-        {previewCanExpand && (
-          <button type="button" className="btn btn-secondary btn-xs realmz-preview-toggle" onClick={() => setPreviewExpanded((current) => !current)}>
-            {previewExpanded ? "Collapse Preview" : "Show Full Preview"}
-          </button>
+          <ActionPointTargetPreview
+            option={selectedTargetPreview}
+            previewUrl={selectedTargetPreviewUrl}
+            definition={selectedDefinition}
+            rawCode={selectedDraft.rawCode}
+            behavior={previewBehavior}
+            canExpand={previewCanExpand}
+            expanded={previewExpanded}
+            onToggleExpanded={() => setPreviewExpanded((current) => !current)}
+            onPreviewEntity={onPreviewEntity}
+          />
         )}
         {inlineTargetPicker}
         {!isEdcdBackedStep && !hasInlineTargetPicker && !isStepOnlyAction && (
-          <div className="realmz-step-form-grid realmz-current-step-authoring-subpane">
-            <div className={`script-required-field realmz-step-id-field${isSameMapActionPointStep ? " script-source-ap-id-field" : ""}`}>
-              <span>{selectedDefinition.target?.label ?? selectedIdLabel}</span>
-              <div className="script-source-ap-field-row">
-                <input
-                  type={isSameMapActionPointStep ? "text" : "number"}
-                  inputMode={isSameMapActionPointStep ? "numeric" : undefined}
-                  pattern={isSameMapActionPointStep ? "-?[0-9]*" : undefined}
-                  value={selectedDraft.id}
-                  onChange={(event) => {
-                    const nextValue = Number.parseInt(event.currentTarget.value, 10);
-                    onSetSelectedDraft({ ...selectedDraft, id: Number.isFinite(nextValue) ? nextValue : 0 });
-                  }}
-                  aria-label={`Slot ${selectedSlot} ${selectedIdLabel}`}
-                />
-                {isSameMapActionPointStep && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-xs icon-only script-source-ap-jump"
-                    title={sameMapActionPointJumpTitle}
-                    disabled={!sameMapActionPointTarget}
-                    onClick={() => {
-                      if (!sameMapActionPointTarget) return;
-                      onPreviewEntity(selectEntityFromId(triggerEntityId(
-                        sameMapActionPointTarget.levelType,
-                        sameMapActionPointTarget.levelIndex,
-                        sameMapActionPointTarget.recordIndex,
-                        sameMapActionPointTarget.source
-                      )));
-                    }}
-                  >
-                    <Eye size={12} />
-                  </button>
-                )}
-              </div>
-              <small>{selectedDefinition.target?.help || selectedDefinition.description}</small>
-            </div>
-          </div>
+          <ActionPointDirectTargetField
+            selectedSlot={selectedSlot}
+            rawCode={selectedDraft.rawCode}
+            id={selectedDraft.id}
+            definition={selectedDefinition}
+            idLabel={selectedIdLabel}
+            sameMapActionPointStep={isSameMapActionPointStep}
+            sameMapTarget={sameMapActionPointTarget}
+            sameMapJumpTitle={sameMapActionPointJumpTitle}
+            onChange={onSetSelectedDraft}
+            onPreviewEntity={onPreviewEntity}
+          />
         )}
         {isEdcdBackedStep && selectedRowUsage?.warnings.map((warning) => (
           <p key={warning} className="field-warning">{authorSettingsWarning(selectedRowUsage, authorSettingsTitle, warning)}</p>
@@ -2991,28 +2871,16 @@ function SelectedStepDetail({
           </div>
         )}
       </div>
-      <CollapsibleSection title="Step Reference" eyebrow="technical details" density="compact" storageKey="scripts.stepReference.open" defaultOpen={false}>
-        <div className="realmz-raw-preview">
-          <FieldRow label="Opcode" value={selectedDefinition.label} />
-          <FieldRow label="Authoring State" value={`${actionAuthoringStateLabel(selectedDefinition, combatMacroContext)} - ${actionAuthoringStateDetail(selectedDefinition, combatMacroContext)}`} />
-          <FieldRow label="Storage" value={actionStorageLabel(selectedDefinition)} />
-          <FieldRow label="Export Behavior" value="Unchanged values are preserved on export. Edits update the same classic Realmz fields Providence already imports." />
-          <FieldRow label="Original CODE / ID" value={`${selectedDraft.rawCode} / ${selectedDraft.id}`} />
-          <FieldRow label="Target Meaning" value={selectedDefinition.target?.help || selectedDefinition.description || "No direct target required."} />
-          {settingLabels.length > 0 && (
-            <FieldRow label="Settings Fields" value={settingLabels.join("; ")} />
-          )}
-          {selectedEdcdRowId != null && <FieldRow label="Action Settings Row" value={selectedEdcdRowId} />}
-          {selectedRowUsage?.summary && <FieldRow label="Action Settings Summary" value={selectedRowUsage.summary} />}
-          {selectedDivinityHelp?.use && <FieldRow label="Divinity Use" value={selectedDivinityHelp.use} />}
-          {selectedDivinityHelp?.options && selectedDivinityHelp.options.toLowerCase() !== "none" && (
-            <FieldRow label="Divinity Options" value={selectedDivinityHelp.options} />
-          )}
-          {selectedDivinityHelp?.extraCodes && selectedDivinityHelp.extraCodes.toLowerCase() !== "none" && (
-            <FieldRow label="Divinity E-Codes" value={selectedDivinityHelp.extraCodes} />
-          )}
-        </div>
-      </CollapsibleSection>
+      <ActionPointStepReference
+        definition={selectedDefinition}
+        combatMacroContext={combatMacroContext}
+        rawCode={selectedDraft.rawCode}
+        id={selectedDraft.id}
+        settingLabels={settingLabels}
+        edcdRowId={selectedEdcdRowId}
+        rowUsage={selectedRowUsage}
+        divinityHelp={selectedDivinityHelp}
+      />
       {selectedSlotApplied ? null : (
         <EmptyState compact title="Step not applied yet" body="Apply this step to update the script." />
       )}
