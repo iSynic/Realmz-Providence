@@ -34,7 +34,6 @@ import {
   ED3_EVIDENCE_FILTERS,
   EXTRA_ACTION_INVENTORY_FILTERS,
   SCRIPT_INVENTORY_FILTERS,
-  ScriptListItem,
   actionBelongsTo,
   filterScriptsByInventory,
   hasScriptWarning,
@@ -83,6 +82,8 @@ import { TimedEncounterShell, timedEncounterEligibilitySummary } from "./scripts
 import { ScriptDiagnostics } from "./scripts/ScriptDiagnostics";
 import { SelectedActionPointStepEditor } from "./scripts/SelectedActionPointStepEditor";
 import { ActionPointRecordHeader } from "./scripts/ActionPointRecordHeader";
+import { ActionPointCreateBar } from "./scripts/ActionPointCreateBar";
+import { ActionPointInventory } from "./scripts/ActionPointInventory";
 import { ActionPointStepList } from "./scripts/ActionPointStepList";
 import { ActionPointStepToolbar } from "./scripts/ActionPointStepToolbar";
 import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./scripts/actionPointDiagnostics";
@@ -158,10 +159,6 @@ const SCRIPT_EDITOR_TABS = [
 
 const SCRIPT_WORKBENCH_HELP =
   "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, Action Settings, targets, diagnostics, and source evidence.";
-const CREATE_AP_HELP =
-  "Creates a map or dungeon Action Point at the chosen cell. Realmz stores these as fixed records, so Providence reuses empty slots instead of shifting later record IDs.";
-const INVENTORY_FILTER_HELP =
-  "Use Current Map while authoring one area, Active for non-empty records, Reusable for cleared fixed slots, Warnings before release, and All when tracing links across the scenario.";
 const TARGET_DRAWER_HELP =
   "Target opens context for the record selected by this step. Small records such as strings can be edited here; larger records such as encounters, battles, shops, treasures, and monsters open in their primary workbench.";
 const FLOW_PREVIEW_HELP =
@@ -889,118 +886,41 @@ function ScriptAuthoringPanel({
           )}
         </div>
       </header>
-      {!selectedMap && activeTabKind === "action-points" && (
-        <div className="script-create-strip script-create-empty">
-          <div>
-            <strong>Create a map before adding Action Points</strong>
-            <small>Map Action Points live on fixed land or dungeon records. Start with Land Level 0, then place the first Action Point at a cell.</small>
-          </div>
-          <button type="button" className="btn btn-primary btn-xs script-create-primary" onClick={() => onApplyCommand?.({ kind: "createMap", label: "Create Land Level 0", levelType: "land" })}>
-            <Plus size={12} /> New Land Level 0
-          </button>
-        </div>
-      )}
-      {selectedMap && activeTabKind === "action-points" && (
-        <div className="script-create-strip">
-          <label>
-            <TutorialTip title="New Action Point" body={CREATE_AP_HELP} side="below">
-              <span>Map</span>
-            </TutorialTip>
-            <select value={newActionPoint.mapId} onChange={(event) => setNewActionPoint({ ...newActionPoint, mapId: event.currentTarget.value })}>
-              {projectMaps.map((map) => (
-                <option key={map.id} value={map.id}>{map.name}</option>
-              ))}
-            </select>
-          </label>
-          <NumberField label="X" value={newActionPoint.x} onCommit={(x) => setNewActionPoint({ ...newActionPoint, x: clampRealmzCoordinate(x) })} />
-          <NumberField label="Y" value={newActionPoint.y} onCommit={(y) => setNewActionPoint({ ...newActionPoint, y: clampRealmzCoordinate(y) })} />
-          <button
-            type="button"
-            className="btn btn-primary btn-xs script-create-primary"
-            disabled={!selectedMapCapacity?.canCreate}
-            title={actionPointCreateTitle}
-            onClick={createSelectedMapActionPoint}
-          >
-            <Plus size={12} /> Action Point
-          </button>
-          {selectedTrigger && (
-            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}>
-              <Copy size={12} /> Duplicate
-            </button>
-          )}
-          <small className={selectedMapCapacity?.canCreate ? "script-capacity-note" : "script-capacity-note blocked"}>
-            {selectedMapCapacity?.active ?? 0}/{selectedMapCapacity?.max ?? 100} active Action Point records
-            {selectedMapCapacity?.reusable ? `, ${selectedMapCapacity.reusable} empty reusable slot(s)` : selectedMapCapacity?.canCreate ? ", next create will append a fixed record" : ". Clear selected Action Point to reuse this record."}
-          </small>
-        </div>
-      )}
+      <ActionPointCreateBar
+        activeTabKind={activeTabKind}
+        projectMaps={projectMaps}
+        selectedMap={selectedMap}
+        selectedMapCapacity={selectedMapCapacity}
+        selectedTrigger={selectedTrigger}
+        newActionPoint={newActionPoint}
+        actionPointCreateTitle={actionPointCreateTitle}
+        onSetNewActionPoint={setNewActionPoint}
+        onCreateMap={() => onApplyCommand?.({ kind: "createMap", label: "Create Land Level 0", levelType: "land" })}
+        onCreateActionPoint={createSelectedMapActionPoint}
+        onDuplicateTrigger={() => selectedTrigger && onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}
+      />
       <div className="realmz-script-layout">
-        <div className="script-list-column">
-          <div className="script-list-tools">
-            <div className="script-list-summary">
-              <strong>{filteredScripts.length.toLocaleString()} shown</strong>
-              <small>{scripts.length.toLocaleString()} total</small>
-            </div>
-            <input
-              className="script-list-filter"
-              value={scriptQuery}
-              onChange={(event) => setScriptQuery(event.currentTarget.value)}
-              placeholder="Filter action points..."
-            />
-            <small className="script-capacity-note">
-              <TutorialTip title="Inventory Filters" body={INVENTORY_FILTER_HELP} side="below">
-                <span>Choose the inventory slice before editing or release-checking scripts.</span>
-              </TutorialTip>
-            </small>
-            <div className="script-list-scope script-filter-chips" role="group" aria-label="Script inventory filter">
-              {visibleInventoryFilters.map((filter) => (
-                <button
-                  key={filter.id}
-                  type="button"
-                  className={inventoryFilter === filter.id ? "active" : ""}
-                  disabled={filter.id === "current-map" && !canScopeToMap}
-                  onClick={() => setInventoryFilter(filter.id)}
-                >
-                  <span>{filter.label}</span>
-                  <b>{inventoryCounts.get(filter.id) == null ? "—" : inventoryCounts.get(filter.id)}</b>
-                </button>
-              ))}
-            </div>
-          {extraActionEvidenceFilterActive && (
-            <div className="script-tab-note">
-              <strong>{(inventoryCounts.get(inventoryFilter) ?? 0).toLocaleString()} Extra Action Point row(s) in this filter</strong>
-              <small>These rows are preserved with the scenario. The unlinked and evidence filters separate imported reusable script rows without source-backed callers from callable Extra Action Points.</small>
-            </div>
-          )}
-          </div>
-          <ScrollArea className="realmz-script-list" aria-label="Action Points and Extra Action Points">
-            {visibleScripts.map((trigger) => (
-              <ScriptListItem
-                key={trigger.id}
-                project={project}
-                trigger={trigger}
-                selected={trigger.id === selectedTrigger?.id}
-                buttonRef={trigger.id === selectedTrigger?.id ? selectedScriptButtonRef : undefined}
-                issues={visibleDiagnosticsById.get(trigger.id) ?? []}
-                onSelectTrigger={handleSelectTrigger}
-              />
-            ))}
-            {filteredScripts.length === 0 && (
-              <div className="script-list-empty">
-                {inventoryFilter === "warnings" && !warningScanReady ? "Scanning warnings..." : "No scripts match this view."}
-              </div>
-            )}
-            {hiddenScriptCount > 0 && (
-              <button
-                className="script-list-more-button"
-                type="button"
-                onClick={() => setVisibleScriptLimit((value) => Math.min(filteredScripts.length, value + 180))}
-              >
-                Show {Math.min(180, hiddenScriptCount).toLocaleString()} more
-              </button>
-            )}
-          </ScrollArea>
-        </div>
+        <ActionPointInventory
+          project={project}
+          scripts={scripts}
+          filteredScripts={filteredScripts}
+          visibleScripts={visibleScripts}
+          selectedTrigger={selectedTrigger}
+          selectedButtonRef={selectedScriptButtonRef}
+          scriptQuery={scriptQuery}
+          inventoryFilter={inventoryFilter}
+          visibleInventoryFilters={visibleInventoryFilters}
+          inventoryCounts={inventoryCounts}
+          canScopeToMap={canScopeToMap}
+          extraActionEvidenceFilterActive={extraActionEvidenceFilterActive}
+          warningScanReady={warningScanReady}
+          hiddenScriptCount={hiddenScriptCount}
+          diagnosticsById={visibleDiagnosticsById}
+          onSetScriptQuery={setScriptQuery}
+          onSetInventoryFilter={setInventoryFilter}
+          onSelectTrigger={handleSelectTrigger}
+          onShowMore={() => setVisibleScriptLimit((value) => Math.min(filteredScripts.length, value + 180))}
+        />
         <div className="realmz-script-form">
           {selectedTrigger ? (
             <>

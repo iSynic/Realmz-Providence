@@ -6,7 +6,9 @@ const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatal
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const actionPointModulePaths = [
   "ActionPointActionChooser.tsx",
+  "ActionPointCreateBar.tsx",
   "ActionPointInlineTargetEditor.tsx",
+  "ActionPointInventory.tsx",
   "ActionPointRecordHeader.tsx",
   "ActionPointSettingsEditor.tsx",
   "ActionPointStepList.tsx",
