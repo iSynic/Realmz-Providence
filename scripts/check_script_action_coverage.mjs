@@ -4,6 +4,8 @@ import path from "node:path";
 const root = process.cwd();
 const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
+const itemIdFieldPath = path.join(root, "src/editor/panels/scripts/ItemIdField.tsx");
+const timedEncounterShellPath = path.join(root, "src/editor/panels/scripts/TimedEncounterShell.tsx");
 const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
 const textScenarioCssPath = path.join(root, "src/editor/styles/text-scenario.css");
 const assetsCssPath = path.join(root, "src/editor/styles/assets.css");
@@ -41,6 +43,8 @@ const tutorialScriptsFixturePath = path.join(root, "tmp/editor-smoke-runs/202605
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
+const itemIdField = fs.readFileSync(itemIdFieldPath, "utf8");
+const timedEncounterShell = fs.readFileSync(timedEncounterShellPath, "utf8");
 const scriptsCss = fs.readFileSync(scriptsCssPath, "utf8");
 const textScenarioCss = fs.readFileSync(textScenarioCssPath, "utf8");
 const assetsCss = fs.readFileSync(assetsCssPath, "utf8");
@@ -667,8 +671,7 @@ for (const snippet of [
 ]) {
   if (!panel.includes(snippet)) failures.push(`Selected step detail is missing inline target drawer suppression: ${snippet}`);
 }
-const itemIdField = panel.match(/function ItemIdField\([\s\S]*?\n}\r?\n\r?\nfunction RequiredWeaponField/);
-if (!itemIdField) {
+if (!itemIdField.includes("export function ItemIdField")) {
   failures.push("ItemIdField is missing.");
 } else {
   for (const snippet of [
@@ -679,18 +682,18 @@ if (!itemIdField) {
     "script-item-selected-row",
     "itemCategoryBadge(option.category)"
   ]) {
-    if (!itemIdField[0].includes(snippet)) failures.push(`ItemIdField is missing search-only item authoring behavior: ${snippet}`);
+    if (!itemIdField.includes(snippet)) failures.push(`ItemIdField is missing search-only item authoring behavior: ${snippet}`);
   }
-  if (itemIdField[0].includes("<select")) failures.push("ItemIdField must not render both search and select controls.");
-  if (itemIdField[0].includes("type=\"number\"")) failures.push("ItemIdField must not render a separate raw numeric sidecar.");
+  if (itemIdField.includes("<select")) failures.push("ItemIdField must not render both search and select controls.");
+  if (itemIdField.includes("type=\"number\"")) failures.push("ItemIdField must not render a separate raw numeric sidecar.");
 }
-if (panel.includes("hideRaw")) {
+if (itemIdField.includes("hideRaw")) {
   failures.push("ItemIdField raw-entry escape hatch should be removed; numeric item IDs are authored through search.");
 }
-if (panel.includes("TimedNumberRow label=\"Required Item ID\"")) {
+if (timedEncounterShell.includes("TimedNumberRow label=\"Required Item ID\"")) {
   failures.push("Timed Encounter required item should use the shared item search field, not a raw number row.");
 }
-if (!panel.includes("label=\"Required Item\" value={record.requiredItem}")) {
+if (!timedEncounterShell.includes("label=\"Required Item\" value={record.requiredItem}")) {
   failures.push("Timed Encounter required item search field is missing.");
 }
 const edcdSearchTargetField = edcd.match(/function EdcdSearchTargetField\([\s\S]*?\n}\r?\n\r?\nfunction EdcdSelectTargetField/);
