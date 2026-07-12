@@ -89,6 +89,8 @@
       "levelType": "land",
       "index": 1,
       "landlook": 4,
+      "isDark": true,
+      "useLos": true,
       "fillTile": 111,
       "operations": [
         { "kind": "combatClearing", "x": 1, "y": 1, "tile": 59 },

@@ -797,6 +797,19 @@ export function validateBrowserProject(project: Project): ValidationReport {
       }
     });
   }
+  for (const level of project.randomLevels ?? []) {
+    const rawValues = level.rawValues ?? [];
+    if (rawValues.length !== RANDOM_LEVEL_BYTES / 2) {
+      errors.push(`${level.id} has invalid raw random-level storage.`);
+      continue;
+    }
+    const rawFlags = decodeRandomLevelRuntimeFlags(rawValues);
+    if (rawFlags.landlook !== level.landlook || rawFlags.isDark !== level.isDark || rawFlags.useLos !== level.useLos) {
+      errors.push(
+        `${level.id} runtime flags do not match its decoded settings: Data ${level.levelType === "land" ? "RD" : "RDD"} exports landlook ${rawFlags.landlook}, dark ${rawFlags.isDark ? 1 : 0}, LOS ${rawFlags.useLos ? 1 : 0}; Providence shows landlook ${level.landlook}, dark ${level.isDark ? 1 : 0}, LOS ${level.useLos ? 1 : 0}.`
+      );
+    }
+  }
   for (const alignment of project.records.alignments) {
     if (alignment.status === "has-trailing-bytes") {
       warnings.push(`${alignment.source} has ${alignment.trailingBytes} trailing bytes after full records.`);
@@ -897,6 +910,17 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   return { ok: errors.length === 0, errors, warnings, exportableFiles, passThroughFiles, targetCompatibilityIssues: [], targetCompatibility: EMPTY_TARGET_COMPATIBILITY };
+}
+
+function decodeRandomLevelRuntimeFlags(rawValues: number[]) {
+  const landlookDarkWord = (rawValues[260] ?? 0) & 0xffff;
+  const losWord = (rawValues[261] ?? 0) & 0xffff;
+  const landlookByte = (landlookDarkWord >>> 8) & 0xff;
+  return {
+    landlook: landlookByte >= 0x80 ? landlookByte - 0x100 : landlookByte,
+    isDark: (landlookDarkWord & 0xff) !== 0,
+    useLos: ((losWord >>> 8) & 0xff) !== 0
+  };
 }
 
 function isBrowserWritableSourceFile(project: Project, name: string) {

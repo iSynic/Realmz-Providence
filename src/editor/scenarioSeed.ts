@@ -3484,7 +3484,7 @@ function addDiagnostic(context: BuildContext, severity: "error" | "warning", cod
 function buildMap(seed: ScenarioSeedMap, fallbackIndex: number, buildContext?: BuildContext): MapEntity {
   const levelType = seed.levelType ?? "land";
   const index = seed.index ?? fallbackIndex;
-  const source = levelType === "land" ? "Data LD" : "Data D";
+  const source = levelType === "land" ? "Data LD" : "Data DL";
   const landlook = seed.landlook ?? 0;
   const fillTile = seed.fillTile ?? (landlook === 4 ? 40 : landlookBaseTile(landlook) ?? 1);
   const tiles = seed.tiles ? [...seed.tiles] : new Array(MAP_SIZE * MAP_SIZE).fill(fillTile);
@@ -3510,18 +3510,28 @@ function buildMap(seed: ScenarioSeedMap, fallbackIndex: number, buildContext?: B
 function buildRandomLevel(seed: ScenarioSeedMap, fallbackIndex: number): RandomLevel {
   const levelType = seed.levelType ?? "land";
   const index = seed.index ?? fallbackIndex;
+  const landlook = seed.landlook ?? 0;
+  const isDark = seed.isDark ?? false;
+  const useLos = seed.useLos ?? false;
+  const rawValues = new Array(RANDOM_LEVEL_BYTES / 2).fill(0);
+  rawValues[260] = signedWord(((landlook & 0xff) << 8) | (isDark ? 1 : 0));
+  rawValues[261] = useLos ? 0x0100 : 0;
   return {
     id: `${levelType}:${index}:randlevel`,
-    source: "Data RD",
+    source: levelType === "land" ? "Data RD" : "Data RDD",
     levelType,
     levelIndex: index,
-    landlook: seed.landlook ?? 0,
-    isDark: seed.isDark ?? false,
-    useLos: seed.useLos ?? false,
+    landlook,
+    isDark,
+    useLos,
     rects: [],
-    rawValues: new Array(RANDOM_LEVEL_BYTES / 2).fill(0),
-    provenance: authoredProvenance("Data RD", index, index * RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES)
+    rawValues,
+    provenance: authoredProvenance(levelType === "land" ? "Data RD" : "Data RDD", index, index * RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES)
   };
+}
+
+function signedWord(value: number) {
+  return value >= 0x8000 ? value - 0x10000 : value;
 }
 
 type MapBuildContext = { landlook: number; levelType: LevelType; mapSeed: string; regions: Map<string, ScenarioSeedPoint>; buildContext?: BuildContext };

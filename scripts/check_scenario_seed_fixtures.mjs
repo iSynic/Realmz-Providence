@@ -128,6 +128,7 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   const result = createProjectFromScenarioSeed(readSeed("map-operations.seed.json"));
   expect(result.ok, "map operations seed should create a project");
   if (!result.ok) return;
+  expect(result.project.validation.ok, "map operation seed runtime metadata should pass project validation");
   const tiles = result.project.maps[0]?.tiles ?? [];
   expect(tileAt(tiles, 0, 0) === 8, "line operation should write tile 8 at 0,0");
   expect(tileAt(tiles, 4, 0) === 8, "line operation should write tile 8 at 4,0");
@@ -164,6 +165,8 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(tiles, 31, 12) === 2169, "default hidden walkable terrain should support an already revealed Secret Area state without an Action Point");
   expect(tileAt(tiles, 32, 12) === 1156, "generated land Action Points should write the normal trigger marker into their map cell");
   const dungeonTiles = result.project.maps.find((map) => map.levelType === "dungeon")?.tiles ?? [];
+  const dungeonMap = result.project.maps.find((map) => map.levelType === "dungeon");
+  expect(dungeonMap?.source === "Data DL" && dungeonMap.provenance.sourceFile === "Data DL", "Dungeon seed maps should use the Data DL runtime source");
   expect(tileAt(dungeonTiles, 4, 4, "dungeon") === 0x1501, "generated dungeon Action Points should preserve directional secret-passage flags and add the trigger marker");
   expect(tileAt(dungeonTiles, 7, 4, "dungeon") === 77 && dungeonTiles[4 * 90 + 7] === 77, "dungeon map operations should retain row-major storage");
   const castleTiles = result.project.maps.find((map) => map.levelType === "land" && map.index === 1)?.tiles ?? [];
@@ -171,6 +174,11 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(castleTiles, 10, 20) === 146 && tileAt(castleTiles, 11, 21) === 155, "Castle named tiles should resolve audited fixtures and variants");
   expect(tileAt(castleTiles, 20, 30) === 158 && tileAt(castleTiles, 21, 30) === 161 && tileAt(castleTiles, 22, 30) === 162, "named stamp variants should place the audited food-table composition");
   expect(tileAt(castleTiles, 30, 30) === 187 && tileAt(castleTiles, 31, 30) === 188 && tileAt(castleTiles, 30, 31) === 190 && tileAt(castleTiles, 31, 31) === 191, "named stamps should place the audited north-wall open door composition");
+  const castleRandomLevel = result.project.randomLevels.find((level) => level.levelType === "land" && level.levelIndex === 1);
+  expect(castleRandomLevel?.landlook === 4 && castleRandomLevel.isDark && castleRandomLevel.useLos, "Castle seed settings should populate decoded random-level metadata");
+  expect(castleRandomLevel?.rawValues[260] === 0x0401 && castleRandomLevel.rawValues[261] === 0x0100, "Castle seed settings should encode Realmz Data RD landlook, darkness, and LOS bytes");
+  const dungeonRandomLevel = result.project.randomLevels.find((level) => level.levelType === "dungeon" && level.levelIndex === 0);
+  expect(dungeonRandomLevel?.source === "Data RDD" && dungeonRandomLevel.provenance.sourceFile === "Data RDD", "Dungeon seed metadata should use the Data RDD runtime source");
   const semanticLandlooks = [
     { index: 2, name: "Desert", hidden: [169, 184], combat: [180, 185] },
     { index: 3, name: "Swamp", hidden: [169], combat: [180] },

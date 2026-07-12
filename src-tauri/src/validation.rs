@@ -142,6 +142,28 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 "{} has invalid raw random-level storage.",
                 level.id
             ));
+        } else {
+            let landlook_dark = level.raw_values[260] as u16;
+            let los = level.raw_values[261] as u16;
+            let raw_landlook = ((landlook_dark >> 8) as u8) as i8;
+            let raw_dark = (landlook_dark & 0xff) != 0;
+            let raw_los = ((los >> 8) & 0xff) != 0;
+            if raw_landlook != level.landlook
+                || raw_dark != level.is_dark
+                || raw_los != level.use_los
+            {
+                errors.push(format!(
+                    "{} runtime flags do not match its decoded settings: Data {} exports landlook {}, dark {}, LOS {}; Providence shows landlook {}, dark {}, LOS {}.",
+                    level.id,
+                    if level.level_type == LevelType::Land { "RD" } else { "RDD" },
+                    raw_landlook,
+                    i32::from(raw_dark),
+                    i32::from(raw_los),
+                    level.landlook,
+                    i32::from(level.is_dark),
+                    i32::from(level.use_los)
+                ));
+            }
         }
         for rect in &level.rects {
             if rect.rect_index >= 20 {
@@ -2476,6 +2498,23 @@ mod tests {
     }
 
     #[test]
+    fn validates_random_level_runtime_flag_mismatch() {
+        let mut project = empty_project();
+        project.maps.push(test_map(LevelType::Land, 0, 0));
+        let mut level = test_random_level(LevelType::Land, 0, 2);
+        level.raw_values[260] = 0;
+        project.random_levels.push(level);
+
+        let report = validate_project(&project);
+
+        assert!(report.errors.iter().any(|error| {
+            error.contains("runtime flags do not match its decoded settings")
+                && error.contains("exports landlook 0")
+                && error.contains("Providence shows landlook 2")
+        }));
+    }
+
+    #[test]
     fn validates_empty_project_requires_a_map() {
         let project = empty_project();
         let report = validate_project(&project);
@@ -2684,6 +2723,8 @@ mod tests {
             LevelType::Land => "Data RD",
             LevelType::Dungeon => "Data RDD",
         };
+        let mut raw_values = vec![0; crate::realmz::RANDLEVEL_BYTES / 2];
+        raw_values[260] = i16::from_be_bytes([landlook as u8, 0]);
         RandomLevel {
             id: format!("{}:{}:randlevel", level_type.as_str(), index),
             source: source.to_string(),
@@ -2693,7 +2734,7 @@ mod tests {
             is_dark: false,
             use_los: false,
             rects: Vec::new(),
-            raw_values: vec![0; crate::realmz::RANDLEVEL_BYTES / 2],
+            raw_values,
             provenance: test_provenance(
                 source,
                 index,
