@@ -7,6 +7,7 @@ const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
 const actionPointModulePaths = [
   "ActionPointActionChooser.tsx",
   "ActionPointCreateBar.tsx",
+  "ActionPointEvidence.tsx",
   "ActionPointInlineTargetEditor.tsx",
   "ActionPointInventory.tsx",
   "ActionPointRecordHeader.tsx",

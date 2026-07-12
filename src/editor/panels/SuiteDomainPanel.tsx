@@ -9,7 +9,7 @@ import { EditorTab, LibraryAsset, LibraryCatalog, LibraryEntity, ManagedAssetKin
 import { selectEntityFromId } from "../utils";
 import { ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
-import { TargetRecordEditor } from "./ScriptsPanel";
+import { TargetRecordEditor } from "./scripts/TargetRecordEditor";
 import { directRecordsForTool, labelForSelectedId, type DirectRecordRow } from "../directRecordIndex";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../itemReferences";
 import { ruleCasteName, ruleRaceName } from "../ruleNames";
