@@ -29,6 +29,41 @@ export const ITEM_REFERENCE_CATEGORIES: { id: ItemReferenceCategory | "all"; lab
   { id: "supply", label: "Supplies / Special", range: "800-999" }
 ];
 
+export function itemOptionDisplayName(option: ItemReferenceOption) {
+  return option.label.replace(/\s+\(-?\d+\)$/, "");
+}
+
+export function itemCategoryBadge(category: ItemReferenceCategory) {
+  if (category === "weapon") return "W";
+  if (category === "armor") return "AR";
+  if (category === "accessory") return "AC";
+  if (category === "magic") return "M";
+  if (category === "supply") return "SP";
+  return "IT";
+}
+
+export function filterItemReferenceOptions(options: ItemReferenceOption[], query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return options;
+  return options.filter((option) => [
+    option.value,
+    option.label,
+    option.detail,
+    option.summary,
+    option.sourceState
+  ].join(" ").toLowerCase().includes(normalized));
+}
+
+export function filterItemReferenceOptionsByCategory(
+  options: ItemReferenceOption[],
+  query: string,
+  category: ItemReferenceCategory | "all"
+) {
+  return filterItemReferenceOptions(options, query)
+    .filter((option) => option.value !== 0)
+    .filter((option) => category === "all" || option.category === category);
+}
+
 type ItemUsage = {
   treasureSlots: number;
   shopSlots: number;

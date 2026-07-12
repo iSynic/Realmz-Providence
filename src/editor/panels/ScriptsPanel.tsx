@@ -5,7 +5,7 @@ import { actionSlotEntityId, linksFor, selectEntityFromId, semanticLabel, trigge
 import { actionSlotEntitiesForTriggerRecord, ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../semanticGraph";
 import { EdcdRowEditor } from "../components/EdcdRowEditor";
 import { buildEdcdRowUsages, edcdUsageForAction, edcdUsageMatchesFilter, edcdUsageStatusTone, edcdUsageToEditorUsage, nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowFilter, type EdcdRowUsage, type EdcdRowCaller } from "../edcdRows";
-import { TargetPicker, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, soundReferenceOptionForQuery, targetOptionForOpcodeValue, targetOptionsForOpcode, targetPickerConfig, type ScriptTargetOption } from "../components/RealmzTargetPicker";
+import { TargetPicker, filterTargetOptions, resolveSignedMessageTarget, signedTargetBehaviorLabel, signedTargetValueForSelection, targetOptionForOpcodeValue, targetOptionsForOpcode, targetPickerConfig, type ScriptTargetOption } from "../components/RealmzTargetPicker";
 import { TutorialTip } from "../components/TutorialTip";
 import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { categoryColor } from "../components/TileSprite";
@@ -14,14 +14,24 @@ import { useDraftChangeGuards } from "../app/draftChangeGuard";
 import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode, normalizeStepOpcode } from "../realmzActions";
 import { edcdFieldNamesForShape } from "../realmzEdcd";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../opcodeCrosswalk";
-import { allDivinityOpcodeHelpEntries, divinityHelpEntriesForOpcode, divinityHelpForOpcode, DIVINITY_OPCODE_HELP_SOURCE, type DivinityOpcodeHelpEntry } from "../divinityOpcodeHelp";
+import { divinityHelpForOpcode } from "../divinityOpcodeHelp";
 import { ScriptDiagnostic, validateActionDraft, validateScriptTrigger } from "../scriptValidation";
 import { actionPointCapacity, isReusableDoorPlaceholder, nextActionPointRecordIndex } from "../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../realmzScriptDescriptors";
 import { actionPointMarkerStateForTrigger, isSecretActionPointState } from "../map/actionPointMarkers";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { buildQuestPresentation, questCategoryLabel, QUEST_CATEGORIES, type QuestFlagModel, type QuestUsage } from "../questUsage";
-import { ITEM_REFERENCE_CATEGORIES, itemReferenceDetail, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../itemReferences";
+import {
+  ITEM_REFERENCE_CATEGORIES,
+  filterItemReferenceOptions,
+  filterItemReferenceOptionsByCategory,
+  itemCategoryBadge,
+  itemOptionDisplayName,
+  itemReferenceDetail,
+  itemReferenceOptions,
+  type ItemReferenceCategory,
+  type ItemReferenceOption
+} from "../itemReferences";
 import { monsterReferenceDetail, monsterReferenceOptions } from "../monsterReferences";
 import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
 import {
@@ -60,6 +70,29 @@ import {
   type ScriptActionCategoryFilter,
   type ScriptActionDefinition
 } from "./scripts/scriptActionCatalog";
+import {
+  ENCOUNTER_RESULT_COUNT,
+  ROGUE_ACTION_LABELS,
+  buildEncounterDecisionSources,
+  encounterActionIsPlayerObservable,
+  encounterActionIsPopulated,
+  encounterActionLabel,
+  encounterResultColumnRows,
+  encounterResultColumnSummary,
+  encounterResultStatus,
+  resultStatusCounts,
+  resultStatusLabel,
+  rogueActionHasOutcomeData,
+  shortSnippet,
+  updateEncounterActionRow,
+  type EncounterDecisionSource,
+  type EncounterResultStatus
+} from "./scripts/encounterFlow";
+import { EncounterResultActionMatrix } from "./scripts/EncounterResultActionMatrix";
+import { useEncounterSoundPreviewUrl } from "./scripts/EncounterResultSoundPreview";
+import { EncounterResponseEditor } from "./scripts/EncounterResponseEditor";
+import { updateArraySlot } from "./scripts/arraySlots";
+import { spellReferenceOptions } from "./scripts/encounterResponseOptions";
 
 const MONSTER_TRAIT_LABELS = [
   "Magic Using",
@@ -200,19 +233,6 @@ const ENCOUNTER_SETUP_HELP =
   "Encounter setup owns the shared source fields: prompt string, back-out behavior, max attempts, and caste-success value. The prompt is a central String; option labels below are inline buffers.";
 const COMPLEX_THIEF_BRANCH_HELP =
   "The complex thief branch links into a Rogue Encounter. That rogue scene decides which lock, trap, and thief actions are available, then returns result numbers into this Complex Encounter's result script columns.";
-const SIMPLE_OPTIONS_HELP =
-  "Each simple option has an inline label and a Result number. Result 1-4 chooses the matching action column below; zero means no result path. Option 1 can use -4 to skip the prompt and immediately run Result #4.";
-const SIMPLE_RESULT_AUTO_FAIL_SENTINEL = -4;
-const COMPLEX_BAR_ACTIONS_HELP =
-  "Complex encounters show up to eight action labels on the encounter bar. The group flags and Action Picker result decide which result column runs when a player chooses a matching action.";
-const COMPLEX_WORD_HELP =
-  "The word answer is a typed-player-text branch. When the typed phrase matches this buffer, the Word Result chooses which result script column runs.";
-const COMPLEX_SPELL_TESTS_HELP =
-  "Magic responses match packed Realmz spell IDs or low spell-class IDs. When the party uses a matching spell or scroll, Realmz runs the selected result script column.";
-const COMPLEX_ITEM_TESTS_HELP =
-  "Item responses match Realmz item IDs from Economy or the reference item library. When the party uses a matching item, Realmz runs the selected result script column.";
-const ENCOUNTER_RESULT_ACTION_HELP =
-  "Encounter result columns are the outcome scripts. Branch fields choose Result 1, 2, 3, or 4; Realmz then runs that column's ordered CODE/ID steps.";
 const ROGUE_ACTION_TESTS_HELP =
   "Rogue action rows control which Divinity thief actions are available, the skill modifier, success/failure result codes, and the text/sound feedback for each outcome.";
 const ROGUE_TRAP_HELP =
@@ -4262,6 +4282,44 @@ function EncounterTargetStatus({ actions, sources }: { actions: EncounterActionR
   );
 }
 
+function encounterResultRecordPreview(
+  project: Project,
+  catalog: LibraryCatalog | null | undefined,
+  targetType: Exclude<RealmzTargetRecordKind, "message" | "questLabel">,
+  targetId: number
+) {
+  if (targetType === "battle") {
+    const record = project.battles?.find((candidate) => candidate.id === targetId);
+    return record ? <TargetSummaryCard project={project} catalog={catalog} recordType="battle" id={targetId} record={record} /> : null;
+  }
+  if (targetType === "monster") {
+    const record = project.monsters?.find((candidate) => candidate.id === targetId);
+    return record ? <TargetSummaryCard project={project} catalog={catalog} recordType="monster" id={targetId} record={record} /> : null;
+  }
+  if (targetType === "treasure") {
+    const record = project.treasures?.find((candidate) => candidate.id === targetId);
+    return record ? <TargetSummaryCard project={project} catalog={catalog} recordType="treasure" id={targetId} record={record} /> : null;
+  }
+  if (targetType === "shop") {
+    const record = project.shops?.find((candidate) => candidate.id === targetId);
+    return record ? <TargetSummaryCard project={project} catalog={catalog} recordType="shop" id={targetId} record={record} /> : null;
+  }
+  if (targetType === "simpleEncounter") {
+    const record = project.simpleEncounters?.find((candidate) => candidate.id === targetId);
+    return record ? <EncounterTargetCard project={project} recordType="simpleEncounter" id={targetId} record={record} /> : null;
+  }
+  if (targetType === "complexEncounter") {
+    const record = project.complexEncounters?.find((candidate) => candidate.id === targetId);
+    return record ? <EncounterTargetCard project={project} recordType="complexEncounter" id={targetId} record={record} /> : null;
+  }
+  if (targetType === "thiefEncounter") {
+    const record = project.thiefEncounters?.find((candidate) => candidate.id === targetId);
+    return record ? <EncounterTargetCard project={project} recordType="thiefEncounter" id={targetId} record={record} /> : null;
+  }
+  const record = project.timedEncounters?.find((candidate) => candidate.id === targetId);
+  return record ? <EncounterTargetCard project={project} recordType="timedEncounter" id={targetId} record={record} /> : null;
+}
+
 function encounterEntityId(recordType: "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter", id: number) {
   if (recordType === "simpleEncounter") return `encounter:simple:${id}`;
   if (recordType === "complexEncounter") return `encounter:complex:${id}`;
@@ -4584,7 +4642,7 @@ function EncounterShell({
         </section>
       {recordKind === "simple" ? (
         <>
-          <EncounterResultEditor
+          <EncounterResponseEditor
             project={project}
             catalog={catalog}
             recordKind={recordKind}
@@ -4597,11 +4655,9 @@ function EncounterShell({
             itemIds={itemIds}
             itemResults={itemResults}
             choiceResults={choiceResults}
-            wordResults={wordResults}
             actions={actions}
             onTextCommit={(slot, text) => update({ texts: updateArraySlot(texts, slot, text, recordKind === "simple" ? 4 : 9) })}
             onChoiceCommit={(slot, value) => update({ choiceResults: updateArraySlot(choiceResults, slot, value, 4) })}
-            onWordCommit={(slot, value) => update({ wordResults: updateArraySlot(wordResults ?? [], slot, value, 4) })}
             onComplexCommit={(changes) => update(changes)}
           />
           <EncounterResultActionMatrix
@@ -4615,6 +4671,8 @@ function EncounterShell({
             onSelectResult={setSelectedResultIndex}
             onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
             onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
+            targetExists={(recordType, targetId) => targetRecordExists(project, recordType, targetId)}
+            renderRecordPreview={(targetType, targetId) => encounterResultRecordPreview(project, catalog, targetType, targetId)}
             previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           />
           <CollapsibleSection
@@ -4637,7 +4695,7 @@ function EncounterShell({
                 <small>Define what the party can say, choose, use, cast, or attempt, then route each response to a result script.</small>
               </div>
             </header>
-            <EncounterResultEditor
+            <EncounterResponseEditor
               project={project}
               catalog={catalog}
               recordKind={recordKind}
@@ -4650,11 +4708,9 @@ function EncounterShell({
               itemIds={itemIds}
               itemResults={itemResults}
               choiceResults={choiceResults}
-              wordResults={wordResults}
               actions={actions}
               onTextCommit={(slot, text) => update({ texts: updateArraySlot(texts, slot, text, 9) })}
               onChoiceCommit={(slot, value) => update({ choiceResults: updateArraySlot(choiceResults, slot, value, 4) })}
-              onWordCommit={(slot, value) => update({ wordResults: updateArraySlot(wordResults ?? [], slot, value, 4) })}
               onComplexCommit={(changes) => update(changes)}
             />
           </section>
@@ -4669,6 +4725,8 @@ function EncounterShell({
             onSelectResult={setSelectedResultIndex}
             onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
             onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
+            targetExists={(recordType, targetId) => targetRecordExists(project, recordType, targetId)}
+            renderRecordPreview={(targetType, targetId) => encounterResultRecordPreview(project, catalog, targetType, targetId)}
             previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           />
         </>
@@ -5168,212 +5226,6 @@ function resultCodeLabel(value: number) {
   return value > 0 ? `Result ${value}` : "no result";
 }
 
-const ENCOUNTER_RESULT_COUNT = 4;
-const ENCOUNTER_RESULT_ROWS = 8;
-
-type EncounterResultStatus = "visible" | "empty" | "missing" | "out-of-range";
-
-type EncounterDecisionSource = {
-  key: string;
-  label: string;
-  detail: string;
-  result: number;
-  resultIndex: number | null;
-  status: EncounterResultStatus;
-};
-
-function resultIndexForCode(result: number) {
-  return result >= 1 && result <= ENCOUNTER_RESULT_COUNT ? result - 1 : null;
-}
-
-function resultStatusLabel(status: EncounterResultStatus) {
-  if (status === "visible") return "Visible";
-  if (status === "empty") return "Empty";
-  if (status === "out-of-range") return "Out of range";
-  return "Missing";
-}
-
-function encounterResultStatus(actions: EncounterActionRow[], result: number): EncounterResultStatus {
-  const resultIndex = resultIndexForCode(result);
-  if (resultIndex === null) return result > ENCOUNTER_RESULT_COUNT ? "out-of-range" : "missing";
-  const column = encounterResultColumnRows(actions, resultIndex);
-  if (column.some((row) => encounterActionIsPlayerObservable(row))) return "visible";
-  return "empty";
-}
-
-function encounterResultColumnRows(actions: EncounterActionRow[], resultIndex: number) {
-  return Array.from({ length: ENCOUNTER_RESULT_ROWS }, (_, rowIndex) => encounterActionAt(actions, resultIndex * ENCOUNTER_RESULT_ROWS + rowIndex));
-}
-
-function encounterActionIsPopulated(row: EncounterActionRow) {
-  return row.rawCode !== 0 || row.id !== 0;
-}
-
-function encounterActionIsPlayerObservable(row: EncounterActionRow) {
-  if (!encounterActionIsPopulated(row)) return false;
-  if (row.rawCode === 24 && row.id === 0) return false;
-  if (isDispatcherNoopOpcode(row.rawCode)) return false;
-  return true;
-}
-
-function encounterActionLabel(row: EncounterActionRow) {
-  const option = actionOptionFor(row.rawCode);
-  if (option) return option.shortLabel ?? option.label;
-  if (encounterActionIsPopulated(row)) return `Raw CODE ${row.rawCode}`;
-  return "Empty";
-}
-
-function encounterResultColumnSummary(actions: EncounterActionRow[], resultIndex: number, sources: EncounterDecisionSource[]) {
-  const rows = encounterResultColumnRows(actions, resultIndex);
-  const visible = rows.find(encounterActionIsPlayerObservable);
-  const populated = rows.find(encounterActionIsPopulated);
-  const incoming = sources.filter((source) => source.resultIndex === resultIndex).length;
-  return {
-    status: visible ? "visible" as EncounterResultStatus : "empty" as EncounterResultStatus,
-    firstAction: visible ? encounterActionLabel(visible) : populated ? `Only ${encounterActionLabel(populated)}` : "No visible actions",
-    incoming
-  };
-}
-
-function resultStatusCounts(actions: EncounterActionRow[]) {
-  return Array.from({ length: ENCOUNTER_RESULT_COUNT }, (_, resultIndex) => encounterResultColumnSummary(actions, resultIndex, []))
-    .reduce((counts, summary) => {
-      counts[summary.status] += 1;
-      return counts;
-    }, { visible: 0, empty: 0, missing: 0, "out-of-range": 0 } as Record<EncounterResultStatus, number>);
-}
-
-function encounterDecisionSource(
-  key: string,
-  label: string,
-  detail: string,
-  result: number,
-  actions: EncounterActionRow[]
-): EncounterDecisionSource {
-  const resultIndex = resultIndexForCode(result);
-  return {
-    key,
-    label,
-    detail,
-    result,
-    resultIndex,
-    status: encounterResultStatus(actions, result)
-  };
-}
-
-function buildEncounterDecisionSources({
-  recordKind,
-  texts,
-  actionResult,
-  wordResult,
-  groups,
-  spellIds,
-  spellResults,
-  itemIds,
-  itemResults,
-  choiceResults,
-  wordResults,
-  thief,
-  rogueId,
-  rogueRecord,
-  actions
-}: {
-  recordKind: "simple" | "complex";
-  texts: string[];
-  actionResult: number;
-  wordResult: number;
-  groups: number[];
-  spellIds: number[];
-  spellResults: number[];
-  itemIds: number[];
-  itemResults: number[];
-  choiceResults: number[];
-  wordResults?: number[];
-  thief: boolean;
-  rogueId: number;
-  rogueRecord?: Project["thiefEncounters"][number];
-  actions: EncounterActionRow[];
-}) {
-  const sources: EncounterDecisionSource[] = [];
-  if (recordKind === "simple") {
-    for (let slot = 0; slot < 4; slot += 1) {
-      const text = (texts[slot] ?? "").trim();
-      sources.push(encounterDecisionSource(
-        `choice-${slot}`,
-        `Choice ${slot}`,
-        text ? `Player picks "${shortSnippet(text, 54)}"` : "Player picks this option.",
-        choiceResults[slot] ?? 0,
-        actions
-      ));
-    }
-    return sources;
-  }
-
-  const actionLabels = texts.slice(0, 8).map((text, slot) => text.trim() ? `Action ${slot}: ${shortSnippet(text, 28)}` : null).filter((label): label is string => Boolean(label));
-  const groupCount = groups.filter((value) => value !== 0).length;
-  if ((actionResult ?? 0) !== 0 || actionLabels.length > 0 || groupCount > 0) {
-    sources.push(encounterDecisionSource(
-      "action-picker",
-      "Action picker",
-      `${actionLabels.length || 8} action label${actionLabels.length === 1 ? "" : "s"}${groupCount ? `; ${groupCount} group flag${groupCount === 1 ? "" : "s"}` : ""}.`,
-      actionResult,
-      actions
-    ));
-  }
-  if ((wordResult ?? 0) !== 0 || (texts[8] ?? "").trim()) {
-    sources.push(encounterDecisionSource(
-      "word-phrase",
-      "Typed word",
-      (texts[8] ?? "").trim() ? `Player types "${shortSnippet(texts[8] ?? "", 54)}".` : "Player enters the configured word or phrase.",
-      wordResult,
-      actions
-    ));
-  }
-  spellIds.forEach((spellId, slot) => {
-    const result = spellResults[slot] ?? 0;
-    if (result !== 0) {
-      sources.push(encounterDecisionSource(`spell-${slot}`, `Magic ${spellId || slot + 1}`, `Party uses the configured spell or scroll response in slot ${slot + 1}.`, result, actions));
-    }
-  });
-  itemIds.forEach((itemId, slot) => {
-    const result = itemResults[slot] ?? 0;
-    if (result !== 0) {
-      sources.push(encounterDecisionSource(`item-${slot}`, `Item ${itemId || slot + 1}`, `Party uses the configured item response in slot ${slot + 1}.`, result, actions));
-    }
-  });
-  (wordResults ?? []).forEach((result, slot) => {
-    if (result !== 0 && slot > 0) {
-      sources.push(encounterDecisionSource(`word-result-${slot}`, `Word result ${slot + 1}`, "Preserved alternate word-result field.", result, actions));
-    }
-  });
-  if (thief && rogueRecord) {
-    ROGUE_ACTION_LABELS.forEach((label, slot) => {
-      if (!rogueRecord.typeFlags?.[slot] && !rogueActionHasOutcomeData(rogueRecord, slot)) return;
-      sources.push(encounterDecisionSource(
-        `rogue-${slot}-success`,
-        `${label} success`,
-        `Rogue Encounter ${rogueId} returns this result when the action succeeds.`,
-        rogueRecord.successCodes?.[slot] ?? 0,
-        actions
-      ));
-      sources.push(encounterDecisionSource(
-        `rogue-${slot}-failure`,
-        `${label} failure`,
-        `Rogue Encounter ${rogueId} returns this result when the action fails.`,
-        rogueRecord.failureCodes?.[slot] ?? 0,
-        actions
-      ));
-    });
-  }
-  return sources;
-}
-
-function shortSnippet(text: string, maxLength: number) {
-  const trimmed = text.replace(/\s+/g, " ").trim();
-  if (trimmed.length <= maxLength) return trimmed;
-  return `${trimmed.slice(0, Math.max(0, maxLength - 1))}...`;
-}
-
 function EncounterResultFlowOverview({
   sources,
   selectedResultIndex,
@@ -5448,17 +5300,6 @@ function rogueSpellPathChance(record: Project["thiefEncounters"][number], config
   return record.promptSounds?.[config.chanceSlot] ?? 0;
 }
 
-function rogueActionHasOutcomeData(record: Project["thiefEncounters"][number], slot: number) {
-  return Boolean(
-    (record.successCodes?.[slot] ?? 0) ||
-    (record.failureCodes?.[slot] ?? 0) ||
-    (record.successText?.[slot] ?? 0) ||
-    (record.failureText?.[slot] ?? 0) ||
-    (record.successSounds?.[slot] ?? 0) ||
-    (record.failureSounds?.[slot] ?? 0)
-  );
-}
-
 function rogueOutcomeHasVisiblePath(record: Project["thiefEncounters"][number], slot: number, outcome: "success" | "failure") {
   const codes = outcome === "success" ? record.successCodes : record.failureCodes;
   const messages = outcome === "success" ? record.successText : record.failureText;
@@ -5477,895 +5318,6 @@ function rogueResultColumnVisibilitySummary(record: Project["thiefEncounters"][n
   const failure = record.failureCodes?.[slot] ?? 0;
   return `Success ${resultStatusLabel(encounterResultStatus(actions, success)).toLowerCase()}; failure ${resultStatusLabel(encounterResultStatus(actions, failure)).toLowerCase()}.`;
 }
-
-function EncounterResultActionMatrix({
-  project,
-  catalog,
-  actions,
-  title,
-  description,
-  decisionSources,
-  selectedResultIndex,
-  onSelectResult,
-  onUpdate,
-  onCreateTarget,
-  previewContext = {}
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  actions: EncounterActionRow[];
-  title: string;
-  description: string;
-  decisionSources: EncounterDecisionSource[];
-  selectedResultIndex: number | null;
-  onSelectResult: (resultIndex: number) => void;
-  onUpdate: (slot: number, changes: Partial<EncounterActionRow>) => void;
-  onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
-  previewContext?: PreviewRuntimeContext;
-}) {
-  const [codeHelperOpen, setCodeHelperOpen] = useState(false);
-  const [soundPreviewOpen, setSoundPreviewOpen] = useState(false);
-  const [targetPreview, setTargetPreview] = useState<{ slot: number; opcode: number; value: number } | null>(null);
-  const [codeHelperSelectedCode, setCodeHelperSelectedCode] = useState(1);
-  const [focusedResultCode, setFocusedResultCode] = useState<number | null>(null);
-  const openCodeHelper = () => {
-    const normalizedFocusedCode = focusedResultCode == null ? 0 : resultActionBaseCode(focusedResultCode);
-    const selectedColumnAction = selectedResultIndex == null
-      ? null
-      : actions
-        .slice(selectedResultIndex * ENCOUNTER_RESULT_ROWS, selectedResultIndex * ENCOUNTER_RESULT_ROWS + ENCOUNTER_RESULT_ROWS)
-        .find((row) => resultActionBaseCode(row.rawCode) !== 0);
-    const firstPopulatedAction = actions.find((row) => resultActionBaseCode(row.rawCode) !== 0);
-    setCodeHelperSelectedCode(resultActionBaseCode(normalizedFocusedCode || selectedColumnAction?.rawCode || firstPopulatedAction?.rawCode || 1));
-    setCodeHelperOpen(true);
-  };
-  return (
-    <section className="simple-encounter-action-matrix">
-      <header>
-        <div>
-          <TutorialTip title={title} body={ENCOUNTER_RESULT_ACTION_HELP} side="below">
-            <strong>{title}</strong>
-          </TutorialTip>
-          <small>{description}</small>
-        </div>
-        <div className="encounter-result-tools">
-          <button type="button" className="btn btn-secondary btn-xs encounter-code-helper-button" onClick={() => setSoundPreviewOpen(true)}>
-            <Volume2 size={12} /> Preview Sound
-          </button>
-          <button type="button" className="btn btn-secondary btn-xs encounter-code-helper-button" onClick={openCodeHelper}>
-            Code Helper
-          </button>
-        </div>
-      </header>
-      <div className="simple-encounter-result-columns">
-        {Array.from({ length: ENCOUNTER_RESULT_COUNT }, (_, resultIndex) => {
-          const summary = encounterResultColumnSummary(actions, resultIndex, decisionSources);
-          return (
-          <div key={resultIndex} className={`simple-encounter-result-column ${summary.status}${selectedResultIndex === resultIndex ? " selected" : ""}`}>
-            <header>
-              <button type="button" className="encounter-result-column-title" onClick={() => onSelectResult(resultIndex)}>
-                <strong>Result #{resultIndex + 1}</strong>
-                <small>{summary.incoming} incoming | {resultStatusLabel(summary.status)}</small>
-              </button>
-            </header>
-            {Array.from({ length: ENCOUNTER_RESULT_ROWS }, (_, rowIndex) => {
-              const slot = resultIndex * ENCOUNTER_RESULT_ROWS + rowIndex;
-              return (
-                <SimpleEncounterActionCell
-                  key={slot}
-                  project={project}
-                  catalog={catalog}
-                  slot={slot}
-                  row={encounterActionAt(actions, slot)}
-                  onUpdate={(changes) => onUpdate(slot, changes)}
-                  onFocusCode={(code) => setFocusedResultCode(resultActionBaseCode(code))}
-                  onCreateTarget={onCreateTarget}
-                  onPreviewTarget={(opcode, value) => setTargetPreview({ slot, opcode, value })}
-                />
-              );
-            })}
-          </div>
-          );
-        })}
-      </div>
-      {codeHelperOpen && (
-        <ResultCodeHelperPanel
-          selectedCode={codeHelperSelectedCode}
-          onSelectCode={setCodeHelperSelectedCode}
-          onClose={() => setCodeHelperOpen(false)}
-        />
-      )}
-      {soundPreviewOpen && (
-        <ResultSoundPreviewPanel
-          project={project}
-          catalog={catalog}
-          previewContext={previewContext}
-          onClose={() => setSoundPreviewOpen(false)}
-        />
-      )}
-      {targetPreview && (
-        <EncounterResultTargetPreviewPanel
-          project={project}
-          catalog={catalog}
-          preview={targetPreview}
-          previewContext={previewContext}
-          onChange={(value) => {
-            onUpdate(targetPreview.slot, { id: value });
-            setTargetPreview((current) => current ? { ...current, value } : null);
-          }}
-          onClose={() => setTargetPreview(null)}
-        />
-      )}
-    </section>
-  );
-}
-
-function ResultSoundPreviewPanel({
-  project,
-  catalog,
-  previewContext,
-  onClose
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  previewContext: PreviewRuntimeContext;
-  onClose: () => void;
-}) {
-  const options = useMemo(() => targetOptionsForOpcode(project, 9, catalog), [catalog, project]);
-  const [query, setQuery] = useState("");
-  const [selectedSoundId, setSelectedSoundId] = useState(0);
-  const typedSoundOption = useMemo(() => soundReferenceOptionForQuery(9, query), [query]);
-  const filteredOptions = useMemo(() => {
-    const matches = filterScriptTargetOptions(options, query);
-    if (typedSoundOption && !matches.some((option) => Math.abs(option.value) === Math.abs(typedSoundOption.value))) {
-      return [typedSoundOption, ...matches];
-    }
-    return matches;
-  }, [options, query, typedSoundOption]);
-  const selectedOption = useMemo(
-    () => targetOptionForOpcodeValue(project, 9, selectedSoundId, catalog),
-    [catalog, project, selectedSoundId]
-  );
-  const visibleOptions = selectedOption && !filteredOptions.some((option) => option.key === selectedOption.key)
-    ? [selectedOption, ...filteredOptions.slice(0, 159)]
-    : filteredOptions.slice(0, 160);
-  const selectedPreviewUrl = useEncounterSoundPreviewUrl(selectedOption, selectedSoundId, project, previewContext);
-
-  useEffect(() => {
-    if (selectedSoundId !== 0 || visibleOptions.length === 0) return;
-    const previewable = visibleOptions.find((option) => option.previewPath || option.managedAsset?.previewPath || option.libraryAsset?.previewPath);
-    setSelectedSoundId(previewable?.value ?? visibleOptions[0].value);
-  }, [selectedSoundId, visibleOptions]);
-
-  const selectedDetail = selectedOption
-    ? [selectedOption.detail, selectedOption.summary, selectedOption.compatibility, selectedOption.sourceState].filter(Boolean).join(" | ")
-    : selectedSoundId
-      ? "Reference only; no preview source loaded"
-      : "Choose a sound to preview.";
-
-  return (
-    <FloatingWorkbenchPanel
-      title="Preview Sound"
-      eyebrow="Encounter Results"
-      storageKey="encounters.soundPreview.position"
-      defaultWidth={560}
-      defaultHeight={430}
-      minWidth={420}
-      minHeight={320}
-      className="encounter-sound-preview-panel"
-      actions={(
-        <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>
-          Close
-        </button>
-      )}
-    >
-      <div className="encounter-sound-preview-body">
-        <label className="encounter-sound-preview-picker">
-          <span>Sound</span>
-          <input
-            type="search"
-            value={query}
-            placeholder="Search sounds or type snd 624..."
-            onChange={(event) => setQuery(event.currentTarget.value)}
-          />
-          <select
-            value={selectedSoundId ? String(Math.abs(selectedSoundId)) : ""}
-            onChange={(event) => setSelectedSoundId(Number(event.currentTarget.value))}
-          >
-            <option value="">Choose sound...</option>
-            {visibleOptions.map((option) => (
-              <option key={option.key} value={Math.abs(option.value)}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <section className="encounter-sound-preview-card">
-          <header>
-            <Volume2 size={16} />
-            <div>
-              <strong>{selectedOption?.label ?? (selectedSoundId ? `Sound ${Math.abs(selectedSoundId)}` : "No Sound Selected")}</strong>
-              <small>{selectedDetail}</small>
-            </div>
-          </header>
-          <div className="encounter-sound-preview-actions">
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              disabled={!selectedPreviewUrl}
-              title={selectedPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
-              onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
-            >
-              <Volume2 size={13} /> Play
-            </button>
-            {!selectedPreviewUrl && (
-              <span>No playable preview is available. Reference-only sounds can still be used with the Play Sound code.</span>
-            )}
-          </div>
-        </section>
-        {filteredOptions.length > visibleOptions.length && (
-          <small className="target-picker-empty">{filteredOptions.length - visibleOptions.length} more sound(s); search to narrow.</small>
-        )}
-      </div>
-    </FloatingWorkbenchPanel>
-  );
-}
-
-function useEncounterSoundPreviewUrl(
-  option: ScriptTargetOption | null,
-  soundId: number,
-  project: Project,
-  previewContext: PreviewRuntimeContext
-) {
-  const resourceId = soundId ? Math.abs(soundId) : option?.value ?? null;
-  return useResolvedPreviewUrl(
-    option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
-    option?.managedAsset ?? null,
-    option?.libraryAsset ?? null,
-    { ...previewContext, project, resourceType: "snd ", resourceId }
-  );
-}
-
-function EncounterResultTargetPreviewPanel({
-  project,
-  catalog,
-  preview,
-  previewContext,
-  onChange,
-  onClose
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  preview: { slot: number; opcode: number; value: number };
-  previewContext: PreviewRuntimeContext;
-  onChange: (value: number) => void;
-  onClose: () => void;
-}) {
-  const opcode = resultActionBaseCode(preview.opcode);
-  const targetId = resolveSignedMessageTarget(opcode, preview.value);
-  const targetType = realmzScriptStepDescriptorFor(opcode).targetType;
-  const option = targetOptionForOpcodeValue(project, opcode, preview.value, catalog);
-  const action = actionOptionFor(opcode);
-  const picker = targetPickerConfig(opcode);
-  const title = option?.label ?? `${picker?.label ?? action.shortLabel} ${targetId}`;
-  const targetTypeLabel = picker?.label ?? (targetType ? targetType.replace(/([a-z])([A-Z])/g, "$1 $2") : "Referenced resource");
-  const detail = [option?.detail, option?.summary, option?.compatibility, option?.sourceState]
-    .filter(Boolean)
-    .join(" | ");
-  return (
-    <FloatingWorkbenchPanel
-      title={title}
-      eyebrow={`Result CODE ${opcode} | ID ${preview.value}`}
-      storageKey="encounters.resultTargetPreview.position"
-      defaultWidth={620}
-      defaultHeight={480}
-      minWidth={420}
-      minHeight={300}
-      className="encounter-result-target-preview-panel"
-      actions={(
-        <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Close target preview" title="Close" onClick={onClose}>
-          <X size={12} />
-        </button>
-      )}
-    >
-      <div className="encounter-result-target-preview-body">
-        <header>
-          <div>
-            <strong>{action.shortLabel}</strong>
-            <small>Read-only preview. Selecting the eye does not leave this encounter.</small>
-          </div>
-          <span>{targetTypeLabel}</span>
-        </header>
-        {picker && (
-          <div className="encounter-result-target-picker">
-            <TargetPicker
-              project={project}
-              catalog={catalog}
-              opcode={opcode}
-              value={preview.value}
-              onChange={onChange}
-              showDetail={false}
-              showTargetCount={false}
-              previewContext={previewContext}
-            />
-          </div>
-        )}
-        {detail && <p className="encounter-result-target-preview-detail">{detail}</p>}
-        <EncounterResultTargetPreviewContent
-          project={project}
-          catalog={catalog}
-          opcode={opcode}
-          targetId={targetId}
-          targetType={targetType}
-          option={option}
-          previewContext={previewContext}
-        />
-      </div>
-    </FloatingWorkbenchPanel>
-  );
-}
-
-function EncounterResultTargetPreviewContent({
-  project,
-  catalog,
-  opcode,
-  targetId,
-  targetType,
-  option,
-  previewContext
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  opcode: number;
-  targetId: number;
-  targetType?: RealmzTargetRecordKind;
-  option: ScriptTargetOption | null;
-  previewContext: PreviewRuntimeContext;
-}) {
-  if (targetType === "message") {
-    const record = project.messages?.find((candidate) => candidate.id === targetId);
-    return record ? (
-      <section className="encounter-result-message-preview">
-        <strong>String {targetId}</strong>
-        <p>{record.text || "This string is empty."}</p>
-      </section>
-    ) : <EmptyState compact title={`String ${targetId} is missing`} body="Create or select a stored string before relying on this result." />;
-  }
-  if (targetType === "battle") {
-    const record = project.battles?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <TargetSummaryCard project={project} catalog={catalog} recordType="battle" id={targetId} record={record} />
-      : <EmptyState compact title={`Battle ${targetId} is missing`} body="Choose an existing battle or create this target." />;
-  }
-  if (targetType === "monster") {
-    const record = project.monsters?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <TargetSummaryCard project={project} catalog={catalog} recordType="monster" id={targetId} record={record} />
-      : <EmptyState compact title={`Monster ${targetId} is missing`} body="Choose an existing monster or create this target." />;
-  }
-  if (targetType === "treasure") {
-    const record = project.treasures?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <TargetSummaryCard project={project} catalog={catalog} recordType="treasure" id={targetId} record={record} />
-      : <EmptyState compact title={`Treasure ${targetId} is missing`} body="Choose an existing treasure or create this target." />;
-  }
-  if (targetType === "shop") {
-    const record = project.shops?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <TargetSummaryCard project={project} catalog={catalog} recordType="shop" id={targetId} record={record} />
-      : <EmptyState compact title={`Shop ${targetId} is missing`} body="Choose an existing shop or create this target." />;
-  }
-  if (targetType === "simpleEncounter") {
-    const record = project.simpleEncounters?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <EncounterTargetCard project={project} recordType="simpleEncounter" id={targetId} record={record} />
-      : <EmptyState compact title={`Simple Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
-  }
-  if (targetType === "complexEncounter") {
-    const record = project.complexEncounters?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <EncounterTargetCard project={project} recordType="complexEncounter" id={targetId} record={record} />
-      : <EmptyState compact title={`Complex Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
-  }
-  if (targetType === "thiefEncounter") {
-    const record = project.thiefEncounters?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <EncounterTargetCard project={project} recordType="thiefEncounter" id={targetId} record={record} />
-      : <EmptyState compact title={`Rogue Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
-  }
-  if (targetType === "timedEncounter") {
-    const record = project.timedEncounters?.find((candidate) => candidate.id === targetId);
-    return record
-      ? <EncounterTargetCard project={project} recordType="timedEncounter" id={targetId} record={record} />
-      : <EmptyState compact title={`Time Encounter ${targetId} is missing`} body="Choose an existing encounter or create this target." />;
-  }
-  if (targetType === "questLabel") {
-    const record = project.questLabels?.find((candidate) => candidate.id === targetId);
-    return record ? (
-      <section className="encounter-result-message-preview">
-        <strong>{record.label || `Quest ${targetId}`}</strong>
-        <p>{record.note || `Story flag ${targetId} has no author note.`}</p>
-      </section>
-    ) : <EmptyState compact title={`Story Flag ${targetId} is unnamed`} body="Name this story flag before relying on it in a result." />;
-  }
-  return (
-    <EncounterResultResourcePreview
-      project={project}
-      opcode={opcode}
-      targetId={targetId}
-      option={option}
-      previewContext={previewContext}
-    />
-  );
-}
-
-function EncounterResultResourcePreview({
-  project,
-  opcode,
-  targetId,
-  option,
-  previewContext
-}: {
-  project: Project;
-  opcode: number;
-  targetId: number;
-  option: ScriptTargetOption | null;
-  previewContext: PreviewRuntimeContext;
-}) {
-  const resourceType = opcode === 9 ? "snd " : opcode === 27 ? "PICT" : null;
-  const previewUrl = useResolvedPreviewUrl(
-    option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null,
-    option?.managedAsset ?? null,
-    option?.libraryAsset ?? null,
-    { ...previewContext, project, resourceType, resourceId: Math.abs(targetId) }
-  );
-  const isAudio = opcode === 9 || option?.previewMimeType?.startsWith("audio/");
-  const isImage = opcode === 27 || option?.previewMimeType?.startsWith("image/");
-  if (!option) {
-    return <EmptyState compact title="No preview available" body={`Providence could not resolve ID ${targetId} to a stored target for this action.`} />;
-  }
-  return (
-    <section className="encounter-result-resource-preview">
-      <strong>{option.label}</strong>
-      {isImage && previewUrl && <img src={previewUrl} alt={`Preview of ${option.label}`} />}
-      {isAudio && (
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          disabled={!previewUrl}
-          title={previewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
-          onClick={() => previewUrl && playPreviewUrl(previewUrl)}
-        >
-          <Volume2 size={13} /> Play
-        </button>
-      )}
-      {!previewUrl && (isAudio || isImage) && <small>No media preview is available for this reference.</small>}
-      {!isAudio && !isImage && <p>{option.summary || option.detail || "No additional preview details are available."}</p>}
-    </section>
-  );
-}
-
-function SimpleEncounterActionCell({
-  project,
-  catalog,
-  slot,
-  row,
-  onUpdate,
-  onFocusCode,
-  onCreateTarget,
-  onPreviewTarget
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  slot: number;
-  row: EncounterActionRow;
-  onUpdate: (changes: Partial<EncounterActionRow>) => void;
-  onFocusCode: (code: number) => void;
-  onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
-  onPreviewTarget: (opcode: number, value: number) => void;
-}) {
-  const baseCode = resultActionBaseCode(row.rawCode);
-  const isNegativeAction = row.rawCode < 0;
-  const rowOption = actionOptionFor(baseCode);
-  const targetType = realmzScriptStepDescriptorFor(baseCode).targetType;
-  const selected = targetOptionForOpcodeValue(project, baseCode, row.id, catalog);
-  const resolvedValue = resolveSignedMessageTarget(baseCode, row.id);
-  const canCreate = Boolean(targetType && resolvedValue > 0 && !selected);
-  const populated = row.rawCode !== 0 || row.id !== 0;
-  const canPreview = baseCode !== 0 && Boolean(
-    selected || (targetType && targetRecordExists(project, targetType, resolvedValue))
-  );
-  const options = resultActionOptionsFor(baseCode);
-  const resolvedTitle = selected
-    ? [selected.label, signedTargetBehaviorLabel(baseCode, row.id)].filter(Boolean).join(" | ")
-    : resolvedValue !== 0
-      ? `Raw value ${row.id}`
-      : "No target";
-  return (
-    <div className={`simple-encounter-action-cell${populated ? " populated" : ""}`}>
-      <button
-        type="button"
-        className={`encounter-action-sign-toggle${isNegativeAction ? " active" : ""}`}
-        title={baseCode === 0 ? "Empty rows cannot be negative" : "Run the negative version of this code"}
-        aria-label={`Toggle negative result action ${slot}`}
-        disabled={baseCode === 0}
-        onClick={() => onUpdate({ rawCode: signedResultActionCode(baseCode, !isNegativeAction) })}
-      >
-        {isNegativeAction ? "-" : ""}
-      </button>
-      <select
-        aria-label={`Result action ${slot} opcode`}
-        value={baseCode}
-        title={rowOption ? `${rowOption.category}: ${rowOption.description}` : "Empty action row"}
-        onFocus={() => onFocusCode(baseCode)}
-        onChange={(event) => {
-          const nextCode = Number(event.currentTarget.value);
-          onUpdate({ rawCode: signedResultActionCode(nextCode, isNegativeAction) });
-        }}
-      >
-        {options.map((option) => (
-          <option key={option.code} value={option.code}>{option.code} {option.shortLabel}</option>
-        ))}
-      </select>
-      <label className="encounter-action-id-field">
-        <input
-          type="number"
-          value={row.id}
-          title={resolvedTitle}
-          aria-label={`Result action ${slot} ID`}
-          onFocus={() => onFocusCode(baseCode)}
-          onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
-        />
-      </label>
-      <div className="encounter-action-row-actions">
-        {canCreate ? (
-          <button
-            type="button"
-            className="encounter-action-create"
-            title={`Create ${targetType} ${resolvedValue}`}
-            aria-label={`Create result action ${slot} target`}
-            onClick={() => targetType && onCreateTarget(targetType, resolvedValue)}
-          >
-            <Plus size={12} />
-          </button>
-        ) : canPreview ? (
-          <button
-            type="button"
-            className="encounter-action-preview"
-            title={`Preview ${selected?.label ?? `${targetType} ${resolvedValue}`}`}
-            aria-label={`Preview result action ${slot} target`}
-            onClick={() => onPreviewTarget(baseCode, row.id)}
-          >
-            <Eye size={12} />
-          </button>
-        ) : <span className="encounter-action-preview-placeholder" aria-hidden="true" />}
-        {populated && (
-          <button
-            type="button"
-            className="encounter-action-clear"
-            title="Clear"
-            aria-label={`Clear result action ${slot}`}
-            onClick={() => onUpdate({ rawCode: 0, id: 0 })}
-          >
-            <X size={12} />
-          </button>
-        )}
-        {!populated && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
-      </div>
-    </div>
-  );
-}
-
-const RESULT_ACTION_OPTIONS = ACTION_OPTIONS.filter((option) => option.code >= 0);
-
-function resultActionBaseCode(code: number) {
-  return Math.abs(Number.isFinite(code) ? code : 0);
-}
-
-function signedResultActionCode(code: number, negative: boolean) {
-  const baseCode = resultActionBaseCode(code);
-  if (baseCode === 0) return 0;
-  return negative ? -baseCode : baseCode;
-}
-
-function resultActionOptionsFor(baseCode: number) {
-  if (RESULT_ACTION_OPTIONS.some((option) => option.code === baseCode)) return RESULT_ACTION_OPTIONS;
-  const fallback = actionOptionFor(baseCode);
-  return [fallback, ...RESULT_ACTION_OPTIONS];
-}
-
-type ResultCodeHelperListItem = {
-  code: number;
-  title: string;
-  alias?: string;
-  category: string;
-  description: string;
-  entries: DivinityOpcodeHelpEntry[];
-  searchText: string;
-};
-
-function ResultCodeHelperPanel({
-  selectedCode,
-  onSelectCode,
-  onClose
-}: {
-  selectedCode: number;
-  onSelectCode: (code: number) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const items = useMemo(() => buildResultCodeHelperItems(), []);
-  const filteredItems = useMemo(() => {
-    const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    if (terms.length === 0) return items;
-    return items.filter((item) => terms.every((term) => item.searchText.includes(term)));
-  }, [items, query]);
-  const selectedItem = items.find((item) => item.code === selectedCode) ?? filteredItems[0] ?? items[0];
-  const selectedEntries = selectedItem?.entries ?? [];
-  return (
-    <FloatingWorkbenchPanel
-      title="Code Helper"
-      eyebrow="Divinity Manual"
-      storageKey="encounters.resultCodeHelper.position"
-      defaultWidth={900}
-      defaultHeight={640}
-      minWidth={560}
-      minHeight={420}
-      className="encounter-code-helper-panel"
-      actions={(
-        <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>
-          Close
-        </button>
-      )}
-    >
-      <div className="encounter-code-helper-body">
-        <aside className="encounter-code-helper-list" aria-label="Divinity action codes">
-          <input
-            type="search"
-            value={query}
-            placeholder="Search codes..."
-            onChange={(event) => setQuery(event.currentTarget.value)}
-          />
-          <div className="encounter-code-helper-source">
-            <strong>{DIVINITY_OPCODE_HELP_SOURCE.opcodeEntryCount}</strong>
-            <span>manual code entries</span>
-          </div>
-          <div className="encounter-code-helper-results">
-            {filteredItems.map((item) => (
-              <button
-                key={item.code}
-                type="button"
-                className={item.code === selectedItem?.code ? "selected" : ""}
-                onClick={() => onSelectCode(item.code)}
-              >
-                <strong>{item.code} {item.title}</strong>
-                <small>{item.entries.length > 0 ? item.category : "No extracted manual text"}</small>
-              </button>
-            ))}
-            {filteredItems.length === 0 && (
-              <EmptyState title="No Matching Codes" body="Try searching by opcode number, title, target field, option, or E-Code text." />
-            )}
-          </div>
-        </aside>
-        <section className="encounter-code-helper-detail">
-          {selectedItem ? (
-            <>
-              <header>
-                <div>
-                  <strong>{selectedItem.code} {selectedItem.title}</strong>
-                  {selectedItem.alias && <small>Providence alias: {selectedItem.alias}</small>}
-                </div>
-                <span>{selectedItem.category}</span>
-              </header>
-              {selectedEntries.length === 0 ? (
-                <div className="field-warning">
-                  This action exists in Providence's action catalog, but no extracted Divinity manual text is available for this code.
-                </div>
-              ) : (
-                <div className="encounter-code-helper-entry-stack">
-                  {selectedEntries.map((entry) => (
-                    <article key={entry.resourceId} className="encounter-code-helper-entry">
-                      <header>
-                        <strong>{entry.title}</strong>
-                        <small>Manual text resource {entry.resourceId}; code{entry.codes.length === 1 ? "" : "s"} {entry.codes.join(", ")}</small>
-                      </header>
-                      {entry.summary && <p className="encounter-code-helper-summary">{entry.summary}</p>}
-                      <dl className="encounter-code-helper-fields">
-                        {codeHelperSectionsForEntry(entry).map((section) => (
-                          <CodeHelperField key={section.label} label={section.label} value={section.value} />
-                        ))}
-                      </dl>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <EmptyState title="No Code Selected" body="Choose a code from the list to read the Divinity manual text." />
-          )}
-        </section>
-      </div>
-    </FloatingWorkbenchPanel>
-  );
-}
-
-type CodeHelperSection = {
-  label: string;
-  value: string;
-};
-
-function CodeHelperField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="encounter-code-helper-field">
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
-}
-
-function codeHelperSectionsForEntry(entry: DivinityOpcodeHelpEntry): CodeHelperSection[] {
-  const parsed = parseCodeHelperManualText(entry.fullText, entry.codes);
-  const sections: CodeHelperSection[] = [];
-  const addSection = (label: string, value: string | undefined, fallback?: string) => {
-    const normalized = normalizeCodeHelperSection(label, value || fallback || "");
-    if (!normalized || normalized.toLowerCase() === "none listed") return;
-    sections.push({ label, value: normalized });
-  };
-
-  addSection("ID Field", parsed.get("ID"), entry.idField || "Not specified");
-  addSection("Use", parsed.get("Use"), entry.use || "Not specified");
-  addSection("Options", parsed.get("Options"), entry.options || "None");
-  addSection("E-Codes", parsed.get("E-Codes"), entry.extraCodes || "None");
-  addSection("Example", parsed.get("Example"));
-  addSection("Script Tip", parsed.get("Script Tip"));
-  addSection("Note", parsed.get("Note"));
-
-  if (sections.length === 0) {
-    sections.push({ label: "Manual Text", value: normalizeCodeHelperSection("Manual Text", entry.fullText) || "No extracted manual text." });
-  }
-  return sections;
-}
-
-function parseCodeHelperManualText(fullText: string | undefined, codes: number[] = []): Map<string, string> {
-  const sections = new Map<string, string>();
-  if (!fullText) return sections;
-  const normalized = sliceCodeHelperManualText(fullText, codes).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-  const pattern = /(^|\n)\s*(ID|Use|Options|E-Codes|Example|Script Tip|Note)\s*:?\s*/g;
-  const matches = Array.from(normalized.matchAll(pattern));
-  for (let index = 0; index < matches.length; index += 1) {
-    const match = matches[index];
-    const label = match[2];
-    const start = (match.index ?? 0) + match[0].length;
-    const end = index + 1 < matches.length ? matches[index + 1].index ?? normalized.length : normalized.length;
-    const value = normalized.slice(start, end);
-    const cleaned = normalizeCodeHelperRawText(value);
-    if (cleaned) sections.set(label, cleaned);
-  }
-  return sections;
-}
-
-function sliceCodeHelperManualText(fullText: string, codes: number[]) {
-  const normalized = fullText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\u00a0/g, " ");
-  const wantedCodes = new Set(codes);
-  if (wantedCodes.size === 0) return normalized;
-  const headings = Array.from(normalized.matchAll(/^Code\s+(-?\d+)\b[^\n]*/gim));
-  if (headings.length === 0) return normalized;
-  const startHeadingIndex = headings.findIndex((match) => wantedCodes.has(Number(match[1])));
-  if (startHeadingIndex < 0) return normalized;
-  const start = headings[startHeadingIndex].index ?? 0;
-  const nextHeading = headings
-    .slice(startHeadingIndex + 1)
-    .find((match) => !wantedCodes.has(Number(match[1])));
-  const end = nextHeading?.index ?? normalized.length;
-  return normalized.slice(start, end);
-}
-
-function normalizeCodeHelperSection(label: string, value: string | undefined): string {
-  if (label === "E-Codes") return formatCodeHelperEcodes(value);
-  return formatCodeHelperProse(value);
-}
-
-function normalizeCodeHelperRawText(value: string | undefined): string {
-  if (!value) return "";
-  return value
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .replace(/\t/g, " ")
-    .split("\n")
-    .map((line) => line.replace(/[ \f\v]+/g, " ").trim())
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-function formatCodeHelperProse(value: string | undefined): string {
-  return normalizeCodeHelperRawText(value)
-    .replace(/([^\n])\s+(?=(?:Example|Script Tip|Note):)/g, "$1\n\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-function formatCodeHelperEcodes(value: string | undefined): string {
-  const raw = normalizeCodeHelperRawText(value);
-  if (!raw) return "";
-  const prepared = raw
-    .replace(/(^|\n)\s*E-?Code\s*\n\s*(\d+)\)/gi, "$1\nE-Code $2)")
-    .replace(/(^|\n|\.\s+)E-?Code\s+(\d+)\)/gi, (_match, prefix: string, code: string) => {
-      const spacer = prefix.trim() ? `${prefix.trimEnd()}\n\n` : prefix;
-      return `${spacer}E-Code ${code})`;
-    })
-    .replace(/(^|\n)(E-Code \d+\))\s+/g, "$1$2\n")
-    .replace(/\n{3,}/g, "\n\n");
-  const lines = prepared.split("\n").map((line) => line.trim()).filter(Boolean);
-  const formatted: string[] = [];
-  let inNumberedEntry = false;
-  let previousWasHeading = false;
-
-  for (const line of lines) {
-    if (/^E-Code \d+\)/i.test(line)) {
-      if (formatted.length > 0 && formatted[formatted.length - 1] !== "") formatted.push("");
-      formatted.push(line.replace(/^E-Code/i, "E-Code"));
-      inNumberedEntry = false;
-      previousWasHeading = true;
-      continue;
-    }
-
-    if (/^\d+\)/.test(line)) {
-      formatted.push(line);
-      inNumberedEntry = true;
-      previousWasHeading = false;
-      continue;
-    }
-
-    if (inNumberedEntry && !previousWasHeading) {
-      formatted.push(`   ${line}`);
-    } else {
-      formatted.push(line);
-    }
-    previousWasHeading = false;
-  }
-
-  return formatted.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-}
-
-function buildResultCodeHelperItems(): ResultCodeHelperListItem[] {
-  const manualCodes = new Set(allDivinityOpcodeHelpEntries().flatMap((entry) => entry.codes).filter((code) => code >= 0));
-  const actionCodes = new Set(RESULT_ACTION_OPTIONS.map((option) => option.code));
-  const codes = Array.from(new Set([...manualCodes, ...actionCodes])).sort((left, right) => left - right);
-  return codes.map((code) => {
-    const action = actionOptionFor(code);
-    const entries = divinityHelpEntriesForOpcode(code);
-    const title = entries[0]?.title ?? action.displayTitle;
-    const searchText = [
-      code,
-      title,
-      action.aliasTitle,
-      action.category,
-      action.description,
-      ...entries.flatMap((entry) => [entry.title, entry.idField, entry.use, entry.options, entry.extraCodes, entry.summary, entry.fullText])
-    ].filter(Boolean).join(" ").toLowerCase();
-    return {
-      code,
-      title,
-      alias: action.aliasTitle,
-      category: action.category,
-      description: action.description,
-      entries,
-      searchText
-    };
-  });
-}
-
-const ROGUE_ACTION_LABELS = [
-  "Acrobatic Act",
-  "Detect Trap",
-  "Disarm Trap",
-  "Hear Noise",
-  "Force Lock",
-  "Move Silently",
-  "Pick Lock",
-  "Pick Pocket"
-];
 
 function ThiefEncounterShell({
   project,
@@ -6926,659 +5878,6 @@ function timedEncounterEligibilitySummary(record: Project["timedEncounters"][num
   return `${timing}; ${record.percent}% chance; ${location}${gates.length ? `; ${gates.join("; ")}` : ""}; ${runs}.`;
 }
 
-function EncounterResultEditor({
-  project,
-  catalog,
-  recordKind,
-  texts,
-  actionResult,
-  wordResult,
-  groups,
-  spellIds,
-  spellResults,
-  itemIds,
-  itemResults,
-  choiceResults,
-  wordResults,
-  actions,
-  onTextCommit,
-  onChoiceCommit,
-  onWordCommit,
-  onComplexCommit
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  recordKind: "simple" | "complex";
-  texts: string[];
-  actionResult: number;
-  wordResult: number;
-  groups: number[];
-  spellIds: number[];
-  spellResults: number[];
-  itemIds: number[];
-  itemResults: number[];
-  choiceResults: number[];
-  wordResults?: number[];
-  actions: EncounterActionRow[];
-  onTextCommit: (slot: number, text: string) => void;
-  onChoiceCommit: (slot: number, value: number) => void;
-  onWordCommit: (slot: number, value: number) => void;
-  onComplexCommit: (changes: Partial<Pick<Project["complexEncounters"][number], "actionResult" | "wordResult" | "groups" | "spellIds" | "spellResults" | "itemIds" | "itemResults" | "choiceResults" | "wordResults">>) => void;
-}) {
-  const count = recordKind === "simple" ? 4 : 9;
-  const maxLength = recordKind === "simple" ? 79 : 39;
-  if (recordKind === "complex") {
-    return (
-      <section className="encounter-result-editor complex-encounter-authoring">
-        <header className="visually-hidden">
-          <div>
-            <strong>Encounter Responses</strong>
-          </div>
-        </header>
-        <div className="complex-encounter-tool-grid">
-          <section className="complex-encounter-tool-panel complex-encounter-action-choice-panel">
-            <header>
-              <TutorialTip title="Action Picker Branch" body={COMPLEX_BAR_ACTIONS_HELP} side="below">
-                <strong>Action Choices</strong>
-              </TutorialTip>
-            </header>
-            <div className="complex-encounter-action-list">
-              {Array.from({ length: 8 }, (_, slot) => {
-                const text = texts[slot] ?? "";
-                return (
-                  <div key={slot} className="complex-encounter-action-option">
-                    <label className="complex-encounter-action-required" title={`Require action ${slot}`}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(groups[slot] ?? 0)}
-                        onChange={(event) => onComplexCommit({ groups: updateArraySlot(groups, slot, event.currentTarget.checked ? 1 : 0, 8) })}
-                      />
-                    </label>
-                    <span className="complex-encounter-action-index">{slot}</span>
-                    <label className="script-encounter-text-field complex-encounter-inline-text">
-                      <input
-                        key={`complex-action-${slot}-${text}`}
-                        type="text"
-                        defaultValue={text}
-                        maxLength={maxLength}
-                        onBlur={(event) => onTextCommit(slot, event.currentTarget.value)}
-                      />
-                    </label>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="complex-encounter-result-line">
-              <EncounterResultNumberField
-                label="Action Result"
-                value={actionResult}
-                actions={actions}
-                onCommit={(value) => onComplexCommit({ actionResult: value, choiceResults: [value, 0, 0, 0] })}
-              />
-            </div>
-          </section>
-          <ComplexEncounterResponseGrid
-            project={project}
-            catalog={catalog}
-            title="Magic Responses"
-            className="complex-encounter-magic-panel"
-            help={COMPLEX_SPELL_TESTS_HELP}
-            count={10}
-            kind="magic"
-            resultLabel="Magic Result"
-            ids={spellIds}
-            results={spellResults}
-            actions={actions}
-            onIdsCommit={(next) => onComplexCommit({ spellIds: next })}
-            onResultsCommit={(next) => onComplexCommit({ spellResults: next })}
-          />
-          <ComplexEncounterResponseGrid
-            project={project}
-            catalog={catalog}
-            title="Item Responses"
-            className="complex-encounter-item-panel"
-            help={COMPLEX_ITEM_TESTS_HELP}
-            count={5}
-            kind="item"
-            resultLabel="Item Result"
-            ids={itemIds}
-            results={itemResults}
-            actions={actions}
-            onIdsCommit={(next) => onComplexCommit({ itemIds: next })}
-            onResultsCommit={(next) => onComplexCommit({ itemResults: next })}
-          />
-          <section className="complex-encounter-tool-panel complex-encounter-word-panel">
-            <header>
-              <TutorialTip title="Word / Phrase Branch" body={COMPLEX_WORD_HELP} side="below">
-                <strong>Typed Reply</strong>
-              </TutorialTip>
-            </header>
-            <label className="script-encounter-text-field encounter-word-answer complex-encounter-inline-text">
-              <input
-                key={`complex-word-${texts[8] ?? ""}`}
-                type="text"
-                defaultValue={texts[8] ?? ""}
-                maxLength={maxLength}
-                onInput={(event) => {
-                  const lowered = event.currentTarget.value.toLowerCase();
-                  if (event.currentTarget.value !== lowered) event.currentTarget.value = lowered;
-                }}
-                onBlur={(event) => {
-                  const lowered = event.currentTarget.value.toLowerCase();
-                  event.currentTarget.value = lowered;
-                  onTextCommit(8, lowered);
-                }}
-              />
-              <small>Typed replies are stored lowercase; uppercase letters are converted automatically.</small>
-            </label>
-            <div className="complex-encounter-result-line">
-              <EncounterResultNumberField
-                label="Typed Reply Result"
-                value={wordResult}
-                actions={actions}
-                onCommit={(value) => onComplexCommit({ wordResult: value, wordResults: [value, 0, 0, 0] })}
-              />
-            </div>
-          </section>
-        </div>
-      </section>
-    );
-  }
-  const autoRunResultFour = (choiceResults[0] ?? 0) === SIMPLE_RESULT_AUTO_FAIL_SENTINEL;
-  return (
-    <section className="encounter-result-editor simple-encounter-options-panel">
-      <header>
-        <div>
-          <TutorialTip title="Simple Player Options" body={SIMPLE_OPTIONS_HELP} side="below">
-            <strong>Player Options</strong>
-          </TutorialTip>
-          <small>{count} classic Pascal text buffers, {maxLength} display bytes each</small>
-        </div>
-      </header>
-      {autoRunResultFour && (
-        <p className="simple-encounter-sentinel-note">This encounter skips the choice prompt and immediately runs Result #4.</p>
-      )}
-      <div className="encounter-result-table simple-encounter-options-table">
-        {Array.from({ length: 4 }, (_, slot) => {
-          const text = texts[slot] ?? "";
-          return (
-            <div key={slot} className="encounter-result-row simple-encounter-option-row">
-              <b>{`Option ${slot + 1}`}</b>
-              <label className="script-encounter-text-field">
-                <span>{encounterTextBufferLabel(recordKind, slot)}</span>
-                <textarea
-                  key={`simple-choice-${slot}-${text}`}
-                  defaultValue={text}
-                  maxLength={maxLength}
-                  onBlur={(event) => onTextCommit(slot, event.currentTarget.value)}
-                />
-                <small>{text.length}/{maxLength}</small>
-              </label>
-              <SimpleEncounterResultPicker
-                slot={slot}
-                value={choiceResults[slot] ?? 0}
-                actions={actions}
-                onCommit={(value) => onChoiceCommit(slot, value)}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function SimpleEncounterResultPicker({ slot, value, actions, onCommit }: { slot: number; value: number; actions: EncounterActionRow[]; onCommit: (value: number) => void }) {
-  const validValues = slot === 0 ? [0, 1, 2, 3, 4, SIMPLE_RESULT_AUTO_FAIL_SENTINEL] : [0, 1, 2, 3, 4];
-  const supported = validValues.includes(value);
-  const status = value === 0
-    ? "missing"
-    : value === SIMPLE_RESULT_AUTO_FAIL_SENTINEL && slot === 0
-      ? encounterResultStatus(actions, 4)
-      : supported
-        ? encounterResultStatus(actions, value)
-        : "out-of-range";
-  const statusLabel = value === 0
-    ? "No result"
-    : value === SIMPLE_RESULT_AUTO_FAIL_SENTINEL && slot === 0
-      ? "Auto-run Result #4"
-      : supported
-        ? resultStatusLabel(status)
-        : `Unsupported imported value ${value}`;
-  return (
-    <label className={`simple-encounter-result-picker is-${status}`} title={statusLabel}>
-      <span>Result #</span>
-      <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
-        <option value={0}>0 No result / unavailable</option>
-        <option value={1}>1 Result #1</option>
-        <option value={2}>2 Result #2</option>
-        <option value={3}>3 Result #3</option>
-        <option value={4}>4 Result #4</option>
-        {slot === 0 && <option value={SIMPLE_RESULT_AUTO_FAIL_SENTINEL}>-4 Auto-run Result #4</option>}
-        {!supported && <option value={value}>{`Unsupported imported value ${value}`}</option>}
-      </select>
-      <small>{statusLabel}</small>
-    </label>
-  );
-}
-
-const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
-
-function ComplexEncounterResponseGrid({
-  project,
-  catalog,
-  title,
-  className,
-  help,
-  count,
-  kind,
-  resultLabel,
-  ids,
-  results,
-  actions,
-  onIdsCommit,
-  onResultsCommit
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  title: string;
-  className?: string;
-  help?: string;
-  count: number;
-  kind: "magic" | "item";
-  resultLabel: string;
-  ids: number[];
-  results: number[];
-  actions: EncounterActionRow[];
-  onIdsCommit: (values: number[]) => void;
-  onResultsCommit: (values: number[]) => void;
-}) {
-  const [activeDraftSlots, setActiveDraftSlots] = useState<Set<number>>(() => new Set());
-  const [pickerSlot, setPickerSlot] = useState<number | null>(null);
-  const blankId = kind === "magic" ? MAGIC_RESPONSE_BLANK_SPELL_ID : 0;
-  const isBlankStoredValue = (slot: number) => {
-    const id = ids[slot] ?? 0;
-    const result = results[slot] ?? 0;
-    if (kind === "magic") return (id === 0 || id === MAGIC_RESPONSE_BLANK_SPELL_ID) && result === 0;
-    return id === 0 && result === 0;
-  };
-  const hasStoredValue = (slot: number) => !isBlankStoredValue(slot);
-  const hasVisibleValue = (slot: number) => hasStoredValue(slot) || activeDraftSlots.has(slot);
-  const isPreservedNoResult = (slot: number) => hasStoredValue(slot) && (results[slot] ?? 0) === 0;
-  const slots = Array.from({ length: count }, (_, slot) => slot);
-  const setDraftSlotActive = (slot: number, active: boolean) => {
-    setActiveDraftSlots((current) => {
-      const next = new Set(current);
-      if (active) next.add(slot);
-      else next.delete(slot);
-      return next;
-    });
-  };
-  return (
-    <section className={`complex-encounter-response-grid${className ? ` ${className}` : ""}`}>
-      <header>
-        {help ? (
-          <TutorialTip title={title} body={help} side="below">
-            <strong>{title}</strong>
-          </TutorialTip>
-        ) : (
-          <strong>{title}</strong>
-        )}
-      </header>
-      <div>
-        {slots.map((slot) => (
-          <div
-            key={slot}
-            className={`complex-encounter-response-row${!hasVisibleValue(slot) ? " is-unused" : ""}${isPreservedNoResult(slot) ? " is-preserved-no-result" : ""}`}
-          >
-            <b>{slot + 1}</b>
-            <EncounterResultNumberField
-              label={resultLabel}
-              value={results[slot] ?? 0}
-              actions={actions}
-              onDraftActiveChange={(active) => setDraftSlotActive(slot, active)}
-              onCommit={(value) => onResultsCommit(updateArraySlot(results, slot, value, count))}
-            />
-            {kind === "magic" ? (
-              <SpellResponseField
-                project={project}
-                catalog={catalog}
-                label="Spell / Scroll"
-                value={ids[slot] ?? 0}
-                onCommit={(value) => onIdsCommit(updateArraySlot(ids, slot, value, count))}
-              />
-            ) : (
-              <ComplexEncounterItemResponseField
-                project={project}
-                catalog={catalog}
-                responseNumber={slot + 1}
-                value={ids[slot] ?? 0}
-                onCommit={(value) => onIdsCommit(updateArraySlot(ids, slot, value, count))}
-              />
-            )}
-            <div className="encounter-action-row-actions complex-encounter-response-actions">
-              <button
-                type="button"
-                className="encounter-action-preview"
-                title={`Browse ${kind === "magic" ? "spells and scrolls" : "items"}`}
-                aria-label={`Browse ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
-                onClick={() => setPickerSlot(slot)}
-              >
-                <Eye size={12} />
-              </button>
-              {hasStoredValue(slot) && (
-                <button
-                  type="button"
-                  className="encounter-action-clear"
-                  title="Clear"
-                  aria-label={`Clear ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
-                  onClick={() => {
-                    onIdsCommit(updateArraySlot(ids, slot, blankId, count));
-                    onResultsCommit(updateArraySlot(results, slot, 0, count));
-                  }}
-                >
-                  <X size={12} />
-                </button>
-              )}
-              {!hasStoredValue(slot) && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
-            </div>
-          </div>
-        ))}
-      </div>
-      {pickerSlot != null && (
-        <ComplexEncounterResponsePickerPanel
-          key={`${kind}-${pickerSlot}`}
-          project={project}
-          catalog={catalog}
-          kind={kind}
-          responseNumber={pickerSlot + 1}
-          value={ids[pickerSlot] ?? 0}
-          onChange={(value) => onIdsCommit(updateArraySlot(ids, pickerSlot, value, count))}
-          onClose={() => setPickerSlot(null)}
-        />
-      )}
-    </section>
-  );
-}
-
-function deduplicatedItemResponseOptions(project: Project, catalog?: LibraryCatalog | null) {
-  const seen = new Set<number>();
-  return itemReferenceOptions(project, catalog).filter((option) => {
-    if (seen.has(option.value)) return false;
-    seen.add(option.value);
-    return true;
-  });
-}
-
-function ComplexEncounterItemResponseField({
-  project,
-  catalog,
-  responseNumber,
-  value,
-  onCommit
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  responseNumber: number;
-  value: number;
-  onCommit: (value: number) => void;
-}) {
-  const options = useMemo(() => deduplicatedItemResponseOptions(project, catalog), [catalog, project]);
-  const selected = options.find((option) => option.value === value) ?? null;
-  const selectedDetail = selected
-    ? [selected.label, selected.detail, selected.sourceState].filter(Boolean).join(" | ")
-    : value === 0
-      ? "No item response selected"
-      : `Imported item ID ${value}`;
-  return (
-    <label className="complex-encounter-item-response-field" title={selectedDetail}>
-      <select value={String(value)} aria-label={`Item response ${responseNumber}`} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
-        <option value="0">No item</option>
-        {value !== 0 && !selected && <option value={String(value)}>{`Item ${value}`}</option>}
-        {options.map((option) => (
-          <option key={option.key} value={String(option.value)}>{itemOptionDisplayName(option)}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function ComplexEncounterResponsePickerPanel({
-  project,
-  catalog,
-  kind,
-  responseNumber,
-  value,
-  onChange,
-  onClose
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  kind: "magic" | "item";
-  responseNumber: number;
-  value: number;
-  onChange: (value: number) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const spellOptions = useMemo(() => spellReferenceOptions(project, catalog), [catalog, project]);
-  const itemOptions = useMemo(() => deduplicatedItemResponseOptions(project, catalog), [catalog, project]);
-  const normalizedQuery = query.trim();
-  const selectedSpell = kind === "magic" ? spellOptions.find((option) => option.value === value) ?? null : null;
-  const selectedItem = kind === "item" ? itemOptions.find((option) => option.value === value) ?? null : null;
-  const filteredSpells = useMemo(() => {
-    if (kind !== "magic") return [];
-    if (!normalizedQuery) return spellOptions;
-    const needle = normalizedQuery.toLowerCase();
-    const numericQuery = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
-    return spellOptions.filter((option) =>
-      option.value === numericQuery
-      || option.label.toLowerCase().includes(needle)
-      || option.detail.toLowerCase().includes(needle)
-    );
-  }, [kind, normalizedQuery, spellOptions]);
-  const filteredItems = useMemo(() => {
-    if (kind !== "item") return [];
-    return normalizedQuery ? filterItemTargetOptions(itemOptions, normalizedQuery) : itemOptions;
-  }, [itemOptions, kind, normalizedQuery]);
-  const visibleSpells = filteredSpells.slice(0, 100);
-  const visibleItems = filteredItems.slice(0, 100);
-  const totalMatches = kind === "magic" ? filteredSpells.length : filteredItems.length;
-  const selectedLabel = kind === "magic"
-    ? selectedSpell?.label ?? (value === 0 || value === MAGIC_RESPONSE_BLANK_SPELL_ID ? "No spell or scroll selected" : `Unknown spell/scroll ${value}`)
-    : selectedItem ? itemOptionDisplayName(selectedItem) : value === 0 ? "No item selected" : `Item ${value}`;
-  const selectedDetail = kind === "magic"
-    ? selectedSpell?.detail ?? (value === 0 || value === MAGIC_RESPONSE_BLANK_SPELL_ID ? "This response does not test a spell or scroll." : `Imported spell/scroll ID ${value}`)
-    : selectedItem
-      ? [selectedItem.detail, selectedItem.sourceState].filter(Boolean).join(" | ")
-      : itemReferenceDetail(project, value, catalog);
-  const responseLabel = kind === "magic" ? "Magic Response" : "Item Response";
-  return (
-    <FloatingWorkbenchPanel
-      title={`${responseLabel} ${responseNumber}`}
-      eyebrow={kind === "magic" ? "Spell / Scroll Picker" : "Item Picker"}
-      storageKey={`encounters.${kind}ResponsePicker.position`}
-      defaultWidth={620}
-      defaultHeight={560}
-      minWidth={420}
-      minHeight={320}
-      className="complex-encounter-response-picker-panel"
-      actions={(
-        <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label={`Close ${responseLabel.toLowerCase()} picker`} title="Close" onClick={onClose}>
-          <X size={12} />
-        </button>
-      )}
-    >
-      <div className="complex-encounter-response-picker-body">
-        <section className={`complex-encounter-response-current${value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID) ? " is-empty" : ""}`}>
-          <span>Current Selection</span>
-          <strong>{selectedLabel}</strong>
-          <small>{selectedDetail}</small>
-        </section>
-        <label className="complex-encounter-response-search">
-          <span>{kind === "magic" ? "Search spells, scrolls, and spell classes" : "Search items"}</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder={kind === "magic" ? "Search spell, class, or ID..." : "Search item name, category, or ID..."}
-            aria-label={`Search ${responseLabel.toLowerCase()} options`}
-          />
-        </label>
-        <div className="complex-encounter-response-picker-summary">
-          <span>{totalMatches} match{totalMatches === 1 ? "" : "es"}</span>
-          {totalMatches > 100 && <small>Showing the first 100. Refine the search to narrow the list.</small>}
-        </div>
-        <div className="complex-encounter-response-picker-results">
-          <button
-            type="button"
-            className={value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID) ? "selected" : ""}
-            onClick={() => onChange(0)}
-          >
-            <b>-</b>
-            <span>
-              <strong>{kind === "magic" ? "No spell or scroll" : "No item"}</strong>
-              <small>Do not require this response target.</small>
-            </span>
-          </button>
-          {kind === "magic" ? visibleSpells.map((option) => (
-            <button key={option.key} type="button" className={option.value === value ? "selected" : ""} onClick={() => onChange(option.value)}>
-              <b>{option.value}</b>
-              <span>
-                <strong>{option.label}</strong>
-                <small>{option.detail}</small>
-              </span>
-            </button>
-          )) : visibleItems.map((option) => (
-            <button key={option.key} type="button" className={option.value === value ? "selected" : ""} onClick={() => onChange(option.value)}>
-              <b>{itemCategoryBadge(option.category)}</b>
-              <span>
-                <strong>{itemOptionDisplayName(option)} <em>#{option.value}</em></strong>
-                <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
-              </span>
-            </button>
-          ))}
-          {totalMatches === 0 && <EmptyState compact title="No matches" body="Try a name, category, or numeric ID from the response list." />}
-        </div>
-      </div>
-    </FloatingWorkbenchPanel>
-  );
-}
-
-function EncounterResultNumberField({
-  label,
-  value,
-  actions,
-  onCommit,
-  onDraftActiveChange
-}: {
-  label: string;
-  value: number;
-  actions: EncounterActionRow[];
-  onCommit: (value: number) => void;
-  onDraftActiveChange?: (active: boolean) => void;
-}) {
-  const [draft, setDraft] = useState(String(value));
-  useEffect(() => {
-    setDraft(String(value));
-    onDraftActiveChange?.(value !== 0);
-  }, [value]);
-  const commit = () => {
-    const next = Number(draft);
-    if (Number.isFinite(next) && next !== value) onCommit(next);
-  };
-  const status = value === 0 ? "missing" : encounterResultStatus(actions, value);
-  const statusLabel = value === 0 ? "No result" : resultStatusLabel(status);
-  return (
-    <label className={`encounter-result-number-field is-${status}`} title={statusLabel}>
-      <span>{label}</span>
-      <input
-        type="number"
-        value={draft}
-        onChange={(event) => {
-          const nextDraft = event.currentTarget.value;
-          setDraft(nextDraft);
-          onDraftActiveChange?.(Number(nextDraft) !== 0);
-        }}
-        onBlur={commit}
-      />
-    </label>
-  );
-}
-
-function SpellResponseField({ project, catalog, label, value, onCommit }: { project: Project; catalog?: LibraryCatalog | null; label: string; value: number; onCommit: (value: number) => void }) {
-  const options = useMemo(() => spellReferenceOptions(project, catalog), [project, catalog]);
-  const displayValue = value === MAGIC_RESPONSE_BLANK_SPELL_ID ? 0 : value;
-  const selected = options.find((option) => option.value === displayValue);
-  const visible = useMemo(() => {
-    const next = options.slice(0, 260);
-    if (selected && !next.some((option) => option.value === selected.value)) return [selected, ...next.slice(0, 219)];
-    return next;
-  }, [options, selected]);
-  return (
-    <label className="script-spell-response-field compact">
-      <span>{label}</span>
-      <select value={displayValue} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
-        <option value={0}>No spell or scroll</option>
-        {displayValue !== 0 && !options.some((option) => option.value === displayValue) && <option value={displayValue}>Unknown spell/scroll {displayValue}</option>}
-        {visible.map((option) => (
-          <option key={option.key} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-      <small>{selected ? selected.detail : displayValue ? `Unknown spell/scroll ${displayValue}` : "No spell or scroll selected."}</small>
-    </label>
-  );
-}
-
-type SpellResponseOption = {
-  key: string;
-  value: number;
-  label: string;
-  detail: string;
-};
-
-function spellReferenceOptions(project: Project, catalog?: LibraryCatalog | null): SpellResponseOption[] {
-  const options = new Map<number, SpellResponseOption>();
-  const add = (option: SpellResponseOption) => {
-    if (option.value === 0) return;
-    if (!options.has(option.value)) options.set(option.value, option);
-  };
-  [
-    ["spell-class:1", 1, "Heat/Fire spell class (1)", "Matches spells whose runtime spell class is Heat."],
-    ["spell-class:2", 2, "Cold spell class (2)", "Matches spells whose runtime spell class is Cold."],
-    ["spell-class:3", 3, "Electrical spell class (3)", "Matches spells whose runtime spell class is Electrical."],
-    ["spell-class:4", 4, "Chemical spell class (4)", "Matches spells whose runtime spell class is Chemical."],
-    ["spell-class:5", 5, "Mental spell class (5)", "Matches spells whose runtime spell class is Mental."],
-    ["spell-class:6", 6, "Magical spell class (6)", "Matches spells whose runtime spell class is Magical."]
-  ].forEach(([key, value, label, detail]) => add({ key: String(key), value: Number(value), label: String(label), detail: String(detail) }));
-  for (const spell of project.spellOverrides ?? []) {
-    const name = spell.displayName?.trim() || `Custom Spell ${spell.id}`;
-    add({
-      key: `project-spell:${spell.id}`,
-      value: spell.id,
-      label: `${name} (${spell.id})`,
-      detail: "Scenario custom spell override"
-    });
-  }
-  for (const entry of catalog?.records ?? []) {
-    if (entry.type !== "spell") continue;
-    const id = typeof entry.summary.packedSpellId === "number" ? entry.summary.packedSpellId : null;
-    if (id == null) continue;
-    const displayName = typeof entry.summary.displayName === "string" ? entry.summary.displayName.trim() : "";
-    add({
-      key: entry.id,
-      value: id,
-      label: `${displayName || entry.label || "Spell"} (${id})`,
-      detail: [
-        typeof entry.summary.spellLevel === "number" ? `level ${entry.summary.spellLevel}` : "",
-        typeof entry.summary.spellcasterClass === "number" ? `class ${entry.summary.spellcasterClass + 1}` : "",
-        entry.source
-      ].filter(Boolean).join(" | ")
-    });
-  }
-  return [...options.values()].sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
-}
-
 function EncounterActionRowEditor({
   project,
   catalog,
@@ -7669,7 +5968,7 @@ function ReferenceIdField({
     if (!optionsLoaded && !query.trim()) return selected ? [selected] : [];
     return targetOptionsForOpcode(project, opcode, catalog);
   }, [catalog, opcode, optionsLoaded, project, query, selected]);
-  const filteredOptions = useMemo(() => filterScriptTargetOptions(options, query), [options, query]);
+  const filteredOptions = useMemo(() => filterTargetOptions(options, query), [options, query]);
   const visibleOptions = useMemo(() => {
     const visible = filteredOptions.slice(0, 260);
     if (selected && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 259)];
@@ -7747,46 +6046,6 @@ function ReferenceIdField({
       )}
     </label>
   );
-}
-
-function updateArraySlot<T>(values: T[], index: number, value: T, minLength: number) {
-  const next = [...values];
-  while (next.length < minLength) next.push((typeof value === "number" ? 0 : "") as T);
-  next[index] = value;
-  return next;
-}
-
-function encounterActionAt(actions: EncounterActionRow[], slot: number): EncounterActionRow {
-  return actions.find((row) => row.slot === slot) ?? { slot, rawCode: 0, id: 0 };
-}
-
-function updateEncounterActionRow(actions: EncounterActionRow[], slot: number, changes: Partial<EncounterActionRow>) {
-  const next = new Map(actions.map((row) => [row.slot, { ...row }]));
-  const updated = { ...(next.get(slot) ?? { slot, rawCode: 0, id: 0 }), ...changes, slot };
-  if (updated.rawCode === 0 && updated.id === 0) {
-    next.delete(slot);
-  } else {
-    next.set(slot, updated);
-  }
-  return [...next.values()].sort((a, b) => a.slot - b.slot);
-}
-
-function encounterTextBufferLabel(recordKind: "simple" | "complex", slot: number) {
-  if (recordKind === "simple") {
-    return ["Choice 1 Label", "Choice 2 Label", "Choice 3 Label", "Choice 4 Label"][slot] ?? `Text Buffer ${slot}`;
-  }
-  const labels = [
-    "Action Option 0 Label",
-    "Action Option 1 Label",
-    "Action Option 2 Label",
-    "Action Option 3 Label",
-    "Action Option 4 Label",
-    "Action Option 5 Label",
-    "Action Option 6 Label",
-    "Action Option 7 Label",
-    "Word Answer"
-  ];
-  return labels[slot] ?? `Text Buffer ${slot}`;
 }
 
 function BattleGridEditor({
@@ -7979,7 +6238,7 @@ function TreasureCatalogAdder({
   const [query, setQuery] = useState("");
   const options = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
   const openSlot = firstOpenTreasureSlot(itemIds);
-  const filteredOptions = useMemo(() => filterItemTargetOptionsByCategory(options, query, category).slice(0, 36), [options, query, category]);
+  const filteredOptions = useMemo(() => filterItemReferenceOptionsByCategory(options, query, category).slice(0, 36), [options, query, category]);
   return (
     <CollapsibleSection title="Add Items" eyebrow="Divinity categories" count={openSlot >= 0 ? `next open slot ${openSlot}` : "full"} density="compact" className="script-item-catalog-section" defaultOpen>
       <div className="script-item-category-tabs">
@@ -8046,7 +6305,7 @@ function ShopStockEditor({
   const [changeAmount, setChangeAmount] = useState(1);
   const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
   const itemOptionsByValue = useMemo(() => new Map(itemOptions.map((option) => [option.value, option])), [itemOptions]);
-  const catalogItems = useMemo(() => filterItemTargetOptionsByCategory(itemOptions, catalogQuery, catalogCategory).slice(0, 72), [itemOptions, catalogQuery, catalogCategory]);
+  const catalogItems = useMemo(() => filterItemReferenceOptionsByCategory(itemOptions, catalogQuery, catalogCategory).slice(0, 72), [itemOptions, catalogQuery, catalogCategory]);
   const filledSlots = useMemo(() => {
     const slots: Array<{ slot: number; itemId: number; quantity: number; option: ItemReferenceOption | null }> = [];
     for (let index = 0; index < 1000; index += 1) {
@@ -8170,19 +6429,6 @@ function ShopItemIcon({
   );
 }
 
-function itemOptionDisplayName(option: ItemReferenceOption) {
-  return option.label.replace(/\s+\(-?\d+\)$/, "");
-}
-
-function itemCategoryBadge(category: ItemReferenceCategory) {
-  if (category === "weapon") return "W";
-  if (category === "armor") return "AR";
-  if (category === "accessory") return "AC";
-  if (category === "magic") return "M";
-  if (category === "supply") return "SP";
-  return "IT";
-}
-
 function clampShopQuantity(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(255, Math.trunc(value)));
@@ -8201,7 +6447,7 @@ function ItemIdField({ project, catalog, label, value, onCommit, compact = false
   const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
   const matchedOptions = useMemo(() => {
     if (!normalizedQuery) return [];
-    return filterItemTargetOptions(options, normalizedQuery).slice(0, 12);
+    return filterItemReferenceOptions(options, normalizedQuery).slice(0, 12);
   }, [normalizedQuery, options]);
   const rawQueryOption: ItemReferenceOption | null =
     queryNumber != null && !options.some((option) => option.value === queryNumber)
@@ -8335,37 +6581,6 @@ function monsterRequiredWeaponStoredCode(displayCode: number) {
 
 function normalizedByte(value: number) {
   return ((Math.trunc(Number.isFinite(value) ? value : 0) % 256) + 256) % 256;
-}
-
-function filterScriptTargetOptions(options: ReturnType<typeof targetOptionsForOpcode>, query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return options;
-  return options.filter((option) => [
-    option.value,
-    option.label,
-    option.detail,
-    option.summary,
-    option.compatibility,
-    option.sourceState
-  ].join(" ").toLowerCase().includes(normalized));
-}
-
-function filterItemTargetOptions(options: ReturnType<typeof itemReferenceOptions>, query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return options;
-  return options.filter((option) => [
-    option.value,
-    option.label,
-    option.detail,
-    option.summary,
-    option.sourceState
-  ].join(" ").toLowerCase().includes(normalized));
-}
-
-function filterItemTargetOptionsByCategory(options: ReturnType<typeof itemReferenceOptions>, query: string, category: ItemReferenceCategory | "all") {
-  return filterItemTargetOptions(options, query)
-    .filter((option) => option.value !== 0)
-    .filter((option) => category === "all" || option.category === category);
 }
 
 function filterMonsterTargetOptions(options: ReturnType<typeof monsterReferenceOptions>, query: string) {
