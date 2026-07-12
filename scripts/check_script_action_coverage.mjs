@@ -4,6 +4,17 @@ import path from "node:path";
 const root = process.cwd();
 const catalogPath = path.join(root, "src/editor/panels/scripts/scriptActionCatalog.ts");
 const panelPath = path.join(root, "src/editor/panels/ScriptsPanel.tsx");
+const actionPointModulePaths = [
+  "ActionPointActionChooser.tsx",
+  "ActionPointInlineTargetEditor.tsx",
+  "ActionPointRecordHeader.tsx",
+  "ActionPointSettingsEditor.tsx",
+  "ActionPointStepList.tsx",
+  "ActionPointStepToolbar.tsx",
+  "SelectedActionPointStepEditor.tsx",
+  "actionPointPresentation.ts",
+  "actionPointStepCommands.ts"
+].map((filename) => path.join(root, "src/editor/panels/scripts", filename));
 const itemIdFieldPath = path.join(root, "src/editor/panels/scripts/ItemIdField.tsx");
 const timedEncounterShellPath = path.join(root, "src/editor/panels/scripts/TimedEncounterShell.tsx");
 const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
@@ -44,6 +55,7 @@ const tutorialScriptsFixturePath = path.join(root, "tmp/editor-smoke-runs/202605
 
 const catalog = fs.readFileSync(catalogPath, "utf8");
 const panel = fs.readFileSync(panelPath, "utf8");
+const actionPointSurface = [panel, ...actionPointModulePaths.map((filePath) => fs.readFileSync(filePath, "utf8"))].join("\n");
 const itemIdField = fs.readFileSync(itemIdFieldPath, "utf8");
 const timedEncounterShell = fs.readFileSync(timedEncounterShellPath, "utf8");
 const scriptsCss = [scriptsCssPath, encountersCssPath].map((filePath) => fs.readFileSync(filePath, "utf8")).join("\n");
@@ -667,10 +679,10 @@ for (const snippet of [
   "&& !inlineDirectTargetPickerAvailable && !inlineDirectTargetEditorAvailable",
   "definitionForActionChooserUse",
   "canonicalActionChooserOpcode(definition.opcode)",
-  "actionChooserDefinitionMatchesDraft",
+  "actionChooserDefinitionMatchesOpcode",
   "onStepOpcodeChange"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Selected step detail is missing inline target drawer suppression: ${snippet}`);
+  if (!actionPointSurface.includes(snippet)) failures.push(`Selected step detail is missing inline target drawer suppression: ${snippet}`);
 }
 if (!itemIdField.includes("export function ItemIdField")) {
   failures.push("ItemIdField is missing.");
@@ -932,7 +944,7 @@ for (const snippet of [
   "surface: \"scripts\"",
   "Apply Step"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing shared dirty selected-step navigation guard behavior: ${snippet}`);
+  if (!actionPointSurface.includes(snippet)) failures.push(`Scripts surface is missing shared dirty selected-step navigation guard behavior: ${snippet}`);
 }
 for (const snippet of [
   "const previewEntity = useCallback",
@@ -946,14 +958,14 @@ for (const snippet of [
   "setPendingDestructiveAction",
   "const clearSelectedStep = () =>",
   "const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty || selectedEdcdStepDraft?.secondaryDirty);",
-  "disabled={!selectedAction && !selectedStepDirty}",
+  "disabled={!hasSelectedAction && !selectedStepDirty}",
   "kind: \"applyRealmzScriptStep\"",
   "secondaryEdcdValues",
   "onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}",
-  "onClick={clearSelectedStep}",
-  "onClick={clearSelectedScript}"
+  "onClear={clearSelectedStep}",
+  "onClear={clearSelectedScript}"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing AP draft guard regression handling: ${snippet}`);
+  if (!actionPointSurface.includes(snippet)) failures.push(`Scripts surface is missing AP draft guard regression handling: ${snippet}`);
 }
 for (const snippet of [
   "const openPreviewEntity = useCallback",
@@ -1010,7 +1022,7 @@ for (const snippet of [
   "<small>CODE</small>",
   "<small>ID</small>"
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing visible step CODE/ID storage behavior: ${snippet}`);
+  if (!actionPointSurface.includes(snippet)) failures.push(`Scripts surface is missing visible step CODE/ID storage behavior: ${snippet}`);
 }
 for (const snippet of [
   "return `${trigger.actions.length} step${trigger.actions.length === 1 ? \"\" : \"s\"}`;",
@@ -1056,7 +1068,7 @@ for (const snippet of [
   "combatMacroContext?.kind === \"battle\") return \"Battle Macro\"",
   "Battle / Monster / Item Action\") return \"Source-Linked Extra Action\""
 ]) {
-  if (!panel.includes(snippet)) failures.push(`Scripts panel is missing context-aware combat macro authoring support: ${snippet}`);
+  if (!actionPointSurface.includes(snippet)) failures.push(`Scripts surface is missing context-aware combat macro authoring support: ${snippet}`);
 }
 
 for (const snippet of [

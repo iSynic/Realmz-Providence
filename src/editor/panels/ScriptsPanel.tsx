@@ -89,6 +89,16 @@ import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } 
 import { edcdDraftValuesEqual, type EdcdStepDraft } from "./scripts/actionPointDraft";
 import { actionSlotIndexFromSelection, actionSlotSelectionId, includeSelectedTrigger } from "./scripts/actionPointSelection";
 import {
+  actionPointSlotDraft,
+  actionPointStepApplyCommand,
+  actionPointStepDraftDirty,
+  actionPointStepDraftKey,
+  removeActionPointEdcdDrafts,
+  removeActionPointStepDraft,
+  swapActionPointStepDrafts,
+  type ActionPointStepDrafts
+} from "./scripts/actionPointStepCommands";
+import {
   combatMacroContextBody,
   combatMacroContextLabel,
   combatMacroContextTitle,
@@ -368,7 +378,7 @@ function ScriptAuthoringPanel({
     [project, activeEditor]
   );
   const projectMaps = project?.maps ?? [];
-  const [draft, setDraft] = useState<Record<string, { rawCode: number; id: number }>>({});
+  const [draft, setDraft] = useState<ActionPointStepDrafts>({});
   const [edcdStepDrafts, setEdcdStepDrafts] = useState<Record<string, EdcdStepDraft>>({});
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<ScriptActionCategoryFilter>("All");
@@ -606,13 +616,11 @@ function ScriptAuthoringPanel({
     : selectedMapCapacity?.canCreate
       ? "Create an Action Point on the selected map, reusing the first empty slot when possible."
       : "This map has no reusable Action Point slots. Clear an existing Action Point to reuse its fixed Realmz record.";
-  const slotDraft = (slot: number, action?: Action) => draft[`${selectedTrigger?.id}:${slot}`] ?? { rawCode: action?.rawCode ?? 0, id: action?.id ?? 0 };
+  const slotDraft = (slot: number, action?: Action) => actionPointSlotDraft(draft, selectedTrigger?.id, slot, action);
   const selectedAction = selectedTrigger?.actions.find((candidate) => candidate.slot === selectedSlot);
-  const selectedKey = `${selectedTrigger?.id}:${selectedSlot}`;
+  const selectedKey = actionPointStepDraftKey(selectedTrigger?.id, selectedSlot);
   const selectedDraft = slotDraft(selectedSlot, selectedAction);
-  const selectedDraftDirty = selectedAction
-    ? selectedDraft.rawCode !== selectedAction.rawCode || selectedDraft.id !== selectedAction.id
-    : selectedDraft.rawCode !== 0 || selectedDraft.id !== 0;
+  const selectedDraftDirty = actionPointStepDraftDirty(selectedDraft, selectedAction);
   const selectedOption = actionOptionFor(selectedDraft.rawCode);
   const selectedEdcdDraftKey = selectedTrigger && selectedOption.edcdShape
     ? `${selectedKey}:${selectedDraft.rawCode}:${selectedDraft.id}:${selectedOption.edcdShape}`
@@ -751,49 +759,25 @@ function ScriptAuthoringPanel({
     });
   }, [selectedDefinition.defaultDraft.parameters, selectedEdcdDraftKey, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.values]);
   const discardSelectedDraft = useCallback(() => {
-    setDraft((current) => {
-      if (!(selectedKey in current)) return current;
-      const next = { ...current };
-      delete next[selectedKey];
-      return next;
-    });
-    setEdcdStepDrafts((current) => {
-      if (!selectedEdcdDraftPrefix || !Object.keys(current).some((key) => key.startsWith(selectedEdcdDraftPrefix))) return current;
-      const next = { ...current };
-      for (const key of Object.keys(next)) {
-        if (key.startsWith(selectedEdcdDraftPrefix)) delete next[key];
-      }
-      return next;
-    });
+    setDraft((current) => removeActionPointStepDraft(current, selectedKey));
+    setEdcdStepDrafts((current) => removeActionPointEdcdDrafts(current, selectedEdcdDraftPrefix));
   }, [selectedEdcdDraftPrefix, selectedKey]);
   const applySelectedSlot = useCallback(() => {
     if (!selectedTrigger || !onApplyCommand) return false;
-    if (selectedOption.edcdShape) {
-      const edcdValues = selectedEdcdStepDraft?.values
-        ?? normalizeEdcdValues(selectedEdcdUsageModel?.values ?? selectedDefinition.defaultDraft.parameters);
-      const secondaryEdcdValues = selectedEdcdUsageModel?.secondaryRowId == null
-        ? undefined
-        : selectedEdcdStepDraft?.secondaryValues ?? normalizeEdcdValues(selectedEdcdUsageModel.secondaryValues ?? undefined);
-      onApplyCommand({
-        kind: "applyRealmzScriptStep",
-        label: `Update slot ${selectedSlot}`,
-        triggerId: selectedTrigger.id,
-        slot: selectedSlot,
-        opcode: selectedDraft.rawCode,
-        id: selectedDraft.id,
-        edcdValues,
-        secondaryEdcdValues
-      });
-    } else {
-      onApplyCommand({
-        kind: "updateActionSlot",
-        label: `Update slot ${selectedSlot}`,
-        triggerId: selectedTrigger.id,
-        slot: selectedSlot,
-        rawCode: selectedDraft.rawCode,
-        id: selectedDraft.id
-      });
-    }
+    const edcdValues = selectedOption.edcdShape
+      ? selectedEdcdStepDraft?.values ?? normalizeEdcdValues(selectedEdcdUsageModel?.values ?? selectedDefinition.defaultDraft.parameters)
+      : undefined;
+    const secondaryEdcdValues = selectedOption.edcdShape && selectedEdcdUsageModel?.secondaryRowId != null
+      ? selectedEdcdStepDraft?.secondaryValues ?? normalizeEdcdValues(selectedEdcdUsageModel.secondaryValues ?? undefined)
+      : undefined;
+    onApplyCommand(actionPointStepApplyCommand({
+      triggerId: selectedTrigger.id,
+      slot: selectedSlot,
+      draft: { rawCode: selectedDraft.rawCode, id: selectedDraft.id },
+      edcdShape: selectedOption.edcdShape,
+      edcdValues,
+      secondaryEdcdValues
+    }));
     discardSelectedDraft();
     return true;
   }, [discardSelectedDraft, onApplyCommand, selectedDefinition.defaultDraft.parameters, selectedDraft.id, selectedDraft.rawCode, selectedEdcdStepDraft?.secondaryValues, selectedEdcdStepDraft?.values, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.secondaryValues, selectedEdcdUsageModel?.values, selectedOption.edcdShape, selectedSlot, selectedTrigger]);
@@ -876,18 +860,7 @@ function ScriptAuthoringPanel({
   };
   const moveSelectedStep = (toSlot: number) => {
     if (!selectedTrigger || toSlot < 0 || toSlot > 7 || toSlot === selectedSlot) return;
-    const fromKey = `${selectedTrigger.id}:${selectedSlot}`;
-    const toKey = `${selectedTrigger.id}:${toSlot}`;
-    setDraft((current) => {
-      const next = { ...current };
-      const fromDraft = next[fromKey];
-      const toDraft = next[toKey];
-      if (fromDraft) next[toKey] = fromDraft;
-      else delete next[toKey];
-      if (toDraft) next[fromKey] = toDraft;
-      else delete next[fromKey];
-      return next;
-    });
+    setDraft((current) => swapActionPointStepDrafts(current, selectedTrigger.id, selectedSlot, toSlot));
     performSelectStepSlot(toSlot);
     onApplyCommand?.({ kind: "swapActionSlots", label: "Move step", triggerId: selectedTrigger.id, fromSlot: selectedSlot, toSlot });
   };
