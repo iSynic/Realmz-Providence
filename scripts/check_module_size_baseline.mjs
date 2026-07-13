@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 
 const MODULE_BASELINES = [
   { path: "src/editor/panels/ScriptsPanel.tsx", maximum: 8587, owner: "ISY-315/ISY-316" },
-  { path: "src/editor/panels/CombatPanel.tsx", maximum: 6221, owner: "ISY-318" },
+  { path: "src/editor/panels/CombatPanel.tsx", maximum: 5812, owner: "ISY-318" },
   { path: "src/editor/scenarioSeed.ts", maximum: 22, owner: "ISY-317" },
   { path: "src/editor/panels/SuiteDomainPanel.tsx", maximum: 3884, owner: "ISY-319" },
   { path: "src/editor/components/MapContextSidebar.tsx", maximum: 2848, owner: "ISY-319" },

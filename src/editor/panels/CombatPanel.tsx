@@ -10,7 +10,7 @@ import { CONDITION_LABELS, RESISTANCE_TYPES } from "../rulesCatalog";
 import { spellAnimationFrameIds } from "../resourceIds";
 import { findLibraryResourceAsset, isActorOrCreatureIconId } from "../resourceResolver";
 import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } from "./scripts/scriptActionCatalog";
-import { LibraryAsset, LibraryCatalog, BattleGridCellChange, BattleRecord, IconEntry, MonsterIconOverride, MonsterRecord, MonsterSetId, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryAsset, LibraryCatalog, BattleRecord, IconEntry, MonsterIconOverride, MonsterRecord, MonsterSetId, Project, ProjectCommand, SelectedEntity } from "../types";
 import { BATTLE_RUNTIME_MONSTER_LIMIT, battleReferencesByMonster, countBattleRuntimeMonsterSlots, type BattleMonsterReference } from "../battleReferences";
 import { encodeCicnResource, mirrorRgbaHorizontally } from "../cicnEncoder";
 import { allMonsterScenarioIds, authorFacingMonsterRecordsForSet, authorFacingMonsterScenarioIds, isZeroBlankMonsterSlot } from "../monsterRecords";
@@ -58,6 +58,19 @@ import {
   type MonsterIconSourceStatus
 } from "./combat/iconSetModel";
 import { measureCombatWork, recordCombatPerf, useCombatRenderTiming } from "./combat/performance";
+import { BattleBoardCanvas, battleMonsterIconLookupKey } from "./combat/BattleBoardCanvas";
+import {
+  BATTLE_GRID_CELL_COUNT,
+  BATTLE_GRID_SIZE,
+  battleGridCells,
+  battleGridChanges,
+  battleGridStorageIndexFromDisplayCoords,
+  normalizeBattleGridForEditor,
+  topVisiblePlacementAtDisplayCell,
+  type BattleGridCellView,
+  type BattleGridPaintPreview,
+  type BattleGridPlacementView
+} from "./combat/battleGridModel";
 
 export {
   monsterIconPickerOptions,
@@ -70,39 +83,9 @@ export {
 export type { MonsterIconPickerOption, MonsterIconSourceStatus } from "./combat/iconSetModel";
 export type { CombatWorkbenchTab } from "./combat/combatLookups";
 
-type BattleGridCellView = {
-  index: number;
-  displayIndex: number;
-  displayCol: number;
-  displayRow: number;
-  value: number;
-  monsterId: number;
-  alternateSide: boolean;
-};
-
-type BattleGridPlacementView = BattleGridCellView & {
-  monster: MonsterRecord | null;
-  col: number;
-  row: number;
-  footprint: { width: number; height: number };
-};
-
-type BattleGridPaintPreview = {
-  anchorIndex: number;
-  col: number;
-  row: number;
-  footprint: { width: number; height: number };
-};
-
 type ResolvedBattleMonsterIcon = MonsterIconResolution & {
   resolvedUrl: string | null;
   cacheKey: string;
-};
-
-type BattleCanvasImage = HTMLImageElement | ImageBitmap;
-type BattleCanvasImageEntry = {
-  url: string | null;
-  image: BattleCanvasImage | null;
 };
 
 type BattleBrushMode = "select" | "paint" | "erase";
@@ -259,8 +242,6 @@ const MONSTER_ATTACK_SPECIAL_OPTIONS: CombatSelectOption[] = [
 const MONSTER_LIBRARY_DRAG_MIME = "application/x-realmz-monster-library-id";
 const SCENARIO_MONSTER_DRAG_MIME = "application/x-realmz-scenario-monster-id";
 const MONSTER_RECORD_BYTES = 210;
-const BATTLE_GRID_SIZE = 13;
-const BATTLE_GRID_CELL_COUNT = BATTLE_GRID_SIZE * BATTLE_GRID_SIZE;
 const BATTLE_SUMMON_SPACE_WARNING_LIMIT = 75;
 const MAX_DIVINITY_BATTLE_MONSTER_ID = 217;
 const MONSTER_GRID_ART_SIZE = 32;
@@ -1113,12 +1094,7 @@ function BattleBoard({
     }
   }, [battle.id, battle.grid]);
   const cells = useMemo<BattleGridCellView[]>(
-    () => measureCombatWork("BattleBoard cells", () => Array.from({ length: BATTLE_GRID_CELL_COUNT }, (_, displayIndex) => {
-      const index = battleGridStorageIndexFromDisplayIndex(displayIndex);
-      const { col: displayCol, row: displayRow } = battleGridDisplayCoordsFromStorageIndex(index);
-      const value = draftGrid[index] ?? 0;
-      return { index, displayIndex, displayCol, displayRow, value, monsterId: Math.abs(value), alternateSide: value < 0 };
-    })),
+    () => measureCombatWork("BattleBoard cells", () => battleGridCells(draftGrid)),
     [draftGrid]
   );
   const selectedCell = cells.find((cell) => cell.index === selectedIndex) ?? cells[0];
@@ -1493,18 +1469,6 @@ function BattleBoard({
   );
 }
 
-type BattleBoardCanvasProps = {
-  cells: BattleGridCellView[];
-  placements: BattleGridPlacementView[];
-  iconUrls: Record<string, ResolvedBattleMonsterIcon>;
-  paintPreview: BattleGridPaintPreview | null;
-  selectedIndex: number;
-  hoverIndex: number | null;
-  draggingIndex: number | null;
-};
-
-const battleCanvasImageCache = new Map<string, Promise<BattleCanvasImage | null>>();
-const battleCanvasResolvedImageCache = new Map<string, BattleCanvasImage | null>();
 const battleMonsterIconUrlCache = new Map<string, Promise<ResolvedBattleMonsterIcon>>();
 const battleMonsterResolvedIconUrlCache = new Map<string, ResolvedBattleMonsterIcon>();
 const battleMonsterFootprintCache = new Map<string, { width: number; height: number }>();
@@ -1608,10 +1572,6 @@ function uniqueBattleMonsterIconMonsters(monsters: MonsterRecord[]) {
   return [...byKey.values()];
 }
 
-function battleMonsterIconLookupKey(monster: MonsterRecord) {
-  return `${monster.id}:${monster.iconId}`;
-}
-
 function battleIconSourceKey(
   project: Project,
   iconEntries: Record<number, IconEntry>,
@@ -1698,113 +1658,6 @@ async function resolveBattleMonsterIcon(
     resolvedUrl: directUrl ?? fallbackUrl,
     cacheKey: battleMonsterIconLookupKey(monster)
   };
-}
-
-function BattleBoardCanvas({
-  cells,
-  placements,
-  iconUrls,
-  paintPreview,
-  selectedIndex,
-  hoverIndex,
-  draggingIndex
-}: BattleBoardCanvasProps) {
-  const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const monsterCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const interactionCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [imagesByPlacement, setImagesByPlacement] = useState<Record<string, BattleCanvasImageEntry>>({});
-
-  useEffect(() => {
-    let disposed = false;
-    const nextImages: Record<string, BattleCanvasImageEntry> = {};
-    const missing: Array<{ key: string; url: string | null }> = [];
-    for (const placement of placements) {
-      const key = battlePlacementCanvasKey(placement);
-      if (!placement.monster) {
-        nextImages[key] = { url: null, image: null };
-        continue;
-      }
-      const resolved = iconUrls[battleMonsterIconLookupKey(placement.monster)] ?? null;
-      const url = resolved?.resolvedUrl ?? null;
-      const cached = imagesByPlacement[key];
-      if (cached && cached.url === url) {
-        nextImages[key] = cached;
-      } else {
-        nextImages[key] = { url, image: url ? battleCanvasResolvedImageCache.get(url) ?? null : null };
-      }
-      if (url && !nextImages[key].image) missing.push({ key, url });
-    }
-    setImagesByPlacement(nextImages);
-    if (missing.length === 0) {
-      return () => {
-        disposed = true;
-      };
-    }
-    Promise.all(missing.map(async ({ key, url }) => {
-      const image = url ? await loadBattleCanvasImage(url) : null;
-      return [key, { url, image }] as const;
-    })).then((entries) => {
-      if (disposed) return;
-      setImagesByPlacement((current) => {
-        let changed = false;
-        const next = { ...current };
-        for (const [key, entry] of entries) {
-          if (next[key]?.url !== entry.url) continue;
-          if (next[key].image === entry.image) continue;
-          next[key] = entry;
-          changed = true;
-        }
-        return changed ? next : current;
-      });
-    }).catch(() => {
-      if (disposed) return;
-      setImagesByPlacement((current) => {
-        let changed = false;
-        const next = { ...current };
-        for (const { key, url } of missing) {
-          if (next[key]?.url !== url || next[key].image === null) continue;
-          next[key] = { url, image: null };
-          changed = true;
-        }
-        return changed ? next : current;
-      });
-    });
-    return () => {
-      disposed = true;
-    };
-  }, [iconUrls, placements]);
-
-  useEffect(() => {
-    const canvas = gridCanvasRef.current;
-    if (!canvas) return;
-    const { ctx, size } = syncBattleCanvas(canvas);
-    if (!ctx) return;
-    drawBattleGridLayer(ctx, size, cells);
-  }, [cells]);
-
-  useEffect(() => {
-    const canvas = monsterCanvasRef.current;
-    if (!canvas) return;
-    const { ctx, size } = syncBattleCanvas(canvas);
-    if (!ctx) return;
-    drawBattleMonsterLayer(ctx, size, placements, imagesByPlacement, draggingIndex);
-  }, [draggingIndex, imagesByPlacement, placements]);
-
-  useEffect(() => {
-    const canvas = interactionCanvasRef.current;
-    if (!canvas) return;
-    const { ctx, size } = syncBattleCanvas(canvas);
-    if (!ctx) return;
-    drawBattleInteractionLayer(ctx, size, cells, placements, paintPreview, selectedIndex, hoverIndex);
-  }, [cells, hoverIndex, paintPreview, placements, selectedIndex]);
-
-  return (
-    <>
-      <canvas ref={gridCanvasRef} className="battle-board-canvas battle-board-grid-canvas" aria-hidden="true" />
-      <canvas ref={monsterCanvasRef} className="battle-board-canvas battle-board-monster-canvas" aria-hidden="true" />
-      <canvas ref={interactionCanvasRef} className="battle-board-canvas battle-board-interaction-canvas" aria-hidden="true" />
-    </>
-  );
 }
 
 function MonsterPalette({
@@ -5721,268 +5574,6 @@ function rgbaToDataUrl(image: { width: number; height: number; rgba: Uint8Array 
 function uniqueSortedNumbers(values: number[]) {
   return [...new Set(values.filter((value) => Number.isFinite(value)).map((value) => Math.trunc(value)))]
     .sort((left, right) => left - right);
-}
-
-function battleGridStorageIndexFromDisplayIndex(displayIndex: number) {
-  const displayCol = displayIndex % BATTLE_GRID_SIZE;
-  const displayRow = Math.floor(displayIndex / BATTLE_GRID_SIZE);
-  return displayCol * BATTLE_GRID_SIZE + displayRow;
-}
-
-function battleGridStorageIndexFromDisplayCoords(displayCol: number, displayRow: number) {
-  return displayCol * BATTLE_GRID_SIZE + displayRow;
-}
-
-function battleGridDisplayCoordsFromStorageIndex(storageIndex: number) {
-  return {
-    col: Math.floor(storageIndex / BATTLE_GRID_SIZE),
-    row: storageIndex % BATTLE_GRID_SIZE
-  };
-}
-
-function topVisiblePlacementAtDisplayCell(placements: BattleGridPlacementView[], displayCol: number, displayRow: number) {
-  for (let index = placements.length - 1; index >= 0; index -= 1) {
-    if (placementIntersectsDisplayCell(placements[index], displayCol, displayRow)) return placements[index];
-  }
-  return null;
-}
-
-function placementIntersectsDisplayCell(placement: BattleGridPlacementView, displayCol: number, displayRow: number) {
-  const colSpan = Math.max(0.5, Math.min(placement.footprint.width, BATTLE_GRID_SIZE));
-  const rowSpan = Math.max(0.5, Math.min(placement.footprint.height, BATTLE_GRID_SIZE));
-  const leftCell = clamp(placement.col + 1 - colSpan, 0, BATTLE_GRID_SIZE - colSpan);
-  const topCell = clamp(placement.row + 1 - rowSpan, 0, BATTLE_GRID_SIZE - rowSpan);
-  return displayCol < leftCell + colSpan
-    && displayCol + 1 > leftCell
-    && displayRow < topCell + rowSpan
-    && displayRow + 1 > topCell;
-}
-
-function normalizeBattleGridForEditor(grid: number[] | undefined) {
-  return Array.from({ length: BATTLE_GRID_CELL_COUNT }, (_, index) => {
-    const value = grid?.[index] ?? 0;
-    return Number.isFinite(value) ? Math.trunc(value) : 0;
-  });
-}
-
-function battleGridChanges(fromGrid: number[], toGrid: number[]): BattleGridCellChange[] {
-  const changes: BattleGridCellChange[] = [];
-  for (let index = 0; index < BATTLE_GRID_CELL_COUNT; index += 1) {
-    const from = Number(fromGrid[index] ?? 0);
-    const to = Number(toGrid[index] ?? 0);
-    if (from !== to) changes.push({ index, from, to });
-  }
-  return changes;
-}
-
-function syncBattleCanvas(canvas: HTMLCanvasElement) {
-  const rect = canvas.getBoundingClientRect();
-  const size = Math.max(1, Math.round(Math.min(rect.width, rect.height)));
-  const scale = window.devicePixelRatio || 1;
-  const pixelSize = Math.max(1, Math.round(size * scale));
-  if (canvas.width !== pixelSize) canvas.width = pixelSize;
-  if (canvas.height !== pixelSize) canvas.height = pixelSize;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    ctx.setTransform(scale, 0, 0, scale, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-  }
-  return { ctx, size };
-}
-
-function drawBattleGridLayer(ctx: CanvasRenderingContext2D, size: number, cells: BattleGridCellView[]) {
-  ctx.clearRect(0, 0, size, size);
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, size, size);
-  const cellSize = size / BATTLE_GRID_SIZE;
-  ctx.fillStyle = "#f7f7f7";
-  for (const cell of cells) {
-    if (!cell.value) continue;
-    ctx.fillRect(cell.displayCol * cellSize, cell.displayRow * cellSize, cellSize, cellSize);
-  }
-  ctx.strokeStyle = "#b8b8b8";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let index = 1; index < BATTLE_GRID_SIZE; index += 1) {
-    const position = Math.round(index * cellSize) + 0.5;
-    ctx.moveTo(position, 0);
-    ctx.lineTo(position, size);
-    ctx.moveTo(0, position);
-    ctx.lineTo(size, position);
-  }
-  ctx.stroke();
-}
-
-function drawBattleMonsterLayer(
-  ctx: CanvasRenderingContext2D,
-  size: number,
-  placements: BattleGridPlacementView[],
-  imagesByPlacement: Record<string, BattleCanvasImageEntry>,
-  draggingIndex: number | null
-) {
-  ctx.clearRect(0, 0, size, size);
-  const cellSize = size / BATTLE_GRID_SIZE;
-  for (const placement of placements) {
-    const rect = battlePlacementRect(placement, cellSize);
-    ctx.save();
-    if (draggingIndex === placement.index) ctx.globalAlpha = 0.55;
-    const image = imagesByPlacement[battlePlacementCanvasKey(placement)]?.image ?? null;
-    if (image) drawImageContained(ctx, image, rect.x, rect.y, rect.width, rect.height);
-    else drawMissingBattleMonster(ctx, placement, rect);
-    if (placement.alternateSide) {
-      ctx.strokeStyle = "#2fa85f";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(rect.x + 1, rect.y + 1, Math.max(1, rect.width - 2), Math.max(1, rect.height - 2));
-      ctx.shadowColor = "#2fa85f";
-      ctx.shadowBlur = 4;
-      ctx.strokeRect(rect.x + 3, rect.y + 3, Math.max(1, rect.width - 6), Math.max(1, rect.height - 6));
-    }
-    ctx.restore();
-  }
-}
-
-function drawBattleInteractionLayer(
-  ctx: CanvasRenderingContext2D,
-  size: number,
-  cells: BattleGridCellView[],
-  placements: BattleGridPlacementView[],
-  paintPreview: BattleGridPaintPreview | null,
-  selectedIndex: number,
-  hoverIndex: number | null
-) {
-  ctx.clearRect(0, 0, size, size);
-  const cellSize = size / BATTLE_GRID_SIZE;
-  if (paintPreview) drawBattlePaintPreview(ctx, paintPreview, cellSize);
-  if (hoverIndex != null) {
-    const hover = cells.find((cell) => cell.index === hoverIndex);
-    if (hover) drawBattleCellOutline(ctx, hover.displayCol, hover.displayRow, cellSize, "#ff9d8f", 2);
-  }
-  const selectedCell = cells.find((cell) => cell.index === selectedIndex);
-  if (selectedCell) drawBattleCellOutline(ctx, selectedCell.displayCol, selectedCell.displayRow, cellSize, "#f2cb70", 3);
-  const selectedPlacement = placements.find((placement) => placement.index === selectedIndex);
-  if (selectedPlacement) {
-    const rect = battlePlacementRect(selectedPlacement, cellSize);
-    ctx.strokeStyle = "#f2cb70";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(rect.x + 2, rect.y + 2, Math.max(1, rect.width - 4), Math.max(1, rect.height - 4));
-  }
-}
-
-function drawBattlePaintPreview(ctx: CanvasRenderingContext2D, preview: BattleGridPaintPreview, cellSize: number) {
-  const coveredCells = battlePlacementCoveredDisplayCells(preview);
-  ctx.save();
-  for (const cell of coveredCells) {
-    if (cell.index === preview.anchorIndex) continue;
-    drawBattleCellFill(ctx, cell.col, cell.row, cellSize, "rgba(42, 158, 234, 0.24)", "rgba(42, 158, 234, 0.78)", 1.5);
-  }
-  const anchor = battleGridDisplayCoordsFromStorageIndex(preview.anchorIndex);
-  drawBattleCellFill(ctx, anchor.col, anchor.row, cellSize, "rgba(242, 203, 112, 0.38)", "rgba(255, 184, 71, 0.95)", 2.5);
-  ctx.restore();
-}
-
-function battlePlacementCoveredDisplayCells(preview: BattleGridPaintPreview) {
-  const colSpan = Math.max(0.5, Math.min(preview.footprint.width, BATTLE_GRID_SIZE));
-  const rowSpan = Math.max(0.5, Math.min(preview.footprint.height, BATTLE_GRID_SIZE));
-  const leftCell = clamp(preview.col + 1 - colSpan, 0, BATTLE_GRID_SIZE - colSpan);
-  const topCell = clamp(preview.row + 1 - rowSpan, 0, BATTLE_GRID_SIZE - rowSpan);
-  const left = Math.floor(leftCell);
-  const top = Math.floor(topCell);
-  const right = Math.min(BATTLE_GRID_SIZE, Math.ceil(leftCell + colSpan));
-  const bottom = Math.min(BATTLE_GRID_SIZE, Math.ceil(topCell + rowSpan));
-  const cells: Array<{ col: number; row: number; index: number }> = [];
-  for (let row = top; row < bottom; row += 1) {
-    for (let col = left; col < right; col += 1) {
-      cells.push({ col, row, index: battleGridStorageIndexFromDisplayCoords(col, row) });
-    }
-  }
-  return cells;
-}
-
-function drawBattleCellFill(ctx: CanvasRenderingContext2D, col: number, row: number, cellSize: number, fill: string, stroke: string, width: number) {
-  const inset = width / 2;
-  const x = col * cellSize;
-  const y = row * cellSize;
-  ctx.fillStyle = fill;
-  ctx.fillRect(x + 1, y + 1, Math.max(1, cellSize - 2), Math.max(1, cellSize - 2));
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = width;
-  ctx.strokeRect(x + inset, y + inset, cellSize - width, cellSize - width);
-}
-
-function drawBattleCellOutline(ctx: CanvasRenderingContext2D, col: number, row: number, cellSize: number, color: string, width: number) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  const inset = width / 2;
-  ctx.strokeRect(col * cellSize + inset, row * cellSize + inset, cellSize - width, cellSize - width);
-}
-
-function battlePlacementRect(placement: BattleGridPlacementView, cellSize: number) {
-  const colSpan = Math.max(0.5, Math.min(placement.footprint.width, BATTLE_GRID_SIZE));
-  const rowSpan = Math.max(0.5, Math.min(placement.footprint.height, BATTLE_GRID_SIZE));
-  const leftCell = clamp(placement.col + 1 - colSpan, 0, BATTLE_GRID_SIZE - colSpan);
-  const topCell = clamp(placement.row + 1 - rowSpan, 0, BATTLE_GRID_SIZE - rowSpan);
-  return {
-    x: leftCell * cellSize,
-    y: topCell * cellSize,
-    width: colSpan * cellSize,
-    height: rowSpan * cellSize
-  };
-}
-
-function drawImageContained(ctx: CanvasRenderingContext2D, image: BattleCanvasImage, x: number, y: number, width: number, height: number) {
-  const imageWidth = "naturalWidth" in image ? image.naturalWidth || image.width || 1 : image.width || 1;
-  const imageHeight = "naturalHeight" in image ? image.naturalHeight || image.height || 1 : image.height || 1;
-  const scale = Math.min(width / imageWidth, height / imageHeight);
-  const drawWidth = Math.max(1, imageWidth * scale);
-  const drawHeight = Math.max(1, imageHeight * scale);
-  const left = x + (width - drawWidth) / 2;
-  const top = y + (height - drawHeight) / 2;
-  ctx.drawImage(image, left, top, drawWidth, drawHeight);
-}
-
-function drawMissingBattleMonster(ctx: CanvasRenderingContext2D, placement: BattleGridPlacementView, rect: { x: number; y: number; width: number; height: number }) {
-  ctx.fillStyle = "#0b1620";
-  ctx.font = "bold 12px monospace";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(String(placement.monsterId || "?"), rect.x + rect.width / 2, rect.y + rect.height / 2);
-}
-
-function battlePlacementCanvasKey(placement: BattleGridPlacementView) {
-  return `${placement.index}:${placement.value}:${placement.monster?.iconId ?? 0}`;
-}
-
-function loadBattleCanvasImage(url: string) {
-  if (battleCanvasResolvedImageCache.has(url)) {
-    return Promise.resolve(battleCanvasResolvedImageCache.get(url) ?? null);
-  }
-  const cached = battleCanvasImageCache.get(url);
-  if (cached) return cached;
-  const request = loadBattleCanvasImageUncached(url).then((image) => {
-    battleCanvasResolvedImageCache.set(url, image);
-    return image;
-  });
-  battleCanvasImageCache.set(url, request);
-  return request;
-}
-
-async function loadBattleCanvasImageUncached(url: string): Promise<BattleCanvasImage | null> {
-  if (typeof window.createImageBitmap === "function") {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      return await window.createImageBitmap(blob);
-    } catch {
-      // Fall back to an HTML image below for URLs the browser cannot fetch as a blob.
-    }
-  }
-  return new Promise<BattleCanvasImage | null>((resolve) => {
-    const image = new Image();
-    image.decoding = "async";
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
-    image.src = url;
-  });
 }
 
 function battleBoardHoverTitle(
