@@ -1,19 +1,14 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { EditorState } from "../store";
-import { CustomMapStamp, DungeonCellFlag, LevelType, MapEntity, MapPaintMode, MapPaintVariation, MapPreviewFocalPoint, MapPreviewMode, MapRegionSelection, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, SmartBrushMaskCell, SmartBrushPreset, TilePaletteCategory, TilesetAsset, TriggerRecord } from "../types";
+import { LevelType, MapEntity, MapPreviewFocalPoint, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { RealmzMapCanvas } from "../components/MapCanvas";
-import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapSelectionSidebar, RandomAreasWorkbench, type LandLayoutCellSelection } from "../components/MapContextSidebar";
+import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapSelectionSidebar, RandomAreasWorkbench } from "../components/MapContextSidebar";
 import { MapViewFilters } from "../components/MapViewFilters";
-import { landlookGroupTiles } from "../map/paintGroups";
 import { buildPaintChanges, rectCells } from "../map/regionPaint";
 import { clearTileForMap } from "../map/tileClear";
-import { DUNGEON_CLEAR_TO_WALL_FLAGS, DUNGEON_DEFAULT_DRAW_FLAGS } from "../map/dungeonCellFlags";
-import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../map/smartTerrainBrush";
-import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../map/superTileStamps";
-import { readGlobalMapStamps, writeGlobalMapStamps } from "../map/customMapStamps";
+import { DUNGEON_CLEAR_TO_WALL_FLAGS } from "../map/dungeonCellFlags";
 import { randomRectEntityId } from "../map/geometry";
-
-const MAP_WORKBENCH_MODE_STORAGE_KEY = "providence.mapWorkbenchMode.v1";
+import { useMapWorkbenchState } from "./maps/useMapWorkbenchState";
 
 const MAP_WORKBENCH_MODES: Array<{ id: MapWorkbenchMode; label: string; description: string }> = [
   { id: "canvas", label: "Canvas", description: "Paint, sample, place Action Points, edit regions, and work directly on the map." },
@@ -71,25 +66,66 @@ export function MapsPanel({
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
 }) {
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  const [contextFocus, setContextFocus] = useState<"flags" | "atlas" | "layout" | "source">("flags");
-  const [workbenchMode, setWorkbenchMode] = useState<MapWorkbenchMode>(() => readStoredWorkbenchMode());
-  const [paintMode, setPaintMode] = useState<MapPaintMode>("brush");
-  const [paintVariation, setPaintVariation] = useState<MapPaintVariation>("single");
-  const [activePaintGroupId, setActivePaintGroupId] = useState("all");
-  const [paintPaletteMode, setPaintPaletteMode] = useState<TilePaletteCategory>("landlook");
-  const [dungeonDrawFlags, setDungeonDrawFlags] = useState<Record<DungeonCellFlag, boolean>>(DUNGEON_DEFAULT_DRAW_FLAGS);
-  const [activeCustomPaletteId, setActiveCustomPaletteId] = useState<string | null>(null);
-  const [selectedSuperTileStampId, setSelectedSuperTileStampId] = useState<string | null>(null);
-  const [globalMapStamps, setGlobalMapStamps] = useState<CustomMapStamp[]>(() => readGlobalMapStamps());
-  const [paletteVariationTiles, setPaletteVariationTiles] = useState<number[] | null>(null);
-  const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
-  const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
-  const [smartBrushPreset, setSmartBrushPreset] = useState<SmartBrushPreset>("mountains");
-  const [smartBrushMask, setSmartBrushMask] = useState<SmartBrushMaskCell[]>([]);
-  const [smartBrushDrawing, setSmartBrushDrawing] = useState(false);
-  const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
+  const {
+    shell: {
+      paletteOpen,
+      setPaletteOpen,
+      contextFocus,
+      setContextFocus,
+      workbenchMode,
+      setWorkbenchMode,
+      previewMode,
+      setPreviewMode,
+      previewFocalPoint,
+      setPreviewFocalPoint,
+      selectedLayoutCell,
+      setSelectedLayoutCell
+    },
+    paint: {
+      paintMode,
+      setPaintMode,
+      paintVariation,
+      setPaintVariation,
+      activePaintGroupId,
+      setActivePaintGroupId,
+      paintPaletteMode,
+      setPaintPaletteMode,
+      dungeonDrawFlags,
+      setDungeonDrawFlags,
+      activeCustomPaletteId,
+      setActiveCustomPaletteId,
+      variationTiles,
+      setPaletteVariationTiles,
+      selectedRegion,
+      setSelectedRegion
+    },
+    stamps: {
+      globalMapStamps,
+      setGlobalMapStamps,
+      selectedSuperTileStamp,
+      setSelectedSuperTileStampId
+    },
+    smartBrush: {
+      smartBrushPreset,
+      setSmartBrushPreset,
+      smartBrushMask,
+      setSmartBrushMask,
+      smartBrushDrawing,
+      setSmartBrushDrawing,
+      smartBrushPlan,
+      visibleSmartBrushPlan,
+      clearSmartBrushMask,
+      applySmartBrush
+    },
+    openCanvasTool
+  } = useMapWorkbenchState({
+    project: state.project,
+    selectedMap,
+    selectedTileset,
+    atlas,
+    onSetTool,
+    onApplyCommand
+  });
   const visibleTriggers = useMemo(
     () => state.showTriggers ? mapTriggers : [],
     [mapTriggers, state.showTriggers]
@@ -110,70 +146,6 @@ export function MapsPanel({
       return recordId != null && visibleIds.has(recordId);
     });
   }, [mapRecords, state.showMapRecords, state.visibleMapRecordIds]);
-  useEffect(() => {
-    setSelectedRegion(null);
-    setSmartBrushMask([]);
-    setSmartBrushDrawing(false);
-    setPreviewFocalPoint(null);
-  }, [selectedMap?.id]);
-  useEffect(() => {
-    localStorage.setItem(MAP_WORKBENCH_MODE_STORAGE_KEY, workbenchMode);
-  }, [workbenchMode]);
-  useEffect(() => {
-    writeGlobalMapStamps(globalMapStamps);
-  }, [globalMapStamps]);
-  const customPalettes = state.project?.editorMetadata?.tilePalettes ?? [];
-  const activeCustomPalette = customPalettes.find((palette) => palette.id === activeCustomPaletteId) ?? customPalettes[0] ?? null;
-  const availableSuperTileStamps = useMemo(
-    () => [
-      ...superTileStampsForMap(selectedMap, selectedTileset).map(builtInStampToMapStamp),
-      ...(state.project?.editorMetadata?.mapStamps ?? []).map((stamp) => customMapStampToMapStamp(stamp, "project")),
-      ...globalMapStamps.map((stamp) => customMapStampToMapStamp(stamp, "global"))
-    ],
-    [globalMapStamps, selectedMap, selectedTileset, state.project?.editorMetadata?.mapStamps]
-  );
-  const selectedSuperTileStamp = availableSuperTileStamps.find((stamp) => stamp.id === selectedSuperTileStampId) ?? availableSuperTileStamps[0] ?? null;
-  const variationTiles = paletteVariationTiles;
-  const smartBrushPlan = useMemo(
-    () => buildSmartTerrainChanges(selectedMap, smartBrushMask, smartBrushPreset, selectedTileset, atlas),
-    [atlas, selectedMap, selectedTileset, smartBrushMask, smartBrushPreset]
-  );
-  const visibleSmartBrushPlan = smartBrushDrawing
-    ? {
-        cells: [],
-        skipped: [],
-        changedCount: 0,
-        skippedCount: 0,
-        profileConfidence: smartBrushPlan.profileConfidence,
-        reason: smartBrushMask.length > 0 ? "Release the pointer to resolve the full smart terrain shape." : "Draw a smart terrain mask on the map."
-      }
-    : smartBrushPlan;
-  useEffect(() => {
-    if (customPalettes.length === 0) {
-      if (activeCustomPaletteId !== null) setActiveCustomPaletteId(null);
-      return;
-    }
-    if (!activeCustomPaletteId || !customPalettes.some((palette) => palette.id === activeCustomPaletteId)) {
-      setActiveCustomPaletteId(customPalettes[0].id);
-    }
-  }, [activeCustomPaletteId, customPalettes]);
-  useEffect(() => {
-    if (availableSuperTileStamps.length === 0) {
-      if (selectedSuperTileStampId !== null) setSelectedSuperTileStampId(null);
-      return;
-    }
-    if (!selectedSuperTileStampId || !availableSuperTileStamps.some((stamp) => stamp.id === selectedSuperTileStampId)) {
-      setSelectedSuperTileStampId(availableSuperTileStamps[0].id);
-    }
-  }, [availableSuperTileStamps, selectedSuperTileStampId]);
-  useEffect(() => {
-    if (paintMode !== "smart") return;
-    if (!selectedMap || selectedMap.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null) {
-      setPaintMode("brush");
-      setSmartBrushMask([]);
-      setSmartBrushDrawing(false);
-    }
-  }, [paintMode, selectedMap, selectedTileset]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isTextEditingTarget(event.target)) return;
@@ -230,11 +202,6 @@ export function MapsPanel({
   };
   const setPaintGroup = (groupId: string) => {
     setActivePaintGroupId(groupId);
-  };
-  const openCanvasTool = (tool: EditorState["activeTool"]) => {
-    setWorkbenchMode("canvas");
-    onSetTool(tool);
-    if (tool === "paint" || tool === "stamp") setPaletteOpen(true);
   };
   return (
     <>
@@ -418,22 +385,8 @@ export function MapsPanel({
         onSetSmartBrushPreset={setSmartBrushPreset}
         smartBrushMask={smartBrushMask}
         smartBrushPlan={visibleSmartBrushPlan}
-        onClearSmartBrushMask={() => {
-          setSmartBrushMask([]);
-          setSmartBrushDrawing(false);
-        }}
-        onApplySmartBrush={() => {
-          if (!selectedMap) return;
-          const cells = buildSmartTerrainPaintChanges(smartBrushPlan);
-          if (cells.length === 0) return;
-          onApplyCommand({
-            kind: "paintTiles",
-            label: `Smart ${smartBrushPreset} terrain`,
-            mapId: selectedMap.id,
-            cells
-          });
-          setSmartBrushMask([]);
-        }}
+        onClearSmartBrushMask={clearSmartBrushMask}
+        onApplySmartBrush={applySmartBrush}
         onSelectEntity={onSelectEntity}
         onApplyCommand={onApplyCommand}
         dungeonDrawFlags={dungeonDrawFlags}
@@ -481,12 +434,6 @@ function semanticMapRecordId(record: SemanticEntity) {
   if (typeof summaryId === "number" && Number.isFinite(summaryId)) return Math.trunc(summaryId);
   const match = /^map-record:(-?\d+)$/.exec(record.id);
   return match ? Number(match[1]) : null;
-}
-
-function readStoredWorkbenchMode(): MapWorkbenchMode {
-  if (typeof localStorage === "undefined") return "canvas";
-  const stored = localStorage.getItem(MAP_WORKBENCH_MODE_STORAGE_KEY);
-  return MAP_WORKBENCH_MODES.some((mode) => mode.id === stored) ? (stored as MapWorkbenchMode) : "canvas";
 }
 
 function MapModeSurface({

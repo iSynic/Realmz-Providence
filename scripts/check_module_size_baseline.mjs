@@ -43,6 +43,8 @@ const MODULE_BASELINES = [
   { path: "src/editor/components/maps/MapTileInspector.tsx", maximum: 133, owner: "ISY-319" },
   { path: "src/editor/components/maps/MapSelectionLinks.tsx", maximum: 86, owner: "ISY-319" },
   { path: "src/editor/components/maps/mapSelectionModel.ts", maximum: 75, owner: "ISY-319" },
+  { path: "src/editor/panels/MapsPanel.tsx", maximum: 477, owner: "ISY-319" },
+  { path: "src/editor/panels/maps/useMapWorkbenchState.ts", maximum: 214, owner: "ISY-319" },
   { path: "src-tauri/src/realmz.rs", maximum: 5173, owner: "ISY-320" },
   { path: "src/editor/styles/scripts.css", maximum: 8712, owner: "ISY-321" },
   { path: "src/editor/styles/maps.css", maximum: 6546, owner: "ISY-321" },
