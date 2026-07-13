@@ -559,9 +559,9 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:monster_storage_mutates_only_owned_fields",
-      "src-tauri/src/realmz.rs:write_monsters",
-      "src-tauri/src/realmz.rs:parse_monsters",
+      "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz/combat.rs:write_monsters",
+      "src-tauri/src/realmz/combat.rs:parse_monsters",
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
@@ -576,9 +576,9 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Alternate monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-      "src-tauri/src/realmz.rs:write_monster_set",
-      "src-tauri/src/realmz.rs:parse_monster_set",
+      "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+      "src-tauri/src/realmz/combat.rs:write_monster_set",
+      "src-tauri/src/realmz/combat.rs:parse_monster_set",
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
@@ -593,9 +593,9 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Alternate monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-      "src-tauri/src/realmz.rs:write_monster_set",
-      "src-tauri/src/realmz.rs:parse_monster_set",
+      "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+      "src-tauri/src/realmz/combat.rs:write_monster_set",
+      "src-tauri/src/realmz/combat.rs:parse_monster_set",
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],

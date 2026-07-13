@@ -662,9 +662,9 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:monster_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:write_monsters",
-        "src-tauri/src/realmz.rs:parse_monsters"
+        "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/combat.rs:write_monsters",
+        "src-tauri/src/realmz/combat.rs:parse_monsters"
       ],
       "fixtureGate": {
         "name": "monster-template-record-writer",
@@ -723,9 +723,9 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-        "src-tauri/src/realmz.rs:write_monster_set",
-        "src-tauri/src/realmz.rs:parse_monster_set"
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:write_monster_set",
+        "src-tauri/src/realmz/combat.rs:parse_monster_set"
       ],
       "fixtureGate": {
         "name": "alternate-monster-template-record-writer",
@@ -784,9 +784,9 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-        "src-tauri/src/realmz.rs:write_monster_set",
-        "src-tauri/src/realmz.rs:parse_monster_set"
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:write_monster_set",
+        "src-tauri/src/realmz/combat.rs:parse_monster_set"
       ],
       "fixtureGate": {
         "name": "alternate-monster-template-record-writer",

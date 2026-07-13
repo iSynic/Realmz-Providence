@@ -81,32 +81,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:monster_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:write_monsters",
-        "src-tauri/src/realmz.rs:parse_monsters",
+        "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/combat.rs:write_monsters",
+        "src-tauri/src/realmz/combat.rs:parse_monsters",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:monster_storage_mutates_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "monster_storage_mutates_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_monsters",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:write_monsters",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "write_monsters",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_monsters",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:parse_monsters",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "parse_monsters",
           "fileExists": true,
           "anchorPresent": true,
@@ -190,32 +190,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-        "src-tauri/src/realmz.rs:write_monster_set",
-        "src-tauri/src/realmz.rs:parse_monster_set",
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:write_monster_set",
+        "src-tauri/src/realmz/combat.rs:parse_monster_set",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_monster_set",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:write_monster_set",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "write_monster_set",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_monster_set",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:parse_monster_set",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "parse_monster_set",
           "fileExists": true,
           "anchorPresent": true,
@@ -299,32 +299,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-        "src-tauri/src/realmz.rs:write_monster_set",
-        "src-tauri/src/realmz.rs:parse_monster_set",
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:write_monster_set",
+        "src-tauri/src/realmz/combat.rs:parse_monster_set",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_monster_set",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:write_monster_set",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "write_monster_set",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_monster_set",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/combat.rs:parse_monster_set",
+          "file": "src-tauri/src/realmz/combat.rs",
           "anchor": "parse_monster_set",
           "fileExists": true,
           "anchorPresent": true,
