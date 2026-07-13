@@ -26,21 +26,18 @@ import {
   SimpleEncounterRecord,
   SmartBrushPreset,
   ThiefEncounterRecord,
-  TilesetAsset,
   TimedEncounterRecord,
   TreasureRecord,
   TriggerRecord
 } from "./types";
 import { nextResourceId } from "./mediaAssets";
 import { createBrowserProject, validateBrowserProject } from "./browser/project";
-import { landlookName, landlookPictId } from "./browser/realmzParser";
 import { clearActionPointMarker, ensureActionPointMarker, landCellSecretState, setLandCellSecretState } from "./map/actionPointMarkers";
 import { setDungeonCellFlags } from "./map/dungeonCellFlags";
 import { GENERATED_SMART_TERRAIN_PROFILES } from "./map/generatedSmartTerrainProfiles";
 import { isScenarioSeedNamedStampName, namedLandStampVariants, resolveNamedLandStamp, type ScenarioSeedNamedStampName } from "./map/namedLandStamps";
 import { isScenarioSeedNamedTileName, namedLandTileVariants, resolveNamedLandTile, type ScenarioSeedNamedTileName } from "./map/namedLandTiles";
 import { supportsSemanticRoads } from "./map/semanticRoads";
-import { buildSmartTerrainChanges } from "./map/smartTerrainBrush";
 import { normalizeSmartTerrainTile } from "./map/smartTerrainTopology";
 import { defaultStockCombatClearingTile, defaultStockHiddenWalkableTile, isStockCombatClearingTile, isStockHiddenWalkableTile } from "./map/secrets";
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
@@ -93,6 +90,7 @@ import {
 } from "./scenarioSeed/mapCompiler";
 import { drawLine, drawPath, mapStorageTileIndex, setTile } from "./scenarioSeed/mapPaintingPrimitives";
 import { applySemanticRoad, applySemanticRoute } from "./scenarioSeed/semanticRouting";
+import { applyTerrainCells, applyTerrainGroup } from "./scenarioSeed/terrainPainter";
 import { deterministicHash, terrainGeometryCells } from "./scenarioSeed/terrainGeometry";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
@@ -3522,46 +3520,6 @@ function isNearScatterProtectedCell(tiles: number[], cell: ScenarioSeedPoint, ma
     }
   }
   return false;
-}
-
-function applyTerrainGroup(
-  tiles: number[],
-  operation: Extract<ScenarioSeedMapOperation, { kind: "terrainGroup" }>,
-  mapContext: MapBuildContext
-) {
-  const cells = terrainGeometryCells(operation.geometry, mapContext.mapSeed, operation.terrain);
-  applyTerrainCells(tiles, cells, operation.terrain, mapContext);
-}
-
-function applyTerrainCells(tiles: number[], cells: ScenarioSeedPoint[], terrain: SmartBrushPreset, mapContext: MapBuildContext) {
-  const map: MapEntity = {
-    id: mapContext.mapSeed,
-    levelType: mapContext.levelType,
-    source: mapContext.levelType === "land" ? "Data LD" : "Data D",
-    index: Number(mapContext.mapSeed.split(":")[1] ?? 0),
-    name: mapContext.mapSeed,
-    width: MAP_SIZE,
-    height: MAP_SIZE,
-    tiles,
-    render: { tilesetId: `landlook-${mapContext.landlook}`, landlook: mapContext.landlook, mode: "outdoor-landlook" }
-  };
-  const tileset: TilesetAsset = {
-    id: `landlook-${mapContext.landlook}`,
-    landlook: mapContext.landlook,
-    name: landlookName(mapContext.landlook),
-    source: "scenario-seed",
-    available: true,
-    imagePath: null,
-    pictId: landlookPictId(mapContext.landlook),
-    tileWidth: 32,
-    tileHeight: 32,
-    columns: 20,
-    rows: 10,
-    custom: false,
-    baseTile: 1
-  };
-  const plan = buildSmartTerrainChanges(map, cells, terrain, tileset, null);
-  for (const cell of plan.cells) setTile(tiles, cell.x, cell.y, cell.to, mapContext.levelType);
 }
 
 function syncActionPointMarkers(maps: MapEntity[], triggers: TriggerRecord[]) {
