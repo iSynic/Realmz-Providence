@@ -1,4 +1,4 @@
-import { DragEvent, memo, MouseEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { DragEvent, MouseEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { browserReferenceIconUrl } from "../../browser/atlasPaths";
 import { TutorialTip } from "../../components/TutorialTip";
@@ -36,13 +36,10 @@ import {
 import { measureCombatWork, useCombatRenderTiming } from "./performance";
 import { MAX_DIVINITY_BATTLE_MONSTER_ID } from "./BattleBoard";
 import { FieldLabel, NumberField, TextAreaField, TextField, ToggleButton } from "./CombatFields";
-import {
-  MonsterIcon,
-  resolveMonsterIcon,
-  samePreviewContextInputs,
-  sameProjectIconInputs
-} from "./MonsterIconPreview";
+import { MonsterIcon, resolveMonsterIcon } from "./MonsterIconPreview";
 import { IconPairPreview, loadLibraryResourceBase64 } from "./IconPairResources";
+import { MonsterLibraryList } from "./MonsterLibraryList";
+import { ScenarioMonsterList, type ScenarioMonsterListEntry } from "./ScenarioMonsterList";
 
 
 type MonsterLibraryCopyEntry = {
@@ -56,16 +53,6 @@ type MonsterLibraryCopyEntry = {
 type PendingBattleReferenceRepair =
   | { kind: "clear"; monsterId: number; setId: MonsterSetId }
   | { kind: "switch"; fromId: number; toId: number; setId: MonsterSetId };
-
-type ScenarioMonsterListEntry = {
-  id: number;
-  normal: MonsterRecord | null;
-  monster: MonsterRecord | null;
-  mega: MonsterRecord | null;
-  active: MonsterRecord | null;
-  fallback: MonsterRecord | null;
-};
-
 
 const MONSTER_VARIANT_SCALE: Record<Exclude<MonsterSetId, 0>, {
   hitDice: number;
@@ -654,123 +641,63 @@ export function MonsterWorkbench({
     <>
     <div className="combat-record-layout monster-combined-layout">
       <div className="monster-source-lists">
-        <aside
-          className={`combat-record-list scrapbook-list combined-scrapbook-list${libraryDropActive ? " drop-active" : ""}`}
-          aria-label="Monster Library entries"
+        <MonsterLibraryList
+          entries={filteredLibrary}
+          query={libraryQuery}
+          selectedId={selectedLibrary?.id ?? null}
+          selectedIds={selectedLibraryIds}
+          selectionActive={activePreview === "library"}
+          populateMenuOpen={populateMenuOpen}
+          dropActive={libraryDropActive}
+          hasCustomEntries={libraryEntries.some(isProvidenceMonsterLibraryEntry)}
+          onQuery={setLibraryQuery}
+          onTogglePopulateMenu={() => setPopulateMenuOpen((open) => !open)}
+          onPopulateStock={populateStockMonsters}
+          onPopulateVisible={populateVisibleLibrary}
+          onPopulateCustom={populateCustomLibrary}
+          onSelect={selectLibraryMonster}
+          onDragStart={startLibraryDrag}
+          onDragEnd={() => {
+            setScenarioDropActive(false);
+            setLibraryDropActive(false);
+          }}
           onDragOver={allowLibraryDrop}
           onDragEnter={allowLibraryDrop}
           onDragLeave={leaveLibraryDrop}
           onDrop={dropMonsterToLibrary}
-        >
-          <header className="monster-list-header">
-            <div className="monster-list-heading-row">
-              <strong className="combat-pane-title">Monster Library</strong>
-              <div className="monster-list-actions">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-xs"
-                  onClick={() => setPopulateMenuOpen((open) => !open)}
-                >
-                  Populate Scenario...
-                </button>
-              </div>
-            </div>
-            {populateMenuOpen ? (
-              <div className="monster-populate-menu" role="menu" aria-label="Populate scenario from monster library">
-                <button type="button" className="btn btn-secondary btn-xs" onClick={populateStockMonsters}>
-                  Copy Stock Monsters
-                  <small>Fill missing built-in IDs.</small>
-                </button>
-                <button type="button" className="btn btn-secondary btn-xs" onClick={populateVisibleLibrary} disabled={filteredLibrary.length === 0}>
-                  Copy Visible Library
-                  <small>{filteredLibrary.length} visible entr{filteredLibrary.length === 1 ? "y" : "ies"}.</small>
-                </button>
-                <button type="button" className="btn btn-secondary btn-xs" onClick={populateCustomLibrary} disabled={!libraryEntries.some(isProvidenceMonsterLibraryEntry)}>
-                  Copy Custom Library
-                  <small>Providence entries only.</small>
-                </button>
-              </div>
-            ) : null}
-          </header>
-          <input value={libraryQuery} onChange={(event) => setLibraryQuery(event.currentTarget.value)} placeholder="Search monster library..." />
-          <div className="combat-record-scroll">
-            {filteredLibrary.map((entry) => {
-              const custom = isProvidenceMonsterLibraryEntry(entry);
-              const librarySelectionActive = activePreview === "library";
-              const selectedForCopy = librarySelectionActive && selectedLibraryIds.includes(entry.id);
-              const selectedLibraryEntry = librarySelectionActive && entry.id === selectedLibrary?.id;
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  draggable
-                  className={`${selectedLibraryEntry ? "selected" : ""}${selectedForCopy ? " multi-selected" : ""}`}
-                  aria-selected={selectedForCopy}
-                  onClick={(event) => selectLibraryMonster(entry, event)}
-                  onDragStart={(event) => startLibraryDrag(entry, event)}
-                  onDragEnd={() => {
-                    setScenarioDropActive(false);
-                    setLibraryDropActive(false);
-                  }}
-                >
-                  <ScrapbookMonsterIcon entry={entry} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} compact />
-                  <span>
-                    <strong>{scrapbookName(entry)}</strong>
-                    <small>{custom ? "Providence library" : "Built-in"} | {scrapbookFacts(entry)}</small>
-                    {selectedForCopy && selectedLibraryIds.length > 1 ? <small className="monster-selected-badge">Selected for copy</small> : null}
-                  </span>
-                </button>
-              );
-            })}
-            {filteredLibrary.length === 0 && <p className="empty-copy compact">No library monsters match that search.</p>}
-          </div>
-        </aside>
+          isCustom={isProvidenceMonsterLibraryEntry}
+          entryName={scrapbookName}
+          entryFacts={scrapbookFacts}
+          renderIcon={(entry) => (
+            <ScrapbookMonsterIcon entry={entry} iconEntries={iconEntries} lookups={lookups} previewContext={previewContext} compact />
+          )}
+        />
 
-        <aside
-          className={`combat-record-list scenario-monster-list${scenarioDropActive ? " drop-active" : ""}`}
-          aria-label="Scenario monster records"
+        <ScenarioMonsterList
+          entries={filtered}
+          query={query}
+          activeSetId={activeSetId}
+          selectedId={selectedId}
+          selectionActive={activePreview === "scenario"}
+          nextMonsterId={nextMonsterId}
+          dropActive={scenarioDropActive}
+          iconEntries={iconEntries}
+          project={project}
+          lookups={lookups}
+          previewContext={previewContext}
+          onQuery={setQuery}
+          onCreate={() => {
+            onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: nextMonsterId });
+            selectScenarioMonster(nextMonsterId);
+          }}
+          onSelect={selectScenarioMonster}
+          onDragStart={startScenarioDrag}
+          onDragEnd={() => setLibraryDropActive(false)}
           onDragOver={allowScenarioDrop}
           onDragEnter={allowScenarioDrop}
           onDragLeave={leaveScenarioDrop}
           onDrop={dropLibraryMonsterToScenario}
-        >
-          <header className="monster-list-header">
-            <div className="monster-list-heading-row">
-              <strong className="combat-pane-title">Scenario Monsters</strong>
-              <div className="monster-list-actions">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-xs"
-                  onClick={() => {
-                    onApplyCommand?.({ kind: "createTargetRecord", label: "Create monster", recordType: "monster", id: nextMonsterId });
-                    selectScenarioMonster(nextMonsterId);
-                  }}
-                >
-                  New Monster {nextMonsterId}
-                </button>
-              </div>
-            </div>
-          </header>
-          <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scenario monsters..." />
-          <div className="combat-record-scroll">
-            {filtered.map((entry) => (
-              <ScenarioMonsterRow
-                key={entry.id}
-                entry={entry}
-                activeSetId={activeSetId}
-                selected={activePreview === "scenario" && selectedId === entry.id}
-                iconEntries={iconEntries}
-                project={project}
-                lookups={lookups}
-                previewContext={previewContext}
-                onSelect={selectScenarioMonster}
-                onDragStart={startScenarioDrag}
-                onDragEnd={() => setLibraryDropActive(false)}
-              />
-            ))}
-            {filtered.length === 0 && <p className="empty-copy compact">No scenario monsters match that search.</p>}
-          </div>
-        </aside>
+        />
       </div>
 
       {activePreview === "library" && multiSelectedLibraryEntries.length > 1 ? (
@@ -867,62 +794,6 @@ export function MonsterWorkbench({
     ) : null}
     </>
   );
-}
-
-type ScenarioMonsterRowProps = {
-  entry: ScenarioMonsterListEntry;
-  activeSetId: MonsterSetId;
-  selected: boolean;
-  iconEntries: Record<number, IconEntry>;
-  project: Project;
-  lookups: CombatLookups;
-  previewContext: PreviewRuntimeContext;
-  onSelect: (id: number) => void;
-  onDragStart: (monster: MonsterRecord, event: DragEvent<HTMLButtonElement>) => void;
-  onDragEnd: () => void;
-};
-
-const ScenarioMonsterRow = memo(function ScenarioMonsterRow({
-  entry,
-  activeSetId,
-  selected,
-  iconEntries,
-  project,
-  lookups,
-  previewContext,
-  onSelect,
-  onDragStart,
-  onDragEnd
-}: ScenarioMonsterRowProps) {
-  const monster = entry.fallback;
-  if (!monster) return null;
-  return (
-    <button
-      type="button"
-      draggable
-      className={selected ? "selected" : ""}
-      onClick={() => onSelect(entry.id)}
-      onDragStart={(event) => onDragStart(monster, event)}
-      onDragEnd={onDragEnd}
-    >
-      <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} compact />
-      <span>
-        <strong>{monster.displayName || `Monster ${entry.id}`}</strong>
-        <small>{monsterFacts(monster)}</small>
-        <MonsterSetBadges entry={entry} activeSetId={activeSetId} />
-      </span>
-    </button>
-  );
-}, areScenarioMonsterRowPropsEqual);
-
-function areScenarioMonsterRowPropsEqual(previous: ScenarioMonsterRowProps, next: ScenarioMonsterRowProps) {
-  return previous.entry === next.entry
-    && previous.activeSetId === next.activeSetId
-    && previous.selected === next.selected
-    && previous.iconEntries === next.iconEntries
-    && previous.lookups === next.lookups
-    && samePreviewContextInputs(previous.previewContext, next.previewContext)
-    && sameProjectIconInputs(previous.project, next.project);
 }
 
 function BattleReferenceRepairDialog({
@@ -1052,27 +923,6 @@ function MonsterLibraryMultiSelection({
         ))}
       </div>
     </section>
-  );
-}
-
-function MonsterSetBadges({
-  entry,
-  activeSetId
-}: {
-  entry: { normal: MonsterRecord | null; monster: MonsterRecord | null; mega: MonsterRecord | null };
-  activeSetId: MonsterSetId;
-}) {
-  return (
-    <span className="monster-set-badges" aria-label="Monster set availability">
-      {MONSTER_SET_OPTIONS.map((option) => {
-        const available = option.id === 0 ? Boolean(entry.normal) : option.id === 1 ? Boolean(entry.monster) : Boolean(entry.mega);
-        return (
-          <span key={option.id} className={`${available ? "available" : "missing"}${activeSetId === option.id ? " active" : ""}`}>
-            {option.label}
-          </span>
-        );
-      })}
-    </span>
   );
 }
 
@@ -3094,10 +2944,6 @@ function monsterSetLabel(setId: MonsterSetId) {
 
 function monsterSetFile(setId: MonsterSetId) {
   return MONSTER_SET_OPTIONS.find((option) => option.id === setId)?.file ?? "Data MD";
-}
-
-function monsterFacts(monster: MonsterRecord) {
-  return `ID ${monster.id}, HD ${monster.hitDice}, armor ${monster.armor}, agility ${monster.agility}, icon ${monster.iconId}`;
 }
 
 function monsterGeneratePreviewRows(source: MonsterRecord) {
