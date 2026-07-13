@@ -387,14 +387,8 @@ export function MapsPanel({
         selectedRandomLevel={selectedRandomLevel}
         mapTriggers={mapTriggers}
         mapRecords={mapRecords}
-        onSelectMap={onSelectMap}
         onSelectTile={onSelectTile}
-        contextFocus={contextFocus}
         onSetContextFocus={setContextFocus}
-        previewMode={previewMode}
-        previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
-        onSetPreviewMode={setPreviewMode}
-        onSetPreviewFocalPoint={setPreviewFocalPoint}
         onSetTool={openCanvasTool}
         onSetViewFlag={onSetViewFlag}
         onOpenPalette={() => setPaletteOpen(true)}
