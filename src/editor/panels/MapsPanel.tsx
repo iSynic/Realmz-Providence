@@ -1,17 +1,10 @@
-import type { ReactNode } from "react";
 import { EditorState } from "../store";
 import { LevelType, MapEntity, MapPreviewFocalPoint, MapViewFlag, MapWorkbenchMode, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
-import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapSelectionSidebar, RandomAreasWorkbench } from "../components/MapContextSidebar";
+import { MapContextSidebar, MapSelectionSidebar } from "../components/MapContextSidebar";
+import { MapAuxiliaryWorkbenches } from "./maps/MapAuxiliaryWorkbenches";
 import { MapCanvasWorkbench } from "./maps/MapCanvasWorkbench";
 import { useMapSelectionShortcuts } from "./maps/useMapSelectionShortcuts";
 import { useMapWorkbenchState } from "./maps/useMapWorkbenchState";
-
-const MAP_WORKBENCH_MODES: Array<{ id: MapWorkbenchMode; label: string; description: string }> = [
-  { id: "canvas", label: "Canvas", description: "Paint, sample, place Action Points, edit regions, and work directly on the map." },
-  { id: "land-layout", label: "Land Layout", description: "Edit outdoor level adjacency for off-map travel." },
-  { id: "land-tiles", label: "Land Tiles", description: "Inspect landlook tiles, movement metadata, and combat expansion." },
-  { id: "random-areas", label: "Random Encounters", description: "Edit random encounter rectangles: priority, chance, battles, text, sounds, and extra AP doors." }
-];
 
 export function MapsPanel({
   state,
@@ -81,9 +74,7 @@ export function MapsPanel({
       previewMode,
       setPreviewMode,
       previewFocalPoint,
-      setPreviewFocalPoint,
-      selectedLayoutCell,
-      setSelectedLayoutCell
+      setPreviewFocalPoint
     },
     paint: {
       paintMode,
@@ -113,10 +104,6 @@ export function MapsPanel({
       smartBrushPreset,
       setSmartBrushPreset,
       smartBrushMask,
-      setSmartBrushMask,
-      smartBrushDrawing,
-      setSmartBrushDrawing,
-      smartBrushPlan,
       visibleSmartBrushPlan,
       clearSmartBrushMask,
       applySmartBrush
@@ -199,56 +186,20 @@ export function MapsPanel({
             onCancelPaintStroke={onCancelPaintStroke}
           />
         )}
-        {workbenchMode === "land-layout" && (
-          <MapModeSurface
-            title="Land Layout"
-            subtitle="Outdoor level adjacency. Blank cells disable edge travel; Land 0 is stored as -1 for Realmz."
-          >
-            <LandLayoutEditor
-              project={state.project}
-              selectedMap={selectedMap}
-              atlasEntries={state.atlasEntries}
-              icons={state.iconEntries}
-              selectedCell={selectedLayoutCell}
-              onSetSelectedCell={setSelectedLayoutCell}
-              onSelectMap={onSelectMap}
-              onApplyCommand={onApplyCommand}
-            />
-          </MapModeSurface>
-        )}
-        {workbenchMode === "land-tiles" && (
-          <MapModeSurface
-            title="Land Tiles And Combat Tiles"
-            subtitle="Inspect the current landlook, tile movement metadata, and Realmz combat-map expansion."
-          >
-            <LandTileAtlasEditor
-              project={state.project}
-              selectedMapId={selectedMap?.id ?? null}
-              selectedTileset={selectedTileset}
-              atlas={atlas}
-              atlasEntries={state.atlasEntries}
-              icons={state.iconEntries}
-              selectedPaintTile={state.selectedTile}
-              onSelectTile={onSelectTile}
-              onApplyCommand={onApplyCommand}
-            />
-          </MapModeSurface>
-        )}
-        {workbenchMode === "random-areas" && (
-          <MapModeSurface
-            title="Random Encounter Areas"
-            subtitle="Realmz checks random encounter rectangle slots from 19 down to 0. Edit fields here or draw rectangles on the canvas."
-          >
-            <RandomAreasWorkbench
-              selectedMap={selectedMap}
-              randomLevel={selectedRandomLevel}
-              onSetWorkbenchMode={switchWorkbenchMode}
-              onSetViewFlag={onSetViewFlag}
-              onSetTool={openCanvasTool}
-              onSelectEntity={onSelectEntity}
-              onApplyCommand={onApplyCommand}
-            />
-          </MapModeSurface>
+        {workbenchMode !== "canvas" && (
+          <MapAuxiliaryWorkbenches
+            state={state}
+            selectedMap={selectedMap}
+            selectedRandomLevel={selectedRandomLevel}
+            selectedTileset={selectedTileset}
+            atlas={atlas}
+            workbench={workbench}
+            onSelectMap={onSelectMap}
+            onSelectTile={onSelectTile}
+            onSelectEntity={onSelectEntity}
+            onSetViewFlag={onSetViewFlag}
+            onApplyCommand={onApplyCommand}
+          />
         )}
       </section>
       <MapSelectionSidebar
@@ -307,30 +258,6 @@ function nextMapIndex(maps: MapEntity[], levelType: LevelType) {
   return maps
     .filter((map) => map.levelType === levelType)
     .reduce((max, map) => Math.max(max, map.index), -1) + 1;
-}
-
-function MapModeSurface({
-  title,
-  subtitle,
-  children
-}: {
-  title: string;
-  subtitle: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="map-mode-surface">
-      <div className="map-mode-header">
-        <div>
-          <h2>{title}</h2>
-          <p>{subtitle}</p>
-        </div>
-      </div>
-      <div className="map-mode-body">
-        {children}
-      </div>
-    </div>
-  );
 }
 
 type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;
