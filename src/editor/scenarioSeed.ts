@@ -67,6 +67,7 @@ import {
   type ScenarioSeedCompilerContext,
   type ScenarioSeedResolvedAsset
 } from "./scenarioSeed/compilerContext";
+import { parseAsset } from "./scenarioSeed/assetParser";
 import {
   allocateScenarioSeed,
   resolveRef,
@@ -1194,36 +1195,6 @@ function parseScenarioStart(input: unknown, path: string, ctx: ParseContext): Sc
   checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
   if (landLevel === null || x === null || y === null) return undefined;
   return { landLevel, x, y };
-}
-
-function parseAsset(input: unknown, path: string, ctx: ParseContext): ScenarioSeedAsset | null {
-  const value = requireObject(input, path, ctx);
-  if (!value) return null;
-  const source = requireString(value.source, `${path}.source`, ctx);
-  if (source === "stock") {
-    allowKeys(value, path, ["key", "source", "resourceType", "resourceId", "kind"], ctx);
-    const kind = optionalManagedAssetKind(value.kind, `${path}.kind`, ctx);
-    return {
-      key: requireString(value.key, `${path}.key`, ctx) ?? "asset",
-      source,
-      resourceType: requireString(value.resourceType, `${path}.resourceType`, ctx) ?? "????",
-      resourceId: requireInteger(value.resourceId, `${path}.resourceId`, ctx) ?? 0,
-      ...(kind !== undefined ? { kind } : {})
-    };
-  }
-  if (source === "custom-library") {
-    allowKeys(value, path, ["key", "source", "assetId", "resourceId"], ctx);
-    const resourceId = optionalInteger(value.resourceId, `${path}.resourceId`, ctx);
-    return {
-      key: requireString(value.key, `${path}.key`, ctx) ?? "asset",
-      source,
-      assetId: requireString(value.assetId, `${path}.assetId`, ctx) ?? "missing",
-      ...(resourceId !== undefined ? { resourceId } : {})
-    };
-  }
-  allowKeys(value, path, ["key", "source", "resourceType", "resourceId", "kind", "assetId"], ctx);
-  ctx.errors.push(`${path}.source must be stock or custom-library.`);
-  return null;
 }
 
 function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeedMap | null {
@@ -3823,13 +3794,6 @@ function requireMapTile(input: unknown, path: string, ctx: ParseContext): number
   const tile = requireInteger(input, path, ctx);
   checkIntegerRange(tile, path, MAP_TILE_MIN, MAP_TILE_MAX, ctx);
   return tile;
-}
-
-function optionalManagedAssetKind(input: unknown, path: string, ctx: ParseContext): ManagedAssetKind | undefined {
-  if (input === undefined) return undefined;
-  if (input === "picture" || input === "icon" || input === "special-land-tile" || input === "sound" || input === "text" || input === "other") return input;
-  ctx.errors.push(`${path} must be picture, icon, special-land-tile, sound, text, or other.`);
-  return undefined;
 }
 
 function optionalScenarioItemTypeName(input: unknown, path: string, ctx: ParseContext): ScenarioSeedItemTypeName | undefined {
