@@ -1,0 +1,30 @@
+import type { ScenarioSeedItemTypeName } from "../scenarioSeed";
+
+export const SCENARIO_ITEM_TYPE_CODES: Record<ScenarioSeedItemTypeName, number> = {
+  ring: 0,
+  unused: 1,
+  meleeWeapon: 2,
+  shield: 3,
+  armorOrRobe: 4,
+  gauntletOrGloves: 5,
+  cloakOrCape: 6,
+  helmetOrCap: 7,
+  ionStone: 8,
+  boots: 9,
+  quiver: 10,
+  waistOrBelt: 11,
+  neck: 12,
+  scrollCase: 13,
+  miscItem: 14,
+  missileWeapon: 15,
+  broach: 16,
+  faceOrMask: 17,
+  scabbard: 18,
+  beltLoop: 19,
+  scroll: 20,
+  magicItem: 21,
+  supplyItem: 22,
+  actionPointItem: 23,
+  identifiedItem: 24,
+  scenarioItem: 25
+};
