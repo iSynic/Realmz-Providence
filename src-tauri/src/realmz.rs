@@ -3,6 +3,17 @@ use crate::project::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
 
+mod record_bytes;
+
+use record_bytes::{
+    copy_fixed_bytes, copy_raw, decode_fixed_text, decode_pascal_text, encode_fixed_text,
+    encode_pascal_text, fallback_i8, i32_be, parse_fixed_records, pascal_record_string,
+    preserve_raw, provenance, read_i16_array, read_i16_vec, read_i32_vec, signed_bytes,
+    write_fixed_records, write_i16_array, write_i16_vec, write_i32_be, write_i32_vec,
+    write_i8_array,
+};
+pub use record_bytes::{i16_be, write_i16_be};
+
 pub const FIELD_BYTES: usize = MAP_SIZE * MAP_SIZE * 2;
 pub const DOOR_BYTES: usize = 40;
 pub const DOORS_PER_LEVEL: usize = 100;
@@ -2797,103 +2808,6 @@ fn timed_location_kind(value: i16) -> &'static str {
     }
 }
 
-fn parse_fixed_records(
-    buffer: &[u8],
-    record_bytes: usize,
-) -> impl Iterator<Item = (usize, usize, &[u8])> {
-    (0..buffer.len() / record_bytes).map(move |id| {
-        let start = id * record_bytes;
-        (id, start, &buffer[start..start + record_bytes])
-    })
-}
-
-fn write_fixed_records<T>(
-    records: &[T],
-    record_bytes: usize,
-    mut writer: impl FnMut(&T, &mut [u8]) -> Result<()>,
-) -> Result<Vec<u8>>
-where
-    T: IndexedRecord,
-{
-    let mut selected: Vec<&T> = records.iter().collect();
-    selected.sort_by_key(|record| record.record_id());
-    let count = selected
-        .last()
-        .map(|record| record.record_id() + 1)
-        .unwrap_or(0);
-    let mut output = vec![0u8; count * record_bytes];
-    for record in selected {
-        let start = record.record_id() * record_bytes;
-        writer(record, &mut output[start..start + record_bytes])?;
-    }
-    Ok(output)
-}
-
-trait IndexedRecord {
-    fn record_id(&self) -> usize;
-}
-
-impl IndexedRecord for MessageRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for OptionLabelRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for BattleRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for MonsterRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for MonsterDescriptionRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for ScenarioItemRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for TreasureRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for ShopRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for SimpleEncounterRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for ComplexEncounterRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for ThiefEncounterRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-impl IndexedRecord for TimedEncounterRecord {
-    fn record_id(&self) -> usize {
-        self.id
-    }
-}
-
 fn parse_encounter_actions(record: &[u8]) -> Vec<EncounterActionRow> {
     let mut actions = Vec::new();
     for slot in 0..32 {
@@ -2927,162 +2841,6 @@ fn write_encounter_actions(buffer: &mut [u8], actions: &[EncounterActionRow]) ->
         write_i16_be(buffer, 32 + action.slot * 2, action.id);
     }
     Ok(())
-}
-
-fn signed_bytes(buffer: &[u8]) -> Vec<i8> {
-    buffer.iter().map(|value| *value as i8).collect()
-}
-
-fn fallback_i8(value: i8, values: &[u8], index: usize) -> i8 {
-    if value != 0 {
-        value
-    } else {
-        values.get(index).copied().unwrap_or(0) as i8
-    }
-}
-
-fn read_i16_array(buffer: &[u8], offset: usize, count: usize) -> Vec<i16> {
-    (0..count)
-        .map(|index| i16_be(buffer, offset + index * 2))
-        .collect()
-}
-
-fn write_i8_array(buffer: &mut [u8], offset: usize, values: &[i8], count: usize) {
-    for index in 0..count {
-        buffer[offset + index] = values.get(index).copied().unwrap_or(0) as u8;
-    }
-}
-
-fn write_i16_array(buffer: &mut [u8], offset: usize, values: &[i16], count: usize) {
-    for index in 0..count {
-        write_i16_be(buffer, offset + index * 2, *values.get(index).unwrap_or(&0));
-    }
-}
-
-fn copy_raw(buffer: &mut [u8], raw: &[u8]) {
-    let length = buffer.len().min(raw.len());
-    buffer[..length].copy_from_slice(&raw[..length]);
-}
-
-fn preserve_raw(authored: bool, raw: &[u8], record_bytes: usize) -> bool {
-    !authored && raw.len() == record_bytes
-}
-
-fn provenance(
-    source_file: &str,
-    record_index: usize,
-    byte_offset: usize,
-    byte_length: usize,
-) -> Provenance {
-    Provenance {
-        source_file: source_file.to_string(),
-        record_index,
-        byte_offset,
-        byte_length,
-        confidence: Confidence::SourceBacked,
-    }
-}
-
-fn decode_pascal_text(bytes: &[u8]) -> String {
-    let length = bytes.first().copied().unwrap_or(0) as usize;
-    let end = (1 + length).min(bytes.len());
-    decode_fixed_text(&bytes[1..end])
-}
-
-fn decode_fixed_text(bytes: &[u8]) -> String {
-    let end = bytes
-        .iter()
-        .position(|byte| *byte == 0)
-        .unwrap_or(bytes.len());
-    bytes[..end]
-        .iter()
-        .map(|byte| {
-            if (32..=126).contains(byte) {
-                *byte as char
-            } else {
-                ' '
-            }
-        })
-        .collect::<String>()
-        .trim_end()
-        .to_string()
-}
-
-fn encode_pascal_text(buffer: &mut [u8], text: &str) -> Result<()> {
-    if buffer.is_empty() {
-        return Ok(());
-    }
-    let bytes = classic_text_bytes(text);
-    if bytes.len() > buffer.len() - 1 || bytes.len() > u8::MAX as usize {
-        return Err(ProvidenceError::message(format!(
-            "Classic Pascal text is {} byte(s); maximum is {}",
-            bytes.len(),
-            buffer.len() - 1
-        )));
-    }
-    buffer.fill(0);
-    buffer[0] = bytes.len() as u8;
-    buffer[1..1 + bytes.len()].copy_from_slice(&bytes);
-    Ok(())
-}
-
-fn encode_fixed_text(buffer: &mut [u8], text: &str) -> Result<()> {
-    let bytes = classic_text_bytes(text);
-    if bytes.len() > buffer.len() {
-        return Err(ProvidenceError::message(format!(
-            "Classic fixed text is {} byte(s); maximum is {}",
-            bytes.len(),
-            buffer.len()
-        )));
-    }
-    buffer.fill(0);
-    buffer[..bytes.len()].copy_from_slice(&bytes);
-    Ok(())
-}
-
-fn pascal_record_string(buffer: &[u8], slot: usize) -> String {
-    let start = slot * 256;
-    let end = (start + 256).min(buffer.len());
-    if start >= end {
-        return String::new();
-    }
-    decode_pascal_text(&buffer[start..end])
-}
-
-fn copy_fixed_bytes(dest: &mut [u8], source: &[u8]) {
-    dest.fill(0);
-    let len = dest.len().min(source.len());
-    dest[..len].copy_from_slice(&source[..len]);
-}
-
-fn read_i16_vec(buffer: &[u8], offset: usize, count: usize) -> Vec<i16> {
-    (0..count)
-        .map(|index| i16_be(buffer, offset + index * 2))
-        .collect()
-}
-
-fn write_i16_vec(buffer: &mut [u8], offset: usize, values: &[i16], count: usize) {
-    for index in 0..count {
-        write_i16_be(buffer, offset + index * 2, *values.get(index).unwrap_or(&0));
-    }
-}
-
-fn read_i32_vec(buffer: &[u8], offset: usize, count: usize) -> Vec<i32> {
-    (0..count)
-        .map(|index| i32_be(buffer, offset + index * 4))
-        .collect()
-}
-
-fn write_i32_vec(buffer: &mut [u8], offset: usize, values: &[i32], count: usize) {
-    for index in 0..count {
-        write_i32_be(buffer, offset + index * 4, *values.get(index).unwrap_or(&0));
-    }
-}
-
-fn classic_text_bytes(text: &str) -> Vec<u8> {
-    text.chars()
-        .map(|ch| if ch.is_ascii() { ch as u8 } else { b'?' })
-        .collect()
 }
 
 fn decode_door_coordinate(doorid: i32) -> Option<MapCoordinate> {
@@ -3352,27 +3110,6 @@ fn title(value: &str) -> String {
         Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
         None => String::new(),
     }
-}
-
-pub fn i16_be(buffer: &[u8], offset: usize) -> i16 {
-    i16::from_be_bytes([buffer[offset], buffer[offset + 1]])
-}
-
-fn i32_be(buffer: &[u8], offset: usize) -> i32 {
-    i32::from_be_bytes([
-        buffer[offset],
-        buffer[offset + 1],
-        buffer[offset + 2],
-        buffer[offset + 3],
-    ])
-}
-
-pub fn write_i16_be(buffer: &mut [u8], offset: usize, value: i16) {
-    buffer[offset..offset + 2].copy_from_slice(&value.to_be_bytes());
-}
-
-fn write_i32_be(buffer: &mut [u8], offset: usize, value: i32) {
-    buffer[offset..offset + 4].copy_from_slice(&value.to_be_bytes());
 }
 
 #[cfg(test)]
