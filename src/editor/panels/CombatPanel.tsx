@@ -1,7 +1,6 @@
 import { ChangeEvent, DragEvent, memo, MouseEvent, PointerEvent, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { loadBrowserBundledLibraryResourceData } from "../browser/library";
-import { inspectResourcePreview } from "../browser/resourcePreview";
 import { Brush, Eraser, Eye, MousePointer2, X } from "lucide-react";
 import { browserReferenceIconUrl } from "../browser/atlasPaths";
 import { TutorialTip } from "../components/TutorialTip";
@@ -16,13 +15,9 @@ import { BATTLE_RUNTIME_MONSTER_LIMIT, battleReferencesByMonster, countBattleRun
 import { encodeCicnResource, mirrorRgbaHorizontally } from "../cicnEncoder";
 import { allMonsterScenarioIds, authorFacingMonsterRecordsForSet, authorFacingMonsterScenarioIds, isZeroBlankMonsterSlot } from "../monsterRecords";
 import {
-  IconLibraryCanvas,
   IconLibraryFacingMode,
   createIconLibraryEntry,
   deleteIconLibraryEntry,
-  iconLibraryMonsterPairMetadata,
-  iconLibraryEntryKind,
-  isProvidenceIconLibraryEntry,
   iconLibraryAssetResourceBase64
 } from "../iconLibrary";
 import {
@@ -37,8 +32,43 @@ import {
 } from "../monsterLibrary";
 import { ScrollArea } from "../ui";
 import { selectEntityFromId } from "../utils";
+import {
+  MONSTER_SET_OPTIONS,
+  useCombatLookups,
+  type CombatLookups,
+  type CombatWorkbenchTab
+} from "./combat/combatLookups";
+import {
+  MONSTER_ICON_PAIR_OFFSET,
+  MONSTER_ICON_SET_LIMIT,
+  monsterIconPickerOptions,
+  monsterIconSetTabCount,
+  monsterIconSourcePairs,
+  monsterIconSourceStatusLabel,
+  monsterIconTargetPairs,
+  monsterIconTargetSourceStatus,
+  monsterIconTargetStatusTitle,
+  nextImportedMonsterIconBaseId,
+  nextScenarioMonsterIconTargetBaseId,
+  normalizedMonsterIconBaseId,
+  previewPathFromCicnBase64,
+  resolveMonsterIconTargetPair,
+  type MonsterIconPairOption,
+  type MonsterIconPickerOption,
+  type MonsterIconSourceStatus
+} from "./combat/iconSetModel";
+import { measureCombatWork, recordCombatPerf, useCombatRenderTiming } from "./combat/performance";
 
-export type CombatWorkbenchTab = "battles" | "monsters" | "iconSet";
+export {
+  monsterIconPickerOptions,
+  monsterIconSetTabCount,
+  monsterIconSourceStatusLabel,
+  monsterIconTargetPairs,
+  nextScenarioMonsterIconTargetBaseId,
+  resolveMonsterIconTargetPair
+} from "./combat/iconSetModel";
+export type { MonsterIconPickerOption, MonsterIconSourceStatus } from "./combat/iconSetModel";
+export type { CombatWorkbenchTab } from "./combat/combatLookups";
 
 type BattleGridCellView = {
   index: number;
@@ -89,8 +119,6 @@ type BattleBoardGesture =
   | { kind: "paint" | "erase"; pointerId: number; fromGrid: number[]; lastIndex: number | null; changed: boolean }
   | { kind: "move"; pointerId: number; fromGrid: number[]; fromIndex: number; lastIndex: number | null; changed: boolean };
 
-export type MonsterIconSourceStatus = "scenario-override" | "scenario-resource" | "default-art" | "missing-art";
-
 type MonsterIconResolution = {
   url: string | null;
   libraryAsset?: LibraryAsset | null;
@@ -98,36 +126,6 @@ type MonsterIconResolution = {
   sourceStatus: MonsterIconSourceStatus;
   width: number | null;
   height: number | null;
-};
-
-type CombatIconAsset = {
-  previewPath?: string | null;
-  label?: string | null;
-  resourceId?: number | null;
-};
-
-type MonsterIconPairOption = {
-  key: string;
-  baseId: number;
-  asset: LibraryAsset | null;
-  pairedAsset: LibraryAsset | null;
-  resourceBase64?: string | null;
-  pairedResourceBase64?: string | null;
-  referenced?: boolean;
-  sourceKind?: "monster-mash" | "providence-library";
-  sourceLabel?: string;
-  override?: MonsterIconOverride | null;
-  facingMode?: IconLibraryFacingMode;
-  canvas?: IconLibraryCanvas | null;
-};
-
-export type MonsterIconPickerOption = {
-  key: string;
-  baseId: number;
-  asset: LibraryAsset | null;
-  pairedAsset: LibraryAsset | null;
-  sourceStatus: Exclude<MonsterIconSourceStatus, "missing-art">;
-  sourceLabel: string;
 };
 
 type MonsterLibraryCopyEntry = {
@@ -151,30 +149,12 @@ type ScenarioMonsterListEntry = {
   fallback: MonsterRecord | null;
 };
 
-type CombatLookups = {
-  monsters: MonsterRecord[];
-  monsterById: Map<number, MonsterRecord>;
-  monsterSetsById: Map<MonsterSetId, MonsterRecord[]>;
-  monsterBySetAndId: Map<MonsterSetId, Map<number, MonsterRecord>>;
-  iconAssetsByAbsId: Map<number, CombatIconAsset>;
-  realmzActorIconAssetsByAbsId: Map<number, LibraryAsset>;
-  monsterMashAssetsByAbsId: Map<number, LibraryAsset>;
-  monsterIconOverridesByTarget: Map<number, MonsterIconOverride>;
-  tabCounts: Record<CombatWorkbenchTab, number>;
-};
-
-const MONSTER_SET_OPTIONS: Array<{ id: MonsterSetId; label: string; file: string }> = [
-  { id: 0, label: "Normal", file: "Data MD" },
-  { id: 1, label: "Monster", file: "Data MD1" },
-  { id: -1, label: "Mega", file: "Data MD-1" }
-];
 const MONSTER_ICON_CANVAS_PRESETS = [
   { key: "32x32", label: "32 x 32", width: 32, height: 32 },
   { key: "32x64", label: "32 x 64", width: 32, height: 64 },
   { key: "64x32", label: "64 x 32", width: 64, height: 32 },
   { key: "64x64", label: "64 x 64", width: 64, height: 64 }
 ] as const;
-const IMPORTED_MONSTER_ICON_BASE_START = 601;
 const MONSTER_VARIANT_SCALE: Record<Exclude<MonsterSetId, 0>, {
   hitDice: number;
   staminaBonus: number;
@@ -228,8 +208,6 @@ const MONSTER_DEATH_ACTION_HELP = "Defeat Action is the monster death macro/door
 const MONSTER_REQUIRED_WEAPON_HELP = "Realmz checks this monster record byte before allowing weapon hits: All is 0, Blunt only is -1, Sharp only is -2, and positive codes match the attacker's weapon number. Divinity fixture evidence shows the adjacent Req Weap value writes Data MD rel 7.";
 const BATTLE_MACRO_HELP = "Battle Macro is an Extra Action Point reference that Realmz checks at the end of each combat round. Providence writes selected macros in the runnable form; positive imports are preserved but warned until edited.";
 const SCRAPBOOK_HELP = "Monster Library combines protected built-in Realmz scrapbook templates with editable Providence entries. Copy entries into Scenario Monsters before using them in runtime battles.";
-const MONSTER_ICON_PAIR_OFFSET = 308;
-const MONSTER_ICON_SET_LIMIT = 127;
 const MONSTER_MONEY_REWARDS = [
   { label: "Gold", iconId: 2002 },
   { label: "Gems", iconId: 2014 },
@@ -304,46 +282,6 @@ const RANDOM_WEAPON_OPTIONS: CombatSelectOption[] = [
   { key: "random-weapon:-9", value: -9, label: "-9 Random swords / dagger / cutlass / nunchucka" }
 ];
 const REQUIRED_WEAPON_MAX_SPECIFIC_CODE = 253;
-
-type CombatPerfWindow = Window & {
-  __providenceCombatPerf?: Array<{ label: string; durationMs: number; at: number }>;
-};
-
-function combatBenchmarkEnabled() {
-  return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("benchmarkCombat");
-}
-
-function recordCombatPerf(label: string, durationMs: number) {
-  if (!combatBenchmarkEnabled()) return;
-  const target = window as CombatPerfWindow;
-  const entry = { label, durationMs, at: performance.now() };
-  target.__providenceCombatPerf = [...(target.__providenceCombatPerf ?? []), entry].slice(-500);
-  if (durationMs >= 4) console.debug(`[combat-perf] ${label}: ${durationMs.toFixed(1)}ms`);
-}
-
-function measureCombatWork<T>(label: string, work: () => T): T {
-  if (!combatBenchmarkEnabled()) return work();
-  const startedAt = performance.now();
-  try {
-    return work();
-  } finally {
-    const durationMs = performance.now() - startedAt;
-    recordCombatPerf(label, durationMs);
-    performance.measure?.(`combat:${label}`, {
-      start: startedAt,
-      end: startedAt + durationMs
-    });
-  }
-}
-
-function useCombatRenderTiming(label: string) {
-  const startedAtRef = useRef(0);
-  if (combatBenchmarkEnabled()) startedAtRef.current = performance.now();
-  useEffect(() => {
-    if (!startedAtRef.current) return;
-    recordCombatPerf(`${label} render`, performance.now() - startedAtRef.current);
-  });
-}
 
 export function CombatPanel({
   activeEditor = "domain",
@@ -5675,324 +5613,6 @@ function filterRecords<T>(records: T[], query: string, text: (record: T) => stri
   return records.filter((record) => text(record).toLowerCase().includes(needle));
 }
 
-export function monsterIconSourceStatusLabel(status: MonsterIconSourceStatus) {
-  if (status === "scenario-override") return "Scenario override";
-  if (status === "scenario-resource") return "Scenario resource";
-  if (status === "default-art") return "Default art";
-  return "Missing art";
-}
-
-function monsterIconTargetStatusTitle(status: MonsterIconSourceStatus) {
-  if (status === "scenario-override") return "Scenario-owned override art. Providence exports this paired cicn set for the target ID.";
-  if (status === "scenario-resource") return "Scenario-owned paired cicn resources imported from this project.";
-  if (status === "default-art") return "Default Realmz art resolved at runtime. This row is not exported as scenario-owned art unless replaced with an override.";
-  return "This target ID has no complete paired art.";
-}
-
-function monsterIconTargetSourceStatus(target: MonsterIconPairOption): Exclude<MonsterIconSourceStatus, "missing-art"> {
-  if (target.override) return "scenario-override";
-  if (target.asset?.source === "Scenario icon resources" || target.sourceLabel?.toLowerCase().startsWith("scenario")) return "scenario-resource";
-  return "default-art";
-}
-
-export function monsterIconPickerOptions(
-  project: Project,
-  lookups: Pick<CombatLookups, "iconAssetsByAbsId" | "realmzActorIconAssetsByAbsId" | "monsterIconOverridesByTarget">,
-  iconEntries: Record<number, IconEntry> = {}
-): MonsterIconPickerOption[] {
-  return monsterIconTargetPairs(project, lookups, iconEntries).map((target) => ({
-    key: target.key,
-    baseId: target.baseId,
-    asset: target.asset,
-    pairedAsset: target.pairedAsset,
-    sourceStatus: monsterIconTargetSourceStatus(target),
-    sourceLabel: target.sourceLabel ?? target.asset?.label ?? `Icon ${target.baseId}`
-  }));
-}
-
-function monsterReferencedIconIds(project: Project) {
-  return uniqueSortedNumbers([
-    ...(project.monsters ?? []).map((monster) => Math.abs(monster.iconId)),
-    ...(project.monsterSets ?? []).flatMap((set) => set.monsters.map((monster) => Math.abs(monster.iconId)))
-  ]).filter((id) => id > 0);
-}
-
-export function monsterIconTargetPairs(
-  project: Project,
-  lookups: Pick<CombatLookups, "iconAssetsByAbsId" | "realmzActorIconAssetsByAbsId" | "monsterIconOverridesByTarget">,
-  iconEntries: Record<number, IconEntry> = {}
-): MonsterIconPairOption[] {
-  const referencedIconIds = monsterReferencedIconIds(project);
-  const referenced = new Set(referencedIconIds);
-  const candidates = new Set<number>(referencedIconIds);
-  for (const id of lookups.realmzActorIconAssetsByAbsId.keys()) {
-    if (isMonsterIconPairBase(id, lookups.realmzActorIconAssetsByAbsId)) candidates.add(id);
-  }
-  for (const override of project.monsterIconOverrides ?? []) {
-    candidates.add(Math.abs(override.targetBaseIconId));
-  }
-  return [...candidates]
-    .filter((baseId) => baseId > 0 && baseId + MONSTER_ICON_PAIR_OFFSET <= 32767)
-    .sort((left, right) => left - right)
-    .map((baseId) => resolveMonsterIconTargetPair(project, lookups, iconEntries, baseId, referenced.has(baseId)))
-    .filter((target): target is MonsterIconPairOption => Boolean(target));
-}
-
-export function monsterIconSetTabCount(
-  project: Project,
-  lookups: Pick<CombatLookups, "iconAssetsByAbsId" | "realmzActorIconAssetsByAbsId" | "monsterIconOverridesByTarget">,
-  iconEntries: Record<number, IconEntry> = {}
-) {
-  return measureCombatWork("monsterIconSetTabCount", () => {
-    const candidates = new Set<number>(monsterReferencedIconIds(project));
-    for (const id of lookups.realmzActorIconAssetsByAbsId.keys()) {
-      if (isMonsterIconPairBase(id, lookups.realmzActorIconAssetsByAbsId)) candidates.add(id);
-    }
-    for (const override of project.monsterIconOverrides ?? []) {
-      candidates.add(Math.abs(override.targetBaseIconId));
-    }
-    const projectIconReferences = projectIconReferenceSet(project);
-    const scenarioResourceIds = new Set(
-      (project.scenarioIconResources ?? [])
-        .filter((resource) => Boolean(resource.resourceBase64))
-        .map((resource) => Math.abs(resource.resourceId))
-    );
-    let count = 0;
-    const counted = new Set<number>();
-    for (const rawBaseId of candidates) {
-      const baseId = normalizedMonsterIconBaseId(rawBaseId);
-      if (!baseId || counted.has(baseId)) continue;
-      const pairedId = baseId + MONSTER_ICON_PAIR_OFFSET;
-      counted.add(baseId);
-      if (lookups.monsterIconOverridesByTarget.has(baseId)) {
-        count += 1;
-        continue;
-      }
-      if (scenarioResourceIds.has(baseId) && scenarioResourceIds.has(pairedId)) {
-        count += 1;
-        continue;
-      }
-      const projectBase = lookups.iconAssetsByAbsId.get(baseId) ?? null;
-      const projectPaired = lookups.iconAssetsByAbsId.get(pairedId) ?? null;
-      if (projectBase?.previewPath && projectPaired?.previewPath) {
-        count += 1;
-        continue;
-      }
-      const entryBase = iconEntries[baseId] ?? iconEntries[-baseId] ?? null;
-      const entryPaired = iconEntries[pairedId] ?? iconEntries[-pairedId] ?? null;
-      if (entryBase?.url && entryPaired?.url && projectIconReferences.has(baseId) && projectIconReferences.has(pairedId)) {
-        count += 1;
-        continue;
-      }
-      if (lookups.realmzActorIconAssetsByAbsId.has(baseId) && lookups.realmzActorIconAssetsByAbsId.has(pairedId)) {
-        count += 1;
-      }
-    }
-    return count;
-  });
-}
-
-export function resolveMonsterIconTargetPair(
-  project: Project,
-  lookups: Pick<CombatLookups, "iconAssetsByAbsId" | "realmzActorIconAssetsByAbsId" | "monsterIconOverridesByTarget">,
-  iconEntries: Record<number, IconEntry>,
-  rawBaseId: number,
-  referenced = false
-): MonsterIconPairOption | null {
-  const baseId = normalizedMonsterIconBaseId(rawBaseId);
-  if (!baseId) return null;
-  const pairedId = baseId + MONSTER_ICON_PAIR_OFFSET;
-  const override = lookups.monsterIconOverridesByTarget.get(baseId) ?? null;
-  if (override) {
-    return {
-      key: `target:${baseId}`,
-      baseId,
-      asset: previewAssetFromBase64(baseId, `${override.sourceLabel ?? `Scenario icon ${baseId}`} base`, override.sourceBaseResourceBase64, `monster-icon-override:${baseId}:base`),
-      pairedAsset: previewAssetFromBase64(pairedId, `${override.sourceLabel ?? `Scenario icon ${baseId}`} paired`, override.sourcePairedResourceBase64, `monster-icon-override:${baseId}:paired`),
-      resourceBase64: override.sourceBaseResourceBase64,
-      pairedResourceBase64: override.sourcePairedResourceBase64,
-      referenced,
-      override,
-      sourceLabel: override.sourceLabel ?? `Scenario icon override ${baseId}`
-    };
-  }
-
-  const scenarioResourceBase = (project.scenarioIconResources ?? []).find((resource) => Math.abs(resource.resourceId) === baseId) ?? null;
-  const scenarioResourcePaired = (project.scenarioIconResources ?? []).find((resource) => Math.abs(resource.resourceId) === pairedId) ?? null;
-  if (scenarioResourceBase?.resourceBase64 && scenarioResourcePaired?.resourceBase64) {
-    return {
-      key: `target:${baseId}`,
-      baseId,
-      asset: previewAssetFromBase64(baseId, scenarioResourceBase.label || `Scenario cicn ${baseId}`, scenarioResourceBase.resourceBase64, `scenario-icon-resource:${baseId}:base`, scenarioResourceBase.previewPath ?? null),
-      pairedAsset: previewAssetFromBase64(pairedId, scenarioResourcePaired.label || `Scenario cicn ${pairedId}`, scenarioResourcePaired.resourceBase64, `scenario-icon-resource:${baseId}:paired`, scenarioResourcePaired.previewPath ?? null),
-      resourceBase64: scenarioResourceBase.resourceBase64,
-      pairedResourceBase64: scenarioResourcePaired.resourceBase64,
-      referenced,
-      sourceLabel: `Scenario resources ${baseId} / ${pairedId}`
-    };
-  }
-
-  const projectBase = lookups.iconAssetsByAbsId.get(baseId) ?? null;
-  const projectPaired = lookups.iconAssetsByAbsId.get(pairedId) ?? null;
-  if (projectBase?.previewPath && projectPaired?.previewPath) {
-    return {
-      key: `target:${baseId}`,
-      baseId,
-      asset: previewAssetFromCombatIconAsset(baseId, projectBase, `project-icon:${baseId}:base`),
-      pairedAsset: previewAssetFromCombatIconAsset(pairedId, projectPaired, `project-icon:${baseId}:paired`),
-      referenced,
-      sourceLabel: `Scenario icons ${baseId} / ${pairedId}`
-    };
-  }
-
-  const entryBase = iconEntries[baseId] ?? iconEntries[-baseId] ?? null;
-  const entryPaired = iconEntries[pairedId] ?? iconEntries[-pairedId] ?? null;
-  if (entryBase?.url && entryPaired?.url && hasProjectIconReference(project, baseId) && hasProjectIconReference(project, pairedId)) {
-    return {
-      key: `target:${baseId}`,
-      baseId,
-      asset: previewAssetFromUrl(baseId, `Scenario cicn ${baseId}`, entryBase.url, `decoded-project-icon:${baseId}:base`),
-      pairedAsset: previewAssetFromUrl(pairedId, `Scenario cicn ${pairedId}`, entryPaired.url, `decoded-project-icon:${baseId}:paired`),
-      referenced,
-      sourceLabel: `Scenario icons ${baseId} / ${pairedId}`
-    };
-  }
-
-  const defaultBase = lookups.realmzActorIconAssetsByAbsId.get(baseId) ?? null;
-  const defaultPaired = lookups.realmzActorIconAssetsByAbsId.get(pairedId) ?? null;
-  if (defaultBase && defaultPaired) {
-    return {
-      key: `target:${baseId}`,
-      baseId,
-      asset: defaultBase,
-      pairedAsset: defaultPaired,
-      referenced,
-      sourceLabel: defaultBase.label || `Family Jewels ${baseId}`
-    };
-  }
-
-  return null;
-}
-
-function hasProjectIconReference(project: Project, resourceId: number) {
-  const id = Math.abs(resourceId);
-  return projectIconReferenceSet(project).has(id);
-}
-
-function projectIconReferenceSet(project: Project) {
-  return new Set([
-    ...(project.assetCatalog?.icons ?? []).map((asset) => Math.abs(asset.resourceId)),
-    ...(project.scenarioIconResources ?? []).map((resource) => Math.abs(resource.resourceId)),
-    ...(project.assets ?? [])
-      .filter((asset) => asset.resourceType === "cicn")
-      .map((asset) => Math.abs(asset.resourceId))
-  ]);
-}
-
-function previewAssetFromBase64(resourceId: number, label: string, resourceBase64: string, id: string, fallback: string | null = null): LibraryAsset {
-  return previewAssetFromUrl(resourceId, label, previewPathFromCicnBase64(resourceBase64, fallback), id);
-}
-
-function previewAssetFromCombatIconAsset(resourceId: number, asset: CombatIconAsset, id: string): LibraryAsset {
-  return previewAssetFromUrl(resourceId, asset.label || `cicn ${resourceId}`, asset.previewPath ?? null, id);
-}
-
-function previewAssetFromUrl(resourceId: number, label: string, previewPath: string | null, id: string): LibraryAsset {
-  return {
-    id,
-    type: "scenario-monster-icon",
-    label,
-    source: "Scenario icon resources",
-    relativePath: id,
-    bytes: 0,
-    sha256: `preview:${id}`,
-    resourceType: "cicn",
-    resourceId,
-    previewPath,
-    mimeType: "image/png"
-  };
-}
-
-function monsterIconSourcePairs(catalog: LibraryCatalog | null, lookups: Pick<CombatLookups, "monsterMashAssetsByAbsId">): MonsterIconPairOption[] {
-  const monsterMashPairs = [...lookups.monsterMashAssetsByAbsId.keys()]
-    .filter((baseId) => isMonsterIconPairBase(baseId, lookups.monsterMashAssetsByAbsId))
-    .sort((left, right) => left - right)
-    .map((baseId) => ({
-      key: `monster-mash:${baseId}`,
-      baseId,
-      asset: lookups.monsterMashAssetsByAbsId.get(baseId) ?? null,
-      pairedAsset: lookups.monsterMashAssetsByAbsId.get(baseId + MONSTER_ICON_PAIR_OFFSET) ?? null,
-      sourceKind: "monster-mash" as const,
-      sourceLabel: `Monster Mash ${baseId}`,
-      facingMode: "custom" as const
-    }));
-  const providencePairs = (catalog?.entities ?? [])
-    .filter((entity) => isProvidenceIconLibraryEntry(entity) && iconLibraryEntryKind(entity) === "monster-pair")
-    .map((entity) => {
-      const number = iconLibraryEntityNumber(entity);
-      const asset = catalog?.assets.find((candidate) => candidate.id === `library-asset:providence:icon-library:${number}:base`) ?? null;
-      const pairedAsset = catalog?.assets.find((candidate) => candidate.id === `library-asset:providence:icon-library:${number}:paired`) ?? null;
-      const baseId = Math.abs(asset?.resourceId ?? 0);
-      const metadata = iconLibraryMonsterPairMetadata(entity);
-      return {
-        key: entity.id,
-        baseId,
-        asset,
-        pairedAsset,
-        sourceKind: "providence-library" as const,
-        sourceLabel: entity.label || asset?.label || `Providence Icon ${baseId}`,
-        facingMode: metadata.facingMode,
-        canvas: metadata.canvas
-      };
-    })
-    .filter((source) => source.baseId > 0 && source.pairedAsset);
-  return [...monsterMashPairs, ...providencePairs];
-}
-
-export function nextScenarioMonsterIconTargetBaseId(
-  sourceBaseIconId: number,
-  targets: Array<Pick<MonsterIconPairOption, "baseId" | "override">>
-) {
-  const occupiedResourceIds = new Set<number>();
-  for (const target of targets) {
-    if (!target.override) continue;
-    const baseId = normalizedMonsterIconBaseId(target.baseId);
-    if (!baseId) continue;
-    occupiedResourceIds.add(baseId);
-    occupiedResourceIds.add(baseId + MONSTER_ICON_PAIR_OFFSET);
-  }
-
-  const sourceBaseId = normalizedMonsterIconBaseId(sourceBaseIconId);
-  const fromSource = firstAvailableMonsterIconBaseId(sourceBaseId, occupiedResourceIds);
-  if (fromSource) return fromSource;
-  return firstAvailableMonsterIconBaseId(IMPORTED_MONSTER_ICON_BASE_START, occupiedResourceIds);
-}
-
-function firstAvailableMonsterIconBaseId(startBaseId: number, occupiedResourceIds: Set<number>) {
-  const start = normalizedMonsterIconBaseId(startBaseId);
-  if (!start) return 0;
-  for (let baseId = start; baseId + MONSTER_ICON_PAIR_OFFSET <= 32767; baseId += 1) {
-    if (!occupiedResourceIds.has(baseId) && !occupiedResourceIds.has(baseId + MONSTER_ICON_PAIR_OFFSET)) return baseId;
-  }
-  return 0;
-}
-
-function normalizedMonsterIconBaseId(baseId: number) {
-  const normalized = Math.trunc(Math.abs(baseId));
-  return normalized > 0 && normalized + MONSTER_ICON_PAIR_OFFSET <= 32767 ? normalized : 0;
-}
-
-function iconLibraryEntityNumber(entity: LibraryCatalog["entities"][number]) {
-  const value = entity.summary.libraryNumber;
-  return typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : 0;
-}
-
-function isMonsterIconPairBase(baseId: number, assets: Map<number, LibraryAsset>) {
-  if (!Number.isInteger(baseId) || baseId <= 0) return false;
-  if (!assets.has(baseId) || !assets.has(baseId + MONSTER_ICON_PAIR_OFFSET)) return false;
-  return !assets.has(baseId - MONSTER_ICON_PAIR_OFFSET);
-}
-
 function IconPairPreview({
   baseAsset,
   pairedAsset,
@@ -6052,29 +5672,8 @@ function bytesToBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
-function previewPathFromCicnBase64(resourceBase64: string, fallback: string | null) {
-  try {
-    const binary = atob(resourceBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-      bytes[index] = binary.charCodeAt(index);
-    }
-    return inspectResourcePreview("cicn", bytes).dataUrl ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
 function monsterIconCanvasPreset(key: (typeof MONSTER_ICON_CANVAS_PRESETS)[number]["key"]) {
   return MONSTER_ICON_CANVAS_PRESETS.find((preset) => preset.key === key) ?? MONSTER_ICON_CANVAS_PRESETS[0];
-}
-
-function nextImportedMonsterIconBaseId(sources: MonsterIconPairOption[]) {
-  const used = new Set(sources.map((source) => Math.abs(source.baseId)));
-  for (let baseId = IMPORTED_MONSTER_ICON_BASE_START; baseId + MONSTER_ICON_PAIR_OFFSET <= 32767; baseId += 1) {
-    if (!used.has(baseId) && !used.has(baseId + MONSTER_ICON_PAIR_OFFSET)) return baseId;
-  }
-  return IMPORTED_MONSTER_ICON_BASE_START + used.size;
 }
 
 function stripFileExtension(name: string) {
@@ -6618,155 +6217,4 @@ function updateArraySlot(values: number[] = [], index: number, value: number, le
   while (next.length < length) next.push(0);
   next[index] = value;
   return next.slice(0, length);
-}
-
-type CombatLookupDeps = {
-  catalogAssets: LibraryCatalog["assets"] | undefined;
-  projectAssets: Project["assets"] | undefined;
-  projectBattlesLength: number;
-  projectCatalogIcons: Project["assetCatalog"]["icons"] | undefined;
-  projectMonsterIconOverrides: Project["monsterIconOverrides"] | undefined;
-  projectMonsters: Project["monsters"] | undefined;
-  projectMonsterSets: Project["monsterSets"] | undefined;
-  projectScenarioIconResources: Project["scenarioIconResources"] | undefined;
-};
-
-let combatLookupsCache: { deps: CombatLookupDeps; value: CombatLookups } | null = null;
-
-function useCombatLookups(project: Project | null, catalog: LibraryCatalog | null): CombatLookups {
-  const projectBattlesLength = project?.battles?.length ?? 0;
-  const projectMonsters = project?.monsters;
-  const projectMonsterSets = project?.monsterSets;
-  const projectAssets = project?.assets;
-  const projectCatalogIcons = project?.assetCatalog?.icons;
-  const projectMonsterIconOverrides = project?.monsterIconOverrides;
-  const projectScenarioIconResources = project?.scenarioIconResources;
-  const catalogAssets = catalog?.assets;
-  return useMemo(() => cachedCombatLookups(project, catalog, {
-    catalogAssets,
-    projectAssets,
-    projectBattlesLength,
-    projectCatalogIcons,
-    projectMonsterIconOverrides,
-    projectMonsters,
-    projectMonsterSets,
-    projectScenarioIconResources
-  }), [
-    catalogAssets,
-    projectAssets,
-    projectBattlesLength,
-    projectCatalogIcons,
-    projectMonsterIconOverrides,
-    projectMonsters,
-    projectMonsterSets,
-    projectScenarioIconResources
-  ]);
-}
-
-function cachedCombatLookups(project: Project | null, catalog: LibraryCatalog | null, deps: CombatLookupDeps) {
-  if (combatLookupsCache && sameCombatLookupDeps(combatLookupsCache.deps, deps)) return combatLookupsCache.value;
-  const value = measureCombatWork("useCombatLookups", () => buildCombatLookups(project, catalog));
-  combatLookupsCache = { deps, value };
-  return value;
-}
-
-function sameCombatLookupDeps(left: CombatLookupDeps, right: CombatLookupDeps) {
-  return left.catalogAssets === right.catalogAssets
-    && left.projectAssets === right.projectAssets
-    && left.projectBattlesLength === right.projectBattlesLength
-    && left.projectCatalogIcons === right.projectCatalogIcons
-    && left.projectMonsterIconOverrides === right.projectMonsterIconOverrides
-    && left.projectMonsters === right.projectMonsters
-    && left.projectMonsterSets === right.projectMonsterSets
-    && left.projectScenarioIconResources === right.projectScenarioIconResources;
-}
-
-function buildCombatLookups(project: Project | null, catalog: LibraryCatalog | null): CombatLookups {
-  if (!project) {
-    return {
-      monsters: [],
-      monsterById: new Map(),
-      monsterSetsById: new Map([[0, []]]),
-      monsterBySetAndId: new Map([[0, new Map()]]),
-      iconAssetsByAbsId: new Map(),
-      realmzActorIconAssetsByAbsId: new Map(),
-      monsterMashAssetsByAbsId: new Map(),
-      monsterIconOverridesByTarget: new Map(),
-      tabCounts: { battles: 0, monsters: 0, iconSet: 0 }
-    };
-  }
-  const monsters = [...(project.monsters ?? [])].sort((a, b) => a.id - b.id);
-  const monsterById = new Map(monsters.map((monster) => [monster.id, monster]));
-  const monsterSetsById = new Map<MonsterSetId, MonsterRecord[]>([[0, monsters]]);
-  const monsterBySetAndId = new Map<MonsterSetId, Map<number, MonsterRecord>>([[0, monsterById]]);
-  for (const option of MONSTER_SET_OPTIONS) {
-    if (option.id === 0) continue;
-    const set = (project.monsterSets ?? []).find((candidate) => candidate.setId === option.id);
-    const setMonsters = [...(set?.monsters ?? [])].sort((a, b) => a.id - b.id);
-    monsterSetsById.set(option.id, setMonsters);
-    monsterBySetAndId.set(option.id, new Map(setMonsters.map((monster) => [monster.id, monster])));
-  }
-  const iconAssetsByAbsId = new Map<number, CombatIconAsset>();
-  const realmzActorIconAssetsByAbsId = new Map<number, LibraryAsset>();
-  const monsterMashAssetsByAbsId = new Map<number, LibraryAsset>();
-  const monsterIconOverridesByTarget = new Map<number, MonsterIconOverride>();
-  for (const override of project.monsterIconOverrides ?? []) {
-    if (Number.isInteger(override.targetBaseIconId)) {
-      monsterIconOverridesByTarget.set(Math.abs(override.targetBaseIconId), override);
-    }
-  }
-  const addIconAsset = (asset: CombatIconAsset | null | undefined) => {
-    if (!asset?.previewPath || asset.resourceId == null) return;
-    const key = Math.abs(asset.resourceId);
-    if (!iconAssetsByAbsId.has(key)) iconAssetsByAbsId.set(key, asset);
-  };
-  for (const asset of project.assets ?? []) {
-    if (asset.resourceType === "cicn") addIconAsset(asset);
-  }
-  for (const asset of project.assetCatalog?.icons ?? []) {
-    if (asset.resourceType === "cicn") addIconAsset(asset);
-  }
-  for (const asset of catalog?.assets ?? []) {
-    if (isRealmzActorOrCreatureIconLibraryAsset(asset)) {
-      const key = Math.abs(asset.resourceId);
-      if (!realmzActorIconAssetsByAbsId.has(key)) realmzActorIconAssetsByAbsId.set(key, asset);
-    }
-    if (!isMonsterMashLibraryAsset(asset)) continue;
-    const key = Math.abs(asset.resourceId);
-    if (!monsterMashAssetsByAbsId.has(key)) monsterMashAssetsByAbsId.set(key, asset);
-  }
-  const iconSetTargetCount = monsterIconSetTabCount(project, {
-    iconAssetsByAbsId,
-    realmzActorIconAssetsByAbsId,
-    monsterIconOverridesByTarget
-  });
-  return {
-    monsters,
-    monsterById,
-    monsterSetsById,
-    monsterBySetAndId,
-    iconAssetsByAbsId,
-    realmzActorIconAssetsByAbsId,
-    monsterMashAssetsByAbsId,
-    monsterIconOverridesByTarget,
-    tabCounts: {
-      battles: project.battles?.length ?? 0,
-      monsters: authorFacingMonsterScenarioIds(project).length,
-      iconSet: iconSetTargetCount
-    }
-  };
-}
-
-function isRealmzActorOrCreatureIconLibraryAsset(asset: LibraryAsset): asset is LibraryAsset & { resourceId: number } {
-  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
-  if (!isActorOrCreatureIconId(Math.abs(asset.resourceId))) return false;
-  if (isMonsterMashLibraryAsset(asset)) return false;
-  const text = `${asset.source} ${asset.label} ${asset.relativePath}`.toLowerCase();
-  return text.includes(":realmz:") || text.includes("realmz-reference") || text.includes("the family jewels");
-}
-
-function isMonsterMashLibraryAsset(asset: LibraryAsset): asset is LibraryAsset & { resourceId: number } {
-  if (asset.resourceType !== "cicn" || asset.resourceId == null) return false;
-  const text = `${asset.source} ${asset.label} ${asset.relativePath}`.toLowerCase();
-  return text.includes("monster mash");
 }
