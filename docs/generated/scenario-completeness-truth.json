@@ -866,9 +866,9 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/core-rules-record-evidence.json",
         "docs/format-evidence-cards/core-rules-record-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
-        "src-tauri/src/realmz.rs:write_scenario_items",
-        "src-tauri/src/realmz.rs:parse_scenario_items"
+        "src-tauri/src/realmz/economy.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+        "src-tauri/src/realmz/economy.rs:write_scenario_items",
+        "src-tauri/src/realmz/economy.rs:parse_scenario_items"
       ],
       "fixtureGate": {
         "name": "scenario-item-record-writer",
@@ -1001,9 +1001,9 @@
       "evidence": [
         "docs/generated/encounter-shop-writer-gates.json",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:write_shops",
-        "src-tauri/src/realmz.rs:parse_shops"
+        "src-tauri/src/realmz/economy.rs:shop_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/economy.rs:write_shops",
+        "src-tauri/src/realmz/economy.rs:parse_shops"
       ],
       "fixtureGate": {
         "name": "shop-record-writer",

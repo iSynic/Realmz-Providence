@@ -519,9 +519,9 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       { field: "Inflation", internal: "inflation", offset: 3000, bytes: 2, type: "i16be" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
-      "src-tauri/src/realmz.rs:write_shops",
-      "src-tauri/src/realmz.rs:parse_shops",
+      "src-tauri/src/realmz/economy.rs:shop_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz/economy.rs:write_shops",
+      "src-tauri/src/realmz/economy.rs:parse_shops",
       "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
     ],
     preservationPolicy: "Shop records are fully modeled as item IDs, quantities, and inflation."
@@ -640,9 +640,9 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Item spare compatibility words", internal: "spare2[7]", offset: 56, bytes: 14, type: "i16be[7]-preserved" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
-      "src-tauri/src/realmz.rs:write_scenario_items",
-      "src-tauri/src/realmz.rs:parse_scenario_items",
+      "src-tauri/src/realmz/economy.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+      "src-tauri/src/realmz/economy.rs:write_scenario_items",
+      "src-tauri/src/realmz/economy.rs:parse_scenario_items",
       "docs/generated/core-rules-record-evidence.json",
       "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
     ],

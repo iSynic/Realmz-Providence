@@ -512,32 +512,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
-        "src-tauri/src/realmz.rs:write_scenario_items",
-        "src-tauri/src/realmz.rs:parse_scenario_items",
+        "src-tauri/src/realmz/economy.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+        "src-tauri/src/realmz/economy.rs:write_scenario_items",
+        "src-tauri/src/realmz/economy.rs:parse_scenario_items",
         "docs/generated/core-rules-record-evidence.json",
         "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/economy.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+          "file": "src-tauri/src/realmz/economy.rs",
           "anchor": "scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_scenario_items",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/economy.rs:write_scenario_items",
+          "file": "src-tauri/src/realmz/economy.rs",
           "anchor": "write_scenario_items",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_scenario_items",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/economy.rs:parse_scenario_items",
+          "file": "src-tauri/src/realmz/economy.rs",
           "anchor": "parse_scenario_items",
           "fileExists": true,
           "anchorPresent": true,

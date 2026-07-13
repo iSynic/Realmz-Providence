@@ -373,31 +373,31 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:write_shops",
-        "src-tauri/src/realmz.rs:parse_shops",
+        "src-tauri/src/realmz/economy.rs:shop_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/economy.rs:write_shops",
+        "src-tauri/src/realmz/economy.rs:parse_shops",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:shop_storage_mutates_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/economy.rs:shop_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz/economy.rs",
           "anchor": "shop_storage_mutates_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_shops",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/economy.rs:write_shops",
+          "file": "src-tauri/src/realmz/economy.rs",
           "anchor": "write_shops",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_shops",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/economy.rs:parse_shops",
+          "file": "src-tauri/src/realmz/economy.rs",
           "anchor": "parse_shops",
           "fileExists": true,
           "anchorPresent": true,
