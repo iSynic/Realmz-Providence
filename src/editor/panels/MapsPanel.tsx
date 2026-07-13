@@ -254,26 +254,7 @@ export function MapsPanel({
         onSelectMap={onSelectMap}
         onSetTool={openCanvasTool}
         onSelectTile={onSelectTile}
-        paintMode={paintMode}
-        onSetPaintMode={setPaintMode}
-        paintVariation={paintVariation}
-        onSetPaintVariation={setPaintVariation}
-        activePaintGroupId={activePaintGroupId}
-        onSetActivePaintGroup={setPaintGroup}
-        paintPaletteMode={paintPaletteMode}
-        onSetPaintPaletteMode={setPaintPaletteMode}
-        activeCustomPaletteId={activeCustomPaletteId}
-        onSetActiveCustomPaletteId={setActiveCustomPaletteId}
-        onSetPaletteVariationTiles={setPaletteVariationTiles}
-        selectedRegion={selectedRegion}
-        onSetSelectedRegion={setSelectedRegion}
-        globalMapStamps={globalMapStamps}
-        onSetGlobalMapStamps={setGlobalMapStamps}
         onApplyCommand={onApplyCommand}
-        paletteOpen={paletteOpen}
-        onSetPaletteOpen={setPaletteOpen}
-        dungeonDrawFlags={dungeonDrawFlags}
-        onSetDungeonDrawFlags={setDungeonDrawFlags}
       />
 
       <section className={`editor-canvas-area map-workbench-area map-workbench-${workbenchMode}`}>
