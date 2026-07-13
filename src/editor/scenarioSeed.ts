@@ -48,6 +48,27 @@ import { defaultStockCombatClearingTile, defaultStockHiddenWalkableTile, isStock
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "./monsterLibrary";
 import { copyCurrentMonsterToAllSets, generateMonsterVariants } from "./projectCommands/targetRecordCommands";
 import { createCasteOverride, createRaceOverride, createSpellOverride } from "./projectCommands/scenarioRulesCommands";
+import {
+  allowKeys,
+  checkIntegerRange,
+  optionalBoolean,
+  optionalFixedIntegerArray,
+  optionalFixedIntegerMatrix,
+  optionalInteger,
+  optionalRef,
+  optionalString,
+  optionalStringProperty,
+  parseArray,
+  parseIntegerArray,
+  parseRefArray,
+  parseStringArray,
+  requireInteger,
+  requireObject,
+  requireRef,
+  requireString,
+  type ObjectValue,
+  type ParseContext
+} from "./scenarioSeed/parsePrimitives";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
 
@@ -858,13 +879,6 @@ export type ScenarioSeedProjectOptions = {
   baseTemplates?: Record<string, Project>;
   libraryCatalog?: LibraryCatalog | null;
 };
-
-type ParseContext = {
-  errors: string[];
-  warnings: string[];
-};
-
-type ObjectValue = Record<string, unknown>;
 
 type MapTarget = { levelType: LevelType; index: number; x?: number; y?: number };
 type ActionPointTarget = { levelType: LevelType; levelIndex: number; recordIndex: number };
@@ -5093,143 +5107,10 @@ function optionalRefField<T extends string>(value: ObjectValue, key: T, path: st
   return parsed === undefined ? {} : { [key]: parsed } as Partial<Record<T, ScenarioSeedRef>>;
 }
 
-function parseArray<T>(input: unknown, path: string, ctx: ParseContext, parse: (input: unknown, path: string, ctx: ParseContext) => T | null): T[] | undefined {
-  if (input === undefined) return undefined;
-  if (!Array.isArray(input)) {
-    ctx.errors.push(`${path} must be an array.`);
-    return undefined;
-  }
-  const values: T[] = [];
-  input.forEach((item, index) => {
-    const parsed = parse(item, `${path}[${index}]`, ctx);
-    if (parsed) values.push(parsed);
-  });
-  return values;
-}
-
-function parseIntegerArray(input: unknown, path: string, ctx: ParseContext): number[] | undefined {
-  if (input === undefined) return undefined;
-  if (!Array.isArray(input)) {
-    ctx.errors.push(`${path} must be an array of integers.`);
-    return undefined;
-  }
-  const values: number[] = [];
-  input.forEach((item, index) => {
-    const parsed = requireInteger(item, `${path}[${index}]`, ctx);
-    if (parsed !== null) values.push(parsed);
-  });
-  return values;
-}
-
-function optionalFixedIntegerArray(input: unknown, path: string, length: number, ctx: ParseContext) {
-  const values = parseIntegerArray(input, path, ctx);
-  if (values && values.length !== length) ctx.errors.push(`${path} must contain exactly ${length} entries.`);
-  return values;
-}
-
-function optionalFixedIntegerMatrix(input: unknown, path: string, rows: number, columns: number, ctx: ParseContext) {
-  const values = parseArray(input, path, ctx, (row, rowPath, rowContext) => optionalFixedIntegerArray(row, rowPath, columns, rowContext) ?? null);
-  if (values && values.length !== rows) ctx.errors.push(`${path} must contain exactly ${rows} rows.`);
-  return values;
-}
-
-function optionalStringProperty<T extends string>(value: ObjectValue, key: T, path: string, ctx: ParseContext): Partial<Record<T, string>> {
-  const parsed = optionalString(value[key], `${path}.${key}`, ctx);
-  return parsed === undefined ? {} : { [key]: parsed } as Partial<Record<T, string>>;
-}
-
-function parseStringArray(input: unknown, path: string, ctx: ParseContext): string[] | undefined {
-  if (input === undefined) return undefined;
-  if (!Array.isArray(input)) {
-    ctx.errors.push(`${path} must be an array of strings.`);
-    return undefined;
-  }
-  const values: string[] = [];
-  input.forEach((item, index) => {
-    const parsed = optionalString(item, `${path}[${index}]`, ctx);
-    if (parsed !== undefined) values.push(parsed);
-  });
-  return values;
-}
-
-function parseRefArray(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRef[] | undefined {
-  if (input === undefined) return undefined;
-  if (!Array.isArray(input)) {
-    ctx.errors.push(`${path} must be an array of integer IDs or key strings.`);
-    return undefined;
-  }
-  const values: ScenarioSeedRef[] = [];
-  input.forEach((item, index) => {
-    values.push(requireRef(item, `${path}[${index}]`, ctx));
-  });
-  return values;
-}
-
-function requireRef(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRef {
-  if (typeof input === "string" && input.trim().length > 0) return input;
-  if (Number.isInteger(input)) return input as number;
-  ctx.errors.push(`${path} must be an integer ID or non-empty key string.`);
-  return 0;
-}
-
-function optionalRef(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRef | undefined {
-  if (input === undefined) return undefined;
-  if (typeof input === "string" && input.trim().length > 0) return input;
-  if (Number.isInteger(input)) return input as number;
-  ctx.errors.push(`${path} must be an integer ID or non-empty key string.`);
-  return undefined;
-}
-
-function requireObject(input: unknown, path: string, ctx: ParseContext): ObjectValue | null {
-  if (isObject(input)) return input;
-  ctx.errors.push(`${path} must be an object.`);
-  return null;
-}
-
-function allowKeys(value: ObjectValue, path: string, keys: string[], ctx: ParseContext) {
-  const allowed = new Set(keys);
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) ctx.errors.push(`${path}.${key} is not a supported scenario seed field.`);
-  }
-}
-
-function requireString(input: unknown, path: string, ctx: ParseContext): string | null {
-  if (typeof input === "string" && input.trim().length > 0) return input;
-  ctx.errors.push(`${path} must be a non-empty string.`);
-  return null;
-}
-
-function optionalString(input: unknown, path: string, ctx: ParseContext): string | undefined {
-  if (input === undefined) return undefined;
-  if (typeof input === "string") return input;
-  ctx.errors.push(`${path} must be a string.`);
-  return undefined;
-}
-
-function requireInteger(input: unknown, path: string, ctx: ParseContext): number | null {
-  if (Number.isInteger(input)) return input as number;
-  ctx.errors.push(`${path} must be an integer.`);
-  return null;
-}
-
 function requireMapTile(input: unknown, path: string, ctx: ParseContext): number | null {
   const tile = requireInteger(input, path, ctx);
   checkIntegerRange(tile, path, MAP_TILE_MIN, MAP_TILE_MAX, ctx);
   return tile;
-}
-
-function optionalInteger(input: unknown, path: string, ctx: ParseContext): number | undefined {
-  if (input === undefined) return undefined;
-  if (Number.isInteger(input)) return input as number;
-  ctx.errors.push(`${path} must be an integer.`);
-  return undefined;
-}
-
-function optionalBoolean(input: unknown, path: string, ctx: ParseContext): boolean | undefined {
-  if (input === undefined) return undefined;
-  if (typeof input === "boolean") return input;
-  ctx.errors.push(`${path} must be a boolean.`);
-  return undefined;
 }
 
 function optionalManagedAssetKind(input: unknown, path: string, ctx: ParseContext): ManagedAssetKind | undefined {
@@ -5426,14 +5307,4 @@ function requireTileParameter(input: unknown, path: string, ctx: ParseContext): 
   if (typeof input === "string" && Object.prototype.hasOwnProperty.call(TILE_PARAMETER_CODES, input)) return input as ScenarioSeedTileParameter;
   ctx.errors.push(`${path} must be shoreline, boatRequired, path, blocksLos, flyFloatRequired, forest, or tileId.`);
   return "path";
-}
-
-function checkIntegerRange(value: number | null | undefined, path: string, min: number | null, max: number | null, ctx: ParseContext) {
-  if (value === null || value === undefined) return;
-  if (min !== null && value < min) ctx.errors.push(`${path} must be greater than or equal to ${min}.`);
-  if (max !== null && value > max) ctx.errors.push(`${path} must be less than or equal to ${max}.`);
-}
-
-function isObject(input: unknown): input is ObjectValue {
-  return typeof input === "object" && input !== null && !Array.isArray(input);
 }
