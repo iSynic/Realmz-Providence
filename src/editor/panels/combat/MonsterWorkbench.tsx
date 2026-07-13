@@ -19,7 +19,7 @@ import {
   type CombatLookups
 } from "./combatLookups";
 import { measureCombatWork, useCombatRenderTiming } from "./performance";
-import { MAX_DIVINITY_BATTLE_MONSTER_ID } from "./BattleBoard";
+import { MAX_DIVINITY_BATTLE_MONSTER_ID } from "./battleMonsterPaletteModel";
 import { BattleReferenceRepairDialog, type PendingBattleReferenceRepair } from "./BattleReferenceRepairDialog";
 import { MonsterLibraryList } from "./MonsterLibraryList";
 import { MonsterLibraryMultiSelection } from "./MonsterLibraryMultiSelection";

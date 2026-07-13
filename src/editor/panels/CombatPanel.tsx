@@ -24,7 +24,7 @@ export {
 } from "./combat/iconSetModel";
 export type { MonsterIconPickerOption, MonsterIconSourceStatus } from "./combat/iconSetModel";
 export type { CombatWorkbenchTab } from "./combat/combatLookups";
-export { monsterBrushPaletteWindow } from "./combat/BattleBoard";
+export { monsterBrushPaletteWindow } from "./combat/battleMonsterPaletteModel";
 export {
   materializeMonsterLibraryIconOverrides,
   monsterIconOverrideForLibraryCopy
