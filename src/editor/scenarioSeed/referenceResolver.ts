@@ -1,5 +1,5 @@
 import type { ManagedAssetKind } from "../types";
-import type { ScenarioSeedRef } from "../scenarioSeed";
+import type { ScenarioSeedRef } from "./contracts";
 import { resolveRef } from "./allocation";
 import {
   addScenarioSeedDiagnostic as addDiagnostic,

@@ -3,7 +3,7 @@ import type {
   ScenarioSeedItem,
   ScenarioSeedMap,
   ScenarioSeedScenario
-} from "../scenarioSeed";
+} from "./contracts";
 import { SCENARIO_ITEM_ID_BASE } from "./allocation";
 import type { ParseContext } from "./parsePrimitives";
 

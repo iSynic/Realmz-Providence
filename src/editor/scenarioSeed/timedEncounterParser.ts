@@ -1,4 +1,4 @@
-import type { ScenarioSeedTimedEncounter, ScenarioSeedTimedLocation } from "../scenarioSeed";
+import type { ScenarioSeedTimedEncounter, ScenarioSeedTimedLocation } from "./contracts";
 import {
   allowKeys,
   checkIntegerRange,

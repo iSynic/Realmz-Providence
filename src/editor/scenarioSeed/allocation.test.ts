@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ScenarioSeed } from "../scenarioSeed";
+import type { ScenarioSeed } from "./contracts";
 import {
   addKey,
   allocateRecordIds,

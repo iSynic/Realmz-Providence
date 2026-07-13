@@ -1,5 +1,5 @@
 import type { ManagedAssetKind } from "../types";
-import type { ScenarioSeedAsset } from "../scenarioSeed";
+import type { ScenarioSeedAsset } from "./contracts";
 import {
   allowKeys,
   optionalInteger,

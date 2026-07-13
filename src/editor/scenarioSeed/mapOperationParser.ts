@@ -10,7 +10,7 @@ import type {
   ScenarioSeedRegion,
   ScenarioSeedRoomDoor,
   ScenarioSeedTerrainGeometry
-} from "../scenarioSeed";
+} from "./contracts";
 import {
   allowKeys,
   checkIntegerRange,

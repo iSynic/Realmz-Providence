@@ -9,7 +9,7 @@ import type {
   ScenarioSeedSimpleEncounter,
   ScenarioSeedSimpleEncounterOption,
   ScenarioSeedThiefEncounter
-} from "../scenarioSeed";
+} from "./contracts";
 import { parseStep } from "./actionPointParser";
 import { ROGUE_ACTION_SLOTS } from "./encounterContracts";
 import {

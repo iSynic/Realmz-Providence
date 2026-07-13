@@ -6,6 +6,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const schemaPath = path.join(root, "schemas", "scenario-seed.schema.json");
 const docsPath = path.join(root, "docs", "scenario-seed-schema.md");
 const sourcePath = path.join(root, "src", "editor", "scenarioSeed.ts");
+const parserPath = path.join(root, "src", "editor", "scenarioSeed", "parser.ts");
+const scriptCompilerPath = path.join(root, "src", "editor", "scenarioSeed", "scriptCompiler.ts");
 const mapOperationParserPath = path.join(root, "src", "editor", "scenarioSeed", "mapOperationParser.ts");
 const namedTilesPath = path.join(root, "src", "editor", "map", "namedLandTiles.ts");
 const namedStampsPath = path.join(root, "src", "editor", "map", "namedLandStamps.ts");
@@ -14,6 +16,8 @@ const builtInStampsPath = path.join(root, "src", "editor", "map", "builtInMapSta
 const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
 const docs = fs.readFileSync(docsPath, "utf8");
 const source = fs.readFileSync(sourcePath, "utf8");
+const parserSource = fs.readFileSync(parserPath, "utf8");
+const scriptCompilerSource = fs.readFileSync(scriptCompilerPath, "utf8");
 const mapOperationParserSource = fs.readFileSync(mapOperationParserPath, "utf8");
 const namedTilesSource = fs.readFileSync(namedTilesPath, "utf8");
 const namedStampsSource = fs.readFileSync(namedStampsPath, "utf8");
@@ -23,8 +27,9 @@ const failures = [];
 expect(schema.properties?.schemaVersion?.const === 1, "schemaVersion must be const 1");
 expect(schema.additionalProperties === false, "root schema must reject additional properties");
 expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the scenario seed schema");
-expect(source.includes("export function parseScenarioSeed"), "scenarioSeed.ts must export parseScenarioSeed");
+expect(source.includes("export { parseScenarioSeed }"), "scenarioSeed.ts must re-export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");
+expect(parserSource.includes("export function parseScenarioSeed"), "parser.ts must implement parseScenarioSeed");
 
 const requiredRootProperties = ["baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "spells", "races", "castes", "actionPoints", "extraActionPoints"];
 for (const key of requiredRootProperties) {
@@ -46,7 +51,10 @@ for (const defName of stepDefs) {
   if (typeof kind === "string") schemaStepKinds.push(kind);
 }
 for (const kind of schemaStepKinds) {
-  expect(source.includes(`kind: "${kind}"`) || source.includes(`kind === "${kind}"`), `scenarioSeed.ts must handle ${kind} steps`);
+  expect(
+    scriptCompilerSource.includes(`kind: "${kind}"`) || scriptCompilerSource.includes(`kind === "${kind}"`),
+    `scriptCompiler.ts must handle ${kind} steps`
+  );
   expect(docs.includes(`\`${kind}\``) || docs.includes(kind), `docs must mention ${kind} steps`);
 }
 

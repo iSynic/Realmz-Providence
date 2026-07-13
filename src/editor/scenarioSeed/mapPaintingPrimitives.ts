@@ -1,5 +1,5 @@
 import type { LevelType } from "../types";
-import type { ScenarioSeedPoint } from "../scenarioSeed";
+import type { ScenarioSeedPoint } from "./contracts";
 
 const MAP_SIZE = 90;
 

@@ -1,4 +1,4 @@
-import type { ScenarioSeedRogueActionKind } from "../scenarioSeed";
+import type { ScenarioSeedRogueActionKind } from "./contracts";
 
 export const ROGUE_ACTION_SLOTS: Record<ScenarioSeedRogueActionKind, number> = {
   acrobaticAct: 0,

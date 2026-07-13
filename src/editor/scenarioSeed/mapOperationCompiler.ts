@@ -9,7 +9,7 @@ import {
   defaultStockHiddenWalkableTile
 } from "../map/secrets";
 import { normalizeSmartTerrainTile } from "../map/smartTerrainTopology";
-import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "../scenarioSeed";
+import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "./contracts";
 import { addScenarioSeedDiagnostic } from "./compilerContext";
 import { castleRoomDoorPoint, type ScenarioSeedMapOperationContext } from "./mapCompiler";
 import { drawLine, drawPath, mapStorageTileIndex, setTile } from "./mapPaintingPrimitives";

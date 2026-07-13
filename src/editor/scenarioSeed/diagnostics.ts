@@ -3,7 +3,7 @@ import { tileValueAt } from "../map/geometry";
 import { supportsSemanticRoads } from "../map/semanticRoads";
 import { normalizeSmartTerrainTile } from "../map/smartTerrainTopology";
 import type { MapEntity } from "../types";
-import type { ScenarioSeed } from "../scenarioSeed";
+import type { ScenarioSeed } from "./contracts";
 import { addScenarioSeedDiagnostic, type ScenarioSeedCompilerContext } from "./compilerContext";
 
 export function addScenarioSeedTopologyDiagnostics(seed: ScenarioSeed, context: ScenarioSeedCompilerContext) {

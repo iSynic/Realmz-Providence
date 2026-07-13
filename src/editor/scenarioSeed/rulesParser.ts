@@ -3,7 +3,7 @@ import type {
   ScenarioSeedRace,
   ScenarioSeedSpell,
   ScenarioSeedSpellNumberField
-} from "../scenarioSeed";
+} from "./contracts";
 import {
   allowKeys,
   checkIntegerRange,

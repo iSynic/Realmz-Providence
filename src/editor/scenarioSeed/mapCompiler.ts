@@ -7,7 +7,7 @@ import type {
   ScenarioSeedMap,
   ScenarioSeedMapOperation,
   ScenarioSeedPoint
-} from "../scenarioSeed";
+} from "./contracts";
 import type { ScenarioSeedCompilerContext } from "./compilerContext";
 
 const MAP_SIZE = 90;

@@ -1,5 +1,5 @@
 import type { LevelType, LibraryCatalog, ManagedAssetKind } from "../types";
-import type { ScenarioSeedAllocationReport, ScenarioSeedDiagnostic } from "../scenarioSeed";
+import type { ScenarioSeedAllocationReport, ScenarioSeedDiagnostic } from "./contracts";
 
 export type MapTarget = { levelType: LevelType; index: number; x?: number; y?: number };
 export type ActionPointTarget = { levelType: LevelType; levelIndex: number; recordIndex: number };

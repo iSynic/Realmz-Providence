@@ -11,7 +11,7 @@ import type {
   ScenarioSeedStep,
   ScenarioSeedTileParameter,
   ScenarioSeedTimeMode
-} from "../scenarioSeed";
+} from "./contracts";
 import {
   ALTER_PICKED_ATTRIBUTE_CODES,
   DIRECTION_CODES,

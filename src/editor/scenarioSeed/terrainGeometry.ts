@@ -1,4 +1,4 @@
-import type { ScenarioSeedPoint, ScenarioSeedTerrainGeometry } from "../scenarioSeed";
+import type { ScenarioSeedPoint, ScenarioSeedTerrainGeometry } from "./contracts";
 
 const MAP_SIZE = 90;
 

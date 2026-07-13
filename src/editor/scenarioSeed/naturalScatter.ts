@@ -1,7 +1,7 @@
 import { namedLandStampVariants, resolveNamedLandStamp } from "../map/namedLandStamps";
 import { namedLandTileVariants } from "../map/namedLandTiles";
 import { normalizeSmartTerrainTile } from "../map/smartTerrainTopology";
-import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "../scenarioSeed";
+import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "./contracts";
 import type { ScenarioSeedMapOperationContext } from "./mapCompiler";
 import { mapStorageTileIndex, setTile } from "./mapPaintingPrimitives";
 import { deterministicHash, terrainGeometryCells } from "./terrainGeometry";

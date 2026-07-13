@@ -3,7 +3,7 @@ import type {
   ScenarioSeedAllocationEntry,
   ScenarioSeedMapOperation,
   ScenarioSeedRef
-} from "../scenarioSeed";
+} from "./contracts";
 import { addScenarioSeedDiagnostic, type ScenarioSeedCompilerContext } from "./compilerContext";
 
 export const SCENARIO_ITEM_ID_BASE = 800;

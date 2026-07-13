@@ -9,7 +9,7 @@ import {
   isStockHiddenWalkableTile
 } from "../map/secrets";
 import type { LevelType } from "../types";
-import type { ScenarioSeedMap } from "../scenarioSeed";
+import type { ScenarioSeedMap } from "./contracts";
 import { scenarioSeedOperationRegions } from "./mapCompiler";
 import {
   MAP_SIZE,

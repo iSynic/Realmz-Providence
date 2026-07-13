@@ -1,4 +1,4 @@
-import type { ScenarioSeedScenario, ScenarioSeedStart } from "../scenarioSeed";
+import type { ScenarioSeedScenario, ScenarioSeedStart } from "./contracts";
 import {
   allowKeys,
   checkIntegerRange,

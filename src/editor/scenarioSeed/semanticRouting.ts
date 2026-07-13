@@ -1,7 +1,7 @@
 import { GENERATED_SMART_TERRAIN_PROFILES } from "../map/generatedSmartTerrainProfiles";
 import { semanticRoadTile } from "../map/semanticRoads";
 import { normalizeSmartTerrainTile } from "../map/smartTerrainTopology";
-import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "../scenarioSeed";
+import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "./contracts";
 import { addScenarioSeedDiagnostic } from "./compilerContext";
 import type { ScenarioSeedMapOperationContext } from "./mapCompiler";
 import { mapStorageTileIndex, setTile } from "./mapPaintingPrimitives";

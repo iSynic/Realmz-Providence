@@ -1,7 +1,7 @@
 import type {
   ScenarioSeedPartyCondition,
   ScenarioSeedTileParameter
-} from "../scenarioSeed";
+} from "./contracts";
 
 export const ALTER_PICKED_ATTRIBUTE_CODES = {
   meleeAttacks: 1,

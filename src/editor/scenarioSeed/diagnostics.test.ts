@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mapTileIndex } from "../map/geometry";
 import type { MapEntity } from "../types";
-import type { ScenarioSeed } from "../scenarioSeed";
+import type { ScenarioSeed } from "./contracts";
 import { createScenarioSeedCompilerContext } from "./compilerContext";
 import {
   addScenarioSeedMapPlacementDiagnostics,

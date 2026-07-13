@@ -11,7 +11,7 @@ import type {
   ScenarioSeedRef,
   ScenarioSeedShop,
   ScenarioSeedTreasure
-} from "../scenarioSeed";
+} from "./contracts";
 import {
   SCENARIO_ITEM_ID_BASE,
   SCENARIO_ITEM_RECORD_COUNT

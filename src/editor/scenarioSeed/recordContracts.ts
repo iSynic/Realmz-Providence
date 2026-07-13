@@ -1,4 +1,4 @@
-import type { ScenarioSeedItemTypeName } from "../scenarioSeed";
+import type { ScenarioSeedItemTypeName } from "./contracts";
 
 export const SCENARIO_ITEM_TYPE_CODES: Record<ScenarioSeedItemTypeName, number> = {
   ring: 0,

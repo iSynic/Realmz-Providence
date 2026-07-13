@@ -1,7 +1,7 @@
 import { landlookName, landlookPictId } from "../browser/realmzParser";
 import { buildSmartTerrainChanges } from "../map/smartTerrainBrush";
 import type { MapEntity, SmartBrushPreset, TilesetAsset } from "../types";
-import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "../scenarioSeed";
+import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "./contracts";
 import type { ScenarioSeedMapOperationContext } from "./mapCompiler";
 import { setTile } from "./mapPaintingPrimitives";
 import { terrainGeometryCells } from "./terrainGeometry";
