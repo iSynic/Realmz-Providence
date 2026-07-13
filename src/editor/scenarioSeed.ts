@@ -18,7 +18,6 @@ import {
   Project,
   Provenance,
   QuestLabel,
-  RandomLevel,
   ShopRecord,
   ScenarioItemRecord,
   ScenarioRaceOverride,
@@ -33,9 +32,8 @@ import {
   TriggerRecord
 } from "./types";
 import { nextResourceId } from "./mediaAssets";
-import { browserReferenceAtlasUrl, hasBrowserReferenceAtlas } from "./browser/atlasPaths";
 import { createBrowserProject, validateBrowserProject } from "./browser/project";
-import { landlookBaseTile, landlookName, landlookPictId } from "./browser/realmzParser";
+import { landlookName, landlookPictId } from "./browser/realmzParser";
 import { clearActionPointMarker, ensureActionPointMarker, landCellSecretState, setLandCellSecretState } from "./map/actionPointMarkers";
 import { setDungeonCellFlags } from "./map/dungeonCellFlags";
 import { GENERATED_SMART_TERRAIN_PROFILES } from "./map/generatedSmartTerrainProfiles";
@@ -87,6 +85,12 @@ import {
   addScenarioSeedMapPlacementDiagnostics,
   addScenarioSeedTopologyDiagnostics
 } from "./scenarioSeed/diagnostics";
+import {
+  castleRoomDoorPoint,
+  compileScenarioSeedMaps,
+  scenarioSeedOperationRegions,
+  type ScenarioSeedMapOperationContext
+} from "./scenarioSeed/mapCompiler";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
 
@@ -94,8 +98,6 @@ const PROJECT_SCHEMA_VERSION = 4;
 const MAP_SIZE = 90;
 const MAP_TILE_MIN = -32768;
 const MAP_TILE_MAX = 32767;
-const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
-const RANDOM_LEVEL_BYTES = 644;
 const MESSAGE_BYTES = 256;
 const BATTLE_BYTES = 346;
 const MONSTER_BYTES = 210;
@@ -1032,7 +1034,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   if (!project) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
-  allocateScenarioSeed(seed, buildContext, { operationRegions: mapOperationRegions });
+  allocateScenarioSeed(seed, buildContext, { operationRegions: scenarioSeedOperationRegions });
   addScenarioSeedTopologyDiagnostics(seed, buildContext);
   if (buildContext.errors.length > 0) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
@@ -1088,12 +1090,13 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   }
 
   if (seed.maps !== undefined) {
-    project.maps = seed.maps.map((map, index) => buildMap(map, index, buildContext));
+    const mapCompilation = compileScenarioSeedMaps(seed.maps, buildContext, { applyOperation: applyMapOperation });
+    project.maps = mapCompilation.maps;
     addScenarioSeedMapPlacementDiagnostics(seed, project.maps, buildContext);
-    project.randomLevels = seed.maps.map((map, index) => buildRandomLevel(map, index));
+    project.randomLevels = mapCompilation.randomLevels;
     project.assetCatalog = {
       ...project.assetCatalog,
-      tilesets: buildTilesets(project.maps)
+      tilesets: mapCompilation.tilesets
     };
   }
 
@@ -1418,7 +1421,7 @@ function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeed
     ctx.errors.push(`${path}.landlook ${landlook ?? 0} does not have a checked-in semantic terrain profile.`);
   }
   const regionKeys = new Set((regions ?? []).map((region) => region.key));
-  for (const operationRegion of mapOperationRegions(operations ?? [], landlook ?? 0)) {
+  for (const operationRegion of scenarioSeedOperationRegions(operations ?? [], landlook ?? 0)) {
     if (regionKeys.has(operationRegion.key)) ctx.errors.push(`${path} declares map region "${operationRegion.key}" more than once.`);
     regionKeys.add(operationRegion.key);
   }
@@ -3196,102 +3199,7 @@ function resolveRegionTarget(ref: ScenarioSeedRef, context: BuildContext): (MapT
   return null;
 }
 
-function mapOperationRegions(operations: ScenarioSeedMapOperation[], landlook: number): Array<{ key: string; x: number; y: number }> {
-  const regions: Array<{ key: string; x: number; y: number }> = [];
-  for (const operation of operations) {
-    if (operation.kind === "namedTile" && operation.region) {
-      regions.push({ key: operation.region, x: operation.x, y: operation.y });
-      continue;
-    }
-    if (operation.kind === "namedStamp" && operation.region && operation.anchor) {
-      const stamp = resolveNamedLandStamp(landlook, operation.name, operation.variant ?? 1);
-      if (!stamp) continue;
-      const east = operation.anchor === "northEast" || operation.anchor === "southEast";
-      const south = operation.anchor === "southWest" || operation.anchor === "southEast";
-      regions.push({
-        key: operation.region,
-        x: operation.x + (east ? stamp.width - 1 : 0),
-        y: operation.y + (south ? stamp.height - 1 : 0)
-      });
-      continue;
-    }
-    if (operation.kind === "castleRoom") {
-      for (const door of operation.doors ?? []) {
-        if (!door.region) continue;
-        const point = castleRoomDoorPoint(operation, door);
-        regions.push({ key: door.region, ...point });
-      }
-    }
-  }
-  return regions;
-}
-
-function castleRoomDoorPoint(
-  operation: Extract<ScenarioSeedMapOperation, { kind: "castleRoom" }>,
-  door: ScenarioSeedCastleRoomDoor
-) {
-  return {
-    x: door.side === "west" ? operation.x : door.side === "east" ? operation.x + operation.width - 1 : operation.x + door.offset,
-    y: door.side === "north" ? operation.y : door.side === "south" ? operation.y + operation.height - 1 : operation.y + door.offset
-  };
-}
-
-function buildMap(seed: ScenarioSeedMap, fallbackIndex: number, buildContext?: BuildContext): MapEntity {
-  const levelType = seed.levelType ?? "land";
-  const index = seed.index ?? fallbackIndex;
-  const source = levelType === "land" ? "Data LD" : "Data DL";
-  const landlook = seed.landlook ?? 0;
-  const fillTile = seed.fillTile ?? (landlook === 4 ? 40 : landlookBaseTile(landlook) ?? 1);
-  const tiles = seed.tiles ? [...seed.tiles] : new Array(MAP_SIZE * MAP_SIZE).fill(fillTile);
-  const regions = new Map([
-    ...(seed.regions ?? []).map((region) => [region.key, { x: region.x, y: region.y }] as const),
-    ...mapOperationRegions(seed.operations ?? [], landlook).map((region) => [region.key, { x: region.x, y: region.y }] as const)
-  ]);
-  for (const operation of seed.operations ?? []) applyMapOperation(tiles, operation, { landlook, levelType, mapSeed: `${levelType}:${index}`, regions, buildContext });
-  return {
-    id: `${levelType}:${index}`,
-    levelType,
-    source,
-    index,
-    name: seed.name ?? canonicalMapLevelName(levelType, index),
-    width: MAP_SIZE,
-    height: MAP_SIZE,
-    tiles,
-    render: { tilesetId: `landlook-${landlook}`, landlook, mode: levelType === "land" ? "outdoor-landlook" : "dungeon-landlook" },
-    provenance: authoredProvenance(source, index, index * FIELD_BYTES, FIELD_BYTES)
-  };
-}
-
-function buildRandomLevel(seed: ScenarioSeedMap, fallbackIndex: number): RandomLevel {
-  const levelType = seed.levelType ?? "land";
-  const index = seed.index ?? fallbackIndex;
-  const landlook = seed.landlook ?? 0;
-  const isDark = seed.isDark ?? false;
-  const useLos = seed.useLos ?? false;
-  const rawValues = new Array(RANDOM_LEVEL_BYTES / 2).fill(0);
-  rawValues[260] = signedWord(((landlook & 0xff) << 8) | (isDark ? 1 : 0));
-  rawValues[261] = useLos ? 0x0100 : 0;
-  return {
-    id: `${levelType}:${index}:randlevel`,
-    source: levelType === "land" ? "Data RD" : "Data RDD",
-    levelType,
-    levelIndex: index,
-    landlook,
-    isDark,
-    useLos,
-    rects: [],
-    rawValues,
-    provenance: authoredProvenance(levelType === "land" ? "Data RD" : "Data RDD", index, index * RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES)
-  };
-}
-
-function signedWord(value: number) {
-  return value >= 0x8000 ? value - 0x10000 : value;
-}
-
-type MapBuildContext = { landlook: number; levelType: LevelType; mapSeed: string; regions: Map<string, ScenarioSeedPoint>; buildContext?: BuildContext };
-
-function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation, mapContext: MapBuildContext) {
+function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation, mapContext: ScenarioSeedMapOperationContext) {
   if (operation.kind === "fill") {
     tiles.fill(operation.tile);
     return;
@@ -3489,6 +3397,8 @@ function applyMapOperation(tiles: number[], operation: ScenarioSeedMapOperation,
     });
   }
 }
+
+type MapBuildContext = ScenarioSeedMapOperationContext;
 
 function applySemanticRoad(
   tiles: number[],
@@ -3991,29 +3901,6 @@ function setTile(tiles: number[], x: number, y: number, tile: number, levelType:
 
 function mapStorageTileIndex(levelType: LevelType, x: number, y: number) {
   return levelType === "dungeon" ? y * MAP_SIZE + x : x * MAP_SIZE + y;
-}
-
-function buildTilesets(maps: MapEntity[]): TilesetAsset[] {
-  const landlooks = [...new Set(maps.map((map) => map.render.landlook ?? 0))].sort((a, b) => a - b);
-  return landlooks.map((landlook) => {
-    const pictId = landlookPictId(landlook);
-    const imagePath = browserReferenceAtlasUrl(pictId);
-    return {
-      id: `landlook-${landlook}`,
-      landlook,
-      name: landlookName(landlook),
-      source: imagePath ? "Scenario seed: bundled Realmz reference PICT" : "Scenario seed: missing reference atlas",
-      available: hasBrowserReferenceAtlas(pictId),
-      imagePath: null,
-      pictId,
-      tileWidth: 32,
-      tileHeight: 32,
-      columns: 20,
-      rows: 10,
-      baseTile: landlookBaseTile(landlook),
-      custom: landlook >= 6 && landlook <= 8
-    };
-  });
 }
 
 function buildSeedAssets(seedAssets: ScenarioSeedAsset[], customAssets: ManagedAsset[], context: BuildContext): ManagedAsset[] {
@@ -4756,10 +4643,6 @@ function describeAction(slot: number, rawCode: number, id: number): Action {
 
 function authoredProvenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number): Provenance {
   return { sourceFile, recordIndex, byteOffset, byteLength, confidence: "inferred" };
-}
-
-function canonicalMapLevelName(levelType: LevelType, index: number) {
-  return `${levelType === "land" ? "Land" : "Dungeon"} ${index}`;
 }
 
 function slugify(value: string) {
