@@ -34,16 +34,17 @@ try {
   const budgets = loadBudgets(args.get("budget") || path.join(root, "docs", "performance-budgets.json"));
   let explicitProjects = splitProjects(args.get("project") || process.env.PROVIDENCE_UI_PROJECT || "");
   const importedCombatBenchmark = args.has("combat-imported-benchmark");
+  const combatBenchmark = args.has("combat-benchmark");
   if (importedCombatBenchmark) {
     const sourceProject = explicitProjects[0] || findImportedCombatBenchmarkSourceProject() || findCombatBenchmarkSourceProject();
     explicitProjects = [prepareCombatImportedBenchmarkProject(sourceProject)];
-  } else if (args.has("combat-benchmark")) {
+  } else if (combatBenchmark) {
     const sourceProject = explicitProjects[0] || findCombatBenchmarkSourceProject();
     explicitProjects = [prepareCombatBenchmarkProject(sourceProject)];
   }
   const projectSpecs = defaultProjectSpecs(explicitProjects).map((spec) => ({
     ...spec,
-    combatOnly: importedCombatBenchmark,
+    combatOnly: importedCombatBenchmark || combatBenchmark,
     importedCombatBenchmark
   }));
   const runRoot = createRunRoot("ui");
@@ -455,7 +456,11 @@ async function runMapProbes(client, budgets, scenario) {
 
 async function runCombatProbes(client, budgets, scenario, { importedHeavy = false } = {}) {
   await warmDomain(client, "combat");
-  await evalValue(client, "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+  await waitFor(
+    async () => evalValue(client, `Boolean(document.querySelector(".combat-tabs")) && !document.body.innerText.includes("Loading editor section")`),
+    importedHeavy ? 180_000 : 30_000,
+    "Timed out waiting for the Combat editor to finish loading."
+  );
   const combatAvailability = await evalValue(client, `
     (() => {
       const countFor = (label) => {

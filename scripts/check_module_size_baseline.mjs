@@ -3,8 +3,9 @@ import { readFile } from "node:fs/promises";
 
 const MODULE_BASELINES = [
   { path: "src/editor/panels/ScriptsPanel.tsx", maximum: 8587, owner: "ISY-315/ISY-316" },
-  { path: "src/editor/panels/CombatPanel.tsx", maximum: 745, owner: "ISY-318" },
-  { path: "src/editor/panels/combat/MonsterWorkbench.tsx", maximum: 1136, owner: "ISY-318" },
+  { path: "src/editor/panels/CombatPanel.tsx", maximum: 197, owner: "ISY-318" },
+  { path: "src/editor/panels/combat/MonsterIconSetWorkbench.tsx", maximum: 553, owner: "ISY-318" },
+  { path: "src/editor/panels/combat/MonsterWorkbench.tsx", maximum: 750, owner: "ISY-318" },
   { path: "src/editor/panels/combat/MonsterLibraryPreview.tsx", maximum: 331, owner: "ISY-318" },
   { path: "src/editor/panels/combat/monsterLibraryWorkflow.ts", maximum: 317, owner: "ISY-318" },
   { path: "src/editor/panels/combat/MonsterRecordEditor.tsx", maximum: 921, owner: "ISY-318" },

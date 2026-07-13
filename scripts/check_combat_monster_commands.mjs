@@ -55,7 +55,7 @@ try {
 } finally {
   await server.close();
 }
-process.exit(process.exitCode ?? 0);
+process.exitCode = process.exitCode ?? 0;
 
 function checkUpdateMonsterRecord({ updateMonsterRecord }) {
   const project = projectWith({
