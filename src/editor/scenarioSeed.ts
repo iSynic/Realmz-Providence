@@ -86,6 +86,7 @@ import {
 } from "./scenarioSeed/mapCompiler";
 import { applyScenarioSeedMapOperation } from "./scenarioSeed/mapOperationCompiler";
 import { mapStorageTileIndex } from "./scenarioSeed/mapPaintingPrimitives";
+import { validateMaxArrayLength, validateScenarioSeed } from "./scenarioSeed/validation";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
 
@@ -991,27 +992,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   const extraActionPoints = parseArray(root.extraActionPoints, "$.extraActionPoints", ctx, parseExtraActionPoint);
   if (extraActionPoints) seed.extraActionPoints = extraActionPoints;
 
-  validateUniqueIds(seed.messages, "messages", ctx);
-  validateUniqueIds(seed.quests, "quests", ctx);
-  validateUniqueIds(seed.battles, "battles", ctx);
-  validateUniqueIds(seed.monsters, "monsters", ctx);
-  validateUniqueIds(seed.treasures, "treasures", ctx);
-  validateUniqueIds(seed.shops, "shops", ctx);
-  validateUniqueIds(seed.items, "items", ctx);
-  validateItems(seed.items, ctx);
-  validateUniqueIds(seed.assets, "assets", ctx);
-  validateUniqueIds(seed.simpleEncounters, "simpleEncounters", ctx);
-  validateUniqueIds(seed.complexEncounters, "complexEncounters", ctx);
-  validateUniqueIds(seed.thiefEncounters, "thiefEncounters", ctx);
-  validateUniqueIds(seed.timedEncounters, "timedEncounters", ctx);
-  validateUniqueIds(seed.spells, "spells", ctx);
-  validateUniqueIds(seed.races, "races", ctx);
-  validateUniqueIds(seed.castes, "castes", ctx);
-  if ((seed.races?.length ?? 0) > 70) ctx.errors.push("$.races can contain at most 70 override records.");
-  if ((seed.castes?.length ?? 0) > 30) ctx.errors.push("$.castes can contain at most 30 override records.");
-  validateUniqueIds(seed.extraActionPoints, "extraActionPoints", ctx);
-  validateMaps(seed.maps, ctx);
-  validateScenarioStart(seed.scenario, seed.maps, ctx);
+  validateScenarioSeed(seed, ctx);
 
   if (ctx.errors.length > 0) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
   return { ok: true, seed, warnings: ctx.warnings };
@@ -3971,64 +3952,6 @@ function padNestedNumberArrays(values: number[][], length: number, rowLength: nu
   const rows = values.slice(0, length).map((row) => padArray(row, rowLength, fill));
   while (rows.length < length) rows.push(new Array(rowLength).fill(fill));
   return rows;
-}
-
-function validateMaps(maps: ScenarioSeedMap[] | undefined, ctx: ParseContext) {
-  const seen = new Set<string>();
-  const keys = new Set<string>();
-  for (const [index, map] of (maps ?? []).entries()) {
-    const levelType = map.levelType ?? "land";
-    const levelIndex = map.index ?? index;
-    const key = `${levelType}:${levelIndex}`;
-    if (seen.has(key)) ctx.errors.push(`$.maps contains duplicate map ${key}.`);
-    seen.add(key);
-    if (map.key) {
-      if (keys.has(map.key)) ctx.errors.push(`$.maps contains duplicate key ${map.key}.`);
-      keys.add(map.key);
-    }
-  }
-}
-
-function validateScenarioStart(scenario: ScenarioSeedScenario, maps: ScenarioSeedMap[] | undefined, ctx: ParseContext) {
-  if (!scenario.start || maps === undefined) return;
-  const resolves = maps.some((map, index) => (map.levelType ?? "land") === "land" && (map.index ?? index) === scenario.start?.landLevel);
-  if (!resolves) ctx.errors.push(`$.scenario.start.landLevel ${scenario.start.landLevel} does not resolve to a declared land map.`);
-}
-
-function validateUniqueIds(values: Array<{ id?: number; key?: string }> | undefined, label: string, ctx: ParseContext) {
-  const seen = new Set<number>();
-  const keys = new Set<string>();
-  for (const value of values ?? []) {
-    if (value.id !== undefined) {
-      if (seen.has(value.id)) ctx.errors.push(`$.${label} contains duplicate id ${value.id}.`);
-      seen.add(value.id);
-    }
-    if (value.key) {
-      if (keys.has(value.key)) ctx.errors.push(`$.${label} contains duplicate key ${value.key}.`);
-      keys.add(value.key);
-    }
-  }
-}
-
-function validateItems(items: ScenarioSeedItem[] | undefined, ctx: ParseContext) {
-  const itemIds = new Set<number>();
-  const rows = new Set<number>();
-  for (const item of items ?? []) {
-    const row = item.id ?? (item.itemId === undefined ? undefined : item.itemId - SCENARIO_ITEM_ID_BASE);
-    const itemId = item.itemId ?? (item.id === undefined ? undefined : SCENARIO_ITEM_ID_BASE + item.id);
-    if (row !== undefined) {
-      if (rows.has(row)) ctx.errors.push(`$.items contains duplicate scenario item row ${row}.`);
-      rows.add(row);
-    }
-    if (itemId !== undefined) {
-      if (itemIds.has(itemId)) ctx.errors.push(`$.items contains duplicate itemId ${itemId}.`);
-      itemIds.add(itemId);
-    }
-  }
-}
-
-function validateMaxArrayLength(values: unknown[] | undefined, path: string, length: number, ctx: ParseContext) {
-  if (values && values.length > length) ctx.errors.push(`${path} can contain at most ${length} entries.`);
 }
 
 function optionalNumberField<T extends string>(value: ObjectValue, key: T, path: string, ctx: ParseContext): Partial<Record<T, number>> {
