@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Copy, Eye, Plus, Trash2, X } from "lucide-react";
+import { Copy, Plus } from "lucide-react";
 import type {
-  Ed3ReachabilityRow,
   LevelType,
   LibraryCatalog,
   MapCoordinateTarget,
@@ -52,7 +51,14 @@ import { ActionPointStepList } from "./ActionPointStepList";
 import { ActionPointStepToolbar } from "./ActionPointStepToolbar";
 import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./actionPointDiagnostics";
 import { includeSelectedTrigger } from "./actionPointSelection";
-import type { CombatMacroContext, CombatMacroReference } from "./actionPointPresentation";
+import {
+  authorFacingExtraActionKind,
+  clampRealmzCoordinate,
+  combatMacroContextFor,
+  textEditorNavigationLabel,
+  type CombatMacroContext
+} from "./actionPointPresentation";
+import { ScriptDestructiveActionDialog, ScriptPreviewDialog, type ScriptPreviewTarget } from "./ActionPointDialogs";
 import { useActionPointStepDrafts } from "./useActionPointStepDrafts";
 
 const SCRIPT_WORKBENCH_HELP =
@@ -80,80 +86,6 @@ type PendingScriptDestructiveAction = {
   confirmLabel: string;
   action: () => void;
 };
-
-type ScriptPreviewTarget =
-  | {
-      kind: "entity";
-      title: string;
-      detail: string;
-      entity: SelectedEntity;
-    }
-  | {
-      kind: "map-coordinate";
-      title: string;
-      detail: string;
-      target: MapCoordinateTarget;
-    };
-
-function authorFacingExtraActionKind(classification: string, combatMacroContext?: CombatMacroContext | null) {
-  if (combatMacroContext?.kind === "battle") return "Battle Macro";
-  if (combatMacroContext?.kind === "monster") return "Monster Macro";
-  if (combatMacroContext?.kind === "mixed") return "Combat Macro";
-  if (classification === "Callable Extra Action Point") return "Extra Action Point";
-  if (classification === "Global Macro") return "Global Event";
-  if (classification === "Random Encounter Action") return "Random Encounter Action";
-  if (classification === "Timed Encounter Action") return "Timed Encounter Action";
-  if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";
-  if (classification === "Likely Padding" || classification === "Imported Empty Slot") return "Likely Padding";
-  if (classification === "Runtime Residue" || classification === "Imported Runtime Mutation") return "Runtime Residue";
-  return "Unlinked Extra Action";
-}
-
-function combatMacroContextFor(project: Project, trigger: TriggerRecord, reachability: Ed3ReachabilityRow | null): CombatMacroContext | null {
-  if (trigger.source !== "Data ED3") return null;
-  const macroId = trigger.recordIndex;
-  const references: CombatMacroReference[] = [];
-  for (const battle of project.battles ?? []) {
-    if (!battle.battleMacro || Math.abs(battle.battleMacro) !== macroId) continue;
-    const placed = battle.grid.filter((cell) => cell !== 0).length;
-    references.push({
-      kind: "battle",
-      key: `battle:${battle.id}`,
-      label: `Battle ${battle.id}`,
-      detail: `${battle.battleMacro < 0 ? "Runnable negative battle macro" : "Imported positive value, preserved but not the normal runnable path"}; ${placed} placed monster slot(s).`,
-      entity: selectEntityFromId(`battle:${battle.id}`),
-      runnable: battle.battleMacro < 0
-    });
-  }
-  const addMonsterRefs = (records: Project["monsters"], setLabel: string, setFile: string) => {
-    for (const monster of records ?? []) {
-      if (!monster.deathMacro || Math.abs(monster.deathMacro) !== macroId) continue;
-      references.push({
-        kind: "monster",
-        key: `monster:${setFile}:${monster.id}`,
-        label: `${setLabel} Monster ${monster.id}`,
-        detail: `${monster.displayName || `Monster ${monster.id}`} defeat macro from ${setFile}.`,
-        entity: selectEntityFromId(`monster:${monster.id}`),
-        runnable: true
-      });
-    }
-  };
-  addMonsterRefs(project.monsters ?? [], "Normal", "Data MD");
-  for (const set of project.monsterSets ?? []) {
-    const setLabel = set.setId === 1 ? "Monster" : set.setId === -1 ? "Mega" : "Normal";
-    addMonsterRefs(set.monsters, setLabel, set.sourceFile || (set.setId === 1 ? "Data MD1" : set.setId === -1 ? "Data MD-1" : "Data MD"));
-  }
-  const uniqueReferences = Array.from(new Map(references.map((reference) => [reference.key, reference])).values());
-  const hasBattle = uniqueReferences.some((reference) => reference.kind === "battle");
-  const hasMonster = uniqueReferences.some((reference) => reference.kind === "monster");
-  const rootType = reachability?.rootType ?? null;
-  if (!hasBattle && !hasMonster && !rootType?.includes("battle") && !rootType?.includes("monster")) return null;
-  return {
-    kind: hasBattle && hasMonster ? "mixed" : hasBattle || rootType?.includes("battle") ? "battle" : "monster",
-    references: uniqueReferences,
-    rootType
-  };
-}
 
 type ActionPointAuthoringPanelProps = {
   project: Project | null;
@@ -831,104 +763,6 @@ function ActionPointAuthoringWorkbench({
   );
 }
 
-function ScriptDestructiveActionDialog({
-  title,
-  body,
-  confirmLabel,
-  onConfirm,
-  onCancel
-}: {
-  title: string;
-  body: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onCancel}>
-      <div
-        className="script-draft-navigation-dialog script-destructive-action-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="script-destructive-action-title"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header>
-          <div>
-            <strong id="script-destructive-action-title">{title}</strong>
-            <small>This action changes the script immediately.</small>
-          </div>
-          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Cancel destructive action" onClick={onCancel}>
-            <X size={12} />
-          </button>
-        </header>
-        <p>{body}</p>
-        <div className="script-draft-navigation-actions">
-          <button type="button" className="btn btn-secondary btn-xs" onClick={onCancel}>Cancel</button>
-          <button type="button" className="btn btn-danger btn-xs" onClick={onConfirm}>
-            <Trash2 size={12} /> {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ScriptPreviewDialog({
-  preview,
-  onClose,
-  onOpen
-}: {
-  preview: ScriptPreviewTarget;
-  onClose: () => void;
-  onOpen: () => void;
-}) {
-  const openLabel = preview.kind === "entity" ? "Open Target" : "Open in Maps";
-  return (
-    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onClose}>
-      <div
-        className="script-draft-navigation-dialog script-preview-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="script-preview-dialog-title"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header>
-          <div>
-            <strong id="script-preview-dialog-title">{preview.title}</strong>
-            <small>{preview.kind === "entity" ? "Target preview" : "Map coordinate preview"}</small>
-          </div>
-          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Close preview" onClick={onClose}>
-            <X size={12} />
-          </button>
-        </header>
-        <p>{preview.detail}</p>
-        <div className="script-preview-dialog-note">
-          Preview does not leave this step editor. Use {openLabel} to navigate to the target.
-        </div>
-        <div className="script-draft-navigation-actions">
-          <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>Close</button>
-          <button type="button" className="btn btn-primary btn-xs" onClick={onOpen}>
-            <Eye size={12} /> {openLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function textEditorNavigationLabel(editor: string) {
-  if (editor === "messages") return "Strings";
-  if (editor === "option-labels") return "Option Labels";
-  if (editor === "scrolling-text") return "Scrolling Text";
-  return "Text";
-}
-
 function isScriptsBenchmarkMode() {
   return typeof window !== "undefined" && new URLSearchParams(window.location.search).has("benchmarkScripts");
-}
-
-function clampRealmzCoordinate(value: number) {
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(89, Math.trunc(value)));
 }
