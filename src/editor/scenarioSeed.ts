@@ -83,6 +83,10 @@ import {
   SCENARIO_ITEM_ID_BASE,
   SCENARIO_ITEM_RECORD_COUNT
 } from "./scenarioSeed/allocation";
+import {
+  addScenarioSeedMapPlacementDiagnostics,
+  addScenarioSeedTopologyDiagnostics
+} from "./scenarioSeed/diagnostics";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
 
@@ -1029,7 +1033,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
   allocateScenarioSeed(seed, buildContext, { operationRegions: mapOperationRegions });
-  addSeedTopologyDiagnostics(seed, buildContext);
+  addScenarioSeedTopologyDiagnostics(seed, buildContext);
   if (buildContext.errors.length > 0) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
@@ -1085,7 +1089,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
 
   if (seed.maps !== undefined) {
     project.maps = seed.maps.map((map, index) => buildMap(map, index, buildContext));
-    addSeedMapPlacementDiagnostics(seed, project.maps, buildContext);
+    addScenarioSeedMapPlacementDiagnostics(seed, project.maps, buildContext);
     project.randomLevels = seed.maps.map((map, index) => buildRandomLevel(map, index));
     project.assetCatalog = {
       ...project.assetCatalog,
@@ -3059,70 +3063,6 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
 
 function createBuildContext(baseTemplate = "blank", libraryCatalog: LibraryCatalog | null = null): BuildContext {
   return createScenarioSeedCompilerContext(baseTemplate, libraryCatalog);
-}
-
-function addSeedTopologyDiagnostics(seed: ScenarioSeed, context: BuildContext) {
-  const placements = (seed.actionPoints ?? []).map((actionPoint, index) => {
-    const mapTarget = actionPoint.map === undefined ? null : typeof actionPoint.map === "number" ? { levelType: "land" as const, index: actionPoint.map } : context.maps.get(actionPoint.map) ?? null;
-    const regionTarget = actionPoint.at === undefined || typeof actionPoint.at !== "string" ? null : context.regions.get(actionPoint.at) ?? null;
-    return {
-      key: actionPoint.key ?? `Action Point ${actionPoint.recordIndex ?? index}`,
-      levelType: actionPoint.levelType ?? regionTarget?.levelType ?? mapTarget?.levelType ?? "land",
-      levelIndex: actionPoint.levelIndex ?? regionTarget?.index ?? mapTarget?.index ?? 0,
-      x: actionPoint.x ?? regionTarget?.x ?? mapTarget?.x ?? 0,
-      y: actionPoint.y ?? regionTarget?.y ?? mapTarget?.y ?? 0,
-      firstStep: actionPoint.steps[0]
-    };
-  });
-  const byCoordinate = new Map(placements.map((placement) => [`${placement.levelType}:${placement.levelIndex}:${placement.x}:${placement.y}`, placement]));
-  for (const [index, actionPoint] of (seed.actionPoints ?? []).entries()) {
-    for (const step of actionPoint.steps) {
-      if (step.kind !== "teleport") continue;
-      const regionTarget = step.at === undefined || typeof step.at !== "string" ? null : context.regions.get(step.at) ?? null;
-      const mapTarget = step.map === undefined ? null : typeof step.map === "number" ? { levelType: "land" as const, index: step.map } : context.maps.get(step.map) ?? null;
-      const levelType = regionTarget?.levelType ?? mapTarget?.levelType ?? "land";
-      const levelIndex = regionTarget?.index ?? mapTarget?.index ?? step.landLevel;
-      const x = regionTarget?.x ?? step.x;
-      const y = regionTarget?.y ?? step.y;
-      if (levelIndex === undefined || x === undefined || y === undefined || levelIndex < 0 || x < 0 || y < 0) continue;
-      const target = byCoordinate.get(`${levelType}:${levelIndex}:${x}:${y}`);
-      if (!target) continue;
-      const source = actionPoint.key ?? `Action Point ${actionPoint.recordIndex ?? index}`;
-      const suffix = target.firstStep?.kind === "teleport" ? " Its first step teleports again, creating an immediate return or teleport chain." : "";
-      addDiagnostic(context, "warning", "teleport-destination-action-point", `${source} teleports directly onto ${target.key}.${suffix}`, "action point", source);
-    }
-  }
-}
-
-function addSeedMapPlacementDiagnostics(seed: ScenarioSeed, maps: MapEntity[], context: BuildContext) {
-  const warnIfWater = (label: string, levelType: LevelType, levelIndex: number, x: number, y: number) => {
-    if (levelType !== "land" || x < 0 || y < 0 || x >= MAP_SIZE || y >= MAP_SIZE) return;
-    const map = maps.find((entry) => entry.levelType === levelType && entry.index === levelIndex);
-    if (!map || map.render.landlook === null || !supportsSemanticRoads(map.render.landlook)) return;
-    const profile = GENERATED_SMART_TERRAIN_PROFILES.find((entry) => entry.landlook === map.render.landlook);
-    const tile = map ? normalizeSmartTerrainTile(map.tiles[mapStorageTileIndex(levelType, x, y)]) : null;
-    if (tile === null || !profile?.presets.water.family.includes(tile)) return;
-    addDiagnostic(context, "warning", "site-on-water", `${label} is placed on water at land level ${levelIndex}, (${x}, ${y}).`, "map site", label);
-  };
-
-  if (seed.scenario.start) {
-    warnIfWater("Scenario start", "land", seed.scenario.start.landLevel, seed.scenario.start.x, seed.scenario.start.y);
-  }
-  for (const [index, actionPoint] of (seed.actionPoints ?? []).entries()) {
-    const mapTarget = actionPoint.map === undefined
-      ? null
-      : typeof actionPoint.map === "number"
-        ? { levelType: "land" as const, index: actionPoint.map }
-        : context.maps.get(actionPoint.map) ?? null;
-    const regionTarget = actionPoint.at === undefined || typeof actionPoint.at !== "string" ? null : context.regions.get(actionPoint.at) ?? null;
-    warnIfWater(
-      actionPoint.key ?? `Action Point ${actionPoint.recordIndex ?? index}`,
-      actionPoint.levelType ?? regionTarget?.levelType ?? mapTarget?.levelType ?? "land",
-      actionPoint.levelIndex ?? regionTarget?.index ?? mapTarget?.index ?? 0,
-      actionPoint.x ?? regionTarget?.x ?? mapTarget?.x ?? 0,
-      actionPoint.y ?? regionTarget?.y ?? mapTarget?.y ?? 0
-    );
-  }
 }
 
 function resolveItemRef(ref: ScenarioSeedRef, context: BuildContext) {
