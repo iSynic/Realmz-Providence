@@ -18,7 +18,6 @@ import { ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassif
 import { resolveSignedMessageTarget, targetPickerConfig } from "../../components/RealmzTargetPicker";
 import { TutorialTip } from "../../components/TutorialTip";
 import { CollapsibleSection, FloatingWorkbenchPanel, PanelSection } from "../../ui";
-import type { ScriptDiagnostic } from "../../scriptValidation";
 import { actionPointCapacity, nextActionPointRecordIndex } from "../../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../../realmzScriptDescriptors";
 import { actionPointMarkerStateForTrigger, isSecretActionPointState } from "../../map/actionPointMarkers";
@@ -27,7 +26,6 @@ import {
   EXTRA_ACTION_INVENTORY_FILTERS,
   SCRIPT_INVENTORY_FILTERS,
   filterScriptsByInventory,
-  hasScriptWarning,
   issueCountsBySlot,
   scriptMatchesInventoryFilter,
   scriptLabel,
@@ -49,7 +47,6 @@ import { CombatMacroContextCard, Ed3EvidenceDetails, ScriptFlowPreview, SourceEv
 import { ActionPointInventory } from "./ActionPointInventory";
 import { ActionPointStepList } from "./ActionPointStepList";
 import { ActionPointStepToolbar } from "./ActionPointStepToolbar";
-import { actionPointDiagnosticDependencyKey, validateActionPointTriggerCached } from "./actionPointDiagnostics";
 import { includeSelectedTrigger } from "./actionPointSelection";
 import {
   authorFacingExtraActionKind,
@@ -60,6 +57,7 @@ import {
 } from "./actionPointPresentation";
 import { ScriptDestructiveActionDialog, ScriptPreviewDialog, type ScriptPreviewTarget } from "./ActionPointDialogs";
 import { useActionPointStepDrafts } from "./useActionPointStepDrafts";
+import { useActionPointWarningDiagnostics, useSelectedActionPointDiagnostics } from "./useActionPointDiagnostics";
 
 const SCRIPT_WORKBENCH_HELP =
   "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, Action Settings, targets, diagnostics, and source evidence.";
@@ -138,8 +136,6 @@ function ActionPointAuthoringWorkbench({
   const [pendingDestructiveAction, setPendingDestructiveAction] = useState<PendingScriptDestructiveAction | null>(null);
   const [previewTarget, setPreviewTarget] = useState<ScriptPreviewTarget | null>(null);
   const [newActionPoint, setNewActionPoint] = useState({ mapId: projectMaps[0]?.id ?? "", x: 1, y: 1 });
-  const [warningScanReady, setWarningScanReady] = useState(false);
-  const [selectedDiagnosticsReady, setSelectedDiagnosticsReady] = useState(false);
   const selectedScriptButtonRef = useRef<HTMLButtonElement | null>(null);
   const benchmarkStartedRef = useRef(false);
   const selectedMap = projectMaps.find((map) => map.id === newActionPoint.mapId) ?? projectMaps[0] ?? null;
@@ -163,22 +159,13 @@ function ActionPointAuthoringWorkbench({
   useEffect(() => {
     selectedScriptButtonRef.current?.scrollIntoView({ block: "nearest" });
   }, [selectedEntity?.id, inventoryFilter, scriptQuery, scripts.length]);
-  const diagnosticDependencyKey = useMemo(() => project ? actionPointDiagnosticDependencyKey(project, catalog) : "", [project, catalog]);
-  useEffect(() => {
-    setWarningScanReady(false);
-    if (inventoryFilter !== "warnings") return;
-    const handle = window.setTimeout(() => setWarningScanReady(true), 160);
-    return () => window.clearTimeout(handle);
-  }, [activeEditor, diagnosticDependencyKey, inventoryFilter, scripts.length]);
-  const fullWarningDiagnosticsById = useMemo(() => {
-    const map = new Map<string, ScriptDiagnostic[]>();
-    if (!project || inventoryFilter !== "warnings" || !warningScanReady) return map;
-    for (const trigger of scripts) {
-      const diagnostics = validateActionPointTriggerCached(project, trigger, catalog, diagnosticDependencyKey);
-      if (hasScriptWarning(diagnostics)) map.set(trigger.id, diagnostics);
-    }
-    return map;
-  }, [project, scripts, catalog, diagnosticDependencyKey, inventoryFilter, warningScanReady]);
+  const { diagnosticDependencyKey, warningScanReady, fullWarningDiagnosticsById } = useActionPointWarningDiagnostics({
+    project,
+    catalog,
+    scripts,
+    inventoryFilter,
+    activeEditor
+  });
   const inventoryCounts = useMemo(() => {
     const counts = new Map<ScriptInventoryFilter, number | null>();
     for (const filter of visibleInventoryFilters) {
@@ -319,20 +306,13 @@ function ActionPointAuthoringWorkbench({
     [filteredScripts, selectedTrigger, visibleScriptLimit]
   );
   const hiddenScriptCount = Math.max(0, filteredScripts.length - Math.min(filteredScripts.length, visibleScriptLimit));
-  useEffect(() => {
-    setSelectedDiagnosticsReady(false);
-    if (!selectedTrigger || !project) return;
-    const handle = window.setTimeout(() => setSelectedDiagnosticsReady(true), 120);
-    return () => window.clearTimeout(handle);
-  }, [project, selectedTrigger?.id, diagnosticDependencyKey]);
-  const visibleDiagnosticsById = useMemo(() => {
-    const map = new Map(fullWarningDiagnosticsById);
-    if (!project) return map;
-    if (selectedDiagnosticsReady && selectedTrigger && !map.has(selectedTrigger.id)) {
-      map.set(selectedTrigger.id, validateActionPointTriggerCached(project, selectedTrigger, catalog, diagnosticDependencyKey));
-    }
-    return map;
-  }, [project, selectedTrigger, selectedDiagnosticsReady, catalog, diagnosticDependencyKey, fullWarningDiagnosticsById]);
+  const visibleDiagnosticsById = useSelectedActionPointDiagnostics({
+    project,
+    catalog,
+    selectedTrigger,
+    diagnosticDependencyKey,
+    fullWarningDiagnosticsById
+  });
   const selectedMapCapacity = selectedMap ? actionPointCapacity(project.triggers, selectedMap.levelType, selectedMap.index) : null;
   const createSelectedMapActionPoint = () => {
     if (!selectedMap || !selectedMapCapacity?.canCreate) return;
