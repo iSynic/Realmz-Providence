@@ -6,6 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const schemaPath = path.join(root, "schemas", "scenario-seed.schema.json");
 const docsPath = path.join(root, "docs", "scenario-seed-schema.md");
 const sourcePath = path.join(root, "src", "editor", "scenarioSeed.ts");
+const mapOperationParserPath = path.join(root, "src", "editor", "scenarioSeed", "mapOperationParser.ts");
 const namedTilesPath = path.join(root, "src", "editor", "map", "namedLandTiles.ts");
 const namedStampsPath = path.join(root, "src", "editor", "map", "namedLandStamps.ts");
 const builtInStampsPath = path.join(root, "src", "editor", "map", "builtInMapStamps.ts");
@@ -13,6 +14,7 @@ const builtInStampsPath = path.join(root, "src", "editor", "map", "builtInMapSta
 const schema = JSON.parse(fs.readFileSync(schemaPath, "utf8"));
 const docs = fs.readFileSync(docsPath, "utf8");
 const source = fs.readFileSync(sourcePath, "utf8");
+const mapOperationParserSource = fs.readFileSync(mapOperationParserPath, "utf8");
 const namedTilesSource = fs.readFileSync(namedTilesPath, "utf8");
 const namedStampsSource = fs.readFileSync(namedStampsPath, "utf8");
 const builtInStampsSource = fs.readFileSync(builtInStampsPath, "utf8");
@@ -54,7 +56,10 @@ for (const defName of mapOperationDefs) {
   const kinds = kindSchema?.const ? [kindSchema.const] : kindSchema?.enum ?? [];
   expect(kinds.length > 0, `${defName} must declare a kind const or enum`);
   for (const kind of kinds) {
-    expect(source.includes(`kind: "${kind}"`) || source.includes(`kind === "${kind}"`), `scenarioSeed.ts must handle ${kind} map operations`);
+    expect(
+      mapOperationParserSource.includes(`kind: "${kind}"`) || mapOperationParserSource.includes(`kind === "${kind}"`),
+      `mapOperationParser.ts must handle ${kind} map operations`
+    );
     expect(docs.includes(`\`${kind}\``), `docs must mention ${kind} map operations`);
   }
 }
