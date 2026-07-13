@@ -78,32 +78,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
-        "src-tauri/src/realmz.rs:write_simple_encounters",
-        "src-tauri/src/realmz.rs:parse_simple_encounter_records",
+        "src-tauri/src/realmz/encounters.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+        "src-tauri/src/realmz/encounters.rs:write_simple_encounters",
+        "src-tauri/src/realmz/encounters.rs:parse_simple_encounter_records",
         "docs/generated/encounter-record-evidence.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_simple_encounters",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:write_simple_encounters",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "write_simple_encounters",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_simple_encounter_records",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:parse_simple_encounter_records",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "parse_simple_encounter_records",
           "fileExists": true,
           "anchorPresent": true,
@@ -227,32 +227,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
-        "src-tauri/src/realmz.rs:write_complex_encounters",
-        "src-tauri/src/realmz.rs:parse_complex_encounter_records",
+        "src-tauri/src/realmz/encounters.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+        "src-tauri/src/realmz/encounters.rs:write_complex_encounters",
+        "src-tauri/src/realmz/encounters.rs:parse_complex_encounter_records",
         "docs/generated/encounter-record-evidence.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_complex_encounters",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:write_complex_encounters",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "write_complex_encounters",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_complex_encounter_records",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:parse_complex_encounter_records",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "parse_complex_encounter_records",
           "fileExists": true,
           "anchorPresent": true,
@@ -480,32 +480,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:write_thief_encounters",
-        "src-tauri/src/realmz.rs:parse_thief_encounters",
+        "src-tauri/src/realmz/encounters.rs:thief_encounter_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/encounters.rs:write_thief_encounters",
+        "src-tauri/src/realmz/encounters.rs:parse_thief_encounters",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
         "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:thief_encounter_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "thief_encounter_storage_mutates_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_thief_encounters",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:write_thief_encounters",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "write_thief_encounters",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_thief_encounters",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/encounters.rs:parse_thief_encounters",
+          "file": "src-tauri/src/realmz/encounters.rs",
           "anchor": "parse_thief_encounters",
           "fileExists": true,
           "anchorPresent": true,

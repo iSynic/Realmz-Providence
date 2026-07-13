@@ -473,9 +473,9 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       { field: "Compatibility byte", internal: "raw[103]", offset: 103, bytes: 1, type: "raw-preserved" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
-      "src-tauri/src/realmz.rs:write_simple_encounters",
-      "src-tauri/src/realmz.rs:parse_simple_encounter_records",
+      "src-tauri/src/realmz/encounters.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+      "src-tauri/src/realmz/encounters.rs:write_simple_encounters",
+      "src-tauri/src/realmz/encounters.rs:parse_simple_encounter_records",
       "docs/generated/encounter-record-evidence.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
@@ -500,9 +500,9 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       { field: "Compatibility byte", internal: "raw[157]", offset: 157, bytes: 1, type: "raw-preserved" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
-      "src-tauri/src/realmz.rs:write_complex_encounters",
-      "src-tauri/src/realmz.rs:parse_complex_encounter_records",
+      "src-tauri/src/realmz/encounters.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+      "src-tauri/src/realmz/encounters.rs:write_complex_encounters",
+      "src-tauri/src/realmz/encounters.rs:parse_complex_encounter_records",
       "docs/generated/encounter-record-evidence.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
@@ -539,9 +539,9 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       { field: "Prompt strings and sounds", internal: "prompts/promptSounds", offset: 106, bytes: 12, type: "i16be[6]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
-      "src-tauri/src/realmz.rs:write_thief_encounters",
-      "src-tauri/src/realmz.rs:parse_thief_encounters",
+      "src-tauri/src/realmz/encounters.rs:thief_encounter_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz/encounters.rs:write_thief_encounters",
+      "src-tauri/src/realmz/encounters.rs:parse_thief_encounters",
       "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
       "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
     ],

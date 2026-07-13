@@ -368,9 +368,9 @@
         "docs/generated/encounter-shop-writer-gates.json",
         "docs/generated/encounter-record-evidence.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
-        "src-tauri/src/realmz.rs:write_simple_encounters",
-        "src-tauri/src/realmz.rs:parse_simple_encounter_records"
+        "src-tauri/src/realmz/encounters.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+        "src-tauri/src/realmz/encounters.rs:write_simple_encounters",
+        "src-tauri/src/realmz/encounters.rs:parse_simple_encounter_records"
       ],
       "fixtureGate": {
         "name": "simple-encounter-record-writer",
@@ -427,9 +427,9 @@
         "docs/generated/encounter-shop-writer-gates.json",
         "docs/generated/encounter-record-evidence.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
-        "src-tauri/src/realmz.rs:write_complex_encounters",
-        "src-tauri/src/realmz.rs:parse_complex_encounter_records"
+        "src-tauri/src/realmz/encounters.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+        "src-tauri/src/realmz/encounters.rs:write_complex_encounters",
+        "src-tauri/src/realmz/encounters.rs:parse_complex_encounter_records"
       ],
       "fixtureGate": {
         "name": "complex-encounter-record-writer",
@@ -1221,9 +1221,9 @@
         "docs/generated/encounter-shop-writer-gates.json",
         "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
         "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
-        "src-tauri/src/realmz.rs:thief_encounter_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:write_thief_encounters",
-        "src-tauri/src/realmz.rs:parse_thief_encounters"
+        "src-tauri/src/realmz/encounters.rs:thief_encounter_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/encounters.rs:write_thief_encounters",
+        "src-tauri/src/realmz/encounters.rs:parse_thief_encounters"
       ],
       "fixtureGate": {
         "name": "thief-encounter-record-writer",
