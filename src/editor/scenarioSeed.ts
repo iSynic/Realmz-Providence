@@ -85,6 +85,7 @@ import {
 import { applyScenarioSeedMapOperation } from "./scenarioSeed/mapOperationCompiler";
 import { mapStorageTileIndex } from "./scenarioSeed/mapPaintingPrimitives";
 import { parseCaste, parseRace, parseSpell } from "./scenarioSeed/rulesParser";
+import { parseScenario } from "./scenarioSeed/scenarioParser";
 import { parseTimedEncounter } from "./scenarioSeed/timedEncounterParser";
 import { validateMaxArrayLength, validateScenarioSeed } from "./scenarioSeed/validation";
 
@@ -1161,40 +1162,6 @@ function createScenarioSeedBaseProject(projectName: string, baseTemplate: string
     addDiagnostic(context, "error", "invalid-base-template", `Base template "${baseTemplate}" could not be cloned as Providence project data.`, "base template", baseTemplate);
     return null;
   }
-}
-
-function parseScenario(input: unknown, path: string, ctx: ParseContext): ScenarioSeedScenario | null {
-  const value = requireObject(input, path, ctx);
-  if (!value) return null;
-  allowKeys(value, path, ["id", "name", "start", "author", "version", "date", "email", "web", "description"], ctx);
-  const name = requireString(value.name, `${path}.name`, ctx);
-  const start = parseScenarioStart(value.start, `${path}.start`, ctx);
-  return {
-    ...(optionalString(value.id, `${path}.id`, ctx) !== undefined ? { id: optionalString(value.id, `${path}.id`, ctx) } : {}),
-    name: name ?? "Untitled Scenario",
-    ...(start ? { start } : {}),
-    ...(optionalString(value.author, `${path}.author`, ctx) !== undefined ? { author: optionalString(value.author, `${path}.author`, ctx) } : {}),
-    ...(optionalString(value.version, `${path}.version`, ctx) !== undefined ? { version: optionalString(value.version, `${path}.version`, ctx) } : {}),
-    ...(optionalString(value.date, `${path}.date`, ctx) !== undefined ? { date: optionalString(value.date, `${path}.date`, ctx) } : {}),
-    ...(optionalString(value.email, `${path}.email`, ctx) !== undefined ? { email: optionalString(value.email, `${path}.email`, ctx) } : {}),
-    ...(optionalString(value.web, `${path}.web`, ctx) !== undefined ? { web: optionalString(value.web, `${path}.web`, ctx) } : {}),
-    ...(optionalString(value.description, `${path}.description`, ctx) !== undefined ? { description: optionalString(value.description, `${path}.description`, ctx) } : {})
-  };
-}
-
-function parseScenarioStart(input: unknown, path: string, ctx: ParseContext): ScenarioSeedStart | undefined {
-  if (input === undefined) return undefined;
-  const value = requireObject(input, path, ctx);
-  if (!value) return undefined;
-  allowKeys(value, path, ["landLevel", "x", "y"], ctx);
-  const landLevel = requireInteger(value.landLevel, `${path}.landLevel`, ctx);
-  const x = requireInteger(value.x, `${path}.x`, ctx);
-  const y = requireInteger(value.y, `${path}.y`, ctx);
-  checkIntegerRange(landLevel, `${path}.landLevel`, 0, null, ctx);
-  checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
-  checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
-  if (landLevel === null || x === null || y === null) return undefined;
-  return { landLevel, x, y };
 }
 
 function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeedMap | null {
