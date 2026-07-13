@@ -69,6 +69,15 @@ import {
   type ObjectValue,
   type ParseContext
 } from "./scenarioSeed/parsePrimitives";
+import {
+  addScenarioSeedDiagnostic as addDiagnostic,
+  createScenarioSeedCompilerContext,
+  type ActionPointTarget,
+  type MapTarget,
+  type ScenarioSeedCompilerContext,
+  type ScenarioSeedResolvedAsset
+} from "./scenarioSeed/compilerContext";
+import { addKey, allocateRecordIds, nextOpenId, resolveRef } from "./scenarioSeed/allocation";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
 
@@ -880,41 +889,12 @@ export type ScenarioSeedProjectOptions = {
   libraryCatalog?: LibraryCatalog | null;
 };
 
-type MapTarget = { levelType: LevelType; index: number; x?: number; y?: number };
-type ActionPointTarget = { levelType: LevelType; levelIndex: number; recordIndex: number };
-type ScenarioSeedResolvedAsset = { kind: ManagedAssetKind; resourceType: string; resourceId: number; bundled: boolean };
 type ActionBuildScope =
   | { kind: "map"; levelType: LevelType; levelIndex: number; recordIndex: number }
   | { kind: "extra"; recordIndex: number }
   | { kind: "encounter"; encounterType: "simple" | "complex"; recordIndex: number; result: ScenarioSeedComplexResultNumber };
 
-type BuildContext = {
-  errors: string[];
-  warnings: string[];
-  diagnostics: ScenarioSeedDiagnostic[];
-  allocations: ScenarioSeedAllocationReport;
-  messages: Map<string, number>;
-  quests: Map<string, number>;
-  battles: Map<string, number>;
-  monsters: Map<string, number>;
-  treasures: Map<string, number>;
-  shops: Map<string, number>;
-  items: Map<string, number>;
-  assets: Map<string, ScenarioSeedResolvedAsset>;
-  simpleEncounters: Map<string, number>;
-  complexEncounters: Map<string, number>;
-  thiefEncounters: Map<string, number>;
-  timedEncounters: Map<string, number>;
-  spells: Map<string, number>;
-  races: Map<string, number>;
-  castes: Map<string, number>;
-  actionPoints: Map<string, number>;
-  actionPointTargets: Map<string, ActionPointTarget>;
-  extraActionPoints: Map<string, number>;
-  maps: Map<string, MapTarget>;
-  regions: Map<string, MapTarget & { x: number; y: number }>;
-  libraryCatalog: LibraryCatalog | null;
-};
+type BuildContext = ScenarioSeedCompilerContext;
 
 const SCENARIO_ITEM_TYPE_CODES: Record<ScenarioSeedItemTypeName, number> = {
   ring: 0,
@@ -3075,54 +3055,7 @@ function parseStep(input: unknown, path: string, ctx: ParseContext): ScenarioSee
 }
 
 function createBuildContext(baseTemplate = "blank", libraryCatalog: LibraryCatalog | null = null): BuildContext {
-  return {
-    errors: [],
-    warnings: [],
-    diagnostics: [],
-    allocations: {
-      baseTemplate,
-      messages: [],
-      quests: [],
-      battles: [],
-      monsters: [],
-      treasures: [],
-      shops: [],
-      items: [],
-      assets: [],
-      simpleEncounters: [],
-      complexEncounters: [],
-      thiefEncounters: [],
-      timedEncounters: [],
-      spells: [],
-      races: [],
-      castes: [],
-      actionPoints: [],
-      extraActionPoints: [],
-      maps: [],
-      regions: []
-    },
-    messages: new Map(),
-    quests: new Map(),
-    battles: new Map(),
-    monsters: new Map(),
-    treasures: new Map(),
-    shops: new Map(),
-    items: new Map(),
-    assets: new Map(),
-    simpleEncounters: new Map(),
-    complexEncounters: new Map(),
-    thiefEncounters: new Map(),
-    timedEncounters: new Map(),
-    spells: new Map(),
-    races: new Map(),
-    castes: new Map(),
-    actionPoints: new Map(),
-    actionPointTargets: new Map(),
-    extraActionPoints: new Map(),
-    maps: new Map(),
-    regions: new Map(),
-    libraryCatalog
-  };
+  return createScenarioSeedCompilerContext(baseTemplate, libraryCatalog);
 }
 
 function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
@@ -3246,21 +3179,6 @@ function actionPointTargetForSeed(actionPoint: ScenarioSeedActionPoint, recordIn
   };
 }
 
-function allocateRecordIds<T extends { id?: number; key?: string }>(records: T[], label: string, keys: Map<string, number>, allocationEntries: ScenarioSeedAllocationEntry[], context: BuildContext, minimumId = 0) {
-  const used = new Set(records.map((record) => record.id).filter((id): id is number => id !== undefined));
-  for (const record of records) {
-    const explicit = record.id !== undefined;
-    if (record.id === undefined) {
-      record.id = nextOpenId(used, minimumId);
-      used.add(record.id);
-    }
-    if (record.key) {
-      addKey(keys, record.key, record.id, label, context);
-      allocationEntries.push({ key: record.key, id: record.id, explicit });
-    }
-  }
-}
-
 function allocateItemIds(records: ScenarioSeedItem[], context: BuildContext) {
   const usedRows = new Set<number>();
   const usedItemIds = new Set<number>();
@@ -3294,28 +3212,6 @@ function allocateItemIds(records: ScenarioSeedItem[], context: BuildContext) {
       context.allocations.items.push({ key: item.key, id: item.itemId, explicit });
     }
   }
-}
-
-function nextOpenId(used: Set<number>, minimumId = 0) {
-  let id = minimumId;
-  while (used.has(id)) id++;
-  return id;
-}
-
-function addKey<T>(map: Map<string, T>, key: string, value: T, label: string, context: BuildContext) {
-  if (map.has(key)) {
-    addDiagnostic(context, "error", "duplicate-key", `Duplicate ${label} key "${key}".`, label, key);
-    return;
-  }
-  map.set(key, value);
-}
-
-function resolveRef(ref: ScenarioSeedRef, keys: Map<string, number>, label: string, context: BuildContext) {
-  if (typeof ref === "number") return ref;
-  const resolved = keys.get(ref);
-  if (resolved !== undefined) return resolved;
-  addDiagnostic(context, "error", "unresolved-reference", `Unknown ${label} reference "${ref}".`, label, ref);
-  return 0;
 }
 
 function resolveItemRef(ref: ScenarioSeedRef, context: BuildContext) {
@@ -3487,12 +3383,6 @@ function castleRoomDoorPoint(
     x: door.side === "west" ? operation.x : door.side === "east" ? operation.x + operation.width - 1 : operation.x + door.offset,
     y: door.side === "north" ? operation.y : door.side === "south" ? operation.y + operation.height - 1 : operation.y + door.offset
   };
-}
-
-function addDiagnostic(context: BuildContext, severity: "error" | "warning", code: string, message: string, family?: string, key?: string) {
-  context.diagnostics.push({ severity, code, message, ...(family ? { family } : {}), ...(key ? { key } : {}) });
-  if (severity === "error") context.errors.push(message);
-  else context.warnings.push(message);
 }
 
 function buildMap(seed: ScenarioSeedMap, fallbackIndex: number, buildContext?: BuildContext): MapEntity {
