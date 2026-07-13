@@ -77,7 +77,12 @@ import {
   type ScenarioSeedCompilerContext,
   type ScenarioSeedResolvedAsset
 } from "./scenarioSeed/compilerContext";
-import { addKey, allocateRecordIds, nextOpenId, resolveRef } from "./scenarioSeed/allocation";
+import {
+  allocateScenarioSeed,
+  resolveRef,
+  SCENARIO_ITEM_ID_BASE,
+  SCENARIO_ITEM_RECORD_COUNT
+} from "./scenarioSeed/allocation";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
 
@@ -100,8 +105,6 @@ const THIEF_ENCOUNTER_BYTES = 118;
 const TIMED_ENCOUNTER_BYTES = 40;
 const EXTRACODE_BYTES = 10;
 const DOOR_BYTES = 40;
-const SCENARIO_ITEM_ID_BASE = 800;
-const SCENARIO_ITEM_RECORD_COUNT = 200;
 const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
 
 const ROGUE_ACTION_SLOTS: Record<ScenarioSeedRogueActionKind, number> = {
@@ -1025,7 +1028,7 @@ export function createProjectFromScenarioSeed(input: unknown, options: ScenarioS
   if (!project) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
   }
-  allocateSeedIds(seed, buildContext);
+  allocateScenarioSeed(seed, buildContext, { operationRegions: mapOperationRegions });
   addSeedTopologyDiagnostics(seed, buildContext);
   if (buildContext.errors.length > 0) {
     return { ok: false, errors: buildContext.errors, warnings: [...parsed.warnings, ...buildContext.warnings], allocations: buildContext.allocations, diagnostics: buildContext.diagnostics };
@@ -3058,49 +3061,6 @@ function createBuildContext(baseTemplate = "blank", libraryCatalog: LibraryCatal
   return createScenarioSeedCompilerContext(baseTemplate, libraryCatalog);
 }
 
-function allocateSeedIds(seed: ScenarioSeed, context: BuildContext) {
-  allocateRecordIds(seed.messages ?? [], "message", context.messages, context.allocations.messages, context);
-  allocateRecordIds(seed.quests ?? [], "quest", context.quests, context.allocations.quests, context);
-  allocateRecordIds(seed.battles ?? [], "battle", context.battles, context.allocations.battles, context);
-  allocateRecordIds(seed.monsters ?? [], "monster", context.monsters, context.allocations.monsters, context);
-  allocateRecordIds(seed.treasures ?? [], "treasure", context.treasures, context.allocations.treasures, context);
-  allocateRecordIds(seed.shops ?? [], "shop", context.shops, context.allocations.shops, context);
-  allocateItemIds(seed.items ?? [], context);
-  allocateRecordIds(seed.simpleEncounters ?? [], "simple encounter", context.simpleEncounters, context.allocations.simpleEncounters, context);
-  allocateRecordIds(seed.complexEncounters ?? [], "complex encounter", context.complexEncounters, context.allocations.complexEncounters, context);
-  allocateRecordIds(seed.thiefEncounters ?? [], "Rogue encounter", context.thiefEncounters, context.allocations.thiefEncounters, context, 1);
-  allocateRecordIds(seed.timedEncounters ?? [], "timed encounter", context.timedEncounters, context.allocations.timedEncounters, context);
-  allocateRecordIds(seed.spells ?? [], "spell override", context.spells, context.allocations.spells, context);
-  allocateRecordIds(seed.races ?? [], "race override", context.races, context.allocations.races, context);
-  allocateRecordIds(seed.castes ?? [], "caste override", context.castes, context.allocations.castes, context);
-  allocateRecordIds(seed.extraActionPoints ?? [], "extra action point", context.extraActionPoints, context.allocations.extraActionPoints, context);
-  for (const [index, map] of (seed.maps ?? []).entries()) {
-    const levelType = map.levelType ?? "land";
-    const levelIndex = map.index ?? index;
-    if (map.key) {
-      addKey(context.maps, map.key, { levelType, index: levelIndex }, "map", context);
-      context.allocations.maps.push({ key: map.key, levelType, index: levelIndex, explicit: map.index !== undefined });
-    }
-    context.maps.set(`${levelType}:${levelIndex}`, { levelType, index: levelIndex });
-    for (const region of map.regions ?? []) {
-      addKey(context.regions, region.key, { levelType, index: levelIndex, x: region.x, y: region.y }, "region", context);
-      context.allocations.regions.push({ key: region.key, ...(map.key ? { mapKey: map.key } : {}), levelType, index: levelIndex, x: region.x, y: region.y });
-    }
-    for (const region of mapOperationRegions(map.operations ?? [], map.landlook ?? 0)) {
-      addKey(context.regions, region.key, { levelType, index: levelIndex, x: region.x, y: region.y }, "region", context);
-      context.allocations.regions.push({ key: region.key, ...(map.key ? { mapKey: map.key } : {}), levelType, index: levelIndex, x: region.x, y: region.y });
-    }
-  }
-  for (const [index, actionPoint] of (seed.actionPoints ?? []).entries()) {
-    const recordIndex = actionPoint.recordIndex ?? index;
-    if (actionPoint.key) {
-      addKey(context.actionPoints, actionPoint.key, recordIndex, "action point", context);
-      addKey(context.actionPointTargets, actionPoint.key, actionPointTargetForSeed(actionPoint, recordIndex, context), "action point target", context);
-      context.allocations.actionPoints.push({ key: actionPoint.key, id: recordIndex, explicit: actionPoint.recordIndex !== undefined });
-    }
-  }
-}
-
 function addSeedTopologyDiagnostics(seed: ScenarioSeed, context: BuildContext) {
   const placements = (seed.actionPoints ?? []).map((actionPoint, index) => {
     const mapTarget = actionPoint.map === undefined ? null : typeof actionPoint.map === "number" ? { levelType: "land" as const, index: actionPoint.map } : context.maps.get(actionPoint.map) ?? null;
@@ -3162,55 +3122,6 @@ function addSeedMapPlacementDiagnostics(seed: ScenarioSeed, maps: MapEntity[], c
       actionPoint.x ?? regionTarget?.x ?? mapTarget?.x ?? 0,
       actionPoint.y ?? regionTarget?.y ?? mapTarget?.y ?? 0
     );
-  }
-}
-
-function actionPointTargetForSeed(actionPoint: ScenarioSeedActionPoint, recordIndex: number, context: BuildContext): ActionPointTarget {
-  const mapTarget = actionPoint.map === undefined
-    ? undefined
-    : typeof actionPoint.map === "number"
-      ? { levelType: "land" as const, index: actionPoint.map }
-      : context.maps.get(actionPoint.map);
-  const regionTarget = typeof actionPoint.at === "string" ? context.regions.get(actionPoint.at) : undefined;
-  return {
-    levelType: actionPoint.levelType ?? regionTarget?.levelType ?? mapTarget?.levelType ?? "land",
-    levelIndex: actionPoint.levelIndex ?? regionTarget?.index ?? mapTarget?.index ?? 0,
-    recordIndex
-  };
-}
-
-function allocateItemIds(records: ScenarioSeedItem[], context: BuildContext) {
-  const usedRows = new Set<number>();
-  const usedItemIds = new Set<number>();
-  for (const item of records) {
-    if (item.id !== undefined) usedRows.add(item.id);
-    if (item.itemId !== undefined) usedItemIds.add(item.itemId);
-  }
-  for (const item of records) {
-    const explicit = item.id !== undefined || item.itemId !== undefined;
-    if (item.id === undefined && item.itemId !== undefined) item.id = item.itemId - SCENARIO_ITEM_ID_BASE;
-    if (item.id === undefined) {
-      item.id = nextOpenId(usedRows);
-      usedRows.add(item.id);
-    }
-    if (item.itemId === undefined) item.itemId = SCENARIO_ITEM_ID_BASE + item.id;
-    if (item.id < 0 || item.id >= SCENARIO_ITEM_RECORD_COUNT || item.itemId < SCENARIO_ITEM_ID_BASE || item.itemId >= SCENARIO_ITEM_ID_BASE + SCENARIO_ITEM_RECORD_COUNT) {
-      addDiagnostic(context, "error", "invalid-item-id", `Item "${item.key ?? item.itemId}" must use scenario item IDs ${SCENARIO_ITEM_ID_BASE}-${SCENARIO_ITEM_ID_BASE + SCENARIO_ITEM_RECORD_COUNT - 1}.`, "item", item.key);
-      continue;
-    }
-    if (item.itemId !== SCENARIO_ITEM_ID_BASE + item.id) {
-      addDiagnostic(context, "error", "invalid-item-id", `Item "${item.key ?? item.itemId}" itemId must equal ${SCENARIO_ITEM_ID_BASE} + id.`, "item", item.key);
-      continue;
-    }
-    if (usedItemIds.has(item.itemId) && !explicit) {
-      addDiagnostic(context, "error", "duplicate-item-id", `Duplicate item ID ${item.itemId}.`, "item", item.key);
-      continue;
-    }
-    usedItemIds.add(item.itemId);
-    if (item.key) {
-      addKey(context.items, item.key, item.itemId, "item", context);
-      context.allocations.items.push({ key: item.key, id: item.itemId, explicit });
-    }
   }
 }
 

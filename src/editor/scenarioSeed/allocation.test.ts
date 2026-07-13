@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { addKey, allocateRecordIds, nextOpenId, resolveRef } from "./allocation";
+import type { ScenarioSeed } from "../scenarioSeed";
+import {
+  addKey,
+  allocateRecordIds,
+  allocateScenarioSeed,
+  nextOpenId,
+  resolveRef
+} from "./allocation";
 import { createScenarioSeedCompilerContext } from "./compilerContext";
 
 describe("scenario seed deterministic allocation", () => {
@@ -55,5 +62,74 @@ describe("scenario seed deterministic allocation", () => {
       family: "battle",
       key: "missing"
     });
+  });
+
+  it("allocates item ranges and seed-wide map, region, and action point topology", () => {
+    const context = createScenarioSeedCompilerContext();
+    const seed: ScenarioSeed = {
+      schemaVersion: 1,
+      scenario: { name: "Allocation test" },
+      items: [
+        { key: "lens" },
+        { key: "key", itemId: 805 }
+      ],
+      maps: [{
+        key: "depths",
+        levelType: "dungeon",
+        index: 3,
+        regions: [{ key: "door", x: 4, y: 5 }],
+        operations: [{ kind: "fill", tile: 40 }]
+      }],
+      actionPoints: [{
+        key: "enter-depths",
+        map: "depths",
+        at: "stairs",
+        steps: []
+      }]
+    };
+
+    allocateScenarioSeed(seed, context, {
+      operationRegions: () => [{ key: "stairs", x: 8, y: 9 }]
+    });
+
+    expect(seed.items).toEqual([
+      { key: "lens", id: 0, itemId: 800 },
+      { key: "key", id: 5, itemId: 805 }
+    ]);
+    expect(context.items).toEqual(new Map([["lens", 800], ["key", 805]]));
+    expect(context.maps.get("depths")).toEqual({ levelType: "dungeon", index: 3 });
+    expect(context.maps.get("dungeon:3")).toEqual({ levelType: "dungeon", index: 3 });
+    expect(context.regions.get("door")).toEqual({ levelType: "dungeon", index: 3, x: 4, y: 5 });
+    expect(context.regions.get("stairs")).toEqual({ levelType: "dungeon", index: 3, x: 8, y: 9 });
+    expect(context.actionPoints.get("enter-depths")).toBe(0);
+    expect(context.actionPointTargets.get("enter-depths")).toEqual({
+      levelType: "dungeon",
+      levelIndex: 3,
+      recordIndex: 0
+    });
+    expect(context.allocations.maps).toEqual([{ key: "depths", levelType: "dungeon", index: 3, explicit: true }]);
+    expect(context.allocations.regions.map(({ key, x, y }) => ({ key, x, y }))).toEqual([
+      { key: "door", x: 4, y: 5 },
+      { key: "stairs", x: 8, y: 9 }
+    ]);
+  });
+
+  it("reports invalid scenario item ranges during allocation", () => {
+    const context = createScenarioSeedCompilerContext();
+    const seed: ScenarioSeed = {
+      schemaVersion: 1,
+      scenario: { name: "Invalid item" },
+      items: [{ key: "stock-item", itemId: 799 }]
+    };
+
+    allocateScenarioSeed(seed, context, { operationRegions: () => [] });
+
+    expect(context.items.has("stock-item")).toBe(false);
+    expect(context.diagnostics).toEqual([expect.objectContaining({
+      severity: "error",
+      code: "invalid-item-id",
+      family: "item",
+      key: "stock-item"
+    })]);
   });
 });
