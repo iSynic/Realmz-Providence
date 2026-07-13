@@ -1,6 +1,7 @@
 import { EditorState } from "../store";
 import { LevelType, MapEntity, MapPreviewFocalPoint, MapViewFlag, MapWorkbenchMode, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MapContextSidebar, MapSelectionSidebar } from "../components/MapContextSidebar";
+import { buildCreateMapAction } from "../components/maps/mapBrowserModel";
 import { MapAuxiliaryWorkbenches } from "./maps/MapAuxiliaryWorkbenches";
 import { MapCanvasWorkbench } from "./maps/MapCanvasWorkbench";
 import { useMapSelectionShortcuts } from "./maps/useMapSelectionShortcuts";
@@ -65,10 +66,7 @@ export function MapsPanel({
   });
   const {
     shell: {
-      paletteOpen,
-      setPaletteOpen,
       contextFocus,
-      setContextFocus,
       workbenchMode,
       setWorkbenchMode,
       previewMode,
@@ -77,36 +75,8 @@ export function MapsPanel({
       setPreviewFocalPoint
     },
     paint: {
-      paintMode,
-      setPaintMode,
-      paintVariation,
-      setPaintVariation,
-      activePaintGroupId,
-      setActivePaintGroupId,
-      paintPaletteMode,
-      setPaintPaletteMode,
-      dungeonDrawFlags,
-      setDungeonDrawFlags,
-      activeCustomPaletteId,
-      setActiveCustomPaletteId,
-      variationTiles,
-      setPaletteVariationTiles,
       selectedRegion,
       setSelectedRegion
-    },
-    stamps: {
-      globalMapStamps,
-      setGlobalMapStamps,
-      selectedSuperTileStamp,
-      setSelectedSuperTileStampId
-    },
-    smartBrush: {
-      smartBrushPreset,
-      setSmartBrushPreset,
-      smartBrushMask,
-      visibleSmartBrushPlan,
-      clearSmartBrushMask,
-      applySmartBrush
     },
     openCanvasTool
   } = workbench;
@@ -128,14 +98,10 @@ export function MapsPanel({
   };
   const createScenarioMap = (levelType: LevelType) => {
     if (!state.project) return;
-    const index = nextMapIndex(state.project.maps, levelType);
-    const id = `${levelType}:${index}`;
-    onApplyCommand({ kind: "createMap", label: `Create ${levelType} map`, levelType });
-    onSelectMap(id);
+    const action = buildCreateMapAction(state.project.maps, levelType);
+    onApplyCommand(action.command);
+    onSelectMap(action.mapId);
     setWorkbenchMode("canvas");
-  };
-  const setPaintGroup = (groupId: string) => {
-    setActivePaintGroupId(groupId);
   };
   return (
     <>
@@ -203,61 +169,27 @@ export function MapsPanel({
         )}
       </section>
       <MapSelectionSidebar
-        state={state}
-        selectedMap={selectedMap}
-        selectedTileset={selectedTileset}
-        atlas={atlas}
-        workbenchMode={workbenchMode}
-        onSetWorkbenchMode={switchWorkbenchMode}
-        selectedRandomLevel={selectedRandomLevel}
-        mapTriggers={mapTriggers}
-        mapRecords={mapRecords}
-        onSelectTile={onSelectTile}
-        onSetContextFocus={setContextFocus}
-        onSetTool={openCanvasTool}
-        onSetViewFlag={onSetViewFlag}
-        onOpenPalette={() => setPaletteOpen(true)}
-        onOpenScripts={onOpenScripts}
-        paletteOpen={paletteOpen}
-        onSetPaletteOpen={setPaletteOpen}
-        paintMode={paintMode}
-        onSetPaintMode={setPaintMode}
-        paintVariation={paintVariation}
-        onSetPaintVariation={setPaintVariation}
-        activePaintGroupId={activePaintGroupId}
-        onSetActivePaintGroup={setPaintGroup}
-        paintPaletteMode={paintPaletteMode}
-        onSetPaintPaletteMode={setPaintPaletteMode}
-        activeCustomPaletteId={activeCustomPaletteId}
-        onSetActiveCustomPaletteId={setActiveCustomPaletteId}
-        selectedSuperTileStampId={selectedSuperTileStamp?.id ?? null}
-        onSelectSuperTileStamp={setSelectedSuperTileStampId}
-        variationTiles={variationTiles}
-        onSetPaletteVariationTiles={setPaletteVariationTiles}
-        selectedRegion={selectedRegion}
-        onSetSelectedRegion={setSelectedRegion}
-        onClearSelection={onClearSelection}
-        globalMapStamps={globalMapStamps}
-        onSetGlobalMapStamps={setGlobalMapStamps}
-        smartBrushPreset={smartBrushPreset}
-        onSetSmartBrushPreset={setSmartBrushPreset}
-        smartBrushMask={smartBrushMask}
-        smartBrushPlan={visibleSmartBrushPlan}
-        onClearSmartBrushMask={clearSmartBrushMask}
-        onApplySmartBrush={applySmartBrush}
-        onSelectEntity={onSelectEntity}
-        onApplyCommand={onApplyCommand}
-        dungeonDrawFlags={dungeonDrawFlags}
-        onSetDungeonDrawFlags={setDungeonDrawFlags}
+        context={{
+          state,
+          selectedMap,
+          selectedTileset,
+          atlas,
+          selectedRandomLevel,
+          mapTriggers,
+          mapRecords
+        }}
+        workbench={workbench}
+        actions={{
+          onSelectTile,
+          onSetViewFlag,
+          onOpenScripts,
+          onClearSelection,
+          onSelectEntity,
+          onApplyCommand
+        }}
       />
     </>
   );
-}
-
-function nextMapIndex(maps: MapEntity[], levelType: LevelType) {
-  return maps
-    .filter((map) => map.levelType === levelType)
-    .reduce((max, map) => Math.max(max, map.index), -1) + 1;
 }
 
 type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;

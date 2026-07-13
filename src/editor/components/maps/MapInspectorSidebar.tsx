@@ -1,30 +1,19 @@
 import { useEffect, useState } from "react";
 import type { EditorState } from "../../store";
 import type {
-  CustomMapStamp,
-  DungeonCellFlag,
-  EditorTool,
   MapEntity,
-  MapPaintMode,
-  MapPaintVariation,
-  MapRegionSelection,
   MapViewFlag,
-  MapWorkbenchMode,
   ProjectCommand,
   RandomLevel,
   SelectedEntity,
   SemanticEntity,
-  SmartBrushMaskCell,
-  SmartBrushPlan,
-  SmartBrushPreset,
-  TilePaletteCategory,
   TilesetAsset,
   TriggerRecord
 } from "../../types";
 import { ScrollArea } from "../../ui";
+import type { MapWorkbenchState } from "../../panels/maps/useMapWorkbenchState";
 import { ResizablePane } from "../ResizablePane";
 import { DungeonDrawInspector } from "./DungeonFlagInspector";
-import { type MapContextFocus } from "./mapBrowserModel";
 import { MapPaintInspector } from "./MapPaintInspector";
 import { resolveMapSelection } from "./mapSelectionModel";
 import { MapSelectionInspector } from "./MapSelectionInspector";
@@ -36,101 +25,91 @@ import {
   type MapSidebarInspector
 } from "./mapInspectorRouting";
 
-export function MapInspectorSidebar({
-  state,
-  selectedMap,
-  selectedTileset,
-  atlas,
-  workbenchMode,
-  onSetWorkbenchMode,
-  selectedRandomLevel,
-  mapTriggers,
-  mapRecords,
-  onSelectTile,
-  onSetContextFocus,
-  onSetTool,
-  onSetViewFlag,
-  onOpenPalette,
-  onOpenScripts,
-  paletteOpen,
-  onSetPaletteOpen,
-  paintMode,
-  onSetPaintMode,
-  paintVariation,
-  onSetPaintVariation,
-  activePaintGroupId,
-  onSetActivePaintGroup,
-  paintPaletteMode,
-  onSetPaintPaletteMode,
-  activeCustomPaletteId,
-  onSetActiveCustomPaletteId,
-  variationTiles,
-  onSetPaletteVariationTiles,
-  selectedRegion,
-  onSetSelectedRegion,
-  onClearSelection,
-  globalMapStamps,
-  onSetGlobalMapStamps,
-  smartBrushPreset,
-  onSetSmartBrushPreset,
-  smartBrushMask,
-  smartBrushPlan,
-  onClearSmartBrushMask,
-  onApplySmartBrush,
-  selectedSuperTileStampId,
-  onSelectSuperTileStamp,
-  onSelectEntity,
-  onApplyCommand,
-  dungeonDrawFlags,
-  onSetDungeonDrawFlags
-}: {
+interface MapInspectorContext {
   state: EditorState;
   selectedMap: MapEntity | null;
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
-  workbenchMode: MapWorkbenchMode;
-  onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   selectedRandomLevel: RandomLevel | null;
   mapTriggers: TriggerRecord[];
   mapRecords: SemanticEntity[];
+}
+
+interface MapInspectorActions {
   onSelectTile: (tile: number) => void;
-  onSetContextFocus: (focus: MapContextFocus) => void;
-  onSetTool: (tool: EditorTool) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
-  onOpenPalette: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
-  paletteOpen: boolean;
-  onSetPaletteOpen: (open: boolean) => void;
-  paintMode: MapPaintMode;
-  onSetPaintMode: (mode: MapPaintMode) => void;
-  paintVariation: MapPaintVariation;
-  onSetPaintVariation: (variation: MapPaintVariation) => void;
-  activePaintGroupId: string;
-  onSetActivePaintGroup: (groupId: string) => void;
-  paintPaletteMode: TilePaletteCategory;
-  onSetPaintPaletteMode: (mode: TilePaletteCategory) => void;
-  activeCustomPaletteId: string | null;
-  onSetActiveCustomPaletteId: (paletteId: string | null) => void;
-  variationTiles: number[] | null;
-  onSetPaletteVariationTiles: (tiles: number[] | null) => void;
-  selectedRegion: MapRegionSelection | null;
-  onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   onClearSelection: () => void;
-  globalMapStamps: CustomMapStamp[];
-  onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
-  smartBrushPreset: SmartBrushPreset;
-  onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
-  smartBrushMask: SmartBrushMaskCell[];
-  smartBrushPlan: SmartBrushPlan;
-  onClearSmartBrushMask: () => void;
-  onApplySmartBrush: () => void;
-  selectedSuperTileStampId: string | null;
-  onSelectSuperTileStamp: (stampId: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
-  dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
-  onSetDungeonDrawFlags: (flags: Record<DungeonCellFlag, boolean>) => void;
+}
+
+export function MapInspectorSidebar({
+  context: {
+    state,
+    selectedMap,
+    selectedTileset,
+    atlas,
+    selectedRandomLevel,
+    mapTriggers,
+    mapRecords
+  },
+  workbench: {
+    shell: {
+      paletteOpen,
+      setPaletteOpen: onSetPaletteOpen,
+      setContextFocus: onSetContextFocus,
+      workbenchMode,
+      setWorkbenchMode: onSetWorkbenchMode
+    },
+    paint: {
+      paintMode,
+      setPaintMode: onSetPaintMode,
+      paintVariation,
+      setPaintVariation: onSetPaintVariation,
+      activePaintGroupId,
+      setActivePaintGroupId: onSetActivePaintGroup,
+      paintPaletteMode,
+      setPaintPaletteMode: onSetPaintPaletteMode,
+      dungeonDrawFlags,
+      setDungeonDrawFlags: onSetDungeonDrawFlags,
+      activeCustomPaletteId,
+      setActiveCustomPaletteId: onSetActiveCustomPaletteId,
+      variationTiles,
+      setPaletteVariationTiles: onSetPaletteVariationTiles,
+      selectedRegion,
+      setSelectedRegion: onSetSelectedRegion
+    },
+    stamps: {
+      globalMapStamps,
+      setGlobalMapStamps: onSetGlobalMapStamps,
+      selectedSuperTileStamp,
+      setSelectedSuperTileStampId: onSelectSuperTileStamp
+    },
+    smartBrush: {
+      smartBrushPreset,
+      setSmartBrushPreset: onSetSmartBrushPreset,
+      smartBrushMask,
+      visibleSmartBrushPlan: smartBrushPlan,
+      clearSmartBrushMask: onClearSmartBrushMask,
+      applySmartBrush: onApplySmartBrush
+    },
+    openCanvasTool: onSetTool
+  },
+  actions: {
+    onSelectTile,
+    onSetViewFlag,
+    onOpenScripts,
+    onClearSelection,
+    onSelectEntity,
+    onApplyCommand
+  }
+}: {
+  context: MapInspectorContext;
+  workbench: MapWorkbenchState;
+  actions: MapInspectorActions;
 }) {
+  const selectedSuperTileStampId = selectedSuperTileStamp?.id ?? null;
   const [open, setOpen] = useState(() => localStorage.getItem("providence.mapRightContextOpen.v1") !== "0");
   useEffect(() => {
     localStorage.setItem("providence.mapRightContextOpen.v1", open ? "1" : "0");
@@ -270,7 +249,7 @@ export function MapInspectorSidebar({
             onSetWorkbenchMode={onSetWorkbenchMode}
             onSetTool={onSetTool}
             onSetViewFlag={onSetViewFlag}
-            onOpenPalette={onOpenPalette}
+            onOpenPalette={() => onSetPaletteOpen(true)}
             onSelectEntity={onSelectEntity}
             onApplyCommand={onApplyCommand}
           />
