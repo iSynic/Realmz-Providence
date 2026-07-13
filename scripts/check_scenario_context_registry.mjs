@@ -4,8 +4,11 @@ import path from "node:path";
 const repoRoot = process.cwd();
 const questUsagePath = path.join(repoRoot, "src", "editor", "questUsage.ts");
 const scriptsPanelPath = path.join(repoRoot, "src", "editor", "panels", "ScriptsPanel.tsx");
+const storyFlagsWorkbenchPath = path.join(repoRoot, "src", "editor", "panels", "scripts", "StoryFlagsWorkbench.tsx");
 const questUsage = fs.readFileSync(questUsagePath, "utf8");
-const scriptsPanel = fs.readFileSync(scriptsPanelPath, "utf8");
+const scriptsPanel = [scriptsPanelPath, storyFlagsWorkbenchPath]
+  .map((filePath) => fs.readFileSync(filePath, "utf8"))
+  .join("\n");
 const failures = [];
 
 for (const forbidden of [

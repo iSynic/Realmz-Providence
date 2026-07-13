@@ -29,6 +29,7 @@ const encountersCssPath = path.join(root, "src/editor/styles/encounters.css");
 const textScenarioCssPath = path.join(root, "src/editor/styles/text-scenario.css");
 const assetsCssPath = path.join(root, "src/editor/styles/assets.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
+const battleWorkbenchPath = path.join(root, "src/editor/panels/combat/BattleWorkbench.tsx");
 const textPanelPath = path.join(root, "src/editor/panels/TextPanel.tsx");
 const styledTextPreviewPath = path.join(root, "src/editor/components/StyledTextPreview.tsx");
 const classicTextPreviewPath = path.join(root, "src/editor/classicTextPreview.ts");
@@ -47,6 +48,7 @@ const semanticPath = path.join(root, "src/editor/browser/semantic.ts");
 const semanticGraphPath = path.join(root, "src/editor/semanticGraph.ts");
 const editorStorePath = path.join(root, "src/editor/store.ts");
 const mapContextSidebarPath = path.join(root, "src/editor/components/MapContextSidebar.tsx");
+const mapActionPointInspectorPath = path.join(root, "src/editor/components/maps/MapActionPointInspector.tsx");
 const mapFormControlsPath = path.join(root, "src/editor/components/maps/MapFormControls.tsx");
 const browserProjectPath = path.join(root, "src/editor/browser/project.ts");
 const browserLibraryPath = path.join(root, "src/editor/browser/library.ts");
@@ -70,7 +72,9 @@ const timedEncounterShell = fs.readFileSync(timedEncounterShellPath, "utf8");
 const scriptsCss = [scriptsCssPath, encountersCssPath].map((filePath) => fs.readFileSync(filePath, "utf8")).join("\n");
 const textScenarioCss = fs.readFileSync(textScenarioCssPath, "utf8");
 const assetsCss = fs.readFileSync(assetsCssPath, "utf8");
-const combatPanel = fs.readFileSync(combatPanelPath, "utf8");
+const combatPanel = [combatPanelPath, battleWorkbenchPath]
+  .map((filePath) => fs.readFileSync(filePath, "utf8"))
+  .join("\n");
 const textPanel = fs.readFileSync(textPanelPath, "utf8");
 const styledTextPreview = fs.readFileSync(styledTextPreviewPath, "utf8");
 const classicTextPreview = fs.readFileSync(classicTextPreviewPath, "utf8");
@@ -89,6 +93,7 @@ const semantic = fs.readFileSync(semanticPath, "utf8");
 const semanticGraph = fs.readFileSync(semanticGraphPath, "utf8");
 const editorStore = fs.readFileSync(editorStorePath, "utf8");
 const mapContextSidebar = fs.readFileSync(mapContextSidebarPath, "utf8");
+const mapContextSurface = [mapContextSidebar, fs.readFileSync(mapActionPointInspectorPath, "utf8")].join("\n");
 const mapFormControls = fs.readFileSync(mapFormControlsPath, "utf8");
 const browserProject = fs.readFileSync(browserProjectPath, "utf8");
 const browserLibrary = fs.readFileSync(browserLibraryPath, "utf8");
@@ -928,7 +933,7 @@ for (const snippet of [
   "label=\"X\" value={trigger.coordinate.x} min={0} max={89} compact plain maxLength={2} commitOnChange",
   "label=\"Y\" value={trigger.coordinate.y} min={0} max={89} compact plain maxLength={2} commitOnChange"
 ]) {
-  if (!mapContextSidebar.includes(snippet)) failures.push(`Map Action Point selection inspector live movement is missing: ${snippet}`);
+  if (!mapContextSurface.includes(snippet)) failures.push(`Map Action Point selection inspector live movement is missing: ${snippet}`);
 }
 
 for (const snippet of [
