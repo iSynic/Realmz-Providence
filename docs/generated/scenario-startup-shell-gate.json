@@ -84,24 +84,24 @@
     "fixturePaths": [],
     "missingEvidence": [],
     "evidence": [
-      "src-tauri/src/realmz.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
-      "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+      "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+      "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
       "docs/generated/scenario-shell-evidence.json",
       "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
       "docs/format-evidence-cards/scenario-shell-startup-release.md"
     ],
     "evidenceChecks": [
       {
-        "reference": "src-tauri/src/realmz.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
-        "file": "src-tauri/src/realmz.rs",
+        "reference": "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+        "file": "src-tauri/src/realmz/scenario.rs",
         "anchor": "scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
         "fileExists": true,
         "anchorPresent": true,
         "present": true
       },
       {
-        "reference": "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
-        "file": "src-tauri/src/realmz.rs",
+        "reference": "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "file": "src-tauri/src/realmz/scenario.rs",
         "anchor": "scenario_shell_contact_and_restrictions_round_trip",
         "fileExists": true,
         "anchorPresent": true,

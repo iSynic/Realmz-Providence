@@ -775,9 +775,9 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Scenario/contact/release strings", internal: "contactdata Str255 fields", offset: 0, bytes: 4608, type: "Str255[18]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
-      "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
-      "src-tauri/src/realmz.rs:write_scenario_contact_info",
+      "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+      "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+      "src-tauri/src/realmz/scenario.rs:write_scenario_contact_info",
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/scenario-shell-evidence.json",
       "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
@@ -798,9 +798,9 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Banned caste flags", internal: "cancaste[30]", offset: 290, bytes: 30, type: "u8[30]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
-      "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
-      "src-tauri/src/realmz.rs:write_scenario_restrictions",
+      "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+      "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+      "src-tauri/src/realmz/scenario.rs:write_scenario_restrictions",
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/scenario-party-restrictions-evidence.json",
       "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
@@ -825,9 +825,9 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Reserved global hook slots", internal: "globalmacro[6..29]", offset: 12, bytes: 48, type: "raw-preserved" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:global_macro_hooks_mutate_only_source_backed_slots",
-      "src-tauri/src/realmz.rs:write_global_macro_hooks",
-      "src-tauri/src/realmz.rs:parse_global_macro_hooks",
+      "src-tauri/src/realmz/scenario.rs:global_macro_hooks_mutate_only_source_backed_slots",
+      "src-tauri/src/realmz/scenario.rs:write_global_macro_hooks",
+      "src-tauri/src/realmz/scenario.rs:parse_global_macro_hooks",
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/global-macro-evidence.json",
       "docs/format-evidence-cards/global-macro-runtime-anchors.md"
@@ -992,8 +992,8 @@ function buildScenarioStartupShellGate(aggregate) {
   const aggregateByName = new Map((aggregate.files ?? []).map((file) => [file.name, file]));
   const file = aggregateByName.get(SCENARIO_STARTUP_SHELL_CONTAINER);
   const evidence = [
-    "src-tauri/src/realmz.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
-    "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
+    "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+    "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
     "docs/generated/scenario-shell-evidence.json",
     "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
     "docs/format-evidence-cards/scenario-shell-startup-release.md"

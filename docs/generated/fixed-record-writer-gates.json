@@ -930,9 +930,9 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
-        "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
-        "src-tauri/src/realmz.rs:write_scenario_contact_info",
+        "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "src-tauri/src/realmz/scenario.rs:write_scenario_contact_info",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
         "docs/generated/scenario-shell-evidence.json",
@@ -941,24 +941,24 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "fixed_record_scenario_shell_writers_mutate_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "scenario_shell_contact_and_restrictions_round_trip",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_scenario_contact_info",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:write_scenario_contact_info",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "write_scenario_contact_info",
           "fileExists": true,
           "anchorPresent": true,
@@ -1043,9 +1043,9 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
-        "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
-        "src-tauri/src/realmz.rs:write_scenario_restrictions",
+        "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+        "src-tauri/src/realmz/scenario.rs:write_scenario_restrictions",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
         "docs/generated/scenario-party-restrictions-evidence.json",
@@ -1053,24 +1053,24 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "fixed_record_scenario_shell_writers_mutate_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:scenario_shell_contact_and_restrictions_round_trip",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "scenario_shell_contact_and_restrictions_round_trip",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_scenario_restrictions",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:write_scenario_restrictions",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "write_scenario_restrictions",
           "fileExists": true,
           "anchorPresent": true,
@@ -1175,9 +1175,9 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:global_macro_hooks_mutate_only_source_backed_slots",
-        "src-tauri/src/realmz.rs:write_global_macro_hooks",
-        "src-tauri/src/realmz.rs:parse_global_macro_hooks",
+        "src-tauri/src/realmz/scenario.rs:global_macro_hooks_mutate_only_source_backed_slots",
+        "src-tauri/src/realmz/scenario.rs:write_global_macro_hooks",
+        "src-tauri/src/realmz/scenario.rs:parse_global_macro_hooks",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
         "docs/generated/global-macro-evidence.json",
@@ -1185,24 +1185,24 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:global_macro_hooks_mutate_only_source_backed_slots",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:global_macro_hooks_mutate_only_source_backed_slots",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "global_macro_hooks_mutate_only_source_backed_slots",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_global_macro_hooks",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:write_global_macro_hooks",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "write_global_macro_hooks",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_global_macro_hooks",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/scenario.rs:parse_global_macro_hooks",
+          "file": "src-tauri/src/realmz/scenario.rs",
           "anchor": "parse_global_macro_hooks",
           "fileExists": true,
           "anchorPresent": true,
