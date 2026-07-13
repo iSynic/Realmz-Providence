@@ -38,11 +38,8 @@ import {
   bytesToBase64,
   loadLibraryResourceBase64
 } from "./combat/IconPairResources";
-import {
-  MonsterWorkbench,
-  copyScrapbookMonsterToScenario,
-  scrapbookEntryForMonsterId
-} from "./combat/MonsterWorkbench";
+import { MonsterWorkbench } from "./combat/MonsterWorkbench";
+import { copyScrapbookMonsterToScenario, scrapbookEntryForMonsterId } from "./combat/monsterLibraryWorkflow";
 
 export {
   monsterIconPickerOptions,
@@ -57,7 +54,9 @@ export type { CombatWorkbenchTab } from "./combat/combatLookups";
 export { monsterBrushPaletteWindow } from "./combat/BattleBoard";
 export {
   materializeMonsterLibraryIconOverrides,
-  monsterIconOverrideForLibraryCopy,
+  monsterIconOverrideForLibraryCopy
+} from "./combat/monsterLibraryWorkflow";
+export {
   monsterRequiredWeaponDisplayCode,
   monsterRequiredWeaponStoredCode
 } from "./combat/MonsterWorkbench";
