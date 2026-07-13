@@ -45,12 +45,9 @@ import {
   allowKeys,
   checkIntegerRange,
   optionalBoolean,
-  optionalFixedIntegerArray,
-  optionalFixedIntegerMatrix,
   optionalInteger,
   optionalRef,
   optionalString,
-  optionalStringProperty,
   parseArray,
   parseIntegerArray,
   parseRefArray,
@@ -86,6 +83,7 @@ import {
 } from "./scenarioSeed/mapCompiler";
 import { applyScenarioSeedMapOperation } from "./scenarioSeed/mapOperationCompiler";
 import { mapStorageTileIndex } from "./scenarioSeed/mapPaintingPrimitives";
+import { parseCaste, parseRace, parseSpell } from "./scenarioSeed/rulesParser";
 import { validateMaxArrayLength, validateScenarioSeed } from "./scenarioSeed/validation";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
@@ -872,16 +870,6 @@ const SCENARIO_MONSTER_NUMBER_FIELDS: ScenarioSeedMonsterNumberField[] = [
   "maxSpellPoints"
 ];
 
-const SCENARIO_SPELL_NUMBER_FIELDS: ScenarioSeedSpellNumberField[] = [
-  "range1", "range2", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetNum", "canRotate", "saveAdjust",
-  "cannot", "resistAdjust", "cost", "damage1", "damage2", "powerDamage1", "powerDamage2", "duration1", "duration2",
-  "powerDuration1", "powerDuration2", "spellLook1", "spellLook2", "sound1", "sound2", "targetType", "size", "special",
-  "damageType", "spellClass"
-];
-
-const SCENARIO_RACE_NUMBER_FIELDS = ["maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "canRegenerate", "defaultIconSet", "descriptors"] as const;
-const SCENARIO_CASTE_NUMBER_FIELDS = ["canUseMissile", "getsMissileBonus", "casteClass", "minimumAgeGroup", "moveBonus", "magRes", "twoHand", "maxStaminaBonus", "bonusAttacks", "maxAttacks", "startMoney", "defaultIcon", "maxSpellsAttacks", "spellsSoFar"] as const;
-
 export type ScenarioSeedProjectResult =
   | { ok: true; project: Project; warnings: string[]; allocations: ScenarioSeedAllocationReport; diagnostics: ScenarioSeedDiagnostic[] }
   | { ok: false; errors: string[]; warnings: string[]; allocations?: ScenarioSeedAllocationReport; diagnostics: ScenarioSeedDiagnostic[] };
@@ -1264,85 +1252,6 @@ function parseTimedEncounter(input: unknown, path: string, ctx: ParseContext): S
     ...(requiredQuest !== undefined ? { requiredQuest } : {}),
     ...(location !== undefined ? { location } : {})
   };
-}
-
-function parseSpell(input: unknown, path: string, ctx: ParseContext): ScenarioSeedSpell | null {
-  const value = requireObject(input, path, ctx);
-  if (!value) return null;
-  allowKeys(value, path, ["key", "id", "displayName", "description", "inCombat", "inCamp", ...SCENARIO_SPELL_NUMBER_FIELDS], ctx);
-  const key = optionalString(value.key, `${path}.key`, ctx);
-  const id = optionalInteger(value.id, `${path}.id`, ctx);
-  checkIntegerRange(id, `${path}.id`, 0, 104, ctx);
-  const record: ScenarioSeedSpell = {
-    ...(key !== undefined ? { key } : {}),
-    ...(id !== undefined ? { id } : {}),
-    ...(optionalString(value.displayName, `${path}.displayName`, ctx) !== undefined ? { displayName: optionalString(value.displayName, `${path}.displayName`, ctx) } : {}),
-    ...(optionalString(value.description, `${path}.description`, ctx) !== undefined ? { description: optionalString(value.description, `${path}.description`, ctx) } : {}),
-    ...(optionalBoolean(value.inCombat, `${path}.inCombat`, ctx) !== undefined ? { inCombat: optionalBoolean(value.inCombat, `${path}.inCombat`, ctx) } : {}),
-    ...(optionalBoolean(value.inCamp, `${path}.inCamp`, ctx) !== undefined ? { inCamp: optionalBoolean(value.inCamp, `${path}.inCamp`, ctx) } : {})
-  };
-  for (const field of SCENARIO_SPELL_NUMBER_FIELDS) {
-    const parsed = optionalInteger(value[field], `${path}.${field}`, ctx);
-    if (parsed !== undefined) record[field] = parsed;
-  }
-  return record;
-}
-
-function parseRace(input: unknown, path: string, ctx: ParseContext): ScenarioSeedRace | null {
-  const value = requireObject(input, path, ctx);
-  if (!value) return null;
-  const arrayFields = { plusMinusToHit: 8, specialAbility: 14, drvBonus: 8, attBonus: 6, minMax: 12, conditions: 40, numOfAttacks: 2, canCaste: 30, itemTypes: 2 } as const;
-  allowKeys(value, path, ["key", "id", "displayName", ...Object.keys(arrayFields), "ageRange", "ageChange", ...SCENARIO_RACE_NUMBER_FIELDS], ctx);
-  const id = optionalInteger(value.id, `${path}.id`, ctx);
-  checkIntegerRange(id, `${path}.id`, 0, 69, ctx);
-  const record: ScenarioSeedRace = {
-    ...optionalStringProperty(value, "key", path, ctx),
-    ...(id !== undefined ? { id } : {}),
-    ...optionalStringProperty(value, "displayName", path, ctx)
-  };
-  for (const [field, length] of Object.entries(arrayFields) as Array<[keyof typeof arrayFields, number]>) {
-    const parsed = optionalFixedIntegerArray(value[field], `${path}.${field}`, length, ctx);
-    if (parsed) record[field] = parsed;
-  }
-  const ageRange = optionalFixedIntegerMatrix(value.ageRange, `${path}.ageRange`, 5, 2, ctx);
-  const ageChange = optionalFixedIntegerMatrix(value.ageChange, `${path}.ageChange`, 5, 15, ctx);
-  if (ageRange) record.ageRange = ageRange;
-  if (ageChange) record.ageChange = ageChange;
-  for (const field of SCENARIO_RACE_NUMBER_FIELDS) {
-    const parsed = optionalInteger(value[field], `${path}.${field}`, ctx);
-    if (parsed !== undefined) record[field] = parsed;
-  }
-  return record;
-}
-
-function parseCaste(input: unknown, path: string, ctx: ParseContext): ScenarioSeedCaste | null {
-  const value = requireObject(input, path, ctx);
-  if (!value) return null;
-  const arrayFields = { drvBonus: 8, attBonus: 6, minMax: 12, conditions: 40, stamina: 2, strength: 2, dodge: 2, toHit: 2, missile: 2, hand2Hand: 2, victory: 30, attacks: 10, itemTypes: 2 } as const;
-  allowKeys(value, path, ["key", "id", "displayName", "specialAbility", "spellcasters", "startItems", ...Object.keys(arrayFields), ...SCENARIO_CASTE_NUMBER_FIELDS], ctx);
-  const id = optionalInteger(value.id, `${path}.id`, ctx);
-  checkIntegerRange(id, `${path}.id`, 0, 29, ctx);
-  const record: ScenarioSeedCaste = {
-    ...optionalStringProperty(value, "key", path, ctx),
-    ...(id !== undefined ? { id } : {}),
-    ...optionalStringProperty(value, "displayName", path, ctx)
-  };
-  for (const [field, length] of Object.entries(arrayFields) as Array<[keyof typeof arrayFields, number]>) {
-    const parsed = optionalFixedIntegerArray(value[field], `${path}.${field}`, length, ctx);
-    if (parsed) record[field] = parsed;
-  }
-  const specialAbility = optionalFixedIntegerMatrix(value.specialAbility, `${path}.specialAbility`, 2, 14, ctx);
-  const spellcasters = optionalFixedIntegerMatrix(value.spellcasters, `${path}.spellcasters`, 4, 3, ctx);
-  const startItems = parseRefArray(value.startItems, `${path}.startItems`, ctx);
-  if (startItems && startItems.length !== 20) ctx.errors.push(`${path}.startItems must contain exactly 20 entries.`);
-  if (specialAbility) record.specialAbility = specialAbility;
-  if (spellcasters) record.spellcasters = spellcasters;
-  if (startItems) record.startItems = startItems;
-  for (const field of SCENARIO_CASTE_NUMBER_FIELDS) {
-    const parsed = optionalInteger(value[field], `${path}.${field}`, ctx);
-    if (parsed !== undefined) record[field] = parsed;
-  }
-  return record;
 }
 
 function parseTimedLocation(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTimedLocation {
