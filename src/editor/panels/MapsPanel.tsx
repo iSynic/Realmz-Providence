@@ -1,13 +1,9 @@
-import { useEffect, useMemo, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { EditorState } from "../store";
-import { LevelType, MapEntity, MapPreviewFocalPoint, MapViewFlag, MapWorkbenchMode, Project, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
-import { RealmzMapCanvas } from "../components/MapCanvas";
+import { LevelType, MapEntity, MapPreviewFocalPoint, MapViewFlag, MapWorkbenchMode, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { LandLayoutEditor, LandTileAtlasEditor, MapContextSidebar, MapSelectionSidebar, RandomAreasWorkbench } from "../components/MapContextSidebar";
-import { MapViewFilters } from "../components/MapViewFilters";
-import { buildPaintChanges, rectCells } from "../map/regionPaint";
-import { clearTileForMap } from "../map/tileClear";
-import { DUNGEON_CLEAR_TO_WALL_FLAGS } from "../map/dungeonCellFlags";
-import { randomRectEntityId } from "../map/geometry";
+import { MapCanvasWorkbench } from "./maps/MapCanvasWorkbench";
+import { useMapSelectionShortcuts } from "./maps/useMapSelectionShortcuts";
 import { useMapWorkbenchState } from "./maps/useMapWorkbenchState";
 
 const MAP_WORKBENCH_MODES: Array<{ id: MapWorkbenchMode; label: string; description: string }> = [
@@ -66,6 +62,14 @@ export function MapsPanel({
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
 }) {
+  const workbench = useMapWorkbenchState({
+    project: state.project,
+    selectedMap,
+    selectedTileset,
+    atlas,
+    onSetTool,
+    onApplyCommand
+  });
   const {
     shell: {
       paletteOpen,
@@ -118,77 +122,20 @@ export function MapsPanel({
       applySmartBrush
     },
     openCanvasTool
-  } = useMapWorkbenchState({
-    project: state.project,
+  } = workbench;
+  useMapSelectionShortcuts({
+    activeTool: state.activeTool,
+    selectedCell: state.selectedCell,
+    hasSelectedEntity: state.selectedEntity != null,
     selectedMap,
+    selectedRegion,
     selectedTileset,
-    atlas,
-    onSetTool,
-    onApplyCommand
+    workbenchMode,
+    onApplyCommand,
+    onClearSelection,
+    onSetSelectedRegion: setSelectedRegion
   });
-  const visibleTriggers = useMemo(
-    () => state.showTriggers ? mapTriggers : [],
-    [mapTriggers, state.showTriggers]
-  );
-  const visibleRandomLevel = useMemo(() => {
-    if (!selectedMap || !selectedRandomLevel || !state.showRandomRects) return null;
-    if (state.visibleRandomRectIds.length === 0) return selectedRandomLevel;
-    const visibleIds = new Set(state.visibleRandomRectIds);
-    const rects = selectedRandomLevel.rects.filter((rect) => visibleIds.has(randomRectEntityId(selectedMap, rect.rectIndex)));
-    return rects.length > 0 ? { ...selectedRandomLevel, rects } : null;
-  }, [selectedMap, selectedRandomLevel, state.showRandomRects, state.visibleRandomRectIds]);
-  const visibleMapRecords = useMemo(() => {
-    if (!state.showMapRecords) return [];
-    if (state.visibleMapRecordIds.length === 0) return mapRecords;
-    const visibleIds = new Set(state.visibleMapRecordIds);
-    return mapRecords.filter((record) => {
-      const recordId = semanticMapRecordId(record);
-      return recordId != null && visibleIds.has(recordId);
-    });
-  }, [mapRecords, state.showMapRecords, state.visibleMapRecordIds]);
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isTextEditingTarget(event.target)) return;
-      if (event.key === "Escape") {
-        if (!selectedRegion && !state.selectedCell && !state.selectedEntity) return;
-        event.preventDefault();
-        setSelectedRegion(null);
-        onClearSelection();
-        return;
-      }
-      if (event.key !== "Delete" && event.key !== "Backspace") return;
-      if (workbenchMode !== "canvas" || state.activeTool !== "select" || !selectedMap) return;
-      const clearTile = clearTileForMap(selectedMap, selectedTileset);
-      const cells = selectedRegion
-        ? rectCells(selectedMap, selectedRegion)
-        : state.selectedCell
-          ? rectCells(selectedMap, { left: state.selectedCell.x, top: state.selectedCell.y, right: state.selectedCell.x, bottom: state.selectedCell.y })
-          : [];
-      if (selectedMap.levelType === "dungeon") {
-        if (cells.length === 0) return;
-        event.preventDefault();
-        onApplyCommand({
-          kind: "updateDungeonCellFlags",
-          label: selectedRegion ? "Clear selected dungeon region" : "Clear selected dungeon cell",
-          mapId: selectedMap.id,
-          flags: DUNGEON_CLEAR_TO_WALL_FLAGS,
-          cells: cells.map((cell) => ({ x: cell.x, y: cell.y, index: cell.index, from: cell.tile }))
-        });
-        return;
-      }
-      const changes = buildPaintChanges(selectedMap, cells, clearTile);
-      if (changes.length === 0) return;
-      event.preventDefault();
-      onApplyCommand({
-        kind: "paintTiles",
-        label: selectedRegion ? "Clear selected region" : "Clear selected tile",
-        mapId: selectedMap.id,
-        cells: changes
-      });
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onApplyCommand, onClearSelection, selectedMap, selectedRegion, selectedTileset, state.activeTool, state.selectedCell, state.selectedEntity, workbenchMode]);
+  const resolvedPreviewFocalPoint = previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap);
   const switchWorkbenchMode = (mode: MapWorkbenchMode) => {
     setWorkbenchMode(mode);
   };
@@ -214,7 +161,7 @@ export function MapsPanel({
         selectedRandomLevel={selectedRandomLevel}
         contextFocus={contextFocus}
         previewMode={previewMode}
-        previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
+        previewFocalPoint={resolvedPreviewFocalPoint}
         onSetPreviewMode={setPreviewMode}
         onSetPreviewFocalPoint={setPreviewFocalPoint}
         onSetWorkbenchMode={switchWorkbenchMode}
@@ -226,71 +173,31 @@ export function MapsPanel({
 
       <section className={`editor-canvas-area map-workbench-area map-workbench-${workbenchMode}`}>
         {workbenchMode === "canvas" && (
-          <>
-            <MapViewFilters
-              state={state}
-              selectedMap={selectedMap}
-              selectedRandomLevel={selectedRandomLevel}
-              mapRecords={mapRecords}
-              onSetZoom={onSetZoom}
-              onSetSmoothTiles={onSetSmoothTiles}
-              onSetViewFlag={onSetViewFlag}
-              onSetVisibleRandomRectIds={onSetVisibleRandomRectIds}
-              onSetVisibleMapRecordIds={onSetVisibleMapRecordIds}
-            />
-            {selectedMap ? (
-              <RealmzMapCanvas
-                project={state.project}
-                map={selectedMap}
-                tileset={selectedTileset}
-                atlas={atlas}
-                icons={state.iconEntries}
-                triggers={visibleTriggers}
-                allTriggers={mapTriggers}
-                randomLevel={visibleRandomLevel}
-                mapRecords={visibleMapRecords}
-                activeTool={state.activeTool}
-                paintMode={paintMode}
-                paintVariation={paintVariation}
-                activePaintGroupId={activePaintGroupId}
-                variationTiles={variationTiles}
-                selectedTile={state.selectedTile}
-                selectedSuperTileStamp={selectedSuperTileStamp}
-                dungeonDrawFlags={dungeonDrawFlags}
-                zoom={state.zoom}
-                smoothTiles={state.smoothTiles}
-                viewOptions={state}
-                tileAttributes={state.project?.tileAttributes ?? []}
-                showRandomRects={Boolean(visibleRandomLevel)}
-                showMapRecords={visibleMapRecords.length > 0}
-                previewMode={previewMode}
-                previewFocalPoint={previewFocalPoint ?? state.selectedCell ?? defaultPreviewFocalPoint(selectedMap)}
-                focusTarget={state.focusTarget}
-                selectedEntity={state.selectedEntity}
-                selectedCell={state.selectedCell}
-                selectedRegion={selectedRegion}
-                smartBrushMask={smartBrushMask}
-                smartBrushPlan={paintMode === "smart" ? visibleSmartBrushPlan : null}
-                smartBrushDrawing={paintMode === "smart" && smartBrushDrawing}
-                globalMapStamps={globalMapStamps}
-                onSelectCell={onSelectCell}
-                onSetSelectedRegion={setSelectedRegion}
-                onClearSelection={onClearSelection}
-                onSetSmartBrushMask={setSmartBrushMask}
-                onSetSmartBrushDrawing={setSmartBrushDrawing}
-                onSampleTile={onSelectTile}
-                onSelectEntity={onSelectEntity}
-                onBeginPaintStroke={onBeginPaintStroke}
-                onApplyCommand={onApplyCommand}
-                onSetGlobalMapStamps={setGlobalMapStamps}
-                onSelectSuperTileStamp={setSelectedSuperTileStampId}
-                onCommitPaintStroke={onCommitPaintStroke}
-                onCancelPaintStroke={onCancelPaintStroke}
-              />
-            ) : (
-              <MapEmptyState project={state.project} onCreateMap={createScenarioMap} />
-            )}
-          </>
+          <MapCanvasWorkbench
+            state={state}
+            selectedMap={selectedMap}
+            selectedRandomLevel={selectedRandomLevel}
+            selectedTileset={selectedTileset}
+            mapTriggers={mapTriggers}
+            mapRecords={mapRecords}
+            atlas={atlas}
+            workbench={workbench}
+            previewFocalPoint={resolvedPreviewFocalPoint}
+            onCreateMap={createScenarioMap}
+            onSelectTile={onSelectTile}
+            onSelectCell={onSelectCell}
+            onSelectEntity={onSelectEntity}
+            onSetZoom={onSetZoom}
+            onSetSmoothTiles={onSetSmoothTiles}
+            onSetViewFlag={onSetViewFlag}
+            onSetVisibleRandomRectIds={onSetVisibleRandomRectIds}
+            onSetVisibleMapRecordIds={onSetVisibleMapRecordIds}
+            onClearSelection={onClearSelection}
+            onBeginPaintStroke={onBeginPaintStroke}
+            onApplyCommand={onApplyCommand}
+            onCommitPaintStroke={onCommitPaintStroke}
+            onCancelPaintStroke={onCancelPaintStroke}
+          />
         )}
         {workbenchMode === "land-layout" && (
           <MapModeSurface
@@ -396,44 +303,10 @@ export function MapsPanel({
   );
 }
 
-function MapEmptyState({
-  project,
-  onCreateMap
-}: {
-  project: Project | null;
-  onCreateMap: (levelType: LevelType) => void;
-}) {
-  return (
-    <div className="room-canvas-placeholder map-empty-state">
-      <div>
-        <h2>{project ? "Create your first map" : "Open a project to begin mapping"}</h2>
-        <p>{project ? "Start with a blank outdoor land map or a dungeon map, then paint tiles and add authoring data." : "Create or import a Providence project to browse maps."}</p>
-      </div>
-      {project && (
-        <div className="map-empty-actions">
-          <button className="btn btn-primary btn-sm" type="button" onClick={() => onCreateMap("land")}>
-            New Land Map
-          </button>
-          <button className="btn btn-secondary btn-sm" type="button" onClick={() => onCreateMap("dungeon")}>
-            New Dungeon Map
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function nextMapIndex(maps: MapEntity[], levelType: LevelType) {
   return maps
     .filter((map) => map.levelType === levelType)
     .reduce((max, map) => Math.max(max, map.index), -1) + 1;
-}
-
-function semanticMapRecordId(record: SemanticEntity) {
-  const summaryId = record.summary.id;
-  if (typeof summaryId === "number" && Number.isFinite(summaryId)) return Math.trunc(summaryId);
-  const match = /^map-record:(-?\d+)$/.exec(record.id);
-  return match ? Number(match[1]) : null;
 }
 
 function MapModeSurface({
@@ -460,17 +333,11 @@ function MapModeSurface({
   );
 }
 
+type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;
+
 function defaultPreviewFocalPoint(map: MapEntity | null): MapPreviewFocalPoint {
   return {
     x: Math.max(0, Math.min(89, Math.floor((map?.width ?? 90) / 2))),
     y: Math.max(0, Math.min(89, Math.floor((map?.height ?? 90) / 2)))
   };
-}
-
-type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;
-
-function isTextEditingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName.toLowerCase();
-  return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
 }

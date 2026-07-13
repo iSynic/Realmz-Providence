@@ -205,6 +205,8 @@ export function useMapWorkbenchState({
   };
 }
 
+export type MapWorkbenchState = ReturnType<typeof useMapWorkbenchState>;
+
 function readStoredWorkbenchMode(): MapWorkbenchMode {
   if (typeof localStorage === "undefined") return "canvas";
   const stored = localStorage.getItem(MAP_WORKBENCH_MODE_STORAGE_KEY);
