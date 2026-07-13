@@ -84,6 +84,7 @@ import {
 import { applyScenarioSeedMapOperation } from "./scenarioSeed/mapOperationCompiler";
 import { mapStorageTileIndex } from "./scenarioSeed/mapPaintingPrimitives";
 import { parseCaste, parseRace, parseSpell } from "./scenarioSeed/rulesParser";
+import { parseTimedEncounter } from "./scenarioSeed/timedEncounterParser";
 import { validateMaxArrayLength, validateScenarioSeed } from "./scenarioSeed/validation";
 
 export const SCENARIO_SEED_SCHEMA_VERSION = 1;
@@ -1223,61 +1224,6 @@ function parseAsset(input: unknown, path: string, ctx: ParseContext): ScenarioSe
   allowKeys(value, path, ["key", "source", "resourceType", "resourceId", "kind", "assetId"], ctx);
   ctx.errors.push(`${path}.source must be stock or custom-library.`);
   return null;
-}
-
-function parseTimedEncounter(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTimedEncounter | null {
-  const value = requireObject(input, path, ctx);
-  if (!value) return null;
-  allowKeys(value, path, ["key", "id", "day", "increment", "percent", "macro", "requiredItem", "requiredQuest", "location"], ctx);
-  const key = optionalString(value.key, `${path}.key`, ctx);
-  const id = optionalInteger(value.id, `${path}.id`, ctx);
-  const day = requireInteger(value.day, `${path}.day`, ctx);
-  const increment = optionalInteger(value.increment, `${path}.increment`, ctx);
-  const percent = optionalInteger(value.percent, `${path}.percent`, ctx);
-  const requiredItem = optionalRef(value.requiredItem, `${path}.requiredItem`, ctx);
-  const requiredQuest = optionalRef(value.requiredQuest, `${path}.requiredQuest`, ctx);
-  const location = value.location === undefined ? undefined : parseTimedLocation(value.location, `${path}.location`, ctx);
-  checkIntegerRange(id, `${path}.id`, 0, 32767, ctx);
-  checkIntegerRange(day, `${path}.day`, 1, 32767, ctx);
-  checkIntegerRange(increment, `${path}.increment`, 0, 32767, ctx);
-  checkIntegerRange(percent, `${path}.percent`, 0, 100, ctx);
-  return {
-    ...(key !== undefined ? { key } : {}),
-    ...(id !== undefined ? { id } : {}),
-    day: day ?? 1,
-    ...(increment !== undefined ? { increment } : {}),
-    ...(percent !== undefined ? { percent } : {}),
-    macro: requireRef(value.macro, `${path}.macro`, ctx),
-    ...(requiredItem !== undefined ? { requiredItem } : {}),
-    ...(requiredQuest !== undefined ? { requiredQuest } : {}),
-    ...(location !== undefined ? { location } : {})
-  };
-}
-
-function parseTimedLocation(input: unknown, path: string, ctx: ParseContext): ScenarioSeedTimedLocation {
-  const value = requireObject(input, path, ctx);
-  if (!value) return { kind: "any" };
-  const kind = requireString(value.kind, `${path}.kind`, ctx);
-  if (kind === "any") {
-    allowKeys(value, path, ["kind"], ctx);
-    return { kind };
-  }
-  if (kind === "land" || kind === "dungeon") {
-    allowKeys(value, path, ["kind", "level", "randomRectangle", "x", "y"], ctx);
-    const level = requireInteger(value.level, `${path}.level`, ctx);
-    const randomRectangle = optionalInteger(value.randomRectangle, `${path}.randomRectangle`, ctx);
-    const x = optionalInteger(value.x, `${path}.x`, ctx);
-    const y = optionalInteger(value.y, `${path}.y`, ctx);
-    checkIntegerRange(level, `${path}.level`, 0, 32767, ctx);
-    checkIntegerRange(randomRectangle, `${path}.randomRectangle`, 0, 19, ctx);
-    checkIntegerRange(x, `${path}.x`, 0, 89, ctx);
-    checkIntegerRange(y, `${path}.y`, 0, 89, ctx);
-    if ((x === undefined) !== (y === undefined)) ctx.errors.push(`${path}.x and ${path}.y must be provided together.`);
-    return { kind, level: level ?? 0, ...(randomRectangle !== undefined ? { randomRectangle } : {}), ...(x !== undefined ? { x } : {}), ...(y !== undefined ? { y } : {}) };
-  }
-  allowKeys(value, path, ["kind", "level", "randomRectangle", "x", "y"], ctx);
-  ctx.errors.push(`${path}.kind must be any, land, or dungeon.`);
-  return { kind: "any" };
 }
 
 function parseMap(input: unknown, path: string, ctx: ParseContext): ScenarioSeedMap | null {
