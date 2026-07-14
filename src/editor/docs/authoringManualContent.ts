@@ -75,6 +75,20 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
+        title: "Tour The Providence Workspace",
+        paragraphs: [
+          "The top bar owns project-wide actions: create or open a project, import an existing scenario, save authoring state, search the project, open this manual, and start an export. The status line reports the last completed operation and any background loading still in progress.",
+          "The left domain rail opens the major authoring areas. A domain can contain several tools, such as Land Editor and Dungeon Editor under Maps or Battle Editor and Monster Editor under Combat. The center workbench is the active editor; the side panels hold record lists, palettes, selection details, previews, and related links."
+        ],
+        points: [
+          "Select a domain first, then use its tool buttons or tabs to choose the exact editor.",
+          "Use lists and search fields to locate a record; selecting it loads the form or inspector without changing other records.",
+          "Buttons labeled Apply commit the current form or step to the project. The project remains unsaved until the main Save action completes.",
+          "Eye buttons open a preview or searchable picker without leaving the current editor.",
+          "Links such as Open in Action Points change tools while preserving enough context to return to the original record."
+        ]
+      },
+      {
         title: "Build A Testable Slice",
         steps: [
           {
@@ -119,13 +133,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "When To Open References",
         paragraphs: [
-          "The right rail and reference drawer are there when you need legacy wording or proof. They are not the main reading path. Start with the chapter workflow, then open the Divinity Manual or source notes when a field name, compatibility warning, or writer boundary needs backup.",
-          "Divinity references explain the classic editor idea. Repo references explain why Providence marks something writable, preserved, read-only, or warning-worthy."
+          "The Further Reference drawer is there when you need classic terminology or technical background. It is not the main reading path. Start with the chapter's editor tour and task instructions, then open a reference when an imported value or compatibility warning needs more context.",
+          "Classic Manual links explain how Divinity described the original concept. Technical references explain compatibility limits that affect editing or export."
         ],
         callout: {
           tone: "info",
-          title: "Author first, evidence second",
-          body: "If a chapter sends you to evidence before explaining the author task, that chapter still needs rewriting."
+          title: "The Providence chapter is the manual",
+          body: "References add background; they do not replace the editor instructions in this manual."
         }
       },
       {
@@ -141,7 +155,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Manual overview",
-        caption: "Chapter navigation, main reading column, optional Classic Manual shortcuts, and collapsed source notes."
+        caption: "The Providence application frame keeps project actions, authoring domains, the active workbench, and project status visible together.",
+        imageSrc: "/manual/gallery/land-dungeon-maps.png"
       }
     ]
   },
@@ -170,8 +185,21 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         cards: [
           { title: "Providence Project", body: "The saved authoring state you keep returning to while building the scenario.", facts: ["editable"] },
-          { title: "Source Snapshot", body: "Imported original files used for preservation, diagnostics, and target exports when a writer does not own every byte.", facts: ["evidence"] },
+          { title: "Imported Sources", body: "Original scenario files retained when an export target needs content that Providence does not edit directly.", facts: ["package input"] },
           { title: "Scenario Export", body: "The Realmz-readable output folder or ZIP written from current project state.", facts: ["output"] }
+        ]
+      },
+      {
+        title: "Project Controls In The Editor",
+        paragraphs: [
+          "New opens the blank-scenario setup and can also accept generated Scenario JSON. Open loads a saved Providence project. Import reads a Realmz scenario folder into a new project. Save updates the Providence project; it does not create a playable Realmz scenario.",
+          "The current project name and save state stay visible in the application frame. Use Export only after the project is saved and the Linter reflects the current edits."
+        ],
+        cards: [
+          { title: "New", body: "Start a blank project or create one from validated Scenario JSON.", facts: ["new project"] },
+          { title: "Open", body: "Resume an existing Providence project package without re-importing its source scenario.", facts: ["continue work"] },
+          { title: "Import", body: "Convert a Realmz scenario folder into a new Providence project and inspect the import summary.", facts: ["existing scenario"] },
+          { title: "Save", body: "Persist maps, records, assets, editor metadata, and project history needed for later authoring.", facts: ["authoring state"] }
         ]
       },
       {
@@ -195,7 +223,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           {
             title: "Validate before packaging",
             body: "Run Linter after substantial edits. Resolve missing links and unsupported target data before opening Export, then read package readiness rather than assuming every source file is writable.",
-            result: "The chosen output path reflects current project state and known writer boundaries."
+            result: "The chosen output path reflects current project state and the package files available for that target."
           }
         ]
       },
@@ -254,6 +282,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
+        title: "Inside The Scenario Editors",
+        paragraphs: [
+          "Open Scenario from the domain rail, then choose Startup Info, Restrictions, Contact Info, or Security. Each tool edits one scenario-wide record rather than a list of map objects. Changes here affect party entry, first load, release identity, or legacy registration behavior across the entire scenario.",
+          "Startup Info selects the opening land or dungeon level and its coordinates. Restrictions controls party size, level limits, and race or caste exclusions. Contact Info stores author and release-facing metadata. Security exposes the legacy fields required by scenarios that use registration checks."
+        ],
+        points: [
+          "Use the map picker and coordinate controls in Startup Info; verify the chosen cell in Land/Dungeon Maps before release.",
+          "Treat zero or blank restriction fields according to the label shown by the editor rather than assuming every zero forbids entry.",
+          "Keep title, author, version, and contact fields consistent with the exported folder and release notes.",
+          "Use Global Events in Action Points for startup, death, quit, shop, and temple behavior; Scenario shows the hooks that connect those scripts."
+        ]
+      },
+      {
         title: "Authoring Workflow",
         steps: [
           {
@@ -301,7 +342,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Startup fields",
-        caption: "Scenario shell fields beside the selected start map and validation state."
+        caption: "Scenario-wide startup, release identity, restrictions, security, and load-readiness controls.",
+        imageSrc: "/manual/gallery/scenario-shell.png"
       }
     ]
   },
@@ -333,6 +375,20 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           { title: "Terrain", body: "Paint the outdoor or dungeon space the player will read visually.", facts: ["tiles"] },
           { title: "Movement", body: "Check passability, edge travel, doors, walls, darkness, and special tile behavior.", facts: ["rules"] },
           { title: "Events", body: "Place Action Points, random rectangles, encounters, and other triggers only where players can understand them.", facts: ["scripts"] }
+        ]
+      },
+      {
+        title: "Inside Land And Dungeon Maps",
+        paragraphs: [
+          "The map browser chooses the level. The canvas is the editable 90 by 90 land map or dungeon grid. Paint controls choose Brush, Eraser, or Smart behavior; the tile palette supplies landlook tiles, named categories, stamps, special tiles, and custom assets. Zoom and smoothing change only the editor view.",
+          "The Selection Inspector describes the selected tile, Action Point, random rectangle, or player-map marker. Overlay controls independently show Action Points, secret areas, hidden-walkable tiles, combat-clearing tiles, passability, and other map data that is not always visible in the artwork."
+        ],
+        points: [
+          "Land Editor paints outdoor tile IDs and landlook-specific stamps. Dungeon Editor edits dungeon levels, walls, darkness, movement, and line-of-sight data.",
+          "Single Tile paints the selected tile. Cycle Group and Random Group use the semantic variation group shown by the palette. Smart uses terrain rules to choose adjoining edges and corners.",
+          "Land Layout arranges outdoor levels and scenario starts. It does not replace painting the contents of each level.",
+          "Select an Action Point marker to inspect its chance, trigger location, destination, and steps; open Scripts/AP when the script itself needs editing.",
+          "Turn overlays off before judging the final player-facing composition, then turn them back on to verify hidden behavior."
         ]
       },
       {
@@ -390,7 +446,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Map layer stack",
-        caption: "Canvas, movement metadata, Action Point overlays, random rectangles, and player-facing map records."
+        caption: "Land map canvas with the level browser, paint tools, overlays, setup controls, and random rectangles.",
+        imageSrc: "/manual/gallery/land-dungeon-maps.png"
       }
     ]
   },
@@ -416,6 +473,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           { title: "Map Identity", body: "Name, label, and describe a map-facing place.", facts: ["names"] },
           { title: "Display Setup", body: "Choose the map region, markers, starts, and picture links shown to players.", facts: ["view"] },
           { title: "Notes", body: "Connect readable text to places, clues, and player-facing guidance.", facts: ["text"] }
+        ]
+      },
+      {
+        title: "Inside The Player Maps Editor",
+        paragraphs: [
+          "The record list selects a Maps/Notes entry. The editor then shows its player-facing name, target land or dungeon level, picture resource, visible map rectangle, starting position, marker slots, and note text. The preview combines those fields so you can check what the player will actually receive.",
+          "Markers use icon IDs and map coordinates. A marker belongs to the player-map record, not to the painted terrain, so moving a map feature may require moving its marker separately."
+        ],
+        points: [
+          "Choose the target level before entering the display rectangle so the coordinates can be checked against the correct map.",
+          "Use the picture preview to confirm the selected PICT resource and dimensions.",
+          "Use marker rows for icons that should appear on the player map; clear unused rows instead of leaving accidental icon ID 0 assumptions.",
+          "Use the note and description fields for player-facing text, then follow their links into Strings when the wording is shared elsewhere."
         ]
       },
       {
@@ -461,7 +531,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Player map record",
-        caption: "Map record fields, text links, picture preview, markers, and validation badges."
+        caption: "A Player Map record with terrain preview, marker controls, map fields, and player-facing note text.",
+        imageSrc: "/manual/gallery/player-maps.png"
       }
     ]
   },
@@ -497,6 +568,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           { title: "Map Action Points", body: "Triggers placed on land or dungeon maps.", facts: ["location"] },
           { title: "Extra Action Points", body: "Reusable scripts called by maps, encounters, battles, monsters, globals, and other scripts.", facts: ["reuse"] },
           { title: "Global Hooks", body: "Scenario lifecycle scripts such as startup, death, quit, shop, or temple behavior.", facts: ["scenario"] }
+        ]
+      },
+      {
+        title: "Inside The Action Point Editor",
+        paragraphs: [
+          "The record browser selects an Action Point, Extra Action Point, Global Event, or Quest. An Action Point header shows its source record, map location, activation chance, and filled step count. The step list contains the ordered Realmz CODE and ID slots; selecting a step opens the guided action editor beside it.",
+          "Change Action opens the action catalog. The selected action replaces raw numbers with named controls such as destination level and coordinates, string, sound, battle, treasure, condition, or result slot. Apply Step stores the current controls in that slot. Move, duplicate, and delete buttons operate on the selected step."
+        ],
+        points: [
+          "Use the target search field to find records by ID, name, or text; use the eye button to inspect a candidate before selecting it.",
+          "Settings-backed actions create or update their settings row when Apply Step is used. Authors do not need to create a separate settings record first.",
+          "Flow Preview summarizes branch destinations and continuation. Incoming links show which maps, encounters, battles, monsters, or scripts call the selected record.",
+          "Technical Details exposes CODE, ID, and settings rows when needed, but the named action controls are the normal editing surface."
         ]
       },
       {
@@ -546,7 +630,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Do not leave orphan Extra Action Points without understanding whether a hidden global, encounter, or macro still reaches them.",
           "Do not hand-enter target IDs when the picker can create or link the target.",
-          "Do not treat CODE/ID/EDCD as the first reading path; use them when the guided label is missing or a warning needs deeper proof.",
+          "Do not treat CODE, ID, or settings row numbers as the first reading path; use Technical Details only when the guided action does not explain an imported value.",
           "Do not forget failure branches for traps, locks, typed answers, and item/magic checks."
         ]
       }
@@ -554,7 +638,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Script flow",
-        caption: "Step editor, target links, visible-result warnings, and Flow Preview."
+        caption: "An Action Point with its map location, ordered steps, guided action controls, string preview, and validation state.",
+        imageSrc: "/manual/gallery/action-points.png"
       }
     ]
   },
@@ -580,6 +665,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           { title: "Scenario Strings", body: "Reusable messages referenced by scripts, encounters, battles, maps, and other records.", facts: ["messages"] },
           { title: "Option Labels", body: "Short labels used for choices and interface-facing prompts.", facts: ["choices"] },
           { title: "Readable Resources", body: "TEXT, STR#, styl, and raw text-like resources previewed from imported or scenario-owned assets.", facts: ["resources"] }
+        ]
+      },
+      {
+        title: "Inside Strings And Text",
+        paragraphs: [
+          "The String Editor has a searchable message list and an editor for the selected string. The header shows the string ID, length, and usage count. The main field edits the player-facing text; sound and presentation controls appear when that string format supports them.",
+          "The Used By area links back to Action Points, encounters, battles, Player Maps, and other records. Reference Strings previews imported TEXT, STR#, and styl resources. Export Check finds overlong or incompatible text before packaging."
+        ],
+        points: [
+          "Search by a phrase when you know the wording and by ID when another editor or warning provides the number.",
+          "Create or duplicate before rewriting a heavily reused message whose callers need different text.",
+          "Use scrolling text records for long passages and inspect styl runs beside the readable fallback.",
+          "Use the usage links to verify context; the same sentence can be correct in one branch and misleading in another."
         ]
       },
       {
@@ -625,7 +723,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "String usage",
-        caption: "Message editor with usage links back to scripts, encounters, combat, player maps, and assets."
+        caption: "The String Editor combines search, text, byte count, sound selection, and links to every known caller.",
+        imageSrc: "/manual/gallery/strings-text.png"
       }
     ]
   },
@@ -655,6 +754,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
+        title: "Inside The Encounter Editors",
+        paragraphs: [
+          "The Encounters domain has separate Simple, Complex, Rogue, and Timed tools. Each tool starts with a searchable record list and opens a form tailored to that encounter family. Prompt and label fields are followed by condition rows and result columns, so the visible choice can be read beside the behavior it triggers.",
+          "Complex Encounter keeps Magic Responses, Item Responses, typed words, grouped actions, and result scripts in distinct sections. Rogue Encounter separates trap and lock chances, sounds, damage, and success or failure results. Timed Encounter exposes schedule, repeat, and location conditions."
+        ],
+        points: [
+          "The eye button beside a string, spell, item, battle, treasure, or script opens a searchable picker and preview without leaving the encounter.",
+          "Selecting an entry in a picker updates the numbered field only after you confirm the choice.",
+          "Item-response rows show response number, item number, and item name together so the requirement remains readable.",
+          "Result columns use the same named action families as Action Points; empty rows remain available for additional outcomes."
+        ]
+      },
+      {
         title: "Encounter Workflow",
         steps: [
           {
@@ -674,7 +786,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Build every result column",
-            body: "Use result-code pickers to search and preview strings, battles, treasure, scripts, and other targets. Reserve the preview space on empty rows so adding a target does not shift the editor layout.",
+            body: "Use the eye button beside a result to open the searchable picker, inspect the target, and choose the correct string, battle, treasure, script, or other record.",
             result: "Success and failure rows point to records the author has inspected."
           },
           {
@@ -697,7 +809,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Encounter branch editor",
-        caption: "Prompt, action rows, branch tests, target links, and visible-result warnings."
+        caption: "A Complex Encounter with player choices, magic and item requirements, typed reply, and result scripts.",
+        imageSrc: "/manual/gallery/complex-encounters.png"
       }
     ]
   },
@@ -723,6 +836,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           { title: "Battle Editor", body: "Places monster IDs on a grid, sets distance, links before/after text, and points to battle macros.", facts: ["encounter setup"] },
           { title: "Monster Editor", body: "Authors scenario monsters with stats, attacks, behavior, loot, icons, and death hooks.", facts: ["creature"] },
           { title: "Monster Library", body: "Stores reusable Providence monster templates that can be copied into scenarios.", facts: ["reuse"] }
+        ]
+      },
+      {
+        title: "Inside Combat",
+        paragraphs: [
+          "Battle Editor combines a battle-record list, battle settings, a fixed combat board, and a scenario-monster palette. Select a monster in the palette, then place or remove its starting position on the board. Text, distance, rewards, and reusable-action fields remain part of the selected battle record.",
+          "Monster Editor shows scenario monsters and the reusable Monster Library side by side. A scenario monster has stats, attacks, spell behavior, resistances, rewards, hooks, and a cicn preview. Library entries are templates; Populate Scenario or copy actions create scenario-owned monster records before a battle can place them."
+        ],
+        points: [
+          "The battle palette includes only monster IDs available to the selected scenario; its count should match the scenario-monster list.",
+          "Use icon previews to distinguish a valid cicn from a missing resource before placing the monster.",
+          "Select battle text, rewards, and actions with their preview controls rather than relying on an unexplained number.",
+          "Open a monster or reusable action in its owning editor when the battle preview identifies the wrong record."
         ]
       },
       {
@@ -768,7 +894,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Battle and monster link",
-        caption: "Battle grid, selected monster, icon preview, text links, and macro target."
+        caption: "The Battle Editor with scenario-monster palette, combat grid, selected monster details, text, and macro target.",
+        imageSrc: "/manual/gallery/combat.png"
       }
     ]
   },
@@ -794,6 +921,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           { title: "Treasure", body: "Victory points, money, gems, jewelry, and item-slot rewards.", facts: ["rewards"] },
           { title: "Items", body: "Built-in item references plus scenario custom items when the scenario owns the record.", facts: ["catalog"] },
           { title: "Shops", body: "Author-owned shop stock, quantities, inflation, and restrictions.", facts: ["stores"] }
+        ]
+      },
+      {
+        title: "Inside The Economy Editors",
+        paragraphs: [
+          "Treasure lists reward records and edits victory points, currency, gems, jewelry, and item slots. Items combines built-in references with scenario custom items and their names, descriptions, icons, values, restrictions, and use behavior. Shops edits stock rows, quantities, pricing, inflation, and entry restrictions.",
+          "Searchable item pickers are shared across Treasure, Shops, encounters, castes, and scripts. Their preview shows enough item identity and behavior to choose the correct record before the numeric field changes."
+        ],
+        points: [
+          "Use the ownership label to distinguish a stock Realmz item from a scenario custom item.",
+          "Keep item number, item name, and slot or response number visible together when reviewing a list.",
+          "Use Bag of Holding and Vault of Arcana as reusable reference libraries; copy or create scenario records only when the scenario owns custom behavior or art.",
+          "Open usage links before renumbering an item that already appears in rewards, shops, scripts, or encounters."
         ]
       },
       {
@@ -839,7 +979,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Reward and shop flow",
-        caption: "Treasure records, shop stock, item picker, custom item details, and validation warnings."
+        caption: "Treasure records with fixed rewards, searchable item catalog, and numbered reward slots.",
+        imageSrc: "/manual/gallery/economy-treasure.png"
       }
     ]
   },
@@ -865,6 +1006,19 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           { title: "Spells", body: "Custom spell records, class, target, range, damage, duration, resistance, icon, sound, and text.", facts: ["magic"] },
           { title: "Races", body: "Race stats, permissions, aging, descriptors, usability, and restrictions.", facts: ["party"] },
           { title: "Castes", body: "Caste progression, spell access, starting items, stats, conditions, and default icon.", facts: ["class"] }
+        ]
+      },
+      {
+        title: "Inside The Rules Editors",
+        paragraphs: [
+          "Rules opens Spell Editor, Race Editor, or Caste Editor. The selector at the top chooses the record and shows whether the displayed values are built-in reference data or a scenario custom override. New Custom creates an editable scenario record; Clear Scenario Custom removes that override and returns the view to built-in behavior.",
+          "Each form groups related fields rather than presenting one long binary record. Spells group identity, targeting, effects, class access, text, sounds, and icons. Races group attributes, permissions, aging, and restrictions. Castes group identity, stats, movement, spellcasting, attack progression, starting items, gold, conditions, and default icon."
+        ],
+        points: [
+          "Use the previous and next controls or selector to compare neighboring built-in records before creating an override.",
+          "A zero in an imported custom record is a real value; compare it with the built-in reference before deciding whether the override is intentional.",
+          "Use the icon preview beside the numeric cicn field to verify the default art.",
+          "Apply related changes together, then inspect party restrictions, combat, starting equipment, and scripts that consume the rule."
         ]
       },
       {
@@ -903,14 +1057,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Do not change a race or caste without considering existing party builds.",
           "Do not create a spell that references missing text, icon, sound, or target behavior.",
           "Do not assume built-in rule browsing means those records export with the scenario.",
-          "Do not hide balance-critical changes in preserved bytes or technical notes."
+          "Do not leave balance-critical behavior unexplained in fields that authors and testers cannot identify from the rule form."
         ]
       }
     ],
     visualSlots: [
       {
         title: "Override comparison",
-        caption: "Shared rule reference beside scenario-owned override fields and validation state."
+        caption: "The Caste Editor shows built-in Realmz values, scenario-copy controls, grouped fields, and icon preview.",
+        imageSrc: "/manual/gallery/rules-castes.png"
       }
     ]
   },
@@ -937,14 +1092,28 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Asset Lanes",
         paragraphs: [
-          "Assets is the resource authoring surface. It should answer what the asset is, whether Realmz already owns it, whether it belongs to this scenario, whether it belongs to Providence's reusable custom library, and what resource ID it will use if exported.",
-          "The lane matters because not every previewable asset should be copied into the scenario. Stock Realmz resources can be referenced by stock ID. Non-stock library material must become a scenario asset before a scenario can depend on it at runtime."
+          "Assets imports, previews, replaces, and organizes the media used by a scenario. The three primary tabs distinguish media that ships with the current scenario, reusable Providence media available to every project, and stock or reference media that can already be selected by ID.",
+          "Not every previewable asset belongs in the scenario package. Stock Realmz resources can be referenced by stock ID. Non-stock library material becomes a Scenario Asset before the scenario can depend on it in Realmz."
         ],
         cards: [
           { title: "Scenario Assets", body: "Project-owned resources that ship in the scenario package.", facts: ["exports"] },
           { title: "Custom Library", body: "A living Providence library of reusable non-stock assets that can be copied into any scenario when needed.", facts: ["reusable"] },
           { title: "Reference Assets", body: "Realmz and useful Divinity/reference material for previewing, comparing, and resolving stock IDs.", facts: ["read-only"] },
-          { title: "Technical Inventory", body: "Lower-priority resource fork diagnostics for unsupported, raw, or preservation-focused entries.", facts: ["advanced"] }
+          { title: "Technical Inventory", body: "An advanced inventory of raw resource entries used when troubleshooting an import or export.", facts: ["advanced"] }
+        ]
+      },
+      {
+        title: "Inside Assets",
+        paragraphs: [
+          "Scenario Assets, Custom Library, and Reference Assets are the main views. Search and type filters narrow the grid. Selecting a card opens the inspector, where the asset label, resource type and ID, ownership, decoded metadata, usage links, and preview controls appear together.",
+          "Import opens a target chooser for pictures, icons, special land tiles, sounds, TEXT, STR#, styl, and raw resources. Image previews support Fit and integer scales. Sounds can be played. Text and raw records use readable previews instead of an empty image frame."
+        ],
+        points: [
+          "Add to Custom Library keeps reusable non-stock media available across Providence projects without adding it to the current scenario.",
+          "Add to Scenario Assets copies eligible non-stock library media into the current scenario and assigns a valid ID for that resource type.",
+          "Stock Realmz reference assets do not offer a scenario copy when the same asset can be selected by its existing stock ID.",
+          "Replace keeps the scenario asset's role and ID while updating its contents; delete removes the scenario-owned resource after usage links are reviewed.",
+          "Technical Inventory is opened separately and is not the normal place to organize author-facing media."
         ]
       },
       {
@@ -963,36 +1132,36 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           {
             title: "Preview before copying",
             body: "Inspect the asset at Fit and useful integer scales, play sounds, and read text or raw metadata. For Reference Assets, determine whether Realmz already owns the stock ID before offering a scenario copy.",
-            result: "The selected asset is recognizable and its provenance does not drive an unnecessary copy."
+            result: "The selected asset is recognizable and is copied only when the scenario needs to own it."
           },
           {
             title: "Copy non-stock material into the scenario",
-            body: "Use Add to Scenario Assets for a Custom Library or non-stock reference asset required at runtime. Providence should allocate a valid scenario-range ID, avoid conflicts, and retain a working preview after the move.",
+            body: "Use Add to Scenario Assets for a Custom Library or non-stock reference asset required at runtime. The copy action assigns a valid scenario-range ID, avoids conflicts, and keeps the preview available in Scenario Assets.",
             result: "The scenario now owns an exportable resource with a valid type-specific ID."
           },
           {
             title: "Verify consumers and export scope",
-            body: "Open usage links from the inspector, confirm maps, monsters, items, scripts, or text records reference the assigned ID, then check Export accounting. Custom Library assets must remain outside scenario output until copied.",
+            body: "Open usage links from the inspector, confirm maps, monsters, items, scripts, or text records reference the assigned ID, then check Export accounting. Custom Library entries are not packaged until they are copied into Scenario Assets.",
             result: "Every bundled asset is used intentionally and every reusable-only asset stays out of the package."
           }
         ],
         callout: {
           tone: "info",
           title: "Custom Library is global Providence material",
-          body: "The Custom Library is not just a project drawer. It should grow into a reusable Providence asset collection that can feed any scenario."
+          body: "The Custom Library is shared across Providence projects. Use it for reusable non-stock media that may feed several scenarios."
         }
       },
       {
         title: "Resource ID Discipline",
         paragraphs: [
           "Scenario-owned resources need IDs that Realmz treats as scenario-safe for their type. Pictures, sounds, custom icons, special land tiles, text resources, and raw payloads have different constraints and different consumers.",
-          "When Providence allocates an ID, it should choose a valid scenario range, avoid conflicts with existing scenario resources, and preserve imported IDs when that is safer than renumbering."
+          "Automatic allocation chooses a valid scenario range and avoids conflicts with existing scenario resources. Imported IDs are retained when they are already valid and unambiguous."
         ],
         points: [
           "Pictures used by scenarios should stay in scenario PICT ranges and keep title-picture rules in mind.",
           "Custom sounds should stay in scenario sound ranges and remain playable in the target package.",
           "Icon and special tile resources must match the map, monster, item, or tile consumer that will read them.",
-          "TEXT, STR#, styl, and raw resources should be preserved and previewed, but long-form text authoring still belongs in Strings & Text."
+          "TEXT, STR#, styl, and raw resources can be imported and previewed, but long-form text authoring still belongs in Strings & Text."
         ]
       },
       {
@@ -1008,7 +1177,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Asset lanes",
-        caption: "Scenario Assets, Custom Library, Reference Assets, preview inspector, and copy/move actions."
+        caption: "Scenario Assets, Custom Library, Reference Assets, type filters, previews, and the selection inspector.",
+        imageSrc: "/manual/gallery/assets.png"
       }
     ]
   },
@@ -1040,9 +1210,22 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Use them together. A green-looking export is not enough if warnings explain missing art, missing visible results, unsupported target data, or source files that only passed through unchanged."
         ],
         cards: [
-          { title: "Fix Blockers", body: "Resolve missing targets, invalid records, malformed resources, and unsafe writer boundaries.", facts: ["must fix"] },
+          { title: "Fix Blockers", body: "Resolve missing targets, invalid records, malformed resources, and package errors that prevent export.", facts: ["must fix"] },
           { title: "Review Warnings", body: "Check compatibility risks, missing visible results, preserved source files, and target-specific notes.", facts: ["review"] },
           { title: "Export Target", body: "Choose Providence project ZIP, Mac scenario ZIP, Windows scenario ZIP, or desktop folder output intentionally.", facts: ["package"] }
+        ]
+      },
+      {
+        title: "Inside Linter And Export",
+        paragraphs: [
+          "Linter groups current project findings by authoring area and severity. Each actionable finding names the map, Action Point, encounter, battle, asset, text record, or scenario field involved. Open links take you to that exact owner instead of leaving you to search by hand.",
+          "Export presents the available output targets, their readiness, and the files involved. After an export, the report separates files written from current edits, files carried into the package unchanged, files skipped for that target, and blockers that prevented completion."
+        ],
+        points: [
+          "Use Blockers for conditions that prevent a valid package. Review Warnings for behavior that can export but still needs an author decision.",
+          "Expand a category to see every affected record and use its link to fix the issue in the owning editor.",
+          "Choose Providence Project ZIP for a portable editable backup; choose a scenario target for a Realmz-readable package.",
+          "Read the completed export report before opening the output folder so you know which project state and target it describes."
         ]
       },
       {
@@ -1055,12 +1238,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Fix author-owned blockers first",
-            body: "Open missing targets, invalid coordinates, resource conflicts, broken IDs, and malformed author records in their owning tools. Do not patch decoded runtime caches or preserved files to silence a source warning.",
+            body: "Open missing targets, invalid coordinates, resource conflicts, broken IDs, and malformed author records in their owning tools. Follow the finding link instead of changing unrelated imported files.",
             result: "Blocking diagnostics are resolved at their real authoring source."
           },
           {
             title: "Review warnings by player impact",
-            body: "Prioritize missing visible results, absent art or sounds, unreachable progress, unsupported target data, and pass-through files that may affect the selected package. Leave accepted informational notes documented rather than deleting evidence.",
+            body: "Prioritize missing visible results, absent art or sounds, unreachable progress, unsupported target data, and imported files that may affect the selected package. Record any warning you intentionally accept for release.",
             result: "Remaining warnings are understood decisions instead of unread noise."
           },
           {
@@ -1088,14 +1271,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Do not treat info notes as blockers, but do read them before release.",
           "Do not fix runtime-cache warnings by editing cache files first; fix the author-owned source record.",
           "Do not release from browser visual smoke alone when desktop file/resource behavior changed.",
-          "Do not assume a no-edit roundtrip guarantee still holds after changing writer-owned records."
+          "Do not assume an imported scenario will export byte-for-byte unchanged after editing supported records."
         ]
       }
     ],
     visualSlots: [
       {
         title: "Export readiness",
-        caption: "Artifact choice, source/package readiness, diagnostics, benchmark, and export report."
+        caption: "Export target selection, package readiness, diagnostics, source availability, and benchmark controls.",
+        imageSrc: "/manual/gallery/export.png"
       }
     ]
   },
@@ -1132,8 +1316,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "appendix",
     label: "Help Appendix",
     title: "Documents, Help, and References",
-    summary: "Use the manual, hover help, Classic Manual links, related chapters, search terms, and source notes without turning evidence into the main workflow.",
-    tags: ["documents", "manual", "help", "Divinity Manual", "source references", "related chapters"],
+    summary: "Use chapter search, hover help, galleries, in-page links, related chapters, and optional classic references.",
+    tags: ["documents", "manual", "help", "Divinity Manual", "gallery", "related chapters"],
     badges: ["appendix", "help"],
     references: [DIVINITY_CHAPTERS.gettingStarted, MARKDOWN_REFERENCES.divinityParity, MARKDOWN_REFERENCES.formatIntegration],
     relatedTopicIds: ["getting-started", "search-navigation", "divinity-parity", "compatibility-terms", "troubleshooting"],
@@ -1141,16 +1325,16 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "How To Read This Manual",
         paragraphs: [
-          "The chapter body is the normal reading path. It explains what an author is trying to build, the workflow to build it, and common mistakes to avoid.",
-          "The right rail gives quick Classic Manual links, status badges, and indexed search terms. The source drawer at the bottom is for verification, not for first-pass reading."
+          "The chapter body explains the Providence editor, the records it owns, the workflow to use, and common mistakes to avoid. Gallery images show the actual controls described in the text.",
+          "Use the chapter list to change topics and the In This Chapter links to jump within a long chapter. Further Reference is optional background for classic terminology."
         ]
       },
       {
         title: "Help On Versus Manual",
         cards: [
           { title: "Help On", body: "Short control-level guidance while you work in a tool.", facts: ["inline"] },
-          { title: "Manual", body: "Longer workflow guidance and pitfalls for a whole authoring area.", facts: ["chapter"] },
-          { title: "Source Notes", body: "Evidence for compatibility, preservation, writer support, and legacy behavior.", facts: ["secondary"] }
+          { title: "Manual", body: "Editor tours, field explanations, workflows, galleries, and pitfalls for a whole authoring area.", facts: ["chapter"] },
+          { title: "Further Reference", body: "Optional classic terminology and compatibility background.", facts: ["secondary"] }
         ]
       }
     ]
@@ -1169,11 +1353,11 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Terms Authors Will See",
         cards: [
-          { title: "Writable", body: "Providence has a typed editor and writer for this data.", facts: ["safe to edit"] },
-          { title: "Preserved", body: "Imported bytes or resources are kept intact because Providence should not rewrite them yet.", facts: ["pass-through"] },
+          { title: "Writable", body: "Providence can edit this data and include the change in a supported export.", facts: ["safe to edit"] },
+          { title: "Preserved", body: "Imported data is retained unchanged when the selected package needs it.", facts: ["pass-through"] },
           { title: "Read-Only", body: "Providence can explain or preview the data, but it is not an authoring target yet.", facts: ["reference"] },
           { title: "Ignored / No-Op", body: "Realmz can read a value but does not appear to act on it in the known runtime path.", facts: ["diagnostic"] },
-          { title: "Needs Verification", body: "The editor can preserve the data, but behavior needs more proof before strong authoring claims.", facts: ["caution"] }
+          { title: "Needs Verification", body: "The data can remain in the package, but its in-game behavior has not been confirmed.", facts: ["caution"] }
         ]
       },
       {
@@ -1181,8 +1365,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Treat writable fields as normal authoring surfaces.",
           "Treat preserved data as package context unless a tool explicitly promotes it to author-owned state.",
-          "Treat read-only material as reference until a follow-up issue adds writer support.",
-          "Open source notes when a compatibility term changes whether you can safely edit or export something."
+          "Treat read-only material as reference and make the intended change in another supported editor when one is available.",
+          "Open Further Reference when a compatibility term changes whether you can safely edit or export something."
         ]
       }
     ]
@@ -1201,7 +1385,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "How To Use The Classic Manual",
         paragraphs: [
-          "The Divinity Manual is still valuable for original terminology and capability coverage. Providence should cover the same scenario-authoring power through modern chapters, not by forcing authors to think in old window names first.",
+          "The Divinity Manual remains useful for original terminology and descriptions of the classic editor. Providence chapters describe the current controls and workflows without requiring authors to translate old window names first.",
           "Use the Classic Manual links when a chapter mentions a legacy concept, when you need the original wording, or when checking whether Providence still exposes an equivalent authoring path."
         ]
       },
@@ -1250,8 +1434,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "appendix",
     label: "Technical Appendix",
     title: "Records and Technical Details",
-    summary: "Use decoded records, byte ranges, semantic links, and writer evidence when a chapter needs deeper investigation.",
-    tags: ["records", "technical", "source", "byte ownership", "writer gates", "runtime cache", "evidence"],
+    summary: "Inspect decoded records, byte ranges, and links when an imported value or warning needs deeper investigation.",
+    tags: ["records", "technical", "source", "byte ranges", "runtime cache", "links"],
     badges: ["appendix", "technical"],
     references: [
       MARKDOWN_REFERENCES.formatIntegration,
@@ -1266,8 +1450,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "When To Use Technical Records",
         paragraphs: [
-          "Technical Records is for investigation, not normal authoring. Open it when a warning mentions byte ownership, source/runtime cache confusion, unresolved links, preserved data, or writer coverage.",
-          "The goal is to explain why a field is writable, preserved, read-only, or risky. Once you know that, return to the owning chapter to make the authoring change."
+          "Technical Records is for investigation, not normal authoring. Open it when a warning names an imported file, unresolved link, preserved record, or cached runtime copy that the ordinary editor does not explain.",
+          "Use the record details to identify the owning map, script, encounter, resource, or scenario field, then return to that editor to make the change."
         ]
       },
       {
@@ -1275,7 +1459,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Source group and file family when you need to know where a decoded record came from.",
           "Incoming and outgoing semantic links when a missing target or duplicate reference is unclear.",
-          "Writer status when an export warning says Providence can preserve but not safely rewrite a record.",
+          "Edit and package status when an export warning says a record will remain unchanged.",
           "Runtime cache labels when a file looks important but is not the author-owned source."
         ]
       }
@@ -1286,8 +1470,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "appendix",
     label: "Coverage Appendix",
     title: "Combat, Economy, and Rules Coverage",
-    summary: "See which Divinity-style editors are authorable today, which are library/reference surfaces, and which need follow-up writer work.",
-    tags: ["coverage", "combat", "economy", "rules", "writer support", "roadmap"],
+    summary: "Distinguish editable scenario records from stock references and reusable libraries across Combat, Economy, and Rules.",
+    tags: ["coverage", "combat", "economy", "rules", "editable", "libraries"],
     badges: ["appendix", "coverage"],
     references: [MARKDOWN_REFERENCES.divinityParity, MARKDOWN_REFERENCES.coreRecordEvidence],
     relatedTopicIds: ["combat", "economy", "rules", "compatibility-terms"],
@@ -1295,8 +1479,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "How To Read Coverage",
         paragraphs: [
-          "Coverage is not a substitute for the authoring chapters. Use it when deciding whether a visible surface is fully writable, browse-only, library-backed, or still future work.",
-          "When coverage is conservative, Providence is choosing preservation over risky writes."
+          "Coverage is not a substitute for the authoring chapters. Use it when deciding whether a visible surface edits a scenario record, browses stock data, or copies from a reusable library.",
+          "When a record is preserved or read-only, leave it unchanged and use the owning editor or copy action described by the chapter."
         ]
       },
       {
@@ -1304,7 +1488,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "If the chapter has an editor, validation, and export support, author there.",
           "If the chapter only previews a library or imported record, treat it as reference until copy/import support says otherwise.",
-          "If Linter or Export reports a writer boundary, file or continue a focused follow-up rather than editing raw bytes."
+          "If Linter or Export says a record cannot be edited for the selected package, leave its raw data unchanged and use a supported authoring path."
         ]
       }
     ]
@@ -1314,10 +1498,10 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "appendix",
     label: "Troubleshooting",
     title: "Troubleshooting and Deeper Checks",
-    summary: "Know where to look when import, validation, export, previews, resources, or optional Realmz Classic checks fail.",
-    tags: ["troubleshooting", "validation", "export", "resource", "oracle", "Classic", "failure"],
+    summary: "Know where to look when import, validation, export, previews, resources, or an in-game Realmz test fails.",
+    tags: ["troubleshooting", "validation", "export", "resource", "Realmz", "failure"],
     badges: ["appendix", "debug"],
-    references: [MARKDOWN_REFERENCES.oracleHarness, MARKDOWN_REFERENCES.formatIntegration, MARKDOWN_REFERENCES.releaseChecklist],
+    references: [MARKDOWN_REFERENCES.formatIntegration, MARKDOWN_REFERENCES.releaseChecklist],
     relatedTopicIds: ["linter-release", "records-evidence", "projects", "assets", "compatibility-terms"],
     sections: [
       {
@@ -1326,21 +1510,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "If import fails, confirm the selected folder is a Realmz scenario source and that the project is empty.",
           "If validation fails, open the warning through Linter and then move to the owning chapter.",
           "If preview fails, check whether the asset is scenario-owned, stock Realmz, custom library, Divinity reference, or unsupported raw inventory.",
-          "If export fails, check the selected target and whether raw source snapshots are available.",
-          "If a Realmz runtime fails after export, compare Linter warnings, Export report notes, and optional oracle evidence."
+          "If export fails, check the selected target and whether imported source files are available.",
+          "If Realmz fails after export, compare the tested package with the Export report, reproduce the smallest failing path, and return to the editor that owns the changed record."
         ]
-      },
-      {
-        title: "When To Use Oracle Notes",
-        paragraphs: [
-          "The oracle harness is a deeper compatibility lane for testing exported scenarios in Realmz Classic. It is useful when normal validation and export look clean but the runtime still fails to load, start, render, or behave correctly.",
-          "Use it deliberately. It is a release-confidence tool, not the first stop for ordinary authoring questions."
-        ],
-        callout: {
-          tone: "warning",
-          title: "Oracle runs are side-effectful",
-          body: "They launch desktop processes and write run artifacts. Read the run summary before chasing individual files."
-        }
       }
     ]
   }

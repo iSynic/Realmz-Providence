@@ -198,6 +198,16 @@ npm run check
 
 `npm run check:architecture` checks feature ownership, compiler/storage direction, and the stable mutation/generation/codec facades. Use `npm run check:architecture:report` to inspect approved owner edges and their source imports. `npm run smoke:scenario-generation` compiles representative Scenario JSON fixtures, validates the generated Providence projects, attaches the generated Realmz runtime baseline, and exports both Windows and Mac browser packages. `npm run check` is the broad pass: refactor guardrails, TypeScript, Action Point coverage, frontend build, and Rust tests. The release gate scripts add packaging-oriented checks and optional editor smokes.
 
+The authoring manual gallery can be regenerated from a representative Providence project:
+
+```powershell
+npm run docs:capture-gallery -- --project tmp/path-to-project/project.json
+```
+
+The script opens deterministic editor presets in headless Edge and writes reviewable screenshots to `public/manual/gallery/`. Use `--capture maps,scripts,assets` to refresh only selected chapters. Commit those image changes on the same documentation branch as the chapter update so text and screenshots can be reviewed together.
+
+Use `--preview-topic assets` to render the completed Documents chapter to `tmp/manual-preview/` for layout review without changing the committed gallery.
+
 There are also smoke and archaeology scripts under `scripts/`. Many of those assume the local Realmz/Providence development environment and are mostly for deeper validation work.
 
 ## Where Projects Live

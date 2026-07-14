@@ -21,6 +21,7 @@ import {
 } from "../map/renderValues";
 import { runProvidenceHarness } from "../harness";
 import { runDesktopUiHarness } from "../desktopUiHarness";
+import { isManualCapturePresetId, manualCaptureActions } from "../docs/manualCapture";
 import { isActorOrCreatureIconId } from "../resourceResolver";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset, type SemanticMappingProgress } from "../types";
@@ -77,7 +78,9 @@ export function useAppBootstrapEffects({
 
   useEffect(() => {
     if (desktopRuntime) return;
-    const benchmarkProjectUrl = new URLSearchParams(window.location.search).get("benchmarkProject");
+    const searchParams = new URLSearchParams(window.location.search);
+    const benchmarkProjectUrl = searchParams.get("benchmarkProject");
+    const manualCapturePreset = searchParams.get("manualCapture");
     if (!benchmarkProjectUrl) return;
     const url = benchmarkProjectUrl;
     let disposed = false;
@@ -89,8 +92,14 @@ export function useAppBootstrapEffects({
         if (!disposed) {
           setProjectDir(`browser-benchmark://${url}`);
           dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
-          dispatch({ type: "setTab", tab: "scripts" });
-          dispatch({ type: "setStatus", status: `Loaded benchmark project ${project.scenario.name}` });
+          if (isManualCapturePresetId(manualCapturePreset)) {
+            for (const action of manualCaptureActions(project, manualCapturePreset)) dispatch(action);
+            document.documentElement.dataset.manualCapture = manualCapturePreset;
+            dispatch({ type: "setStatus", status: `Manual capture ready: ${manualCapturePreset}` });
+          } else {
+            dispatch({ type: "setTab", tab: "scripts" });
+            dispatch({ type: "setStatus", status: `Loaded benchmark project ${project.scenario.name}` });
+          }
         }
       } catch (error) {
         if (!disposed) dispatch({ type: "setStatus", status: `Benchmark project load failed: ${commandError(error)}` });

@@ -7,11 +7,11 @@ import { TutorialTip } from "../components/TutorialTip";
 const TOPBAR_SEARCH_HELP =
   "Global Search jumps across scenario records, maps, scripts, strings, assets, bundled libraries, documentation, and diagnostics. Use Ctrl+K, then try shortcuts like monster 12, pict 304, string 349, or macro 143.";
 const TOPBAR_DOCUMENTS_HELP =
-  "Documents opens the Providence handbook: author workflows, Divinity Manual crosswalks, source evidence, compatibility terms, and release guidance.";
+  "Documents opens the Providence authoring manual: editor controls, record fields, complete workflows, troubleshooting, and release guidance.";
 const TOPBAR_HELP_HELP =
   "Help On enables hover and focus help bubbles throughout the current tool. Turn it off when you want a quieter workspace; the Documents handbook remains available either way.";
 const TOPBAR_MANUAL_HELP =
-  "Triple-click the Realmz Providence mark to open the local Divinity Manual. Providence docs summarize workflows; the manual remains the chapter-level legacy reference.";
+  "Triple-click the Realmz Providence mark to open the local Divinity Manual when you need original Realmz terminology or historical editor context.";
 const TOPBAR_RUNTIME_HELP =
   "The runtime badge tells you whether you are in the desktop app or browser preview. Desktop can write project folders and export Realmz scenario folders; browser mode saves projects locally in the browser.";
 const TOPBAR_DIRTY_HELP =

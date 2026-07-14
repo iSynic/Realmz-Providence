@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, Search, X } from "lucide-react";
+import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, ListTree, Search, X } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import { EmptyState, LinkChip, PanelSection, PreviewCard } from "../ui";
 import {
@@ -17,27 +17,25 @@ import {
 } from "../docs/authoringManualContent";
 
 const DOCUMENTS_HELP =
-  "Documents is Providence's authoring manual. It teaches scenario-building workflows first, with Divinity and repo evidence available as secondary references.";
+  "Documents is Providence's authoring manual. It explains the editor controls, records, and workflows used to build a Realmz scenario.";
 const DOCUMENT_SEARCH_HELP =
-  "Document search scans chapter titles, summaries, tags, badges, references, section text, cards, and callouts. Use it for concepts like EDCD, special land, runtime cache, release, or Divinity.";
+  "Document search scans every chapter and appendix. Search for the editor task, record, field, or warning you are working with.";
 const DOCUMENT_NAV_HELP =
   "The navigation list groups the manual into chapters and appendices. Selecting a chapter only changes the manual view; it does not change the active project.";
 const TOPIC_HERO_HELP =
-  "The chapter header summarizes the selected manual page, shows its status badges, and counts either its sections or filtered search results.";
+  "The chapter header summarizes the selected authoring area and opens the corresponding Providence tools.";
 const VISUAL_SLOTS_HELP =
-  "Visual references show stable screenshots or diagrams that clarify a workflow. Draft placeholders are not shown in the finished manual.";
+  "Chapter galleries show the actual Providence editor surfaces described by the manual.";
 const RELATED_TOPICS_HELP =
   "Related chapters are curated jumps to adjacent concepts. They clear the current document search so you can keep reading without fighting the filter.";
 const SOURCE_REFERENCES_HELP =
-  "References and source notes are secondary context. Divinity links explain legacy UI concepts; repo evidence explains parser, writer, and runtime behavior.";
-const STATUS_BADGES_HELP =
-  "Status badges summarize what kind of handbook page this is, such as authoring workflow, reference-only, release, verified, or compatibility-oriented.";
-const SEARCH_TERMS_HELP =
-  "Search terms are indexed tags for the current chapter. Click one to filter the manual to related pages.";
+  "Further references are optional background. The chapter itself is the Providence editor manual.";
+const CHAPTER_NAV_HELP =
+  "Use these links to jump to a specific editor surface or task in the current chapter.";
 const DIVINITY_SOURCE_HELP =
   "Divinity source chips open the local Divinity Manual chapter that anchors a legacy concept or editor behavior.";
 const REPO_SOURCE_HELP =
-  "Repo source chips point at local evidence files, generated ledgers, format notes, or release documentation that support the Providence summary.";
+  "Technical reference chips identify compatibility notes and supporting project documentation for readers who need implementation-level detail.";
 
 export function DocumentsView({
   onClose,
@@ -74,7 +72,9 @@ export function DocumentsView({
 
   const activeTopic = filteredTopics.find((topic) => topic.id === activeSection) ?? filteredTopics[0] ?? documentationTopicById(activeSection);
   const relatedTopics = activeTopic.relatedTopicIds.map(documentationTopicById).filter((topic) => topic.id !== activeTopic.id);
-  const divinityReferences = activeTopic.references.filter((reference) => reference.kind === "divinity");
+  const displayReferences = activeTopic.groupId === "chapters"
+    ? activeTopic.references.filter((reference) => reference.kind === "divinity")
+    : activeTopic.references;
   const visibleVisualSlots = documentationVisualReferences(activeTopic);
 
   function selectSection(sectionId: string, options: { clearSearch?: boolean } = {}) {
@@ -134,6 +134,7 @@ export function DocumentsView({
                     <button
                       key={topic.id}
                       type="button"
+                      data-document-topic={topic.id}
                       className={topic.id === activeTopic.id ? "active" : ""}
                       onClick={() => selectSection(topic.id)}
                     >
@@ -144,30 +145,27 @@ export function DocumentsView({
                 </section>
               ))}
               {filteredTopics.length === 0 && (
-                <EmptyState compact title="No document matches" body="Try searching for EDCD, special land, release, Divinity, dispatcher, or oracle." />
+                <EmptyState compact title="No document matches" body="Try searching for teleport, map tile, item response, custom sound, or export warning." />
               )}
             </nav>
           </aside>
 
-          <article className="documents-content documents-content-workbench">
+          <article className="documents-content documents-content-workbench" data-active-document-topic={activeTopic.id}>
             <TopicHero
               topic={activeTopic}
               resultCount={filteredTopics.length}
               searching={Boolean(normalizedQuery)}
               onOpenTool={onOpenTool}
             />
-            {activeTopic.sections.map((section) => (
-              <ArticleSection key={section.title} section={section} />
-            ))}
             {visibleVisualSlots.length > 0 && (
               <PanelSection
                 title={(
-                  <TutorialTip title="Visual Reference Slots" body={VISUAL_SLOTS_HELP} side="below">
-                    <span>Visual Reference Slots</span>
+                  <TutorialTip title="Chapter Gallery" body={VISUAL_SLOTS_HELP} side="below">
+                    <span>Chapter Gallery</span>
                   </TutorialTip>
                 )}
-                eyebrow="Prepared assets"
-                count={`${visibleVisualSlots.length} reference${visibleVisualSlots.length === 1 ? "" : "s"}`}
+                eyebrow="Providence editor"
+                count={`${visibleVisualSlots.length} image${visibleVisualSlots.length === 1 ? "" : "s"}`}
               >
                 <div className="documents-visual-grid">
                   {visibleVisualSlots.map((slot) => (
@@ -176,6 +174,9 @@ export function DocumentsView({
                 </div>
               </PanelSection>
             )}
+            {activeTopic.sections.map((section) => (
+              <ArticleSection key={section.title} topicId={activeTopic.id} section={section} />
+            ))}
             {relatedTopics.length > 0 && (
               <PanelSection
                 title={(
@@ -193,20 +194,20 @@ export function DocumentsView({
                 </div>
               </PanelSection>
             )}
-            {activeTopic.references.length > 0 && (
+            {displayReferences.length > 0 && (
               <PanelSection
                 title={(
                   <TutorialTip title="Source References" body={SOURCE_REFERENCES_HELP} side="below">
-                    <span>References and Source Notes</span>
+                    <span>Further Reference</span>
                   </TutorialTip>
                 )}
-                eyebrow="Secondary context"
+                eyebrow="Optional background"
                 density="compact"
               >
                 <details className="documents-reference-drawer">
-                  <summary>Open references for this chapter</summary>
+                  <summary>Open classic and technical references</summary>
                   <div className="documents-source-list">
-                    {activeTopic.references.map((reference) => (
+                    {displayReferences.map((reference) => (
                       <SourceReferenceChip key={referenceKey(reference)} reference={reference} onOpenDivinityReference={onOpenDivinityReference} />
                     ))}
                   </div>
@@ -216,54 +217,23 @@ export function DocumentsView({
           </article>
 
           <aside className="documents-reference-panel" aria-label="Reading tools">
-            {divinityReferences.length > 0 && (
-              <PanelSection
-                title={(
-                  <TutorialTip title="Divinity Manual Reference" body={DIVINITY_SOURCE_HELP} side="below">
-                    <span>Classic Manual</span>
-                  </TutorialTip>
-                )}
-                eyebrow="Optional reference"
-                density="compact"
-              >
-                <div className="documents-source-list">
-                  {divinityReferences.map((reference) => (
-                    <SourceReferenceChip key={referenceKey(reference)} reference={reference} onOpenDivinityReference={onOpenDivinityReference} />
-                  ))}
-                </div>
-              </PanelSection>
-            )}
             <PanelSection
               title={(
-                <TutorialTip title="Status Badges" body={STATUS_BADGES_HELP} side="below">
-                  <span>Status Badges</span>
+                <TutorialTip title="In This Chapter" body={CHAPTER_NAV_HELP} side="below">
+                  <span>In This Chapter</span>
                 </TutorialTip>
               )}
-              eyebrow="Current topic"
+              eyebrow="Jump to"
               density="compact"
             >
-              <div className="documents-status-list">
-                {activeTopic.badges.map((badge) => (
-                  <span key={badge}>{badge}</span>
+              <nav className="documents-section-nav" aria-label="Sections in this chapter">
+                {activeTopic.sections.map((section) => (
+                  <a key={section.title} href={`#${sectionAnchor(activeTopic.id, section.title)}`}>
+                    <ListTree size={12} />
+                    <span>{section.title}</span>
+                  </a>
                 ))}
-              </div>
-            </PanelSection>
-            <PanelSection
-              title={(
-                <TutorialTip title="Search Terms" body={SEARCH_TERMS_HELP} side="below">
-                  <span>Search Terms</span>
-                </TutorialTip>
-              )}
-              eyebrow="Indexed tags"
-              density="compact"
-            >
-              <div className="documents-tag-list">
-                {activeTopic.tags.map((tag) => (
-                  <button key={tag} type="button" onClick={() => setQuery(tag)}>
-                    {tag}
-                  </button>
-                ))}
-              </div>
+              </nav>
             </PanelSection>
           </aside>
         </div>
@@ -296,11 +266,6 @@ function TopicHero({
       <div className="documents-topic-hero">
         <div className="documents-topic-hero-copy">
           <p>{topic.summary}</p>
-          <div className="documents-status-list" aria-label="Topic status badges">
-            {topic.badges.map((badge) => (
-              <span key={badge}>{badge}</span>
-            ))}
-          </div>
         </div>
         {topic.toolTargets && topic.toolTargets.length > 0 && (
           <div className="documents-topic-actions" aria-label="Open chapter tools">
@@ -324,47 +289,49 @@ function TopicHero({
   );
 }
 
-function ArticleSection({ section }: { section: DocumentationSection }) {
+function ArticleSection({ topicId, section }: { topicId: string; section: DocumentationSection }) {
   return (
-    <PanelSection title={section.title} density="compact">
-      <div className="documents-article-section">
-        {section.paragraphs && (
-          <div className="documents-copy">
-            {section.paragraphs.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
-            ))}
-          </div>
-        )}
-        {section.points && (
-          <ul className="documents-point-list">
-            {section.points.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
-        )}
-        {section.steps && (
-          <ol className="documents-step-list">
-            {section.steps.map((step) => (
-              <li key={step.title}>
-                <div>
-                  <strong>{step.title}</strong>
-                  <span>{step.body}</span>
-                  {step.result && <small>{step.result}</small>}
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-        {section.cards && (
-          <div className="workbench-preview-grid">
-            {section.cards.map((card) => (
-              <PreviewCard key={card.title} title={card.title} subtitle={card.body} facts={card.facts} />
-            ))}
-          </div>
-        )}
-        {section.callout && <DocumentationCalloutView callout={section.callout} />}
-      </div>
-    </PanelSection>
+    <div id={sectionAnchor(topicId, section.title)} className="documents-section-anchor">
+      <PanelSection title={section.title} density="compact">
+        <div className="documents-article-section">
+          {section.paragraphs && (
+            <div className="documents-copy">
+              {section.paragraphs.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          )}
+          {section.points && (
+            <ul className="documents-point-list">
+              {section.points.map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
+          )}
+          {section.steps && (
+            <ol className="documents-step-list">
+              {section.steps.map((step) => (
+                <li key={step.title}>
+                  <div>
+                    <strong>{step.title}</strong>
+                    <span>{step.body}</span>
+                    {step.result && <small>{step.result}</small>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+          {section.cards && (
+            <div className="workbench-preview-grid">
+              {section.cards.map((card) => (
+                <PreviewCard key={card.title} title={card.title} subtitle={card.body} facts={card.facts} />
+              ))}
+            </div>
+          )}
+          {section.callout && <DocumentationCalloutView callout={section.callout} />}
+        </div>
+      </PanelSection>
+    </div>
   );
 }
 
@@ -381,7 +348,7 @@ function VisualSlot({ slot }: { slot: DocumentationVisualSlot }) {
   return (
     <article className="documents-visual-slot">
       <div className="documents-visual-frame">
-        {slot.imageSrc ? <img src={slot.imageSrc} alt="" /> : <Camera size={22} />}
+        {slot.imageSrc ? <img src={slot.imageSrc} alt={slot.title} /> : <Camera size={22} />}
       </div>
       <div>
         <strong>{slot.title}</strong>
@@ -414,7 +381,7 @@ function SourceReferenceChip({ reference, onOpenDivinityReference }: { reference
   }
 
   return (
-    <TutorialTip title="Repo Evidence Reference" body={REPO_SOURCE_HELP} side="left">
+    <TutorialTip title="Technical Reference" body={REPO_SOURCE_HELP} side="left">
       <span className="documents-source-chip source-repo">
         <FileText size={13} />
         <span>
@@ -429,4 +396,8 @@ function SourceReferenceChip({ reference, onOpenDivinityReference }: { reference
 
 function referenceKey(reference: DocumentationReference) {
   return reference.kind === "divinity" ? reference.href : reference.path;
+}
+
+function sectionAnchor(topicId: string, title: string) {
+  return `${topicId}-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
 }

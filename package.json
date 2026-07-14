@@ -71,6 +71,7 @@
     "smoke:editor:assets-performance": "powershell -ExecutionPolicy Bypass -File scripts/run_assets_performance_editor_smoke.ps1",
     "smoke:ui:map-paint": "node scripts/smoke_ui_map_paint.mjs",
     "smoke:ui:performance": "node scripts/smoke_ui_performance.mjs",
+    "docs:capture-gallery": "node scripts/capture_manual_gallery.mjs",
     "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
     "check:ap-action-gaps": "node scripts/report_ap_action_gaps.mjs --self-test && node scripts/report_ap_action_gaps.mjs --fail-on-authoring-gaps --out tmp/ap-action-gaps-check",

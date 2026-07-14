@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   DOCUMENTATION_GROUPS,
@@ -57,6 +59,18 @@ describe("Providence authoring manual", () => {
     }
   });
 
+  it("teaches the Providence editor instead of delegating the chapter to references", () => {
+    for (const id of CORE_CHAPTER_IDS) {
+      const topic = documentationTopicById(id);
+      const editorTours = topic.sections.filter((section) => /inside|tour|project controls/i.test(section.title));
+      const body = chapterBody(topic);
+
+      expect(editorTours.length, `${topic.label} editor tour`).toBeGreaterThanOrEqual(1);
+      expect(body.length, `${topic.label} chapter detail`).toBeGreaterThan(1_200);
+      expect(body, `${topic.label} internal planning language`).not.toMatch(/reserve the preview space|writer boundar|repo reference|source-backed|provenance|codex/i);
+    }
+  });
+
   it("keeps chapter links and tool actions resolvable", () => {
     const topicIds = new Set(DOCUMENTATION_TOPICS.map((topic) => topic.id));
 
@@ -72,6 +86,12 @@ describe("Providence authoring manual", () => {
     }
   });
 
+  it("keeps developer planning and automation instructions out of the manual body", () => {
+    for (const topic of DOCUMENTATION_TOPICS) {
+      expect(chapterBody(topic), topic.label).not.toMatch(/codex|reserve the preview space|follow-up issue|roadmap|fixture-proven|oracle harness|writer support|repo reference/i);
+    }
+  });
+
   it("indexes procedural text for author-facing search", () => {
     expect(documentationSearchText(documentationTopicById("scripts"))).toContain("apply step");
     expect(documentationSearchText(documentationTopicById("maps"))).toContain("combat-clearing");
@@ -83,6 +103,29 @@ describe("Providence authoring manual", () => {
     for (const topic of DOCUMENTATION_TOPICS) {
       expect(documentationVisualReferences(topic).every((slot) => slot.imageSrc.length > 0)).toBe(true);
     }
-    expect(documentationVisualReferences(documentationTopicById("getting-started"))).toEqual([]);
+  });
+
+  it("keeps committed editor screenshots behind the core chapter galleries", () => {
+    const illustratedChapters = CORE_CHAPTER_IDS.filter((id) => documentationVisualReferences(documentationTopicById(id)).length > 0);
+    expect(illustratedChapters).toHaveLength(CORE_CHAPTER_IDS.length - 1);
+
+    for (const id of illustratedChapters) {
+      for (const slot of documentationVisualReferences(documentationTopicById(id))) {
+        expect(slot.imageSrc, `${id} gallery path`).toMatch(/^\/manual\/gallery\/[a-z0-9-]+\.png$/);
+        expect(existsSync(resolve("public", slot.imageSrc.replace(/^\//, ""))), `${id} gallery file`).toBe(true);
+      }
+    }
   });
 });
+
+function chapterBody(topic: ReturnType<typeof documentationTopicById>) {
+  return topic.sections.flatMap((section) => [
+    section.title,
+    ...(section.paragraphs ?? []),
+    ...(section.points ?? []),
+    ...(section.steps ?? []).flatMap((step) => [step.title, step.body, step.result ?? ""]),
+    ...(section.cards ?? []).flatMap((card) => [card.title, card.body, ...(card.facts ?? [])]),
+    section.callout?.title ?? "",
+    section.callout?.body ?? ""
+  ]).join(" ");
+}
