@@ -351,9 +351,9 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Land tile cells", internal: "tiles[90][90]", offset: 0, bytes: 16200, type: "i16be[8100]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:map_storage_land_tiles_mutate_only_owned_cell",
-      "src-tauri/src/realmz.rs:write_fields",
-      "src-tauri/src/realmz.rs:parse_fields",
+      "src-tauri/src/realmz/maps.rs:map_storage_land_tiles_mutate_only_owned_cell",
+      "src-tauri/src/realmz/maps.rs:write_fields",
+      "src-tauri/src/realmz/maps.rs:parse_fields",
       "docs/generated/map-field-value-evidence.json",
       "docs/format-evidence-cards/map-tile-runtime-anchors.md"
     ],
@@ -372,9 +372,9 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Optional compatibility tail", internal: "trailingBytes", offset: 256, bytes: 256, type: "raw-preserved-when-present" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
-      "src-tauri/src/realmz.rs:write_land_layout",
-      "src-tauri/src/realmz.rs:parse_land_layout",
+      "src-tauri/src/realmz/maps.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+      "src-tauri/src/realmz/maps.rs:write_land_layout",
+      "src-tauri/src/realmz/maps.rs:parse_land_layout",
       "docs/generated/map-field-value-evidence.json",
       "docs/format-evidence-cards/map-tile-runtime-anchors.md"
     ],
@@ -427,9 +427,9 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Random encounter raw signed-short stream", internal: "raw_values[322]", offset: 0, bytes: 644, type: "i16be[322]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-      "src-tauri/src/realmz.rs:write_random_levels",
-      "src-tauri/src/realmz.rs:parse_random_levels",
+      "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+      "src-tauri/src/realmz/maps.rs:write_random_levels",
+      "src-tauri/src/realmz/maps.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
@@ -444,9 +444,9 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Random encounter raw signed-short stream", internal: "raw_values[322]", offset: 0, bytes: 644, type: "i16be[322]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-      "src-tauri/src/realmz.rs:write_random_levels",
-      "src-tauri/src/realmz.rs:parse_random_levels",
+      "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+      "src-tauri/src/realmz/maps.rs:write_random_levels",
+      "src-tauri/src/realmz/maps.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
@@ -617,10 +617,10 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Compatibility bytes", internal: "raw[74..76]", offset: 74, bytes: 2, type: "raw-preserved" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
-      "src-tauri/src/realmz.rs:map_record_marker_storage_mutates_only_selected_marker_words",
-      "src-tauri/src/realmz.rs:write_map_records",
-      "src-tauri/src/realmz.rs:parse_map_records",
+      "src-tauri/src/realmz/maps.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+      "src-tauri/src/realmz/maps.rs:map_record_marker_storage_mutates_only_selected_marker_words",
+      "src-tauri/src/realmz/maps.rs:write_map_records",
+      "src-tauri/src/realmz/maps.rs:parse_map_records",
       "docs/generated/map-record-evidence.json",
       "docs/format-evidence-cards/map-record-runtime-anchors.md"
     ],

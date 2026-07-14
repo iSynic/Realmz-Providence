@@ -68,32 +68,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:map_storage_land_tiles_mutate_only_owned_cell",
-        "src-tauri/src/realmz.rs:write_fields",
-        "src-tauri/src/realmz.rs:parse_fields",
+        "src-tauri/src/realmz/maps.rs:map_storage_land_tiles_mutate_only_owned_cell",
+        "src-tauri/src/realmz/maps.rs:write_fields",
+        "src-tauri/src/realmz/maps.rs:parse_fields",
         "docs/generated/map-field-value-evidence.json",
         "docs/format-evidence-cards/map-tile-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:map_storage_land_tiles_mutate_only_owned_cell",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:map_storage_land_tiles_mutate_only_owned_cell",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "map_storage_land_tiles_mutate_only_owned_cell",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_fields",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:write_fields",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "write_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_fields",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:parse_fields",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "parse_fields",
           "fileExists": true,
           "anchorPresent": true,
@@ -151,32 +151,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
-        "src-tauri/src/realmz.rs:write_land_layout",
-        "src-tauri/src/realmz.rs:parse_land_layout",
+        "src-tauri/src/realmz/maps.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+        "src-tauri/src/realmz/maps.rs:write_land_layout",
+        "src-tauri/src/realmz/maps.rs:parse_land_layout",
         "docs/generated/map-field-value-evidence.json",
         "docs/format-evidence-cards/map-tile-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_land_layout",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:write_land_layout",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "write_land_layout",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_land_layout",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:parse_land_layout",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "parse_land_layout",
           "fileExists": true,
           "anchorPresent": true,
@@ -469,32 +469,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-        "src-tauri/src/realmz.rs:write_random_levels",
-        "src-tauri/src/realmz.rs:parse_random_levels",
+        "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+        "src-tauri/src/realmz/maps.rs:write_random_levels",
+        "src-tauri/src/realmz/maps.rs:parse_random_levels",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "map_storage_random_levels_mutate_only_owned_raw_words",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_random_levels",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:write_random_levels",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "write_random_levels",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_random_levels",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:parse_random_levels",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "parse_random_levels",
           "fileExists": true,
           "anchorPresent": true,
@@ -555,32 +555,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-        "src-tauri/src/realmz.rs:write_random_levels",
-        "src-tauri/src/realmz.rs:parse_random_levels",
+        "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+        "src-tauri/src/realmz/maps.rs:write_random_levels",
+        "src-tauri/src/realmz/maps.rs:parse_random_levels",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "map_storage_random_levels_mutate_only_owned_raw_words",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_random_levels",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:write_random_levels",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "write_random_levels",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_random_levels",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:parse_random_levels",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "parse_random_levels",
           "fileExists": true,
           "anchorPresent": true,

@@ -392,41 +392,41 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
-        "src-tauri/src/realmz.rs:map_record_marker_storage_mutates_only_selected_marker_words",
-        "src-tauri/src/realmz.rs:write_map_records",
-        "src-tauri/src/realmz.rs:parse_map_records",
+        "src-tauri/src/realmz/maps.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+        "src-tauri/src/realmz/maps.rs:map_record_marker_storage_mutates_only_selected_marker_words",
+        "src-tauri/src/realmz/maps.rs:write_map_records",
+        "src-tauri/src/realmz/maps.rs:parse_map_records",
         "docs/generated/map-record-evidence.json",
         "docs/format-evidence-cards/map-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:map_record_marker_storage_mutates_only_selected_marker_words",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:map_record_marker_storage_mutates_only_selected_marker_words",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "map_record_marker_storage_mutates_only_selected_marker_words",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_map_records",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:write_map_records",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "write_map_records",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_map_records",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/maps.rs:parse_map_records",
+          "file": "src-tauri/src/realmz/maps.rs",
           "anchor": "parse_map_records",
           "fileExists": true,
           "anchorPresent": true,
