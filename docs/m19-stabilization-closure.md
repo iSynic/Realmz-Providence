@@ -74,11 +74,11 @@ Do not mark ISY-323 or M19 complete until every required pending row has observe
 | Imported-project and Combat/maps performance | Standard lanes pass; imported-heavy follow-up | Dense Combat and map paint pass; ISY-324 tracks the pre-existing intermittent imported-heavy timing failures |
 | Desktop release artifacts | Pass | Full Windows release build produced online/offline NSIS and MSI artifacts; the corrected full editor smoke matrix passed |
 | Browser manual smoke | Pass for authoring surfaces | In-app browser loaded the smoke project and rendered Maps, AP, Encounters, Combat, Economy, Assets, Linter, and Export; generated round trips are covered by automated package checks |
-| Fresh desktop manual smoke | Pending | Same workflows against freshly built artifacts |
+| Fresh desktop manual smoke | Pass | Maintainer reviewed the freshly built result and accepted the closure pass on 2026-07-14 |
 | Generated files and package-source churn | Pass for automated gates | Initial clean-tree run produced no tracked churn; subsequent changes are limited to loader normalization, corrected smoke contracts, and this closure evidence |
-| Fixture and exported-byte churn | Pending fixture reconciliation | Integration failures must be resolved or refreshed from accepted source evidence |
+| Fixture and exported-byte churn | Accepted residual follow-ups | ISY-325 through ISY-327 retain the exact failing expectations; they are not treated as M19 extraction regressions or silently waived |
 | Residual-risk follow-ups | Pass | ISY-324 through ISY-327 capture the four independent risks found by the closure run |
-| Resume feature development | Pending decision | Record explicitly after all required gates pass |
+| Resume feature development | Approved | Maintainer accepted the closure evidence on 2026-07-14; normal roadmap work may resume |
 
 ### Automated closure run: 2026-07-13
 
@@ -116,4 +116,12 @@ These remain separate from demonstrated M19 extraction behavior, but ISY-323 can
 - **ISY-326** resolves the Windows `Scenario.rsrc` `STR# Map Names` promotion expectation.
 - **ISY-327** resolves authored same-ID `TEXT`/`styl` export fixture coverage.
 
-These issues are deliberately outside M19 extraction scope. They retain exact failing tests and evidence requirements so feature work can resume after the remaining desktop and manual closure gates without losing the risks.
+These issues are deliberately outside M19 extraction scope. They retain exact failing tests and evidence requirements so feature work can resume without losing the risks after M19 closes.
+
+## Closure Decision
+
+On 2026-07-14, the maintainer reviewed the fresh build and closure evidence and approved closing ISY-323. M19 achieved its purpose: the major editor and codec owners have narrow composition entrypoints, explicit module ownership, enforced dependency boundaries, substantially broader characterization coverage, and release/performance smoke gates that survived the extraction work.
+
+This decision does not claim that the aggregate full-Rust fixture run is green. The three reproduced fixture expectations remain open in ISY-325 through ISY-327, and imported-heavy Combat timing variance remains open in ISY-324. They are accepted as independently owned residual work rather than reasons to keep the completed modularization milestone open indefinitely.
+
+**Decision: close ISY-323 and resume normal feature development.**
