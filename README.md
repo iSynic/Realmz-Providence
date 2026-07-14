@@ -1,6 +1,6 @@
 # Realmz Providence
 
-Providence is a modern scenario editor for Realmz. The current release is 0.3.2.
+Providence is a modern scenario editor for Realmz. The current release is 0.3.3.
 
 It is trying to do two things at once:
 
@@ -10,6 +10,26 @@ It is trying to do two things at once:
 That second part matters. Realmz scenarios contain a lot of classic Mac-era binary data, resource forks, packed records, and runtime quirks. Providence treats the original files as evidence, keeps unknown data visible or preserved, and only writes the parts we understand well enough to edit safely.
 
 The app is built with React/Vite on the frontend and Tauri/Rust on the desktop side.
+
+## 0.3.3 Stabilization Update
+
+The 0.3.3 release completes a broad codebase stabilization pass while keeping
+Providence's project and export contracts compatible with 0.3.2.
+
+- The in-app Documents area is now a task-oriented Providence Authoring Manual
+  with clearer guidance for Maps, Action Points, encounters, combat, economy,
+  rules, assets, validation, and export.
+- Large Maps, Scripts, Combat, Economy, encounter, scenario-generation, and
+  Realmz codec modules were split into focused owners without changing their
+  authoring workflows or public facades.
+- Architecture, ownership, module-size, generated-artifact, and characterization
+  gates now protect those boundaries from drifting back into monolithic files.
+- Imported-heavy Combat performance checks are more deterministic and use the
+  same project normalization path as ordinary browser project loading.
+- City of Bywater now uses the accepted reverted package as its canonical corpus
+  baseline, with byte-identical no-edit export coverage retained.
+- Windows resource-fork promotion and authored scrolling `TEXT`/`styl` export
+  fixtures now cover the expected map-name and same-ID resource behavior.
 
 ## 0.3.2 Packaging Update
 
