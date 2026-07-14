@@ -83,8 +83,20 @@ export function ProvidenceEditorShell({
 }) {
   const hasWorkbench = Boolean(state.project || state.activeWorkbench === "library");
   const subtitle = state.activeWorkbench === "library" ? "Library Workbench" : state.project?.scenario.name ?? "No project loaded";
+  const iconOverlayState = state.iconStatusTab !== state.activeTab
+    ? "deferred"
+    : state.iconStatus.startsWith("Loading ")
+    ? "loading"
+    : state.iconStatus.startsWith("Loaded ") || state.iconStatus.startsWith("No icon overlay")
+      ? "ready"
+      : "deferred";
   return (
-    <div className="editor-layout providence-shell">
+    <div
+      className="editor-layout providence-shell"
+      data-semantic-mapping-state={state.semanticMapping?.active ? "active" : "idle"}
+      data-icon-overlay-state={iconOverlayState}
+      data-icon-overlay-status={state.iconStatus}
+    >
       <WorkbenchTopbar
         activeWorkbench={state.activeWorkbench}
         title="Realmz Providence"

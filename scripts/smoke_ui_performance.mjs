@@ -36,8 +36,16 @@ try {
   const importedCombatBenchmark = args.has("combat-imported-benchmark");
   const combatBenchmark = args.has("combat-benchmark");
   if (importedCombatBenchmark) {
-    const sourceProject = explicitProjects[0] || findImportedCombatBenchmarkSourceProject() || findCombatBenchmarkSourceProject();
-    explicitProjects = [prepareCombatImportedBenchmarkProject(sourceProject)];
+    const explicitSource = explicitProjects[0] || null;
+    const cachedProject = !explicitSource && !args.has("refresh-benchmark-fixture")
+      ? cachedCombatImportedBenchmarkProject()
+      : null;
+    if (cachedProject) {
+      explicitProjects = [cachedProject];
+    } else {
+      const sourceProject = explicitSource || findImportedCombatBenchmarkSourceProject() || findCombatBenchmarkSourceProject();
+      explicitProjects = [prepareCombatImportedBenchmarkProject(sourceProject)];
+    }
   } else if (combatBenchmark) {
     const sourceProject = explicitProjects[0] || findCombatBenchmarkSourceProject();
     explicitProjects = [prepareCombatBenchmarkProject(sourceProject)];
@@ -86,7 +94,10 @@ try {
     }
   }
   for (const server of projectServers) {
-    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => {
+      server.close(resolve);
+      server.closeAllConnections?.();
+    });
   }
 }
 
@@ -179,7 +190,13 @@ async function runScenario({ baseUrl, budgets, spec, projectServers }) {
       longTaskStatus: "pass"
     });
   } finally {
-    if (!keepBrowser) client.close();
+    if (!keepBrowser) {
+      await Promise.race([
+        client.send("Browser.close").catch(() => null),
+        new Promise((resolve) => setTimeout(resolve, 2_000))
+      ]);
+      client.close();
+    }
   }
   return scenario;
 }
@@ -461,6 +478,9 @@ async function runCombatProbes(client, budgets, scenario, { importedHeavy = fals
     importedHeavy ? 180_000 : 30_000,
     "Timed out waiting for the Combat editor to finish loading."
   );
+  scenario.combatBackgroundReadiness = await waitForCombatBackgroundReadiness(client, {
+    timeoutMs: importedHeavy ? 180_000 : 30_000
+  });
   const combatAvailability = await evalValue(client, `
     (() => {
       const countFor = (label) => {
@@ -714,6 +734,10 @@ async function runCombatProbes(client, budgets, scenario, { importedHeavy = fals
       return Boolean(monsterTab);
     })()
   `, `document.querySelector(".scenario-monster-list .combat-record-scroll button") && !document.body.innerText.includes("Loading editor section")`);
+  await waitForCombatPreviews(client, "Timed out waiting for monster-list images to settle.", {
+    timeoutMs: importedHeavy ? 30_000 : 10_000
+  });
+  await evalValue(client, "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
 
   for (const [probeIndex, targetIndex] of [1, 24, 72].entries()) {
     await probe(client, scenario, budgets, `Combat scenario monster selection ${probeIndex + 1}`, "recordSelection", `
@@ -728,6 +752,30 @@ async function runCombatProbes(client, budgets, scenario, { importedHeavy = fals
     })()
     `, `document.querySelector(".scenario-monster-list button.selected")?.textContent === window.__combatMonsterSelectionText && document.querySelector(".monster-editor")`);
   }
+}
+
+async function waitForCombatBackgroundReadiness(client, { timeoutMs }) {
+  const startedAt = Date.now();
+  await evalValue(client, "new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+  await waitFor(async () => evalValue(client, `
+    (() => {
+      const shell = document.querySelector(".providence-shell");
+      return shell?.getAttribute("data-semantic-mapping-state") === "idle"
+        && shell?.getAttribute("data-icon-overlay-state") === "ready";
+    })()
+  `), timeoutMs, "Timed out waiting for Combat background loading to finish.");
+  await evalValue(client, "new Promise((resolve) => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(resolve)), 250))");
+  const readiness = await evalValue(client, `
+    (() => {
+      const shell = document.querySelector(".providence-shell");
+      return {
+        semanticMappingState: shell?.getAttribute("data-semantic-mapping-state") ?? null,
+        iconOverlayState: shell?.getAttribute("data-icon-overlay-state") ?? null,
+        iconOverlayStatus: shell?.getAttribute("data-icon-overlay-status") ?? null
+      };
+    })()
+  `);
+  return { durationMs: Date.now() - startedAt, ...readiness };
 }
 
 async function waitForCombatPreviews(client, message, { strict = true, timeoutMs = 20_000 } = {}) {
@@ -1107,6 +1155,23 @@ function prepareCombatImportedBenchmarkProject(sourceProject) {
   const outputPath = path.join(outputDir, "project.json");
   writeBenchmarkProject(outputPath, project);
   return outputPath;
+}
+
+function cachedCombatImportedBenchmarkProject() {
+  const outputPath = path.join(root, "tmp", "performance-smoke", "combat-imported-benchmark-project", "project.json");
+  if (!fs.existsSync(outputPath)) return null;
+  try {
+    const project = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+    const usable = project.scenario?.name === "Combat Imported Performance Benchmark"
+      && Array.isArray(project.monsters) && project.monsters.length >= 190
+      && Array.isArray(project.battles) && project.battles.length > 0
+      && Array.isArray(project.triggers) && project.triggers.length >= 6_000
+      && Array.isArray(project.extracodes) && project.extracodes.length >= 64_000
+      && Array.isArray(project.messages) && project.messages.length >= 1_000;
+    return usable ? outputPath : null;
+  } catch {
+    return null;
+  }
 }
 
 function writeBenchmarkProject(outputPath, project) {

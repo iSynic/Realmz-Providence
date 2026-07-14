@@ -75,6 +75,7 @@ export type EditorState = MapViewOptions & {
   atlasStatus: string;
   iconEntries: Record<number, IconEntry>;
   iconStatus: string;
+  iconStatusTab: EditorTab | null;
 };
 
 export type EditorAction =
@@ -123,7 +124,7 @@ export type EditorAction =
   | { type: "setVisibleRandomRectIds"; ids: string[] }
   | { type: "setVisibleMapRecordIds"; ids: number[] }
   | { type: "setAtlases"; entries: Record<string, AtlasEntry>; status: string }
-  | { type: "setIcons"; entries: Record<number, IconEntry>; status: string };
+  | { type: "setIcons"; entries: Record<number, IconEntry>; status: string; forTab: EditorTab | null };
 
 export function initialEditorState(desktopRuntime: boolean): EditorState {
   return {
@@ -181,7 +182,8 @@ export function initialEditorState(desktopRuntime: boolean): EditorState {
     atlasEntries: {},
     atlasStatus: "No atlases loaded",
     iconEntries: {},
-    iconStatus: "No icon overlays loaded"
+    iconStatus: "No icon overlays loaded",
+    iconStatusTab: null
   };
 }
 
@@ -266,7 +268,8 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         atlasEntries: {},
         atlasStatus: action.project ? "Tile atlases will load when needed" : "No atlases loaded",
         iconEntries: {},
-        iconStatus: action.project ? "Icon overlays will load when needed" : "No icon overlays loaded"
+        iconStatus: action.project ? "Icon overlays will load when needed" : "No icon overlays loaded",
+        iconStatusTab: null
       };
     case "setSemanticSchema":
       return state.project
@@ -480,7 +483,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case "setAtlases":
       return { ...state, atlasEntries: action.entries, atlasStatus: action.status };
     case "setIcons":
-      return { ...state, iconEntries: action.entries, iconStatus: action.status };
+      return { ...state, iconEntries: action.entries, iconStatus: action.status, iconStatusTab: action.forTab };
     default:
       return state;
   }

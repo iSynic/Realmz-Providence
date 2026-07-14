@@ -81,7 +81,7 @@ export function BattleBoard({
   useCombatRenderTiming("BattleBoard");
   const activeMonsters = useMemo(
     () => authorFacingMonsterRecordsForSet(project, monsterSetPreview),
-    [monsterSetPreview, project.battles, project.monsters, project.monsterSets]
+    [monsterSetPreview, project.monsters, project.monsterSets]
   );
   const activeMonsterById = useMemo(
     () => new Map(activeMonsters.map((monster) => [monster.id, monster])),

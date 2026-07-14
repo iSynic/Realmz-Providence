@@ -346,7 +346,7 @@ export function useAppBootstrapEffects({
       if (!state.project) {
         loadedIconOverlayKeyRef.current = "";
         loadingIconOverlayKeyRef.current = "";
-        dispatch({ type: "setIcons", entries: {}, status: "No icon overlays loaded" });
+        dispatch({ type: "setIcons", entries: {}, status: "No icon overlays loaded", forTab: null });
         return;
       }
       if (!shouldLoadIconOverlaysForTab(state.activeTab)) return;
@@ -419,13 +419,14 @@ export function useAppBootstrapEffects({
       if (ids.length === 0) {
         loadedIconOverlayKeyRef.current = requestedIconOverlayKey;
         loadingIconOverlayKeyRef.current = "";
-        dispatch({ type: "setIcons", entries: {}, status: "No icon overlays in maps" });
+        dispatch({ type: "setIcons", entries: {}, status: "No icon overlays in maps", forTab: state.activeTab });
         return;
       }
       dispatch({
         type: "setIcons",
         entries: {},
-        status: `Loading ${ids.length}${ids.length < rawIds.length ? `/${rawIds.length}` : ""} map icon overlay${ids.length === 1 ? "" : "s"}...`
+        status: `Loading ${ids.length}${ids.length < rawIds.length ? `/${rawIds.length}` : ""} map icon overlay${ids.length === 1 ? "" : "s"}...`,
+        forTab: state.activeTab
       });
       const pairs = await Promise.all(
         ids.map(async (id) => {
@@ -522,7 +523,8 @@ export function useAppBootstrapEffects({
       dispatch({
         type: "setIcons",
         entries,
-        status: `Loaded ${Object.keys(entries).length}/${ids.length} map icon overlays`
+        status: `Loaded ${Object.keys(entries).length}/${ids.length} map icon overlays`,
+        forTab: state.activeTab
       });
     }
     loadIcons();

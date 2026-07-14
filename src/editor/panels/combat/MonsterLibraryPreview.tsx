@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { browserReferenceIconUrl } from "../../browser/atlasPaths";
 import { itemReferenceOptions } from "../../itemReferences";
 import { useResolvedPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
@@ -6,6 +6,7 @@ import { isActorOrCreatureIconId } from "../../resourceResolver";
 import type { IconEntry, LibraryCatalog, Project } from "../../types";
 import { combatSpellOptions, spellPreviewIconIdMap } from "./monsterReferenceOptions";
 import { MONSTER_MONEY_HELP, MONSTER_MONEY_LABELS, MONSTER_MONEY_REWARDS } from "./monsterMoneyModel";
+import { samePreviewContextInputs } from "./MonsterIconPreview";
 import { ReferenceIconPreview } from "./ReferenceIconPreview";
 import type { CombatLookups } from "./combatLookups";
 import {
@@ -291,19 +292,21 @@ function LibraryEmptyValue({ label }: { label: string }) {
   return <small className="scrapbook-empty-value">{label}</small>;
 }
 
-export function MonsterLibraryIcon({
-  entry,
-  iconEntries,
-  lookups,
-  previewContext,
-  compact = false
-}: {
+type MonsterLibraryIconProps = {
   entry: LibraryCatalog["entities"][number];
   iconEntries: Record<number, IconEntry>;
   lookups: CombatLookups;
   previewContext: PreviewRuntimeContext;
   compact?: boolean;
-}) {
+};
+
+export const MonsterLibraryIcon = memo(function MonsterLibraryIcon({
+  entry,
+  iconEntries,
+  lookups,
+  previewContext,
+  compact = false
+}: MonsterLibraryIconProps) {
   const iconId = summaryNumber(entry, "iconId");
   const absIconId = Math.abs(iconId);
   const icon = iconEntries[iconId] ?? iconEntries[Math.abs(iconId)] ?? iconEntries[-Math.abs(iconId)];
@@ -327,4 +330,12 @@ export function MonsterLibraryIcon({
       {usableUrl ? <img src={usableUrl} alt="" loading="lazy" decoding="async" onLoad={() => setLoadedUrl(usableUrl)} onError={() => setFailedUrl(usableUrl)} /> : <span>{iconId || "?"}</span>}
     </div>
   );
+}, areMonsterLibraryIconPropsEqual);
+
+function areMonsterLibraryIconPropsEqual(previous: MonsterLibraryIconProps, next: MonsterLibraryIconProps) {
+  return previous.entry === next.entry
+    && previous.iconEntries === next.iconEntries
+    && previous.lookups === next.lookups
+    && previous.compact === next.compact
+    && samePreviewContextInputs(previous.previewContext, next.previewContext);
 }
