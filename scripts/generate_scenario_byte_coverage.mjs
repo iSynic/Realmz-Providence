@@ -332,12 +332,7 @@ const TARGET_RECORD_WRITER_EVIDENCE = [
 ];
 
 const FIXED_RECORD_TEXT_WRITER_EVIDENCE = [
-  "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
-  ...TARGET_RECORD_WRITER_EVIDENCE
-];
-
-const FIXED_RECORD_TARGET_WRITER_EVIDENCE = [
-  "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+  "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
   ...TARGET_RECORD_WRITER_EVIDENCE
 ];
 
@@ -692,7 +687,8 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Monster description text", internal: "text", offset: 0, bytes: 256, type: "Str255/raw tail" }
     ],
     evidence: [
-      ...FIXED_RECORD_TEXT_WRITER_EVIDENCE,
+      "src-tauri/src/realmz/combat.rs:monster_description_storage_mutates_only_owned_pascal_bytes",
+      ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
     ],
@@ -711,7 +707,8 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Jewelry reward", internal: "jewelry", offset: 46, bytes: 2, type: "i16be" }
     ],
     evidence: [
-      ...FIXED_RECORD_TARGET_WRITER_EVIDENCE,
+      "src-tauri/src/realmz/economy.rs:treasure_storage_mutates_only_owned_fields",
+      ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/item-treasure-shop-evidence.json",
       "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
@@ -734,7 +731,8 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Alignment padding", internal: "padding", offset: 339, bytes: 1, type: "raw-preserved" }
     ],
     evidence: [
-      ...FIXED_RECORD_TARGET_WRITER_EVIDENCE,
+      "src-tauri/src/realmz/combat.rs:battle_storage_mutates_only_owned_fields",
+      ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/battle-record-evidence.json",
       "docs/format-evidence-cards/battle-record-runtime-anchors.md"
@@ -760,7 +758,8 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Timed encounter qualifiers", internal: "stuff[10]", offset: 20, bytes: 20, type: "i16be[10]" }
     ],
     evidence: [
-      ...FIXED_RECORD_TARGET_WRITER_EVIDENCE,
+      "src-tauri/src/realmz/encounters.rs:timed_encounter_writer_mutates_only_owned_fields",
+      ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
     ],

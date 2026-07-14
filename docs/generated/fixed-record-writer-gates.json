@@ -104,7 +104,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -114,8 +114,8 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "file": "src-tauri/src/realmz/text_records.rs",
           "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
           "fileExists": true,
           "anchorPresent": true,
@@ -211,7 +211,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -221,8 +221,8 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "file": "src-tauri/src/realmz/text_records.rs",
           "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
           "fileExists": true,
           "anchorPresent": true,
@@ -327,7 +327,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz/combat.rs:monster_description_storage_mutates_only_owned_pascal_bytes",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -336,9 +336,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
-          "file": "src-tauri/src/realmz.rs",
-          "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "reference": "src-tauri/src/realmz/combat.rs:monster_description_storage_mutates_only_owned_pascal_bytes",
+          "file": "src-tauri/src/realmz/combat.rs",
+          "anchor": "monster_description_storage_mutates_only_owned_pascal_bytes",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -451,7 +451,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz/economy.rs:treasure_storage_mutates_only_owned_fields",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -461,9 +461,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
-          "anchor": "fixed_record_target_writers_mutate_only_owned_fields",
+          "reference": "src-tauri/src/realmz/economy.rs:treasure_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz/economy.rs",
+          "anchor": "treasure_storage_mutates_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -613,7 +613,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz/combat.rs:battle_storage_mutates_only_owned_fields",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -623,9 +623,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
-          "anchor": "fixed_record_target_writers_mutate_only_owned_fields",
+          "reference": "src-tauri/src/realmz/combat.rs:battle_storage_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz/combat.rs",
+          "anchor": "battle_storage_mutates_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -765,7 +765,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
+        "src-tauri/src/realmz/encounters.rs:timed_encounter_writer_mutates_only_owned_fields",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -774,9 +774,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:fixed_record_target_writers_mutate_only_owned_fields",
-          "file": "src-tauri/src/realmz.rs",
-          "anchor": "fixed_record_target_writers_mutate_only_owned_fields",
+          "reference": "src-tauri/src/realmz/encounters.rs:timed_encounter_writer_mutates_only_owned_fields",
+          "file": "src-tauri/src/realmz/encounters.rs",
+          "anchor": "timed_encounter_writer_mutates_only_owned_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true

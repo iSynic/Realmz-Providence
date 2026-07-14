@@ -1,4 +1,3 @@
-use crate::error::Result;
 use crate::project::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -12,6 +11,7 @@ mod maps;
 mod record_bytes;
 mod rules;
 mod scenario;
+mod text_records;
 
 pub use action_points::{
     parse_door_file, parse_extracodes, parse_macro_file, write_door_file,
@@ -57,17 +57,15 @@ pub use scenario::{
     write_scenario_contact_info, write_scenario_restrictions, write_scenario_shell,
     write_scenario_support_file,
 };
+pub use text_records::{
+    parse_messages, parse_option_labels, write_messages, write_option_labels, MESSAGE_BYTES,
+    OPTION_LABEL_BYTES,
+};
 
 use landlooks::parse_tile_attributes;
 use maps::attach_render_info;
-use record_bytes::{
-    copy_raw, decode_pascal_text, encode_pascal_text, i32_be, parse_fixed_records, preserve_raw,
-    provenance, write_fixed_records,
-};
 pub use record_bytes::{i16_be, write_i16_be};
-
-pub const MESSAGE_BYTES: usize = 256;
-pub const OPTION_LABEL_BYTES: usize = 25;
+use record_bytes::{i32_be, provenance};
 
 pub const SUPPORTED_WRITE_FILES: &[&str] = &[
     "Data LD",
@@ -429,52 +427,6 @@ fn alignment_for(name: &str, buffer: Option<&Vec<u8>>, record_bytes: usize) -> R
     }
 }
 
-pub fn parse_messages(buffer: &[u8]) -> Vec<MessageRecord> {
-    parse_fixed_records(buffer, MESSAGE_BYTES)
-        .map(|(id, start, record)| MessageRecord {
-            id,
-            text: decode_pascal_text(record),
-            raw_bytes: record.to_vec(),
-            authored: false,
-            provenance: provenance("Data SD2", id, start, MESSAGE_BYTES),
-        })
-        .collect()
-}
-
-pub fn write_messages(records: &[MessageRecord]) -> Result<Vec<u8>> {
-    write_fixed_records(records, MESSAGE_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, MESSAGE_BYTES) {
-            return Ok(());
-        }
-        encode_pascal_text(buffer, &record.text)?;
-        Ok(())
-    })
-}
-
-pub fn parse_option_labels(buffer: &[u8]) -> Vec<OptionLabelRecord> {
-    parse_fixed_records(buffer, OPTION_LABEL_BYTES)
-        .map(|(id, start, record)| OptionLabelRecord {
-            id,
-            text: decode_pascal_text(record),
-            raw_bytes: record.to_vec(),
-            authored: false,
-            provenance: provenance("Data OD", id, start, OPTION_LABEL_BYTES),
-        })
-        .collect()
-}
-
-pub fn write_option_labels(records: &[OptionLabelRecord]) -> Result<Vec<u8>> {
-    write_fixed_records(records, OPTION_LABEL_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, OPTION_LABEL_BYTES) {
-            return Ok(());
-        }
-        encode_pascal_text(buffer, &record.text)?;
-        Ok(())
-    })
-}
-
 fn build_asset_catalog(maps: &[MapEntity], random_levels: &[RandomLevel]) -> AssetCatalog {
     let mut landlooks = BTreeSet::new();
     for level in random_levels {
@@ -573,46 +525,6 @@ fn landlook_base_tile(landlook: i8) -> Option<i16> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {
-        before
-            .iter()
-            .zip(after.iter())
-            .enumerate()
-            .filter_map(|(offset, (left, right))| (left != right).then_some(offset))
-            .collect()
-    }
-
-    #[test]
-    fn fixed_record_text_writers_mutate_only_owned_pascal_bytes() {
-        let mut message_input = vec![0u8; MESSAGE_BYTES * 2];
-        message_input[0] = 1;
-        message_input[1] = b'Z';
-        let message_start = MESSAGE_BYTES;
-        let mut messages = parse_messages(&message_input);
-        messages[1].authored = true;
-        messages[1].text = "Go".to_string();
-        let message_output = write_messages(&messages).unwrap();
-        assert_eq!(message_output.len(), message_input.len());
-        assert_eq!(
-            changed_offsets(&message_input, &message_output),
-            vec![message_start, message_start + 1, message_start + 2]
-        );
-
-        let mut option_input = vec![0u8; OPTION_LABEL_BYTES * 3];
-        option_input[1] = 1;
-        option_input[2] = b'Q';
-        let option_start = OPTION_LABEL_BYTES * 2;
-        let mut option_labels = parse_option_labels(&option_input);
-        option_labels[2].authored = true;
-        option_labels[2].text = "On".to_string();
-        let option_output = write_option_labels(&option_labels).unwrap();
-        assert_eq!(option_output.len(), option_input.len());
-        assert_eq!(
-            changed_offsets(&option_input, &option_output),
-            vec![option_start, option_start + 1, option_start + 2]
-        );
-    }
 
     #[test]
     fn target_records_round_trip_full_records() {
