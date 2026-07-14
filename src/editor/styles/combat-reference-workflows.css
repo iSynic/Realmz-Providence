@@ -1,0 +1,243 @@
+
+.monster-icon-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(2, 7, 11, 0.72);
+}
+
+.monster-icon-picker-dialog {
+  width: min(840px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 32px));
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
+  overflow: hidden;
+  border: 1px solid #2b4255;
+  border-radius: 8px;
+  background: #0b1219;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+.monster-icon-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.monster-icon-picker-header h3 {
+  margin: 0;
+  color: #f2f7ff;
+  font-size: 16px;
+}
+
+.monster-icon-picker-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.monster-icon-picker-search {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #314455;
+  border-radius: 5px;
+  background: #071018;
+  color: #edf7ff;
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.monster-icon-picker-grid {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+  align-content: start;
+  gap: 7px;
+  padding-right: 2px;
+}
+
+.monster-icon-picker-option {
+  min-width: 0;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid #243746;
+  border-radius: 6px;
+  background: #091119;
+  color: #e8f5ff;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.monster-icon-picker-option:hover,
+.monster-icon-picker-option:focus-visible {
+  border-color: #2c9eea;
+  background: #0d1d2a;
+}
+
+.monster-icon-picker-option.selected {
+  border-color: #e0a632;
+  background: #31230d;
+}
+
+.monster-icon-picker-option span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.monster-icon-picker-option strong,
+.monster-icon-picker-option small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monster-icon-picker-option small {
+  color: #9db6ca;
+}
+
+.monster-icon-picker-grid > .empty-copy {
+  grid-column: 1 / -1;
+}
+
+.battle-reference-repair-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(2, 7, 11, 0.72);
+}
+
+.battle-reference-repair-dialog {
+  width: min(560px, calc(100vw - 32px));
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #2b4255;
+  border-radius: 8px;
+  background: #0b1219;
+  color: #e8f5ff;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+.battle-reference-repair-dialog header,
+.battle-reference-repair-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.battle-reference-repair-dialog p {
+  margin: 0;
+  color: #c9d8e4;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.battle-reference-repair-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 5px;
+}
+
+.battle-reference-repair-list small {
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid #263746;
+  border-radius: 5px;
+  background: #071018;
+  color: #b5cadb;
+}
+
+.battle-reference-replacement {
+  max-width: 220px;
+}
+
+.battle-reference-repair-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.monster-selected-badge {
+  color: #93e8bd !important;
+}
+
+.combat-record-scroll strong,
+.combat-record-scroll small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.combat-editor {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+}
+
+.monster-multi-selection {
+  align-content: start;
+}
+
+.monster-selection-list {
+  min-height: 0;
+  display: grid;
+  gap: 6px;
+  overflow: auto;
+}
+
+.monster-selection-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #263746;
+  border-radius: 6px;
+  background: #0b1219;
+}
+
+.monster-selection-row > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.monster-selection-row strong,
+.monster-selection-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monster-selection-row .copy-target {
+  min-width: 92px;
+  display: grid;
+  justify-items: end;
+  color: #dff8ff;
+  font-weight: 900;
+}
+
+.monster-selection-row .copy-target.shifted small {
+  color: #e3bf76;
+}

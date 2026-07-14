@@ -1,0 +1,95 @@
+
+.monster-identity-section {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+}
+
+.monster-field-grid,
+.monster-attacks-grid,
+.combat-compact-array {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.monster-select-array {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.combat-select-field select {
+  min-width: 0;
+}
+
+.combat-textarea-field textarea {
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid #314455;
+  border-radius: 5px;
+  background: #0a1219;
+  color: #edf7ff;
+  padding: 8px;
+  font: inherit;
+  line-height: 1.35;
+}
+
+.scrapbook-monster-preview .monster-icon-preview {
+  width: 88px;
+  height: 88px;
+}
+
+.monster-attacks-grid {
+  grid-template-columns: repeat(auto-fit, minmax(245px, 1fr));
+}
+
+.combat-check-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  color: #e5f2ff;
+  font-size: 11px;
+}
+
+.combat-traits {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 7px 14px;
+}
+
+.monster-attack-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(86px, 1fr));
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid #22313f;
+  border-radius: 6px;
+  background: #0a1118;
+}
+
+.monster-attack-row > strong {
+  grid-column: 1 / -1;
+  color: #fff1c2;
+  font-size: 11px;
+}
+
+.combat-reference-tab {
+  padding: 14px;
+  color: #adc3d4;
+}
+
+.combat-editor.empty {
+  min-height: 260px;
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+  color: #9fb4c7;
+}
+
+.battle-empty-action {
+  width: min(220px, 100%);
+  justify-content: center;
+}

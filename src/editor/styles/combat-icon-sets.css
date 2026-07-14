@@ -1,0 +1,322 @@
+
+.icon-set-workbench {
+  width: min(100%, 1500px);
+  align-content: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.icon-set-header {
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #263746;
+}
+
+.icon-set-header h2 {
+  color: #eef7ff;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.icon-set-header p {
+  margin: 2px 0 0;
+  color: #9db6ca;
+  font-size: 11px;
+}
+
+.icon-set-limit {
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  border: 1px solid #25445c;
+  border-radius: 999px;
+  background: #0b1219;
+  color: #b9d9ef;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.icon-set-limit.warning {
+  border-color: #8a6a1e;
+  color: #ffe18d;
+}
+
+.icon-set-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 160px)) minmax(0, 1fr) auto minmax(180px, 1fr);
+  gap: 8px;
+  align-items: end;
+  padding: 9px;
+  border: 1px solid #233444;
+  border-radius: 7px;
+  background: #0b1219;
+}
+
+.icon-set-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+}
+
+.icon-set-context-action {
+  width: auto;
+  min-width: 150px;
+  justify-self: start;
+}
+
+.icon-set-import-toggle {
+  white-space: nowrap;
+}
+
+.icon-set-action-group .btn-danger {
+  border-color: #8a2f2a;
+  background: #351310;
+  color: #ffd0c9;
+}
+
+.icon-set-action-group .btn-danger:hover:not(:disabled) {
+  border-color: #c24b41;
+  background: #521d18;
+  color: #fff3f0;
+}
+
+.icon-set-controls small {
+  align-self: center;
+  color: #a9c1d4;
+  font-size: 10px;
+}
+
+.icon-set-import-panel {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(120px, 160px) minmax(220px, 1fr) auto minmax(220px, 1fr) auto;
+  gap: 9px;
+  align-items: end;
+  padding: 10px;
+  border: 1px solid #263746;
+  border-radius: 7px;
+  background: #0b1219;
+}
+
+.icon-set-import-panel > header {
+  align-self: center;
+  display: grid;
+  gap: 2px;
+}
+
+.icon-set-import-panel label {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  color: #9ed0ff;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.icon-set-import-panel input[type="file"],
+.icon-set-import-panel select {
+  min-width: 0;
+  height: 32px;
+  border: 1px solid #2a3a48;
+  border-radius: 5px;
+  background: #0b1219;
+  color: #f3f8ff;
+  padding: 5px 8px;
+  font: inherit;
+  text-transform: none;
+}
+
+.icon-set-import-panel input[type="file"].icon-set-file-input {
+  display: none;
+}
+
+.icon-set-file-control {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.icon-set-file-control small {
+  min-width: 0;
+  overflow: hidden;
+  color: #b7c9d8;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.icon-set-import-panel .checkbox-row {
+  grid-template-columns: minmax(0, auto) auto;
+  align-items: center;
+  justify-content: start;
+}
+
+.icon-set-import-panel .checkbox-row input {
+  width: 15px;
+  height: 15px;
+}
+
+.icon-set-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  overflow: hidden;
+}
+
+.icon-set-pane {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #253847;
+  border-radius: 7px;
+  background: #0b1219;
+}
+
+.icon-set-pane > header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #2c3f4f;
+}
+
+.icon-set-pane .combat-pane-title {
+  justify-self: center;
+  color: #eef7ff;
+  font-size: 13px;
+  font-weight: 950;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.icon-set-pane > input {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid #2a3a48;
+  border-radius: 5px;
+  background: #0b1219;
+  color: #f3f8ff;
+  padding: 5px 8px;
+  font: inherit;
+}
+
+.icon-set-scroll {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #22313f;
+  border-radius: 6px;
+  background: #081017;
+}
+
+.icon-set-row {
+  width: 100%;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  padding: 8px;
+  border: 0;
+  border-bottom: 1px solid #1d2a35;
+  background: transparent;
+  color: #dceeff;
+  text-align: left;
+}
+
+.icon-set-row.selected {
+  background: #10283d;
+  box-shadow: inset 3px 0 0 #2b8fd8;
+}
+
+.icon-set-row.overridden {
+  background: linear-gradient(90deg, rgba(47, 129, 83, 0.18), rgba(10, 16, 22, 0));
+}
+
+.icon-set-row > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.icon-set-row strong,
+.icon-set-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.override-badge,
+.icon-target-source-badge {
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px 6px;
+  border: 1px solid #2d7a4e;
+  border-radius: 999px;
+  color: #9af1be !important;
+  font-size: 9px !important;
+  font-weight: 900;
+}
+
+.icon-target-source-badge.scenario-override {
+  border-color: #2d7a4e;
+  color: #9af1be !important;
+}
+
+.icon-target-source-badge.scenario-resource {
+  border-color: #2b7fa7;
+  color: #a4ddff !important;
+}
+
+.icon-target-source-badge.default-art {
+  border-color: #8a6a1e;
+  color: #ffe18d !important;
+}
+
+.icon-target-source-badge.missing-art {
+  border-color: #7c3131;
+  color: #ffb6b6 !important;
+}
+
+.icon-pair-preview {
+  display: inline-grid;
+  grid-template-columns: repeat(2, 42px);
+  gap: 5px;
+  align-items: center;
+}
+
+.icon-pair-swatch {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #29465a;
+  border-radius: 5px;
+  background: #071018;
+  color: #dff3ff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.icon-pair-swatch img {
+  max-width: 40px;
+  max-height: 40px;
+  image-rendering: pixelated;
+}

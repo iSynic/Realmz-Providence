@@ -1,0 +1,58 @@
+
+@media (max-width: 1360px) {
+  .battle-board-workbench {
+    grid-template-columns: minmax(210px, 270px) minmax(390px, 1fr);
+  }
+
+  .battle-selection-card {
+    grid-column: 1 / -1;
+  }
+
+  .selected-battle-cell {
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr);
+    align-items: start;
+  }
+}
+
+@media (max-width: 1120px) {
+  .combat-record-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .combat-record-layout.battle-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .combat-record-list {
+    position: static;
+    grid-template-rows: auto auto minmax(180px, 260px);
+  }
+
+  .monster-source-lists {
+    grid-template-columns: 1fr;
+  }
+
+  .monster-source-lists .combat-record-list {
+    position: static;
+    grid-template-rows: auto auto minmax(180px, 260px);
+  }
+
+  .battle-editor > .combat-editor-header,
+  .battle-header-fields,
+  .monster-editor-identity-description-grid,
+  .monster-placement-card,
+  .battle-selection-card,
+  .monster-identity-section,
+  .scrapbook-description-summary,
+  .scrapbook-stat-attack-row {
+    grid-template-columns: 1fr;
+  }
+
+  .battle-board-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .selected-battle-cell {
+    grid-template-columns: 1fr;
+  }
+}

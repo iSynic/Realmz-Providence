@@ -1,0 +1,67 @@
+
+.scrapbook-editor {
+  max-width: 980px;
+}
+
+.combat-editor-actions,
+.placement-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.btn-icon {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+}
+
+.placement-mode-controls {
+  display: grid;
+  grid-template-columns: repeat(3, 124px);
+  justify-content: center;
+  gap: 6px;
+}
+
+.placement-mode-controls > .tutorial-tip {
+  display: block;
+  width: 100%;
+}
+
+.placement-controls > .tutorial-tip {
+  display: inline-flex;
+}
+
+.placement-mode-controls > .tutorial-tip > .combat-toggle,
+.placement-controls > .tutorial-tip > .combat-toggle {
+  width: 100%;
+}
+
+.placement-mode-controls .combat-toggle {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border-color: #2c333e;
+  border-radius: 5px;
+  background: #15191f;
+  color: #9ba7b4;
+  text-align: center;
+  font-size: 11px;
+}
+
+.placement-mode-controls .combat-toggle:hover:not(:disabled),
+.placement-mode-controls .combat-toggle.active {
+  border-color: #3c78b2;
+  background: #172d48;
+  color: #b9ddff;
+}
+
+.placement-mode-controls .combat-toggle svg {
+  width: 15px;
+  height: 15px;
+}

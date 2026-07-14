@@ -6,6 +6,14 @@
 @import "./editor/styles/encounters.css";
 @import "./editor/styles/rules.css";
 @import "./editor/styles/combat.css";
+@import "./editor/styles/combat-record-lists.css";
+@import "./editor/styles/combat-icon-sets.css";
+@import "./editor/styles/combat-reference-workflows.css";
+@import "./editor/styles/combat-monsters.css";
+@import "./editor/styles/combat-controls.css";
+@import "./editor/styles/combat-battles.css";
+@import "./editor/styles/combat-fields.css";
+@import "./editor/styles/combat-responsive.css";
 
 * {
   box-sizing: border-box;
