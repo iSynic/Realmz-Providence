@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readdir, readFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const EDITOR_ROOT = "src/editor";
@@ -162,6 +163,87 @@ async function collectProductionSources(directory) {
   return files;
 }
 
+function evaluateArtifactPolicy(artifactPaths, policy, packageScripts) {
+  const failures = [];
+  const claims = new Map();
+
+  function claim(output, owner) {
+    if (claims.has(output)) {
+      failures.push(`${output} is claimed by both ${claims.get(output)} and ${owner}`);
+      return;
+    }
+    claims.set(output, owner);
+  }
+
+  for (const family of policy.generatedFamilies ?? []) {
+    if (!family.name || !family.command || !Array.isArray(family.outputs) || family.outputs.length === 0) {
+      failures.push("Generated artifact family is missing name, command, or outputs");
+      continue;
+    }
+    if (!packageScripts[family.command]) {
+      failures.push(`${family.name} references missing package command npm run ${family.command}`);
+    }
+    for (const output of family.outputs) claim(output, `generated family ${family.name}`);
+  }
+
+  for (const output of policy.curatedEvidence ?? []) {
+    if (!output.startsWith("docs/generated/")) {
+      failures.push(`${output} is curated evidence outside docs/generated`);
+    }
+    claim(output, "curated evidence");
+  }
+
+  const artifacts = new Set(artifactPaths);
+  for (const artifact of artifacts) {
+    if (!claims.has(artifact)) failures.push(`${artifact} has no generated or curated artifact owner`);
+  }
+  for (const [output, owner] of claims) {
+    if (!artifacts.has(output)) failures.push(`${output} is claimed by ${owner} but does not exist`);
+  }
+  return failures;
+}
+
+async function checkArtifactGeneratorReferences(policy, packageScripts) {
+  const failures = [];
+  for (const family of policy.generatedFamilies ?? []) {
+    const commandSource = packageScripts[family.command];
+    if (!commandSource) continue;
+    let ownerSource = commandSource;
+    const scriptPaths = commandSource.match(/scripts[\\/][^\s"']+\.(?:js|mjs|ps1)/g) ?? [];
+    for (const scriptPath of scriptPaths) {
+      try {
+        ownerSource += `\n${await readFile(path.join(ROOT, scriptPath), "utf8")}`;
+      } catch (error) {
+        failures.push(`${family.name} cannot read generator ${scriptPath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    for (const output of family.outputs ?? []) {
+      const outputStem = path.basename(output).replace(/\.(?:json|md|ts)$/, "");
+      if (!ownerSource.includes(outputStem)) {
+        failures.push(`${family.name} command does not reference output ${output}`);
+      }
+    }
+  }
+  return failures;
+}
+
+async function checkGeneratedArtifactPolicy() {
+  const packageJson = JSON.parse(await readFile(path.join(ROOT, "package.json"), "utf8"));
+  const policy = JSON.parse(await readFile(path.join(ROOT, "docs/generated-artifact-policy.json"), "utf8"));
+  const artifactPaths = execFileSync("git", [
+    "ls-files",
+    "-z",
+    "--",
+    "docs/generated",
+    "src/editor/generated",
+    "src/editor/map/generatedSmartTerrainProfiles.ts"
+  ], { cwd: ROOT, encoding: "utf8" }).split("\0").filter(Boolean).sort();
+  return [
+    ...evaluateArtifactPolicy(artifactPaths, policy, packageJson.scripts ?? {}),
+    ...await checkArtifactGeneratorReferences(policy, packageJson.scripts ?? {})
+  ];
+}
+
 async function requireTokens(filePath, tokens) {
   const source = await readFile(path.join(ROOT, filePath), "utf8");
   return tokens
@@ -210,6 +292,7 @@ async function checkStableFacades() {
   ]));
   failures.push(...await requireTokens("docs/codebase-stabilization-baseline.md", [
     "Authoritative Architecture Contract",
+    "`docs/generated-artifact-policy.json`",
     "`src/editor/scenarioSeed.ts`",
     "`src/editor/projectCommands.ts`",
     "`src-tauri/src/realmz.rs`",
@@ -256,6 +339,19 @@ function runSelfTest() {
     "./types",
     "./x"
   ]);
+  assert.deepEqual(evaluateArtifactPolicy(
+    ["docs/generated/report.json", "docs/generated/evidence.json"],
+    {
+      generatedFamilies: [{ name: "Report", command: "archaeology:report", outputs: ["docs/generated/report.json"] }],
+      curatedEvidence: ["docs/generated/evidence.json"]
+    },
+    { "archaeology:report": "node scripts/report.mjs" }
+  ), []);
+  assert.match(evaluateArtifactPolicy(
+    ["docs/generated/unowned.json"],
+    { generatedFamilies: [], curatedEvidence: [] },
+    {}
+  )[0] ?? "", /no generated or curated artifact owner/);
   console.log("Architecture boundary self-test passed (forbidden imports are rejected)." );
 }
 
@@ -275,6 +371,7 @@ async function runArchitectureCheck() {
   }
 
   failures.push(...await checkStableFacades());
+  failures.push(...await checkGeneratedArtifactPolicy());
   if (failures.length > 0) {
     process.stderr.write("Architecture boundary check failed:\n");
     for (const failure of failures) process.stderr.write(`- ${failure}\n`);

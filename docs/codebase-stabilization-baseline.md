@@ -67,13 +67,15 @@ Facade behavior is characterized at the public entrypoint: `src/editor/scenarioS
 
 Generated output is source controlled when the application or validation gates consume it. Do not hand-edit generated evidence to make a check pass.
 
+`docs/generated-artifact-policy.json` is the exhaustive machine-readable registry for source-controlled files under `docs/generated`, `src/editor/generated`, and the generated smart-terrain profile. Every reproducible family names its `npm run` command. Evidence snapshots that were assembled from source archaeology rather than emitted by a current generator are listed separately as curated evidence; update those only with corresponding source/evidence citations. Ignored transient reports are outside the registry. `npm run check:architecture` fails on missing commands, commands that do not reference their claimed outputs, duplicate claims, missing outputs, or an unclassified tracked artifact.
+
 | Output | Generator | Required verification |
 | --- | --- | --- |
 | `src/editor/map/generatedSmartTerrainProfiles.ts` | `npm run archaeology:smart-terrain` | `npm run check:smart-terrain-profiles` |
 | `src/editor/generated/divinityOpcodeHelp.json` and the matching report | `npm run archaeology:divinity-opcodes` | `npm run check:ap-actions` |
 | `src/editor/generated/opcodeEdcdCrosswalk.json` and the matching report | `npm run archaeology:opcode-crosswalk` | `npm run check:ap-actions` and the relevant diagnostics report |
 | `src/editor/generated/scenarioCoverageManifest.json` and scenario coverage reports | `npm run archaeology:byte-coverage` | Review the generated diff, then run `npm run typecheck` and the relevant writer/coverage gate |
-| `docs/generated/*` | The named `archaeology:*` or report command that owns the artifact | Run that command's `--check` mode when available; otherwise review the complete generated diff |
+| Other reproducible `docs/generated/*` families | The command recorded in `docs/generated-artifact-policy.json` | Run that command's `--check` mode when available; otherwise review the complete generated diff |
 
 Despite its name, `src/editor/browser/generatedScenarioBaseline.ts` is executable browser export infrastructure, not a generated artifact. Changes to it require `npm run check:generated-scenario-baseline` and `npm run smoke:scenario-generation`.
 

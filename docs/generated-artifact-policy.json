@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "generatedFamilies": [
+    {
+      "name": "Scenario no-edit round-trip ledger",
+      "command": "archaeology:roundtrip-audit",
+      "outputs": [
+        "docs/generated/scenario-byte-roundtrip-ledger.json"
+      ]
+    },
+    {
+      "name": "Scenario byte coverage",
+      "command": "archaeology:byte-coverage",
+      "outputs": [
+        "docs/generated/core-record-writer-gates.json",
+        "docs/generated/encounter-shop-writer-gates.json",
+        "docs/generated/fixed-record-writer-gates.json",
+        "docs/generated/functional-authoring-readiness.json",
+        "docs/generated/maps-storage-writer-gates.json",
+        "docs/generated/runtime-cache-classification.json",
+        "docs/generated/scenario-byte-ownership.json",
+        "docs/generated/scenario-completeness-truth.json",
+        "docs/generated/scenario-file-inventory.json",
+        "docs/generated/scenario-startup-shell-gate.json",
+        "docs/generated/scenario-unknown-byte-report.json",
+        "src/editor/generated/scenarioCoverageManifest.json"
+      ]
+    },
+    {
+      "name": "Dungeon byte coverage",
+      "command": "archaeology:dungeon-coverage",
+      "outputs": [
+        "docs/generated/dungeon-byte-ownership.json",
+        "docs/generated/dungeon-cell-bit-taxonomy.json",
+        "docs/generated/dungeon-high-bit-audit.json",
+        "docs/generated/dungeon-primitive-writer-gate.json"
+      ]
+    },
+    {
+      "name": "Custom landlook coverage",
+      "command": "archaeology:custom-landlook-coverage",
+      "outputs": [
+        "docs/generated/custom-landlook-coverage.json"
+      ]
+    },
+    {
+      "name": "Rules coverage",
+      "command": "archaeology:rules-coverage",
+      "outputs": [
+        "docs/generated/rules-name-resource-packaging.json",
+        "docs/generated/rules-resource-coverage.json"
+      ]
+    },
+    {
+      "name": "Resource coverage",
+      "command": "archaeology:resource-coverage",
+      "outputs": [
+        "docs/generated/resource-byte-ownership.json",
+        "docs/generated/resource-fork-inventory.json",
+        "docs/generated/resource-payload-codec-backlog.json"
+      ]
+    },
+    {
+      "name": "Target compatibility",
+      "command": "archaeology:target-compatibility",
+      "outputs": [
+        "docs/generated/media-codec-boundary.json",
+        "docs/generated/package-contract-matrix.json",
+        "docs/generated/scenario-target-compatibility.json"
+      ]
+    },
+    {
+      "name": "Smart terrain corpus",
+      "command": "archaeology:smart-terrain",
+      "outputs": [
+        "docs/generated/map-tile-adjacency-audit.json",
+        "docs/generated/map-tile-adjacency-audit.md",
+        "docs/generated/smart-terrain-corpus-report.md",
+        "docs/generated/smart-terrain-corpus.json",
+        "docs/generated/smart-terrain-review.json",
+        "docs/generated/smart-terrain-review.md",
+        "src/editor/map/generatedSmartTerrainProfiles.ts"
+      ]
+    },
+    {
+      "name": "Divinity opcode help",
+      "command": "archaeology:divinity-opcodes",
+      "outputs": [
+        "docs/generated/divinity-opcode-help.json",
+        "src/editor/generated/divinityOpcodeHelp.json"
+      ]
+    },
+    {
+      "name": "Opcode EDCD crosswalk",
+      "command": "archaeology:opcode-crosswalk",
+      "outputs": [
+        "docs/generated/action-point-writer-gate.json",
+        "docs/generated/opcode-edcd-crosswalk.json",
+        "src/editor/generated/opcodeEdcdCrosswalk.json"
+      ]
+    },
+    {
+      "name": "AP opcode coverage",
+      "command": "archaeology:ap-opcode-coverage",
+      "outputs": [
+        "docs/generated/ap-opcode-coverage.json",
+        "docs/generated/ap-opcode-coverage.md"
+      ]
+    },
+    {
+      "name": "AP authoring gaps",
+      "command": "archaeology:ap-action-gaps",
+      "outputs": [
+        "docs/generated/ap-action-gaps.json",
+        "docs/generated/ap-action-gaps.md"
+      ]
+    },
+    {
+      "name": "Preserved-byte triage",
+      "command": "archaeology:preserved-byte-triage",
+      "outputs": [
+        "docs/generated/preserved-byte-triage.json",
+        "docs/generated/preserved-byte-triage.md"
+      ]
+    },
+    {
+      "name": "Timed encounter reserved fields",
+      "command": "archaeology:timed-encounter-fields",
+      "outputs": [
+        "docs/generated/timed-encounter-reserved-fields.json",
+        "docs/generated/timed-encounter-reserved-fields.md"
+      ]
+    },
+    {
+      "name": "Scenario context report",
+      "command": "archaeology:scenario-context",
+      "outputs": [
+        "docs/generated/scenario-context/castle-in-the-clouds/context-report.json",
+        "docs/generated/scenario-context/castle-in-the-clouds/context-report.md"
+      ]
+    },
+    {
+      "name": "PICT codec report",
+      "command": "archaeology:pict-codec",
+      "outputs": [
+        "docs/generated/pict-codec-report.md"
+      ]
+    }
+  ],
+  "curatedEvidence": [
+    "docs/generated/battle-record-evidence.json",
+    "docs/generated/core-rules-record-evidence.json",
+    "docs/generated/corpus-field-usage.json",
+    "docs/generated/coverage-matrix.json",
+    "docs/generated/custom-landlook-tail-patterns.json",
+    "docs/generated/divinity-editor-field-map.json",
+    "docs/generated/dungeon-bitfield-evidence.json",
+    "docs/generated/edcd-opcode-source-map.json",
+    "docs/generated/encounter-record-evidence.json",
+    "docs/generated/extra-ap-reachability-source-map.json",
+    "docs/generated/global-macro-evidence.json",
+    "docs/generated/item-treasure-shop-evidence.json",
+    "docs/generated/map-field-value-evidence.json",
+    "docs/generated/map-record-evidence.json",
+    "docs/generated/monster-description-set-evidence.json",
+    "docs/generated/monster-record-evidence.json",
+    "docs/generated/outdoor-visibility-evidence.json",
+    "docs/generated/random-level-evidence.json",
+    "docs/generated/resource-icon-evidence.json",
+    "docs/generated/rules-spell-race-caste-evidence.json",
+    "docs/generated/scenario-music-format-evidence.json",
+    "docs/generated/scenario-party-restrictions-evidence.json",
+    "docs/generated/scenario-shell-evidence.json",
+    "docs/generated/string-sound-audit.json",
+    "docs/generated/text-message-evidence.json",
+    "docs/generated/thief-timed-encounter-evidence.json",
+    "docs/generated/tile-attribute-evidence.json",
+    "docs/generated/unknown-data-backlog.json"
+  ]
+}
