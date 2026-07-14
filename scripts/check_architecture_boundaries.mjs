@@ -74,6 +74,14 @@ const OWNERSHIP_ROOTS = [
     roots: ["src/editor/browser"]
   }
 ];
+const APPROVED_OWNERSHIP_EDGES = new Set([
+  "combat-ui\0browser-runtime",
+  "combat-ui\0scripts-ui",
+  "scenario-seed\0browser-runtime",
+  "scenario-seed\0project-commands",
+  "suite-ui\0browser-runtime",
+  "suite-ui\0scripts-ui"
+]);
 const PROJECT_COMMAND_DEEP_IMPORT_ALLOWLIST = new Map([
   [
     "src/editor/scenarioSeed/coreRecordCompiler.ts",
@@ -161,6 +169,16 @@ function evaluateOwnershipCycles(edges) {
     if (!indexByOwner.has(owner)) visit(owner);
   }
   return cycles.map((cycle) => `ownership dependency cycle: ${cycle.join(" <-> ")}`);
+}
+
+function evaluateOwnershipEdges(edges, approvedEdges = APPROVED_OWNERSHIP_EDGES) {
+  return edges
+    .filter((edge) => !approvedEdges.has(edge))
+    .sort()
+    .map((edge) => {
+      const [source, target] = edge.split("\0");
+      return `unapproved ownership dependency: ${source} -> ${target}`;
+    });
 }
 
 function evaluateBoundary(sourcePath, targetPath) {
@@ -454,6 +472,12 @@ function runSelfTest() {
     ["scripts-ui", "project-commands"],
     ["project-commands", "scripts-ui"]
   ])[0] ?? "", /ownership dependency cycle/);
+  assert.deepEqual(evaluateOwnershipEdges(["scripts-ui\0project-commands"], new Set([
+    "scripts-ui\0project-commands"
+  ])), []);
+  assert.match(evaluateOwnershipEdges([
+    "maps-ui\0combat-ui"
+  ], new Set())[0] ?? "", /unapproved ownership dependency/);
   console.log("Architecture boundary self-test passed (boundary, ownership-cycle, and artifact violations are rejected)." );
 }
 
@@ -461,6 +485,7 @@ async function runArchitectureCheck() {
   const files = await collectProductionSources(path.join(ROOT, EDITOR_ROOT));
   const failures = [];
   const ownershipEdges = new Set();
+  const ownershipEdgeSources = new Map();
   let relativeImports = 0;
 
   for (const sourcePath of files) {
@@ -473,11 +498,15 @@ async function runArchitectureCheck() {
       const sourceOwner = ownerForPath(sourcePath);
       const targetOwner = ownerForPath(targetPath);
       if (sourceOwner && targetOwner && sourceOwner !== targetOwner) {
-        ownershipEdges.add(`${sourceOwner}\0${targetOwner}`);
+        const edge = `${sourceOwner}\0${targetOwner}`;
+        ownershipEdges.add(edge);
+        if (!ownershipEdgeSources.has(edge)) ownershipEdgeSources.set(edge, new Set());
+        ownershipEdgeSources.get(edge).add(`${sourcePath} -> ${targetPath}`);
       }
     }
   }
 
+  failures.push(...evaluateOwnershipEdges([...ownershipEdges]));
   failures.push(...evaluateOwnershipCycles([...ownershipEdges].map((edge) => edge.split("\0"))));
   failures.push(...await checkStableFacades());
   failures.push(...await checkGeneratedArtifactPolicy());
@@ -489,6 +518,16 @@ async function runArchitectureCheck() {
   }
 
   console.log(`Architecture boundary check passed (${files.length} production modules, ${relativeImports} relative imports, ${ownershipEdges.size} ownership edges).`);
+  if (process.argv.includes("--report")) {
+    console.log("Ownership edges:");
+    for (const edge of [...ownershipEdges].sort()) {
+      const [source, target] = edge.split("\0");
+      console.log(`- ${source} -> ${target}`);
+      for (const sourceImport of [...(ownershipEdgeSources.get(edge) ?? [])].sort()) {
+        console.log(`  ${sourceImport}`);
+      }
+    }
+  }
 }
 
 if (process.argv.includes("--self-test")) runSelfTest();

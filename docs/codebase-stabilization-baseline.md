@@ -59,7 +59,16 @@ Extraction work must preserve these entrypoints unless an issue explicitly appro
 
 `npm run check:architecture` enforces the practical dependency rules, rejects cycles between the documented UI/compiler/mutation/browser owners, and verifies the presence of these facades. It intentionally does not ban every module-level cycle or existing cross-layer import: broad layering rules would create busywork and hide the boundaries that protect compiler, storage, export, and feature ownership.
 
-The checker records narrow exceptions rather than directory-wide exemptions. Current exceptions are Combat's read-only use of the Scripts action catalog; scenario generation's use of browser-hosted default-project validation and reference landlook/atlas metadata; and `coreRecordCompiler.ts` reuse of pure target-record/rules command helpers. New imports across those boundaries fail unless ownership is deliberately revised here and in the checker.
+The checker records narrow exceptions rather than directory-wide exemptions. New ownership edges fail unless ownership is deliberately revised here and in the checker. `npm run check:architecture:report` lists every approved edge and the concrete imports that create it.
+
+| Approved edge | Purpose |
+| --- | --- |
+| Combat -> Browser runtime | Read-only resource data, atlas URLs, and preview decoding |
+| Combat -> Scripts | Read-only Action Point opcode catalog for battle result authoring |
+| Scenario generation -> Browser runtime | Existing default-project validation and bundled landlook/atlas metadata bridge |
+| Scenario generation -> Project commands | Pure target-record and rule helper reuse in `coreRecordCompiler.ts` |
+| Suite -> Browser runtime | Read-only bundled-library previews |
+| Suite -> Scripts | Shared `TargetRecordEditor` composition used by the suite target-record workbench |
 
 Facade behavior is characterized at the public entrypoint: `src/editor/scenarioSeed.test.ts` covers parsing and compilation through `scenarioSeed.ts`; `src/editor/projectCommands.test.ts` covers immutable command application and history metadata; Rust record-family round trips exercise the `realmz.rs` reexports; and browser/desktop package parity has dedicated package checks. The architecture checker additionally fails if those public symbols disappear.
 
