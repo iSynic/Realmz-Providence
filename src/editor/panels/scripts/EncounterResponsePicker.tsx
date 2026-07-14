@@ -1,17 +1,16 @@
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import {
-  filterItemReferenceOptions,
-  itemCategoryBadge,
   itemOptionDisplayName,
-  itemReferenceDetail
+  itemReferenceDetail,
+  type ItemReferenceOption
 } from "../../itemReferences";
 import type { LibraryCatalog, Project } from "../../types";
-import { EmptyState, FloatingWorkbenchPanel, SearchField } from "../../ui";
+import { FloatingWorkbenchPanel, ReferencePicker, type ReferencePickerOption } from "../../ui";
 import {
   deduplicatedItemResponseOptions,
-  filterSpellResponseOptions,
-  spellReferenceOptions
+  spellReferenceOptions,
+  type SpellResponseOption
 } from "./encounterResponseOptions";
 
 export const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
@@ -73,25 +72,18 @@ export function ComplexEncounterResponsePickerPanel({
   const [query, setQuery] = useState("");
   const spellOptions = useMemo(() => spellReferenceOptions(project, catalog), [catalog, project]);
   const itemOptions = useMemo(() => deduplicatedItemResponseOptions(project, catalog), [catalog, project]);
-  const normalizedQuery = query.trim();
   const selectedSpell = kind === "magic" ? spellOptions.find((option) => option.value === value) ?? null : null;
   const selectedItem = kind === "item" ? itemOptions.find((option) => option.value === value) ?? null : null;
-  const filteredSpells = useMemo(() => {
-    if (kind !== "magic") return [];
-    return filterSpellResponseOptions(spellOptions, normalizedQuery);
-  }, [kind, normalizedQuery, spellOptions]);
-  const filteredItems = useMemo(() => {
-    if (kind !== "item") return [];
-    return normalizedQuery ? filterItemReferenceOptions(itemOptions, normalizedQuery) : itemOptions;
-  }, [itemOptions, kind, normalizedQuery]);
-  const visibleSpells = filteredSpells.slice(0, 100);
-  const visibleItems = filteredItems.slice(0, 100);
-  const totalMatches = kind === "magic" ? filteredSpells.length : filteredItems.length;
+  const referenceOptions = useMemo(
+    () => encounterResponseReferenceOptions(kind, spellOptions, itemOptions),
+    [itemOptions, kind, spellOptions]
+  );
+  const isEmpty = value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID);
   const selectedLabel = kind === "magic"
-    ? selectedSpell?.label ?? (value === 0 || value === MAGIC_RESPONSE_BLANK_SPELL_ID ? "No spell or scroll selected" : `Unknown spell/scroll ${value}`)
+    ? selectedSpell?.label ?? (isEmpty ? "No spell or scroll selected" : `Unknown spell/scroll ${value}`)
     : selectedItem ? itemOptionDisplayName(selectedItem) : value === 0 ? "No item selected" : `Item ${value}`;
   const selectedDetail = kind === "magic"
-    ? selectedSpell?.detail ?? (value === 0 || value === MAGIC_RESPONSE_BLANK_SPELL_ID ? "This response does not test a spell or scroll." : `Imported spell/scroll ID ${value}`)
+    ? selectedSpell?.detail ?? (isEmpty ? "This response does not test a spell or scroll." : `Imported spell/scroll ID ${value}`)
     : selectedItem
       ? [selectedItem.detail, selectedItem.sourceState].filter(Boolean).join(" | ")
       : itemReferenceDetail(project, value, catalog);
@@ -119,57 +111,62 @@ export function ComplexEncounterResponsePickerPanel({
       )}
     >
       <div className="complex-encounter-response-picker-body">
-        <section className={`complex-encounter-response-current${value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID) ? " is-empty" : ""}`}>
-          <span>Current Selection</span>
-          <strong>{selectedLabel}</strong>
-          <small>{selectedDetail}</small>
-        </section>
-        <SearchField
-          className="complex-encounter-response-search"
+        <ReferencePicker
+          className="complex-encounter-response-reference-picker"
           label={kind === "magic" ? "Search spells, scrolls, and spell classes" : "Search items"}
-          value={query}
-          onChange={setQuery}
           placeholder={kind === "magic" ? "Search spell, class, or ID..." : "Search item name, category, or ID..."}
           ariaLabel={`Search ${responseLabel.toLowerCase()} options`}
-          resultCount={totalMatches}
-          resultNoun="match"
-          resultNounPlural="matches"
-          status={totalMatches > 100 ? "Showing the first 100. Refine the search to narrow the list." : undefined}
+          query={query}
+          onQueryChange={setQuery}
+          options={referenceOptions}
+          value={isEmpty ? 0 : value}
+          onSelect={(option) => {
+            onChange(option.value);
+            setQuery("");
+          }}
+          current={{
+            label: selectedLabel,
+            detail: selectedDetail,
+            state: isEmpty ? "empty" : selectedSpell || selectedItem ? "resolved" : "unresolved"
+          }}
+          resultNoun="option"
+          resultNounPlural="options"
+          emptyTitle="No matches"
+          emptyBody="Try a name, category, or numeric ID from the response list."
         />
-        <div className="complex-encounter-response-picker-results">
-          <button
-            type="button"
-            className={value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID) ? "selected" : ""}
-            onClick={() => onChange(0)}
-          >
-            <b>-</b>
-            <span>
-              <strong>{kind === "magic" ? "No spell or scroll" : "No item"}</strong>
-              <small>Do not require this response target.</small>
-            </span>
-          </button>
-          {kind === "magic" ? visibleSpells.map((option) => (
-            <button key={option.key} type="button" className={option.value === value ? "selected" : ""} onClick={() => onChange(option.value)}>
-              <b>{option.value}</b>
-              <span>
-                <strong>{option.label}</strong>
-                <small>{option.detail}</small>
-              </span>
-            </button>
-          )) : visibleItems.map((option) => (
-            <button key={option.key} type="button" className={option.value === value ? "selected" : ""} onClick={() => onChange(option.value)}>
-              <b>{itemCategoryBadge(option.category)}</b>
-              <span>
-                <strong>{itemOptionDisplayName(option)} <em>#{option.value}</em></strong>
-                <small>{[option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available."}</small>
-              </span>
-            </button>
-          ))}
-          {totalMatches === 0 && <EmptyState compact title="No matches" body="Try a name, category, or numeric ID from the response list." />}
-        </div>
       </div>
     </FloatingWorkbenchPanel>
   );
+}
+
+export function encounterResponseReferenceOptions(
+  kind: "magic" | "item",
+  spellOptions: SpellResponseOption[],
+  itemOptions: ItemReferenceOption[]
+): ReferencePickerOption<number>[] {
+  const emptyOption: ReferencePickerOption<number> = {
+    key: `${kind}:none`,
+    value: 0,
+    label: kind === "magic" ? "No spell or scroll" : "No item",
+    detail: "Do not require this response target.",
+    searchText: "none empty clear"
+  };
+  if (kind === "magic") {
+    return [emptyOption, ...spellOptions.map((option) => ({
+      key: option.key,
+      value: option.value,
+      label: option.label,
+      detail: option.detail,
+      searchText: `${option.value} ${option.label} ${option.detail}`
+    }))];
+  }
+  return [emptyOption, ...itemOptions.map((option) => ({
+    key: option.key,
+    value: option.value,
+    label: `${itemOptionDisplayName(option)} #${option.value}`,
+    detail: [option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available.",
+    searchText: `${option.value} ${option.label} ${option.category} ${option.detail} ${option.sourceState}`
+  }))];
 }
 
 export function SpellResponseField({

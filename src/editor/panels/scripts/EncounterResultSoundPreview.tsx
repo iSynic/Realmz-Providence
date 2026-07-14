@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Volume2 } from "lucide-react";
 import {
-  filterTargetOptions,
   soundReferenceOptionForQuery,
   targetOptionForOpcodeValue,
   targetOptionsForOpcode,
@@ -9,7 +7,7 @@ import {
 } from "../../components/RealmzTargetPicker";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project } from "../../types";
-import { FloatingWorkbenchPanel } from "../../ui";
+import { FloatingWorkbenchPanel, ReferencePicker, ReferencePreview, type ReferencePickerOption } from "../../ui";
 
 export function EncounterResultSoundPreview({
   project,
@@ -26,27 +24,19 @@ export function EncounterResultSoundPreview({
   const [query, setQuery] = useState("");
   const [selectedSoundId, setSelectedSoundId] = useState(0);
   const typedSoundOption = useMemo(() => soundReferenceOptionForQuery(9, query), [query]);
-  const filteredOptions = useMemo(() => {
-    const matches = filterTargetOptions(options, query);
-    if (typedSoundOption && !matches.some((option) => Math.abs(option.value) === Math.abs(typedSoundOption.value))) {
-      return [typedSoundOption, ...matches];
-    }
-    return matches;
-  }, [options, query, typedSoundOption]);
+  const effectiveOptions = useMemo(() => withTypedSoundOption(options, typedSoundOption), [options, typedSoundOption]);
+  const referenceOptions = useMemo(() => soundPreviewReferenceOptions(effectiveOptions), [effectiveOptions]);
   const selectedOption = useMemo(
     () => targetOptionForOpcodeValue(project, 9, selectedSoundId, catalog),
     [catalog, project, selectedSoundId]
   );
-  const visibleOptions = selectedOption && !filteredOptions.some((option) => option.key === selectedOption.key)
-    ? [selectedOption, ...filteredOptions.slice(0, 159)]
-    : filteredOptions.slice(0, 160);
   const selectedPreviewUrl = useEncounterSoundPreviewUrl(selectedOption, selectedSoundId, project, previewContext);
 
   useEffect(() => {
-    if (selectedSoundId !== 0 || visibleOptions.length === 0) return;
-    const previewable = visibleOptions.find((option) => option.previewPath || option.managedAsset?.previewPath || option.libraryAsset?.previewPath);
-    setSelectedSoundId(previewable?.value ?? visibleOptions[0].value);
-  }, [selectedSoundId, visibleOptions]);
+    if (selectedSoundId !== 0 || options.length === 0) return;
+    const previewable = options.find((option) => option.previewPath || option.managedAsset?.previewPath || option.libraryAsset?.previewPath);
+    setSelectedSoundId(Math.abs(previewable?.value ?? options[0].value));
+  }, [options, selectedSoundId]);
 
   const selectedDetail = selectedOption
     ? [selectedOption.detail, selectedOption.summary, selectedOption.compatibility, selectedOption.sourceState].filter(Boolean).join(" | ")
@@ -71,55 +61,61 @@ export function EncounterResultSoundPreview({
       )}
     >
       <div className="encounter-sound-preview-body">
-        <label className="encounter-sound-preview-picker">
-          <span>Sound</span>
-          <input
-            type="search"
-            value={query}
-            placeholder="Search sounds or type snd 624..."
-            onChange={(event) => setQuery(event.currentTarget.value)}
-          />
-          <select
-            value={selectedSoundId ? String(Math.abs(selectedSoundId)) : ""}
-            onChange={(event) => setSelectedSoundId(Number(event.currentTarget.value))}
-          >
-            <option value="">Choose sound...</option>
-            {visibleOptions.map((option) => (
-              <option key={option.key} value={Math.abs(option.value)}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <section className="encounter-sound-preview-card">
-          <header>
-            <Volume2 size={16} />
-            <div>
-              <strong>{selectedOption?.label ?? (selectedSoundId ? `Sound ${Math.abs(selectedSoundId)}` : "No Sound Selected")}</strong>
-              <small>{selectedDetail}</small>
-            </div>
-          </header>
-          <div className="encounter-sound-preview-actions">
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              disabled={!selectedPreviewUrl}
-              title={selectedPreviewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
-              onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
-            >
-              <Volume2 size={13} /> Play
-            </button>
-            {!selectedPreviewUrl && (
-              <span>No playable preview is available. Reference-only sounds can still be used with the Play Sound code.</span>
-            )}
-          </div>
-        </section>
-        {filteredOptions.length > visibleOptions.length && (
-          <small className="target-picker-empty">{filteredOptions.length - visibleOptions.length} more sound(s); search to narrow.</small>
-        )}
+        <ReferencePicker
+          className="encounter-sound-reference-picker"
+          label="Sound"
+          ariaLabel="Search sound preview options"
+          placeholder="Search sounds or type snd 624..."
+          query={query}
+          onQueryChange={setQuery}
+          options={referenceOptions}
+          value={selectedSoundId}
+          onSelect={(option) => {
+            setSelectedSoundId(Math.abs(option.value));
+            setQuery("");
+          }}
+          current={{
+            label: selectedOption?.label ?? (selectedSoundId ? `Sound ${Math.abs(selectedSoundId)}` : "No Sound Selected"),
+            detail: selectedDetail,
+            state: selectedOption ? "resolved" : selectedSoundId ? "unresolved" : "empty"
+          }}
+          resultNoun="sound"
+          resultNounPlural="sounds"
+          emptyTitle="No matching sounds"
+          emptyBody="Try a sound name, numeric ID, or snd resource reference."
+        />
+        <ReferencePreview preview={{
+          key: selectedOption?.key ?? `sound:${selectedSoundId}`,
+          kind: "audio",
+          title: selectedOption?.label ?? (selectedSoundId ? `Sound ${Math.abs(selectedSoundId)}` : "No Sound Selected"),
+          detail: selectedDetail,
+          src: selectedPreviewUrl,
+          onPlay: selectedPreviewUrl ? () => playPreviewUrl(selectedPreviewUrl) : undefined,
+          state: selectedPreviewUrl ? "resolved" : "unavailable"
+        }} />
       </div>
     </FloatingWorkbenchPanel>
   );
+}
+
+export function withTypedSoundOption(
+  options: ScriptTargetOption[],
+  typedSoundOption: ScriptTargetOption | null
+) {
+  if (typedSoundOption && !options.some((option) => Math.abs(option.value) === Math.abs(typedSoundOption.value))) {
+    return [typedSoundOption, ...options];
+  }
+  return options;
+}
+
+export function soundPreviewReferenceOptions(options: ScriptTargetOption[]): ReferencePickerOption<number>[] {
+  return options.map((option) => ({
+    key: option.key,
+    value: option.value,
+    label: option.label,
+    detail: [option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | "),
+    searchText: [option.value, option.label, option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" ")
+  }));
 }
 
 export function useEncounterSoundPreviewUrl(

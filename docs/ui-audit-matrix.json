@@ -31,6 +31,17 @@
 
     { "key": "encounters.simple", "domain": "encounters", "editor": "simple", "label": "Simple Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "encounters.complex", "domain": "encounters", "editor": "complex", "label": "Complex Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "encounters", "states": [
+      { "id": "item-response-filtered", "steps": [
+        { "action": "click", "selector": ".complex-encounter-item-panel .encounter-action-preview" },
+        { "action": "wait", "selector": ".complex-encounter-response-picker-panel .workbench-reference-picker" },
+        { "action": "fill", "selector": ".complex-encounter-response-picker-panel .workbench-search-field input[type=\"search\"]", "value": "1" },
+        { "action": "wait", "selector": ".complex-encounter-response-picker-panel .workbench-reference-results [role=\"option\"]" }
+      ] },
+      { "id": "sound-preview-open", "steps": [
+        { "action": "click", "selector": ".simple-encounter-action-matrix .encounter-result-tools .encounter-code-helper-button:first-child" },
+        { "action": "wait", "selector": ".encounter-sound-preview-panel .workbench-reference-picker" },
+        { "action": "wait", "selector": ".encounter-sound-preview-panel .workbench-reference-preview" }
+      ] },
       { "id": "result-target-open", "steps": [
         { "action": "click", "selector": ".simple-encounter-action-matrix .encounter-action-preview" },
         { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-picker" }

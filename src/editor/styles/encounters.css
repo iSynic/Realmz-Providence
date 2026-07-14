@@ -900,118 +900,19 @@
 
 .complex-encounter-response-picker-body {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 10px;
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
 }
 
-.complex-encounter-response-current {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  border: 1px solid #31566d;
-  border-radius: 6px;
-  background: #0d1c27;
-  padding: 9px;
-}
-
-.complex-encounter-response-current.is-empty {
-  border-color: #3a4650;
-  background: #101820;
-}
-
-.complex-encounter-response-current > span {
-  color: #89a8bd;
-  font-size: 8px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.complex-encounter-response-current strong {
-  color: #e3f2ff;
-  font-size: 12px;
-}
-
-.complex-encounter-response-current small {
-  color: #9eb2c2;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-.complex-encounter-response-picker-results {
-  display: grid;
-  align-content: start;
-  gap: 4px;
+.complex-encounter-response-reference-picker {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
   min-height: 0;
-  overflow: auto;
-  padding-right: 3px;
 }
 
-.complex-encounter-response-picker-results > button {
-  display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
-  border: 1px solid #293e4d;
-  border-radius: 5px;
-  background: #0c161f;
-  padding: 7px;
-  color: #cde1f0;
-  text-align: left;
-  cursor: pointer;
-}
-
-.complex-encounter-response-picker-results > button:hover {
-  border-color: #4f85a7;
-  background: #102536;
-}
-
-.complex-encounter-response-picker-results > button.selected {
-  border-color: #57a9da;
-  background: #123148;
-}
-
-.complex-encounter-response-picker-results > button > b {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 30px;
-  border: 1px solid #31536a;
-  border-radius: 4px;
-  background: #0a1219;
-  color: #aedaef;
-  font-size: 9px;
-}
-
-.complex-encounter-response-picker-results > button > span {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-.complex-encounter-response-picker-results strong {
-  overflow: hidden;
-  color: #e1f0fb;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.complex-encounter-response-picker-results strong em {
-  color: #7f9cb0;
-  font-size: 9px;
-  font-style: normal;
-}
-
-.complex-encounter-response-picker-results small {
-  overflow: hidden;
-  color: #91a7b7;
-  font-size: 9px;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.complex-encounter-response-reference-picker .workbench-reference-results {
+  max-height: none;
 }
 
 .encounter-result-number-field input {
@@ -1806,73 +1707,8 @@
   min-width: 0;
 }
 
-.encounter-sound-preview-picker {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-}
-
-.encounter-sound-preview-picker span {
-  color: #7db7e8;
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.encounter-sound-preview-picker input,
-.encounter-sound-preview-picker select {
-  width: 100%;
-  min-width: 0;
-}
-
-.encounter-sound-preview-card {
-  display: grid;
-  gap: 10px;
-  border: 1px solid #273847;
-  border-radius: 6px;
-  background: #0e1821;
-  padding: 10px;
-}
-
-.encounter-sound-preview-card > header {
-  display: flex;
-  gap: 8px;
-  align-items: start;
-  min-width: 0;
-}
-
-.encounter-sound-preview-card > header svg {
-  flex: 0 0 auto;
-  color: #9fc8e8;
-}
-
-.encounter-sound-preview-card > header div {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-.encounter-sound-preview-card > header strong {
-  color: #f1f8ff;
-  font-size: 13px;
-}
-
-.encounter-sound-preview-card > header small {
-  color: #8fa6b8;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-.encounter-sound-preview-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.encounter-sound-preview-actions span {
-  color: #91a4b5;
-  font-size: 10px;
+.encounter-sound-reference-picker .workbench-reference-results {
+  max-height: min(180px, 24vh);
 }
 
 .encounter-result-target-preview-panel .workbench-floating-panel-body {
