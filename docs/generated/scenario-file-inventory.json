@@ -3,7 +3,7 @@
   "generatedAt": "2026-05-31T14:25:12.921Z",
   "sources": {
     "roundtripLedger": "docs/generated/scenario-byte-roundtrip-ledger.json",
-    "rustRegistry": "src-tauri/src/realmz.rs",
+    "rustRegistry": "src-tauri/src/realmz/assembly.rs",
     "runtimeCaches": "docs/generated/runtime-cache-classification.json",
     "resourceCoverage": "docs/generated/resource-byte-ownership.json",
     "customLandlookCoverage": "docs/generated/custom-landlook-coverage.json",

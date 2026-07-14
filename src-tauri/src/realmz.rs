@@ -1,5 +1,3 @@
-use crate::project::*;
-
 mod action_points;
 mod assembly;
 mod asset_catalog;
@@ -64,11 +62,12 @@ pub use text_records::{
 };
 
 pub use record_bytes::{i16_be, write_i16_be};
-use record_bytes::{i32_be, provenance};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::project::*;
+    use crate::realmz::record_bytes::{i32_be, provenance};
 
     #[test]
     fn target_records_round_trip_full_records() {

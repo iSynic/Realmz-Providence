@@ -8,7 +8,10 @@
     "mapEvidence": "docs/generated/map-field-value-evidence.json",
     "actionPointEvidence": "docs/generated/extra-ap-reachability-source-map.json",
     "corpusUsage": "docs/generated/corpus-field-usage.json",
-    "mapStorageWriters": "src-tauri/src/realmz.rs"
+    "mapStorageWriters": [
+      "src-tauri/src/realmz/maps.rs",
+      "src-tauri/src/realmz/action_points.rs"
+    ]
   },
   "policy": {
     "note": "This registry gates map storage containers only. Data DL dungeon tile bitfields remain governed by dungeon-byte-ownership and dungeon-primitive-writer-gate.",

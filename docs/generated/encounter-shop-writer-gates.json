@@ -8,7 +8,10 @@
     "encounterEvidence": "docs/generated/encounter-record-evidence.json",
     "itemShopEvidence": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
     "thiefEvidence": "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
-    "encounterShopWriters": "src-tauri/src/realmz.rs"
+    "encounterShopWriters": [
+      "src-tauri/src/realmz/encounters.rs",
+      "src-tauri/src/realmz/economy.rs"
+    ]
   },
   "policy": {
     "note": "This registry gates simple/complex encounter, shop, and thief encounter storage only. Timed encounters remain governed by fixed-record-writer-gates.",

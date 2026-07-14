@@ -8,7 +8,11 @@
     "monsterEvidence": "docs/generated/monster-record-evidence.json",
     "mapRecordEvidence": "docs/generated/map-record-evidence.json",
     "itemEvidence": "docs/generated/core-rules-record-evidence.json",
-    "coreRecordWriters": "src-tauri/src/realmz.rs"
+    "coreRecordWriters": [
+      "src-tauri/src/realmz/combat.rs",
+      "src-tauri/src/realmz/maps.rs",
+      "src-tauri/src/realmz/economy.rs"
+    ]
   },
   "policy": {
     "note": "This registry gates the final core gameplay record storage families. It proves fixed-record storage writability only and does not expose new normal editor controls.",

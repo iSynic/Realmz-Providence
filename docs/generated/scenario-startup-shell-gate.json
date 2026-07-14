@@ -6,7 +6,7 @@
   "sources": {
     "byteCoverage": "docs/generated/scenario-byte-ownership.json",
     "scenarioShellEvidence": "docs/generated/scenario-shell-evidence.json",
-    "shellCodec": "src-tauri/src/realmz.rs"
+    "shellCodec": "src-tauri/src/realmz/scenario.rs"
   },
   "policy": {
     "note": "Scenario-named 316/320 byte supported-binary files are reported as one logical startup shell container. Data CS remains its own preserved security-backup container.",

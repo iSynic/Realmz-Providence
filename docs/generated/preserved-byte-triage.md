@@ -157,7 +157,7 @@ Targets: 7
 - evidence:
   - docs/generated/scenario-startup-shell-gate.json
   - docs/format-evidence-cards/scenario-shell-startup-release.md
-  - src-tauri/src/realmz.rs startup shell tests
+  - src-tauri/src/realmz/scenario.rs startup shell tests
 
 ### data-cs-security-backup
 

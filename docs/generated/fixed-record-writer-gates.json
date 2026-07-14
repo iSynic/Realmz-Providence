@@ -6,7 +6,14 @@
   "sources": {
     "byteCoverage": "docs/generated/scenario-byte-ownership.json",
     "fixtureRoundtrip": "src-tauri/tests/fixture_roundtrip.rs",
-    "fixedRecordWriters": "src-tauri/src/realmz.rs"
+    "fixedRecordWriters": [
+      "src-tauri/src/realmz/text_records.rs",
+      "src-tauri/src/realmz/combat.rs",
+      "src-tauri/src/realmz/economy.rs",
+      "src-tauri/src/realmz/encounters.rs",
+      "src-tauri/src/realmz/rules.rs",
+      "src-tauri/src/realmz/scenario.rs"
+    ]
   },
   "policy": {
     "note": "This registry gates only the Core Fixed-Record Writer-Gate Batch. Startup shell files and map, encounter, monster-template, and shop families are intentionally excluded.",
