@@ -185,10 +185,10 @@ const FIXTURE_GATES = {
       "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:data_solids_round_trip_from_tile_attributes",
-      "src-tauri/src/realmz.rs:data_solids_mutates_only_selected_special_tile_solidity",
-      "src-tauri/src/realmz.rs:write_tile_solids",
-      "src-tauri/src/realmz.rs:parse_tile_attributes",
+      "src-tauri/src/realmz/landlooks.rs:data_solids_round_trip_from_tile_attributes",
+      "src-tauri/src/realmz/landlooks.rs:data_solids_mutates_only_selected_special_tile_solidity",
+      "src-tauri/src/realmz/landlooks.rs:write_tile_solids",
+      "src-tauri/src/realmz/landlooks.rs:parse_tile_attributes",
       "docs/format-evidence-cards/map-tile-runtime-anchors.md",
       "docs/format-evidence-cards/map-tile-intelligence.md"
     ]
