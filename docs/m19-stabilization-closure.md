@@ -99,22 +99,27 @@ The run started from clean commit `8b4bd72`.
 - Vite retained its existing warning for chunks larger than 500 kB. No build or architecture gate treats that warning as a failure.
 - `git status --short` remained empty after the initial automated runs, including tracked generated evidence and source-generated artifacts. The later closure hardening diff is intentionally limited to browser-project normalization, smoke-harness contract corrections, and this report.
 
-## Known Baseline Caveats
+## Resolved Fixture Caveats
 
-The full closure run reproduced the three previously documented full-Rust fixture expectations, with no additional Rust failure:
+The three fixture expectations recorded during the original closure run were
+resolved in the follow-up queue:
 
-- `imports_core_fixture_scenarios`: the replacement City of Bywater `Data BD` remains 88,576 bytes while the generated corpus records 88,922 bytes, followed by the missing tile-atlas expectation.
-- `windows_export_promotes_macosx_scenario_resource_fork`: exported `Scenario.rsrc` does not satisfy the existing `STR# Map Names` expectation.
-- `authored_scrolling_text_exports_same_id_text_and_style_resources`: the fixture expects exported `TEXT -200`.
+- ISY-326 reconciled Windows `Scenario.rsrc` map-name promotion.
+- ISY-327 expanded authored same-ID `TEXT`/`styl` export coverage.
+- ISY-328 adopted the reverted City of Bywater package and regenerated its
+  canonical corpus entry.
 
-These remain separate from demonstrated M19 extraction behavior, but ISY-323 cannot claim a fully green `npm run check` until they are reconciled or the fixture expectations are deliberately refreshed from accepted source evidence. The audit must not silently relabel an existing fixture discrepancy as an extraction regression or waive a new failure as pre-existing.
+On 2026-07-14 the complete fixture round-trip suite passed (`26 passed`,
+`1 ignored`) against the canonical corpus, including byte-identical no-edit
+exports and all target package contracts.
 
 ## Residual-Risk Queue
 
 - **ISY-324** stabilizes imported-heavy Combat timing while icon previews and semantic mapping are active. It is related to the completed ISY-273 work and does not relax existing budgets.
-- **ISY-325** reconciles the accepted City of Bywater source copy, generated corpus metadata, and tile-atlas expectation.
-- **ISY-326** resolves the Windows `Scenario.rsrc` `STR# Map Names` promotion expectation.
-- **ISY-327** resolves authored same-ID `TEXT`/`styl` export fixture coverage.
+- **ISY-325 through ISY-328 (completed)** stabilized the City of Bywater
+  compatibility fixture, fixed Windows `Scenario.rsrc` map-name promotion,
+  expanded scrolling-text export coverage, and then adopted the reverted City
+  of Bywater package as the canonical corpus baseline.
 
 These issues are deliberately outside M19 extraction scope. They retain exact failing tests and evidence requirements so feature work can resume without losing the risks after M19 closes.
 

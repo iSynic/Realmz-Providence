@@ -121,7 +121,12 @@ The Rust library suite passes (`136 passed`, `1 ignored`). The full `npm run tes
 - `windows_export_promotes_macosx_scenario_resource_fork`: exported `Scenario.rsrc` does not satisfy the existing `STR# Map Names` expectation.
 - `authored_scrolling_text_exports_same_id_text_and_style_resources`: the fixture expects exported `TEXT -200`.
 
-M19 changes must keep the library suite green and must not add fixture failures. These three expectations should be reconciled in dedicated fixture/corpus work before making the full Rust command a hard M19 closure gate.
+M19 changes must keep the library suite green and must not add fixture failures.
+The three expectations above were subsequently reconciled by ISY-326,
+ISY-327, and ISY-328. On 2026-07-14 the complete fixture round-trip suite
+passed against the accepted reverted City of Bywater package (`26 passed`,
+`1 ignored`), including byte-identical no-edit export and all target package
+contracts.
 
 ## Guardrail Commands
 

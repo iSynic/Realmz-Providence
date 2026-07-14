@@ -33,13 +33,8 @@ fn fixture_path(name: &str) -> Option<std::path::PathBuf> {
         }
     }
 
-    [
-        "F:/Realmz/corpus-fixtures",
-        "F:/Realmz/base/Realmz/Scenarios",
-    ]
-    .into_iter()
-    .map(|root| Path::new(root).join(name))
-    .find(|path| path.is_dir())
+    let path = Path::new("F:/Realmz/base/Realmz/Scenarios").join(name);
+    path.is_dir().then_some(path)
 }
 
 fn out_fixture_path(name: &str) -> Option<std::path::PathBuf> {
