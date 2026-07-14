@@ -26,8 +26,20 @@ use std::path::Path;
 use tempfile::tempdir;
 
 fn fixture_path(name: &str) -> Option<std::path::PathBuf> {
-    let path = Path::new("F:/Realmz/base/Realmz/Scenarios").join(name);
-    path.is_dir().then_some(path)
+    if let Some(root) = std::env::var_os("PROVIDENCE_SCENARIO_CORPUS") {
+        let path = std::path::PathBuf::from(root).join(name);
+        if path.is_dir() {
+            return Some(path);
+        }
+    }
+
+    [
+        "F:/Realmz/corpus-fixtures",
+        "F:/Realmz/base/Realmz/Scenarios",
+    ]
+    .into_iter()
+    .map(|root| Path::new(root).join(name))
+    .find(|path| path.is_dir())
 }
 
 fn out_fixture_path(name: &str) -> Option<std::path::PathBuf> {
@@ -78,16 +90,35 @@ fn imports_core_fixture_scenarios() {
         assert!(project.source.immutable);
         assert_generated_corpus_expectations(name, &source, &project);
         assert_fixture_contracts(name, &project);
+        let source_custom_atlas_ids = source_custom_tile_atlas_ids(&source);
+        if *name == "City of Bywater" {
+            assert!(
+                source_custom_atlas_ids.is_empty(),
+                "City of Bywater should not claim a scenario-supplied custom tile atlas"
+            );
+        }
+        for tileset in project
+            .asset_catalog
+            .tilesets
+            .iter()
+            .filter(|tileset| tileset.custom)
+        {
+            let Some(pict_id) = tileset.pict_id else {
+                continue;
+            };
+            if source_custom_atlas_ids.contains(&pict_id) {
+                assert!(
+                    tileset.image_path.is_some(),
+                    "{name} should import source PICT {pict_id} as a custom tile atlas"
+                );
+            }
+        }
         let atlased_tilesets: Vec<_> = project
             .asset_catalog
             .tilesets
             .iter()
             .filter_map(|tileset| tileset.image_path.as_ref())
             .collect();
-        assert!(
-            !atlased_tilesets.is_empty(),
-            "{name} should import at least one tile atlas"
-        );
         for image_path in atlased_tilesets {
             assert!(
                 project_dir.join(image_path).is_file(),
@@ -2937,6 +2968,33 @@ fn resource_entries_by_key(bytes: &[u8]) -> BTreeMap<(String, i16), ResourceFork
     parse_resource_fork_entries(bytes)
         .into_iter()
         .map(|entry| ((entry.resource_type.clone(), entry.id), entry))
+        .collect()
+}
+
+fn source_custom_tile_atlas_ids(source: &Path) -> BTreeSet<i32> {
+    let scenario_name = source
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Scenario");
+    let candidates = [
+        source.join("Scenario.rsrc"),
+        source.join("Scenario.rsf"),
+        source.join(format!("{scenario_name}.rsrc")),
+        source.join(format!("{scenario_name}.rsf")),
+        source.join(".rsrc").join("Scenario"),
+        source.join(".rsrc").join(scenario_name),
+        source.join("Scenario"),
+    ];
+
+    candidates
+        .into_iter()
+        .filter_map(|path| fs::read(path).ok())
+        .map(|bytes| parse_resource_fork_entries(&bytes))
+        .find(|entries| !entries.is_empty())
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|entry| entry.resource_type == "PICT" && (306..=308).contains(&entry.id))
+        .map(|entry| i32::from(entry.id))
         .collect()
 }
 
