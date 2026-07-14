@@ -24,8 +24,20 @@ const itemIdFieldPath = path.join(root, "src/editor/panels/scripts/ItemIdField.t
 const storyFlagsWorkbenchPath = path.join(root, "src/editor/panels/scripts/StoryFlagsWorkbench.tsx");
 const actionSettingsWorkbenchPath = path.join(root, "src/editor/panels/scripts/ActionSettingsWorkbench.tsx");
 const timedEncounterShellPath = path.join(root, "src/editor/panels/scripts/TimedEncounterShell.tsx");
-const scriptsCssPath = path.join(root, "src/editor/styles/scripts.css");
-const encountersCssPath = path.join(root, "src/editor/styles/encounters.css");
+const scriptsCssPaths = [
+  "script-surfaces.css",
+  "export.css",
+  "action-point-lists.css",
+  "action-point-editor.css",
+  "action-point-references.css",
+  "action-point-settings.css",
+  "quests.css",
+  "action-point-diagnostics.css",
+  "action-point-visual-editor.css",
+  "action-point-inline-editors.css",
+  "scripts.css",
+  "encounters.css"
+].map((filename) => path.join(root, "src/editor/styles", filename));
 const textScenarioCssPath = path.join(root, "src/editor/styles/text-scenario.css");
 const assetsCssPath = path.join(root, "src/editor/styles/assets.css");
 const combatPanelPath = path.join(root, "src/editor/panels/CombatPanel.tsx");
@@ -69,7 +81,7 @@ const storyFlagsWorkbench = fs.readFileSync(storyFlagsWorkbenchPath, "utf8");
 const actionSettingsWorkbench = fs.readFileSync(actionSettingsWorkbenchPath, "utf8");
 const itemIdField = fs.readFileSync(itemIdFieldPath, "utf8");
 const timedEncounterShell = fs.readFileSync(timedEncounterShellPath, "utf8");
-const scriptsCss = [scriptsCssPath, encountersCssPath].map((filePath) => fs.readFileSync(filePath, "utf8")).join("\n");
+const scriptsCss = scriptsCssPaths.map((filePath) => fs.readFileSync(filePath, "utf8")).join("\n");
 const textScenarioCss = fs.readFileSync(textScenarioCssPath, "utf8");
 const assetsCss = fs.readFileSync(assetsCssPath, "utf8");
 const combatPanel = [combatPanelPath, battleWorkbenchPath]

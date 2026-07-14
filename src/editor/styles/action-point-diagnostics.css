@@ -1,0 +1,324 @@
+
+
+
+.script-diagnostics {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+
+
+.script-diagnostics.ok {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  padding: 7px 8px;
+  border: 1px solid #254a39;
+  border-radius: 5px;
+  background: #101b16;
+}
+
+
+
+.script-diagnostics.ok span {
+  color: #76c59a;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+
+
+.script-diagnostics.ok strong {
+  color: #b9e8cb;
+  font-size: 11px;
+}
+
+
+
+.script-diagnostic {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: start;
+  padding: 7px 8px;
+  border: 1px solid #2e3a45;
+  border-radius: 5px;
+  background: #101820;
+}
+
+
+
+.script-diagnostic svg {
+  margin-top: 2px;
+}
+
+
+
+.script-diagnostic.warning {
+  border-color: #6b5629;
+  background: #211d14;
+}
+
+
+
+.script-diagnostic.error {
+  border-color: #7d3440;
+  background: #27151a;
+}
+
+
+
+.script-diagnostic.info {
+  border-color: #2f5373;
+  background: #101a27;
+}
+
+
+
+.script-diagnostic span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+
+
+.script-diagnostic strong {
+  color: #edf4fb;
+  font-size: 11px;
+}
+
+
+
+.script-diagnostic small,
+.script-diagnostic-more {
+  color: #8fa3b7;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+
+
+@media (max-width: 980px) {
+  .realmz-script-layout {
+    flex-direction: column;
+  }
+
+  .script-list-column {
+    width: 100%;
+    flex-basis: auto;
+    border-right: 0;
+    border-bottom: 1px solid #26333f;
+    padding-right: 0;
+    padding-bottom: 8px;
+  }
+
+  .realmz-script-layout:has(.encounter-record-grid) > .script-list-column {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .realmz-script-list {
+    min-height: 220px;
+    max-height: 320px;
+  }
+
+  .script-create-strip,
+  .script-record-header {
+    grid-template-columns: 1fr;
+  }
+
+  .script-header-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .script-header-fields,
+  .script-header-location .script-header-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .realmz-step-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .realmz-visual-script,
+  .realmz-visual-script.has-floating-detail {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .script-target-drawer.wide-target .script-target-grid,
+  .script-floating-detail .script-target-drawer.wide-target .script-target-grid,
+  .script-encounter-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .script-target-drawer.wide-target .script-number-field,
+  .script-target-drawer.wide-target .script-reference-id-field,
+  .script-target-drawer.wide-target .script-target-checkbox {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1220px) {
+  .script-create-strip {
+    grid-template-columns: minmax(180px, 1fr) minmax(58px, 72px) minmax(58px, 72px);
+  }
+
+  .script-create-strip > .btn {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}
+
+
+
+@media (max-width: 1800px) {
+  .realmz-visual-script {
+    grid-template-columns: minmax(210px, 250px) minmax(560px, 1fr);
+    min-width: 790px;
+    width: max(100%, 790px);
+  }
+
+  .script-target-drawer {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .realmz-visual-script,
+  .realmz-visual-script.has-floating-detail {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+.summary-table {
+  display: grid;
+  padding: 0 10px 10px;
+  font-size: 11px;
+}
+
+
+
+
+
+.summary-table div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #20252b;
+}
+
+
+
+
+
+.summary-table dt {
+  color: #77818c;
+}
+
+
+
+
+
+.summary-table dd {
+  color: #d6dee7;
+  overflow-wrap: anywhere;
+}
+
+
+
+
+
+.action-slot-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+
+
+
+
+.action-slot-list.padded {
+  padding: 0 10px 10px;
+}
+
+
+
+
+
+.action-slot-list span {
+  border: 1px solid #313943;
+  border-radius: 3px;
+  padding: 3px 5px;
+  color: #c9d3dd;
+  background: #0e1115;
+  font-size: 10px;
+}
+
+
+
+
+
+.special-land-authoring {
+  min-height: auto;
+}
+
+
+
+
+
+.special-land-explainer {
+  margin: 0 0 10px;
+  padding: 9px 10px;
+  border: 1px solid #2d4151;
+  border-radius: 6px;
+  background: #101922;
+  color: #a9bbcc;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+
+
+
+
+.special-land-explainer code {
+  color: #d9ecff;
+}
+
+
+
+
+
+.special-land-card strong {
+  color: #f1f7ff;
+  font-size: 12px;
+}
+
+
+
+
+
+.compact-field input {
+  width: 100%;
+}
+
+
+
+
+
+.advanced-back-button {
+  justify-self: start;
+  margin: 0 10px;
+}
