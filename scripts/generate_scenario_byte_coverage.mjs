@@ -19,7 +19,7 @@ const scenarioStartupShellGatePath = path.join(repoRoot, "docs/generated/scenari
 const mapsStorageWriterGatesPath = path.join(repoRoot, "docs/generated/maps-storage-writer-gates.json");
 const encounterShopWriterGatesPath = path.join(repoRoot, "docs/generated/encounter-shop-writer-gates.json");
 const coreRecordWriterGatesPath = path.join(repoRoot, "docs/generated/core-record-writer-gates.json");
-const realmzRsPath = path.join(repoRoot, "src-tauri/src/realmz.rs");
+const realmzAssemblyRsPath = path.join(repoRoot, "src-tauri/src/realmz/assembly.rs");
 
 const fileInventoryPath = path.join(repoRoot, "docs/generated/scenario-file-inventory.json");
 const byteOwnershipPath = path.join(repoRoot, "docs/generated/scenario-byte-ownership.json");
@@ -851,7 +851,7 @@ const customLandlookCoverage = readOptionalJson(customLandlookCoveragePath);
 const rulesCoverage = readOptionalJson(rulesCoveragePath);
 const targetCompatibility = readOptionalJson(targetCompatibilityPath);
 const actionPointWriterGate = readOptionalJson(actionPointWriterGatePath);
-const rustRegistry = parseRustRegistry(fs.readFileSync(realmzRsPath, "utf8"));
+const rustRegistry = parseRustRegistry(fs.readFileSync(realmzAssemblyRsPath, "utf8"));
 const parsedResourceForkNames = new Set(
   (resourceByteOwnership?.forks ?? [])
     .filter((fork) => fork.parseStatus === "parsed")
@@ -960,7 +960,14 @@ function buildFixedRecordWriterGates(aggregate) {
     sources: {
       byteCoverage: "docs/generated/scenario-byte-ownership.json",
       fixtureRoundtrip: "src-tauri/tests/fixture_roundtrip.rs",
-      fixedRecordWriters: "src-tauri/src/realmz.rs"
+      fixedRecordWriters: [
+        "src-tauri/src/realmz/text_records.rs",
+        "src-tauri/src/realmz/combat.rs",
+        "src-tauri/src/realmz/economy.rs",
+        "src-tauri/src/realmz/encounters.rs",
+        "src-tauri/src/realmz/rules.rs",
+        "src-tauri/src/realmz/scenario.rs"
+      ]
     },
     policy: {
       note: "This registry gates only the Core Fixed-Record Writer-Gate Batch. Startup shell files and map, encounter, monster-template, and shop families are intentionally excluded.",
@@ -1016,7 +1023,7 @@ function buildScenarioStartupShellGate(aggregate) {
     sources: {
       byteCoverage: "docs/generated/scenario-byte-ownership.json",
       scenarioShellEvidence: "docs/generated/scenario-shell-evidence.json",
-      shellCodec: "src-tauri/src/realmz.rs"
+      shellCodec: "src-tauri/src/realmz/scenario.rs"
     },
     policy: {
       note: "Scenario-named 316/320 byte supported-binary files are reported as one logical startup shell container. Data CS remains its own preserved security-backup container.",
@@ -1131,7 +1138,10 @@ function buildMapsStorageWriterGates(aggregate) {
       mapEvidence: "docs/generated/map-field-value-evidence.json",
       actionPointEvidence: "docs/generated/extra-ap-reachability-source-map.json",
       corpusUsage: "docs/generated/corpus-field-usage.json",
-      mapStorageWriters: "src-tauri/src/realmz.rs"
+      mapStorageWriters: [
+        "src-tauri/src/realmz/maps.rs",
+        "src-tauri/src/realmz/action_points.rs"
+      ]
     },
     policy: {
       note: "This registry gates map storage containers only. Data DL dungeon tile bitfields remain governed by dungeon-byte-ownership and dungeon-primitive-writer-gate.",
@@ -1211,7 +1221,10 @@ function buildEncounterShopWriterGates(aggregate) {
       encounterEvidence: "docs/generated/encounter-record-evidence.json",
       itemShopEvidence: "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
       thiefEvidence: "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md",
-      encounterShopWriters: "src-tauri/src/realmz.rs"
+      encounterShopWriters: [
+        "src-tauri/src/realmz/encounters.rs",
+        "src-tauri/src/realmz/economy.rs"
+      ]
     },
     policy: {
       note: "This registry gates simple/complex encounter, shop, and thief encounter storage only. Timed encounters remain governed by fixed-record-writer-gates.",
@@ -1291,7 +1304,11 @@ function buildCoreRecordWriterGates(aggregate) {
       monsterEvidence: "docs/generated/monster-record-evidence.json",
       mapRecordEvidence: "docs/generated/map-record-evidence.json",
       itemEvidence: "docs/generated/core-rules-record-evidence.json",
-      coreRecordWriters: "src-tauri/src/realmz.rs"
+      coreRecordWriters: [
+        "src-tauri/src/realmz/combat.rs",
+        "src-tauri/src/realmz/maps.rs",
+        "src-tauri/src/realmz/economy.rs"
+      ]
     },
     policy: {
       note: "This registry gates the final core gameplay record storage families. It proves fixed-record storage writability only and does not expose new normal editor controls.",
@@ -1457,7 +1474,7 @@ function buildInventory(scanned, aggregate) {
     generatedAt: new Date().toISOString(),
     sources: {
       roundtripLedger: "docs/generated/scenario-byte-roundtrip-ledger.json",
-      rustRegistry: "src-tauri/src/realmz.rs",
+      rustRegistry: "src-tauri/src/realmz/assembly.rs",
         runtimeCaches: "docs/generated/runtime-cache-classification.json",
         resourceCoverage: "docs/generated/resource-byte-ownership.json",
         customLandlookCoverage: "docs/generated/custom-landlook-coverage.json",

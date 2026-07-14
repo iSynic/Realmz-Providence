@@ -358,7 +358,7 @@ function checkBattleRuntimeMonsterLimit({ BATTLE_RUNTIME_MONSTER_LIMIT, countBat
   const validationSource = fs.readFileSync("src/editor/targetValidation.ts", "utf8");
   assert(validationSource.includes("countBattleRuntimeMonsterSlots(record.grid)"), "battle validation does not use the shared runtime monster slot counter");
   assert(validationSource.includes('recordIssue("error", recordType, recordId, "battle-monster-cap"'), "battle validation does not hard-error above the 100 placed monster cap");
-  const rustWriterSource = fs.readFileSync("src-tauri/src/realmz.rs", "utf8");
+  const rustWriterSource = fs.readFileSync("src-tauri/src/realmz/combat.rs", "utf8");
   assert(rustWriterSource.includes("BATTLE_RUNTIME_MONSTER_LIMIT: usize = 100"), "Rust Realmz writer does not keep the runtime battle monster cap source-backed");
   assert(rustWriterSource.includes("placed_monsters > BATTLE_RUNTIME_MONSTER_LIMIT"), "Rust battle writer does not reject authored over-cap battles");
   assert(rustWriterSource.includes("at most {} loaded monsters"), "Rust battle writer error does not describe the loaded-monster cap");
