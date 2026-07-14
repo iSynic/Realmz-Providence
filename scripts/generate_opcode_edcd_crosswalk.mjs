@@ -202,9 +202,9 @@ function buildActionPointWriterGate(artifact) {
         "F:/Realmz/src/realmz_orig/structs.h"
       ],
       fixtureTests: [
-        "src-tauri/src/realmz.rs:extra_action_point_writer_mutates_only_owned_slot_words",
-        "src-tauri/src/realmz.rs:extracode_writer_mutates_only_owned_signed_short",
-        "src-tauri/src/realmz.rs:opcode_92_secondary_extracode_row_is_independently_owned"
+        "src-tauri/src/realmz/action_points.rs:extra_action_point_writer_mutates_only_owned_slot_words",
+        "src-tauri/src/realmz/action_points.rs:extracode_writer_mutates_only_owned_signed_short",
+        "src-tauri/src/realmz/action_points.rs:opcode_92_secondary_extracode_row_is_independently_owned"
       ]
     },
     policy: {

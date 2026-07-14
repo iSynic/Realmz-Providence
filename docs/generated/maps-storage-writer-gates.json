@@ -257,32 +257,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
-        "src-tauri/src/realmz.rs:write_door_file",
-        "src-tauri/src/realmz.rs:parse_door_file",
+        "src-tauri/src/realmz/action_points.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+        "src-tauri/src/realmz/action_points.rs:write_door_file",
+        "src-tauri/src/realmz/action_points.rs:parse_door_file",
         "docs/generated/extra-ap-reachability-source-map.json",
         "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/action_points.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+          "file": "src-tauri/src/realmz/action_points.rs",
           "anchor": "map_storage_trigger_tables_mutate_only_owned_action_slot",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_door_file",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/action_points.rs:write_door_file",
+          "file": "src-tauri/src/realmz/action_points.rs",
           "anchor": "write_door_file",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_door_file",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/action_points.rs:parse_door_file",
+          "file": "src-tauri/src/realmz/action_points.rs",
           "anchor": "parse_door_file",
           "fileExists": true,
           "anchorPresent": true,
@@ -357,32 +357,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
-        "src-tauri/src/realmz.rs:write_door_file",
-        "src-tauri/src/realmz.rs:parse_door_file",
+        "src-tauri/src/realmz/action_points.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+        "src-tauri/src/realmz/action_points.rs:write_door_file",
+        "src-tauri/src/realmz/action_points.rs:parse_door_file",
         "docs/generated/extra-ap-reachability-source-map.json",
         "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/action_points.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+          "file": "src-tauri/src/realmz/action_points.rs",
           "anchor": "map_storage_trigger_tables_mutate_only_owned_action_slot",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:write_door_file",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/action_points.rs:write_door_file",
+          "file": "src-tauri/src/realmz/action_points.rs",
           "anchor": "write_door_file",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:parse_door_file",
-          "file": "src-tauri/src/realmz.rs",
+          "reference": "src-tauri/src/realmz/action_points.rs:parse_door_file",
+          "file": "src-tauri/src/realmz/action_points.rs",
           "anchor": "parse_door_file",
           "fileExists": true,
           "anchorPresent": true,

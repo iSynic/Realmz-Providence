@@ -135,7 +135,7 @@ const FIXTURE_GATES = {
     ],
     evidence: [
       "docs/generated/action-point-writer-gate.json",
-      "src-tauri/src/realmz.rs:extra_action_point_writer_mutates_only_owned_slot_words"
+      "src-tauri/src/realmz/action_points.rs:extra_action_point_writer_mutates_only_owned_slot_words"
     ]
   },
   "Data EDCD": {
@@ -146,8 +146,8 @@ const FIXTURE_GATES = {
     ],
     evidence: [
       "docs/generated/action-point-writer-gate.json",
-      "src-tauri/src/realmz.rs:extracode_writer_mutates_only_owned_signed_short",
-      "src-tauri/src/realmz.rs:opcode_92_secondary_extracode_row_is_independently_owned"
+      "src-tauri/src/realmz/action_points.rs:extracode_writer_mutates_only_owned_signed_short",
+      "src-tauri/src/realmz/action_points.rs:opcode_92_secondary_extracode_row_is_independently_owned"
     ]
   },
   "Data Custom 1 BD": {
@@ -391,9 +391,9 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Action IDs", internal: "id[8]", offset: 24, bytes: 16, type: "i16be[8]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
-      "src-tauri/src/realmz.rs:write_door_file",
-      "src-tauri/src/realmz.rs:parse_door_file",
+      "src-tauri/src/realmz/action_points.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+      "src-tauri/src/realmz/action_points.rs:write_door_file",
+      "src-tauri/src/realmz/action_points.rs:parse_door_file",
       "docs/generated/extra-ap-reachability-source-map.json",
       "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
     ],
@@ -410,9 +410,9 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Action IDs", internal: "id[8]", offset: 24, bytes: 16, type: "i16be[8]" }
     ],
     evidence: [
-      "src-tauri/src/realmz.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
-      "src-tauri/src/realmz.rs:write_door_file",
-      "src-tauri/src/realmz.rs:parse_door_file",
+      "src-tauri/src/realmz/action_points.rs:map_storage_trigger_tables_mutate_only_owned_action_slot",
+      "src-tauri/src/realmz/action_points.rs:write_door_file",
+      "src-tauri/src/realmz/action_points.rs:parse_door_file",
       "docs/generated/extra-ap-reachability-source-map.json",
       "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md"
     ],
