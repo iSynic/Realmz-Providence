@@ -58,11 +58,6 @@ fn custom_names_fixture_path() -> Option<std::path::PathBuf> {
     path.is_file().then_some(path)
 }
 
-fn desktop_fixture_path(name: &str) -> Option<std::path::PathBuf> {
-    let path = Path::new("C:/Users/Eric/Desktop").join(name);
-    path.is_dir().then_some(path)
-}
-
 const HARDENED_FIXTURES: &[&str] = &[
     "City of Bywater",
     "Prelude to Pestilence",
@@ -651,8 +646,10 @@ fn authored_scrolling_text_exports_same_id_text_and_style_resources() {
             .any(|entry| entry.contains("runtime-suspect")),
         "authored scrolling text export should report current runtime uncertainty"
     );
+    let exported_resource_path = resource_path_with_entry(&project, &export_dir, "TEXT", -200)
+        .expect("export should write authored scrolling text to a resource fork");
     let exported_resources =
-        parse_resource_fork_entries(&fs::read(export_dir.join("Scenario")).unwrap());
+        parse_resource_fork_entries(&fs::read(exported_resource_path).unwrap());
     let exported_text = exported_resources
         .iter()
         .find(|entry| entry.resource_type == "TEXT" && entry.id == -200)
@@ -2706,15 +2703,39 @@ fn generated_fixture_file_mismatch(source: &Path, expected: &Value) -> Option<St
 
 #[test]
 fn windows_export_promotes_macosx_scenario_resource_fork() {
-    let Some(source) = desktop_fixture_path("City of Bywater") else {
-        eprintln!("Skipping Mac ZIP resource fork promotion test; Desktop City of Bywater fixture is absent.");
+    let Some(fixture) = fixture_path("City of Bywater") else {
+        eprintln!("Skipping Mac ZIP resource fork promotion test; City of Bywater is absent.");
         return;
     };
-    if !source.join("__MACOSX").join("._Scenario").is_file() {
-        eprintln!("Skipping Mac ZIP resource fork promotion test; __MACOSX/._Scenario is absent.");
-        return;
+    let source_resource_path = fixture.join("Scenario.rsrc");
+    let source_resource_bytes = fs::read(&source_resource_path)
+        .expect("City of Bywater should provide a valid Scenario.rsrc fixture");
+    let source_resources = parse_resource_fork_entries(&source_resource_bytes);
+    assert!(
+        source_resources
+            .iter()
+            .any(|entry| entry.resource_type == "STR#" && entry.name == "Map Names"),
+        "source Scenario.rsrc should contain STR# Map Names"
+    );
+
+    let source_temp = tempdir().unwrap();
+    let source = source_temp.path().join("City of Bywater");
+    fs::create_dir_all(&source).unwrap();
+    for entry in fs::read_dir(&fixture).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_file() && entry.file_name() != "Scenario.rsrc" {
+            fs::copy(entry.path(), source.join(entry.file_name())).unwrap();
+        }
     }
-    let (_temp, project, export_dir, _report) =
+    let macosx_dir = source.join("__MACOSX");
+    fs::create_dir_all(&macosx_dir).unwrap();
+    fs::write(
+        macosx_dir.join("._Scenario"),
+        appledouble_resource_sidecar(&source_resource_bytes),
+    )
+    .unwrap();
+
+    let (_temp, project, export_dir, report) =
         export_fixture_with_target(&source, ScenarioTarget::WindowsRealmzFolder);
 
     assert!(
@@ -2728,8 +2749,20 @@ fn windows_export_promotes_macosx_scenario_resource_fork() {
         exported_resource_path.is_file(),
         "Windows export should include promoted Scenario.rsrc"
     );
-    let exported_resources =
-        parse_resource_fork_entries(&fs::read(&exported_resource_path).unwrap());
+    let exported_resource_bytes = fs::read(&exported_resource_path).unwrap();
+    assert_eq!(
+        exported_resource_bytes, source_resource_bytes,
+        "no-edit Windows export should preserve the promoted resource fork byte-for-byte"
+    );
+    assert!(
+        report.written_resources.is_empty(),
+        "no-edit promotion should not synthesize or replace resources"
+    );
+    let exported_resources = parse_resource_fork_entries(&exported_resource_bytes);
+    assert_eq!(
+        exported_resources, source_resources,
+        "no-edit promotion should preserve every resource entry"
+    );
     assert!(
         exported_resources
             .iter()
@@ -2996,6 +3029,23 @@ fn source_custom_tile_atlas_ids(source: &Path) -> BTreeSet<i32> {
         .filter(|entry| entry.resource_type == "PICT" && (306..=308).contains(&entry.id))
         .map(|entry| i32::from(entry.id))
         .collect()
+}
+
+fn appledouble_resource_sidecar(resource_fork: &[u8]) -> Vec<u8> {
+    const HEADER_BYTES: u32 = 26;
+    const ENTRY_BYTES: u32 = 12;
+    const RESOURCE_FORK_ENTRY_ID: u32 = 2;
+    let resource_offset = HEADER_BYTES + ENTRY_BYTES;
+    let mut sidecar = Vec::with_capacity(resource_offset as usize + resource_fork.len());
+    sidecar.extend_from_slice(&0x0005_1607_u32.to_be_bytes());
+    sidecar.extend_from_slice(&0x0002_0000_u32.to_be_bytes());
+    sidecar.extend_from_slice(&[0; 16]);
+    sidecar.extend_from_slice(&1_u16.to_be_bytes());
+    sidecar.extend_from_slice(&RESOURCE_FORK_ENTRY_ID.to_be_bytes());
+    sidecar.extend_from_slice(&resource_offset.to_be_bytes());
+    sidecar.extend_from_slice(&(resource_fork.len() as u32).to_be_bytes());
+    sidecar.extend_from_slice(resource_fork);
+    sidecar
 }
 
 fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {
