@@ -6,7 +6,9 @@ import {
   type DocumentationGroup,
   type DocumentationReference,
   type DocumentationSection,
+  type DocumentationStep,
   type DocumentationTopic,
+  type DocumentationToolTarget,
   type DocumentationVisualSlot
 } from "./documentationContent";
 
@@ -16,7 +18,9 @@ export type {
   DocumentationGroup,
   DocumentationReference,
   DocumentationSection,
+  DocumentationStep,
   DocumentationTopic,
+  DocumentationToolTarget,
   DocumentationVisualSlot
 } from "./documentationContent";
 
@@ -44,6 +48,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     badges: ["chapter", "orientation"],
     references: [DIVINITY_CHAPTERS.gettingStarted, MARKDOWN_REFERENCES.divinityParity],
     relatedTopicIds: ["projects", "scenario", "maps", "scripts", "assets", "linter-release", "documents-help"],
+    toolTargets: [{ domain: "maps", editor: "land", label: "Open Land/Dungeon Maps" }],
     sections: [
       {
         title: "The Providence Authoring Loop",
@@ -66,6 +71,36 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
             title: "Validate and Export",
             body: "Use Linter and Export to catch missing targets, resource problems, and target-package differences before testing in Realmz.",
             facts: ["release path"]
+          }
+        ]
+      },
+      {
+        title: "Build A Testable Slice",
+        steps: [
+          {
+            title: "Create or import the project",
+            body: "Use New for a blank scenario, Open for an existing Providence project, or Import for a Realmz scenario folder. Give the project a recognizable scenario name before adding content.",
+            result: "You have one saved Providence project and know whether its source is blank, generated, or imported."
+          },
+          {
+            title: "Make one playable place",
+            body: "Open Land/Dungeon Maps, choose or create a level, and build a short readable route with a clear start and destination. Keep overlays available, but inspect the player-facing terrain with them off as well.",
+            result: "A party can stand somewhere intentional and move through a coherent small area."
+          },
+          {
+            title: "Add one visible event",
+            body: "Place an Action Point on the object or location that causes the event. Give it a message, sound, movement, battle, reward, map change, or another result the player can recognize.",
+            result: "The first interaction has an observable success or failure path."
+          },
+          {
+            title: "Validate the slice",
+            body: "Open Linter, follow warnings back to their owning tools, and fix missing targets or resources. Save the Providence project before producing a scenario package.",
+            result: "The small slice is internally linked and ready for a Realmz test."
+          },
+          {
+            title: "Export and test in Realmz",
+            body: "Choose the intended package target in Export, review what will be written or preserved, then test the resulting scenario from its configured starting location.",
+            result: "You have proved the project loop before scaling the scenario."
           }
         ]
       },
@@ -141,12 +176,27 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Setup Workflow",
-        points: [
-          "Use New Project when you are starting a scenario from scratch.",
-          "Use Import only while the project is empty; this prevents raw scenario bytes from being merged into already-authored project data.",
-          "Use Open when returning to a saved Providence package or browser project ZIP.",
-          "Save before a risky editing pass, a visual smoke pass, or any export comparison.",
-          "Validate before export so missing targets and resource problems are caught before you test the package in Realmz."
+        steps: [
+          {
+            title: "Choose the correct starting action",
+            body: "Use New Project for a blank project or Scenario JSON prompt, Open for a Providence package, and Import only for a Realmz scenario source. Import is intentionally limited to an empty project.",
+            result: "The project has one unambiguous source and no merged raw-scenario state."
+          },
+          {
+            title: "Confirm the scenario identity",
+            body: "Check the scenario name, project location, source snapshot status, and intended export target before editing. Rename generic or temporary projects early.",
+            result: "Save and export artifacts will be easy to identify."
+          },
+          {
+            title: "Save an authoring baseline",
+            body: "Save immediately after import or generation, before risky map changes, and before comparing export behavior. In browser mode, download a Providence project ZIP when you need a portable backup.",
+            result: "You can return to a known project state without relying on an exported scenario."
+          },
+          {
+            title: "Validate before packaging",
+            body: "Run Linter after substantial edits. Resolve missing links and unsupported target data before opening Export, then read package readiness rather than assuming every source file is writable.",
+            result: "The chosen output path reflects current project state and known writer boundaries."
+          }
         ]
       },
       {
@@ -189,6 +239,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       MARKDOWN_REFERENCES.scenarioShellEvidence
     ],
     relatedTopicIds: ["projects", "maps", "scripts", "rules", "linter-release", "compatibility-terms"],
+    toolTargets: [{ domain: "scenario", editor: "startup", label: "Open Scenario" }],
     sections: [
       {
         title: "What The Scenario Shell Owns",
@@ -204,12 +255,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Authoring Workflow",
-        points: [
-          "Set the startup map and coordinates early, then test from that position as the scenario grows.",
-          "Decide party restrictions before balancing combat or reward pacing.",
-          "Fill contact and release fields before packaging a public build.",
-          "Use global hooks sparingly and link them to clear Action Points so they are easy to inspect later.",
-          "Run Linter after changing startup, restrictions, security, or global hooks."
+        steps: [
+          {
+            title: "Set the first playable location",
+            body: "In Startup Info, choose an existing land or dungeon level and coordinates that place the party on valid terrain. Recheck this whenever maps are added, removed, or reorganized.",
+            result: "Realmz can enter the scenario at a real, testable location."
+          },
+          {
+            title: "Define entry restrictions",
+            body: "In Restrictions, set party size, level, race, and caste rules deliberately. Test with an allowed party and with a party that should be refused so the gate and its message agree.",
+            result: "The intended audience can enter and excluded parties receive a clear refusal."
+          },
+          {
+            title: "Complete release identity",
+            body: "Fill Contact Info and scenario metadata before a public build. Treat Security and registration fields as compatibility-sensitive legacy data rather than ordinary flavor text.",
+            result: "The scenario identifies its author and carries intentional release metadata."
+          },
+          {
+            title: "Connect global behavior",
+            body: "Point only the global hooks you use at named Extra Action Points. Open each target in Action Points and verify that startup, death, quit, shop, temple, or other lifecycle behavior has a clear purpose.",
+            result: "Global behavior is inspectable instead of hidden behind unexplained numeric slots."
+          },
+          {
+            title: "Validate the shell",
+            body: "Run Linter after changing startup, restrictions, security, or global hooks. Treat missing maps, impossible coordinates, and missing macro targets as release blockers.",
+            result: "The scenario shell is ready for repeated playtesting."
+          }
         ]
       },
       {
@@ -250,6 +321,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       MARKDOWN_REFERENCES.resourceIconEvidence
     ],
     relatedTopicIds: ["player-maps", "scripts", "assets", "encounters-targets", "linter-release"],
+    toolTargets: [{ domain: "maps", editor: "land", label: "Open Land/Dungeon Maps" }],
     sections: [
       {
         title: "Think In Three Layers",
@@ -265,12 +337,37 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Map Building Workflow",
-        points: [
-          "Block in the playable route first; decoration can wait.",
-          "Use sampling and stamps to keep repeated structures consistent.",
-          "Place transitions after both sides of the transition exist.",
-          "Place Action Points after the geography makes the trigger location clear.",
-          "Use overlays while authoring, but turn them off periodically to inspect what players will actually see."
+        steps: [
+          {
+            title: "Choose the level and landlook",
+            body: "Create or select the land or dungeon level, confirm its name and landlook, and set darkness or line-of-sight behavior before detailed painting. Use Land Layout when the level participates in outdoor edge travel.",
+            result: "The level has the correct tile vocabulary and runtime context."
+          },
+          {
+            title: "Block the traversable route",
+            body: "Use Paint for terrain, Sample to reuse a nearby tile, and Eraser only when clearing is intended. Build entrances, exits, rooms, shorelines, roads, and corridors before scattering decoration.",
+            result: "The playable route is visually readable and reaches every required destination."
+          },
+          {
+            title: "Resolve joins and repeated structures",
+            body: "Use Smart painting for semantic terrain families and Stamps for known multi-tile structures. Inspect corners, shoreline or mountain continuity, wall orientation, doors, caves, forest edges, and road turns at normal zoom.",
+            result: "Adjacent tiles meet consistently instead of merely belonging to the same broad category."
+          },
+          {
+            title: "Author movement and overlays",
+            body: "Use selection details and overlays to inspect walkability, hidden walkable tiles, combat-clearing behavior, Action Points, random rectangles, and Player Map markers. Keep hidden walkable and combat-clearing concepts distinct.",
+            result: "The runtime movement rules agree with what the map communicates."
+          },
+          {
+            title: "Place transitions and events",
+            body: "Put teleport Action Points on the door, cave, stair, or object that causes travel. Draw random rectangles around meaningful encounter spaces and verify both sides of edge travel and level transitions.",
+            result: "Triggers are attached to their visible points of interest and lead to valid destinations."
+          },
+          {
+            title: "Inspect the player-facing map",
+            body: "Turn authoring overlays off, scan at Fit and normal zoom, and look for bald forest interiors, broken edges, isolated decorations, unreachable spaces, or markers that reveal hidden information.",
+            result: "The level reads coherently without editor-only assistance."
+          }
         ]
       },
       {
@@ -307,6 +404,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     badges: ["chapter", "player-facing"],
     references: [DIVINITY_CHAPTERS.map, MARKDOWN_REFERENCES.textEvidence, MARKDOWN_REFERENCES.resourceAuthoringEvidence],
     relatedTopicIds: ["maps", "text", "assets", "scenario", "linter-release"],
+    toolTargets: [{ domain: "player-maps", editor: "map-records", label: "Open Player Maps" }],
     sections: [
       {
         title: "What Player Maps Are For",
@@ -322,12 +420,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Authoring Workflow",
-        points: [
-          "Create or select the map record for the place the player should understand.",
-          "Set the name and display rectangle before writing long notes.",
-          "Attach a PICT only when the image improves player understanding or scenario presentation.",
-          "Use Strings & Text for substantial prose, then link the relevant string from the map record.",
-          "Validate missing strings, missing pictures, and map references before release."
+        steps: [
+          {
+            title: "Create the Maps/Notes entry",
+            body: "Add or select one of the player map records and give it the name players should recognize in Realmz. Decide whether it shows a land/dungeon tile region or a dedicated picture resource.",
+            result: "The record has a clear player-facing identity and display mode."
+          },
+          {
+            title: "Frame the visible area",
+            body: "For tile-view maps, choose the level, tile size, and display rectangle so the preview includes the useful region without exposing hidden areas. For picture mode, choose a scenario-safe PICT and inspect its bounds.",
+            result: "The preview matches the intended in-game map view."
+          },
+          {
+            title: "Place markers and starts",
+            body: "Add markers only where they help navigation. Verify icon resources, coordinates, and labels, then set any start or focus position to a meaningful visible location.",
+            result: "Markers sit on the places they describe and remain inside the displayed region."
+          },
+          {
+            title: "Write notes and descriptions",
+            body: "Keep substantial prose in Strings or Scrolling Text and link it from the map record. Read the result as a player and remove spoilers or author-only directions.",
+            result: "The map explains what the party has learned without exposing hidden state."
+          },
+          {
+            title: "Validate every dependency",
+            body: "Check missing levels, invalid rectangles, absent PICT resources, broken strings, and unresolved marker icons before export.",
+            result: "The Maps/Notes entry can be opened with all of its visible content intact."
+          }
         ]
       },
       {
@@ -367,6 +485,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       MARKDOWN_REFERENCES.opcodeEdcdEvidence
     ],
     relatedTopicIds: ["maps", "text", "encounters-targets", "combat", "economy", "scenario", "linter-release"],
+    toolTargets: [{ domain: "scripts", editor: "action-points", label: "Open Action Points" }],
     sections: [
       {
         title: "Think In Events",
@@ -382,12 +501,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Script Authoring Workflow",
-        points: [
-          "Name the purpose of the script before filling in steps.",
-          "Add the player-visible message, sound, movement, combat, reward, or state change first.",
-          "Add conditions and branches only after the main result is clear.",
-          "Use target pickers to link strings, maps, encounters, battles, treasure, shops, and assets instead of typing numbers from memory.",
-          "Use Flow Preview to check branch order, GOSUB calls, and missing visible results."
+        steps: [
+          {
+            title: "Choose the script owner",
+            body: "Use Action Points for map-triggered behavior, Extra Action Points for reusable calls, Global Events for scenario lifecycle hooks, and Quests for quest state and references. Name the script by what it does, not by its numeric slot.",
+            result: "The behavior lives in the smallest reusable record that owns it."
+          },
+          {
+            title: "Build the visible result first",
+            body: "Add a step, choose its action by author intent, and set the target with the search picker. Use Apply Step to store the drafted fields; settings-backed actions create their authoring row as part of applying the step.",
+            result: "The event already communicates a message, sound, movement, battle, reward, map change, or other observable outcome."
+          },
+          {
+            title: "Add conditions and branches",
+            body: "Add checks only after the main path is understandable. For item, magic, thief, typed answer, quest, difficulty, and chance branches, author both outcomes and verify where Exit, GOSUB, or result slots continue execution.",
+            result: "Every attempted branch has a known destination and completion path."
+          },
+          {
+            title: "Reuse targets intentionally",
+            body: "Use Extra Action Points when behavior is genuinely shared. Preview selected strings, battles, treasure, maps, and encounters before choosing them instead of copying numeric IDs from another record.",
+            result: "Shared behavior has one inspectable source and links point at the intended record."
+          },
+          {
+            title: "Read the completed flow",
+            body: "Use Flow Preview, incoming links, and Linter warnings to inspect step order, GOSUB reachability, missing settings, missing targets, and player-facing success or failure feedback.",
+            result: "The script can be explained from trigger through final visible result."
+          }
         ]
       },
       {
@@ -429,6 +568,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     badges: ["chapter", "writing"],
     references: [DIVINITY_CHAPTERS.text, MARKDOWN_REFERENCES.textEvidence, MARKDOWN_REFERENCES.resourceAuthoringEvidence],
     relatedTopicIds: ["scripts", "encounters-targets", "player-maps", "assets", "combat", "economy"],
+    toolTargets: [{ domain: "text", editor: "messages", label: "Open Strings" }],
     sections: [
       {
         title: "What Text Owns",
@@ -444,12 +584,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Writing Workflow",
-        points: [
-          "Write the message in the context of the tool that will show it, then edit the final wording here.",
-          "Use clear success, failure, and refusal text for every player-facing branch.",
-          "Keep option labels short enough to scan quickly.",
-          "Use search and usage links before changing an old string that may be reused in multiple places.",
-          "Run Linter after text changes that affect script warnings or missing-result checks."
+        steps: [
+          {
+            title: "Find or create the right text record",
+            body: "Search by ID, phrase, or usage before adding a new message. Use Strings for ordinary scenario messages and Scrolling Text for longer TEXT resources with optional same-ID styl formatting.",
+            result: "The prose is stored in the text family Realmz expects for its consumer."
+          },
+          {
+            title: "Write for the moment of play",
+            body: "State what the player perceives, what changed, and what choices remain. Write distinct success, failure, refusal, and no-effect messages when those states matter.",
+            result: "A player can understand the outcome without seeing the script."
+          },
+          {
+            title: "Check reuse before editing",
+            body: "Open usage links for an existing string before changing it. Duplicate the message when one caller needs different wording and the other callers should remain unchanged.",
+            result: "A local wording improvement does not silently alter unrelated scenes."
+          },
+          {
+            title: "Author presentation details",
+            body: "Keep option labels concise, attach a sound only when it supports the message, and preview styled scrolling text to verify its runs and readable fallback text.",
+            result: "The text remains legible in both Providence and the intended Realmz presentation."
+          },
+          {
+            title: "Follow the text back to its callers",
+            body: "Use deep links to inspect Action Points, encounters, battles, Player Maps, or other records that reference the text. Run Linter for missing messages and no-visible-result warnings.",
+            result: "Every important message is reachable from a valid authoring record."
+          }
         ]
       },
       {
@@ -479,6 +639,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     badges: ["chapter", "branching"],
     references: [DIVINITY_CHAPTERS.simpleEncounter, DIVINITY_CHAPTERS.complexEncounter, MARKDOWN_REFERENCES.encounterEvidence, MARKDOWN_REFERENCES.thiefTimedEvidence],
     relatedTopicIds: ["scripts", "text", "combat", "economy", "rules", "linter-release"],
+    toolTargets: [{ domain: "encounters", editor: "simple", label: "Open Encounters" }],
     sections: [
       {
         title: "Choose The Encounter Family",
@@ -495,12 +656,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Encounter Workflow",
-        points: [
-          "Write the prompt first so the player understands the situation.",
-          "Choose the available actions and make each action lead to an understandable result.",
-          "Link result rows to strings, scripts, combat, rewards, or other records using pickers.",
-          "Check both success and failure paths for thief, item, magic, and typed-word branches.",
-          "Use Linter warnings to find branches that can be attempted but produce no visible result."
+        steps: [
+          {
+            title: "Choose the encounter family",
+            body: "Start with Simple for direct choices, Complex for item, magic, typed-word, or multi-result branches, Rogue for trap and lock interactions, and Timed for scheduled events. Do not use a larger record merely because it has more fields.",
+            result: "The record structure matches the interaction the player will experience."
+          },
+          {
+            title: "Write the opening situation",
+            body: "Link or create the prompt string first. It should tell the player what is present and why the available responses make sense without exposing hidden checks.",
+            result: "The encounter is understandable before any result codes are configured."
+          },
+          {
+            title: "Author responses in player order",
+            body: "Give each response a distinct label and configure its requirement, chance, item, spell, thief skill, typed answer, or timing rule. Use the preview/search buttons for long magic and item lists.",
+            result: "Each visible response corresponds to one intentional condition."
+          },
+          {
+            title: "Build every result column",
+            body: "Use result-code pickers to search and preview strings, battles, treasure, scripts, and other targets. Reserve the preview space on empty rows so adding a target does not shift the editor layout.",
+            result: "Success and failure rows point to records the author has inspected."
+          },
+          {
+            title: "Test alternate outcomes",
+            body: "Read item, magic, thief, typed-word, chance, and timing paths independently. Verify failure feedback, repeat behavior, and whether the encounter exits, continues, or calls another script.",
+            result: "No selectable or attemptable branch ends silently or reaches a missing target."
+          }
         ]
       },
       {
@@ -530,6 +711,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     badges: ["chapter", "combat"],
     references: [DIVINITY_CHAPTERS.battle, DIVINITY_CHAPTERS.monster, DIVINITY_CHAPTERS.icons, MARKDOWN_REFERENCES.battleEvidence, MARKDOWN_REFERENCES.monsterEvidence],
     relatedTopicIds: ["scripts", "encounters-targets", "assets", "economy", "linter-release"],
+    toolTargets: [{ domain: "combat", editor: "battles", label: "Open Combat" }],
     sections: [
       {
         title: "Battle Records And Monster Records",
@@ -545,12 +727,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Combat Workflow",
-        points: [
-          "Create or choose the monster records before polishing the battle grid.",
-          "Use icons that resolve from Realmz stock assets, scenario assets, or intentional copied library assets.",
-          "Place monsters so their footprints and starting positions are legible.",
-          "Write before and after text in Strings & Text, then link it from the battle.",
-          "Use battle macros only when round-by-round scripted behavior is needed."
+        steps: [
+          {
+            title: "Prepare scenario monsters",
+            body: "Create or copy the monsters the battle needs before painting the grid. Review names, hit dice, armor, agility, attacks, behavior, immunities, loot, death hooks, and scenario-safe icon ownership.",
+            result: "Every placeable monster ID resolves to an intentional scenario monster."
+          },
+          {
+            title: "Set the battle context",
+            body: "Choose the battle record, distance, terrain or backdrop context, before text, after text, rewards, and any reusable action links before arranging every combatant.",
+            result: "The fight has a narrative entrance and a defined completion path."
+          },
+          {
+            title: "Paint the starting formation",
+            body: "Select monsters from the scenario palette and place them on the battle grid. Keep footprints inside valid cells, avoid accidental overlap, and use a formation that supports the intended range and movement pressure.",
+            result: "The opening round is readable and uses only valid scenario monster entries."
+          },
+          {
+            title: "Add scripted combat behavior",
+            body: "Use battle and monster macros only for behavior that cannot be expressed by the battle or monster records alone. Open each macro in Action Points and verify its combat-specific conditions and targets.",
+            result: "Round behavior has one clear owner and does not hide ordinary setup in a macro."
+          },
+          {
+            title: "Preview and validate",
+            body: "Check every icon preview, scenario monster limit, battle text link, macro link, reward, and placement count. Test the battle from the map or encounter that actually launches it.",
+            result: "The authored fight matches both the Battle Editor preview and its real entry path."
+          }
         ]
       },
       {
@@ -580,6 +782,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     badges: ["chapter", "items"],
     references: [DIVINITY_CHAPTERS.treasure, DIVINITY_CHAPTERS.item, DIVINITY_CHAPTERS.shop, MARKDOWN_REFERENCES.economyEvidence],
     relatedTopicIds: ["scripts", "encounters-targets", "combat", "assets", "rules", "linter-release"],
+    toolTargets: [{ domain: "economy", editor: "treasure", label: "Open Economy" }],
     sections: [
       {
         title: "What Economy Owns",
@@ -595,12 +798,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Economy Workflow",
-        points: [
-          "Pick built-in items by meaning, not just by nearby ID.",
-          "Create scenario custom items only when stock Realmz items cannot express the design.",
-          "Use Treasure for rewards that happen once or after a clear script result.",
-          "Use Shops for repeatable purchasing and restocking expectations.",
-          "Check icon and description links for every custom item."
+        steps: [
+          {
+            title: "Decide whether the item is stock or custom",
+            body: "Search built-in Realmz items by name and behavior before creating a scenario item. Use a custom record only when its mechanics, description, art, or quest role cannot be represented by stock data.",
+            result: "The scenario owns only the item records it actually needs to export."
+          },
+          {
+            title: "Finish custom item dependencies",
+            body: "For each scenario item, set a clear name, type, value, use behavior, restrictions, description, and icon. Copy non-stock art into Scenario Assets; keep stock art referenced by its existing ID.",
+            result: "The item is understandable in inventory and all of its resources resolve."
+          },
+          {
+            title: "Build one-time rewards",
+            body: "Use Treasure for victory points, gold, gems, jewelry, and item slots awarded by a script, encounter, or battle. Preview item choices and add a visible acquisition message for important rewards.",
+            result: "The reward is complete, bounded, and linked from a real gameplay result."
+          },
+          {
+            title: "Build repeatable stores",
+            body: "Use Shops for purchasable stock, quantities, inflation, restrictions, and shop-facing text. Edit the author-owned source stock rather than runtime or saved-game inventory caches.",
+            result: "The shop opens with intentional stock and predictable pricing rules."
+          },
+          {
+            title: "Test the economic loop",
+            body: "Verify that rewards can be received, quest items cannot be lost accidentally, shops expose the intended items, and custom icons and descriptions appear wherever the item is selected or used.",
+            result: "Items move through rewards, inventory, use, and shops without broken references."
+          }
         ]
       },
       {
@@ -630,6 +853,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     badges: ["chapter", "rules"],
     references: [DIVINITY_CHAPTERS.spell, DIVINITY_CHAPTERS.race, DIVINITY_CHAPTERS.caste, MARKDOWN_REFERENCES.rulesEvidence],
     relatedTopicIds: ["scenario", "combat", "economy", "assets", "linter-release", "compatibility-terms"],
+    toolTargets: [{ domain: "rules", editor: "spells", label: "Open Rules" }],
     sections: [
       {
         title: "Built-In Rules Versus Scenario Overrides",
@@ -645,12 +869,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Rules Workflow",
-        points: [
-          "Browse stock Realmz behavior before deciding an override is needed.",
-          "Create overrides only for rules the scenario intentionally changes.",
-          "Check downstream impact on party restrictions, monsters, items, shops, and scripts.",
-          "Use clear names and text for custom spells so players can understand them.",
-          "Validate resource links for spell and caste icons or sounds."
+        steps: [
+          {
+            title: "Inspect the built-in rule",
+            body: "Open the stock spell, race, or caste and read the fields that affect your design before creating a scenario override. Confirm that a local change is necessary rather than assuming blank or zero-valued imported data is authoritative.",
+            result: "The override begins from understood Realmz behavior."
+          },
+          {
+            title: "Create the smallest intentional override",
+            body: "Add a scenario custom record and change only the behavior your scenario owns. Keep names, class or race identity, progression, permissions, targets, and ranges internally consistent.",
+            result: "The scenario-local rule has a clear design purpose."
+          },
+          {
+            title: "Complete linked presentation",
+            body: "Set player-facing names and descriptions, then verify spell or caste icons, sounds, starting items, and any text resources. Reference stock assets by stock ID and bundle only non-stock material.",
+            result: "The rule is both mechanically complete and visible to the player."
+          },
+          {
+            title: "Trace downstream effects",
+            body: "Review Scenario restrictions, party eligibility, starting equipment, combat balance, items, shops, monsters, and scripts that depend on the changed spell, race, or caste.",
+            result: "The override does not create an impossible party or an unresolved dependency."
+          },
+          {
+            title: "Validate in context",
+            body: "Test the changed rule with a party or encounter that actually uses it. Linter can find missing resources and invalid links, but gameplay testing must confirm progression and balance.",
+            result: "The override works as authored rather than merely serializing successfully."
+          }
         ]
       },
       {
@@ -688,6 +932,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       MARKDOWN_REFERENCES.scenarioMusicEvidence
     ],
     relatedTopicIds: ["maps", "player-maps", "scripts", "text", "combat", "linter-release", "compatibility-terms"],
+    toolTargets: [{ domain: "assets", editor: "project-assets", label: "Open Assets" }],
     sections: [
       {
         title: "Asset Lanes",
@@ -704,12 +949,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Import And Copy Workflow",
-        points: [
-          "Import pictures, icons, special land tiles, sounds, text resources, or raw payloads into the lane that matches how the asset should be used.",
-          "Copy a Custom Library or Reference Asset to Scenario Assets only when the scenario needs its own bundled copy.",
-          "Do not offer copy-to-scenario for assets Realmz already owns by stock ID; scripts and records can reference those stock IDs directly.",
-          "After copying to Scenario Assets, inspect the preview, resource type, assigned ID, usage links, and export scope.",
-          "Move Scenario Assets back to the Custom Library when the asset is reusable and no longer meant to ship only with this scenario."
+        steps: [
+          {
+            title: "Choose the ownership lane",
+            body: "Import into Scenario Assets when this scenario must ship the resource. Import into Custom Library when the non-stock asset should remain reusable across Providence projects. Use Reference Assets only to inspect stock or bundled reference material.",
+            result: "The resource's storage scope matches how authors and Realmz will use it."
+          },
+          {
+            title: "Choose the resource target",
+            body: "Select picture, icon, special land tile, sound, TEXT, STR#, styl, or raw preservation according to the consumer. Keep narrative editing in Strings even when Assets can preview and preserve the text resource.",
+            result: "The imported bytes have the resource type their runtime consumer expects."
+          },
+          {
+            title: "Preview before copying",
+            body: "Inspect the asset at Fit and useful integer scales, play sounds, and read text or raw metadata. For Reference Assets, determine whether Realmz already owns the stock ID before offering a scenario copy.",
+            result: "The selected asset is recognizable and its provenance does not drive an unnecessary copy."
+          },
+          {
+            title: "Copy non-stock material into the scenario",
+            body: "Use Add to Scenario Assets for a Custom Library or non-stock reference asset required at runtime. Providence should allocate a valid scenario-range ID, avoid conflicts, and retain a working preview after the move.",
+            result: "The scenario now owns an exportable resource with a valid type-specific ID."
+          },
+          {
+            title: "Verify consumers and export scope",
+            body: "Open usage links from the inspector, confirm maps, monsters, items, scripts, or text records reference the assigned ID, then check Export accounting. Custom Library assets must remain outside scenario output until copied.",
+            result: "Every bundled asset is used intentionally and every reusable-only asset stays out of the package."
+          }
         ],
         callout: {
           tone: "info",
@@ -763,6 +1028,10 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       MARKDOWN_REFERENCES.oracleHarness
     ],
     relatedTopicIds: ["projects", "scenario", "assets", "scripts", "troubleshooting", "compatibility-terms"],
+    toolTargets: [
+      { domain: "linter", editor: "issues", label: "Open Linter" },
+      { domain: "export", editor: "export-plan", label: "Open Export" }
+    ],
     sections: [
       {
         title: "The Release Loop",
@@ -778,12 +1047,32 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       },
       {
         title: "Validation Workflow",
-        points: [
-          "Run validation after major map, script, asset, encounter, combat, economy, rules, or shell changes.",
-          "Open warnings through their owning tool; do not edit records from the diagnostic sentence alone.",
-          "Fix missing visible results by adding strings, sounds, result code, movement, combat, reward, or another player-visible outcome.",
-          "Review preserved-source notes before classic scenario ZIP export.",
-          "Use Export reports as the record of what the chosen target actually received."
+        steps: [
+          {
+            title: "Run Linter from current project state",
+            body: "Validate after changes to maps, scripts, assets, encounters, combat, economy, rules, or the scenario shell. Read the category and owning location before changing data.",
+            result: "The issue list reflects the project you intend to package."
+          },
+          {
+            title: "Fix author-owned blockers first",
+            body: "Open missing targets, invalid coordinates, resource conflicts, broken IDs, and malformed author records in their owning tools. Do not patch decoded runtime caches or preserved files to silence a source warning.",
+            result: "Blocking diagnostics are resolved at their real authoring source."
+          },
+          {
+            title: "Review warnings by player impact",
+            body: "Prioritize missing visible results, absent art or sounds, unreachable progress, unsupported target data, and pass-through files that may affect the selected package. Leave accepted informational notes documented rather than deleting evidence.",
+            result: "Remaining warnings are understood decisions instead of unread noise."
+          },
+          {
+            title: "Choose the package intentionally",
+            body: "Use a Providence project ZIP for editable backup and a Mac or Windows scenario package for Realmz runtime output. Confirm raw-source readiness and target-specific resource behavior before starting export.",
+            result: "The selected artifact matches whether you are backing up or shipping."
+          },
+          {
+            title: "Read the export report and test",
+            body: "Review written, preserved, skipped, and blocked files after export. Test the resulting package in Realmz from startup through the workflows changed in this build; do not substitute a browser preview for runtime verification.",
+            result: "The tested artifact is the same artifact the report describes."
+          }
         ]
       },
       {
@@ -1074,9 +1363,16 @@ export function documentationSearchText(topic: DocumentationTopic) {
         section.title,
         section.paragraphs?.join(" ") ?? "",
         section.points?.join(" ") ?? "",
+        section.steps?.map((step) => `${step.title} ${step.body} ${step.result ?? ""}`).join(" ") ?? "",
         section.cards?.map((card) => `${card.title} ${card.body} ${card.facts?.join(" ") ?? ""}`).join(" ") ?? "",
         section.callout ? `${section.callout.title} ${section.callout.body}` : ""
       ].join(" "))
       .join(" ")
   ].join(" ").toLowerCase();
+}
+
+export function documentationVisualReferences(topic: DocumentationTopic) {
+  return (topic.visualSlots ?? []).filter(
+    (slot): slot is DocumentationVisualSlot & { imageSrc: string } => Boolean(slot.imageSrc)
+  );
 }

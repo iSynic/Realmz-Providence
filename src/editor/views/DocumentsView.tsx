@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Camera, ExternalLink, FileText, Search, X } from "lucide-react";
+import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, Search, X } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import { EmptyState, LinkChip, PanelSection, PreviewCard } from "../ui";
 import {
@@ -8,10 +8,12 @@ import {
   DocumentationCallout,
   DocumentationReference,
   DocumentationSection,
+  DocumentationToolTarget,
   DocumentationTopic,
   DocumentationVisualSlot,
   documentationSearchText,
-  documentationTopicById
+  documentationTopicById,
+  documentationVisualReferences
 } from "../docs/authoringManualContent";
 
 const DOCUMENTS_HELP =
@@ -23,7 +25,7 @@ const DOCUMENT_NAV_HELP =
 const TOPIC_HERO_HELP =
   "The chapter header summarizes the selected manual page, shows its status badges, and counts either its sections or filtered search results.";
 const VISUAL_SLOTS_HELP =
-  "Visual slots mark screenshots or diagrams we plan to capture for stable documentation. Empty slots are placeholders, not missing scenario data.";
+  "Visual references show stable screenshots or diagrams that clarify a workflow. Draft placeholders are not shown in the finished manual.";
 const RELATED_TOPICS_HELP =
   "Related chapters are curated jumps to adjacent concepts. They clear the current document search so you can keep reading without fighting the filter.";
 const SOURCE_REFERENCES_HELP =
@@ -41,12 +43,14 @@ export function DocumentsView({
   onClose,
   initialSection = DOCUMENTATION_TOPICS[0].id,
   onSectionChange,
-  onOpenDivinityReference
+  onOpenDivinityReference,
+  onOpenTool
 }: {
   onClose: () => void;
   initialSection?: string;
   onSectionChange?: (section: string) => void;
   onOpenDivinityReference?: (href: string) => void;
+  onOpenTool?: (target: DocumentationToolTarget) => void;
 }) {
   const [activeSection, setActiveSection] = useState(() => documentationTopicById(initialSection).id);
   const [query, setQuery] = useState("");
@@ -71,6 +75,7 @@ export function DocumentsView({
   const activeTopic = filteredTopics.find((topic) => topic.id === activeSection) ?? filteredTopics[0] ?? documentationTopicById(activeSection);
   const relatedTopics = activeTopic.relatedTopicIds.map(documentationTopicById).filter((topic) => topic.id !== activeTopic.id);
   const divinityReferences = activeTopic.references.filter((reference) => reference.kind === "divinity");
+  const visibleVisualSlots = documentationVisualReferences(activeTopic);
 
   function selectSection(sectionId: string, options: { clearSearch?: boolean } = {}) {
     if (options.clearSearch) setQuery("");
@@ -145,11 +150,16 @@ export function DocumentsView({
           </aside>
 
           <article className="documents-content documents-content-workbench">
-            <TopicHero topic={activeTopic} resultCount={filteredTopics.length} searching={Boolean(normalizedQuery)} />
+            <TopicHero
+              topic={activeTopic}
+              resultCount={filteredTopics.length}
+              searching={Boolean(normalizedQuery)}
+              onOpenTool={onOpenTool}
+            />
             {activeTopic.sections.map((section) => (
               <ArticleSection key={section.title} section={section} />
             ))}
-            {activeTopic.visualSlots && activeTopic.visualSlots.length > 0 && (
+            {visibleVisualSlots.length > 0 && (
               <PanelSection
                 title={(
                   <TutorialTip title="Visual Reference Slots" body={VISUAL_SLOTS_HELP} side="below">
@@ -157,10 +167,10 @@ export function DocumentsView({
                   </TutorialTip>
                 )}
                 eyebrow="Prepared assets"
-                count={`${activeTopic.visualSlots.length} slot${activeTopic.visualSlots.length === 1 ? "" : "s"}`}
+                count={`${visibleVisualSlots.length} reference${visibleVisualSlots.length === 1 ? "" : "s"}`}
               >
                 <div className="documents-visual-grid">
-                  {activeTopic.visualSlots.map((slot) => (
+                  {visibleVisualSlots.map((slot) => (
                     <VisualSlot key={slot.title} slot={slot} />
                   ))}
                 </div>
@@ -262,7 +272,17 @@ export function DocumentsView({
   );
 }
 
-function TopicHero({ topic, resultCount, searching }: { topic: DocumentationTopic; resultCount: number; searching: boolean }) {
+function TopicHero({
+  topic,
+  resultCount,
+  searching,
+  onOpenTool
+}: {
+  topic: DocumentationTopic;
+  resultCount: number;
+  searching: boolean;
+  onOpenTool?: (target: DocumentationToolTarget) => void;
+}) {
   return (
     <PanelSection
       eyebrow={topic.groupId === "appendix" ? "Appendix" : "Manual chapter"}
@@ -274,12 +294,31 @@ function TopicHero({ topic, resultCount, searching }: { topic: DocumentationTopi
       count={searching ? `${resultCount} result${resultCount === 1 ? "" : "s"}` : `${topic.sections.length} sections`}
     >
       <div className="documents-topic-hero">
-        <p>{topic.summary}</p>
-        <div className="documents-status-list" aria-label="Topic status badges">
-          {topic.badges.map((badge) => (
-            <span key={badge}>{badge}</span>
-          ))}
+        <div className="documents-topic-hero-copy">
+          <p>{topic.summary}</p>
+          <div className="documents-status-list" aria-label="Topic status badges">
+            {topic.badges.map((badge) => (
+              <span key={badge}>{badge}</span>
+            ))}
+          </div>
         </div>
+        {topic.toolTargets && topic.toolTargets.length > 0 && (
+          <div className="documents-topic-actions" aria-label="Open chapter tools">
+            {topic.toolTargets.map((target) => (
+              <button
+                key={`${target.domain}:${target.editor}`}
+                className="btn btn-secondary btn-xs"
+                type="button"
+                disabled={!onOpenTool}
+                title={onOpenTool ? `Open ${target.label}` : "Open or import a project first"}
+                onClick={() => onOpenTool?.(target)}
+              >
+                {target.label}
+                <ArrowRight size={13} />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </PanelSection>
   );
@@ -302,6 +341,19 @@ function ArticleSection({ section }: { section: DocumentationSection }) {
               <li key={point}>{point}</li>
             ))}
           </ul>
+        )}
+        {section.steps && (
+          <ol className="documents-step-list">
+            {section.steps.map((step) => (
+              <li key={step.title}>
+                <div>
+                  <strong>{step.title}</strong>
+                  <span>{step.body}</span>
+                  {step.result && <small>{step.result}</small>}
+                </div>
+              </li>
+            ))}
+          </ol>
         )}
         {section.cards && (
           <div className="workbench-preview-grid">

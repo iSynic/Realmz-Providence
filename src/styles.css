@@ -1,4 +1,5 @@
 @import "./editor/styles/shell.css";
+@import "./editor/styles/documents-authoring.css";
 @import "./editor/styles/text-scenario.css";
 @import "./editor/styles/map-context-sidebar.css";
 @import "./editor/styles/map-paint-inspector.css";

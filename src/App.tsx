@@ -35,6 +35,7 @@ import { WorkbenchRouter } from "./editor/workbench/WorkbenchRouter";
 import { GlobalSearchDialog } from "./editor/workbench/GlobalSearchDialog";
 import { DivinityManualWindow } from "./editor/views/DivinityManualWindow";
 import { GlobalSearchResult } from "./editor/globalSearch";
+import type { DocumentationToolTarget } from "./editor/docs/documentationContent";
 import {
   LazyDocumentsView as DocumentsView,
   WorkbenchChunkErrorBoundary,
@@ -634,6 +635,13 @@ export function App() {
     dispatch({ type: "setStatus", status: `Returned to ${location.domain.replace(/-/g, " ")}.` });
   }
 
+  function openDocumentationTool(target: DocumentationToolTarget) {
+    setDocumentsOpen(false);
+    openProjectDomain(target.domain);
+    dispatch({ type: "setActiveEditor", editor: target.editor });
+    dispatch({ type: "setStatus", status: `Opened ${target.label} from Documents.` });
+  }
+
   function navigateWorkbenchHistory(delta: -1 | 1) {
     const nextIndex = workbenchHistory.index + delta;
     const next = workbenchHistory.entries[nextIndex];
@@ -799,6 +807,7 @@ export function App() {
                 setDivinityManualHref(href);
                 setDivinityManualOpen(true);
               }}
+              onOpenTool={state.project ? openDocumentationTool : undefined}
               onClose={() => setDocumentsOpen(false)}
             />
           </Suspense>

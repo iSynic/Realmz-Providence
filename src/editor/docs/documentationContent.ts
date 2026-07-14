@@ -1,3 +1,5 @@
+import type { EditorTab } from "../types";
+
 export type DocumentationGroup = {
   id: string;
   label: string;
@@ -30,6 +32,18 @@ export type DocumentationCard = {
   facts?: string[];
 };
 
+export type DocumentationStep = {
+  title: string;
+  body: string;
+  result?: string;
+};
+
+export type DocumentationToolTarget = {
+  domain: EditorTab;
+  editor: string;
+  label: string;
+};
+
 export type DocumentationVisualSlot = {
   title: string;
   caption: string;
@@ -42,6 +56,7 @@ export type DocumentationSection = {
   title: string;
   paragraphs?: string[];
   points?: string[];
+  steps?: DocumentationStep[];
   cards?: DocumentationCard[];
   callout?: DocumentationCallout;
 };
@@ -57,6 +72,7 @@ export type DocumentationTopic = {
   references: DocumentationReference[];
   sections: DocumentationSection[];
   relatedTopicIds: string[];
+  toolTargets?: DocumentationToolTarget[];
   visualSlots?: DocumentationVisualSlot[];
 };
 
@@ -3003,6 +3019,7 @@ export function documentationSearchText(topic: DocumentationTopic) {
         section.title,
         section.paragraphs?.join(" ") ?? "",
         section.points?.join(" ") ?? "",
+        section.steps?.map((step) => `${step.title} ${step.body} ${step.result ?? ""}`).join(" ") ?? "",
         section.cards?.map((card) => `${card.title} ${card.body} ${card.facts?.join(" ") ?? ""}`).join(" ") ?? "",
         section.callout ? `${section.callout.title} ${section.callout.body}` : ""
       ].join(" "))
