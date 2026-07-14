@@ -11,6 +11,9 @@ use crate::importer::{
 };
 use crate::media_assets::mime_for_path;
 use crate::project::{ProvidenceProject, ScenarioTarget, SemanticSchema, ValidationReport};
+use crate::project_package::{
+    open_project_package as open_project_package_impl, OpenedProjectPackage,
+};
 use crate::resource_fork::parse_resource_fork_entries;
 use crate::resource_preview::{
     inspect_resource_preview, preview_data_url_for_resource, DecodedResourcePreview,
@@ -257,6 +260,14 @@ pub fn import_scenario_into_project(
 #[tauri::command]
 pub fn open_project(project_dir: String) -> Result<ProvidenceProject> {
     open_project_impl(project_dir)
+}
+
+#[tauri::command]
+pub fn open_project_package(
+    package_path: String,
+    project_root: String,
+) -> Result<OpenedProjectPackage> {
+    open_project_package_impl(package_path, project_root)
 }
 
 #[tauri::command]

@@ -170,6 +170,7 @@ pub enum ScenarioIconResourceSource {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ScenarioMeta {
+    #[serde(default)]
     pub id: String,
     pub name: String,
     pub project_path: String,
@@ -977,15 +978,30 @@ pub struct Action {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "snake_case")]
 pub enum ActionCategory {
+    #[serde(alias = "Branch", alias = "Quest")]
     Branch,
+    #[serde(alias = "Combat")]
     Combat,
+    #[serde(alias = "Encounter")]
     Encounter,
+    #[serde(alias = "Economy", alias = "ItemShop")]
     ItemShop,
+    #[serde(alias = "Map")]
     Map,
+    #[serde(alias = "Registration", alias = "Scenario")]
     Registration,
+    #[serde(
+        alias = "Advanced",
+        alias = "Characters",
+        alias = "Rules",
+        alias = "State"
+    )]
     State,
+    #[serde(alias = "Time")]
     Time,
+    #[serde(alias = "Media", alias = "Text", alias = "UiText")]
     UiText,
+    #[serde(alias = "Unknown")]
     Unknown,
 }
 
@@ -1845,5 +1861,31 @@ pub enum ScenarioTarget {
 impl ProvidenceProject {
     pub fn map_by_id_mut(&mut self, id: &str) -> Option<&mut MapEntity> {
         self.maps.iter_mut().find(|map| map.id == id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ActionCategory;
+
+    #[test]
+    fn action_category_accepts_legacy_browser_package_labels() {
+        let cases = [
+            ("\"Text\"", ActionCategory::UiText),
+            ("\"Combat\"", ActionCategory::Combat),
+            ("\"Encounter\"", ActionCategory::Encounter),
+            ("\"Economy\"", ActionCategory::ItemShop),
+            ("\"Map\"", ActionCategory::Map),
+            ("\"Quest\"", ActionCategory::Branch),
+        ];
+
+        for (json, expected) in cases {
+            let category = serde_json::from_str::<ActionCategory>(json).expect("legacy category");
+            assert_eq!(category, expected);
+        }
+        assert_eq!(
+            serde_json::to_string(&ActionCategory::UiText).expect("serialize category"),
+            "\"ui_text\""
+        );
     }
 }

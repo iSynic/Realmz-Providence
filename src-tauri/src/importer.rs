@@ -2182,7 +2182,7 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
     hex::encode(hasher.finalize())
 }
 
-fn scenario_id(name: &str) -> String {
+pub(crate) fn scenario_id(name: &str) -> String {
     let slug: String = name
         .chars()
         .map(|ch| {

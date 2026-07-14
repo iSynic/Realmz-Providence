@@ -197,7 +197,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         cards: [
           { title: "New", body: "Start a blank project or create one from validated Scenario JSON.", facts: ["new project"] },
-          { title: "Open", body: "Resume an existing Providence project package without re-importing its source scenario.", facts: ["continue work"] },
+          { title: "Open", body: "Resume an existing Providence project package without re-importing its source scenario. Desktop accepts a .providence.zip package or the project.json inside an extracted project folder.", facts: ["continue work"] },
           { title: "Import", body: "Convert a Realmz scenario folder into a new Providence project and inspect the import summary.", facts: ["existing scenario"] },
           { title: "Save", body: "Persist maps, records, assets, editor metadata, and project history needed for later authoring.", facts: ["authoring state"] }
         ]
@@ -239,6 +239,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Do not import a raw scenario into a project that already contains author edits.",
           "Do not confuse Save with Export.",
+          "Do not open .windows.zip or .mac-classic.zip as projects. They are playable Realmz exports; Open expects .providence.zip or project.json.",
           "Do not assume browser behavior is final desktop parity for resource forks, native folders, or release packaging.",
           "Do not edit the original imported folder and expect Providence to merge those changes later."
         ]

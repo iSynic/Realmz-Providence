@@ -25,7 +25,7 @@ const TOPBAR_PROJECT_HELP =
 const TOPBAR_NEW_PROJECT_HELP =
   "New creates a Providence package with an editable land level 0. Use Import before authoring project content when starting from a raw Realmz scenario.";
 const TOPBAR_OPEN_PROJECT_HELP =
-  "Open loads an existing Providence project package. Browser mode opens downloaded .providence.zip packages; use Import for raw Realmz scenario folders.";
+  "Open loads an existing Providence project. Select a .providence.zip package or project.json on desktop; browser mode opens downloaded .providence.zip packages. Use Import for raw Realmz scenario folders.";
 const TOPBAR_CLOSE_PROJECT_HELP =
   "Close returns to the Providence start screen. In browser mode it pauses auto-resume without deleting the saved project from browser storage; use Resume Local on the start screen to reopen it.";
 const TOPBAR_IMPORT_HELP =
@@ -226,7 +226,7 @@ export function WorkbenchTopbar({
             type="button"
             onClick={onOpenProject}
             disabled={!canOpenProject}
-            title={canOpenProject ? (isDesktopRuntime ? "Open Providence project package" : "Open Providence project ZIP") : browserPreviewStatus}
+            title={canOpenProject ? (isDesktopRuntime ? "Open Providence project ZIP or project.json" : "Open Providence project ZIP") : browserPreviewStatus}
           >
             <FolderOpen size={15} />
             <span>Open</span>

@@ -562,7 +562,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "New, Open, And Import",
         paragraphs: [
           "New creates a Providence package with library-backed defaults and an editable land level 0. Import Scenario is the raw Realmz scenario path and should be used before authoring project content.",
-          "Open loads an existing Providence project package. Browser mode opens downloaded `.providence.zip` packages directly; desktop mode opens project package folders. If you select a raw scenario folder when you meant to import, Providence cannot assume how to merge it into the current project.",
+          "Open loads an existing Providence project package. Browser mode opens downloaded `.providence.zip` packages directly. Desktop accepts a `.providence.zip` package or the `project.json` inside an extracted project folder. If you select a raw scenario folder when you meant to import, Providence cannot assume how to merge it into the current project.",
           "Import Scenario reads classic Realmz scenario files, resource forks, fixed-record data, pictures, sounds, icons, maps, scripts, and runtime-adjacent evidence into the empty package. Imported source files are then treated as evidence and preservation inputs."
         ],
         cards: [

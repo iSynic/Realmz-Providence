@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { resolve } from "node:path";
+/// <reference types="vite/client" />
+
 import { describe, expect, it } from "vitest";
 import {
   DOCUMENTATION_GROUPS,
@@ -39,6 +39,11 @@ const AUTHORING_DOMAINS = new Set([
   "linter",
   "export"
 ]);
+
+const GALLERY_IMAGES = new Set(
+  Object.keys(import.meta.glob("../../../public/manual/gallery/*.png", { eager: true, query: "?url", import: "default" }))
+    .map((path) => `/manual/gallery/${path.split("/").pop()}`)
+);
 
 describe("Providence authoring manual", () => {
   it("keeps the authoring chapters separate from reference appendices", () => {
@@ -112,7 +117,7 @@ describe("Providence authoring manual", () => {
     for (const id of illustratedChapters) {
       for (const slot of documentationVisualReferences(documentationTopicById(id))) {
         expect(slot.imageSrc, `${id} gallery path`).toMatch(/^\/manual\/gallery\/[a-z0-9-]+\.png$/);
-        expect(existsSync(resolve("public", slot.imageSrc.replace(/^\//, ""))), `${id} gallery file`).toBe(true);
+        expect(GALLERY_IMAGES.has(slot.imageSrc), `${id} gallery file`).toBe(true);
       }
     }
   });

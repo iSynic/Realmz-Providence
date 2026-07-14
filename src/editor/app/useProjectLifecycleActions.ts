@@ -145,16 +145,36 @@ export function useProjectLifecycleActions({
       return;
     }
     const selected = await open({
-      directory: true,
+      directory: false,
       multiple: false,
       defaultPath: roots.project,
-      title: "Open Providence Project Package"
+      title: "Open Providence Project",
+      filters: [{
+        name: "Providence Projects",
+        extensions: ["providence.zip", "json"]
+      }]
     });
     const selectedPath = normalizeDialogPath(selected);
     if (!selectedPath) return;
-    setProjectDir(selectedPath);
     try {
-      await openProjectFromDir(selectedPath);
+      const selectedName = pathBaseName(selectedPath).toLowerCase();
+      if (selectedName === "project.json") {
+        await openProjectFromDir(parentPath(selectedPath));
+        return;
+      }
+      if (!selectedName.endsWith(".providence.zip")) {
+        throw new Error("Select a .providence.zip package or a project's project.json file.");
+      }
+      dispatch({ type: "setStatus", status: "Opening project package..." });
+      const opened = await invoke<{ projectDir: string; project: Project }>("open_project_package", {
+        packagePath: selectedPath,
+        projectRoot: roots.project
+      });
+      setProjectDir(opened.projectDir);
+      setExportDir(defaultExportPath(roots.export, opened.project.scenario.name));
+      dispatch({ type: "setProject", project: opened.project, selectedMapId: opened.project.maps[0]?.id ?? null });
+      dispatch({ type: "setTab", tab: "maps" });
+      dispatch({ type: "setStatus", status: `Opened ${opened.project.scenario.name} from project package` });
     } catch (error) {
       dispatch({ type: "setStatus", status: `Open failed: ${commandError(error)}` });
     }

@@ -7,6 +7,7 @@ pub mod harness;
 pub mod importer;
 pub mod media_assets;
 pub mod project;
+pub mod project_package;
 pub mod realmz;
 pub mod resource_fork;
 pub mod resource_preview;
@@ -33,6 +34,7 @@ pub fn run() {
             commands::import_scenario,
             commands::import_scenario_into_project,
             commands::open_project,
+            commands::open_project_package,
             commands::build_project_semantic_schema,
             commands::build_saved_project_semantic_schema,
             media_assets::load_project_asset,
