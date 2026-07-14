@@ -375,6 +375,13 @@ async function checkStableFacades() {
     "export function projectCommandLabel",
     "export function projectCommandChangeCount"
   ]));
+  failures.push(...await requireTokens("src/editor/components/MapContextSidebar.tsx", [
+    "export { MapBrowserSidebar as MapContextSidebar }",
+    "export { MapInspectorSidebar as MapSelectionSidebar }",
+    "export { LandLayoutEditor }",
+    "export { LandTileAtlasEditor }",
+    "export { RandomAreasWorkbench }"
+  ]));
   failures.push(...await requireTokens("src-tauri/src/realmz.rs", [
     "mod action_points;",
     "mod assembly;",
@@ -403,6 +410,7 @@ async function checkStableFacades() {
     "export_project_impl("
   ]));
   failures.push(...await requireTokens("docs/codebase-stabilization-baseline.md", [
+    "providence-architecture-contract",
     "Authoritative Architecture Contract",
     "`docs/generated-artifact-policy.json`",
     "`src/editor/scenarioSeed.ts`",
@@ -410,6 +418,12 @@ async function checkStableFacades() {
     "`src-tauri/src/realmz.rs`",
     "`src-tauri/src/commands.rs` -> `src-tauri/src/exporter.rs`",
     "`npm run check:architecture`"
+  ]));
+  failures.push(...await requireTokens("README.md", [
+    "docs/codebase-stabilization-baseline.md"
+  ]));
+  failures.push(...await requireTokens("docs/release-checklist.md", [
+    "docs/codebase-stabilization-baseline.md"
   ]));
   return failures;
 }

@@ -1,3 +1,4 @@
+<!-- providence-architecture-contract -->
 # M19 Codebase Stabilization Baseline
 
 This document defines the guardrails for M19: Codebase Stabilization & Modularization. M19 is an incremental extraction effort, not a rewrite or visual redesign. Public editor behavior, project schema, imported data, and exported Realmz bytes remain stable unless a separate issue explicitly changes them.
@@ -13,7 +14,8 @@ This is the canonical developer architecture document for Providence. The README
 | Scripts and Action Points | `src/editor/panels/ScriptsPanel.tsx` | `src/editor/panels/scripts/ActionPoint*`, `SelectedActionPointStepEditor.tsx`, diagnostics, draft, and command helpers | Scripts UI may use shared editor/domain modules, but must not import Combat or Maps feature internals. The read-only `scriptActionCatalog.ts` is an explicit shared catalog used by Combat result authoring. |
 | Encounters | `src/editor/panels/ScriptsPanel.tsx` | `src/editor/panels/scripts/Encounter*`, `ThiefEncounterShell.tsx`, and `TimedEncounterShell.tsx` | Encounter UI shares the Scripts feature boundary and sends typed project commands rather than owning persistence. |
 | Combat | `src/editor/panels/CombatPanel.tsx` | `src/editor/panels/combat/*` | Battle, monster, icon-set, and library workbenches are private to Combat. Other panels use project records or shared helpers, not Combat components. |
-| Maps | `src/editor/panels/MapsPanel.tsx` | `src/editor/panels/maps/*` and `src/editor/components/maps/*` | The panel owns workbench state and canvas composition; map inspectors own selection presentation. Other domains do not import Maps feature internals. |
+| Maps | `src/editor/panels/MapsPanel.tsx` | `src/editor/panels/maps/*` and `src/editor/components/maps/*` | The panel owns workbench state and canvas composition. Other domains do not import Maps feature internals. |
+| Map context and selection | `src/editor/components/MapContextSidebar.tsx` | `MapBrowserSidebar.tsx`, `MapInspectorSidebar.tsx`, `mapBrowserModel.ts`, and focused map workbenches under `src/editor/components/maps/*` | The facade preserves the map browser, selection inspector, layout, atlas, and random-area entrypoints. Pure map-context commands and labels live in `mapBrowserModel.ts`; panel state remains in `useMapWorkbenchState.ts`. |
 | Shared suite and economy tools | `src/editor/panels/SuiteDomainPanel.tsx` | `src/editor/panels/suite/*` and `src/editor/panels/economy/*` | Suite routing composes domain workbenches. Record mutation still goes through project commands. |
 | Scenario generation | `src/editor/scenarioSeed.ts` | `src/editor/scenarioSeed/*` parser, allocation, compiler, terrain, and validation stages | Consumers import the facade. Compiler modules cannot depend on UI or browser storage/package code. Exact bridge imports provide the existing default-project validator and bundled landlook/atlas metadata; two pure project-command helpers are intentionally reused by `coreRecordCompiler.ts`. |
 | Project mutation | `src/editor/projectCommands.ts` | `src/editor/projectCommands/*` command families | `applyProjectCommand` is the editor mutation facade. UI and harness code dispatch `ProjectCommand`; deep command imports are private except the documented compiler reuse. |
@@ -50,6 +52,7 @@ The executable size baseline is in `scripts/check_module_size_baseline.mjs`. It 
 Extraction work must preserve these entrypoints unless an issue explicitly approves a migration:
 
 - `ScriptsPanel`, `CombatPanel`, `MapsPanel`, `SuiteDomainPanel`, and map inspector component props and application routing.
+- `src/editor/components/MapContextSidebar.tsx`: map context, selection, layout, atlas, and random-area component exports.
 - `src/editor/scenarioSeed.ts`: `parseScenarioSeed`, `createProjectFromScenarioSeed`, contracts, diagnostics, and allocation reports.
 - `src/editor/projectCommands.ts`: `applyProjectCommand`, command labels, and change counts.
 - Browser project/package module exports and the current project schema version.
