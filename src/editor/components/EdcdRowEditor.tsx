@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, Save, Trash2 } from "lucide-react";
 import { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
-import { CollapsibleSection, EmptyState, FieldRow, PanelSection } from "../ui";
+import { CollapsibleSection, EmptyState, FieldRow, PanelSection, type ReferencePickerOption } from "../ui";
 import { itemReferenceOptions, type ItemReferenceOption } from "../itemReferences";
 import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences, type EdcdTargetKind, type EdcdTargetOption } from "../edcdTargets";
 import { type OpcodeParameterLabel } from "../opcodeCrosswalk";
 import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, choicePromptStorageFromOptionLabels, parseChoicePromptValue, serializeChoicePromptValue } from "../choiceDialogs";
 import { scriptActionSummary } from "../panels/scripts/scriptActionCatalog";
 import { selectEntityFromId } from "../utils";
+import { EdcdReferenceTargetField, numericReferenceQuery } from "./EdcdReferenceTargetField";
 
 type EdcdField = {
   name?: string;
@@ -799,8 +800,6 @@ function mapLevelTypeSort(levelType: string) {
   return levelType === "land" ? 0 : 1;
 }
 
-type EdcdItemSearchResult = Pick<ItemReferenceOption, "key" | "value" | "label" | "detail" | "summary" | "sourceState">;
-
 function EdcdItemTargetField({
   value,
   disabled,
@@ -814,25 +813,15 @@ function EdcdItemTargetField({
   onChange: (value: number) => void;
   onOpen?: (entity: SelectedEntity) => void;
 }) {
-  const [query, setQuery] = useState("");
   const selected = options.find((option) => option.value === value) ?? null;
-  const normalizedQuery = query.trim().toLowerCase();
-  const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
-  const matchedOptions: EdcdItemSearchResult[] = normalizedQuery
-    ? options.filter((option) => edcdItemOptionMatches(option, normalizedQuery)).slice(0, 8)
-    : [];
-  const rawQueryOption: EdcdItemSearchResult | null = queryNumber != null && !options.some((option) => option.value === queryNumber)
-    ? {
-      key: `raw:item:${queryNumber}`,
-      value: queryNumber,
-      label: `Item ${queryNumber}`,
-      detail: "Raw Realmz item ID",
-      summary: "",
-      sourceState: "No decoded item record"
-    }
-    : null;
-  const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
-  const matchCount = normalizedQuery ? options.filter((option) => edcdItemOptionMatches(option, normalizedQuery)).length + (rawQueryOption ? 1 : 0) : 0;
+  const pickerOptions = useMemo(() => options.map((option): ReferencePickerOption<number> => ({
+    key: option.key,
+    value: option.value,
+    label: option.label,
+    detail: edcdSearchResultDetail(option.detail, option.sourceState),
+    searchText: [option.value, option.label, option.detail, option.summary, option.sourceState].filter(Boolean).join(" "),
+    title: edcdSearchResultDetail(option.detail, option.sourceState)
+  })), [options]);
   const selectedLabel = selected?.label ?? (value ? `Item ${value}` : "No item selected");
   const selectedDetail = selected
     ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ")
@@ -840,95 +829,39 @@ function EdcdItemTargetField({
       ? "Raw Realmz item ID; no decoded project usage yet."
       : "";
   const selectedEntity = selected ? selectEntityFromId(`item:${selected.value}`) : null;
-  const chooseOption = (option: EdcdItemSearchResult) => {
-    onChange(option.value);
-    setQuery("");
-  };
-  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setQuery("");
-      return;
-    }
-    if (event.key !== "Enter") return;
-    const firstOption = resultOptions[0];
-    if (!firstOption) return;
-    event.preventDefault();
-    chooseOption(firstOption);
-  };
   return (
-    <div className="edcd-search-target-field">
-      <input
-        type="search"
-        disabled={disabled}
-        value={query}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-        onKeyDown={handleSearchKeyDown}
-        placeholder="Search item # or name..."
-        aria-label="Search item"
-      />
-      {normalizedQuery ? (
-        <div className="edcd-search-target-results" aria-live="polite">
-          {resultOptions.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              className={option.value === value ? "selected" : ""}
-              disabled={disabled}
-              title={[option.detail, option.sourceState].filter(Boolean).join(" | ")}
-              onClick={(event) => {
-                event.preventDefault();
-                chooseOption(option);
-              }}
-            >
-              <strong>{option.label}</strong>
-              {edcdSearchResultDetail(option.detail, option.sourceState) && <small>{edcdSearchResultDetail(option.detail, option.sourceState)}</small>}
-            </button>
-          ))}
-          {resultOptions.length === 0 && <small>No item references match this search.</small>}
-          {matchCount > resultOptions.length && <small>{matchCount - resultOptions.length} more item reference(s); search to narrow.</small>}
-        </div>
-      ) : (
-        <div className={`edcd-selected-target-row${selected || value === 0 ? "" : " missing"}`}>
-          <div>
-            <strong>{selectedLabel}</strong>
-            {selectedDetail && <small>{selectedDetail}</small>}
-          </div>
-          <div className="edcd-selected-target-actions">
-            {selectedEntity && onOpen && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-xs icon-only"
-                disabled={disabled}
-                title={`Open ${selectedLabel}`}
-                aria-label={`Open ${selectedLabel}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onOpen(selectedEntity);
-                }}
-              >
-                <Eye size={12} />
-              </button>
-            )}
-            {value !== 0 && (
-              <button
-                type="button"
-                className="btn btn-danger btn-xs icon-only"
-                disabled={disabled}
-                title="Clear item"
-                aria-label="Clear item"
-                onClick={(event) => {
-                  event.preventDefault();
-                  onChange(0);
-                }}
-              >
-                <Trash2 size={12} />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+    <EdcdReferenceTargetField
+      ariaLabel="Search item"
+      placeholder="Search item # or name..."
+      options={pickerOptions}
+      value={value}
+      current={{
+        label: selectedLabel,
+        detail: selectedDetail,
+        state: selected ? "resolved" : value === 0 ? "empty" : "unresolved"
+      }}
+      disabled={disabled}
+      rawOptionForQuery={(query) => {
+        const queryNumber = numericReferenceQuery(query);
+        if (queryNumber == null || options.some((option) => option.value === queryNumber)) return null;
+        return {
+          key: `raw:item:${queryNumber}`,
+          value: queryNumber,
+          label: `Item ${queryNumber}`,
+          detail: "Raw Realmz item ID | No decoded item record",
+          searchText: `${queryNumber} item raw realmz no decoded record`
+        };
+      }}
+      resultNoun="item"
+      resultNounPlural="items"
+      emptyTitle="No matching items"
+      emptyBody="Try an item name, numeric ID, category, source, or use."
+      selectedEntity={selectedEntity}
+      openLabel={`Open ${selectedLabel}`}
+      clearLabel="Clear item"
+      onChange={onChange}
+      onOpen={onOpen}
+    />
   );
 }
 
@@ -949,113 +882,59 @@ function EdcdSearchTargetField({
   onChange: (value: number) => void;
   onOpen?: (entity: SelectedEntity) => void;
 }) {
-  const [query, setQuery] = useState("");
   const resolvedValue = targetKind === "message" || targetKind === "sound" ? Math.abs(value) : value;
   const selected = options.find((option) => option.value === resolvedValue) ?? null;
-  const normalizedQuery = query.trim().toLowerCase();
-  const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
-  const matchedOptions = normalizedQuery
-    ? options.filter((option) => edcdTargetOptionMatches(option, normalizedQuery)).slice(0, 6)
-    : [];
-  const rawQueryOption = queryNumber != null && !options.some((option) => option.value === Math.abs(queryNumber))
-    ? {
-      key: `raw:${targetKind}:${queryNumber}`,
-      value: targetKind === "sound" ? queryNumber : Math.abs(queryNumber),
-      label: `${targetKind === "message" ? "String" : label} ${Math.abs(queryNumber)}`,
-      detail: targetKind === "message" ? "No string record exists yet." : "Raw sound reference."
-    }
-    : null;
-  const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
+  const pickerOptions = useMemo(() => options.map((option): ReferencePickerOption<number> => ({
+    key: option.key,
+    value: option.value,
+    label: option.label,
+    detail: option.detail,
+    searchText: [
+      option.value,
+      targetKind === "message" ? -Math.abs(option.value) : null,
+      option.label,
+      option.detail
+    ].filter((part) => part != null && part !== "").join(" "),
+    title: option.detail
+  })), [options, targetKind]);
   const selectedLabel = selected?.label ?? (value ? `${targetKind === "message" ? "String" : label} ${Math.abs(value)}` : `No ${label.toLowerCase()} selected`);
   const selectedDetail = edcdCompactTargetDetail(targetKind, selected, value, label);
-  const chooseOption = (option: EdcdTargetOption) => {
-    onChange(option.value);
-    setQuery("");
-  };
-  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setQuery("");
-      return;
-    }
-    if (event.key !== "Enter") return;
-    const firstOption = resultOptions[0];
-    if (!firstOption) return;
-    event.preventDefault();
-    chooseOption(firstOption);
-  };
   return (
-    <div className="edcd-search-target-field">
-      <input
-        type="search"
-        disabled={disabled}
-        value={query}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-        onKeyDown={handleSearchKeyDown}
-        placeholder={targetKind === "message" ? "Search string # or text..." : "Search sound # or name..."}
-        aria-label={`Search ${label}`}
-      />
-      {normalizedQuery ? (
-        <div className="edcd-search-target-results" aria-live="polite">
-          {resultOptions.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-                className={option.value === value || Math.abs(option.value) === resolvedValue ? "selected" : ""}
-                disabled={disabled}
-                title={option.detail}
-                onClick={(event) => {
-                  event.preventDefault();
-                  chooseOption(option);
-                }}
-              >
-                <strong>{option.label}</strong>
-              {option.detail && <small>{option.detail}</small>}
-            </button>
-          ))}
-          {resultOptions.length === 0 && <small>No {label.toLowerCase()} targets match this search.</small>}
-        </div>
-      ) : (
-        <div className={`edcd-selected-target-row${selected ? "" : " missing"}`}>
-          <div>
-            <strong>{selectedLabel}</strong>
-            {selectedDetail && <small>{selectedDetail}</small>}
-          </div>
-          <div className="edcd-selected-target-actions">
-            {selected?.entity && onOpen && (
-              <button
-                type="button"
-                className="btn btn-secondary btn-xs icon-only"
-                disabled={disabled}
-                title={`Open ${selected.label}`}
-                aria-label={`Open ${selected.label}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onOpen(selected.entity!);
-                }}
-              >
-                <Eye size={12} />
-              </button>
-            )}
-            {value !== 0 && (
-              <button
-                type="button"
-                className="btn btn-danger btn-xs icon-only"
-                disabled={disabled}
-                title={`Clear ${label}`}
-                aria-label={`Clear ${label}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  onChange(0);
-                }}
-              >
-                <Trash2 size={12} />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+    <EdcdReferenceTargetField
+      ariaLabel={`Search ${label}`}
+      placeholder={targetKind === "message" ? "Search string # or text..." : "Search sound # or name..."}
+      options={pickerOptions}
+      value={value}
+      selectedValue={resolvedValue}
+      current={{
+        label: selectedLabel,
+        detail: selectedDetail,
+        state: selected ? "resolved" : value === 0 ? "empty" : "unresolved"
+      }}
+      disabled={disabled}
+      rawOptionForQuery={(query) => {
+        const queryNumber = numericReferenceQuery(query);
+        if (queryNumber == null) return null;
+        const rawValue = targetKind === "sound" ? queryNumber : Math.abs(queryNumber);
+        if (options.some((option) => option.value === rawValue)) return null;
+        return {
+          key: `raw:${targetKind}:${queryNumber}`,
+          value: rawValue,
+          label: `${targetKind === "message" ? "String" : label} ${Math.abs(queryNumber)}`,
+          detail: targetKind === "message" ? "No string record exists yet." : "Raw sound reference.",
+          searchText: `${queryNumber} ${Math.abs(queryNumber)} ${targetKind} ${label} raw`
+        };
+      }}
+      resultNoun={targetKind === "message" ? "string" : "sound"}
+      resultNounPlural={targetKind === "message" ? "strings" : "sounds"}
+      emptyTitle={`No matching ${targetKind === "message" ? "strings" : "sounds"}`}
+      emptyBody={`Try a ${targetKind === "message" ? "string" : "sound"} name, numeric ID, or detail.`}
+      selectedEntity={selected?.entity}
+      openLabel={`Open ${selected?.label ?? selectedLabel}`}
+      clearLabel={`Clear ${label}`}
+      onChange={onChange}
+      onOpen={onOpen}
+    />
   );
 }
 
@@ -1091,114 +970,51 @@ function EdcdSelectTargetField({
     : value > 0
       ? `No ${label} ${value} exists yet.`
       : "";
-  const [query, setQuery] = useState("");
-  const normalizedQuery = query.trim().toLowerCase();
-  const queryNumber = /^-?\d+$/.test(normalizedQuery) ? Number(normalizedQuery) : null;
-  const matchedOptions = normalizedQuery
-    ? options.filter((option) => edcdTargetOptionMatches(option, normalizedQuery)).slice(0, 8)
-    : [];
-  const rawQueryOption: EdcdTargetOption | null = queryNumber != null && !options.some((option) => option.value === queryNumber)
-    ? {
-      key: `raw:${targetKind}:${queryNumber}`,
-      value: queryNumber,
-      label: `${displayLabel} ${queryNumber}`,
-      detail: `No ${label} ${queryNumber} exists yet.`
-    }
-    : null;
-  const resultOptions = rawQueryOption ? [rawQueryOption, ...matchedOptions] : matchedOptions;
   const selectedLabel = selected?.label ?? (value > 0 ? `Missing ${displayLabel} ${value}` : `No ${label.toLowerCase()} selected`);
   const selectedDetail = selected?.detail ?? (value > 0 ? `No ${label} ${value} exists yet.` : "");
-  const chooseTarget = (option: EdcdTargetOption) => {
-    onChange(option.value);
-    setQuery("");
-  };
-  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setQuery("");
-      return;
-    }
-    if (event.key !== "Enter") return;
-    const firstOption = resultOptions[0];
-    if (!firstOption) return;
-    event.preventDefault();
-    chooseTarget(firstOption);
-  };
   if (useSearchTarget) {
+    const pickerOptions = options.map((option): ReferencePickerOption<number> => ({
+      key: option.key,
+      value: option.value,
+      label: option.label,
+      detail: option.detail,
+      searchText: [option.value, option.label, option.detail].filter(Boolean).join(" "),
+      title: option.detail
+    }));
     return (
-      <div className="edcd-select-target-field edcd-search-target-field">
-        <input
-          type="search"
-          disabled={disabled}
-          value={query}
-          onChange={(event) => setQuery(event.currentTarget.value)}
-          onKeyDown={handleSearchKeyDown}
-          placeholder={`Search ${label.toLowerCase()}...`}
-          aria-label={`Search ${label}`}
-        />
-        {normalizedQuery ? (
-          <div className="edcd-search-target-results" aria-live="polite">
-            {resultOptions.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={option.value === value ? "selected" : ""}
-                disabled={disabled}
-                title={option.detail}
-                onClick={(event) => {
-                  event.preventDefault();
-                  chooseTarget(option);
-                }}
-              >
-                <strong>{option.label}</strong>
-                {option.detail && <small>{option.detail}</small>}
-              </button>
-            ))}
-            {resultOptions.length === 0 && <small>No {label.toLowerCase()} targets match this search.</small>}
-            {matchedOptions.length === 8 && <small>Keep typing to narrow more {label.toLowerCase()} matches.</small>}
-          </div>
-        ) : (
-          <div className={`edcd-search-selected-target${selected ? "" : " missing"}`}>
-            <div>
-              <strong>{selectedLabel}</strong>
-              {selectedDetail && <small>{selectedDetail}</small>}
-            </div>
-            <div className="edcd-selected-target-actions">
-              {selected?.entity && onOpen && (
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-xs icon-only"
-                  title={`Open ${selected.label}`}
-                  aria-label={`Open ${selected.label}`}
-                  disabled={disabled}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onOpen(selected.entity!);
-                  }}
-                >
-                  <Eye size={12} />
-                </button>
-              )}
-              {value !== 0 && (
-                <button
-                  type="button"
-                  className="btn btn-danger btn-xs icon-only"
-                  title={`Clear ${label}`}
-                  aria-label={`Clear ${label}`}
-                  disabled={disabled}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onChange(0);
-                  }}
-                >
-                  <Trash2 size={12} />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-        {isMacroTarget && <EdcdMacroFlowPreview project={project} catalog={catalog} macroId={value} />}
-      </div>
+      <EdcdReferenceTargetField
+        ariaLabel={`Search ${label}`}
+        placeholder={`Search ${label.toLowerCase()}...`}
+        options={pickerOptions}
+        value={value}
+        current={{
+          label: selectedLabel,
+          detail: selectedDetail,
+          state: selected ? "resolved" : value === 0 ? "empty" : "unresolved"
+        }}
+        disabled={disabled}
+        rawOptionForQuery={(query) => {
+          const queryNumber = numericReferenceQuery(query);
+          if (queryNumber == null || options.some((option) => option.value === queryNumber)) return null;
+          return {
+            key: `raw:${targetKind}:${queryNumber}`,
+            value: queryNumber,
+            label: `${displayLabel} ${queryNumber}`,
+            detail: `No ${label} ${queryNumber} exists yet.`,
+            searchText: `${queryNumber} ${targetKind} ${label} missing raw`
+          };
+        }}
+        resultNoun="target"
+        resultNounPlural="targets"
+        emptyTitle={`No matching ${label.toLowerCase()} targets`}
+        emptyBody={`Try a ${label.toLowerCase()} name, numeric ID, or target detail.`}
+        selectedEntity={selected?.entity}
+        openLabel={`Open ${selected?.label ?? selectedLabel}`}
+        clearLabel={`Clear ${label}`}
+        currentSupplement={isMacroTarget ? <EdcdMacroFlowPreview project={project} catalog={catalog} macroId={value} /> : undefined}
+        onChange={onChange}
+        onOpen={onOpen}
+      />
     );
   }
   return (
@@ -1304,24 +1120,6 @@ function EdcdMacroFlowPreview({
       {actions.length > 5 && <small>{actions.length - 5} more action slot(s).</small>}
     </div>
   );
-}
-
-function edcdTargetOptionMatches(option: EdcdTargetOption, normalizedQuery: string) {
-  return [
-    option.label,
-    option.detail,
-    String(option.value)
-  ].join(" ").toLowerCase().includes(normalizedQuery);
-}
-
-function edcdItemOptionMatches(option: ItemReferenceOption, normalizedQuery: string) {
-  return [
-    option.label,
-    option.detail,
-    option.summary,
-    option.sourceState,
-    String(option.value)
-  ].join(" ").toLowerCase().includes(normalizedQuery);
 }
 
 type GuidedField = {

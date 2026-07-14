@@ -14,7 +14,12 @@
 
     { "key": "player-maps.map-records", "domain": "player-maps", "editor": "map-records", "label": "Player Maps", "workbenches": ["project"], "track": "ISY-337", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "player-maps" } },
 
-    { "key": "scripts.action-points", "domain": "scripts", "editor": "action-points", "label": "Action Points", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "scripts" } },
+    { "key": "scripts.action-points", "domain": "scripts", "editor": "action-points", "label": "Action Points", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "scripts", "states": [
+      { "id": "reference-target-filtered", "steps": [
+        { "action": "fill", "selector": ".target-picker-reference .workbench-search-field input[type=\"search\"]", "value": "guard" },
+        { "action": "wait", "selector": ".target-picker-reference .workbench-reference-results [role=\"option\"]" }
+      ] }
+    ] } },
     { "key": "scripts.macros", "domain": "scripts", "editor": "macros", "label": "Extra Action Points", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "scripts.global-macros", "domain": "scripts", "editor": "global-macros", "label": "Global Events", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "scripts.quests", "domain": "scripts", "editor": "quests", "label": "Quests", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },

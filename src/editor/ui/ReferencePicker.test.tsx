@@ -68,4 +68,23 @@ describe("ReferencePicker", () => {
     expect(referencePickerKeyboardAction("Escape", "bell", true)).toBe("clear");
     expect(referencePickerKeyboardAction("Escape", "", true)).toBeNull();
   });
+
+  it("disables both search and result choices", () => {
+    const html = renderToStaticMarkup(
+      <ReferencePicker
+        label="String Target"
+        ariaLabel="Search strings"
+        query="bell"
+        onQueryChange={() => undefined}
+        options={options}
+        value={12}
+        onSelect={() => undefined}
+        current={{ label: "String 12" }}
+        disabled
+      />
+    );
+
+    expect(html).toMatch(/type="search"[^>]*disabled=""/);
+    expect((html.match(/disabled=""/g) ?? []).length).toBe(2);
+  });
 });

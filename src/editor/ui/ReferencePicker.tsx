@@ -24,7 +24,7 @@ export type ReferencePickerCurrent = {
 };
 
 export type ReferencePickerProps<TValue extends ReferencePickerValue = number> = {
-  label: ReactNode;
+  label?: ReactNode;
   ariaLabel: string;
   placeholder?: string;
   query: string;
@@ -41,6 +41,7 @@ export type ReferencePickerProps<TValue extends ReferencePickerValue = number> =
   emptyTitle?: ReactNode;
   emptyBody?: ReactNode;
   className?: string;
+  disabled?: boolean;
 };
 
 export function ReferencePicker<TValue extends ReferencePickerValue = number>({
@@ -60,7 +61,8 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
   resultNounPlural = "matches",
   emptyTitle = "No matches",
   emptyBody = "Try a name, numeric ID, category, or other target detail.",
-  className
+  className,
+  disabled = false
 }: ReferencePickerProps<TValue>) {
   const filteredOptions = filterReferencePickerOptions(options, query);
   const firstSelectable = filteredOptions.find((option) => !option.disabled) ?? null;
@@ -87,6 +89,7 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
         value={query}
         onChange={onQueryChange}
         onKeyDown={handleSearchKeyDown}
+        disabled={disabled}
         resultCount={showResults ? filteredOptions.length : undefined}
         resultNoun={resultNoun}
         resultNounPlural={resultNounPlural}
@@ -111,7 +114,7 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
               className={option.value === value ? "is-selected" : ""}
               data-reference-option={option.key}
               title={option.title}
-              disabled={option.disabled}
+              disabled={disabled || option.disabled}
               onClick={() => onSelect(option)}
             >
               <strong>{option.label}</strong>
