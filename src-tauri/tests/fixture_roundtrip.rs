@@ -549,7 +549,6 @@ fn custom_landlook_atlas_replacement_changes_only_target_pict_resource() {
 fn authored_scrolling_text_exports_same_id_text_and_style_resources() {
     let temp = tempdir().unwrap();
     let project_dir = temp.path().join("project");
-    let export_dir = temp.path().join("exported");
     let mut project = create_project("Styled Scrolling Text".to_string(), &project_dir).unwrap();
     let text_bytes = b"Styled scrolling text fixture".to_vec();
     let style_bytes = vec![
@@ -617,50 +616,53 @@ fn authored_scrolling_text_exports_same_id_text_and_style_resources() {
         conversion: None,
     });
 
-    let report = export_project(
-        &project_dir,
-        &project,
-        &export_dir,
-        ScenarioTarget::ProvidencePortableFolder,
-    )
-    .unwrap();
+    for (folder, target) in [
+        ("portable", ScenarioTarget::ProvidencePortableFolder),
+        ("mac", ScenarioTarget::MacClassicFolder),
+        ("windows", ScenarioTarget::WindowsRealmzFolder),
+    ] {
+        let export_dir = temp.path().join(folder);
+        let report = export_project(&project_dir, &project, &export_dir, target).unwrap();
 
-    assert!(
-        report
-            .written_resources
+        assert!(
+            report
+                .written_resources
+                .iter()
+                .any(|entry| entry.contains("TEXT -200")),
+            "{target:?} should report authored scrolling TEXT"
+        );
+        assert!(
+            report
+                .written_resources
+                .iter()
+                .any(|entry| entry.contains("styl -200")),
+            "{target:?} should report the authored style companion"
+        );
+        assert!(
+            report
+                .resource_warnings
+                .iter()
+                .any(|entry| entry.contains("runtime-suspect")),
+            "{target:?} should keep runtime uncertainty separate from writer success"
+        );
+        let exported_resource_path = resource_path_with_entry(&project, &export_dir, "TEXT", -200)
+            .unwrap_or_else(|| {
+                panic!("{target:?} should write authored scrolling text to a resource fork")
+            });
+        let exported_resources =
+            parse_resource_fork_entries(&fs::read(exported_resource_path).unwrap());
+        let exported_text = exported_resources
             .iter()
-            .any(|entry| entry.contains("TEXT -200")),
-        "authored scrolling TEXT should be reported as a written resource"
-    );
-    assert!(
-        report
-            .written_resources
+            .find(|entry| entry.resource_type == "TEXT" && entry.id == -200)
+            .unwrap_or_else(|| panic!("{target:?} should contain TEXT -200"));
+        let exported_style = exported_resources
             .iter()
-            .any(|entry| entry.contains("styl -200")),
-        "authored style companion should be reported as a written resource"
-    );
-    assert!(
-        report
-            .resource_warnings
-            .iter()
-            .any(|entry| entry.contains("runtime-suspect")),
-        "authored scrolling text export should report current runtime uncertainty"
-    );
-    let exported_resource_path = resource_path_with_entry(&project, &export_dir, "TEXT", -200)
-        .expect("export should write authored scrolling text to a resource fork");
-    let exported_resources =
-        parse_resource_fork_entries(&fs::read(exported_resource_path).unwrap());
-    let exported_text = exported_resources
-        .iter()
-        .find(|entry| entry.resource_type == "TEXT" && entry.id == -200)
-        .expect("export should contain TEXT -200");
-    let exported_style = exported_resources
-        .iter()
-        .find(|entry| entry.resource_type == "styl" && entry.id == -200)
-        .expect("export should contain styl -200");
+            .find(|entry| entry.resource_type == "styl" && entry.id == -200)
+            .unwrap_or_else(|| panic!("{target:?} should contain styl -200"));
 
-    assert_eq!(exported_text.data, text_bytes);
-    assert_eq!(exported_style.data, style_bytes);
+        assert_eq!(exported_text.data, text_bytes, "{target:?} TEXT payload");
+        assert_eq!(exported_style.data, style_bytes, "{target:?} styl payload");
+    }
 }
 
 #[test]
