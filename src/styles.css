@@ -1,6 +1,16 @@
 @import "./editor/styles/shell.css";
 @import "./editor/styles/text-scenario.css";
-@import "./editor/styles/maps.css";
+@import "./editor/styles/map-context-sidebar.css";
+@import "./editor/styles/map-paint-inspector.css";
+@import "./editor/styles/map-landlook-workbenches.css";
+@import "./editor/styles/map-auxiliary-workbenches.css";
+@import "./editor/styles/map-layout-workbench.css";
+@import "./editor/styles/map-tile-palette.css";
+@import "./editor/styles/map-browser-sidebar.css";
+@import "./editor/styles/map-selection-inspector.css";
+@import "./editor/styles/map-canvas.css";
+@import "./editor/styles/map-stamps.css";
+@import "./editor/styles/map-shared.css";
 @import "./editor/styles/assets.css";
 @import "./editor/styles/script-surfaces.css";
 @import "./editor/styles/export.css";

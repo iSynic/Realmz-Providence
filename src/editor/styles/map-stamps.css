@@ -1,0 +1,282 @@
+
+
+
+
+
+.stamp-palette-section code {
+  color: #f6d86b;
+}
+
+.stamp-palette-section {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.stamp-library-toolbar,
+.stamp-library-actions,
+.stamp-editor-actions,
+.stamp-editor-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.stamp-library-toolbar,
+.stamp-library-actions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.stamp-scope-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.stamp-scope-tabs button,
+.stamp-editor-tools button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 26px;
+  border: 1px solid #26394c;
+  border-radius: 5px;
+  background: #0b1218;
+  color: #bcd2e8;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 10px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.stamp-scope-tabs button {
+  min-width: 0;
+  padding-inline: 6px;
+}
+
+.stamp-scope-tabs button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stamp-scope-tabs button b {
+  min-width: 18px;
+  padding: 2px 5px;
+  border: 1px solid rgba(126, 178, 224, 0.28);
+  border-radius: 999px;
+  background: rgba(26, 48, 69, 0.72);
+  color: #d8ebff;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.stamp-scope-tabs button.active,
+.stamp-editor-tools button.active {
+  border-color: #3f8fd5;
+  background: #123453;
+  color: #fff;
+}
+
+.stamp-library-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #223445;
+  border-radius: 6px;
+  background: rgba(8, 14, 20, 0.72);
+}
+
+.stamp-library-actions > span {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow: hidden;
+  color: #d8e8f8;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stamp-library-actions button {
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stamp-library-actions > span small {
+  margin-left: 6px;
+  color: #7fa7c9;
+}
+
+.stamp-editor {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 12px;
+  border: 1px solid #2b4154;
+  border-radius: 6px;
+  background: #0b1218;
+}
+
+.stamp-editor-fields {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 72px 72px;
+  gap: 8px;
+}
+
+.stamp-editor-fields label {
+  display: grid;
+  gap: 4px;
+  color: #7fbfff;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.stamp-editor-fields input {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid #2b4154;
+  border-radius: 4px;
+  background: #061019;
+  color: #f8fbff;
+  padding: 4px 6px;
+  font: inherit;
+}
+
+.stamp-editor-grid {
+  display: grid;
+  gap: 2px;
+  overflow: auto;
+  max-width: 100%;
+  padding: 6px;
+  border: 1px dashed #30465a;
+  border-radius: 6px;
+  background: #071019;
+}
+
+.stamp-editor-grid button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #26394c;
+  border-radius: 3px;
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+    #101820;
+  background-size: 8px 8px;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.stamp-editor-grid button.filled {
+  background: #10161d;
+}
+
+.stamp-editor-grid .tile-swatch,
+.stamp-editor-grid .tile-swatch canvas {
+  width: 32px;
+  height: 32px;
+}
+
+
+.stamp-palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+
+
+
+
+.stamp-palette-card {
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #263341;
+  border-radius: 6px;
+  background: #10161d;
+  color: #d8e8f8;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 3px;
+  justify-items: center;
+  align-content: center;
+  padding: 4px;
+  overflow: hidden;
+  text-align: center;
+}
+
+
+
+
+
+.stamp-palette-card.selected {
+  border-color: #4da3ff;
+  box-shadow: inset 0 0 0 1px #4da3ff;
+}
+
+
+
+
+
+.stamp-palette-preview {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.13);
+  border-radius: 5px;
+  background: #11151a;
+}
+
+.stamp-palette-preview > span {
+  width: 22px;
+  height: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(157, 207, 255, 0.11);
+  background:
+    linear-gradient(45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.04) 25%, transparent 25%),
+    #0d141b;
+  background-size: 8px 8px;
+}
+
+.stamp-palette-preview > span.transparent {
+  opacity: 0.72;
+}
+
+.stamp-palette-preview .tile-swatch,
+.stamp-palette-preview .tile-swatch canvas {
+  width: 22px;
+  height: 22px;
+}
+
+
+
+
+
+.stamp-palette-label {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e2f1ff;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: normal;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

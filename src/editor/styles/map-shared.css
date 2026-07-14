@@ -1,0 +1,180 @@
+
+
+
+
+
+.room-canvas-placeholder {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: #66717d;
+  font-size: 13px;
+}
+
+
+
+.map-empty-state {
+  align-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+
+
+.map-empty-state h2 {
+  margin: 0 0 6px;
+  color: #f1f6fb;
+  font-size: 20px;
+}
+
+
+
+.map-empty-state p {
+  max-width: 460px;
+  margin: 0 auto;
+  color: #9db7cd;
+  line-height: 1.45;
+}
+
+
+
+.map-empty-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+
+
+
+
+.object-inspector {
+  border-bottom: 1px solid #252a31;
+}
+
+
+
+
+
+.info-grid {
+  display: grid;
+  gap: 0;
+  padding: 8px 10px 10px;
+  font-size: 11px;
+}
+
+
+
+
+
+.info-grid > div {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid #20252b;
+}
+
+
+
+
+
+.info-grid dt {
+  color: #77818c;
+}
+
+
+
+
+
+.info-grid dd {
+  color: #dce2e8;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+
+
+
+
+@keyframes selected-tile-border {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: scale(0.94);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+
+
+
+@keyframes inspected-tile-border {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(0.9);
+  }
+}
+
+
+
+
+
+.link-chip-row,
+.cell-link-stack {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+}
+
+
+
+
+
+.link-chip.inert {
+  color: #d9b86d;
+  border-color: #4b412a;
+  background: #211d14;
+}
+
+
+
+
+
+.context-action-button {
+  margin: 8px 10px 10px;
+  width: calc(100% - 20px);
+  justify-content: center;
+}
+
+.context-action-button.context-action-button-narrow {
+  width: max-content;
+  max-width: calc(100% - 20px);
+  padding-inline: 18px;
+  justify-self: center;
+}
+
+.code-id-head {
+  color: #8794a2;
+  background: #171b20;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cell-link-stack {
+  padding: 0 10px 10px;
+}

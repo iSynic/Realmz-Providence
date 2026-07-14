@@ -1,0 +1,761 @@
+
+
+
+.land-layout-editor {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+
+
+.land-tile-atlas-editor {
+  display: grid;
+  gap: 12px;
+  padding: 0 10px 10px;
+}
+
+
+
+.map-mode-body .land-tile-atlas-editor {
+  padding: 0;
+}
+
+
+
+.map-mode-body .land-tile-atlas-top,
+.map-mode-body .context-capacity-note {
+  width: 100%;
+}
+
+
+
+.map-mode-body .land-layout-editor {
+  padding: 0;
+}
+
+
+
+.map-mode-body .land-layout-grid {
+  gap: 6px;
+}
+
+
+
+.map-mode-body .land-layout-cell {
+  min-height: 58px;
+}
+
+
+
+.map-mode-body .land-layout-cell select {
+  height: 30px;
+}
+
+
+
+@media (max-width: 1380px) {
+  .map-mode-body .land-tile-atlas-main,
+  .random-areas-layout,
+  .map-records-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+.land-tile-atlas-top,
+.random-areas-toolbar,
+.map-records-toolbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 12px;
+  align-items: start;
+}
+
+
+
+.land-tile-atlas-status,
+.land-tile-atlas-controls,
+.random-areas-toolbar,
+.map-records-toolbar,
+.map-record-summary-card {
+  padding: 10px;
+  border: 1px solid #253340;
+  border-radius: 7px;
+  background: #10161d;
+}
+
+
+
+.land-tile-atlas-controls {
+  display: grid;
+  gap: 8px;
+}
+
+.custom-landlook-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.custom-landlook-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #253340;
+  border-radius: 7px;
+  background:
+    linear-gradient(135deg, rgba(59, 214, 184, 0.08), transparent 60%),
+    #10161d;
+}
+
+.custom-landlook-card p {
+  margin: 0;
+  color: #95a8b8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.custom-landlook-card p.warning {
+  color: #f3ca76;
+}
+
+.custom-landlook-primary-copy {
+  color: #c4d2df;
+}
+
+.custom-landlook-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+  min-width: 0;
+}
+
+.custom-landlook-form label {
+  flex: 1 1 160px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.custom-landlook-form select,
+.custom-landlook-form input {
+  width: 100%;
+  min-width: 0;
+}
+
+.custom-landlook-form .map-number-field {
+  flex: 0 0 92px;
+}
+
+.custom-landlook-form button,
+.custom-landlook-file-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.custom-landlook-form.import {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.custom-landlook-form label {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: #7ea9d5;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+}
+
+.custom-landlook-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  box-sizing: border-box;
+  border: 1px solid #2d3946;
+  border-radius: 5px;
+  background: #0f141a;
+  color: #f0f6fc;
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+.custom-landlook-form .map-number-field.compact {
+  flex: 0 0 70px;
+  width: 70px;
+}
+
+.custom-landlook-form .btn,
+.custom-landlook-file-button {
+  flex: 0 0 auto;
+}
+
+.custom-landlook-file-button {
+  min-height: 28px;
+  align-self: end;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border: 1px solid #3f6b2f;
+  border-radius: 5px;
+  background: #142019;
+  color: #bfe8bf !important;
+  cursor: pointer;
+}
+
+.custom-landlook-file-button input {
+  display: none;
+}
+
+@media (max-width: 1380px) {
+  .custom-landlook-tools {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+.map-search-input {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid #2d4151;
+  border-radius: 6px;
+  background: #0c1218;
+  color: #eef7ff;
+  font: inherit;
+}
+
+
+
+.map-search-input::placeholder {
+  color: #6f8599;
+}
+
+
+
+.land-tile-atlas-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+
+
+.land-tile-atlas-browser {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+
+
+.land-tile-filter-bar {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+
+
+.land-tile-search-input {
+  min-height: 30px;
+}
+
+
+
+.land-tile-filter-menu-wrap {
+  position: relative;
+}
+
+
+
+.land-tile-filter-button {
+  border-radius: 6px;
+}
+
+
+
+.land-tile-filter-button em {
+  max-width: 150px;
+  overflow: hidden;
+  color: #dbe9f5;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.land-tile-filter-popover {
+  right: 0;
+  left: auto;
+  width: min(360px, calc(100vw - 360px));
+}
+
+
+
+.land-tile-filter-list {
+  display: grid;
+  gap: 5px;
+  overflow-y: auto;
+  padding: 8px 10px;
+}
+
+
+
+.land-tile-filter-list button {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid #223140;
+  border-radius: 5px;
+  background: #0c141c;
+  color: #dce8f4;
+  text-align: left;
+}
+
+
+
+.land-tile-filter-list button:hover,
+.land-tile-filter-list button.active {
+  border-color: #4a77ad;
+  background: #17263a;
+}
+
+
+
+.land-tile-filter-list strong {
+  color: #f1f6fb;
+  font-size: 10px;
+}
+
+
+
+.land-tile-filter-list small {
+  color: #8ca6bc;
+  font-size: 9px;
+  line-height: 1.3;
+}
+
+
+
+.land-tile-detail-rail {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+
+
+.land-tile-sidebar-summary {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+
+
+.land-tile-compact-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+
+
+.land-tile-atlas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+
+
+.land-tile-atlas-toolbar button {
+  min-height: 26px;
+  padding: 4px 7px;
+  border: 1px solid #2c3845;
+  border-radius: 5px;
+  background: #111820;
+  color: #bcc9d6;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+
+
+.land-tile-atlas-toolbar button:hover,
+.land-tile-atlas-toolbar button.active {
+  border-color: #4a77ad;
+  background: #17263a;
+  color: #eef7ff;
+}
+
+
+
+.land-tile-atlas-grid {
+  display: grid;
+  grid-template-columns: repeat(20, 32px);
+  align-content: start;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+  max-height: none;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #0d1319;
+}
+
+
+
+.land-tile-atlas-grid button {
+  position: relative;
+  min-width: 0;
+  width: 32px;
+  height: 32px;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  color: #f8fafc;
+  text-shadow: 0 1px 2px #000;
+}
+
+
+
+.land-tile-atlas-grid button:hover {
+  border-color: #4a77ad;
+}
+
+
+
+.land-tile-atlas-grid button.selected {
+  border-color: #f3c869;
+  box-shadow: 0 0 0 2px rgba(243, 200, 105, 0.16);
+}
+
+
+
+.land-tile-atlas-grid button.inspected::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 4;
+  border: 2px solid #78d7ff;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+
+
+.land-tile-atlas-grid .tile-swatch canvas {
+  width: 100%;
+  height: 100%;
+}
+
+
+
+@media (min-width: 1680px) {
+  .land-tile-atlas-grid {
+    grid-template-columns: repeat(20, 32px);
+  }
+}
+
+
+
+.land-tile-detail-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 8px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+
+
+.land-tile-detail-preview {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #344657;
+  border-radius: 5px;
+}
+
+
+
+.land-tile-detail-preview .tile-swatch canvas {
+  width: 68px;
+  height: 68px;
+}
+
+
+
+.land-tile-detail-body {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+
+
+.combat-build-preview {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+
+
+.combat-build-visuals {
+  display: grid;
+  grid-template-columns: minmax(76px, 96px) minmax(210px, 320px);
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+.combat-build-source,
+.combat-build-expanded {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  min-width: 0;
+}
+
+
+
+.combat-build-source > span,
+.combat-build-expanded > span {
+  color: #93abc0;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+
+
+.combat-build-source-tile {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  overflow: hidden;
+  border: 1px solid #314354;
+  border-radius: 4px;
+  background: #0d1319;
+}
+
+
+
+.combat-build-source-tile .tile-swatch canvas {
+  width: 100%;
+  height: 100%;
+}
+
+
+
+.combat-build-source-tile b {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.72);
+  color: #f3ca76;
+  font-size: 8px;
+}
+
+
+
+.combat-build-preview.compact {
+  color: #95a8b8;
+}
+
+
+
+.combat-build-preview p {
+  margin: 0;
+  color: #95a8b8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+
+
+.combat-build-grid {
+  display: grid;
+  width: min(100%, 320px);
+  aspect-ratio: 1 / 1;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 0;
+  overflow: hidden;
+  border: 2px solid #314354;
+  border-radius: 3px;
+}
+
+
+
+.combat-build-cell {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-right: 1px solid rgba(255,255,255,0.16);
+  border-bottom: 1px solid rgba(255,255,255,0.16);
+  border-radius: 0;
+  background: #0d1319;
+}
+
+
+
+.combat-build-cell .tile-swatch canvas {
+  width: 100%;
+  height: 100%;
+}
+
+
+
+.combat-build-cell span {
+  position: absolute;
+  right: 3px;
+  bottom: 2px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.72);
+  color: #f3ca76;
+  font-size: 8px;
+  font-weight: 850;
+  text-shadow: 0 1px 1px #000;
+}
+
+.combat-build-cell input {
+  position: absolute;
+  inset: auto 3px 3px 3px;
+  width: calc(100% - 6px);
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(82, 141, 198, 0.72);
+  border-radius: 3px;
+  background: rgba(4, 8, 12, 0.88);
+  color: #d7ecff;
+  font-size: 9px;
+  font-weight: 850;
+}
+
+.combat-build-cell:has(input) span {
+  display: none;
+}
+
+.tile-attribute-editor {
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #253340;
+  border-radius: 6px;
+  background: #10161d;
+}
+
+.tile-attribute-editor.compact {
+  color: #95a8b8;
+}
+
+.tile-attribute-editor p {
+  margin: 0;
+  color: #95a8b8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.tile-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.tile-toggle-grid button {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 8px;
+  border: 1px solid #2b3d50;
+  border-radius: 5px;
+  background: #0d1319;
+  color: #c7d7e5;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.tile-toggle-grid button.active {
+  border-color: #3b91d9;
+  background: #12385a;
+  color: #e2f3ff;
+}
+
+.tile-toggle-grid button b {
+  color: #81cfff;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+
+
+.land-tile-quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+
+
+.land-tile-quick-filters button {
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid #2c4458;
+  border-radius: 999px;
+  background: #102033;
+  color: #c7dfef;
+  font-size: 10px;
+  font-weight: 850;
+}
