@@ -35,6 +35,45 @@ const SCENARIO_SEED_BROWSER_IMPORT_ALLOWLIST = new Map([
     new Set(["src/editor/browser/realmzParser"])
   ]
 ]);
+const OWNERSHIP_ROOTS = [
+  {
+    owner: "scripts-ui",
+    roots: ["src/editor/panels/ScriptsPanel", "src/editor/panels/scripts"]
+  },
+  {
+    owner: "combat-ui",
+    roots: ["src/editor/panels/CombatPanel", "src/editor/panels/combat"]
+  },
+  {
+    owner: "maps-ui",
+    roots: [
+      "src/editor/panels/MapsPanel",
+      "src/editor/panels/maps",
+      "src/editor/components/MapContextSidebar",
+      "src/editor/components/maps"
+    ]
+  },
+  {
+    owner: "suite-ui",
+    roots: [
+      "src/editor/panels/SuiteDomainPanel",
+      "src/editor/panels/suite",
+      "src/editor/panels/economy"
+    ]
+  },
+  {
+    owner: "scenario-seed",
+    roots: ["src/editor/scenarioSeed"]
+  },
+  {
+    owner: "project-commands",
+    roots: ["src/editor/projectCommands"]
+  },
+  {
+    owner: "browser-runtime",
+    roots: ["src/editor/browser"]
+  }
+];
 const PROJECT_COMMAND_DEEP_IMPORT_ALLOWLIST = new Map([
   [
     "src/editor/scenarioSeed/coreRecordCompiler.ts",
@@ -67,6 +106,61 @@ function resolveImport(sourcePath, target) {
   if (!target.startsWith(".")) return null;
   const absolute = path.resolve(ROOT, path.dirname(sourcePath), target);
   return normalizePath(path.relative(ROOT, absolute));
+}
+
+function ownerForPath(filePath) {
+  return OWNERSHIP_ROOTS.find(({ roots }) => roots.some((root) =>
+    isWithin(filePath, root) || filePath === `${root}.ts` || filePath === `${root}.tsx`
+  ))?.owner ?? null;
+}
+
+function evaluateOwnershipCycles(edges) {
+  const adjacency = new Map();
+  for (const [source, target] of edges) {
+    if (source === target) continue;
+    if (!adjacency.has(source)) adjacency.set(source, new Set());
+    adjacency.get(source).add(target);
+    if (!adjacency.has(target)) adjacency.set(target, new Set());
+  }
+
+  const indexByOwner = new Map();
+  const lowLinkByOwner = new Map();
+  const stack = [];
+  const onStack = new Set();
+  const cycles = [];
+  let nextIndex = 0;
+
+  function visit(owner) {
+    indexByOwner.set(owner, nextIndex);
+    lowLinkByOwner.set(owner, nextIndex);
+    nextIndex += 1;
+    stack.push(owner);
+    onStack.add(owner);
+
+    for (const target of adjacency.get(owner) ?? []) {
+      if (!indexByOwner.has(target)) {
+        visit(target);
+        lowLinkByOwner.set(owner, Math.min(lowLinkByOwner.get(owner), lowLinkByOwner.get(target)));
+      } else if (onStack.has(target)) {
+        lowLinkByOwner.set(owner, Math.min(lowLinkByOwner.get(owner), indexByOwner.get(target)));
+      }
+    }
+
+    if (lowLinkByOwner.get(owner) !== indexByOwner.get(owner)) return;
+    const component = [];
+    let member;
+    do {
+      member = stack.pop();
+      onStack.delete(member);
+      component.push(member);
+    } while (member !== owner);
+    if (component.length > 1) cycles.push(component.sort());
+  }
+
+  for (const owner of [...adjacency.keys()].sort()) {
+    if (!indexByOwner.has(owner)) visit(owner);
+  }
+  return cycles.map((cycle) => `ownership dependency cycle: ${cycle.join(" <-> ")}`);
 }
 
 function evaluateBoundary(sourcePath, targetPath) {
@@ -352,12 +446,21 @@ function runSelfTest() {
     { generatedFamilies: [], curatedEvidence: [] },
     {}
   )[0] ?? "", /no generated or curated artifact owner/);
-  console.log("Architecture boundary self-test passed (forbidden imports are rejected)." );
+  assert.deepEqual(evaluateOwnershipCycles([
+    ["scripts-ui", "project-commands"],
+    ["project-commands", "browser-runtime"]
+  ]), []);
+  assert.match(evaluateOwnershipCycles([
+    ["scripts-ui", "project-commands"],
+    ["project-commands", "scripts-ui"]
+  ])[0] ?? "", /ownership dependency cycle/);
+  console.log("Architecture boundary self-test passed (boundary, ownership-cycle, and artifact violations are rejected)." );
 }
 
 async function runArchitectureCheck() {
   const files = await collectProductionSources(path.join(ROOT, EDITOR_ROOT));
   const failures = [];
+  const ownershipEdges = new Set();
   let relativeImports = 0;
 
   for (const sourcePath of files) {
@@ -367,9 +470,15 @@ async function runArchitectureCheck() {
       if (!targetPath) continue;
       relativeImports += 1;
       failures.push(...evaluateBoundary(sourcePath, targetPath));
+      const sourceOwner = ownerForPath(sourcePath);
+      const targetOwner = ownerForPath(targetPath);
+      if (sourceOwner && targetOwner && sourceOwner !== targetOwner) {
+        ownershipEdges.add(`${sourceOwner}\0${targetOwner}`);
+      }
     }
   }
 
+  failures.push(...evaluateOwnershipCycles([...ownershipEdges].map((edge) => edge.split("\0"))));
   failures.push(...await checkStableFacades());
   failures.push(...await checkGeneratedArtifactPolicy());
   if (failures.length > 0) {
@@ -379,7 +488,7 @@ async function runArchitectureCheck() {
     return;
   }
 
-  console.log(`Architecture boundary check passed (${files.length} production modules, ${relativeImports} relative imports).`);
+  console.log(`Architecture boundary check passed (${files.length} production modules, ${relativeImports} relative imports, ${ownershipEdges.size} ownership edges).`);
 }
 
 if (process.argv.includes("--self-test")) runSelfTest();

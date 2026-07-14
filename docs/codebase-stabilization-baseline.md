@@ -57,7 +57,7 @@ Extraction work must preserve these entrypoints unless an issue explicitly appro
 - `src-tauri/src/realmz.rs`: public parser/writer reexports, resource IDs, record ranges, and exported byte behavior.
 - Existing CSS class names used by smoke tests until their owning extraction updates those tests in the same commit.
 
-`npm run check:architecture` enforces the practical dependency rules and the presence of these facades. It intentionally does not ban every existing cross-layer import: broad layering rules would create busywork and hide the boundaries that protect compiler, storage, export, and feature ownership.
+`npm run check:architecture` enforces the practical dependency rules, rejects cycles between the documented UI/compiler/mutation/browser owners, and verifies the presence of these facades. It intentionally does not ban every module-level cycle or existing cross-layer import: broad layering rules would create busywork and hide the boundaries that protect compiler, storage, export, and feature ownership.
 
 The checker records narrow exceptions rather than directory-wide exemptions. Current exceptions are Combat's read-only use of the Scripts action catalog; scenario generation's use of browser-hosted default-project validation and reference landlook/atlas metadata; and `coreRecordCompiler.ts` reuse of pure target-record/rules command helpers. New imports across those boundaries fail unless ownership is deliberately revised here and in the checker.
 
@@ -116,7 +116,7 @@ M19 changes must keep the library suite green and must not add fixture failures.
 - `npm run lint` checks TypeScript/TSX syntax, duplicate imports, and React Hooks rules against the recorded warning ceiling.
 - `npm run lint:report` prints every current lint finding when investigating or reducing the baseline.
 - `npm run test:unit` runs fast deterministic characterization tests for pure editor and compiler contracts.
-- `npm run check:architecture` rejects feature-domain crossings, core-to-UI dependency leaks, facade bypasses, and missing stable entrypoints.
+- `npm run check:architecture` rejects feature-domain crossings, owner cycles, core-to-UI dependency leaks, facade bypasses, unowned generated artifacts, and missing stable entrypoints.
 - `npm run check:guardrail-self-tests` proves that lint errors, new warning categories, warning growth, hotspot growth, and architecture violations are rejected.
 - `npm run check:module-sizes` prevents the recorded God files and feature stylesheets from growing silently.
 - `npm run check:refactor-guardrails` runs architecture, lint, unit, and module-size checks and is included in `npm run check`.
