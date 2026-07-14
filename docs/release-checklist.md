@@ -30,6 +30,7 @@ The patch gate is the following sequence:
 
 | Step | Command | Expected Result |
 | --- | --- | --- |
+| Architecture boundaries | `npm run check:architecture` | Feature ownership, core dependency direction, and stable public facades remain intact. |
 | TypeScript | `npm run typecheck` | `tsc --noEmit` completes with no errors. |
 | Action Point gap gate | `npm run check:ap-action-gaps` | Self-test passes and reports `gateFailureCount: 0`. |
 | Action Point coverage | `npm run check:ap-actions` | Action title and script action coverage checks pass. |
@@ -44,6 +45,8 @@ The patch gate is the following sequence:
 | Desktop artifacts | `npm run release:desktop-gate` | Windows and Linux desktop artifacts rebuild for the current package version. |
 
 `npm run check` is a useful broad local pass, but it is not the full patch release gate. The patch gate above also includes the Divinity manual audit and desktop artifact gate.
+
+For M19 refactors, also follow the ownership and no-behavior-change protocol in `docs/codebase-stabilization-baseline.md`. Extraction commits should keep public facades stable, add characterization coverage for moved responsibilities, and avoid unrelated UI, schema, or byte changes.
 
 ## Desktop Acceptance Gate
 
@@ -133,6 +136,7 @@ Use this shape for patch release notes:
 
 ## Verification
 
+- npm run check:architecture
 - npm run typecheck
 - npm run check:ap-action-gaps
 - npm run check:ap-actions

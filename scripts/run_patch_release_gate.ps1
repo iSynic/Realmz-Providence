@@ -29,6 +29,10 @@ function Invoke-Step {
 Write-Host "Realmz Providence patch release gate" -ForegroundColor Yellow
 Write-Host "Started: $(Get-Date)"
 
+Invoke-Step "Architecture boundaries" {
+  npm run check:architecture
+}
+
 Invoke-Step "TypeScript" {
   npm run typecheck
 }
