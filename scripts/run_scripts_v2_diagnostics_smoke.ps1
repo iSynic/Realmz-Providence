@@ -57,12 +57,12 @@ $script = @{
       @{ recordType = "simpleEncounter"; id = 77; fields = @{ "actions.0.rawCode" = 2; "actions.0.id" = 777 } }
     )
     scriptDiagnosticsContain = @(
-      @{ triggerId = "Data DD:0:6"; text = "Missing battle number target" },
-      @{ triggerId = "Data DD:0:6"; text = "Missing before message target" }
+      @{ triggerId = "Data DD:0:6"; text = "Missing battle target" },
+      @{ triggerId = "Data DD:0:6"; text = "Missing string target" }
     )
     targetDiagnosticsContain = @(
-      @{ recordType = "simpleEncounter"; id = 77; text = "Missing battle number target" },
-      @{ recordType = "simpleEncounter"; id = 77; text = "Missing before message target" }
+      @{ recordType = "simpleEncounter"; id = 77; text = "Missing battle target" },
+      @{ recordType = "simpleEncounter"; id = 77; text = "Missing string target" }
     )
     exportContains = @("Data DD", "Data EDCD", "Data ED")
   }

@@ -783,11 +783,11 @@ async function runAssetsProbes(client, budgets, scenario) {
   await probe(client, scenario, budgets, "Assets switch to reference libraries", "assetSectionSwitch", `
     (() => {
       const tab = [...document.querySelectorAll(".asset-section-tabs button")]
-        .find((button) => button.textContent?.includes("Reference Libraries"));
+        .find((button) => button.textContent?.includes("Reference Assets"));
       tab?.click();
       return Boolean(tab);
     })()
-  `, `document.querySelector(".library-asset-strip") && document.body.innerText.includes("Reference Libraries")`);
+  `, `document.querySelector(".library-asset-strip") && document.body.innerText.includes("Reference Assets")`);
 
   await probe(client, scenario, budgets, "Assets reference card selection", "assetCardSelection", `
     (() => {
@@ -838,11 +838,11 @@ async function runAssetsProbes(client, budgets, scenario) {
   await probe(client, scenario, budgets, "Assets switch back to reference libraries", "assetSectionSwitch", `
     (() => {
       const tab = [...document.querySelectorAll(".asset-section-tabs button")]
-        .find((button) => button.textContent?.includes("Reference Libraries"));
+        .find((button) => button.textContent?.includes("Reference Assets"));
       tab?.click();
       return Boolean(tab);
     })()
-  `, `document.querySelector(".library-asset-strip") && document.body.innerText.includes("Reference Libraries")`);
+  `, `document.querySelector(".library-asset-strip") && document.body.innerText.includes("Reference Assets")`);
 }
 
 async function warmDomain(client, domain) {

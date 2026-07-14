@@ -77,7 +77,8 @@ $script = @{
       @{ mapId = "land:0"; index = 182; value = 1 },
       @{ mapId = "land:0"; index = 183; value = 1 },
       @{ mapId = "land:0"; index = 272; value = 1 },
-      @{ mapId = "land:0"; index = 273; value = 1 },
+      # Tutorial owns an action point at this cell, so clearing terrain preserves the +1000 marker band.
+      @{ mapId = "land:0"; index = 273; value = 1001 },
       @{ mapId = "land:0"; index = 364; value = -100 },
       @{ mapId = "land:0"; index = 365; value = 1 }
     )

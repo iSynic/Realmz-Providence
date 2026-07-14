@@ -7,7 +7,11 @@ import {
   loadBundledLibraryCatalog
 } from "../browser/library";
 import { loadBrowserCustomAssets } from "../browser/workspaceStore";
-import { buildBrowserSemanticSchemaForProject, ensureBrowserReferenceTileAttributes } from "../browser/project";
+import {
+  buildBrowserSemanticSchemaForProject,
+  ensureBrowserReferenceTileAttributes,
+  normalizeBrowserProject
+} from "../browser/project";
 import { loadActiveBrowserProject } from "../browser/projectStore";
 import { loadImage } from "../components/TileSprite";
 import {
@@ -81,7 +85,7 @@ export function useAppBootstrapEffects({
       try {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const project = (await response.json()) as Project;
+        const project = normalizeBrowserProject((await response.json()) as Project);
         if (!disposed) {
           setProjectDir(`browser-benchmark://${url}`);
           dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
