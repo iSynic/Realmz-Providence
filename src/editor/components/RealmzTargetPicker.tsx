@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, Volume2 } from "lucide-react";
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "../soundReferences";
+import { ReferencePicker, type ReferencePickerOption } from "../ui";
 
 export type ScriptTargetOption = {
   key: string;
@@ -118,6 +119,17 @@ export function TargetPicker({
   const filteredTargets = typedSoundTarget && !filteredTargetBase.some((target) => target.value === typedSoundTarget.value)
     ? [typedSoundTarget, ...filteredTargetBase]
     : filteredTargetBase;
+  const searchTargets = typedSoundTarget && !targets.some((target) => target.value === typedSoundTarget.value)
+    ? [typedSoundTarget, ...targets]
+    : targets;
+  const referenceOptions: ReferencePickerOption<number>[] = searchTargets.map((target) => ({
+    key: target.key,
+    value: target.value,
+    label: target.label,
+    detail: targetPickerSearchResultDetail(target, normalizeStepOpcode(opcode)),
+    searchText: [target.value, target.label, target.detail, target.summary, target.compatibility, target.sourceState].filter(Boolean).join(" "),
+    title: targetOptionTitle(target)
+  }));
   const selected = targets.find((target) => target.value === resolvedValue) ?? selectedStub ?? null;
   const previewResourceType = normalizeStepOpcode(opcode) === 9
     ? "snd "
@@ -140,9 +152,6 @@ export function TargetPicker({
     ? [selected, ...filteredTargets.slice(0, 159)]
     : filteredTargets.slice(0, 160);
   const normalizedQuery = query.trim();
-  const searchResultTargets = normalizedQuery && isSearchDrivenPicker
-    ? filteredTargets.slice(0, 8)
-    : [];
   const hasCurrentValue = Number.isFinite(resolvedValue) && resolvedValue !== 0 && !selected;
   const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue));
   const behavior = signedTargetBehaviorLabel(opcode, value);
@@ -160,73 +169,50 @@ export function TargetPicker({
     setQuery("");
     setTargetsLoaded(false);
   };
-  const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setQuery("");
-      setTargetsLoaded(false);
-      return;
-    }
-    if (event.key !== "Enter") return;
-    const firstTarget = searchResultTargets[0];
-    if (!firstTarget) return;
-    event.preventDefault();
-    chooseTarget(firstTarget);
-  };
   return (
     <div className="realmz-target-picker">
       {isSearchDrivenPicker ? (
-        <>
-          <label className="target-picker-search-label">
-            <span>{config.label}</span>
-            <input
-              value={query}
-              onChange={(event) => {
-                const nextQuery = event.currentTarget.value;
-                setTargetsLoaded(Boolean(nextQuery.trim()));
-                setQuery(nextQuery);
-              }}
-              onKeyDown={handleSearchKeyDown}
-              placeholder={config.searchPlaceholder ?? `Search ${config.label.toLowerCase()}...`}
-              aria-label={`Search ${config.label}`}
-            />
-          </label>
-          <div className={`target-picker-selected-row${selected ? "" : " missing"}`}>
-            <div>
-              <strong>{selected ? selected.label : hasCurrentValue ? targetFallbackLabel(config.label, resolvedValue) : emptyLabel ?? `No ${config.label.toLowerCase()} selected`}</strong>
-              {selectedDetail && <small>{selectedDetail}</small>}
-            </div>
-            {selected?.entity && onInspect && (
-              <button className="btn btn-secondary btn-xs icon-only target-picker-open-button" type="button" title={`Open ${selected.label}`} onClick={() => onInspect(selected.entity!)}>
-                <Eye size={12} />
-              </button>
-            )}
-          </div>
-          {isDirectMacroOpcode(normalizeStepOpcode(opcode)) && <TargetMacroFlowPreview project={project} catalog={catalog} macroId={resolvedValue} />}
-          {normalizedQuery && (
-            <div className="target-picker-search-preview target-picker-string-results" aria-live="polite">
-              {searchResultTargets.map((target) => {
-                const resultDetail = targetPickerSearchResultDetail(target, normalizeStepOpcode(opcode));
-                return (
-                  <button
-                    key={target.key}
-                    type="button"
-                    className={target.value === resolvedValue ? "selected" : ""}
-                    title={targetOptionTitle(target)}
-                    onClick={() => chooseTarget(target)}
-                  >
-                    <strong>{target.label}</strong>
-                    {resultDetail && <small>{resultDetail}</small>}
-                  </button>
-                );
-              })}
-              {searchResultTargets.length === 0 && <span className="target-picker-empty">No {config.label.toLowerCase()} targets match this search.</span>}
-              {filteredTargets.length > searchResultTargets.length && (
-                <small>{filteredTargets.length - searchResultTargets.length} more matching target(s); keep typing to narrow.</small>
-              )}
-            </div>
-          )}
-        </>
+        <ReferencePicker
+          className="target-picker-reference"
+          label={config.label}
+          ariaLabel={`Search ${config.label}`}
+          placeholder={config.searchPlaceholder ?? `Search ${config.label.toLowerCase()}...`}
+          query={query}
+          onQueryChange={(nextQuery) => {
+            setTargetsLoaded(Boolean(nextQuery.trim()));
+            setQuery(nextQuery);
+          }}
+          options={referenceOptions}
+          value={resolvedValue}
+          onSelect={(option) => {
+            const target = searchTargets.find((candidate) => candidate.key === option.key);
+            if (target) chooseTarget(target);
+          }}
+          current={{
+            label: selected ? selected.label : hasCurrentValue ? targetFallbackLabel(config.label, resolvedValue) : emptyLabel ?? `No ${config.label.toLowerCase()} selected`,
+            detail: selectedDetail,
+            state: selected ? "resolved" : hasCurrentValue ? "unresolved" : "empty"
+          }}
+          currentActions={selected?.entity && onInspect ? (
+            <button
+              className="btn btn-secondary btn-xs icon-only target-picker-open-button"
+              type="button"
+              title={`Open ${selected.label}`}
+              aria-label={`Open ${selected.label}`}
+              onClick={() => onInspect(selected.entity!)}
+            >
+              <Eye size={12} />
+            </button>
+          ) : undefined}
+          currentSupplement={isDirectMacroOpcode(normalizeStepOpcode(opcode)) ? (
+            <TargetMacroFlowPreview project={project} catalog={catalog} macroId={resolvedValue} />
+          ) : undefined}
+          showResults={Boolean(normalizedQuery)}
+          resultNoun="target"
+          resultNounPlural="targets"
+          emptyTitle={`No ${config.label.toLowerCase()} matches`}
+          emptyBody="Try another name, numeric ID, or target detail."
+        />
       ) : (
         <label className="target-picker-select-label">
           <span>{config.label}</span>

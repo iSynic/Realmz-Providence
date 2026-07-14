@@ -7,7 +7,7 @@ import {
   itemReferenceDetail
 } from "../../itemReferences";
 import type { LibraryCatalog, Project } from "../../types";
-import { EmptyState, FloatingWorkbenchPanel } from "../../ui";
+import { EmptyState, FloatingWorkbenchPanel, SearchField } from "../../ui";
 import {
   deduplicatedItemResponseOptions,
   filterSpellResponseOptions,
@@ -124,20 +124,18 @@ export function ComplexEncounterResponsePickerPanel({
           <strong>{selectedLabel}</strong>
           <small>{selectedDetail}</small>
         </section>
-        <label className="complex-encounter-response-search">
-          <span>{kind === "magic" ? "Search spells, scrolls, and spell classes" : "Search items"}</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder={kind === "magic" ? "Search spell, class, or ID..." : "Search item name, category, or ID..."}
-            aria-label={`Search ${responseLabel.toLowerCase()} options`}
-          />
-        </label>
-        <div className="complex-encounter-response-picker-summary">
-          <span>{totalMatches} match{totalMatches === 1 ? "" : "es"}</span>
-          {totalMatches > 100 && <small>Showing the first 100. Refine the search to narrow the list.</small>}
-        </div>
+        <SearchField
+          className="complex-encounter-response-search"
+          label={kind === "magic" ? "Search spells, scrolls, and spell classes" : "Search items"}
+          value={query}
+          onChange={setQuery}
+          placeholder={kind === "magic" ? "Search spell, class, or ID..." : "Search item name, category, or ID..."}
+          ariaLabel={`Search ${responseLabel.toLowerCase()} options`}
+          resultCount={totalMatches}
+          resultNoun="match"
+          resultNounPlural="matches"
+          status={totalMatches > 100 ? "Showing the first 100. Refine the search to narrow the list." : undefined}
+        />
         <div className="complex-encounter-response-picker-results">
           <button
             type="button"

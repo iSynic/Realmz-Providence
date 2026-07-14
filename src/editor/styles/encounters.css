@@ -900,7 +900,7 @@
 
 .complex-encounter-response-picker-body {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 10px;
   height: 100%;
   min-height: 0;
@@ -921,8 +921,7 @@
   background: #101820;
 }
 
-.complex-encounter-response-current > span,
-.complex-encounter-response-search > span {
+.complex-encounter-response-current > span {
   color: #89a8bd;
   font-size: 8px;
   font-weight: 900;
@@ -938,29 +937,6 @@
   color: #9eb2c2;
   font-size: 10px;
   line-height: 1.4;
-}
-
-.complex-encounter-response-search {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.complex-encounter-response-search input {
-  width: 100%;
-  min-width: 0;
-}
-
-.complex-encounter-response-picker-summary {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  color: #99afbf;
-  font-size: 9px;
-}
-
-.complex-encounter-response-picker-summary small {
-  color: #7f96a8;
 }
 
 .complex-encounter-response-picker-results {

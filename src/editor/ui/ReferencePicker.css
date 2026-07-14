@@ -1,0 +1,125 @@
+.workbench-reference-picker {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.workbench-reference-current {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid #2b455a;
+  border-radius: 5px;
+  background: #0a1219;
+}
+
+.workbench-reference-current.is-empty,
+.workbench-reference-current.is-unresolved {
+  border-style: dashed;
+  border-color: #3b4a58;
+}
+
+.workbench-reference-current.is-unresolved {
+  border-color: #735e2d;
+  background: #1d190f;
+}
+
+.workbench-reference-current > div:first-child {
+  min-width: 0;
+}
+
+.workbench-reference-current span {
+  display: block;
+  margin-bottom: 2px;
+  color: #7890a4;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workbench-reference-current strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #f1f7ff;
+  font-size: 14px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-reference-current small {
+  display: block;
+  min-width: 0;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #9eb1c2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-reference-current-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.workbench-reference-current-supplement {
+  min-width: 0;
+}
+
+.workbench-reference-results {
+  min-width: 0;
+  max-height: min(320px, 42vh);
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  overflow: auto;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
+}
+
+.workbench-reference-results > button {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  align-items: start;
+  border: 1px solid #263746;
+  border-radius: 5px;
+  background: #0a1219;
+  color: #dcecf8;
+  padding: 5px 7px;
+  text-align: left;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 42px;
+}
+
+.workbench-reference-results > button:hover:not(:disabled),
+.workbench-reference-results > button.is-selected {
+  border-color: #2d8ad0;
+  background: #102235;
+}
+
+.workbench-reference-results > button strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #e9f4ff;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-reference-results > button small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: #9eb1c2;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

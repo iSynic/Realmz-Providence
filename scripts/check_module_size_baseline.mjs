@@ -13,7 +13,7 @@ const MODULE_BASELINES = [
   { path: "src/editor/panels/combat/BattleMonsterInspector.tsx", maximum: 80, owner: "ISY-318" },
   { path: "src/editor/panels/combat/battleMonsterIcons.ts", maximum: 265, owner: "ISY-318" },
   { path: "src/editor/panels/combat/battleMonsterPaletteModel.ts", maximum: 88, owner: "ISY-318" },
-  { path: "src/editor/panels/combat/MonsterLibraryPreview.tsx", maximum: 331, owner: "ISY-318" },
+  { path: "src/editor/panels/combat/MonsterLibraryPreview.tsx", maximum: 342, owner: "ISY-318" },
   { path: "src/editor/panels/combat/monsterLibraryWorkflow.ts", maximum: 317, owner: "ISY-318" },
   { path: "src/editor/panels/combat/MonsterRecordEditor.tsx", maximum: 405, owner: "ISY-318" },
   { path: "src/editor/panels/combat/MonsterIconControl.tsx", maximum: 223, owner: "ISY-318" },

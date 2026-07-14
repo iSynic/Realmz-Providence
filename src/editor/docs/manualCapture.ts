@@ -1,6 +1,7 @@
 import type { EditorAction } from "../store";
-import type { Project } from "../types";
+import type { ActiveWorkbench, EditorTab, Project } from "../types";
 import { selectEntityFromId, triggerEntityId } from "../utils";
+import uiAuditCatalog from "../../../docs/ui-audit-matrix.json";
 
 export const MANUAL_CAPTURE_PRESET_IDS = [
   "workspace",
@@ -20,6 +21,33 @@ export const MANUAL_CAPTURE_PRESET_IDS = [
 
 export type ManualCapturePresetId = (typeof MANUAL_CAPTURE_PRESET_IDS)[number];
 
+export type UiAuditCaptureStep = {
+  action: "click" | "fill" | "wait";
+  selector: string;
+  value?: string;
+};
+
+export type UiAuditCaptureTarget = {
+  key: string;
+  domain: EditorTab;
+  editor: string;
+  label: string;
+  workbenches: ActiveWorkbench[];
+  track: string;
+  capture: {
+    route: "ready" | "interaction-hook";
+    baseline: "covered" | "planned";
+    galleryPreset?: ManualCapturePresetId;
+    captureWorkbench?: ActiveWorkbench;
+    states?: Array<{
+      id: string;
+      steps: UiAuditCaptureStep[];
+    }>;
+  };
+};
+
+const UI_AUDIT_CAPTURE_TARGETS = uiAuditCatalog.tools as UiAuditCaptureTarget[];
+
 export function isManualCapturePresetId(value: string | null): value is ManualCapturePresetId {
   return Boolean(value && (MANUAL_CAPTURE_PRESET_IDS as readonly string[]).includes(value));
 }
@@ -38,6 +66,29 @@ export function manualCaptureActions(project: Project, preset: ManualCapturePres
   const entityId = selectedEntityId(project, preset);
   if (entityId) actions.push({ type: "selectEntity", entity: selectEntityFromId(entityId) });
   if (preset === "maps" && project.maps[0]) {
+    actions.push({ type: "setSelectedMap", id: project.maps[0].id });
+    actions.push({ type: "setTool", tool: "select" });
+  }
+  return actions;
+}
+
+export function uiAuditCaptureTarget(value: string | null): UiAuditCaptureTarget | null {
+  if (!value) return null;
+  return UI_AUDIT_CAPTURE_TARGETS.find((target) => target.key === value && target.capture.route === "ready") ?? null;
+}
+
+export function uiAuditCaptureActions(project: Project, target: UiAuditCaptureTarget): EditorAction[] {
+  const workbench = target.capture.captureWorkbench ?? target.workbenches[0] ?? "project";
+  const actions: EditorAction[] = [
+    { type: "setWorkbench", workbench, tab: target.domain },
+    { type: "setTutorialEnabled", enabled: false },
+    { type: "setActiveEditor", editor: target.editor },
+    { type: "setTab", tab: target.domain }
+  ];
+  const preset = target.capture.galleryPreset;
+  const entityId = preset ? selectedEntityId(project, preset) : null;
+  if (entityId) actions.push({ type: "selectEntity", entity: selectEntityFromId(entityId) });
+  if (target.key === "maps.land" && project.maps[0]) {
     actions.push({ type: "setSelectedMap", id: project.maps[0].id });
     actions.push({ type: "setTool", tool: "select" });
   }
@@ -71,7 +122,14 @@ function selectedEntityId(project: Project, preset: ManualCapturePresetId): stri
     const message = project.messages.find((candidate) => candidate.id > 0 && candidate.text.trim().length > 0) ?? project.messages[0];
     return message ? `message:${message.id}` : null;
   }
-  if (preset === "encounters") return project.complexEncounters[0] ? `encounter:complex:${project.complexEncounters[0].id}` : null;
+  if (preset === "encounters") {
+    const encounter = project.complexEncounters.find((candidate) => candidate.actions.some((action) => (
+      Math.abs(action.rawCode) === 1
+      && action.id > 0
+      && project.messages.some((message) => message.id === action.id)
+    ))) ?? project.complexEncounters[0];
+    return encounter ? `encounter:complex:${encounter.id}` : null;
+  }
   if (preset === "combat") {
     const battle = project.battles.find((candidate) => candidate.grid.some((monsterId) => monsterId !== 0)) ?? project.battles[0];
     return battle ? `battle:${battle.id}` : null;

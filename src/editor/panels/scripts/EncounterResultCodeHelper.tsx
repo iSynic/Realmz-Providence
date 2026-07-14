@@ -6,7 +6,7 @@ import {
   type DivinityOpcodeHelpEntry
 } from "../../divinityOpcodeHelp";
 import { actionOptionFor } from "../../realmzActions";
-import { EmptyState, FloatingWorkbenchPanel } from "../../ui";
+import { EmptyState, FloatingWorkbenchPanel, SearchField } from "../../ui";
 import { RESULT_ACTION_OPTIONS } from "./encounterFlow";
 
 type ResultCodeHelperListItem = {
@@ -55,11 +55,13 @@ export function ResultCodeHelperPanel({
     >
       <div className="encounter-code-helper-body">
         <aside className="encounter-code-helper-list" aria-label="Divinity action codes">
-          <input
-            type="search"
+          <SearchField
             value={query}
+            onChange={setQuery}
             placeholder="Search codes..."
-            onChange={(event) => setQuery(event.currentTarget.value)}
+            ariaLabel="Search Divinity action codes"
+            resultCount={filteredItems.length}
+            resultNoun="code"
           />
           <div className="encounter-code-helper-source">
             <strong>{DIVINITY_OPCODE_HELP_SOURCE.opcodeEntryCount}</strong>

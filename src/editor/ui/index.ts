@@ -13,6 +13,9 @@ export {
   ValidationGate
 } from "./WorkbenchPrimitives";
 
+export { SearchField } from "./SearchField";
+export { ReferencePicker, filterReferencePickerOptions } from "./ReferencePicker";
+
 export type {
   EmptyStateProps,
   CollapsibleSectionProps,
@@ -30,3 +33,11 @@ export type {
   WorkbenchIssue,
   WorkbenchTone
 } from "./WorkbenchPrimitives";
+
+export type { SearchFieldProps } from "./SearchField";
+export type {
+  ReferencePickerCurrent,
+  ReferencePickerOption,
+  ReferencePickerProps,
+  ReferencePickerValue
+} from "./ReferencePicker";

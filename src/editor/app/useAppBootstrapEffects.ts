@@ -21,7 +21,7 @@ import {
 } from "../map/renderValues";
 import { runProvidenceHarness } from "../harness";
 import { runDesktopUiHarness } from "../desktopUiHarness";
-import { isManualCapturePresetId, manualCaptureActions } from "../docs/manualCapture";
+import { isManualCapturePresetId, manualCaptureActions, uiAuditCaptureActions, uiAuditCaptureTarget } from "../docs/manualCapture";
 import { isActorOrCreatureIconId } from "../resourceResolver";
 import { BROWSER_PREVIEW_STATUS, EditorAction, EditorState } from "../store";
 import { AtlasEntry, IconEntry, Project, ProvidenceWorkspace, TilesetAsset, type SemanticMappingProgress } from "../types";
@@ -81,6 +81,7 @@ export function useAppBootstrapEffects({
     const searchParams = new URLSearchParams(window.location.search);
     const benchmarkProjectUrl = searchParams.get("benchmarkProject");
     const manualCapturePreset = searchParams.get("manualCapture");
+    const uiAuditCaptureId = searchParams.get("uiAuditCapture");
     if (!benchmarkProjectUrl) return;
     const url = benchmarkProjectUrl;
     let disposed = false;
@@ -92,7 +93,12 @@ export function useAppBootstrapEffects({
         if (!disposed) {
           setProjectDir(`browser-benchmark://${url}`);
           dispatch({ type: "setProject", project, selectedMapId: project.maps[0]?.id ?? null });
-          if (isManualCapturePresetId(manualCapturePreset)) {
+          const auditTarget = uiAuditCaptureTarget(uiAuditCaptureId);
+          if (auditTarget) {
+            for (const action of uiAuditCaptureActions(project, auditTarget)) dispatch(action);
+            document.documentElement.dataset.uiAuditCapture = auditTarget.key;
+            dispatch({ type: "setStatus", status: `UI audit capture ready: ${auditTarget.label}` });
+          } else if (isManualCapturePresetId(manualCapturePreset)) {
             for (const action of manualCaptureActions(project, manualCapturePreset)) dispatch(action);
             document.documentElement.dataset.manualCapture = manualCapturePreset;
             dispatch({ type: "setStatus", status: `Manual capture ready: ${manualCapturePreset}` });

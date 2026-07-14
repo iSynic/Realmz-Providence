@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M20: GUI System & Tool Consolidation",
+  "parentIssue": "ISY-329",
+  "viewports": [
+    { "id": "desktop", "width": 1600, "height": 1000 },
+    { "id": "compact", "width": 1280, "height": 800 }
+  ],
+  "tools": [
+    { "key": "maps.land", "domain": "maps", "editor": "land", "label": "Land Editor", "workbenches": ["project"], "track": "ISY-337", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "maps" } },
+    { "key": "maps.dungeon", "domain": "maps", "editor": "dungeon", "label": "Dungeon Editor", "workbenches": ["project"], "track": "ISY-337", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+    { "key": "maps.layout", "domain": "maps", "editor": "layout", "label": "Land Layout", "workbenches": ["project"], "track": "ISY-337", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+    { "key": "maps.special-land", "domain": "maps", "editor": "special-land", "label": "Special Land Tiles", "workbenches": ["project", "library"], "track": "ISY-337", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+
+    { "key": "player-maps.map-records", "domain": "player-maps", "editor": "map-records", "label": "Player Maps", "workbenches": ["project"], "track": "ISY-337", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "player-maps" } },
+
+    { "key": "scripts.action-points", "domain": "scripts", "editor": "action-points", "label": "Action Points", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "scripts" } },
+    { "key": "scripts.macros", "domain": "scripts", "editor": "macros", "label": "Extra Action Points", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "scripts.global-macros", "domain": "scripts", "editor": "global-macros", "label": "Global Events", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "scripts.quests", "domain": "scripts", "editor": "quests", "label": "Quests", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+
+    { "key": "scenario.startup", "domain": "scenario", "editor": "startup", "label": "Startup Info", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "scenario" } },
+    { "key": "scenario.restrictions", "domain": "scenario", "editor": "restrictions", "label": "Restrictions", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+    { "key": "scenario.contact", "domain": "scenario", "editor": "contact", "label": "Contact Info", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+    { "key": "scenario.registration", "domain": "scenario", "editor": "registration", "label": "Security", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+
+    { "key": "encounters.simple", "domain": "encounters", "editor": "simple", "label": "Simple Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "encounters.complex", "domain": "encounters", "editor": "complex", "label": "Complex Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "encounters", "states": [
+      { "id": "result-target-open", "steps": [
+        { "action": "click", "selector": ".simple-encounter-action-matrix .encounter-action-preview" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-picker" }
+      ] },
+      { "id": "result-target-filtered", "steps": [
+        { "action": "click", "selector": ".simple-encounter-action-matrix .encounter-action-preview" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-picker" },
+        { "action": "fill", "selector": ".encounter-result-target-preview-panel .workbench-search-field input[type=\"search\"]", "value": "1" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-results" }
+      ] }
+    ] } },
+    { "key": "encounters.rogue", "domain": "encounters", "editor": "rogue", "label": "Rogue Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "encounters.timed", "domain": "encounters", "editor": "timed", "label": "Timed Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+
+    { "key": "combat.battles", "domain": "combat", "editor": "battles", "label": "Battle Editor", "workbenches": ["project"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "combat" } },
+    { "key": "combat.monsters", "domain": "combat", "editor": "monsters", "label": "Monster Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "combat.scrapbook", "domain": "combat", "editor": "scrapbook", "label": "Monster Library", "workbenches": ["library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned", "captureWorkbench": "library" } },
+
+    { "key": "economy.treasure", "domain": "economy", "editor": "treasure", "label": "Treasure", "workbenches": ["project"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "economy" } },
+    { "key": "economy.items", "domain": "economy", "editor": "items", "label": "Items", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "economy.shops", "domain": "economy", "editor": "shops", "label": "Shops", "workbenches": ["project"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "economy.bag", "domain": "economy", "editor": "bag", "label": "Bag of Holding", "workbenches": ["library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned", "captureWorkbench": "library" } },
+    { "key": "economy.vault", "domain": "economy", "editor": "vault", "label": "Vault of Arcana", "workbenches": ["library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned", "captureWorkbench": "library" } },
+
+    { "key": "rules.spells", "domain": "rules", "editor": "spells", "label": "Spell Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "rules.races", "domain": "rules", "editor": "races", "label": "Race Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "rules.castes", "domain": "rules", "editor": "castes", "label": "Caste Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "rules" } },
+
+    { "key": "assets.project-assets", "domain": "assets", "editor": "project-assets", "label": "Scenario Assets", "workbenches": ["project"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "assets" } },
+    { "key": "assets.pictures", "domain": "assets", "editor": "pictures", "label": "Scenario Pictures", "workbenches": ["project", "library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "assets.sounds", "domain": "assets", "editor": "sounds", "label": "Scenario Sounds", "workbenches": ["project", "library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "assets.icons", "domain": "assets", "editor": "icons", "label": "Scenario Icons", "workbenches": ["project", "library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "assets.text-resources", "domain": "assets", "editor": "text-resources", "label": "Text Resources", "workbenches": ["project", "library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "assets.special-land", "domain": "assets", "editor": "special-land", "label": "Special Land Tiles", "workbenches": ["project", "library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "assets.library-assets", "domain": "assets", "editor": "library-assets", "label": "Reference Libraries", "workbenches": ["library"], "track": "ISY-336", "capture": { "route": "ready", "baseline": "planned", "captureWorkbench": "library" } },
+    { "key": "assets.decoded-records", "domain": "assets", "editor": "decoded-records", "label": "Decoded Records", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "assets.resource-forks", "domain": "assets", "editor": "resource-forks", "label": "Advanced Resources", "workbenches": ["project", "library"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "planned" } },
+
+    { "key": "text.messages", "domain": "text", "editor": "messages", "label": "String Editor", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "text" } },
+    { "key": "text.text-resources", "domain": "text", "editor": "text-resources", "label": "Reference Strings", "workbenches": ["project", "library"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "text.spell-check", "domain": "text", "editor": "spell-check", "label": "Export Check", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+
+    { "key": "records.decoded-records", "domain": "records", "editor": "decoded-records", "label": "Decoded Records", "workbenches": ["project", "library"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "records.evidence", "domain": "records", "editor": "evidence", "label": "Technical Details", "workbenches": ["project", "library"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+
+    { "key": "linter.issues", "domain": "linter", "editor": "issues", "label": "Issues", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "linter.readiness", "domain": "linter", "editor": "readiness", "label": "Readiness", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } },
+
+    { "key": "export.export-plan", "domain": "export", "editor": "export-plan", "label": "Export Plan", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "export" } },
+    { "key": "export.benchmark", "domain": "export", "editor": "benchmark", "label": "Benchmark", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "interaction-hook", "baseline": "planned" } }
+  ]
+}

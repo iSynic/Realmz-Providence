@@ -72,6 +72,9 @@
     "smoke:ui:map-paint": "node scripts/smoke_ui_map_paint.mjs",
     "smoke:ui:performance": "node scripts/smoke_ui_performance.mjs",
     "docs:capture-gallery": "node scripts/capture_manual_gallery.mjs",
+    "docs:capture-ui-audit": "node scripts/capture_manual_gallery.mjs --audit",
+    "audit:ui": "node scripts/report_ui_audit_coverage.mjs --out tmp/ui-audit/coverage-report.json",
+    "check:ui-audit": "node scripts/report_ui_audit_coverage.mjs --check",
     "smoke:editor:scripts-v2": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_editor_smoke.ps1",
     "smoke:editor:scripts-v2:diagnostics": "powershell -ExecutionPolicy Bypass -File scripts/run_scripts_v2_diagnostics_smoke.ps1",
     "check:ap-action-gaps": "node scripts/report_ap_action_gaps.mjs --self-test && node scripts/report_ap_action_gaps.mjs --fail-on-authoring-gaps --out tmp/ap-action-gaps-check",
@@ -92,7 +95,7 @@
     "smoke:scenario-generation": "node scripts/run_scenario_generation_smoke.mjs",
     "check:scenario-seed": "node scripts/check_scenario_seed_schema.mjs && node scripts/check_scenario_seed_fixtures.mjs && node scripts/check_scenario_seed_report.mjs && npm run smoke:scenario-generation",
     "check:evidence-lab": "node scripts/check_evidence_lab_policy.mjs",
-    "check": "npm run check:refactor-guardrails && npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
+    "check": "npm run check:refactor-guardrails && npm run check:ui-audit && npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

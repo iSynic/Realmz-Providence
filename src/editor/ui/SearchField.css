@@ -1,0 +1,73 @@
+.workbench-search-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workbench-search-field > label {
+  color: #89a8bd;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workbench-search-control {
+  position: relative;
+  min-width: 0;
+}
+
+.workbench-search-control > svg {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  z-index: 1;
+  color: #7890a4;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.workbench-search-control > input {
+  width: 100%;
+  min-width: 0;
+  padding-left: 29px;
+  padding-right: 29px;
+}
+
+.workbench-search-control > input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.workbench-search-control > button {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #8da4b8;
+  padding: 0;
+  transform: translateY(-50%);
+}
+
+.workbench-search-control > button:hover {
+  background: #203143;
+  color: #e1f0ff;
+}
+
+.workbench-search-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #99afbf;
+  font-size: 9px;
+}
+
+.workbench-search-meta small {
+  color: #7f96a8;
+  font-size: inherit;
+  text-align: right;
+}

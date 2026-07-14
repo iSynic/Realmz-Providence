@@ -7,7 +7,11 @@ import path from "node:path";
 const root = process.cwd();
 const args = parseArgs(process.argv.slice(2));
 const previewTopic = args.get("preview-topic");
-const outputDir = path.resolve(args.get("out") ?? (previewTopic ? "tmp/manual-preview" : "public/manual/gallery"));
+const auditMode = args.has("audit");
+const auditCatalog = auditMode ? readAuditCatalog() : null;
+const auditViewport = auditMode ? resolveAuditViewport(auditCatalog, args.get("viewport") ?? "desktop") : null;
+const auditStateId = auditMode ? args.get("state") ?? "base" : null;
+const outputDir = path.resolve(args.get("out") ?? (previewTopic ? "tmp/manual-preview" : auditMode ? "tmp/ui-audit/captures" : "public/manual/gallery"));
 const requested = new Set((args.get("capture") ?? "").split(",").map((value) => value.trim()).filter(Boolean));
 const galleryCaptures = [
   { preset: "scenario", file: "scenario-shell.png", selector: ".scenario-workbench" },
@@ -29,7 +33,21 @@ const captures = previewTopic
       selector: ".workbench-topbar",
       documentTopic: previewTopic
     }]
-  : galleryCaptures.filter((capture) => requested.size === 0 || requested.has(capture.preset));
+  : auditMode
+    ? auditCatalog.tools
+      .filter((tool) => tool.capture.route === "ready" && (requested.size === 0 || requested.has(tool.key)))
+      .map((tool) => {
+        const state = resolveAuditState(tool, auditStateId);
+        const stateSuffix = auditStateId === "base" ? "" : `-${safeFilePart(auditStateId)}`;
+        return {
+          preset: tool.key,
+          auditId: tool.key,
+          auditState: state,
+          file: `${safeFilePart(tool.key)}-${auditViewport.id}${stateSuffix}.png`,
+          selector: ".editor-panel-host"
+        };
+      })
+    : galleryCaptures.filter((capture) => requested.size === 0 || requested.has(capture.preset));
 
 if (captures.length === 0) throw new Error("No matching capture presets were requested.");
 
@@ -53,19 +71,23 @@ try {
   await client.send("Page.enable");
   await client.send("Runtime.enable");
   await client.send("Emulation.setDeviceMetricsOverride", {
-    width: Number(args.get("width") ?? 1600),
-    height: Number(args.get("height") ?? 1000),
+    width: Number(args.get("width") ?? auditViewport?.width ?? 1600),
+    height: Number(args.get("height") ?? auditViewport?.height ?? 1000),
     deviceScaleFactor: 1,
     mobile: false
   });
 
   const written = [];
   for (const capture of captures) {
-    process.stdout.write(`[manual-gallery] ${capture.preset}... `);
-    const url = `${baseUrl}/?benchmarkProject=${encodeURIComponent(projectUrl)}&manualCapture=${capture.preset}`;
+    process.stdout.write(`[${auditMode ? "ui-audit" : "manual-gallery"}] ${capture.preset}... `);
+    const captureParam = capture.auditId
+      ? `uiAuditCapture=${encodeURIComponent(capture.auditId)}`
+      : `manualCapture=${encodeURIComponent(capture.preset)}`;
+    const url = `${baseUrl}/?benchmarkProject=${encodeURIComponent(projectUrl)}&${captureParam}`;
     await client.send("Page.navigate", { url });
     await waitFor(async () => {
-      const ready = await evaluate(client, `document.documentElement.dataset.manualCapture === ${JSON.stringify(capture.preset)} && Boolean(document.querySelector(${JSON.stringify(capture.selector)}))`);
+      const dataset = capture.auditId ? "uiAuditCapture" : "manualCapture";
+      const ready = await evaluate(client, `document.documentElement.dataset[${JSON.stringify(dataset)}] === ${JSON.stringify(capture.preset)} && Boolean(document.querySelector(${JSON.stringify(capture.selector)}))`);
       return ready === true;
     }, 45_000, `Timed out waiting for ${capture.preset} (${capture.selector}).`);
     if (capture.documentTopic) {
@@ -94,6 +116,7 @@ try {
     if (capture.ready) {
       await waitFor(async () => await evaluate(client, capture.ready) === true, 30_000, `Timed out waiting for ${capture.preset} assets.`);
     }
+    if (capture.auditState) await applyAuditState(client, capture.preset, capture.auditState);
     await evaluate(client, `
       (() => {
         document.documentElement.dataset.tutorial = "off";
@@ -111,7 +134,7 @@ try {
     process.stdout.write(`${written.at(-1)}\n`);
   }
   client.close();
-  console.log(JSON.stringify({ project: workspacePath(projectPath), captures: written }, null, 2));
+  console.log(JSON.stringify({ project: workspacePath(projectPath), mode: auditMode ? "ui-audit" : "manual-gallery", viewport: auditViewport?.id ?? "desktop", state: auditStateId ?? "base", captures: written }, null, 2));
 } finally {
   if (browser) browser.kill();
   if (server) await new Promise((resolve) => server.close(resolve));
@@ -135,6 +158,71 @@ function parseArgs(values) {
     else parsed.set(key, "true");
   }
   return parsed;
+}
+
+function readAuditCatalog() {
+  const catalogPath = path.join(root, "docs", "ui-audit-matrix.json");
+  return JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+}
+
+function resolveAuditViewport(catalog, id) {
+  const viewport = catalog.viewports.find((candidate) => candidate.id === id);
+  if (!viewport) throw new Error(`Unknown UI audit viewport: ${id}`);
+  return viewport;
+}
+
+function resolveAuditState(tool, stateId) {
+  if (stateId === "base") return null;
+  const state = tool.capture.states?.find((candidate) => candidate.id === stateId) ?? null;
+  if (!state) throw new Error(`${tool.key} has no UI audit state named ${stateId}.`);
+  return state;
+}
+
+async function applyAuditState(client, preset, state) {
+  for (const step of state.steps) {
+    if (step.action === "wait") {
+      await waitFor(
+        async () => await evaluate(client, `Boolean(document.querySelector(${JSON.stringify(step.selector)}))`) === true,
+        15_000,
+        `Timed out waiting for ${preset}:${state.id} selector ${step.selector}.`
+      );
+      continue;
+    }
+    if (step.action === "click") {
+      await waitFor(
+        async () => await evaluate(client, `
+          (() => {
+            const element = document.querySelector(${JSON.stringify(step.selector)});
+            if (!(element instanceof HTMLElement)) return false;
+            element.click();
+            return true;
+          })()
+        `) === true,
+        15_000,
+        `Could not click ${step.selector} for ${preset}:${state.id}.`
+      );
+      continue;
+    }
+    if (step.action === "fill") {
+      await waitFor(
+        async () => await evaluate(client, `
+          (() => {
+            const element = document.querySelector(${JSON.stringify(step.selector)});
+            if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return false;
+            const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+            const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+            setter?.call(element, ${JSON.stringify(step.value)});
+            element.dispatchEvent(new Event("input", { bubbles: true }));
+            element.dispatchEvent(new Event("change", { bubbles: true }));
+            element.focus();
+            return true;
+          })()
+        `) === true,
+        15_000,
+        `Could not fill ${step.selector} for ${preset}:${state.id}.`
+      );
+    }
+  }
 }
 
 function safeFilePart(value) {
