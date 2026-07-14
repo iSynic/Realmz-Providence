@@ -1938,42 +1938,6 @@
   background: #0b151e;
 }
 
-.encounter-result-message-preview,
-.encounter-result-resource-preview {
-  display: grid;
-  gap: 8px;
-  border: 1px solid #2a4050;
-  border-radius: 6px;
-  background: #0d1720;
-  padding: 10px;
-}
-
-.encounter-result-message-preview strong,
-.encounter-result-resource-preview strong {
-  color: #dceeff;
-  font-size: 12px;
-}
-
-.encounter-result-message-preview p,
-.encounter-result-resource-preview p {
-  margin: 0;
-  color: #c5d5e2;
-  font-size: 11px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-}
-
-.encounter-result-resource-preview img {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  max-height: 280px;
-  object-fit: contain;
-  image-rendering: pixelated;
-  border: 1px solid #2f485b;
-  background: #070b0e;
-}
-
 .encounter-result-resource-preview small {
   color: #8fa5b6;
   font-size: 10px;

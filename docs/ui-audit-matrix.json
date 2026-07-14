@@ -35,6 +35,27 @@
         { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-picker" },
         { "action": "fill", "selector": ".encounter-result-target-preview-panel .workbench-search-field input[type=\"search\"]", "value": "1" },
         { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-results" }
+      ] },
+      { "id": "result-target-selected", "steps": [
+        { "action": "click", "selector": ".simple-encounter-action-matrix .encounter-action-preview" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-picker" },
+        { "action": "fill", "selector": ".encounter-result-target-preview-panel .workbench-search-field input[type=\"search\"]", "value": "10" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-results [role=\"option\"]" },
+        { "action": "click", "selector": ".encounter-result-target-preview-panel .workbench-reference-results [role=\"option\"]" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-current.is-resolved" }
+      ] },
+      { "id": "result-target-no-match", "steps": [
+        { "action": "click", "selector": ".simple-encounter-action-matrix .encounter-action-preview" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-picker" },
+        { "action": "fill", "selector": ".encounter-result-target-preview-panel .workbench-search-field input[type=\"search\"]", "value": "no-reference-can-match-this-query" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-results .workbench-empty-state" }
+      ] },
+      { "id": "result-target-unresolved", "steps": [
+        { "action": "click", "selector": ".simple-encounter-action-matrix .encounter-action-preview" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-picker" },
+        { "action": "fill", "selector": ".simple-encounter-action-matrix .simple-encounter-action-cell.populated .encounter-action-id-field input", "value": "9999" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-current.is-unresolved" },
+        { "action": "wait", "selector": ".encounter-result-target-preview-panel .workbench-reference-preview.is-missing" }
       ] }
     ] } },
     { "key": "encounters.rogue", "domain": "encounters", "editor": "rogue", "label": "Rogue Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },

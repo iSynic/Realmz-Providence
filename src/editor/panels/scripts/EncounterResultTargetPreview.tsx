@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Volume2, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   TargetPicker,
   resolveSignedMessageTarget,
@@ -11,7 +11,7 @@ import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } fro
 import { actionOptionFor } from "../../realmzActions";
 import { realmzScriptStepDescriptorFor } from "../../realmzScriptDescriptors";
 import type { LibraryCatalog, Project, RealmzTargetRecordKind } from "../../types";
-import { EmptyState, FloatingWorkbenchPanel } from "../../ui";
+import { FloatingWorkbenchPanel, ReferencePreview, type ReferencePreviewModel } from "../../ui";
 import { resultActionBaseCode } from "./encounterFlow";
 
 type StoredPreviewType = Exclude<RealmzTargetRecordKind, "message" | "questLabel">;
@@ -122,25 +122,48 @@ function EncounterResultTargetPreviewContent({
 }) {
   if (targetType === "message") {
     const record = project.messages?.find((candidate) => candidate.id === targetId);
-    return record ? (
-      <section className="encounter-result-message-preview">
-        <strong>String {targetId}</strong>
-        <p>{record.text || "This string is empty."}</p>
-      </section>
-    ) : <EmptyState compact title={`String ${targetId} is missing`} body="Create or select a stored string before relying on this result." />;
+    return <ReferencePreview preview={record ? {
+      key: `message:${targetId}`,
+      kind: "text",
+      title: `String ${targetId}`,
+      detail: option?.sourceState,
+      text: record.text || "This string is empty."
+    } : {
+      key: `message:${targetId}`,
+      kind: "missing",
+      title: `String ${targetId} is missing`,
+      body: "Create or select a stored string before relying on this result.",
+      state: "missing"
+    }} />;
   }
   if (targetType === "questLabel") {
     const record = project.questLabels?.find((candidate) => candidate.id === targetId);
-    return record ? (
-      <section className="encounter-result-message-preview">
-        <strong>{record.label || `Quest ${targetId}`}</strong>
-        <p>{record.note || `Story flag ${targetId} has no author note.`}</p>
-      </section>
-    ) : <EmptyState compact title={`Story Flag ${targetId} is unnamed`} body="Name this story flag before relying on it in a result." />;
+    return <ReferencePreview preview={record ? {
+      key: `quest:${targetId}`,
+      kind: "text",
+      title: record.label || `Quest ${targetId}`,
+      detail: option?.sourceState,
+      text: record.note || `Story flag ${targetId} has no author note.`
+    } : {
+      key: `quest:${targetId}`,
+      kind: "missing",
+      title: `Story Flag ${targetId} is unnamed`,
+      body: "Name this story flag before relying on it in a result.",
+      state: "missing"
+    }} />;
   }
   if (isStoredPreviewType(targetType)) {
     const rendered = renderRecordPreview(targetType, targetId);
-    return rendered ?? missingStoredTarget(targetType, targetId);
+    const preview: ReferencePreviewModel = rendered == null
+      ? missingStoredTarget(targetType, targetId)
+      : {
+          key: `${targetType}:${targetId}`,
+          kind: "custom",
+          title: option?.label ?? storedTargetTitle(targetType, targetId),
+          detail: option?.detail,
+          content: rendered
+        };
+    return <ReferencePreview preview={preview} />;
   }
   return (
     <EncounterResultResourcePreview
@@ -176,27 +199,39 @@ function EncounterResultResourcePreview({
   const isAudio = opcode === 9 || option?.previewMimeType?.startsWith("audio/");
   const isImage = opcode === 27 || option?.previewMimeType?.startsWith("image/");
   if (!option) {
-    return <EmptyState compact title="No preview available" body={`Providence could not resolve ID ${targetId} to a stored target for this action.`} />;
+    return <ReferencePreview preview={{
+      key: `unresolved:${opcode}:${targetId}`,
+      kind: "missing",
+      title: "No preview available",
+      body: `Providence could not resolve ID ${targetId} to a stored target for this action.`,
+      state: "missing"
+    }} />;
   }
-  return (
-    <section className="encounter-result-resource-preview">
-      <strong>{option.label}</strong>
-      {isImage && previewUrl && <img src={previewUrl} alt={`Preview of ${option.label}`} />}
-      {isAudio && (
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          disabled={!previewUrl}
-          title={previewUrl ? "Play this sound preview." : "No playable preview is available for this sound."}
-          onClick={() => previewUrl && playPreviewUrl(previewUrl)}
-        >
-          <Volume2 size={13} /> Play
-        </button>
-      )}
-      {!previewUrl && (isAudio || isImage) && <small>No media preview is available for this reference.</small>}
-      {!isAudio && !isImage && <p>{option.summary || option.detail || "No additional preview details are available."}</p>}
-    </section>
-  );
+  const detail = [option.detail, option.summary, option.sourceState].filter(Boolean).join(" | ");
+  const preview: ReferencePreviewModel = isImage ? {
+    key: option.key,
+    kind: "image",
+    title: option.label,
+    detail,
+    src: previewUrl,
+    alt: `Preview of ${option.label}`,
+    state: previewUrl ? "resolved" : "unavailable"
+  } : isAudio ? {
+    key: option.key,
+    kind: "audio",
+    title: option.label,
+    detail,
+    src: previewUrl,
+    onPlay: previewUrl ? () => playPreviewUrl(previewUrl) : undefined,
+    state: previewUrl ? "resolved" : "unavailable"
+  } : {
+    key: option.key,
+    kind: "summary",
+    title: option.label,
+    detail: option.sourceState,
+    summary: option.summary || option.detail || "No additional preview details are available."
+  };
+  return <ReferencePreview preview={preview} />;
 }
 
 function isStoredPreviewType(targetType: RealmzTargetRecordKind | undefined): targetType is StoredPreviewType {
@@ -210,7 +245,18 @@ function isStoredPreviewType(targetType: RealmzTargetRecordKind | undefined): ta
     || targetType === "timedEncounter";
 }
 
-function missingStoredTarget(targetType: StoredPreviewType, targetId: number) {
+function storedTargetTitle(targetType: StoredPreviewType, targetId: number) {
+  return targetType === "battle" ? `Battle ${targetId}`
+    : targetType === "monster" ? `Monster ${targetId}`
+      : targetType === "treasure" ? `Treasure ${targetId}`
+        : targetType === "shop" ? `Shop ${targetId}`
+          : targetType === "simpleEncounter" ? `Simple Encounter ${targetId}`
+            : targetType === "complexEncounter" ? `Complex Encounter ${targetId}`
+              : targetType === "thiefEncounter" ? `Rogue Encounter ${targetId}`
+                : `Time Encounter ${targetId}`;
+}
+
+function missingStoredTarget(targetType: StoredPreviewType, targetId: number): ReferencePreviewModel {
   const title = targetType === "battle" ? `Battle ${targetId} is missing`
     : targetType === "monster" ? `Monster ${targetId} is missing`
       : targetType === "treasure" ? `Treasure ${targetId} is missing`
@@ -222,5 +268,11 @@ function missingStoredTarget(targetType: StoredPreviewType, targetId: number) {
   const body = targetType === "battle" || targetType === "monster" || targetType === "treasure" || targetType === "shop"
     ? "Choose an existing target or create this target."
     : "Choose an existing encounter or create this target.";
-  return <EmptyState compact title={title} body={body} />;
+  return {
+    key: `${targetType}:${targetId}`,
+    kind: "missing",
+    title,
+    body,
+    state: "missing"
+  };
 }

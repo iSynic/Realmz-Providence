@@ -4,7 +4,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 
 ## Current Foundation
 
-`src/editor/ui` exports fourteen shared primitives:
+`src/editor/ui` exports fifteen shared primitives:
 
 - `PanelSection` and `CollapsibleSection`
 - `FloatingWorkbenchPanel`
@@ -19,6 +19,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 - `ScrollArea`
 - `SearchField`
 - `ReferencePicker`
+- `ReferencePreview`
 
 At the ISY-330 baseline, 35 editor files import the shared UI module. This is enough adoption to evolve rather than replace the layer.
 
@@ -93,7 +94,7 @@ Providence currently has shared floating panels plus bespoke backdrops/dialogs f
 
 - The desktop and compact Extra Action Points captures preserve the same core workflow, but compact width truncates several status labels and reduces list/editor breathing room.
 - The Complex Encounter desktop capture keeps all response groups in one scan row. At compact width, Typed Reply wraps below the other response groups and Result Scripts falls below the first viewport; the editor remains usable, but its scan order changes substantially.
-- Direct tool captures prove populated base layouts. Floating pickers still need explicit open, filtered, selected, empty, and unresolved interaction hooks before their complete behavior can be compared visually.
+- Direct tool captures prove populated base layouts. Complex Encounter result targets now provide explicit open, filtered, selected, no-match, and unresolved interaction recipes; the same state set should be reused by later picker migrations.
 - Search fields do not consistently expose a clear command, result count, loading state, or the same keyboard behavior.
 - Several reference fields expose search, select, raw ID, preview, and navigation simultaneously even when only one authoring choice is primary.
 - Eye actions are moving toward a consistent preview meaning, but their floating surfaces remain independently composed.
@@ -106,4 +107,4 @@ ISY-332 starts with the shared `SearchField`, now used by Complex Encounter resp
 
 The next implemented layer is the typed `ReferencePicker`. `TargetPicker` now delegates its searchable selected/result presentation to that primitive while retaining Realmz signed-ID, sound, media, creation, and macro-flow behavior. Shared matching is term-based, unresolved values stay visible, and result lists are complete rather than sliced to an arbitrary count.
 
-The next slice should define the pluggable `ReferencePreview` renderer registry and finish the Complex Encounter result-target pilot captures. Those targets exercise strings, battles, treasure, scripts, sounds, previews, and selection without changing the underlying record writer.
+The pluggable `ReferencePreview` registry now owns text, summary, image, audio, custom-domain, unavailable, and missing presentation without implying navigation or mutation. Complex Encounter result targets use it for their floating preview and expose open, filtered, selected, no-match, and unresolved audit states. Documents is the first non-script surface migrated to the shared `SearchField`; later record and library browsers should reuse the same field and state vocabulary.

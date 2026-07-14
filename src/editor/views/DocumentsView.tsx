@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, ListTree, Search, X } from "lucide-react";
+import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, ListTree } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
-import { EmptyState, LinkChip, PanelSection, PreviewCard } from "../ui";
+import { EmptyState, LinkChip, PanelSection, PreviewCard, SearchField } from "../ui";
 import {
   DOCUMENTATION_GROUPS,
   DOCUMENTATION_TOPICS,
@@ -105,22 +105,21 @@ export function DocumentsView({
         </header>
         <div className="documents-body">
           <aside className="documents-nav-shell">
-            <label className="documents-search">
-              <TutorialTip title="Search Documents" body={DOCUMENT_SEARCH_HELP} side="below">
-                <span className="documents-help-anchor"><Search size={14} /></span>
-              </TutorialTip>
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.currentTarget.value)}
-                placeholder="Search manual"
-                aria-label="Search manual"
-              />
-              {query && (
-                <button type="button" onClick={() => setQuery("")} aria-label="Clear documentation search">
-                  <X size={13} />
-                </button>
+            <SearchField
+              className="documents-search"
+              label={(
+                <TutorialTip title="Search Documents" body={DOCUMENT_SEARCH_HELP} side="below">
+                  <span>Manual Search</span>
+                </TutorialTip>
               )}
-            </label>
+              value={query}
+              onChange={setQuery}
+              placeholder="Search manual"
+              ariaLabel="Search manual"
+              resultCount={normalizedQuery ? filteredTopics.length : undefined}
+              resultNoun="chapter"
+              resultNounPlural="chapters"
+            />
             <nav className="documents-nav" aria-label="Manual chapters">
               {groupedTopics.map(({ group, topics }) => (
                 <section key={group.id} className="documents-nav-group" aria-label={group.label}>

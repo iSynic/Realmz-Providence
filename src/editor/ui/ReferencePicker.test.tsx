@@ -1,6 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ReferencePicker, filterReferencePickerOptions, type ReferencePickerOption } from "./ReferencePicker";
+import {
+  ReferencePicker,
+  filterReferencePickerOptions,
+  referencePickerKeyboardAction,
+  type ReferencePickerOption
+} from "./ReferencePicker";
 
 describe("ReferencePicker", () => {
   const options: ReferencePickerOption<number>[] = [
@@ -55,5 +60,12 @@ describe("ReferencePicker", () => {
     expect(markup).toContain("is-unresolved");
     expect(markup).toContain("This target does not exist yet.");
     expect(markup).toContain("1 match");
+  });
+
+  it("selects the first result with Enter and clears a query with Escape", () => {
+    expect(referencePickerKeyboardAction("Enter", "bell", true)).toBe("select-first");
+    expect(referencePickerKeyboardAction("Enter", "bell", false)).toBeNull();
+    expect(referencePickerKeyboardAction("Escape", "bell", true)).toBe("clear");
+    expect(referencePickerKeyboardAction("Escape", "", true)).toBeNull();
   });
 });

@@ -14,7 +14,8 @@ export {
 } from "./WorkbenchPrimitives";
 
 export { SearchField } from "./SearchField";
-export { ReferencePicker, filterReferencePickerOptions } from "./ReferencePicker";
+export { ReferencePicker, filterReferencePickerOptions, referencePickerKeyboardAction } from "./ReferencePicker";
+export { ReferencePreview, DEFAULT_REFERENCE_PREVIEW_RENDERERS } from "./ReferencePreview";
 
 export type {
   EmptyStateProps,
@@ -41,3 +42,15 @@ export type {
   ReferencePickerProps,
   ReferencePickerValue
 } from "./ReferencePicker";
+export type {
+  ReferenceAudioPreview,
+  ReferenceCustomPreview,
+  ReferenceImagePreview,
+  ReferenceMissingPreview,
+  ReferencePreviewModel,
+  ReferencePreviewProps,
+  ReferencePreviewRenderer,
+  ReferencePreviewRendererRegistry,
+  ReferenceSummaryPreview,
+  ReferenceTextPreview
+} from "./ReferencePreview";

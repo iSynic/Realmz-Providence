@@ -204,23 +204,20 @@ async function applyAuditState(client, preset, state) {
       continue;
     }
     if (step.action === "fill") {
-      await waitFor(
+      const focused = await waitFor(
         async () => await evaluate(client, `
           (() => {
             const element = document.querySelector(${JSON.stringify(step.selector)});
             if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return false;
-            const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-            const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
-            setter?.call(element, ${JSON.stringify(step.value)});
-            element.dispatchEvent(new Event("input", { bubbles: true }));
-            element.dispatchEvent(new Event("change", { bubbles: true }));
             element.focus();
+            element.select();
             return true;
           })()
         `) === true,
         15_000,
         `Could not fill ${step.selector} for ${preset}:${state.id}.`
       );
+      if (focused) await client.send("Input.insertText", { text: step.value });
     }
   }
 }

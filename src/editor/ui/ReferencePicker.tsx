@@ -1,5 +1,6 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import { EmptyState } from "./WorkbenchPrimitives";
+import type { ReferencePreviewModel } from "./ReferencePreview";
 import { SearchField } from "./SearchField";
 import "./ReferencePicker.css";
 
@@ -13,6 +14,7 @@ export type ReferencePickerOption<TValue extends ReferencePickerValue = number> 
   searchText: string;
   title?: string;
   disabled?: boolean;
+  preview?: ReferencePreviewModel;
 };
 
 export type ReferencePickerCurrent = {
@@ -64,13 +66,14 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
   const firstSelectable = filteredOptions.find((option) => !option.disabled) ?? null;
 
   function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Escape" && query) {
+    const action = referencePickerKeyboardAction(event.key, query, Boolean(firstSelectable));
+    if (action === "clear") {
       event.preventDefault();
       event.stopPropagation();
       onQueryChange("");
       return;
     }
-    if (event.key !== "Enter" || !firstSelectable) return;
+    if (action !== "select-first" || !firstSelectable) return;
     event.preventDefault();
     onSelect(firstSelectable);
   }
@@ -120,6 +123,16 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
       )}
     </div>
   );
+}
+
+export function referencePickerKeyboardAction(
+  key: string,
+  query: string,
+  hasSelectableResult: boolean
+): "clear" | "select-first" | null {
+  if (key === "Escape" && query) return "clear";
+  if (key === "Enter" && hasSelectableResult) return "select-first";
+  return null;
 }
 
 export function filterReferencePickerOptions<TValue extends ReferencePickerValue>(

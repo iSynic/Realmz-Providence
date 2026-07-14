@@ -75,6 +75,11 @@ export function EncounterResultActionMatrix({
     setCodeHelperSelectedCode(resultActionBaseCode(normalizedFocusedCode || selectedColumnAction?.rawCode || firstPopulatedAction?.rawCode || 1));
     setCodeHelperOpen(true);
   };
+  const activeTargetPreview = targetPreview ? {
+    ...targetPreview,
+    opcode: encounterActionAt(actions, targetPreview.slot).rawCode,
+    value: encounterActionAt(actions, targetPreview.slot).id
+  } : null;
   return (
     <section className="simple-encounter-action-matrix">
       <header>
@@ -140,16 +145,15 @@ export function EncounterResultActionMatrix({
           onClose={() => setSoundPreviewOpen(false)}
         />
       )}
-      {targetPreview && (
+      {activeTargetPreview && (
         <EncounterResultTargetPreview
           project={project}
           catalog={catalog}
-          preview={targetPreview}
+          preview={activeTargetPreview}
           previewContext={previewContext}
           renderRecordPreview={renderRecordPreview}
           onChange={(value) => {
-            onUpdate(targetPreview.slot, { id: value });
-            setTargetPreview((current) => current ? { ...current, value } : null);
+            onUpdate(activeTargetPreview.slot, { id: value });
           }}
           onClose={() => setTargetPreview(null)}
         />
