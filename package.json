@@ -17,6 +17,7 @@
     "check:architecture:report": "node scripts/check_architecture_boundaries.mjs --report",
     "check:module-sizes": "node scripts/check_module_size_baseline.mjs",
     "check:refactor-guardrails": "npm run check:guardrail-self-tests && npm run check:architecture && npm run lint && npm run test:unit && npm run check:module-sizes",
+    "audit:m19-closure": "node scripts/report_m19_closure.mjs --out tmp/m19-closure-audit.json",
     "typecheck": "tsc --noEmit",
     "build": "vite build",
     "dist": "tauri build",
