@@ -182,18 +182,6 @@
   padding: 2px 5px;
 }
 
-.encounter-setup-select {
-  height: 24px;
-  min-width: 0;
-  border: 1px solid #526275;
-  border-radius: 4px;
-  background: #2c2b35;
-  color: #f2f7ff;
-  font: inherit;
-  font-weight: 800;
-  padding: 2px 5px;
-}
-
 .encounter-prompt-inline-field .inline-number-field {
   width: 74px;
 }
@@ -237,8 +225,12 @@
   margin: 0;
 }
 
-.encounter-rogue-inline-field .encounter-setup-select {
-  width: 58px;
+.encounter-rogue-reference-field {
+  width: min(100%, 560px);
+}
+
+.encounter-rogue-reference-field .workbench-reference-results {
+  max-height: 260px;
 }
 
 .encounter-setup-divider {

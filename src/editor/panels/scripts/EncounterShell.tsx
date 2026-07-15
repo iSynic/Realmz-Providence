@@ -22,7 +22,8 @@ import {
   type EncounterCopySource
 } from "./EncounterCopyPanel";
 import { EncounterPromptStringEditor } from "./EncounterPromptStringEditor";
-import { EncounterRecordPicker, encounterRecordsForType } from "./EncounterRecordPicker";
+import { EncounterRecordPicker } from "./EncounterRecordPicker";
+import { EncounterRogueReferenceField } from "./EncounterRogueReferenceField";
 import { EncounterResponseEditor } from "./EncounterResponseEditor";
 import { EncounterResultActionMatrix } from "./EncounterResultActionMatrix";
 import { InlineNumberField } from "./InlineNumberField";
@@ -188,12 +189,6 @@ export function EncounterShell({
   useEffect(() => {
     setRogueTargetDraft(thiefSuccess ?? 0);
   }, [thiefSuccess]);
-  const rogueRecords = recordKind === "complex" ? encounterRecordsForType(project, "thiefEncounter") : [];
-  const rogueTargetRecord = rogueRecords.find((candidate) => candidate.id === rogueTargetDraft);
-  const roguePickerRecords = rogueTargetRecord || rogueTargetDraft == null
-    ? rogueRecords
-    : [{ id: rogueTargetDraft }, ...rogueRecords];
-  const canOpenRogueEncounter = Boolean(thief) && Boolean(rogueTargetRecord);
   return (
     <>
       <div className="script-target-grid encounter-record-grid">
@@ -242,44 +237,6 @@ export function EncounterShell({
                     onChange={(event) => update({ thief: event.currentTarget.checked })}
                   />
                 </div>
-                {thief && (
-                  <>
-                    <span className="encounter-setup-divider" aria-hidden="true" />
-                    <label className="encounter-setup-inline-field encounter-rogue-inline-field">
-                      <span>Rogue Encounter</span>
-                      <select
-                        aria-label="Rogue Encounter ID"
-                        className="encounter-setup-select"
-                        value={rogueTargetDraft}
-                        onChange={(event) => {
-                          const nextId = Number(event.currentTarget.value);
-                          if (!Number.isInteger(nextId)) return;
-                          setRogueTargetDraft(nextId);
-                          update({ thiefSuccess: nextId });
-                        }}
-                      >
-                        {roguePickerRecords.map((record) => (
-                          <option key={record.id} value={record.id}>
-                            {record.id}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-xs"
-                      disabled={!canOpenRogueEncounter}
-                      onClick={() => {
-                        if (!canOpenRogueEncounter) return;
-                        onSelectEncounterRecordType?.("thiefEncounter");
-                        onSelectEditor?.("rogue");
-                        onSelectEntity?.(selectEntityFromId(`thief:${rogueTargetDraft}`));
-                      }}
-                    >
-                      Go to Rogue Encounter
-                    </button>
-                  </>
-                )}
               </>
             )}
             <span className="encounter-setup-divider" aria-hidden="true" />
@@ -288,6 +245,22 @@ export function EncounterShell({
               <InlineNumberField ariaLabel="Max Times" value={maxTimes} onCommit={(value) => update({ maxTimes: value })} />
             </label>
           </div>
+          {recordKind === "complex" && thief && (
+            <EncounterRogueReferenceField
+              project={project}
+              value={rogueTargetDraft}
+              disabled={!onApplyCommand}
+              onChange={(nextId) => {
+                setRogueTargetDraft(nextId);
+                update({ thiefSuccess: nextId });
+              }}
+              onOpen={(nextId) => {
+                onSelectEncounterRecordType?.("thiefEncounter");
+                onSelectEditor?.("rogue");
+                onSelectEntity?.(selectEntityFromId(`thief:${nextId}`));
+              }}
+            />
+          )}
         </section>
       {recordKind === "simple" ? (
         <>
