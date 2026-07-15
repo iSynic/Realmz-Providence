@@ -3,10 +3,10 @@ import { Volume2 } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import {
   resolveSignedMessageTarget,
-  signedTargetBehaviorLabel,
   signedTargetValueForSelection,
   targetOptionForOpcodeValue,
-  targetOptionsForOpcode
+  targetOptionsForOpcode,
+  type ScriptTargetOption
 } from "../../components/RealmzTargetPicker";
 import { playPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
 import type {
@@ -16,6 +16,7 @@ import type {
   ProjectCommand,
   SelectedEntity
 } from "../../types";
+import { ReferenceField, numericReferenceQuery, type ReferencePickerOption } from "../../ui";
 import {
   ROGUE_ACTION_LABELS,
   encounterResultStatus,
@@ -26,7 +27,7 @@ import { useEncounterSoundPreviewUrl } from "./EncounterResultSoundPreview";
 import { EncounterRecordPicker } from "./EncounterRecordPicker";
 import { InlineNumberField } from "./InlineNumberField";
 import { NumberField } from "./NumberField";
-import { ReferenceIdField } from "./ReferenceIdField";
+import { ReferenceIdField, rawReferenceTargetOption } from "./ReferenceIdField";
 import { spellReferenceOptions } from "./encounterResponseOptions";
 import { updateArraySlot } from "./arraySlots";
 
@@ -208,14 +209,17 @@ export function ThiefEncounterShell({
           <div className="rogue-trap-fields">
             <div className="rogue-trap-lock-column">
               <strong>Traps</strong>
-              <RoguePromptStringSelect
+              <ReferenceIdField
                 project={project}
                 catalog={catalog}
                 label="Trap Prompt String"
                 emptyLabel="No trap prompt string"
-                className="rogue-trap-prompt-string-field"
+                opcode={1}
                 value={record.prompts?.[0] ?? 0}
+                createRecordType="message"
+                compact
                 onCommit={(value) => update({ prompts: updateArraySlot(record.prompts ?? [], 0, value, 3) })}
+                onCreateTarget={(targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create rogue trap string", recordType: "message", id: targetId })}
               />
               <RoguePromptStringPreview
                 project={project}
@@ -302,8 +306,8 @@ function RogueSoundSelectField({
 }) {
   const soundOptions = useMemo(() => targetOptionsForOpcode(project, 9, catalog), [catalog, project]);
   const selected = useMemo(() => targetOptionForOpcodeValue(project, 9, value, catalog), [catalog, project, value]);
+  const pickerOptions = useMemo(() => soundOptions.map(scriptTargetReferenceOption), [soundOptions]);
   const selectedValue = Math.abs(value);
-  const selectedInOptions = selectedValue === 0 || soundOptions.some((option) => option.value === selectedValue);
   const soundHelp = selected
     ? [selected.label, selected.detail, selected.summary].filter(Boolean).join(" | ")
     : value
@@ -325,78 +329,28 @@ function RogueSoundSelectField({
       >
         <Volume2 size={12} />
       </button>
-      <select
-        aria-label={label}
-        title={soundHelp}
+      <ReferenceField
+        ariaLabel={`Search ${label}`}
+        placeholder="Search sound name or ID..."
+        options={pickerOptions}
         value={value}
-        onChange={(event) => onCommit(Number(event.currentTarget.value))}
-      >
-        <option value={0}>{emptyLabel}</option>
-        {value !== 0 && !selectedInOptions && <option value={value}>Current sound {selectedValue}</option>}
-        {soundOptions.map((option) => {
-          const optionValue = signedTargetValueForSelection(9, value, option.value);
-          return <option key={option.key} value={optionValue}>{option.label}</option>;
-        })}
-      </select>
-    </div>
-  );
-}
-
-function RoguePromptStringSelect({
-  project,
-  catalog,
-  label = "Prompt String",
-  emptyLabel = "No prompt string",
-  className = "rogue-prompt-string-field",
-  value,
-  onCommit
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  label?: string;
-  emptyLabel?: string;
-  className?: string;
-  value: number;
-  onCommit: (value: number) => void;
-}) {
-  const selected = useMemo(() => targetOptionForOpcodeValue(project, 1, value, catalog), [catalog, project, value]);
-  const options = useMemo(() => targetOptionsForOpcode(project, 1, catalog), [catalog, project]);
-  const resolvedValue = resolveSignedMessageTarget(1, value);
-  const hasRawValue = resolvedValue !== 0 && !selected;
-  const visibleOptions = selected && !options.some((option) => option.value === selected.value) ? [selected, ...options] : options;
-  const help = selected
-    ? [selected.label, selected.detail, selected.summary, signedTargetBehaviorLabel(1, value)].filter(Boolean).join(" | ")
-    : hasRawValue
-      ? `String ${resolvedValue} is not created yet.`
-      : `${emptyLabel} selected.`;
-
-  return (
-    <label className={className} title={help}>
-      <TutorialTip title={label} body={help} side="below">
-        <span>{label}</span>
-      </TutorialTip>
-      <span aria-hidden="true" />
-      <select
-        aria-label={label}
-        title={help}
-        value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
-        onChange={(event) => {
-          const next = event.currentTarget.value;
-          if (!next) {
-            onCommit(0);
-            return;
-          }
-          if (next.startsWith("raw:")) return;
-          onCommit(signedTargetValueForSelection(1, value, Number(next)));
+        selectedValue={selectedValue}
+        current={{
+          label: selected?.label ?? (value ? `Current sound ${selectedValue}` : emptyLabel),
+          detail: soundHelp,
+          state: selected ? "resolved" : value ? "unresolved" : "empty"
         }}
-      >
-        <option value="">{emptyLabel}</option>
-        {hasRawValue && <option value={`raw:${resolvedValue}`}>Current string {resolvedValue}</option>}
-        {visibleOptions.map((option) => (
-          <option key={option.key} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-    </label>
+        rawOptionForQuery={(query) => rawReferenceTargetOption(query, 9, label, soundOptions)}
+        resultNoun="sound"
+        emptyTitle="No matching sounds"
+        emptyBody="Try a sound name, numeric ID, or resource detail."
+        clearLabel={`Clear ${label.toLowerCase()}`}
+        className="rogue-trap-reference-picker"
+        compact
+        compactPanelTitle={label}
+        onChange={(next) => onCommit(signedTargetValueForSelection(9, value, next))}
+      />
+    </div>
   );
 }
 
@@ -448,6 +402,13 @@ function RogueTrapSpellField({
   onCommit: (value: number) => void;
 }) {
   const options = useMemo(() => spellReferenceOptions(project, catalog), [catalog, project]);
+  const pickerOptions = useMemo(() => options.map((option): ReferencePickerOption<number> => ({
+    key: option.key,
+    value: option.value,
+    label: option.label,
+    detail: option.detail,
+    searchText: `${option.value} ${option.label} ${option.detail}`
+  })), [options]);
   const selected = options.find((option) => option.value === value);
   const spellHelp = selected
     ? [selected.label, selected.detail].filter(Boolean).join(" | ")
@@ -455,24 +416,54 @@ function RogueTrapSpellField({
       ? `Spell ${value} has no matching loaded spell target.`
       : "No trap spell selected.";
   return (
-    <label className="rogue-trap-spell-field" title={spellHelp}>
+    <div className="rogue-trap-spell-field" title={spellHelp}>
       <TutorialTip title="Trap Spell" body={spellHelp} side="below">
         <span>Trap Spell</span>
       </TutorialTip>
-      <select
-        aria-label="Trap Spell"
-        title={spellHelp}
+      <ReferenceField
+        ariaLabel="Search Trap Spell"
+        placeholder="Search spell name, class, or ID..."
+        options={pickerOptions}
         value={value}
-        onChange={(event) => onCommit(Number(event.currentTarget.value))}
-      >
-        <option value={0}>No trap spell</option>
-        {value !== 0 && !selected && <option value={value}>Current spell {value}</option>}
-        {options.map((option) => (
-          <option key={option.key} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-    </label>
+        current={{
+          label: selected?.label ?? (value ? `Current spell ${value}` : "No trap spell"),
+          detail: spellHelp,
+          state: selected ? "resolved" : value ? "unresolved" : "empty"
+        }}
+        rawOptionForQuery={(query) => rawSpellReferenceOption(query, options)}
+        resultNoun="spell"
+        emptyTitle="No matching spells"
+        emptyBody="Try a spell name, class, numeric ID, or source detail."
+        clearLabel="Clear trap spell"
+        className="rogue-trap-reference-picker"
+        compact
+        compactPanelTitle="Trap Spell"
+        onChange={onCommit}
+      />
+    </div>
   );
+}
+
+function scriptTargetReferenceOption(option: ScriptTargetOption): ReferencePickerOption<number> {
+  return {
+    key: option.key,
+    value: option.value,
+    label: option.label,
+    detail: [option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | "),
+    searchText: [option.value, option.label, option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" ")
+  };
+}
+
+function rawSpellReferenceOption(query: string, options: ReturnType<typeof spellReferenceOptions>): ReferencePickerOption<number> | null {
+  const value = numericReferenceQuery(query);
+  if (value == null || value === 0 || options.some((option) => option.value === value)) return null;
+  return {
+    key: `raw-spell:${value}`,
+    value,
+    label: `Use raw spell value ${value}`,
+    detail: "No matching loaded spell target.",
+    searchText: `${value} spell raw target`
+  };
 }
 
 function RogueActionRow({
