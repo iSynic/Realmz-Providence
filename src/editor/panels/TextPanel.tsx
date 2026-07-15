@@ -46,7 +46,7 @@ import {
 } from "../classicTextPreview";
 import { type PreviewRuntimeContext } from "../previewUrls";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
-import { SearchField } from "../ui";
+import { SearchField, WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 import "../styles/text-search.css";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
@@ -142,6 +142,35 @@ export function TextPanel({
     };
     confirmBeforeDraftDiscard(`open ${labels[tab]}`, () => setActiveTab(tab));
   }, [activeTab, confirmBeforeDraftDiscard, hasOptionLabels]);
+  const textAuthoringTabs: WorkbenchTabOption<TextAuthoringTab>[] = [
+    {
+      value: "strings",
+      label: (
+        <TutorialTip title="Strings" body={STRINGS_TAB_HELP} side="below">
+          <span>Strings</span>
+        </TutorialTip>
+      ),
+      meta: records.length.toLocaleString()
+    },
+    ...(hasOptionLabels ? [{
+      value: "option-labels" as const,
+      label: (
+        <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
+          <span>Option Labels</span>
+        </TutorialTip>
+      ),
+      meta: optionRecords.length.toLocaleString()
+    }] : []),
+    {
+      value: "scrolling-text",
+      label: (
+        <TutorialTip title="Scrolling Text" body={SCROLLING_TEXT_TAB_HELP} side="below">
+          <span>Scrolling Text</span>
+        </TutorialTip>
+      ),
+      meta: (scrollingTextAssets.length + importedScrollingTextResources.length).toLocaleString()
+    }
+  ];
   const filteredRecords = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return records;
@@ -343,28 +372,13 @@ export function TextPanel({
           </button>
         </div>
       </header>
-      <div className="text-authoring-tabs" role="tablist" aria-label="String editors">
-        <TutorialTip title="Strings" body={STRINGS_TAB_HELP} side="below">
-          <button type="button" className={activeTab === "strings" ? "active" : ""} role="tab" aria-selected={activeTab === "strings"} onClick={() => selectTextTab("strings")}>
-            <span>Strings</span>
-            <b>{records.length.toLocaleString()}</b>
-          </button>
-        </TutorialTip>
-        {hasOptionLabels && (
-          <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
-            <button type="button" className={`text-option-labels-tab ${activeTab === "option-labels" ? "active" : ""}`} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => selectTextTab("option-labels")}>
-              <span>Option Labels</span>
-              <b>{optionRecords.length.toLocaleString()}</b>
-            </button>
-          </TutorialTip>
-        )}
-        <TutorialTip title="Scrolling Text" body={SCROLLING_TEXT_TAB_HELP} side="below">
-          <button type="button" className={`text-scrolling-tab ${activeTab === "scrolling-text" ? "active" : ""}`} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => selectTextTab("scrolling-text")}>
-            <span>Scrolling Text</span>
-            <b>{(scrollingTextAssets.length + importedScrollingTextResources.length).toLocaleString()}</b>
-          </button>
-        </TutorialTip>
-      </div>
+      <WorkbenchTabs
+        ariaLabel="String editors"
+        className="text-authoring-tabs"
+        value={activeTab}
+        options={textAuthoringTabs}
+        onChange={selectTextTab}
+      />
       {activeTab === "strings" && (
         <StringNavigator
           records={records}

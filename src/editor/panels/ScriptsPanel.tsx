@@ -5,14 +5,15 @@ import { scriptPanelTitle } from "./scripts/scriptInventory";
 import { ActionPointAuthoringPanel } from "./scripts/ActionPointAuthoringPanel";
 import { ActionSettingsWorkbench } from "./scripts/ActionSettingsWorkbench";
 import { StoryFlagsWorkbench } from "./scripts/StoryFlagsWorkbench";
+import { WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 
 
-const SCRIPT_EDITOR_TABS = [
-  { id: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
-  { id: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
-  { id: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
-  { id: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." },
-  { id: "settings-rows", label: "Action Settings", title: "Advanced browser for shared or imported action settings." }
+const SCRIPT_EDITOR_TABS: ReadonlyArray<WorkbenchTabOption<string>> = [
+  { value: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
+  { value: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
+  { value: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
+  { value: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." },
+  { value: "settings-rows", label: "Action Settings", title: "Advanced browser for shared or imported action settings." }
 ];
 
 export function ScriptsPanel({
@@ -108,23 +109,12 @@ function ScriptEditorTabs({
   onSelectEditor?: (editor: string) => void;
 }) {
   return (
-    <div className="script-editor-tabs" role="tablist" aria-label="Action Point Hub sections">
-      {SCRIPT_EDITOR_TABS.map((tab) => {
-        const selected = activeEditor === tab.id;
-        return (
-          <button
-            key={tab.id}
-            className={selected ? "active" : ""}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            title={tab.title}
-            onClick={() => onSelectEditor?.(tab.id)}
-          >
-            {tab.label}
-          </button>
-        );
-      })}
-    </div>
+    <WorkbenchTabs
+      ariaLabel="Action Point Hub sections"
+      className="script-editor-tabs"
+      value={activeEditor}
+      options={SCRIPT_EDITOR_TABS}
+      onChange={(editor) => onSelectEditor?.(editor)}
+    />
   );
 }
