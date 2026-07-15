@@ -152,6 +152,8 @@ Custom Item Category and Type now use Economy-owned compact reference pickers. C
 
 Custom Item Special behavior fields now retain their short native mode selectors while decoded condition, power, hit-bonus, ability, monster-type, and party-condition details use the shared compact reference picker. Imported unknown values remain editable in explicit raw-number mode, and the reusable numeric item input no longer leaks through the Item workbench into Shop and Treasure ownership.
 
+The Item workbench now delegates complete Special behavior and use-restriction edit/summary families to Economy-owned modules. Decoding, signed restriction-mask handling, searchable specific Race/Caste references, and fixed checkbox geometry remain together at the domain boundary instead of leaving migrated controls and their storage logic in the workbench router.
+
 Monster record macros, equipped and required weapons, ten spell slots, and six loot-item slots now use one Combat-owned compact reference adapter. These fields search decoded labels and metadata, preserve explicit empty sentinels and unresolved imported values, and retain the required-weapon byte/display conversion at the adapter boundary. The small Summon Eligible enum and fixed battle-board placement controls remain native, specialized controls rather than opening unnecessary search workbenches.
 
 Battle reference repair keeps its destructive confirmation modal but now uses the shared inline reference picker for replacement monsters. Candidates expose names, IDs, active combat stats, and Normal/Monster/Mega record availability; authors can search those facts instead of scanning a long anonymous `Monster N` dropdown before rewriting placed battle cells.

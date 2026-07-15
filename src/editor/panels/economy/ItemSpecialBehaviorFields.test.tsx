@@ -1,9 +1,11 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import type { ScenarioItemRecord } from "../../types";
 import {
   ItemSpecialAttributeField,
   ItemSpecialEffectCodeField,
+  describeItemSpecialBehavior,
   defaultItemSpecialAttributeValue,
   itemSpecialAttributeReferenceOptions,
   itemSpecialEffectReferenceOptions
@@ -61,5 +63,22 @@ describe("ItemSpecialBehaviorFields", () => {
     expect(html.match(/<select/g)).toHaveLength(1);
     expect(html).toContain('aria-label="Search Special 3 monster type"');
     expect(html).toContain("-3: Monster type 3");
+  });
+
+  it("keeps decoded and raw tuple summaries stable", () => {
+    expect(describeItemSpecialBehavior({
+      special1: 29,
+      special2: 4,
+      special3: -3,
+      special4: 2,
+      special5: 7
+    } as ScenarioItemRecord)).toEqual([
+      expect.stringContaining("Adds condition"),
+      "Monster-type hit bonus 7 against type 3.",
+      "Adds secondary character special ability 2 by 7."
+    ]);
+    expect(describeItemSpecialBehavior({ special5: 9 } as ScenarioItemRecord)).toEqual([
+      "Raw special tuple preserved: 0, 0, 0, 0, 9."
+    ]);
   });
 });

@@ -3,7 +3,6 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../../itemReferences";
 import type { PreviewRuntimeContext } from "../../previewUrls";
-import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, REALMZ_RACES } from "../../rulesCatalog";
 import type { LibraryCatalog, LibraryEntity, Project, ProjectCommand, ScenarioItemRecord, SelectedEntity, SemanticEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import { ScrollArea, SearchField } from "../../ui";
@@ -13,15 +12,18 @@ import { EconomyItemReferenceField, economyItemReferenceOptions } from "./Econom
 import {
   ItemCategoryReferenceField,
   ItemTypeReferenceField,
-  itemCategoryBitFromPair,
   itemTypeText
 } from "./ItemClassificationFields";
 import { ItemIconField } from "./ItemIconField";
 import { ItemNumberInput } from "./ItemNumberInput";
 import { ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemReferencePresentation";
-import { ItemRestrictionReferenceField } from "./ItemRestrictionReferenceField";
 import { ItemSoundField } from "./ItemSoundField";
-import { ItemSpecialAttributeField, ItemSpecialEffectCodeField } from "./ItemSpecialBehaviorFields";
+import { ItemSpecialBehaviorEditor } from "./ItemSpecialBehaviorFields";
+import {
+  ItemRestrictionSummary,
+  ItemUseRestrictionEditor,
+  type ItemRestrictionKey
+} from "./ItemUseRestrictionFields";
 
 const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
 const CUSTOM_ITEM_HELP = "Custom scenario items use item IDs 900-999. Built-in items stay reference-only unless copied into one of these scenario-backed slots.";
@@ -467,12 +469,6 @@ const SCENARIO_ITEM_EDIT_GROUPS: Array<{
   },
 ];
 
-const SCENARIO_ITEM_SPECIAL_FIELDS: Array<{ key: ScenarioItemNumberKey; label: string; help?: string }> = [
-  { key: "special5", label: "Bonus / Amount", help: "Amount used by ability, monster-type, and party-condition effects." },
-  { key: "weightPerCharge", label: "Weight / Charge", help: "Weight used per charge for charge-like items." },
-  { key: "dropOnEmpty", label: "Drop On Empty", help: "Whether Realmz drops this item when its charges are depleted." }
-];
-
 function ScenarioItemEditor({
   record,
   itemId,
@@ -607,91 +603,10 @@ function ScenarioItemEditor({
           />
         </ItemFieldGroup>
         <ItemFieldGroup title="Special Behavior" className="item-field-group-full">
-          <ItemSpecialBehaviorSummary record={record} />
-          <div className="item-special-field-grid">
-            <ItemSpecialEffectCodeField
-              value={Number(record.special1 ?? 0)}
-              onChange={(value) => onChange("special1", value)}
-            />
-            <ItemNumberInput
-              label="Spell / Amount"
-              value={Number(record.special2 ?? 0)}
-              title="Spell number for spell-storing items, or amount used by condition and attack effects."
-              onCommit={(value) => onChange("special2", value)}
-            />
-            <ItemSpecialAttributeField
-              label="Special 3"
-              value={Number(record.special3 ?? 0)}
-              onChange={(value) => onChange("special3", value)}
-            />
-            <ItemSpecialAttributeField
-              label="Special 4"
-              value={Number(record.special4 ?? 0)}
-              onChange={(value) => onChange("special4", value)}
-            />
-            {SCENARIO_ITEM_SPECIAL_FIELDS.map((field) => (
-              <ItemNumberInput
-                key={field.key}
-                label={field.label}
-                value={Number(record[field.key] ?? 0)}
-                title={field.help}
-                onCommit={(value) => onChange(field.key, value)}
-              />
-            ))}
-          </div>
+          <ItemSpecialBehaviorEditor record={record} onChange={(field, value) => onChange(field, value)} />
         </ItemFieldGroup>
       </div>
     </section>
-  );
-}
-
-type ItemRestrictionKey =
-  | "raceRestrictions"
-  | "casteRestrictions"
-  | "specificRace"
-  | "specificCaste"
-  | "raceClassOnly"
-  | "casteClassOnly";
-
-const CASTE_CLASS_LABELS = [
-  "Warrior Castes",
-  "Thief Castes",
-  "Archer Castes",
-  "Sorcerer Castes",
-  "Priest Castes",
-  "Enchanter Castes",
-  "Warrior Wizard Castes"
-];
-
-function ItemRestrictionSummary({
-  itemCat0,
-  itemCat1,
-  raceRestrictions,
-  casteRestrictions,
-  specificRace,
-  specificCaste,
-  raceClassOnly,
-  casteClassOnly
-}: {
-  itemCat0: number;
-  itemCat1: number;
-  raceRestrictions: number;
-  casteRestrictions: number;
-  specificRace: number;
-  specificCaste: number;
-  raceClassOnly: number;
-  casteClassOnly: number;
-}) {
-  return (
-    <div className="item-restriction-summary">
-      <ItemFact label="Item Categories" value={summarizeItemCategoryLabels(itemCat0, itemCat1, 5)} />
-      <ItemFact label="Cannot Use - Race Types" value={summarizeMaskLabels(raceRestrictions, RACE_DESCRIPTOR_LABELS)} />
-      <ItemFact label="Can Use Only - Race Types" value={summarizeMaskLabels(raceClassOnly, RACE_DESCRIPTOR_LABELS)} />
-      <ItemFact label="Cannot Use - Caste Types" value={summarizeMaskLabels(casteRestrictions, CASTE_CLASS_LABELS)} />
-      <ItemFact label="Can Use Only - Caste Types" value={summarizeMaskLabels(casteClassOnly, CASTE_CLASS_LABELS)} />
-      <ItemFact label="Specific Race" value={specificRace ? `${specificRace}: ${REALMZ_RACES[specificRace - 1] ?? "Unknown race"}` : "Any"} />
-      <ItemFact label="Specific Caste" value={specificCaste ? `${specificCaste}: ${REALMZ_CASTES[specificCaste - 1] ?? "Unknown caste"}` : "Any"} />
-    </div>
   );
 }
 
@@ -751,213 +666,6 @@ function CursedFormItemField({
 
 function ItemFieldNote({ children }: { children: ReactNode }) {
   return <p className="item-field-note">{children}</p>;
-}
-
-function ItemSpecialBehaviorSummary({ record }: { record: ScenarioItemRecord }) {
-  const descriptions = describeItemSpecialBehavior(record);
-  return (
-    <div className="item-special-summary">
-      <strong>Known Behavior</strong>
-      {descriptions.length ? (
-        <ul>
-          {descriptions.map((description) => <li key={description}>{description}</li>)}
-        </ul>
-      ) : (
-        <p>No known special behavior fields are set.</p>
-      )}
-    </div>
-  );
-}
-
-function describeItemSpecialBehavior(record: ScenarioItemRecord) {
-  const sp1 = Number(record.special1 ?? 0);
-  const sp2 = Number(record.special2 ?? 0);
-  const sp3 = Number(record.special3 ?? 0);
-  const sp4 = Number(record.special4 ?? 0);
-  const sp5 = Number(record.special5 ?? 0);
-  const descriptions: string[] = [];
-  if (sp1 === -10) {
-    descriptions.push(`Inflicts condition ${conditionNameFromOneBasedCode(sp3 - 19)}.`);
-  } else if (sp1 >= -7 && sp1 <= -1) {
-    descriptions.push(`Power level ${Math.abs(sp1)}.`);
-  } else if (sp1 === 8) {
-    descriptions.push("Random power level.");
-  } else if (sp1 > 19 && sp1 < 60) {
-    descriptions.push(`Adds condition ${conditionNameFromZeroBasedCode(sp1 - 20)} by ${sp2}.`);
-  } else if (sp1 > 59 && sp1 < 100) {
-    descriptions.push(`Removes condition ${conditionNameFromZeroBasedCode(sp1 - 60)} by ${sp2}.`);
-  } else if (sp1 === 120) {
-    descriptions.push("Always hits in combat.");
-  } else if (sp1 === 121) {
-    descriptions.push("Penetration weapon; Realmz treats magical plus as doubled for to-hit display.");
-  } else if (sp1 === 122) {
-    descriptions.push(`Adds attack rounds (${attackBonusText(sp2)}).`);
-  } else if (sp1 > 0) {
-    descriptions.push(`Unclassified special effect code ${sp1}; raw tuple is preserved.`);
-  }
-  if (sp2 > 1100) descriptions.push(`Stores spell ${sp2}.`);
-  if (sp3 < 0) {
-    descriptions.push(`Monster-type hit bonus ${sp5} against type ${Math.abs(sp3)}.`);
-  } else if (sp3 > 0 && sp3 < 16) {
-    descriptions.push(`Adds character special ability ${sp3} by ${sp5}.`);
-  } else if (sp3 >= 30) {
-    descriptions.push(`Applies party condition code ${sp3} by ${sp5}.`);
-  }
-  if (sp4 < 0) {
-    descriptions.push(`Secondary monster-type hit bonus ${sp5} against type ${Math.abs(sp4)}.`);
-  } else if (sp4 > 0 && sp4 < 16) {
-    descriptions.push(`Adds secondary character special ability ${sp4} by ${sp5}.`);
-  } else if (sp4 >= 30) {
-    descriptions.push(`Applies secondary party condition code ${sp4} by ${sp5}.`);
-  }
-  if (!descriptions.length && [sp1, sp2, sp3, sp4, sp5].some((value) => value !== 0)) {
-    descriptions.push(`Raw special tuple preserved: ${sp1}, ${sp2}, ${sp3}, ${sp4}, ${sp5}.`);
-  }
-  return descriptions;
-}
-
-function conditionNameFromOneBasedCode(code: number) {
-  if (code <= 0) return `code ${code}`;
-  return `${code}: ${CONDITION_LABELS[code - 1] ?? "Unknown condition"}`;
-}
-
-function conditionNameFromZeroBasedCode(code: number) {
-  return `${code}: ${CONDITION_LABELS[code] ?? "Unknown condition"}`;
-}
-
-function attackBonusText(value: number) {
-  if (value === 1) return "+1/2";
-  if (value === 2) return "+1";
-  if (value === 3) return "+1 1/2";
-  if (value === 4) return "+2";
-  return `raw value ${value}`;
-}
-
-function ItemUseRestrictionEditor({
-  record,
-  onChange
-}: {
-  record: ScenarioItemRecord;
-  onChange: (field: ItemRestrictionKey, value: number) => void;
-}) {
-  return (
-    <div className="item-use-restriction-editor">
-      <div className="item-specific-restrictions">
-        <ItemRestrictionReferenceField
-          kind="race"
-          value={record.specificRace}
-          onChange={(value) => onChange("specificRace", value)}
-        />
-        <ItemRestrictionReferenceField
-          kind="caste"
-          value={record.specificCaste}
-          onChange={(value) => onChange("specificCaste", value)}
-        />
-      </div>
-      <ItemMaskEditor
-        title="Those That Can't Use It"
-        groups={[
-          { title: "Race Restrictions", field: "raceRestrictions", labels: RACE_DESCRIPTOR_LABELS, value: record.raceRestrictions },
-          { title: "Caste Restrictions", field: "casteRestrictions", labels: CASTE_CLASS_LABELS, value: record.casteRestrictions }
-        ]}
-        onChange={onChange}
-      />
-      <ItemMaskEditor
-        title="Those That Can Use It"
-        groups={[
-          { title: "Race Restrictions", field: "raceClassOnly", labels: RACE_DESCRIPTOR_LABELS, value: record.raceClassOnly },
-          { title: "Caste Restrictions", field: "casteClassOnly", labels: CASTE_CLASS_LABELS, value: record.casteClassOnly }
-        ]}
-        onChange={onChange}
-      />
-    </div>
-  );
-}
-
-function ItemMaskEditor({
-  title,
-  groups,
-  onChange
-}: {
-  title: string;
-  groups: Array<{ title: string; field: ItemRestrictionKey; labels: string[]; value: number }>;
-  onChange: (field: ItemRestrictionKey, value: number) => void;
-}) {
-  return (
-    <section className="item-mask-editor">
-      <header>{title}</header>
-      {groups.map((group) => (
-        <div key={group.field}>
-          <h5>{group.title}</h5>
-          <div className="item-bit-editor">
-            {group.labels.map((label, index) => {
-              const checked = bitFromMask(group.value, index);
-              return (
-                <label key={label} className={checked ? "checked" : ""}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(event) => onChange(group.field, setBitInMask(group.value, index, event.currentTarget.checked))}
-                  />
-                  <span>{label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </section>
-  );
-}
-
-function bitFromMask(value: number, bit: number) {
-  return Boolean((value >>> 0) & (1 << bit));
-}
-
-function setBitInMask(value: number, bit: number, checked: boolean) {
-  const next = checked ? ((value >>> 0) | (1 << bit)) : ((value >>> 0) & ~(1 << bit));
-  return toSigned16(next);
-}
-
-function bitFromPair(itemCat0: number, itemCat1: number, bit: number) {
-  const source = bit < 32 ? itemCat0 : itemCat1;
-  return Boolean((source >>> 0) & (1 << (bit % 32)));
-}
-
-function setBitInPair(itemCat0: number, itemCat1: number, bit: number, checked: boolean): [number, number] {
-  if (bit < 32) return [toSigned32(setUnsignedBit(itemCat0, bit, checked)), itemCat1];
-  return [itemCat0, toSigned32(setUnsignedBit(itemCat1, bit - 32, checked))];
-}
-
-function setUnsignedBit(value: number, bit: number, checked: boolean) {
-  return checked ? ((value >>> 0) | (1 << bit)) : ((value >>> 0) & ~(1 << bit));
-}
-
-function toSigned16(value: number) {
-  const unsigned = value & 0xffff;
-  return unsigned > 0x7fff ? unsigned - 0x10000 : unsigned;
-}
-
-function toSigned32(value: number) {
-  return value | 0;
-}
-
-function summarizeMaskLabels(mask: number, labels: string[]) {
-  return summarizeBitLabels([mask], labels, 4);
-}
-
-function summarizeBitLabels(values: number[], labels: string[], limit: number) {
-  const selected = labels.filter((_, index) => bitFromPair(values[0] ?? 0, values[1] ?? 0, index));
-  if (!selected.length) return "None";
-  if (selected.length <= limit) return selected.join(", ");
-  return `${selected.slice(0, limit).join(", ")} +${selected.length - limit} more`;
-}
-
-function summarizeItemCategoryLabels(itemCat0: number, itemCat1: number, limit: number) {
-  const selected = ITEM_CATEGORY_LABELS.filter((_, index) => itemCategoryBitFromPair(itemCat0, itemCat1, index));
-  if (!selected.length) return "None";
-  if (selected.length <= limit) return selected.join(", ");
-  return `${selected.slice(0, limit).join(", ")} +${selected.length - limit} more`;
 }
 
 export const SHOP_ITEM_CATEGORY_OPTIONS: Array<{ id: ItemReferenceCategory | "all"; label: string; range?: string }> = [
