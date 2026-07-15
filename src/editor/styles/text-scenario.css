@@ -953,18 +953,6 @@
   min-height: 30px;
 }
 
-.item-sound-field {
-  display: grid;
-  grid-template-columns: minmax(90px, 1fr) auto;
-  gap: 6px;
-  align-items: end;
-  min-width: 0;
-}
-
-.item-sound-field .item-number-input {
-  min-width: 0;
-}
-
 .item-used-by {
   display: grid;
   gap: 7px;

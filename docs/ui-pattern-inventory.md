@@ -142,6 +142,8 @@ Economy item browsing now uses the same search contract in Items, Shops, and Tre
 
 Treasure item slots and Shop stock rows now use one compact Economy item-reference field. The shared picker searches item IDs, names, categories, decoded details, and source ownership; it keeps icon previews and unresolved imported IDs while removing Treasure's duplicate native select plus raw-number controls and Shop's full-catalog select per row. Quantity editing and each tool's fixed slot geometry remain domain-owned.
 
+Custom Item sounds now use the shared compact reference and audio-preview controls. The Economy adapter merges scenario, project-catalog, and reference-library sound aliases by direct `snd` ID, keeps signed imported values until an author changes them, and removes the raw number-plus-Play implementation. This remains separate from the Rules sound adapter because spell fields store an offset value rather than the direct item sound resource ID.
+
 Rules record navigation now uses the shared compact `ReferenceField` for Race, Caste, and per-class Spell selection. Long native record dropdowns have become searchable floating pickers with the standard selected, filtered, no-match, and unresolved states; previous/next navigation, scenario-copy commands, and dense fixed-record form geometry remain Rules-owned. The short Spellcaster Class mode list intentionally remains a native select.
 
 Spell casting and resolution sounds now use the same compact `ReferenceField` plus `ReferenceAudioPreviewAction`. Authors can search by sound name, stored spell value, or `snd` resource ID; unresolved imported values remain explicit, playback remains available on read-only built-in spells, and the former raw number-plus-Play control has been retired.

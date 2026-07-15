@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, typ
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../../itemReferences";
-import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
+import { useIconPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, REALMZ_RACES } from "../../rulesCatalog";
 import type { LibraryCatalog, LibraryEntity, Project, ProjectCommand, ScenarioItemRecord, SelectedEntity, SemanticEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
@@ -10,6 +10,7 @@ import { ScrollArea, SearchField } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { filterEconomyItemOptions } from "./economyItemSearch";
 import { ItemIconField } from "./ItemIconField";
+import { ItemSoundField } from "./ItemSoundField";
 
 const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
 const CUSTOM_ITEM_HELP = "Custom scenario items use item IDs 900-999. Built-in items stay reference-only unless copied into one of these scenario-backed slots.";
@@ -1270,63 +1271,6 @@ function ItemTypeSelectField({ value, onChange }: { value: number; onChange: (va
         ))}
       </select>
     </label>
-  );
-}
-
-function ItemSoundField({
-  value,
-  project,
-  catalog,
-  previewContext,
-  onChange
-}: {
-  value: number;
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  previewContext: PreviewRuntimeContext;
-  onChange: (value: number) => void;
-}) {
-  const previewUrl = useItemSoundPreviewUrl(value, project, catalog, previewContext);
-  return (
-    <div className="item-sound-field">
-      <ItemNumberInput label="Sound" value={value} onCommit={onChange} />
-      <button
-        type="button"
-        className="btn btn-secondary btn-xs"
-        disabled={!previewUrl}
-        title={previewUrl ? `Play snd ${Math.abs(value)}` : "No playable sound preview is available."}
-        onClick={() => previewUrl && playPreviewUrl(previewUrl)}
-      >
-        Play
-      </button>
-    </div>
-  );
-}
-
-function useItemSoundPreviewUrl(
-  soundId: number,
-  project: Project,
-  catalog: LibraryCatalog | null | undefined,
-  previewContext: PreviewRuntimeContext
-) {
-  const resourceId = soundId ? Math.abs(soundId) : null;
-  const managedAsset = resourceId == null ? null : (project.assets ?? []).find((asset) =>
-    asset.kind === "sound" &&
-    Math.abs(asset.resourceId) === resourceId
-  ) ?? null;
-  const projectAsset = resourceId == null ? null : (project.assetCatalog.sounds ?? []).find((asset) =>
-    Math.abs(asset.resourceId) === resourceId
-  ) ?? null;
-  const libraryAsset = resourceId == null ? null : catalog?.assets.find((asset) =>
-    (asset.type === "sound" || (asset.resourceType ?? "").trim() === "snd") &&
-    asset.resourceId != null &&
-    Math.abs(asset.resourceId) === resourceId
-  ) ?? null;
-  return useResolvedPreviewUrl(
-    managedAsset?.previewPath ?? projectAsset?.previewPath ?? libraryAsset?.previewPath ?? null,
-    managedAsset,
-    libraryAsset,
-    { ...previewContext, project, resourceType: "snd ", resourceId }
   );
 }
 
