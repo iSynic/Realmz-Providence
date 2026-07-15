@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
-  filterTargetOptions,
   resolveSignedMessageTarget,
   signedTargetBehaviorLabel,
   signedTargetValueForSelection,
+  type ScriptTargetOption,
   targetOptionForOpcodeValue,
   targetOptionsForOpcode
 } from "../../components/RealmzTargetPicker";
 import type { LibraryCatalog, Project, RealmzTargetRecordKind } from "../../types";
+import { ReferenceField, numericReferenceQuery, type ReferencePickerOption } from "../../ui";
 
 export function ReferenceIdField({
   project,
@@ -18,7 +19,6 @@ export function ReferenceIdField({
   value,
   createRecordType,
   compact = false,
-  showSelectedResult = true,
   onCommit,
   onCreateTarget
 }: {
@@ -30,100 +30,119 @@ export function ReferenceIdField({
   value: number;
   createRecordType?: RealmzTargetRecordKind;
   compact?: boolean;
-  showSelectedResult?: boolean;
   onCommit: (value: number) => void;
   onCreateTarget?: (id: number) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const [optionsLoaded, setOptionsLoaded] = useState(false);
-  useEffect(() => {
-    setQuery("");
-    setOptionsLoaded(false);
-  }, [opcode, project]);
   const resolvedValue = resolveSignedMessageTarget(opcode, value);
   const selected = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [catalog, opcode, project, value]);
-  const options = useMemo(() => {
-    if (!optionsLoaded && !query.trim()) return selected ? [selected] : [];
-    return targetOptionsForOpcode(project, opcode, catalog);
-  }, [catalog, opcode, optionsLoaded, project, query, selected]);
-  const filteredOptions = useMemo(() => filterTargetOptions(options, query), [options, query]);
+  const options = useMemo(() => targetOptionsForOpcode(project, opcode, catalog), [catalog, opcode, project]);
+  const pickerOptions = useMemo(() => options.map(targetReferencePickerOption), [options]);
   const visibleOptions = useMemo(() => {
-    const visible = filteredOptions.slice(0, 260);
+    const visible = options.slice(0, 260);
     if (selected && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 259)];
     return visible;
-  }, [filteredOptions, selected]);
-  const resultOptions = useMemo(() => {
-    const visible = filteredOptions.slice(0, 8);
-    if (selected && !query.trim() && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 7)];
-    return visible;
-  }, [filteredOptions, query, selected]);
+  }, [options, selected]);
   const hasRawValue = resolvedValue !== 0 && !selected;
   const canCreate = Boolean(createRecordType && onCreateTarget && (!selected || hasRawValue || value === 0));
   const createId = resolvedValue > 0 && !selected ? resolvedValue : createRecordType ? nextAuthorableTargetId(project, createRecordType) : resolvedValue;
   const selectTarget = (next: number) => {
     onCommit(signedTargetValueForSelection(opcode, value, next));
-    setQuery("");
   };
+  const detail = selected
+    ? [selected.detail, selected.summary, signedTargetBehaviorLabel(opcode, value), selected.compatibility, selected.sourceState].filter(Boolean).join(" | ")
+    : hasRawValue
+      ? "Current value has no matching target yet."
+      : emptyLabel;
+  const createAction = canCreate ? (
+    <button type="button" className="btn btn-secondary btn-xs" onClick={() => {
+      onCreateTarget?.(createId);
+      onCommit(signedTargetValueForSelection(opcode, value, createId));
+    }}>
+      Create {label} {createId}
+    </button>
+  ) : undefined;
+
+  if (compact) {
+    return (
+      <label className="script-reference-id-field compact">
+        <span>{label}</span>
+        <select
+          value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
+          onChange={(event) => {
+            const raw = event.currentTarget.value;
+            if (!raw || raw.startsWith("raw:")) return;
+            selectTarget(Number(raw));
+          }}
+        >
+          <option value="">{emptyLabel}</option>
+          {hasRawValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
+          {visibleOptions.map((option) => (
+            <option key={option.key} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+        <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`${label} value`} />
+        <small>{detail}</small>
+        {createAction}
+      </label>
+    );
+  }
+
   return (
-    <label className={compact ? "script-reference-id-field compact" : "script-reference-id-field"}>
+    <div className="script-reference-id-field">
       <span>{label}</span>
-      {!compact && (
-        <>
-          <input
-            value={query}
-            onFocus={() => setOptionsLoaded(true)}
-            onChange={(event) => {
-              setOptionsLoaded(true);
-              setQuery(event.currentTarget.value);
-            }}
-            placeholder={`Search ${label.toLowerCase()}...`}
-            aria-label={`Search ${label}`}
-          />
-          <div className="script-reference-results" aria-live="polite">
-            {query.trim() && resultOptions.length === 0 && <small>No matching {label.toLowerCase()} targets.</small>}
-            {(query.trim() ? resultOptions : showSelectedResult && selected ? [selected] : []).map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={option.value === resolvedValue ? "selected" : ""}
-                onClick={() => selectTarget(option.value)}
-              >
-                <strong>{option.label}</strong>
-                <span>{[option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | ")}</span>
-              </button>
-            ))}
-            {query.trim() && filteredOptions.length > resultOptions.length && <small>{filteredOptions.length - resultOptions.length} more match(es); keep typing to narrow.</small>}
-          </div>
-        </>
-      )}
-      <select
-        value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
-        onFocus={() => setOptionsLoaded(true)}
-        onMouseDown={() => setOptionsLoaded(true)}
-        onChange={(event) => {
-          const raw = event.currentTarget.value;
-          if (!raw || raw.startsWith("raw:")) return;
-          selectTarget(Number(raw));
+      <ReferenceField
+        ariaLabel={`Search ${label}`}
+        placeholder={`Search ${label.toLowerCase()}...`}
+        options={pickerOptions}
+        value={value}
+        selectedValue={resolvedValue}
+        current={{
+          label: selected?.label ?? (hasRawValue ? `Current value ${resolvedValue}` : emptyLabel),
+          detail,
+          state: selected ? "resolved" : hasRawValue ? "unresolved" : "empty"
         }}
-      >
-        <option value="">{emptyLabel}</option>
-        {hasRawValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
-        {visibleOptions.map((option) => (
-          <option key={option.key} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-      <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`${label} value`} />
-      <small>{selected ? [selected.detail, selected.summary, signedTargetBehaviorLabel(opcode, value), selected.compatibility, selected.sourceState].filter(Boolean).join(" | ") : hasRawValue ? "Current value has no matching target yet." : filteredOptions.length === 0 && query.trim() ? "No targets match this search." : emptyLabel}</small>
-      {canCreate && (
-        <button type="button" className="btn btn-secondary btn-xs" onClick={() => {
-          onCreateTarget?.(createId);
-          onCommit(signedTargetValueForSelection(opcode, value, createId));
-        }}>
-          Create {label} {createId}
-        </button>
-      )}
-    </label>
+        rawOptionForQuery={(query) => rawReferenceTargetOption(query, opcode, label, options)}
+        resultNoun="target"
+        emptyTitle={`No ${label.toLowerCase()} matches`}
+        emptyBody="Try another name, numeric ID, or target detail."
+        clearLabel={`Clear ${label.toLowerCase()}`}
+        currentActions={createAction}
+        className="script-reference-picker-field"
+        onChange={selectTarget}
+      />
+    </div>
   );
+}
+
+function targetReferencePickerOption(option: ScriptTargetOption): ReferencePickerOption<number> {
+  return {
+    key: option.key,
+    value: option.value,
+    label: option.label,
+    detail: [option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | "),
+    searchText: [option.value, option.label, option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" ")
+  };
+}
+
+export function rawReferenceTargetOption(
+  query: string,
+  opcode: number,
+  label: string,
+  options: ScriptTargetOption[]
+): ReferencePickerOption<number> | null {
+  const rawValue = numericReferenceQuery(query);
+  if (rawValue == null || rawValue === 0) return null;
+  const resolvedRawValue = resolveSignedMessageTarget(opcode, rawValue);
+  const selected = options.find((option) => option.value === resolvedRawValue) ?? null;
+  if (selected && rawValue === resolvedRawValue) return null;
+  const behavior = signedTargetBehaviorLabel(opcode, rawValue);
+  return {
+    key: `raw-target:${opcode}:${rawValue}`,
+    value: rawValue,
+    label: behavior && selected ? `${selected.label} | ${behavior}` : `Use raw ${label.toLowerCase()} value ${rawValue}`,
+    detail: selected ? [selected.detail, behavior].filter(Boolean).join(" | ") : "No decoded target record found.",
+    searchText: `${rawValue} ${resolvedRawValue} ${label} ${behavior} raw target`
+  };
 }
 export function nextAuthorableTargetId(project: Project, recordType: RealmzTargetRecordKind) {
   const records =
