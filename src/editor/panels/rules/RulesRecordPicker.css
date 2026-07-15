@@ -1,0 +1,29 @@
+.rules-reference-picker-field {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.rules-reference-picker-label {
+  color: #dce8f3;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.rules-reference-picker-field .workbench-reference-compact-trigger {
+  width: 100%;
+  min-height: 34px;
+}
+
+.rules-record-picker-compact .rules-reference-picker-field,
+.rules-spell-record-picker .rules-reference-picker-field {
+  width: 100%;
+}
+
+@media (max-width: 1050px) {
+  .rules-record-picker-compact .rules-reference-picker-field {
+    width: min(420px, 100%);
+  }
+}

@@ -242,7 +242,7 @@
 
 
 .rules-record-picker-compact {
-  grid-template-columns: auto max-content auto auto auto;
+  grid-template-columns: auto minmax(240px, 340px) auto auto auto;
   justify-content: start;
   align-items: center;
 }
@@ -342,12 +342,6 @@
 
 .rules-spell-record-picker .rules-spell-class-select-field {
   grid-template-columns: max-content 185px;
-}
-
-
-
-.rules-spell-record-picker .rules-spell-select-field {
-  grid-template-columns: 42px minmax(175px, 258px);
 }
 
 

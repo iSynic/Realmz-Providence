@@ -6,6 +6,7 @@ import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES } from "../../r
 import { fastplotTileId, spellAnimationFrameIds, spellAnimationHint, spellAnimationIsBlank, SpellAnimationZeroMode, spellSoundResourceId } from "../../resourceIds";
 import { findLibraryResourceAsset } from "../../resourceResolver";
 import { capitalize, classNames, victoryPointLabels } from "./ruleUtils";
+import { RulesRecordPicker, rulesRecordPickerOptions } from "./RulesRecordPicker";
 
 type TutorialSide = "right" | "left" | "below" | "above";
 
@@ -84,6 +85,13 @@ export function RulesLayout<T extends { id: number }>({
   const help = rulesFamilyHelp(recordNoun);
   const customizeHelp = createHelp ?? `Create or update this scenario's ${recordNoun.toLowerCase()} override. The shared Realmz ${recordNoun.toLowerCase()} table remains the reference source.`;
   const clearHelp = `Remove this scenario's ${recordNoun.toLowerCase()} override and fall back to the shared Realmz ${recordNoun.toLowerCase()} definition.`;
+  const recordPickerOptions = rulesRecordPickerOptions(Array.from({ length: maxRecords }, (_, id) => {
+    const record = records.find((candidate) => candidate.id === id);
+    const label = record ? labelFor(record) : `${id}: ${fallbackLabelFor(id)}`;
+    const summary = record ? summaryFor(record) : fallbackSummaryFor(id);
+    const status = record && entryHasScenarioVersion(record) ? "Scenario custom" : "Reference/default";
+    return { id, label, detail: `${summary} | ${status}`, searchText: status };
+  }));
   return (
     <div className="rules-layout rules-layout-single">
       <section className="rules-selector">
@@ -118,15 +126,15 @@ export function RulesLayout<T extends { id: number }>({
               />
             </label>
           )}
-          <label className="rules-record-select-field">
-            <HelpLabel label={pickerLabel ?? recordNoun} help={`Select a ${recordNoun.toLowerCase()} record.`} />
-            <select value={selectedId} onChange={(event) => onSelect(Number(event.currentTarget.value))}>
-              {Array.from({ length: maxRecords }, (_, id) => {
-                const record = records.find((candidate) => candidate.id === id);
-                return <option key={id} value={id}>{record ? labelFor(record) : `${id}: ${fallbackLabelFor(id)}`}</option>;
-              })}
-            </select>
-          </label>
+          <RulesRecordPicker
+            label={pickerLabel ?? recordNoun}
+            help={`Select a ${recordNoun.toLowerCase()} record.`}
+            options={recordPickerOptions}
+            value={selectedId}
+            placeholder={`Search ${recordNoun.toLowerCase()} # or name...`}
+            storageKey={`rules.${recordNoun.toLowerCase()}.picker.position`}
+            onChange={onSelect}
+          />
           {showCreateButton && (
             <button type="button" className="btn btn-primary btn-xs" title={customizeHelp} disabled={selectedIsScenario || createDisabled} onClick={() => onCreate(selectedId)}>
               {createLabel ?? "Customize In This Scenario"}

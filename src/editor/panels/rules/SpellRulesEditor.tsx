@@ -5,6 +5,7 @@ import { SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_T
 import { NumberField, SelectField, SoundNumberField, SpellAnimationIconField, FastplotTileNumberField, TextField, CheckboxField } from "./RuleFields";
 import { buildSpellEntries, previousSpellPackedId, nextSpellPackedId, selectedIdFor, spellPackedId } from "./ruleUtils";
 import { SpellRuleEntry, SpellRulesEditorProps } from "./ruleTypes";
+import { RulesRecordPicker, rulesRecordPickerOptions } from "./RulesRecordPicker";
 
 const SPELL_EDITOR_HELP = "Browse packed Realmz spell IDs from shared Data S and create scenario-local custom spell overrides in Data Spell. Built-in spell classes are reference/copy sources.";
 const SPELL_CLASS_HELP = "Spell IDs encode class, level, and slot. The Custom class is the scenario-owned class; copying a built-in spell here creates an editable Data Spell record.";
@@ -23,6 +24,12 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
   }, [entry?.packedId]);
   const visibleEntries = entries.filter((candidate) => candidate.spellcasterClass === spellcasterClass);
   const selectedEntry = visibleEntries.find((candidate) => candidate.packedId === selectedPackedId) ?? visibleEntries[0] ?? entry;
+  const spellPickerOptions = rulesRecordPickerOptions(visibleEntries.map((candidate) => ({
+    id: candidate.packedId,
+    label: `${candidate.packedId}: ${candidate.label}`,
+    detail: `Level ${candidate.levelIndex + 1}, slot ${candidate.slotIndex + 1} | ${candidate.hasScenarioVersion ? "Scenario custom" : candidate.spellcasterClass === 4 ? "Empty custom slot" : "Built-in Realmz"}`,
+    searchText: `${SPELL_CASTER_CLASSES[candidate.spellcasterClass]} level ${candidate.levelIndex + 1} slot ${candidate.slotIndex + 1}`
+  })));
   const nextEmptyCustomEntry = entries.find((candidate) => candidate.spellcasterClass === 4 && !candidate.hasScenarioVersion) ?? null;
   const customSpellCount = entries.filter((candidate) => candidate.spellcasterClass === 4 && candidate.hasScenarioVersion).length;
   const selectPacked = (packedId: number) => onSelectEntity({ type: "record", id: `rule-spell:${packedId}` });
@@ -74,18 +81,15 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
             <button type="button" className="btn btn-secondary btn-xs" title="Previous spell" onClick={() => selectedEntry && selectPacked(previousSpellPackedId(selectedEntry))}>‹</button>
             <button type="button" className="btn btn-secondary btn-xs" title="Next spell" onClick={() => selectedEntry && selectPacked(nextSpellPackedId(selectedEntry))}>›</button>
           </div>
-          <label className="rules-record-select-field rules-spell-select-field">
-            <TutorialTip title="Spell" body={SPELL_PICKER_HELP} side="below">
-              <span>Spell</span>
-            </TutorialTip>
-            <select value={selectedEntry?.packedId ?? ""} onChange={(event) => selectPacked(Number(event.currentTarget.value))}>
-              {visibleEntries.map((candidate) => (
-                <option key={candidate.packedId} value={candidate.packedId}>
-                  {candidate.packedId} {candidate.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <RulesRecordPicker
+            label="Spell"
+            help={SPELL_PICKER_HELP}
+            options={spellPickerOptions}
+            value={selectedEntry?.packedId ?? selectedPackedId}
+            placeholder="Search spell #, name, level, or slot..."
+            storageKey="rules.spell.picker.position"
+            onChange={selectPacked}
+          />
           <button type="button" className="btn btn-secondary btn-xs" title={SPELL_NEW_CUSTOM_HELP} disabled={!nextEmptyCustomEntry} onClick={createBlankCustomSpell}>New Custom Spell</button>
           <button
             type="button"
