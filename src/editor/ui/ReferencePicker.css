@@ -4,6 +4,69 @@
   gap: 6px;
 }
 
+.workbench-reference-compact {
+  min-width: 0;
+}
+
+.workbench-reference-compact-trigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #2b455a;
+  border-radius: 4px;
+  background: #0a1219;
+  color: #e9f4ff;
+  padding: 3px 6px;
+  text-align: left;
+}
+
+.workbench-reference-compact-trigger:hover:not(:disabled),
+.workbench-reference-compact-trigger:focus-visible {
+  border-color: #2d8ad0;
+  background: #102235;
+}
+
+.workbench-reference-compact-trigger.is-empty,
+.workbench-reference-compact-trigger.is-unresolved {
+  border-style: dashed;
+  color: #9eb1c2;
+}
+
+.workbench-reference-compact-trigger.is-unresolved {
+  border-color: #735e2d;
+  background: #1d190f;
+}
+
+.workbench-reference-compact-trigger svg {
+  flex: 0 0 auto;
+  color: #75bfff;
+}
+
+.workbench-reference-compact-trigger span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-reference-picker-panel .workbench-floating-panel-body {
+  overflow: hidden;
+}
+
+.workbench-reference-floating-picker {
+  height: 100%;
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.workbench-reference-floating-picker .workbench-reference-results {
+  max-height: none;
+}
+
 .workbench-reference-current {
   min-width: 0;
   display: grid;

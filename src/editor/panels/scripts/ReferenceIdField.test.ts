@@ -70,4 +70,25 @@ describe("ReferenceIdField", () => {
     expect(html).toContain("String 12");
     expect(html).not.toContain("script-reference-results");
   });
+
+  it("renders compact target references as a shared picker trigger with a raw value field", () => {
+    const project = {
+      messages: [{ id: 12, text: "A warning message", authored: true }],
+      triggers: []
+    } as unknown as Project;
+    const html = renderToStaticMarkup(createElement(ReferenceIdField, {
+      project,
+      label: "Success Text",
+      emptyLabel: "No success string",
+      opcode: 1,
+      value: 12,
+      compact: true,
+      onCommit: () => undefined
+    }));
+
+    expect(html).toContain("workbench-reference-compact-trigger");
+    expect(html).toContain('aria-label="Search Success Text"');
+    expect(html).toContain('aria-label="Success Text value"');
+    expect(html).not.toContain("<select");
+  });
 });

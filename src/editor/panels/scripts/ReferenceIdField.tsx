@@ -37,11 +37,6 @@ export function ReferenceIdField({
   const selected = useMemo(() => targetOptionForOpcodeValue(project, opcode, value, catalog), [catalog, opcode, project, value]);
   const options = useMemo(() => targetOptionsForOpcode(project, opcode, catalog), [catalog, opcode, project]);
   const pickerOptions = useMemo(() => options.map(targetReferencePickerOption), [options]);
-  const visibleOptions = useMemo(() => {
-    const visible = options.slice(0, 260);
-    if (selected && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 259)];
-    return visible;
-  }, [options, selected]);
   const hasRawValue = resolvedValue !== 0 && !selected;
   const canCreate = Boolean(createRecordType && onCreateTarget && (!selected || hasRawValue || value === 0));
   const createId = resolvedValue > 0 && !selected ? resolvedValue : createRecordType ? nextAuthorableTargetId(project, createRecordType) : resolvedValue;
@@ -64,26 +59,32 @@ export function ReferenceIdField({
 
   if (compact) {
     return (
-      <label className="script-reference-id-field compact">
+      <div className="script-reference-id-field compact">
         <span>{label}</span>
-        <select
-          value={hasRawValue ? `raw:${resolvedValue}` : selected ? String(selected.value) : ""}
-          onChange={(event) => {
-            const raw = event.currentTarget.value;
-            if (!raw || raw.startsWith("raw:")) return;
-            selectTarget(Number(raw));
+        <ReferenceField
+          ariaLabel={`Search ${label}`}
+          placeholder={`Search ${label.toLowerCase()}...`}
+          options={pickerOptions}
+          value={value}
+          selectedValue={resolvedValue}
+          current={{
+            label: selected?.label ?? (hasRawValue ? `Current value ${resolvedValue}` : emptyLabel),
+            detail,
+            state: selected ? "resolved" : hasRawValue ? "unresolved" : "empty"
           }}
-        >
-          <option value="">{emptyLabel}</option>
-          {hasRawValue && <option value={`raw:${resolvedValue}`}>Current value {resolvedValue}</option>}
-          {visibleOptions.map((option) => (
-            <option key={option.key} value={option.value}>{option.label}</option>
-          ))}
-        </select>
+          rawOptionForQuery={(query) => rawReferenceTargetOption(query, opcode, label, options)}
+          resultNoun="target"
+          emptyTitle={`No ${label.toLowerCase()} matches`}
+          emptyBody="Try another name, numeric ID, or target detail."
+          clearLabel={`Clear ${label.toLowerCase()}`}
+          currentActions={createAction}
+          className="script-reference-picker-field"
+          compact
+          compactPanelTitle={label}
+          onChange={selectTarget}
+        />
         <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`${label} value`} />
-        <small>{detail}</small>
-        {createAction}
-      </label>
+      </div>
     );
   }
 

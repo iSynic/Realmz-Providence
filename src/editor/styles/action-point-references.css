@@ -672,6 +672,11 @@
   display: block;
 }
 
+.script-reference-id-field.compact > .workbench-reference-compact {
+  width: 100%;
+  min-width: 0;
+}
+
 
 
 .script-reference-id-field:not(.compact) > span,
