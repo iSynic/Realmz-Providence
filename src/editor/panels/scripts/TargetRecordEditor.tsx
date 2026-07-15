@@ -6,7 +6,14 @@ import { ACTION_OPTIONS, actionOptionFor } from "../../realmzActions";
 import { realmzScriptStepDescriptorFor } from "../../realmzScriptDescriptors";
 import type { ScriptDiagnostic } from "../../scriptValidation";
 import type { EncounterActionRow, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, SelectedEntity } from "../../types";
-import { CollapsibleSection, EmptyState } from "../../ui";
+import {
+  CollapsibleSection,
+  EmptyState,
+  ReferenceField,
+  SearchField,
+  numericReferenceQuery,
+  type ReferencePickerOption
+} from "../../ui";
 import { selectEntityFromId } from "../../utils";
 import { validateRealmzTargetRecord } from "../../targetValidation";
 import {
@@ -63,6 +70,8 @@ const ROGUE_ENCOUNTER_SOURCE_HELP =
   "Rogue Encounters are Data TD2 source records for locks, traps, search, and thief-skill actions. Runtime can mark traps detected, disabled, or sprung without changing this source record.";
 const TIMED_ENCOUNTER_SOURCE_HELP =
   "Time Encounters are Data TD3 source records. Realmz checks schedule, chance, location, item, and quest gates, then runs the Extra Action Point target when everything matches.";
+const TREASURE_CATALOG_PAGE_SIZE = 36;
+const SHOP_CATALOG_PAGE_SIZE = 72;
 
 export function TargetRecordEditor({
   project,
@@ -1296,34 +1305,51 @@ function MonsterIdField({
   onCommit: (value: number) => void;
   compact?: boolean;
 }) {
-  const [query, setQuery] = useState("");
   const options = useMemo(() => monsterReferenceOptions(project, catalog), [project, catalog]);
   const selected = options.find((option) => option.value === Math.abs(value));
-  const filteredOptions = useMemo(() => filterMonsterTargetOptions(options, query), [options, query]);
-  const visibleOptions = useMemo(() => {
-    const visible = filteredOptions.slice(0, 260);
-    if (selected && !visible.some((option) => option.value === selected.value)) return [selected, ...visible.slice(0, 259)];
-    return visible;
-  }, [filteredOptions, selected]);
+  const pickerOptions = useMemo(() => options.map((option): ReferencePickerOption<number> => ({
+    key: option.key,
+    value: option.value,
+    label: option.label,
+    detail: [option.detail, option.sourceState].filter(Boolean).join(" | "),
+    searchText: [option.value, option.label, option.detail, option.summary, option.sourceState].join(" ")
+  })), [options]);
+  const selectedDetail = monsterReferenceDetail(project, value, catalog);
   return (
-    <label className={`script-monster-id-field${compact ? " compact" : ""}`}>
+    <div className={`script-monster-id-field${compact ? " compact" : ""}`}>
       <span>{label}</span>
-      <input
-        value={query}
-        onChange={(event) => setQuery(event.currentTarget.value)}
+      <ReferenceField
+        ariaLabel={`Search ${label} monsters`}
         placeholder="Search monsters..."
-        aria-label={`Search ${label} monsters`}
+        options={pickerOptions}
+        value={value}
+        selectedValue={Math.abs(value)}
+        current={value === 0
+          ? { label: "Empty / none", detail: selectedDetail, state: "empty" }
+          : selected
+            ? { label: selected.label, detail: selectedDetail, state: "resolved" }
+            : { label: `Raw monster ID ${Math.abs(value)}`, detail: selectedDetail, state: "unresolved" }}
+        rawOptionForQuery={(query) => {
+          const rawValue = numericReferenceQuery(query);
+          if (rawValue == null || rawValue === 0) return null;
+          const knownMonster = options.some((option) => option.value === Math.abs(rawValue));
+          if (knownMonster && rawValue > 0) return null;
+          return {
+            key: `raw-monster:${rawValue}`,
+            value: rawValue,
+            label: rawValue < 0 ? `Use monster ${Math.abs(rawValue)} on the other side` : `Use raw monster ID ${rawValue}`,
+            detail: knownMonster ? "Known monster with the combat side flipped." : "No decoded monster record found.",
+            searchText: `${rawValue} ${Math.abs(rawValue)} raw monster combat side`
+          };
+        }}
+        resultNoun="monster"
+        emptyTitle="No matching monsters"
+        emptyBody="Try a monster name, numeric ID, combat fact, or source detail."
+        clearLabel="Clear selected monster"
+        className="script-monster-reference-field"
+        onChange={onCommit}
       />
-      <select value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
-        <option value={0}>Empty / none</option>
-        {value !== 0 && !options.some((option) => option.value === Math.abs(value)) && <option value={Math.abs(value)}>Current monster ID {Math.abs(value)}</option>}
-        {visibleOptions.map((option) => (
-          <option key={option.key} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-      <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`${label} raw monster ID`} />
-      <small>{selected ? [selected.detail, selected.sourceState].filter(Boolean).join(" | ") : filteredOptions.length === 0 && query.trim() ? "No monsters match this search." : monsterReferenceDetail(project, value, catalog)}</small>
-    </label>
+    </div>
   );
 }
 
@@ -1349,22 +1375,40 @@ function TreasureCatalogAdder({
 }) {
   const [category, setCategory] = useState<ItemReferenceCategory | "all">("weapon");
   const [query, setQuery] = useState("");
+  const [visibleLimit, setVisibleLimit] = useState(TREASURE_CATALOG_PAGE_SIZE);
   const options = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
   const openSlot = firstOpenTreasureSlot(itemIds);
-  const filteredOptions = useMemo(() => filterItemReferenceOptionsByCategory(options, query, category).slice(0, 36), [options, query, category]);
+  const filteredOptions = useMemo(() => filterItemReferenceOptionsByCategory(options, query, category), [options, query, category]);
+  const visibleOptions = filteredOptions.slice(0, visibleLimit);
+  const hiddenCount = Math.max(0, filteredOptions.length - visibleOptions.length);
   return (
     <CollapsibleSection title="Add Items" eyebrow="Divinity categories" count={openSlot >= 0 ? `next open slot ${openSlot}` : "full"} density="compact" className="script-item-catalog-section" defaultOpen>
       <div className="script-item-category-tabs">
         {ITEM_REFERENCE_CATEGORIES.filter((entry) => entry.id !== "all").map((entry) => (
-          <button key={entry.id} type="button" className={category === entry.id ? "active" : ""} onClick={() => setCategory(entry.id)}>
+          <button key={entry.id} type="button" className={category === entry.id ? "active" : ""} onClick={() => {
+            setCategory(entry.id);
+            setVisibleLimit(TREASURE_CATALOG_PAGE_SIZE);
+          }}>
             <strong>{entry.label}</strong>
             {entry.range && <span>{entry.range}</span>}
           </button>
         ))}
       </div>
-      <input className="script-item-catalog-search" value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search items to add..." />
+      <SearchField
+        className="script-item-catalog-search"
+        value={query}
+        onChange={(nextQuery) => {
+          setQuery(nextQuery);
+          setVisibleLimit(TREASURE_CATALOG_PAGE_SIZE);
+        }}
+        placeholder="Search items to add..."
+        ariaLabel="Search treasure items to add"
+        resultCount={filteredOptions.length}
+        resultNoun="item"
+        status={hiddenCount ? `${visibleOptions.length.toLocaleString()} shown` : "All shown"}
+      />
       <div className="script-item-catalog-list compact">
-        {filteredOptions.map((option) => (
+        {visibleOptions.map((option) => (
           <button key={option.key} type="button" disabled={openSlot < 0} onClick={() => onAddItem(option.value)}>
             <strong>{option.label}</strong>
             <span>{[option.detail, option.sourceState].filter(Boolean).join(" | ")}</span>
@@ -1372,6 +1416,11 @@ function TreasureCatalogAdder({
         ))}
         {filteredOptions.length === 0 && <small>No items match this category/search.</small>}
       </div>
+      {hiddenCount > 0 && (
+        <button type="button" className="btn btn-secondary btn-xs script-item-catalog-more" onClick={() => setVisibleLimit((limit) => limit + TREASURE_CATALOG_PAGE_SIZE)}>
+          Show {Math.min(TREASURE_CATALOG_PAGE_SIZE, hiddenCount).toLocaleString()} more
+        </button>
+      )}
     </CollapsibleSection>
   );
 }
@@ -1415,10 +1464,13 @@ function ShopStockEditor({
 }) {
   const [catalogCategory, setCatalogCategory] = useState<ItemReferenceCategory | "all">("weapon");
   const [catalogQuery, setCatalogQuery] = useState("");
+  const [catalogVisibleLimit, setCatalogVisibleLimit] = useState(SHOP_CATALOG_PAGE_SIZE);
   const [changeAmount, setChangeAmount] = useState(1);
   const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
   const itemOptionsByValue = useMemo(() => new Map(itemOptions.map((option) => [option.value, option])), [itemOptions]);
-  const catalogItems = useMemo(() => filterItemReferenceOptionsByCategory(itemOptions, catalogQuery, catalogCategory).slice(0, 72), [itemOptions, catalogQuery, catalogCategory]);
+  const filteredCatalogItems = useMemo(() => filterItemReferenceOptionsByCategory(itemOptions, catalogQuery, catalogCategory), [itemOptions, catalogQuery, catalogCategory]);
+  const catalogItems = filteredCatalogItems.slice(0, catalogVisibleLimit);
+  const hiddenCatalogCount = Math.max(0, filteredCatalogItems.length - catalogItems.length);
   const filledSlots = useMemo(() => {
     const slots: Array<{ slot: number; itemId: number; quantity: number; option: ItemReferenceOption | null }> = [];
     for (let index = 0; index < 1000; index += 1) {
@@ -1452,13 +1504,28 @@ function ShopStockEditor({
           </header>
           <div className="script-item-category-tabs">
             {ITEM_REFERENCE_CATEGORIES.map((entry) => (
-              <button key={entry.id} type="button" className={catalogCategory === entry.id ? "active" : ""} onClick={() => setCatalogCategory(entry.id)}>
+              <button key={entry.id} type="button" className={catalogCategory === entry.id ? "active" : ""} onClick={() => {
+                setCatalogCategory(entry.id);
+                setCatalogVisibleLimit(SHOP_CATALOG_PAGE_SIZE);
+              }}>
                 <strong>{entry.label}</strong>
                 {entry.range && <span>{entry.range}</span>}
               </button>
             ))}
           </div>
-          <input className="script-item-catalog-search" value={catalogQuery} onChange={(event) => setCatalogQuery(event.currentTarget.value)} placeholder="Search item name, ID, source, or use..." />
+          <SearchField
+            className="script-item-catalog-search"
+            value={catalogQuery}
+            onChange={(nextQuery) => {
+              setCatalogQuery(nextQuery);
+              setCatalogVisibleLimit(SHOP_CATALOG_PAGE_SIZE);
+            }}
+            placeholder="Search item name, ID, source, or use..."
+            ariaLabel="Search shop item catalog"
+            resultCount={filteredCatalogItems.length}
+            resultNoun="item"
+            status={hiddenCatalogCount ? `${catalogItems.length.toLocaleString()} shown` : "All shown"}
+          />
           <div className="script-shop-catalog-list">
             {catalogItems.map((option) => {
               const quantity = shopQuantityForItem(itemIds, quantities, option.value);
@@ -1475,6 +1542,11 @@ function ShopStockEditor({
             })}
             {catalogItems.length === 0 && <small>No items match this category/search.</small>}
           </div>
+          {hiddenCatalogCount > 0 && (
+            <button type="button" className="btn btn-secondary btn-xs script-item-catalog-more" onClick={() => setCatalogVisibleLimit((limit) => limit + SHOP_CATALOG_PAGE_SIZE)}>
+              Show {Math.min(SHOP_CATALOG_PAGE_SIZE, hiddenCatalogCount).toLocaleString()} more
+            </button>
+          )}
         </section>
         <section className="script-shop-inventory-panel" aria-label="Stocked shop items">
           <header>
@@ -1600,18 +1672,6 @@ function monsterRequiredWeaponStoredCode(displayCode: number) {
 
 function normalizedByte(value: number) {
   return ((Math.trunc(Number.isFinite(value) ? value : 0) % 256) + 256) % 256;
-}
-
-function filterMonsterTargetOptions(options: ReturnType<typeof monsterReferenceOptions>, query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return options;
-  return options.filter((option) => [
-    option.value,
-    option.label,
-    option.detail,
-    option.summary,
-    option.sourceState
-  ].join(" ").toLowerCase().includes(normalized));
 }
 
 function treasureRewardHint(label: string, value: number) {

@@ -119,3 +119,5 @@ The Strings workbench now uses `SearchField` for message filtering, occurrence n
 The Action Point inventory, Action Settings browser, and action chooser now use `SearchField` as one coherent browsing family. All three expose the same clear action, result-count status, input geometry, and accessible search semantics while preserving their map/status/category filters and domain-specific result cards.
 
 The shared layer now includes `ReferenceField` for inline numeric references. EDCD targets and item-ID fields both compose it over `ReferencePicker`, so selected, empty, unresolved, raw-ID, clear, Enter, and Escape behavior no longer depends on separate field implementations. Item searches also return the complete matching collection instead of stopping silently at twelve rows.
+
+Target Record monster fields now use the same inline reference contract, including signed combat-side values and unresolved numeric IDs. Its treasure and shop catalog searches use `SearchField` with complete result counts and explicit incremental paging, replacing silent 36- and 72-row truncation while preserving category filters and record mutation behavior.

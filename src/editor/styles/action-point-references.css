@@ -73,8 +73,11 @@
 
 .script-item-catalog-search {
   width: 100%;
-  min-height: 28px;
   margin-top: 7px;
+}
+
+.script-item-catalog-search .workbench-search-control > input {
+  min-height: 28px;
 }
 
 
@@ -90,6 +93,11 @@
 
 .script-item-catalog-list.compact {
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.script-item-catalog-more {
+  width: fit-content;
+  margin-top: 7px;
 }
 
 
@@ -515,7 +523,7 @@
 
 .script-number-field.compact span,
 .script-item-id-field.compact > span,
-.script-monster-id-field.compact span {
+.script-monster-id-field.compact > span {
   font-size: 8px;
 }
 
@@ -532,7 +540,7 @@
 
 
 
-.script-monster-id-field.compact small {
+.script-monster-id-field.compact .workbench-reference-current small {
   display: none;
 }
 
@@ -597,8 +605,6 @@
 
 
 .script-item-id-field input,
-.script-monster-id-field input,
-.script-monster-id-field select,
 .script-reference-id-field input,
 .script-reference-id-field select {
   min-height: 26px;
