@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
 import { LibraryAsset, ProjectCommand, ScenarioSpellOverride } from "../../types";
 import { SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_TARGET_TYPES } from "../../rulesCatalog";
-import { NumberField, SelectField, SoundNumberField, SpellAnimationIconField, FastplotTileNumberField, TextField, CheckboxField } from "./RuleFields";
+import { NumberField, SelectField, SpellAnimationIconField, FastplotTileNumberField, TextField, CheckboxField } from "./RuleFields";
 import { buildSpellEntries, previousSpellPackedId, nextSpellPackedId, selectedIdFor, spellPackedId } from "./ruleUtils";
 import { SpellRuleEntry, SpellRulesEditorProps } from "./ruleTypes";
 import { RulesRecordPicker, rulesRecordPickerOptions } from "./RulesRecordPicker";
+import { RulesSoundField } from "./RulesSoundField";
 
 const SPELL_EDITOR_HELP = "Browse packed Realmz spell IDs from shared Data S and create scenario-local custom spell overrides in Data Spell. Built-in spell classes are reference/copy sources.";
 const SPELL_CLASS_HELP = "Spell IDs encode class, level, and slot. The Custom class is the scenario-owned class; copying a built-in spell here creates an editable Data Spell record.";
@@ -237,8 +238,8 @@ function SpellForm({
             />
             <TextField label="Description / Note" value={record.description ?? ""} onCommit={(description) => update({ description })} wide disabled={!editable} help="Editor note only. Known Divinity scenarios do not provide a portable custom spell description field in exported scenario data." />
             <div className="rules-spell-sound-row">
-              <SoundNumberField label="Casting Sound" value={record.sound1} assets={iconAssets} onCommit={(sound1) => update({ sound1 })} disabled={!editable} help="Sound played when casting begins." />
-              <SoundNumberField label="Resolution Sound" value={record.sound2} assets={iconAssets} onCommit={(sound2) => update({ sound2 })} disabled={!editable} help="Sound played when the spell resolves." />
+              <RulesSoundField label="Casting Sound" value={record.sound1} assets={iconAssets} onCommit={(sound1) => update({ sound1 })} disabled={!editable} help="Sound played when casting begins." />
+              <RulesSoundField label="Resolution Sound" value={record.sound2} assets={iconAssets} onCommit={(sound2) => update({ sound2 })} disabled={!editable} help="Sound played when the spell resolves." />
             </div>
             <div className="rules-spell-icon-row">
               <SpellAnimationIconField label="Cast Icon" value={record.spellLook1} assets={iconAssets} onCommit={(spellLook1) => update({ spellLook1 })} disabled={!editable} zeroMode="blank-cast" help="Animation shown while the spell is cast." />

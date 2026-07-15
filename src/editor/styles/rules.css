@@ -1003,14 +1003,12 @@
 
 
 
-.rules-spell-sound-row .rules-sound-number > div,
 .rules-spell-icon-row .rules-icon-number > div {
   justify-content: start;
 }
 
 
 
-.rules-spell-sound-row .rules-sound-number input,
 .rules-spell-icon-row .rules-icon-number input {
   width: 9ch;
 }
@@ -1255,8 +1253,7 @@
 
 
 
-.rules-section .rules-icon-number,
-.rules-section .rules-sound-number {
+.rules-section .rules-icon-number {
   width: 100%;
   max-width: 180px;
 }
@@ -1265,23 +1262,6 @@
 
 .rules-section .rules-icon-number-compact {
   max-width: 150px;
-}
-
-
-
-.rules-sound-number > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-
-
-.rules-sound-number input {
-  width: 8ch;
-  min-width: 0;
 }
 
 

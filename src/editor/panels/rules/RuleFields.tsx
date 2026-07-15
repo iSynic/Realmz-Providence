@@ -3,7 +3,7 @@ import { loadBrowserBundledLibraryAssetPreview } from "../../browser/library";
 import { TutorialTip } from "../../components/TutorialTip";
 import { LibraryAsset, LibraryCatalog, ScenarioCasteOverride, ScenarioRaceOverride } from "../../types";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_ATTRIBUTES } from "../../rulesCatalog";
-import { fastplotTileId, spellAnimationFrameIds, spellAnimationHint, spellAnimationIsBlank, SpellAnimationZeroMode, spellSoundResourceId } from "../../resourceIds";
+import { fastplotTileId, spellAnimationFrameIds, spellAnimationHint, spellAnimationIsBlank, SpellAnimationZeroMode } from "../../resourceIds";
 import { findLibraryResourceAsset } from "../../resourceResolver";
 import { capitalize, classNames, victoryPointLabels } from "./ruleUtils";
 import { RulesRecordPicker, rulesRecordPickerOptions } from "./RulesRecordPicker";
@@ -445,45 +445,6 @@ export function IconNumberField({
         />
       </div>
       <small>{hint ? hint(previewValue) : resolvedIconId !== null ? `cicn ${resolvedIconId}` : "Combat tile preview pending"}</small>
-    </label>
-  );
-}
-
-export function SoundNumberField({ label, value, assets, onCommit, disabled = false, help }: { label: string; value: number; assets: LibraryAsset[]; onCommit: (value: number) => void; disabled?: boolean; help?: string }) {
-  const soundId = spellSoundResourceId(value);
-  const asset = soundId !== null ? findLibraryResourceAsset(assets, "snd", soundId, "sound") : null;
-  const [status, setStatus] = useState<string | null>(null);
-  const resolvedHint = soundId !== null ? `snd ${soundId}` : "No sound";
-  const play = async () => {
-    if (!asset) {
-      setStatus(soundId !== null ? `snd ${soundId} unavailable` : "No sound");
-      return;
-    }
-    const url = await loadBrowserBundledLibraryAssetPreview(asset);
-    if (!url) {
-      setStatus(`snd ${soundId} unavailable`);
-      return;
-    }
-    const audio = new Audio(url);
-    audio.play().then(() => setStatus(`Playing snd ${soundId}`)).catch(() => setStatus(`Could not play snd ${soundId}`));
-  };
-  return (
-    <label className="scenario-field rules-sound-number" title={[help, status ?? resolvedHint].filter(Boolean).join("\n")}>
-      <HelpLabel label={label} help={help} />
-      <div>
-        <input
-          key={value}
-          type="number"
-          defaultValue={value}
-          disabled={disabled}
-          onBlur={(event) => {
-            const next = Number(event.currentTarget.value);
-            if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
-          }}
-        />
-        <button type="button" className="btn btn-secondary btn-xs" onClick={play} disabled={!asset}>Play</button>
-      </div>
-      {status ? <small>{status}</small> : null}
     </label>
   );
 }
