@@ -1,20 +1,20 @@
 .workbench-panel-section {
   min-width: 0;
-  border: 1px solid #27313c;
-  border-radius: 6px;
-  background: #12161b;
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-color-surface);
   overflow: hidden;
 }
 
 .workbench-panel-section-header {
-  min-height: 38px;
+  min-height: var(--ui-section-header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border-bottom: 1px solid #232b34;
-  background: #171b20;
+  gap: var(--ui-space-5);
+  padding: var(--ui-space-4) var(--ui-space-5);
+  border-bottom: 1px solid var(--ui-color-border-subtle);
+  background: var(--ui-color-surface-raised);
 }
 
 .workbench-collapsible-section .workbench-panel-section-header {
@@ -69,14 +69,14 @@
 
 .workbench-floating-panel {
   position: fixed;
-  z-index: 10000;
+  z-index: var(--ui-layer-floating);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #334657;
-  border-radius: 7px;
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: var(--ui-radius-floating);
   background: #10161d;
-  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(83, 135, 180, 0.12);
+  box-shadow: var(--ui-shadow-floating);
 }
 
 .workbench-floating-panel-header {
@@ -110,8 +110,8 @@
 .workbench-floating-panel-header strong {
   min-width: 0;
   overflow: hidden;
-  color: #edf5ff;
-  font-size: 12px;
+  color: var(--ui-color-text-strong);
+  font-size: var(--ui-font-size-title);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -165,8 +165,8 @@
 
 .workbench-panel-section-header strong {
   min-width: 0;
-  color: #edf4fb;
-  font-size: 12px;
+  color: var(--ui-color-text-strong);
+  font-size: var(--ui-font-size-title);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -194,16 +194,16 @@
 
 .workbench-panel-section-body {
   min-width: 0;
-  padding: 10px;
+  padding: var(--ui-space-5);
 }
 
 .workbench-panel-section.density-compact .workbench-panel-section-header {
-  min-height: 32px;
+  min-height: var(--ui-control-height-md);
   padding: 6px 8px;
 }
 
 .workbench-panel-section.density-compact .workbench-panel-section-body {
-  padding: 8px;
+  padding: var(--ui-space-4);
 }
 
 .workbench-panel-section.is-scrollable .workbench-panel-section-body {
@@ -211,7 +211,7 @@
   overflow-y: scroll;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
-  scrollbar-color: #657284 #111418;
+  scrollbar-color: var(--ui-scroll-thumb) var(--ui-scroll-track);
 }
 
 .workbench-panel-section.is-scrollable .workbench-panel-section-body::-webkit-scrollbar {
@@ -221,17 +221,17 @@
 
 .workbench-panel-section.is-scrollable .workbench-panel-section-body::-webkit-scrollbar-thumb {
   min-height: 42px;
-  background: #657284;
-  border: 2px solid #111418;
+  background: var(--ui-scroll-thumb);
+  border: 2px solid var(--ui-scroll-track);
   border-radius: 10px;
 }
 
 .workbench-panel-section.is-scrollable .workbench-panel-section-body::-webkit-scrollbar-thumb:hover {
-  background: #7a8796;
+  background: var(--ui-scroll-thumb-hover);
 }
 
 .workbench-panel-section.is-scrollable .workbench-panel-section-body::-webkit-scrollbar-track {
-  background: #111418;
+  background: var(--ui-scroll-track);
 }
 
 .workbench-scroll-area {
@@ -270,7 +270,7 @@
 
 .workbench-scrollbar {
   position: absolute;
-  z-index: 12;
+  z-index: var(--ui-layer-sticky);
   border: 1px solid #28323d;
   border-radius: 999px;
   background: rgba(10, 13, 17, 0.72);
@@ -826,7 +826,7 @@ a.workbench-link-chip:hover,
 
 .workbench-help-bubble {
   position: absolute;
-  z-index: 60;
+  z-index: var(--ui-layer-tooltip);
   width: 245px;
   padding: 10px 11px;
   border: 1px solid #315d89;
@@ -845,7 +845,7 @@ a.workbench-link-chip:hover,
   position: fixed;
   right: auto;
   bottom: auto;
-  z-index: 1000;
+  z-index: var(--ui-layer-popover);
 }
 
 .workbench-help-bubble.is-open {

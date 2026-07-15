@@ -1,3 +1,4 @@
+@import "./editor/ui/foundations.css";
 @import "./editor/styles/shell.css";
 @import "./editor/styles/documents-authoring.css";
 @import "./editor/styles/text-scenario.css";
@@ -44,9 +45,9 @@
 
 :root {
   color-scheme: dark;
-  font-family: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-  background: #101113;
-  color: #dedede;
+  font-family: var(--ui-font-family);
+  background: var(--ui-color-canvas);
+  color: var(--ui-color-text);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -55,7 +56,7 @@ body {
   min-width: 1100px;
   min-height: 720px;
   overflow: hidden;
-  background: #101113;
+  background: var(--ui-color-canvas);
 }
 
 button,
@@ -75,7 +76,7 @@ button:disabled {
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
-  background: #111418;
+  background: var(--ui-scroll-track);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -85,7 +86,7 @@ button:disabled {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #657284;
+  background: var(--ui-scroll-thumb);
 }
 
 ::-webkit-scrollbar-track {

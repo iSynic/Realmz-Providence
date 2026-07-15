@@ -1,7 +1,7 @@
 .workbench-reference-picker {
   min-width: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--ui-space-3);
 }
 
 .workbench-reference-compact {
@@ -11,13 +11,13 @@
 .workbench-reference-compact-trigger {
   width: 100%;
   min-width: 0;
-  min-height: 26px;
+  min-height: var(--ui-control-height-xs);
   display: inline-flex;
   align-items: center;
   gap: 5px;
   border: 1px solid #2b455a;
-  border-radius: 4px;
-  background: #0a1219;
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-color-surface-inset);
   color: #e9f4ff;
   padding: 3px 6px;
   text-align: left;
@@ -25,8 +25,8 @@
 
 .workbench-reference-compact-trigger:hover:not(:disabled),
 .workbench-reference-compact-trigger:focus-visible {
-  border-color: #2d8ad0;
-  background: #102235;
+  border-color: var(--ui-focus-color);
+  background: var(--ui-color-info-surface);
 }
 
 .workbench-reference-compact-trigger.is-empty,

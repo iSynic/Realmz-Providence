@@ -1,0 +1,72 @@
+:root {
+  --ui-font-family: "JetBrains Mono", "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+  --ui-font-size-label: 9px;
+  --ui-font-size-meta: 10px;
+  --ui-font-size-body: 11px;
+  --ui-font-size-title: 12px;
+  --ui-font-size-heading: 14px;
+
+  --ui-space-1: 2px;
+  --ui-space-2: 4px;
+  --ui-space-3: 6px;
+  --ui-space-4: 8px;
+  --ui-space-5: 10px;
+  --ui-space-6: 12px;
+  --ui-space-8: 16px;
+
+  --ui-radius-control: 4px;
+  --ui-radius-panel: 6px;
+  --ui-radius-floating: 7px;
+
+  --ui-control-height-xs: 26px;
+  --ui-control-height-sm: 29px;
+  --ui-control-height-md: 32px;
+  --ui-section-header-height: 38px;
+
+  --ui-color-canvas: #101113;
+  --ui-color-surface: #12161b;
+  --ui-color-surface-raised: #171b20;
+  --ui-color-surface-inset: #0a1219;
+  --ui-color-surface-hover: #1a222c;
+  --ui-color-border: #27313c;
+  --ui-color-border-subtle: #232b34;
+  --ui-color-border-strong: #334657;
+  --ui-color-text: #dedede;
+  --ui-color-text-strong: #edf4fb;
+  --ui-color-text-muted: #9eb1c2;
+  --ui-color-text-subtle: #7e8b98;
+  --ui-color-info: #9dcfff;
+  --ui-color-info-border: #2f6eaa;
+  --ui-color-info-surface: #102235;
+  --ui-color-success: #a7f3c7;
+  --ui-color-success-border: #2e6b4f;
+  --ui-color-success-surface: #102119;
+  --ui-color-warning: #f2d591;
+  --ui-color-warning-border: #6b5629;
+  --ui-color-warning-surface: #211d14;
+  --ui-color-danger: #ff9cad;
+  --ui-color-danger-border: #7d3440;
+  --ui-color-danger-surface: #27151a;
+
+  --ui-focus-color: #4f9ce6;
+  --ui-focus-ring: 0 0 0 2px rgba(79, 156, 230, 0.3);
+  --ui-shadow-floating: 0 18px 54px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(83, 135, 180, 0.12);
+
+  --ui-layer-base: 0;
+  --ui-layer-sticky: 12;
+  --ui-layer-tooltip: 60;
+  --ui-layer-popover: 1000;
+  --ui-layer-floating: 10000;
+  --ui-layer-modal: 11000;
+
+  --ui-scroll-track: #111418;
+  --ui-scroll-thumb: #657284;
+  --ui-scroll-thumb-hover: #7a8796;
+}
+
+:is(.workbench-panel-section, .workbench-floating-panel, .workbench-reference-picker)
+  :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 1px solid var(--ui-focus-color);
+  outline-offset: 1px;
+  box-shadow: var(--ui-focus-ring);
+}

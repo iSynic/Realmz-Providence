@@ -1,12 +1,12 @@
 .workbench-search-field {
   display: grid;
-  gap: 4px;
+  gap: var(--ui-space-2);
   min-width: 0;
 }
 
 .workbench-search-field > label {
   color: #89a8bd;
-  font-size: 8px;
+  font-size: var(--ui-font-size-label);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -46,7 +46,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--ui-radius-control);
   background: transparent;
   color: #8da4b8;
   padding: 0;
@@ -61,9 +61,9 @@
 .workbench-search-meta {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
-  color: #99afbf;
-  font-size: 9px;
+  gap: var(--ui-space-4);
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-label);
 }
 
 .workbench-search-meta small {

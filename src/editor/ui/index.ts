@@ -14,6 +14,7 @@ export {
 } from "./WorkbenchPrimitives";
 
 export { SearchField } from "./SearchField";
+export { WorkbenchActionBar, WorkbenchCluster, WorkbenchStack } from "./WorkbenchLayout";
 export { IncrementalListFooter, useIncrementalListLimit } from "./IncrementalListFooter";
 export { ReferenceField, numericReferenceQuery } from "./ReferenceField";
 export { ReferencePicker, filterReferencePickerOptions, referencePickerKeyboardAction } from "./ReferencePicker";
@@ -42,6 +43,7 @@ export type {
 } from "./WorkbenchPrimitives";
 
 export type { SearchFieldProps } from "./SearchField";
+export type { WorkbenchActionBarProps, WorkbenchClusterProps, WorkbenchGap, WorkbenchStackProps } from "./WorkbenchLayout";
 export type { IncrementalListFooterProps } from "./IncrementalListFooter";
 export type { RawReferenceOptionFactory, ReferenceFieldProps } from "./ReferenceField";
 export type {

@@ -1,5 +1,7 @@
 # Providence UI Pattern Inventory
 
+Shared density, spacing, state, focus, layer, scroll, and keyboard rules are defined in [Providence UI Foundations](ui-foundations.md). This inventory tracks where those contracts are adopted and where domain geometry intentionally remains specialized.
+
 This is the initial ISY-330 inventory. It records implementation families that should be audited before M20 chooses a shared replacement. Counts are baseline evidence, not quality judgments.
 
 ## Current Foundation

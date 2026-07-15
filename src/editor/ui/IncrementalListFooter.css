@@ -1,10 +1,6 @@
 .workbench-incremental-list-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 4px 0;
-  color: #9eb1c2;
+  padding: var(--ui-space-2) 0;
+  color: var(--ui-color-text-muted);
 }
 
 .workbench-incremental-list-footer small {

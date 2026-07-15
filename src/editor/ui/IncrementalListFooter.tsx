@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { WorkbenchActionBar } from "./WorkbenchLayout";
 import "./IncrementalListFooter.css";
 
 export type IncrementalListFooterProps = {
@@ -32,13 +33,16 @@ export function IncrementalListFooter({
   const collectionNoun = totalCount === 1 ? noun : nounPlural;
 
   return (
-    <div className="workbench-incremental-list-footer">
-      <small>
+    <WorkbenchActionBar
+      className="workbench-incremental-list-footer"
+      ariaLabel={`${collectionNoun} display controls`}
+      meta={<small>
         {visibleCount.toLocaleString()} of {totalCount.toLocaleString()} {collectionNoun} shown
-      </small>
+      </small>}
+    >
       <button type="button" className="btn btn-secondary btn-xs" disabled={disabled} onClick={onShowMore}>
         Show {revealCount.toLocaleString()} More
       </button>
-    </div>
+    </WorkbenchActionBar>
   );
 }
