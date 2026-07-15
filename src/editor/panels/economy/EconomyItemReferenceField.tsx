@@ -11,7 +11,7 @@ import {
   ReferencePreview,
   type ReferencePickerOption
 } from "../../ui";
-import { ItemOptionIcon } from "./ItemCatalogWorkbench";
+import { ItemOptionIcon } from "./ItemReferencePresentation";
 import "./EconomyItemReferenceField.css";
 
 export function economyItemReferenceOptions(
@@ -79,6 +79,9 @@ export function EconomyItemReferenceField({
   ariaLabel,
   panelTitle,
   storageKey,
+  emptyLabel = "Empty / none",
+  emptyDetail = "This slot does not contain an item.",
+  clearLabel = "Clear item slot",
   project,
   catalog,
   previewContext,
@@ -90,14 +93,17 @@ export function EconomyItemReferenceField({
   ariaLabel: string;
   panelTitle: ReactNode;
   storageKey: string;
+  emptyLabel?: string;
+  emptyDetail?: string;
+  clearLabel?: string;
   project: Project;
   catalog?: LibraryCatalog | null;
   previewContext: PreviewRuntimeContext;
   onChange: (value: number) => void;
 }) {
   const current = value === 0 ? {
-    label: "Empty / none",
-    detail: "This slot does not contain an item.",
+    label: emptyLabel,
+    detail: emptyDetail,
     state: "empty" as const
   } : option ? {
     label: `${itemOptionDisplayName(option)} (${value})`,
@@ -147,7 +153,7 @@ export function EconomyItemReferenceField({
         emptyBody="Try an item ID, name, category, source, or enter a raw numeric ID."
         initialVisibleCount={160}
         visibleCountStep={160}
-        clearLabel="Clear item slot"
+        clearLabel={clearLabel}
         compact
         compactPanelTitle={panelTitle}
         compactStorageKey={storageKey}

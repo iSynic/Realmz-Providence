@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, typ
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../../itemReferences";
-import { useIconPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
+import type { PreviewRuntimeContext } from "../../previewUrls";
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, REALMZ_RACES } from "../../rulesCatalog";
 import type { LibraryCatalog, LibraryEntity, Project, ProjectCommand, ScenarioItemRecord, SelectedEntity, SemanticEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import { ScrollArea, SearchField } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { filterEconomyItemOptions } from "./economyItemSearch";
+import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
 import { ItemIconField } from "./ItemIconField";
+import { ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemReferencePresentation";
 import { ItemRestrictionReferenceField } from "./ItemRestrictionReferenceField";
 import { ItemSoundField } from "./ItemSoundField";
 
@@ -131,53 +133,6 @@ export function ItemCatalogWorkbench({
       </div>
     </article>
   );
-}
-
-export function ItemOptionIcon({
-  option,
-  project,
-  catalog,
-  previewContext
-}: {
-  option: ItemReferenceOption;
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  previewContext: PreviewRuntimeContext;
-}) {
-  const iconUrl = useIconPreviewUrl(option.iconId, project, catalog, previewContext);
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  useEffect(() => setFailedUrl(null), [iconUrl]);
-  const usableUrl = iconUrl && iconUrl !== failedUrl ? iconUrl : null;
-  return (
-    <span className="item-option-icon" title={option.iconId ? `cicn ${option.iconId}` : `${itemCategoryBadge(option.category)} item`}>
-      {usableUrl ? <img src={usableUrl} alt="" onError={() => setFailedUrl(usableUrl)} /> : <i>{itemCategoryBadge(option.category)}</i>}
-    </span>
-  );
-}
-
-export function useDeferredItemReferenceOptions(project: Project, catalog?: LibraryCatalog | null) {
-  const [options, setOptions] = useState<ItemReferenceOption[] | null>(null);
-  useEffect(() => {
-    let disposed = false;
-    const timer = window.setTimeout(() => {
-      const next = itemReferenceOptions(project, catalog);
-      if (!disposed) setOptions(next);
-    }, 120);
-    return () => {
-      disposed = true;
-      window.clearTimeout(timer);
-    };
-  }, [catalog, project]);
-  return options;
-}
-
-export function itemCategoryBadge(category: ItemReferenceCategory) {
-  if (category === "weapon") return "W";
-  if (category === "armor") return "AR";
-  if (category === "accessory") return "AC";
-  if (category === "magic") return "M";
-  if (category === "supply") return "SP";
-  return "IT";
 }
 
 function ItemDetailPanel({
@@ -531,6 +486,10 @@ function ScenarioItemEditor({
 }) {
   const magicalRawValue = Number(record.magical ?? 0);
   const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [catalog, project]);
+  const itemReferencePickerOptions = useMemo(
+    () => economyItemReferenceOptions(itemOptions, project, catalog, previewContext),
+    [catalog, itemOptions, previewContext, project]
+  );
   return (
     <section className="scenario-item-editor" aria-label={`Custom item ${itemId} editor`}>
       <header>
@@ -613,6 +572,10 @@ function ScenarioItemEditor({
           <CursedFormItemField
             value={Number(record.cursedItemId ?? 0)}
             options={itemOptions}
+            referenceOptions={itemReferencePickerOptions}
+            project={project}
+            catalog={catalog}
+            previewContext={previewContext}
             onChange={(value) => onChange("cursedItemId", value)}
           />
           <ItemCategorySelectEditor
@@ -772,24 +735,40 @@ function ItemMagicField({ value, onChange }: { value: number; onChange: (value: 
 function CursedFormItemField({
   value,
   options,
+  referenceOptions,
+  project,
+  catalog,
+  previewContext,
   onChange
 }: {
   value: number;
   options: ItemReferenceOption[];
+  referenceOptions: ReturnType<typeof economyItemReferenceOptions>;
+  project: Project;
+  catalog?: LibraryCatalog | null;
+  previewContext: PreviewRuntimeContext;
   onChange: (value: number) => void;
 }) {
   const selectedOption = options.find((option) => option.value === value);
   return (
-    <label className="item-number-input item-field-wide" title="If nonzero, Realmz secretly loads this item as the cursed form while keeping the original item identity hidden until revealed.">
+    <div className="item-number-input item-field-wide" title="If nonzero, Realmz secretly loads this item as the cursed form while keeping the original item identity hidden until revealed.">
       <span>Cursed Form Item</span>
-      <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
-        <option value="0">No cursed form</option>
-        {value !== 0 && !selectedOption && <option value={String(value)}>Current item {value}</option>}
-        {options.map((option) => (
-          <option key={option.key} value={String(option.value)}>{option.label}</option>
-        ))}
-      </select>
-    </label>
+      <EconomyItemReferenceField
+        value={value}
+        option={selectedOption}
+        options={referenceOptions}
+        ariaLabel="Search cursed form item"
+        panelTitle="Cursed Form Item"
+        storageKey="economy.item.cursed-form.picker.position"
+        emptyLabel="No cursed form"
+        emptyDetail="Realmz does not substitute another item when this item is cursed."
+        clearLabel="Clear cursed form item"
+        project={project}
+        catalog={catalog}
+        previewContext={previewContext}
+        onChange={onChange}
+      />
+    </div>
   );
 }
 

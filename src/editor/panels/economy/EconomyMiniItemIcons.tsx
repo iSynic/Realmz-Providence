@@ -1,5 +1,4 @@
-import type { ItemReferenceOption } from "../../itemReferences";
-import { itemCategoryBadge } from "./ItemCatalogWorkbench";
+import { itemCategoryBadge, type ItemReferenceOption } from "../../itemReferences";
 import { itemOptionName } from "./economyRecordModel";
 
 export function EconomyMiniItemIcons({

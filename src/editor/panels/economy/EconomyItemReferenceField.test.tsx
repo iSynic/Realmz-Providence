@@ -55,4 +55,24 @@ describe("Economy item reference field", () => {
     expect(html).not.toContain("<select");
     expect(html).not.toContain('type="number"');
   });
+
+  it("supports domain-specific empty language", () => {
+    const html = renderToStaticMarkup(createElement(EconomyItemReferenceField, {
+      value: 0,
+      options: economyItemReferenceOptions([item], project, null, {} as never),
+      ariaLabel: "Search cursed form item",
+      panelTitle: "Cursed Form Item",
+      storageKey: "economy.item.cursed-form.picker.position",
+      emptyLabel: "No cursed form",
+      emptyDetail: "Realmz does not substitute another item when this item is cursed.",
+      clearLabel: "Clear cursed form item",
+      project,
+      previewContext: {} as never,
+      onChange: vi.fn()
+    }));
+    expect(html).toContain('aria-label="Search cursed form item"');
+    expect(html).toContain("No cursed form");
+    expect(html).toContain("Realmz does not substitute another item");
+    expect(html).not.toContain("<select");
+  });
 });

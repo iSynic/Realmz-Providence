@@ -8,7 +8,8 @@ import { ScrollArea, SearchField } from "../../ui";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
 import { filterEconomyItemOptions } from "./economyItemSearch";
-import { ItemNumberInput, ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemCatalogWorkbench";
+import { ItemNumberInput } from "./ItemCatalogWorkbench";
+import { ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemReferencePresentation";
 import {
   economyTargetIdFromSelection,
   economyTargetRecordSummary,
