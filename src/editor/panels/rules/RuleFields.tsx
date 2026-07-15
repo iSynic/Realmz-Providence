@@ -395,60 +395,6 @@ export function FastplotTileNumberField({
   );
 }
 
-export function IconNumberField({
-  label,
-  value,
-  assets,
-  onCommit,
-  disabled = false,
-  iconId,
-  assetPreference,
-  hint,
-  compact = false,
-  help
-}: {
-  label: string;
-  value: number;
-  assets: LibraryAsset[];
-  onCommit: (value: number) => void;
-  disabled?: boolean;
-  iconId?: ((value: number) => number) | null;
-  assetPreference?: (asset: LibraryAsset) => boolean;
-  hint?: (value: number) => string;
-  compact?: boolean;
-  help?: string;
-}) {
-  const [draft, setDraft] = useState(String(value));
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-  const parsedDraft = Number(draft);
-  const previewValue = Number.isFinite(parsedDraft) ? parsedDraft : value;
-  const resolvedIconId = iconId === null ? null : iconId ? iconId(previewValue) : previewValue;
-  const asset = resolvedIconId === null ? null : findLibraryResourceAsset(assets, "cicn", resolvedIconId, "icon", assetPreference);
-  const preview = useRuleIconPreview(asset);
-  return (
-    <label className={classNames("scenario-field", "rules-icon-number", compact && "rules-icon-number-compact")} title={help}>
-      <HelpLabel label={label} help={help} />
-      <div>
-        {preview ? <img src={preview} alt={`${label} ${resolvedIconId}`} /> : <b>{previewValue || "-"}</b>}
-        <input
-          type="number"
-          value={draft}
-          disabled={disabled}
-          onChange={(event) => setDraft(event.currentTarget.value)}
-          onBlur={(event) => {
-            const next = Number(event.currentTarget.value);
-            if (!disabled && Number.isFinite(next) && next !== value) onCommit(next);
-            else setDraft(String(value));
-          }}
-        />
-      </div>
-      <small>{hint ? hint(previewValue) : resolvedIconId !== null ? `cicn ${resolvedIconId}` : "Combat tile preview pending"}</small>
-    </label>
-  );
-}
-
 export function spellAnimationIconRange(value: number, zeroMode: SpellAnimationZeroMode) {
   const frameIconIds = spellAnimationFrameIds(value, zeroMode);
   return {
@@ -463,27 +409,6 @@ export function fastplotTileRect(tile: number) {
   const tileGroup = Math.floor((normalized - 1) / 20);
   const column = normalized - tileGroup * 20 - 1;
   return { column, row: tileGroup };
-}
-
-export function useRuleIconPreview(asset: LibraryAsset | null) {
-  const [preview, setPreview] = useState<string | null>(asset?.previewPath ?? null);
-  useEffect(() => {
-    let disposed = false;
-    if (!asset) {
-      setPreview(null);
-      return;
-    }
-    setPreview(asset.previewPath ?? null);
-    loadBrowserBundledLibraryAssetPreview(asset).then((url) => {
-      if (!disposed) setPreview(url ?? asset.previewPath ?? null);
-    }).catch(() => {
-      if (!disposed) setPreview(asset.previewPath ?? null);
-    });
-    return () => {
-      disposed = true;
-    };
-  }, [asset]);
-  return preview;
 }
 
 export function useRuleIconPreviews(assets: Array<LibraryAsset | null>) {

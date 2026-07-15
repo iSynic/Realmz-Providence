@@ -1,0 +1,61 @@
+.rules-icon-reference-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  max-width: none;
+}
+
+.rules-icon-reference-label {
+  color: #89c7f8;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rules-icon-reference-control {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.rules-icon-reference-control .workbench-reference-compact,
+.rules-icon-reference-control .workbench-reference-compact-trigger {
+  width: 100%;
+  min-width: 0;
+}
+
+.rules-icon-reference-thumbnail {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid #304052;
+  border-radius: 4px;
+  background: #08121a;
+}
+
+.rules-icon-reference-thumbnail.is-unresolved {
+  border-color: #66552c;
+  color: #c7b37c;
+}
+
+.rules-icon-reference-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.rules-icon-reference-thumbnail b {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+}
+
+.rules-icon-reference-field .workbench-reference-preview-content > img {
+  image-rendering: pixelated;
+}
