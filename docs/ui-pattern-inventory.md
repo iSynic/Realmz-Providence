@@ -131,3 +131,5 @@ The Complex Encounter Rogue branch now uses the same encounter option model and 
 Action Point target eyes now open the shared movable `FloatingWorkbenchPanel` and render through `ReferencePreview`. Inline sound and picture previews remain owned by `TargetPicker`, so the unreachable duplicate media resolver and legacy preview controls have been removed; destructive confirmations remain modal because they mutate records immediately.
 
 Story Flags now uses `SearchField` for decoded flags and flags available to an author note. Both searches report complete result counts, and the former silent eighteen-flag limit has been removed.
+
+Combat monster and icon browsing now shares `SearchField` across the battle palette, Monster Library, Scenario Monsters, monster icon picker, icon-set library, and icon targets. Specialized virtualized palettes, drag/drop rows, and media grids remain unchanged while search clear actions, result counts, and accessible labels become consistent.

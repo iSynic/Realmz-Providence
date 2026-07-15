@@ -2,6 +2,7 @@ import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "re
 import { X } from "lucide-react";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { IconEntry, LibraryCatalog, Project, ProjectCommand } from "../../types";
+import { SearchField } from "../../ui";
 import { encodeCicnResource, mirrorRgbaHorizontally } from "../../cicnEncoder";
 import {
   IconLibraryFacingMode,
@@ -73,10 +74,8 @@ export function MonsterIconSetWorkbench({
   useEffect(() => {
     if (!sources.some((source) => source.key === selectedSourceKey)) setSelectedSourceKey(sources[0]?.key ?? "");
   }, [selectedSourceKey, sources]);
-  const filteredTargets = useMemo(
-    () => filterRecords(targets, targetQuery, (target) => `${target.baseId} ${target.asset?.label ?? ""} ${target.override?.sourceLabel ?? ""} ${monsterIconSourceStatusLabel(monsterIconTargetSourceStatus(target))}`),
-    [targetQuery, targets]
-  );
+  const filteredTargets = useMemo(() =>
+    filterRecords(targets, targetQuery, (target) => `${target.baseId} ${target.asset?.label ?? ""} ${target.override?.sourceLabel ?? ""} ${monsterIconSourceStatusLabel(monsterIconTargetSourceStatus(target))}`), [targetQuery, targets]);
   const filteredSources = useMemo(
     () => filterRecords(sources, sourceQuery, (source) => `${source.baseId} ${source.sourceLabel ?? ""} ${source.asset?.label ?? ""}`),
     [sourceQuery, sources]
@@ -420,7 +419,8 @@ export function MonsterIconSetWorkbench({
             <strong className="combat-pane-title">Library Monster Icon Sets</strong>
             <small>{sources.length} source pairs</small>
           </header>
-          <input value={sourceQuery} onChange={(event) => setSourceQuery(event.currentTarget.value)} placeholder="Search library monster icon sets..." />
+          <SearchField value={sourceQuery} onChange={setSourceQuery} placeholder="Search library monster icon sets..."
+            ariaLabel="Search library monster icon sets" resultCount={filteredSources.length} resultNoun="icon set" />
           <div className="icon-set-scroll">
             {filteredSources.map((source) => (
               <button
@@ -453,7 +453,8 @@ export function MonsterIconSetWorkbench({
             <strong className="combat-pane-title">Monster Icon Targets</strong>
             <small>{targets.length} target pairs</small>
           </header>
-          <input value={targetQuery} onChange={(event) => setTargetQuery(event.currentTarget.value)} placeholder="Search monster icon targets..." />
+          <SearchField value={targetQuery} onChange={setTargetQuery} placeholder="Search monster icon targets..."
+            ariaLabel="Search monster icon targets" resultCount={filteredTargets.length} resultNoun="target" />
           <div className="icon-set-scroll">
             {filteredTargets.map((target) => {
               const previewBaseAsset = target.asset;

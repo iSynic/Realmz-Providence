@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { IconEntry, MonsterRecord, MonsterSetId, Project } from "../../types";
+import { SearchField } from "../../ui";
 import { battleMonsterIconLookupKey } from "./BattleBoardCanvas";
 import { BattleScenarioMonsterSetField } from "./BattleWorkbench";
 import type { CombatLookups } from "./combatLookups";
@@ -107,10 +108,7 @@ export function BattleMonsterPalette({
     () => monsterBrushPaletteWindow(filtered.length, paletteViewport.width, paletteViewport.height, paletteViewport.scrollTop),
     [filtered.length, paletteViewport.height, paletteViewport.scrollTop, paletteViewport.width]
   );
-  const visibleEntries = useMemo(
-    () => filtered.slice(paletteWindow.startIndex, paletteWindow.endIndex),
-    [filtered, paletteWindow.endIndex, paletteWindow.startIndex]
-  );
+  const visibleEntries = useMemo(() => filtered.slice(paletteWindow.startIndex, paletteWindow.endIndex), [filtered, paletteWindow.endIndex, paletteWindow.startIndex]);
   const battleIconSourceKey = useBattleIconSourceKey(project, iconEntries, lookups, previewContext);
   const visibleIconUrls = useResolvedBattleMonsterIcons(
     visibleEntries.map((entry) => entry.monster),
@@ -135,7 +133,8 @@ export function BattleMonsterPalette({
         </div>
         <BattleScenarioMonsterSetField value={monsterSetPreview} onCommit={onMonsterSetPreviewChange} compact />
       </header>
-      <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search monsters..." />
+      <SearchField value={query} onChange={setQuery} placeholder="Search monsters..." ariaLabel="Search paintable monsters"
+        resultCount={filtered.length} resultNoun="monster" />
       <div
         ref={paletteRef}
         className="monster-brush-palette"

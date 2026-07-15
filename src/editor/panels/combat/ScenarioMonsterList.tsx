@@ -1,6 +1,7 @@
 import { DragEvent, memo } from "react";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { IconEntry, MonsterRecord, MonsterSetId, Project } from "../../types";
+import { SearchField } from "../../ui";
 import { MONSTER_SET_OPTIONS, type CombatLookups } from "./combatLookups";
 import { MonsterIcon, samePreviewContextInputs, sameProjectIconInputs } from "./MonsterIconPreview";
 
@@ -77,7 +78,8 @@ export function ScenarioMonsterList({
           </div>
         </div>
       </header>
-      <input value={query} onChange={(event) => onQuery(event.currentTarget.value)} placeholder="Search scenario monsters..." />
+      <SearchField value={query} onChange={onQuery} placeholder="Search scenario monsters..."
+        ariaLabel="Search scenario monsters" resultCount={entries.length} resultNoun="monster" />
       <div className="combat-record-scroll">
         {entries.map((entry) => (
           <ScenarioMonsterRow

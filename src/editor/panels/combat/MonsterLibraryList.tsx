@@ -1,5 +1,6 @@
 import { DragEvent, MouseEvent, ReactNode } from "react";
 import type { LibraryCatalog } from "../../types";
+import { SearchField } from "../../ui";
 
 type MonsterLibraryEntry = LibraryCatalog["entities"][number];
 
@@ -91,7 +92,8 @@ export function MonsterLibraryList({
           </div>
         ) : null}
       </header>
-      <input value={query} onChange={(event) => onQuery(event.currentTarget.value)} placeholder="Search monster library..." />
+      <SearchField value={query} onChange={onQuery} placeholder="Search monster library..."
+        ariaLabel="Search monster library" resultCount={entries.length} resultNoun="monster" />
       <div className="combat-record-scroll">
         {entries.map((entry) => {
           const selectedForCopy = selectionActive && selectedIds.includes(entry.id);

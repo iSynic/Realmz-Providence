@@ -44,7 +44,7 @@
   gap: 6px;
 }
 
-.monster-icon-picker-search {
+.monster-icon-picker-search .workbench-search-control > input {
   width: 100%;
   min-height: 34px;
   border: 1px solid #314455;

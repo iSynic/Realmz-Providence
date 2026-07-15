@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { IconEntry, MonsterRecord, Project } from "../../types";
+import { SearchField } from "../../ui";
 import type { CombatLookups } from "./combatLookups";
 import { IconPairPreview } from "./IconPairResources";
 import { monsterIconPickerOptions, monsterIconSourceStatusLabel } from "./iconSetModel";
@@ -184,13 +185,9 @@ function MonsterIconPickerDialog({
             </button>
           </div>
         </header>
-        <input
-          className="monster-icon-picker-search"
-          value={query}
-          onChange={(event) => onQuery(event.currentTarget.value)}
-          placeholder="Search icon ID or source..."
-          autoFocus
-        />
+        <SearchField className="monster-icon-picker-search" value={query} onChange={onQuery}
+          placeholder="Search icon ID or source..." ariaLabel="Search monster icons"
+          resultCount={filteredOptions.length} resultNoun="icon" autoFocus />
         <div className="monster-icon-picker-grid" role="listbox" aria-label="Scenario monster icon targets">
           {filteredOptions.map((option) => {
             const selected = option.baseId === currentIconId;

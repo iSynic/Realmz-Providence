@@ -205,7 +205,7 @@
   text-transform: uppercase;
 }
 
-.icon-set-pane > input {
+.icon-set-pane .workbench-search-control > input {
   width: 100%;
   min-height: 32px;
   border: 1px solid #2a3a48;
