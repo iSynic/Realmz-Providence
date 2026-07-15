@@ -282,34 +282,6 @@
 
 
 
-.script-list-summary {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-
-
-.script-list-summary strong {
-  color: #dcecff;
-  font-size: 11px;
-}
-
-
-
-.script-list-filter {
-  width: 100%;
-  min-height: 28px;
-  border: 1px solid #263746;
-  border-radius: 5px;
-  background: #0b1218;
-  color: #dcecff;
-  padding: 5px 7px;
-}
-
-
-
 .script-list-scope {
   display: grid;
   grid-template-columns: 1fr 1fr;

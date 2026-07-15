@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
+import { SearchField } from "../../ui";
 import {
   SCRIPT_ACTION_CATEGORY_FILTERS,
   actionDefinitionPathLabel,
@@ -67,12 +68,14 @@ export function ActionPointActionChooser({
             </button>
           ))}
         </div>
-        <input
+        <SearchField
           className="realmz-opcode-search"
           value={opcodeQuery}
-          onChange={(event) => onSetOpcodeQuery(event.currentTarget.value)}
+          onChange={onSetOpcodeQuery}
           placeholder="Search actions, targets, and settings..."
-          aria-label="Search script actions"
+          ariaLabel="Search script actions"
+          resultCount={filteredDefinitions.length}
+          resultNoun="action"
         />
         {combatMacroContext && combatMacroActionDefinitions.length > 0 && (
           <div className="combat-macro-action-strip">

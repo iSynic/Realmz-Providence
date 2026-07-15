@@ -15,6 +15,22 @@
     { "key": "player-maps.map-records", "domain": "player-maps", "editor": "map-records", "label": "Player Maps", "workbenches": ["project"], "track": "ISY-337", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "player-maps" } },
 
     { "key": "scripts.action-points", "domain": "scripts", "editor": "action-points", "label": "Action Points", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "scripts", "states": [
+      { "id": "inventory-search-filtered", "steps": [
+        { "action": "fill", "selector": ".script-inventory-search .workbench-search-control input[type=\"search\"]", "value": "action" },
+        { "action": "wait", "selector": ".realmz-script-list button" }
+      ] },
+      { "id": "action-chooser-filtered", "steps": [
+        { "action": "click", "selector": ".realmz-current-opcode-header .btn" },
+        { "action": "wait", "selector": ".realmz-opcode-search" },
+        { "action": "click", "selector": ".realmz-step-category-bar button:first-child" },
+        { "action": "fill", "selector": ".realmz-opcode-search .workbench-search-control input[type=\"search\"]", "value": "teleport" },
+        { "action": "wait", "selector": ".action-chooser-grid button" }
+      ] },
+      { "id": "action-settings-search-filtered", "steps": [
+        { "action": "click", "selector": ".script-editor-tabs [role=\"tab\"]:nth-child(5)" },
+        { "action": "wait", "selector": ".settings-row-search" },
+        { "action": "fill", "selector": ".settings-row-search .workbench-search-control input[type=\"search\"]", "value": "in use" }
+      ] },
       { "id": "reference-target-filtered", "steps": [
         { "action": "fill", "selector": ".target-picker-reference .workbench-search-field input[type=\"search\"]", "value": "guard" },
         { "action": "wait", "selector": ".target-picker-reference .workbench-reference-results [role=\"option\"]" }

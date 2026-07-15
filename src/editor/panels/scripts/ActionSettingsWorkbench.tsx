@@ -15,7 +15,7 @@ import {
   type EdcdRowUsage
 } from "../../edcdRows";
 import { TutorialTip } from "../../components/TutorialTip";
-import { EmptyState, PanelSection, ScrollArea } from "../../ui";
+import { EmptyState, PanelSection, ScrollArea, SearchField } from "../../ui";
 import { edcdFieldNamesForShape } from "../../realmzEdcd";
 import { SCRIPT_ACTION_DEFINITIONS, scriptActionDefinitionFor } from "./scriptActionCatalog";
 import { scriptLabel, usePersistentValue } from "./scriptInventory";
@@ -178,11 +178,14 @@ function SettingsRowsPanel({
       <div className="settings-rows-layout">
         <aside className="settings-row-list-column">
           <div className="settings-row-filter-panel">
-            <input
-              className="script-list-filter"
+            <SearchField
+              className="settings-row-search"
               value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Filter action settings..."
+              onChange={setQuery}
+              placeholder="Search action settings..."
+              ariaLabel="Search action settings"
+              resultCount={filteredUsages.length}
+              resultNoun="settings row"
             />
             <div className="script-list-scope script-filter-chips" role="group" aria-label="Action settings filter">
               {EDCD_ROW_FILTERS.map((entry) => (
@@ -308,4 +311,3 @@ function edcdRowIdFromSelectedEntity(entity: SelectedEntity | null) {
   const rowId = Number(match[1]);
   return Number.isFinite(rowId) ? Math.max(0, Math.trunc(rowId)) : null;
 }
-

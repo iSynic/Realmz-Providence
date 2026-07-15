@@ -2,7 +2,7 @@ import type { RefObject } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
 import type { ScriptDiagnostic } from "../../scriptValidation";
 import type { Project, ScriptInventoryFilter, TriggerRecord } from "../../types";
-import { ScrollArea } from "../../ui";
+import { ScrollArea, SearchField } from "../../ui";
 import { ScriptListItem } from "./scriptInventory";
 
 const INVENTORY_FILTER_HELP =
@@ -52,11 +52,16 @@ export function ActionPointInventory({
   return (
     <div className="script-list-column">
       <div className="script-list-tools">
-        <div className="script-list-summary">
-          <strong>{filteredScripts.length.toLocaleString()} shown</strong>
-          <small>{scripts.length.toLocaleString()} total</small>
-        </div>
-        <input className="script-list-filter" value={scriptQuery} onChange={(event) => onSetScriptQuery(event.currentTarget.value)} placeholder="Filter action points..." />
+        <SearchField
+          className="script-inventory-search"
+          value={scriptQuery}
+          onChange={onSetScriptQuery}
+          placeholder="Search action points..."
+          ariaLabel="Search action points"
+          resultCount={filteredScripts.length}
+          resultNoun="action point"
+          status={`${scripts.length.toLocaleString()} total`}
+        />
         <small className="script-capacity-note">
           <TutorialTip title="Inventory Filters" body={INVENTORY_FILTER_HELP} side="below">
             <span>Choose the inventory slice before editing or release-checking scripts.</span>
