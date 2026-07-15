@@ -75,7 +75,7 @@
 }
 
 .scenario-monster-editor .monster-identity-section .monster-field-grid > .combat-field:first-child,
-.scenario-monster-editor .monster-identity-section .monster-field-grid > .combat-select-field {
+.scenario-monster-editor .monster-identity-section .monster-field-grid > .monster-reference-field {
   grid-column: span 2;
 }
 
@@ -116,8 +116,8 @@
 }
 
 .monster-compact-number-section .combat-field > span,
-.monster-spells-column .combat-select-field > span,
-.monster-loot-column .combat-select-field > span {
+.monster-spells-column .monster-reference-field > span,
+.monster-loot-column .monster-reference-field > span {
   width: 100%;
   max-width: 100%;
   text-align: center;
@@ -228,14 +228,14 @@
   max-width: 360px;
 }
 
-.monster-attack-equipment-row .combat-select-field {
+.monster-attack-equipment-row .monster-reference-field {
   width: min(100%, 360px);
 }
 
-.monster-attack-equipment-row .combat-select-field select {
-  min-height: 30px;
+.monster-reference-field .workbench-reference-compact,
+.monster-reference-field .workbench-reference-compact-trigger {
+  width: 100%;
 }
-
 .monster-traits-section .combat-traits {
   grid-template-columns: repeat(3, minmax(105px, 1fr));
   gap: 2px 0;

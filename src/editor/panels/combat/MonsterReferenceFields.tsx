@@ -1,59 +1,107 @@
 import { useMemo, useState } from "react";
 import { itemReferenceOptions } from "../../itemReferences";
 import type { LibraryCatalog, Project } from "../../types";
+import type { ReferencePickerOption } from "../../ui";
 import { FieldLabel } from "./CombatFields";
-import { combatSpellOptions } from "./monsterReferenceOptions";
+import {
+  MonsterRecordReferenceField,
+  monsterReferencePickerOptions
+} from "./MonsterRecordReferenceField";
+import { monsterRequiredWeaponOptions } from "./monsterReferenceOptions";
 import {
   MONSTER_DEATH_ACTION_HELP,
   MONSTER_REQUIRED_WEAPON_HELP,
   MONSTER_SUMMON_ELIGIBLE_HELP,
   MONSTER_SUMMON_ELIGIBLE_OPTIONS,
   RANDOM_WEAPON_OPTIONS,
-  REQUIRED_WEAPON_MAX_SPECIFIC_CODE,
   monsterRequiredWeaponDisplayCode,
   monsterRequiredWeaponStoredCode,
-  updateArraySlot,
   type CombatSelectOption
 } from "./monsterReferenceModel";
+export { monsterRawReferenceOption, monsterReferencePickerOptions } from "./MonsterRecordReferenceField";
+export { ItemSlotGrid, SpellSlotGrid } from "./MonsterSpellLootFields";
 
 export function MacroReferenceField({ project, value, onCommit }: { project: Project; value: number; onCommit: (value: number) => void }) {
-  const options = useMemo<CombatSelectOption[]>(
-    () => (project.triggers ?? [])
-      .filter((trigger) => trigger.source === "Data ED3")
+  const options = useMemo<ReferencePickerOption<number>[]>(
+    () => monsterReferencePickerOptions((project.triggers ?? [])
+      .filter((trigger) => trigger.source === "Data ED3" && trigger.recordIndex > 0)
       .sort((a, b) => a.recordIndex - b.recordIndex)
-      .map((trigger) => ({
-        key: `macro:${trigger.recordIndex}`,
-        value: trigger.recordIndex,
-        label: `Extra Action Point ${trigger.recordIndex}`,
-        detail: `${trigger.actions.filter((action) => action.rawCode !== 0).length} action step(s)`
-      })),
+      .map((trigger) => {
+        const actionCount = trigger.actions.filter((action) => action.rawCode !== 0).length;
+        return {
+          key: `macro:${trigger.recordIndex}`,
+          value: trigger.recordIndex,
+          label: `Extra Action Point ${trigger.recordIndex}`,
+          detail: `${actionCount} action ${actionCount === 1 ? "step" : "steps"}`
+        };
+      }), "monster death macro extra action point"),
     [project.triggers]
   );
-  return <NumberSelectField label="Monster Macro" help={MONSTER_DEATH_ACTION_HELP} value={value} options={options} emptyLabel="No monster macro" onCommit={onCommit} />;
+  return (
+    <MonsterRecordReferenceField
+      label="Monster Macro"
+      help={MONSTER_DEATH_ACTION_HELP}
+      value={value}
+      options={options}
+      emptyLabel="No monster macro"
+      emptyDetail="No Extra Action Point runs when this monster dies."
+      unresolvedNoun="Extra Action Point"
+      placeholder="Search Extra Action Point # or action count..."
+      resultNoun="macro"
+      panelTitle="Monster Macro Picker"
+      storageKey="combat.monster.macro.picker.position"
+      onCommit={onCommit}
+    />
+  );
 }
 
 export function WeaponIdField({ project, catalog, value, onCommit }: { project: Project; catalog: LibraryCatalog | null; value: number; onCommit: (value: number) => void }) {
-  const options = useMemo<CombatSelectOption[]>(() => [
-    ...RANDOM_WEAPON_OPTIONS,
+  const options = useMemo<ReferencePickerOption<number>[]>(() => [
+    ...monsterReferencePickerOptions(RANDOM_WEAPON_OPTIONS, "random weapon category"),
     ...itemReferenceOptions(project, catalog).map((item) => ({
       key: item.key,
       value: item.value,
       label: item.label,
-      detail: item.detail
+      detail: [item.detail, item.sourceState].filter(Boolean).join(" | "),
+      searchText: [item.value, item.label, item.category, item.detail, item.summary, item.sourceState].join(" ")
     }))
   ], [catalog, project]);
-  return <NumberSelectField label="Weapon Used" value={value} options={options} emptyLabel="No weapon" onCommit={onCommit} />;
+  return (
+    <MonsterRecordReferenceField
+      label="Weapon Used"
+      value={value}
+      options={options}
+      emptyLabel="No weapon"
+      emptyDetail="This monster does not use a weapon record."
+      unresolvedNoun="Weapon"
+      placeholder="Search weapon #, name, category, or random group..."
+      resultNoun="weapon"
+      panelTitle="Monster Weapon Picker"
+      storageKey="combat.monster.weapon.picker.position"
+      onCommit={onCommit}
+    />
+  );
 }
 
 export function RequiredWeaponField({ project, catalog, value, onCommit }: { project: Project; catalog: LibraryCatalog | null; value: number; onCommit: (value: number) => void }) {
-  const options = useMemo(() => monsterRequiredWeaponOptions(project, catalog), [catalog, project]);
+  const options = useMemo(
+    () => monsterReferencePickerOptions(monsterRequiredWeaponOptions(project, catalog), "required weapon restriction"),
+    [catalog, project]
+  );
   return (
-    <NumberSelectField
+    <MonsterRecordReferenceField
       label="Required Weapon"
       value={monsterRequiredWeaponDisplayCode(value)}
       options={options}
       emptyLabel="All weapons"
+      emptyDetail="Any weapon may damage this monster."
+      unresolvedNoun="Required weapon code"
       help={MONSTER_REQUIRED_WEAPON_HELP}
+      placeholder="Search weapon #, name, or restriction..."
+      resultNoun="restriction"
+      panelTitle="Required Weapon Picker"
+      storageKey="combat.monster.required-weapon.picker.position"
+      allowRawValue={false}
       onCommit={(displayCode) => onCommit(monsterRequiredWeaponStoredCode(displayCode))}
     />
   );
@@ -69,45 +117,6 @@ export function SummonEligibleField({ value, onCommit }: { value: number; onComm
       help={MONSTER_SUMMON_ELIGIBLE_HELP}
       onCommit={onCommit}
     />
-  );
-}
-
-export function SpellSlotGrid({ project, catalog, values, onCommit }: { project: Project; catalog: LibraryCatalog | null; values: number[]; onCommit: (values: number[]) => void }) {
-  const options = useMemo(() => combatSpellOptions(project, catalog), [catalog, project]);
-  return (
-    <div className="combat-compact-array monster-select-array">
-      {Array.from({ length: 10 }, (_, index) => (
-        <NumberSelectField
-          key={index}
-          label={`Spell ${index + 1}`}
-          value={values[index] ?? 0}
-          options={options}
-          emptyLabel="No spell"
-          onCommit={(value) => onCommit(updateArraySlot(values, index, value, 10))}
-        />
-      ))}
-    </div>
-  );
-}
-
-export function ItemSlotGrid({ project, catalog, values, onCommit }: { project: Project; catalog: LibraryCatalog | null; values: number[]; onCommit: (values: number[]) => void }) {
-  const options = useMemo(
-    () => itemReferenceOptions(project, catalog).map((item) => ({ key: item.key, value: item.value, label: item.label, detail: item.detail })),
-    [catalog, project]
-  );
-  return (
-    <div className="combat-compact-array monster-select-array">
-      {Array.from({ length: 6 }, (_, index) => (
-        <NumberSelectField
-          key={index}
-          label={`Item ${index + 1}`}
-          value={values[index] ?? 0}
-          options={options}
-          emptyLabel="No item"
-          onCommit={(value) => onCommit(updateArraySlot(values, index, value, 6))}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -215,26 +224,4 @@ function NumberSelectField({
       </select>
     </label>
   );
-}
-
-function monsterRequiredWeaponOptions(project: Project, catalog: LibraryCatalog | null): CombatSelectOption[] {
-  const weaponOptions = new Map(
-    itemReferenceOptions(project, catalog)
-      .filter((item) => item.category === "weapon" && item.value > 0 && item.value <= REQUIRED_WEAPON_MAX_SPECIFIC_CODE)
-      .map((item) => [item.value, item])
-  );
-  return [
-    { key: "required-weapon:blunt", value: -1, label: "Blunt only", detail: "Stored as -1." },
-    { key: "required-weapon:sharp", value: -2, label: "Sharp only", detail: "Stored as -2." },
-    ...Array.from({ length: REQUIRED_WEAPON_MAX_SPECIFIC_CODE }, (_, index) => {
-      const code = index + 1;
-      const item = weaponOptions.get(code);
-      return {
-        key: `required-weapon:${code}`,
-        value: code,
-        label: item?.label ?? `Weapon ${code}`,
-        detail: item ? [item.detail, item.sourceState].filter(Boolean).join(" | ") : `Specific weapon code ${code}.`
-      };
-    })
-  ];
 }

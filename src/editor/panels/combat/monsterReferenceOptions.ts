@@ -1,5 +1,7 @@
 import { spellAnimationFrameIds } from "../../resourceIds";
+import { itemReferenceOptions } from "../../itemReferences";
 import type { LibraryCatalog, Project } from "../../types";
+import { REQUIRED_WEAPON_MAX_SPECIFIC_CODE } from "./monsterReferenceModel";
 
 export type CombatSelectOption = {
   key: string;
@@ -37,6 +39,28 @@ export function combatSpellOptions(project: Project, catalog: LibraryCatalog | n
     });
   }
   return [...options.values()].sort((a, b) => a.value - b.value || a.label.localeCompare(b.label));
+}
+
+export function monsterRequiredWeaponOptions(project: Project, catalog: LibraryCatalog | null): CombatSelectOption[] {
+  const weaponOptions = new Map(
+    itemReferenceOptions(project, catalog)
+      .filter((item) => item.category === "weapon" && item.value > 0 && item.value <= REQUIRED_WEAPON_MAX_SPECIFIC_CODE)
+      .map((item) => [item.value, item])
+  );
+  return [
+    { key: "required-weapon:blunt", value: -1, label: "Blunt only", detail: "Stored as -1." },
+    { key: "required-weapon:sharp", value: -2, label: "Sharp only", detail: "Stored as -2." },
+    ...Array.from({ length: REQUIRED_WEAPON_MAX_SPECIFIC_CODE }, (_, index) => {
+      const code = index + 1;
+      const item = weaponOptions.get(code);
+      return {
+        key: `required-weapon:${code}`,
+        value: code,
+        label: item?.label ?? `Weapon ${code}`,
+        detail: item ? [item.detail, item.sourceState].filter(Boolean).join(" | ") : `Specific weapon code ${code}.`
+      };
+    })
+  ];
 }
 
 export function spellPreviewIconIdMap(project: Project, catalog: LibraryCatalog | null) {
