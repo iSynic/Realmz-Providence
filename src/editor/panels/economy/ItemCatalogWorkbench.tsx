@@ -5,7 +5,7 @@ import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type 
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, LibraryEntity, Project, ProjectCommand, ScenarioItemRecord, SelectedEntity, SemanticEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { ScrollArea, SearchField } from "../../ui";
+import { IncrementalListFooter, ScrollArea, SearchField } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { filterEconomyItemOptions } from "./economyItemSearch";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
@@ -118,16 +118,13 @@ export function ItemCatalogWorkbench({
                 <b>{option.value}</b>
               </button>
             ))}
-            {hiddenOptionCount > 0 && (
-              <div className="item-browser-load-more">
-                <small>
-                  {hiddenOptionCount} more item reference{hiddenOptionCount === 1 ? "" : "s"}.
-                </small>
-                <button type="button" onClick={() => setVisibleLimit((limit) => limit + 240)}>
-                  Load {Math.min(240, hiddenOptionCount)} More
-                </button>
-              </div>
-            )}
+            <IncrementalListFooter
+              visibleCount={visibleOptions.length}
+              totalCount={filteredOptions.length}
+              step={240}
+              noun="item reference"
+              onShowMore={() => setVisibleLimit((limit) => limit + 240)}
+            />
             {filteredOptions.length === 0 && <p>No items match this category/search.</p>}
           </ScrollArea>
         </aside>

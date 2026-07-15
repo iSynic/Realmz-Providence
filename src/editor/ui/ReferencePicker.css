@@ -161,21 +161,6 @@
   scrollbar-gutter: stable;
 }
 
-.workbench-reference-results-more {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  color: #9eb1c2;
-}
-
-.workbench-reference-results-more small {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .workbench-reference-results > button {
   min-width: 0;
   display: grid;

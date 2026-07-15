@@ -4,7 +4,8 @@ import type { ItemReferenceCategory, ItemReferenceOption } from "../../itemRefer
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { ScrollArea, SearchField } from "../../ui";
+import { IncrementalListFooter, ScrollArea, SearchField, useIncrementalListLimit } from "../../ui";
+import { EconomyItemPoolList } from "./EconomyItemPoolList";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
 import { SHOP_ITEM_CATEGORY_OPTIONS } from "./ItemCatalogWorkbench";
 import { ItemNumberInput } from "./ItemNumberInput";
@@ -16,7 +17,6 @@ import {
   economyTargetRecordSummary,
   economyTargetRecords,
   includeSelectedEconomyRecord,
-  itemOptionName,
   nextEconomyTargetRecordId
 } from "./economyRecordModel";
 
@@ -182,12 +182,12 @@ function ShopStockEditor({
 }) {
   const [category, setCategory] = useState<ItemReferenceCategory | "all">("weapon");
   const [query, setQuery] = useState("");
+  const [visibleStockLimit, showMoreStock] = useIncrementalListLimit(120, record.id);
   const openSlot = firstOpenShopSlot(record);
   const filledSlots = shopFilledSlotIndexes(record);
-  const visibleSlots = filledSlots.length ? filledSlots.slice(0, 120) : openSlot >= 0 ? [openSlot] : [];
+  const visibleSlots = filledSlots.length ? filledSlots.slice(0, visibleStockLimit) : openSlot >= 0 ? [openSlot] : [];
   const optionsByValue = useMemo(() => new Map(options.map((option) => [option.value, option])), [options]);
   const matchingOptions = useMemo(() => filterEconomyItemOptions(options, category, query), [category, options, query]);
-  const visibleOptions = useMemo(() => matchingOptions.slice(0, 42), [matchingOptions]);
   const referenceOptions = useMemo(
     () => economyItemReferenceOptions(options, project, catalog, previewContext),
     [catalog, options, previewContext, project]
@@ -229,23 +229,11 @@ function ShopStockEditor({
             </select>
           </label>
           <SearchField className="item-search" value={query} onChange={setQuery} placeholder="Search item pool..."
-            ariaLabel="Search shop items" resultCount={matchingOptions.length} resultNoun="item"
-            status={matchingOptions.length > visibleOptions.length ? `${visibleOptions.length} shown` : undefined} />
+            ariaLabel="Search shop items" resultCount={matchingOptions.length} resultNoun="item" />
         </div>
-        <ScrollArea className="shop-catalog-list" aria-label="Items available for shop stock">
-          {visibleOptions.map((option) => (
-            <button key={option.key} type="button" disabled={openSlot < 0} onClick={() => addItem(option.value)}>
-              <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} />
-              <span>
-                <strong>{itemOptionName(option)}</strong>
-                <small>{option.detail}</small>
-              </span>
-              <b>{option.value}</b>
-            </button>
-          ))}
-          {optionsLoading && <p>Loading item references...</p>}
-          {matchingOptions.length === 0 && <p>No items match this category/search.</p>}
-        </ScrollArea>
+        <EconomyItemPoolList className="shop-catalog-list" ariaLabel="Items available for shop stock"
+          options={matchingOptions} optionsLoading={optionsLoading} disabled={openSlot < 0}
+          project={project} catalog={catalog} previewContext={previewContext} onSelect={addItem} />
       </div>
       <div className="shop-inventory-panel">
         <header>
@@ -281,7 +269,13 @@ function ShopStockEditor({
               />
             );
           })}
-          {filledSlots.length > visibleSlots.length && <p className="domain-list-limit">{filledSlots.length - visibleSlots.length} more stocked slots not shown.</p>}
+          <IncrementalListFooter
+            visibleCount={visibleSlots.length}
+            totalCount={filledSlots.length}
+            step={120}
+            noun="stocked slot"
+            onShowMore={showMoreStock}
+          />
           {visibleSlots.length === 0 && <p>No stock slots available.</p>}
         </ScrollArea>
       </div>

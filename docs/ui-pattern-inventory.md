@@ -142,6 +142,8 @@ Economy item browsing now uses the same search contract in Items, Shops, and Tre
 
 Treasure item slots and Shop stock rows now use one compact Economy item-reference field. The shared picker searches item IDs, names, categories, decoded details, and source ownership; it keeps icon previews and unresolved imported IDs while removing Treasure's duplicate native select plus raw-number controls and Shop's full-catalog select per row. Quantity editing and each tool's fixed slot geometry remain domain-owned.
 
+Large searchable collections now share `IncrementalListFooter` for an explicit visible/total count and Show More command. `ReferencePicker`, the Items browser, Treasure and Shop item pools, and Shop stock no longer use bespoke or silent render caps; the Shop stock grid also contracts without horizontal overflow at compact desktop widths. Remaining fixed summaries are intentionally bounded previews rather than editable search results.
+
 Custom Item sounds now use the shared compact reference and audio-preview controls. The Economy adapter merges scenario, project-catalog, and reference-library sound aliases by direct `snd` ID, keeps signed imported values until an author changes them, and removes the raw number-plus-Play implementation. This remains separate from the Rules sound adapter because spell fields store an offset value rather than the direct item sound resource ID.
 
 Custom Item specific Race and Caste restrictions now use an Economy-owned compact reference adapter instead of long native dropdowns. The picker reuses canonical Realmz names while preserving the Item record's distinct one-based values, its `0 = Any` sentinel, and unusual imported values; Rules record navigation remains zero-based.

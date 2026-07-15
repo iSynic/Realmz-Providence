@@ -228,40 +228,6 @@
   padding: 10px;
 }
 
-.item-browser-load-more {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  border-top: 1px solid #1f2a34;
-  padding: 9px;
-}
-
-.item-browser-load-more small {
-  min-width: 0;
-}
-
-.item-browser-load-more button {
-  flex: 0 0 auto;
-  min-height: 26px;
-  border: 1px solid #2f699c;
-  border-radius: 5px;
-  background: #12314c;
-  color: #e8f4ff;
-  padding: 4px 8px;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.item-browser-load-more button:hover {
-  border-color: #58a9e6;
-  background: #173d5f;
-}
-
-
-
 .item-detail-panel {
   display: grid;
   gap: 12px;
@@ -1503,7 +1469,7 @@
 
 .shop-stock-card {
   display: grid;
-  grid-template-columns: 36px minmax(160px, 1fr) 74px auto;
+  grid-template-columns: 36px minmax(0, 1fr) minmax(58px, 74px) auto;
   gap: 6px 8px;
   align-items: end;
   min-width: 0;

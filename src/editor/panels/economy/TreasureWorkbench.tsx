@@ -5,6 +5,7 @@ import { useIconPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import { ScrollArea, SearchField } from "../../ui";
+import { EconomyItemPoolList } from "./EconomyItemPoolList";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
 import { filterEconomyItemOptions } from "./economyItemSearch";
@@ -15,7 +16,6 @@ import {
   economyTargetRecordSummary,
   economyTargetRecords,
   includeSelectedEconomyRecord,
-  itemOptionName,
   nextEconomyTargetRecordId
 } from "./economyRecordModel";
 
@@ -264,7 +264,6 @@ function TreasureLootEditor({
   const [query, setQuery] = useState("");
   const openSlot = firstOpenTreasureSlotForUi(itemIds);
   const matchingOptions = useMemo(() => filterEconomyItemOptions(options, category, query), [category, options, query]);
-  const visibleOptions = useMemo(() => matchingOptions.slice(0, 42), [matchingOptions]);
   const referenceOptions = useMemo(
     () => economyItemReferenceOptions(options, project, catalog, previewContext),
     [catalog, options, previewContext, project]
@@ -307,22 +306,10 @@ function TreasureLootEditor({
           ))}
         </div>
         <SearchField className="item-search" value={query} onChange={setQuery} placeholder="Search items to add..."
-          ariaLabel="Search treasure items" resultCount={matchingOptions.length} resultNoun="item"
-          status={matchingOptions.length > visibleOptions.length ? `${visibleOptions.length} shown` : undefined} />
-        <ScrollArea className="treasure-catalog-list" aria-label="Items available for treasure">
-          {visibleOptions.map((option) => (
-            <button key={option.key} type="button" disabled={openSlot < 0} onClick={() => addItem(option.value)}>
-              <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} />
-              <span>
-                <strong>{itemOptionName(option)}</strong>
-                <small>{option.detail}</small>
-              </span>
-              <b>{option.value}</b>
-            </button>
-          ))}
-          {optionsLoading && <p>Loading item references...</p>}
-          {matchingOptions.length === 0 && <p>No items match this category/search.</p>}
-        </ScrollArea>
+          ariaLabel="Search treasure items" resultCount={matchingOptions.length} resultNoun="item" />
+        <EconomyItemPoolList className="treasure-catalog-list" ariaLabel="Items available for treasure"
+          options={matchingOptions} optionsLoading={optionsLoading} disabled={openSlot < 0}
+          project={project} catalog={catalog} previewContext={previewContext} onSelect={addItem} />
       </div>
       <div className="treasure-slot-panel">
         <header>

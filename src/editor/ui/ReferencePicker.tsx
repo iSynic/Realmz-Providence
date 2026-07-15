@@ -1,5 +1,6 @@
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { EmptyState } from "./WorkbenchPrimitives";
+import { IncrementalListFooter } from "./IncrementalListFooter";
 import type { ReferencePreviewModel } from "./ReferencePreview";
 import { SearchField } from "./SearchField";
 import "./ReferencePicker.css";
@@ -153,19 +154,15 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
             ))}
             {filteredOptions.length === 0 && <EmptyState compact title={emptyTitle} body={emptyBody} />}
           </div>
-          {hiddenOptionCount > 0 && (
-            <div className="workbench-reference-results-more">
-              <small>{visibleOptions.length.toLocaleString()} of {filteredOptions.length.toLocaleString()} {filteredOptions.length === 1 ? resultNoun : resultNounPlural} shown</small>
-              <button
-                type="button"
-                className="btn btn-secondary btn-xs"
-                disabled={disabled}
-                onClick={() => setVisibleCount((count) => count + (visibleCountStep ?? hiddenOptionCount))}
-              >
-                Show {Math.min(visibleCountStep ?? hiddenOptionCount, hiddenOptionCount).toLocaleString()} More
-              </button>
-            </div>
-          )}
+          <IncrementalListFooter
+            visibleCount={visibleOptions.length}
+            totalCount={filteredOptions.length}
+            step={visibleCountStep}
+            noun={resultNoun}
+            nounPlural={resultNounPlural}
+            disabled={disabled}
+            onShowMore={() => setVisibleCount((count) => count + (visibleCountStep ?? hiddenOptionCount))}
+          />
         </div>
       )}
     </div>
