@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Plus, Trash2, X } from "lucide-react";
 import type { Project, ProjectCommand, QuestThread, SelectedEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { EmptyState, PanelSection } from "../../ui";
+import { EmptyState, PanelSection, SearchField } from "../../ui";
 import { buildQuestPresentation, questCategoryLabel, QUEST_CATEGORIES, type QuestFlagModel, type QuestUsage } from "../../questUsage";
 
 export function StoryFlagsWorkbench({
@@ -19,6 +19,7 @@ export function StoryFlagsWorkbench({
   const model = useMemo(() => buildQuestPresentation(project, scripts), [project, scripts]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [selectedQuestId, setSelectedQuestId] = useState<number | null>(null);
+  const [questSearch, setQuestSearch] = useState("");
   const userThreads = useMemo(() => model.threads.filter((thread) => thread.source !== "bundled"), [model.threads]);
   const selectedThread = userThreads.find((thread) => thread.id === selectedThreadId) ?? null;
   const selectedQuest = selectedQuestId == null ? null : model.questById.get(selectedQuestId) ?? null;
@@ -26,6 +27,7 @@ export function StoryFlagsWorkbench({
   const activeUses = selectedThread
     ? threadQuests.flatMap((quest) => quest.uses.map((usage) => ({ ...usage, questLabel: quest.label }))).sort((a, b) => a.sortKey.localeCompare(b.sortKey))
     : selectedQuest?.uses.map((usage) => ({ ...usage, questLabel: selectedQuest.label })) ?? [];
+  const visibleQuests = useMemo(() => filterQuestFlags(model.quests, questSearch), [model.quests, questSearch]);
 
   useEffect(() => {
     if (selectedThreadId && !userThreads.some((thread) => thread.id === selectedThreadId)) setSelectedThreadId(null);
@@ -64,8 +66,16 @@ export function StoryFlagsWorkbench({
       <div className="quest-workbench-layout">
         <aside className="quest-thread-column">
           <PanelSection title="Decoded Story Flags" eyebrow={`${model.quests.length} known`} density="compact" className="quest-raw-panel">
+            <SearchField
+              value={questSearch}
+              onChange={setQuestSearch}
+              placeholder="Search flags..."
+              ariaLabel="Search decoded story flags"
+              resultCount={visibleQuests.length}
+              resultNoun="flag"
+            />
             <div className="quest-raw-list">
-              {model.quests.map((quest) => (
+              {visibleQuests.map((quest) => (
                 <button
                   key={quest.id}
                   type="button"
@@ -83,6 +93,7 @@ export function StoryFlagsWorkbench({
                 </button>
               ))}
               {model.quests.length === 0 && <small className="empty-copy compact">No flag labels or decoded quest-flag uses found.</small>}
+              {model.quests.length > 0 && visibleQuests.length === 0 && <small className="empty-copy compact">No story flags match this search.</small>}
             </div>
           </PanelSection>
           <PanelSection title="Context Notes" eyebrow={`${userThreads.length} author`} density="compact">
@@ -167,7 +178,10 @@ function QuestThreadDetail({
   onRemoveQuest: (questId: number) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
+  const [addQuestSearch, setAddQuestSearch] = useState("");
   const threadIds = new Set(thread.questIds);
+  const availableQuests = allQuests.filter((quest) => !threadIds.has(quest.id));
+  const visibleAvailableQuests = filterQuestFlags(availableQuests, addQuestSearch);
   return (
     <div className="quest-detail-grid">
       <PanelSection title={thread.source === "bundled" ? "Curated Note" : "Author Note"} eyebrow={`${thread.questIds.length} flags`} density="compact">
@@ -206,13 +220,22 @@ function QuestThreadDetail({
       />
       {thread.source !== "bundled" && (
         <PanelSection title="Add Flag" eyebrow="raw flags" density="compact">
+          <SearchField
+            value={addQuestSearch}
+            onChange={setAddQuestSearch}
+            placeholder="Search available flags..."
+            ariaLabel="Search flags to add"
+            resultCount={visibleAvailableQuests.length}
+            resultNoun="flag"
+          />
           <div className="quest-add-grid">
-            {allQuests.filter((quest) => !threadIds.has(quest.id)).slice(0, 18).map((quest) => (
+            {visibleAvailableQuests.map((quest) => (
               <button key={quest.id} type="button" className="btn btn-secondary btn-xs" onClick={() => onAddQuest(quest.id)}>
                 <Plus size={11} /> {quest.label}
               </button>
             ))}
-            {allQuests.every((quest) => threadIds.has(quest.id)) && <small className="empty-copy compact">Every known quest flag is already in this thread.</small>}
+            {availableQuests.length === 0 && <small className="empty-copy compact">Every known quest flag is already in this thread.</small>}
+            {availableQuests.length > 0 && visibleAvailableQuests.length === 0 && <small className="empty-copy compact">No available flags match this search.</small>}
           </div>
         </PanelSection>
       )}
@@ -220,6 +243,20 @@ function QuestThreadDetail({
       <ThreadWarnings quests={quests} onApplyCommand={onApplyCommand} />
     </div>
   );
+}
+
+export function filterQuestFlags(quests: QuestFlagModel[], query: string) {
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return quests;
+  return quests.filter((quest) => {
+    const searchable = [
+      quest.id,
+      quest.label,
+      quest.note,
+      ...quest.uses.flatMap((usage) => [usage.category, usage.label, usage.detail, usage.sourceLabel])
+    ].join(" ").toLowerCase();
+    return terms.every((term) => searchable.includes(term));
+  });
 }
 
 function QuestFlagDetail({
@@ -391,4 +428,3 @@ function ThreadWarnings({ quests, onApplyCommand }: { quests: QuestFlagModel[]; 
     </PanelSection>
   );
 }
-

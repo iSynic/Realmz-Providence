@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Eye } from "lucide-react";
-import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig, type ScriptTargetOption } from "../../components/RealmzTargetPicker";
+import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig } from "../../components/RealmzTargetPicker";
 import { categoryColor } from "../../components/TileSprite";
 import { divinityHelpForOpcode } from "../../divinityOpcodeHelp";
 import type { EdcdRowUsage } from "../../edcdRows";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
-import { useResolvedPreviewUrl } from "../../previewUrls";
 import { actionOptionFor, normalizeStepOpcode } from "../../realmzActions";
 import type { ScriptDiagnostic } from "../../scriptValidation";
 import type { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../../types";
@@ -42,34 +41,6 @@ type SelectedEdcdUsage = {
   diagnostics?: string[];
   summary?: string;
 };
-
-function useTargetPreviewUrl(
-  option: ScriptTargetOption | null,
-  opcode: number,
-  project: Project,
-  desktopRuntime: boolean,
-  projectDir: string,
-  workspaceDir: string
-) {
-  const code = normalizeStepOpcode(opcode);
-  const resourceType = code === 9 ? "snd " : code === 27 ? targetPreviewResourceType(option) : null;
-  return useResolvedPreviewUrl(
-    resourceType ? option?.previewPath ?? option?.managedAsset?.previewPath ?? option?.libraryAsset?.previewPath ?? null : null,
-    resourceType ? option?.managedAsset ?? null : null,
-    resourceType ? option?.libraryAsset ?? null : null,
-    { desktopRuntime, projectDir, workspaceDir, project, resourceType, resourceId: resourceType ? option?.value ?? null : null }
-  );
-}
-
-function targetPreviewResourceType(option: ScriptTargetOption | null) {
-  const managedType = option?.managedAsset?.resourceType?.trim();
-  if (managedType) return managedType;
-  const libraryType = option?.libraryAsset?.resourceType?.trim();
-  if (libraryType) return libraryType;
-  const entityId = option?.entity?.id ?? "";
-  const match = entityId.match(/^resource:([^:]+):/);
-  return match?.[1]?.trim() || "PICT";
-}
 
 export function SelectedActionPointStepEditor({
   project,
@@ -162,14 +133,6 @@ export function SelectedActionPointStepEditor({
     if (!selectedDefinition.target || selectedDefinition.target.targetFamily === "parameter-row") return null;
     return targetOptionForOpcodeValue(project, selectedDraft.rawCode, selectedDraft.id, catalog);
   }, [catalog, project, selectedDefinition.target, selectedDraft.id, selectedDraft.rawCode]);
-  const selectedTargetPreviewUrl = useTargetPreviewUrl(
-    selectedTargetPreview,
-    selectedDraft.rawCode,
-    project,
-    desktopRuntime,
-    projectDir,
-    workspaceDir
-  );
   useEffect(() => {
     setPreviewExpanded(false);
   }, [selectedSlot, selectedDraft.rawCode, selectedDraft.id]);
@@ -273,14 +236,11 @@ export function SelectedActionPointStepEditor({
         {!hasInlineTargetPicker && selectedTargetPreview && (
           <ActionPointTargetPreview
             option={selectedTargetPreview}
-            previewUrl={selectedTargetPreviewUrl}
             definition={selectedDefinition}
-            rawCode={selectedDraft.rawCode}
             behavior={previewBehavior}
             canExpand={previewCanExpand}
             expanded={previewExpanded}
             onToggleExpanded={() => setPreviewExpanded((current) => !current)}
-            onPreviewEntity={onPreviewEntity}
           />
         )}
         <ActionPointInlineTargetEditor

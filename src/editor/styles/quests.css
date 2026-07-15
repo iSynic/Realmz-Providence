@@ -199,10 +199,9 @@
   width: 100%;
 }
 
-.quest-raw-panel .workbench-panel-section-body {
-  max-height: 430px;
-  overflow: auto;
-}
+.quest-raw-panel .workbench-panel-section-body { display: grid; gap: 8px; }
+
+.quest-raw-list { max-height: 430px; overflow: auto; }
 
 .quest-raw-row {
   width: 100%;

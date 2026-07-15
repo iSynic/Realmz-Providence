@@ -1,5 +1,7 @@
 import { Eye, Trash2, X } from "lucide-react";
 import type { MapCoordinateTarget, SelectedEntity } from "../../types";
+import { FloatingWorkbenchPanel, ReferencePreview, type ReferencePreviewModel } from "../../ui";
+import "./ActionPointDialogs.css";
 
 export type ScriptPreviewTarget =
   | {
@@ -58,7 +60,7 @@ export function ScriptDestructiveActionDialog({
   );
 }
 
-export function ScriptPreviewDialog({
+export function ScriptPreviewPanel({
   preview,
   onClose,
   onOpen
@@ -69,34 +71,52 @@ export function ScriptPreviewDialog({
 }) {
   const openLabel = preview.kind === "entity" ? "Open Target" : "Open in Maps";
   return (
-    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onClose}>
-      <div
-        className="script-draft-navigation-dialog script-preview-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="script-preview-dialog-title"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header>
-          <div>
-            <strong id="script-preview-dialog-title">{preview.title}</strong>
-            <small>{preview.kind === "entity" ? "Target preview" : "Map coordinate preview"}</small>
-          </div>
-          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Close preview" onClick={onClose}>
-            <X size={12} />
-          </button>
-        </header>
-        <p>{preview.detail}</p>
-        <div className="script-preview-dialog-note">
+    <FloatingWorkbenchPanel
+      title={preview.title}
+      eyebrow={preview.kind === "entity" ? "Target Preview" : "Map Coordinate Preview"}
+      storageKey="scripts.targetPreview.position"
+      defaultWidth={480}
+      defaultHeight={320}
+      minWidth={360}
+      minHeight={240}
+      className="script-preview-panel"
+      actions={(
+        <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Close preview" title="Close" onClick={onClose}>
+          <X size={12} />
+        </button>
+      )}
+    >
+      <div className="script-preview-panel-body">
+        <ReferencePreview preview={scriptPreviewReferenceModel(preview)} />
+        <div className="script-preview-panel-note">
           Preview does not leave this step editor. Use {openLabel} to navigate to the target.
         </div>
-        <div className="script-draft-navigation-actions">
+        <div className="script-preview-panel-actions">
           <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>Close</button>
           <button type="button" className="btn btn-primary btn-xs" onClick={onOpen}>
             <Eye size={12} /> {openLabel}
           </button>
         </div>
       </div>
-    </div>
+    </FloatingWorkbenchPanel>
   );
+}
+
+export function scriptPreviewReferenceModel(preview: ScriptPreviewTarget): ReferencePreviewModel {
+  if (preview.kind === "entity") {
+    return {
+      key: `entity:${preview.entity.type}:${preview.entity.id}`,
+      kind: "summary",
+      title: preview.title,
+      detail: preview.detail,
+      summary: `Reference ${preview.entity.id}`
+    };
+  }
+  return {
+    key: `map:${preview.target.levelType}:${preview.target.levelIndex}:${preview.target.x}:${preview.target.y}`,
+    kind: "summary",
+    title: preview.title,
+    detail: preview.detail,
+    summary: `${preview.target.levelType === "dungeon" ? "Dungeon" : "Land"} level ${preview.target.levelIndex} at ${preview.target.x}, ${preview.target.y}`
+  };
 }

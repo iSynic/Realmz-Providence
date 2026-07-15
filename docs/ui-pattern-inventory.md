@@ -127,3 +127,7 @@ Full-size Target Record ID fields now compose `ReferenceField` instead of mainta
 Simple, Complex, Rogue, and Timed encounter record navigation now uses the shared searchable `ReferenceField` instead of long native dropdowns. Navigation remains limited to existing records, missing imported selections remain explicit, and the same component serves setup panels and standalone encounter shells without maintaining a second selector style.
 
 The Complex Encounter Rogue branch now uses the same encounter option model and searchable `ReferenceField`. The branch toggle remains compact, while target selection, unresolved imported IDs, and the separate open-record command share the standard selected/result presentation instead of another setup-bar dropdown.
+
+Action Point target eyes now open the shared movable `FloatingWorkbenchPanel` and render through `ReferencePreview`. Inline sound and picture previews remain owned by `TargetPicker`, so the unreachable duplicate media resolver and legacy preview controls have been removed; destructive confirmations remain modal because they mutate records immediately.
+
+Story Flags now uses `SearchField` for decoded flags and flags available to an author note. Both searches report complete result counts, and the former silent eighteen-flag limit has been removed.

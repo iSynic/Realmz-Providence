@@ -55,7 +55,7 @@ import {
   textEditorNavigationLabel,
   type CombatMacroContext
 } from "./actionPointPresentation";
-import { ScriptDestructiveActionDialog, ScriptPreviewDialog, type ScriptPreviewTarget } from "./ActionPointDialogs";
+import { ScriptDestructiveActionDialog, ScriptPreviewPanel, type ScriptPreviewTarget } from "./ActionPointDialogs";
 import { useActionPointStepDrafts } from "./useActionPointStepDrafts";
 import { useActionPointWarningDiagnostics, useSelectedActionPointDiagnostics } from "./useActionPointDiagnostics";
 
@@ -733,7 +733,7 @@ function ActionPointAuthoringWorkbench({
         />
       )}
       {previewTarget && (
-        <ScriptPreviewDialog
+        <ScriptPreviewPanel
           preview={previewTarget}
           onClose={() => setPreviewTarget(null)}
           onOpen={openPreviewTarget}
