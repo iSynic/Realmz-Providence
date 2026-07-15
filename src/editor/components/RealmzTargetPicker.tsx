@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Volume2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity, SemanticEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "../soundReferences";
-import { ReferencePicker, type ReferencePickerOption } from "../ui";
+import {
+  ReferencePicker,
+  ReferencePreview,
+  type ReferencePickerOption,
+  type ReferencePreviewModel,
+  type ReferencePreviewRendererRegistry
+} from "../ui";
 
 export type ScriptTargetOption = {
   key: string;
@@ -149,6 +155,20 @@ export function TargetPicker({
       resourceId: previewResourceType ? selected?.value ?? resolvedValue : null
     }
   );
+  const selectedReferencePreview = targetPickerReferencePreviewModel(opcode, value, selected, selectedPreviewUrl);
+  const selectedPreviewRenderers: ReferencePreviewRendererRegistry | undefined = normalizeStepOpcode(opcode) === 27 && selected?.entity && onInspect ? {
+    image: (preview) => preview.src ? (
+      <button
+        type="button"
+        className="target-picker-reference-image-preview"
+        title="Open picture target"
+        aria-label={`Open ${selected.label}`}
+        onClick={() => onInspect(selected.entity!)}
+      >
+        <img src={preview.src} alt={preview.alt} />
+      </button>
+    ) : <small>No image preview is available for this reference.</small>
+  } : undefined;
   if (!config) return null;
   const visibleTargets = selected && !filteredTargets.some((target) => target.key === selected.key)
     ? [selected, ...filteredTargets.slice(0, 159)]
@@ -266,26 +286,12 @@ export function TargetPicker({
         </label>
       )}
       {!isSearchDrivenPicker && showDetail && detail && <small>{detail}</small>}
-      {normalizeStepOpcode(opcode) === 9 && selected && (
-        <button
-          className="btn btn-secondary btn-xs"
-          type="button"
-          disabled={!selectedPreviewUrl}
-          title={selectedPreviewUrl ? "Play this sound preview." : "No preview is available for this sound reference."}
-          onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
-        >
-          <Volume2 size={12} /> Play
-        </button>
-      )}
-      {normalizeStepOpcode(opcode) === 27 && selected && selectedPreviewUrl && onInspect && (
-        <button
-          className="realmz-target-picker-preview"
-          type="button"
-          title="Open picture target"
-          onClick={() => selected?.entity && onInspect(selected.entity)}
-        >
-          <img src={selectedPreviewUrl} alt={selected.label} />
-        </button>
+      {selectedReferencePreview && (
+        <ReferencePreview
+          className="target-picker-reference-preview"
+          preview={selectedReferencePreview}
+          renderers={selectedPreviewRenderers}
+        />
       )}
       {canCreateTarget && (
         <button
@@ -377,6 +383,40 @@ export function targetPickerConfig(opcode: number) {
     127: { label: "Monster Target", hint: "Select a monster record.", recordType: "monster" }
   };
   return configs[code] ?? null;
+}
+
+export function targetPickerReferencePreviewModel(
+  opcode: number,
+  value: number,
+  selected: ScriptTargetOption | null,
+  previewUrl: string | null
+): ReferencePreviewModel | null {
+  if (!selected) return null;
+  const code = normalizeStepOpcode(opcode);
+  const detail = targetPickerSelectedDetail(selected, code, signedTargetBehaviorLabel(opcode, value));
+  if (code === 9) {
+    return {
+      key: selected.key,
+      kind: "audio",
+      title: selected.label,
+      detail,
+      src: previewUrl,
+      onPlay: previewUrl ? () => playPreviewUrl(previewUrl) : undefined,
+      state: previewUrl ? "resolved" : "unavailable"
+    };
+  }
+  if (code === 27) {
+    return {
+      key: selected.key,
+      kind: "image",
+      title: selected.label,
+      detail,
+      src: previewUrl,
+      alt: selected.label,
+      state: previewUrl ? "resolved" : "unavailable"
+    };
+  }
+  return null;
 }
 
 function encounterPromptDetail(prompt: number) {
