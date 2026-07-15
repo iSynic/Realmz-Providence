@@ -87,4 +87,53 @@ describe("ReferencePicker", () => {
     expect(html).toMatch(/type="search"[^>]*disabled=""/);
     expect((html.match(/disabled=""/g) ?? []).length).toBe(2);
   });
+
+  it("renders reserved media previews in result rows", () => {
+    const html = renderToStaticMarkup(
+      <ReferencePicker
+        ariaLabel="Search icons"
+        query=""
+        onQueryChange={() => undefined}
+        options={[{
+          key: "icon:12",
+          value: 12,
+          label: "Icon 12",
+          searchText: "icon 12",
+          preview: {
+            kind: "image",
+            key: "icon-preview:12",
+            title: "Icon 12",
+            src: "data:image/png;base64,iVBORw0KGgo=",
+            alt: "Icon 12 preview"
+          }
+        }]}
+        value={12}
+        onSelect={() => undefined}
+        current={{ label: "Icon 12" }}
+      />
+    );
+
+    expect(html).toContain('data-reference-option-preview="icon-preview:12"');
+    expect(html).toContain('alt="Icon 12 preview"');
+    expect(html).toContain("workbench-reference-option-copy");
+  });
+
+  it("reserves an explicit floating-panel row for selected previews", () => {
+    const html = renderToStaticMarkup(
+      <ReferencePicker
+        ariaLabel="Search icons"
+        query=""
+        onQueryChange={() => undefined}
+        options={options}
+        value={12}
+        onSelect={() => undefined}
+        current={{ label: "String 12" }}
+        currentSupplement={<div>Selected preview</div>}
+        className="workbench-reference-floating-picker"
+      />
+    );
+
+    expect(html).toContain("has-current-supplement workbench-reference-floating-picker");
+    expect(html).toContain("Selected preview");
+  });
 });

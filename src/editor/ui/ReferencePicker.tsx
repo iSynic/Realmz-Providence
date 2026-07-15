@@ -81,7 +81,11 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
   }
 
   return (
-    <div className={["workbench-reference-picker", className].filter(Boolean).join(" ")}>
+    <div className={[
+      "workbench-reference-picker",
+      currentSupplement ? "has-current-supplement" : undefined,
+      className
+    ].filter(Boolean).join(" ")}>
       <SearchField
         label={label}
         ariaLabel={ariaLabel}
@@ -111,14 +115,27 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
               type="button"
               role="option"
               aria-selected={option.value === value}
-              className={option.value === value ? "is-selected" : ""}
+              className={[
+                option.value === value ? "is-selected" : "",
+                option.preview ? "has-preview" : ""
+              ].filter(Boolean).join(" ")}
               data-reference-option={option.key}
               title={option.title}
               disabled={disabled || option.disabled}
               onClick={() => onSelect(option)}
             >
-              <strong>{option.label}</strong>
-              {option.detail && <small>{option.detail}</small>}
+              {option.preview && (
+                <span
+                  className={`workbench-reference-option-preview is-${option.preview.state ?? "resolved"}`}
+                  data-reference-option-preview={option.preview.key}
+                >
+                  {referenceOptionPreview(option.preview)}
+                </span>
+              )}
+              <span className="workbench-reference-option-copy">
+                <strong>{option.label}</strong>
+                {option.detail && <small>{option.detail}</small>}
+              </span>
             </button>
           ))}
           {filteredOptions.length === 0 && <EmptyState compact title={emptyTitle} body={emptyBody} />}
@@ -126,6 +143,16 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
       )}
     </div>
   );
+}
+
+function referenceOptionPreview(preview: ReferencePreviewModel) {
+  if (preview.kind === "image") {
+    return preview.src
+      ? <img src={preview.src} alt={preview.alt} />
+      : <span className="workbench-reference-option-preview-placeholder" aria-hidden="true" />;
+  }
+  if (preview.kind === "custom") return preview.content;
+  return <span className="workbench-reference-option-preview-placeholder" aria-hidden="true" />;
 }
 
 export function referencePickerKeyboardAction(

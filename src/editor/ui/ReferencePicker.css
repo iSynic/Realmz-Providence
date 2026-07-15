@@ -63,6 +63,10 @@
   grid-template-rows: auto auto minmax(0, 1fr);
 }
 
+.workbench-reference-floating-picker.has-current-supplement {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
 .workbench-reference-floating-picker .workbench-reference-results {
   max-height: none;
 }
@@ -158,6 +162,51 @@
   text-align: left;
   content-visibility: auto;
   contain-intrinsic-size: auto 42px;
+}
+
+.workbench-reference-results > button.has-preview {
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+}
+
+.workbench-reference-option-preview {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid #304052;
+  border-radius: 4px;
+  background: #08121a;
+}
+
+.workbench-reference-option-preview.is-unavailable,
+.workbench-reference-option-preview.is-missing {
+  border-style: dashed;
+  border-color: #66552c;
+}
+
+.workbench-reference-option-preview > * {
+  width: 100%;
+  height: 100%;
+}
+
+.workbench-reference-option-preview > img {
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.workbench-reference-option-preview-placeholder {
+  width: 12px;
+  height: 12px;
+  border: 1px dashed #66552c;
+  border-radius: 2px;
+}
+
+.workbench-reference-option-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
 }
 
 .workbench-reference-results > button:hover:not(:disabled),

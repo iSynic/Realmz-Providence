@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
 import { LibraryAsset, ProjectCommand, ScenarioSpellOverride } from "../../types";
 import { SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_TARGET_TYPES } from "../../rulesCatalog";
-import { NumberField, SelectField, SpellAnimationIconField, FastplotTileNumberField, TextField, CheckboxField } from "./RuleFields";
+import { NumberField, SelectField, TextField, CheckboxField } from "./RuleFields";
 import { buildSpellEntries, previousSpellPackedId, nextSpellPackedId, selectedIdFor, spellPackedId } from "./ruleUtils";
 import { SpellRuleEntry, SpellRulesEditorProps } from "./ruleTypes";
 import { RulesRecordPicker, rulesRecordPickerOptions } from "./RulesRecordPicker";
+import { RulesQueueIconField } from "./RulesQueueIconField";
 import { RulesSoundField } from "./RulesSoundField";
+import { RulesSpellAnimationField } from "./RulesSpellAnimationField";
 
 const SPELL_EDITOR_HELP = "Browse packed Realmz spell IDs from shared Data S and create scenario-local custom spell overrides in Data Spell. Built-in spell classes are reference/copy sources.";
 const SPELL_CLASS_HELP = "Spell IDs encode class, level, and slot. The Custom class is the scenario-owned class; copying a built-in spell here creates an editable Data Spell record.";
@@ -242,9 +244,9 @@ function SpellForm({
               <RulesSoundField label="Resolution Sound" value={record.sound2} assets={iconAssets} onCommit={(sound2) => update({ sound2 })} disabled={!editable} help="Sound played when the spell resolves." />
             </div>
             <div className="rules-spell-icon-row">
-              <SpellAnimationIconField label="Cast Icon" value={record.spellLook1} assets={iconAssets} onCommit={(spellLook1) => update({ spellLook1 })} disabled={!editable} zeroMode="blank-cast" help="Animation shown while the spell is cast." />
-              <SpellAnimationIconField label="Resolution Icon" value={record.spellLook2} assets={iconAssets} onCommit={(spellLook2) => update({ spellLook2 })} disabled={!editable} zeroMode="default-resolution" help="Animation shown when the spell resolves." />
-              <FastplotTileNumberField label="Queue Icon" value={record.queueIcon} atlasUrl={queueAtlasUrl} onCommit={(queueIcon) => update({ queueIcon })} disabled={!editable} help="Small icon used in spell queue/combat displays." />
+              <RulesSpellAnimationField label="Cast Icon" value={record.spellLook1} assets={iconAssets} onCommit={(spellLook1) => update({ spellLook1 })} disabled={!editable} zeroMode="blank-cast" help="Animation shown while the spell is cast. Search by stored value or first cicn frame ID." />
+              <RulesSpellAnimationField label="Resolution Icon" value={record.spellLook2} assets={iconAssets} onCommit={(spellLook2) => update({ spellLook2 })} disabled={!editable} zeroMode="default-resolution" help="Animation shown when the spell resolves. Stored value 0 uses the default resolution sequence." />
+              <RulesQueueIconField label="Queue Icon" value={record.queueIcon} atlasUrl={queueAtlasUrl} onCommit={(queueIcon) => update({ queueIcon })} disabled={!editable} help="Small icon used in spell queue/combat displays. Stored values 1 through 200 map to combat tiles 201 through 400." />
             </div>
           </div>
         </div>

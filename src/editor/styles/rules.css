@@ -489,21 +489,6 @@
 
 
 
-.rules-race-core-group .rules-icon-number > div {
-  gap: 6px;
-}
-
-
-
-.rules-race-core-group .rules-icon-number img,
-.rules-race-core-group .rules-icon-number b {
-  width: 28px;
-  height: 28px;
-}
-
-
-
-.rules-race-core-group .rules-icon-number input,
 .rules-race-core-group .rules-field-compact input {
   width: 7ch;
 }
@@ -1003,18 +988,6 @@
 
 
 
-.rules-spell-icon-row .rules-icon-number > div {
-  justify-content: start;
-}
-
-
-
-.rules-spell-icon-row .rules-icon-number input {
-  width: 9ch;
-}
-
-
-
 .rules-field-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(132px, 178px));
@@ -1165,103 +1138,6 @@
   background: #191509;
   color: #e7cf8d;
   font-size: 12px;
-}
-
-
-
-.rules-icon-number > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex-wrap: nowrap;
-}
-
-
-
-.rules-icon-number img {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #304052;
-  border-radius: 4px;
-  background: #f7f7ef;
-  image-rendering: pixelated;
-}
-
-
-
-.rules-blank-icon-preview,
-.rules-fastplot-preview,
-.rules-animation-preview {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #304052;
-  border-radius: 4px;
-  image-rendering: pixelated;
-  background-repeat: no-repeat;
-}
-
-
-
-.rules-animation-preview {
-  display: grid;
-  place-items: center;
-  background: #f7f7ef;
-  overflow: hidden;
-}
-
-
-
-.rules-animation-preview img {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-
-
-.rules-blank-icon-preview {
-  background: #f7f7ef;
-}
-
-
-
-.rules-fastplot-preview {
-  background-color: #f7f7ef;
-}
-
-
-
-.rules-icon-number b {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid #304052;
-  border-radius: 4px;
-  color: #91a4b5;
-  font-size: 11px;
-}
-
-
-
-.rules-icon-number input {
-  width: 8ch;
-  min-width: 0;
-}
-
-
-
-.rules-section .rules-icon-number {
-  width: 100%;
-  max-width: 180px;
-}
-
-
-
-.rules-section .rules-icon-number-compact {
-  max-width: 150px;
 }
 
 
