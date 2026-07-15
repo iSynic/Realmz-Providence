@@ -40,7 +40,9 @@ Search metadata must not change the alignment of neighboring controls. In a hori
 | Sections | `PanelHeader` for unframed pane titles; `PanelSection`, `CollapsibleSection` for framed sections |
 | Collections | `SearchField`, `ScrollArea`, `EntityRow`, `IncrementalListFooter` |
 | References | `ReferenceField`, `ReferencePicker`, `ReferencePreview` |
-| Overlay | `FloatingWorkbenchPanel` for modeless authoring; blocking dialogs remain modal |
+| Overlay | `FloatingWorkbenchPanel` for modeless authoring; `ModalDialog` for blocking workflows |
 | Feedback | `EmptyState`, `IssueGroup`, `ValidationGate`, status tones |
 
 Shared components own interaction structure and shared styling. Domain adapters own encoding, labels, preview data, mutation commands, and specialized geometry. Migrate a surface only when its focused behavior, constrained-width layout, and obsolete CSS can be verified together.
+
+`ModalDialog` owns the modal layer, labelled dialog semantics, initial focus, Tab containment, Escape and optional backdrop dismissal, disabled dismissal during work, and focus restoration. Domain dialogs retain their size, body layout, destructive-action ordering, and submit behavior.

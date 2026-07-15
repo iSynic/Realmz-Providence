@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import {
@@ -8,6 +8,7 @@ import {
   searchGlobalIndex
 } from "../globalSearch";
 import { LibraryCatalog, ManagedAsset, Project } from "../types";
+import { ModalDialog } from "../ui";
 
 const scopeLabels: Record<GlobalSearchScope, string> = {
   scenario: "Scenario",
@@ -45,12 +46,7 @@ export function GlobalSearchDialog({
   const [selectedScopes, setSelectedScopes] = useState<Set<GlobalSearchScope>>(() => new Set(scopeOrder));
   const [expandedScopes, setExpandedScopes] = useState<Set<GlobalSearchScope>>(() => new Set());
   const [activeIndex, setActiveIndex] = useState(0);
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const index = useMemo(() => buildGlobalSearchIndex(project, catalog, customAssets), [catalog, customAssets, project]);
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
 
   useEffect(() => {
     const handle = window.setTimeout(() => setDeferredQuery(query), exactShortcutCandidate(query) ? 0 : 120);
@@ -90,12 +86,7 @@ export function GlobalSearchDialog({
     onClose();
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      onClose();
-      return;
-    }
+  function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
       setActiveIndex((index) => Math.min(index + 1, Math.max(0, visibleResults.length - 1)));
@@ -113,22 +104,20 @@ export function GlobalSearchDialog({
   }
 
   return (
-    <div className="global-search-backdrop" role="presentation" onMouseDown={onClose}>
-      <section
-        className="global-search-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Global search"
-        onMouseDown={(event) => event.stopPropagation()}
-        onKeyDown={handleKeyDown}
-      >
+    <ModalDialog
+      backdropClassName="global-search-backdrop"
+      className="global-search-dialog"
+      ariaLabel="Global search"
+      onDismiss={onClose}
+      onKeyDown={handleKeyDown}
+    >
         <header className="global-search-header">
           <label className="global-search-input">
             <TutorialTip title="Global Search" body={GLOBAL_SEARCH_HELP} side="below">
               <span className="global-search-help-anchor"><Search size={17} /></span>
             </TutorialTip>
             <input
-              ref={inputRef}
+              data-modal-initial-focus
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="Search scenario, libraries, assets, docs..."
@@ -235,8 +224,7 @@ export function GlobalSearchDialog({
           <span>Esc closes</span>
           <span>Ctrl+K toggles</span>
         </footer>
-      </section>
-    </div>
+    </ModalDialog>
   );
 }
 

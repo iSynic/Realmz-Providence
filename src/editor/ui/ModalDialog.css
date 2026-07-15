@@ -1,0 +1,26 @@
+.workbench-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ui-layer-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--ui-space-8);
+  background: rgba(3, 6, 10, 0.68);
+  overscroll-behavior: contain;
+}
+
+.workbench-modal-dialog {
+  min-width: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.workbench-modal-dialog:focus {
+  outline: none;
+}
+
+.workbench-modal-dialog :is(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 1px solid var(--ui-focus-color);
+  outline-offset: 1px;
+  box-shadow: var(--ui-focus-ring);
+}

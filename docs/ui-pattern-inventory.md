@@ -6,7 +6,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 
 ## Current Foundation
 
-`src/editor/ui` exports seventeen shared component families:
+`src/editor/ui` exports eighteen shared component families:
 
 - `PanelSection` and `CollapsibleSection`
 - `FloatingWorkbenchPanel`
@@ -23,6 +23,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 - `ReferenceField`
 - `ReferencePicker`
 - `ReferencePreview`
+- `ModalDialog`
 - `WorkbenchTabs`
 - `SegmentedControl`
 
@@ -93,7 +94,7 @@ The first shared renderer types should be string, sound, picture/icon, item, mon
 
 ## Overlay Families
 
-Providence currently has shared floating panels plus bespoke backdrops/dialogs for project lifecycle, draft changes, global search, asset import, and battle repair. Item and monster icon selection now use the shared movable reference panel. ISY-331 should define one focus, Escape, backdrop, sizing, scroll, and action-row contract before the remaining dialogs are restyled.
+Providence now has shared modeless and blocking overlay contracts. Project creation, project close, draft changes, global search, and battle-reference repair use `ModalDialog` for focus, Escape, backdrop, and focus-return behavior while retaining their domain layouts. Item and monster icon selection use the shared movable reference panel. Asset import and document/manual windows remain explicit later-lane migrations because their sizing and window behavior are specialized.
 
 ## Baseline Findings
 

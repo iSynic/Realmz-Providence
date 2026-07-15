@@ -1756,11 +1756,6 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 .modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  display: grid;
-  place-items: center;
   padding: 24px;
   background: rgba(4, 6, 8, 0.68);
 }
@@ -1768,10 +1763,6 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 .global-search-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1250;
-  display: grid;
   place-items: start center;
   padding: 72px 18px 18px;
   background: rgba(3, 6, 10, 0.62);

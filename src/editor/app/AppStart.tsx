@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, BookOpen, Braces, CheckCircle2, Clipboard, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import { ScenarioSeedPreflightOutcome, ScenarioSeedTemplateSelection } from "../scenarioSeedReport";
-import { SegmentedControl, type SegmentedControlOption } from "../ui";
+import { ModalDialog, SegmentedControl, type SegmentedControlOption } from "../ui";
 
 const NEW_PROJECT_DIALOG_HELP =
   "A Providence project is its own folder package. New projects start with an editable land level 0; import a Realmz scenario before authoring project content.";
@@ -82,17 +82,19 @@ export function ProjectNameDialog({
   }
 
   return (
-    <div className="modal-backdrop" role="presentation">
-      <form
-        className={`project-name-dialog${mode === "scenario-json" ? " scenario-json" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="new-project-dialog-title"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void submitProject();
-        }}
-      >
+    <ModalDialog
+      surfaceTag="form"
+      backdropClassName="modal-backdrop"
+      className={`project-name-dialog${mode === "scenario-json" ? " scenario-json" : ""}`}
+      ariaLabelledBy="new-project-dialog-title"
+      closeOnBackdrop={false}
+      dismissDisabled={workingAction !== null}
+      onDismiss={onCancel}
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submitProject();
+      }}
+    >
         <div className="panel-header">
           <TutorialTip title="New Providence Project" body={NEW_PROJECT_DIALOG_HELP} side="below">
             <span id="new-project-dialog-title">New Providence Project</span>
@@ -112,7 +114,7 @@ export function ProjectNameDialog({
                 <TutorialTip title="Project Name" body={PROJECT_NAME_HELP} side="below">
                   <span>Project Name</span>
                 </TutorialTip>
-                <input autoFocus value={value} onChange={(event) => onChange(event.currentTarget.value)} />
+                <input data-modal-initial-focus autoFocus value={value} onChange={(event) => onChange(event.currentTarget.value)} />
               </label>
               <p>Providence will create this project under the default project directory with an editable land level 0.</p>
             </>
@@ -135,6 +137,7 @@ export function ProjectNameDialog({
               <label className="scenario-seed-field">
                 <span>Scenario Seed JSON</span>
                 <textarea
+                  data-modal-initial-focus
                   autoFocus
                   value={seedJson}
                   spellCheck={false}
@@ -188,8 +191,7 @@ export function ProjectNameDialog({
             {workingAction === "create" ? "Creating..." : mode === "blank" ? "Create Project" : "Create From JSON"}
           </button>
         </div>
-      </form>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -216,8 +218,14 @@ export function CloseProjectDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="close-project-dialog" role="dialog" aria-modal="true" aria-labelledby="close-project-title">
+    <ModalDialog
+      backdropClassName="modal-backdrop"
+      className="close-project-dialog"
+      ariaLabelledBy="close-project-title"
+      closeOnBackdrop={false}
+      dismissDisabled={saving}
+      onDismiss={onCancel}
+    >
         <div className="panel-header">
           <span id="close-project-title">Close Project</span>
         </div>
@@ -236,8 +244,7 @@ export function CloseProjectDialog({
             {saving ? "Saving..." : "Save and Close"}
           </button>
         </div>
-      </section>
-    </div>
+    </ModalDialog>
   );
 }
 

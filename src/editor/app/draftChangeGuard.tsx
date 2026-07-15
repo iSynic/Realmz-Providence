@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Save, X } from "lucide-react";
 import { flushSync } from "react-dom";
+import { ModalDialog } from "../ui";
 
 export type DraftGuardSurface = "scripts" | "text" | "assets" | "maps" | "combat" | "project" | "library" | "other";
 
@@ -185,8 +186,13 @@ function DraftChangeGuardDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onCancel}>
-      <section className="draft-change-dialog" role="dialog" aria-modal="true" aria-labelledby="draft-change-title" onMouseDown={(event) => event.stopPropagation()}>
+    <ModalDialog
+      backdropClassName="modal-backdrop"
+      className="draft-change-dialog"
+      ariaLabelledBy="draft-change-title"
+      dismissDisabled={busy}
+      onDismiss={onCancel}
+    >
         <header>
           <div>
             <strong id="draft-change-title">Unapplied Changes</strong>
@@ -219,8 +225,7 @@ function DraftChangeGuardDialog({
             <Save size={12} /> {busy ? "Applying..." : "Apply and Continue"}
           </button>
         </div>
-      </section>
-    </div>
+    </ModalDialog>
   );
 }
 

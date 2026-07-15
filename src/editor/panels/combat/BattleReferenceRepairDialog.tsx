@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import type { MonsterSetId } from "../../types";
 import type { BattleMonsterReference } from "../../battleReferences";
-import { ReferenceField, type ReferencePickerOption } from "../../ui";
+import { ModalDialog, ReferenceField, type ReferencePickerOption } from "../../ui";
 import type { ScenarioMonsterListEntry } from "./ScenarioMonsterList";
 
 export type PendingBattleReferenceRepair =
@@ -78,14 +78,12 @@ export function BattleReferenceRepairDialog({
   const battleCount = new Set(references.map((reference) => reference.battleId)).size;
   const referenceSummary = references.slice(0, 8);
   return (
-    <div className="battle-reference-repair-backdrop" role="presentation" onMouseDown={onCancel}>
-      <section
-        className="battle-reference-repair-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Battle reference repair"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
+    <ModalDialog
+      backdropClassName="battle-reference-repair-backdrop"
+      className="battle-reference-repair-dialog"
+      ariaLabel="Battle reference repair"
+      onDismiss={onCancel}
+    >
         <header>
           <strong>Battle References</strong>
           <button type="button" className="btn btn-secondary btn-xs btn-icon" aria-label="Close battle reference repair" onClick={onCancel}>
@@ -147,7 +145,6 @@ export function BattleReferenceRepairDialog({
             <button type="button" className="btn btn-primary btn-xs" onClick={onSwitchAndSwapCells}>Also Swap Battle Cell IDs</button>
           </div>
         )}
-      </section>
-    </div>
+    </ModalDialog>
   );
 }
