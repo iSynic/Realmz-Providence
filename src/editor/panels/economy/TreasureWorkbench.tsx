@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
-import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../../itemReferences";
+import { ITEM_REFERENCE_CATEGORIES, type ItemReferenceCategory, type ItemReferenceOption } from "../../itemReferences";
 import { useIconPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { ScrollArea } from "../../ui";
+import { ScrollArea, SearchField } from "../../ui";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
+import { filterEconomyItemOptions } from "./economyItemSearch";
 import { ItemNumberInput, ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemCatalogWorkbench";
 import {
   economyTargetIdFromSelection,
@@ -260,14 +261,8 @@ function TreasureLootEditor({
   const [category, setCategory] = useState<ItemReferenceCategory | "all">("weapon");
   const [query, setQuery] = useState("");
   const openSlot = firstOpenTreasureSlotForUi(itemIds);
-  const filteredOptions = useMemo(() => {
-    const text = query.trim().toLowerCase();
-    return options.filter((option) => {
-      if (category !== "all" && option.category !== category) return false;
-      if (!text) return true;
-      return [option.label, option.detail, option.summary, String(option.value)].some((part) => part.toLowerCase().includes(text));
-    }).slice(0, 42);
-  }, [category, options, query]);
+  const matchingOptions = useMemo(() => filterEconomyItemOptions(options, category, query), [category, options, query]);
+  const visibleOptions = useMemo(() => matchingOptions.slice(0, 42), [matchingOptions]);
   const commitSlot = (slot: number, itemId: number) => {
     onApplyCommand?.({
       kind: "updateTreasureRecord",
@@ -305,16 +300,11 @@ function TreasureLootEditor({
             </button>
           ))}
         </div>
-        <input
-          className="item-search"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.currentTarget.value)}
-          placeholder="Search items to add..."
-          aria-label="Search treasure items"
-        />
+        <SearchField className="item-search" value={query} onChange={setQuery} placeholder="Search items to add..."
+          ariaLabel="Search treasure items" resultCount={matchingOptions.length} resultNoun="item"
+          status={matchingOptions.length > visibleOptions.length ? `${visibleOptions.length} shown` : undefined} />
         <ScrollArea className="treasure-catalog-list" aria-label="Items available for treasure">
-          {filteredOptions.map((option) => (
+          {visibleOptions.map((option) => (
             <button key={option.key} type="button" disabled={openSlot < 0} onClick={() => addItem(option.value)}>
               <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} />
               <span>
@@ -325,7 +315,7 @@ function TreasureLootEditor({
             </button>
           ))}
           {optionsLoading && <p>Loading item references...</p>}
-          {filteredOptions.length === 0 && <p>No items match this category/search.</p>}
+          {matchingOptions.length === 0 && <p>No items match this category/search.</p>}
         </ScrollArea>
       </div>
       <div className="treasure-slot-panel">

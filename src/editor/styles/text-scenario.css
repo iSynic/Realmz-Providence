@@ -117,6 +117,10 @@
 
 .item-search {
   width: 100%;
+}
+
+.item-search .workbench-search-control > input,
+.item-icon-picker-search .workbench-search-control > input {
   min-height: 33px;
 }
 

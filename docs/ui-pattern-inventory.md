@@ -133,3 +133,5 @@ Action Point target eyes now open the shared movable `FloatingWorkbenchPanel` an
 Story Flags now uses `SearchField` for decoded flags and flags available to an author note. Both searches report complete result counts, and the former silent eighteen-flag limit has been removed.
 
 Combat monster and icon browsing now shares `SearchField` across the battle palette, Monster Library, Scenario Monsters, monster icon picker, icon-set library, and icon targets. Specialized virtualized palettes, drag/drop rows, and media grids remain unchanged while search clear actions, result counts, and accessible labels become consistent.
+
+Economy item browsing now uses the same search contract in Items, Shops, Treasure, and the item icon picker. Category filtering composes over the canonical item matcher, full match counts remain visible when large collections are capped for rendering, and the existing record, slot, and media-grid geometry remains domain-owned.

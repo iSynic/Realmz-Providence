@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
-import { itemReferenceOptions, type ItemReferenceCategory, type ItemReferenceOption } from "../../itemReferences";
+import type { ItemReferenceCategory, ItemReferenceOption } from "../../itemReferences";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { ScrollArea } from "../../ui";
+import { ScrollArea, SearchField } from "../../ui";
 import {
   ItemNumberInput,
   ItemOptionIcon,
@@ -12,6 +12,7 @@ import {
   useDeferredItemReferenceOptions
 } from "./ItemCatalogWorkbench";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
+import { filterEconomyItemOptions } from "./economyItemSearch";
 import {
   economyTargetIdFromSelection,
   economyTargetRecordSummary,
@@ -187,14 +188,8 @@ function ShopStockEditor({
   const filledSlots = shopFilledSlotIndexes(record);
   const visibleSlots = filledSlots.length ? filledSlots.slice(0, 120) : openSlot >= 0 ? [openSlot] : [];
   const optionsByValue = useMemo(() => new Map(options.map((option) => [option.value, option])), [options]);
-  const filteredOptions = useMemo(() => {
-    const text = query.trim().toLowerCase();
-    return options.filter((option) => {
-      if (category !== "all" && option.category !== category) return false;
-      if (!text) return true;
-      return [option.label, option.detail, option.summary, String(option.value)].some((part) => part.toLowerCase().includes(text));
-    }).slice(0, 42);
-  }, [category, options, query]);
+  const matchingOptions = useMemo(() => filterEconomyItemOptions(options, category, query), [category, options, query]);
+  const visibleOptions = useMemo(() => matchingOptions.slice(0, 42), [matchingOptions]);
   const updateStock = (itemIds: number[], quantities: number[]) => {
     onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop stock", id: record.id, changes: { itemIds, quantities } });
   };
@@ -231,17 +226,12 @@ function ShopStockEditor({
               ))}
             </select>
           </label>
-          <input
-            className="item-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="Search item pool..."
-            aria-label="Search shop items"
-          />
+          <SearchField className="item-search" value={query} onChange={setQuery} placeholder="Search item pool..."
+            ariaLabel="Search shop items" resultCount={matchingOptions.length} resultNoun="item"
+            status={matchingOptions.length > visibleOptions.length ? `${visibleOptions.length} shown` : undefined} />
         </div>
         <ScrollArea className="shop-catalog-list" aria-label="Items available for shop stock">
-          {filteredOptions.map((option) => (
+          {visibleOptions.map((option) => (
             <button key={option.key} type="button" disabled={openSlot < 0} onClick={() => addItem(option.value)}>
               <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} />
               <span>
@@ -252,7 +242,7 @@ function ShopStockEditor({
             </button>
           ))}
           {optionsLoading && <p>Loading item references...</p>}
-          {filteredOptions.length === 0 && <p>No items match this category/search.</p>}
+          {matchingOptions.length === 0 && <p>No items match this category/search.</p>}
         </ScrollArea>
       </div>
       <div className="shop-inventory-panel">

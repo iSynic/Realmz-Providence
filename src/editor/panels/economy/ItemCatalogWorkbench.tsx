@@ -7,8 +7,9 @@ import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl, type PreviewR
 import { CONDITION_LABELS, ITEM_CATEGORY_LABELS, RACE_DESCRIPTOR_LABELS, REALMZ_CASTES, REALMZ_RACES } from "../../rulesCatalog";
 import type { LibraryCatalog, LibraryEntity, Project, ProjectCommand, ScenarioItemRecord, SelectedEntity, SemanticEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { ScrollArea } from "../../ui";
+import { ScrollArea, SearchField } from "../../ui";
 import { renderListKey } from "../../renderKeys";
+import { filterEconomyItemOptions } from "./economyItemSearch";
 
 const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
 const CUSTOM_ITEM_HELP = "Custom scenario items use item IDs 900-999. Built-in items stay reference-only unless copied into one of these scenario-backed slots.";
@@ -34,14 +35,7 @@ export function ItemCatalogWorkbench({
   const [query, setQuery] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(240);
   const selectedFromEntity = itemIdFromEntityId(selectedEntity?.id ?? "");
-  const filteredOptions = useMemo(() => {
-    const text = query.trim().toLowerCase();
-    return options.filter((option) => {
-      if (category !== "all" && option.category !== category) return false;
-      if (!text) return true;
-      return [option.label, option.detail, option.summary, String(option.value)].some((part) => part.toLowerCase().includes(text));
-    });
-  }, [category, options, query]);
+  const filteredOptions = useMemo(() => filterEconomyItemOptions(options, category, query), [category, options, query]);
   useEffect(() => {
     setVisibleLimit(240);
   }, [category, query]);
@@ -91,14 +85,9 @@ export function ItemCatalogWorkbench({
               </button>
             ))}
           </div>
-          <input
-            className="item-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="Search item ID, name, category, or use..."
-            aria-label="Search items"
-          />
+          <SearchField className="item-search" value={query} onChange={setQuery}
+            placeholder="Search item ID, name, category, or use..." ariaLabel="Search items"
+            resultCount={filteredOptions.length} resultNoun="item" status={hiddenOptionCount ? `${visibleOptions.length} shown` : undefined} />
           <ScrollArea className="item-browser-list" aria-label="Item catalog">
             {visibleOptions.map((option) => (
               <button
@@ -1356,9 +1345,8 @@ function ItemIconPickerModal({
   const [query, setQuery] = useState("");
   const choices = useMemo(() => itemIconPickerChoices(project, catalog, itemOptions), [catalog, itemOptions, project]);
   const normalizedQuery = query.trim().toLowerCase();
-  const visibleChoices = choices
-    .filter((choice) => !normalizedQuery || String(choice.id).includes(normalizedQuery) || choice.label.toLowerCase().includes(normalizedQuery) || choice.detail.toLowerCase().includes(normalizedQuery))
-    .slice(0, 160);
+  const filteredChoices = choices.filter((choice) => !normalizedQuery || String(choice.id).includes(normalizedQuery) || choice.label.toLowerCase().includes(normalizedQuery) || choice.detail.toLowerCase().includes(normalizedQuery));
+  const visibleChoices = filteredChoices.slice(0, 160);
   return (
     <div className="item-icon-picker-backdrop" role="presentation" onMouseDown={onClose}>
       <section className="item-icon-picker-modal" role="dialog" aria-modal="true" aria-label="Choose item icon" onMouseDown={(event) => event.stopPropagation()}>
@@ -1369,12 +1357,9 @@ function ItemIconPickerModal({
           </div>
           <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>Close</button>
         </header>
-        <input
-          type="search"
-          value={query}
-          placeholder="Search cicn id, item, or source..."
-          onChange={(event) => setQuery(event.currentTarget.value)}
-        />
+        <SearchField className="item-icon-picker-search" value={query} onChange={setQuery}
+          placeholder="Search cicn ID, item, or source..." ariaLabel="Search item icons"
+          resultCount={filteredChoices.length} resultNoun="icon" status={filteredChoices.length > visibleChoices.length ? `${visibleChoices.length} shown` : undefined} autoFocus />
         <div className="item-icon-picker-grid">
           {visibleChoices.map((choice) => (
             <ItemIconPickerButton
@@ -1388,7 +1373,7 @@ function ItemIconPickerModal({
             />
           ))}
         </div>
-        {choices.length > visibleChoices.length && <small>{choices.length - visibleChoices.length} more icon(s); search to narrow.</small>}
+        {filteredChoices.length > visibleChoices.length && <small>{filteredChoices.length - visibleChoices.length} more matching icon(s); search to narrow.</small>}
       </section>
     </div>
   );
