@@ -20,7 +20,7 @@ import {
 } from "./combatLookups";
 import { measureCombatWork, useCombatRenderTiming } from "./performance";
 import { MAX_DIVINITY_BATTLE_MONSTER_ID } from "./battleMonsterPaletteModel";
-import { BattleReferenceRepairDialog, type PendingBattleReferenceRepair } from "./BattleReferenceRepairDialog";
+import { BattleReferenceRepairDialog, battleReferenceReplacementCandidates, type PendingBattleReferenceRepair } from "./BattleReferenceRepairDialog";
 import { MonsterLibraryList } from "./MonsterLibraryList";
 import { MonsterLibraryMultiSelection } from "./MonsterLibraryMultiSelection";
 import { MonsterLibraryIcon, MonsterLibraryPreview } from "./MonsterLibraryPreview";
@@ -524,9 +524,9 @@ export function MonsterWorkbench({
       ...battleReferencesForId(pendingBattleRepair.toId)
     ];
   }, [battleReferenceLookup, pendingBattleRepair]);
-  const repairReplacementIds = useMemo(
-    () => scenarioIds.filter((id) => id > 0 && id !== (pendingBattleRepair?.kind === "clear" ? pendingBattleRepair.monsterId : 0)),
-    [pendingBattleRepair, scenarioIds]
+  const repairReplacements = useMemo(
+    () => battleReferenceReplacementCandidates(scenarioEntries, pendingBattleRepair?.kind === "clear" ? pendingBattleRepair.monsterId : 0),
+    [pendingBattleRepair, scenarioEntries]
   );
   const closeBattleRepair = () => setPendingBattleRepair(null);
   const applyClearRepair = (mode: "keep" | "clear" | "replace", replacementId = 0) => {
@@ -696,7 +696,7 @@ export function MonsterWorkbench({
       <BattleReferenceRepairDialog
         action={pendingBattleRepair}
         references={pendingRepairReferences}
-        replacementIds={repairReplacementIds}
+        replacements={repairReplacements}
         onCancel={closeBattleRepair}
         onClearOnly={() => applyClearRepair("keep")}
         onClearPlacements={() => applyClearRepair("clear")}

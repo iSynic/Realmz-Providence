@@ -2,15 +2,59 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import type { MonsterSetId } from "../../types";
 import type { BattleMonsterReference } from "../../battleReferences";
+import { ReferenceField, type ReferencePickerOption } from "../../ui";
+import type { ScenarioMonsterListEntry } from "./ScenarioMonsterList";
 
 export type PendingBattleReferenceRepair =
   | { kind: "clear"; monsterId: number; setId: MonsterSetId }
   | { kind: "switch"; fromId: number; toId: number; setId: MonsterSetId };
 
+export type BattleReferenceReplacement = {
+  id: number;
+  label: string;
+  detail: string;
+};
+
+export function battleReferenceReplacementCandidates(
+  entries: ScenarioMonsterListEntry[],
+  excludedId = 0
+): BattleReferenceReplacement[] {
+  return entries
+    .filter((entry) => entry.id > 0 && entry.id !== excludedId)
+    .map((entry) => {
+      const record = entry.active ?? entry.fallback;
+      const availableSets = [
+        entry.normal ? "Normal" : "",
+        entry.monster ? "Monster" : "",
+        entry.mega ? "Mega" : ""
+      ].filter(Boolean).join(", ");
+      return {
+        id: entry.id,
+        label: record?.displayName?.trim() || `Monster ${entry.id}`,
+        detail: [
+          availableSets || "No decoded set record",
+          record ? `HD ${record.hitDice}, armor ${record.armor}, agility ${record.agility}, icon ${record.iconId}` : ""
+        ].filter(Boolean).join(" | ")
+      };
+    });
+}
+
+export function battleRepairReplacementOptions(
+  replacements: BattleReferenceReplacement[]
+): ReferencePickerOption<number>[] {
+  return replacements.map((replacement) => ({
+    key: `battle-repair-monster:${replacement.id}`,
+    value: replacement.id,
+    label: `${replacement.label} (${replacement.id})`,
+    detail: replacement.detail,
+    searchText: `${replacement.id} ${replacement.label} ${replacement.detail} battle replacement monster`
+  }));
+}
+
 export function BattleReferenceRepairDialog({
   action,
   references,
-  replacementIds,
+  replacements,
   onCancel,
   onClearOnly,
   onClearPlacements,
@@ -20,7 +64,7 @@ export function BattleReferenceRepairDialog({
 }: {
   action: PendingBattleReferenceRepair;
   references: BattleMonsterReference[];
-  replacementIds: number[];
+  replacements: BattleReferenceReplacement[];
   onCancel: () => void;
   onClearOnly: () => void;
   onClearPlacements: () => void;
@@ -28,7 +72,9 @@ export function BattleReferenceRepairDialog({
   onSwitchRecordsOnly: () => void;
   onSwitchAndSwapCells: () => void;
 }) {
-  const [replacementId, setReplacementId] = useState(replacementIds[0] ?? 0);
+  const replacementOptions = battleRepairReplacementOptions(replacements);
+  const [replacementId, setReplacementId] = useState(replacements[0]?.id ?? 0);
+  const selectedReplacement = replacementOptions.find((option) => option.value === replacementId) ?? null;
   const battleCount = new Set(references.map((reference) => reference.battleId)).size;
   const referenceSummary = references.slice(0, 8);
   return (
@@ -61,14 +107,32 @@ export function BattleReferenceRepairDialog({
         </div>
         {action.kind === "clear" ? (
           <>
-            <label className="combat-field battle-reference-replacement">
+            <div className="combat-field battle-reference-replacement">
               <span>Replace With</span>
-              <select value={String(replacementId)} onChange={(event) => setReplacementId(Number(event.currentTarget.value))}>
-                {replacementIds.map((id) => (
-                  <option key={id} value={id}>Monster {id}</option>
-                ))}
-              </select>
-            </label>
+              <ReferenceField
+                ariaLabel="Search replacement monster"
+                placeholder="Search monster #, name, stats, or available set..."
+                options={replacementOptions}
+                value={replacementId}
+                selectedValue={selectedReplacement?.value ?? null}
+                current={selectedReplacement ? {
+                  label: selectedReplacement.label,
+                  detail: selectedReplacement.detail,
+                  state: "resolved"
+                } : {
+                  label: "No replacement available",
+                  detail: "No other scenario monster record can receive these battle placements.",
+                  state: "empty"
+                }}
+                resultNoun="monster"
+                resultNounPlural="monsters"
+                emptyTitle="No matching replacement monsters"
+                emptyBody="Try a monster ID, name, combat stat, or Normal/Monster/Mega availability."
+                initialVisibleCount={80}
+                visibleCountStep={80}
+                onChange={setReplacementId}
+              />
+            </div>
             <div className="battle-reference-repair-actions">
               <button type="button" className="btn btn-secondary btn-xs" onClick={onCancel}>Cancel</button>
               <button type="button" className="btn btn-danger btn-xs" onClick={onClearPlacements}>Clear Battle Placements</button>

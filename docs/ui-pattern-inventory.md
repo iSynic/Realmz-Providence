@@ -150,6 +150,8 @@ Custom Item cursed-form references now use the same Economy item picker as Treas
 
 Monster record macros, equipped and required weapons, ten spell slots, and six loot-item slots now use one Combat-owned compact reference adapter. These fields search decoded labels and metadata, preserve explicit empty sentinels and unresolved imported values, and retain the required-weapon byte/display conversion at the adapter boundary. The small Summon Eligible enum and fixed battle-board placement controls remain native, specialized controls rather than opening unnecessary search workbenches.
 
+Battle reference repair keeps its destructive confirmation modal but now uses the shared inline reference picker for replacement monsters. Candidates expose names, IDs, active combat stats, and Normal/Monster/Mega record availability; authors can search those facts instead of scanning a long anonymous `Monster N` dropdown before rewriting placed battle cells.
+
 Rules record navigation now uses the shared compact `ReferenceField` for Race, Caste, and per-class Spell selection. Long native record dropdowns have become searchable floating pickers with the standard selected, filtered, no-match, and unresolved states; previous/next navigation, scenario-copy commands, and dense fixed-record form geometry remain Rules-owned. The short Spellcaster Class mode list intentionally remains a native select.
 
 Spell casting and resolution sounds now use the same compact `ReferenceField` plus `ReferenceAudioPreviewAction`. Authors can search by sound name, stored spell value, or `snd` resource ID; unresolved imported values remain explicit, playback remains available on read-only built-in spells, and the former raw number-plus-Play control has been retired.

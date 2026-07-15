@@ -52,7 +52,12 @@
 }
 
 .battle-reference-replacement {
-  max-width: 220px;
+  width: 100%;
+}
+
+.battle-reference-replacement .workbench-reference-results {
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .battle-reference-repair-actions {
