@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import {
   TargetPicker,
   resolveSignedMessageTarget,
+  signedTargetValueForSelection,
   targetOptionForOpcodeValue,
   targetPickerConfig,
   type ScriptTargetOption
@@ -13,6 +14,7 @@ import { realmzScriptStepDescriptorFor } from "../../realmzScriptDescriptors";
 import type { LibraryCatalog, Project, RealmzTargetRecordKind } from "../../types";
 import { FloatingWorkbenchPanel, ReferencePreview, type ReferencePreviewModel } from "../../ui";
 import { resultActionBaseCode } from "./encounterFlow";
+import { nextAuthorableTargetId } from "./ReferenceIdField";
 
 type StoredPreviewType = Exclude<RealmzTargetRecordKind, "message" | "questLabel">;
 
@@ -28,6 +30,7 @@ export function EncounterResultTargetPreview({
   preview,
   previewContext,
   renderRecordPreview,
+  onCreateTarget,
   onChange,
   onClose
 }: {
@@ -36,6 +39,7 @@ export function EncounterResultTargetPreview({
   preview: EncounterResultTargetPreviewValue;
   previewContext: PreviewRuntimeContext;
   renderRecordPreview: (targetType: StoredPreviewType, targetId: number) => ReactNode;
+  onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
   onChange: (value: number) => void;
   onClose: () => void;
 }) {
@@ -70,7 +74,7 @@ export function EncounterResultTargetPreview({
         <header>
           <div>
             <strong>{action.shortLabel}</strong>
-            <small>Read-only preview. Selecting the eye does not leave this encounter.</small>
+            <small>Search, select, and preview the target without leaving this encounter.</small>
           </div>
           <span>{targetTypeLabel}</span>
         </header>
@@ -82,6 +86,12 @@ export function EncounterResultTargetPreview({
               opcode={opcode}
               value={preview.value}
               onChange={onChange}
+              onCreate={(recordType, requestedId) => {
+                const createId = requestedId ?? nextAuthorableTargetId(project, recordType);
+                onCreateTarget(recordType, createId);
+                onChange(signedTargetValueForSelection(opcode, preview.value, createId));
+              }}
+              allowCreateAtZero
               showDetail={false}
               showTargetCount={false}
               previewContext={previewContext}

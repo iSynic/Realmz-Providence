@@ -41,7 +41,6 @@ export function EncounterResultActionMatrix({
   onSelectResult,
   onUpdate,
   onCreateTarget,
-  targetExists,
   renderRecordPreview,
   previewContext = {}
 }: {
@@ -55,7 +54,6 @@ export function EncounterResultActionMatrix({
   onSelectResult: (resultIndex: number) => void;
   onUpdate: (slot: number, changes: Partial<EncounterActionRow>) => void;
   onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
-  targetExists: (recordType: RealmzTargetRecordKind, id: number) => boolean;
   renderRecordPreview: (targetType: StoredPreviewType, targetId: number) => ReactNode;
   previewContext?: PreviewRuntimeContext;
 }) {
@@ -120,9 +118,7 @@ export function EncounterResultActionMatrix({
                     row={encounterActionAt(actions, slot)}
                     onUpdate={(changes) => onUpdate(slot, changes)}
                     onFocusCode={(code) => setFocusedResultCode(resultActionBaseCode(code))}
-                    onCreateTarget={onCreateTarget}
                     onPreviewTarget={(opcode, value) => setTargetPreview({ slot, opcode, value })}
-                    targetExists={targetExists}
                   />
                 );
               })}
@@ -152,6 +148,7 @@ export function EncounterResultActionMatrix({
           preview={activeTargetPreview}
           previewContext={previewContext}
           renderRecordPreview={renderRecordPreview}
+          onCreateTarget={onCreateTarget}
           onChange={(value) => {
             onUpdate(activeTargetPreview.slot, { id: value });
           }}

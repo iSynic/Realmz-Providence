@@ -151,7 +151,6 @@ export function TargetRecordEditor({
             onSelectEditor={onSelectEditor}
             onSelectEncounterRecordType={onSelectEncounterRecordType}
             onApplyCommand={onApplyCommand}
-            targetExists={(recordType, id) => targetRecordExists(project, recordType, id)}
             renderRecordPreview={(targetType, id) => encounterResultRecordPreview(project, catalog, targetType, id)}
           />
         )}
@@ -198,7 +197,6 @@ export function TargetRecordEditor({
             onSelectEditor={onSelectEditor}
             onSelectEncounterRecordType={onSelectEncounterRecordType}
             onApplyCommand={onApplyCommand}
-            targetExists={(recordType, id) => targetRecordExists(project, recordType, id)}
             renderRecordPreview={(targetType, id) => encounterResultRecordPreview(project, catalog, targetType, id)}
           />
         )}

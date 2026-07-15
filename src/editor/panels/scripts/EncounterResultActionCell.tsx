@@ -1,16 +1,15 @@
-import { Eye, Plus, X } from "lucide-react";
+import { Eye, X } from "lucide-react";
 import {
   resolveSignedMessageTarget,
   signedTargetBehaviorLabel,
+  targetPickerConfig,
   targetOptionForOpcodeValue
 } from "../../components/RealmzTargetPicker";
 import { actionOptionFor } from "../../realmzActions";
-import { realmzScriptStepDescriptorFor } from "../../realmzScriptDescriptors";
 import type {
   EncounterActionRow,
   LibraryCatalog,
-  Project,
-  RealmzTargetRecordKind
+  Project
 } from "../../types";
 import {
   resultActionBaseCode,
@@ -25,9 +24,7 @@ export function EncounterResultActionCell({
   row,
   onUpdate,
   onFocusCode,
-  onCreateTarget,
-  onPreviewTarget,
-  targetExists
+  onPreviewTarget
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -35,21 +32,16 @@ export function EncounterResultActionCell({
   row: EncounterActionRow;
   onUpdate: (changes: Partial<EncounterActionRow>) => void;
   onFocusCode: (code: number) => void;
-  onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
   onPreviewTarget: (opcode: number, value: number) => void;
-  targetExists: (recordType: RealmzTargetRecordKind, id: number) => boolean;
 }) {
   const baseCode = resultActionBaseCode(row.rawCode);
   const isNegativeAction = row.rawCode < 0;
   const rowOption = actionOptionFor(baseCode);
-  const targetType = realmzScriptStepDescriptorFor(baseCode).targetType;
   const selected = targetOptionForOpcodeValue(project, baseCode, row.id, catalog);
   const resolvedValue = resolveSignedMessageTarget(baseCode, row.id);
-  const canCreate = Boolean(targetType && resolvedValue > 0 && !selected);
   const populated = row.rawCode !== 0 || row.id !== 0;
-  const canPreview = baseCode !== 0 && Boolean(
-    selected || (targetType && targetExists(targetType, resolvedValue))
-  );
+  const targetPicker = targetPickerConfig(baseCode);
+  const canBrowse = Boolean(targetPicker);
   const options = resultActionOptionsFor(baseCode);
   const resolvedTitle = selected
     ? [selected.label, signedTargetBehaviorLabel(baseCode, row.id)].filter(Boolean).join(" | ")
@@ -93,22 +85,12 @@ export function EncounterResultActionCell({
         />
       </label>
       <div className="encounter-action-row-actions">
-        {canCreate ? (
-          <button
-            type="button"
-            className="encounter-action-create"
-            title={`Create ${targetType} ${resolvedValue}`}
-            aria-label={`Create result action ${slot} target`}
-            onClick={() => targetType && onCreateTarget(targetType, resolvedValue)}
-          >
-            <Plus size={12} />
-          </button>
-        ) : canPreview ? (
+        {canBrowse ? (
           <button
             type="button"
             className="encounter-action-preview"
-            title={`Preview ${selected?.label ?? `${targetType} ${resolvedValue}`}`}
-            aria-label={`Preview result action ${slot} target`}
+            title={selected ? `Browse ${selected.label}` : `Browse ${targetPicker?.label ?? "action target"}`}
+            aria-label={`Browse result action ${slot} target`}
             onClick={() => onPreviewTarget(baseCode, row.id)}
           >
             <Eye size={12} />

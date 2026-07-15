@@ -63,7 +63,6 @@ export function EncounterShell({
   onSelectEditor,
   onSelectEncounterRecordType,
   onApplyCommand,
-  targetExists,
   renderRecordPreview
 }: {
   project: Project;
@@ -94,7 +93,6 @@ export function EncounterShell({
   onSelectEditor?: (editor: string) => void;
   onSelectEncounterRecordType?: (recordType: RealmzTargetRecordKind) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
-  targetExists: (recordType: RealmzTargetRecordKind, id: number) => boolean;
   renderRecordPreview: (targetType: Exclude<RealmzTargetRecordKind, "message" | "questLabel">, targetId: number) => ReactNode;
 }) {
   const encounterRecordType: "simpleEncounter" | "complexEncounter" = recordKind === "simple" ? "simpleEncounter" : "complexEncounter";
@@ -293,7 +291,6 @@ export function EncounterShell({
             onSelectResult={setSelectedResultIndex}
             onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
             onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
-            targetExists={targetExists}
             renderRecordPreview={renderRecordPreview}
             previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           />
@@ -347,7 +344,6 @@ export function EncounterShell({
             onSelectResult={setSelectedResultIndex}
             onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
             onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
-            targetExists={targetExists}
             renderRecordPreview={renderRecordPreview}
             previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           />

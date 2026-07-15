@@ -81,6 +81,7 @@ export function TargetPicker({
   showSearch = true,
   showDetail = true,
   showTargetCount = true,
+  allowCreateAtZero = false,
   previewContext = {}
 }: {
   project: Project | null;
@@ -94,6 +95,7 @@ export function TargetPicker({
   showSearch?: boolean;
   showDetail?: boolean;
   showTargetCount?: boolean;
+  allowCreateAtZero?: boolean;
   previewContext?: PreviewRuntimeContext;
 }) {
   const config = targetPickerConfig(opcode);
@@ -153,7 +155,11 @@ export function TargetPicker({
     : filteredTargets.slice(0, 160);
   const normalizedQuery = query.trim();
   const hasCurrentValue = Number.isFinite(resolvedValue) && resolvedValue !== 0 && !selected;
-  const canCreateTarget = Boolean(config.recordType && onCreate && (!selected || hasCurrentValue));
+  const canCreateTarget = Boolean(
+    config.recordType
+    && onCreate
+    && (!selected || hasCurrentValue || (allowCreateAtZero && resolvedValue === 0))
+  );
   const behavior = signedTargetBehaviorLabel(opcode, value);
   const showWaitControl = supportsSignedSoundReference(opcode) && resolvedValue !== 0;
   const detail = selected
