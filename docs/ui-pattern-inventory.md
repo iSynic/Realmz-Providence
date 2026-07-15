@@ -23,6 +23,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 - `ReferenceField`
 - `ReferencePicker`
 - `ReferencePreview`
+- `WorkbenchTabs`
 
 At the ISY-330 baseline, 35 editor files import the shared UI module. This is enough adoption to evolve rather than replace the layer.
 
@@ -103,6 +104,7 @@ Providence currently has shared floating panels plus bespoke backdrops/dialogs f
 - Eye actions are moving toward a consistent preview meaning, but their floating surfaces remain independently composed.
 - Some overview lists still use fixed visible slices. Each occurrence must be classified as deliberate pagination/virtualization or replaced with a complete searchable/scrollable collection.
 - Tool tabs, segmented modes, and combinable filters are not always visually distinct.
+- Economy and writable-record family navigation now use `WorkbenchTabs`, including roving focus and Left/Right/Home/End keyboard selection; specialized map, combat, and fixed-grid modes remain candidates for domain-by-domain review.
 
 ## First Implementation Slice
 

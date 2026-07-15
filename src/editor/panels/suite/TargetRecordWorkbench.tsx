@@ -10,7 +10,7 @@ import type {
   RealmzTargetRecordKind,
   SelectedEntity
 } from "../../types";
-import { ScrollArea } from "../../ui";
+import { ScrollArea, WorkbenchTabs, type WorkbenchTabOption } from "../../ui";
 import { selectEntityFromId } from "../../utils";
 import { TargetRecordEditor } from "../scripts/TargetRecordEditor";
 
@@ -30,33 +30,26 @@ export function DomainTargetSwitcher({
   selectedRecordType: RealmzTargetRecordKind;
   onSelectRecordType: (recordType: RealmzTargetRecordKind) => void;
 }) {
+  const options: Array<WorkbenchTabOption<RealmzTargetRecordKind>> = recordTypes.map((recordType) => {
+    const help = targetRecordHelp(recordType);
+    const label = targetRecordLabel(recordType);
+    return {
+      value: recordType,
+      label: help ? (
+        <TutorialTip title={label} body={help} side="right">
+          <span>{label}</span>
+        </TutorialTip>
+      ) : label,
+      meta: targetRecords(project, recordType).length.toLocaleString()
+    };
+  });
   return (
-    <div className="domain-target-switcher" role="tablist" aria-label="Writable Realmz record family">
-      {recordTypes.map((recordType) => {
-        const selected = selectedRecordType === recordType;
-        const count = targetRecords(project, recordType).length;
-        const help = targetRecordHelp(recordType);
-        return (
-          <button
-            key={recordType}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            className={selected ? "active" : ""}
-            onClick={() => onSelectRecordType(recordType)}
-          >
-            {help ? (
-              <TutorialTip title={targetRecordLabel(recordType)} body={help} side="right">
-                <span>{targetRecordLabel(recordType)}</span>
-              </TutorialTip>
-            ) : (
-              <span>{targetRecordLabel(recordType)}</span>
-            )}
-            <b>{count.toLocaleString()}</b>
-          </button>
-        );
-      })}
-    </div>
+    <WorkbenchTabs
+      ariaLabel="Writable Realmz record family"
+      value={selectedRecordType}
+      options={options}
+      onChange={onSelectRecordType}
+    />
   );
 }
 

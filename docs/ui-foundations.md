@@ -35,6 +35,7 @@ Search metadata must not change the alignment of neighboring controls. In a hori
 | Concern | Shared contract |
 | --- | --- |
 | Layout | `WorkbenchStack`, `WorkbenchCluster`, `WorkbenchActionBar` |
+| Navigation | `WorkbenchTabs` for mutually exclusive local views |
 | Sections | `PanelHeader` for unframed pane titles; `PanelSection`, `CollapsibleSection` for framed sections |
 | Collections | `SearchField`, `ScrollArea`, `EntityRow`, `IncrementalListFooter` |
 | References | `ReferenceField`, `ReferencePicker`, `ReferencePreview` |

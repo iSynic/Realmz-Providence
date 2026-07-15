@@ -1,0 +1,57 @@
+.workbench-tabs {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-4);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-panel);
+  background: var(--ui-color-canvas);
+}
+
+.workbench-tabs > button {
+  min-height: var(--ui-control-height-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-4);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-muted);
+  padding: 0 var(--ui-space-5);
+  font: inherit;
+  font-size: var(--ui-font-size-meta);
+  font-weight: 900;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.workbench-tabs > button:hover:not(:disabled) {
+  border-color: var(--ui-color-border-strong);
+  background: var(--ui-color-surface-hover);
+  color: var(--ui-color-text);
+}
+
+.workbench-tabs > button.is-selected {
+  border-color: var(--ui-color-info);
+  background: var(--ui-color-info-surface);
+  color: var(--ui-color-text-strong);
+}
+
+.workbench-tabs > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.workbench-tabs > button > b {
+  min-width: 22px;
+  min-height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--ui-color-border);
+  border-radius: 999px;
+  background: var(--ui-color-surface-inset);
+  color: var(--ui-color-info);
+  padding: 0 var(--ui-space-2);
+  font-size: var(--ui-font-size-label);
+}

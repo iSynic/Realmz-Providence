@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
+import { WorkbenchTabs, type WorkbenchTabOption } from "../../ui";
 import { ItemCatalogWorkbench } from "./ItemCatalogWorkbench";
 import { ShopWorkbench } from "./ShopWorkbench";
 import { TreasureWorkbench } from "./TreasureWorkbench";
@@ -75,32 +76,19 @@ function EconomySectionSwitcher({
   onSelectSection: (section: EconomySection) => void;
 }) {
   const itemCount = useMemo(() => economyItemReferenceCount(project), [project]);
-  const sections: Array<{ id: EconomySection; label: string; count: number; help: string }> = [
-    { id: "treasure", label: "Treasure", count: project.treasures?.length ?? 0, help: ECONOMY_SECTION_HELP.treasure },
-    { id: "items", label: "Items", count: itemCount, help: ECONOMY_SECTION_HELP.items },
-    { id: "shops", label: "Shops", count: project.shops?.length ?? 0, help: ECONOMY_SECTION_HELP.shops }
+  const sections: Array<WorkbenchTabOption<EconomySection>> = [
+    { value: "treasure", label: <TutorialTip title="Treasure" body={ECONOMY_SECTION_HELP.treasure} side="right"><span>Treasure</span></TutorialTip>, meta: (project.treasures?.length ?? 0).toLocaleString() },
+    { value: "items", label: <TutorialTip title="Items" body={ECONOMY_SECTION_HELP.items} side="right"><span>Items</span></TutorialTip>, meta: itemCount.toLocaleString() },
+    { value: "shops", label: <TutorialTip title="Shops" body={ECONOMY_SECTION_HELP.shops} side="right"><span>Shops</span></TutorialTip>, meta: (project.shops?.length ?? 0).toLocaleString() }
   ];
   return (
-    <div className="domain-target-switcher economy-section-switcher" role="tablist" aria-label="Economy sections">
-      {sections.map((entry) => {
-        const selected = entry.id === selectedSection;
-        return (
-          <button
-            key={entry.id}
-            type="button"
-            role="tab"
-            aria-selected={selected}
-            className={selected ? "active" : ""}
-            onClick={() => onSelectSection(entry.id)}
-          >
-            <TutorialTip title={entry.label} body={entry.help} side="right">
-              <span>{entry.label}</span>
-            </TutorialTip>
-            <b>{entry.count.toLocaleString()}</b>
-          </button>
-        );
-      })}
-    </div>
+    <WorkbenchTabs
+      className="economy-section-switcher"
+      ariaLabel="Economy sections"
+      value={selectedSection}
+      options={sections}
+      onChange={onSelectSection}
+    />
   );
 }
 
