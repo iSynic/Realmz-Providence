@@ -1,6 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ReferencePreview, type ReferencePreviewRendererRegistry } from "./ReferencePreview";
+import {
+  ReferenceAudioPreviewAction,
+  ReferencePreview,
+  type ReferencePreviewRendererRegistry
+} from "./ReferencePreview";
 
 describe("ReferencePreview", () => {
   it("renders shared text preview structure and metadata", () => {
@@ -46,5 +50,30 @@ describe("ReferencePreview", () => {
     );
 
     expect(html).toContain("Domain preview: 3 items");
+  });
+
+  it("shares compact audio action behavior with dense reference fields", () => {
+    const html = renderToStaticMarkup(
+      <ReferenceAudioPreviewAction
+        compact
+        iconOnly
+        ariaLabel="Preview trap sound"
+        preview={{
+          key: "sound:624",
+          kind: "audio",
+          title: "Sound 624",
+          src: null,
+          state: "unavailable"
+        }}
+      />
+    );
+
+    expect(html).toContain("workbench-reference-audio-action");
+    expect(html).toContain("is-compact");
+    expect(html).toContain("is-icon-only");
+    expect(html).toContain("aria-label=\"Preview trap sound\"");
+    expect(html).toContain("data-reference-preview-key=\"sound:624\"");
+    expect(html).toContain("data-reference-preview-state=\"unavailable\"");
+    expect(html).toContain("disabled=\"\"");
   });
 });

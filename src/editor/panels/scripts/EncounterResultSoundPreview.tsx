@@ -7,7 +7,13 @@ import {
 } from "../../components/RealmzTargetPicker";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project } from "../../types";
-import { FloatingWorkbenchPanel, ReferencePicker, ReferencePreview, type ReferencePickerOption } from "../../ui";
+import {
+  FloatingWorkbenchPanel,
+  ReferencePicker,
+  ReferencePreview,
+  type ReferenceAudioPreview,
+  type ReferencePickerOption
+} from "../../ui";
 
 export function EncounterResultSoundPreview({
   project,
@@ -38,11 +44,7 @@ export function EncounterResultSoundPreview({
     setSelectedSoundId(Math.abs(previewable?.value ?? options[0].value));
   }, [options, selectedSoundId]);
 
-  const selectedDetail = selectedOption
-    ? [selectedOption.detail, selectedOption.summary, selectedOption.compatibility, selectedOption.sourceState].filter(Boolean).join(" | ")
-    : selectedSoundId
-      ? "Reference only; no preview source loaded"
-      : "Choose a sound to preview.";
+  const selectedPreview = encounterSoundReferencePreviewModel(selectedOption, selectedSoundId, selectedPreviewUrl);
 
   return (
     <FloatingWorkbenchPanel
@@ -76,7 +78,7 @@ export function EncounterResultSoundPreview({
           }}
           current={{
             label: selectedOption?.label ?? (selectedSoundId ? `Sound ${Math.abs(selectedSoundId)}` : "No Sound Selected"),
-            detail: selectedDetail,
+            detail: selectedPreview.detail,
             state: selectedOption ? "resolved" : selectedSoundId ? "unresolved" : "empty"
           }}
           resultNoun="sound"
@@ -84,18 +86,34 @@ export function EncounterResultSoundPreview({
           emptyTitle="No matching sounds"
           emptyBody="Try a sound name, numeric ID, or snd resource reference."
         />
-        <ReferencePreview preview={{
-          key: selectedOption?.key ?? `sound:${selectedSoundId}`,
-          kind: "audio",
-          title: selectedOption?.label ?? (selectedSoundId ? `Sound ${Math.abs(selectedSoundId)}` : "No Sound Selected"),
-          detail: selectedDetail,
-          src: selectedPreviewUrl,
-          onPlay: selectedPreviewUrl ? () => playPreviewUrl(selectedPreviewUrl) : undefined,
-          state: selectedPreviewUrl ? "resolved" : "unavailable"
-        }} />
+        <ReferencePreview preview={selectedPreview} />
       </div>
     </FloatingWorkbenchPanel>
   );
+}
+
+export function encounterSoundReferencePreviewModel(
+  option: ScriptTargetOption | null,
+  soundId: number,
+  previewUrl: string | null,
+  emptyLabel = "No Sound Selected"
+): ReferenceAudioPreview {
+  const resolvedId = Math.abs(soundId || option?.value || 0);
+  const title = option?.label ?? (resolvedId ? `Sound ${resolvedId}` : emptyLabel);
+  const detail = option
+    ? [option.detail, option.summary, option.compatibility, option.sourceState].filter(Boolean).join(" | ")
+    : resolvedId
+      ? "Reference only; no preview source loaded"
+      : "Choose a sound to preview.";
+  return {
+    key: option?.key ?? `sound:${resolvedId}`,
+    kind: "audio",
+    title,
+    detail,
+    src: previewUrl,
+    onPlay: previewUrl ? () => playPreviewUrl(previewUrl) : undefined,
+    state: previewUrl ? "resolved" : "unavailable"
+  };
 }
 
 export function withTypedSoundOption(

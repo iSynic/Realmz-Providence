@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Volume2 } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import {
   resolveSignedMessageTarget,
@@ -8,7 +7,7 @@ import {
   targetOptionsForOpcode,
   type ScriptTargetOption
 } from "../../components/RealmzTargetPicker";
-import { playPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
+import { type PreviewRuntimeContext } from "../../previewUrls";
 import type {
   EncounterActionRow,
   LibraryCatalog,
@@ -16,14 +15,22 @@ import type {
   ProjectCommand,
   SelectedEntity
 } from "../../types";
-import { ReferenceField, numericReferenceQuery, type ReferencePickerOption } from "../../ui";
+import {
+  ReferenceAudioPreviewAction,
+  ReferenceField,
+  numericReferenceQuery,
+  type ReferencePickerOption
+} from "../../ui";
 import {
   ROGUE_ACTION_LABELS,
   encounterResultStatus,
   resultStatusLabel,
   type EncounterDecisionSource
 } from "./encounterFlow";
-import { useEncounterSoundPreviewUrl } from "./EncounterResultSoundPreview";
+import {
+  encounterSoundReferencePreviewModel,
+  useEncounterSoundPreviewUrl
+} from "./EncounterResultSoundPreview";
 import { EncounterRecordPicker } from "./EncounterRecordPicker";
 import { InlineNumberField } from "./InlineNumberField";
 import { NumberField } from "./NumberField";
@@ -314,21 +321,18 @@ function RogueSoundSelectField({
       ? `Sound ${selectedValue} has no matching loaded sound target.`
       : `${emptyLabel} selected.`;
   const selectedPreviewUrl = useEncounterSoundPreviewUrl(selected, value, project, previewContext);
+  const selectedPreview = encounterSoundReferencePreviewModel(selected, value, selectedPreviewUrl, emptyLabel);
   return (
-    <div className={className} title={soundHelp}>
+    <div className={className} title={[selectedPreview.title, selectedPreview.detail].filter(Boolean).join(" | ")}>
       <TutorialTip title={label} body={soundHelp} side="below">
         <span>{label}</span>
       </TutorialTip>
-      <button
-        type="button"
-        className="rogue-trap-sound-preview-button"
-        disabled={!selectedPreviewUrl}
-        title={selectedPreviewUrl ? `Preview ${selected?.label ?? `sound ${selectedValue}`}` : "No playable preview is available for this sound."}
-        aria-label={previewAriaLabel}
-        onClick={() => selectedPreviewUrl && playPreviewUrl(selectedPreviewUrl)}
-      >
-        <Volume2 size={12} />
-      </button>
+      <ReferenceAudioPreviewAction
+        preview={selectedPreview}
+        compact
+        iconOnly
+        ariaLabel={previewAriaLabel}
+      />
       <ReferenceField
         ariaLabel={`Search ${label}`}
         placeholder="Search sound name or ID..."

@@ -70,23 +70,53 @@ export type ReferencePreviewProps = {
   className?: string;
 };
 
+export type ReferenceAudioPreviewActionProps = {
+  preview: ReferenceAudioPreview;
+  compact?: boolean;
+  iconOnly?: boolean;
+  ariaLabel?: string;
+  className?: string;
+};
+
+export function ReferenceAudioPreviewAction({
+  preview,
+  compact = false,
+  iconOnly = false,
+  ariaLabel,
+  className
+}: ReferenceAudioPreviewActionProps) {
+  const playLabel = preview.playLabel ?? "Play";
+  return (
+    <button
+      type="button"
+      className={[
+        "btn",
+        "btn-secondary",
+        compact ? "btn-xs" : "btn-sm",
+        "workbench-reference-audio-action",
+        compact ? "is-compact" : "",
+        iconOnly ? "is-icon-only" : "",
+        className
+      ].filter(Boolean).join(" ")}
+      disabled={!preview.src || !preview.onPlay}
+      title={preview.src ? "Play this sound preview." : "No playable preview is available for this sound."}
+      aria-label={ariaLabel ?? (iconOnly ? "Play sound preview" : undefined)}
+      data-reference-preview-key={preview.key}
+      data-reference-preview-state={preview.state ?? (preview.src ? "resolved" : "unavailable")}
+      onClick={preview.onPlay}
+    >
+      <Volume2 size={compact ? 12 : 13} /> {!iconOnly && playLabel}
+    </button>
+  );
+}
+
 export const DEFAULT_REFERENCE_PREVIEW_RENDERERS: CompleteReferencePreviewRendererRegistry = {
   text: (preview) => <p>{preview.text}</p>,
   summary: (preview) => <p>{preview.summary}</p>,
   image: (preview) => preview.src
     ? <img src={preview.src} alt={preview.alt} />
     : <small>No image preview is available for this reference.</small>,
-  audio: (preview) => (
-    <button
-      type="button"
-      className="btn btn-secondary btn-sm"
-      disabled={!preview.src || !preview.onPlay}
-      title={preview.src ? "Play this sound preview." : "No playable preview is available for this sound."}
-      onClick={preview.onPlay}
-    >
-      <Volume2 size={13} /> {preview.playLabel ?? "Play"}
-    </button>
-  ),
+  audio: (preview) => <ReferenceAudioPreviewAction preview={preview} />,
   custom: (preview) => preview.content,
   missing: (preview) => <EmptyState compact title={preview.title} body={preview.body} />
 };

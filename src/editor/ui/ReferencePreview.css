@@ -61,3 +61,19 @@
   border: 1px solid #2f485b;
   background: #070b0e;
 }
+
+.workbench-reference-audio-action.is-icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+}
+
+.workbench-reference-audio-action.is-compact.is-icon-only {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
+}

@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { ItemReferenceOption } from "../../itemReferences";
 import type { ScriptTargetOption } from "../../components/RealmzTargetPicker";
 import { encounterResponseReferenceOptions } from "./EncounterResponsePicker";
-import { soundPreviewReferenceOptions, withTypedSoundOption } from "./EncounterResultSoundPreview";
+import {
+  encounterSoundReferencePreviewModel,
+  soundPreviewReferenceOptions,
+  withTypedSoundOption
+} from "./EncounterResultSoundPreview";
 
 describe("encounter response reference options", () => {
   it("keeps the complete spell response collection plus the empty choice", () => {
@@ -57,6 +61,23 @@ describe("encounter sound reference options", () => {
 
     expect(withTypedSoundOption(stored, typed)).toEqual(stored);
     expect(withTypedSoundOption(stored, newTyped).map((option) => option.value)).toEqual([-625, 624]);
+  });
+
+  it("uses one preview model for floating and compact sound controls", () => {
+    expect(encounterSoundReferencePreviewModel(soundOption(-624), -624, null)).toMatchObject({
+      key: "sound:-624",
+      kind: "audio",
+      title: "Sound 624",
+      src: null,
+      state: "unavailable"
+    });
+    expect(encounterSoundReferencePreviewModel(null, 625, "/sound.wav")).toMatchObject({
+      key: "sound:625",
+      kind: "audio",
+      title: "Sound 625",
+      src: "/sound.wav",
+      state: "resolved"
+    });
   });
 });
 

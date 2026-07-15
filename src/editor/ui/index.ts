@@ -16,7 +16,11 @@ export {
 export { SearchField } from "./SearchField";
 export { ReferenceField, numericReferenceQuery } from "./ReferenceField";
 export { ReferencePicker, filterReferencePickerOptions, referencePickerKeyboardAction } from "./ReferencePicker";
-export { ReferencePreview, DEFAULT_REFERENCE_PREVIEW_RENDERERS } from "./ReferencePreview";
+export {
+  ReferenceAudioPreviewAction,
+  ReferencePreview,
+  DEFAULT_REFERENCE_PREVIEW_RENDERERS
+} from "./ReferencePreview";
 
 export type {
   EmptyStateProps,
@@ -46,6 +50,7 @@ export type {
 } from "./ReferencePicker";
 export type {
   ReferenceAudioPreview,
+  ReferenceAudioPreviewActionProps,
   ReferenceCustomPreview,
   ReferenceImagePreview,
   ReferenceMissingPreview,
