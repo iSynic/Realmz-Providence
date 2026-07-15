@@ -81,7 +81,7 @@ These should share query fields, clear behavior, result counts, filter controls,
 | --- | --- | --- |
 | Inline reference | AP targets, EDCD targets, item IDs | `ReferenceField` with consistent selected and unresolved states |
 | Floating reference picker | Encounter response/result panels | `ReferencePicker` shell with pluggable rows and preview renderer |
-| Media/icon picker | Item icons, monster icons, Assets | Shared dialog/search/filter shell; domain media grid remains specialized |
+| Media/icon picker | Item icons, monster icons, Assets | Shared reference shell for item and monster icons; domain asset grids remain specialized |
 | Quick preview | Eye actions for strings, sounds, targets, resources | `ReferencePreview` using the same renderer registry as the picker |
 | Persistent inspector | Assets, maps, combat, suite details | Shared inspector sections and command placement |
 
@@ -89,7 +89,7 @@ The first shared renderer types should be string, sound, picture/icon, item, mon
 
 ## Overlay Families
 
-Providence currently has shared floating panels plus bespoke backdrops/dialogs for project lifecycle, draft changes, global search, asset import, battle repair, item icons, and monster icons. ISY-331 should define one focus, Escape, backdrop, sizing, scroll, and action-row contract before those dialogs are restyled.
+Providence currently has shared floating panels plus bespoke backdrops/dialogs for project lifecycle, draft changes, global search, asset import, and battle repair. Item and monster icon selection now use the shared movable reference panel. ISY-331 should define one focus, Escape, backdrop, sizing, scroll, and action-row contract before the remaining dialogs are restyled.
 
 ## Baseline Findings
 
@@ -133,6 +133,8 @@ Action Point target eyes now open the shared movable `FloatingWorkbenchPanel` an
 Story Flags now uses `SearchField` for decoded flags and flags available to an author note. Both searches report complete result counts, and the former silent eighteen-flag limit has been removed.
 
 Combat monster and icon browsing now shares `SearchField` across the battle palette, Monster Library, Scenario Monsters, monster icon picker, icon-set library, and icon targets. Specialized virtualized palettes, drag/drop rows, and media grids remain unchanged while search clear actions, result counts, and accessible labels become consistent.
+
+Monster record icon selection now composes the compact `ReferenceField` and paired custom previews. The picker remains limited to complete base/alternate icon pairs, reports source ownership, keeps the selected large monster preview and source badge visible, and exposes the full Icon Set workbench as an explicit action. Its bespoke fixed backdrop, search shell, grid, and Escape handling have been retired in favor of the shared movable picker contract.
 
 Economy item browsing now uses the same search contract in Items, Shops, and Treasure. Category filtering composes over the canonical item matcher, full match counts remain visible when large collections are capped for rendering, and the existing record and slot geometry remains domain-owned. The custom-item icon field now composes the shared compact `ReferenceField` with selected and result-row image previews: item, project, and library aliases merge by `cicn` ID, imported raw IDs remain selectable as unresolved values, and the former silent modal-specific cap and CSS have been retired. Its 1,500-plus merged references remain fully searchable while the shared picker renders them in explicit 160-row increments with a visible Show More state.
 

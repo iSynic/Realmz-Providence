@@ -1,12 +1,47 @@
-import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { useMemo } from "react";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { IconEntry, MonsterRecord, Project } from "../../types";
-import { SearchField } from "../../ui";
+import {
+  ReferenceField,
+  ReferencePreview,
+  type ReferencePickerOption
+} from "../../ui";
 import type { CombatLookups } from "./combatLookups";
 import { IconPairPreview } from "./IconPairResources";
-import { monsterIconPickerOptions, monsterIconSourceStatusLabel } from "./iconSetModel";
+import {
+  monsterIconPickerOptions,
+  monsterIconSourceStatusLabel,
+  type MonsterIconPickerOption
+} from "./iconSetModel";
 import { MonsterIcon, resolveMonsterIcon } from "./MonsterIconPreview";
+
+export function monsterIconReferenceOptions(
+  options: MonsterIconPickerOption[],
+  previewContext: PreviewRuntimeContext
+): ReferencePickerOption<number>[] {
+  return options.map((option) => {
+    const status = monsterIconSourceStatusLabel(option.sourceStatus);
+    return {
+      key: option.key,
+      value: option.baseId,
+      label: `Icon ${option.baseId}`,
+      detail: `${status} | ${option.sourceLabel}`,
+      searchText: `${option.baseId} icon cicn ${status} ${option.sourceLabel}`,
+      preview: {
+        kind: "custom",
+        key: `monster-icon-pair:${option.baseId}`,
+        title: `Icon ${option.baseId}`,
+        content: (
+          <IconPairPreview
+            baseAsset={option.asset}
+            pairedAsset={option.pairedAsset}
+            previewContext={previewContext}
+          />
+        )
+      }
+    };
+  });
+}
 
 export function MonsterIconControl({
   monster,
@@ -25,195 +60,90 @@ export function MonsterIconControl({
   onCommit: (iconId: number) => void;
   onOpenIconSet?: () => void;
 }) {
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const targets = useMemo(
+    () => monsterIconPickerOptions(project, lookups, iconEntries),
+    [iconEntries, lookups, project]
+  );
+  const options = useMemo(
+    () => monsterIconReferenceOptions(targets, previewContext),
+    [previewContext, targets]
+  );
+  const iconId = Math.abs(monster.iconId);
+  const selectedTarget = targets.find((target) => target.baseId === iconId) ?? null;
   const resolution = resolveMonsterIcon(monster, iconEntries, project, lookups);
   const statusLabel = monsterIconSourceStatusLabel(resolution.sourceStatus);
   const canPickTargetIcon = Boolean(onOpenIconSet);
   const iconTitle = `${canPickTargetIcon ? "Choose monster icon" : "Monster icon"} (${statusLabel}: ${resolution.label})`;
   const showSourceBadge = resolution.sourceStatus !== "default-art";
-  const preview = <MonsterIcon monster={monster} iconEntries={iconEntries} project={project} lookups={lookups} previewContext={previewContext} large />;
+  const current = {
+    label: `Icon ${iconId}`,
+    detail: `${statusLabel} | ${resolution.label}`,
+    state: resolution.sourceStatus === "missing-art" ? "unresolved" as const : "resolved" as const
+  };
+
   return (
-    <div className="monster-icon-control">
-      {canPickTargetIcon ? (
-        <button
-          type="button"
-          className="monster-icon-button"
-          onClick={() => setPickerOpen(true)}
-          title={iconTitle}
-          aria-label="Choose monster icon"
-        >
-          {preview}
-        </button>
-      ) : <span title={iconTitle}>{preview}</span>}
+    <div className="monster-icon-control" title={iconTitle}>
+      <MonsterIcon
+        monster={monster}
+        iconEntries={iconEntries}
+        project={project}
+        lookups={lookups}
+        previewContext={previewContext}
+        large
+      />
       {showSourceBadge ? (
         <span className={`monster-icon-source-badge ${resolution.sourceStatus}`} title={resolution.label}>
           {statusLabel}
         </span>
       ) : null}
       {canPickTargetIcon ? (
-        <MonsterIconPickerModal
-          open={pickerOpen}
-          currentIconId={Math.abs(monster.iconId)}
-          project={project}
-          iconEntries={iconEntries}
-          lookups={lookups}
-          previewContext={previewContext}
-          onSelect={onCommit}
-          onOpenIconSet={onOpenIconSet}
-          onClose={() => setPickerOpen(false)}
+        <ReferenceField
+          ariaLabel="Search monster icon"
+          placeholder="Search icon ID or source..."
+          options={options}
+          value={iconId}
+          selectedValue={selectedTarget?.baseId ?? null}
+          current={current}
+          currentActions={(
+            <button type="button" className="btn btn-secondary btn-xs" onClick={onOpenIconSet}>
+              Open Icon Set
+            </button>
+          )}
+          currentSupplement={(
+            <ReferencePreview
+              preview={selectedTarget ? {
+                kind: "custom",
+                key: `monster-icon-current:${iconId}`,
+                title: `Monster icon ${iconId}`,
+                detail: `${statusLabel} | ${selectedTarget.sourceLabel}`,
+                content: (
+                  <IconPairPreview
+                    baseAsset={selectedTarget.asset}
+                    pairedAsset={selectedTarget.pairedAsset}
+                    previewContext={previewContext}
+                  />
+                )
+              } : {
+                kind: "missing",
+                key: `monster-icon-current:${iconId}:missing`,
+                title: `Monster icon ${iconId}`,
+                detail: resolution.label,
+                body: "Choose a complete base and alternate monster icon pair, or open Icon Set to import one.",
+                state: "missing"
+              }}
+            />
+          )}
+          resultNoun="icon"
+          resultNounPlural="icons"
+          emptyTitle="No matching monster icons"
+          emptyBody="Try a target icon ID, source name, or source status. Only complete monster icon pairs are available."
+          compact
+          compactPanelTitle="Monster Icon Picker"
+          compactStorageKey="combat.monster.icon.picker.position"
+          className="monster-icon-reference-field"
+          onChange={onCommit}
         />
       ) : null}
-    </div>
-  );
-}
-
-function MonsterIconPickerModal({
-  open,
-  currentIconId,
-  project,
-  iconEntries,
-  lookups,
-  previewContext,
-  onSelect,
-  onOpenIconSet,
-  onClose
-}: {
-  open: boolean;
-  currentIconId: number;
-  project: Project;
-  iconEntries: Record<number, IconEntry>;
-  lookups: CombatLookups;
-  previewContext: PreviewRuntimeContext;
-  onSelect: (iconId: number) => void;
-  onOpenIconSet?: () => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  useEffect(() => {
-    if (open) setQuery("");
-  }, [open]);
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, open]);
-  if (!open) return null;
-  return (
-    <MonsterIconPickerDialog
-      currentIconId={currentIconId}
-      project={project}
-      iconEntries={iconEntries}
-      lookups={lookups}
-      previewContext={previewContext}
-      query={query}
-      onQuery={setQuery}
-      onSelect={onSelect}
-      onOpenIconSet={onOpenIconSet}
-      onClose={onClose}
-    />
-  );
-}
-
-function MonsterIconPickerDialog({
-  currentIconId,
-  project,
-  iconEntries,
-  lookups,
-  previewContext,
-  query,
-  onQuery,
-  onSelect,
-  onOpenIconSet,
-  onClose
-}: {
-  currentIconId: number;
-  project: Project;
-  iconEntries: Record<number, IconEntry>;
-  lookups: CombatLookups;
-  previewContext: PreviewRuntimeContext;
-  query: string;
-  onQuery: (query: string) => void;
-  onSelect: (iconId: number) => void;
-  onOpenIconSet?: () => void;
-  onClose: () => void;
-}) {
-  const options = useMemo(() => monsterIconPickerOptions(project, lookups, iconEntries), [iconEntries, lookups, project]);
-  const filteredOptions = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return options;
-    return options.filter((option) => {
-      const haystack = [
-        String(option.baseId),
-        `icon ${option.baseId}`,
-        option.sourceLabel,
-        monsterIconSourceStatusLabel(option.sourceStatus)
-      ].join(" ").toLowerCase();
-      return haystack.includes(needle);
-    });
-  }, [options, query]);
-  return (
-    <div className="monster-icon-picker-backdrop" role="presentation" onMouseDown={onClose}>
-      <section
-        className="monster-icon-picker-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="monster-icon-picker-title"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        <header className="monster-icon-picker-header">
-          <div>
-            <h3 id="monster-icon-picker-title">Choose Monster Icon</h3>
-          </div>
-          <div className="monster-icon-picker-actions">
-            {onOpenIconSet ? (
-              <button
-                type="button"
-                className="btn btn-secondary btn-xs"
-                onClick={() => {
-                  onClose();
-                  onOpenIconSet();
-                }}
-              >
-                Open Icon Set
-              </button>
-            ) : null}
-            <button type="button" className="btn btn-icon btn-xs" aria-label="Close icon picker" onClick={onClose}>
-              <X size={14} aria-hidden="true" />
-            </button>
-          </div>
-        </header>
-        <SearchField className="monster-icon-picker-search" value={query} onChange={onQuery}
-          placeholder="Search icon ID or source..." ariaLabel="Search monster icons"
-          resultCount={filteredOptions.length} resultNoun="icon" autoFocus />
-        <div className="monster-icon-picker-grid" role="listbox" aria-label="Scenario monster icon targets">
-          {filteredOptions.map((option) => {
-            const selected = option.baseId === currentIconId;
-            return (
-              <button
-                key={option.key}
-                type="button"
-                className={`monster-icon-picker-option${selected ? " selected" : ""}`}
-                aria-selected={selected}
-                role="option"
-                onClick={() => {
-                  onSelect(option.baseId);
-                  onClose();
-                }}
-              >
-                <IconPairPreview baseAsset={option.asset} pairedAsset={option.pairedAsset} previewContext={previewContext} />
-                <span>
-                  <strong>Icon {option.baseId}</strong>
-                  <small>{monsterIconSourceStatusLabel(option.sourceStatus)}</small>
-                </span>
-              </button>
-            );
-          })}
-          {filteredOptions.length === 0 ? <p className="empty-copy compact">No scenario target icons match that search.</p> : null}
-        </div>
-      </section>
     </div>
   );
 }
