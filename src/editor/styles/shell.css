@@ -2782,7 +2782,7 @@ button.documents-source-chip {
 }
 
 .project-create-modes button:hover,
-.project-create-modes button.active {
+.project-create-modes button.is-selected {
   border-color: #365f80;
   background: #162534;
   color: #e9f4ff;

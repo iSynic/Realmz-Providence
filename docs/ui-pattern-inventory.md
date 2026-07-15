@@ -6,7 +6,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 
 ## Current Foundation
 
-`src/editor/ui` exports sixteen shared primitives:
+`src/editor/ui` exports seventeen shared component families:
 
 - `PanelSection` and `CollapsibleSection`
 - `FloatingWorkbenchPanel`
@@ -24,6 +24,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 - `ReferencePicker`
 - `ReferencePreview`
 - `WorkbenchTabs`
+- `SegmentedControl`
 
 At the ISY-330 baseline, 35 editor files import the shared UI module. This is enough adoption to evolve rather than replace the layer.
 
@@ -105,6 +106,7 @@ Providence currently has shared floating panels plus bespoke backdrops/dialogs f
 - Some overview lists still use fixed visible slices. Each occurrence must be classified as deliberate pagination/virtualization or replaced with a complete searchable/scrollable collection.
 - Tool tabs, segmented modes, and combinable filters are not always visually distinct.
 - Economy, writable-record family, Rules, Combat, Text, and Scripts top-level navigation now use `WorkbenchTabs`, including roving focus and Left/Right/Home/End keyboard selection; specialized map and fixed-grid modes remain candidates for domain-by-domain review.
+- Project creation, tile-palette source, and stamp-library scope now use `SegmentedControl`, with pressed-button semantics and the same roving Left/Right/Home/End keyboard model while their grid geometry remains domain-owned.
 
 ## First Implementation Slice
 

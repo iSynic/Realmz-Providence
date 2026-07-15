@@ -36,6 +36,7 @@ Search metadata must not change the alignment of neighboring controls. In a hori
 | --- | --- |
 | Layout | `WorkbenchStack`, `WorkbenchCluster`, `WorkbenchActionBar` |
 | Navigation | `WorkbenchTabs` for mutually exclusive local views |
+| Modes | `SegmentedControl` for mutually exclusive actions, sources, or filters within one view |
 | Sections | `PanelHeader` for unframed pane titles; `PanelSection`, `CollapsibleSection` for framed sections |
 | Collections | `SearchField`, `ScrollArea`, `EntityRow`, `IncrementalListFooter` |
 | References | `ReferenceField`, `ReferencePicker`, `ReferencePreview` |

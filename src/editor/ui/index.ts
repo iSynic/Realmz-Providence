@@ -15,6 +15,7 @@ export {
 } from "./WorkbenchPrimitives";
 
 export { SearchField } from "./SearchField";
+export { SegmentedControl, segmentedControlKeyboardTarget } from "./SegmentedControl";
 export { WorkbenchActionBar, WorkbenchCluster, WorkbenchStack } from "./WorkbenchLayout";
 export { WorkbenchTabs, workbenchTabKeyboardTarget } from "./WorkbenchTabs";
 export { IncrementalListFooter, useIncrementalListLimit } from "./IncrementalListFooter";
@@ -46,6 +47,7 @@ export type {
 } from "./WorkbenchPrimitives";
 
 export type { SearchFieldProps } from "./SearchField";
+export type { SegmentedControlOption, SegmentedControlProps } from "./SegmentedControl";
 export type { WorkbenchActionBarProps, WorkbenchClusterProps, WorkbenchGap, WorkbenchStackProps } from "./WorkbenchLayout";
 export type { WorkbenchTabOption, WorkbenchTabsProps } from "./WorkbenchTabs";
 export type { IncrementalListFooterProps } from "./IncrementalListFooter";

@@ -10,7 +10,7 @@ import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resource
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
-import { ScrollArea } from "../ui";
+import { ScrollArea, SegmentedControl, type SegmentedControlOption } from "../ui";
 
 const FALLBACK_TILE_CHOICES = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160,
@@ -61,12 +61,12 @@ type PaintPalettePanelProps = {
 
 type SpecialIconFilter = "structures" | "placeable" | "actors" | "used" | "all";
 
-const PALETTE_MODE_OPTIONS: Array<{ id: TilePaletteCategory; label: string }> = [
-  { id: "all", label: "All" },
-  { id: "landlook", label: "Landlook" },
-  { id: "special", label: "Special / Advanced" },
-  { id: "super", label: "Stamps" },
-  { id: "custom", label: "Custom" }
+const PALETTE_MODE_OPTIONS: ReadonlyArray<SegmentedControlOption<TilePaletteCategory>> = [
+  { value: "all", label: "All", title: PALETTE_MODE_HELP.all },
+  { value: "landlook", label: "Landlook", title: PALETTE_MODE_HELP.landlook },
+  { value: "special", label: "Special / Advanced", title: PALETTE_MODE_HELP.special },
+  { value: "super", label: "Stamps", title: PALETTE_MODE_HELP.super },
+  { value: "custom", label: "Custom", title: PALETTE_MODE_HELP.custom }
 ];
 
 export function TileSelectionBar(props: Omit<PaintPalettePanelProps, "variant">) {
@@ -319,19 +319,13 @@ export function PaintPalettePanel({
         <b>{paintVariation === "single" ? `Paint ${selectedTile}` : paintVariationLabel(paintVariation, activeVariationLabel)}</b>
       </div>
       {variant === "sidebar" && !stampOnly && (
-        <div className="paint-palette-tabs" role="tablist" aria-label="Tile palette mode">
-          {PALETTE_MODE_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={mode === option.id ? "active" : ""}
-              onClick={() => onSetMode(option.id)}
-              title={PALETTE_MODE_HELP[option.id]}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          ariaLabel="Tile palette mode"
+          className="paint-palette-tabs"
+          value={mode}
+          options={PALETTE_MODE_OPTIONS}
+          onChange={onSetMode}
+        />
       )}
       {variant === "sidebar" && mode === "landlook" && (
         <label className="paint-palette-select-row">
@@ -610,14 +604,17 @@ function StampLibrary({
         </select>
       </label>
       <div className="stamp-library-toolbar">
-        <div className="stamp-scope-tabs" role="toolbar" aria-label="Stamp library filter">
-          {STAMP_SCOPES.map((item) => (
-            <button key={item.id} type="button" className={scope === item.id ? "active" : ""} onClick={() => setScope(item.id)}>
-              <span>{item.label}</span>
-              <b>{stampScopeCount(stamps, item.id)}</b>
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          ariaLabel="Stamp library filter"
+          className="stamp-scope-tabs"
+          value={scope}
+          options={STAMP_SCOPES.map((item) => ({
+            value: item.id,
+            label: item.label,
+            meta: stampScopeCount(stamps, item.id)
+          }))}
+          onChange={setScope}
+        />
         <button className="btn btn-primary btn-xs" type="button" disabled={captureDisabled} onClick={createFromSelection} title={captureDisabled ? "Select a map region first." : "Create a project stamp from the selected map region."}>
           New From Selection
         </button>

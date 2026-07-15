@@ -503,7 +503,7 @@
 .paint-mode-grid button:hover,
 .paint-variation-buttons button.active,
 .paint-variation-compact button.active,
-.paint-palette-tabs button.active {
+.paint-palette-tabs button.is-selected {
   border-color: #3c78b2;
   background: #172d48;
   color: #b9ddff;
@@ -527,7 +527,7 @@
 }
 
 .paint-palette-tabs button:hover,
-.paint-palette-tabs button.active {
+.paint-palette-tabs button.is-selected {
   border-color: rgba(59, 214, 184, 0.78);
   background: #112a27;
   color: #bff8ed;

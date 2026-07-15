@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, BookOpen, Braces, CheckCircle2, Clipboard, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import { ScenarioSeedPreflightOutcome, ScenarioSeedTemplateSelection } from "../scenarioSeedReport";
+import { SegmentedControl, type SegmentedControlOption } from "../ui";
 
 const NEW_PROJECT_DIALOG_HELP =
   "A Providence project is its own folder package. New projects start with an editable land level 0; import a Realmz scenario before authoring project content.";
@@ -13,6 +14,11 @@ const PROJECT_RUNTIME_HELP =
   "Desktop projects can save, export, and use native folder dialogs. Browser preview opens Providence ZIP packages, saves locally, and uses folder support only where the browser exposes it.";
 
 type ProjectCreationMode = "blank" | "scenario-json";
+
+const PROJECT_CREATION_MODES: ReadonlyArray<SegmentedControlOption<ProjectCreationMode>> = [
+  { value: "blank", label: <><FilePlus2 size={14} /> Blank Project</> },
+  { value: "scenario-json", label: <><Braces size={14} /> Scenario JSON</> }
+];
 
 export function ProjectNameDialog({
   value,
@@ -93,14 +99,13 @@ export function ProjectNameDialog({
           </TutorialTip>
         </div>
         <div className="project-name-dialog-body">
-          <div className="project-create-modes" role="tablist" aria-label="Project creation mode">
-            <button className={mode === "blank" ? "active" : ""} type="button" role="tab" aria-selected={mode === "blank"} onClick={() => setMode("blank")}>
-              <FilePlus2 size={14} /> Blank Project
-            </button>
-            <button className={mode === "scenario-json" ? "active" : ""} type="button" role="tab" aria-selected={mode === "scenario-json"} onClick={() => setMode("scenario-json")}>
-              <Braces size={14} /> Scenario JSON
-            </button>
-          </div>
+          <SegmentedControl
+            ariaLabel="Project creation mode"
+            className="project-create-modes"
+            value={mode}
+            options={PROJECT_CREATION_MODES}
+            onChange={setMode}
+          />
           {mode === "blank" ? (
             <>
               <label>

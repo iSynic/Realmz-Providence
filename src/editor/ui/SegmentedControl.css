@@ -1,0 +1,53 @@
+:where(.segmented-control) {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-1);
+}
+
+:where(.segmented-control) > button {
+  min-height: var(--ui-control-height-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-2);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-control);
+  background: var(--ui-color-surface);
+  color: var(--ui-color-text-muted);
+  padding: 0 var(--ui-space-3);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+:where(.segmented-control) > button > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-2);
+}
+
+:where(.segmented-control) > button:hover:not(:disabled) {
+  border-color: var(--ui-color-border-strong);
+  background: var(--ui-color-surface-hover);
+  color: var(--ui-color-text);
+}
+
+:where(.segmented-control) > button.is-selected {
+  border-color: var(--ui-color-info);
+  background: var(--ui-color-info-surface);
+  color: var(--ui-color-text-strong);
+}
+
+:where(.segmented-control) > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+:where(.segmented-control) > button:focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus-ring);
+  outline-offset: 1px;
+}

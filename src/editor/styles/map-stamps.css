@@ -80,7 +80,7 @@
   line-height: 1;
 }
 
-.stamp-scope-tabs button.active,
+.stamp-scope-tabs button.is-selected,
 .stamp-editor-tools button.active {
   border-color: #3f8fd5;
   background: #123453;
