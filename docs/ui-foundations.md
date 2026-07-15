@@ -28,6 +28,8 @@ Layer order is explicit: base, sticky, tooltip, popover, floating workbench, the
 
 Every pane has one vertical scroll owner. `ScrollArea` owns large collections; a panel body may own scrolling only when the complete body is the viewport. Nested vertical scrollers require a domain-specific reason. Collections report the full match count, and any rendering cap uses `IncrementalListFooter` with an explicit visible count and Show More command.
 
+Search metadata must not change the alignment of neighboring controls. In a horizontal control row, put counts and status in the pane header or reserve an equal metadata row for every control. Shared search inputs own their icon and clear-button padding; domain input rules must not override that internal spacing.
+
 ## Shared Component Contracts
 
 | Concern | Shared contract |

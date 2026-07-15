@@ -36,6 +36,8 @@ describe("Economy search fields", () => {
     const shopHtml = renderToStaticMarkup(createElement(ShopWorkbench, commonProps));
     const treasureHtml = renderToStaticMarkup(createElement(TreasureWorkbench, commonProps));
     expect(shopHtml).toContain('aria-label="Search shop items"');
+    expect(shopHtml).toContain('class="shop-pool-result-count"');
+    expect(shopHtml).not.toContain('class="workbench-search-meta"');
     expect(treasureHtml).toContain('aria-label="Search treasure items"');
     expect(shopHtml).toContain("0 items");
     expect(treasureHtml).toContain("0 items");

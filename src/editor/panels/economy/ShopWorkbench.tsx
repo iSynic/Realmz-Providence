@@ -212,6 +212,9 @@ function ShopStockEditor({
             </TutorialTip>
             <small>{openSlot >= 0 ? `Next open slot ${openSlot}` : "All shop slots are filled"}</small>
           </div>
+          <span className="shop-pool-result-count" aria-live="polite">
+            {matchingOptions.length.toLocaleString()} {matchingOptions.length === 1 ? "item" : "items"}
+          </span>
         </header>
         <div className="shop-pool-controls">
           <label>
@@ -229,7 +232,7 @@ function ShopStockEditor({
             </select>
           </label>
           <SearchField className="item-search" value={query} onChange={setQuery} placeholder="Search item pool..."
-            ariaLabel="Search shop items" resultCount={matchingOptions.length} resultNoun="item" />
+            ariaLabel="Search shop items" />
         </div>
         <EconomyItemPoolList className="shop-catalog-list" ariaLabel="Items available for shop stock"
           options={matchingOptions} optionsLoading={optionsLoading} disabled={openSlot < 0}

@@ -26,11 +26,11 @@
   transform: translateY(-50%);
 }
 
-.workbench-search-control > input {
+.workbench-search-field .workbench-search-control > input[type="search"] {
   width: 100%;
   min-width: 0;
-  padding-left: 29px;
-  padding-right: 29px;
+  padding-left: 34px;
+  padding-right: 32px;
 }
 
 .workbench-search-control > input::-webkit-search-cancel-button {

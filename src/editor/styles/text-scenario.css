@@ -1408,6 +1408,12 @@
   text-transform: uppercase;
 }
 
+.shop-pool-result-count {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-label);
+  white-space: nowrap;
+}
+
 
 
 .treasure-slot-grid {
