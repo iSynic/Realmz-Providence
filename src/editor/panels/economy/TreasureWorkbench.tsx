@@ -4,7 +4,7 @@ import { ITEM_REFERENCE_CATEGORIES, type ItemReferenceCategory, type ItemReferen
 import { useIconPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { ScrollArea, SearchField } from "../../ui";
+import { PanelHeader, ScrollArea, SearchField } from "../../ui";
 import { EconomyItemPoolList } from "./EconomyItemPoolList";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
@@ -71,12 +71,10 @@ export function TreasureWorkbench({
       </header>
       <div className="treasure-workbench-layout">
         <aside className="treasure-record-browser">
-          <header>
-            <TutorialTip title="Treasure Records" body={TREASURE_EDITOR_HELP} side="right">
-              <strong>{records.length.toLocaleString()} records</strong>
-            </TutorialTip>
-            <small>{records.reduce((total, entry) => total + treasureFilledItems(project, entry.id), 0).toLocaleString()} item slots filled</small>
-          </header>
+          <PanelHeader
+            title={<TutorialTip title="Treasure Records" body={TREASURE_EDITOR_HELP} side="right">{records.length.toLocaleString()} records</TutorialTip>}
+            description={`${records.reduce((total, entry) => total + treasureFilledItems(project, entry.id), 0).toLocaleString()} item slots filled`}
+          />
           <ScrollArea className="treasure-record-list" aria-label="Treasure records">
             {visibleRecords.map((entry) => {
               const candidate = (project.treasures ?? []).find((treasure) => treasure.id === entry.id) ?? null;
@@ -283,14 +281,11 @@ function TreasureLootEditor({
   return (
     <section className="treasure-loot-panel">
       <div className="treasure-catalog-panel">
-        <header>
-          <div>
-            <TutorialTip title="Add Treasure Item" body="Choose from the same Divinity item families used by the Item Editor. Clicking an item fills the next open treasure slot." side="right">
-              <strong>Add Item</strong>
-            </TutorialTip>
-            <small>{openSlot >= 0 ? `Next open slot ${openSlot}` : "All 20 slots are filled"}</small>
-          </div>
-        </header>
+        <PanelHeader
+          title={<TutorialTip title="Add Treasure Item" body="Choose from the same Divinity item families used by the Item Editor. Clicking an item fills the next open treasure slot." side="right">Add Item</TutorialTip>}
+          description={openSlot >= 0 ? `Next open slot ${openSlot}` : "All 20 slots are filled"}
+          meta={`${matchingOptions.length.toLocaleString()} ${matchingOptions.length === 1 ? "item" : "items"}`}
+        />
         <div className="item-category-tabs" role="tablist" aria-label="Treasure item categories">
           {ITEM_REFERENCE_CATEGORIES.map((entry) => (
             <button
@@ -306,20 +301,16 @@ function TreasureLootEditor({
           ))}
         </div>
         <SearchField className="item-search" value={query} onChange={setQuery} placeholder="Search items to add..."
-          ariaLabel="Search treasure items" resultCount={matchingOptions.length} resultNoun="item" />
+          ariaLabel="Search treasure items" />
         <EconomyItemPoolList className="treasure-catalog-list" ariaLabel="Items available for treasure"
           options={matchingOptions} optionsLoading={optionsLoading} disabled={openSlot < 0}
           project={project} catalog={catalog} previewContext={previewContext} onSelect={addItem} />
       </div>
       <div className="treasure-slot-panel">
-        <header>
-          <div>
-            <TutorialTip title="Treasure Items" body={TREASURE_ITEMS_HELP} side="right">
-              <strong>Treasure Items</strong>
-            </TutorialTip>
-            <small>{itemIds.filter(Boolean).length} of 20 slots filled</small>
-          </div>
-        </header>
+        <PanelHeader
+          title={<TutorialTip title="Treasure Items" body={TREASURE_ITEMS_HELP} side="right">Treasure Items</TutorialTip>}
+          description={`${itemIds.filter(Boolean).length} of 20 slots filled`}
+        />
         <div className="treasure-slot-grid">
           {Array.from({ length: 20 }, (_, slot) => {
             const value = itemIds[slot] ?? 0;

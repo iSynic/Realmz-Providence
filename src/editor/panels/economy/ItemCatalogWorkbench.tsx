@@ -665,11 +665,6 @@ function ItemFieldNote({ children }: { children: ReactNode }) {
   return <p className="item-field-note">{children}</p>;
 }
 
-export const SHOP_ITEM_CATEGORY_OPTIONS: Array<{ id: ItemReferenceCategory | "all"; label: string; range?: string }> = [
-  { id: "all", label: "All Items" },
-  ...ITEM_REFERENCE_CATEGORIES
-];
-
 function ItemTextInput({
   label,
   value,

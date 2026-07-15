@@ -5,6 +5,33 @@ import "./workbench.css";
 
 export type WorkbenchTone = "neutral" | "info" | "success" | "warning" | "danger" | "blocked";
 
+export type PanelHeaderProps = {
+  title: ReactNode;
+  eyebrow?: ReactNode;
+  description?: ReactNode;
+  meta?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+};
+
+export function PanelHeader({ title, eyebrow, description, meta, actions, className }: PanelHeaderProps) {
+  return (
+    <header className={classNames("workbench-pane-header", className)}>
+      <div className="workbench-pane-header-copy">
+        {eyebrow && <span className="workbench-pane-header-eyebrow">{eyebrow}</span>}
+        <strong>{title}</strong>
+        {description && <small>{description}</small>}
+      </div>
+      {(meta || actions) && (
+        <div className="workbench-pane-header-aside">
+          {meta && <span className="workbench-pane-header-meta">{meta}</span>}
+          {actions}
+        </div>
+      )}
+    </header>
+  );
+}
+
 export type PanelSectionProps = {
   title: ReactNode;
   eyebrow?: ReactNode;

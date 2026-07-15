@@ -6,6 +6,40 @@
   overflow: hidden;
 }
 
+.workbench-pane-header {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-space-6);
+}
+
+.workbench-pane-header-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.workbench-pane-header-eyebrow {
+  color: var(--ui-color-info);
+  font-size: var(--ui-font-size-label);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workbench-pane-header-aside {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-4);
+}
+
+.workbench-pane-header-meta {
+  color: var(--ui-color-text-muted);
+  font-size: var(--ui-font-size-meta);
+  white-space: nowrap;
+}
+
 .workbench-panel-section-header {
   min-height: var(--ui-section-header-height);
   display: flex;

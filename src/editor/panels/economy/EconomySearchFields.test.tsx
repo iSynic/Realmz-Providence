@@ -39,6 +39,10 @@ describe("Economy search fields", () => {
     expect(shopHtml).toContain('class="shop-pool-result-count"');
     expect(shopHtml).not.toContain('class="workbench-search-meta"');
     expect(treasureHtml).toContain('aria-label="Search treasure items"');
+    expect(treasureHtml).not.toContain('class="workbench-search-meta"');
+    expect(shopHtml).toContain('class="workbench-pane-header');
+    expect(treasureHtml).toContain('class="workbench-pane-header');
+    expect((shopHtml.match(/<option value="all"/g) ?? [])).toHaveLength(1);
     expect(shopHtml).toContain("0 items");
     expect(treasureHtml).toContain("0 items");
   });

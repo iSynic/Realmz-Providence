@@ -924,13 +924,7 @@
 .treasure-workbench-header,
 .shop-workbench-header,
 .treasure-detail-panel > header,
-.shop-detail-panel > header,
-.treasure-record-browser > header,
-.shop-record-browser > header,
-.treasure-catalog-panel > header,
-.treasure-slot-panel > header,
-.shop-catalog-panel > header,
-.shop-inventory-panel > header {
+.shop-detail-panel > header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1032,16 +1026,6 @@
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
-}
-
-
-
-.treasure-catalog-panel > header div,
-.treasure-slot-panel > header div,
-.shop-catalog-panel > header div,
-.shop-inventory-panel > header div {
-  display: grid;
-  gap: 3px;
 }
 
 

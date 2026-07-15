@@ -1,13 +1,12 @@
 import { useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
-import type { ItemReferenceCategory, ItemReferenceOption } from "../../itemReferences";
+import { ITEM_REFERENCE_CATEGORIES, type ItemReferenceCategory, type ItemReferenceOption } from "../../itemReferences";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
-import { IncrementalListFooter, ScrollArea, SearchField, useIncrementalListLimit } from "../../ui";
+import { IncrementalListFooter, PanelHeader, ScrollArea, SearchField, useIncrementalListLimit } from "../../ui";
 import { EconomyItemPoolList } from "./EconomyItemPoolList";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
-import { SHOP_ITEM_CATEGORY_OPTIONS } from "./ItemCatalogWorkbench";
 import { ItemNumberInput } from "./ItemNumberInput";
 import { ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemReferencePresentation";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
@@ -70,12 +69,10 @@ export function ShopWorkbench({
       </header>
       <div className="shop-workbench-layout">
         <aside className="shop-record-browser">
-          <header>
-            <TutorialTip title="Shop Records" body={SHOP_RECORD_HELP} side="right">
-              <strong>{records.length.toLocaleString()} records</strong>
-            </TutorialTip>
-            <small>{records.reduce((total, entry) => total + shopFilledSlots(project, entry.id), 0).toLocaleString()} stocked slots</small>
-          </header>
+          <PanelHeader
+            title={<TutorialTip title="Shop Records" body={SHOP_RECORD_HELP} side="right">{records.length.toLocaleString()} records</TutorialTip>}
+            description={`${records.reduce((total, entry) => total + shopFilledSlots(project, entry.id), 0).toLocaleString()} stocked slots`}
+          />
           <ScrollArea className="shop-record-list" aria-label="Shop records">
             {visibleRecords.map((entry) => {
               const candidate = (project.shops ?? []).find((shop) => shop.id === entry.id) ?? null;
@@ -205,17 +202,11 @@ function ShopStockEditor({
   return (
     <section className="shop-stock-panel">
       <div className="shop-catalog-panel">
-        <header>
-          <div>
-            <TutorialTip title="Item Pool" body="Choose from the same item families used by Treasure and Items. Clicking an item fills the next open shop slot with quantity 1." side="right">
-              <strong>Item Pool</strong>
-            </TutorialTip>
-            <small>{openSlot >= 0 ? `Next open slot ${openSlot}` : "All shop slots are filled"}</small>
-          </div>
-          <span className="shop-pool-result-count" aria-live="polite">
-            {matchingOptions.length.toLocaleString()} {matchingOptions.length === 1 ? "item" : "items"}
-          </span>
-        </header>
+        <PanelHeader
+          title={<TutorialTip title="Item Pool" body="Choose from the same item families used by Treasure and Items. Clicking an item fills the next open shop slot with quantity 1." side="right">Item Pool</TutorialTip>}
+          description={openSlot >= 0 ? `Next open slot ${openSlot}` : "All shop slots are filled"}
+          meta={<span className="shop-pool-result-count" aria-live="polite">{matchingOptions.length.toLocaleString()} {matchingOptions.length === 1 ? "item" : "items"}</span>}
+        />
         <div className="shop-pool-controls">
           <label>
             <span>Category</span>
@@ -224,7 +215,7 @@ function ShopStockEditor({
               onChange={(event) => setCategory(event.currentTarget.value as ItemReferenceCategory | "all")}
               aria-label="Shop item category"
             >
-              {SHOP_ITEM_CATEGORY_OPTIONS.map((entry) => (
+              {ITEM_REFERENCE_CATEGORIES.map((entry) => (
                 <option key={entry.id} value={entry.id}>
                   {entry.range ? `${entry.label} (${entry.range})` : entry.label}
                 </option>
@@ -239,17 +230,11 @@ function ShopStockEditor({
           project={project} catalog={catalog} previewContext={previewContext} onSelect={addItem} />
       </div>
       <div className="shop-inventory-panel">
-        <header>
-          <div>
-            <TutorialTip title="Shop Stock" body="Realmz copies this source stock into the runtime shop inventory when a new game starts. Saved games can diverge after play begins." side="right">
-              <strong>Shop Stock</strong>
-            </TutorialTip>
-            <small>{filledSlots.length} of 1000 slots filled</small>
-          </div>
-          <button type="button" className="btn btn-danger btn-xs" disabled={filledSlots.length === 0} onClick={clearAll}>
-            Clear Stock
-          </button>
-        </header>
+        <PanelHeader
+          title={<TutorialTip title="Shop Stock" body="Realmz copies this source stock into the runtime shop inventory when a new game starts. Saved games can diverge after play begins." side="right">Shop Stock</TutorialTip>}
+          description={`${filledSlots.length} of 1000 slots filled`}
+          actions={<button type="button" className="btn btn-danger btn-xs" disabled={filledSlots.length === 0} onClick={clearAll}>Clear Stock</button>}
+        />
         <ScrollArea className="shop-inventory-list" aria-label="Shop stocked items">
           {visibleSlots.map((slot) => {
             const itemId = record.itemIds[slot] ?? 0;
