@@ -4,7 +4,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 
 ## Current Foundation
 
-`src/editor/ui` exports fifteen shared primitives:
+`src/editor/ui` exports sixteen shared primitives:
 
 - `PanelSection` and `CollapsibleSection`
 - `FloatingWorkbenchPanel`
@@ -18,6 +18,7 @@ This is the initial ISY-330 inventory. It records implementation families that s
 - `HelpBubble`
 - `ScrollArea`
 - `SearchField`
+- `ReferenceField`
 - `ReferencePicker`
 - `ReferencePreview`
 
@@ -116,3 +117,5 @@ Complex Encounter Magic/Item response browsers and the encounter Sound Preview n
 The Strings workbench now uses `SearchField` for message filtering, occurrence navigation, option labels, scrolling text, and reference resources. Option Labels and Scrolling Text each expose one list-local filter instead of synchronized toolbar and sidebar duplicates. Reference resources retain incremental loading, but the former silent 120-row slice now has an explicit Show More action and reports the full match count.
 
 The Action Point inventory, Action Settings browser, and action chooser now use `SearchField` as one coherent browsing family. All three expose the same clear action, result-count status, input geometry, and accessible search semantics while preserving their map/status/category filters and domain-specific result cards.
+
+The shared layer now includes `ReferenceField` for inline numeric references. EDCD targets and item-ID fields both compose it over `ReferencePicker`, so selected, empty, unresolved, raw-ID, clear, Enter, and Escape behavior no longer depends on separate field implementations. Item searches also return the complete matching collection instead of stopping silently at twelve rows.

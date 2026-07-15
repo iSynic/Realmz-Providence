@@ -1,15 +1,15 @@
-import { useState, type ReactNode } from "react";
-import { Eye, Trash2 } from "lucide-react";
+import type { ReactNode } from "react";
+import { Eye } from "lucide-react";
 import type { SelectedEntity } from "../types";
 import {
-  ReferencePicker,
+  ReferenceField,
+  type RawReferenceOptionFactory,
   type ReferencePickerCurrent,
   type ReferencePickerOption
 } from "../ui";
 
-export type EdcdRawReferenceOptionFactory = (
-  query: string
-) => ReferencePickerOption<number> | null;
+export type EdcdRawReferenceOptionFactory = RawReferenceOptionFactory;
+export { numericReferenceQuery } from "../ui";
 
 export function EdcdReferenceTargetField({
   ariaLabel,
@@ -50,73 +50,42 @@ export function EdcdReferenceTargetField({
   onChange: (value: number) => void;
   onOpen?: (entity: SelectedEntity) => void;
 }) {
-  const [query, setQuery] = useState("");
-  const rawOption = rawOptionForQuery?.(query) ?? null;
-  const effectiveOptions = rawOption ? [rawOption, ...options] : options;
   const canOpen = Boolean(selectedEntity && onOpen);
-  const canClear = value !== 0;
-  const currentActions = canOpen || canClear ? (
-    <>
-      {canOpen && (
-        <button
-          type="button"
-          className="btn btn-secondary btn-xs icon-only"
-          disabled={disabled}
-          title={openLabel}
-          aria-label={openLabel}
-          onClick={(event) => {
-            event.preventDefault();
-            if (selectedEntity) onOpen?.(selectedEntity);
-          }}
-        >
-          <Eye size={12} />
-        </button>
-      )}
-      {canClear && (
-        <button
-          type="button"
-          className="btn btn-danger btn-xs icon-only"
-          disabled={disabled}
-          title={clearLabel}
-          aria-label={clearLabel}
-          onClick={(event) => {
-            event.preventDefault();
-            onChange(0);
-          }}
-        >
-          <Trash2 size={12} />
-        </button>
-      )}
-    </>
+  const currentActions = canOpen ? (
+    <button
+      type="button"
+      className="btn btn-secondary btn-xs icon-only"
+      disabled={disabled}
+      title={openLabel}
+      aria-label={openLabel}
+      onClick={(event) => {
+        event.preventDefault();
+        if (selectedEntity) onOpen?.(selectedEntity);
+      }}
+    >
+      <Eye size={12} />
+    </button>
   ) : undefined;
 
   return (
-    <ReferencePicker
+    <ReferenceField
       className="edcd-reference-target-field"
       ariaLabel={ariaLabel}
       placeholder={placeholder}
-      query={query}
-      onQueryChange={setQuery}
-      options={effectiveOptions}
-      value={selectedValue}
-      disabled={disabled}
-      onSelect={(option) => {
-        onChange(option.value);
-        setQuery("");
-      }}
+      options={options}
+      value={value}
+      selectedValue={selectedValue}
       current={current}
-      currentActions={currentActions}
-      currentSupplement={currentSupplement}
-      showResults={Boolean(query.trim())}
+      disabled={disabled}
+      rawOptionForQuery={rawOptionForQuery}
       resultNoun={resultNoun}
       resultNounPlural={resultNounPlural}
       emptyTitle={emptyTitle}
       emptyBody={emptyBody}
+      clearLabel={clearLabel}
+      currentActions={currentActions}
+      currentSupplement={currentSupplement}
+      onChange={onChange}
     />
   );
-}
-
-export function numericReferenceQuery(query: string) {
-  const normalized = query.trim();
-  return /^-?\d+$/.test(normalized) ? Number(normalized) : null;
 }

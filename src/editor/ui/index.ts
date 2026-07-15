@@ -14,6 +14,7 @@ export {
 } from "./WorkbenchPrimitives";
 
 export { SearchField } from "./SearchField";
+export { ReferenceField, numericReferenceQuery } from "./ReferenceField";
 export { ReferencePicker, filterReferencePickerOptions, referencePickerKeyboardAction } from "./ReferencePicker";
 export { ReferencePreview, DEFAULT_REFERENCE_PREVIEW_RENDERERS } from "./ReferencePreview";
 
@@ -36,6 +37,7 @@ export type {
 } from "./WorkbenchPrimitives";
 
 export type { SearchFieldProps } from "./SearchField";
+export type { RawReferenceOptionFactory, ReferenceFieldProps } from "./ReferenceField";
 export type {
   ReferencePickerCurrent,
   ReferencePickerOption,

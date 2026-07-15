@@ -842,7 +842,7 @@
 .complex-encounter-response-row .encounter-result-select span,
 .complex-encounter-response-row .encounter-result-number-field span,
 .complex-encounter-response-row .script-spell-response-field span,
-.complex-encounter-response-row .script-item-id-field.compact span {
+.complex-encounter-response-row .script-item-id-field.compact > span {
   display: none;
 }
 
@@ -866,7 +866,7 @@
 .complex-encounter-response-row .encounter-result-number-field small,
 .complex-encounter-response-row .script-spell-response-field small,
 .complex-encounter-response-row .script-reference-id-field.compact small,
-.complex-encounter-response-row .script-item-id-field.compact small {
+.complex-encounter-response-row .script-item-id-field.compact > small {
   display: none;
 }
 
@@ -1513,7 +1513,7 @@
 .timed-form-row > span,
 .timed-form-row > .tutorial-tip,
 .timed-form-row .script-number-field.compact span,
-.timed-form-row .script-item-id-field.compact span,
+.timed-form-row .script-item-id-field.compact > span,
 .timed-form-row .script-reference-id-field.compact > span {
   color: #d8e8f5;
   font-size: 10px;
@@ -2715,7 +2715,7 @@
 
   .timed-form-row > span,
   .timed-form-row .script-number-field.compact span,
-  .timed-form-row .script-item-id-field.compact span,
+  .timed-form-row .script-item-id-field.compact > span,
   .timed-form-row .script-reference-id-field.compact > span {
     text-align: left;
   }

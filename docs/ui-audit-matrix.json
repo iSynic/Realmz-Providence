@@ -91,7 +91,12 @@
       ] }
     ] } },
     { "key": "encounters.rogue", "domain": "encounters", "editor": "rogue", "label": "Rogue Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
-    { "key": "encounters.timed", "domain": "encounters", "editor": "timed", "label": "Timed Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "encounters.timed", "domain": "encounters", "editor": "timed", "label": "Timed Encounter", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned", "states": [
+      { "id": "required-item-filtered", "steps": [
+        { "action": "fill", "selector": ".timed-encounter-editor .script-item-id-field .workbench-search-control input[type=\"search\"]", "value": "dagger" },
+        { "action": "wait", "selector": ".timed-encounter-editor .script-item-id-field .workbench-reference-results [role=\"option\"]" }
+      ] }
+    ] } },
 
     { "key": "combat.battles", "domain": "combat", "editor": "battles", "label": "Battle Editor", "workbenches": ["project"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "combat" } },
     { "key": "combat.monsters", "domain": "combat", "editor": "monsters", "label": "Monster Editor", "workbenches": ["project", "library"], "track": "ISY-335", "capture": { "route": "ready", "baseline": "planned" } },
