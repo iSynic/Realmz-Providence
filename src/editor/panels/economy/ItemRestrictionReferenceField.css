@@ -1,0 +1,12 @@
+.item-restriction-reference-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.item-restriction-reference-field > span {
+  color: #75b8f0;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}

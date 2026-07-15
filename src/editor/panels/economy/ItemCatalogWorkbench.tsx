@@ -10,6 +10,7 @@ import { ScrollArea, SearchField } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { filterEconomyItemOptions } from "./economyItemSearch";
 import { ItemIconField } from "./ItemIconField";
+import { ItemRestrictionReferenceField } from "./ItemRestrictionReferenceField";
 import { ItemSoundField } from "./ItemSoundField";
 
 const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
@@ -1062,24 +1063,16 @@ function ItemUseRestrictionEditor({
   return (
     <div className="item-use-restriction-editor">
       <div className="item-specific-restrictions">
-        <label>
-          <span>Specific Race</span>
-          <select value={record.specificRace} onChange={(event) => onChange("specificRace", Number(event.currentTarget.value))}>
-            <option value={0}>Any race</option>
-            {REALMZ_RACES.map((label, index) => (
-              <option key={label} value={index + 1}>{index + 1}: {label}</option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>Specific Caste</span>
-          <select value={record.specificCaste} onChange={(event) => onChange("specificCaste", Number(event.currentTarget.value))}>
-            <option value={0}>Any caste</option>
-            {REALMZ_CASTES.map((label, index) => (
-              <option key={label} value={index + 1}>{index + 1}: {label}</option>
-            ))}
-          </select>
-        </label>
+        <ItemRestrictionReferenceField
+          kind="race"
+          value={record.specificRace}
+          onChange={(value) => onChange("specificRace", value)}
+        />
+        <ItemRestrictionReferenceField
+          kind="caste"
+          value={record.specificCaste}
+          onChange={(value) => onChange("specificCaste", value)}
+        />
       </div>
       <ItemMaskEditor
         title="Those That Can't Use It"

@@ -144,6 +144,8 @@ Treasure item slots and Shop stock rows now use one compact Economy item-referen
 
 Custom Item sounds now use the shared compact reference and audio-preview controls. The Economy adapter merges scenario, project-catalog, and reference-library sound aliases by direct `snd` ID, keeps signed imported values until an author changes them, and removes the raw number-plus-Play implementation. This remains separate from the Rules sound adapter because spell fields store an offset value rather than the direct item sound resource ID.
 
+Custom Item specific Race and Caste restrictions now use an Economy-owned compact reference adapter instead of long native dropdowns. The picker reuses canonical Realmz names while preserving the Item record's distinct one-based values, its `0 = Any` sentinel, and unusual imported values; Rules record navigation remains zero-based.
+
 Rules record navigation now uses the shared compact `ReferenceField` for Race, Caste, and per-class Spell selection. Long native record dropdowns have become searchable floating pickers with the standard selected, filtered, no-match, and unresolved states; previous/next navigation, scenario-copy commands, and dense fixed-record form geometry remain Rules-owned. The short Spellcaster Class mode list intentionally remains a native select.
 
 Spell casting and resolution sounds now use the same compact `ReferenceField` plus `ReferenceAudioPreviewAction`. Authors can search by sound name, stored spell value, or `snd` resource ID; unresolved imported values remain explicit, playback remains available on read-only built-in spells, and the former raw number-plus-Play control has been retired.

@@ -569,23 +569,6 @@
 
 
 
-.item-specific-restrictions label {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-}
-
-
-
-.item-specific-restrictions label span {
-  color: #75b8f0;
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-
-
 .item-mask-editor {
   display: grid;
   gap: 8px;
