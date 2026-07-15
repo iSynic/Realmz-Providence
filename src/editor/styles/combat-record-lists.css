@@ -408,7 +408,6 @@
 .combat-field input,
 .combat-field select,
 .combat-target-field > select,
-.combat-pager-row input,
 .monster-palette input {
   width: 100%;
   min-height: 30px;
@@ -425,14 +424,6 @@
   display: grid;
   gap: 7px;
   justify-items: center;
-}
-
-.combat-record-pager {
-  width: fit-content;
-}
-
-.combat-pager-row input {
-  text-align: center;
 }
 
 .combat-record-scroll {

@@ -1,13 +1,15 @@
-import { Eye } from "lucide-react";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
 import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } from "../scripts/scriptActionCatalog";
 import type { BattleRecord, LibraryCatalog, MonsterSetId, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
+import {
+  BattleMacroReferenceField,
+  BattleRecordReferenceField,
+  BattleStringReferenceField
+} from "./BattleReferenceFields";
 import { MONSTER_SET_OPTIONS } from "./combatLookups";
 import { FieldLabel, NumberField } from "./CombatFields";
-
-const BATTLE_MACRO_HELP = "Battle Macro is an Extra Action Point reference that Realmz checks at the end of each combat round. Providence writes selected macros in the runnable form; positive imports are preserved but warned until edited.";
 
 export type BattleBoardRenderProps = {
   battle: BattleRecord;
@@ -132,19 +134,16 @@ function BattleEditor({
     <article className="combat-editor battle-editor">
       <header className="combat-editor-header">
         <div className="combat-editor-title">
-          <PagedNumberControl
-            className="combat-record-pager"
-            label="Battle"
+          <BattleRecordReferenceField
             value={battle.id}
-            options={battles.map((candidate) => candidate.id)}
-            allowArbitrary={false}
+            battles={battles}
             help="Use the arrows to page through existing Data BD battle records, or type an existing battle number."
-            onCommit={onSelectBattle}
+            onChange={onSelectBattle}
           />
         </div>
         <div className="battle-header-fields">
           <BattleDistanceField value={battle.dist} onCommit={(dist) => onUpdate({ dist })} />
-          <BattleStringField
+          <BattleStringReferenceField
             project={project}
             label="Before String"
             value={battle.messageBefore}
@@ -154,7 +153,7 @@ function BattleEditor({
             onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create before battle string", recordType: "message", id })}
             onUpdateString={(id, text) => onApplyCommand?.({ kind: "updateMessageRecord", label: `Update before battle string ${id}`, id, changes: { text } })}
           />
-          <BattleStringField
+          <BattleStringReferenceField
             project={project}
             label="After String"
             value={battle.messageAfter}
@@ -164,12 +163,19 @@ function BattleEditor({
             onCreate={(id) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create after battle string", recordType: "message", id })}
             onUpdateString={(id, text) => onApplyCommand?.({ kind: "updateMessageRecord", label: `Update after battle string ${id}`, id, changes: { text } })}
           />
-          <BattleMacroField
+          <BattleMacroReferenceField
             project={project}
-            catalog={catalog}
             value={battle.battleMacro}
             onCommit={(battleMacro) => onUpdate({ battleMacro })}
             onSelectEntity={onSelectEntity}
+            previewContent={(
+              <BattleActionFlowContent
+                project={project}
+                catalog={catalog}
+                actionId={Math.abs(battle.battleMacro)}
+                onSelectEntity={onSelectEntity}
+              />
+            )}
           />
         </div>
         <div className="battle-header-actions">
@@ -195,130 +201,6 @@ function BattleEditor({
   );
 }
 
-function PagedNumberControl({
-  label,
-  value,
-  options,
-  help,
-  actions,
-  allowArbitrary = true,
-  className = "",
-  onCommit
-}: {
-  label: string;
-  value: number;
-  options: number[];
-  help?: string;
-  actions?: ReactNode;
-  allowArbitrary?: boolean;
-  className?: string;
-  onCommit: (value: number) => void;
-}) {
-  const [draft, setDraft] = useState(String(value));
-  const pageValues = useMemo(() => uniqueSortedNumbers(options), [options]);
-  const valueSet = useMemo(() => new Set(pageValues), [pageValues]);
-  const previousValue = [...pageValues].reverse().find((candidate) => candidate < value) ?? null;
-  const nextValue = pageValues.find((candidate) => candidate > value) ?? null;
-  useEffect(() => setDraft(String(value)), [value]);
-  const commitDraft = () => {
-    const parsed = Number(draft);
-    if (!Number.isFinite(parsed)) {
-      setDraft(String(value));
-      return;
-    }
-    const next = Math.trunc(parsed);
-    if (!allowArbitrary && !valueSet.has(next)) {
-      setDraft(String(value));
-      return;
-    }
-    onCommit(next);
-    setDraft(String(next));
-  };
-  return (
-    <div className={`combat-paged-field ${className}`.trim()}>
-      <FieldLabel label={label} help={help} />
-      <div className="combat-pager-action-row">
-        <div className="combat-pager-row">
-          <button type="button" className="btn btn-secondary btn-xs" disabled={previousValue === null} aria-label={`Previous ${label}`} onClick={() => previousValue !== null && onCommit(previousValue)}>
-            &lt;
-          </button>
-          <input
-            type="number"
-            value={draft}
-            onChange={(event) => setDraft(event.currentTarget.value)}
-            onBlur={commitDraft}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") event.currentTarget.blur();
-            }}
-          />
-          <button type="button" className="btn btn-secondary btn-xs" disabled={nextValue === null} aria-label={`Next ${label}`} onClick={() => nextValue !== null && onCommit(nextValue)}>
-            &gt;
-          </button>
-        </div>
-        {actions ? <div className="battle-target-actions">{actions}</div> : null}
-      </div>
-    </div>
-  );
-}
-
-function BattleStringField({
-  project,
-  label,
-  value,
-  help,
-  onCommit,
-  onSelectEntity,
-  onCreate,
-  onUpdateString
-}: {
-  project: Project;
-  label: string;
-  value: number;
-  help?: string;
-  onCommit: (value: number) => void;
-  onSelectEntity: (entity: SelectedEntity) => void;
-  onCreate?: (id: number) => void;
-  onUpdateString?: (id: number, text: string) => void;
-}) {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const targetId = Math.abs(value);
-  const options = useMemo(
-    () => uniqueSortedNumbers([0, targetId, ...(project.messages ?? []).map((message) => message.id)]),
-    [project.messages, targetId]
-  );
-  return (
-    <div className="combat-target-field battle-string-field">
-      <PagedNumberControl
-        label={label}
-        value={targetId}
-        options={options}
-        help={help}
-        onCommit={(id) => onCommit(Math.max(0, Math.trunc(Math.abs(id))))}
-        actions={
-          targetId ? (
-            <>
-              <button type="button" className="btn btn-xs battle-open-target-button" onClick={() => onSelectEntity(selectEntityFromId(`message:${targetId}`))}>
-                Open String
-              </button>
-              <button
-                type="button"
-                className={`btn btn-xs battle-preview-button battle-icon-button${previewOpen ? " active" : ""}`}
-                title="Preview / edit string"
-                aria-label="Preview or edit selected string"
-                aria-pressed={previewOpen}
-                onClick={() => setPreviewOpen((open) => !open)}
-              >
-                <Eye size={14} aria-hidden="true" />
-              </button>
-            </>
-          ) : null
-        }
-      />
-      {targetId && previewOpen ? <BattleStringPreviewPanel project={project} stringId={targetId} onCreate={onCreate} onUpdateString={onUpdateString} /> : null}
-    </div>
-  );
-}
-
 function BattleDistanceField({ value, onCommit }: { value: number; onCommit: (value: number) => void }) {
   const outOfRange = value < 0 || value > 30;
   return (
@@ -336,121 +218,7 @@ function BattleDistanceField({ value, onCommit }: { value: number; onCommit: (va
   );
 }
 
-function BattleMacroField({
-  project,
-  catalog,
-  value,
-  onCommit,
-  onSelectEntity
-}: {
-  project: Project;
-  catalog: LibraryCatalog | null;
-  value: number;
-  onCommit: (value: number) => void;
-  onSelectEntity: (entity: SelectedEntity) => void;
-}) {
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const macroId = Math.abs(value);
-  const options = useMemo(
-    () =>
-      (project.triggers ?? [])
-        .filter((trigger) => trigger.source === "Data ED3" && trigger.recordIndex > 0)
-        .slice()
-        .sort((a, b) => a.recordIndex - b.recordIndex),
-    [project.triggers]
-  );
-  const optionIds = useMemo(
-    () => uniqueSortedNumbers([0, macroId, ...options.map((trigger) => trigger.recordIndex)]),
-    [macroId, options]
-  );
-  const selected = options.find((trigger) => trigger.recordIndex === macroId) ?? null;
-  const commitMacroId = (nextMacroId: number) => {
-    if (!nextMacroId) {
-      onCommit(0);
-      return;
-    }
-    onCommit(-Math.abs(nextMacroId));
-  };
-  return (
-    <div className="combat-target-field battle-macro-field">
-      <PagedNumberControl
-        label="Battle Macro"
-        value={macroId}
-        options={optionIds}
-        help={BATTLE_MACRO_HELP}
-        onCommit={commitMacroId}
-        actions={
-          macroId ? (
-            <>
-              {selected ? (
-                <button type="button" className="btn btn-xs battle-open-target-button" onClick={() => onSelectEntity(selectEntityFromId(`macro:${selected.recordIndex}`))}>
-                  Open Battle Macro
-                </button>
-              ) : (
-                <span className="battle-target-action-placeholder">Missing Macro</span>
-              )}
-              <button
-                type="button"
-                className={`btn btn-xs battle-preview-button battle-icon-button${previewOpen ? " active" : ""}`}
-                title="Flow preview"
-                aria-label="Toggle flow preview"
-                aria-pressed={previewOpen}
-                onClick={() => setPreviewOpen((open) => !open)}
-              >
-                <Eye size={14} aria-hidden="true" />
-              </button>
-            </>
-          ) : null
-        }
-      />
-      {value > 0 && (
-        <p className="combat-inline-warning">
-          Positive Battle Macro values are preserved, but modern Realmz does not run them at the end of each combat round. Re-selecting a macro will store the runnable value.
-        </p>
-      )}
-      {macroId && previewOpen ? <BattleActionFlowPanel project={project} catalog={catalog} actionId={macroId} onSelectEntity={onSelectEntity} /> : null}
-    </div>
-  );
-}
-
-function BattleStringPreviewPanel({
-  project,
-  stringId,
-  onCreate,
-  onUpdateString
-}: {
-  project: Project;
-  stringId: number;
-  onCreate?: (id: number) => void;
-  onUpdateString?: (id: number, text: string) => void;
-}) {
-  if (!stringId) return null;
-  const record = (project.messages ?? []).find((candidate) => candidate.id === Math.abs(stringId)) ?? null;
-  return (
-    <div className="combat-target-disclosure battle-target-panel">
-      {record ? (
-        <textarea
-          key={`battle-string-${record.id}-${record.text}`}
-          defaultValue={record.text}
-          onBlur={(event) => {
-            if (event.currentTarget.value !== record.text) onUpdateString?.(record.id, event.currentTarget.value);
-          }}
-        />
-      ) : (
-        <div className="combat-disclosure-empty">
-          <p>String {Math.abs(stringId)} has not been created yet.</p>
-          {onCreate ? (
-            <button type="button" className="btn btn-primary btn-xs" onClick={() => onCreate(Math.abs(stringId))}>
-              Create String {Math.abs(stringId)}
-            </button>
-          ) : null}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function BattleActionFlowPanel({
+function BattleActionFlowContent({
   project,
   catalog,
   actionId,
@@ -461,13 +229,11 @@ function BattleActionFlowPanel({
   actionId: number;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
-  if (!actionId) return null;
-  const trigger = (project.triggers ?? []).find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === Math.abs(actionId)) ?? null;
-  const actions = trigger?.actions.filter((action) => action.rawCode !== 0).sort((a, b) => a.slot - b.slot) ?? [];
+  const trigger = (project.triggers ?? []).find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === actionId) ?? null;
+  const actions = trigger?.actions.filter((action) => action.rawCode !== 0).sort((left, right) => left.slot - right.slot) ?? [];
   return (
-    <div className="combat-target-disclosure combat-flow-disclosure battle-target-panel">
-      {!trigger && <p>Extra Action Point {Math.abs(actionId)} has not been created yet.</p>}
-      {trigger && actions.length === 0 && <p>No action steps.</p>}
+    <div className="combat-flow-disclosure battle-reference-flow-preview">
+      {actions.length === 0 && <p>No action steps.</p>}
       {actions.map((action) => {
         const definition = scriptActionDefinitionFor(action.rawCode);
         const routes = scriptStepFlowRoutes(project, catalog, { rawCode: action.rawCode, id: action.id });
@@ -507,11 +273,6 @@ function selectEntityForCombatFlowTarget(target: { targetKind: string; value: nu
   if (target.targetKind === "mapRecord") return selectEntityFromId(`map-record:${target.value}`);
   if (target.targetKind === "item") return selectEntityFromId(`item:${target.value}`);
   return selectEntityFromId(`${target.targetKind}:${target.value}`);
-}
-
-function uniqueSortedNumbers(values: number[]) {
-  return [...new Set(values.filter((value) => Number.isFinite(value)).map((value) => Math.trunc(value)))]
-    .sort((left, right) => left - right);
 }
 
 function idFromEntity(entityId: string, prefix: string) {

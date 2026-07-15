@@ -33,74 +33,28 @@
 }
 
 .combat-target-field,
+.battle-reference-field,
+.battle-record-reference-field,
 .combat-field {
   display: grid;
   gap: 4px;
   min-width: 0;
 }
 
-.combat-paged-field {
+.battle-record-reference-control {
   display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.combat-pager-row {
-  display: grid;
-  grid-template-columns: 30px 96px 30px;
-  gap: 4px;
-  align-items: center;
-  justify-content: center;
-}
-
-.combat-pager-action-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  max-width: 100%;
-}
-
-.battle-macro-field .combat-pager-row {
-  grid-template-columns: 30px 96px 30px;
-}
-
-.combat-record-pager .combat-pager-row {
-  grid-template-columns: 30px 82px 30px;
-}
-
-.combat-pager-row button {
-  min-width: 0;
-  min-height: 30px;
-  padding: 4px 0;
-}
-
-.battle-header-fields .combat-pager-row {
-  grid-template-columns: 24px 52px 24px;
+  grid-template-columns: 28px minmax(112px, 164px) 28px;
   gap: 5px;
+  align-items: center;
+  justify-content: center;
 }
 
-.battle-header-fields .combat-pager-row button {
-  min-height: 28px;
-}
-
-.battle-header-fields .battle-target-actions {
-  grid-template-columns: minmax(78px, 1fr) 28px;
-}
-
-.battle-header-fields .battle-macro-field .battle-target-actions {
-  grid-template-columns: minmax(132px, 1fr) 28px;
-}
-
-.battle-header-fields .battle-target-actions > .btn,
-.battle-header-fields .battle-target-action-placeholder {
-  min-height: 28px;
-  font-size: 10px;
-}
-
-.battle-header-fields .battle-icon-button {
-  width: 28px;
-  min-width: 28px;
+.battle-record-reference-control .workbench-reference-compact,
+.battle-record-reference-control .workbench-reference-compact-trigger,
+.battle-reference-field .workbench-reference-compact,
+.battle-reference-field .workbench-reference-compact-trigger {
+  width: 100%;
+  min-width: 0;
 }
 
 .battle-scenario-monster-set {
@@ -174,7 +128,8 @@
   justify-items: center;
 }
 
-.battle-header-fields .combat-target-field {
+.battle-header-fields .combat-target-field,
+.battle-header-fields .battle-reference-field {
   gap: 7px;
   justify-items: center;
 }
@@ -184,9 +139,8 @@
   justify-items: center;
 }
 
-.battle-header-fields .combat-paged-field {
+.battle-header-fields .battle-reference-field {
   width: min(100%, 330px);
-  justify-items: center;
 }
 
 .battle-header-fields .combat-field input {
@@ -208,9 +162,9 @@
 }
 
 .battle-header-fields .combat-field > span,
-.battle-header-fields .combat-paged-field > span,
+.battle-header-fields .battle-reference-field > span,
 .battle-header-actions > span,
-.combat-editor-title .combat-paged-field > span {
+.combat-editor-title .battle-record-reference-field > span {
   width: 100%;
   display: grid;
   justify-items: center;
@@ -246,7 +200,8 @@
 }
 
 .combat-target-field > span,
-.combat-paged-field > span,
+.battle-reference-field > span,
+.battle-record-reference-field > span,
 .combat-field > span {
   color: #86c7ff;
   font-size: 9px;
@@ -318,114 +273,17 @@
   font-weight: 800;
 }
 
-.combat-target-disclosure {
-  border: 1px solid #263543;
-  border-radius: 5px;
-  background: #0b1219;
-  overflow: hidden;
-}
-
-.combat-target-disclosure summary {
-  display: flex;
-  align-items: center;
-  min-height: 26px;
-  padding: 4px 8px;
-  color: #dcecff;
-  font-size: 10px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
 .battle-header-fields .combat-target-field > small {
   max-width: 280px;
   text-align: center;
 }
 
-.battle-target-actions {
-  display: grid;
-  grid-template-columns: 104px 30px;
-  gap: 4px;
-  align-items: center;
-  min-width: 0;
-}
-
-.battle-macro-field .battle-target-actions {
-  grid-template-columns: 138px 30px;
-}
-
-.battle-target-actions > .btn {
-  min-height: 28px;
-}
-
-.battle-open-target-button {
-  border-color: #286f7e;
-  background: #0b2a31;
-  color: #c7f6ff;
-}
-
-.battle-open-target-button:hover:not(:disabled) {
-  border-color: #3b9aad;
-  background: #123c47;
-  color: #f1fdff;
-}
-
-.battle-preview-button {
-  border-color: #2d5d78;
-  background: #0b2230;
-  color: #ccecff;
-}
-
-.battle-preview-button:hover:not(:disabled) {
-  border-color: #4483a3;
-  background: #123247;
-  color: #effaff;
-}
-
-.battle-icon-button {
-  width: 30px;
-  min-width: 30px;
-  padding: 0;
-}
-
-.battle-icon-button.active {
-  border-color: #49b3d1;
-  background: #143c4a;
-  color: #effbff;
-}
-
-.battle-target-action-placeholder {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 28px;
-  border: 1px solid #314351;
-  border-radius: 4px;
-  background: #0b1219;
-  color: #8da9bd;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.battle-header-fields .battle-target-panel {
-  width: min(100%, 320px);
-  justify-self: center;
-}
-
-.battle-target-panel textarea {
-  border-top: 0;
-}
-
-.battle-target-panel > p,
-.battle-target-panel .combat-flow-step:first-child {
-  border-top: 0;
-}
-
-.combat-target-disclosure textarea {
+.battle-string-preview-editor {
   width: 100%;
   min-height: 96px;
   resize: vertical;
-  border: 0;
-  border-top: 1px solid #263543;
+  border: 1px solid #2c4050;
+  border-radius: 5px;
   background: #081018;
   color: #edf7ff;
   padding: 8px;
@@ -434,29 +292,19 @@
   line-height: 1.35;
 }
 
-.combat-target-disclosure > p {
-  margin: 0;
-  border-top: 1px solid #263543;
-  padding: 8px;
-  color: #8ea5b7;
-  font-size: 10px;
-}
-
-.combat-disclosure-empty {
+.battle-reference-flow-preview {
   display: grid;
-  gap: 7px;
-  border-top: 1px solid #263543;
-  padding: 8px;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #263543;
+  border-radius: 5px;
 }
 
-.combat-disclosure-empty p {
+.battle-reference-flow-preview > p {
   margin: 0;
+  padding: 8px;
   color: #8ea5b7;
   font-size: 10px;
-}
-
-.combat-disclosure-empty .btn {
-  justify-self: start;
 }
 
 .combat-flow-step {
