@@ -13,6 +13,7 @@ import { BattleBoard } from "./combat/BattleBoard";
 import { MonsterIconSetWorkbench } from "./combat/MonsterIconSetWorkbench";
 import { MonsterWorkbench } from "./combat/MonsterWorkbench";
 import { copyScrapbookMonsterToScenario, scrapbookEntryForMonsterId } from "./combat/monsterLibraryWorkflow";
+import { WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 
 export {
   monsterIconPickerOptions,
@@ -80,6 +81,12 @@ export function CombatPanel({
     onSelectEditor(next);
   };
   const lookups = useCombatLookups(project, catalog);
+  const combatTabs: WorkbenchTabOption<CombatWorkbenchTab>[] = (Object.keys(TAB_LABELS) as CombatWorkbenchTab[]).map((candidate) => ({
+    value: candidate,
+    label: TAB_LABELS[candidate],
+    meta: lookups.tabCounts[candidate].toLocaleString(),
+    title: TAB_HELP[candidate]
+  }));
 
   if (!project) {
     return (
@@ -111,22 +118,13 @@ export function CombatPanel({
         </div>
         <small>{project.scenario.name}</small>
       </header>
-      <div className="combat-tabs" role="tablist" aria-label="Combat workbench sections">
-        {(Object.keys(TAB_LABELS) as CombatWorkbenchTab[]).map((candidate) => (
-          <button
-            key={candidate}
-            type="button"
-            role="tab"
-            aria-selected={tab === candidate}
-            className={tab === candidate ? "active" : ""}
-            onClick={() => selectTab(candidate)}
-            title={TAB_HELP[candidate]}
-          >
-            <span>{TAB_LABELS[candidate]}</span>
-            <b>{lookups.tabCounts[candidate].toLocaleString()}</b>
-          </button>
-        ))}
-      </div>
+      <WorkbenchTabs
+        ariaLabel="Combat workbench sections"
+        className="combat-tabs"
+        value={tab}
+        options={combatTabs}
+        onChange={selectTab}
+      />
 
       {tab === "battles" && (
         <BattleWorkbench

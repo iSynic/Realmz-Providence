@@ -104,7 +104,7 @@ Providence currently has shared floating panels plus bespoke backdrops/dialogs f
 - Eye actions are moving toward a consistent preview meaning, but their floating surfaces remain independently composed.
 - Some overview lists still use fixed visible slices. Each occurrence must be classified as deliberate pagination/virtualization or replaced with a complete searchable/scrollable collection.
 - Tool tabs, segmented modes, and combinable filters are not always visually distinct.
-- Economy and writable-record family navigation now use `WorkbenchTabs`, including roving focus and Left/Right/Home/End keyboard selection; specialized map, combat, and fixed-grid modes remain candidates for domain-by-domain review.
+- Economy, writable-record family, Rules, and Combat top-level navigation now use `WorkbenchTabs`, including roving focus and Left/Right/Home/End keyboard selection; specialized map and fixed-grid modes remain candidates for domain-by-domain review.
 
 ## First Implementation Slice
 
@@ -143,6 +143,8 @@ Monster record icon selection now composes the compact `ReferenceField` and pair
 Battle record navigation, before/after strings, and the end-of-round Battle Macro now form one shared compact reference family. Record navigation keeps previous/next commands around a searchable Battle picker; string pickers search full message text and provide editing or creation in the picker preview; Battle Macro search preserves signed runnable storage and exposes its Action Point flow. Missing imported numeric references remain explicit, while the former number pagers, eye toggles, and layout-shifting inline disclosures have been retired. The battle board and monster palette remain specialized.
 
 Economy item browsing now uses the same search contract in Items, Shops, and Treasure. Category filtering composes over the canonical item matcher, full match counts remain visible when large collections are capped for rendering, and the existing record and slot geometry remains domain-owned. The custom-item icon field now composes the shared compact `ReferenceField` with selected and result-row image previews: item, project, and library aliases merge by `cicn` ID, imported raw IDs remain selectable as unresolved values, and the former silent modal-specific cap and CSS have been retired. Its 1,500-plus merged references remain fully searchable while the shared picker renders them in explicit 160-row increments with a visible Show More state.
+
+Rules and Combat top-level workbench navigation now use the same tab contract as Economy and writable-record editors. Tool-specific counts, labels, tutorial affordances, and layout widths remain domain-owned while selected state, accessibility roles, and keyboard navigation come from `WorkbenchTabs`.
 
 Treasure item slots and Shop stock rows now use one compact Economy item-reference field. The shared picker searches item IDs, names, categories, decoded details, and source ownership; it keeps icon previews and unresolved imported IDs while removing Treasure's duplicate native select plus raw-number controls and Shop's full-catalog select per row. Quantity editing and each tool's fixed slot geometry remain domain-owned.
 

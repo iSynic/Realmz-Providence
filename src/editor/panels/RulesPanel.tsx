@@ -6,6 +6,7 @@ import { RaceRulesEditor } from "./rules/RaceRulesEditor";
 import { CasteRulesEditor } from "./rules/CasteRulesEditor";
 import { RulesFamily } from "./rules/ruleTypes";
 import { familyLabel, normalizeFamily, overrideCount } from "./rules/ruleUtils";
+import { WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 
 const RULES_HELP = "Rules covers Realmz spells, races, and castes. Shared Realmz definitions are reference/copy sources; scenario-local Data Spell, Data Race, and Data Caste overrides are the editable/exported surface.";
 const RULES_FAMILY_HELP: Record<RulesFamily, string> = {
@@ -33,6 +34,15 @@ export function RulesPanel({
 }) {
   const [family, setFamily] = useState<RulesFamily>(() => normalizeFamily(activeEditor));
   useEffect(() => setFamily(normalizeFamily(activeEditor)), [activeEditor]);
+  const familyTabs: WorkbenchTabOption<RulesFamily>[] = (["spells", "races", "castes"] as RulesFamily[]).map((candidate) => ({
+    value: candidate,
+    label: (
+      <TutorialTip title={familyLabel(candidate)} body={RULES_FAMILY_HELP[candidate]} side="right">
+        <span>{familyLabel(candidate)}</span>
+      </TutorialTip>
+    ),
+    meta: overrideCount(project, candidate)
+  }));
   return (
     <section className="rules-workbench">
       <header className="domain-header">
@@ -46,16 +56,13 @@ export function RulesPanel({
         </div>
         <small>{project.scenario.name}</small>
       </header>
-      <div className="rules-tabs" role="tablist" aria-label="Rules editor">
-        {(["spells", "races", "castes"] as RulesFamily[]).map((candidate) => (
-          <button key={candidate} type="button" className={family === candidate ? "active" : ""} onClick={() => setFamily(candidate)}>
-            <TutorialTip title={familyLabel(candidate)} body={RULES_FAMILY_HELP[candidate]} side="right">
-              <span>{familyLabel(candidate)}</span>
-            </TutorialTip>
-            <b>{overrideCount(project, candidate)}</b>
-          </button>
-        ))}
-      </div>
+      <WorkbenchTabs
+        ariaLabel="Rules editor"
+        className="rules-tabs"
+        value={family}
+        options={familyTabs}
+        onChange={setFamily}
+      />
       {family === "spells" && <SpellRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} queueAtlasUrl={queueAtlasUrl ?? null} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
       {family === "races" && <RaceRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
       {family === "castes" && <CasteRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
