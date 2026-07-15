@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import {
@@ -19,6 +19,7 @@ const scopeLabels: Record<GlobalSearchScope, string> = {
 };
 const scopeOrder: GlobalSearchScope[] = ["scenario", "assets", "libraries", "docs", "diagnostics"];
 const initialGroupLimit = 8;
+const GLOBAL_SEARCH_RESULTS_ID = "global-search-results";
 const GLOBAL_SEARCH_HELP =
   "Global Search indexes the current scenario, scenario assets, bundled libraries, documentation, validation, and diagnostics. It is the fastest way to jump to a record, resource, topic, or warning.";
 const SEARCH_SCOPES_HELP =
@@ -46,6 +47,7 @@ export function GlobalSearchDialog({
   const [selectedScopes, setSelectedScopes] = useState<Set<GlobalSearchScope>>(() => new Set(scopeOrder));
   const [expandedScopes, setExpandedScopes] = useState<Set<GlobalSearchScope>>(() => new Set());
   const [activeIndex, setActiveIndex] = useState(0);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
   const index = useMemo(() => buildGlobalSearchIndex(project, catalog, customAssets), [catalog, customAssets, project]);
 
   useEffect(() => {
@@ -68,6 +70,18 @@ export function GlobalSearchDialog({
   useEffect(() => {
     setActiveIndex(0);
   }, [deferredQuery, selectedScopes]);
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, Math.max(0, visibleResults.length - 1)));
+  }, [visibleResults.length]);
+
+  useEffect(() => {
+    const activeResult = visibleResults[activeIndex];
+    if (!activeResult) return;
+    resultsRef.current?.ownerDocument
+      .getElementById(globalSearchOptionId(activeResult.id))
+      ?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, visibleResults]);
 
   function toggleScope(scope: GlobalSearchScope) {
     setSelectedScopes((current) => {
@@ -97,6 +111,16 @@ export function GlobalSearchDialog({
       setActiveIndex((index) => Math.max(0, index - 1));
       return;
     }
+    if (event.key === "Home" && visibleResults.length > 0) {
+      event.preventDefault();
+      setActiveIndex(0);
+      return;
+    }
+    if (event.key === "End" && visibleResults.length > 0) {
+      event.preventDefault();
+      setActiveIndex(visibleResults.length - 1);
+      return;
+    }
     if (event.key === "Enter" && visibleResults[activeIndex]) {
       event.preventDefault();
       openResult(visibleResults[activeIndex]);
@@ -122,6 +146,13 @@ export function GlobalSearchDialog({
               onChange={(event) => setQuery(event.currentTarget.value)}
               placeholder="Search scenario, libraries, assets, docs..."
               aria-label="Search Providence"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls={GLOBAL_SEARCH_RESULTS_ID}
+              aria-expanded={Boolean(deferredQuery.trim())}
+              aria-activedescendant={visibleResults[activeIndex]
+                ? globalSearchOptionId(visibleResults[activeIndex].id)
+                : undefined}
             />
           </label>
           <button type="button" className="global-search-close" onClick={onClose} aria-label="Close search">
@@ -138,6 +169,7 @@ export function GlobalSearchDialog({
               key={scope}
               type="button"
               className={selectedScopes.has(scope) ? "active" : ""}
+              aria-pressed={selectedScopes.has(scope)}
               onClick={() => toggleScope(scope)}
             >
               {scopeLabels[scope]}
@@ -145,7 +177,13 @@ export function GlobalSearchDialog({
           ))}
         </div>
 
-        <div className="global-search-results" role="listbox" aria-label="Search results">
+        <div
+          ref={resultsRef}
+          id={GLOBAL_SEARCH_RESULTS_ID}
+          className="global-search-results"
+          role="listbox"
+          aria-label="Search results"
+        >
           {!deferredQuery.trim() && (
             <div className="global-search-empty">
               <TutorialTip title="Shortcut Searches" body={SEARCH_SHORTCUTS_HELP} side="below">
@@ -166,7 +204,7 @@ export function GlobalSearchDialog({
             const expanded = expandedScopes.has(scope);
             const visible = expanded ? rows : rows.slice(0, initialGroupLimit);
             return (
-              <section key={scope} className="global-search-group" aria-label={`${scopeLabels[scope]} results`}>
+              <section key={scope} className="global-search-group" role="group" aria-label={`${scopeLabels[scope]} results`}>
                 <header>
                   <TutorialTip title={`${scopeLabels[scope]} Results`} body={SEARCH_RESULTS_HELP} side="below">
                     <span>{scopeLabels[scope]}</span>
@@ -178,10 +216,14 @@ export function GlobalSearchDialog({
                   return (
                     <button
                       key={result.id}
+                      id={globalSearchOptionId(result.id)}
                       type="button"
                       role="option"
                       aria-selected={visibleIndex === activeIndex}
+                      aria-posinset={visibleIndex + 1}
+                      aria-setsize={visibleResults.length}
                       className={visibleIndex === activeIndex ? "active" : ""}
+                      onMouseEnter={() => setActiveIndex(visibleIndex)}
                       onClick={() => openResult(result)}
                     >
                       {result.preview && <img src={result.preview} alt="" />}
@@ -240,4 +282,8 @@ function groupedResults(results: GlobalSearchResult[]) {
 
 function exactShortcutCandidate(query: string) {
   return /^(\D+\s+)?-?\d+$/.test(query.trim());
+}
+
+export function globalSearchOptionId(resultId: string) {
+  return `global-search-option-${encodeURIComponent(resultId)}`;
 }

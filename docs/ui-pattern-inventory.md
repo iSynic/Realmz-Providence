@@ -50,7 +50,7 @@ M20 should move reusable declarations into the shared layer only as consuming co
 ### Global navigation
 
 - `workbench/GlobalSearchDialog.tsx`
-- Grouped scopes, ranking, arrow navigation, Enter, Escape, and Ctrl+K.
+- Grouped scopes, ranking, pressed filter semantics, combobox active-result ownership, Arrow/Home/End navigation, Enter, Escape, and Ctrl+K.
 - This is a navigation system, not the model for choosing a field value.
 
 ### Script and encounter references
