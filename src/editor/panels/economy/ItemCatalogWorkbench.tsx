@@ -10,6 +10,12 @@ import { ScrollArea, SearchField } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { filterEconomyItemOptions } from "./economyItemSearch";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
+import {
+  ItemCategoryReferenceField,
+  ItemTypeReferenceField,
+  itemCategoryBitFromPair,
+  itemTypeText
+} from "./ItemClassificationFields";
 import { ItemIconField } from "./ItemIconField";
 import { ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemReferencePresentation";
 import { ItemRestrictionReferenceField } from "./ItemRestrictionReferenceField";
@@ -539,7 +545,7 @@ function ScenarioItemEditor({
                 onChange={(value) => onChange("iconId", value)}
               />
             ) : field.key === "type" ? (
-              <ItemTypeSelectField
+              <ItemTypeReferenceField
                 key={field.key}
                 value={Number(record.type ?? 0)}
                 onChange={(value) => onChange("type", value)}
@@ -578,7 +584,7 @@ function ScenarioItemEditor({
             previewContext={previewContext}
             onChange={(value) => onChange("cursedItemId", value)}
           />
-          <ItemCategorySelectEditor
+          <ItemCategoryReferenceField
             itemCat0={record.itemCat0}
             itemCat1={record.itemCat1}
             onChange={(itemCat0, itemCat1) => {
@@ -684,37 +690,6 @@ function ItemRestrictionSummary({
       <ItemFact label="Specific Race" value={specificRace ? `${specificRace}: ${REALMZ_RACES[specificRace - 1] ?? "Unknown race"}` : "Any"} />
       <ItemFact label="Specific Caste" value={specificCaste ? `${specificCaste}: ${REALMZ_CASTES[specificCaste - 1] ?? "Unknown caste"}` : "Any"} />
     </div>
-  );
-}
-
-function ItemCategorySelectEditor({
-  itemCat0,
-  itemCat1,
-  onChange
-}: {
-  itemCat0: number;
-  itemCat1: number;
-  onChange: (itemCat0: number, itemCat1: number) => void;
-}) {
-  const selectedIndex = selectedItemCategoryIndex(itemCat0, itemCat1);
-  return (
-    <label className="item-category-select-editor">
-      <span>Category</span>
-      <select
-        value={selectedIndex == null ? "" : String(selectedIndex)}
-        onChange={(event) => {
-          const nextIndex = event.currentTarget.value === "" ? null : Number(event.currentTarget.value);
-          onChange(...itemCategoryPairForSingleSelection(nextIndex));
-        }}
-      >
-        <option value="">No category</option>
-        {ITEM_CATEGORY_LABELS.map((label, index) => (
-          <option key={label} value={index}>
-            {label}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }
 
@@ -1128,31 +1103,6 @@ function setBitInPair(itemCat0: number, itemCat1: number, bit: number, checked: 
   return [itemCat0, toSigned32(setUnsignedBit(itemCat1, bit - 32, checked))];
 }
 
-function itemCategoryStorageBit(index: number) {
-  return 31 - (index % 32);
-}
-
-function itemCategoryBitFromPair(itemCat0: number, itemCat1: number, index: number) {
-  const source = index < 32 ? itemCat0 : itemCat1;
-  return Boolean((source >>> 0) & (1 << itemCategoryStorageBit(index)));
-}
-
-function setItemCategoryBitInPair(itemCat0: number, itemCat1: number, index: number, checked: boolean): [number, number] {
-  const bit = itemCategoryStorageBit(index);
-  if (index < 32) return [toSigned32(setUnsignedBit(itemCat0, bit, checked)), itemCat1];
-  return [itemCat0, toSigned32(setUnsignedBit(itemCat1, bit, checked))];
-}
-
-function selectedItemCategoryIndex(itemCat0: number, itemCat1: number) {
-  const selected = ITEM_CATEGORY_LABELS.findIndex((_, index) => itemCategoryBitFromPair(itemCat0, itemCat1, index));
-  return selected >= 0 ? selected : null;
-}
-
-function itemCategoryPairForSingleSelection(index: number | null): [number, number] {
-  if (index == null || !Number.isFinite(index)) return [0, 0];
-  return setItemCategoryBitInPair(0, 0, Math.trunc(index), true);
-}
-
 function setUnsignedBit(value: number, bit: number, checked: boolean) {
   return checked ? ((value >>> 0) | (1 << bit)) : ((value >>> 0) & ~(1 << bit));
 }
@@ -1184,67 +1134,10 @@ function summarizeItemCategoryLabels(itemCat0: number, itemCat1: number, limit: 
   return `${selected.slice(0, limit).join(", ")} +${selected.length - limit} more`;
 }
 
-const ITEM_TYPE_LABELS: Record<number, string> = {
-  0: "Ring",
-  1: "Do not use",
-  2: "Melee Weapon",
-  3: "Shield",
-  4: "Armor and Robe",
-  5: "Gauntlet and Gloves",
-  6: "Cloak and Cape",
-  7: "Helmet and Cap",
-  8: "Ion Stone",
-  9: "Boots",
-  10: "Quiver",
-  11: "Waist and Belt",
-  12: "Neck",
-  13: "Scroll Case",
-  14: "Misc Item",
-  15: "Missile Weapon",
-  16: "Broach",
-  17: "Face and Mask",
-  18: "Scabbard",
-  19: "Belt Loop",
-  20: "Scroll",
-  21: "Magic Item",
-  22: "Supply Item",
-  23: "Action Point Item (SP5 = AP ID)",
-  24: "Identified Item",
-  25: "Scenario Item"
-};
-
-function itemTypeLabel(value: number) {
-  const abs = Math.abs(value);
-  if (ITEM_TYPE_LABELS[abs]) return ITEM_TYPE_LABELS[abs];
-  return `Raw type ${value}`;
-}
-
-function itemTypeText(value: number | null | undefined) {
-  if (value == null) return "unknown";
-  return `${value}: ${itemTypeLabel(value)}`;
-}
-
-const ITEM_TYPE_OPTIONS = Array.from({ length: 26 }, (_, value) => ({ value, label: itemTypeLabel(value) }));
-
 export const SHOP_ITEM_CATEGORY_OPTIONS: Array<{ id: ItemReferenceCategory | "all"; label: string; range?: string }> = [
   { id: "all", label: "All Items" },
   ...ITEM_REFERENCE_CATEGORIES
 ];
-
-function ItemTypeSelectField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  const hasOption = ITEM_TYPE_OPTIONS.some((option) => option.value === value);
-  return (
-    <label className="item-number-input item-type-select" title="Realmz equipment/use type. This is separate from the item category restriction list.">
-      <span>Type</span>
-      <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
-        {!hasOption && <option value={String(value)}>{itemTypeText(value)}</option>}
-        {ITEM_TYPE_OPTIONS.map((option) => (
-          <option key={option.value} value={String(option.value)}>{option.value}: {option.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
 
 export function ItemNumberInput({
   label,

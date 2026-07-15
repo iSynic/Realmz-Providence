@@ -614,38 +614,6 @@
   padding-right: 0;
 }
 
-.item-category-select-editor {
-  display: grid;
-  gap: 6px;
-  width: min(100%, 720px);
-  max-width: 100%;
-}
-
-.item-category-select-editor > span {
-  color: #7fc5ff;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.item-category-select-editor select {
-  width: 100%;
-  min-height: 34px;
-  border: 1px solid #2b4a63;
-  border-radius: 5px;
-  background: #071018;
-  color: #eef7ff;
-  padding: 6px 10px;
-  font-family: inherit;
-  font-weight: 800;
-}
-
-.item-type-select {
-  min-width: min(100%, 180px);
-}
-
-
-
 .item-bit-editor label {
   min-width: 0;
   display: flex;

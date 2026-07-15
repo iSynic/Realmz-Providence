@@ -148,6 +148,8 @@ Custom Item specific Race and Caste restrictions now use an Economy-owned compac
 
 Custom Item cursed-form references now use the same Economy item picker as Treasure and Shops. The field searches the complete item catalog with icon previews, preserves `0 = No cursed form` and unresolved imported IDs, and replaces the long native item dropdown without changing Realmz's cursed-item substitution contract.
 
+Custom Item Category and Type now use Economy-owned compact reference pickers. Category searches the full 57-entry Realmz category table and keeps empty or imported multi-category bit pairs explicit until the author chooses a single replacement; Type searches all 26 decoded equipment/use values and preserves unknown imported values. Short behavior-mode and filter enums remain native selects.
+
 Monster record macros, equipped and required weapons, ten spell slots, and six loot-item slots now use one Combat-owned compact reference adapter. These fields search decoded labels and metadata, preserve explicit empty sentinels and unresolved imported values, and retain the required-weapon byte/display conversion at the adapter boundary. The small Summon Eligible enum and fixed battle-board placement controls remain native, specialized controls rather than opening unnecessary search workbenches.
 
 Battle reference repair keeps its destructive confirmation modal but now uses the shared inline reference picker for replacement monsters. Candidates expose names, IDs, active combat stats, and Normal/Monster/Mega record availability; authors can search those facts instead of scanning a long anonymous `Monster N` dropdown before rewriting placed battle cells.

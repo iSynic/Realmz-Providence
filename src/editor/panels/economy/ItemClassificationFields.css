@@ -1,0 +1,38 @@
+.item-classification-reference-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.item-category-reference-field {
+  width: min(100%, 720px);
+  max-width: 100%;
+}
+
+.item-classification-reference-field > span {
+  overflow: hidden;
+  color: #75b8f0;
+  font-size: 9px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.item-category-reference-field > span {
+  color: #7fc5ff;
+  font-size: 10px;
+}
+
+.item-classification-reference-field .workbench-reference-compact,
+.item-classification-reference-field .workbench-reference-compact-trigger {
+  width: 100%;
+}
+
+.item-classification-reference-field .workbench-reference-compact-trigger {
+  min-height: 34px;
+}
+
+.item-type-reference-field {
+  min-width: min(100%, 180px);
+}
