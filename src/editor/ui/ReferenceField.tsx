@@ -24,6 +24,8 @@ export type ReferenceFieldProps = {
   resultNounPlural?: string;
   emptyTitle?: ReactNode;
   emptyBody: ReactNode;
+  initialVisibleCount?: number;
+  visibleCountStep?: number;
   clearLabel?: string;
   clearValue?: number;
   currentActions?: ReactNode;
@@ -48,6 +50,8 @@ export function ReferenceField({
   resultNounPlural = "targets",
   emptyTitle = "No matching targets",
   emptyBody,
+  initialVisibleCount,
+  visibleCountStep,
   clearLabel,
   clearValue = 0,
   currentActions,
@@ -106,6 +110,8 @@ export function ReferenceField({
       resultNounPlural={resultNounPlural}
       emptyTitle={emptyTitle}
       emptyBody={emptyBody}
+      initialVisibleCount={initialVisibleCount}
+      visibleCountStep={visibleCountStep}
     />
   );
 

@@ -43,6 +43,33 @@ describe("ReferencePicker", () => {
     expect(markup.match(/data-reference-option=/g)).toHaveLength(180);
   });
 
+  it("makes large-collection limits explicit without limiting search coverage", () => {
+    const completeOptions = Array.from({ length: 180 }, (_, index): ReferencePickerOption<number> => ({
+      key: `target:${index}`,
+      value: index,
+      label: `Target ${index}`,
+      searchText: `target ${index}`
+    }));
+    const markup = renderToStaticMarkup(
+      <ReferencePicker
+        ariaLabel="Search large target collection"
+        query=""
+        onQueryChange={() => undefined}
+        options={completeOptions}
+        value={0}
+        onSelect={() => undefined}
+        current={{ label: "Target 0" }}
+        initialVisibleCount={60}
+        visibleCountStep={60}
+      />
+    );
+
+    expect(markup.match(/data-reference-option=/g)).toHaveLength(60);
+    expect(markup).toContain("60 of 180 matches shown");
+    expect(markup).toContain("Show 60 More");
+    expect(markup).toContain("180 matches");
+  });
+
   it("exposes unresolved current values without hiding available replacements", () => {
     const markup = renderToStaticMarkup(
       <ReferencePicker

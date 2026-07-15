@@ -1,0 +1,60 @@
+.item-icon-reference-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.item-icon-reference-label {
+  color: #75b8f0;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.item-icon-reference-control {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.item-icon-reference-control .workbench-reference-compact,
+.item-icon-reference-control .workbench-reference-compact-trigger {
+  width: 100%;
+  min-width: 0;
+}
+
+.item-icon-reference-thumbnail {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid #304052;
+  border-radius: 4px;
+  background: #08121a;
+}
+
+.item-icon-reference-thumbnail.is-unresolved {
+  border-color: #66552c;
+  color: #c7b37c;
+}
+
+.item-icon-reference-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.item-icon-reference-thumbnail b {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+}
+
+.item-icon-reference-field .workbench-reference-preview-content > img {
+  image-rendering: pixelated;
+}

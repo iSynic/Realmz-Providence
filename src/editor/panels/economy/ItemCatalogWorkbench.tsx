@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { loadBrowserBundledLibraryAssetPreview } from "../../browser/library";
 import { TutorialTip } from "../../components/TutorialTip";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../../itemReferences";
 import { playPreviewUrl, useIconPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls";
@@ -10,6 +9,7 @@ import { selectEntityFromId } from "../../utils";
 import { ScrollArea, SearchField } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { filterEconomyItemOptions } from "./economyItemSearch";
+import { ItemIconField } from "./ItemIconField";
 
 const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
 const CUSTOM_ITEM_HELP = "Custom scenario items use item IDs 900-999. Built-in items stay reference-only unless copied into one of these scenario-backed slots.";
@@ -1257,186 +1257,6 @@ export const SHOP_ITEM_CATEGORY_OPTIONS: Array<{ id: ItemReferenceCategory | "al
   { id: "all", label: "All Items" },
   ...ITEM_REFERENCE_CATEGORIES
 ];
-
-function ItemIconField({
-  value,
-  project,
-  catalog,
-  previewContext,
-  itemOptions,
-  onChange
-}: {
-  value: number;
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  previewContext: PreviewRuntimeContext;
-  itemOptions: ItemReferenceOption[];
-  onChange: (value: number) => void;
-}) {
-  const previewUrl = useIconPreviewUrl(value, project, catalog, previewContext);
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  useEffect(() => setFailedUrl(null), [previewUrl]);
-  const usableUrl = previewUrl && previewUrl !== failedUrl ? previewUrl : null;
-  return (
-    <div className="item-icon-field">
-      <label className="item-number-input" title="CICN resource ID drawn for this item in Realmz lists and menus.">
-        <span>Icon</span>
-        <span className="item-icon-field-control">
-          <button
-            type="button"
-            className="item-icon-preview item-icon-preview-button"
-            title={value ? `Choose cicn icon; current ${value}` : "Choose cicn icon"}
-            onClick={() => setPickerOpen(true)}
-          >
-            {usableUrl ? <img src={usableUrl} alt="" onError={() => setFailedUrl(usableUrl)} /> : <i>{value || "-"}</i>}
-          </button>
-          <input
-            type="number"
-            value={value}
-            onChange={(event) => {
-              const next = Number(event.currentTarget.value);
-              if (Number.isFinite(next)) onChange(Math.trunc(next));
-            }}
-          />
-        </span>
-      </label>
-      {pickerOpen && (
-        <ItemIconPickerModal
-          value={value}
-          project={project}
-          catalog={catalog}
-          previewContext={previewContext}
-          itemOptions={itemOptions}
-          onChoose={(nextValue) => {
-            onChange(nextValue);
-            setPickerOpen(false);
-          }}
-          onClose={() => setPickerOpen(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-type ItemIconPickerChoice = {
-  id: number;
-  label: string;
-  detail: string;
-};
-
-function ItemIconPickerModal({
-  value,
-  project,
-  catalog,
-  previewContext,
-  itemOptions,
-  onChoose,
-  onClose
-}: {
-  value: number;
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  previewContext: PreviewRuntimeContext;
-  itemOptions: ItemReferenceOption[];
-  onChoose: (value: number) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const choices = useMemo(() => itemIconPickerChoices(project, catalog, itemOptions), [catalog, itemOptions, project]);
-  const normalizedQuery = query.trim().toLowerCase();
-  const filteredChoices = choices.filter((choice) => !normalizedQuery || String(choice.id).includes(normalizedQuery) || choice.label.toLowerCase().includes(normalizedQuery) || choice.detail.toLowerCase().includes(normalizedQuery));
-  const visibleChoices = filteredChoices.slice(0, 160);
-  return (
-    <div className="item-icon-picker-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="item-icon-picker-modal" role="dialog" aria-modal="true" aria-label="Choose item icon" onMouseDown={(event) => event.stopPropagation()}>
-        <header>
-          <div>
-            <strong>Choose Icon</strong>
-            <small>{choices.length} cicn option(s)</small>
-          </div>
-          <button type="button" className="btn btn-secondary btn-xs" onClick={onClose}>Close</button>
-        </header>
-        <SearchField className="item-icon-picker-search" value={query} onChange={setQuery}
-          placeholder="Search cicn ID, item, or source..." ariaLabel="Search item icons"
-          resultCount={filteredChoices.length} resultNoun="icon" status={filteredChoices.length > visibleChoices.length ? `${visibleChoices.length} shown` : undefined} autoFocus />
-        <div className="item-icon-picker-grid">
-          {visibleChoices.map((choice) => (
-            <ItemIconPickerButton
-              key={`${choice.id}:${choice.label}`}
-              choice={choice}
-              selected={choice.id === value}
-              project={project}
-              catalog={catalog}
-              previewContext={previewContext}
-              onChoose={onChoose}
-            />
-          ))}
-        </div>
-        {filteredChoices.length > visibleChoices.length && <small>{filteredChoices.length - visibleChoices.length} more matching icon(s); search to narrow.</small>}
-      </section>
-    </div>
-  );
-}
-
-function ItemIconPickerButton({
-  choice,
-  selected,
-  project,
-  catalog,
-  previewContext,
-  onChoose
-}: {
-  choice: ItemIconPickerChoice;
-  selected: boolean;
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  previewContext: PreviewRuntimeContext;
-  onChoose: (value: number) => void;
-}) {
-  const previewUrl = useIconPreviewUrl(choice.id, project, catalog, previewContext);
-  return (
-    <button
-      type="button"
-      className={`item-icon-picker-option${selected ? " selected" : ""}`}
-      onClick={() => onChoose(choice.id)}
-    >
-      <span className="item-icon-preview">
-        {previewUrl ? <img src={previewUrl} alt="" /> : <i>{choice.id}</i>}
-      </span>
-      <strong>{choice.id}</strong>
-      <small>{choice.label}</small>
-    </button>
-  );
-}
-
-function itemIconPickerChoices(project: Project, catalog: LibraryCatalog | null | undefined, itemOptions: ItemReferenceOption[]) {
-  const choices = new Map<number, ItemIconPickerChoice>();
-  const addChoice = (id: number | null | undefined, label: string, detail: string) => {
-    if (id == null || id === 0 || !Number.isFinite(id)) return;
-    const normalizedId = Math.trunc(id);
-    const existing = choices.get(normalizedId);
-    if (existing) {
-      if (!existing.label.includes(label)) existing.detail = [existing.detail, detail].filter(Boolean).join(" | ");
-      return;
-    }
-    choices.set(normalizedId, { id: normalizedId, label, detail });
-  };
-  for (const option of itemOptions) addChoice(option.iconId, option.label.replace(/\s+\(-?\d+\)$/, ""), `item ${option.value}`);
-  for (const asset of project.assets ?? []) {
-    if (asset.kind === "icon" || asset.resourceType.trim() === "cicn") addChoice(asset.resourceId, asset.label, "project icon");
-  }
-  for (const asset of project.assetCatalog.icons ?? []) {
-    addChoice(asset.resourceId, asset.name || `cicn ${asset.resourceId}`, asset.source || "project catalog");
-  }
-  for (const asset of catalog?.assets ?? []) {
-    const resourceType = (asset.resourceType ?? "").trim();
-    if (asset.resourceId != null && (asset.type === "icon" || asset.type.includes("icon") || resourceType === "cicn")) {
-      addChoice(asset.resourceId, asset.label, asset.source || "library icon");
-    }
-  }
-  return [...choices.values()].sort((a, b) => Math.abs(a.id) - Math.abs(b.id) || a.id - b.id);
-}
 
 function ItemTypeSelectField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
   const hasOption = ITEM_TYPE_OPTIONS.some((option) => option.value === value);

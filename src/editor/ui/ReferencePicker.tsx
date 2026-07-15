@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { EmptyState } from "./WorkbenchPrimitives";
 import type { ReferencePreviewModel } from "./ReferencePreview";
 import { SearchField } from "./SearchField";
@@ -40,6 +40,8 @@ export type ReferencePickerProps<TValue extends ReferencePickerValue = number> =
   resultNounPlural?: string;
   emptyTitle?: ReactNode;
   emptyBody?: ReactNode;
+  initialVisibleCount?: number;
+  visibleCountStep?: number;
   className?: string;
   disabled?: boolean;
 };
@@ -61,10 +63,20 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
   resultNounPlural = "matches",
   emptyTitle = "No matches",
   emptyBody = "Try a name, numeric ID, category, or other target detail.",
+  initialVisibleCount,
+  visibleCountStep = initialVisibleCount,
   className,
   disabled = false
 }: ReferencePickerProps<TValue>) {
   const filteredOptions = filterReferencePickerOptions(options, query);
+  const [visibleCount, setVisibleCount] = useState(initialVisibleCount ?? Number.POSITIVE_INFINITY);
+  useEffect(() => {
+    setVisibleCount(initialVisibleCount ?? Number.POSITIVE_INFINITY);
+  }, [initialVisibleCount, query]);
+  const visibleOptions = initialVisibleCount == null
+    ? filteredOptions
+    : filteredOptions.slice(0, visibleCount);
+  const hiddenOptionCount = Math.max(0, filteredOptions.length - visibleOptions.length);
   const firstSelectable = filteredOptions.find((option) => !option.disabled) ?? null;
 
   function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -108,37 +120,52 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
       </section>
       {currentSupplement && <div className="workbench-reference-current-supplement">{currentSupplement}</div>}
       {showResults && (
-        <div className="workbench-reference-results" role="listbox" aria-label={`${ariaLabel} results`}>
-          {filteredOptions.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              className={[
-                option.value === value ? "is-selected" : "",
-                option.preview ? "has-preview" : ""
-              ].filter(Boolean).join(" ")}
-              data-reference-option={option.key}
-              title={option.title}
-              disabled={disabled || option.disabled}
-              onClick={() => onSelect(option)}
-            >
-              {option.preview && (
-                <span
-                  className={`workbench-reference-option-preview is-${option.preview.state ?? "resolved"}`}
-                  data-reference-option-preview={option.preview.key}
-                >
-                  {referenceOptionPreview(option.preview)}
+        <div className="workbench-reference-results-shell">
+          <div className="workbench-reference-results" role="listbox" aria-label={`${ariaLabel} results`}>
+            {visibleOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                role="option"
+                aria-selected={option.value === value}
+                className={[
+                  option.value === value ? "is-selected" : "",
+                  option.preview ? "has-preview" : ""
+                ].filter(Boolean).join(" ")}
+                data-reference-option={option.key}
+                title={option.title}
+                disabled={disabled || option.disabled}
+                onClick={() => onSelect(option)}
+              >
+                {option.preview && (
+                  <span
+                    className={`workbench-reference-option-preview is-${option.preview.state ?? "resolved"}`}
+                    data-reference-option-preview={option.preview.key}
+                  >
+                    {referenceOptionPreview(option.preview)}
+                  </span>
+                )}
+                <span className="workbench-reference-option-copy">
+                  <strong>{option.label}</strong>
+                  {option.detail && <small>{option.detail}</small>}
                 </span>
-              )}
-              <span className="workbench-reference-option-copy">
-                <strong>{option.label}</strong>
-                {option.detail && <small>{option.detail}</small>}
-              </span>
-            </button>
-          ))}
-          {filteredOptions.length === 0 && <EmptyState compact title={emptyTitle} body={emptyBody} />}
+              </button>
+            ))}
+            {filteredOptions.length === 0 && <EmptyState compact title={emptyTitle} body={emptyBody} />}
+          </div>
+          {hiddenOptionCount > 0 && (
+            <div className="workbench-reference-results-more">
+              <small>{visibleOptions.length.toLocaleString()} of {filteredOptions.length.toLocaleString()} {filteredOptions.length === 1 ? resultNoun : resultNounPlural} shown</small>
+              <button
+                type="button"
+                className="btn btn-secondary btn-xs"
+                disabled={disabled}
+                onClick={() => setVisibleCount((count) => count + (visibleCountStep ?? hiddenOptionCount))}
+              >
+                Show {Math.min(visibleCountStep ?? hiddenOptionCount, hiddenOptionCount).toLocaleString()} More
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
