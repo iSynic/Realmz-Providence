@@ -6,10 +6,8 @@ import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "..
 import { selectEntityFromId } from "../../utils";
 import { ScrollArea, SearchField } from "../../ui";
 import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
-import {
-  ItemNumberInput,
-  SHOP_ITEM_CATEGORY_OPTIONS
-} from "./ItemCatalogWorkbench";
+import { SHOP_ITEM_CATEGORY_OPTIONS } from "./ItemCatalogWorkbench";
+import { ItemNumberInput } from "./ItemNumberInput";
 import { ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemReferencePresentation";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
 import { filterEconomyItemOptions } from "./economyItemSearch";

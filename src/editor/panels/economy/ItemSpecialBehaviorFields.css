@@ -1,0 +1,24 @@
+.item-special-reference-detail {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.item-special-reference-detail > span {
+  overflow: hidden;
+  color: #75b8f0;
+  font-size: 9px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.item-special-reference-detail .workbench-reference-compact,
+.item-special-reference-detail .workbench-reference-compact-trigger {
+  width: 100%;
+}
+
+.item-special-reference-detail .workbench-reference-compact-trigger {
+  min-height: 34px;
+}

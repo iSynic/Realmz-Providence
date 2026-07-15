@@ -17,9 +17,11 @@ import {
   itemTypeText
 } from "./ItemClassificationFields";
 import { ItemIconField } from "./ItemIconField";
+import { ItemNumberInput } from "./ItemNumberInput";
 import { ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemReferencePresentation";
 import { ItemRestrictionReferenceField } from "./ItemRestrictionReferenceField";
 import { ItemSoundField } from "./ItemSoundField";
+import { ItemSpecialAttributeField, ItemSpecialEffectCodeField } from "./ItemSpecialBehaviorFields";
 
 const ITEM_EDITOR_HELP = "Browse item IDs by Divinity family, inspect built-in/library data, and copy built-in items into scenario custom slots when you need editable item definitions.";
 const CUSTOM_ITEM_HELP = "Custom scenario items use item IDs 900-999. Built-in items stay reference-only unless copied into one of these scenario-backed slots.";
@@ -767,182 +769,6 @@ function ItemSpecialBehaviorSummary({ record }: { record: ScenarioItemRecord }) 
   );
 }
 
-function ItemSpecialEffectCodeField({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  const group = specialEffectGroupForValue(value);
-  const groupOptions = specialEffectOptionsForGroup(group);
-  const hasKnownValue = groupOptions.some((option) => option.value === value);
-  return (
-    <div className="item-cascade-field item-special-effect-field" title="Primary Realmz special behavior code. Unknown raw values are preserved until changed.">
-      <label>
-        <span>Special 1</span>
-        <select
-          value={group}
-          onChange={(event) => {
-            const nextGroup = event.currentTarget.value as ItemSpecialEffectGroup;
-            onChange(defaultSpecialEffectValue(nextGroup, value));
-          }}
-        >
-          <option value="none">No special effect</option>
-          <option value="power">Power level</option>
-          <option value="addCondition">Add condition</option>
-          <option value="removeCondition">Remove condition</option>
-          <option value="hitBonus">Hit bonus</option>
-          <option value="raw">Raw code</option>
-        </select>
-      </label>
-      {group === "raw" ? (
-        <ItemNumberInput label="Raw Code" value={value} onCommit={onChange} />
-      ) : group !== "none" && (
-        <label>
-          <span>{specialEffectDetailLabel(group)}</span>
-          <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
-            {!hasKnownValue && <option value={value}>Current code {value}</option>}
-            {groupOptions.map((option) => (
-              <option key={`${option.value}:${option.label}`} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-      )}
-    </div>
-  );
-}
-
-type ItemSpecialEffectGroup = "none" | "power" | "addCondition" | "removeCondition" | "hitBonus" | "raw";
-
-function specialEffectGroupForValue(value: number): ItemSpecialEffectGroup {
-  if (value === 0) return "none";
-  if ((value >= -7 && value <= -1) || value === 8) return "power";
-  if (value >= 20 && value <= 59) return "addCondition";
-  if (value >= 60 && value <= 99) return "removeCondition";
-  if (value >= 120 && value <= 122) return "hitBonus";
-  return "raw";
-}
-
-function defaultSpecialEffectValue(group: ItemSpecialEffectGroup, currentValue: number) {
-  if (group === "none") return 0;
-  if (group === "power") return currentValue >= -7 && currentValue <= -1 ? currentValue : -1;
-  if (group === "addCondition") return currentValue >= 20 && currentValue <= 59 ? currentValue : 20;
-  if (group === "removeCondition") return currentValue >= 60 && currentValue <= 99 ? currentValue : 60;
-  if (group === "hitBonus") return currentValue >= 120 && currentValue <= 122 ? currentValue : 120;
-  return currentValue;
-}
-
-function specialEffectOptionsForGroup(group: ItemSpecialEffectGroup) {
-  if (group === "power") {
-    return [
-      ...Array.from({ length: 7 }, (_, index) => ({ value: -(index + 1), label: `Power level ${index + 1}` })),
-      { value: 8, label: "Random power level" }
-    ];
-  }
-  if (group === "addCondition") {
-    return CONDITION_LABELS.slice(0, 40).map((label, index) => ({ value: index + 20, label }));
-  }
-  if (group === "removeCondition") {
-    return CONDITION_LABELS.slice(0, 40).map((label, index) => ({ value: index + 60, label }));
-  }
-  if (group === "hitBonus") {
-    return [
-      { value: 120, label: "Auto hit" },
-      { value: 121, label: "Penetration bonus" },
-      { value: 122, label: "Double to-hit bonus" }
-    ];
-  }
-  return [];
-}
-
-function specialEffectDetailLabel(group: ItemSpecialEffectGroup) {
-  if (group === "power") return "Power";
-  if (group === "addCondition") return "Condition";
-  if (group === "removeCondition") return "Condition";
-  if (group === "hitBonus") return "Bonus";
-  return "Value";
-}
-
-type ItemSpecialAttributeGroup = "none" | "ability" | "monsterType" | "partyCondition" | "raw";
-
-function ItemSpecialAttributeField({
-  label,
-  value,
-  onChange
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  const group = specialAttributeGroupForValue(value);
-  const options = specialAttributeOptionsForGroup(group);
-  const hasKnownValue = options.some((option) => option.value === value);
-  return (
-    <div className="item-cascade-field" title={`${label} companion field for ability, monster-type, and party-condition behavior.`}>
-      <label>
-        <span>{label}</span>
-        <select
-          value={group}
-          onChange={(event) => {
-            const nextGroup = event.currentTarget.value as ItemSpecialAttributeGroup;
-            onChange(defaultSpecialAttributeValue(nextGroup, value));
-          }}
-        >
-          <option value="none">No behavior</option>
-          <option value="ability">Special ability</option>
-          <option value="monsterType">Monster-type bonus</option>
-          <option value="partyCondition">Party condition</option>
-          <option value="raw">Raw value</option>
-        </select>
-      </label>
-      {group === "raw" ? (
-        <ItemNumberInput label="Raw Value" value={value} onCommit={onChange} />
-      ) : group !== "none" && (
-        <label>
-          <span>{specialAttributeDetailLabel(group)}</span>
-          <select value={String(value)} onChange={(event) => onChange(Number(event.currentTarget.value))}>
-            {!hasKnownValue && <option value={value}>Current value {value}</option>}
-            {options.map((option) => (
-              <option key={`${option.value}:${option.label}`} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </label>
-      )}
-    </div>
-  );
-}
-
-function specialAttributeGroupForValue(value: number): ItemSpecialAttributeGroup {
-  if (value === 0) return "none";
-  if (value > 0 && value < 16) return "ability";
-  if (value < 0) return "monsterType";
-  if (value >= 30 && value <= 40) return "partyCondition";
-  return "raw";
-}
-
-function defaultSpecialAttributeValue(group: ItemSpecialAttributeGroup, currentValue: number) {
-  if (group === "none") return 0;
-  if (group === "ability") return currentValue > 0 && currentValue < 16 ? currentValue : 1;
-  if (group === "monsterType") return currentValue < 0 ? currentValue : -1;
-  if (group === "partyCondition") return currentValue >= 30 && currentValue <= 40 ? currentValue : 30;
-  return currentValue;
-}
-
-function specialAttributeOptionsForGroup(group: ItemSpecialAttributeGroup) {
-  if (group === "ability") {
-    return Array.from({ length: 15 }, (_, index) => ({ value: index + 1, label: `Ability ${index + 1}` }));
-  }
-  if (group === "monsterType") {
-    return Array.from({ length: 20 }, (_, index) => ({ value: -(index + 1), label: `Monster type ${index + 1}` }));
-  }
-  if (group === "partyCondition") {
-    return Array.from({ length: 11 }, (_, index) => ({ value: index + 30, label: `Party condition ${index + 30}` }));
-  }
-  return [];
-}
-
-function specialAttributeDetailLabel(group: ItemSpecialAttributeGroup) {
-  if (group === "ability") return "Ability";
-  if (group === "monsterType") return "Monster Type";
-  if (group === "partyCondition") return "Condition";
-  return "Value";
-}
-
 function describeItemSpecialBehavior(record: ScenarioItemRecord) {
   const sp1 = Number(record.special1 ?? 0);
   const sp2 = Number(record.special2 ?? 0);
@@ -1138,48 +964,6 @@ export const SHOP_ITEM_CATEGORY_OPTIONS: Array<{ id: ItemReferenceCategory | "al
   { id: "all", label: "All Items" },
   ...ITEM_REFERENCE_CATEGORIES
 ];
-
-export function ItemNumberInput({
-  label,
-  value,
-  title,
-  onCommit
-}: {
-  label: string;
-  value: number;
-  title?: string;
-  onCommit: (value: number) => void;
-}) {
-  const [draft, setDraft] = useState(String(value));
-  useEffect(() => {
-    setDraft(String(value));
-  }, [value]);
-  const commit = () => {
-    const next = Number(draft);
-    if (!Number.isFinite(next)) {
-      setDraft(String(value));
-      return;
-    }
-    const normalized = Math.trunc(next);
-    setDraft(String(normalized));
-    if (normalized !== value) onCommit(normalized);
-  };
-  return (
-    <label className="item-number-input" title={title}>
-      <span>{label}</span>
-      <input
-        type="number"
-        value={draft}
-        onChange={(event) => setDraft(event.currentTarget.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-          if (event.key === "Escape") setDraft(String(value));
-        }}
-      />
-    </label>
-  );
-}
 
 function ItemTextInput({
   label,
