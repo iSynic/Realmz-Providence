@@ -773,7 +773,6 @@
 }
 
 .encounter-result-select,
-.script-spell-response-field,
 .encounter-result-number-field {
   display: grid;
   gap: 3px;
@@ -782,15 +781,12 @@
 
 .complex-encounter-response-row .encounter-result-select,
 .complex-encounter-response-row .encounter-result-number-field,
-.complex-encounter-response-row .script-spell-response-field,
 .complex-encounter-response-row .script-reference-id-field.compact,
 .complex-encounter-response-row .script-item-id-field.compact {
   max-width: 100%;
 }
 
-.complex-encounter-response-row .script-spell-response-field,
-.complex-encounter-response-row .script-item-id-field.compact,
-.complex-encounter-item-response-field {
+.complex-encounter-response-row .script-item-id-field.compact {
   display: block;
   min-width: 0;
 }
@@ -804,7 +800,6 @@
 }
 
 .encounter-result-select span,
-.script-spell-response-field span,
 .encounter-result-number-field span {
   color: #8ea8bc;
   font-size: 8px;
@@ -815,14 +810,11 @@
 
 .complex-encounter-response-row .encounter-result-select span,
 .complex-encounter-response-row .encounter-result-number-field span,
-.complex-encounter-response-row .script-spell-response-field span,
 .complex-encounter-response-row .script-item-id-field.compact > span {
   display: none;
 }
 
 .encounter-result-select select,
-.script-spell-response-field select,
-.script-spell-response-field input,
 .encounter-result-number-field input {
   width: 100%;
   min-width: 0;
@@ -830,7 +822,6 @@
 }
 
 .encounter-result-select small,
-.script-spell-response-field small,
 .encounter-result-number-field small {
   color: #8098ab;
   font-size: 9px;
@@ -838,17 +829,15 @@
 
 .complex-encounter-response-row .encounter-result-select small,
 .complex-encounter-response-row .encounter-result-number-field small,
-.complex-encounter-response-row .script-spell-response-field small,
 .complex-encounter-response-row .script-reference-id-field.compact small,
 .complex-encounter-response-row .script-item-id-field.compact > small {
   display: none;
 }
 
-.complex-encounter-response-row .script-spell-response-field select,
 .complex-encounter-response-row .script-reference-id-field.compact .workbench-reference-compact-trigger,
 .complex-encounter-response-row .script-reference-id-field.compact input,
 .complex-encounter-response-row .script-item-id-field.compact input,
-.complex-encounter-item-response-field select,
+.complex-encounter-response-value,
 .complex-encounter-response-row .encounter-result-number-field input,
 .complex-encounter-response-row .encounter-result-select select {
   height: 24px;
@@ -857,9 +846,34 @@
   font-size: 10px;
 }
 
-.complex-encounter-item-response-field select {
+.complex-encounter-response-value {
+  display: flex;
+  align-items: center;
   width: 100%;
   min-width: 0;
+  overflow: hidden;
+  border: 1px solid #2b455a;
+  border-radius: 4px;
+  background: #0a1219;
+  color: #e9f4ff;
+}
+
+.complex-encounter-response-value > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.complex-encounter-response-value.is-empty {
+  border-style: dashed;
+  color: #8fa4b5;
+}
+
+.complex-encounter-response-value.is-unresolved {
+  border-color: #735e2d;
+  background: #1d190f;
+  color: #f0d68e;
 }
 
 .complex-encounter-response-actions {

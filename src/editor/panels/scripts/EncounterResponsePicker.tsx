@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import {
   itemOptionDisplayName,
-  itemReferenceDetail,
   type ItemReferenceOption
 } from "../../itemReferences";
 import type { LibraryCatalog, Project } from "../../types";
@@ -15,40 +14,73 @@ import {
 
 export const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
 
-export function ComplexEncounterItemResponseField({
-  project,
-  catalog,
+export type EncounterResponseSelection = {
+  label: string;
+  detail: string;
+  state: "resolved" | "empty" | "unresolved";
+};
+
+export function encounterResponseSelection(
+  kind: "magic" | "item",
+  value: number,
+  spellOptions: SpellResponseOption[],
+  itemOptions: ItemReferenceOption[]
+): EncounterResponseSelection {
+  if (kind === "magic") {
+    if (value === 0 || value === MAGIC_RESPONSE_BLANK_SPELL_ID) {
+      return {
+        label: "No spell or scroll selected",
+        detail: "This response does not test a spell or scroll.",
+        state: "empty"
+      };
+    }
+    const selected = spellOptions.find((option) => option.value === value);
+    return selected
+      ? { label: selected.label, detail: selected.detail, state: "resolved" }
+      : {
+          label: `Unknown spell/scroll ${value}`,
+          detail: `Imported spell/scroll ID ${value}`,
+          state: "unresolved"
+        };
+  }
+  if (value === 0) {
+    return {
+      label: "No item selected",
+      detail: "This response does not test an item.",
+      state: "empty"
+    };
+  }
+  const selected = itemOptions.find((option) => option.value === value);
+  return selected
+    ? {
+        label: itemOptionDisplayName(selected),
+        detail: [selected.detail, selected.sourceState].filter(Boolean).join(" | ") || "No details available.",
+        state: "resolved"
+      }
+    : {
+        label: `Item ${value}`,
+        detail: `Imported item ID ${value}`,
+        state: "unresolved"
+      };
+}
+
+export function ComplexEncounterResponseValue({
+  kind,
   responseNumber,
-  value,
-  onCommit
+  selection
 }: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
+  kind: "magic" | "item";
   responseNumber: number;
-  value: number;
-  onCommit: (value: number) => void;
+  selection: EncounterResponseSelection;
 }) {
-  const options = useMemo(() => deduplicatedItemResponseOptions(project, catalog), [catalog, project]);
-  const selected = options.find((option) => option.value === value) ?? null;
-  const selectedDetail = selected
-    ? [selected.label, selected.detail, selected.sourceState].filter(Boolean).join(" | ")
-    : value === 0
-      ? "No item response selected"
-      : `Imported item ID ${value}`;
   return (
-    <label className="complex-encounter-item-response-field" title={selectedDetail}>
-      <select
-        value={String(value)}
-        aria-label={`Item response ${responseNumber}`}
-        onChange={(event) => onCommit(Number(event.currentTarget.value))}
-      >
-        <option value="0">No item</option>
-        {value !== 0 && !selected && <option value={String(value)}>{`Item ${value}`}</option>}
-        {options.map((option) => (
-          <option key={option.key} value={String(option.value)}>{itemOptionDisplayName(option)}</option>
-        ))}
-      </select>
-    </label>
+    <output
+      className={`complex-encounter-response-value is-${selection.state}`}
+      aria-label={`${kind === "magic" ? "Magic" : "Item"} response ${responseNumber} selection`}
+      title={selection.detail}
+    >
+      <span>{selection.label}</span>
+    </output>
   );
 }
 
@@ -72,21 +104,11 @@ export function ComplexEncounterResponsePickerPanel({
   const [query, setQuery] = useState("");
   const spellOptions = useMemo(() => spellReferenceOptions(project, catalog), [catalog, project]);
   const itemOptions = useMemo(() => deduplicatedItemResponseOptions(project, catalog), [catalog, project]);
-  const selectedSpell = kind === "magic" ? spellOptions.find((option) => option.value === value) ?? null : null;
-  const selectedItem = kind === "item" ? itemOptions.find((option) => option.value === value) ?? null : null;
   const referenceOptions = useMemo(
     () => encounterResponseReferenceOptions(kind, spellOptions, itemOptions),
     [itemOptions, kind, spellOptions]
   );
-  const isEmpty = value === 0 || (kind === "magic" && value === MAGIC_RESPONSE_BLANK_SPELL_ID);
-  const selectedLabel = kind === "magic"
-    ? selectedSpell?.label ?? (isEmpty ? "No spell or scroll selected" : `Unknown spell/scroll ${value}`)
-    : selectedItem ? itemOptionDisplayName(selectedItem) : value === 0 ? "No item selected" : `Item ${value}`;
-  const selectedDetail = kind === "magic"
-    ? selectedSpell?.detail ?? (isEmpty ? "This response does not test a spell or scroll." : `Imported spell/scroll ID ${value}`)
-    : selectedItem
-      ? [selectedItem.detail, selectedItem.sourceState].filter(Boolean).join(" | ")
-      : itemReferenceDetail(project, value, catalog);
+  const selection = encounterResponseSelection(kind, value, spellOptions, itemOptions);
   const responseLabel = kind === "magic" ? "Magic Response" : "Item Response";
   return (
     <FloatingWorkbenchPanel
@@ -119,16 +141,12 @@ export function ComplexEncounterResponsePickerPanel({
           query={query}
           onQueryChange={setQuery}
           options={referenceOptions}
-          value={isEmpty ? 0 : value}
+          value={selection.state === "empty" ? 0 : value}
           onSelect={(option) => {
             onChange(option.value);
             setQuery("");
           }}
-          current={{
-            label: selectedLabel,
-            detail: selectedDetail,
-            state: isEmpty ? "empty" : selectedSpell || selectedItem ? "resolved" : "unresolved"
-          }}
+          current={selection}
           resultNoun="option"
           resultNounPlural="options"
           emptyTitle="No matches"
@@ -167,42 +185,4 @@ export function encounterResponseReferenceOptions(
     detail: [option.detail, option.sourceState].filter(Boolean).join(" | ") || "No details available.",
     searchText: `${option.value} ${option.label} ${option.category} ${option.detail} ${option.sourceState}`
   }))];
-}
-
-export function SpellResponseField({
-  project,
-  catalog,
-  label,
-  value,
-  onCommit
-}: {
-  project: Project;
-  catalog?: LibraryCatalog | null;
-  label: string;
-  value: number;
-  onCommit: (value: number) => void;
-}) {
-  const options = useMemo(() => spellReferenceOptions(project, catalog), [project, catalog]);
-  const displayValue = value === MAGIC_RESPONSE_BLANK_SPELL_ID ? 0 : value;
-  const selected = options.find((option) => option.value === displayValue);
-  const visible = useMemo(() => {
-    const next = options.slice(0, 260);
-    if (selected && !next.some((option) => option.value === selected.value)) return [selected, ...next.slice(0, 219)];
-    return next;
-  }, [options, selected]);
-  return (
-    <label className="script-spell-response-field compact">
-      <span>{label}</span>
-      <select value={displayValue} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
-        <option value={0}>No spell or scroll</option>
-        {displayValue !== 0 && !options.some((option) => option.value === displayValue) && (
-          <option value={displayValue}>Unknown spell/scroll {displayValue}</option>
-        )}
-        {visible.map((option) => (
-          <option key={option.key} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-      <small>{selected ? selected.detail : displayValue ? `Unknown spell/scroll ${displayValue}` : "No spell or scroll selected."}</small>
-    </label>
-  );
 }

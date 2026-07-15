@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, X } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import type { EncounterActionRow, LibraryCatalog, Project } from "../../types";
@@ -7,11 +7,12 @@ import {
   resultStatusLabel
 } from "./encounterFlow";
 import {
-  ComplexEncounterItemResponseField,
   ComplexEncounterResponsePickerPanel,
-  MAGIC_RESPONSE_BLANK_SPELL_ID,
-  SpellResponseField
+  ComplexEncounterResponseValue,
+  encounterResponseSelection,
+  MAGIC_RESPONSE_BLANK_SPELL_ID
 } from "./EncounterResponsePicker";
+import { deduplicatedItemResponseOptions, spellReferenceOptions } from "./encounterResponseOptions";
 import { updateArraySlot } from "./arraySlots";
 
 const SIMPLE_RESULT_AUTO_FAIL_SENTINEL = -4;
@@ -299,6 +300,14 @@ function ComplexEncounterResponseGrid({
 }) {
   const [activeDraftSlots, setActiveDraftSlots] = useState<Set<number>>(() => new Set());
   const [pickerSlot, setPickerSlot] = useState<number | null>(null);
+  const responseSpellOptions = useMemo(
+    () => kind === "magic" ? spellReferenceOptions(project, catalog) : [],
+    [catalog, kind, project]
+  );
+  const responseItemOptions = useMemo(
+    () => kind === "item" ? deduplicatedItemResponseOptions(project, catalog) : [],
+    [catalog, kind, project]
+  );
   const blankId = kind === "magic" ? MAGIC_RESPONSE_BLANK_SPELL_ID : 0;
   const isBlankStoredValue = (slot: number) => {
     const id = ids[slot] ?? 0;
@@ -330,64 +339,60 @@ function ComplexEncounterResponseGrid({
         )}
       </header>
       <div>
-        {slots.map((slot) => (
-          <div
-            key={slot}
-            className={`complex-encounter-response-row${!hasVisibleValue(slot) ? " is-unused" : ""}${isPreservedNoResult(slot) ? " is-preserved-no-result" : ""}`}
-          >
-            <b>{slot + 1}</b>
-            <EncounterResultNumberField
-              label={resultLabel}
-              value={results[slot] ?? 0}
-              actions={actions}
-              onDraftActiveChange={(active) => setDraftSlotActive(slot, active)}
-              onCommit={(value) => onResultsCommit(updateArraySlot(results, slot, value, count))}
-            />
-            {kind === "magic" ? (
-              <SpellResponseField
-                project={project}
-                catalog={catalog}
-                label="Spell / Scroll"
-                value={ids[slot] ?? 0}
-                onCommit={(value) => onIdsCommit(updateArraySlot(ids, slot, value, count))}
+        {slots.map((slot) => {
+          const selection = encounterResponseSelection(
+            kind,
+            ids[slot] ?? 0,
+            responseSpellOptions,
+            responseItemOptions
+          );
+          return (
+            <div
+              key={slot}
+              className={`complex-encounter-response-row${!hasVisibleValue(slot) ? " is-unused" : ""}${isPreservedNoResult(slot) ? " is-preserved-no-result" : ""}`}
+            >
+              <b>{slot + 1}</b>
+              <EncounterResultNumberField
+                label={resultLabel}
+                value={results[slot] ?? 0}
+                actions={actions}
+                onDraftActiveChange={(active) => setDraftSlotActive(slot, active)}
+                onCommit={(value) => onResultsCommit(updateArraySlot(results, slot, value, count))}
               />
-            ) : (
-              <ComplexEncounterItemResponseField
-                project={project}
-                catalog={catalog}
+              <ComplexEncounterResponseValue
+                kind={kind}
                 responseNumber={slot + 1}
-                value={ids[slot] ?? 0}
-                onCommit={(value) => onIdsCommit(updateArraySlot(ids, slot, value, count))}
+                selection={selection}
               />
-            )}
-            <div className="encounter-action-row-actions complex-encounter-response-actions">
-              <button
-                type="button"
-                className="encounter-action-preview"
-                title={`Browse ${kind === "magic" ? "spells and scrolls" : "items"}`}
-                aria-label={`Browse ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
-                onClick={() => setPickerSlot(slot)}
-              >
-                <Eye size={12} />
-              </button>
-              {hasStoredValue(slot) && (
+              <div className="encounter-action-row-actions complex-encounter-response-actions">
                 <button
                   type="button"
-                  className="encounter-action-clear"
-                  title="Clear"
-                  aria-label={`Clear ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
-                  onClick={() => {
-                    onIdsCommit(updateArraySlot(ids, slot, blankId, count));
-                    onResultsCommit(updateArraySlot(results, slot, 0, count));
-                  }}
+                  className="encounter-action-preview"
+                  title={`Browse ${kind === "magic" ? "spells and scrolls" : "items"}`}
+                  aria-label={`Browse ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
+                  onClick={() => setPickerSlot(slot)}
                 >
-                  <X size={12} />
+                  <Eye size={12} />
                 </button>
-              )}
-              {!hasStoredValue(slot) && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
+                {hasStoredValue(slot) && (
+                  <button
+                    type="button"
+                    className="encounter-action-clear"
+                    title="Clear"
+                    aria-label={`Clear ${kind === "magic" ? "magic" : "item"} response ${slot + 1}`}
+                    onClick={() => {
+                      onIdsCommit(updateArraySlot(ids, slot, blankId, count));
+                      onResultsCommit(updateArraySlot(results, slot, 0, count));
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+                {!hasStoredValue(slot) && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {pickerSlot != null && (
         <ComplexEncounterResponsePickerPanel
