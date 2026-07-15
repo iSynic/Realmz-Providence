@@ -9,7 +9,7 @@ import type { CombatLookups } from "./combatLookups";
 import { measureCombatWork, useCombatRenderTiming } from "./performance";
 import { BattleBoardCanvas } from "./BattleBoardCanvas";
 import { ToggleButton } from "./CombatFields";
-import { BattleMonsterDetail, BattleMonsterSelect } from "./BattleMonsterInspector";
+import { BattleMonsterDetail, BattleMonsterSelect } from "./BattleMonsterReferenceField";
 import { BattleMonsterPalette } from "./BattleMonsterPalette";
 import {
   monsterBattleFootprintCached,

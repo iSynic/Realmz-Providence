@@ -152,6 +152,8 @@ Monster record macros, equipped and required weapons, ten spell slots, and six l
 
 Battle reference repair keeps its destructive confirmation modal but now uses the shared inline reference picker for replacement monsters. Candidates expose names, IDs, active combat stats, and Normal/Monster/Mega record availability; authors can search those facts instead of scanning a long anonymous `Monster N` dropdown before rewriting placed battle cells.
 
+The selected battle-cell inspector now uses the same compact Combat reference picker for its anchor monster. Authors can search the active set by monster ID, name, stats, or icon while Empty, missing imported placements, and the separate force-friend sign control retain their existing battle-grid semantics; the board, brush palette, and placement geometry remain specialized.
+
 Rules record navigation now uses the shared compact `ReferenceField` for Race, Caste, and per-class Spell selection. Long native record dropdowns have become searchable floating pickers with the standard selected, filtered, no-match, and unresolved states; previous/next navigation, scenario-copy commands, and dense fixed-record form geometry remain Rules-owned. The short Spellcaster Class mode list intentionally remains a native select.
 
 Spell casting and resolution sounds now use the same compact `ReferenceField` plus `ReferenceAudioPreviewAction`. Authors can search by sound name, stored spell value, or `snd` resource ID; unresolved imported values remain explicit, playback remains available on read-only built-in spells, and the former raw number-plus-Play control has been retired.
