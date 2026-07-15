@@ -5,6 +5,7 @@ import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import { ScrollArea, SearchField } from "../../ui";
+import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
 import {
   ItemNumberInput,
   ItemOptionIcon,
@@ -190,6 +191,10 @@ function ShopStockEditor({
   const optionsByValue = useMemo(() => new Map(options.map((option) => [option.value, option])), [options]);
   const matchingOptions = useMemo(() => filterEconomyItemOptions(options, category, query), [category, options, query]);
   const visibleOptions = useMemo(() => matchingOptions.slice(0, 42), [matchingOptions]);
+  const referenceOptions = useMemo(
+    () => economyItemReferenceOptions(options, project, catalog, previewContext),
+    [catalog, options, previewContext, project]
+  );
   const updateStock = (itemIds: number[], quantities: number[]) => {
     onApplyCommand?.({ kind: "updateShopRecord", label: "Update shop stock", id: record.id, changes: { itemIds, quantities } });
   };
@@ -269,7 +274,7 @@ function ShopStockEditor({
                 itemId={itemId}
                 quantity={quantity}
                 option={option}
-                options={options}
+                referenceOptions={referenceOptions}
                 project={project}
                 catalog={catalog}
                 previewContext={previewContext}
@@ -292,7 +297,7 @@ function ShopStockSlotEditor({
   itemId,
   quantity,
   option,
-  options,
+  referenceOptions,
   project,
   catalog,
   previewContext,
@@ -304,7 +309,7 @@ function ShopStockSlotEditor({
   itemId: number;
   quantity: number;
   option?: ItemReferenceOption;
-  options: ItemReferenceOption[];
+  referenceOptions: ReturnType<typeof economyItemReferenceOptions>;
   project: Project;
   catalog?: LibraryCatalog | null;
   previewContext: PreviewRuntimeContext;
@@ -316,16 +321,21 @@ function ShopStockSlotEditor({
     <div className={itemId || quantity ? "shop-stock-card filled" : "shop-stock-card"}>
       <span className="shop-stock-index">Slot {slot}</span>
       {option ? <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} /> : <span className="item-option-icon"><i>IT</i></span>}
-      <label>
+      <div className="shop-stock-item-field">
         <span>Item</span>
-        <select value={String(itemId)} onChange={(event) => onCommitItem(Number(event.currentTarget.value))}>
-          <option value="0">Empty / none</option>
-          {itemId !== 0 && !option && <option value={String(itemId)}>Current item {itemId}</option>}
-          {options.map((entry) => (
-            <option key={entry.key} value={entry.value}>{entry.label}</option>
-          ))}
-        </select>
-      </label>
+        <EconomyItemReferenceField
+          value={itemId}
+          option={option}
+          options={referenceOptions}
+          ariaLabel={`Search shop slot ${slot} item`}
+          panelTitle={`Shop Slot ${slot} Item`}
+          storageKey="economy.shop.item.picker.position"
+          project={project}
+          catalog={catalog}
+          previewContext={previewContext}
+          onChange={onCommitItem}
+        />
+      </div>
       <label>
         <span>Qty</span>
         <input type="number" min={0} max={255} value={quantity} onChange={(event) => onCommitQuantity(Number(event.currentTarget.value))} />

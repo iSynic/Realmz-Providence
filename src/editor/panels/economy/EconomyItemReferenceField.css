@@ -1,0 +1,45 @@
+.economy-item-reference-field {
+  min-width: 0;
+}
+
+.economy-item-reference-preview {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.economy-item-reference-preview > span:last-child {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.economy-item-reference-preview strong,
+.economy-item-reference-preview small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.treasure-slot-card .economy-item-reference-field {
+  grid-column: 2;
+}
+
+.shop-stock-item-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.shop-stock-item-field > span {
+  color: #83c7ff;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.treasure-slot-card .workbench-reference-compact-trigger,
+.shop-stock-card .workbench-reference-compact-trigger {
+  min-height: 29px;
+}

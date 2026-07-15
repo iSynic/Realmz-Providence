@@ -5,6 +5,7 @@ import { useIconPreviewUrl, type PreviewRuntimeContext } from "../../previewUrls
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import { ScrollArea, SearchField } from "../../ui";
+import { EconomyItemReferenceField, economyItemReferenceOptions } from "./EconomyItemReferenceField";
 import { EconomyMiniItemIcons } from "./EconomyMiniItemIcons";
 import { filterEconomyItemOptions } from "./economyItemSearch";
 import { ItemNumberInput, ItemOptionIcon, useDeferredItemReferenceOptions } from "./ItemCatalogWorkbench";
@@ -263,6 +264,10 @@ function TreasureLootEditor({
   const openSlot = firstOpenTreasureSlotForUi(itemIds);
   const matchingOptions = useMemo(() => filterEconomyItemOptions(options, category, query), [category, options, query]);
   const visibleOptions = useMemo(() => matchingOptions.slice(0, 42), [matchingOptions]);
+  const referenceOptions = useMemo(
+    () => economyItemReferenceOptions(options, project, catalog, previewContext),
+    [catalog, options, previewContext, project]
+  );
   const commitSlot = (slot: number, itemId: number) => {
     onApplyCommand?.({
       kind: "updateTreasureRecord",
@@ -337,7 +342,7 @@ function TreasureLootEditor({
                 slot={slot}
                 value={value}
                 option={option}
-                options={options}
+                referenceOptions={referenceOptions}
                 project={project}
                 catalog={catalog}
                 previewContext={previewContext}
@@ -355,7 +360,7 @@ function TreasureSlotEditor({
   slot,
   value,
   option,
-  options,
+  referenceOptions,
   project,
   catalog,
   previewContext,
@@ -364,26 +369,30 @@ function TreasureSlotEditor({
   slot: number;
   value: number;
   option?: ItemReferenceOption;
-  options: ItemReferenceOption[];
+  referenceOptions: ReturnType<typeof economyItemReferenceOptions>;
   project: Project;
   catalog?: LibraryCatalog | null;
   previewContext: PreviewRuntimeContext;
   onCommit: (value: number) => void;
 }) {
   return (
-    <label className={value ? "treasure-slot-card filled" : "treasure-slot-card"}>
+    <div className={value ? "treasure-slot-card filled" : "treasure-slot-card"}>
       <span className="treasure-slot-index">Slot {slot}</span>
       {option ? <ItemOptionIcon option={option} project={project} catalog={catalog} previewContext={previewContext} /> : <span className="item-option-icon"><i>IT</i></span>}
-      <select value={String(value)} onChange={(event) => onCommit(Number(event.currentTarget.value))}>
-        <option value="0">Empty / none</option>
-        {value !== 0 && !option && <option value={String(value)}>Current item {value}</option>}
-        {options.map((entry) => (
-          <option key={entry.key} value={entry.value}>{entry.label}</option>
-        ))}
-      </select>
-      <input type="number" value={value} onChange={(event) => onCommit(Number(event.currentTarget.value))} aria-label={`Treasure slot ${slot} raw item ID`} />
+      <EconomyItemReferenceField
+        value={value}
+        option={option}
+        options={referenceOptions}
+        ariaLabel={`Search treasure slot ${slot} item`}
+        panelTitle={`Treasure Slot ${slot} Item`}
+        storageKey="economy.treasure.item.picker.position"
+        project={project}
+        catalog={catalog}
+        previewContext={previewContext}
+        onChange={onCommit}
+      />
       <small>{option ? [option.detail, option.sourceState].filter(Boolean).join(" | ") : value ? "Raw item ID" : "Open slot"}</small>
-    </label>
+    </div>
   );
 }
 

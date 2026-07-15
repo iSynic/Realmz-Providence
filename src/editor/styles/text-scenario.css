@@ -1544,21 +1544,6 @@
 
 
 
-.treasure-slot-card select,
-.treasure-slot-card input {
-  min-width: 0;
-  width: 100%;
-  min-height: 27px;
-}
-
-
-
-.treasure-slot-card input {
-  grid-column: 2;
-}
-
-
-
 .treasure-slot-card small {
   grid-column: 1 / -1;
   overflow: hidden;
@@ -1623,7 +1608,6 @@
 
 
 
-.shop-stock-card select,
 .shop-stock-card input {
   min-width: 0;
   width: 100%;
