@@ -1371,7 +1371,8 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 .library-hero p,
-.domain-header p {
+.domain-header p,
+.domain-header .workbench-pane-header-copy > small {
   max-width: 760px;
   margin-top: 5px;
   color: #8e9aa7;
@@ -1381,7 +1382,7 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 
-.domain-header small {
+.domain-header .workbench-pane-header-meta {
   flex-shrink: 0;
   color: #71aef0;
   font-size: 11px;

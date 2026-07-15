@@ -12,14 +12,16 @@ export type PanelHeaderProps = {
   meta?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  headingLevel?: 1 | 2 | 3;
 };
 
-export function PanelHeader({ title, eyebrow, description, meta, actions, className }: PanelHeaderProps) {
+export function PanelHeader({ title, eyebrow, description, meta, actions, className, headingLevel }: PanelHeaderProps) {
+  const TitleTag = headingLevel ? (`h${headingLevel}` as "h1" | "h2" | "h3") : "strong";
   return (
     <header className={classNames("workbench-pane-header", className)}>
       <div className="workbench-pane-header-copy">
         {eyebrow && <span className="workbench-pane-header-eyebrow">{eyebrow}</span>}
-        <strong>{title}</strong>
+        <TitleTag>{title}</TitleTag>
         {description && <small>{description}</small>}
       </div>
       {(meta || actions) && (

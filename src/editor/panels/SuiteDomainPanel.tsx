@@ -3,7 +3,7 @@ import { TutorialTip } from "../components/TutorialTip";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import { EditorTab, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
-import { ScrollArea } from "../ui";
+import { PanelHeader, ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
 import { EconomyWorkbench } from "./economy/EconomyWorkbench";
 import { DomainDetailPanel, entitySubtitle } from "./suite/DomainDetailPanel";
@@ -100,21 +100,19 @@ export function SuiteDomainPanel({
   const showOverviewCards = tab !== "records" && tab !== "linter" && !economyActive && !focusedTargetEditor && targetRecordTypes.length === 0;
   return (
     <section className={`domain-workbench${suppressDetailPanel ? " domain-workbench-no-detail" : ""}`}>
-      <header className="domain-header">
-        <div>
-          <h1>
-            {headerHelp ? (
-              <TutorialTip title={headerTitle} body={headerHelp} side="right">
-                <span>{headerTitle}</span>
-              </TutorialTip>
-            ) : (
-              headerTitle
-            )}
-          </h1>
-          <p>{headerEditor ? editorSubtitle(headerEditor) : config.subtitle}</p>
-        </div>
-        <small>{project ? project.scenario.name : "Library workbench"}</small>
-      </header>
+      <PanelHeader
+        className="domain-header"
+        headingLevel={1}
+        title={headerHelp ? (
+          <TutorialTip title={headerTitle} body={headerHelp} side="right">
+            <span>{headerTitle}</span>
+          </TutorialTip>
+        ) : (
+          headerTitle
+        )}
+        description={headerEditor ? editorSubtitle(headerEditor) : config.subtitle}
+        meta={project ? project.scenario.name : "Library workbench"}
+      />
       <div className={`domain-main-layout${suppressDetailPanel ? " no-detail" : ""}`}>
         <div className="domain-main-column">
       {economyActive && project && (

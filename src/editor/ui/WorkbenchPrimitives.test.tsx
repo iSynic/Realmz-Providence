@@ -19,4 +19,18 @@ describe("Workbench primitives", () => {
     expect(markup).toContain("workbench-pane-header-aside");
     expect(markup).toContain("199 items");
   });
+
+  it("can own a semantic workbench heading", () => {
+    const markup = renderToStaticMarkup(
+      <PanelHeader
+        headingLevel={1}
+        title="Rules"
+        description="Scenario rule records"
+        meta="Current project"
+      />
+    );
+
+    expect(markup).toContain("<h1>Rules</h1>");
+    expect(markup).toContain("Scenario rule records");
+  });
 });

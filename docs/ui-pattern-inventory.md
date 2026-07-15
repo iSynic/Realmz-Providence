@@ -107,6 +107,7 @@ Providence now has shared modeless and blocking overlay contracts. Project creat
 - Eye actions are moving toward a consistent preview meaning, but their floating surfaces remain independently composed.
 - Some overview lists still use fixed visible slices. Each occurrence must be classified as deliberate pagination/virtualization or replaced with a complete searchable/scrollable collection.
 - Tool tabs, segmented modes, and combinable filters are not always visually distinct.
+- Suite domain headers now use `PanelHeader` for stable title, description, and project-context regions while preserving a real `h1`; specialized tool heroes retain their own geometry until their domain audit.
 - Economy, writable-record family, Rules, Combat, Text, and Scripts top-level navigation now use `WorkbenchTabs`, including roving focus and Left/Right/Home/End keyboard selection; specialized map and fixed-grid modes remain candidates for domain-by-domain review.
 - Project creation, tile-palette source, stamp-library scope, and the shell's Project/Library switch now use `SegmentedControl`, with pressed-button semantics and the same roving Left/Right/Home/End keyboard model while their domain geometry remains locally owned.
 
