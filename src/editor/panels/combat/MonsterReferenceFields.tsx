@@ -19,6 +19,7 @@ import {
   type CombatSelectOption
 } from "./monsterReferenceModel";
 export { monsterRawReferenceOption, monsterReferencePickerOptions } from "./MonsterRecordReferenceField";
+export { MonsterAttackCodePicker } from "./MonsterAttackCodeField";
 export { ItemSlotGrid, SpellSlotGrid } from "./MonsterSpellLootFields";
 
 export function MacroReferenceField({ project, value, onCommit }: { project: Project; value: number; onCommit: (value: number) => void }) {
@@ -117,68 +118,6 @@ export function SummonEligibleField({ value, onCommit }: { value: number; onComm
       help={MONSTER_SUMMON_ELIGIBLE_HELP}
       onCommit={onCommit}
     />
-  );
-}
-
-export function MonsterAttackCodePicker({
-  label,
-  value,
-  options,
-  onCommit
-}: {
-  label: string;
-  value: number;
-  options: CombatSelectOption[];
-  onCommit: (value: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((option) => option.value === value) ?? null;
-  const menuOptions = selected ? options : [{ key: `${label}:current:${value}`, value, label: `Current value ${value}` }, ...options];
-  const title = selected ? `${selected.value} ${selected.label}` : `Current value ${value}`;
-  return (
-    <div
-      className="combat-field monster-attack-code-picker"
-      onBlur={(event) => {
-        const nextTarget = event.relatedTarget;
-        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) setOpen(false);
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") setOpen(false);
-      }}
-    >
-      <FieldLabel label={label} />
-      <button
-        type="button"
-        className="monster-attack-code-button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        title={title}
-        onClick={() => setOpen((current) => !current)}
-      >
-        {value}
-      </button>
-      {open ? (
-        <div className="monster-attack-code-menu" role="listbox" aria-label={label}>
-          {menuOptions.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              className={option.value === value ? "selected" : ""}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={() => {
-                onCommit(option.value);
-                setOpen(false);
-              }}
-            >
-              <span>{option.value}</span>
-              <strong>{option.label}</strong>
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
   );
 }
 

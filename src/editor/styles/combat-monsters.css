@@ -291,7 +291,7 @@
 }
 
 .monster-attacks-section .combat-field input,
-.monster-attacks-section .monster-attack-code-button {
+.monster-attacks-section .monster-attack-code-picker .workbench-reference-compact-trigger {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -311,88 +311,8 @@
   white-space: nowrap;
 }
 
-.monster-attack-code-picker {
-  position: relative;
-}
-
-.monster-attack-code-button {
-  display: grid;
-  place-items: center;
-  border: 1px solid #2a3a48;
-  border-radius: 5px;
-  background: #0b1219;
-  color: #f3f8ff;
-  font: inherit;
-  cursor: pointer;
-}
-
-.monster-attack-code-button:hover,
-.monster-attack-code-button:focus-visible {
-  border-color: #2c9eea;
-  background: #0d1d2a;
-}
-
-.monster-attack-code-menu {
-  position: absolute;
-  top: calc(100% + 3px);
-  left: 0;
-  z-index: 60;
-  width: 190px;
-  max-height: 260px;
-  overflow-y: auto;
-  display: grid;
-  padding: 4px;
-  border: 1px solid #2b4255;
-  border-radius: 5px;
-  background: #091119;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
-}
-
-.monster-attack-row .monster-attack-code-picker:last-child .monster-attack-code-menu {
-  right: 0;
-  left: auto;
-}
-
-.monster-attack-code-menu button {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  color: #e8f5ff;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.monster-attack-code-menu button:hover,
-.monster-attack-code-menu button:focus-visible {
-  border-color: #2c9eea;
-  background: #0d1d2a;
-}
-
-.monster-attack-code-menu button.selected {
-  border-color: #2b8fd8;
-  background: #10283d;
-  box-shadow: inset 3px 0 0 #2b8fd8;
-}
-
-.monster-attack-code-menu span {
-  color: #9bd2ff;
-  font-variant-numeric: tabular-nums;
-  font-weight: 900;
-}
-
-.monster-attack-code-menu strong {
-  min-width: 0;
-  overflow: hidden;
-  color: #e8f5ff;
-  font-size: 10px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.monster-attack-code-picker .workbench-reference-compact {
+  width: 100%;
 }
 
 .monster-spells-loot-section .combat-compact-array {

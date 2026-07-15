@@ -156,8 +156,8 @@ export function MonsterRecordEditor({
                         <strong>Attack {row + 1}</strong>
                         <NumberField label="Damage Low" value={values[0] ?? 0} onCommit={(value) => updateAttackSlot(0, value)} />
                         <NumberField label="Damage High" value={values[1] ?? 0} onCommit={(value) => updateAttackSlot(1, value)} />
-                        <MonsterAttackCodePicker label="Form" value={values[2] ?? 0} options={MONSTER_ATTACK_FORM_OPTIONS} onCommit={(value) => updateAttackSlot(2, value)} />
-                        <MonsterAttackCodePicker label="Special" value={values[3] ?? 0} options={MONSTER_ATTACK_SPECIAL_OPTIONS} onCommit={(value) => updateAttackSlot(3, value)} />
+                        <MonsterAttackCodePicker label="Form" contextLabel={`Attack ${row + 1} Form`} value={values[2] ?? 0} options={MONSTER_ATTACK_FORM_OPTIONS} onCommit={(value) => updateAttackSlot(2, value)} />
+                        <MonsterAttackCodePicker label="Special" contextLabel={`Attack ${row + 1} Special`} value={values[3] ?? 0} options={MONSTER_ATTACK_SPECIAL_OPTIONS} onCommit={(value) => updateAttackSlot(3, value)} />
                       </div>
                     );
                   })}
