@@ -705,13 +705,11 @@ export function App() {
         emptyProjectView={
           <ProjectStart
             desktopRuntime={desktopRuntime}
-            browserFileSystem={browserFileSystem}
             browserPreviewStatus={BROWSER_PREVIEW_STATUS}
             projectRoot={storagePaths.projectRoot}
             onNewProject={() => confirmBeforeDraftDiscard("start a new project", () => showNewProjectDialog())}
             onOpenProject={() => confirmBeforeDraftDiscard("open another project", () => chooseExistingProject())}
             onResumeProject={desktopRuntime ? undefined : () => confirmBeforeDraftDiscard("resume the browser-local project", () => resumeBrowserProject())}
-            onImportScenario={() => confirmBeforeDraftDiscard("import a scenario", () => importScenario())}
             onLibraryHub={() => confirmBeforeDraftDiscard("open the Library workbench", () => openLibraryHub())}
             onDocuments={() => confirmBeforeDraftDiscard("open Documents", () => setDocumentsOpen(true))}
           />

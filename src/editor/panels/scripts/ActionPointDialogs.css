@@ -1,9 +1,4 @@
 .script-draft-navigation-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 2200;
-  display: grid;
-  place-items: center;
   padding: 24px;
   background: rgb(0 0 0 / 48%);
   backdrop-filter: blur(2px);

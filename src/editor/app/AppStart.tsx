@@ -9,7 +9,7 @@ const NEW_PROJECT_DIALOG_HELP =
 const PROJECT_NAME_HELP =
   "The project name becomes the Providence package name and default export name. It does not have to match an imported Realmz scenario folder, though matching names are easier to track.";
 const PROJECT_START_HELP =
-  "Start with New when authoring a blank scenario, Import when bringing in a raw Realmz scenario, Open when returning to a Providence project package, or Library when you only need bundled Realmz/Divinity reference material.";
+  "Start with New when authoring a blank scenario or preparing to import a raw Realmz scenario. Open returns to a Providence project package, while Library opens reusable and bundled reference material without a project.";
 const PROJECT_RUNTIME_HELP =
   "Desktop projects can save, export, and use native folder dialogs. Browser preview opens Providence ZIP packages, saves locally, and uses folder support only where the browser exposes it.";
 
@@ -259,22 +259,20 @@ export function ProjectStart({
   onDocuments
 }: {
   desktopRuntime: boolean;
-  browserFileSystem: boolean;
   projectRoot: string;
   browserPreviewStatus: string;
   onNewProject: () => void;
   onOpenProject: () => void;
   onResumeProject?: () => void;
-  onImportScenario: () => void;
   onLibraryHub: () => void;
   onDocuments: () => void;
 }) {
   return (
-    <section className="project-start">
+    <section className="project-start" aria-labelledby="project-start-title">
       <img className="project-start-splash" src="/providence-splash.png" alt="" draggable={false} />
       <div className="project-start-panel">
         <img className="project-start-mark" src="/divinity-icon.png" alt="" draggable={false} />
-        <h1>
+        <h1 id="project-start-title">
           <TutorialTip title="Project Start" body={PROJECT_START_HELP} side="below">
             <span>Realmz Providence</span>
           </TutorialTip>
@@ -285,23 +283,27 @@ export function ProjectStart({
         </TutorialTip>
         {!desktopRuntime && <small>{browserPreviewStatus}</small>}
         <div className="project-start-actions">
-          <button className="btn btn-primary" type="button" onClick={onNewProject}>
-            <FilePlus2 size={15} /> New Project
-          </button>
-          <button className="btn btn-secondary" type="button" onClick={onOpenProject}>
-            <FolderOpen size={15} /> Open Project
-          </button>
-          {onResumeProject && (
-            <button className="btn btn-secondary" type="button" onClick={onResumeProject}>
-              <RefreshCcw size={15} /> Resume Local
+          <div className="project-start-action-group" role="group" aria-label="Project actions">
+            <button className="btn btn-primary" type="button" onClick={onNewProject}>
+              <FilePlus2 size={15} /> New Project
             </button>
-          )}
-          <button className="btn btn-secondary" type="button" onClick={onLibraryHub}>
-            <LibraryBig size={15} /> Library
-          </button>
-          <button className="btn btn-secondary" type="button" onClick={onDocuments}>
-            <BookOpen size={15} /> Documents
-          </button>
+            <button className="btn btn-secondary" type="button" onClick={onOpenProject}>
+              <FolderOpen size={15} /> Open Project
+            </button>
+            {onResumeProject && (
+              <button className="btn btn-secondary" type="button" onClick={onResumeProject}>
+                <RefreshCcw size={15} /> Resume Local
+              </button>
+            )}
+          </div>
+          <div className="project-start-action-group secondary" role="group" aria-label="Reference actions">
+            <button className="btn btn-ghost" type="button" onClick={onLibraryHub}>
+              <LibraryBig size={15} /> Library
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={onDocuments}>
+              <BookOpen size={15} /> Documents
+            </button>
+          </div>
         </div>
       </div>
     </section>

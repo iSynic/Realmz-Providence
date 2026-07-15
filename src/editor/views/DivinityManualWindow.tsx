@@ -1,5 +1,6 @@
 import { MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_DIVINITY_MANUAL_URL } from "../constants";
+import { ModalDialog } from "../ui";
 
 type ManualBounds = {
   x: number;
@@ -61,10 +62,6 @@ export function DivinityManualWindow({ href = "", onClose }: { href?: string; on
   }), [bounds]);
 
   useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
     function onMessage(event: MessageEvent) {
       if (event.origin === window.location.origin && event.data?.type === "divinity-manual-close") {
         onClose();
@@ -95,13 +92,11 @@ export function DivinityManualWindow({ href = "", onClose }: { href?: string; on
       setIsDragging(false);
     }
 
-    window.addEventListener("keydown", onKeyDown);
     window.addEventListener("message", onMessage);
     window.addEventListener("resize", onResize);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
     return () => {
-      window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("message", onMessage);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouseMove);
@@ -122,15 +117,14 @@ export function DivinityManualWindow({ href = "", onClose }: { href?: string; on
   }
 
   return (
-    <div className="divinity-manual-overlay" role="presentation" onClick={onClose}>
-      <section
-        className={`divinity-manual-window${isDragging ? " is-dragging" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Divinity Manual"
-        style={boundsStyle}
-        onClick={(event) => event.stopPropagation()}
-      >
+    <ModalDialog
+      backdropClassName="divinity-manual-overlay"
+      className={`divinity-manual-window${isDragging ? " is-dragging" : ""}`}
+      ariaLabel="Divinity Manual"
+      initialFocusSelector=".divinity-manual-frame"
+      style={boundsStyle}
+      onDismiss={onClose}
+    >
         <iframe className="divinity-manual-frame" title="Divinity Manual" src={`${DEFAULT_DIVINITY_MANUAL_URL}${href}`} />
         <div
           className="divinity-manual-drag-strip"
@@ -142,7 +136,6 @@ export function DivinityManualWindow({ href = "", onClose }: { href?: string; on
           aria-hidden="true"
           onMouseDown={(event) => beginManualDrag(event, "resize")}
         />
-      </section>
-    </div>
+    </ModalDialog>
   );
 }

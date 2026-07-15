@@ -2,6 +2,7 @@ import { Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { ManagedAssetKind, ManagedAssetLibraryScope } from "../../types";
 import { TutorialTip } from "../../components/TutorialTip";
+import { ModalDialog } from "../../ui";
 import {
   assetTargetForKind,
   fileToMediaAssetRequest,
@@ -133,8 +134,14 @@ export function AssetImportBar({
         }}
       />
       {pendingFiles.length > 0 && (
-        <div className="asset-import-dialog-backdrop" role="presentation">
-          <div className="asset-import-dialog" role="dialog" aria-modal="true" aria-label="Prepare asset import">
+        <ModalDialog
+          backdropClassName="asset-import-dialog-backdrop"
+          className="asset-import-dialog"
+          ariaLabel="Prepare asset import"
+          initialFocusSelector='[aria-label="Cancel import"]'
+          closeOnBackdrop={false}
+          onDismiss={() => setPendingFiles([])}
+        >
             <div className="asset-import-dialog-header">
               <div>
                 <b>Prepare {kindLabel(activeKind)}</b>
@@ -274,8 +281,7 @@ export function AssetImportBar({
                 Import as {libraryScope === "custom-library" ? "Custom Library Asset" : "Scenario Asset"}
               </button>
             </div>
-          </div>
-        </div>
+        </ModalDialog>
       )}
     </div>
   );

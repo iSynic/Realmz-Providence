@@ -1,6 +1,6 @@
 import { Eye, Trash2, X } from "lucide-react";
 import type { MapCoordinateTarget, SelectedEntity } from "../../types";
-import { FloatingWorkbenchPanel, ReferencePreview, type ReferencePreviewModel } from "../../ui";
+import { FloatingWorkbenchPanel, ModalDialog, ReferencePreview, type ReferencePreviewModel } from "../../ui";
 import "./ActionPointDialogs.css";
 
 export type ScriptPreviewTarget =
@@ -31,14 +31,12 @@ export function ScriptDestructiveActionDialog({
   onCancel: () => void;
 }) {
   return (
-    <div className="script-draft-navigation-backdrop" role="presentation" onMouseDown={onCancel}>
-      <div
-        className="script-draft-navigation-dialog script-destructive-action-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="script-destructive-action-title"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
+    <ModalDialog
+      backdropClassName="script-draft-navigation-backdrop"
+      className="script-draft-navigation-dialog script-destructive-action-dialog"
+      ariaLabelledBy="script-destructive-action-title"
+      onDismiss={onCancel}
+    >
         <header>
           <div>
             <strong id="script-destructive-action-title">{title}</strong>
@@ -50,13 +48,12 @@ export function ScriptDestructiveActionDialog({
         </header>
         <p>{body}</p>
         <div className="script-draft-navigation-actions">
-          <button type="button" className="btn btn-secondary btn-xs" onClick={onCancel}>Cancel</button>
+          <button data-modal-initial-focus type="button" className="btn btn-secondary btn-xs" onClick={onCancel}>Cancel</button>
           <button type="button" className="btn btn-danger btn-xs" onClick={onConfirm}>
             <Trash2 size={12} /> {confirmLabel}
           </button>
         </div>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 

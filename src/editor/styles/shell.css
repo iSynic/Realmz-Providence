@@ -213,6 +213,18 @@
   align-items: center;
   gap: 5px;
   justify-content: flex-end;
+  min-width: 0;
+}
+
+.topbar-workbench-switch {
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+
+.topbar-workbench-switch > button {
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 11px;
 }
 
 
@@ -2081,11 +2093,6 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 .documents-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  display: grid;
-  place-items: center;
   padding: 20px;
   background: rgba(3, 6, 10, 0.76);
   backdrop-filter: blur(3px);
@@ -2108,11 +2115,6 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 .divinity-manual-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1180;
-  display: grid;
-  place-items: center;
   padding: 12px;
   background: rgba(3, 6, 10, 0.62);
   backdrop-filter: blur(2px);
@@ -4086,11 +4088,45 @@ button.documents-source-chip {
   min-width: 0;
 }
 
+.status-bar > span:first-child,
+.status-bar-summary > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-bar > span:first-child {
+  flex: 1 1 auto;
+}
+
+.status-bar-summary {
+  flex: 0 1 55%;
+}
 
 
-@media (max-width: 1200px) {
+
+@media (max-width: 1380px) {
   .editor-topbar {
-    grid-template-columns: 210px minmax(260px, 1fr) auto;
+    grid-template-columns: minmax(210px, 1fr) auto;
+  }
+
+  .topbar-action-button {
+    width: 30px;
+    min-width: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .topbar-action-button > span,
+  .topbar-workbench-switch > button > span > span {
+    display: none;
+  }
+
+  .topbar-workbench-switch > button {
+    width: 30px;
+    min-width: 30px;
+    padding: 0;
   }
 
   .path-strip {
@@ -4102,16 +4138,26 @@ button.documents-source-chip {
   }
 }
 
-.grid-button-glyph {
-  width: 15px;
-  height: 15px;
-  display: inline-grid;
-  place-items: center;
-  border: 1px solid #4a77ad;
-  border-radius: 3px;
-  color: #9dcfff;
-  font-size: 7px;
-  line-height: 1;
+@media (max-width: 940px) {
+  .editor-topbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .editor-topbar-actions {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
+  .topbar-title-cluster {
+    justify-content: space-between;
+  }
+
+  .status-bar-summary {
+    flex-basis: 48%;
+  }
 }
 
 
@@ -4356,7 +4402,7 @@ button.documents-source-chip {
   justify-content: center;
   padding: clamp(24px, 4vw, 72px);
   padding-bottom: clamp(42px, 12vh, 144px);
-  overflow: hidden;
+  overflow: auto;
   background: #050909;
 }
 
@@ -4451,17 +4497,35 @@ button.documents-source-chip {
 }
 
 .project-start-actions {
-  display: flex;
-  flex-wrap: wrap;
+  width: 100%;
+  display: grid;
   gap: 8px;
   margin-top: 4px;
 }
 
-.project-start-actions .btn {
+.project-start-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-start-action-group.secondary {
+  padding-top: 8px;
+  border-top: 1px solid rgba(126, 174, 223, 0.18);
+}
+
+.project-start-action-group .btn {
   min-height: 32px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
+}
+
+@media (max-height: 680px) {
+  .project-start {
+    align-items: center;
+    padding-block: 24px;
+  }
 }
 
 

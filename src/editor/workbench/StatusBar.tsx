@@ -34,9 +34,12 @@ export function StatusBar({
     : "Awaiting project";
   return (
     <footer className="status-bar">
-      <span>{status}</span>
+      <span role="status" aria-live="polite" aria-atomic="true" title={status}>{status}</span>
       <span className="status-bar-summary">
-        <span>
+        <span title={activeWorkbench === "library"
+          ? `${catalog?.summary.sourceCount ?? 0} library sources | ${catalog?.summary.entityCount ?? 0} entities`
+          : projectSummary}
+        >
           {activeWorkbench === "library"
             ? `${catalog?.summary.sourceCount ?? 0} library sources | ${catalog?.summary.entityCount ?? 0} entities`
             : projectSummary}
@@ -47,6 +50,10 @@ export function StatusBar({
             style={progressStyle}
             title={semanticMapping?.detail ?? "Mapping scenario links"}
             aria-label={semanticMapping?.detail ?? "Mapping scenario links"}
+            role="progressbar"
+            aria-valuemin={semanticMapping?.indeterminate ? undefined : 0}
+            aria-valuemax={semanticMapping?.indeterminate ? undefined : semanticMapping?.total}
+            aria-valuenow={semanticMapping?.indeterminate ? undefined : semanticMapping?.completed}
           />
         )}
       </span>

@@ -27,6 +27,7 @@ export function DomainRail({
             <button
               className={`rail-tool domain-${domain}${activeDomain === domain ? " active" : ""}`}
               title={`${descriptor.label}: ${descriptor.description}`}
+              aria-current={activeDomain === domain ? "page" : undefined}
               onClick={() => onSelectDomain(domain)}
               type="button"
             >

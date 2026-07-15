@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type FormEventHandler,
   type KeyboardEvent,
   type KeyboardEventHandler,
@@ -12,6 +13,7 @@ const MODAL_FOCUSABLE_SELECTOR = [
   "button:not(:disabled)",
   "a[href]",
   "input:not(:disabled)",
+  "iframe",
   "select:not(:disabled)",
   "textarea:not(:disabled)",
   "[tabindex]:not([tabindex='-1'])"
@@ -24,6 +26,7 @@ export type ModalDialogProps = {
   children: ReactNode;
   className?: string;
   backdropClassName?: string;
+  style?: CSSProperties;
   surfaceTag?: "div" | "section" | "form";
   initialFocusSelector?: string;
   closeOnBackdrop?: boolean;
@@ -57,6 +60,7 @@ export function ModalDialog({
   children,
   className,
   backdropClassName,
+  style,
   surfaceTag = "section",
   initialFocusSelector,
   closeOnBackdrop = true,
@@ -117,6 +121,7 @@ export function ModalDialog({
   };
   const sharedProps = {
     className: surfaceClassName,
+    style,
     role: "dialog",
     "aria-modal": true,
     "aria-label": ariaLabel,

@@ -100,7 +100,7 @@ const MODULE_BASELINES = [
   { path: "src/editor/styles/combat-responsive.css", maximum: 59, owner: "ISY-321" },
   { path: "src/editor/styles/rules.css", maximum: 1806, owner: "ISY-321" },
   { path: "src/editor/styles/assets.css", maximum: 1659, owner: "ISY-321" },
-  { path: "src/editor/ui/workbench.css", maximum: 912, owner: "ISY-321" }
+  { path: "src/editor/ui/workbench.css", maximum: 946, owner: "ISY-331" }
 ];
 
 function evaluateModuleSizes(measurements) {

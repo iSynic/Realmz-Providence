@@ -50,6 +50,7 @@ export function ToolSidebar({
           </div>
           <button
             className={activeEditor === "domain" ? "active" : ""}
+            aria-current={activeEditor === "domain" ? "page" : undefined}
             type="button"
             onClick={() => onSelectEditor("domain")}
             title="Show the domain overview"
@@ -66,6 +67,7 @@ export function ToolSidebar({
               <TutorialTip key={tool.id} title={tool.label} body={tool.description} side="right">
                 <button
                   className={selected ? "selected" : ""}
+                  aria-current={selected ? "page" : undefined}
                   type="button"
                   onClick={() => onSelectEditor(tool.id)}
                 >

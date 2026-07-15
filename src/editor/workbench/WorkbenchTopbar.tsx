@@ -1,8 +1,9 @@
 import { useRef } from "react";
-import { BookOpen, ChevronLeft, ChevronRight, Download, FilePlus2, FolderOpen, LibraryBig, RefreshCcw, Save, Search, Upload, X } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, CircleHelp, Download, FilePlus2, FolderOpen, LayoutDashboard, LibraryBig, RefreshCcw, Save, Search, Upload, X } from "lucide-react";
 import { ActiveWorkbench } from "../types";
 import { IconButton } from "../components/IconButton";
 import { TutorialTip } from "../components/TutorialTip";
+import { SegmentedControl, type SegmentedControlOption } from "../ui";
 
 const TOPBAR_SEARCH_HELP =
   "Global Search jumps across scenario records, maps, scripts, strings, assets, bundled libraries, documentation, and diagnostics. Use Ctrl+K, then try shortcuts like monster 12, pict 304, string 349, or macro 143.";
@@ -18,10 +19,8 @@ const TOPBAR_DIRTY_HELP =
   "Dirty means the Providence project has unsaved editor changes. Desktop Save writes the project package; browser Save stores the project locally in this browser.";
 const TOPBAR_EDITING_HELP =
   "Editing appears while a text field or editable control owns focus. Keyboard shortcuts may defer to that field until editing ends.";
-const TOPBAR_LIBRARY_HELP =
-  "Library opens bundled Realmz and Divinity reference data. These records and assets are evidence and picker sources, not automatically project-owned content.";
-const TOPBAR_PROJECT_HELP =
-  "Project returns from Library Workbench to the active Providence project, where scenario maps, records, resources, diagnostics, and export live.";
+const TOPBAR_WORKBENCH_HELP =
+  "Project contains the active scenario and its authoring tools. Library contains reusable Providence material and bundled Realmz and Divinity references; library records and assets are not automatically project-owned content.";
 const TOPBAR_NEW_PROJECT_HELP =
   "New creates a Providence package with an editable land level 0. Use Import before authoring project content when starting from a raw Realmz scenario.";
 const TOPBAR_OPEN_PROJECT_HELP =
@@ -40,6 +39,19 @@ const TOPBAR_EXPORT_HELP =
   "Export writes a Realmz-readable scenario folder on desktop. In browser mode, Export downloads a Providence project ZIP backup or a conservative scenario ZIP from captured raw sources.";
 const TOPBAR_HISTORY_HELP =
   "Workbench history moves backward and forward through recently visited Providence tools and selected records without changing the project itself.";
+
+const WORKBENCH_OPTIONS: SegmentedControlOption<ActiveWorkbench>[] = [
+  {
+    value: "project",
+    label: <><LayoutDashboard size={14} /><span>Project</span></>,
+    title: "Open the project workbench"
+  },
+  {
+    value: "library",
+    label: <><LibraryBig size={14} /><span>Library</span></>,
+    title: "Open the reusable Providence library workbench"
+  }
+];
 
 export function WorkbenchTopbar({
   activeWorkbench,
@@ -183,16 +195,19 @@ export function WorkbenchTopbar({
             <span className="dirty-pill">Editing</span>
           </TutorialTip>
         )}
+        <TutorialTip title="Project And Library" body={TOPBAR_WORKBENCH_HELP} side="below">
+          <SegmentedControl
+            className="topbar-workbench-switch"
+            ariaLabel="Active workbench"
+            value={activeWorkbench}
+            options={WORKBENCH_OPTIONS}
+            onChange={(workbench) => workbench === "project" ? onProject() : onLibrary()}
+          />
+        </TutorialTip>
         <TutorialTip title="Global Search" body={TOPBAR_SEARCH_HELP} side="below">
           <button className="topbar-action-button" type="button" onClick={onGlobalSearch} title="Search scenario, libraries, assets, and docs (Ctrl+K)">
             <Search size={15} />
             <span>Search</span>
-          </button>
-        </TutorialTip>
-        <TutorialTip title="Library Workbench" body={TOPBAR_LIBRARY_HELP} side="below">
-          <button className="topbar-action-button" type="button" onClick={onLibrary} title="Open managed library workbench">
-            <LibraryBig size={15} />
-            <span>Library</span>
           </button>
         </TutorialTip>
         <TutorialTip title="Providence Documents" body={TOPBAR_DOCUMENTS_HELP} side="below">
@@ -203,17 +218,10 @@ export function WorkbenchTopbar({
         </TutorialTip>
         <TutorialTip title="Hover Help" body={TOPBAR_HELP_HELP} side="below">
           <button className={`topbar-action-button${tutorialEnabled ? " active" : ""}`} type="button" onClick={onToggleTutorial} title="Toggle hover help bubbles">
+            <CircleHelp size={15} />
             <span>{tutorialEnabled ? "Help On" : "Help Off"}</span>
           </button>
         </TutorialTip>
-        {activeWorkbench === "library" && (
-          <TutorialTip title="Project Workbench" body={TOPBAR_PROJECT_HELP} side="below">
-            <button className="topbar-action-button" type="button" onClick={onProject} title="Return to project workbench">
-              <span className="grid-button-glyph" aria-hidden="true">RP</span>
-              <span>Project</span>
-            </button>
-          </TutorialTip>
-        )}
         <TutorialTip title="New Project" body={TOPBAR_NEW_PROJECT_HELP} side="below">
           <button className="topbar-action-button" type="button" onClick={onNewProject} title="Create a new Providence project">
             <FilePlus2 size={15} />

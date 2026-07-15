@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, ListTree } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
-import { EmptyState, LinkChip, PanelSection, PreviewCard, SearchField } from "../ui";
+import { EmptyState, LinkChip, ModalDialog, PanelSection, PreviewCard, SearchField } from "../ui";
 import {
   DOCUMENTATION_GROUPS,
   DOCUMENTATION_TOPICS,
@@ -83,17 +83,14 @@ export function DocumentsView({
     onSectionChange?.(sectionId);
   }
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
-
   return (
-    <div className="documents-overlay" role="presentation" onClick={onClose}>
-      <section className="documents-panel" role="dialog" aria-modal="true" aria-label="Providence Authoring Manual" onClick={(event) => event.stopPropagation()}>
+    <ModalDialog
+      backdropClassName="documents-overlay"
+      className="documents-panel"
+      ariaLabel="Providence Authoring Manual"
+      initialFocusSelector=".documents-search input"
+      onDismiss={onClose}
+    >
         <header className="documents-header">
           <div>
             <TutorialTip title="Providence Documents" body={DOCUMENTS_HELP} side="below">
@@ -236,8 +233,7 @@ export function DocumentsView({
             </PanelSection>
           </aside>
         </div>
-      </section>
-    </div>
+    </ModalDialog>
   );
 }
 

@@ -41,7 +41,7 @@ The editor owns 38 CSS files with roughly 24,000 nonblank lines. The largest phy
 | `styles/rules.css` | 1,806 | Record forms, navigation, previews, and rule-specific geometry |
 | `styles/assets.css` | 1,659 | Media grid, filters, inspectors, import, and preview windows |
 | `styles/combat-battles.css` | 1,315 | Battle-specific geometry mixed with reusable control patterns |
-| `ui/workbench.css` | 912 | Existing shared layer |
+| `ui/workbench.css` | 946 | Existing shared layer; pane-header contracts added under ISY-331 |
 
 M20 should move reusable declarations into the shared layer only as consuming components migrate. File size alone is not a reason to move domain geometry.
 
@@ -94,11 +94,12 @@ The first shared renderer types should be string, sound, picture/icon, item, mon
 
 ## Overlay Families
 
-Providence now has shared modeless and blocking overlay contracts. Project creation, project close, draft changes, global search, and battle-reference repair use `ModalDialog` for focus, Escape, backdrop, and focus-return behavior while retaining their domain layouts. Item and monster icon selection use the shared movable reference panel. Asset import and document/manual windows remain explicit later-lane migrations because their sizing and window behavior are specialized.
+Providence now has shared modeless and blocking overlay contracts. Project creation, project close, draft changes, global search, battle-reference repair, Documents, the movable Divinity Manual window, Asset Import, and destructive Action Point confirmations use `ModalDialog` for focus, Escape, backdrop, and focus-return behavior while retaining their domain layouts. Item and monster icon selection use the shared movable reference panel. Menus, palette windows, and reference previews remain modeless surfaces with their own keyboard and dismissal contracts.
 
 ## Baseline Findings
 
 - The desktop and compact Extra Action Points captures preserve the same core workflow, but compact width truncates several status labels and reduces list/editor breathing room.
+- The shell no longer enforces the former 1100 x 720 document minimum. Compact windows keep topbar and status ownership inside the viewport, while dense workbenches retain local scrolling and responsive rules instead of forcing the entire application off-screen.
 - The Complex Encounter desktop capture keeps all response groups in one scan row. At compact width, Typed Reply wraps below the other response groups and Result Scripts falls below the first viewport; the editor remains usable, but its scan order changes substantially.
 - Direct tool captures prove populated base layouts. Complex Encounter result targets now provide explicit open, filtered, selected, no-match, and unresolved interaction recipes; the same state set should be reused by later picker migrations.
 - Search fields do not consistently expose a clear command, result count, loading state, or the same keyboard behavior.
@@ -107,7 +108,7 @@ Providence now has shared modeless and blocking overlay contracts. Project creat
 - Some overview lists still use fixed visible slices. Each occurrence must be classified as deliberate pagination/virtualization or replaced with a complete searchable/scrollable collection.
 - Tool tabs, segmented modes, and combinable filters are not always visually distinct.
 - Economy, writable-record family, Rules, Combat, Text, and Scripts top-level navigation now use `WorkbenchTabs`, including roving focus and Left/Right/Home/End keyboard selection; specialized map and fixed-grid modes remain candidates for domain-by-domain review.
-- Project creation, tile-palette source, and stamp-library scope now use `SegmentedControl`, with pressed-button semantics and the same roving Left/Right/Home/End keyboard model while their grid geometry remains domain-owned.
+- Project creation, tile-palette source, stamp-library scope, and the shell's Project/Library switch now use `SegmentedControl`, with pressed-button semantics and the same roving Left/Right/Home/End keyboard model while their domain geometry remains locally owned.
 
 ## First Implementation Slice
 

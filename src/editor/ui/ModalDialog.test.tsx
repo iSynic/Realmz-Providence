@@ -17,6 +17,17 @@ describe("ModalDialog", () => {
     expect(markup).toContain('aria-label="Confirm operation"');
   });
 
+  it("passes specialized surface geometry through to the dialog", () => {
+    const markup = renderToStaticMarkup(
+      <ModalDialog ariaLabel="Movable reference" style={{ left: 24, width: 480 }}>
+        <iframe title="Reference" />
+      </ModalDialog>
+    );
+
+    expect(markup).toContain('style="left:24px;width:480px"');
+    expect(markup).toContain('<iframe title="Reference"></iframe>');
+  });
+
   it("wraps tab focus at both ends", () => {
     expect(modalDialogTabTarget(2, 3, false)).toBe(0);
     expect(modalDialogTabTarget(0, 3, true)).toBe(2);

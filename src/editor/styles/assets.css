@@ -527,11 +527,6 @@
 
 
 .asset-import-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  display: grid;
-  place-items: center;
   padding: 24px;
   background: rgba(0, 0, 0, 0.55);
 }
