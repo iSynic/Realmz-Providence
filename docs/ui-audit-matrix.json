@@ -101,7 +101,29 @@
     { "key": "assets.decoded-records", "domain": "assets", "editor": "decoded-records", "label": "Decoded Records", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "assets.resource-forks", "domain": "assets", "editor": "resource-forks", "label": "Advanced Resources", "workbenches": ["project", "library"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "planned" } },
 
-    { "key": "text.messages", "domain": "text", "editor": "messages", "label": "String Editor", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "text" } },
+    { "key": "text.messages", "domain": "text", "editor": "messages", "label": "String Editor", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "text", "states": [
+      { "id": "string-search-filtered", "steps": [
+        { "action": "fill", "selector": ".text-message-search .workbench-search-control input[type=\"search\"]", "value": "the" },
+        { "action": "wait", "selector": ".text-message-list button" }
+      ] },
+      { "id": "option-label-search-filtered", "steps": [
+        { "action": "click", "selector": ".text-option-labels-tab" },
+        { "action": "wait", "selector": ".text-option-label-search" },
+        { "action": "fill", "selector": ".text-option-label-search .workbench-search-control input[type=\"search\"]", "value": "1" },
+        { "action": "wait", "selector": ".text-message-list button" }
+      ] },
+      { "id": "scrolling-text-search", "steps": [
+        { "action": "click", "selector": ".text-scrolling-tab" },
+        { "action": "wait", "selector": ".text-scrolling-search" },
+        { "action": "fill", "selector": ".text-scrolling-search .workbench-search-control input[type=\"search\"]", "value": "bell" }
+      ] },
+      { "id": "reference-text-search-filtered", "steps": [
+        { "action": "click", "selector": ".text-reference-toggle" },
+        { "action": "wait", "selector": ".text-reference-search" },
+        { "action": "fill", "selector": ".text-reference-search .workbench-search-control input[type=\"search\"]", "value": "TEXT" },
+        { "action": "wait", "selector": ".text-reference-grid" }
+      ] }
+    ] } },
     { "key": "text.text-resources", "domain": "text", "editor": "text-resources", "label": "Reference Strings", "workbenches": ["project", "library"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "text.spell-check", "domain": "text", "editor": "spell-check", "label": "Export Check", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
 

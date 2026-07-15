@@ -46,6 +46,8 @@ import {
 } from "../classicTextPreview";
 import { type PreviewRuntimeContext } from "../previewUrls";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
+import { SearchField } from "../ui";
+import "../styles/text-search.css";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
 type TextAuthoringTab = "strings" | "option-labels" | "scrolling-text";
@@ -99,6 +101,7 @@ export function TextPanel({
   const [selectedScrollingTextAssetId, setSelectedScrollingTextAssetId] = useState<string | null>(null);
   const [messageListLimit, setMessageListLimit] = useState(320);
   const [optionListLimit, setOptionListLimit] = useState(320);
+  const [referenceListLimit, setReferenceListLimit] = useState(120);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const records = [...(project.messages ?? [])].sort((a, b) => a.id - b.id);
   const optionRecords = [...(project.optionLabels ?? [])].sort((a, b) => a.id - b.id);
@@ -164,6 +167,7 @@ export function TextPanel({
   const nextId = nextMessageId(records);
   const referencePanelRequested = showReferences || selectedReferenceId != null;
   const resourceRows = useMemo(() => referencePanelRequested ? textReferenceRows(project, catalog, resourceQuery) : [], [catalog, project, referencePanelRequested, resourceQuery]);
+  const visibleResourceRows = resourceRows.slice(0, referenceListLimit);
   const selectedReference = selectedReferenceId ? resourceRows.find((row) => row.id === selectedReferenceId) ?? null : null;
   const referencePanelOpen = referencePanelRequested;
   const handleTextFileImport = async (file: File | null) => {
@@ -247,6 +251,10 @@ export function TextPanel({
     setMessageListLimit(320);
   }, [query]);
 
+  useEffect(() => {
+    setReferenceListLimit(120);
+  }, [resourceQuery]);
+
   return (
     <section className="text-workbench">
       <header className="text-workbench-header">
@@ -299,7 +307,7 @@ export function TextPanel({
           <TutorialTip title="Reference Strings" body={REFERENCE_STRINGS_HELP} side="below">
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm text-reference-toggle"
               onClick={() => setShowReferences((value) => !value)}
               title="Show or hide readable TEXT, STR#, and style string resources."
             >
@@ -344,14 +352,14 @@ export function TextPanel({
         </TutorialTip>
         {hasOptionLabels && (
           <TutorialTip title="Option Labels" body={OPTION_LABELS_TAB_HELP} side="below">
-            <button type="button" className={activeTab === "option-labels" ? "active" : ""} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => selectTextTab("option-labels")}>
+            <button type="button" className={`text-option-labels-tab ${activeTab === "option-labels" ? "active" : ""}`} role="tab" aria-selected={activeTab === "option-labels"} onClick={() => selectTextTab("option-labels")}>
               <span>Option Labels</span>
               <b>{optionRecords.length.toLocaleString()}</b>
             </button>
           </TutorialTip>
         )}
         <TutorialTip title="Scrolling Text" body={SCROLLING_TEXT_TAB_HELP} side="below">
-          <button type="button" className={activeTab === "scrolling-text" ? "active" : ""} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => selectTextTab("scrolling-text")}>
+          <button type="button" className={`text-scrolling-tab ${activeTab === "scrolling-text" ? "active" : ""}`} role="tab" aria-selected={activeTab === "scrolling-text"} onClick={() => selectTextTab("scrolling-text")}>
             <span>Scrolling Text</span>
             <b>{(scrollingTextAssets.length + importedScrollingTextResources.length).toLocaleString()}</b>
           </button>
@@ -399,8 +407,15 @@ export function TextPanel({
       {activeTab === "strings" ? <div className="text-workbench-layout">
         {showList && <aside className="text-message-list-panel">
           <div className="text-search-row">
-            <span>{filteredRecords.length.toLocaleString()} shown</span>
-            <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search strings..." />
+            <SearchField
+              className="text-list-search text-message-search"
+              value={query}
+              onChange={setQuery}
+              placeholder="Search strings..."
+              ariaLabel="Search scenario strings"
+              resultCount={filteredRecords.length}
+              resultNoun="string"
+            />
           </div>
           <div className="text-message-list" role="list" aria-label="Scenario strings">
             {visibleMessageRecords.map((record) => {
@@ -455,7 +470,15 @@ export function TextPanel({
                   <p>Readable TEXT, STR#, and style resources are searchable reference material.</p>
                 </div>
                 <div className="text-reference-actions">
-                  <input value={resourceQuery} onChange={(event) => setResourceQuery(event.currentTarget.value)} placeholder="Search TEXT / STR#..." />
+                  <SearchField
+                    className="text-reference-search"
+                    value={resourceQuery}
+                    onChange={setResourceQuery}
+                    placeholder="Search TEXT / STR#..."
+                    ariaLabel="Search reference text resources"
+                    resultCount={resourceRows.length}
+                    resultNoun="resource"
+                  />
                   <button type="button" className="btn btn-secondary btn-xs" onClick={() => {
                     setSelectedReferenceId(null);
                     setShowReferences(false);
@@ -468,13 +491,18 @@ export function TextPanel({
                 <TextReferenceDetail row={selectedReference} onBack={() => setSelectedReferenceId(null)} onInspect={() => confirmBeforeDraftDiscard(`inspect ${selectedReference.label}`, () => onSelectEntity(selectEntityFromId(selectedReference.id)))} />
               ) : (
                 <div className="text-reference-grid">
-                  {resourceRows.slice(0, 120).map((row) => (
+                  {visibleResourceRows.map((row) => (
                     <button key={row.id} type="button" onClick={() => setSelectedReferenceId(row.id)}>
                       <strong>{row.label}</strong>
                       <span>{row.detail}</span>
                       <small>{row.source}</small>
                     </button>
                   ))}
+                  {resourceRows.length > referenceListLimit && (
+                    <button type="button" className="text-reference-more" onClick={() => setReferenceListLimit((value) => value + 120)}>
+                      Show {Math.min(120, resourceRows.length - referenceListLimit).toLocaleString()} more
+                    </button>
+                  )}
                   {resourceRows.length === 0 && <p>No readable strings match this search.</p>}
                 </div>
               )}
@@ -553,12 +581,20 @@ function StringNavigator({
       <button type="button" className="btn btn-secondary btn-sm" onClick={onToggleList}>
         <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
       </button>
-      <label className="text-find-field">
-        <TutorialTip title="Find Occurrence" body={FIND_OCCURRENCE_HELP} side="below">
-          <span>Find Occurrence</span>
-        </TutorialTip>
-        <input value={findQuery} onChange={(event) => onFindQueryChange(event.currentTarget.value)} placeholder="Search all strings..." />
-      </label>
+      <SearchField
+        className="text-find-field text-occurrence-search"
+        label={(
+          <TutorialTip title="Find Occurrence" body={FIND_OCCURRENCE_HELP} side="below">
+            <span>Find Occurrence</span>
+          </TutorialTip>
+        )}
+        value={findQuery}
+        onChange={onFindQueryChange}
+        placeholder="Search all strings..."
+        ariaLabel="Find string occurrence"
+        resultCount={findQuery.trim() ? findCount : undefined}
+        resultNoun="match"
+      />
       <button type="button" className="btn btn-secondary btn-sm" disabled={!findCount} onClick={onFindFirst}>
         Find First
       </button>
@@ -843,7 +879,7 @@ function OptionLabelsWorkbench({
   const nextId = nextOptionLabelId(records);
   return (
     <>
-      <nav className="text-string-navigator" aria-label="Option label navigator">
+      <nav className="text-string-navigator text-option-label-toolbar" aria-label="Option label navigator">
         <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!previous || previous.id === selectedId} onClick={() => previous && onSelect(previous.id)} title="Previous option label">
           <ChevronLeft size={15} />
         </button>
@@ -854,12 +890,6 @@ function OptionLabelsWorkbench({
         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowList((value) => !value)}>
           <List size={14} /> {showList ? "Hide Search List" : "Show Search List"}
         </button>
-        <label className="text-find-field">
-          <TutorialTip title="Search Labels" body="Search two-choice option labels by ID or visible text. These labels are edited separately from ordinary scenario messages." side="below">
-            <span>Search Labels</span>
-          </TutorialTip>
-          <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search option labels..." />
-        </label>
         <button
           type="button"
           className="btn btn-primary btn-sm"
@@ -877,8 +907,20 @@ function OptionLabelsWorkbench({
         {showList && (
           <aside className="text-message-list-panel">
             <div className="text-search-row">
-              <span>{filteredRecords.length.toLocaleString()} shown</span>
-              <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search option labels..." />
+              <SearchField
+                className="text-list-search text-option-label-search"
+                label={(
+                  <TutorialTip title="Search Labels" body="Search two-choice option labels by ID or visible text. These labels are edited separately from ordinary scenario messages." side="below">
+                    <span>Search Labels</span>
+                  </TutorialTip>
+                )}
+                value={query}
+                onChange={setQuery}
+                placeholder="Search option labels..."
+                ariaLabel="Search option labels"
+                resultCount={filteredRecords.length}
+                resultNoun="label"
+              />
             </div>
             <div className="text-message-list" role="list" aria-label="Option labels">
               {filteredRecords.slice(0, listLimit).map((record) => {
@@ -1119,12 +1161,6 @@ function ScrollingTextWorkbench({
   return (
     <>
       <nav className="text-string-navigator text-scrolling-toolbar" aria-label="Scrolling text resources">
-        <label className="text-find-field">
-          <TutorialTip title="Search Scrolling Text" body="Search authored scenario TEXT resources by resource ID, label, or body text." side="below">
-            <span>Search Scrolling Text</span>
-          </TutorialTip>
-          <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scrolling text..." />
-        </label>
         <b>{assets.length.toLocaleString()} authored | {importedResources.length.toLocaleString()} imported</b>
         <button
           type="button"
@@ -1144,8 +1180,20 @@ function ScrollingTextWorkbench({
       <div className="text-workbench-layout">
         <aside className="text-message-list-panel">
           <div className="text-search-row">
-            <span>{filteredRows.length.toLocaleString()} shown</span>
-            <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search scrolling text..." />
+            <SearchField
+              className="text-list-search text-scrolling-search"
+              label={(
+                <TutorialTip title="Search Scrolling Text" body="Search authored and imported scenario TEXT resources by resource ID, label, or body text." side="below">
+                  <span>Search Scrolling Text</span>
+                </TutorialTip>
+              )}
+              value={query}
+              onChange={setQuery}
+              placeholder="Search scrolling text..."
+              ariaLabel="Search scrolling text resources"
+              resultCount={filteredRows.length}
+              resultNoun="resource"
+            />
           </div>
           <div className="text-message-list" role="list" aria-label="Scrolling text resources">
             {filteredRows.slice(0, listLimit).map((row) => {

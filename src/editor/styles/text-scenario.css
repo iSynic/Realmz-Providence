@@ -2031,16 +2031,6 @@
 
 
 
-.text-search-row span {
-  min-width: 72px;
-  color: #9dcfff;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-
-
 .text-message-list {
   min-height: 0;
   overflow: auto;
@@ -2887,8 +2877,6 @@
   min-width: min(420px, 100%);
 }
 
-
-
 .text-reference-panel h2,
 .text-reference-panel p {
   margin: 0;
@@ -2900,8 +2888,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
-
-
 
 .text-reference-detail {
   display: grid;
