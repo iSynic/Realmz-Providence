@@ -18,6 +18,7 @@ describe("WorkbenchTabs", () => {
 
     expect(markup).toContain('role="tablist"');
     expect(markup).toContain('aria-label="Economy sections"');
+    expect(markup).toContain('aria-orientation="horizontal"');
     expect(markup).toContain('aria-selected="true" tabindex="0" class="is-selected"');
     expect(markup).toContain("Items");
     expect(markup).toContain("199");
@@ -35,5 +36,17 @@ describe("WorkbenchTabs", () => {
     expect(workbenchTabKeyboardTarget(options, "rogue", "Home")).toBe("simple");
     expect(workbenchTabKeyboardTarget(options, "simple", "End")).toBe("rogue");
     expect(workbenchTabKeyboardTarget(options, "simple", "Escape")).toBeNull();
+  });
+
+  it("supports vertical roving focus for rail-style tabs", () => {
+    const options = [
+      { value: "maps", label: "Maps" },
+      { value: "scripts", label: "Scripts" },
+      { value: "linter", label: "Linter" }
+    ] as const;
+
+    expect(workbenchTabKeyboardTarget(options, "maps", "ArrowDown", "vertical")).toBe("scripts");
+    expect(workbenchTabKeyboardTarget(options, "maps", "ArrowUp", "vertical")).toBe("linter");
+    expect(workbenchTabKeyboardTarget(options, "scripts", "ArrowRight", "vertical")).toBeNull();
   });
 });

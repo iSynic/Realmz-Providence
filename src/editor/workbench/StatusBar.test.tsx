@@ -16,6 +16,7 @@ describe("StatusBar", () => {
     );
 
     expect(markup).toContain('role="status"');
+    expect(markup).toContain('aria-label="Application status"');
     expect(markup).toContain('aria-live="polite"');
     expect(markup).toContain('title="Project saved"');
     expect(markup).toContain("Awaiting project");

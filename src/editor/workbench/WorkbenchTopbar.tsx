@@ -181,7 +181,7 @@ export function WorkbenchTopbar({
         </div>
       </div>
 
-      <div className="editor-topbar-actions">
+      <div className="editor-topbar-actions" role="toolbar" aria-label="Project and application actions">
         <TutorialTip title="Runtime Mode" body={TOPBAR_RUNTIME_HELP} side="below">
           <span className={`runtime-pill${runtimeLive ? " live" : ""}`}>{runtimeLabel}</span>
         </TutorialTip>
@@ -217,7 +217,7 @@ export function WorkbenchTopbar({
           </button>
         </TutorialTip>
         <TutorialTip title="Hover Help" body={TOPBAR_HELP_HELP} side="below">
-          <button className={`topbar-action-button${tutorialEnabled ? " active" : ""}`} type="button" onClick={onToggleTutorial} title="Toggle hover help bubbles">
+          <button className={`topbar-action-button${tutorialEnabled ? " active" : ""}`} type="button" aria-pressed={tutorialEnabled} onClick={onToggleTutorial} title="Toggle hover help bubbles">
             <CircleHelp size={15} />
             <span>{tutorialEnabled ? "Help On" : "Help Off"}</span>
           </button>
@@ -267,7 +267,7 @@ export function WorkbenchTopbar({
             </button>
           </TutorialTip>
         )}
-        <div className="editor-undo-redo" aria-label="Undo and redo">
+        <div className="editor-undo-redo" role="group" aria-label="Undo and redo">
           <TutorialTip title="Undo" body={TOPBAR_UNDO_HELP} side="below">
             <IconButton title={undoLabel ? `Undo ${undoLabel} (Ctrl+Z)` : "Undo (Ctrl+Z)"} onClick={onUndo} disabled={!canUndo}>
               <RefreshCcw size={15} />

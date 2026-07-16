@@ -15,14 +15,18 @@ export type WorkbenchTabsProps<Value extends string = string> = {
   options: ReadonlyArray<WorkbenchTabOption<Value>>;
   onChange: (value: Value) => void;
   className?: string;
+  orientation?: "horizontal" | "vertical";
 };
 
 export function workbenchTabKeyboardTarget<Value extends string>(
   options: ReadonlyArray<WorkbenchTabOption<Value>>,
   value: Value,
-  key: string
+  key: string,
+  orientation: "horizontal" | "vertical" = "horizontal"
 ): Value | null {
-  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) return null;
+  const previousKey = orientation === "vertical" ? "ArrowUp" : "ArrowLeft";
+  const nextKey = orientation === "vertical" ? "ArrowDown" : "ArrowRight";
+  if (![previousKey, nextKey, "Home", "End"].includes(key)) return null;
   const enabled = options.filter((option) => !option.disabled);
   if (!enabled.length) return null;
   const currentIndex = Math.max(0, enabled.findIndex((option) => option.value === value));
@@ -30,7 +34,7 @@ export function workbenchTabKeyboardTarget<Value extends string>(
     ? 0
     : key === "End"
       ? enabled.length - 1
-      : (currentIndex + (key === "ArrowRight" ? 1 : -1) + enabled.length) % enabled.length;
+      : (currentIndex + (key === nextKey ? 1 : -1) + enabled.length) % enabled.length;
   return enabled[nextIndex].value;
 }
 
@@ -39,7 +43,8 @@ export function WorkbenchTabs<Value extends string>({
   value,
   options,
   onChange,
-  className
+  className,
+  orientation = "horizontal"
 }: WorkbenchTabsProps<Value>) {
   const buttons = useRef(new Map<Value, HTMLButtonElement>());
 
@@ -49,7 +54,7 @@ export function WorkbenchTabs<Value extends string>({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const nextValue = workbenchTabKeyboardTarget(options, value, event.key);
+    const nextValue = workbenchTabKeyboardTarget(options, value, event.key, orientation);
     if (nextValue == null) return;
     event.preventDefault();
     selectAndFocus(nextValue);
@@ -60,6 +65,7 @@ export function WorkbenchTabs<Value extends string>({
       className={["workbench-tabs", className].filter(Boolean).join(" ")}
       role="tablist"
       aria-label={ariaLabel}
+      aria-orientation={orientation}
       onKeyDown={handleKeyDown}
     >
       {options.map((option) => {

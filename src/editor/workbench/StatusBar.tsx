@@ -33,7 +33,7 @@ export function StatusBar({
       : `${project.maps.length} maps | ${project.triggers.length.toLocaleString()} triggers | links on demand`
     : "Awaiting project";
   return (
-    <footer className="status-bar">
+    <footer className="status-bar" aria-label="Application status">
       <span role="status" aria-live="polite" aria-atomic="true" title={status}>{status}</span>
       <span className="status-bar-summary">
         <span title={activeWorkbench === "library"

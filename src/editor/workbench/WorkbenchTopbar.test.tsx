@@ -49,6 +49,9 @@ describe("WorkbenchTopbar", () => {
     );
 
     expect(markup).toContain('aria-label="Active workbench"');
+    expect(markup).toContain('role="toolbar" aria-label="Project and application actions"');
+    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).toContain('role="group" aria-label="Undo and redo"');
     expect(markup).toMatch(/aria-pressed="false"[^>]*><span><svg[^>]*>[\s\S]*?Project/);
     expect(markup).toMatch(/aria-pressed="true"[^>]*><span><svg[^>]*>[\s\S]*?Library/);
     expect(markup).not.toContain("Library Workbench</span></button>");
