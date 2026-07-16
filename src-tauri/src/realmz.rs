@@ -23,8 +23,8 @@ pub use combat::{
     MONSTER_DESCRIPTION_BYTES,
 };
 pub use economy::{
-    parse_scenario_items, parse_shops, parse_treasures, write_scenario_items, write_shops,
-    write_treasures, ITEM_BYTES, SHOP_BYTES, TREASURE_BYTES,
+    parse_scenario_items, parse_shops, parse_treasures, shop_prefix_record_count,
+    write_scenario_items, write_shops, write_treasures, ITEM_BYTES, SHOP_BYTES, TREASURE_BYTES,
 };
 pub use encounters::{
     parse_complex_encounter_records, parse_simple_encounter_records, parse_thief_encounters,

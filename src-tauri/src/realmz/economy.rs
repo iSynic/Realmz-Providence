@@ -10,6 +10,11 @@ pub const SHOP_BYTES: usize = 3002;
 pub const TREASURE_BYTES: usize = 48;
 pub const ITEM_BYTES: usize = 100;
 
+const SHOP_ITEM_SLOTS: usize = 1000;
+const FOREIGN_RECORD_MIN_NONZERO_ITEMS: usize = 900;
+const FOREIGN_RECORD_MIN_OUT_OF_RANGE_ITEMS: usize = 500;
+const FOREIGN_RECORD_MIN_NONZERO_QUANTITIES: usize = 900;
+
 pub fn parse_scenario_items(buffer: &[u8]) -> Vec<ScenarioItemRecord> {
     parse_fixed_records(buffer, ITEM_BYTES)
         .map(|(id, start, record)| {
@@ -166,7 +171,8 @@ pub fn write_treasures(records: &[TreasureRecord]) -> Result<Vec<u8>> {
 }
 
 pub fn parse_shops(buffer: &[u8]) -> Vec<ShopRecord> {
-    parse_fixed_records(buffer, SHOP_BYTES)
+    let prefix_bytes = shop_prefix_record_count(buffer) * SHOP_BYTES;
+    parse_fixed_records(&buffer[..prefix_bytes], SHOP_BYTES)
         .map(|(id, start, record)| ShopRecord {
             id,
             item_ids: (0..1000).map(|slot| i16_be(record, slot * 2)).collect(),
@@ -177,6 +183,40 @@ pub fn parse_shops(buffer: &[u8]) -> Vec<ShopRecord> {
             provenance: provenance("Data SD", id, start, SHOP_BYTES),
         })
         .collect()
+}
+
+pub fn shop_prefix_record_count(buffer: &[u8]) -> usize {
+    let mut count = buffer.len() / SHOP_BYTES;
+    while count > 0
+        && is_foreign_shop_tail_record(&buffer[(count - 1) * SHOP_BYTES..count * SHOP_BYTES])
+    {
+        count -= 1;
+    }
+    count
+}
+
+fn is_foreign_shop_tail_record(record: &[u8]) -> bool {
+    if record.len() != SHOP_BYTES {
+        return false;
+    }
+    let mut nonzero_items = 0;
+    let mut out_of_range_items = 0;
+    let mut nonzero_quantities = 0;
+    for slot in 0..SHOP_ITEM_SLOTS {
+        let item_id = i16_be(record, slot * 2);
+        if item_id != 0 {
+            nonzero_items += 1;
+        }
+        if item_id.unsigned_abs() > 999 {
+            out_of_range_items += 1;
+        }
+        if record[2000 + slot] != 0 {
+            nonzero_quantities += 1;
+        }
+    }
+    nonzero_items >= FOREIGN_RECORD_MIN_NONZERO_ITEMS
+        && out_of_range_items >= FOREIGN_RECORD_MIN_OUT_OF_RANGE_ITEMS
+        && nonzero_quantities >= FOREIGN_RECORD_MIN_NONZERO_QUANTITIES
 }
 
 pub fn write_shops(records: &[ShopRecord]) -> Result<Vec<u8>> {
@@ -303,5 +343,48 @@ mod tests {
                 shop_start + 3001,
             ]
         );
+    }
+
+    #[test]
+    fn dense_foreign_shop_suffix_is_not_exposed() {
+        let mut input = vec![0u8; SHOP_BYTES * 3];
+        write_i16_be(&mut input, 0, 10);
+        input[2000] = 2;
+        write_i16_be(&mut input, 3000, 100);
+        for record_index in 1..3 {
+            let start = record_index * SHOP_BYTES;
+            for slot in 0..SHOP_ITEM_SLOTS {
+                write_i16_be(&mut input, start + slot * 2, 2000 + slot as i16);
+                input[start + 2000 + slot] = 0xff;
+            }
+        }
+
+        assert_eq!(shop_prefix_record_count(&input), 1);
+        assert_eq!(parse_shops(&input).len(), 1);
+    }
+
+    #[test]
+    fn sparse_malformed_shop_remains_visible() {
+        let mut input = vec![0u8; SHOP_BYTES];
+        write_i16_be(&mut input, 0, 32000);
+        input[2000] = 1;
+        write_i16_be(&mut input, 3000, -25);
+
+        assert_eq!(shop_prefix_record_count(&input), 1);
+        assert_eq!(parse_shops(&input).len(), 1);
+    }
+
+    #[test]
+    fn dense_record_before_later_shop_is_not_hidden() {
+        let mut input = vec![0u8; SHOP_BYTES * 3];
+        for slot in 0..SHOP_ITEM_SLOTS {
+            write_i16_be(&mut input, SHOP_BYTES + slot * 2, 2000 + slot as i16);
+            input[SHOP_BYTES + 2000 + slot] = 0xff;
+        }
+        write_i16_be(&mut input, SHOP_BYTES * 2, 42);
+        input[SHOP_BYTES * 2 + 2000] = 3;
+
+        assert_eq!(shop_prefix_record_count(&input), 3);
+        assert_eq!(parse_shops(&input).len(), 3);
     }
 }

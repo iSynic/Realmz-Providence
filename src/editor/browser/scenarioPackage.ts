@@ -57,6 +57,7 @@ import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
 import { encodeStringListResource, mergeResourceEntries, parseResourceFork, parseStringListResource, type ResourceForkUpdate } from "./resourceFork";
 import { createStoredZip } from "./zip";
 import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioTarget } from "../types";
+import { appendPreservedShopSourceSuffix } from "./shopRecords";
 
 type ZipEntry = {
   path: string;
@@ -406,7 +407,7 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
   if (project.shops.length > 0) {
     writes.push({
       path: "Data SD",
-      bytes: preserveMalformedRawTail("Data SD", writeShops(project.shops), SHOP_RECORD_BYTES, rawFiles)
+      bytes: appendPreservedShopSourceSuffix(writeShops(project.shops), rawSourceBytes("Data SD", rawFiles))
     });
   }
   if (project.spellOverrides.length > 0) {

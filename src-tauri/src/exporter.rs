@@ -300,7 +300,7 @@ pub fn export_project(
     write_fixed_if_nonempty(
         output_dir,
         "Data SD",
-        write_shops(&project.shops)?,
+        append_preserved_shop_source_suffix(write_shops(&project.shops)?, &raw_dir)?,
         crate::realmz::SHOP_BYTES,
         &raw_dir,
         &mut written_files,
@@ -463,6 +463,29 @@ fn overlay_zero_filled_fixed_capacity(
     }
     raw[..bytes.len()].copy_from_slice(&bytes);
     Ok(raw)
+}
+
+fn append_preserved_shop_source_suffix(mut bytes: Vec<u8>, raw_dir: &Path) -> Result<Vec<u8>> {
+    let raw_path = raw_dir.join("Data SD");
+    if bytes.is_empty() || !raw_path.is_file() {
+        return Ok(bytes);
+    }
+    let raw = fs::read(&raw_path).with_path(&raw_path)?;
+    let source_prefix_bytes =
+        crate::realmz::shop_prefix_record_count(&raw) * crate::realmz::SHOP_BYTES;
+    let full_source_bytes = raw.len() / crate::realmz::SHOP_BYTES * crate::realmz::SHOP_BYTES;
+    let suffix_start = if source_prefix_bytes < full_source_bytes {
+        Some(source_prefix_bytes)
+    } else if full_source_bytes < raw.len() {
+        Some(full_source_bytes)
+    } else {
+        None
+    };
+    let Some(suffix_start) = suffix_start else {
+        return Ok(bytes);
+    };
+    bytes.extend_from_slice(&raw[suffix_start..]);
+    Ok(bytes)
 }
 
 fn preserve_imported_fixed_length(
@@ -1113,7 +1136,8 @@ mod tests {
     use super::{
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
-        preserve_imported_fixed_length, scenario_icon_resource_updates, ResourceExportResult,
+        append_preserved_shop_source_suffix, preserve_imported_fixed_length,
+        scenario_icon_resource_updates, ResourceExportResult,
     };
     use crate::project::{
         Confidence, ManagedAsset, ManagedAssetExportState, ManagedAssetKind, MapRecord,
@@ -1255,6 +1279,30 @@ mod tests {
         let bytes = preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, raw_dir).unwrap();
 
         assert_eq!(bytes, vec![1u8, 2, 7, 6, 5]);
+    }
+
+    #[test]
+    fn inserts_added_shop_before_preserved_source_suffix() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path();
+        let valid = vec![0u8; crate::realmz::SHOP_BYTES];
+        let mut foreign = vec![0u8; crate::realmz::SHOP_BYTES];
+        for slot in 0..1000 {
+            crate::realmz::write_i16_be(&mut foreign, slot * 2, 2000 + slot as i16);
+            foreign[2000 + slot] = 0xff;
+        }
+        fs::write(
+            raw_dir.join("Data SD"),
+            [valid.clone(), foreign.clone()].concat(),
+        )
+        .unwrap();
+        let mut modeled = valid.clone();
+        modeled.extend_from_slice(&vec![1u8; crate::realmz::SHOP_BYTES]);
+
+        let bytes = append_preserved_shop_source_suffix(modeled.clone(), raw_dir).unwrap();
+
+        assert_eq!(&bytes[..modeled.len()], modeled);
+        assert_eq!(&bytes[modeled.len()..], foreign);
     }
 
     #[test]

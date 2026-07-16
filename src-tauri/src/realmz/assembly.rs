@@ -222,7 +222,24 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data Caste", CASTE_BYTES),
         ("Layout", LAND_LAYOUT_BYTES),
     ] {
-        let alignment = alignment_for(name, buffers.get(name), record_bytes);
+        let mut alignment = alignment_for(name, buffers.get(name), record_bytes);
+        if name == "Data SD" {
+            if let Some(buffer) = buffers.get(name) {
+                let shop_count = super::economy::shop_prefix_record_count(buffer);
+                let preserved_records = alignment.count.saturating_sub(shop_count);
+                if preserved_records > 0 {
+                    alignment.count = shop_count;
+                    diagnostics.push(Diagnostic {
+                        severity: DiagnosticSeverity::Info,
+                        code: "non-shop-data-suffix".to_string(),
+                        message: format!(
+                            "Data SD has {preserved_records} trailing full record(s) that do not match shop structure; Providence preserves them as non-shop source data"
+                        ),
+                        source: Some(name.to_string()),
+                    });
+                }
+            }
+        }
         records.counts.insert(name.to_string(), alignment.count);
         if matches!(alignment.status, AlignmentStatus::HasTrailingBytes) {
             diagnostics.push(Diagnostic {

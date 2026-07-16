@@ -1,7 +1,7 @@
 use super::common::*;
 use super::map_names::{map_record_name, ResourceMapName};
 use crate::project::*;
-use crate::realmz::{COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES};
+use crate::realmz::{shop_prefix_record_count, COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -334,7 +334,11 @@ fn parse_fixed_collection(
     let Some(buffer) = buffers.get(source) else {
         return;
     };
-    let count = buffer.len() / record_bytes;
+    let count = if source == "Data SD" {
+        shop_prefix_record_count(buffer)
+    } else {
+        buffer.len() / record_bytes
+    };
     for index in 0..count {
         let start = index * record_bytes;
         let record_summary = parser(&buffer[start..start + record_bytes], index);

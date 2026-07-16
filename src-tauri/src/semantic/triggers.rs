@@ -1,6 +1,7 @@
 use super::common::*;
 use super::opcodes::{action_semantics, ReferenceCounts};
 use crate::project::*;
+use crate::realmz::shop_prefix_record_count;
 use crate::realmz::{COMPLEX_ENCOUNTER_BYTES, DOOR_BYTES, SIMPLE_ENCOUNTER_BYTES};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -27,7 +28,9 @@ pub(super) fn add_triggers(
         simple: simple_count,
         complex: complex_count,
         battle: full_record_count(buffers.get("Data BD"), 346),
-        shop: full_record_count(buffers.get("Data SD"), 3002),
+        shop: buffers
+            .get("Data SD")
+            .map_or(0, |buffer| shop_prefix_record_count(buffer)),
         message: full_record_count(buffers.get("Data SD2"), 256),
         monster: full_record_count(buffers.get("Data MD"), 210),
         treasure: full_record_count(buffers.get("Data TD"), 48),

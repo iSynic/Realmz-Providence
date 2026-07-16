@@ -37,6 +37,7 @@ import { parseResourceFork, parseStringListResource, type ResourceEntry } from "
 import { inspectResourcePreview } from "./resourcePreview";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { referencedMapIconIds } from "../map/renderValues";
+import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
 
 export const MAP_SIZE = 90;
 export const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
@@ -228,6 +229,19 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const scenarioItems = parseScenarioItems(buffers.get("Data NI"));
   const treasures = parseTreasures(buffers.get("Data TD"));
   const shops = parseShops(buffers.get("Data SD"));
+  const rawShopCount = Math.floor((buffers.get("Data SD")?.byteLength ?? 0) / SHOP_RECORD_BYTES);
+  const preservedShopTailRecords = rawShopCount - shops.length;
+  const shopAlignment = records.alignments.find((alignment) => alignment.source === "Data SD");
+  if (shopAlignment && preservedShopTailRecords > 0) {
+    shopAlignment.count = shops.length;
+    records.counts["Data SD"] = shops.length;
+    diagnostics.push({
+      severity: "info",
+      code: "non-shop-data-suffix",
+      message: `Data SD has ${preservedShopTailRecords} trailing full record(s) that do not match shop structure; Providence preserves them as non-shop source data.`,
+      source: "Data SD"
+    });
+  }
   const simpleEncounters = parseSimpleEncounters(buffers.get("Data ED"));
   const complexEncounters = parseComplexEncounters(buffers.get("Data ED2"));
   const thiefEncounters = parseThiefEncounters(buffers.get("Data TD2"));
@@ -657,14 +671,15 @@ function parseTreasures(buffer: Uint8Array | undefined): TreasureRecord[] {
 }
 
 function parseShops(buffer: Uint8Array | undefined): ShopRecord[] {
-  return fixedRecords(buffer, 3002, "Data SD", (id, start, record) => ({
+  const prefixBytes = shopPrefixRecordCount(buffer) * SHOP_RECORD_BYTES;
+  return fixedRecords(buffer?.subarray(0, prefixBytes), SHOP_RECORD_BYTES, "Data SD", (id, start, record) => ({
     id,
     itemIds: Array.from({ length: 1000 }, (_, slot) => i16(record, slot * 2)),
     quantities: Array.from(record.subarray(2000, 3000)),
     inflation: i16(record, 3000),
     rawBytes: Array.from(record),
     authored: false,
-    provenance: provenance("Data SD", id, start, 3002, "source-backed")
+    provenance: provenance("Data SD", id, start, SHOP_RECORD_BYTES, "source-backed")
   }));
 }
 

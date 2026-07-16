@@ -87,6 +87,12 @@ Treasure action opcode `10` reads `Data TD` by ID and passes the record to `boot
 
 The authored source file is scenario `Data SD`. Runtime shop state is copied into `CS` at first start, then shop purchases/sales and opcode `51` mutate `CS`. Providence should show this distinction clearly: editing source shop records affects new runs/exported scenarios, not an already-running save's current shop stock.
 
+### City of Bywater ownership boundary
+
+Both known City of Bywater copies are 63,042 bytes, or 21 full 3,002-byte blocks. Records 0-15 have coherent shop structure: item IDs stay in Realmz's 0-999 item families, stock quantities correspond to used item slots, and inflation values are plausible. Records 16-20 are dense foreign data rather than authored shop stock: each has 966-1,000 nonzero item words, 640-980 item words outside `+/-999`, and 979-1,000 nonzero quantity bytes. The five-block suffix is byte-identical in both scenario copies (`SHA-256 a871d55f9ba5269423e28ed1932243d1226e48c27d5e6cd7c1a5da1917c01426`).
+
+Providence therefore owns bytes 0-48,031 as 16 editable shop records and treats bytes 48,032-63,041 as preserved non-shop source data. Import exposes shops 0-15 only. Export overlays the edited shop prefix onto the original `Data SD` and carries the suffix unchanged. The classifier is deliberately narrow: it only removes a contiguous trailing run of overwhelmingly dense, out-of-range records, so sparse malformed shops remain visible for diagnosis and a dense record before a later plausible shop is not hidden.
+
 ## Corpus Evidence
 
 `Data TD`, `Data SD`, `Data ID`, and `Data NI` evidence confirms fixed sizes:
@@ -114,7 +120,7 @@ The authored source file is scenario `Data SD`. Runtime shop state is copied int
 ## Validation Rules
 
 - `Data TD` length must be divisible by 48.
-- `Data SD` length must be divisible by 3,002.
+- `Data SD` length must be divisible by 3,002. Full-size trailing blocks that are demonstrably foreign data are preserved but are not exposed as shops.
 - Treasure item slots should resolve through the item library when nonzero.
 - Negative treasure reward fields should be described as randomized rewards.
 - Shop item IDs should resolve through the item library when quantity is nonzero.

@@ -13,6 +13,7 @@ const workRoot = path.join(repoRoot, "tmp", "browser-desktop-scenario-parity");
 const sourceFiles = [
   "src/editor/browser/zip.ts",
   "src/editor/browser/binaryWriters.ts",
+  "src/editor/browser/shopRecords.ts",
   "src/editor/browser/resourceFork.ts",
   "src/editor/browser/fsAccess.ts",
   "src/editor/browser/scenarioPackage.ts"
@@ -130,8 +131,12 @@ function corpusExpectations(projectName) {
       expectedMissingFiles: ["Data MENU", "Custom Names.rsrc"],
       passThroughFiles: ["Data Custom 1 BD"],
       requiresTextStylResources: true,
+      expectedProjectCounts: { shops: 16 },
+      preserveSourceFiles: ["Data SD"],
+      preservedSourceSuffixes: [{ name: "Data SD", offset: 16 * 3002 }],
       edited: {
         mutate: mutateCityOfBywaterForEditedParity,
+        preservedSourceSuffixes: [{ name: "Data SD", sourceOffset: 16 * 3002, outputOffset: 17 * 3002 }],
         requiredWrittenFiles: [
           "Data LD",
           "Data DD",
@@ -143,6 +148,7 @@ function corpusExpectations(projectName) {
           "Data MD",
           "Data DES",
           "Data NI",
+          "Data SD",
           "Data ED",
           "Data ED2",
           "Data TD2",
@@ -174,6 +180,9 @@ async function compareOptionalCorpusScenario(projectName, caseId, expectations) 
   const importedProjectDir = path.join(workRoot, `${caseId}-project`);
   await runCargoExample("import_scenario_project", [scenarioDir, importedProjectDir, projectName]);
   const project = JSON.parse(await fs.readFile(path.join(importedProjectDir, "project.json"), "utf8"));
+  for (const [collection, expectedCount] of Object.entries(expectations.expectedProjectCounts ?? {})) {
+    expect(project[collection]?.length === expectedCount, `${projectName}: expected ${expectedCount} ${collection}, found ${project[collection]?.length ?? 0}`);
+  }
   const importedRawSources = await rawSourcesFromImportedProject(importedProjectDir, project, projectName, "windows-realmz");
   await compareScenarioCase(caseId, importedProjectDir, project, importedRawSources, expectations);
   if (expectations.edited) {
@@ -185,6 +194,7 @@ async function compareOptionalCorpusScenario(projectName, caseId, expectations) 
       requiredFiles: expectations.requiredFiles,
       passThroughFiles: expectations.passThroughFiles,
       requiresTextStylResources: expectations.requiresTextStylResources,
+      preservedSourceSuffixes: expectations.edited.preservedSourceSuffixes ?? expectations.preservedSourceSuffixes,
       requiredWrittenFiles: expectations.edited.requiredWrittenFiles
     });
   }
@@ -212,6 +222,16 @@ async function compareScenarioCase(caseId, importedProjectDir, project, sourceSn
     }
     for (const name of expectations.requiredWrittenFiles ?? []) {
       expect(browserResult.report.writtenFiles.includes(name), `${label}: browser report should include written file ${name}`);
+    }
+    for (const name of expectations.preserveSourceFiles ?? []) {
+      const source = sourceSnapshot.files.find((file) => file.name === name)?.bytesData;
+      expect(source && bytesEqual(browserFiles.get(name), source), `${label}: browser output should preserve ${name} exactly`);
+      expect(source && bytesEqual(desktopFiles.get(name), source), `${label}: desktop output should preserve ${name} exactly`);
+    }
+    for (const { name, offset, sourceOffset = offset, outputOffset = offset } of expectations.preservedSourceSuffixes ?? []) {
+      const source = sourceSnapshot.files.find((file) => file.name === name)?.bytesData;
+      expect(source && bytesEqual(browserFiles.get(name)?.slice(outputOffset), source.slice(sourceOffset)), `${label}: browser output should preserve ${name} suffix from source byte ${sourceOffset}`);
+      expect(source && bytesEqual(desktopFiles.get(name)?.slice(outputOffset), source.slice(sourceOffset)), `${label}: desktop output should preserve ${name} suffix from source byte ${sourceOffset}`);
     }
     if (expectations.requiresTextStylResources) {
       expectTextStylResources(browserFiles, label);
@@ -327,6 +347,16 @@ function mutateCityOfBywaterForEditedParity(project) {
     item.cost = 4321;
     item.weight = 22;
     item.sound = 88;
+  }
+
+  const shopTemplate = edited.shops?.[15];
+  if (shopTemplate) {
+    edited.shops.push({
+      ...JSON.parse(JSON.stringify(shopTemplate)),
+      id: 16,
+      authored: true,
+      inflation: 51
+    });
   }
 
   const simple = edited.simpleEncounters?.[0];
