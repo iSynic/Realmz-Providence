@@ -1,6 +1,7 @@
 import { FileArchive, LibraryBig } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import { LibraryCatalog, ProvidenceWorkspace } from "../types";
+import { PanelHeader } from "../ui";
 
 const LIBRARY_WORKBENCH_HELP =
   "Library Workbench is Providence's bundled reference catalog. It explains Realmz and Divinity built-ins used for previews, pickers, fallbacks, and comparison, but those entries are not scenario-owned export data.";
@@ -28,17 +29,17 @@ export function LibraryHubPanel({
 }) {
   return (
     <section className="library-hub">
-      <div className="library-hero">
-        <LibraryBig size={30} />
-        <div>
-          <h1>
-            <TutorialTip title="Library Workbench" body={LIBRARY_WORKBENCH_HELP} side="below">
-              <span>Library Workbench</span>
-            </TutorialTip>
-          </h1>
-          <p>Bundled Divinity and Realmz reference data for tools that should work even before a scenario is loaded.</p>
-        </div>
-      </div>
+      <PanelHeader
+        className="library-hero"
+        headingLevel={1}
+        leading={<LibraryBig size={30} />}
+        title={(
+          <TutorialTip title="Library Workbench" body={LIBRARY_WORKBENCH_HELP} side="below">
+            <span>Library Workbench</span>
+          </TutorialTip>
+        )}
+        description="Bundled Divinity and Realmz reference data for tools that should work even before a scenario is loaded."
+      />
       <p className="library-note">
         <TutorialTip title="Bundled Reference Data" body={LIBRARY_PACKAGE_HELP} side="below">
           <span>Realmz and Divinity reference assets are packaged with Providence. Rebuild this catalog from source only during developer asset updates.</span>

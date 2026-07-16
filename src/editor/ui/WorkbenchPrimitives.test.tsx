@@ -6,6 +6,7 @@ describe("Workbench primitives", () => {
   it("keeps pane copy, metadata, and actions in stable regions", () => {
     const markup = renderToStaticMarkup(
       <PanelHeader
+        leading={<span>Icon</span>}
         eyebrow="Collection"
         title="Item Pool"
         description="Next open slot 4"
@@ -15,6 +16,8 @@ describe("Workbench primitives", () => {
     );
 
     expect(markup).toContain("workbench-pane-header-copy");
+    expect(markup).toContain("workbench-pane-header-main");
+    expect(markup).toContain("workbench-pane-header-leading");
     expect(markup).toContain("workbench-pane-header-meta");
     expect(markup).toContain("workbench-pane-header-aside");
     expect(markup).toContain("has-actions");

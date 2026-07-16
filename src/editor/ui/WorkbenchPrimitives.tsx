@@ -7,6 +7,7 @@ export type WorkbenchTone = "neutral" | "info" | "success" | "warning" | "danger
 
 export type PanelHeaderProps = {
   title: ReactNode;
+  leading?: ReactNode;
   eyebrow?: ReactNode;
   description?: ReactNode;
   meta?: ReactNode;
@@ -15,15 +16,23 @@ export type PanelHeaderProps = {
   headingLevel?: 1 | 2 | 3;
 };
 
-export function PanelHeader({ title, eyebrow, description, meta, actions, className, headingLevel }: PanelHeaderProps) {
+export function PanelHeader({ title, leading, eyebrow, description, meta, actions, className, headingLevel }: PanelHeaderProps) {
   const TitleTag = headingLevel ? (`h${headingLevel}` as "h1" | "h2" | "h3") : "strong";
+  const copy = (
+    <div className="workbench-pane-header-copy">
+      {eyebrow && <span className="workbench-pane-header-eyebrow">{eyebrow}</span>}
+      <TitleTag>{title}</TitleTag>
+      {description && <small>{description}</small>}
+    </div>
+  );
   return (
     <header className={classNames("workbench-pane-header", className)}>
-      <div className="workbench-pane-header-copy">
-        {eyebrow && <span className="workbench-pane-header-eyebrow">{eyebrow}</span>}
-        <TitleTag>{title}</TitleTag>
-        {description && <small>{description}</small>}
-      </div>
+      {leading ? (
+        <div className="workbench-pane-header-main">
+          <span className="workbench-pane-header-leading">{leading}</span>
+          {copy}
+        </div>
+      ) : copy}
       {(meta || actions) && (
         <div className={classNames("workbench-pane-header-aside", Boolean(actions) && "has-actions")}>
           {meta && <span className="workbench-pane-header-meta">{meta}</span>}
