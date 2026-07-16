@@ -3576,13 +3576,13 @@ button.documents-source-chip {
   background: rgba(13, 28, 44, 0.55);
 }
 
-.scenario-coverage-card header {
+.scenario-coverage-header {
   display: flex;
   justify-content: space-between;
   gap: 10px;
 }
 
-.scenario-coverage-card header small {
+.scenario-coverage-header .workbench-pane-header-meta {
   color: #79a9d5;
   font-size: 10px;
 }

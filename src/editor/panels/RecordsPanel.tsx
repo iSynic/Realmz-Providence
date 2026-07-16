@@ -3,7 +3,7 @@ import { compactValue, linksFor, selectEntityFromId, semanticLabel } from "../ut
 import { semanticRecordGroups } from "../semanticGraph";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { TutorialTip } from "../components/TutorialTip";
-import { ScrollArea } from "../ui";
+import { PanelHeader, ScrollArea } from "../ui";
 
 const RECORD_CATALOG_HELP =
   "Records is the audit view for decoded scenario data. Use it to inspect source files, fixed-record layouts, byte ranges, summaries, semantic links, and preservation boundaries before changing related authoring fields.";
@@ -32,12 +32,15 @@ export function RecordsPanel({
   return (
     <div className="editor-full-panel semantic-workbench">
       <section className="tab-panel records-index">
-        <div className="panel-header">
-          <TutorialTip title="Record Catalog" body={RECORD_CATALOG_HELP} side="below">
-            <span>Record Catalog</span>
-          </TutorialTip>
-          <b>{records.length.toLocaleString()}</b>
-        </div>
+        <PanelHeader
+          className="panel-header"
+          title={(
+            <TutorialTip title="Record Catalog" body={RECORD_CATALOG_HELP} side="below">
+              <span>Record Catalog</span>
+            </TutorialTip>
+          )}
+          meta={records.length.toLocaleString()}
+        />
         <p className="field-help">
           <TutorialTip title="Source Groups" body={SOURCE_GROUPS_HELP} side="below">
             <span>Start with the source strip to understand file family, origin, and fixed-record layout.</span>
@@ -79,11 +82,14 @@ export function RecordsPanel({
         </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
-        <div className="panel-header">
-          <TutorialTip title="Semantic Inspector" body={RECORD_INSPECTOR_HELP} side="below">
-            <span>Semantic Inspector</span>
-          </TutorialTip>
-        </div>
+        <PanelHeader
+          className="panel-header"
+          title={(
+            <TutorialTip title="Semantic Inspector" body={RECORD_INSPECTOR_HELP} side="below">
+              <span>Semantic Inspector</span>
+            </TutorialTip>
+          )}
+        />
         <ScrollArea className="semantic-right-scroll" aria-label="Record semantic inspector">
           <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={onSelectEntity} />
         </ScrollArea>

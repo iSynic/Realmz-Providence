@@ -6,7 +6,7 @@ import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
 import { assetFallbacks, blockedSemanticObjects, entityById, generatedRuntimeCaches, recordById, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
 import { loadScenarioCoverageManifest, type ScenarioCoverageManifest } from "../scenarioCoverage";
-import { ScrollArea } from "../ui";
+import { PanelHeader, ScrollArea } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
 import { ED3_CLASSIFICATION_ORDER, ed3ClassificationCounts, ed3DiagnosticSummaries, ed3RiskySummaries } from "../scriptDiagnostics";
 import { buildEdcdRowUsages, type EdcdRowStatus, type EdcdRowUsage } from "../edcdRows";
@@ -74,16 +74,21 @@ export function LinterPanel({
   return (
     <div className="editor-full-panel lint-workbench">
       <section className="tab-panel lint-panel">
-        <div className="panel-header">
-          <TutorialTip title="Project Linter" body={LINTER_HELP} side="below">
-            <span>Project Linter</span>
-          </TutorialTip>
-          <TutorialTip title="Re-run Validation" body={RERUN_HELP} side="below">
-            <button className="btn btn-primary btn-xs" disabled={!project} onClick={onValidate}>
-              Re-run
-            </button>
-          </TutorialTip>
-        </div>
+        <PanelHeader
+          className="panel-header"
+          title={(
+            <TutorialTip title="Project Linter" body={LINTER_HELP} side="below">
+              <span>Project Linter</span>
+            </TutorialTip>
+          )}
+          actions={(
+            <TutorialTip title="Re-run Validation" body={RERUN_HELP} side="below">
+              <button className="btn btn-primary btn-xs" disabled={!project} onClick={onValidate}>
+                Re-run
+              </button>
+            </TutorialTip>
+          )}
+        />
         <TutorialTip title="Validation Summary" body={LINTER_SUMMARY_HELP} side="below">
           <div className="lint-summary">
             {project?.validation.ok ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
@@ -134,11 +139,14 @@ export function LinterPanel({
         </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
-        <div className="panel-header">
-          <TutorialTip title="Semantic Inspector" body={SEMANTIC_INSPECTOR_HELP} side="below">
-            <span>Semantic Inspector</span>
-          </TutorialTip>
-        </div>
+        <PanelHeader
+          className="panel-header"
+          title={(
+            <TutorialTip title="Semantic Inspector" body={SEMANTIC_INSPECTOR_HELP} side="below">
+              <span>Semantic Inspector</span>
+            </TutorialTip>
+          )}
+        />
         <ScrollArea className="semantic-right-scroll" aria-label="Linter semantic inspector">
           <SemanticInspector project={project} selectedEntity={selectedEntity} onSelect={openLintEntity} />
         </ScrollArea>
@@ -236,11 +244,14 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
   if (!coverage) {
     return (
       <section className="scenario-coverage-card">
-        <header>
-          <TutorialTip title="Scenario Coverage" body={SCENARIO_COVERAGE_HELP} side="below">
-            <span>Scenario Coverage</span>
-          </TutorialTip>
-        </header>
+        <PanelHeader
+          className="scenario-coverage-header"
+          title={(
+            <TutorialTip title="Scenario Coverage" body={SCENARIO_COVERAGE_HELP} side="below">
+              <span>Scenario Coverage</span>
+            </TutorialTip>
+          )}
+        />
         <div className="entity-empty">Coverage details are loading.</div>
       </section>
     );
@@ -259,12 +270,15 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
     : "Unknown";
   return (
     <section className="scenario-coverage-card">
-      <header>
-        <TutorialTip title="Scenario Coverage" body={SCENARIO_COVERAGE_HELP} side="below">
-          <span>Scenario Coverage</span>
-        </TutorialTip>
-        <small>{summary.scenarioRoots.toLocaleString()} checked scenario roots</small>
-      </header>
+      <PanelHeader
+        className="scenario-coverage-header"
+        title={(
+          <TutorialTip title="Scenario Coverage" body={SCENARIO_COVERAGE_HELP} side="below">
+            <span>Scenario Coverage</span>
+          </TutorialTip>
+        )}
+        meta={`${summary.scenarioRoots.toLocaleString()} checked scenario roots`}
+      />
       <div className="scenario-coverage-metrics">
         <Metric label="Ready to Author" value={readyContainers} />
         <Metric label="Needs Review" value={reviewContainers} />
