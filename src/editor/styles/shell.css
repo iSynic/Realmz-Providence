@@ -1471,7 +1471,6 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 
-.library-source-list strong,
 .domain-entity-list strong {
   display: block;
   color: #e1e8ef;
@@ -1483,7 +1482,6 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 
-.library-source-list small,
 .domain-entity-list small {
   display: block;
   margin-top: 2px;
@@ -4668,11 +4666,8 @@ button.documents-source-chip {
 
 
 
-.library-source-list article {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  padding: 8px 10px;
+.library-source-toolbar {
+  padding: 10px;
   border-bottom: 1px solid #20252b;
 }
 
@@ -4683,28 +4678,13 @@ button.documents-source-chip {
   border-top: 1px solid #20252b;
 }
 
-.library-diagnostic-list article {
-  display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  gap: 8px;
-  align-items: start;
-  color: #c8d7e6;
-  font-size: 12px;
+.library-section > .workbench-incremental-list-footer {
+  padding: 8px 10px;
+  border-top: 1px solid #20252b;
 }
 
-.library-diagnostic-list article strong {
-  color: #f3c455;
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-
-
-
-
-.library-source-list svg {
-  color: #9dcfff;
-  margin-top: 2px;
+.library-diagnostic-list .workbench-incremental-list-footer {
+  padding-bottom: 0;
 }
 
 
