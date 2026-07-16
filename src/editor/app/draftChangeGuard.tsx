@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Save, X } from "lucide-react";
 import { flushSync } from "react-dom";
-import { ModalDialog } from "../ui";
+import { ModalDialog, ModalDialogActions, ModalDialogHeader } from "../ui";
 
 export type DraftGuardSurface = "scripts" | "text" | "assets" | "maps" | "combat" | "project" | "library" | "other";
 
@@ -193,15 +193,16 @@ function DraftChangeGuardDialog({
       dismissDisabled={busy}
       onDismiss={onCancel}
     >
-        <header>
-          <div>
-            <strong id="draft-change-title">Unapplied Changes</strong>
-            <small>Apply or discard draft editor changes before you {destination}.</small>
-          </div>
-          <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Cancel navigation" disabled={busy} onClick={onCancel}>
-            <X size={12} />
-          </button>
-        </header>
+        <ModalDialogHeader
+          titleId="draft-change-title"
+          title="Unapplied Changes"
+          description={<>Apply or discard draft editor changes before you {destination}.</>}
+          actions={(
+            <button type="button" className="btn btn-secondary btn-xs icon-only" aria-label="Cancel navigation" disabled={busy} onClick={onCancel}>
+              <X size={12} />
+            </button>
+          )}
+        />
         <div className="draft-change-dialog-body">
           {groupedEntries.map((group) => (
             <section key={group.surface}>
@@ -218,13 +219,13 @@ function DraftChangeGuardDialog({
           ))}
           {error && <p className="draft-change-dialog-error">{error}</p>}
         </div>
-        <div className="draft-change-dialog-actions">
+        <ModalDialogActions>
           <button type="button" className="btn btn-ghost" disabled={busy} onClick={onCancel}>Cancel</button>
           <button type="button" className="btn btn-danger" disabled={busy} onClick={onDiscard}>Discard Changes</button>
           <button type="button" className="btn btn-primary" disabled={busy} onClick={onApply}>
             <Save size={12} /> {busy ? "Applying..." : "Apply and Continue"}
           </button>
-        </div>
+        </ModalDialogActions>
     </ModalDialog>
   );
 }

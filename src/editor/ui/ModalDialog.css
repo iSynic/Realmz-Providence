@@ -24,3 +24,48 @@
   outline-offset: 1px;
   box-shadow: var(--ui-focus-ring);
 }
+
+.workbench-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-8);
+  padding: 12px 14px;
+  border-bottom: 1px solid #243545;
+  background: #15191e;
+}
+
+.workbench-modal-header-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.workbench-modal-header-copy strong {
+  min-width: 0;
+  color: #f3f7fb;
+  font-size: 14px;
+}
+
+.workbench-modal-header-copy small {
+  color: #a8b4c0;
+  font-size: 11px;
+}
+
+.workbench-modal-header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-4);
+}
+
+.workbench-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-space-8);
+  padding: 12px 14px;
+  border-top: 1px solid #243545;
+  background: #12161a;
+}

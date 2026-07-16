@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ProjectStart } from "./AppStart";
+import { CloseProjectDialog, ProjectStart } from "./AppStart";
 
 const noop = () => undefined;
 
@@ -24,5 +24,21 @@ describe("ProjectStart", () => {
     expect(markup).toContain('role="group" aria-label="Reference actions"');
     expect(markup).toContain("Resume Local");
     expect(markup).not.toContain("Import Scenario");
+  });
+
+  it("uses the shared modal structure for project close confirmation", () => {
+    const markup = renderToStaticMarkup(
+      <CloseProjectDialog
+        projectName="Example Project"
+        saving={false}
+        onSaveAndClose={noop}
+        onCloseWithoutSaving={noop}
+        onCancel={noop}
+      />
+    );
+
+    expect(markup).toContain('class="workbench-modal-header"');
+    expect(markup).toContain('class="workbench-modal-actions"');
+    expect(markup).toContain('aria-labelledby="close-project-title"');
   });
 });

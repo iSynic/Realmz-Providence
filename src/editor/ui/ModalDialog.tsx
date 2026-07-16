@@ -37,6 +37,19 @@ export type ModalDialogProps = {
   onSubmit?: FormEventHandler<HTMLFormElement>;
 };
 
+export type ModalDialogHeaderProps = {
+  title: ReactNode;
+  titleId?: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+};
+
+export type ModalDialogActionsProps = {
+  children: ReactNode;
+  className?: string;
+};
+
 export function modalDialogTabTarget(activeIndex: number, focusableCount: number, shiftKey: boolean) {
   if (focusableCount <= 0) return null;
   if (shiftKey && activeIndex <= 0) return focusableCount - 1;
@@ -149,6 +162,26 @@ export function ModalDialog({
     >
       {surface}
     </div>
+  );
+}
+
+export function ModalDialogHeader({ title, titleId, description, actions, className }: ModalDialogHeaderProps) {
+  return (
+    <header className={["workbench-modal-header", className].filter(Boolean).join(" ")}>
+      <div className="workbench-modal-header-copy">
+        <strong id={titleId}>{title}</strong>
+        {description && <small>{description}</small>}
+      </div>
+      {actions && <div className="workbench-modal-header-actions">{actions}</div>}
+    </header>
+  );
+}
+
+export function ModalDialogActions({ children, className }: ModalDialogActionsProps) {
+  return (
+    <footer className={["workbench-modal-actions", className].filter(Boolean).join(" ")}>
+      {children}
+    </footer>
   );
 }
 

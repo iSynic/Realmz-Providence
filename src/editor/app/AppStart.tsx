@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, BookOpen, Braces, CheckCircle2, Clipboard, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import { ScenarioSeedPreflightOutcome, ScenarioSeedTemplateSelection } from "../scenarioSeedReport";
-import { ModalDialog, SegmentedControl, type SegmentedControlOption } from "../ui";
+import { ModalDialog, ModalDialogActions, ModalDialogHeader, SegmentedControl, type SegmentedControlOption } from "../ui";
 
 const NEW_PROJECT_DIALOG_HELP =
   "A Providence project is its own folder package. New projects start with an editable land level 0; import a Realmz scenario before authoring project content.";
@@ -95,11 +95,14 @@ export function ProjectNameDialog({
         void submitProject();
       }}
     >
-        <div className="panel-header">
-          <TutorialTip title="New Providence Project" body={NEW_PROJECT_DIALOG_HELP} side="below">
-            <span id="new-project-dialog-title">New Providence Project</span>
-          </TutorialTip>
-        </div>
+        <ModalDialogHeader
+          titleId="new-project-dialog-title"
+          title={(
+            <TutorialTip title="New Providence Project" body={NEW_PROJECT_DIALOG_HELP} side="below">
+              <span>New Providence Project</span>
+            </TutorialTip>
+          )}
+        />
         <div className="project-name-dialog-body">
           <SegmentedControl
             ariaLabel="Project creation mode"
@@ -178,7 +181,7 @@ export function ProjectNameDialog({
             </>
           )}
         </div>
-        <div className="project-name-dialog-actions">
+        <ModalDialogActions>
           <button className="btn btn-ghost" type="button" onClick={onCancel} disabled={workingAction !== null}>
             Cancel
           </button>
@@ -190,7 +193,7 @@ export function ProjectNameDialog({
           <button className="btn btn-primary" type="submit" disabled={workingAction !== null || (mode === "blank" ? !value.trim() : !seedJson.trim() || preflight?.ok === false)}>
             {workingAction === "create" ? "Creating..." : mode === "blank" ? "Create Project" : "Create From JSON"}
           </button>
-        </div>
+        </ModalDialogActions>
     </ModalDialog>
   );
 }
@@ -226,14 +229,12 @@ export function CloseProjectDialog({
       dismissDisabled={saving}
       onDismiss={onCancel}
     >
-        <div className="panel-header">
-          <span id="close-project-title">Close Project</span>
-        </div>
+        <ModalDialogHeader titleId="close-project-title" title="Close Project" />
         <div className="close-project-dialog-body">
           <strong>{projectName}</strong>
           <p>This project has unsaved changes. Save the current project state before returning to the Providence start screen, or close without saving and discard the current in-memory edits.</p>
         </div>
-        <div className="close-project-dialog-actions">
+        <ModalDialogActions>
           <button className="btn btn-ghost" type="button" onClick={onCancel} disabled={saving}>
             Cancel
           </button>
@@ -243,7 +244,7 @@ export function CloseProjectDialog({
           <button className="btn btn-primary" type="button" onClick={onSaveAndClose} disabled={saving}>
             {saving ? "Saving..." : "Save and Close"}
           </button>
-        </div>
+        </ModalDialogActions>
     </ModalDialog>
   );
 }

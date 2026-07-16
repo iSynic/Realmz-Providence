@@ -1,6 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { ModalDialog, modalDialogShouldDismiss, modalDialogTabTarget } from "./ModalDialog";
+import {
+  ModalDialog,
+  ModalDialogActions,
+  ModalDialogHeader,
+  modalDialogShouldDismiss,
+  modalDialogTabTarget
+} from "./ModalDialog";
 
 describe("ModalDialog", () => {
   it("renders a labelled blocking dialog surface", () => {
@@ -26,6 +32,28 @@ describe("ModalDialog", () => {
 
     expect(markup).toContain('style="left:24px;width:480px"');
     expect(markup).toContain('<iframe title="Reference"></iframe>');
+  });
+
+  it("provides stable header and action regions", () => {
+    const markup = renderToStaticMarkup(
+      <ModalDialog ariaLabelledBy="confirm-title">
+        <ModalDialogHeader
+          titleId="confirm-title"
+          title="Confirm operation"
+          description="Review the pending change."
+          actions={<button type="button">Close</button>}
+        />
+        <ModalDialogActions>
+          <button type="button">Cancel</button>
+          <button type="button">Apply</button>
+        </ModalDialogActions>
+      </ModalDialog>
+    );
+
+    expect(markup).toContain('class="workbench-modal-header"');
+    expect(markup).toContain('class="workbench-modal-header-actions"');
+    expect(markup).toContain('class="workbench-modal-actions"');
+    expect(markup).toContain('id="confirm-title"');
   });
 
   it("wraps tab focus at both ends", () => {

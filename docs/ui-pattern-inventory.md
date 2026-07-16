@@ -192,3 +192,5 @@ Race portrait sets and Caste default icons now use a Rules-owned compact `Refere
 Spell cast animations, resolution animations, and queue icons now use the same compact reference contract with preview thumbnails in both the selected field and result rows. The picker preserves the different value-zero meanings, accepts mapped `cicn` or combat-tile IDs in search, and keeps unusual imported bytes available as explicit raw values instead of normalizing them away.
 
 The application status footer now keeps activity and project or library context as separately labelled regions. At very narrow widths the two lines stack instead of competing for a pair of truncated half-width columns, while normal desktop widths retain the dense single-row footer.
+
+Shell-owned blocking dialogs now compose shared `ModalDialogHeader` and `ModalDialogActions` regions. New Project, Close Project, and Unapplied Changes retain their domain bodies and destructive-command ordering while dropping three separate header/footer layouts; search-first and domain-specific dialogs remain free to use specialized structures.
