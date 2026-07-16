@@ -70,7 +70,7 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   macro: "Macro",
   "ed3-action-record": "Extra Action Point",
   "action-slot": "Action Slot",
-  "edcd-row": "Action Settings",
+  "edcd-row": "Data EDCD Storage",
   "simple encounter": "Simple Encounter",
   "complex encounter": "Complex Encounter",
   "random-region": "Random Region",

@@ -1,4 +1,5 @@
 import { useCallback, useTransition } from "react";
+import { Database } from "lucide-react";
 import { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
 import { scriptPanelTitle } from "./scripts/scriptInventory";
@@ -8,13 +9,16 @@ import { StoryFlagsWorkbench } from "./scripts/StoryFlagsWorkbench";
 import { WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 
 
-const SCRIPT_EDITOR_TABS: ReadonlyArray<WorkbenchTabOption<string>> = [
+export const PRIMARY_SCRIPT_EDITOR_TABS: ReadonlyArray<WorkbenchTabOption<string>> = [
   { value: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
   { value: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
   { value: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
-  { value: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." },
-  { value: "settings-rows", label: "Action Settings", title: "Advanced browser for shared or imported action settings." }
+  { value: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." }
 ];
+
+export function isAdvancedScriptStorageEditor(editor: string) {
+  return editor === "settings-rows";
+}
 
 export function ScriptsPanel({
   project,
@@ -95,7 +99,22 @@ export function ScriptsPanel({
   );
   return (
     <div className="editor-full-panel scripts-workbench">
-      <ScriptEditorTabs activeEditor={effectiveEditor} onSelectEditor={handleSelectEditor} />
+      <div className="script-editor-navigation">
+        <ScriptEditorTabs activeEditor={effectiveEditor} onSelectEditor={handleSelectEditor} />
+        <details className="script-advanced-storage-menu" open={isAdvancedScriptStorageEditor(effectiveEditor) ? true : undefined}>
+          <summary><Database size={13} /> Advanced</summary>
+          <div>
+            <button
+              type="button"
+              className={isAdvancedScriptStorageEditor(effectiveEditor) ? "active" : ""}
+              onClick={() => handleSelectEditor("settings-rows")}
+            >
+              <strong>Data EDCD / Extra Code Storage</strong>
+              <small>Technical diagnostics and deliberate raw-row repair.</small>
+            </button>
+          </div>
+        </details>
+      </div>
       {workbench}
     </div>
   );
@@ -113,7 +132,7 @@ function ScriptEditorTabs({
       ariaLabel="Action Point Hub sections"
       className="script-editor-tabs"
       value={activeEditor}
-      options={SCRIPT_EDITOR_TABS}
+      options={PRIMARY_SCRIPT_EDITOR_TABS}
       onChange={(editor) => onSelectEditor?.(editor)}
     />
   );

@@ -1336,9 +1336,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
             facts: ["reusable", "Data ED3"]
           },
           {
-            title: "Action Settings",
-            body: "Extra fields used when a CODE/ID step needs more than one target, range, branch, or option. Providence names those fields from the selected action.",
-            facts: ["Action Settings", "typed fields"]
+            title: "Settings Fields",
+            body: "Named author-facing fields used when a CODE/ID step needs more than one target, range, branch, or option. Applying the step manages its Data EDCD backing row.",
+            facts: ["caller-owned", "typed fields"]
           }
         ]
       },
@@ -1378,9 +1378,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
             facts: ["source", "macro"]
           },
           {
-            title: "Action Settings",
-            body: "Five signed shorts per Data EDCD settings entry. The selected opcode determines how those five values should be labeled.",
-            facts: ["settings"]
+            title: "Data EDCD Storage",
+            body: "Five signed shorts per Extra Code entry. A proven calling opcode determines how those values should be labeled; uncalled rows remain uninterpreted technical storage.",
+            facts: ["technical storage"]
           }
         ]
       },
@@ -1411,7 +1411,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Create or select an Action Point, then edit its map cell, activation chance, Secret state, and goto fields. For dungeons, paint Allow Move directions in Dungeon Draw; an AP on that secret-passage cell is automatically treated as Secret.",
           "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied, and the shared unapplied-changes dialog protects them when navigating away.",
           "Use Target Details when a direct target has an inline editor. Use Settings when the step needs named options such as branch mode, message, sound, battle, map, range, or secondary target fields.",
-          "Open Action Settings when you need to find orphaned settings, repair missing settings, duplicate a known Settings ID, or understand why two steps share the same settings."
+          "Use Scripts > Advanced > Data EDCD / Extra Code Storage only when you need to diagnose an orphaned, shared, conflicting, or missing backing row. Author ordinary values from the calling step."
         ]
       },
       {
@@ -1428,15 +1428,15 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
-        title: "Action Settings In Practice",
+        title: "Settings And Data EDCD In Practice",
         paragraphs: [
-          "Action Settings is the advanced list behind the per-step Settings editor. It is useful when imported scenarios contain shared settings, missing settings, or settings that are no longer called by any visible script step.",
+          "The per-step Settings editor is the authoring surface. Data EDCD / Extra Code Storage is an advanced diagnostic list for imported scenarios with shared settings, missing settings, conflicting callers, or rows that are no longer called by any visible script step.",
           "For ordinary authoring, start from the script step that calls the settings. The selected action gives the settings their field names, so editing from the caller is safer than navigating by ID alone."
         ],
         points: [
           "Shared settings can intentionally feed more than one step; duplicate before changing shared settings when only one caller should change.",
           "Missing settings block the action that points at them and should be repaired or retargeted before release.",
-          "Unused settings are fixed-slot leftovers or imported evidence until an author reuses, duplicates, or clears them.",
+          "Unused settings are fixed-slot leftovers or imported evidence. Providence preserves them and does not guess an action shape without a caller.",
           "Settings IDs stay stable because scripts, encounters, and imported records can store direct references to them."
         ]
       },

@@ -178,7 +178,7 @@ export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "ed3-evidence") return "Extra Action Points";
   if (activeEditor === "global-macros") return "Global Events";
   if (activeEditor === "quests") return "Quests";
-  if (activeEditor === "settings-rows") return "Action Settings";
+  if (activeEditor === "settings-rows") return "Data EDCD Storage";
   return "Action Points";
 }
 

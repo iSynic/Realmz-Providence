@@ -568,6 +568,15 @@
   line-height: 1.2;
 }
 
+.technical-storage-eyebrow {
+  display: block;
+  margin-bottom: 4px;
+  color: #7eaedf;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .settings-rows-header small {
   display: block;
   margin: 4px 0 0;
@@ -632,6 +641,16 @@
 
 .settings-row-list {
   min-height: 0;
+}
+
+.settings-row-list-limit {
+  margin: 0;
+  border-bottom: 1px solid #1d2a35;
+  background: #111c26;
+  color: #a9bccd;
+  padding: 8px 10px;
+  font-size: 10px;
+  line-height: 1.4;
 }
 
 .settings-row-card {
@@ -778,4 +797,54 @@
 .settings-row-template label {
   display: grid;
   gap: 4px;
+}
+
+.settings-row-raw-editor {
+  display: grid;
+  gap: 10px;
+  border: 1px dashed #3b5064;
+  border-radius: 6px;
+  background: #0b141c;
+  padding: 10px;
+}
+
+.settings-row-raw-editor > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-row-raw-editor small {
+  color: #91a8bb;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.settings-row-raw-fields {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(90px, 1fr));
+  gap: 7px;
+}
+
+.settings-row-raw-fields label {
+  display: grid;
+  gap: 4px;
+  color: #7eaedf;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.settings-row-raw-fields input {
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-row-raw-editor > button {
+  justify-self: start;
+}
+
+@media (max-width: 820px) {
+  .settings-row-raw-fields {
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+  }
 }

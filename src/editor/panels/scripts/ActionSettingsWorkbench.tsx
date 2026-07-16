@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Copy, Plus, Trash2 } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import { EdcdRowEditor } from "../../components/EdcdRowEditor";
@@ -8,7 +8,6 @@ import {
   edcdUsageMatchesFilter,
   edcdUsageStatusTone,
   edcdUsageToEditorUsage,
-  nextUnusedEdcdRowId,
   normalizeEdcdValues,
   type EdcdRowCaller,
   type EdcdRowFilter,
@@ -16,13 +15,12 @@ import {
 } from "../../edcdRows";
 import { TutorialTip } from "../../components/TutorialTip";
 import { EmptyState, PanelSection, ScrollArea, SearchField } from "../../ui";
-import { edcdFieldNamesForShape } from "../../realmzEdcd";
-import { SCRIPT_ACTION_DEFINITIONS, scriptActionDefinitionFor } from "./scriptActionCatalog";
+import { scriptActionDefinitionFor } from "./scriptActionCatalog";
 import { scriptLabel, usePersistentValue } from "./scriptInventory";
 import { actionSlotSelectionId } from "./actionPointSelection";
 
 const SETTINGS_HELP =
-  "Action Settings hold the extra fields for actions whose CODE/ID slot is too small. Pick the storage row from its caller when possible; Providence names the fields for the selected action and keeps imported storage stable.";
+  "Data EDCD stores Divinity Extra Code values behind settings-backed actions. Authors normally edit these values from the calling script step. This advanced browser exists for diagnostics, archaeology, and deliberate storage repair.";
 
 export function ActionSettingsWorkbench({
   project,
@@ -81,6 +79,8 @@ const EDCD_ROW_FILTERS: Array<{ id: EdcdRowFilter; label: string }> = [
   { id: "conflict", label: "Conflicts" }
 ];
 
+const MAX_VISIBLE_STORAGE_ROWS = 500;
+
 function SettingsRowsPanel({
   project,
   catalog,
@@ -103,8 +103,6 @@ function SettingsRowsPanel({
   const [filter, setFilter] = usePersistentValue<EdcdRowFilter>("scripts.edcdRows.filter", "all");
   const [query, setQuery] = useState("");
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
-  const [templateOpcode, setTemplateOpcode] = useState<number>(() => SCRIPT_ACTION_DEFINITIONS.find((definition) => definition.edcdShape)?.opcode ?? 2);
-  const edcdTemplates = SCRIPT_ACTION_DEFINITIONS.filter((definition) => definition.edcdShape && definition.authoringLevel !== "ignored");
   const selectedEntityRowId = edcdRowIdFromSelectedEntity(selectedEntity);
 
   useEffect(() => {
@@ -112,7 +110,6 @@ function SettingsRowsPanel({
     setSelectedRowId(selectedEntityRowId);
     setQuery(String(selectedEntityRowId));
   }, [selectedEntityRowId]);
-  const selectedTemplate = scriptActionDefinitionFor(templateOpcode);
   const usageCounts = useMemo(() => {
     const counts = new Map<EdcdRowFilter, number>(EDCD_ROW_FILTERS.map((entry) => [entry.id, 0]));
     for (const usage of usages) {
@@ -138,41 +135,32 @@ function SettingsRowsPanel({
       ].join(" ").toLowerCase().includes(normalized);
     });
   }, [filter, query, usages]);
+  const visibleUsages = filteredUsages.slice(0, MAX_VISIBLE_STORAGE_ROWS);
   const selectedUsage = filteredUsages.find((usage) => usage.rowId === selectedRowId)
-    ?? usages.find((usage) => usage.rowId === selectedRowId)
     ?? filteredUsages[0]
+    ?? usages.find((usage) => usage.rowId === selectedRowId)
     ?? usages[0]
     ?? null;
-  const selectedShape = selectedUsage?.primaryShape ?? selectedTemplate.edcdShape ?? undefined;
-  const selectedOpcode = selectedUsage?.primaryOpcode ?? selectedTemplate.opcode;
-  const editorUsage = selectedUsage ? edcdUsageToEditorUsage(selectedUsage, selectedShape) : null;
+  const selectedShape = selectedUsage?.primaryShape ?? undefined;
+  const selectedOpcode = selectedUsage?.primaryOpcode ?? undefined;
+  const editorUsage = selectedUsage ? edcdUsageToEditorUsage(selectedUsage) : null;
+  const editorMode = selectedUsage ? settingsEditorModeForUsage(selectedUsage) : null;
   const canDelete = selectedUsage?.exists && selectedUsage.status === "unused";
-  const duplicateRow = () => {
-    if (!selectedUsage) return;
-    const nextId = nextUnusedEdcdRowId(project);
-    onApplyCommand?.({ kind: "updateEdcdRow", label: `Duplicate Settings #${selectedUsage.rowId}`, rowId: nextId, values: selectedUsage.values });
-    setSelectedRowId(nextId);
-  };
-  const createRow = () => {
-    const nextId = selectedUsage && !selectedUsage.exists ? selectedUsage.rowId : nextUnusedEdcdRowId(project);
-    const values = normalizeEdcdValues(selectedUsage?.exists ? selectedUsage.values : selectedTemplate.defaultDraft.parameters);
-    onApplyCommand?.({ kind: "updateEdcdRow", label: `Create Settings #${nextId}`, rowId: nextId, values });
-    setSelectedRowId(nextId);
+  const deleteSelectedRow = () => {
+    if (!selectedUsage || !canDelete) return;
+    if (!window.confirm(`Delete unused Data EDCD row #${selectedUsage.rowId}? Imported unused rows are preserved unless you deliberately delete them here.`)) return;
+    onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete Data EDCD row #${selectedUsage.rowId}`, rowId: selectedUsage.rowId });
   };
 
   return (
     <section className="settings-rows-workbench">
       <header>
         <div>
-          <TutorialTip title="Action Settings" body={SETTINGS_HELP} side="below">
-            <strong>Action Settings</strong>
+          <span className="technical-storage-eyebrow">Technical Inventory</span>
+          <TutorialTip title="Data EDCD / Extra Code Storage" body={SETTINGS_HELP} side="below">
+            <strong>Data EDCD / Extra Code Storage</strong>
           </TutorialTip>
-          <small>Inspect and repair the extra fields used by settings-backed actions.</small>
-        </div>
-        <div className="script-toolbar">
-          <button type="button" className="btn btn-secondary btn-xs" onClick={createRow}>
-            <Plus size={12} /> Create From Template
-          </button>
+          <small>Inspect backing rows and repair storage only when caller-based editing is insufficient.</small>
         </div>
       </header>
       <div className="settings-rows-layout">
@@ -182,8 +170,8 @@ function SettingsRowsPanel({
               className="settings-row-search"
               value={query}
               onChange={setQuery}
-              placeholder="Search action settings..."
-              ariaLabel="Search action settings"
+              placeholder="Search Data EDCD storage..."
+              ariaLabel="Search Data EDCD storage"
               resultCount={filteredUsages.length}
               resultNoun="settings row"
             />
@@ -201,8 +189,13 @@ function SettingsRowsPanel({
               ))}
             </div>
           </div>
-          <ScrollArea className="settings-row-list" aria-label="Action settings">
-            {filteredUsages.map((usage) => (
+          <ScrollArea className="settings-row-list" aria-label="Data EDCD storage rows">
+            {filteredUsages.length > visibleUsages.length && (
+              <p className="settings-row-list-limit">
+                Showing {visibleUsages.length.toLocaleString()} of {filteredUsages.length.toLocaleString()} matching rows. Search or narrow the status filter to reach the rest.
+              </p>
+            )}
+            {visibleUsages.map((usage) => (
               <button
                 key={usage.rowId}
                 type="button"
@@ -210,29 +203,26 @@ function SettingsRowsPanel({
                 onClick={() => setSelectedRowId(usage.rowId)}
               >
                 <span>
-                  <strong>Settings #{usage.rowId}</strong>
+                  <strong>Data EDCD #{usage.rowId}</strong>
                   <small>{usage.summary}</small>
                 </span>
                 <b>{usage.statusLabel}</b>
                 <small>{usage.callers.length} caller{usage.callers.length === 1 ? "" : "s"}{usage.primaryShape ? ` | ${usage.primaryShape}` : ""}</small>
               </button>
             ))}
-            {filteredUsages.length === 0 && <EmptyState compact title="No action settings" body="No settings match this filter." />}
+            {filteredUsages.length === 0 && <EmptyState compact title="No storage rows" body="No Data EDCD rows match this filter." />}
           </ScrollArea>
         </aside>
         <main className="settings-row-detail">
           {selectedUsage ? (
             <PanelSection
-              title={`Settings #${selectedUsage.rowId}`}
+              title={`Data EDCD #${selectedUsage.rowId}`}
               eyebrow={selectedUsage.statusLabel}
               density="compact"
               actions={
                 <>
-                  <button type="button" className="btn btn-secondary btn-xs" onClick={duplicateRow} disabled={!selectedUsage.exists}>
-                    <Copy size={12} /> Duplicate Settings
-                  </button>
-                  <button type="button" className="btn btn-danger btn-xs" disabled={!canDelete} title={canDelete ? "Delete these unused settings." : "Only unused settings can be deleted here."} onClick={() => onApplyCommand?.({ kind: "deleteEdcdRow", label: `Delete Settings #${selectedUsage.rowId}`, rowId: selectedUsage.rowId })}>
-                    <Trash2 size={12} /> Delete Unused Settings
+                  <button type="button" className="btn btn-danger btn-xs" disabled={!canDelete} title={canDelete ? "Permanently delete this unused raw storage row." : "Only unused storage rows can be deleted here."} onClick={deleteSelectedRow}>
+                    <Trash2 size={12} /> Delete Raw Row
                   </button>
                 </>
               }
@@ -240,7 +230,7 @@ function SettingsRowsPanel({
               <div className="settings-row-overview">
                 <div className={`settings-row-status ${edcdUsageStatusTone(selectedUsage.status)}`}>
                   <strong>{selectedUsage.statusLabel}</strong>
-                  <span>{selectedUsage.exists ? "Stored in project action settings." : "Referenced by a script but not created yet."}</span>
+                  <span>{selectedUsage.exists ? "Stored in Data EDCD backing storage." : "Referenced by a script but not created yet. Open its caller to author and apply the missing values."}</span>
                 </div>
                 {selectedUsage.warnings.map((warning) => <p key={warning} className="field-warning">{warning}</p>)}
                 {selectedUsage.callers.length > 0 && (
@@ -254,41 +244,95 @@ function SettingsRowsPanel({
                     ))}
                   </div>
                 )}
-                {!selectedUsage.primaryShape && (
-                  <label className="script-required-field">
-                    <span>Template</span>
-                    <select value={templateOpcode} onChange={(event) => setTemplateOpcode(Number(event.currentTarget.value))}>
-                      {edcdTemplates.map((definition) => (
-                        <option key={definition.opcode} value={definition.opcode}>{definition.label}</option>
-                      ))}
-                    </select>
-                    <small>Choose a template to interpret or create this row with guided fields.</small>
-                  </label>
-                )}
               </div>
-              <EdcdRowEditor
-                project={project}
-                catalog={catalog}
-                edcdUsage={editorUsage}
-                fallbackRowId={selectedUsage.rowId}
-                fallbackShape={selectedShape}
-                fallbackFieldNames={selectedShape ? edcdFieldNamesForShape(selectedShape) : undefined}
-                fallbackInitialValues={selectedUsage.exists ? selectedUsage.values : selectedTemplate.defaultDraft.parameters}
-                fallbackOpcode={selectedOpcode}
-                parameterLabels={selectedOpcode != null ? scriptActionDefinitionFor(selectedOpcode).parameters : undefined}
-                selectedSlotLabel="settings"
-                onSelectEntity={onSelectEntity}
-                onOpenText={(editor) => onOpenTool?.("text", editor)}
-                onApplyCommand={onApplyCommand}
-              />
+              {editorMode === "typed" && (
+                <EdcdRowEditor
+                  project={project}
+                  catalog={catalog}
+                  edcdUsage={editorUsage}
+                  fallbackRowId={selectedUsage.rowId}
+                  fallbackShape={selectedShape}
+                  fallbackInitialValues={selectedUsage.values}
+                  fallbackOpcode={selectedOpcode}
+                  parameterLabels={selectedOpcode != null ? scriptActionDefinitionFor(selectedOpcode).parameters : undefined}
+                  selectedSlotLabel="settings"
+                  onSelectEntity={onSelectEntity}
+                  onOpenText={(editor) => onOpenTool?.("text", editor)}
+                  onApplyCommand={onApplyCommand}
+                />
+              )}
+              {editorMode === "raw" && (
+                <RawEdcdRowEditor rowId={selectedUsage.rowId} values={selectedUsage.values} onApplyCommand={onApplyCommand} />
+              )}
+              {editorMode === "caller" && (
+                <EmptyState compact title="Create from the calling step" body="This referenced row is missing. Open a caller above, choose the action's named values, and Apply Step so Providence can create the correct storage shape." />
+              )}
             </PanelSection>
           ) : (
-            <EmptyState title="No action settings yet" body="Create settings from a template or add a settings-backed action to a script." />
+            <EmptyState title="No Data EDCD storage" body="Settings-backed actions create their required storage when their calling steps are applied." />
           )}
         </main>
       </div>
     </section>
   );
+}
+
+export function settingsEditorModeForUsage(usage: Pick<EdcdRowUsage, "exists" | "status" | "primaryShape">): "typed" | "raw" | "caller" {
+  if (!usage.exists) return "caller";
+  if (usage.status === "unused" || usage.status === "conflict" || !usage.primaryShape) return "raw";
+  return "typed";
+}
+
+function RawEdcdRowEditor({
+  rowId,
+  values,
+  onApplyCommand
+}: {
+  rowId: number;
+  values: readonly number[];
+  onApplyCommand?: (command: ProjectCommand) => void;
+}) {
+  const normalized = normalizeEdcdValues(values);
+  const storageKey = `${rowId}:${normalized.join("|")}`;
+  const [draft, setDraft] = useState(normalized.map(String));
+  useEffect(() => setDraft(normalized.map(String)), [storageKey]);
+  const numericDraft = normalizeEdcdValues(draft.map((value) => clampSignedShort(Number(value))));
+  const changed = numericDraft.some((value, index) => value !== normalized[index]);
+  return (
+    <div className="settings-row-raw-editor">
+      <div>
+        <strong>Uninterpreted Extra Code Values</strong>
+        <small>No caller proves a single action shape for this row. These are the five raw signed-short values stored by Realmz.</small>
+      </div>
+      <div className="settings-row-raw-fields">
+        {draft.map((value, index) => (
+          <label key={index}>
+            <span>Raw Value {index + 1}</span>
+            <input
+              type="number"
+              min={-32768}
+              max={32767}
+              value={value}
+              onChange={(event) => setDraft((current) => current.map((entry, entryIndex) => entryIndex === index ? event.currentTarget.value : entry))}
+            />
+          </label>
+        ))}
+      </div>
+      <button
+        type="button"
+        className="btn btn-secondary btn-xs"
+        disabled={!changed || !onApplyCommand}
+        onClick={() => onApplyCommand?.({ kind: "updateEdcdRow", label: `Update raw Data EDCD row #${rowId}`, rowId, values: numericDraft })}
+      >
+        <Save size={12} /> Apply Raw Storage
+      </button>
+    </div>
+  );
+}
+
+function clampSignedShort(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(-32768, Math.min(32767, Math.trunc(value)));
 }
 
 function callerLabel(project: Project, caller: EdcdRowCaller) {

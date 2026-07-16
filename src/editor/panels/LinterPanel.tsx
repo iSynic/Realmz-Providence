@@ -570,7 +570,7 @@ function semanticLintGroups(project: Project | null) {
           id: "edcd-risk-more",
           severity: "info" as const,
           message: `${(edcdActionable.length - 8).toLocaleString()} more Action Settings entr${edcdActionable.length - 8 === 1 ? "y" : "ies"} need repair.`,
-          detail: "Use Scripts > Action Settings to filter, inspect, duplicate, or repair settings."
+          detail: "Use Scripts > Advanced > Data EDCD / Extra Code Storage to inspect the backing rows, then repair values from their calling steps when possible."
         } : null
       ].filter((row): row is LintInsight => Boolean(row))
     },
@@ -643,7 +643,7 @@ function edcdStatusDetail(status: EdcdRowStatus) {
   if (status === "conflict") return "Different action types are reading the same five values differently; duplicate or repair the settings before editing.";
   if (status === "shared") return "Shared settings are valid, but step-specific edits should duplicate them first.";
   if (status === "unused") return "Unused imported settings are preserved, but they are not currently linked from known script flow.";
-  return "These settings have one known caller and can be edited from the selected step or Action Settings tab.";
+  return "These settings have one known caller and should normally be edited from that selected step. Raw storage remains available under Scripts > Advanced for diagnostics.";
 }
 
 function edcdRiskMessage(usage: EdcdRowUsage) {
