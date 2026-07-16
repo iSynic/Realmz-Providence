@@ -1,0 +1,30 @@
+.map-cell-inspector {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.map-cell-inspector > .context-capacity-note {
+  margin: 0;
+}
+
+.map-cell-inspector .workbench-panel-section-body {
+  display: grid;
+  gap: 8px;
+}
+
+.map-cell-inspector .info-grid {
+  padding: 0;
+}
+
+.map-cell-inspector .context-section {
+  border-top: 0;
+}
+
+.map-cell-inspector .context-action-stack {
+  padding-top: 0;
+}
+
+.map-cell-inspector .workbench-empty-state {
+  margin: 0;
+}

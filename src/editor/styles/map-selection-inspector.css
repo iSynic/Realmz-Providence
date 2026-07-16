@@ -1,7 +1,4 @@
-
-
-
-
+@import "./map-cell-selection-inspector.css";
 
 .zoom-cluster {
   display: flex;
@@ -249,10 +246,6 @@
   background: #211d14;
   color: #f3ca76;
 }
-
-
-
-
 
 .context-section.subtle {
   border-color: #24313d;
