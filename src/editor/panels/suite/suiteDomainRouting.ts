@@ -72,13 +72,13 @@ export const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string;
   },
   economy: {
     title: "Economy",
-    subtitle: "Treasure, items, shops, and shared icon/item libraries.",
+    subtitle: "Scenario treasure, items, and shops; reusable item and icon references live in Library Workbench.",
     editors: [
       { id: "treasure", label: "Treasure Editor", entityTypes: ["treasure"], createType: "treasure" },
       { id: "items", label: "Item Editor", entityTypes: ["item", "item-reference"], createType: "item" },
       { id: "shops", label: "Shop Editor", entityTypes: ["shop"], createType: "shop" },
-      { id: "bag", label: "Bag of Holding", entityTypes: ["bag-item"], createType: "bag-item" },
-      { id: "vault", label: "Vault of Arcana", entityTypes: ["vault-icon"], createType: "vault-icon" }
+      { id: "bag", label: "Bag of Holding", entityTypes: ["bag-item"] },
+      { id: "vault", label: "Vault of Arcana", entityTypes: ["vault-icon"] }
     ]
   },
   rules: {
@@ -129,7 +129,7 @@ export const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string;
 };
 
 const DOMAIN_HEADER_HELP: Partial<Record<EditorTab, string>> = {
-  economy: "Economy covers scenario Treasure records, scenario Shop records, item references, custom scenario items, and bundled read-only item/icon libraries.",
+  economy: "Project Economy covers scenario Treasure records, Shop records, item references, and custom items. Bag of Holding and Vault of Arcana remain read-only references in Library Workbench.",
   encounters: "Encounters covers source Data ED, Data ED2, Data TD2, and Data TD3 records: simple choices, complex branch tests, rogue/thief scenes, and timed macro triggers."
 };
 

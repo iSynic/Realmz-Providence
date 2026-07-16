@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
 import { LibraryDraftSpec } from "../libraryDrafts";
-import { EditorTab, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, SelectedEntity } from "../types";
+import { ActiveWorkbench, EditorTab, LibraryCatalog, Project, ProjectCommand, RealmzTargetRecordKind, SelectedEntity } from "../types";
 import { selectEntityFromId } from "../utils";
 import { PanelHeader, ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
-import { EconomyWorkbench } from "./economy/EconomyWorkbench";
+import { EconomyDomainContent, economyDomainMode } from "./economy/EconomyDomainContent";
 import { DomainDetailPanel, entitySubtitle } from "./suite/DomainDetailPanel";
 import {
   DomainTargetSwitcher,
@@ -21,6 +21,7 @@ import { DOMAIN_CONFIG, directDetailForSelection, domainHeaderHelp, editorSubtit
 export function SuiteDomainPanel({
   tab,
   activeEditor = "domain",
+  activeWorkbench = "project",
   project,
   catalog,
   selectedEntity,
@@ -36,6 +37,7 @@ export function SuiteDomainPanel({
 }: {
   tab: EditorTab;
   activeEditor?: string;
+  activeWorkbench?: ActiveWorkbench;
   project: Project | null;
   catalog: LibraryCatalog | null;
   selectedEntity: SelectedEntity | null;
@@ -51,12 +53,13 @@ export function SuiteDomainPanel({
 }) {
   void onUpdateLibraryCatalog;
   const config = DOMAIN_CONFIG[tab];
-  const economyActive = tab === "economy";
+  const economyMode = economyDomainMode(activeWorkbench, tab, activeEditor);
+  const economyProjectActive = economyMode === "project", economyLibraryActive = economyMode === "bag" || economyMode === "vault";
   const focusedEditor = config.editors.find((editor) => editor.id === activeEditor) ?? null;
-  const headerEditor = tab === "encounters" || economyActive ? null : focusedEditor;
+  const headerEditor = tab === "encounters" || economyProjectActive ? null : focusedEditor;
   const visibleEditors = focusedEditor ? [focusedEditor] : config.editors;
   const libraryEntities = catalog?.entities ?? [];
-  const suppressDetailPanel = tab === "encounters" || economyActive;
+  const suppressDetailPanel = tab === "encounters" || economyProjectActive || economyLibraryActive;
   const selectedDetail = suppressDetailPanel ? null :
     directDetailForSelection(project, selectedEntity?.id ?? null) ??
     libraryEntities.find((entity) => entity.id === selectedEntity?.id) ??
@@ -97,7 +100,7 @@ export function SuiteDomainPanel({
   const headerHelp = domainHeaderHelp(tab);
   const headerTitle = headerEditor ? headerEditor.label : config.title;
   const showTargetSwitcher = targetRecordTypes.length > 1 && (tab === "encounters" || !focusedTargetEditor);
-  const showOverviewCards = tab !== "records" && tab !== "linter" && !economyActive && !focusedTargetEditor && targetRecordTypes.length === 0;
+  const showOverviewCards = tab !== "records" && tab !== "linter" && !economyProjectActive && !economyLibraryActive && !focusedTargetEditor && targetRecordTypes.length === 0;
   return (
     <section className={`domain-workbench${suppressDetailPanel ? " domain-workbench-no-detail" : ""}`}>
       <PanelHeader
@@ -115,18 +118,17 @@ export function SuiteDomainPanel({
       />
       <div className={`domain-main-layout${suppressDetailPanel ? " no-detail" : ""}`}>
         <div className="domain-main-column">
-      {economyActive && project && (
-        <EconomyWorkbench
-          activeEditor={activeEditor}
-          project={project}
-          catalog={catalog}
-          selectedEntity={selectedEntity}
-          previewContext={{ desktopRuntime, projectDir, workspaceDir }}
-          onSelectEntity={onSelectEntity}
-          onApplyCommand={onApplyCommand}
-        />
-      )}
-      {!economyActive && project && targetRecordTypes.length > 0 && (
+      <EconomyDomainContent
+        mode={economyMode}
+        activeEditor={activeEditor}
+        project={project}
+        catalog={catalog}
+        selectedEntity={selectedEntity}
+        previewContext={{ desktopRuntime, projectDir, workspaceDir }}
+        onSelectEntity={onSelectEntity}
+        onApplyCommand={onApplyCommand}
+      />
+      {!economyProjectActive && project && targetRecordTypes.length > 0 && (
         <div className="domain-target-stack">
           {showTargetSwitcher && (
             <DomainTargetSwitcher

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { LibraryCatalog, LibraryEntity } from "../../types";
+import { economyDomainMode } from "./EconomyDomainContent";
 import { EconomyReferenceLibrary, filterEconomyReferenceEntries } from "./EconomyReferenceLibrary";
 import { economySectionFromEditor } from "./EconomySectionSwitcher";
 
@@ -42,9 +43,13 @@ function catalogWithOverflow(): LibraryCatalog {
 }
 
 describe("EconomyReferenceLibrary", () => {
-  it("routes both reusable Economy libraries to their own sections", () => {
-    expect(economySectionFromEditor("bag")).toBe("bag");
-    expect(economySectionFromEditor("vault")).toBe("vault");
+  it("keeps protected library routes out of the project Economy sections", () => {
+    expect(economySectionFromEditor("bag")).toBeNull();
+    expect(economySectionFromEditor("vault")).toBeNull();
+    expect(economyDomainMode("project", "economy", "bag")).toBe("project");
+    expect(economyDomainMode("library", "economy", "bag")).toBe("bag");
+    expect(economyDomainMode("library", "economy", "vault")).toBe("vault");
+    expect(economyDomainMode("library", "economy", "items")).toBeNull();
   });
 
   it("filters one protected library without mixing the other library into results", () => {

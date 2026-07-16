@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, Project, ProjectCommand, SelectedEntity } from "../../types";
-import { EconomyReferenceLibrary } from "./EconomyReferenceLibrary";
 import {
   EconomySectionSwitcher,
   economySectionFromEditor,
@@ -52,16 +51,8 @@ export function EconomyWorkbench({
 
   return (
     <>
-      <EconomySectionSwitcher project={project} catalog={catalog} selectedSection={section} onSelectSection={setSection} />
-      {section === "bag" || section === "vault" ? (
-        <EconomyReferenceLibrary
-          key={section}
-          kind={section}
-          catalog={catalog ?? null}
-          selectedEntity={selectedEntity}
-          onSelectEntity={onSelectEntity}
-        />
-      ) : section === "items" ? (
+      <EconomySectionSwitcher project={project} selectedSection={section} onSelectSection={setSection} />
+      {section === "items" ? (
         <ItemCatalogWorkbench {...commonProps} />
       ) : section === "shops" ? (
         <ShopWorkbench {...commonProps} />

@@ -694,7 +694,7 @@ export function App() {
       onExport={exportProject}
       onSelectDomain={(domain) => {
         confirmBeforeDraftDiscard(`open ${domain}`, () => {
-          openProjectDomain(domain);
+          state.activeWorkbench === "library" ? dispatch({ type: "setActiveDomain", domain }) : openProjectDomain(domain);
           dispatch({ type: "setActiveEditor", editor: domain === "scripts" ? "action-points" : "domain" });
         });
       }}

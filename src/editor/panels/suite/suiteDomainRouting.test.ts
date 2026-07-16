@@ -22,6 +22,8 @@ describe("suite domain routing", () => {
   it("keeps domain configuration tied to author-facing editor families", () => {
     expect(DOMAIN_CONFIG.maps.editors.map((editor) => editor.id)).toContain("land-layout");
     expect(DOMAIN_CONFIG.encounters.editors.map((editor) => editor.id)).toEqual(["simple", "complex", "rogue", "timed"]);
+    expect(DOMAIN_CONFIG.economy.editors.filter((editor) => ["bag", "vault"].includes(editor.id)).every((editor) => !editor.createType)).toBe(true);
+    expect(domainHeaderHelp("economy")).toContain("Library Workbench");
     expect(domainHeaderHelp("encounters")).toContain("Data ED2");
     expect(domainHeaderHelp("maps")).toBeNull();
   });

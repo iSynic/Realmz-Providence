@@ -121,6 +121,7 @@ function WorkbenchRouterContent({
       <SuiteDomainPanel
         tab={state.activeTab}
         activeEditor={state.activeEditor}
+        activeWorkbench={state.activeWorkbench}
         project={state.project}
         catalog={state.libraryCatalog}
         selectedEntity={state.selectedEntity}
