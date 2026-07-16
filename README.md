@@ -2,7 +2,7 @@
 
 **A modern scenario editor and creator for Realmz.**
 
-[Download the latest release](https://github.com/iSynic/Realmz-Providence/releases/latest) | [Release history](https://github.com/iSynic/Realmz-Providence/releases) | [MIT License](LICENSE)
+[Download the latest release](https://github.com/iSynic/Realmz-Providence/releases/latest) | [Release history](https://github.com/iSynic/Realmz-Providence/releases) | [CC BY-NC-SA 4.0 License](LICENSE)
 
 ![Realmz Providence editing City of Bywater in the Land and Dungeon Maps workbench](public/manual/gallery/land-dungeon-maps.png)
 
@@ -224,4 +224,10 @@ Providence is under active development. Version 0.3.4 supports substantial end-t
 
 Before submitting code, keep changes scoped, run the relevant focused checks, and use `npm run check` when the affected surface crosses project, export, or shared-record boundaries. Refactors should also follow the [Codebase Stabilization Baseline](docs/codebase-stabilization-baseline.md), which defines the repository's ownership and no-behavior-change constraints.
 
-Realmz Providence is released under the [MIT License](LICENSE).
+## License
+
+Realmz Providence is released under the [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License](LICENSE). This permits sharing and adaptation with attribution for non-commercial purposes, provided adaptations are distributed under the same license.
+
+Realmz is copyright (c) 1994 Tim Phillips. Providence includes and adapts Realmz-derived assets, documentation, formats, and reference material under the same CC BY-NC-SA 4.0 terms used by the modern Realmz project. Third-party dependencies and preserved historical reference material retain their own licenses and notices. See [NOTICE](NOTICE) for attribution and scope details.
+
+Providence does not claim ownership of original scenario content created by its users. Scenario packages can include Realmz-derived assets or reference material that remain subject to their applicable license terms.

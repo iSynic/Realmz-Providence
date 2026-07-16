@@ -26,6 +26,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "licenseFile": "../LICENSE",
     "category": "DeveloperTool",
     "resources": {
       "../public/bundled-libraries/": "bundled-libraries"
