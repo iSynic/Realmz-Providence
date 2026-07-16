@@ -49,9 +49,9 @@ export const DOMAIN_ORDER: EditorTab[] = [
   "player-maps",
   "scripts",
   "text",
+  "encounters",
   "scenario",
   "rules",
-  "encounters",
   "combat",
   "economy",
   "assets",
@@ -65,7 +65,8 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
   maps: {
     id: "maps",
     label: "Land/Dungeon Maps",
-    shortLabel: "Land/Dungeon",
+    shortLabel: "Land & Dungeon",
+    railGroup: "world",
     description: "Land levels, dungeon levels, layout, tile painting, Action Points, and random rectangles.",
     help: "Use the contextual sidebar for core map setup or selection details. The canvas stays the primary surface.",
     tools: [
@@ -79,6 +80,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "player-maps",
     label: "Player Maps",
     shortLabel: "Player Maps",
+    railGroup: "world",
     description: "Maps/Notes helper maps, names, pictures, markers, and description text.",
     help: "Create and edit the Maps/Notes entries players can find in game.",
     tools: [
@@ -89,6 +91,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "scripts",
     label: "Action Points",
     shortLabel: "Action Points",
+    railGroup: "story",
     description: "Action Points, Extra Action Points, global events, quests, and links to the rest of the scenario.",
     help: "Action Points are the scenario behavior hub. Build them from clear steps, targets, settings, and Extra Action Points.",
     tools: [
@@ -102,6 +105,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "scenario",
     label: "Scenario",
     shortLabel: "Scenario",
+    railGroup: "systems",
     description: "Startup information, restrictions, contact metadata, and legacy security.",
     help: "Scenario-wide startup, contact, restrictions, and load-readiness records.",
     tools: [
@@ -115,6 +119,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "encounters",
     label: "Encounters",
     shortLabel: "Encounters",
+    railGroup: "story",
     description: "Simple, complex, rogue, timed, and random encounter authoring.",
     help: "Encounter editors show Realmz links to battles, text, maps, and runtime state.",
     tools: [
@@ -128,6 +133,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "combat",
     label: "Combat",
     shortLabel: "Combat",
+    railGroup: "systems",
     description: "Battles, scenario monsters, and Monster Library.",
     help: "Library material is usable reference data; project records remain editable where supported.",
     tools: [
@@ -140,6 +146,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "economy",
     label: "Economy",
     shortLabel: "Economy",
+    railGroup: "systems",
     description: "Treasure, items, shops, Bag of Holding, and Vault of Arcana.",
     help: "Economy tools combine scenario records with shared library assets when available.",
     tools: [
@@ -154,6 +161,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "rules",
     label: "Rules",
     shortLabel: "Rules",
+    railGroup: "systems",
     description: "Spells, races, castes, and selector data.",
     help: "Rule editors expose authored records and shared Realmz reference catalogs.",
     tools: [
@@ -166,6 +174,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "assets",
     label: "Assets",
     shortLabel: "Assets",
+    railGroup: "media",
     description: "Scenario media and bundled reference libraries.",
     help: "Scenario assets ship with your scenario. Bundled Realmz and Divinity resources are reference-only unless copied into the scenario.",
     tools: [
@@ -184,6 +193,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "text",
     label: "Strings",
     shortLabel: "Strings",
+    railGroup: "story",
     description: "Scenario strings, reference string tables, and export checks.",
     help: "Scenario strings are editable. TEXT and STR# resources are readable reference material.",
     tools: [
@@ -196,6 +206,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "records",
     label: "Records",
     shortLabel: "Records",
+    railGroup: "release",
     description: "Decoded binary records, byte ranges, provenance, and diagnostics.",
     help: "Records show the technical details behind editable scenario content.",
     tools: [
@@ -207,6 +218,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "linter",
     label: "Linter",
     shortLabel: "Linter",
+    railGroup: "release",
     description: "Compatibility diagnostics, missing resources, unsupported edits, and export blockers.",
     help: "The linter is the compatibility map for what Providence can safely write.",
     tools: [
@@ -218,6 +230,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     id: "export",
     label: "Export",
     shortLabel: "Export",
+    railGroup: "release",
     description: "Realmz Revisited export readiness, pass-through files, and resource reports.",
     help: "Export stays conservative and explains exactly what it writes or preserves.",
     tools: [

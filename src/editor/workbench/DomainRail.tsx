@@ -35,7 +35,7 @@ export function DomainRail({
           <TutorialTip key={domain} title={descriptor.label} body={descriptor.description} side="right" focusable={false}>
             <button
               ref={registerItem(domain)}
-              className={`rail-tool domain-${domain}${activeDomain === domain ? " active" : ""}`}
+              className={`rail-tool rail-group-${descriptor.railGroup} domain-${domain}${activeDomain === domain ? " active" : ""}`}
               title={`${descriptor.label}: ${descriptor.description}`}
               aria-current={activeDomain === domain ? "page" : undefined}
               tabIndex={activeDomain === domain ? 0 : -1}

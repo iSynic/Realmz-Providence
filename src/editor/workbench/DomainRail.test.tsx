@@ -18,5 +18,10 @@ describe("DomainRail", () => {
     expect(markup).toContain('aria-label="Providence domains"');
     expect(markup).toMatch(/aria-current="page" tabindex="0"[^>]*>[^]*Linter/);
     expect(markup).toContain('tabindex="-1"');
+    expect(markup).toContain("Land &amp; Dungeon");
+    expect(markup).toContain("rail-group-world domain-maps");
+    expect(markup).toContain("rail-group-world domain-player-maps");
+    expect(markup).toContain("rail-group-story domain-scripts");
+    expect(markup).toContain("rail-group-release domain-linter active");
   });
 });

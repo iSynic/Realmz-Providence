@@ -194,6 +194,7 @@ export type DomainDescriptor = {
   id: EditorTab;
   label: string;
   shortLabel: string;
+  railGroup: "world" | "story" | "systems" | "media" | "release";
   description: string;
   help: string;
   tools: EditorToolDescriptor[];
