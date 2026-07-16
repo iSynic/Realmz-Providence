@@ -1,6 +1,6 @@
-import { ArrowRight, Link2 } from "lucide-react";
 import { Project, SelectedEntity } from "../types";
 import { compactValue, findSemanticEntity, findSemanticRecord, linksFor, selectEntityFromId, semanticLabel } from "../utils";
+import { EmptyState, IssueGroup, LinkChip, type WorkbenchTone } from "../ui";
 import { InfoGrid } from "./InfoGrid";
 
 export function SemanticInspector({
@@ -48,16 +48,21 @@ export function SemanticInspector({
           <LinkList title="Outgoing" links={links.outgoing} direction="outgoing" project={project} onSelect={onSelect} />
           <LinkList title="Incoming" links={links.incoming} direction="incoming" project={project} onSelect={onSelect} />
           {diagnostics.length > 0 && (
-            <div className="semantic-diagnostics">
-              <strong>Diagnostics</strong>
-              {diagnostics.slice(0, 8).map((diagnostic) => (
-                <p key={diagnostic.id} className={diagnostic.severity}>{diagnostic.message}</p>
-              ))}
-            </div>
+            <IssueGroup
+              className="semantic-inspector-diagnostics"
+              title="Diagnostics"
+              issues={diagnostics.slice(0, 8).map((diagnostic) => ({
+                id: diagnostic.id,
+                severity: diagnosticTone(diagnostic.severity),
+                message: diagnostic.message,
+                detail: diagnostic.type,
+                target: diagnostic.source
+              }))}
+            />
           )}
         </>
       ) : (
-        <p className="empty-copy">Select an item, link, map cell, or record.</p>
+        <EmptyState compact title="No record selected" body="Select an item, link, map cell, or decoded record to inspect its evidence." />
       )}
     </section>
   );
@@ -97,12 +102,12 @@ function LinkList({
       {links.slice(0, 24).map((link) => {
         const id = direction === "outgoing" ? link.to : link.from;
         return (
-          <button key={link.id} onClick={() => onSelect(selectEntityFromId(id))}>
-            <Link2 size={12} />
-            <span>{link.kind}</span>
-            <ArrowRight size={12} />
-            <small>{semanticLabel(project, id)}</small>
-          </button>
+          <LinkChip
+            key={link.id}
+            label={link.kind}
+            detail={semanticLabel(project, id)}
+            onClick={() => onSelect(selectEntityFromId(id))}
+          />
         );
       })}
       {links.length === 0 && <span className="empty-inline">none</span>}
@@ -111,11 +116,7 @@ function LinkList({
 }
 
 function LinkButton({ id, onSelect }: { id: string; onSelect: (entity: SelectedEntity) => void }) {
-  return (
-    <button className="link-chip" onClick={() => onSelect(selectEntityFromId(id))}>
-      {id}
-    </button>
-  );
+  return <LinkChip label={id} onClick={() => onSelect(selectEntityFromId(id))} />;
 }
 
 function SummaryTable({ values }: { values: Record<string, unknown> }) {
@@ -136,4 +137,12 @@ function SummaryTable({ values }: { values: Record<string, unknown> }) {
 function byteRangeLabel(range: { start: number; length: number; endExclusive: number } | null) {
   if (!range) return "none";
   return `${range.start.toLocaleString()}..${range.endExclusive.toLocaleString()} (${range.length.toLocaleString()} bytes)`;
+}
+
+function diagnosticTone(severity: string): WorkbenchTone {
+  if (severity === "error" || severity === "fatal") return "danger";
+  if (severity === "warning" || severity === "warn") return "warning";
+  if (severity === "success") return "success";
+  if (severity === "blocked") return "blocked";
+  return "info";
 }

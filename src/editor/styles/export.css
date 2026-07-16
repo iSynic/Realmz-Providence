@@ -58,13 +58,6 @@
 
 
 
-.export-source-list .record-row > button:disabled {
-  cursor: default;
-  opacity: 1;
-}
-
-
-
 .export-review-column .panel-header.compact,
 .export-benchmark-header {
   min-height: 40px;

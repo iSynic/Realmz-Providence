@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Download, Gauge } from "lucide-react";
 import { BenchmarkReport, ExportReport, Project, ScenarioTarget } from "../types";
 import { InfoGrid } from "../components/InfoGrid";
-import { ScrollArea } from "../ui";
+import { EmptyState, EntityRow, IssueGroup, PanelHeader, ScrollArea, ValidationGate } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
 import {
   assetFallbacks,
@@ -68,11 +68,14 @@ export function ExportPanel({
   return (
     <div className="editor-full-panel export-workbench">
       <section className="tab-panel export-artifact-panel">
-        <div className="panel-header">
-          <TutorialTip title={exportTitle} body={EXPORT_WORKBENCH_HELP} side="below">
-            <span>{exportTitle}</span>
-          </TutorialTip>
-        </div>
+        <PanelHeader
+          className="panel-header"
+          title={(
+            <TutorialTip title={exportTitle} body={EXPORT_WORKBENCH_HELP} side="below">
+              <span>{exportTitle}</span>
+            </TutorialTip>
+          )}
+        />
         <div className="export-actions">
           {desktopRuntime ? (
             <label className="field compact export-target-field">
@@ -121,18 +124,37 @@ export function ExportPanel({
         {exportReport ? (
           <ExportReportSummary report={exportReport} />
         ) : (
-          <p className="empty-copy">No export has been run in this session.</p>
+          <EmptyState compact title="No export report yet" body="Run an export to inspect written, preserved, and blocked package contents." />
         )}
       </section>
       <section className="tab-panel">
-        <div className="panel-header">
-          <TutorialTip title="Readiness & Sources" body={EXPORT_PLAN_HELP} side="below">
-            <span>Readiness & Sources</span>
-          </TutorialTip>
-        </div>
+        <PanelHeader
+          className="panel-header"
+          title={(
+            <TutorialTip title="Readiness & Sources" body={EXPORT_PLAN_HELP} side="below">
+              <span>Readiness & Sources</span>
+            </TutorialTip>
+          )}
+        />
         <div className="export-readiness-grid">
           <section className="export-readiness-column">
             <h3>Package Readiness</h3>
+            <ValidationGate
+              ok={Boolean(project) && diagnostics.every((diagnostic) => diagnostic.kind !== "error")}
+              title="Selected package target"
+              okLabel="Ready to export"
+              blockedLabel={project ? "Review export blockers" : "No project loaded"}
+              detail={project ? `${diagnostics.length.toLocaleString()} diagnostic note(s) for ${desktopRuntime ? exportTargetLabel(target) : browserTargetLabel(browserTarget)}.` : "Open or import a project before building an export package."}
+              issues={diagnostics
+                .filter((diagnostic) => diagnostic.kind === "error")
+                .slice(0, 8)
+                .map((diagnostic, index) => ({
+                  id: `export-blocker:${index}`,
+                  severity: "error",
+                  message: diagnostic.message,
+                  detail: diagnostic.detail
+                }))}
+            />
             <InfoGrid
               rows={[
                 ["Writable Records", plan.editableRecords.toLocaleString()],
@@ -154,8 +176,7 @@ export function ExportPanel({
             <InfoGrid
               rows={[
                 ["Encoded Sources", plan.exportableSources.length.toLocaleString()],
-                ["Copied Sources", plan.passThroughSources.length.toLocaleString()],
-                ["Shown", sourceShownCount(plan).toLocaleString()]
+                ["Copied Sources", plan.passThroughSources.length.toLocaleString()]
               ]}
             />
             <SourceRows plan={plan} />
@@ -165,11 +186,15 @@ export function ExportPanel({
       <section className="tab-panel">
         <div className="export-review-grid">
           <section className="export-review-column">
-            <div className="panel-header compact">
-              <TutorialTip title="Export Diagnostics" body={EXPORT_REPORT_HELP} side="below">
-                <span>Export Diagnostics</span>
-              </TutorialTip>
-            </div>
+            <PanelHeader
+              className="panel-header compact"
+              title={(
+                <TutorialTip title="Export Diagnostics" body={EXPORT_REPORT_HELP} side="below">
+                  <span>Export Diagnostics</span>
+                </TutorialTip>
+              )}
+              meta={diagnostics.length.toLocaleString()}
+            />
             <DiagnosticsList diagnostics={diagnostics} />
           </section>
           <section className="export-review-column">
@@ -210,44 +235,43 @@ function SourceRows({ plan }: { plan: ReturnType<typeof exportPlan> }) {
       mode: "writer-supported",
       detail: `${source.bytes.toLocaleString()} source bytes`
     })),
-    ...plan.passThroughSources.slice(0, 10).map((source) => ({
+    ...plan.passThroughSources.map((source) => ({
       id: source.id,
       name: source.name,
       mode: "pass-through",
       detail: source.origin
     }))
   ];
-  if (rows.length === 0) return <p className="empty-copy compact">No source files are available for this project state.</p>;
+  if (rows.length === 0) return <EmptyState compact title="No source files available" body="This project state has no writer-supported or pass-through sources." />;
   return (
     <ScrollArea className="record-table export-source-list" aria-label="Export sources">
       {rows.map((source) => (
-        <article key={source.id} className="record-row">
-          <button type="button" disabled>
-            <strong>{source.name}</strong>
-            <span>{source.mode}</span>
-            <small>{source.detail}</small>
-          </button>
-        </article>
+        <EntityRow
+          key={source.id}
+          title={source.name}
+          subtitle={source.mode}
+          meta={source.detail}
+          status={source.mode === "writer-supported" ? "Encoded" : "Copied"}
+          statusTone={source.mode === "writer-supported" ? "success" : "info"}
+        />
       ))}
-      {plan.passThroughSources.length > 10 ? (
-        <p className="empty-copy compact">{(plan.passThroughSources.length - 10).toLocaleString()} more pass-through source file(s).</p>
-      ) : null}
     </ScrollArea>
   );
 }
 
 function DiagnosticsList({ diagnostics }: { diagnostics: ExportDiagnostic[] }) {
-  if (diagnostics.length === 0) return <p className="empty-copy">No export diagnostics for the current project state.</p>;
+  if (diagnostics.length === 0) return <EmptyState compact title="No export diagnostics" body="The current project and target have no export-facing findings." />;
   return (
     <ScrollArea className="lint-results compact export-diagnostics-list" aria-label="Export diagnostics">
-      <section>
-        {diagnostics.map((diagnostic, index) => (
-          <div key={`${diagnostic.kind}-${diagnostic.message}-${index}`} className={`lint-issue ${diagnostic.kind}`}>
-            {diagnostic.kind === "error" ? "x" : diagnostic.kind === "warning" ? "!" : "i"} {diagnostic.message}
-            {diagnostic.detail ? <small>{diagnostic.detail}</small> : null}
-          </div>
-        ))}
-      </section>
+      <IssueGroup
+        title="Current findings"
+        issues={diagnostics.map((diagnostic, index) => ({
+          id: `${diagnostic.kind}:${index}`,
+          severity: diagnostic.kind,
+          message: diagnostic.message,
+          detail: diagnostic.detail
+        }))}
+      />
     </ScrollArea>
   );
 }
@@ -263,16 +287,21 @@ function BenchmarkSummary({
 }) {
   return (
     <>
-      <div className="panel-header compact export-benchmark-header">
-        <TutorialTip title="Project Benchmark" body={BENCHMARK_HELP} side="below">
-          <span>Project Benchmark</span>
-        </TutorialTip>
-        <TutorialTip title="Benchmark Project" body={BENCHMARK_HELP} side="below">
-          <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>
-            <Gauge size={14} /> Benchmark Project
-          </button>
-        </TutorialTip>
-      </div>
+      <PanelHeader
+        className="panel-header compact export-benchmark-header"
+        title={(
+          <TutorialTip title="Project Benchmark" body={BENCHMARK_HELP} side="below">
+            <span>Project Benchmark</span>
+          </TutorialTip>
+        )}
+        actions={(
+          <TutorialTip title="Benchmark Project" body={BENCHMARK_HELP} side="below">
+            <button className="btn btn-secondary" disabled={!project} onClick={onBenchmark}>
+              <Gauge size={14} /> Benchmark Project
+            </button>
+          </TutorialTip>
+        )}
+      />
       {benchmark ? (
         <InfoGrid
           rows={[
@@ -285,7 +314,7 @@ function BenchmarkSummary({
           ]}
         />
       ) : (
-        <p className="empty-copy">No benchmark has been run in this session.</p>
+        <EmptyState compact title="No benchmark report yet" body="Run the project benchmark to measure validation and dense-scenario scale." />
       )}
     </>
   );
@@ -326,10 +355,6 @@ function browserTargetToScenarioTarget(target: BrowserExportTarget): ScenarioTar
     default:
       return "providence-portable-folder";
   }
-}
-
-function sourceShownCount(plan: ReturnType<typeof exportPlan>) {
-  return plan.exportableSources.length + Math.min(plan.passThroughSources.length, 10);
 }
 
 type ExportDiagnostic = {

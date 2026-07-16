@@ -1,9 +1,22 @@
-import { Project, SelectedEntity } from "../types";
+import { useMemo, useState } from "react";
+import { Project, SelectedEntity, SemanticRecord } from "../types";
 import { compactValue, linksFor, selectEntityFromId, semanticLabel } from "../utils";
 import { semanticRecordGroups } from "../semanticGraph";
 import { SemanticInspector } from "../components/SemanticInspector";
 import { TutorialTip } from "../components/TutorialTip";
-import { PanelHeader, ScrollArea } from "../ui";
+import {
+  EmptyState,
+  EntityRow,
+  IncrementalListFooter,
+  LinkChip,
+  PanelHeader,
+  ScrollArea,
+  SearchField,
+  useIncrementalListLimit,
+  type WorkbenchTone
+} from "../ui";
+
+const RECORD_PAGE_SIZE = 200;
 
 const RECORD_CATALOG_HELP =
   "Records is the audit view for decoded scenario data. Use it to inspect source files, fixed-record layouts, byte ranges, summaries, semantic links, and preservation boundaries before changing related authoring fields.";
@@ -29,6 +42,11 @@ export function RecordsPanel({
 }) {
   const records = project?.semanticSchema?.records ?? [];
   const groups = semanticRecordGroups(project);
+  const [query, setQuery] = useState("");
+  const filteredRecords = useMemo(() => filterSemanticRecords(records, query), [query, records]);
+  const resetKey = `${query.trim().toLowerCase()}:${records.length}`;
+  const [visibleLimit, showMoreRecords] = useIncrementalListLimit(RECORD_PAGE_SIZE, resetKey);
+  const visibleRecords = filteredRecords.slice(0, visibleLimit);
   return (
     <div className="editor-full-panel semantic-workbench">
       <section className="tab-panel records-index">
@@ -39,7 +57,7 @@ export function RecordsPanel({
               <span>Record Catalog</span>
             </TutorialTip>
           )}
-          meta={records.length.toLocaleString()}
+          meta={query ? `${filteredRecords.length.toLocaleString()} / ${records.length.toLocaleString()}` : records.length.toLocaleString()}
         />
         <p className="field-help">
           <TutorialTip title="Source Groups" body={SOURCE_GROUPS_HELP} side="below">
@@ -60,25 +78,60 @@ export function RecordsPanel({
             <span>Rows show decoded labels, types, source byte ranges, summaries, and cross-links.</span>
           </TutorialTip>
         </p>
+        <SearchField
+          className="records-search"
+          value={query}
+          onChange={setQuery}
+          placeholder="Search labels, types, sources, ranges, or summaries..."
+          ariaLabel="Search decoded records"
+          resultCount={project ? filteredRecords.length : undefined}
+          resultNoun="record"
+          disabled={!project}
+        />
         <ScrollArea className="record-table" aria-label="Record Catalog">
-          {records.slice(0, 900).map((record) => (
-            <article key={record.id} className="record-row">
-              <button onClick={() => onSelectEntity(selectEntityFromId(record.id))}>
-                <strong>{record.label}</strong>
-                <span>{record.type}</span>
-                <small>{record.byteRange ? `${record.byteRange.start}..${record.byteRange.endExclusive}` : record.source}</small>
-              </button>
-              <p>{recordPreview(record.summary)}</p>
-              <RecordLinks project={project} id={record.id} onSelectEntity={onSelectEntity} />
-            </article>
-          ))}
-          {!project && (
-            <div className="entity-empty">
-              <TutorialTip title="No Project Loaded" body={RECORD_EMPTY_HELP} side="below">
-                <span>Open a project to inspect record layouts.</span>
-              </TutorialTip>
-            </div>
+          {visibleRecords.map((record) => {
+            const preview = recordPreview(record.summary);
+            const byteRange = record.byteRange ? `${record.byteRange.start}..${record.byteRange.endExclusive}` : "No byte range";
+            return (
+              <div key={record.id} className="records-entity-entry">
+                <EntityRow
+                  title={record.label}
+                  subtitle={record.type}
+                  meta={[record.source, byteRange, preview].filter(Boolean).join(" | ")}
+                  selected={selectedEntity?.id === record.id}
+                  status={userFacingEditState(record.editState)}
+                  statusTone={recordStatusTone(record.editState)}
+                  onSelect={() => onSelectEntity(selectEntityFromId(record.id))}
+                />
+                <RecordLinks project={project} id={record.id} onSelectEntity={onSelectEntity} />
+              </div>
+            );
+          })}
+          {project && filteredRecords.length === 0 && (
+            <EmptyState
+              compact
+              title="No matching records"
+              body="Try another label, type, source, byte range, or summary value."
+            />
           )}
+          {!project && (
+            <EmptyState
+              compact
+              title={(
+                <TutorialTip title="No Project Loaded" body={RECORD_EMPTY_HELP} side="below">
+                  <span>No project loaded</span>
+                </TutorialTip>
+              )}
+              body="Open a project to inspect decoded record layouts."
+            />
+          )}
+          <IncrementalListFooter
+            visibleCount={visibleRecords.length}
+            totalCount={filteredRecords.length}
+            step={RECORD_PAGE_SIZE}
+            noun="record"
+            onShowMore={showMoreRecords}
+          />
         </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
@@ -113,14 +166,17 @@ function RecordLinks({
   return (
     <div className="link-chip-row">
       <TutorialTip title="Record Links" body={RECORD_LINKS_HELP} side="below">
-        <span className="link-chip">Links</span>
+        <LinkChip label="Links" inert />
       </TutorialTip>
       {combined.map((link) => {
         const target = link.from === id ? link.to : link.from;
         return (
-          <button key={link.id} className="link-chip" onClick={() => onSelectEntity(selectEntityFromId(target))}>
-            {link.kind}: {semanticLabel(project, target)}
-          </button>
+          <LinkChip
+            key={link.id}
+            label={link.kind}
+            detail={semanticLabel(project, target)}
+            onClick={() => onSelectEntity(selectEntityFromId(target))}
+          />
         );
       })}
     </div>
@@ -133,4 +189,31 @@ function recordPreview(summary: Record<string, unknown>) {
     .filter((key) => summary[key] != null)
     .map((key) => `${key}: ${compactValue(summary[key])}`)
     .join(" | ");
+}
+
+export function filterSemanticRecords(records: SemanticRecord[], query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return records;
+  return records.filter((record) => {
+    const byteRange = record.byteRange ? `${record.byteRange.start} ${record.byteRange.endExclusive} ${record.byteRange.length}` : "";
+    const summary = Object.entries(record.summary)
+      .map(([key, value]) => `${key} ${compactValue(value)}`)
+      .join(" ");
+    return [record.id, record.label, record.type, record.source, record.editState, record.confidence, byteRange, summary]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+  });
+}
+
+function recordStatusTone(editState: SemanticRecord["editState"]): WorkbenchTone {
+  if (editState === "editable") return "success";
+  if (editState === "blocked") return "blocked";
+  return "neutral";
+}
+
+function userFacingEditState(editState: SemanticRecord["editState"]) {
+  if (editState === "editable") return "Editable";
+  if (editState === "blocked") return "Not editable yet";
+  return "Read-only";
 }

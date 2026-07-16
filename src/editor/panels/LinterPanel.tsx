@@ -1,4 +1,3 @@
-import { CheckCircle2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Issue, Project, SelectedEntity } from "../types";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
@@ -6,7 +5,7 @@ import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
 import { assetFallbacks, blockedSemanticObjects, entityById, generatedRuntimeCaches, recordById, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
 import { loadScenarioCoverageManifest, type ScenarioCoverageManifest } from "../scenarioCoverage";
-import { PanelHeader, ScrollArea } from "../ui";
+import { EmptyState, PanelHeader, ScrollArea, ValidationGate } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
 import { ED3_CLASSIFICATION_ORDER, ed3ClassificationCounts, ed3DiagnosticSummaries, ed3RiskySummaries } from "../scriptDiagnostics";
 import { buildEdcdRowUsages, type EdcdRowStatus, type EdcdRowUsage } from "../edcdRows";
@@ -89,12 +88,23 @@ export function LinterPanel({
             </TutorialTip>
           )}
         />
-        <TutorialTip title="Validation Summary" body={LINTER_SUMMARY_HELP} side="below">
-          <div className="lint-summary">
-            {project?.validation.ok ? <CheckCircle2 size={18} /> : <XCircle size={18} />}
-            <span>{project ? (project.validation.ok ? "No blocking export errors" : "Blocking export issues found") : "No project loaded"}</span>
-          </div>
-        </TutorialTip>
+        <ValidationGate
+          className="lint-validation-gate"
+          ok={Boolean(project?.validation.ok)}
+          title={(
+            <TutorialTip title="Validation Summary" body={LINTER_SUMMARY_HELP} side="below">
+              <span>Export validation</span>
+            </TutorialTip>
+          )}
+          okLabel="No blocking export errors"
+          blockedLabel={project ? "Blocking export issues found" : "No project loaded"}
+          detail={project ? "Review the grouped findings below before writing a Realmz scenario package." : "Open or import a project to validate its authoring and export state."}
+          issues={(project?.validation.errors ?? []).slice(0, 8).map((message, index) => ({
+            id: `validation:${index}`,
+            severity: "error",
+            message
+          }))}
+        />
         <ScrollArea className="lint-results" aria-label="Project Linter">
           <ScenarioCoverageSummary coverage={coverage} />
           {semanticGroups.map((group) => (
@@ -128,14 +138,15 @@ export function LinterPanel({
                 />
               ))}
               {sourceIssues.length > LINTER_ROW_LIMIT && (
-                <article className="info">
-                  Showing {LINTER_ROW_LIMIT.toLocaleString()} of {sourceIssues.length.toLocaleString()} rows.
-                  <small>Use search or the owning tool to narrow this group before editing records.</small>
-                </article>
+                <EmptyState
+                  compact
+                  title={`Showing ${LINTER_ROW_LIMIT.toLocaleString()} of ${sourceIssues.length.toLocaleString()} findings`}
+                  body="Use the owning tool to narrow this group before editing records."
+                />
               )}
             </LinterSection>
           ))}
-          {project && issues.length === 0 && <div className="entity-empty">No authoring findings.</div>}
+          {project && issues.length === 0 && <EmptyState compact title="No authoring findings" body="Validation found no additional scenario-owned issues." />}
         </ScrollArea>
       </section>
       <aside className="tab-panel semantic-right">
@@ -252,7 +263,7 @@ function ScenarioCoverageSummary({ coverage }: { coverage: ScenarioCoverageManif
             </TutorialTip>
           )}
         />
-        <div className="entity-empty">Coverage details are loading.</div>
+        <EmptyState compact title="Coverage details are loading" body="Providence is reading the generated coverage manifest." />
       </section>
     );
   }

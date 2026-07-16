@@ -3480,14 +3480,8 @@ button.documents-source-chip {
 
 
 
-.lint-summary {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 12px;
-  border-bottom: 1px solid #252a31;
-  color: #dce4ec;
-  font-size: 13px;
+.lint-validation-gate {
+  margin: 10px;
 }
 
 
@@ -3926,10 +3920,30 @@ button.documents-source-chip {
 
 .semantic-workbench {
   display: grid;
-  grid-template-columns: 290px minmax(420px, 1fr) 340px;
+  grid-template-columns: minmax(440px, 1fr) minmax(300px, 360px);
   gap: 14px;
   min-height: 0;
   height: 100%;
+}
+
+
+
+.records-search {
+  padding: 0 10px 10px;
+}
+
+
+
+.records-entity-entry {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+
+
+.records-entity-entry > .link-chip-row {
+  padding: 0 4px;
 }
 
 
@@ -3965,8 +3979,7 @@ button.documents-source-chip {
 
 
 
-.semantic-link-list > strong,
-.semantic-diagnostics > strong {
+.semantic-link-list > strong {
   color: #9faab5;
   font-size: 11px;
   text-transform: uppercase;
@@ -3974,7 +3987,6 @@ button.documents-source-chip {
 
 
 
-.semantic-link-list button,
 .link-chip {
   min-width: 0;
   display: inline-flex;
@@ -3991,7 +4003,6 @@ button.documents-source-chip {
 
 
 
-.semantic-link-list button:hover,
 .link-chip:hover {
   border-color: #4a77ad;
   background: #17263a;
@@ -3999,29 +4010,8 @@ button.documents-source-chip {
 
 
 
-.semantic-link-list small {
-  color: #dbe7f3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-
-
-.semantic-diagnostics {
-  display: grid;
-  gap: 5px;
-  padding: 0 10px 12px;
-}
-
-
-
-.semantic-diagnostics p {
-  border: 1px solid #2d3540;
-  border-radius: 4px;
-  padding: 6px;
-  color: #facc6b;
-  font-size: 11px;
+.semantic-inspector-diagnostics {
+  margin: 0 10px 12px;
 }
 
 
