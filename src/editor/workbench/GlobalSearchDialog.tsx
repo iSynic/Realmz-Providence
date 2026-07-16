@@ -103,30 +103,11 @@ export function GlobalSearchDialog({
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLElement>) {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveIndex((index) => Math.min(index + 1, Math.max(0, visibleResults.length - 1)));
-      return;
-    }
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveIndex((index) => Math.max(0, index - 1));
-      return;
-    }
-    if (event.key === "Home" && visibleResults.length > 0) {
-      event.preventDefault();
-      setActiveIndex(0);
-      return;
-    }
-    if (event.key === "End" && visibleResults.length > 0) {
-      event.preventDefault();
-      setActiveIndex(visibleResults.length - 1);
-      return;
-    }
-    if (event.key === "Enter" && visibleResults[activeIndex]) {
-      event.preventDefault();
-      openResult(visibleResults[activeIndex]);
-    }
+    const action = globalSearchKeyboardAction(activeIndex, visibleResults.length, event.key);
+    if (!action) return;
+    event.preventDefault();
+    if (action.kind === "open") openResult(visibleResults[action.index]);
+    else setActiveIndex(action.index);
   }
 
   return (
@@ -135,7 +116,6 @@ export function GlobalSearchDialog({
       className="global-search-dialog"
       ariaLabel="Global search"
       onDismiss={onClose}
-      onKeyDown={handleKeyDown}
     >
         <header className="global-search-header">
           <TutorialTip title="Global Search" body={GLOBAL_SEARCH_HELP} side="below" focusable={false}>
@@ -146,6 +126,7 @@ export function GlobalSearchDialog({
               placeholder="Search scenario, libraries, assets, docs..."
               ariaLabel="Search Providence"
               modalInitialFocus
+              onKeyDown={handleKeyDown}
               combobox={{
                 controls: GLOBAL_SEARCH_RESULTS_ID,
                 expanded: Boolean(deferredQuery.trim()),
@@ -220,6 +201,7 @@ export function GlobalSearchDialog({
                       id={globalSearchOptionId(result.id)}
                       type="button"
                       role="option"
+                      tabIndex={-1}
                       aria-selected={visibleIndex === activeIndex}
                       aria-posinset={visibleIndex + 1}
                       aria-setsize={visibleResults.length}
@@ -294,4 +276,14 @@ export function globalSearchStatus(query: string, resultCount: number, pending: 
   if (pending) return "Searching...";
   if (!query.trim()) return "Type to search";
   return `${resultCount.toLocaleString()} ${resultCount === 1 ? "match" : "matches"}`;
+}
+
+export function globalSearchKeyboardAction(activeIndex: number, resultCount: number, key: string) {
+  if (resultCount <= 0) return null;
+  if (key === "ArrowDown") return { kind: "move" as const, index: Math.min(activeIndex + 1, resultCount - 1) };
+  if (key === "ArrowUp") return { kind: "move" as const, index: Math.max(0, activeIndex - 1) };
+  if (key === "Home") return { kind: "move" as const, index: 0 };
+  if (key === "End") return { kind: "move" as const, index: resultCount - 1 };
+  if (key === "Enter" && activeIndex >= 0 && activeIndex < resultCount) return { kind: "open" as const, index: activeIndex };
+  return null;
 }

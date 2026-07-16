@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { GlobalSearchDialog, globalSearchOptionId, globalSearchStatus } from "./GlobalSearchDialog";
+import { GlobalSearchDialog, globalSearchKeyboardAction, globalSearchOptionId, globalSearchStatus } from "./GlobalSearchDialog";
 
 describe("GlobalSearchDialog", () => {
   it("exposes a navigation combobox and pressed search scopes", () => {
@@ -34,5 +34,15 @@ describe("GlobalSearchDialog", () => {
     expect(globalSearchStatus("", 0, false)).toBe("Type to search");
     expect(globalSearchStatus("bell", 1, false)).toBe("1 match");
     expect(globalSearchStatus("bell", 24, false)).toBe("24 matches");
+  });
+
+  it("keeps result navigation within the combobox keyboard contract", () => {
+    expect(globalSearchKeyboardAction(0, 3, "ArrowDown")).toEqual({ kind: "move", index: 1 });
+    expect(globalSearchKeyboardAction(2, 3, "ArrowDown")).toEqual({ kind: "move", index: 2 });
+    expect(globalSearchKeyboardAction(1, 3, "Home")).toEqual({ kind: "move", index: 0 });
+    expect(globalSearchKeyboardAction(1, 3, "End")).toEqual({ kind: "move", index: 2 });
+    expect(globalSearchKeyboardAction(1, 3, "Enter")).toEqual({ kind: "open", index: 1 });
+    expect(globalSearchKeyboardAction(0, 0, "Enter")).toBeNull();
+    expect(globalSearchKeyboardAction(0, 3, " ")).toBeNull();
   });
 });

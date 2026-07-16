@@ -114,6 +114,7 @@ Providence now has shared modeless and blocking overlay contracts. Project creat
 - Global Search now composes the shared `SearchField` in editable-combobox mode, including the standard clear command, modal initial-focus marker, pending/result status, and scope-group semantics while retaining its grouped navigation index and routing behavior.
 - Shell tutorial wrappers no longer add duplicate tab stops around controls. The domain rail and tool sidebar keep one active navigation target in the tab order, with Up/Down/Home/End movement delegated to the shared workbench keyboard contract.
 - Documents chapter navigation now follows the same vertical roving-focus contract. Compact windows retain the shared manual search and expose a grouped chapter selector instead of hiding the entire navigation surface.
+- Global Search result arrows, Home/End, and Enter now belong to the combobox input rather than the entire dialog. Scope filters and incremental-result commands retain their native keyboard activation, while active result options stay out of the sequential tab order.
 
 ## First Implementation Slice
 
