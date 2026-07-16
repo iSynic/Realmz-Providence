@@ -20,8 +20,11 @@ describe("ProjectStart", () => {
     );
 
     expect(markup).toContain('aria-labelledby="project-start-title"');
+    expect(markup).toContain('class="workbench-pane-header project-start-header"');
+    expect(markup).toContain('<h1>');
     expect(markup).toContain('role="group" aria-label="Project actions"');
     expect(markup).toContain('role="group" aria-label="Reference actions"');
+    expect(markup).toContain('role="status" aria-live="polite">Browser project storage ready');
     expect(markup).toContain("Resume Local");
     expect(markup).not.toContain("Import Scenario");
   });

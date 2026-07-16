@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AlertTriangle, BookOpen, Braces, CheckCircle2, Clipboard, FilePlus2, FolderOpen, LibraryBig, RefreshCcw } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import { ScenarioSeedPreflightOutcome, ScenarioSeedTemplateSelection } from "../scenarioSeedReport";
-import { ModalDialog, ModalDialogActions, ModalDialogHeader, SegmentedControl, type SegmentedControlOption } from "../ui";
+import { ModalDialog, ModalDialogActions, ModalDialogHeader, PanelHeader, SegmentedControl, type SegmentedControlOption } from "../ui";
 
 const NEW_PROJECT_DIALOG_HELP =
   "A Providence project is its own folder package. New projects start with an editable land level 0; import a Realmz scenario before authoring project content.";
@@ -272,17 +272,23 @@ export function ProjectStart({
     <section className="project-start" aria-labelledby="project-start-title">
       <img className="project-start-splash" src="/providence-splash.png" alt="" draggable={false} />
       <div className="project-start-panel">
-        <img className="project-start-mark" src="/divinity-icon.png" alt="" draggable={false} />
-        <h1 id="project-start-title">
-          <TutorialTip title="Project Start" body={PROJECT_START_HELP} side="below">
-            <span>Realmz Providence</span>
+        <PanelHeader
+          className="project-start-header"
+          headingLevel={1}
+          leading={<img className="project-start-mark" src="/divinity-icon.png" alt="" draggable={false} />}
+          title={(
+            <TutorialTip title="Project Start" body={PROJECT_START_HELP} side="below">
+              <span id="project-start-title">Realmz Providence</span>
+            </TutorialTip>
+          )}
+          description="Create a scenario project, open an existing project, or work in the bundled Realmz/Divinity library before a scenario exists."
+        />
+        <div className="project-start-runtime">
+          <TutorialTip title={desktopRuntime ? "Desktop Runtime" : "Browser Preview"} body={PROJECT_RUNTIME_HELP} side="below">
+            <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview opens downloaded Providence ZIP packages and loads bundled library fixtures into memory."}</small>
           </TutorialTip>
-        </h1>
-        <p>Create a scenario project, open an existing project, or work in the bundled Realmz/Divinity library before a scenario exists.</p>
-        <TutorialTip title={desktopRuntime ? "Desktop Runtime" : "Browser Preview"} body={PROJECT_RUNTIME_HELP} side="below">
-          <small>{desktopRuntime ? `Projects are created under ${projectRoot}. Bundled libraries are seeded automatically.` : "Browser preview opens downloaded Providence ZIP packages and loads bundled library fixtures into memory."}</small>
-        </TutorialTip>
-        {!desktopRuntime && <small>{browserPreviewStatus}</small>}
+          {!desktopRuntime && <small role="status" aria-live="polite">{browserPreviewStatus}</small>}
+        </div>
         <div className="project-start-actions">
           <div className="project-start-action-group" role="group" aria-label="Project actions">
             <button className="btn btn-primary" type="button" onClick={onNewProject}>

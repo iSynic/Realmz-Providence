@@ -4151,6 +4151,12 @@ button.documents-source-chip {
 }
 
 @media (max-width: 620px) {
+  .editor-topbar-actions {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
   .status-bar {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -4465,21 +4471,22 @@ button.documents-source-chip {
   image-rendering: pixelated;
 }
 
+.project-start-header {
+  width: 100%;
+  align-items: center;
+}
 
+.project-start-header .workbench-pane-header-main {
+  align-items: center;
+}
 
-
-
-.project-start h1 {
+.project-start-header h1 {
   color: #f2f6fb;
   font-size: 21px;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 
-
-
-
-
-.project-start p {
+.project-start-header .workbench-pane-header-copy > small {
   max-width: 58ch;
   color: #d0e3f0;
   font-size: 12px;
@@ -4493,6 +4500,11 @@ button.documents-source-chip {
 .project-start small {
   color: #99aebc;
   font-size: 11px;
+}
+
+.project-start-runtime {
+  display: grid;
+  gap: 4px;
 }
 
 .project-start-actions {
@@ -4524,6 +4536,27 @@ button.documents-source-chip {
   .project-start {
     align-items: center;
     padding-block: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .project-start {
+    padding: 16px;
+  }
+
+  .project-start-panel {
+    gap: 11px;
+    padding: 16px;
+  }
+
+  .project-start-action-group {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-start-action-group .btn {
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
