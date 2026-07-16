@@ -28,6 +28,8 @@ import {
   filterScriptsByInventory,
   issueCountsBySlot,
   scriptMatchesInventoryFilter,
+  scriptDescriptor,
+  scriptIdentity,
   scriptLabel,
   scriptMatchesQuery,
   scriptPanelTitle,
@@ -624,7 +626,8 @@ function ActionPointAuthoringWorkbench({
             <>
               <ActionPointRecordHeader
                 trigger={selectedTrigger}
-                currentName={scriptLabel(project, selectedTrigger)}
+                identity={scriptIdentity(selectedTrigger)}
+                descriptor={scriptDescriptor(project, selectedTrigger)}
                 isMacro={isMacro}
                 deleteMacroLabel={deleteMacroLabel}
                 diagnostics={triggerDiagnostics.filter((issue) => issue.slot == null)}
@@ -640,7 +643,7 @@ function ActionPointAuthoringWorkbench({
                 destinationMatchesTrigger={destinationMatchesTrigger}
                 triggerLocationTarget={triggerLocationMapTarget}
                 afterScriptTarget={afterScriptMapTarget}
-                onRename={(displayName) => onApplyCommand?.({ kind: "renameEditorEntity", label: "Rename script", entityId: selectedTrigger.id, displayName })}
+                onRename={(displayName) => onApplyCommand?.({ kind: "renameEditorEntity", label: "Update script descriptor", entityId: selectedTrigger.id, displayName })}
                 onDuplicate={() => onApplyCommand?.({ kind: "duplicateTrigger", label: "Duplicate script", triggerId: selectedTrigger.id })}
                 onClear={clearSelectedScript}
                 onUpdateHeader={(label, fields) => onApplyCommand?.({ kind: "updateTriggerHeader", label, triggerId: selectedTrigger.id, fields })}

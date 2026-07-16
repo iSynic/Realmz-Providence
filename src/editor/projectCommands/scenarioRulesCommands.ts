@@ -4,8 +4,13 @@ import { normalizedEditorMetadata } from "./tilePaletteCommands";
 
 export function renameEditorEntity(project: Project, entityId: string, displayName: string) {
   const label = displayName.trim();
-  if (!label) return project;
   const metadata = normalizedEditorMetadata(project);
+  if (!label) {
+    if (!(entityId in metadata.displayNames)) return project;
+    const displayNames = { ...metadata.displayNames };
+    delete displayNames[entityId];
+    return { ...project, editorMetadata: { ...metadata, displayNames } };
+  }
   return {
     ...project,
     editorMetadata: {

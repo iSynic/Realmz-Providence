@@ -158,8 +158,12 @@
 
 
 .script-create-strip {
-  grid-template-columns: minmax(220px, 1fr) repeat(2, minmax(72px, 86px)) max-content max-content;
+  grid-template-columns: minmax(220px, 420px) repeat(2, minmax(72px, 86px)) max-content max-content minmax(0, 1fr);
   justify-content: stretch;
+}
+
+.script-create-map-field {
+  max-width: 420px;
 }
 
 .script-create-strip.script-create-empty {
@@ -238,6 +242,32 @@
 
 .script-record-header {
   grid-template-columns: minmax(180px, 1fr) auto;
+}
+
+.script-record-heading {
+  display: grid;
+  grid-template-columns: max-content minmax(200px, 360px);
+  align-items: end;
+  justify-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.script-record-identity {
+  display: block;
+  padding-bottom: 7px;
+  white-space: nowrap;
+}
+
+.script-name-field {
+  width: min(360px, 100%);
+}
+
+.script-record-descriptor {
+  color: #d9bd78;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 

@@ -48,7 +48,7 @@ export function ActionPointCreateBar({
   }
   return (
     <div className="script-create-strip">
-      <label>
+      <label className="script-create-map-field">
         <TutorialTip title="New Action Point" body={CREATE_AP_HELP} side="below"><span>Map</span></TutorialTip>
         <select value={newActionPoint.mapId} onChange={(event) => onSetNewActionPoint({ ...newActionPoint, mapId: event.currentTarget.value })}>
           {projectMaps.map((map) => <option key={map.id} value={map.id}>{map.name}</option>)}

@@ -30,7 +30,8 @@ export const ScriptListItem = memo(function ScriptListItem({
       className={`${selected ? "selected" : ""}${isReusableActionPoint(trigger) ? " reusable" : ""}`}
       onClick={() => onSelectTrigger(trigger)}
     >
-      <strong>{scriptLabel(project, trigger)}</strong>
+      <strong>{scriptIdentity(trigger)}</strong>
+      {scriptDescriptor(project, trigger) && <small className="script-record-descriptor">{scriptDescriptor(project, trigger)}</small>}
       <small>{scriptSubtitle(project, trigger)}</small>
       {trigger.source === "Data ED3" && (
         <small className={`script-reachability-badge ${ed3Evidence?.tone ?? ""}`} title={ed3Evidence?.detail}>
@@ -186,15 +187,24 @@ function ed3RootTypeIncludes(project: Project | null, trigger: TriggerRecord, ne
   return String(ed3ReachabilityFor(project, trigger.recordIndex)?.rootType ?? "").includes(needle);
 }
 
-export function scriptLabel(project: Project, trigger: TriggerRecord) {
-  const fallback = trigger.source === "Data ED3"
+export function scriptIdentity(trigger: TriggerRecord) {
+  return trigger.source === "Data ED3"
     ? `Extra Action Point ${trigger.recordIndex}`
     : isReusableDoorPlaceholder(trigger)
       ? `Empty Action Point ${trigger.recordIndex}`
-    : trigger.coordinate
-      ? `Action Point ${trigger.recordIndex} (${trigger.coordinate.x}, ${trigger.coordinate.y})`
-      : `Action Point ${trigger.recordIndex}`;
-  return project.editorMetadata?.displayNames?.[trigger.id]?.label ?? fallback;
+      : trigger.coordinate
+        ? `Action Point ${trigger.recordIndex} (${trigger.coordinate.x}, ${trigger.coordinate.y})`
+        : `Action Point ${trigger.recordIndex}`;
+}
+
+export function scriptDescriptor(project: Project, trigger: TriggerRecord) {
+  return project.editorMetadata?.displayNames?.[trigger.id]?.label?.trim() ?? "";
+}
+
+export function scriptLabel(project: Project, trigger: TriggerRecord) {
+  const identity = scriptIdentity(trigger);
+  const descriptor = scriptDescriptor(project, trigger);
+  return descriptor ? `${identity} - ${descriptor}` : identity;
 }
 
 export function scriptSubtitle(project: Project, trigger: TriggerRecord) {
@@ -213,7 +223,8 @@ export function scriptMatchesQuery(project: Project, trigger: TriggerRecord, que
   const normalized = query.trim().toLowerCase();
   if (!normalized) return true;
   return [
-    scriptLabel(project, trigger),
+    scriptIdentity(trigger),
+    scriptDescriptor(project, trigger),
     scriptSubtitle(project, trigger),
     trigger.id,
     trigger.actions.map((action) => `${action.slot} ${action.rawCode} ${action.id} ${action.label}`).join(" ")

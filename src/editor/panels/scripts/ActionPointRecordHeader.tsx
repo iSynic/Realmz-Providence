@@ -8,6 +8,8 @@ import { ScriptDiagnostics } from "./ScriptDiagnostics";
 
 const SCRIPT_RECORD_HELP =
   "This selected record is the source-backed script container. Map Action Points have chance/location/goto fields; Extra Action Points store only the eight steps until another script calls them.";
+const SCRIPT_DESCRIPTOR_HELP =
+  "Optional project-only description for Providence authors. Realmz does not store or consume it; the canonical Action Point number and coordinates remain the record identity.";
 const CLEAR_SCRIPT_HELP =
   "Clear keeps Realmz's fixed record shape intact. Clearing a map Action Point makes the slot reusable; deleting an Extra Action Point uses the safe row command for that reusable script.";
 const SAME_AS_TRIGGER_DESTINATION_HELP =
@@ -15,7 +17,8 @@ const SAME_AS_TRIGGER_DESTINATION_HELP =
 
 export function ActionPointRecordHeader({
   trigger,
-  currentName,
+  identity,
+  descriptor,
   isMacro,
   deleteMacroLabel,
   diagnostics,
@@ -37,7 +40,8 @@ export function ActionPointRecordHeader({
   onOpenMapCoordinate
 }: {
   trigger: TriggerRecord;
-  currentName: string;
+  identity: string;
+  descriptor: string;
   isMacro: boolean;
   deleteMacroLabel: string;
   diagnostics: ScriptDiagnostic[];
@@ -61,17 +65,23 @@ export function ActionPointRecordHeader({
   return (
     <>
       <div className="script-record-header">
-        <label className="script-name-field">
-          <TutorialTip title="Selected Script Record" body={SCRIPT_RECORD_HELP} side="below"><span>Name</span></TutorialTip>
-          <input
-            key={trigger.id}
-            defaultValue={currentName}
-            onBlur={(event) => {
-              const displayName = event.currentTarget.value.trim();
-              if (displayName && displayName !== currentName) onRename(displayName);
-            }}
-          />
-        </label>
+        <div className="script-record-heading">
+          <TutorialTip title="Selected Script Record" body={SCRIPT_RECORD_HELP} side="below">
+            <strong className="script-record-identity">{identity}</strong>
+          </TutorialTip>
+          <label className="script-name-field">
+            <TutorialTip title="Descriptor" body={SCRIPT_DESCRIPTOR_HELP} side="below"><span>Descriptor</span></TutorialTip>
+            <input
+              key={`${trigger.id}:${descriptor}`}
+              defaultValue={descriptor}
+              placeholder="Optional project-only description"
+              onBlur={(event) => {
+                const displayName = event.currentTarget.value.trim();
+                if (displayName !== descriptor) onRename(displayName);
+              }}
+            />
+          </label>
+        </div>
         <div className="script-record-actions">
           <button className="btn btn-secondary btn-xs" type="button" onClick={onDuplicate}><Copy size={12} /> Duplicate</button>
           <TutorialTip title={isMacro ? "Delete Extra Action Point" : "Clear Action Point"} body={CLEAR_SCRIPT_HELP} side="below">
