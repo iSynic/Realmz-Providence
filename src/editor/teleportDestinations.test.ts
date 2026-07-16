@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { missingEdcdTargetReferences } from "./edcdTargets";
+import { actionPointStepApplyCommand } from "./panels/scripts/actionPointStepCommands";
 import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } from "./panels/scripts/scriptActionCatalog";
 import { teleportDestinationLevelType, teleportLevelLabel, teleportLevelOptions, teleportMapCoordinateTarget } from "./teleportDestinations";
 import type { Project } from "./types";
@@ -73,6 +74,19 @@ describe("teleport action presentation", () => {
       defaultDraft: { rawCode: 37, parameters: [0, 0, 0, 0, 1] }
     });
     expect(definition.parameters.map((parameter) => parameter.internalName)).toEqual(["mode", "level", "x", "y", "signedHeading"]);
+
+    expect(actionPointStepApplyCommand({
+      triggerId: "trigger:land:0:4",
+      slot: 3,
+      draft: { rawCode: 37, id: 12 },
+      edcdShape: definition.edcdShape,
+      edcdValues: [1, 2, 30, 40, -3]
+    })).toMatchObject({
+      kind: "applyRealmzScriptStep",
+      opcode: 37,
+      id: 12,
+      edcdValues: [1, 2, 30, 40, -3]
+    });
   });
 
   it("makes land, dungeon, and reusable Teleport summaries family-aware", () => {
