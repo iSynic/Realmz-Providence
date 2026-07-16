@@ -1,10 +1,13 @@
+import { useId } from "react";
 import { Eye, X } from "lucide-react";
+import { TutorialTip } from "../../components/TutorialTip";
 import {
   resolveSignedMessageTarget,
   signedTargetBehaviorLabel,
   targetPickerConfig,
   targetOptionForOpcodeValue
 } from "../../components/RealmzTargetPicker";
+import { divinityHelpForOpcode } from "../../divinityOpcodeHelp";
 import { actionOptionFor } from "../../realmzActions";
 import type {
   EncounterActionRow,
@@ -16,6 +19,56 @@ import {
   resultActionOptionsFor,
   signedResultActionCode
 } from "./encounterFlow";
+
+export function encounterResultIdHelp(
+  project: Project,
+  catalog: LibraryCatalog | null | undefined,
+  row: EncounterActionRow
+) {
+  const baseCode = resultActionBaseCode(row.rawCode);
+  const action = actionOptionFor(baseCode);
+  const manualHelp = divinityHelpForOpcode(baseCode);
+  const picker = targetPickerConfig(baseCode);
+  const selected = targetOptionForOpcodeValue(project, baseCode, row.id, catalog);
+  const resolvedValue = resolveSignedMessageTarget(baseCode, row.id);
+  const fieldMeaning = documentedIdField(manualHelp?.idField);
+  const actionLabel = manualHelp?.title || action?.shortLabel || action?.label || `Code ${baseCode}`;
+  const definition = fieldMeaning
+    ? asSentence(fieldMeaning)
+    : "No contextual ID-field description is documented for this action.";
+  let context = `Current raw value: ${row.id}.`;
+  if (picker) {
+    if (selected) {
+      const detail = conciseTargetDetail(selected.detail);
+      const target = [selected.label, detail, signedTargetBehaviorLabel(baseCode, row.id)].filter(Boolean).join(" | ");
+      context = `Current target: ${target}.`;
+    } else if (resolvedValue === 0) {
+      context = "Current target: none.";
+    } else {
+      context = `Current raw value: ${row.id}; no matching ${picker.label.toLowerCase()} was found.`;
+    }
+  }
+  return {
+    title: `${baseCode} ${actionLabel} ID Field`,
+    body: `${definition} ${context}`
+  };
+}
+
+function documentedIdField(value: string | undefined) {
+  const normalized = value?.trim() ?? "";
+  if (!normalized || /^(none|n\/a|not specified)$/i.test(normalized)) return null;
+  return normalized;
+}
+
+function asSentence(value: string) {
+  return /[.!?]$/.test(value) ? value : `${value}.`;
+}
+
+function conciseTargetDetail(value: string) {
+  const normalized = value.trim();
+  if (!normalized || normalized.toLowerCase() === "empty") return null;
+  return normalized.length > 120 ? `${normalized.slice(0, 117)}...` : normalized;
+}
 
 export function EncounterResultActionCell({
   project,
@@ -34,20 +87,16 @@ export function EncounterResultActionCell({
   onFocusCode: (code: number) => void;
   onPreviewTarget: (opcode: number, value: number) => void;
 }) {
+  const idHelpId = useId();
   const baseCode = resultActionBaseCode(row.rawCode);
   const isNegativeAction = row.rawCode < 0;
   const rowOption = actionOptionFor(baseCode);
   const selected = targetOptionForOpcodeValue(project, baseCode, row.id, catalog);
-  const resolvedValue = resolveSignedMessageTarget(baseCode, row.id);
   const populated = row.rawCode !== 0 || row.id !== 0;
   const targetPicker = targetPickerConfig(baseCode);
   const canBrowse = Boolean(targetPicker);
   const options = resultActionOptionsFor(baseCode);
-  const resolvedTitle = selected
-    ? [selected.label, signedTargetBehaviorLabel(baseCode, row.id)].filter(Boolean).join(" | ")
-    : resolvedValue !== 0
-      ? `Raw value ${row.id}`
-      : "No target";
+  const idHelp = encounterResultIdHelp(project, catalog, row);
   return (
     <div className={`simple-encounter-action-cell${populated ? " populated" : ""}`}>
       <button
@@ -74,16 +123,18 @@ export function EncounterResultActionCell({
           <option key={option.code} value={option.code}>{option.code} {option.shortLabel}</option>
         ))}
       </select>
-      <label className="encounter-action-id-field">
-        <input
-          type="number"
-          value={row.id}
-          title={resolvedTitle}
-          aria-label={`Result action ${slot} ID`}
-          onFocus={() => onFocusCode(baseCode)}
-          onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
-        />
-      </label>
+      <TutorialTip title={idHelp.title} body={idHelp.body} side="below" focusable={false} tooltipId={idHelpId}>
+        <label className="encounter-action-id-field">
+          <input
+            type="number"
+            value={row.id}
+            aria-label={`Result action ${slot} ID`}
+            aria-describedby={idHelpId}
+            onFocus={() => onFocusCode(baseCode)}
+            onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
+          />
+        </label>
+      </TutorialTip>
       <div className="encounter-action-row-actions">
         {canBrowse ? (
           <button

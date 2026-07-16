@@ -2109,7 +2109,13 @@
 
 .encounter-action-id-field {
   display: block;
+  width: 100%;
   min-width: 0;
+  align-self: end;
+}
+
+.simple-encounter-action-cell > .tutorial-tip {
+  width: 100%;
   align-self: end;
 }
 

@@ -7,16 +7,19 @@ export function TutorialTip({
   body,
   side = "right",
   focusable = true,
+  tooltipId: providedTooltipId,
   children
 }: {
   title: string;
   body: string;
   side?: HelpBubbleSide;
   focusable?: boolean;
+  tooltipId?: string;
   children: ReactNode;
 }) {
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
-  const tooltipId = useId();
+  const generatedTooltipId = useId();
+  const tooltipId = providedTooltipId ?? generatedTooltipId;
   const [bubbleStyle, setBubbleStyle] = useState<CSSProperties | undefined>();
   const [open, setOpen] = useState(false);
 

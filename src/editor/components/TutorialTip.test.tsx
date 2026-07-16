@@ -23,4 +23,15 @@ describe("TutorialTip", () => {
     expect(markup).toContain('<button type="button">Open</button>');
     expect(markup).not.toContain('tabindex="0"');
   });
+
+  it("uses a caller-provided ID for an associated interactive field", () => {
+    const markup = renderToStaticMarkup(
+      <TutorialTip title="Result ID" body="Explains the selected action ID." focusable={false} tooltipId="result-id-help">
+        <input aria-describedby="result-id-help" />
+      </TutorialTip>
+    );
+
+    expect(markup).toContain('aria-describedby="result-id-help"');
+    expect(markup).not.toContain('tabindex="0"');
+  });
 });
