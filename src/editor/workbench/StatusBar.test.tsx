@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Project, SemanticMappingProgress } from "../types";
+import type { LibraryCatalog, Project, SemanticMappingProgress } from "../types";
 import { StatusBar } from "./StatusBar";
 
 describe("StatusBar", () => {
@@ -19,7 +19,24 @@ describe("StatusBar", () => {
     expect(markup).toContain('aria-label="Application status"');
     expect(markup).toContain('aria-live="polite"');
     expect(markup).toContain('title="Project saved"');
+    expect(markup).toContain('role="group"');
+    expect(markup).toContain('aria-label="Project summary"');
     expect(markup).toContain("Awaiting project");
+  });
+
+  it("labels the library summary separately from project status", () => {
+    const markup = renderToStaticMarkup(
+      <StatusBar
+        status="Library ready"
+        activeWorkbench="library"
+        project={null}
+        catalog={{ summary: { sourceCount: 3, entityCount: 42 } } as unknown as LibraryCatalog}
+        semanticMapping={null}
+      />
+    );
+
+    expect(markup).toContain('aria-label="Library summary"');
+    expect(markup).toContain("3 library sources | 42 entities");
   });
 
   it("exposes determinate semantic mapping progress", () => {

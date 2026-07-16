@@ -4108,8 +4108,6 @@ button.documents-source-chip {
   justify-content: center;
 }
 
-
-
 .status-bar {
   flex-shrink: 0;
   display: flex;
@@ -4145,8 +4143,6 @@ button.documents-source-chip {
 .status-bar-summary {
   flex: 0 1 55%;
 }
-
-
 
 @media (max-width: 1380px) {
   .editor-topbar {
@@ -4202,9 +4198,18 @@ button.documents-source-chip {
   }
 }
 
-
-
-
+@media (max-width: 620px) {
+  .status-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    padding-block: 4px;
+  }
+  .status-bar-summary {
+    width: 100%;
+    max-width: 100%;
+  }
+}
 
 .runtime-pill {
   height: 30px;

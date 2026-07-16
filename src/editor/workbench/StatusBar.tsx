@@ -32,17 +32,16 @@ export function StatusBar({
         : `${project.maps.length} maps | ${project.triggers.length.toLocaleString()} triggers | links on demand`
       : `${project.maps.length} maps | ${project.triggers.length.toLocaleString()} triggers | links on demand`
     : "Awaiting project";
+  const workbenchSummary = activeWorkbench === "library"
+    ? `${catalog?.summary.sourceCount ?? 0} library sources | ${catalog?.summary.entityCount ?? 0} entities`
+    : projectSummary;
+  const workbenchSummaryLabel = activeWorkbench === "library" ? "Library summary" : "Project summary";
   return (
     <footer className="status-bar" aria-label="Application status">
       <span role="status" aria-live="polite" aria-atomic="true" title={status}>{status}</span>
-      <span className="status-bar-summary">
-        <span title={activeWorkbench === "library"
-          ? `${catalog?.summary.sourceCount ?? 0} library sources | ${catalog?.summary.entityCount ?? 0} entities`
-          : projectSummary}
-        >
-          {activeWorkbench === "library"
-            ? `${catalog?.summary.sourceCount ?? 0} library sources | ${catalog?.summary.entityCount ?? 0} entities`
-            : projectSummary}
+      <span className="status-bar-summary" role="group" aria-label={workbenchSummaryLabel}>
+        <span title={workbenchSummary}>
+          {workbenchSummary}
         </span>
         {mappingPending && (
           <span

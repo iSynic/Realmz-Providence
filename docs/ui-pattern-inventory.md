@@ -190,3 +190,5 @@ Spell casting and resolution sounds now use the same compact `ReferenceField` pl
 Race portrait sets and Caste default icons now use a Rules-owned compact `ReferenceField` with image preview. Race keeps its stored six-icon set index distinct from the mapped first `cicn` resource ID, Caste keeps its direct `cicn` contract, and both preserve unresolved numeric values instead of silently replacing imported data.
 
 Spell cast animations, resolution animations, and queue icons now use the same compact reference contract with preview thumbnails in both the selected field and result rows. The picker preserves the different value-zero meanings, accepts mapped `cicn` or combat-tile IDs in search, and keeps unusual imported bytes available as explicit raw values instead of normalizing them away.
+
+The application status footer now keeps activity and project or library context as separately labelled regions. At very narrow widths the two lines stack instead of competing for a pair of truncated half-width columns, while normal desktop widths retain the dense single-row footer.
