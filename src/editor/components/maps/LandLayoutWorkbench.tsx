@@ -5,10 +5,16 @@ import { tileValueAt } from "../../map/geometry";
 import { InfoGrid } from "../InfoGrid";
 import { TutorialTip } from "../TutorialTip";
 import { drawTileSprite, tileColor } from "../TileSprite";
+import { SegmentedControl, type SegmentedControlOption } from "../../ui";
 
 export type LandLayoutCellSelection = { row: number; col: number } | null;
+type LandLayoutPreviewMode = "compact" | "preview";
 const LAND_LAYOUT_ROWS = 8;
 const LAND_LAYOUT_COLS = 16;
+const LAND_LAYOUT_PREVIEW_OPTIONS: ReadonlyArray<SegmentedControlOption<LandLayoutPreviewMode>> = [
+  { value: "preview", label: "Preview" },
+  { value: "compact", label: "Compact" }
+];
 const LAND_LAYOUT_HELP =
   "The Land Layout table is Realmz's outdoor edge-travel map. When the party exits a land level at an edge, Realmz looks up that level in this grid and moves to the neighboring filled cell.";
 const CREATE_LAYOUT_HELP =
@@ -53,7 +59,7 @@ export function LandLayoutEditor({
   onSelectMap: (id: string) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
-  const [previewMode, setPreviewMode] = useState<"compact" | "preview">(() => readStoredLandLayoutPreviewMode());
+  const [previewMode, setPreviewMode] = useState<LandLayoutPreviewMode>(() => readStoredLandLayoutPreviewMode());
   const [showNeighbors, setShowNeighbors] = useState(() => readStoredBoolean("providence.landLayout.showNeighbors.v1", true));
   const showPreviews = previewMode === "preview";
   const landMaps = (project?.maps ?? []).filter((map) => map.levelType === "land").sort((a, b) => a.index - b.index);
@@ -128,10 +134,12 @@ export function LandLayoutEditor({
         <TutorialTip title="Layout Display Mode" body={LAYOUT_DISPLAY_HELP} side="below">
           <span className="map-help-anchor">Display</span>
         </TutorialTip>
-        <div className="segmented-control compact" role="group" aria-label="Land layout display mode">
-          <button className={previewMode === "preview" ? "active" : ""} type="button" onClick={() => setPreviewMode("preview")}>Preview</button>
-          <button className={previewMode === "compact" ? "active" : ""} type="button" onClick={() => setPreviewMode("compact")}>Compact</button>
-        </div>
+        <SegmentedControl
+          ariaLabel="Land layout display mode"
+          value={previewMode}
+          options={LAND_LAYOUT_PREVIEW_OPTIONS}
+          onChange={setPreviewMode}
+        />
         <TutorialTip title="Neighbor Preview" body={LAYOUT_NEIGHBORS_HELP} side="below">
           <button className={`btn btn-secondary btn-xs${showNeighbors ? " active" : ""}`} type="button" onClick={() => setShowNeighbors(!showNeighbors)}>
             {showNeighbors ? "Hide Neighbors" : "Show Neighbors"}
@@ -546,7 +554,7 @@ export function storeBoolean(key: string, value: boolean) {
   localStorage.setItem(key, value ? "1" : "0");
 }
 
-function readStoredLandLayoutPreviewMode(): "compact" | "preview" {
+function readStoredLandLayoutPreviewMode(): LandLayoutPreviewMode {
   if (typeof localStorage === "undefined") return "preview";
   const stored = localStorage.getItem("providence.landLayout.previewMode.v1");
   return stored === "compact" ? "compact" : "preview";

@@ -273,8 +273,8 @@ function checkLandlookPaintGroupsAndStamps(paintGroups, stamps) {
 function checkPaintPaletteConsolidation() {
   const source = fs.readFileSync(path.join(root, "src/editor/components/TileSelectionBar.tsx"), "utf8");
   assert(source.includes('{ id: "all", label: "All" }'), "Paint palette should expose a deduplicated All mode.");
-  assert(source.includes('{ id: "special", label: "Special / Advanced" }'), "Paint palette should merge special/icon and raw compatibility values.");
-  assert(!source.includes('{ id: "raw", label: "Raw / Advanced" }'), "Paint palette should not retain a separate Raw / Advanced tab.");
+  assert(source.includes('{ value: "special", label: "Special / Advanced"'), "Paint palette should merge special/icon and raw compatibility values.");
+  assert(!source.includes('{ value: "raw", label: "Raw / Advanced"'), "Paint palette should not retain a separate Raw / Advanced tab.");
   assert(source.includes("const values = new Set([...standardTiles, ...specialAdvancedTiles])"), "All Available should deduplicate landlook and special/advanced tile values.");
   assert(!source.includes("Object.keys(icons ?? {})"), "Loaded negative icon resources should not automatically become paintable map values.");
 }

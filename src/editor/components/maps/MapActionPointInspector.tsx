@@ -3,10 +3,16 @@ import type { LandCellSecretState, MapEntity, Project, ProjectCommand, SelectedE
 import { actionSlotEntityId, selectEntityFromId, triggerEntityId } from "../../utils";
 import { InfoGrid } from "../InfoGrid";
 import { TutorialTip } from "../TutorialTip";
+import { SegmentedControl, type SegmentedControlOption } from "../../ui";
 import { MapNumberField } from "./MapFormControls";
 
 const MAP_SAME_AS_TRIGGER_DESTINATION_HELP =
   "This after-script destination exactly matches the trigger cell. Expand this section and edit Level/X/Y to make the destination separate.";
+const LAND_CELL_SECRET_OPTIONS: ReadonlyArray<SegmentedControlOption<LandCellSecretState>> = [
+  { value: "normal", label: "Normal" },
+  { value: "hidden", label: "Hidden Secret" },
+  { value: "revealed", label: "Revealed Secret" }
+];
 
 export function CellActionPointDetails({
   project,
@@ -69,34 +75,23 @@ export function LandCellSecretEditor({
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const state = landCellSecretState(cell.tile);
-  const options: Array<{ id: LandCellSecretState; label: string }> = [
-    { id: "normal", label: "Normal" },
-    { id: "hidden", label: "Hidden Secret" },
-    { id: "revealed", label: "Revealed Secret" }
-  ];
   return (
     <section className="map-authoring-group land-cell-secret-editor" aria-label="Land cell secret state">
       <h4>Secret Area</h4>
-      <div className="segmented-control" role="group" aria-label="Secret area state">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            className={state === option.id ? "active" : ""}
-            type="button"
-            aria-pressed={state === option.id}
-            onClick={() => onApplyCommand({
-              kind: "setLandCellSecretState",
-              label: `Set land cell ${option.label}`,
-              mapId: map.id,
-              x: cell.x,
-              y: cell.y,
-              state: option.id
-            })}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl
+        className="land-cell-secret-control"
+        ariaLabel="Secret area state"
+        value={state}
+        options={LAND_CELL_SECRET_OPTIONS}
+        onChange={(nextState) => onApplyCommand({
+          kind: "setLandCellSecretState",
+          label: `Set land cell ${LAND_CELL_SECRET_OPTIONS.find((option) => option.value === nextState)?.label ?? nextState}`,
+          mapId: map.id,
+          x: cell.x,
+          y: cell.y,
+          state: nextState
+        })}
+      />
       <small>{state === "hidden" ? "Undetected until Realmz reveals this cell." : state === "revealed" ? "Stored as already detected." : "Ordinary land cell state."}</small>
     </section>
   );

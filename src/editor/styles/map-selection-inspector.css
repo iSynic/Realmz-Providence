@@ -284,45 +284,6 @@
 
 
 
-.segmented-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid #28465e;
-  border-radius: 5px;
-  background: #0d1620;
-}
-
-
-
-
-
-.segmented-control button {
-  min-height: 22px;
-  padding: 3px 8px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: #8fb2ce;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-
-
-
-
-.segmented-control button:hover,
-.segmented-control button.active {
-  background: #14304d;
-  color: #eef8ff;
-}
-
-
-
-
-
 .inline-diagnostics {
   display: grid;
   gap: 5px;

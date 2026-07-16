@@ -808,13 +808,13 @@
   gap: 7px;
 }
 
-.land-cell-secret-editor .segmented-control {
+.land-cell-secret-control {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
 }
 
-.land-cell-secret-editor .segmented-control button {
+.land-cell-secret-control > button {
   min-width: 0;
   white-space: normal;
 }
