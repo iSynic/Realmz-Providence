@@ -2263,6 +2263,12 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 
+.documents-compact-topic-picker {
+  display: none;
+}
+
+
+
 .documents-nav {
   min-height: 0;
   display: grid;
@@ -2709,6 +2715,7 @@ button.documents-source-chip {
 
   .documents-body {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .documents-visual-grid {
@@ -2716,6 +2723,37 @@ button.documents-source-chip {
   }
 
   .documents-nav-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 42%);
+    grid-template-rows: auto;
+    align-items: end;
+    gap: 8px;
+    padding: 10px;
+    border-right: 0;
+    border-bottom: 1px solid #27313c;
+  }
+
+  .documents-search {
+    margin: 0;
+  }
+
+  .documents-compact-topic-picker {
+    min-width: 0;
+    display: grid;
+    gap: 5px;
+    color: #7eaedf;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .documents-compact-topic-picker select {
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+  }
+
+  .documents-nav {
     display: none;
   }
 }

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, ListTree } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
-import { EmptyState, LinkChip, ModalDialog, PanelSection, PreviewCard, SearchField } from "../ui";
+import { EmptyState, LinkChip, ModalDialog, PanelSection, PreviewCard, SearchField, workbenchTabKeyboardTarget } from "../ui";
 import {
   DOCUMENTATION_GROUPS,
   DOCUMENTATION_TOPICS,
@@ -52,6 +52,7 @@ export function DocumentsView({
 }) {
   const [activeSection, setActiveSection] = useState(() => documentationTopicById(initialSection).id);
   const [query, setQuery] = useState("");
+  const topicButtons = useRef(new Map<string, HTMLButtonElement>());
   const normalizedQuery = query.trim().toLowerCase();
 
   useEffect(() => {
@@ -76,11 +77,20 @@ export function DocumentsView({
     ? activeTopic.references.filter((reference) => reference.kind === "divinity")
     : activeTopic.references;
   const visibleVisualSlots = documentationVisualReferences(activeTopic);
+  const topicOptions = filteredTopics.map((topic) => ({ value: topic.id, label: topic.label }));
 
   function selectSection(sectionId: string, options: { clearSearch?: boolean } = {}) {
     if (options.clearSearch) setQuery("");
     setActiveSection(sectionId);
     onSectionChange?.(sectionId);
+  }
+
+  function handleChapterNavigation(event: KeyboardEvent<HTMLElement>) {
+    const nextSection = workbenchTabKeyboardTarget(topicOptions, activeTopic.id, event.key, "vertical");
+    if (nextSection == null) return;
+    event.preventDefault();
+    selectSection(nextSection);
+    topicButtons.current.get(nextSection)?.focus();
   }
 
   return (
@@ -117,7 +127,23 @@ export function DocumentsView({
               resultNoun="chapter"
               resultNounPlural="chapters"
             />
-            <nav className="documents-nav" aria-label="Manual chapters">
+            <label className="documents-compact-topic-picker">
+              <span>Chapter</span>
+              <select
+                aria-label="Current manual chapter"
+                value={filteredTopics.length > 0 ? activeTopic.id : ""}
+                disabled={filteredTopics.length === 0}
+                onChange={(event) => selectSection(event.target.value)}
+              >
+                {filteredTopics.length === 0 && <option value="">No matching chapters</option>}
+                {groupedTopics.map(({ group, topics }) => (
+                  <optgroup key={group.id} label={group.label}>
+                    {topics.map((topic) => <option key={topic.id} value={topic.id}>{topic.label}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+            </label>
+            <nav className="documents-nav" aria-label="Manual chapters" onKeyDown={handleChapterNavigation}>
               {groupedTopics.map(({ group, topics }) => (
                 <section key={group.id} className="documents-nav-group" aria-label={group.label}>
                   <header>
@@ -129,9 +155,15 @@ export function DocumentsView({
                   {topics.map((topic) => (
                     <button
                       key={topic.id}
+                      ref={(element) => {
+                        if (element) topicButtons.current.set(topic.id, element);
+                        else topicButtons.current.delete(topic.id);
+                      }}
                       type="button"
                       data-document-topic={topic.id}
                       className={topic.id === activeTopic.id ? "active" : ""}
+                      aria-current={topic.id === activeTopic.id ? "page" : undefined}
+                      tabIndex={topic.id === activeTopic.id ? 0 : -1}
                       onClick={() => selectSection(topic.id)}
                     >
                       <span>{topic.label}</span>
