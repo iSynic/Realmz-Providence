@@ -116,7 +116,7 @@ export function StoryFlagsWorkbench({
                       <strong>{thread.name}</strong>
                       <small>{thread.questIds.length} flag{thread.questIds.length === 1 ? "" : "s"}</small>
                     </button>
-                    <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete note" onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete author note", threadId: thread.id })}>
+                    <button type="button" className="btn btn-danger btn-xs icon-only" title="Delete note" aria-label={`Delete ${thread.name}`} onClick={() => onApplyCommand?.({ kind: "deleteQuestThread", label: "Delete author note", threadId: thread.id })}>
                       <Trash2 size={12} />
                     </button>
                   </div>

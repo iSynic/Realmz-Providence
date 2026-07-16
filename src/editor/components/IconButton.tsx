@@ -12,7 +12,7 @@ export function IconButton({
   children: ReactNode;
 }) {
   return (
-    <button className="icon-btn" title={title} disabled={disabled} onClick={onClick}>
+    <button type="button" className="icon-btn" title={title} aria-label={title} disabled={disabled} onClick={onClick}>
       {children}
     </button>
   );

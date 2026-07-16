@@ -56,7 +56,7 @@ export function ActionPointActionChooser({
             <strong>{selectedRawCode === 0 ? "Choose Action" : "Change Action"}</strong>
           </TutorialTip>
         </div>
-        <button type="button" className="btn btn-secondary btn-xs icon-only" title="Close action chooser" onClick={onClose}>
+        <button type="button" className="btn btn-secondary btn-xs icon-only" title="Close action chooser" aria-label="Close action chooser" onClick={onClose}>
           <X size={12} />
         </button>
       </header>

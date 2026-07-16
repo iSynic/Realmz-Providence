@@ -177,6 +177,7 @@ function MapCoordinateJumpButton({
       type="button"
       className="btn btn-secondary btn-xs icon-only script-coordinate-jump"
       title={title}
+      aria-label={title}
       disabled={!target || !map || !onOpenMapCoordinate}
       onClick={(event) => {
         event.preventDefault();

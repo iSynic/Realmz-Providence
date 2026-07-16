@@ -47,6 +47,7 @@ export function ActionPointDirectTargetField({
               type="button"
               className="btn btn-secondary btn-xs icon-only script-source-ap-jump"
               title={sameMapJumpTitle}
+              aria-label={sameMapJumpTitle}
               disabled={!sameMapTarget}
               onClick={() => {
                 if (!sameMapTarget) return;

@@ -587,10 +587,10 @@ function StringNavigator({
   const next = records[Math.min(records.length - 1, selectedIndex + 1)] ?? null;
   return (
     <nav className="text-string-navigator" aria-label="String navigator">
-      <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!previous || previous.id === selectedId} onClick={() => previous && onSelect(previous.id)} title="Previous string">
+      <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!previous || previous.id === selectedId} onClick={() => previous && onSelect(previous.id)} title="Previous string" aria-label="Previous string">
         <ChevronLeft size={15} />
       </button>
-      <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!next || next.id === selectedId} onClick={() => next && onSelect(next.id)} title="Next string">
+      <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!next || next.id === selectedId} onClick={() => next && onSelect(next.id)} title="Next string" aria-label="Next string">
         <ChevronRight size={15} />
       </button>
       <RecordJumpField label="Go To String" selectedId={selectedId} records={records} onSelect={onSelect} />
@@ -896,10 +896,10 @@ function OptionLabelsWorkbench({
   return (
     <>
       <nav className="text-string-navigator text-option-label-toolbar" aria-label="Option label navigator">
-        <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!previous || previous.id === selectedId} onClick={() => previous && onSelect(previous.id)} title="Previous option label">
+        <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!previous || previous.id === selectedId} onClick={() => previous && onSelect(previous.id)} title="Previous option label" aria-label="Previous option label">
           <ChevronLeft size={15} />
         </button>
-        <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!next || next.id === selectedId} onClick={() => next && onSelect(next.id)} title="Next option label">
+        <button type="button" className="btn btn-secondary btn-sm icon-only" disabled={!next || next.id === selectedId} onClick={() => next && onSelect(next.id)} title="Next option label" aria-label="Next option label">
           <ChevronRight size={15} />
         </button>
         <RecordJumpField label="Go To Label" selectedId={selectedId} records={records} onSelect={onSelect} />

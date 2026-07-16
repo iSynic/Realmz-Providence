@@ -415,6 +415,7 @@ export function EdcdRowEditor({
             type="button"
             className="btn btn-secondary btn-xs icon-only edcd-map-jump-button edcd-destination-jump"
             title={jumpTitle}
+            aria-label={jumpTitle}
             disabled={!jumpTarget || !jumpMap || !onOpenMapCoordinate}
             onClick={(event) => {
               event.preventDefault();
@@ -474,6 +475,7 @@ export function EdcdRowEditor({
               type="button"
               className="btn btn-secondary btn-xs icon-only edcd-map-jump-button"
               title={mapJumpTitle}
+              aria-label={mapJumpTitle}
               disabled={!mapCoordinateMap}
               onClick={(event) => {
                 event.preventDefault();
@@ -692,6 +694,7 @@ function RandomRegionLevelField({
             type="button"
             className="btn btn-secondary btn-xs icon-only"
             title={`Open ${selected.label}`}
+            aria-label={`Open ${selected.label}`}
             disabled={disabled}
             onClick={(event) => {
               event.preventDefault();
@@ -1043,6 +1046,7 @@ function EdcdSelectTargetField({
             type="button"
             className="btn btn-secondary btn-xs icon-only"
             title={selected ? `Open ${selected.label}` : `No ${displayLabel} selected`}
+            aria-label={selected ? `Open ${selected.label}` : `No ${displayLabel} selected`}
             disabled={disabled || !selected?.entity || !onOpen}
             onClick={(event) => {
               event.preventDefault();

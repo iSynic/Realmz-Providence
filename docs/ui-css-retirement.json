@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "selectors": [
+    ".lint-issue",
+    ".lint-summary",
+    ".scenario-checklist",
+    ".scenario-form-grid",
+    ".semantic-diagnostics"
+  ]
+}
