@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
 import { Project, ProjectCommand, SelectedEntity } from "../types";
-import { PanelHeader } from "../ui";
+import { CollapsibleSection, FieldRow, PanelHeader, ValidationGate, type WorkbenchIssue } from "../ui";
 import { ruleCasteOptions, ruleRaceOptions } from "../ruleNames";
 import {
   SECURITY_SEGMENT_LENGTH,
@@ -43,6 +43,8 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
   const securityBackup = project.scenario.securityBackup ?? null;
   const startupMap = project.maps.find((map) => map.levelType === "land" && map.index === shell.landLevel) ?? null;
   const issues = scenarioIssues(project, shell);
+  const readiness = readinessRows(project, issues);
+  const readinessProblems = readiness.filter((row) => !row.ok);
   const hookRows = globalHooks(project);
   const startHook = hookRows.find((hook) => hook.slot === 0);
   const nextStartupMacroId = nextStartupTestMacroRecordIndex(project);
@@ -314,16 +316,24 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
               <HelpTitle title="Load Readiness" help={READINESS_HELP} />
               <small>Realmz standard scenario shell</small>
             </div>
-            <b>{issues.length ? `${issues.length} issue(s)` : "ready"}</b>
+            <b>{readinessProblems.length ? `${readinessProblems.length} issue(s)` : "ready"}</b>
           </header>
-          <div className="scenario-checklist">
-            {readinessRows(project, issues).map((row) => (
-              <div key={row.label} className={row.ok ? "ok" : "warn"}>
-                <span>{row.label}</span>
-                <small>{row.detail}</small>
-              </div>
-            ))}
-          </div>
+          <ValidationGate
+            className="scenario-readiness-gate"
+            ok={readinessProblems.length === 0}
+            title="Realmz startup package"
+            okLabel="Ready to load"
+            blockedLabel="Startup review required"
+            detail={readinessProblems.length === 0
+              ? `${readiness.length.toLocaleString()} startup and package checks passed.`
+              : `${readinessProblems.length.toLocaleString()} of ${readiness.length.toLocaleString()} startup and package checks need attention.`}
+            issues={readinessProblems.map((row): WorkbenchIssue => ({
+              id: row.label,
+              severity: "warning",
+              message: row.label,
+              detail: row.detail
+            }))}
+          />
         </article>
 
         <article id="scenario-global-macros" className="scenario-card">
@@ -670,15 +680,16 @@ function RestrictionChecklist({
 
 function EvidenceBox({ title, rows }: { title: string; rows: [string, string][] }) {
   return (
-    <details className="scenario-evidence">
-      <summary>{title}</summary>
+    <CollapsibleSection
+      className="scenario-evidence"
+      title={title}
+      density="compact"
+      defaultOpen={false}
+    >
       {rows.map(([label, value]) => (
-        <div key={label}>
-          <span>{label}</span>
-          <code>{value}</code>
-        </div>
+        <FieldRow key={label} label={label} value={<code>{value}</code>} />
       ))}
-    </details>
+    </CollapsibleSection>
   );
 }
 
@@ -781,11 +792,20 @@ function scenarioIssues(project: Project, shell: NonNullable<Project["scenario"]
 
 function readinessRows(project: Project, issues: string[]) {
   const hasFile = (name: string) => project.source.files.some((file) => file.name === name);
+  const startupIssue = issues.find((issue) => !issue.includes("resource fork"));
+  const firstStartFiles = ["Data DD", "Data LD", "Data RD"];
+  const missingFirstStartFiles = firstStartFiles.filter((name) => !hasFile(name));
   return [
     { label: "Marker/main file", ok: Boolean(project.scenario.shell), detail: project.scenario.shell?.sourceFile ?? "Will be created from edited startup shell." },
     { label: "Scenario resource fork", ok: hasFile("Scenario"), detail: hasFile("Scenario") ? "Resource fork present." : "Missing Scenario resource fork." },
-    { label: "Startup fields", ok: issues.length === 0, detail: issues[0] ?? "Startup map and coordinates are valid." },
-    { label: "First-start records", ok: ["Data DD", "Data LD", "Data RD"].every(hasFile), detail: "Outdoor trigger, land, and random-level records checked." },
+    { label: "Startup fields", ok: !startupIssue, detail: startupIssue ?? "Startup map and coordinates are valid." },
+    {
+      label: "First-start records",
+      ok: missingFirstStartFiles.length === 0,
+      detail: missingFirstStartFiles.length === 0
+        ? "Outdoor trigger, land, and random-level records are present."
+        : `Missing ${missingFirstStartFiles.join(", ")}.`
+    },
     { label: "Contact info", ok: Boolean(project.scenario.contactInfo), detail: project.scenario.contactInfo ? "Editable." : "No contact record." }
   ];
 }

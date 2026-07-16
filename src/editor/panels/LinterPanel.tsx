@@ -5,7 +5,7 @@ import { SemanticInspector } from "../components/SemanticInspector";
 import { selectEntityFromId } from "../utils";
 import { assetFallbacks, blockedSemanticObjects, entityById, generatedRuntimeCaches, recordById, resourceGaps, sourcePassThroughList, unresolvedLinks } from "../semanticGraph";
 import { loadScenarioCoverageManifest, type ScenarioCoverageManifest } from "../scenarioCoverage";
-import { EmptyState, PanelHeader, ScrollArea, ValidationGate } from "../ui";
+import { EmptyState, IssueList, PanelHeader, ScrollArea, ValidationGate, type WorkbenchIssue } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
 import { ED3_CLASSIFICATION_ORDER, ed3ClassificationCounts, ed3DiagnosticSummaries, ed3RiskySummaries } from "../scriptDiagnostics";
 import { buildEdcdRowUsages, type EdcdRowStatus, type EdcdRowUsage } from "../edcdRows";
@@ -115,11 +115,8 @@ export function LinterPanel({
               count={group.rows.length}
               defaultOpen={group.defaultOpen}
               summary={group.summary}
-            >
-              {group.rows.map((row) => (
-                <LintInsightRow key={row.id} row={row} onSelectEntity={openLintEntity} />
-              ))}
-            </LinterSection>
+              issues={group.rows.map((row) => lintInsightIssue(row, openLintEntity))}
+            />
           ))}
           {grouped.map(([source, sourceIssues]) => (
             <LinterSection
@@ -129,22 +126,17 @@ export function LinterPanel({
               count={sourceIssues.length}
               defaultOpen={sourceIssues.some((issue) => issue.severity === "error")}
               summary={issueGroupSummary(source, sourceIssues)}
-            >
-              {sourceIssues.slice(0, LINTER_ROW_LIMIT).map((issue, index) => (
-                <LintIssueRow
-                  key={`${issue.message}-${index}`}
-                  issue={issue}
-                  onSelectEntity={openLintEntity}
-                />
-              ))}
-              {sourceIssues.length > LINTER_ROW_LIMIT && (
+              issues={sourceIssues
+                .slice(0, LINTER_ROW_LIMIT)
+                .map((issue, index) => lintProjectIssue(issue, index, openLintEntity))}
+              footer={sourceIssues.length > LINTER_ROW_LIMIT ? (
                 <EmptyState
                   compact
                   title={`Showing ${LINTER_ROW_LIMIT.toLocaleString()} of ${sourceIssues.length.toLocaleString()} findings`}
                   body="Use the owning tool to narrow this group before editing records."
                 />
-              )}
-            </LinterSection>
+              ) : null}
+            />
           ))}
           {project && issues.length === 0 && <EmptyState compact title="No authoring findings" body="Validation found no additional scenario-owned issues." />}
         </ScrollArea>
@@ -217,14 +209,16 @@ function LinterSection({
   count,
   defaultOpen,
   summary,
-  children
+  issues,
+  footer
 }: {
   title: string;
   help: string;
   count: number;
   defaultOpen?: boolean;
   summary?: string;
-  children: ReactNode;
+  issues: WorkbenchIssue[];
+  footer?: ReactNode;
 }) {
   return (
     <section>
@@ -236,7 +230,8 @@ function LinterSection({
           <small>{count.toLocaleString()}</small>
         </summary>
         {summary && <p className="linter-section-summary">{summary}</p>}
-        {children}
+        <IssueList className="linter-section-issues" issues={issues} />
+        {footer}
       </details>
     </section>
   );
@@ -424,19 +419,14 @@ type LintInsight = {
   target?: string | null;
 };
 
-function LintInsightRow({ row, onSelectEntity }: { row: LintInsight; onSelectEntity: (entity: SelectedEntity) => void }) {
-  const content = (
-    <>
-      {row.severity === "error" ? "x" : row.severity === "warning" ? "!" : "i"} {row.message}
-      <small>{row.detail}</small>
-    </>
-  );
-  if (!row.target) return <article className={row.severity}>{content}</article>;
-  return (
-    <button className={`lint-issue ${row.severity}`} onClick={() => onSelectEntity(selectEntityFromId(row.target!))}>
-      {content}
-    </button>
-  );
+function lintInsightIssue(row: LintInsight, onSelectEntity: (entity: SelectedEntity) => void): WorkbenchIssue {
+  return {
+    id: row.id,
+    severity: row.severity,
+    message: row.message,
+    detail: row.detail,
+    onSelect: row.target ? () => onSelectEntity(selectEntityFromId(row.target!)) : undefined
+  };
 }
 
 function semanticLintGroups(project: Project | null) {
@@ -688,24 +678,16 @@ function humanScriptTriageDetail(classification: string) {
   return "Imported entry needs review before editing.";
 }
 
-function LintIssueRow({ issue, onSelectEntity }: { issue: Issue; onSelectEntity: (entity: SelectedEntity) => void }) {
+function lintProjectIssue(issue: Issue, index: number, onSelectEntity: (entity: SelectedEntity) => void): WorkbenchIssue {
   const target = issue.target ?? (isSemanticId(issue.source) ? issue.source : null);
-  const meta = [issue.provenance ? issueProvenanceLabel(issue.provenance) : null, target].filter(Boolean).join(" | ");
-  const content = (
-    <>
-      {issue.severity === "error" ? "x" : issue.severity === "warning" ? "!" : "i"} {issue.message}
-      {issue.detail && <small>{issue.detail}</small>}
-      {meta && <small>{meta}</small>}
-    </>
-  );
-  if (!target) {
-    return <article className={issue.severity}>{content}</article>;
-  }
-  return (
-    <button className={`lint-issue ${issue.severity}`} onClick={() => onSelectEntity(selectEntityFromId(target))}>
-      {content}
-    </button>
-  );
+  const detail = [issue.detail, issue.provenance ? issueProvenanceLabel(issue.provenance) : null].filter(Boolean).join(" | ");
+  return {
+    id: `${issue.source}:${index}:${issue.message}`,
+    severity: issue.severity === "error" ? "danger" : issue.severity === "warning" ? "warning" : "info",
+    message: issue.message,
+    detail: detail || undefined,
+    onSelect: target ? () => onSelectEntity(selectEntityFromId(target)) : undefined
+  };
 }
 
 function isSemanticId(value: string) {

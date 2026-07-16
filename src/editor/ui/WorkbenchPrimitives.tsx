@@ -491,6 +491,12 @@ export type IssueGroupProps = {
   className?: string;
 };
 
+export type IssueListProps = {
+  issues: WorkbenchIssue[];
+  emptyMessage?: ReactNode;
+  className?: string;
+};
+
 export function IssueGroup({ title, issues, emptyMessage = "No issues.", className }: IssueGroupProps) {
   return (
     <section className={classNames("workbench-issue-group", className)}>
@@ -498,13 +504,19 @@ export function IssueGroup({ title, issues, emptyMessage = "No issues.", classNa
         <strong>{title}</strong>
         <b>{issues.length.toLocaleString()}</b>
       </header>
-      <div>
-        {issues.map((issue, index) => (
-          <IssueRow key={issue.id ?? index} issue={issue} />
-        ))}
-        {issues.length === 0 && <span className="workbench-empty-inline">{emptyMessage}</span>}
-      </div>
+      <IssueList issues={issues} emptyMessage={emptyMessage} />
     </section>
+  );
+}
+
+export function IssueList({ issues, emptyMessage = "No issues.", className }: IssueListProps) {
+  return (
+    <div className={classNames("workbench-issue-list", className)}>
+      {issues.map((issue, index) => (
+        <IssueRow key={issue.id ?? index} issue={issue} />
+      ))}
+      {issues.length === 0 && <span className="workbench-empty-inline">{emptyMessage}</span>}
+    </div>
   );
 }
 

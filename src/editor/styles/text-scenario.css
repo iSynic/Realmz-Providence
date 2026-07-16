@@ -3144,46 +3144,25 @@
 
 
 .scenario-evidence {
-  border: 1px solid #2c3845;
-  border-radius: 6px;
   background: #0d131a;
-  padding: 8px 10px;
 }
 
 
 
-.scenario-evidence summary {
-  color: #cbd8e6;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-
-
-.scenario-evidence div,
-.scenario-checklist div {
+.scenario-evidence .workbench-panel-section-body {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 10px;
-  padding-top: 7px;
+  gap: 0;
 }
 
 
 
-.scenario-evidence span,
-.scenario-checklist span {
-  color: #8094a8;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
+.scenario-evidence .workbench-field-row {
+  grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
 }
 
 
 
-.scenario-evidence code,
-.scenario-checklist small {
+.scenario-evidence code {
   color: #d6e6f5;
   font-size: 10px;
   line-height: 1.45;
@@ -3192,31 +3171,8 @@
 
 
 
-.scenario-checklist {
-  display: grid;
-  gap: 6px;
-}
-
-
-
-.scenario-checklist div {
-  border: 1px solid #273441;
-  border-radius: 6px;
-  background: #0d141b;
-  padding: 8px;
-}
-
-
-
-.scenario-checklist div.ok {
-  border-color: #28543d;
-}
-
-
-
-.scenario-checklist div.warn {
-  border-color: #69562a;
-  background: #17140c;
+.scenario-readiness-gate {
+  margin: 0;
 }
 
 
@@ -3224,8 +3180,7 @@
 @media (max-width: 760px) {
   .scenario-form-grid,
   .scenario-restriction-grid,
-  .scenario-evidence div,
-  .scenario-checklist div {
+  .scenario-evidence .workbench-field-row {
     grid-template-columns: 1fr;
   }
 

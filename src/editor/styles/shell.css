@@ -3689,50 +3689,8 @@ button.documents-source-chip {
 
 
 
-.lint-results article,
-.lint-issue {
-  width: 100%;
-  display: grid;
-  gap: 3px;
-  padding: 7px 9px;
+.linter-section-issues {
   border-top: 1px solid #20252b;
-  border-right: 0;
-  border-bottom: 0;
-  border-left: 0;
-  background: transparent;
-  font-size: 11px;
-  text-align: left;
-}
-
-
-
-.lint-issue:hover {
-  background: #1a222c;
-}
-
-
-
-.lint-results article.error,
-.lint-issue.error {
-  color: #fca5a5;
-}
-
-
-
-.lint-results article.warning,
-.lint-results article.info,
-.lint-issue.warning,
-.lint-issue.info {
-  color: #facc6b;
-}
-
-
-
-.lint-issue small {
-  color: #8ca6bd;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 

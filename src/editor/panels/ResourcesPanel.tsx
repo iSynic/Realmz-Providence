@@ -8,7 +8,7 @@ import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities
 import { resourceUsageLinks } from "../contentLinks";
 import { canCopyLibraryAssetToScenario } from "../resourceResolver";
 import { tileColor } from "../components/TileSprite";
-import { PanelHeader, ScrollArea, SearchField, SegmentedControl } from "../ui";
+import { IssueList, PanelHeader, ScrollArea, SearchField, SegmentedControl } from "../ui";
 import { renderListKey } from "../renderKeys";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { TutorialTip } from "../components/TutorialTip";
@@ -521,12 +521,15 @@ export function ResourcesPanel({
                   <span>Resource Fallbacks</span>
                 </TutorialTip>
               </header>
-              {gaps.slice(0, 8).map((gap, index) => (
-                <button key={renderListKey("resource-gap", gap.entity, index)} className="lint-issue warning" onClick={() => onSelectEntity(selectEntityFromId(gap.entity.id))}>
-                  ! {gap.entity.label} uses {gap.reason}
-                  <small>{gap.consumers.length.toLocaleString()} semantic consumers</small>
-                </button>
-              ))}
+              <IssueList
+                issues={gaps.slice(0, 8).map((gap, index) => ({
+                  id: renderListKey("resource-gap", gap.entity, index),
+                  severity: "warning" as const,
+                  message: `${gap.entity.label} uses ${gap.reason}`,
+                  detail: `${gap.consumers.length.toLocaleString()} semantic consumers`,
+                  onSelect: () => onSelectEntity(selectEntityFromId(gap.entity.id))
+                }))}
+              />
             </section>
           </ScrollArea>
         )}
