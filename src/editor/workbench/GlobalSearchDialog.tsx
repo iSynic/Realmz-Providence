@@ -138,7 +138,7 @@ export function GlobalSearchDialog({
       onKeyDown={handleKeyDown}
     >
         <header className="global-search-header">
-          <TutorialTip title="Global Search" body={GLOBAL_SEARCH_HELP} side="below">
+          <TutorialTip title="Global Search" body={GLOBAL_SEARCH_HELP} side="below" focusable={false}>
             <SearchField
               className="global-search-input"
               value={query}

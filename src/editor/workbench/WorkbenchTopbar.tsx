@@ -149,7 +149,7 @@ export function WorkbenchTopbar({
     <header className="editor-topbar workbench-topbar">
       <div className="topbar-title-cluster">
         <div className="app-mark">
-          <TutorialTip title="Divinity Manual" body={TOPBAR_MANUAL_HELP} side="below">
+          <TutorialTip title="Divinity Manual" body={TOPBAR_MANUAL_HELP} side="below" focusable={false}>
             <button
               className="mark-glyph app-mark-button"
               type="button"
@@ -167,12 +167,12 @@ export function WorkbenchTopbar({
         </div>
         <div>
           <div className="topbar-history-nav" aria-label="Workbench navigation history">
-            <TutorialTip title="Workbench History" body={TOPBAR_HISTORY_HELP} side="below">
+            <TutorialTip title="Workbench History" body={TOPBAR_HISTORY_HELP} side="below" focusable={false}>
               <button type="button" aria-label="Go back to previous tool" title="Back to previous tool" disabled={!canNavigateBack} onClick={onNavigateBack}>
                 <ChevronLeft size={15} />
               </button>
             </TutorialTip>
-            <TutorialTip title="Workbench History" body={TOPBAR_HISTORY_HELP} side="below">
+            <TutorialTip title="Workbench History" body={TOPBAR_HISTORY_HELP} side="below" focusable={false}>
               <button type="button" aria-label="Go forward to next tool" title="Forward to next tool" disabled={!canNavigateForward} onClick={onNavigateForward}>
                 <ChevronRight size={15} />
               </button>
@@ -195,7 +195,7 @@ export function WorkbenchTopbar({
             <span className="dirty-pill">Editing</span>
           </TutorialTip>
         )}
-        <TutorialTip title="Project And Library" body={TOPBAR_WORKBENCH_HELP} side="below">
+        <TutorialTip title="Project And Library" body={TOPBAR_WORKBENCH_HELP} side="below" focusable={false}>
           <SegmentedControl
             className="topbar-workbench-switch"
             ariaLabel="Active workbench"
@@ -204,31 +204,31 @@ export function WorkbenchTopbar({
             onChange={(workbench) => workbench === "project" ? onProject() : onLibrary()}
           />
         </TutorialTip>
-        <TutorialTip title="Global Search" body={TOPBAR_SEARCH_HELP} side="below">
+        <TutorialTip title="Global Search" body={TOPBAR_SEARCH_HELP} side="below" focusable={false}>
           <button className="topbar-action-button" type="button" onClick={onGlobalSearch} title="Search scenario, libraries, assets, and docs (Ctrl+K)">
             <Search size={15} />
             <span>Search</span>
           </button>
         </TutorialTip>
-        <TutorialTip title="Providence Documents" body={TOPBAR_DOCUMENTS_HELP} side="below">
+        <TutorialTip title="Providence Documents" body={TOPBAR_DOCUMENTS_HELP} side="below" focusable={false}>
           <button className="topbar-action-button" type="button" onClick={onDocuments} title="Open Providence documents">
             <BookOpen size={15} />
             <span>Documents</span>
           </button>
         </TutorialTip>
-        <TutorialTip title="Hover Help" body={TOPBAR_HELP_HELP} side="below">
+        <TutorialTip title="Hover Help" body={TOPBAR_HELP_HELP} side="below" focusable={false}>
           <button className={`topbar-action-button${tutorialEnabled ? " active" : ""}`} type="button" aria-pressed={tutorialEnabled} onClick={onToggleTutorial} title="Toggle hover help bubbles">
             <CircleHelp size={15} />
             <span>{tutorialEnabled ? "Help On" : "Help Off"}</span>
           </button>
         </TutorialTip>
-        <TutorialTip title="New Project" body={TOPBAR_NEW_PROJECT_HELP} side="below">
+        <TutorialTip title="New Project" body={TOPBAR_NEW_PROJECT_HELP} side="below" focusable={false}>
           <button className="topbar-action-button" type="button" onClick={onNewProject} title="Create a new Providence project">
             <FilePlus2 size={15} />
             <span>New</span>
           </button>
         </TutorialTip>
-        <TutorialTip title="Open Project" body={TOPBAR_OPEN_PROJECT_HELP} side="below">
+        <TutorialTip title="Open Project" body={TOPBAR_OPEN_PROJECT_HELP} side="below" focusable={false}>
           <button
             className="topbar-action-button"
             type="button"
@@ -241,7 +241,7 @@ export function WorkbenchTopbar({
           </button>
         </TutorialTip>
         {canCloseProject && (
-          <TutorialTip title="Close Project" body={TOPBAR_CLOSE_PROJECT_HELP} side="below">
+          <TutorialTip title="Close Project" body={TOPBAR_CLOSE_PROJECT_HELP} side="below" focusable={false}>
             <button
               className="topbar-action-button"
               type="button"
@@ -254,7 +254,7 @@ export function WorkbenchTopbar({
           </TutorialTip>
         )}
         {importAllowed && (
-          <TutorialTip title="Import Scenario" body={TOPBAR_IMPORT_HELP} side="below">
+          <TutorialTip title="Import Scenario" body={TOPBAR_IMPORT_HELP} side="below" focusable={false}>
             <button
               className="topbar-action-button"
               type="button"
@@ -268,23 +268,23 @@ export function WorkbenchTopbar({
           </TutorialTip>
         )}
         <div className="editor-undo-redo" role="group" aria-label="Undo and redo">
-          <TutorialTip title="Undo" body={TOPBAR_UNDO_HELP} side="below">
+          <TutorialTip title="Undo" body={TOPBAR_UNDO_HELP} side="below" focusable={false}>
             <IconButton title={undoLabel ? `Undo ${undoLabel} (Ctrl+Z)` : "Undo (Ctrl+Z)"} onClick={onUndo} disabled={!canUndo}>
               <RefreshCcw size={15} />
             </IconButton>
           </TutorialTip>
-          <TutorialTip title="Redo" body={TOPBAR_REDO_HELP} side="below">
+          <TutorialTip title="Redo" body={TOPBAR_REDO_HELP} side="below" focusable={false}>
             <IconButton title={redoLabel ? `Redo ${redoLabel} (Ctrl+Y)` : "Redo (Ctrl+Y)"} onClick={onRedo} disabled={!canRedo}>
               <RefreshCcw size={15} className="redo-icon" />
             </IconButton>
           </TutorialTip>
         </div>
-        <TutorialTip title="Save Project" body={TOPBAR_SAVE_HELP} side="below">
+        <TutorialTip title="Save Project" body={TOPBAR_SAVE_HELP} side="below" focusable={false}>
           <IconButton title={saveTitle} onClick={onSave} disabled={!canSave}>
             <Save size={15} />
           </IconButton>
         </TutorialTip>
-        <TutorialTip title="Export Scenario" body={TOPBAR_EXPORT_HELP} side="below">
+        <TutorialTip title="Export Scenario" body={TOPBAR_EXPORT_HELP} side="below" focusable={false}>
           <IconButton title={exportTitle} onClick={onExport} disabled={!canExport}>
             <Download size={15} />
           </IconButton>

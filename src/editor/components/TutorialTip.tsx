@@ -6,11 +6,13 @@ export function TutorialTip({
   title,
   body,
   side = "right",
+  focusable = true,
   children
 }: {
   title: string;
   body: string;
   side?: HelpBubbleSide;
+  focusable?: boolean;
   children: ReactNode;
 }) {
   const wrapperRef = useRef<HTMLSpanElement | null>(null);
@@ -63,7 +65,7 @@ export function TutorialTip({
       <span
         ref={wrapperRef}
         className={`tutorial-tip tutorial-tip-${side}${open ? " tooltip-open" : ""}`}
-        tabIndex={0}
+        tabIndex={focusable ? 0 : undefined}
         aria-describedby={open ? tooltipId : undefined}
         onMouseEnter={showBubble}
         onMouseLeave={hideBubble}

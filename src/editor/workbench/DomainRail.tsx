@@ -36,7 +36,7 @@ export function DomainRail({
         const descriptor = DOMAIN_REGISTRY[domain];
         const count = domainCount(domain, project, catalog, activeWorkbench, issueCount);
         return (
-          <TutorialTip key={domain} title={descriptor.label} body={descriptor.description} side="right">
+          <TutorialTip key={domain} title={descriptor.label} body={descriptor.description} side="right" focusable={false}>
             <button
               ref={(element) => {
                 if (element) buttons.current.set(domain, element);

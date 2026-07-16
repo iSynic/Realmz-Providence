@@ -112,6 +112,7 @@ Providence now has shared modeless and blocking overlay contracts. Project creat
 - Project creation, tile-palette source, stamp-library scope, and the shell's Project/Library switch now use `SegmentedControl`, with pressed-button semantics and the same roving Left/Right/Home/End keyboard model while their domain geometry remains locally owned.
 - The topbar exposes one application toolbar with explicit grouped history and undo/redo controls, the domain rail reuses the tab keyboard contract vertically with Up/Down/Home/End navigation, and the status footer is a named live-status landmark.
 - Global Search now composes the shared `SearchField` in editable-combobox mode, including the standard clear command, modal initial-focus marker, pending/result status, and scope-group semantics while retaining its grouped navigation index and routing behavior.
+- Shell tutorial wrappers no longer add duplicate tab stops around controls. The domain rail and tool sidebar keep one active navigation target in the tab order, with Up/Down/Home/End movement delegated to the shared workbench keyboard contract.
 
 ## First Implementation Slice
 

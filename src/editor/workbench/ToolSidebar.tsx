@@ -1,6 +1,8 @@
+import { useRef, type KeyboardEvent } from "react";
 import { ActiveWorkbench, EditorTab, LibraryCatalog, Project } from "../types";
 import { ResizablePane } from "../components/ResizablePane";
 import { TutorialTip } from "../components/TutorialTip";
+import { workbenchTabKeyboardTarget } from "../ui";
 import { DOMAIN_REGISTRY, toolCount } from "./registry";
 
 export function ToolSidebar({
@@ -20,6 +22,19 @@ export function ToolSidebar({
 }) {
   const domain = DOMAIN_REGISTRY[activeDomain];
   const tools = domain.tools.filter((tool) => tool.workbench === "both" || tool.workbench === activeWorkbench);
+  const buttons = useRef(new Map<string, HTMLButtonElement>());
+  const options = [
+    { value: "domain", label: "All" },
+    ...tools.map((tool) => ({ value: tool.id, label: tool.label }))
+  ];
+  const activeValue = options.some((option) => option.value === activeEditor) ? activeEditor : "domain";
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    const nextEditor = workbenchTabKeyboardTarget(options, activeValue, event.key, "vertical");
+    if (nextEditor == null) return;
+    event.preventDefault();
+    onSelectEditor(nextEditor);
+    buttons.current.get(nextEditor)?.focus();
+  };
   if (tools.length === 0) return null;
   if (activeDomain === "assets") return null;
   if (activeDomain === "combat") return null;
@@ -42,15 +57,20 @@ export function ToolSidebar({
       maxWidth={480}
       edge="right"
     >
-      <section className="tool-sidebar-card">
+      <section className="tool-sidebar-card" role="navigation" aria-label={`${domain.label} tools`} onKeyDown={handleKeyDown}>
         <header>
           <div>
             <strong>{domain.label}</strong>
             <span>{activeWorkbench === "library" ? "Library tools" : "Project tools"}</span>
           </div>
           <button
-            className={activeEditor === "domain" ? "active" : ""}
-            aria-current={activeEditor === "domain" ? "page" : undefined}
+            ref={(element) => {
+              if (element) buttons.current.set("domain", element);
+              else buttons.current.delete("domain");
+            }}
+            className={activeValue === "domain" ? "active" : ""}
+            aria-current={activeValue === "domain" ? "page" : undefined}
+            tabIndex={activeValue === "domain" ? 0 : -1}
             type="button"
             onClick={() => onSelectEditor("domain")}
             title="Show the domain overview"
@@ -62,12 +82,17 @@ export function ToolSidebar({
         <div className="tool-sidebar-list">
           {tools.map((tool) => {
             const count = toolCount(tool, project, catalog, activeWorkbench);
-            const selected = activeEditor === tool.id;
+            const selected = activeValue === tool.id;
             return (
-              <TutorialTip key={tool.id} title={tool.label} body={tool.description} side="right">
+              <TutorialTip key={tool.id} title={tool.label} body={tool.description} side="right" focusable={false}>
                 <button
+                  ref={(element) => {
+                    if (element) buttons.current.set(tool.id, element);
+                    else buttons.current.delete(tool.id);
+                  }}
                   className={selected ? "selected" : ""}
                   aria-current={selected ? "page" : undefined}
+                  tabIndex={selected ? 0 : -1}
                   type="button"
                   onClick={() => onSelectEditor(tool.id)}
                 >
