@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { FormField, FormGrid } from "./FormField";
 import { PanelHeader } from "./WorkbenchPrimitives";
 
 describe("Workbench primitives", () => {
@@ -36,5 +37,23 @@ describe("Workbench primitives", () => {
 
     expect(markup).toContain("<h1>Rules</h1>");
     expect(markup).toContain("Scenario rule records");
+  });
+
+  it("provides stable compact form layout and hint regions", () => {
+    const markup = renderToStaticMarkup(
+      <FormGrid columns={2}>
+        <FormField label="Scenario Name" hint="Used by Realmz.">
+          <input defaultValue="Test Scenario" />
+        </FormField>
+        <FormField label="Description" wide>
+          <textarea defaultValue="Description" />
+        </FormField>
+      </FormGrid>
+    );
+
+    expect(markup).toContain("workbench-form-grid columns-2");
+    expect(markup).toContain("workbench-form-field-label");
+    expect(markup).toContain("workbench-form-field is-wide");
+    expect(markup).toContain("Used by Realmz.");
   });
 });

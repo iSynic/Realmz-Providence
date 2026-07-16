@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { GlobalSearchDialog, globalSearchKeyboardAction, globalSearchOptionId, globalSearchStatus } from "./GlobalSearchDialog";
+import { GlobalSearchDialog } from "./GlobalSearchDialog";
+import { globalSearchKeyboardAction, globalSearchOptionId, globalSearchStatus } from "./globalSearchDialogModel";
 
 describe("GlobalSearchDialog", () => {
   it("exposes a navigation combobox and pressed search scopes", () => {

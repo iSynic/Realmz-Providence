@@ -2788,14 +2788,6 @@
 
 
 
-.scenario-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-
-
 .scenario-field {
   display: grid;
   gap: 5px;
@@ -3178,7 +3170,6 @@
 
 
 @media (max-width: 760px) {
-  .scenario-form-grid,
   .scenario-restriction-grid,
   .scenario-evidence .workbench-field-row {
     grid-template-columns: 1fr;
@@ -3303,6 +3294,6 @@
 
 
 
-.scenario-field.is-preserved {
+.scenario-global-hook-grid .workbench-form-field.is-preserved {
   opacity: .78;
 }

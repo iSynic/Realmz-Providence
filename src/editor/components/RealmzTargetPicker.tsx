@@ -12,6 +12,7 @@ import {
   type ReferencePreviewModel,
   type ReferencePreviewRendererRegistry
 } from "../ui";
+import { filterTargetOptions } from "./realmzTargetPickerSearch";
 
 export type ScriptTargetOption = {
   key: string;
@@ -1162,19 +1163,6 @@ function usageCounts(project: Project, opcodes: number[]) {
     }
   }
   return counts;
-}
-
-export function filterTargetOptions(options: ScriptTargetOption[], query: string) {
-  const normalized = query.trim().toLowerCase();
-  if (!normalized) return options;
-  return options.filter((option) => [
-    option.value,
-    option.label,
-    option.detail,
-    option.summary,
-    option.compatibility,
-    option.sourceState
-  ].join(" ").toLowerCase().includes(normalized));
 }
 
 function targetOptionTitle(option: ScriptTargetOption) {

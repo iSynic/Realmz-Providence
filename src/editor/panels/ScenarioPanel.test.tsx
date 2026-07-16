@@ -19,8 +19,11 @@ describe("ScenarioPanel", () => {
     expect(markup).toContain("Realmz startup package");
     expect(markup).toContain("workbench-collapsible-section");
     expect(markup).toContain("is-collapsed scenario-evidence");
+    expect(markup).toContain("workbench-form-grid columns-2");
+    expect(markup).toContain("workbench-form-field-label");
     expect(markup).toContain("Missing Data DD, Data LD, Data RD.");
     expect(markup).not.toContain("scenario-checklist");
+    expect(markup).not.toContain("scenario-form-grid");
     expect(markup).not.toContain("<details class=\"scenario-evidence\"");
   });
 });

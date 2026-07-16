@@ -57,6 +57,9 @@ export type {
   WorkbenchTone
 } from "./WorkbenchPrimitives";
 
+export { FormField, FormGrid } from "./FormField";
+export type { FormFieldProps, FormGridProps } from "./FormField";
+
 export type { SearchFieldProps } from "./SearchField";
 export type { PopoverPanelProps } from "./PopoverPanel";
 export type { ModalDialogActionsProps, ModalDialogHeaderProps, ModalDialogProps } from "./ModalDialog";

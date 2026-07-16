@@ -1,0 +1,70 @@
+.workbench-form-grid {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workbench-form-grid.columns-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workbench-form-grid.columns-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workbench-form-grid.columns-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workbench-form-grid.columns-auto {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.workbench-form-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.workbench-form-field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.workbench-form-field-label {
+  color: #80bfff;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.workbench-form-field > small {
+  color: #8095a8;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.workbench-form-field > input,
+.workbench-form-field > select,
+.workbench-form-field > textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid #2a3947;
+  border-radius: 6px;
+  background: #0d151d;
+  color: #f0f7ff;
+  padding: 8px 9px;
+  font: inherit;
+}
+
+.workbench-form-field > textarea {
+  min-height: 105px;
+  resize: vertical;
+}
+
+@media (max-width: 760px) {
+  .workbench-form-grid.columns-2,
+  .workbench-form-grid.columns-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
 import { Project, ProjectCommand, SelectedEntity } from "../types";
-import { CollapsibleSection, FieldRow, PanelHeader, ValidationGate, type WorkbenchIssue } from "../ui";
+import { CollapsibleSection, FieldRow, FormField, FormGrid, PanelHeader, ValidationGate, type WorkbenchIssue } from "../ui";
 import { ruleCasteOptions, ruleRaceOptions } from "../ruleNames";
 import {
   SECURITY_SEGMENT_LENGTH,
@@ -67,7 +67,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
             </div>
             <b>{shell.sourceFile || project.scenario.name}</b>
           </header>
-          <div className="scenario-form-grid">
+          <FormGrid>
             <TextField
               label="Scenario Name"
               value={project.scenario.name}
@@ -90,8 +90,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
               value={shell.maxLevel}
               onCommit={(maxLevel) => onApplyCommand({ kind: "updateScenarioShell", label: "Update max party level", changes: { maxLevel } })}
             />
-            <label className="scenario-field">
-              <HelpTitle title="Startup Land" help={STARTUP_LAND_HELP} />
+            <FormField label={<HelpTitle title="Startup Land" help={STARTUP_LAND_HELP} />}>
               <select
                 value={shell.landLevel}
                 onChange={(event) => onApplyCommand({
@@ -104,7 +103,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
                   <option key={map.id} value={map.index}>{map.name} ({map.index})</option>
                 ))}
               </select>
-            </label>
+            </FormField>
             <NumberField
               label="Startup X"
               help={STARTUP_COORD_HELP}
@@ -123,7 +122,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
               value={shell.creatorUser}
               onCommit={(creatorUser) => onApplyCommand({ kind: "updateScenarioShell", label: "Update creator check", changes: { creatorUser } })}
             />
-          </div>
+          </FormGrid>
           <div className="scenario-action-row">
             <button
               type="button"
@@ -160,21 +159,20 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
             </div>
             <b>{contact.authored ? "edited" : "source"}</b>
           </header>
-          <div className="scenario-form-grid">
+          <FormGrid>
             <TextField label="Title" value={contact.scenarioName} onCommit={(scenarioName) => updateContact(onApplyCommand, { scenarioName })} />
             <TextField label="Version" value={contact.version} onCommit={(version) => updateContact(onApplyCommand, { version })} />
             <TextField label="Date" value={contact.date} onCommit={(date) => updateContact(onApplyCommand, { date })} />
             <TextField label="Author" value={contact.author} onCommit={(author) => updateContact(onApplyCommand, { author })} />
             <TextField label="Email" value={contact.email} onCommit={(email) => updateContact(onApplyCommand, { email })} />
             <TextField label="Web" value={contact.web} onCommit={(web) => updateContact(onApplyCommand, { web })} />
-          </div>
-          <label className="scenario-field scenario-field-wide">
-            <span>Description</span>
+          </FormGrid>
+          <FormField label="Description" wide>
             <textarea
               defaultValue={contact.description}
               onBlur={(event) => updateContact(onApplyCommand, { description: event.currentTarget.value })}
             />
-          </label>
+          </FormField>
         </article>
 
         <article id="scenario-authoring-hub" className="scenario-card">
@@ -270,7 +268,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
                   onChange={(bannedCastes) => updateRestrictions(onApplyCommand, { bannedCastes })}
                 />
               </div>
-              <div className="scenario-form-grid">
+              <FormGrid>
                 <NumberField
                   label="Maximum Number Of Characters"
                   help="Maximum party character count from Data RI. Divinity/Realmz party size is normally 1-6."
@@ -288,14 +286,13 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
                   hint="0 means no maximum character level."
                   onCommit={(maxPartyLevel) => updateRestrictions(onApplyCommand, { maxPartyLevel })}
                 />
-              </div>
-              <label className="scenario-field scenario-field-wide">
-                <span>Restriction Message</span>
+              </FormGrid>
+              <FormField label="Restriction Message" wide>
                 <textarea
                   defaultValue={restrictions.description}
                   onBlur={(event) => updateRestrictions(onApplyCommand, { description: event.currentTarget.value })}
                 />
-              </label>
+              </FormField>
             </>
           ) : (
             <div className="scenario-empty-state">
@@ -363,8 +360,12 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
           </div>
           <div className="scenario-global-hook-grid">
             {hookRows.map((hook) => (
-              <label key={hook.slot} className={hook.sourceBacked ? "scenario-field" : "scenario-field is-preserved"}>
-                <span>{hook.label}</span>
+              <FormField
+                key={hook.slot}
+                label={hook.label}
+                hint={hook.sourceBacked ? hook.runtimeConsumer : "Reserved slot kept intact."}
+                className={hook.sourceBacked ? undefined : "is-preserved"}
+              >
                 <input
                   type="number"
                   defaultValue={hook.door}
@@ -375,8 +376,7 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
                     }
                   }}
                 />
-                <small>{hook.sourceBacked ? hook.runtimeConsumer : "Reserved slot kept intact."}</small>
-              </label>
+              </FormField>
             ))}
           </div>
         </article>
@@ -487,28 +487,32 @@ function SecurityRegistrationCard({
           Apply Security Codes
         </button>
       </div>
-      <div className="scenario-form-grid">
-        <label className="scenario-field scenario-security-field">
-          <HelpTitle title="Code Segment 1" help={SECURITY_HELP} />
+      <FormGrid>
+        <FormField
+          label={<HelpTitle title="Code Segment 1" help={SECURITY_HELP} />}
+          hint={`${segment1.length}/${SECURITY_SEGMENT_LENGTH} characters`}
+          className="scenario-security-field"
+        >
           <input
             readOnly={!unlocked}
             maxLength={SECURITY_SEGMENT_LENGTH}
             value={segment1}
             onChange={(event) => setSegment1(cleanSecuritySegment(event.currentTarget.value))}
           />
-          <small>{segment1.length}/{SECURITY_SEGMENT_LENGTH} characters</small>
-        </label>
-        <label className="scenario-field scenario-security-field">
-          <HelpTitle title="Code Segment 2" help={SECURITY_HELP} />
+        </FormField>
+        <FormField
+          label={<HelpTitle title="Code Segment 2" help={SECURITY_HELP} />}
+          hint={`${segment2.length}/${SECURITY_SEGMENT_LENGTH} characters`}
+          className="scenario-security-field"
+        >
           <input
             readOnly={!unlocked}
             maxLength={SECURITY_SEGMENT_LENGTH}
             value={segment2}
             onChange={(event) => setSegment2(cleanSecuritySegment(event.currentTarget.value))}
           />
-          <small>{segment2.length}/{SECURITY_SEGMENT_LENGTH} characters</small>
-        </label>
-      </div>
+        </FormField>
+      </FormGrid>
       <section className="scenario-registration-generator">
         <header>
           <div>
@@ -517,26 +521,24 @@ function SecurityRegistrationCard({
           </div>
           <b>{primaryRegistrationVariant?.code ?? "ready"}</b>
         </header>
-        <div className="scenario-form-grid">
-          <label className="scenario-field">
-            <span>Registration Name</span>
+        <FormGrid>
+          <FormField label="Registration Name">
             <input
               value={registrationName}
               maxLength={26}
               onChange={(event) => setRegistrationName(cleanRegistrationName(event.currentTarget.value))}
               placeholder="Name supplied by player"
             />
-          </label>
-          <label className="scenario-field">
-            <span>Realmz Serial Number</span>
+          </FormField>
+          <FormField label="Realmz Serial Number">
             <input
               value={serialNumber}
               inputMode="numeric"
               onChange={(event) => setSerialNumber(event.currentTarget.value.replace(/[^0-9-]/g, "").slice(0, 12))}
               placeholder="Serial number"
             />
-          </label>
-        </div>
+          </FormField>
+        </FormGrid>
         <div className="scenario-registration-variants">
           {registrationVariants.length === 0 ? (
             <p>Enter a registration name and serial number to calculate evidence-backed and candidate codes.</p>
@@ -582,8 +584,7 @@ function HelpTitle({ title, help }: { title: string; help: string }) {
 
 function TextField({ label, value, help, onCommit }: { label: string; value: string; help?: string; onCommit: (value: string) => void }) {
   return (
-    <label className="scenario-field" title={help}>
-      {help ? <HelpTitle title={label} help={help} /> : <span>{label}</span>}
+    <FormField label={help ? <HelpTitle title={label} help={help} /> : label} title={help}>
       <input
         key={value}
         defaultValue={value}
@@ -592,7 +593,7 @@ function TextField({ label, value, help, onCommit }: { label: string; value: str
           if (next !== value) onCommit(next);
         }}
       />
-    </label>
+    </FormField>
   );
 }
 
@@ -614,8 +615,11 @@ function NumberField({
   onCommit: (value: number) => void;
 }) {
   return (
-    <label className="scenario-field" title={help}>
-      {help ? <HelpTitle title={label} help={help} /> : <span>{label}</span>}
+    <FormField
+      label={help ? <HelpTitle title={label} help={help} /> : label}
+      hint={hint}
+      title={help}
+    >
       <input
         key={value}
         type="number"
@@ -627,8 +631,7 @@ function NumberField({
           if (Number.isFinite(next) && next !== value) onCommit(next);
         }}
       />
-      {hint && <small>{hint}</small>}
-    </label>
+    </FormField>
   );
 }
 

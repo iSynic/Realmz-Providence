@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  filterTargetOptions,
   resolveSignedTargetValue,
   signedSoundValueForSelection,
   signedSoundWaitsForCompletion,
@@ -10,6 +9,7 @@ import {
   targetPickerConfig,
   type ScriptTargetOption
 } from "./RealmzTargetPicker";
+import { filterTargetOptions } from "./realmzTargetPickerSearch";
 
 describe("Realmz target semantics", () => {
   it("preserves signed direct-target behavior when replacing a selection", () => {
