@@ -1,4 +1,4 @@
-import { LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
+import { LevelType, LibraryCatalog, Project, RealmzTargetRecordKind, SelectedEntity } from "./types";
 import { selectEntityFromId } from "./utils";
 import { choiceBranchTargetKind, choicePromptStorageFromOptionLabels, parseChoicePromptValue } from "./choiceDialogs";
 import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "./soundReferences";
@@ -300,7 +300,16 @@ export function edcdTargetOptions(project: Project, targetKind: EdcdTargetKind, 
   }));
 }
 
-export function missingEdcdTargetReferences(project: Project, shape: string, fieldNames: string[], values: number[], opcode?: number, preservedIndexes?: Iterable<number>, catalog?: LibraryCatalog | null): EdcdTargetReferenceIssue[] {
+export function missingEdcdTargetReferences(
+  project: Project,
+  shape: string,
+  fieldNames: string[],
+  values: number[],
+  opcode?: number,
+  preservedIndexes?: Iterable<number>,
+  catalog?: LibraryCatalog | null,
+  sourceLevelType: LevelType | null = null
+): EdcdTargetReferenceIssue[] {
   if (shape.toLowerCase() === "choice" && Math.abs(opcode ?? 0) === 3) {
     return missingChoiceDialogReferences(project, fieldNames, values, preservedIndexes, catalog);
   }
@@ -309,7 +318,10 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
   for (const [index, field] of fieldNames.entries()) {
     if (preserved.has(index)) continue;
     const rawValue = values[index] ?? 0;
-    const targetKind = edcdFieldTargetKind(shape, field, fieldNames, values, opcode);
+    let targetKind = edcdFieldTargetKind(shape, field, fieldNames, values, opcode);
+    if (shape.toLowerCase() === "teleport" && field.toLowerCase() === "levelorkeep" && sourceLevelType) {
+      targetKind = sourceLevelType === "dungeon" ? "dungeonLevel" : "landLevel";
+    }
     if (!targetKind || targetKind === "questLabel") continue;
     if (targetKind === "sound") continue;
     if (targetKind === "message" && Math.abs(rawValue) >= 10000) continue;
@@ -327,7 +339,7 @@ export function missingEdcdTargetReferences(project: Project, shape: string, fie
       });
       continue;
     }
-    if (value === 0 && !["macro", "simpleEncounter", "complexEncounter"].includes(targetKind)) continue;
+    if (value === 0 && !["macro", "simpleEncounter", "complexEncounter", "mapLevel", "landLevel", "dungeonLevel"].includes(targetKind)) continue;
     if (edcdTargetExists(project, targetKind, value, catalog)) continue;
     issues.push({
       index,

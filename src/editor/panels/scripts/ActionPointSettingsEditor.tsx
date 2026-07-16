@@ -102,6 +102,7 @@ export function ActionPointSettingsEditor({
   const settingsTitle = actionSettingsTitleForStep(selectedDefinition, edcdShape);
   const settingsLabel = actionSettingsFieldLabel(settingsTitle);
   const presentation = isEdcdBackedStep ? "selected-step" : "inventory";
+  const sourceLevelType = project.triggers.find((trigger) => trigger.id === selectedTriggerId)?.levelType ?? null;
   const duplicateSettingsForStep = () => {
     if (!isEdcdBackedStep) return;
     const duplicate = duplicateActionPointSettings({
@@ -143,6 +144,7 @@ export function ActionPointSettingsEditor({
       onApplyCommand={onApplyCommand}
       showActionButtons={presentation !== "selected-step"}
       presentation={presentation}
+      sourceLevelType={sourceLevelType}
     />
   );
 

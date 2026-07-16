@@ -82,7 +82,7 @@ export function ActionPointStepList({
               <span className="slot-index">{slot + 1}</span>
               <span className="script-step-main">
                 <strong>{definition.shortLabel}</strong>
-                <small>{scriptActionSummary(project, catalog, current, actionSummary(action))}</small>
+                <small>{scriptActionSummary(project, catalog, current, actionSummary(action), trigger.levelType)}</small>
                 {branchHint && <small className="script-step-branch-hint">{branchHint}</small>}
               </span>
               <span className="script-step-storage" title={storageTitle} aria-label={storageTitle}>

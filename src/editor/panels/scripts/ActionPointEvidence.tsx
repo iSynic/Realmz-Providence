@@ -149,8 +149,8 @@ export function ScriptFlowPreview({ project, catalog, trigger, onSelectEntity }:
   const flowSteps = trigger.actions.filter((action) => action.rawCode !== 0).sort((a, b) => a.slot - b.slot).map((action) => ({
     action,
     definition: scriptActionDefinitionFor(action.rawCode),
-    routes: scriptStepFlowRoutes(project, catalog, { rawCode: action.rawCode, id: action.id }),
-    summary: scriptActionSummary(project, catalog, { rawCode: action.rawCode, id: action.id })
+    routes: scriptStepFlowRoutes(project, catalog, { rawCode: action.rawCode, id: action.id }, trigger.levelType),
+    summary: scriptActionSummary(project, catalog, { rawCode: action.rawCode, id: action.id }, "Empty step", trigger.levelType)
   }));
   if (flowSteps.length === 0) return null;
   return (

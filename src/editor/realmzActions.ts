@@ -66,7 +66,7 @@ const ACTION_DETAILS: Record<number, Partial<RealmzActionOption>> = {
   34: { shortLabel: "Break Loop", category: "Encounter", description: "Break out of an encounter loop; only meaningful inside encounter scripts." },
   35: { shortLabel: "Encounter State", category: "Encounter", description: "Mutate simple encounter state." },
   36: { shortLabel: "Equipment State", category: "Economy", description: "Capture or restore the party's equipment state." },
-  37: { shortLabel: "Dungeon Move", category: "Map", description: "Move in dungeon coordinates through EDCD fields.", edcdShape: "dungeon-move" },
+  37: { shortLabel: "Enter/Exit Dungeon", category: "Map", description: "Move the party between land and dungeon maps, then stop the script.", edcdShape: "dungeon-move" },
   38: { shortLabel: "Force Branch", category: "Branch", description: "Branch to macro/simple/complex targets through EDCD.", edcdShape: "force-branch" },
   39: { shortLabel: "Extend Codes", category: "Branch", description: "Call an Extra Action Point row directly." },
   40: { shortLabel: "Condition Branch", category: "Branch", description: "Branch based on party condition state.", edcdShape: "party-condition-branch" },

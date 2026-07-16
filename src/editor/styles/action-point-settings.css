@@ -178,6 +178,7 @@
   .edcd-branch-result-row {
     grid-template-columns: 1fr;
   }
+
 }
 
 .edcd-teleport-destination-grid {
@@ -185,6 +186,21 @@
   grid-template-columns: minmax(150px, 1fr) minmax(64px, 0.34fr) minmax(64px, 0.34fr) 24px;
   gap: 8px;
   align-items: end;
+}
+
+.edcd-teleport-destination-grid.has-family {
+  grid-template-columns: minmax(130px, 0.68fr) minmax(150px, 1fr) repeat(2, minmax(64px, 0.32fr)) minmax(86px, 0.4fr) 24px;
+}
+
+.edcd-teleport-family-hint {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .edcd-teleport-destination-grid,
+  .edcd-teleport-destination-grid.has-family {
+    grid-template-columns: 1fr;
+  }
 }
 
 .edcd-teleport-destination-grid label,

@@ -3,7 +3,8 @@ import { crosswalkForOpcode, parameterLabelsForOpcode } from "../../opcodeCrossw
 import { signedTargetBehaviorLabel, targetOptionForOpcodeValue, targetPickerConfig } from "../../components/RealmzTargetPicker";
 import { choiceBranchModeLabel, choiceBranchTargetKind, choicePromptStorageFromOptionLabels, parseChoicePromptValue } from "../../choiceDialogs";
 import { edcdFieldTargetKind, edcdTargetOptions, type EdcdTargetKind } from "../../edcdTargets";
-import { LibraryCatalog, Project } from "../../types";
+import { teleportDestinationLevelType, teleportHeadingLabel, teleportLevelLabel } from "../../teleportDestinations";
+import { LevelType, LibraryCatalog, Project } from "../../types";
 
 export type ScriptActionCategory =
   | "Dialogue"
@@ -213,7 +214,7 @@ const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "lab
   34: { label: "Break Encounter Loop", shortLabel: "Break Loop", category: "Encounters", description: "Break out of an encounter loop; only meaningful inside encounter scripts." },
   35: { label: "Change Encounter State", shortLabel: "Encounter State", category: "Encounters", description: "Change a simple encounter's state." },
   36: { label: "Capture Or Restore Equipment", shortLabel: "Equipment State", category: "Items", description: "Capture or restore the party's equipment state." },
-  37: { label: "Move In Dungeon", shortLabel: "Dungeon Move", category: "Travel", description: "Move the party within a dungeon." },
+  37: { label: "Enter / Exit Dungeon", shortLabel: "Enter/Exit Dungeon", category: "Travel", description: "Move the party between land and dungeon maps, then stop the script." },
   38: { label: "Force Branch", shortLabel: "Force Branch", category: "Logic", description: "Route execution to another result or action." },
   39: { label: "Run Extra Action Point", shortLabel: "Extra AP", category: "Extra Action Points", description: "Run an Extra Action Point." },
   40: { label: "Branch On Condition", shortLabel: "Condition Branch", category: "Logic", description: "Branch based on party condition state." },
@@ -420,11 +421,25 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
     defaultDraft: { rawCode: 20, id: 0, parameters: [-1, -1, -1, 0, 0] },
     parameterDefaults: [-1, -1, -1, 0, 0],
     parameters: {
-      0: { label: "Land Level", targetFamily: "map-level", help: "-1 keeps the current land level; otherwise use the destination land level." },
+      0: { label: "Current-Family Level", targetFamily: "map-level", help: "-1 keeps the current level. Teleport stays in the caller's current land or dungeon map family." },
       1: { label: "X Coordinate", help: "-1 keeps the current X coordinate." },
       2: { label: "Y Coordinate", help: "-1 keeps the current Y coordinate." },
       3: { label: "Sound" },
       4: { label: "Message" }
+    }
+  },
+  37: {
+    storage: "data-edcd-parameter-row",
+    edcdShape: "dungeon-move",
+    target: parameterRowTarget("Transfer Settings"),
+    defaultDraft: { rawCode: 37, id: 0, parameters: [0, 0, 0, 0, 1] },
+    parameterDefaults: [0, 0, 0, 0, 1],
+    parameters: {
+      0: { label: "Destination Type", help: "0 enters a dungeon; 1 exits to a land level." },
+      1: { label: "Destination Level", targetFamily: "map-level" },
+      2: { label: "X Coordinate" },
+      3: { label: "Y Coordinate" },
+      4: { label: "Starting Heading", help: "1 north, 2 east, 3 south, 4 west. A negative heading enters a dungeon in 3D-only view." }
     }
   },
   [-23]: {
@@ -472,7 +487,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
     defaultDraft: { rawCode: 45, id: 0, parameters: [-1, -1, -1, 0, 0] },
     parameterDefaults: [-1, -1, -1, 0, 0],
     parameters: {
-      0: { label: "Land Level", targetFamily: "map-level", help: "-1 keeps the current land level; otherwise use the destination land level." },
+      0: { label: "Current-Family Level", targetFamily: "map-level", help: "-1 keeps the current level. Teleport Only stays in the caller's current land or dungeon map family." },
       1: { label: "X Coordinate", help: "-1 keeps the current X coordinate." },
       2: { label: "Y Coordinate", help: "-1 keeps the current Y coordinate." },
       3: { label: "Sound" },
@@ -691,7 +706,8 @@ export function scriptActionSummary(
   project: Project | null,
   catalog: LibraryCatalog | null | undefined,
   draft: ScriptStepDraft,
-  emptyLabel = "Empty step"
+  emptyLabel = "Empty step",
+  sourceLevelType: LevelType | null = null
 ) {
   const definition = scriptActionDefinitionFor(draft.rawCode);
   const code = normalizeStepOpcode(draft.rawCode);
@@ -704,7 +720,7 @@ export function scriptActionSummary(
     const behavior = signedTargetBehaviorLabel(draft.rawCode, draft.id);
     return `${definition.shortLabel}: ${targetSummary(definition.target?.targetFamily, target.label, target.detail)}${behavior ? ` · ${behavior}` : ""}`;
   }
-  const settingsSummary = summarizeSettingsBackedAction(project, catalog, definition, draft);
+  const settingsSummary = summarizeSettingsBackedAction(project, catalog, definition, draft, sourceLevelType);
   if (settingsSummary) return settingsSummary;
   if (definition.target) {
     if (draft.id === 0) return `${definition.shortLabel}: choose ${definition.target.label.toLowerCase()}`;
@@ -719,6 +735,7 @@ export function scriptStepBranchHint(rawCode: number, id: number) {
   if (code === 3) return "Routes the player's choice.";
   if (code === 8) return `Runs same-map Action Point ${id}.`;
   if (code === 39) return `Runs Extra Action Point ${id}.`;
+  if (code === 37) return "Switches between land and dungeon maps, then stops the script.";
   if ([38, 46, 58, 59, 72, 75, 77, 78, 81, 85, 86, 87].includes(code)) return "Routes the script based on a condition or result.";
   if ([2, 48, 56, 107].includes(code)) return "May route based on battle setup or outcome.";
   if ([111, 112].includes(code)) return "Returns from Extra Action Point flow.";
@@ -728,7 +745,8 @@ export function scriptStepBranchHint(rawCode: number, id: number) {
 export function scriptStepFlowRoutes(
   project: Project | null,
   catalog: LibraryCatalog | null | undefined,
-  draft: ScriptStepDraft
+  draft: ScriptStepDraft,
+  sourceLevelType: LevelType | null = null
 ): ScriptFlowPreviewRoute[] {
   const code = normalizeStepOpcode(draft.rawCode);
   const definition = scriptActionDefinitionFor(code);
@@ -761,6 +779,14 @@ export function scriptStepFlowRoutes(
       routes.push({ kind: "call", label: "Extra Action Point", detail: targetRoute(project, "macro", draft.id, catalog)?.detail ?? `Runs Extra Action Point ${draft.id}.`, target: targetRoute(project, "macro", draft.id, catalog) ?? undefined });
     return routes;
   }
+  if (code === 37) {
+    routes.push({
+      kind: "stops",
+      label: definition.shortLabel,
+      detail: summarizeSettingsBackedAction(project, catalog, definition, draft, sourceLevelType) || "Switches map family and stops the script."
+    });
+    return routes;
+  }
   if ([38, 46, 58, 59, 42, 72, 75, 77, 78, 81, 85, 86, 87].includes(code)) {
     routes.push({ kind: "branch", label: definition.shortLabel, detail: summarizeSettingsBackedAction(project, catalog, definition, draft) || "Routes to another result when its condition matches." });
   }
@@ -777,7 +803,8 @@ function summarizeSettingsBackedAction(
   project: Project | null,
   catalog: LibraryCatalog | null | undefined,
   definition: ScriptActionDefinition,
-  draft: ScriptStepDraft
+  draft: ScriptStepDraft,
+  sourceLevelType: LevelType | null = null
 ) {
   const code = normalizeStepOpcode(draft.rawCode);
   const values = settingsValues(project, draft);
@@ -798,7 +825,12 @@ function summarizeSettingsBackedAction(
     return low === high ? `Random Message: ${messageLabel(project, low)}` : `Random Message: ${messageLabel(project, low)}-${messageLabel(project, high)}`;
   }
   if (code === 20 || code === 45) {
-    return `${definition.shortLabel}: ${mapLevelLabel(project, values[0] ?? -1)}, ${coordinateLabel(values[1])}, ${coordinateLabel(values[2])}`;
+    return `${definition.shortLabel}: ${teleportLevelLabel(project, values[0] ?? -1, sourceLevelType)}, ${coordinateLabel(values[1])}, ${coordinateLabel(values[2])}`;
+  }
+  if (code === 37) {
+    const levelType = teleportDestinationLevelType("dungeon-move", values, sourceLevelType) ?? "dungeon";
+    const heading = levelType === "dungeon" ? `, facing ${teleportHeadingLabel(values[4] ?? 1)}` : "";
+    return `${definition.shortLabel}: ${teleportLevelLabel(project, values[1] ?? -1, levelType)}, ${coordinateLabel(values[2])}, ${coordinateLabel(values[3])}${heading}; stops script`;
   }
   if ([2, 48, 56, 107].includes(code)) {
     return `${definition.shortLabel}: ${rangeTargetSummary(project, "battle", values[0] ?? 0, values[1] ?? 0)}`;

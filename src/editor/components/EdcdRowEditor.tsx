@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Save, Trash2 } from "lucide-react";
-import { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryCatalog, LevelType, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
 import { CollapsibleSection, EmptyState, FieldRow, PanelSection, type ReferencePickerOption } from "../ui";
 import { itemReferenceOptions, type ItemReferenceOption } from "../itemReferences";
 import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences, type EdcdTargetKind, type EdcdTargetOption } from "../edcdTargets";
 import { type OpcodeParameterLabel } from "../opcodeCrosswalk";
 import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, choicePromptStorageFromOptionLabels, parseChoicePromptValue, serializeChoicePromptValue } from "../choiceDialogs";
 import { scriptActionSummary } from "../panels/scripts/scriptActionCatalog";
+import { teleportDestinationLevelType, teleportFieldIndexes, teleportHeadingLabel, teleportLevelLabel, teleportLevelOptions, teleportMapCoordinateTarget } from "../teleportDestinations";
 import { selectEntityFromId } from "../utils";
 import { EdcdReferenceTargetField, numericReferenceQuery } from "./EdcdReferenceTargetField";
 
@@ -48,7 +49,8 @@ export function EdcdRowEditor({
   onSecondaryDraftValuesChange,
   onApplyCommand,
   showActionButtons = true,
-  presentation = "inventory"
+  presentation = "inventory",
+  sourceLevelType = null
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -69,6 +71,7 @@ export function EdcdRowEditor({
   onApplyCommand?: (command: ProjectCommand) => void;
   showActionButtons?: boolean;
   presentation?: EdcdRowEditorPresentation;
+  sourceLevelType?: LevelType | null;
 }) {
   const rowId = edcdUsage?.rowId ?? (fallbackShape ? Math.max(0, fallbackRowId) : null);
   const shape = edcdUsage?.shape ?? fallbackShape ?? null;
@@ -122,10 +125,10 @@ export function EdcdRowEditor({
   const primaryFields = fieldMetadata.filter((field) => !field.preserved);
   const preservedFields = fieldMetadata.filter((field) => field.preserved);
   const preservedIndexes = preservedFields.map((field) => field.index);
-  const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes, catalog);
+  const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes, catalog, sourceLevelType);
   const guidedSections = guidedSectionsForShape(shapeId, primaryFields, numericDraft, opcode);
-  const guidedSummary = guidedSummaryForEdcd(project, catalog, shapeId, opcode, rowId, numericDraft, fieldNames, edcdUsage?.summary);
-  const mapCoordinateTarget = mapCoordinateTargetForEdcd(shapeId, numericDraft);
+  const guidedSummary = guidedSummaryForEdcd(project, catalog, shapeId, opcode, rowId, numericDraft, fieldNames, edcdUsage?.summary, sourceLevelType);
+  const mapCoordinateTarget = teleportMapCoordinateTarget(shapeId, numericDraft, sourceLevelType);
   const mapCoordinateMap = mapCoordinateTarget
     ? project.maps.find((candidate) => candidate.levelType === mapCoordinateTarget.levelType && candidate.index === mapCoordinateTarget.levelIndex) ?? null
     : null;
@@ -230,6 +233,7 @@ export function EdcdRowEditor({
               onApplyCommand={onApplyCommand}
               showActionButtons={showActionButtons && presentation !== "selected-step"}
               presentation="selected-step"
+              sourceLevelType={sourceLevelType}
             />
           </div>
         )}
@@ -347,17 +351,18 @@ export function EdcdRowEditor({
 
   function renderTeleportDestinationSection(section: GuidedSection) {
     const normalizedShape = normalizeShape(shapeId);
-    const destinationLevelType = normalizedShape === "dungeon-move" ? "dungeon" : "land";
+    const indexes = teleportFieldIndexes(normalizedShape);
+    const destinationLevelType = teleportDestinationLevelType(normalizedShape, numericDraft, sourceLevelType);
+    const modeField = section.fields.find((field) => normalizeField(field.internalName) === "mode");
     const levelField = section.fields.find((field) => ["levelorkeep", "level", "legacylevel"].includes(normalizeField(field.internalName)));
     const xField = section.fields.find((field) => ["xorkeep", "x"].includes(normalizeField(field.internalName)));
     const yField = section.fields.find((field) => ["yorkeep", "y"].includes(normalizeField(field.internalName)));
+    const headingField = section.fields.find((field) => normalizeField(field.internalName) === "signedheading");
     const levelValue = levelField ? Number(draft[levelField.index] ?? -1) : -1;
-    const mapOptions = project.maps
-      .filter((map) => map.levelType === destinationLevelType)
-      .slice()
-      .sort((a, b) => a.index - b.index);
-    const hasLevelValue = levelValue === -1 || mapOptions.some((map) => map.index === levelValue);
-    const jumpTarget = mapCoordinateTargetForEdcd(shapeId, numericDraft);
+    const levelIssue = levelField ? targetIssues.find((issue) => issue.index === levelField.index) : null;
+    const mapOptions = teleportLevelOptions(project, destinationLevelType);
+    const hasLevelValue = levelValue === -1 || mapOptions.some((option) => option.value === levelValue);
+    const jumpTarget = teleportMapCoordinateTarget(shapeId, numericDraft, sourceLevelType);
     const jumpMap = jumpTarget
       ? project.maps.find((candidate) => candidate.levelType === jumpTarget.levelType && candidate.index === jumpTarget.levelIndex) ?? null
       : null;
@@ -365,17 +370,43 @@ export function EdcdRowEditor({
       ? jumpMap
         ? `Open ${jumpMap.name} at ${jumpTarget.x}, ${jumpTarget.y} on Maps.`
         : `No ${jumpTarget.levelType} level ${jumpTarget.levelIndex} exists for ${jumpTarget.x}, ${jumpTarget.y}.`
-      : "Choose a concrete level, X, and Y to preview this destination on Maps.";
+      : destinationLevelType
+        ? "Choose a concrete level, X, and Y to preview this destination on Maps."
+        : "This reusable teleport uses the runtime's current map family, so Providence cannot choose one map preview.";
+    const gridClassName = `edcd-teleport-destination-grid${normalizedShape === "dungeon-move" ? " has-family" : ""}`;
+    const levelLabel = destinationLevelType
+      ? `${destinationLevelType === "dungeon" ? "Dungeon" : "Land"} Level`
+      : "Current-Family Level Index";
+    const currentLevelLabel = destinationLevelType
+      ? `-1 = Current ${destinationLevelType === "dungeon" ? "Dungeon" : "Land"} Level`
+      : "-1 = Current Runtime Level";
+    const behaviorHint = normalizedShape === "dungeon-move"
+      ? "Enter / Exit Dungeon switches between land and dungeon maps and stops the script. Steps after this one do not run."
+      : destinationLevelType
+        ? `Teleport stays within the current ${destinationLevelType} map family. Use Enter / Exit Dungeon (code 37) to switch families.`
+        : "This reusable teleport stores a runtime-current-family level index. It does not switch between land and dungeon maps; use Enter / Exit Dungeon (code 37) for that.";
     return (
       <section key={section.title} className="guided-edcd-section">
         <header>
           <span>{section.eyebrow}</span>
           <h4>{section.title}</h4>
         </header>
-        <div className="edcd-teleport-destination-grid">
+        <div className={gridClassName}>
+          {normalizedShape === "dungeon-move" && modeField && indexes?.mode != null && (
+            <label>
+              <span title={modeField.internalName}>Destination Type</span>
+              <select
+                value={destinationLevelType ?? "dungeon"}
+                onChange={(event) => setDraftValue(indexes.mode!, event.currentTarget.value === "dungeon" ? 0 : 1)}
+              >
+                <option value="dungeon">Enter Dungeon</option>
+                <option value="land">Exit To Land</option>
+              </select>
+            </label>
+          )}
           {levelField && (
-            <label className={fieldClassName(levelField, false, null, guidedFieldPresentation(shapeId, levelField.internalName, numericDraft, opcode))}>
-              <span title={levelField.internalName}>{destinationLevelType === "dungeon" ? "Dungeon Level" : "Land Level"}</span>
+            <label className={fieldClassName(levelField, false, levelIssue, guidedFieldPresentation(shapeId, levelField.internalName, numericDraft, opcode))}>
+              <span title={levelField.internalName}>{levelLabel}</span>
               <select
                 disabled={guidedFieldPresentation(shapeId, levelField.internalName, numericDraft, opcode).disabled}
                 value={hasLevelValue ? String(levelValue) : `raw:${levelValue}`}
@@ -386,11 +417,12 @@ export function EdcdRowEditor({
                 }}
               >
                 {!hasLevelValue && <option value={`raw:${levelValue}`}>Imported level {levelValue}</option>}
-                <option value="-1">-1 = Current {destinationLevelType === "dungeon" ? "Dungeon Level" : "Land Level"}</option>
-                {mapOptions.map((map) => (
-                  <option key={map.id} value={map.index}>{map.name}</option>
+                <option value="-1">{currentLevelLabel}</option>
+                {mapOptions.map((option) => (
+                  <option key={`${option.value}-${option.levelTypes.join("-")}`} value={option.value}>{option.label}</option>
                 ))}
               </select>
+              {levelIssue && <small className="field-warning">Missing {levelIssue.targetLabel} {levelIssue.value}.</small>}
             </label>
           )}
           {xField && (
@@ -411,6 +443,15 @@ export function EdcdRowEditor({
               onChange={(value) => setDraftValue(yField.index, value)}
             />
           )}
+          {headingField && (
+            <CompactNumberField
+              field={headingField}
+              label="Starting Heading"
+              value={draft[headingField.index] ?? "1"}
+              disabled={guidedFieldPresentation(shapeId, headingField.internalName, numericDraft, opcode).disabled}
+              onChange={(value) => setDraftValue(headingField.index, value)}
+            />
+          )}
           <button
             type="button"
             className="btn btn-secondary btn-xs icon-only edcd-map-jump-button edcd-destination-jump"
@@ -427,6 +468,7 @@ export function EdcdRowEditor({
             <Eye size={12} />
           </button>
         </div>
+        <small className="field-help edcd-teleport-family-hint">{behaviorHint}</small>
       </section>
     );
   }
@@ -1416,7 +1458,8 @@ function guidedSummaryForEdcd(
   rowId: number,
   values: number[],
   fieldNames: string[],
-  importedSummary?: string
+  importedSummary?: string,
+  sourceLevelType: LevelType | null = null
 ) {
   const normalized = normalizeShape(shape);
   if (normalized === "action-data-patching") {
@@ -1443,7 +1486,13 @@ function guidedSummaryForEdcd(
     return `On a ${percent}% success roll, ${destination}; otherwise continue.`;
   }
   if (normalized === "teleport") {
-    return `Move to ${mapLevelSummary(project, values[0] ?? -1)} at ${coordSummary(values[1])}, ${coordSummary(values[2])}${mediaTail(project, catalog, values[3] ?? 0, values[4] ?? 0)}.`;
+    return `Move within the current map family to ${teleportLevelLabel(project, values[0] ?? -1, sourceLevelType)} at ${coordSummary(values[1])}, ${coordSummary(values[2])}${mediaTail(project, catalog, values[3] ?? 0, values[4] ?? 0)}.`;
+  }
+  if (normalized === "dungeon-move") {
+    const destinationLevelType = teleportDestinationLevelType(normalized, values, sourceLevelType) ?? "dungeon";
+    const destination = teleportLevelLabel(project, values[1] ?? -1, destinationLevelType);
+    const heading = destinationLevelType === "dungeon" ? ` facing ${teleportHeadingLabel(values[4] ?? 1)}` : "";
+    return `${destinationLevelType === "dungeon" ? "Enter" : "Exit to"} ${destination} at ${coordSummary(values[2])}, ${coordSummary(values[3])}${heading}; stop the script after transfer.`;
   }
   if (normalized === "random-message") {
     return `${messageSummary(project, values[0] ?? 0)} through ${messageSummary(project, values[1] ?? values[0] ?? 0)}.`;
@@ -1462,7 +1511,7 @@ function guidedSummaryForEdcd(
     return `Set the current land level to ${state}.`;
   }
   if (opcode != null) {
-    const summary = scriptActionSummary(project, catalog, { rawCode: opcode, id: rowId, parameters: valuesToTuple(values) }, "");
+    const summary = scriptActionSummary(project, catalog, { rawCode: opcode, id: rowId, parameters: valuesToTuple(values) }, "", sourceLevelType);
     if (summary) return summary;
   }
   if (importedSummary) return importedSummary;
@@ -1564,12 +1613,6 @@ function battleRangeSummary(project: Project, low: number, high: number) {
   const startLabel = battle(start) ? `Battle ${start}` : `battle ${start}`;
   const endLabel = battle(end) ? `Battle ${end}` : `battle ${end}`;
   return start === end ? `Start ${startLabel}` : `Start ${startLabel} through ${endLabel}`;
-}
-
-function mapLevelSummary(project: Project, value: number) {
-  if (value < 0) return "current level";
-  const map = project.maps.find((candidate) => candidate.index === value);
-  return map?.name ?? `Land level ${value}`;
 }
 
 function coordSummary(value: number | undefined) {
@@ -1914,22 +1957,6 @@ function edcdFieldLooksLikeItem(shape: string, name: string, opcode?: number) {
 
 function fieldNameIsPreserved(name: string) {
   return name.toLowerCase().includes("unused");
-}
-
-function mapCoordinateTargetForEdcd(shape: string, values: number[]): MapCoordinateTarget | null {
-  const normalized = normalizeShape(shape);
-  if (normalized !== "teleport" && normalized !== "dungeon-move") return null;
-  const levelIndex = Number(values[0] ?? -1);
-  const x = Number(values[1] ?? -1);
-  const y = Number(values[2] ?? -1);
-  if (!Number.isInteger(levelIndex) || !Number.isInteger(x) || !Number.isInteger(y)) return null;
-  if (levelIndex < 0 || x < 0 || y < 0) return null;
-  return {
-    levelType: normalized === "dungeon-move" ? "dungeon" : "land",
-    levelIndex,
-    x,
-    y
-  };
 }
 
 function isCoordinateJumpField(shape: string, name: string) {
