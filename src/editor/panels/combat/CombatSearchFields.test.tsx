@@ -11,6 +11,8 @@ describe("Combat list search fields", () => {
     const html = renderToStaticMarkup(createElement(MonsterLibraryList, {
       entries: [],
       query: "dragon",
+      scope: "all",
+      scopeCounts: { all: 0, builtIn: 0, custom: 0 },
       selectedId: null,
       selectedIds: [],
       selectionActive: false,
@@ -18,6 +20,7 @@ describe("Combat list search fields", () => {
       dropActive: false,
       hasCustomEntries: false,
       onQuery: noop,
+      onScopeChange: noop,
       onTogglePopulateMenu: noop,
       onPopulateStock: noop,
       onPopulateVisible: noop,

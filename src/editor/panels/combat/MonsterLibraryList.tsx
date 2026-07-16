@@ -1,12 +1,16 @@
 import { DragEvent, MouseEvent, ReactNode } from "react";
 import type { LibraryCatalog } from "../../types";
-import { SearchField } from "../../ui";
+import { ScrollArea, SearchField, SegmentedControl } from "../../ui";
+import type { MonsterLibraryScopeFilter } from "./monsterLibraryFilters";
+import "./monster-library-audit.css";
 
 type MonsterLibraryEntry = LibraryCatalog["entities"][number];
 
 type MonsterLibraryListProps = {
   entries: MonsterLibraryEntry[];
   query: string;
+  scope: MonsterLibraryScopeFilter;
+  scopeCounts: { all: number; builtIn: number; custom: number };
   selectedId: string | null;
   selectedIds: string[];
   selectionActive: boolean;
@@ -14,6 +18,7 @@ type MonsterLibraryListProps = {
   dropActive: boolean;
   hasCustomEntries: boolean;
   onQuery: (query: string) => void;
+  onScopeChange: (scope: MonsterLibraryScopeFilter) => void;
   onTogglePopulateMenu: () => void;
   onPopulateStock: () => void;
   onPopulateVisible: () => void;
@@ -34,6 +39,8 @@ type MonsterLibraryListProps = {
 export function MonsterLibraryList({
   entries,
   query,
+  scope,
+  scopeCounts,
   selectedId,
   selectedIds,
   selectionActive,
@@ -41,6 +48,7 @@ export function MonsterLibraryList({
   dropActive,
   hasCustomEntries,
   onQuery,
+  onScopeChange,
   onTogglePopulateMenu,
   onPopulateStock,
   onPopulateVisible,
@@ -92,9 +100,22 @@ export function MonsterLibraryList({
           </div>
         ) : null}
       </header>
-      <SearchField value={query} onChange={onQuery} placeholder="Search monster library..."
-        ariaLabel="Search monster library" resultCount={entries.length} resultNoun="monster" />
-      <div className="combat-record-scroll">
+      <div className="monster-list-filter-stack">
+        <SearchField value={query} onChange={onQuery} placeholder="Search monster library..."
+          ariaLabel="Search monster library" resultCount={entries.length} resultNoun="monster" />
+        <SegmentedControl
+          className="monster-library-scope-filter"
+          ariaLabel="Monster library ownership"
+          value={scope}
+          options={[
+            { value: "all", label: "All", meta: scopeCounts.all },
+            { value: "built-in", label: "Built-in", meta: scopeCounts.builtIn },
+            { value: "custom", label: "Custom", meta: scopeCounts.custom }
+          ]}
+          onChange={onScopeChange}
+        />
+      </div>
+      <ScrollArea shellClassName="combat-record-scroll-shell" className="combat-record-scroll" aria-label="Monster Library results">
         {entries.map((entry) => {
           const selectedForCopy = selectionActive && selectedIds.includes(entry.id);
           const selectedEntry = selectionActive && entry.id === selectedId;
@@ -112,14 +133,14 @@ export function MonsterLibraryList({
               {renderIcon(entry)}
               <span>
                 <strong>{entryName(entry)}</strong>
-                <small>{isCustom(entry) ? "Providence library" : "Built-in"} | {entryFacts(entry)}</small>
+                <small>{isCustom(entry) ? "Providence Custom Library" : "Protected Built-in Reference"} | {entryFacts(entry)}</small>
                 {selectedForCopy && selectedIds.length > 1 ? <small className="monster-selected-badge">Selected for copy</small> : null}
               </span>
             </button>
           );
         })}
         {entries.length === 0 && <p className="empty-copy compact">No library monsters match that search.</p>}
-      </div>
+      </ScrollArea>
     </aside>
   );
 }

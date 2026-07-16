@@ -1,0 +1,51 @@
+.monster-list-filter-stack {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.monster-library-scope-filter {
+  width: 100%;
+}
+
+.monster-library-scope-filter button {
+  min-width: 0;
+}
+
+.combat-record-scroll-shell {
+  height: 100%;
+  min-height: 0;
+}
+
+.combat-record-scroll {
+  height: 100%;
+}
+
+.monster-library-preview-title {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.monster-library-ownership-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  border: 1px solid #31546c;
+  border-radius: 5px;
+  padding: 2px 6px;
+  background: #101f2a;
+  color: #a9d8f5;
+  font-size: 9px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.monster-library-ownership-badge.custom {
+  border-color: #4d6d45;
+  background: #162416;
+  color: #b8e4ab;
+}

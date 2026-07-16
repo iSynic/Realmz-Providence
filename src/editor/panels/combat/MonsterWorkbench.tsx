@@ -23,7 +23,9 @@ import { MAX_DIVINITY_BATTLE_MONSTER_ID } from "./battleMonsterPaletteModel";
 import { BattleReferenceRepairDialog, battleReferenceReplacementCandidates, type PendingBattleReferenceRepair } from "./BattleReferenceRepairDialog";
 import { MonsterLibraryList } from "./MonsterLibraryList";
 import { MonsterLibraryMultiSelection } from "./MonsterLibraryMultiSelection";
+import { MonsterLibraryOwnershipBadge } from "./MonsterLibraryOwnershipBadge";
 import { MonsterLibraryIcon, MonsterLibraryPreview } from "./MonsterLibraryPreview";
+import { useMonsterLibraryFilter } from "./monsterLibraryFilters";
 import { MonsterRecordEditor } from "./MonsterRecordEditor";
 import { ScenarioMonsterList, type ScenarioMonsterListEntry } from "./ScenarioMonsterList";
 import { MissingMonsterSetEditor, MonsterSetToolbar } from "./MonsterSetControls";
@@ -39,7 +41,6 @@ import {
   scrapbookFacts,
   scrapbookIndex,
   scrapbookName,
-  scrapbookSearchText,
   visibleMonsterLibraryEntries,
   type MonsterLibraryCopyEntry
 } from "./monsterLibraryWorkflow";
@@ -133,10 +134,7 @@ export function MonsterWorkbench({
       return scrapbookIndex(a) - scrapbookIndex(b);
     });
   }, [catalog?.entities]);
-  const filteredLibrary = useMemo(
-    () => filterRecords(libraryEntries, libraryQuery, scrapbookSearchText),
-    [libraryEntries, libraryQuery]
-  );
+  const { libraryScope, setLibraryScope, filteredLibrary, libraryScopeCounts } = useMonsterLibraryFilter(libraryEntries, libraryQuery);
   useEffect(() => {
     if (filteredLibrary.length === 0) {
       setSelectedLibraryId(null);
@@ -557,13 +555,14 @@ export function MonsterWorkbench({
         <MonsterLibraryList
           entries={filteredLibrary}
           query={libraryQuery}
+          scope={libraryScope} scopeCounts={libraryScopeCounts}
           selectedId={selectedLibrary?.id ?? null}
           selectedIds={selectedLibraryIds}
           selectionActive={activePreview === "library"}
           populateMenuOpen={populateMenuOpen}
           dropActive={libraryDropActive}
           hasCustomEntries={libraryEntries.some(isProvidenceMonsterLibraryEntry)}
-          onQuery={setLibraryQuery}
+          onQuery={setLibraryQuery} onScopeChange={setLibraryScope}
           onTogglePopulateMenu={() => setPopulateMenuOpen((open) => !open)}
           onPopulateStock={populateStockMonsters}
           onPopulateVisible={populateVisibleLibrary}
@@ -629,6 +628,7 @@ export function MonsterWorkbench({
           lookups={lookups}
           previewContext={previewContext}
           description={monsterLibraryEntryDescription(selectedLibrary)}
+          headerMeta={<MonsterLibraryOwnershipBadge custom />}
           duplicateLabel="New Variant"
           clearLabel={monsterLibraryOrigin(selectedLibrary).kind === "built-in-override" ? "Restore Scrapbook Default" : "Delete Library Entry"}
           onUpdate={(changes) => updateLibraryMonster(selectedLibrary, changes)}

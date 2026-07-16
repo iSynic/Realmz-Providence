@@ -1,7 +1,7 @@
 import { DragEvent, memo } from "react";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { IconEntry, MonsterRecord, MonsterSetId, Project } from "../../types";
-import { SearchField } from "../../ui";
+import { ScrollArea, SearchField } from "../../ui";
 import { MONSTER_SET_OPTIONS, type CombatLookups } from "./combatLookups";
 import { MonsterIcon, samePreviewContextInputs, sameProjectIconInputs } from "./MonsterIconPreview";
 
@@ -80,7 +80,7 @@ export function ScenarioMonsterList({
       </header>
       <SearchField value={query} onChange={onQuery} placeholder="Search scenario monsters..."
         ariaLabel="Search scenario monsters" resultCount={entries.length} resultNoun="monster" />
-      <div className="combat-record-scroll">
+      <ScrollArea shellClassName="combat-record-scroll-shell" className="combat-record-scroll" aria-label="Scenario monster results">
         {entries.map((entry) => (
           <ScenarioMonsterRow
             key={entry.id}
@@ -97,7 +97,7 @@ export function ScenarioMonsterList({
           />
         ))}
         {entries.length === 0 && <p className="empty-copy compact">No scenario monsters match that search.</p>}
-      </div>
+      </ScrollArea>
     </aside>
   );
 }

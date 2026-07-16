@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LibraryCatalog } from "../../types";
+import { filterMonsterLibraryEntries, monsterLibraryScopeCounts } from "./monsterLibraryFilters";
 import {
   monsterRecordFromLibraryEntry,
   nextAvailableMonsterRecordId,
@@ -32,6 +33,27 @@ describe("monster library workflow", () => {
     const catalog = { entities: [blank, populated] } as LibraryCatalog;
 
     expect(visibleMonsterLibraryEntries(catalog)).toEqual([populated]);
+  });
+
+  it("filters protected and custom library ownership without weakening text search", () => {
+    const builtIn = entry(2, { displayName: "Bog Wraith", hitDice: 4 });
+    const custom = {
+      ...entry(3, { displayName: "Drowned Bell Keeper", hitDice: 8 }),
+      id: "monster-library-entry:keeper",
+      source: "Providence Monster Library",
+      summary: {
+        ...entry(3).summary,
+        displayName: "Drowned Bell Keeper",
+        hitDice: 8,
+        providenceMonsterLibraryEntry: true
+      }
+    };
+    const entries = [builtIn, custom];
+
+    expect(monsterLibraryScopeCounts(entries)).toEqual({ all: 2, builtIn: 1, custom: 1 });
+    expect(filterMonsterLibraryEntries(entries, "", "built-in")).toEqual([builtIn]);
+    expect(filterMonsterLibraryEntries(entries, "", "custom")).toEqual([custom]);
+    expect(filterMonsterLibraryEntries(entries, "bell keeper", "all")).toEqual([custom]);
   });
 
   it("decodes signed bytes and big-endian shorts from raw scrapbook records", () => {

@@ -17,7 +17,6 @@ import {
   TECHNICAL_ASSET_SECTIONS,
   AssetImportBar,
   AssetPagination,
-  AssetSection,
   AssetPreview,
   LibraryAssetCard,
   ManagedAssetCard,
@@ -41,6 +40,7 @@ import {
   useDeferredProjectPreview
 } from "./resources/ResourceWidgets";
 import { RecordsPanel } from "./RecordsPanel";
+import { ADD_TO_CUSTOM_LIBRARY_LABEL, COPY_TO_SCENARIO_ASSETS_LABEL, MOVE_TO_SCENARIO_ASSETS_LABEL, type AssetSection, assetSectionHelp } from "./resources/assetOwnership";
 
 type AssetPreviewSize = "small" | "medium" | "large";
 type ManagedGalleryItem = { type: "managed"; asset: ManagedAsset; root: "project" | "workspace" };
@@ -61,25 +61,6 @@ const UI_REFERENCE_HELP = "Divinity and Realmz editor interface art is useful fo
 const SPECIAL_LAND_FILTER_HELP = "Special Land Tiles are 32 x 32 cicn resources painted as negative map field values. Realmz draws the landlook base tile under the transparent icon.";
 const RESOURCE_FALLBACK_HELP = "Fallback warnings identify records that point at resources Providence could not resolve from the scenario or bundled Realmz libraries. Treat used missing resources as release risks.";
 const TILE_ATLAS_HELP = "Tile atlases are landlook render sources. Standard Realmz atlases are reference data; scenario custom landlooks ship only when the scenario supplies them.";
-
-function assetSectionHelp(section: AssetSection) {
-  if (section === "project") {
-    return "Import and manage pictures, sounds, icons, text resources, and special land tiles that ship with this scenario.";
-  }
-  if (section === "custom") {
-    return "Keep reusable Providence assets in the workspace and copy them into Scenario Assets when a scenario should ship them.";
-  }
-  if (section === "realmz") {
-    return "Browse useful stock and reference media for previewing and copying into the scenario.";
-  }
-  if (section === "divinity") {
-    return "Editor UI reference material kept out of normal authoring views.";
-  }
-  if (section === "records") {
-    return "Parsed scenario records and resource references.";
-  }
-  return "Raw resource listings, diagnostics, and compatibility records.";
-}
 
 export function ResourcesPanel({
   project,
@@ -399,7 +380,7 @@ export function ResourcesPanel({
                         onReplaceAsset={item.root === "project" ? onReplaceAsset : undefined}
                         onDeleteAsset={item.root === "workspace" ? onDeleteCustomAsset : onDeleteAsset}
                         onSelectPaintTile={onSelectPaintTile}
-                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? "Copy To Scenario" : undefined : section === "custom" ? "Move To Scenario" : "Add To Custom Library"}
+                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? COPY_TO_SCENARIO_ASSETS_LABEL : undefined : section === "custom" ? MOVE_TO_SCENARIO_ASSETS_LABEL : ADD_TO_CUSTOM_LIBRARY_LABEL}
                         onMoveAssetScope={(assetId) => {
                           if (item.root === "workspace") onCopyCustomAssetToScenario?.(assetId);
                           else if (section === "custom") onUpdateAsset?.(assetId, { libraryScope: "scenario" });
@@ -420,7 +401,7 @@ export function ResourcesPanel({
                         onUpdateAsset={item.root === "workspace" ? onUpdateCustomAsset : onUpdateAsset}
                         onDeleteAsset={item.root === "workspace" ? onDeleteCustomAsset : onDeleteAsset}
                         onSelectEntity={onSelectEntity}
-                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? "Copy To Scenario" : undefined : section === "custom" ? "Move To Scenario" : "Add To Custom Library"}
+                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? COPY_TO_SCENARIO_ASSETS_LABEL : undefined : section === "custom" ? MOVE_TO_SCENARIO_ASSETS_LABEL : ADD_TO_CUSTOM_LIBRARY_LABEL}
                         onMoveAssetScope={(assetId) => {
                           if (item.root === "workspace") onCopyCustomAssetToScenario?.(assetId);
                           else if (section === "custom") onUpdateAsset?.(assetId, { libraryScope: "scenario" });
@@ -682,7 +663,7 @@ function AssetSelectionInspector({
         <div className="panel-header-actions">
           {showCopyReferenceAction && (
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => item?.type === "library" && onCopyReferenceAssetToScenario?.(item.asset.id)}>
-              Copy To Scenario
+              {COPY_TO_SCENARIO_ASSETS_LABEL}
             </button>
           )}
           <button type="button" className="btn btn-secondary btn-xs" disabled={!item} onClick={() => item && onOpenDetail(item)}>

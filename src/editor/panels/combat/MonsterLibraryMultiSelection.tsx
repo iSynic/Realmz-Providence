@@ -44,7 +44,7 @@ export function MonsterLibraryMultiSelection({
           <div key={entry.id} className="monster-selection-row">
             <span>
               <strong>{scrapbookName(entry)}</strong>
-              <small>{isProvidenceMonsterLibraryEntry(entry) ? "Providence library" : "Built-in"} | {scrapbookFacts(entry)}</small>
+              <small>{isProvidenceMonsterLibraryEntry(entry) ? "Providence Custom Library" : "Protected Built-in Reference"} | {scrapbookFacts(entry)}</small>
             </span>
             <span className={occupied ? "copy-target shifted" : "copy-target"}>
               Monster {id}

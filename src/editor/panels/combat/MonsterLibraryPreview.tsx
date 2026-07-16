@@ -7,6 +7,7 @@ import type { IconEntry, LibraryCatalog, Project } from "../../types";
 import { combatSpellOptions, spellPreviewIconIdMap } from "./monsterReferenceOptions";
 import { MONSTER_MONEY_HELP, MONSTER_MONEY_LABELS, MONSTER_MONEY_REWARDS } from "./monsterMoneyModel";
 import { samePreviewContextInputs } from "./MonsterIconPreview";
+import { MonsterLibraryOwnershipBadge } from "./MonsterLibraryOwnershipBadge";
 import { ReferenceIconPreview } from "./ReferenceIconPreview";
 import type { CombatLookups } from "./combatLookups";
 import {
@@ -17,7 +18,6 @@ import {
   summaryNumberArray,
   summaryNumberRows
 } from "./monsterLibraryWorkflow";
-
 export function MonsterLibraryPreview({
   entry,
   project,
@@ -53,7 +53,7 @@ export function MonsterLibraryPreview({
   return (
     <article className="combat-editor monster-editor scrapbook-monster-preview">
       <header className="combat-editor-header monster-editor-title-header">
-        <span className="combat-pane-title">{scrapbookName(entry)}</span>
+        <div className="monster-library-preview-title"><span className="combat-pane-title">{scrapbookName(entry)}</span><MonsterLibraryOwnershipBadge custom={false} /></div>
         <div className="combat-editor-actions">
           {onCustomize ? (
             <button type="button" className="btn btn-secondary btn-xs" title="Create an editable override for this protected built-in template" onClick={onCustomize}>

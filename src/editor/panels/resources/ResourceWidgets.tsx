@@ -23,8 +23,9 @@ import {
   SCENARIO_SPLASH_PICTURE_ID
 } from "../../mediaAssets";
 import { AssetImportBar } from "./AssetImportDialog";
+import { COPY_TO_SCENARIO_ASSETS_LABEL, type AssetSection, referenceAssetOwnershipGuidance, resourceScopeHelp } from "./assetOwnership";
 
-export type AssetSection = "project" | "custom" | "realmz" | "divinity" | "records" | "advanced";
+export type { AssetSection } from "./assetOwnership";
 export const LIBRARY_PAGE_SIZE = 20;
 const SPECIAL_LAND_AUTHORING_HELP = "Special Land Tiles are scenario-local cicn resources addressed by negative map tile values. They are separate from standard landlook atlases and can be selected for map painting.";
 const PROJECT_ASSET_NAME_HELP = "This is an editor-facing Providence label. It helps authors identify the asset, but Realmz still resolves the exported resource by type and numeric resource ID.";
@@ -105,7 +106,7 @@ export function libraryAssetMatchesKind(asset: LibraryAsset, filter: ManagedAsse
 
 export function assetAuthoringGuidance(section: AssetSection, kindFilter: ManagedAssetKind | "all") {
   if (section === "custom") {
-    return "Custom Library assets live in the Providence workspace and can be copied into any scenario when you want them to ship.";
+    return "Custom Library assets live in the Providence workspace and stay available to every scenario. Copy them into Scenario Assets only when that scenario should ship them.";
   }
   if (section !== "project") return "";
   if (kindFilter === "picture") {
@@ -655,7 +656,7 @@ export function LibraryAssetCard({
               onCopyToScenario?.(asset.id);
             }}
           >
-            Copy To Scenario
+            {COPY_TO_SCENARIO_ASSETS_LABEL}
           </button>
         )}
       </article>
@@ -700,7 +701,7 @@ export function LibraryAssetCard({
       <div className="asset-card-actions">
         {canCopyToScenario && (
           <button className="btn btn-secondary btn-xs" type="button" onClick={() => onCopyToScenario?.(asset.id)}>
-            Copy To Scenario
+            {COPY_TO_SCENARIO_ASSETS_LABEL}
           </button>
         )}
         <TutorialTip title="Reference Asset Detail" body={LIBRARY_DETAIL_HELP} side="below">
@@ -828,25 +829,6 @@ export function ResourceScopeBadge({ scope }: { scope: ResourceExportScope }) {
   );
 }
 
-function resourceScopeHelp(scope: ResourceExportScope) {
-  if (scope === "ships-with-scenario") {
-    return "This resource is scenario-owned or scenario-supplied and should be packaged with the exported scenario when its writer path is supported.";
-  }
-  if (scope === "realmz-built-in-reference") {
-    return "This is a Realmz built-in reference asset. Realmz can resolve it at runtime, but Providence should not copy it into the scenario export.";
-  }
-  if (scope === "divinity-reference") {
-    return "This is Divinity/editor reference evidence. Use it for comparison and documentation, not as authored scenario media unless explicitly imported.";
-  }
-  if (scope === "ui-reference") {
-    return "This is application interface artwork. It is useful for research but should stay out of normal scenario authoring.";
-  }
-  if (scope === "custom-library") {
-    return "This asset belongs to the Providence custom library. It stays reusable across scenarios until you copy it into Scenario Assets.";
-  }
-  return "Providence has not proven this resource's export role yet. Inspect Advanced Inventory before treating it as authored scenario media.";
-}
-
 export function ResourcePreviewWindow({
   item,
   project,
@@ -919,6 +901,7 @@ export function ResourcePreviewContents({
         </TutorialTip>
       </p>
       <ResourceScopeBadge scope={scope} />
+      {item.type === "library" && <p className="field-help">{referenceAssetOwnershipGuidance(item.asset)}</p>}
       {item.type === "managed" && (
         <ManagedResourceDetail
           item={item}
