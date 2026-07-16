@@ -1,4 +1,5 @@
 @import "./map-cell-selection-inspector.css";
+@import "./map-dungeon-inspector.css";
 
 .zoom-cluster {
   display: flex;
@@ -525,114 +526,6 @@
   color: #aeb8c3;
   font-size: 10px;
 }
-
-.dungeon-flag-editor {
-  display: grid;
-  gap: 12px;
-}
-
-.selection-summary-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 12px;
-  border: 1px solid #27415c;
-  border-radius: 6px;
-  background: rgba(11, 20, 29, 0.78);
-}
-
-.selection-summary-card span {
-  color: #8aa0b8;
-  font-size: 12px;
-}
-
-.dungeon-flag-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.dungeon-flag-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.dungeon-flag-toggle {
-  display: grid;
-  grid-template-columns: auto 34px 1fr;
-  gap: 2px 8px;
-  align-items: center;
-  padding: 9px 10px;
-  border: 1px solid #293746;
-  border-radius: 6px;
-  background: rgba(9, 18, 26, 0.84);
-}
-
-.dungeon-flag-toggle.on {
-  border-color: #3f8dd0;
-  background: rgba(19, 62, 98, 0.42);
-}
-
-.dungeon-flag-toggle.mixed {
-  border-color: rgba(232, 186, 80, 0.72);
-  background: rgba(89, 66, 22, 0.28);
-}
-
-.dungeon-flag-preview {
-  grid-row: 1 / span 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-}
-
-.dungeon-flag-preview .tile-swatch,
-.dungeon-flag-preview .tile-swatch canvas {
-  width: 32px;
-  height: 32px;
-}
-
-.dungeon-flag-preview-empty {
-  width: 32px;
-  height: 32px;
-  border: 1px dashed rgba(121, 159, 196, 0.28);
-  border-radius: 4px;
-}
-
-.dungeon-flag-toggle small {
-  grid-column: 3;
-  color: #8aa0b8;
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-.dungeon-managed-flags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  color: #8aa0b8;
-  font-size: 12px;
-}
-
-.dungeon-managed-flags b {
-  padding: 3px 7px;
-  border: 1px solid #293746;
-  border-radius: 999px;
-  color: #dce8f4;
-  background: rgba(18, 35, 50, 0.75);
-}
-
-.dungeon-technical-details {
-  margin-top: 2px;
-}
-
-
-
-
 
 .modifier-grid {
   grid-template-columns: 1fr;
