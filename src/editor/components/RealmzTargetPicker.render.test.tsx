@@ -5,6 +5,7 @@ import { TargetPicker, targetPickerReferencePreviewModel, type ScriptTargetOptio
 
 const project = {
   scenario: { name: "Picker test", projectPath: "" },
+  source: { sourcePath: "" },
   messages: [{ id: 0, text: "Do not use" }],
   triggers: []
 } as unknown as Project;
@@ -56,5 +57,34 @@ describe("TargetPicker creation actions", () => {
       src: "/picture.png"
     });
     expect(targetPickerReferencePreviewModel(1, 12, { ...sound, key: "message:12" }, null)).toBeNull();
+  });
+
+  it("lets a preview-owning host suppress the picker's inline media preview", () => {
+    const soundProject = {
+      ...project,
+      assets: [{
+        id: "asset:sound:619",
+        kind: "sound",
+        resourceId: 619,
+        resourceType: "snd ",
+        label: "Arrow Hit",
+        exportState: "bundled",
+        previewPath: "/arrow-hit.wav",
+        mimeType: "audio/wav"
+      }],
+      assetCatalog: { sounds: [], pictures: [], icons: [] }
+    } as unknown as Project;
+    const renderSoundPicker = (showPreview?: boolean) => renderToStaticMarkup(
+      <TargetPicker
+        project={soundProject}
+        opcode={9}
+        value={619}
+        onChange={() => undefined}
+        showPreview={showPreview}
+      />
+    );
+
+    expect(renderSoundPicker()).toContain('data-reference-preview-kind="audio"');
+    expect(renderSoundPicker(false)).not.toContain('data-reference-preview-kind="audio"');
   });
 });

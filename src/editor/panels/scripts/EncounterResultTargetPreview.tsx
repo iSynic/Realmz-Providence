@@ -94,6 +94,7 @@ export function EncounterResultTargetPreview({
               allowCreateAtZero
               showDetail={false}
               showTargetCount={false}
+              showPreview={false}
               previewContext={previewContext}
             />
           </div>

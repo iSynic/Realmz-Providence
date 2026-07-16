@@ -88,6 +88,7 @@ export function TargetPicker({
   showSearch = true,
   showDetail = true,
   showTargetCount = true,
+  showPreview = true,
   allowCreateAtZero = false,
   previewContext = {}
 }: {
@@ -102,6 +103,7 @@ export function TargetPicker({
   showSearch?: boolean;
   showDetail?: boolean;
   showTargetCount?: boolean;
+  showPreview?: boolean;
   allowCreateAtZero?: boolean;
   previewContext?: PreviewRuntimeContext;
 }) {
@@ -287,7 +289,7 @@ export function TargetPicker({
         </label>
       )}
       {!isSearchDrivenPicker && showDetail && detail && <small>{detail}</small>}
-      {selectedReferencePreview && (
+      {showPreview && selectedReferencePreview && (
         <ReferencePreview
           className="target-picker-reference-preview"
           preview={selectedReferencePreview}
