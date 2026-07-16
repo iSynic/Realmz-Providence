@@ -915,10 +915,9 @@
 }
 
 
-
 .map-number-field input,
 .map-select-field select,
-.paint-palette-search {
+.paint-palette-search-input {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -950,7 +949,7 @@
 
 .map-number-field input:focus,
 .map-select-field select:focus,
-.paint-palette-search:focus {
+.paint-palette-search-input:focus {
   outline: none;
   border-color: #4d91d6;
   box-shadow: 0 0 0 1px rgba(77, 145, 214, 0.24);

@@ -1,0 +1,111 @@
+.workbench-popover {
+  position: relative;
+  min-width: 0;
+}
+
+.workbench-popover-trigger {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #353a42;
+  border-radius: 999px;
+  background: #1a1d21;
+  color: #cfd9e5;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workbench-popover-trigger:hover,
+.workbench-popover-trigger[aria-expanded="true"] {
+  border-color: #4a77ad;
+  background: #17263a;
+  color: #f2f8ff;
+}
+
+.workbench-popover-trigger b {
+  color: #83cf67;
+  font-size: 10px;
+}
+
+.workbench-popover-panel {
+  position: absolute;
+  z-index: 900;
+  width: min(380px, calc(100vw - 360px));
+  max-height: min(590px, calc(100vh - 150px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #304052;
+  border-radius: 8px;
+  background: #111820;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.58);
+}
+
+.workbench-popover-panel.place-below {
+  top: calc(100% + 7px);
+}
+
+.workbench-popover-panel.place-above {
+  bottom: calc(100% + 7px);
+}
+
+.workbench-popover-panel.align-start {
+  left: 0;
+}
+
+.workbench-popover-panel.align-end {
+  right: 0;
+}
+
+.workbench-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #27313d;
+}
+
+.workbench-popover-header strong {
+  color: #e6f0fa;
+  font-size: 12px;
+}
+
+.workbench-popover-header span {
+  color: #83cf67;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workbench-popover-body {
+  min-height: 0;
+  overflow: auto;
+}
+
+.workbench-popover-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid #27313d;
+}
+
+.workbench-popover-actions button {
+  border: 0;
+  background: transparent;
+  color: #b9c7d6;
+  font-size: 10px;
+}
+
+.workbench-popover-actions button:hover {
+  color: #9dcfff;
+}
+
+@media (max-width: 720px) {
+  .workbench-popover-panel {
+    width: min(380px, calc(100vw - 24px));
+  }
+}

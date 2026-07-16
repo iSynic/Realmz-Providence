@@ -279,12 +279,6 @@
 
 
 
-.land-tile-filter-menu-wrap {
-  position: relative;
-}
-
-
-
 .land-tile-filter-button {
   border-radius: 6px;
 }
@@ -303,8 +297,6 @@
 
 
 .land-tile-filter-popover {
-  right: 0;
-  left: auto;
   width: min(360px, calc(100vw - 360px));
 }
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorState } from "../store";
 import { MapEntity, MapViewFlag, RandomLevel, SemanticEntity } from "../types";
 import { mapRecordTerrainFootprint, randomRectCellBounds, randomRectEntityId } from "../map/geometry";
+import { PopoverPanel } from "../ui";
 import { IconButton } from "./IconButton";
 import { TutorialTip } from "./TutorialTip";
 
@@ -89,7 +90,6 @@ export function MapViewFilters({
   onSetVisibleMapRecordIds: (ids: number[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const popoverRef = useRef<HTMLDivElement | null>(null);
   const randomEntries = useMemo(
     () => buildRandomRectangleEntries(selectedMap, selectedRandomLevel),
     [selectedMap, selectedRandomLevel]
@@ -107,100 +107,86 @@ export function MapViewFilters({
   }).length + (state.smoothTiles ? 1 : 0);
   const totalOverlays = FILTERS.length + 1;
 
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(event: PointerEvent) {
-      if (!popoverRef.current?.contains(event.target as Node)) setOpen(false);
-    }
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
-    }
-    window.addEventListener("pointerdown", onPointerDown);
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("pointerdown", onPointerDown);
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
   return (
     <div className="map-filterbar">
-      <div className="overlay-menu-wrap" ref={popoverRef}>
-        <button className="overlay-menu-button" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+      <PopoverPanel
+        className="map-overlay-menu"
+        open={open}
+        onOpenChange={setOpen}
+        ariaLabel="Map overlay filters"
+        title="Map Overlays"
+        meta={`${activeOverlays} visible`}
+        bodyClassName="overlay-table"
+        trigger={(
+          <>
           <Eye size={15} />
           <span>Overlays</span>
           <b>{activeOverlays}/{totalOverlays}</b>
           <ChevronDown size={14} />
-        </button>
-        {open && (
-          <div className="overlay-popover" role="menu">
-            <div className="overlay-popover-head">
-              <strong>Map Overlays</strong>
-              <span>{activeOverlays} visible</span>
-            </div>
-            <div className="overlay-table">
-              <span>Category</span>
-              <span>Show</span>
-              {FILTERS.map((filter) => {
-                if (filter.flag === "showRandomRects") {
-                  return (
-                    <OverlayEntryGroup
-                      key={filter.flag}
-                      flag={filter.flag}
-                      label={filter.label}
-                      title={filter.title}
-                      body={filter.body}
-                      entries={randomEntries}
-                      categoryChecked={state.showRandomRects}
-                      visibleIds={state.visibleRandomRectIds}
-                      onSetViewFlag={onSetViewFlag}
-                      onSetVisibleIds={onSetVisibleRandomRectIds}
-                    />
-                  );
-                }
-                if (filter.flag === "showMapRecords") {
-                  return (
-                    <OverlayEntryGroup
-                      key={filter.flag}
-                      flag={filter.flag}
-                      label={filter.label}
-                      title={filter.title}
-                      body={filter.body}
-                      entries={mapRecordEntries}
-                      categoryChecked={state.showMapRecords}
-                      visibleIds={state.visibleMapRecordIds}
-                      onSetViewFlag={onSetViewFlag}
-                      onSetVisibleIds={onSetVisibleMapRecordIds}
-                    />
-                  );
-                }
-                return (
-                  <OverlayRow
-                    key={filter.flag}
-                    label={filter.label}
-                    title={filter.title}
-                    body={filter.body}
-                    checked={state[filter.flag]}
-                    onChecked={(value) => onSetViewFlag(filter.flag, value)}
-                  />
-                );
-              })}
-              <OverlayRow
-                label="Smooth"
-                title="Smooth Tiles"
-                body="Use browser image smoothing for a less crunchy zoomed-in view. Disable it for exact pixel inspection."
-                checked={state.smoothTiles}
-                onChecked={onSetSmoothTiles}
-              />
-            </div>
-            <div className="overlay-popover-actions">
+          </>
+        )}
+        actions={(
+          <>
               <button type="button" onClick={() => setAllFilters(true, onSetViewFlag, onSetSmoothTiles, onSetVisibleRandomRectIds, onSetVisibleMapRecordIds)}>Show All</button>
               <button type="button" onClick={() => setAllFilters(false, onSetViewFlag, onSetSmoothTiles, onSetVisibleRandomRectIds, onSetVisibleMapRecordIds)}>Hide All</button>
               <button type="button" onClick={() => setOpen(false)}>Close</button>
-            </div>
-          </div>
+          </>
         )}
-      </div>
+      >
+        <span>Category</span>
+        <span>Show</span>
+        {FILTERS.map((filter) => {
+          if (filter.flag === "showRandomRects") {
+            return (
+              <OverlayEntryGroup
+                key={filter.flag}
+                flag={filter.flag}
+                label={filter.label}
+                title={filter.title}
+                body={filter.body}
+                entries={randomEntries}
+                categoryChecked={state.showRandomRects}
+                visibleIds={state.visibleRandomRectIds}
+                onSetViewFlag={onSetViewFlag}
+                onSetVisibleIds={onSetVisibleRandomRectIds}
+              />
+            );
+          }
+          if (filter.flag === "showMapRecords") {
+            return (
+              <OverlayEntryGroup
+                key={filter.flag}
+                flag={filter.flag}
+                label={filter.label}
+                title={filter.title}
+                body={filter.body}
+                entries={mapRecordEntries}
+                categoryChecked={state.showMapRecords}
+                visibleIds={state.visibleMapRecordIds}
+                onSetViewFlag={onSetViewFlag}
+                onSetVisibleIds={onSetVisibleMapRecordIds}
+              />
+            );
+          }
+          return (
+            <OverlayRow
+              key={filter.flag}
+              label={filter.label}
+              title={filter.title}
+              body={filter.body}
+              checked={state[filter.flag]}
+              onChecked={(value) => onSetViewFlag(filter.flag, value)}
+            />
+          );
+        })}
+        <OverlayRow
+          label="Smooth"
+          title="Smooth Tiles"
+          body="Use browser image smoothing for a less crunchy zoomed-in view. Disable it for exact pixel inspection."
+          checked={state.smoothTiles}
+          onChecked={onSetSmoothTiles}
+        />
+      </PopoverPanel>
       <div className="zoom-cluster">
         <IconButton title="Zoom out" onClick={() => onSetZoom(clampZoom(Number((state.zoom - ZOOM_BUTTON_STEP).toFixed(2))))}>
           <ZoomOut size={15} />
@@ -254,6 +240,7 @@ function OverlayRow({
         <input
           ref={checkboxRef}
           type="checkbox"
+          aria-label={label}
           checked={checked}
           disabled={disabled}
           onChange={(event) => onChecked(event.currentTarget.checked)}

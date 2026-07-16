@@ -3,6 +3,7 @@ import { EditorState } from "../../store";
 import { IconEntry, ManagedAsset, Project, ProjectCommand, ResourceAsset, TileAttributeFlag, TilesetAsset } from "../../types";
 import { LandlookTileVisualCategory, landlookVisualCategoryLabel } from "../../map/landlookTileSemantics";
 import { classifyTileValue, standardTileValues, tileAttributeGroup } from "../../map/tileMetadata";
+import { PopoverPanel, SearchField } from "../../ui";
 import { TileSwatch } from "../TileSwatch";
 import { loadImage, tileColor } from "../TileSprite";
 import { MapNumberField } from "./MapFormControls";
@@ -284,57 +285,62 @@ export function LandTileAtlasEditor({
       <div className="land-tile-atlas-main">
         <div className="land-tile-atlas-browser">
           <div className="land-tile-filter-bar">
-            <input
-              className="map-search-input land-tile-search-input"
-              type="search"
+            <SearchField
+              className="land-tile-search-field"
+              inputClassName="land-tile-search-input"
               value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
+              onChange={setQuery}
               placeholder="Search tile id, label, or trait..."
+              ariaLabel="Search land tiles"
             />
-            <div className="land-tile-filter-menu-wrap">
-              <button
-                className="overlay-menu-button land-tile-filter-button"
-                type="button"
-                aria-expanded={filterMenuOpen}
-                onClick={() => setFilterMenuOpen((open) => !open)}
-              >
+            <PopoverPanel
+              className="land-tile-filter-menu"
+              triggerClassName="land-tile-filter-button"
+              panelClassName="land-tile-filter-popover"
+              bodyClassName="land-tile-filter-list"
+              bodyRole="listbox"
+              bodyAriaLabel="Tile attribute filters"
+              align="end"
+              open={filterMenuOpen}
+              onOpenChange={setFilterMenuOpen}
+              ariaLabel="Tile filters"
+              title="Tile Filters"
+              meta={activeFilterLabel}
+              trigger={(
+                <>
                 <span>Tile Filters</span>
                 <b>{visibleTiles.length}/{tiles.length}</b>
                 <em>{activeFilterLabel}</em>
-              </button>
-              {filterMenuOpen && (
-                <div className="overlay-popover land-tile-filter-popover" role="dialog" aria-label="Tile filters">
-                  <div className="overlay-popover-head">
-                    <strong>Tile Filters</strong>
-                    <span>{activeFilterLabel}</span>
-                  </div>
-                  <div className="land-tile-filter-list" role="listbox" aria-label="Tile attribute filters">
-                    {LAND_TILE_FILTERS.map((item) => {
-                      const label = landTileFilterLabel(item, selectedTileset);
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className={filter === item.id ? "active" : ""}
-                          onClick={() => {
-                            setFilter(item.id);
-                            setFilterMenuOpen(false);
-                          }}
-                          title={item.hint}
-                        >
-                          <strong>{label}</strong>
-                          <small>{item.hint}</small>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="overlay-popover-actions">
+                </>
+              )}
+              actions={(
+                <>
                     <button type="button" onClick={() => { setFilter("all"); setFilterMenuOpen(false); }}>Show All</button>
                     <button type="button" onClick={() => setFilterMenuOpen(false)}>Close</button>
-                  </div>
-                </div>
+                </>
               )}
-            </div>
+            >
+              {LAND_TILE_FILTERS.map((item) => {
+                const label = landTileFilterLabel(item, selectedTileset);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="option"
+                    aria-selected={filter === item.id}
+                    className={filter === item.id ? "active" : ""}
+                    onClick={() => {
+                      setFilter(item.id);
+                      setFilterMenuOpen(false);
+                    }}
+                    title={item.hint}
+                  >
+                    <strong>{label}</strong>
+                    <small>{item.hint}</small>
+                  </button>
+                );
+              })}
+            </PopoverPanel>
           </div>
           <div className="land-tile-atlas-grid">
             {visibleTiles.map((tile) => (

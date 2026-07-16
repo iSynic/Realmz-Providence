@@ -15,6 +15,7 @@ export {
 } from "./WorkbenchPrimitives";
 
 export { SearchField } from "./SearchField";
+export { PopoverPanel, popoverPanelGeometry, popoverPanelShouldDismiss } from "./PopoverPanel";
 export {
   ModalDialog,
   ModalDialogActions,
@@ -55,6 +56,7 @@ export type {
 } from "./WorkbenchPrimitives";
 
 export type { SearchFieldProps } from "./SearchField";
+export type { PopoverPanelProps } from "./PopoverPanel";
 export type { ModalDialogActionsProps, ModalDialogHeaderProps, ModalDialogProps } from "./ModalDialog";
 export type { SegmentedControlOption, SegmentedControlProps } from "./SegmentedControl";
 export type { WorkbenchActionBarProps, WorkbenchClusterProps, WorkbenchGap, WorkbenchStackProps } from "./WorkbenchLayout";

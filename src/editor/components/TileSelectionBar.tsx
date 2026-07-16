@@ -10,7 +10,7 @@ import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resource
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
 import { TutorialTip } from "./TutorialTip";
-import { ScrollArea, SegmentedControl, type SegmentedControlOption } from "../ui";
+import { ScrollArea, SearchField, SegmentedControl, type SegmentedControlOption } from "../ui";
 
 const FALLBACK_TILE_CHOICES = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160,
@@ -385,12 +385,15 @@ export function PaintPalettePanel({
         />
       )}
       {variant === "sidebar" && (
-        <input
+        <SearchField
           className="paint-palette-search"
+          inputClassName="paint-palette-search-input"
           value={query}
-          onChange={(event) => setQuery(event.currentTarget.value)}
+          onChange={setQuery}
           placeholder={mode === "super" ? "Search stamps or tile id..." : "Search tile id..."}
-          aria-label={mode === "super" ? "Search stamps or tile id" : "Search tile id"}
+          ariaLabel={mode === "super" ? "Search stamps or tile id" : "Search tile id"}
+          resultCount={mode === "super" ? filteredSuperTileStamps.length : filteredTiles.length}
+          resultNoun={mode === "super" ? "stamp" : "tile"}
         />
       )}
       {variant === "sidebar" && mode === "super" ? (
