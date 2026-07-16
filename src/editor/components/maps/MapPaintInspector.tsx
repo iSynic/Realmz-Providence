@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useState } from "react";
 import type { EditorState } from "../../store";
 import type {
   CustomMapStamp,
@@ -23,25 +23,10 @@ import { PaintPalettePanel } from "../TileSelectionBar";
 import { TileSwatch } from "../TileSwatch";
 import { tileColor } from "../TileSprite";
 import { TutorialTip } from "../TutorialTip";
+import { PanelSection, SegmentedControl, type SegmentedControlOption } from "../../ui";
 import { clearRegion, fillRegion, paintModeLabel, regionLabel } from "./mapRegionUiUtils";
 import { tileAttributeLabel } from "./mapTileUiUtils";
-
-const PAINT_PALETTE_STORAGE_KEY = "providence.mapPaintPalette.v1";
-const DEFAULT_PALETTE_STATE: PaintPaletteState = {
-  mode: "docked",
-  x: 720,
-  y: 120,
-  width: 440,
-  height: 560
-};
-
-type PaintPaletteState = {
-  mode: "docked" | "floating";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
+import { PaintPaletteSurface } from "./PaintPaletteSurface";
 
 export function MapPaintInspector({
   state,
@@ -112,15 +97,9 @@ export function MapPaintInspector({
   paletteOpen: boolean;
   onSetPaletteOpen: (open: boolean) => void;
 }) {
-  const [paletteState, setPaletteState] = useState<PaintPaletteState>(() => readPaintPaletteState());
   const [paintFillChance, setPaintFillChance] = useState(100);
-  const onSetPaletteState = setPaletteState;
   const onSetPaintFillChance = setPaintFillChance;
-  useEffect(() => {
-    localStorage.setItem(PAINT_PALETTE_STORAGE_KEY, JSON.stringify(paletteState));
-  }, [paletteState]);
   const selectedMeaning = classifyTileValue(state.selectedTile, selectedTileset, state.project?.tileAttributes ?? [], state.iconEntries);
-  const docked = paletteState.mode === "docked";
   const palette = (
     <PaintPalettePanel
       map={map}
@@ -205,46 +184,9 @@ export function MapPaintInspector({
           selectedPaintTile={state.selectedTile}
         />
       )}
-      <div className={`paint-palette-shell${paletteOpen && docked ? " paint-palette-shell-docked" : ""}`}>
-        <div className="paint-palette-shell-header">
-          <TutorialTip
-            title="Tile Palette"
-            body="Dock the palette in the Paint Inspector or pop it out over the map. Custom palettes are saved with the project; drag tiles from any tab into the reveal dock to collect them."
-            side="right"
-          >
-            <span>Tile Palette</span>
-          </TutorialTip>
-          <div>
-            {!paletteOpen && (
-              <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetPaletteOpen(true)}>
-                Open
-              </button>
-            )}
-            {paletteOpen && (
-              <button className="btn btn-secondary btn-xs" type="button" onClick={() => onSetPaletteState({ ...paletteState, mode: docked ? "floating" : "docked" })}>
-                {docked ? "Pop-Out" : "Dock"}
-              </button>
-            )}
-            {paletteOpen && (
-              <button className="btn btn-ghost btn-xs" type="button" onClick={() => onSetPaletteOpen(false)}>
-                Close
-              </button>
-            )}
-          </div>
-        </div>
-        {paletteOpen && docked && <div className="paint-palette-scroll">{palette}</div>}
-        {paletteOpen && !docked && <p className="empty-copy compact">Palette is floating over the map canvas.</p>}
-      </div>
-      {paletteOpen && !docked && (
-        <FloatingPaintPalette
-          paletteState={paletteState}
-          onSetPaletteState={onSetPaletteState}
-          onClose={() => onSetPaletteOpen(false)}
-          onDock={() => onSetPaletteState({ ...paletteState, mode: "docked" })}
-        >
-          {palette}
-        </FloatingPaintPalette>
-      )}
+      <PaintPaletteSurface open={paletteOpen} onSetOpen={onSetPaletteOpen}>
+        {palette}
+      </PaintPaletteSurface>
     </section>
   );
 }
@@ -254,117 +196,6 @@ const PAINT_VARIATION_OPTIONS: Array<{ id: MapPaintVariation; label: string; hin
   { id: "cycle-group", label: "Cycle Group", hint: "Advance through the active palette group once for each newly painted cell." },
   { id: "random-group", label: "Random Group", hint: "Pick a stable pseudo-random tile from the active palette group for each newly painted cell." }
 ];
-
-function FloatingPaintPalette({
-  paletteState,
-  onSetPaletteState,
-  onClose,
-  onDock,
-  children
-}: {
-  paletteState: PaintPaletteState;
-  onSetPaletteState: (state: PaintPaletteState) => void;
-  onClose: () => void;
-  onDock: () => void;
-  children: ReactNode;
-}) {
-  const draggingRef = useRef(false);
-  const resizingRef = useRef(false);
-  const stateRef = useRef(paletteState);
-  useEffect(() => {
-    stateRef.current = paletteState;
-  }, [paletteState]);
-  const startDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    draggingRef.current = true;
-    const start = { x: event.clientX, y: event.clientY, left: paletteState.x, top: paletteState.y };
-    const move = (moveEvent: PointerEvent) => {
-      const next = clampPaletteRect({
-        ...stateRef.current,
-        x: start.left + moveEvent.clientX - start.x,
-        y: start.top + moveEvent.clientY - start.y
-      });
-      onSetPaletteState(next);
-    };
-    const up = () => {
-      draggingRef.current = false;
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-  const startResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    resizingRef.current = true;
-    const start = { x: event.clientX, y: event.clientY, width: paletteState.width, height: paletteState.height };
-    const move = (moveEvent: PointerEvent) => {
-      const next = clampPaletteRect({
-        ...stateRef.current,
-        width: Math.max(320, start.width + moveEvent.clientX - start.x),
-        height: Math.max(360, start.height + moveEvent.clientY - start.y)
-      });
-      onSetPaletteState(next);
-    };
-    const up = () => {
-      resizingRef.current = false;
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-  const clamped = clampPaletteRect(paletteState);
-  return (
-    <div
-      className="floating-paint-palette"
-      style={{ left: `${clamped.x}px`, top: `${clamped.y}px`, width: `${clamped.width}px`, height: `${clamped.height}px` }}
-    >
-      <div className="floating-paint-palette-header" onPointerDown={startDrag}>
-        <span>Paint Palette</span>
-        <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={onDock}>Dock</button>
-        <button type="button" onPointerDown={(event) => event.stopPropagation()} onClick={onClose}>Close</button>
-      </div>
-      <div className="floating-paint-palette-body">{children}</div>
-      <button className="floating-paint-palette-resize" type="button" aria-label="Resize paint palette" onPointerDown={startResize} />
-    </div>
-  );
-}
-
-function readPaintPaletteState(): PaintPaletteState {
-  if (typeof localStorage === "undefined") return DEFAULT_PALETTE_STATE;
-  try {
-    const parsed = JSON.parse(localStorage.getItem(PAINT_PALETTE_STORAGE_KEY) ?? "");
-    if (!parsed || typeof parsed !== "object") return DEFAULT_PALETTE_STATE;
-    return clampPaletteRect({
-      mode: parsed.mode === "floating" ? "floating" : "docked",
-      x: numberOrDefault(parsed.x, DEFAULT_PALETTE_STATE.x),
-      y: numberOrDefault(parsed.y, DEFAULT_PALETTE_STATE.y),
-      width: numberOrDefault(parsed.width, DEFAULT_PALETTE_STATE.width),
-      height: numberOrDefault(parsed.height, DEFAULT_PALETTE_STATE.height)
-    });
-  } catch {
-    return DEFAULT_PALETTE_STATE;
-  }
-}
-
-function numberOrDefault(value: unknown, fallback: number) {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-function clampPaletteRect(state: PaintPaletteState): PaintPaletteState {
-  if (typeof window === "undefined") return state;
-  const margin = 12;
-  const width = Math.min(Math.max(320, state.width), Math.max(320, window.innerWidth - margin * 2));
-  const height = Math.min(Math.max(360, state.height), Math.max(360, window.innerHeight - margin * 2));
-  return {
-    ...state,
-    width,
-    height,
-    x: Math.max(margin, Math.min(state.x, window.innerWidth - width - margin)),
-    y: Math.max(margin, Math.min(state.y, window.innerHeight - height - margin))
-  };
-}
 
 export function PaintTileSummary({
   selectedTile,
@@ -496,55 +327,53 @@ function PaintModePanel({
     onSetPaintMode(mode);
     onActivatePaintTool();
   };
+  const paintModeOptions: ReadonlyArray<SegmentedControlOption<MapPaintMode>> = PAINT_MODES.map((mode) => ({
+    value: mode.id,
+    label: mode.label,
+    disabled: mode.id === "smart" && smartDisabled,
+    title: mode.id === "smart" && smartDisabled ? "Smart terrain is available for supported land maps." : mode.body
+  }));
+  const variationOptions: ReadonlyArray<SegmentedControlOption<MapPaintVariation>> = PAINT_VARIATION_OPTIONS.map((variation) => ({
+    value: variation.id,
+    label: variation.label,
+    title: variation.hint
+  }));
   return (
-    <div className="paint-mode-panel">
-      <div className="paint-mode-header">
-        <TutorialTip
-          title="Paint Subtools"
-          body="Brush paints the selected value, Eraser writes the map's clear tile, and Smart is a beta terrain-mask resolver for mountains, water, and forest."
-          side="right"
-        >
-          <span>Paint Subtool</span>
-        </TutorialTip>
-        <b>{paintModeLabel(paintMode)}</b>
-      </div>
-      <div className="paint-mode-grid">
-        {PAINT_MODES.map((mode) => (
-          <button
-            key={mode.id}
-            className={paintMode === mode.id ? "active" : ""}
-            type="button"
-            disabled={mode.id === "smart" && smartDisabled}
-            onClick={() => setMode(mode.id)}
-            title={mode.id === "smart" && smartDisabled ? "Smart terrain is available for supported land maps." : mode.body}
-          >
-            {mode.label}
-          </button>
-        ))}
-      </div>
+    <PanelSection
+      title="Paint Controls"
+      eyebrow="paint subtool"
+      count={paintModeLabel(paintMode)}
+      density="compact"
+      className="paint-mode-panel"
+    >
+      <TutorialTip
+        title="Paint Subtools"
+        body="Brush paints the selected value, Eraser writes the map's clear tile, and Smart is a beta terrain-mask resolver for mountains, water, and forest."
+        side="right"
+      >
+        <span className="paint-control-label">Mode</span>
+      </TutorialTip>
+      <SegmentedControl
+        ariaLabel="Paint subtool"
+        value={paintMode}
+        options={paintModeOptions}
+        onChange={setMode}
+        className="paint-mode-control"
+      />
       {showVariation && (
-        <>
-          <div className="paint-mode-divider" />
-          <div className="paint-mode-variation" aria-label="Brush variation">
-            <div className="paint-variation-header">
-              <span>Variation</span>
-              <b>{activeVariation.label}</b>
-            </div>
-            <div className="paint-variation-buttons" role="toolbar" aria-label="Brush variation mode">
-              {PAINT_VARIATION_OPTIONS.map((variation) => (
-                <button
-                  key={variation.id}
-                  type="button"
-                  className={paintVariation === variation.id ? "active" : ""}
-                  onClick={() => onSetPaintVariation(variation.id)}
-                  title={variation.hint}
-                >
-                  {variation.label}
-                </button>
-              ))}
-            </div>
+        <div className="paint-mode-variation" aria-label="Brush variation">
+          <div className="paint-variation-header">
+            <span>Variation</span>
+            <b>{activeVariation.label}</b>
           </div>
-        </>
+          <SegmentedControl
+            ariaLabel="Brush variation mode"
+            value={paintVariation}
+            options={variationOptions}
+            onChange={onSetPaintVariation}
+            className="paint-variation-control"
+          />
+        </div>
       )}
       {paintMode === "smart" && (
         <div className="smart-brush-panel">
@@ -629,7 +458,7 @@ function PaintModePanel({
           <button type="button" onClick={() => clearRegion(map, selectedRegion, selectedTileset, onApplyCommand)}>Clear</button>
         </div>
       )}
-    </div>
+    </PanelSection>
   );
 }
 

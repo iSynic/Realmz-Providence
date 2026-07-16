@@ -474,8 +474,8 @@
 
 
 .map-toolset-mode-control > button,
-.paint-mode-grid button,
-.paint-variation-buttons button,
+.paint-mode-control > button,
+.paint-variation-control > button,
 .paint-variation-compact button,
 .paint-palette-tabs button {
   display: grid;
@@ -500,9 +500,9 @@
 
 .map-toolset-mode-control > button:hover,
 .map-toolset-mode-control > button.is-selected,
-.paint-mode-grid button.active,
-.paint-mode-grid button:hover,
-.paint-variation-buttons button.active,
+.paint-mode-control > button.is-selected,
+.paint-mode-control > button:hover,
+.paint-variation-control > button.is-selected,
 .paint-variation-compact button.active,
 .paint-palette-tabs button.is-selected {
   border-color: #3c78b2;
@@ -516,10 +516,10 @@
   color: #c9dcff;
 }
 
-.paint-mode-grid button:hover,
-.paint-mode-grid button.active,
-.paint-variation-buttons button:hover,
-.paint-variation-buttons button.active,
+.paint-mode-control > button:hover,
+.paint-mode-control > button.is-selected,
+.paint-variation-control > button:hover,
+.paint-variation-control > button.is-selected,
 .paint-variation-compact button:hover,
 .paint-variation-compact button.active {
   border-color: rgba(243, 200, 105, 0.78);
