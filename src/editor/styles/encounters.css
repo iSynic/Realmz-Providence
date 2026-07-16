@@ -113,9 +113,10 @@
 }
 
 .encounter-record-picker-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 560px) 28px auto;
   align-items: center;
-  justify-content: space-between;
+  justify-content: start;
   gap: 8px;
   width: 100%;
   min-width: 0;
@@ -131,8 +132,22 @@
 }
 
 .encounter-record-picker {
-  width: min(100%, 560px);
+  width: 100%;
   min-width: 0;
+}
+
+.encounter-record-step {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+}
+
+.encounter-record-position {
+  min-width: 58px;
+  color: #9eb1c2;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .encounter-record-picker .workbench-reference-results {
@@ -2674,7 +2689,7 @@
 
   .encounter-record-picker-row {
     align-items: stretch;
-    flex-direction: column;
+    grid-template-columns: 28px minmax(0, 1fr) 28px auto;
   }
 
   .encounter-record-picker {

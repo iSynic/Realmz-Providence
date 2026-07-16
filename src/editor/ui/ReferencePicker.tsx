@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useState, type KeyboardEvent, type ReactNode } from "react";
 import { EmptyState } from "./WorkbenchPrimitives";
 import { IncrementalListFooter } from "./IncrementalListFooter";
 import type { ReferencePreviewModel } from "./ReferencePreview";
@@ -45,6 +45,7 @@ export type ReferencePickerProps<TValue extends ReferencePickerValue = number> =
   visibleCountStep?: number;
   className?: string;
   disabled?: boolean;
+  autoFocusSearch?: boolean;
 };
 
 export function ReferencePicker<TValue extends ReferencePickerValue = number>({
@@ -67,10 +68,13 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
   initialVisibleCount,
   visibleCountStep = initialVisibleCount,
   className,
-  disabled = false
+  disabled = false,
+  autoFocusSearch = false
 }: ReferencePickerProps<TValue>) {
+  const resultsId = `reference-picker-results-${useId()}`;
   const filteredOptions = filterReferencePickerOptions(options, query);
   const [visibleCount, setVisibleCount] = useState(initialVisibleCount ?? Number.POSITIVE_INFINITY);
+  const [activeOptionKey, setActiveOptionKey] = useState<string | null>(null);
   useEffect(() => {
     setVisibleCount(initialVisibleCount ?? Number.POSITIVE_INFINITY);
   }, [initialVisibleCount, query]);
@@ -78,7 +82,16 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
     ? filteredOptions
     : filteredOptions.slice(0, visibleCount);
   const hiddenOptionCount = Math.max(0, filteredOptions.length - visibleOptions.length);
-  const firstSelectable = filteredOptions.find((option) => !option.disabled) ?? null;
+  const selectableOptions = visibleOptions.filter((option) => !option.disabled);
+  const firstSelectable = selectableOptions[0] ?? null;
+  const activeOption = selectableOptions.find((option) => option.key === activeOptionKey) ?? null;
+  const activeOptionIndex = activeOption
+    ? visibleOptions.findIndex((option) => option.key === activeOption.key)
+    : -1;
+  useEffect(() => {
+    if (activeOptionIndex < 0 || typeof document === "undefined") return;
+    document.getElementById(`${resultsId}-option-${activeOptionIndex}`)?.scrollIntoView({ block: "nearest" });
+  }, [activeOptionIndex, resultsId]);
 
   function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     const action = referencePickerKeyboardAction(event.key, query, Boolean(firstSelectable));
@@ -86,11 +99,21 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
       event.preventDefault();
       event.stopPropagation();
       onQueryChange("");
+      setActiveOptionKey(null);
       return;
     }
-    if (action !== "select-first" || !firstSelectable) return;
+    if (action === "move-next" || action === "move-previous") {
+      event.preventDefault();
+      setActiveOptionKey(nextReferencePickerActiveKey(
+        selectableOptions,
+        activeOptionKey,
+        action === "move-next" ? 1 : -1
+      ));
+      return;
+    }
+    if (action !== "select-first" || (!activeOption && !firstSelectable)) return;
     event.preventDefault();
-    onSelect(firstSelectable);
+    onSelect(activeOption ?? firstSelectable!);
   }
 
   return (
@@ -104,9 +127,19 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
         ariaLabel={ariaLabel}
         placeholder={placeholder}
         value={query}
-        onChange={onQueryChange}
+        onChange={(nextQuery) => {
+          onQueryChange(nextQuery);
+          setActiveOptionKey(null);
+        }}
         onKeyDown={handleSearchKeyDown}
         disabled={disabled}
+        autoFocus={autoFocusSearch}
+        modalInitialFocus={autoFocusSearch}
+        combobox={{
+          controls: resultsId,
+          expanded: showResults,
+          activeDescendant: activeOptionIndex >= 0 ? `${resultsId}-option-${activeOptionIndex}` : undefined
+        }}
         resultCount={showResults ? filteredOptions.length : undefined}
         resultNoun={resultNoun}
         resultNounPlural={resultNounPlural}
@@ -122,20 +155,24 @@ export function ReferencePicker<TValue extends ReferencePickerValue = number>({
       {currentSupplement && <div className="workbench-reference-current-supplement">{currentSupplement}</div>}
       {showResults && (
         <div className="workbench-reference-results-shell">
-          <div className="workbench-reference-results" role="listbox" aria-label={`${ariaLabel} results`}>
-            {visibleOptions.map((option) => (
+          <div id={resultsId} className="workbench-reference-results" role="listbox" aria-label={`${ariaLabel} results`}>
+            {visibleOptions.map((option, optionIndex) => (
               <button
                 key={option.key}
+                id={`${resultsId}-option-${optionIndex}`}
                 type="button"
                 role="option"
                 aria-selected={option.value === value}
                 className={[
                   option.value === value ? "is-selected" : "",
+                  option.key === activeOption?.key ? "is-active" : "",
                   option.preview ? "has-preview" : ""
                 ].filter(Boolean).join(" ")}
                 data-reference-option={option.key}
                 title={option.title}
                 disabled={disabled || option.disabled}
+                onMouseEnter={() => setActiveOptionKey(option.key)}
+                onFocus={() => setActiveOptionKey(option.key)}
                 onClick={() => onSelect(option)}
               >
                 {option.preview && (
@@ -183,20 +220,40 @@ export function referencePickerKeyboardAction(
   key: string,
   query: string,
   hasSelectableResult: boolean
-): "clear" | "select-first" | null {
+): "clear" | "select-first" | "move-next" | "move-previous" | null {
   if (key === "Escape" && query) return "clear";
+  if (key === "ArrowDown" && hasSelectableResult) return "move-next";
+  if (key === "ArrowUp" && hasSelectableResult) return "move-previous";
   if (key === "Enter" && hasSelectableResult) return "select-first";
   return null;
+}
+
+export function nextReferencePickerActiveKey<TValue extends ReferencePickerValue>(
+  options: ReferencePickerOption<TValue>[],
+  activeKey: string | null,
+  direction: -1 | 1
+) {
+  const selectable = options.filter((option) => !option.disabled);
+  if (selectable.length === 0) return null;
+  const currentIndex = selectable.findIndex((option) => option.key === activeKey);
+  if (currentIndex < 0) return direction > 0 ? selectable[0].key : selectable[selectable.length - 1].key;
+  const nextIndex = Math.max(0, Math.min(selectable.length - 1, currentIndex + direction));
+  return selectable[nextIndex].key;
 }
 
 export function filterReferencePickerOptions<TValue extends ReferencePickerValue>(
   options: ReferencePickerOption<TValue>[],
   query: string
 ) {
-  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const normalizedQuery = query.trim().toLowerCase();
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean);
   if (terms.length === 0) return options;
-  return options.filter((option) => {
+  const matches = options.filter((option) => {
     const searchText = option.searchText.toLowerCase();
     return terms.every((term) => searchText.includes(term));
   });
+  return matches
+    .map((option, index) => ({ option, index, exactValue: String(option.value).toLowerCase() === normalizedQuery }))
+    .sort((left, right) => Number(right.exactValue) - Number(left.exactValue) || left.index - right.index)
+    .map(({ option }) => option);
 }

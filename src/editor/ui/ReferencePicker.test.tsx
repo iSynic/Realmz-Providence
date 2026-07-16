@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ReferencePicker,
   filterReferencePickerOptions,
+  nextReferencePickerActiveKey,
   referencePickerKeyboardAction,
   type ReferencePickerOption
 } from "./ReferencePicker";
@@ -17,6 +18,15 @@ describe("ReferencePicker", () => {
     expect(filterReferencePickerOptions(options, "bell scenario").map((option) => option.value)).toEqual([12]);
     expect(filterReferencePickerOptions(options, "28 key").map((option) => option.value)).toEqual([28]);
     expect(filterReferencePickerOptions(options, "bell key")).toEqual([]);
+  });
+
+  it("ranks an exact numeric ID before incidental content matches", () => {
+    const numericOptions: ReferencePickerOption<number>[] = [
+      { key: "record:1", value: 1, label: "Record 1", searchText: "record 1 11 result steps" },
+      { key: "record:11", value: 11, label: "Record 11", searchText: "record 11 no results" }
+    ];
+
+    expect(filterReferencePickerOptions(numericOptions, "11").map((option) => option.value)).toEqual([11, 1]);
   });
 
   it("renders complete results instead of applying an arbitrary visible cap", () => {
@@ -94,6 +104,15 @@ describe("ReferencePicker", () => {
     expect(referencePickerKeyboardAction("Enter", "bell", false)).toBeNull();
     expect(referencePickerKeyboardAction("Escape", "bell", true)).toBe("clear");
     expect(referencePickerKeyboardAction("Escape", "", true)).toBeNull();
+  });
+
+  it("moves an active result with arrow keys without wrapping boundaries", () => {
+    expect(referencePickerKeyboardAction("ArrowDown", "", true)).toBe("move-next");
+    expect(referencePickerKeyboardAction("ArrowUp", "", true)).toBe("move-previous");
+    expect(nextReferencePickerActiveKey(options, null, 1)).toBe("string:12");
+    expect(nextReferencePickerActiveKey(options, null, -1)).toBe("string:28");
+    expect(nextReferencePickerActiveKey(options, "string:12", -1)).toBe("string:12");
+    expect(nextReferencePickerActiveKey(options, "string:28", 1)).toBe("string:28");
   });
 
   it("disables both search and result choices", () => {

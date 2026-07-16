@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Project } from "../../types";
 import {
   EncounterRecordPicker,
+  adjacentEncounterRecordId,
   encounterEntityId,
   encounterRecordFamilyLabel,
   encounterRecordLabel,
@@ -37,25 +38,25 @@ describe("encounter record picker helpers", () => {
 
   it("builds complete searchable options for the selected encounter family", () => {
     const project = {
-      complexEncounters: [{ id: 12 }, { id: 3 }]
+      messages: [{ id: 7, text: "The drowned bell tolls below the reef." }],
+      complexEncounters: [
+        { id: 12, prompt: 0, texts: [], actions: [], actionResult: 0, wordResult: 0, spellResults: [], itemResults: [], choiceResults: [] },
+        { id: 3, prompt: 7, texts: [], actions: [{ slot: 0, rawCode: 1, id: 7 }], actionResult: 1, wordResult: 0, spellResults: [], itemResults: [], choiceResults: [] }
+      ]
     } as unknown as Project;
 
-    expect(encounterRecordPickerOptions(project, "complexEncounter")).toEqual([
-      {
-        key: "complexEncounter:3",
-        value: 3,
-        label: "Complex Encounter 3",
-        detail: "Record 3",
-        searchText: "3 Complex Encounter 3 encounter record"
-      },
-      {
-        key: "complexEncounter:12",
-        value: 12,
-        label: "Complex Encounter 12",
-        detail: "Record 12",
-        searchText: "12 Complex Encounter 12 encounter record"
-      }
-    ]);
+    const options = encounterRecordPickerOptions(project, "complexEncounter");
+    expect(options.map((option) => option.value)).toEqual([3, 12]);
+    expect(options[0].detail).toContain("1 responses | 1 result steps | The drowned bell tolls below the reef.");
+    expect(options[0].searchText).toContain("drowned bell");
+  });
+
+  it("moves to adjacent records without wrapping at boundaries", () => {
+    const records = [{ id: 2 }, { id: 5 }, { id: 8 }];
+    expect(adjacentEncounterRecordId(records, 5, -1)).toBe(2);
+    expect(adjacentEncounterRecordId(records, 5, 1)).toBe(8);
+    expect(adjacentEncounterRecordId(records, 2, -1)).toBeNull();
+    expect(adjacentEncounterRecordId(records, 8, 1)).toBeNull();
   });
 
   it("renders encounter navigation through the shared searchable reference field", () => {
@@ -69,9 +70,33 @@ describe("encounter record picker helpers", () => {
       onSelectEntity: () => undefined
     }));
 
-    expect(html).toContain("workbench-reference-field");
+    expect(html).toContain("workbench-reference-compact-trigger");
     expect(html).toContain('aria-label="Search Time Encounter records"');
     expect(html).toContain("Time Encounter 9");
+    expect(html).toContain('aria-label="Previous Time Encounter"');
+    expect(html).toContain('aria-label="Next Time Encounter"');
+    expect(html).toContain("2 of 2");
     expect(html).not.toContain("<select");
+  });
+
+  it("disables sequential navigation at the first and last records", () => {
+    const project = { simpleEncounters: [{ id: 2 }, { id: 9 }] } as unknown as Project;
+    const first = renderToStaticMarkup(createElement(EncounterRecordPicker, {
+      project,
+      recordType: "simpleEncounter",
+      id: 2,
+      onSelectEntity: () => undefined
+    }));
+    const last = renderToStaticMarkup(createElement(EncounterRecordPicker, {
+      project,
+      recordType: "simpleEncounter",
+      id: 9,
+      onSelectEntity: () => undefined
+    }));
+
+    expect(first).toMatch(/aria-label="Previous Simple Encounter"[^>]*disabled=""/);
+    expect(first).not.toMatch(/aria-label="Next Simple Encounter"[^>]*disabled=""/);
+    expect(last).not.toMatch(/aria-label="Previous Simple Encounter"[^>]*disabled=""/);
+    expect(last).toMatch(/aria-label="Next Simple Encounter"[^>]*disabled=""/);
   });
 });

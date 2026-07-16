@@ -222,9 +222,15 @@
 }
 
 .workbench-reference-results > button:hover:not(:disabled),
+.workbench-reference-results > button.is-active,
 .workbench-reference-results > button.is-selected {
   border-color: #2d8ad0;
   background: #102235;
+}
+
+.workbench-reference-results > button.is-active {
+  outline: 1px solid color-mix(in srgb, var(--ui-focus-color) 72%, transparent);
+  outline-offset: -2px;
 }
 
 .workbench-reference-results > button strong {

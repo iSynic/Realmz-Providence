@@ -106,6 +106,7 @@ export function ReferenceField({
       currentActions={actions}
       currentSupplement={currentSupplement}
       showResults={compact || Boolean(query.trim())}
+      autoFocusSearch={compact}
       resultNoun={resultNoun}
       resultNounPlural={resultNounPlural}
       emptyTitle={emptyTitle}
