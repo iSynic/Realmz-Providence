@@ -28,4 +28,26 @@ describe("SearchField", () => {
 
     expect(markup).not.toContain("Clear search items");
   });
+
+  it("supports an editable combobox inside a modal", () => {
+    const markup = renderToStaticMarkup(
+      <SearchField
+        value="bell"
+        onChange={() => undefined}
+        ariaLabel="Search Providence"
+        modalInitialFocus
+        combobox={{
+          controls: "global-results",
+          expanded: true,
+          activeDescendant: "global-result-1"
+        }}
+      />
+    );
+
+    expect(markup).toContain('role="combobox"');
+    expect(markup).toContain('aria-autocomplete="list"');
+    expect(markup).toContain('aria-controls="global-results"');
+    expect(markup).toContain('aria-activedescendant="global-result-1"');
+    expect(markup).toContain('data-modal-initial-focus="true"');
+  });
 });

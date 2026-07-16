@@ -18,6 +18,13 @@ export type SearchFieldProps = {
   autoFocus?: boolean;
   disabled?: boolean;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  modalInitialFocus?: boolean;
+  combobox?: {
+    controls: string;
+    expanded: boolean;
+    activeDescendant?: string;
+    autocomplete?: "none" | "inline" | "list" | "both";
+  };
 };
 
 export function SearchField({
@@ -35,7 +42,9 @@ export function SearchField({
   inputClassName,
   autoFocus = false,
   disabled = false,
-  onKeyDown
+  onKeyDown,
+  modalInitialFocus = false,
+  combobox
 }: SearchFieldProps) {
   const generatedId = useId();
   const inputId = id ?? `workbench-search-${generatedId}`;
@@ -56,9 +65,15 @@ export function SearchField({
           value={value}
           placeholder={placeholder}
           aria-label={accessibleLabel}
+          role={combobox ? "combobox" : undefined}
+          aria-autocomplete={combobox?.autocomplete ?? (combobox ? "list" : undefined)}
+          aria-controls={combobox?.controls}
+          aria-expanded={combobox?.expanded}
+          aria-activedescendant={combobox?.activeDescendant}
           autoComplete="off"
           spellCheck={false}
           autoFocus={autoFocus}
+          data-modal-initial-focus={modalInitialFocus || undefined}
           disabled={disabled}
           onChange={(event) => onChange(event.currentTarget.value)}
           onKeyDown={onKeyDown}

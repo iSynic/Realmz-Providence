@@ -1808,15 +1808,21 @@ body.is-resizing-pane .pane-resize-handle::before {
   background: #15191e;
 }
 
+.global-search-header > .tutorial-tip {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
 
 
 .global-search-input {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
   min-width: 0;
-  padding: 7px 10px;
+  gap: 0;
+}
+
+.global-search-input .workbench-search-control {
+  min-width: 0;
   border: 1px solid #34506a;
   border-radius: 6px;
   background: #071019;
@@ -1825,7 +1831,7 @@ body.is-resizing-pane .pane-resize-handle::before {
 
 
 
-.global-search-input input {
+.global-search-input .workbench-search-control > input[type="search"] {
   width: 100%;
   min-width: 0;
   border: 0;
@@ -1841,14 +1847,6 @@ body.is-resizing-pane .pane-resize-handle::before {
 .global-search-input input::placeholder {
   color: #7e8790;
 }
-
-.global-search-help-anchor {
-  display: inline-flex;
-  align-items: center;
-  color: #8fc7ff;
-}
-
-
 
 .global-search-close {
   width: 34px;
@@ -2089,6 +2087,11 @@ body.is-resizing-pane .pane-resize-handle::before {
   background: #0b1117;
   color: #8ea6bb;
   font-size: 11px;
+}
+
+.global-search-status {
+  margin-left: auto;
+  color: #b7cfe3;
 }
 
 

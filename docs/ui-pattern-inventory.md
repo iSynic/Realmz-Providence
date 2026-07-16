@@ -111,6 +111,7 @@ Providence now has shared modeless and blocking overlay contracts. Project creat
 - Economy, writable-record family, Rules, Combat, Text, and Scripts top-level navigation now use `WorkbenchTabs`, including roving focus and Left/Right/Home/End keyboard selection; specialized map and fixed-grid modes remain candidates for domain-by-domain review.
 - Project creation, tile-palette source, stamp-library scope, and the shell's Project/Library switch now use `SegmentedControl`, with pressed-button semantics and the same roving Left/Right/Home/End keyboard model while their domain geometry remains locally owned.
 - The topbar exposes one application toolbar with explicit grouped history and undo/redo controls, the domain rail reuses the tab keyboard contract vertically with Up/Down/Home/End navigation, and the status footer is a named live-status landmark.
+- Global Search now composes the shared `SearchField` in editable-combobox mode, including the standard clear command, modal initial-focus marker, pending/result status, and scope-group semantics while retaining its grouped navigation index and routing behavior.
 
 ## First Implementation Slice
 

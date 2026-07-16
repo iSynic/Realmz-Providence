@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
 import {
   buildGlobalSearchIndex,
@@ -8,7 +8,7 @@ import {
   searchGlobalIndex
 } from "../globalSearch";
 import { LibraryCatalog, ManagedAsset, Project } from "../types";
-import { ModalDialog } from "../ui";
+import { ModalDialog, SearchField } from "../ui";
 
 const scopeLabels: Record<GlobalSearchScope, string> = {
   scenario: "Scenario",
@@ -66,6 +66,8 @@ export function GlobalSearchDialog({
       return expandedScopes.has(scope) ? rows : rows.slice(0, initialGroupLimit);
     });
   }, [expandedScopes, groups]);
+  const searchPending = query !== deferredQuery;
+  const searchStatus = globalSearchStatus(deferredQuery, results.length, searchPending);
 
   useEffect(() => {
     setActiveIndex(0);
@@ -136,31 +138,29 @@ export function GlobalSearchDialog({
       onKeyDown={handleKeyDown}
     >
         <header className="global-search-header">
-          <label className="global-search-input">
-            <TutorialTip title="Global Search" body={GLOBAL_SEARCH_HELP} side="below">
-              <span className="global-search-help-anchor"><Search size={17} /></span>
-            </TutorialTip>
-            <input
-              data-modal-initial-focus
+          <TutorialTip title="Global Search" body={GLOBAL_SEARCH_HELP} side="below">
+            <SearchField
+              className="global-search-input"
               value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
+              onChange={setQuery}
               placeholder="Search scenario, libraries, assets, docs..."
-              aria-label="Search Providence"
-              role="combobox"
-              aria-autocomplete="list"
-              aria-controls={GLOBAL_SEARCH_RESULTS_ID}
-              aria-expanded={Boolean(deferredQuery.trim())}
-              aria-activedescendant={visibleResults[activeIndex]
-                ? globalSearchOptionId(visibleResults[activeIndex].id)
-                : undefined}
+              ariaLabel="Search Providence"
+              modalInitialFocus
+              combobox={{
+                controls: GLOBAL_SEARCH_RESULTS_ID,
+                expanded: Boolean(deferredQuery.trim()),
+                activeDescendant: visibleResults[activeIndex]
+                  ? globalSearchOptionId(visibleResults[activeIndex].id)
+                  : undefined
+              }}
             />
-          </label>
+          </TutorialTip>
           <button type="button" className="global-search-close" onClick={onClose} aria-label="Close search">
             <X size={16} />
           </button>
         </header>
 
-        <div className="global-search-scopes" aria-label="Search scopes">
+        <div className="global-search-scopes" role="group" aria-label="Search scopes">
           <TutorialTip title="Search Scopes" body={SEARCH_SCOPES_HELP} side="below">
             <span className="global-search-scope-label">Scopes</span>
           </TutorialTip>
@@ -183,6 +183,7 @@ export function GlobalSearchDialog({
           className="global-search-results"
           role="listbox"
           aria-label="Search results"
+          aria-busy={searchPending}
         >
           {!deferredQuery.trim() && (
             <div className="global-search-empty">
@@ -265,6 +266,7 @@ export function GlobalSearchDialog({
           </TutorialTip>
           <span>Esc closes</span>
           <span>Ctrl+K toggles</span>
+          <span className="global-search-status" aria-live="polite">{searchStatus}</span>
         </footer>
     </ModalDialog>
   );
@@ -286,4 +288,10 @@ function exactShortcutCandidate(query: string) {
 
 export function globalSearchOptionId(resultId: string) {
   return `global-search-option-${encodeURIComponent(resultId)}`;
+}
+
+export function globalSearchStatus(query: string, resultCount: number, pending: boolean) {
+  if (pending) return "Searching...";
+  if (!query.trim()) return "Type to search";
+  return `${resultCount.toLocaleString()} ${resultCount === 1 ? "match" : "matches"}`;
 }

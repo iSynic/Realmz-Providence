@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { GlobalSearchDialog, globalSearchOptionId } from "./GlobalSearchDialog";
+import { GlobalSearchDialog, globalSearchOptionId, globalSearchStatus } from "./GlobalSearchDialog";
 
 describe("GlobalSearchDialog", () => {
   it("exposes a navigation combobox and pressed search scopes", () => {
@@ -16,7 +16,10 @@ describe("GlobalSearchDialog", () => {
     expect(markup).toContain('role="combobox"');
     expect(markup).toContain('aria-controls="global-search-results"');
     expect(markup).toContain('role="listbox"');
+    expect(markup).toContain('role="group" aria-label="Search scopes"');
     expect(markup).toContain('aria-pressed="true"');
+    expect(markup).toContain('data-modal-initial-focus="true"');
+    expect(markup).toContain('aria-live="polite">Type to search');
     expect(markup).toContain("Scenario");
     expect(markup).toContain("Diagnostics");
   });
@@ -24,5 +27,12 @@ describe("GlobalSearchDialog", () => {
   it("creates stable option IDs for punctuation-heavy result identifiers", () => {
     expect(globalSearchOptionId("scenario:string:STR# 5000/1"))
       .toBe("global-search-option-scenario%3Astring%3ASTR%23%205000%2F1");
+  });
+
+  it("reports pending and settled result states", () => {
+    expect(globalSearchStatus("bell", 0, true)).toBe("Searching...");
+    expect(globalSearchStatus("", 0, false)).toBe("Type to search");
+    expect(globalSearchStatus("bell", 1, false)).toBe("1 match");
+    expect(globalSearchStatus("bell", 24, false)).toBe("24 matches");
   });
 });
