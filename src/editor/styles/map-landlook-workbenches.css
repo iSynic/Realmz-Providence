@@ -65,8 +65,7 @@
 
 
 .land-tile-atlas-top,
-.random-areas-toolbar,
-.map-records-toolbar {
+.random-areas-toolbar {
   display: grid;
   grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
   gap: 12px;
@@ -78,7 +77,6 @@
 .land-tile-atlas-status,
 .land-tile-atlas-controls,
 .random-areas-toolbar,
-.map-records-toolbar,
 .map-record-summary-card {
   padding: 10px;
   border: 1px solid #253340;

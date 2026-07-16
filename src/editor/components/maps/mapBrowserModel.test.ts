@@ -7,6 +7,7 @@ import {
   mapWorkbenchModeLabel,
   nextMapIndex
 } from "./mapBrowserModel";
+import { segmentedControlKeyboardTarget } from "../../ui";
 
 function map(levelType: MapEntity["levelType"], index: number) {
   return { levelType, index } as MapEntity;
@@ -26,6 +27,18 @@ describe("map browser model", () => {
     expect(mapWorkbenchModeLabel("land-layout")).toBe("Land Layout");
     expect(mapWorkbenchModeLabel("land-tiles")).toBe("Land Tiles");
     expect(mapWorkbenchModeLabel("random-areas")).toBe("Random Encounters");
+  });
+
+  it("supports roving keyboard navigation for map workbench modes", () => {
+    const options = [
+      { value: "canvas", label: "Canvas" },
+      { value: "land-layout", label: "Land Layout" },
+      { value: "land-tiles", label: "Land Tiles" },
+      { value: "random-areas", label: "Random Encounters" }
+    ] as const;
+
+    expect(segmentedControlKeyboardTarget(options, "canvas", "ArrowRight")).toBe("land-layout");
+    expect(segmentedControlKeyboardTarget(options, "canvas", "End")).toBe("random-areas");
   });
 
   it("builds map creation and duplication intents with predicted selections", () => {

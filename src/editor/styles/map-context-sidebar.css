@@ -463,16 +463,17 @@
 
 
 
-.map-toolset-mode-grid {
+.map-toolset-mode-control {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
   padding: 0;
 }
 
 
 
-.map-toolset-mode-grid button,
+.map-toolset-mode-control > button,
 .paint-mode-grid button,
 .paint-variation-buttons button,
 .paint-variation-compact button,
@@ -497,8 +498,8 @@
 
 
 
-.map-toolset-mode-grid button:hover,
-.map-toolset-mode-grid button.active,
+.map-toolset-mode-control > button:hover,
+.map-toolset-mode-control > button.is-selected,
 .paint-mode-grid button.active,
 .paint-mode-grid button:hover,
 .paint-variation-buttons button.active,
@@ -509,7 +510,7 @@
   color: #b9ddff;
 }
 
-.map-sections-group .map-toolset-mode-grid button.active {
+.map-sections-group .map-toolset-mode-control > button.is-selected {
   border-color: rgba(122, 168, 255, 0.88);
   background: #17294a;
   color: #c9dcff;
@@ -535,7 +536,7 @@
 
 
 
-.map-toolset-mode-grid button span {
+.map-toolset-mode-control > button span {
   font-size: 11px;
   font-weight: 900;
 }

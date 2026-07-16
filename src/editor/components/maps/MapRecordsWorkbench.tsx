@@ -3,6 +3,7 @@ import { AtlasEntry, IconEntry, MapEntity, MapMarker, MapRecord, MapViewFlag, Ma
 import { drawTileValueCell } from "../../map/drawMapCanvas";
 import { tileValueAt } from "../../map/geometry";
 import { compactValue, linksFor, selectEntityFromId, semanticLabel } from "../../utils";
+import { EmptyState, EntityRow, ScrollArea, SearchField, WorkbenchActionBar } from "../../ui";
 import { InfoGrid } from "../InfoGrid";
 import { TutorialTip } from "../TutorialTip";
 import { MapDiagnostics, MapNumberField } from "./MapFormControls";
@@ -70,6 +71,7 @@ export function MapRecordsWorkbench({
   const visibleRecords = filterToSelectedMap && selectedMap
     ? records.filter((record) => record.level === selectedMap.index && record.isDungeon === (selectedMap.levelType === "dungeon"))
     : records;
+  const [query, setQuery] = useState("");
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(() => visibleRecords[0]?.id ?? null);
   const visibleRecordKey = visibleRecords.map((record) => record.id).join(",");
   const selectedEntityRecordId = selectedEntity?.id.match(/^map-record:(-?\d+)$/)?.[1];
@@ -83,8 +85,9 @@ export function MapRecordsWorkbench({
   }, [selectedEntityRecordId, visibleRecordKey]);
   const selectedRecord = visibleRecords.find((record) => record.id === selectedRecordId) ?? null;
   const selectedSemantic = selectedRecord ? mapRecords.find((record) => summaryNumber(record, "id") === selectedRecord.id) ?? semanticForMapRecord(selectedRecord) : null;
-  const mapViewRecords = visibleRecords.filter((record) => playerMapRecordDisplayKind(record) !== "scrolling-text");
-  const scrollingTextRecords = visibleRecords.filter((record) => playerMapRecordDisplayKind(record) === "scrolling-text");
+  const filteredRecords = filterPlayerMapRecords(visibleRecords, query);
+  const mapViewRecords = filteredRecords.filter((record) => playerMapRecordDisplayKind(record) !== "scrolling-text");
+  const scrollingTextRecords = filteredRecords.filter((record) => playerMapRecordDisplayKind(record) === "scrolling-text");
   const createRecord = () => {
     const id = nextMapRecordId(records);
     onApplyCommand({
@@ -101,7 +104,11 @@ export function MapRecordsWorkbench({
   if (!project) return <p className="empty-copy compact">Open a project to browse player maps.</p>;
   return (
     <div className="map-records-workbench">
-      <div className="map-records-toolbar">
+      <WorkbenchActionBar
+        className="player-map-action-bar"
+        ariaLabel="Player map actions"
+        meta={`${filteredRecords.length.toLocaleString()} of ${visibleRecords.length.toLocaleString()} player maps`}
+      >
         <button className="btn btn-primary btn-xs context-action-button" type="button" onClick={createRecord}>
           New Player Map
         </button>
@@ -115,22 +122,38 @@ export function MapRecordsWorkbench({
             </button>
           </TutorialTip>
         )}
-      </div>
+      </WorkbenchActionBar>
       <div className="map-records-layout">
-        <div className="map-records-table" role="list" aria-label="Player maps">
-          <PlayerMapRecordListGroup
-            title="Map Views"
-            records={mapViewRecords}
-            selectedRecordId={selectedRecordId}
-            onSelect={setSelectedRecordId}
+        <div className="player-map-record-browser">
+          <SearchField
+            value={query}
+            onChange={setQuery}
+            placeholder="Search player maps..."
+            ariaLabel="Search player maps"
+            resultCount={filteredRecords.length}
+            resultNoun="player map"
           />
-          <PlayerMapRecordListGroup
-            title="Scrolling Text Entries"
-            records={scrollingTextRecords}
-            selectedRecordId={selectedRecordId}
-            onSelect={setSelectedRecordId}
-          />
-          {visibleRecords.length === 0 && <span className="empty-inline">No player maps point to the current map.</span>}
+          <ScrollArea className="map-records-table" aria-label="Player maps">
+            <PlayerMapRecordListGroup
+              title="Map Views"
+              records={mapViewRecords}
+              selectedRecordId={selectedRecordId}
+              onSelect={setSelectedRecordId}
+            />
+            <PlayerMapRecordListGroup
+              title="Scrolling Text Entries"
+              records={scrollingTextRecords}
+              selectedRecordId={selectedRecordId}
+              onSelect={setSelectedRecordId}
+            />
+            {filteredRecords.length === 0 && (
+              <EmptyState
+                compact
+                title={query ? "No matching player maps" : "No player maps for this level"}
+                body={query ? "Try a map name, slot, level, coordinate, picture, or text ID." : "Create a player map or choose a level with existing map entries."}
+              />
+            )}
+          </ScrollArea>
         </div>
         <div className="map-record-detail">
           {selectedRecord && selectedSemantic ? (
@@ -178,21 +201,17 @@ function PlayerMapRecordListGroup({
     <section className="map-record-list-group">
       <span className="map-record-list-title">{title}</span>
       {records.map((record) => (
-        <button
+        <EntityRow
           key={record.id}
-          type="button"
-          className={record.id === selectedRecordId ? "selected" : ""}
-          onClick={() => onSelect(record.id)}
-        >
-          <strong className="player-map-slot-badge">Map {record.id}</strong>
-          <span>
-            <b>{record.primaryName || record.name || `Player Map ${record.id}`}</b>
-            <small>{playerMapRecordListDescription(record)}</small>
-          </span>
-          <em className={`map-record-picture-badge ${playerMapRecordDisplayKind(record)}`}>
-            {playerMapRecordBadge(record)}
-          </em>
-        </button>
+          className="player-map-record-row"
+          selected={record.id === selectedRecordId}
+          icon={<strong className="player-map-slot-badge">Map {record.id}</strong>}
+          title={record.primaryName || record.name || `Player Map ${record.id}`}
+          subtitle={playerMapRecordListDescription(record)}
+          status={playerMapRecordBadge(record)}
+          statusTone={playerMapRecordDisplayKind(record) === "scrolling-text" ? "warning" : "info"}
+          onSelect={() => onSelect(record.id)}
+        />
       ))}
     </section>
   );
@@ -820,10 +839,29 @@ function playerMapRecordListDescription(record: MapRecord) {
   return target;
 }
 
+export function filterPlayerMapRecords(records: MapRecord[], query: string) {
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return records;
+  return records.filter((record) => {
+    const kind = playerMapRecordDisplayKind(record);
+    const haystack = [
+      `map ${record.id}`,
+      record.primaryName,
+      record.secondaryName,
+      record.name,
+      record.note,
+      playerMapRecordListDescription(record),
+      playerMapRecordBadge(record),
+      kind.replace("-", " ")
+    ].filter(Boolean).join(" ").toLowerCase();
+    return terms.every((term) => haystack.includes(term));
+  });
+}
+
 function playerMapRecordBadge(record: MapRecord) {
-  if (playerMapRecordDisplayKind(record) === "scrolling-text") return <>TEXT<br />{record.show}</>;
-  if (record.pictId !== 0) return <>PICT<br />{record.pictId}</>;
-  return <>MAP<br />VIEW</>;
+  if (playerMapRecordDisplayKind(record) === "scrolling-text") return `TEXT ${record.show}`;
+  if (record.pictId !== 0) return `PICT ${record.pictId}`;
+  return "Map view";
 }
 
 function readI16(bytes: number[], offset: number) {
