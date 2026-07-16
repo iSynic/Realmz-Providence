@@ -133,6 +133,19 @@
   background: #0b1118;
 }
 
+.economy-reference-library-list {
+  min-height: 420px;
+  max-height: calc(100vh - 360px);
+  border: 1px solid #24313d;
+  border-radius: 6px;
+  background: #0b1118;
+}
+
+.economy-reference-library-list .workbench-incremental-list-footer {
+  padding: 8px;
+  border-top: 1px solid #24313d;
+}
+
 
 
 .item-browser-list button {
