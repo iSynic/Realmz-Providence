@@ -33,7 +33,7 @@
 
 
 
-.map-mode-header p {
+.map-mode-header .workbench-pane-header-copy > small {
   margin: 0;
   color: #9db7cd;
   font-size: 12px;

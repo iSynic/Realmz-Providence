@@ -58,12 +58,12 @@
   margin: 0;
 }
 
-.player-maps-header p {
+.player-maps-header .workbench-pane-header-copy > small {
   margin: 4px 0 0;
   color: #9fb4c5;
 }
 
-.player-maps-header strong {
+.player-maps-header .workbench-pane-header-meta {
   color: #f4c84c;
   white-space: nowrap;
 }

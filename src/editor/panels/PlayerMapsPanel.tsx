@@ -1,5 +1,6 @@
 import { AtlasEntry, IconEntry, MapRecord, Project, ProjectCommand, SelectedEntity, SemanticEntity } from "../types";
 import { MapRecordsWorkbench } from "../components/maps/MapRecordsWorkbench";
+import { PanelHeader } from "../ui";
 
 export function PlayerMapsPanel({
   project,
@@ -24,13 +25,13 @@ export function PlayerMapsPanel({
   return (
     <section className="player-maps-panel">
       <div className="player-maps-pane">
-        <header className="panel-card player-maps-header">
-          <div>
-            <h2>Player Maps</h2>
-            <p>Create and edit the Maps/Notes entries players can find in game.</p>
-          </div>
-          <strong>{project.mapRecords.length} map(s)</strong>
-        </header>
+        <PanelHeader
+          className="panel-card player-maps-header"
+          headingLevel={2}
+          title="Player Maps"
+          description="Create and edit the Maps/Notes entries players can find in game."
+          meta={`${project.mapRecords.length} map(s)`}
+        />
         <MapRecordsWorkbench
           project={project}
           selectedMap={null}

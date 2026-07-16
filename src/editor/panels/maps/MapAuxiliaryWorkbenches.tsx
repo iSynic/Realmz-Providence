@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { LandLayoutEditor } from "../../components/maps/LandLayoutWorkbench";
 import { LandTileAtlasEditor } from "../../components/maps/LandTilesWorkbench";
 import { RandomAreasWorkbench } from "../../components/maps/RandomEncountersWorkbench";
+import { PanelHeader } from "../../ui";
 import type { EditorState } from "../../store";
 import type {
   MapEntity,
@@ -105,7 +106,6 @@ export function MapAuxiliaryWorkbenches({
 
   return null;
 }
-
 function MapModeSurface({
   title,
   subtitle,
@@ -117,12 +117,12 @@ function MapModeSurface({
 }) {
   return (
     <div className="map-mode-surface">
-      <div className="map-mode-header">
-        <div>
-          <h2>{title}</h2>
-          <p>{subtitle}</p>
-        </div>
-      </div>
+      <PanelHeader
+        className="map-mode-header"
+        headingLevel={2}
+        title={title}
+        description={subtitle}
+      />
       <div className="map-mode-body">
         {children}
       </div>
