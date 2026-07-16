@@ -2693,7 +2693,7 @@
 
 
 
-.scenario-hero p {
+.scenario-hero .workbench-pane-header-copy > small {
   margin-top: 5px;
   color: #91a0ae;
   font-size: 12px;
@@ -2702,7 +2702,7 @@
 
 
 
-.scenario-hero span {
+.scenario-hero .workbench-pane-header-meta {
   color: #f2c66d;
   font-size: 11px;
   font-weight: 900;

@@ -13,7 +13,7 @@ import { BattleBoard } from "./combat/BattleBoard";
 import { MonsterIconSetWorkbench } from "./combat/MonsterIconSetWorkbench";
 import { MonsterWorkbench } from "./combat/MonsterWorkbench";
 import { copyScrapbookMonsterToScenario, scrapbookEntryForMonsterId } from "./combat/monsterLibraryWorkflow";
-import { WorkbenchTabs, type WorkbenchTabOption } from "../ui";
+import { PanelHeader, WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 
 export {
   monsterIconPickerOptions,
@@ -91,33 +91,33 @@ export function CombatPanel({
   if (!project) {
     return (
       <section className="combat-workbench">
-        <header className="combat-hero">
-          <div>
-            <h1>Combat</h1>
-            <p>Open or create a scenario before editing battles and monsters.</p>
-          </div>
-        </header>
+        <PanelHeader
+          className="combat-hero"
+          headingLevel={1}
+          title="Combat"
+          description="Open or create a scenario before editing battles and monsters."
+        />
       </section>
     );
   }
 
   return (
     <section className="combat-workbench">
-      <header className="combat-hero">
-        <div>
-          <h1>
-            <TutorialTip
-              title="Combat Workbench"
-              body="Use Combat for scenario battles, scenario monsters, protected built-in Monster Scrapbook templates, and editable Providence monster-library variants."
-              side="right"
-            >
-              <span>Combat</span>
-            </TutorialTip>
-          </h1>
-          <p>Author battles, scenario monsters, and reusable Providence monster-library templates.</p>
-        </div>
-        <small>{project.scenario.name}</small>
-      </header>
+      <PanelHeader
+        className="combat-hero"
+        headingLevel={1}
+        title={(
+          <TutorialTip
+            title="Combat Workbench"
+            body="Use Combat for scenario battles, scenario monsters, protected built-in Monster Scrapbook templates, and editable Providence monster-library variants."
+            side="right"
+          >
+            <span>Combat</span>
+          </TutorialTip>
+        )}
+        description="Author battles, scenario monsters, and reusable Providence monster-library templates."
+        meta={project.scenario.name}
+      />
       <WorkbenchTabs
         ariaLabel="Combat workbench sections"
         className="combat-tabs"

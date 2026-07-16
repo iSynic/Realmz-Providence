@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
 import { Project, ProjectCommand, SelectedEntity } from "../types";
+import { PanelHeader } from "../ui";
 import { ruleCasteOptions, ruleRaceOptions } from "../ruleNames";
 import {
   SECURITY_SEGMENT_LENGTH,
@@ -47,15 +48,13 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
   const nextStartupMacroId = nextStartupTestMacroRecordIndex(project);
   return (
     <section className="scenario-workbench">
-      <header className="scenario-hero">
-        <div>
-          <h1>
-            <HelpTitle title="Scenario" help={SCENARIO_HELP} />
-          </h1>
-          <p>Author startup, contact, party restrictions, and Realmz load-readiness.</p>
-        </div>
-        <span>{project.scenario.name}</span>
-      </header>
+      <PanelHeader
+        className="scenario-hero"
+        headingLevel={1}
+        title={<HelpTitle title="Scenario" help={SCENARIO_HELP} />}
+        description="Author startup, contact, party restrictions, and Realmz load-readiness."
+        meta={project.scenario.name}
+      />
 
       <div className="scenario-grid">
         <article id="scenario-startup" className="scenario-card scenario-card-primary">

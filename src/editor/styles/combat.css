@@ -37,19 +37,19 @@
   line-height: 1.2;
 }
 
-.combat-hero p,
-.combat-hero small {
+.combat-hero .workbench-pane-header-copy > small,
+.combat-hero .workbench-pane-header-meta {
   color: #8e9aa7;
   font-size: 12px;
   line-height: 1.5;
 }
 
-.combat-hero p {
+.combat-hero .workbench-pane-header-copy > small {
   max-width: 760px;
   margin-top: 5px;
 }
 
-.combat-hero small {
+.combat-hero .workbench-pane-header-meta {
   flex-shrink: 0;
   color: #71aef0;
   font-size: 11px;

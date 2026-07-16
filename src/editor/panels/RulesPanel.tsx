@@ -6,7 +6,7 @@ import { RaceRulesEditor } from "./rules/RaceRulesEditor";
 import { CasteRulesEditor } from "./rules/CasteRulesEditor";
 import { RulesFamily } from "./rules/ruleTypes";
 import { familyLabel, normalizeFamily, overrideCount } from "./rules/ruleUtils";
-import { WorkbenchTabs, type WorkbenchTabOption } from "../ui";
+import { PanelHeader, WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 
 const RULES_HELP = "Rules covers Realmz spells, races, and castes. Shared Realmz definitions are reference/copy sources; scenario-local Data Spell, Data Race, and Data Caste overrides are the editable/exported surface.";
 const RULES_FAMILY_HELP: Record<RulesFamily, string> = {
@@ -45,17 +45,17 @@ export function RulesPanel({
   }));
   return (
     <section className="rules-workbench">
-      <header className="domain-header">
-        <div>
-          <h1>
-            <TutorialTip title="Rules" body={RULES_HELP} side="right">
-              <span>Rules</span>
-            </TutorialTip>
-          </h1>
-          <p>Browse Realmz spells, races, and castes, then customize the records this scenario is allowed to override.</p>
-        </div>
-        <small>{project.scenario.name}</small>
-      </header>
+      <PanelHeader
+        className="domain-header"
+        headingLevel={1}
+        title={(
+          <TutorialTip title="Rules" body={RULES_HELP} side="right">
+            <span>Rules</span>
+          </TutorialTip>
+        )}
+        description="Browse Realmz spells, races, and castes, then customize the records this scenario is allowed to override."
+        meta={project.scenario.name}
+      />
       <WorkbenchTabs
         ariaLabel="Rules editor"
         className="rules-tabs"
