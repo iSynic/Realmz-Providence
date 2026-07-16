@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, BookOpen, Camera, ExternalLink, FileText, ListTree } from "lucide-react";
 import { TutorialTip } from "../components/TutorialTip";
-import { EmptyState, LinkChip, ModalDialog, PanelSection, PreviewCard, SearchField, workbenchTabKeyboardTarget } from "../ui";
+import { EmptyState, LinkChip, ModalDialog, PanelSection, PreviewCard, SearchField, useRovingNavigation } from "../ui";
 import {
   DOCUMENTATION_GROUPS,
   DOCUMENTATION_TOPICS,
@@ -52,7 +52,6 @@ export function DocumentsView({
 }) {
   const [activeSection, setActiveSection] = useState(() => documentationTopicById(initialSection).id);
   const [query, setQuery] = useState("");
-  const topicButtons = useRef(new Map<string, HTMLButtonElement>());
   const normalizedQuery = query.trim().toLowerCase();
 
   useEffect(() => {
@@ -85,13 +84,12 @@ export function DocumentsView({
     onSectionChange?.(sectionId);
   }
 
-  function handleChapterNavigation(event: KeyboardEvent<HTMLElement>) {
-    const nextSection = workbenchTabKeyboardTarget(topicOptions, activeTopic.id, event.key, "vertical");
-    if (nextSection == null) return;
-    event.preventDefault();
-    selectSection(nextSection);
-    topicButtons.current.get(nextSection)?.focus();
-  }
+  const { handleKeyDown: handleChapterNavigation, registerItem: registerTopic } = useRovingNavigation({
+    options: topicOptions,
+    value: activeTopic.id,
+    onChange: selectSection,
+    orientation: "vertical"
+  });
 
   return (
     <ModalDialog
@@ -155,10 +153,7 @@ export function DocumentsView({
                   {topics.map((topic) => (
                     <button
                       key={topic.id}
-                      ref={(element) => {
-                        if (element) topicButtons.current.set(topic.id, element);
-                        else topicButtons.current.delete(topic.id);
-                      }}
+                      ref={registerTopic(topic.id)}
                       type="button"
                       data-document-topic={topic.id}
                       className={topic.id === activeTopic.id ? "active" : ""}

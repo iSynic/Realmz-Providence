@@ -19,6 +19,7 @@ export { ModalDialog, modalDialogShouldDismiss, modalDialogTabTarget } from "./M
 export { SegmentedControl, segmentedControlKeyboardTarget } from "./SegmentedControl";
 export { WorkbenchActionBar, WorkbenchCluster, WorkbenchStack } from "./WorkbenchLayout";
 export { WorkbenchTabs, workbenchTabKeyboardTarget } from "./WorkbenchTabs";
+export { rovingNavigationKeyboardTarget, useRovingNavigation } from "./RovingNavigation";
 export { IncrementalListFooter, useIncrementalListLimit } from "./IncrementalListFooter";
 export { ReferenceField, numericReferenceQuery } from "./ReferenceField";
 export { ReferencePicker, filterReferencePickerOptions, referencePickerKeyboardAction } from "./ReferencePicker";
@@ -52,6 +53,7 @@ export type { ModalDialogProps } from "./ModalDialog";
 export type { SegmentedControlOption, SegmentedControlProps } from "./SegmentedControl";
 export type { WorkbenchActionBarProps, WorkbenchClusterProps, WorkbenchGap, WorkbenchStackProps } from "./WorkbenchLayout";
 export type { WorkbenchTabOption, WorkbenchTabsProps } from "./WorkbenchTabs";
+export type { RovingNavigationOption, RovingNavigationOrientation } from "./RovingNavigation";
 export type { IncrementalListFooterProps } from "./IncrementalListFooter";
 export type { RawReferenceOptionFactory, ReferenceFieldProps } from "./ReferenceField";
 export type {

@@ -1,4 +1,5 @@
-import { useRef, type KeyboardEvent, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { rovingNavigationKeyboardTarget, useRovingNavigation } from "./RovingNavigation";
 import "./WorkbenchTabs.css";
 
 export type WorkbenchTabOption<Value extends string = string> = {
@@ -24,18 +25,7 @@ export function workbenchTabKeyboardTarget<Value extends string>(
   key: string,
   orientation: "horizontal" | "vertical" = "horizontal"
 ): Value | null {
-  const previousKey = orientation === "vertical" ? "ArrowUp" : "ArrowLeft";
-  const nextKey = orientation === "vertical" ? "ArrowDown" : "ArrowRight";
-  if (![previousKey, nextKey, "Home", "End"].includes(key)) return null;
-  const enabled = options.filter((option) => !option.disabled);
-  if (!enabled.length) return null;
-  const currentIndex = Math.max(0, enabled.findIndex((option) => option.value === value));
-  const nextIndex = key === "Home"
-    ? 0
-    : key === "End"
-      ? enabled.length - 1
-      : (currentIndex + (key === nextKey ? 1 : -1) + enabled.length) % enabled.length;
-  return enabled[nextIndex].value;
+  return rovingNavigationKeyboardTarget(options, value, key, orientation);
 }
 
 export function WorkbenchTabs<Value extends string>({
@@ -46,19 +36,7 @@ export function WorkbenchTabs<Value extends string>({
   className,
   orientation = "horizontal"
 }: WorkbenchTabsProps<Value>) {
-  const buttons = useRef(new Map<Value, HTMLButtonElement>());
-
-  const selectAndFocus = (nextValue: Value) => {
-    onChange(nextValue);
-    buttons.current.get(nextValue)?.focus();
-  };
-
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const nextValue = workbenchTabKeyboardTarget(options, value, event.key, orientation);
-    if (nextValue == null) return;
-    event.preventDefault();
-    selectAndFocus(nextValue);
-  };
+  const { handleKeyDown, registerItem } = useRovingNavigation({ options, value, onChange, orientation });
 
   return (
     <div
@@ -73,10 +51,7 @@ export function WorkbenchTabs<Value extends string>({
         return (
           <button
             key={option.value}
-            ref={(element) => {
-              if (element) buttons.current.set(option.value, element);
-              else buttons.current.delete(option.value);
-            }}
+            ref={registerItem(option.value)}
             type="button"
             role="tab"
             aria-selected={selected}

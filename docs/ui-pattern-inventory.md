@@ -115,6 +115,7 @@ Providence now has shared modeless and blocking overlay contracts. Project creat
 - Shell tutorial wrappers no longer add duplicate tab stops around controls. The domain rail and tool sidebar keep one active navigation target in the tab order, with Up/Down/Home/End movement delegated to the shared workbench keyboard contract.
 - Documents chapter navigation now follows the same vertical roving-focus contract. Compact windows retain the shared manual search and expose a grouped chapter selector instead of hiding the entire navigation surface.
 - Global Search result arrows, Home/End, and Enter now belong to the combobox input rather than the entire dialog. Scope filters and incremental-result commands retain their native keyboard activation, while active result options stay out of the sequential tab order.
+- Tabs, segmented modes, the domain rail, tool sidebar, and Documents chapter navigation now share one roving-focus hook. Their roles and visual geometry remain distinct, but enabled-item traversal, disabled-item skipping, orientation keys, selection, and focus transfer no longer have five separate implementations.
 
 ## First Implementation Slice
 
