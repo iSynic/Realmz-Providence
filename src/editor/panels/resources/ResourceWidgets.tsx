@@ -11,7 +11,7 @@ import { CLASSIC_TEXT_EDIT_VIEW_WIDTH, StyledScrollingTextPreview, parseClassicS
 import { inspectBrowserBundledLibraryAssetPreview, loadBrowserBundledLibraryResourceData } from "../../browser/library";
 import { loadBrowserScenarioResourcePreview } from "../../browser/project";
 import { useResolvedPreviewUrl } from "../../previewUrls";
-import { FloatingWorkbenchPanel, ScrollArea } from "../../ui";
+import { FloatingWorkbenchPanel, ScrollArea, SegmentedControl } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { ResourceExportScope, canCopyLibraryAssetToScenario, isMapPlaceableLibraryAsset, managedAssetKindForLibrary, resourceExportScope, resourceExportScopeLabel, resourceOrigin, resourceOriginLabel, resourceRole } from "../../resourceResolver";
 import {
@@ -544,20 +544,20 @@ export function PreviewStatusFilters({
     "missing-fallback"
   ];
   return (
-    <div className="resource-preview-filters" role="toolbar" aria-label="Resource preview filters">
-      {options.map((option) => (
-        <button
-          key={option}
-          type="button"
-          className={value === option ? "active" : ""}
-          onClick={() => onChange(option)}
-        >
+    <SegmentedControl
+      className="resource-preview-filters"
+      ariaLabel="Resource preview filters"
+      value={value}
+      options={options.map((option) => ({
+        value: option,
+        label: (
           <TutorialTip title={previewFilterLabel(option)} body={PREVIEW_STATUS_FILTER_HELP} side="below">
             <span>{previewFilterLabel(option)}</span>
           </TutorialTip>
-        </button>
-      ))}
-    </div>
+        )
+      }))}
+      onChange={onChange}
+    />
   );
 }
 

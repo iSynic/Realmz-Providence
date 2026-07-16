@@ -233,7 +233,8 @@
 
 
 
-.asset-gallery-controls label {
+.asset-gallery-controls label,
+.asset-preview-size-control {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -241,6 +242,23 @@
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+
+
+.asset-preview-size-control .segmented-control {
+  gap: 3px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+
+
+.asset-preview-size-control .segmented-control > button {
+  min-height: 28px;
+  padding-inline: 8px;
+  font-size: 10px;
 }
 
 
@@ -370,7 +388,7 @@
 
 
 
-.asset-filter-row > input,
+.asset-filter-row > .asset-search-field,
 .asset-filter-row > select {
   min-width: 220px;
   flex: 1 1 260px;
@@ -1103,33 +1121,8 @@
 
 
 .resource-preview-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 10px 0;
-}
-
-
-
-.resource-preview-filters button {
-  border: 1px solid #26384a;
-  border-radius: 5px;
-  background: #101820;
-  color: #9eb8cc;
-  min-height: 24px;
-  padding: 3px 7px;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-
-
-.resource-preview-filters button.active {
-  border-color: #41a8ff;
-  background: #123354;
-  color: #e7f5ff;
+  flex: 1 1 100%;
+  padding: 6px;
 }
 
 

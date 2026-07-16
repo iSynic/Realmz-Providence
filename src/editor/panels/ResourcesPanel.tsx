@@ -8,7 +8,7 @@ import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities
 import { resourceUsageLinks } from "../contentLinks";
 import { canCopyLibraryAssetToScenario } from "../resourceResolver";
 import { tileColor } from "../components/TileSprite";
-import { PanelHeader, ScrollArea } from "../ui";
+import { PanelHeader, ScrollArea, SearchField, SegmentedControl } from "../ui";
 import { renderListKey } from "../renderKeys";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { TutorialTip } from "../components/TutorialTip";
@@ -49,6 +49,11 @@ type ProjectGalleryItem =
   | ManagedGalleryItem;
 
 const ASSET_PAGE_SIZE_OPTIONS = [50, 100, 200, 500, 0];
+const ASSET_PREVIEW_SIZE_OPTIONS: Array<{ value: AssetPreviewSize; label: string }> = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" }
+];
 
 const ASSETS_WORKBENCH_HELP = "Import, preview, replace, and locate scenario media. Text and scrolling-text editing stays in Strings.";
 const ASSET_KIND_FILTER_HELP = "Filter by Realmz resource family. Pictures are PICT resources, sounds are snd resources, icons and special land tiles are cicn resources, and text resources include TEXT, STR#, and styl entries.";
@@ -179,6 +184,7 @@ export function ResourcesPanel({
     ...managedGalleryItems
   ], [managedGalleryItems, scenarioResources]);
   const isManagedAssetSection = section === "project" || section === "custom";
+  const isReferenceAssetSection = section === "realmz" || section === "divinity";
   useEffect(() => {
     setLibraryPage(0);
   }, [section, kindFilter, normalizedQuery, libraryPreviewFilter, showUiReference, assetPageSize]);
@@ -288,9 +294,17 @@ export function ResourcesPanel({
           </div>
         </details>
       </div>
-      {section !== "records" && (
+      {(isManagedAssetSection || isReferenceAssetSection) && (
         <div className="asset-filter-row">
-          <input value={query} onChange={(event) => setQuery(event.currentTarget.value)} placeholder="Search assets..." />
+          <SearchField
+            className="asset-search-field"
+            value={query}
+            onChange={setQuery}
+            placeholder="Search assets..."
+            ariaLabel={section === "project" ? "Search scenario assets" : section === "custom" ? "Search custom library assets" : "Search reference assets"}
+            resultCount={isManagedAssetSection ? projectGalleryItems.length : matchingLibraryAssets.length}
+            resultNoun="asset"
+          />
           <TutorialTip title="Asset Kind Filter" body={ASSET_KIND_FILTER_HELP} side="below">
             <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
               <option value="all">All Types</option>
@@ -302,7 +316,7 @@ export function ResourcesPanel({
               <option value="other">Other</option>
             </select>
           </TutorialTip>
-          <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />
+          {isReferenceAssetSection && <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />}
           {section === "divinity" && (
             <label className="asset-inline-toggle" title="Show Divinity/Realmz application interface artwork. These resources are not scenario media.">
               <input type="checkbox" checked={showUiReference} onChange={(event) => setShowUiReference(event.currentTarget.checked)} />
@@ -601,7 +615,7 @@ export function ResourcesPanel({
   );
 }
 
-function AssetGalleryControls({
+export function AssetGalleryControls({
   pageSize,
   previewSize,
   onPageSizeChange,
@@ -614,14 +628,15 @@ function AssetGalleryControls({
 }) {
   return (
     <div className="asset-gallery-controls" aria-label="Asset gallery controls">
-      <label>
+      <div className="asset-preview-size-control">
         <span>Preview Size</span>
-        <select aria-label="Asset preview size" value={previewSize} onChange={(event) => onPreviewSizeChange(event.currentTarget.value as AssetPreviewSize)}>
-          <option value="small">Small</option>
-          <option value="medium">Medium</option>
-          <option value="large">Large</option>
-        </select>
-      </label>
+        <SegmentedControl
+          ariaLabel="Asset preview size"
+          value={previewSize}
+          options={ASSET_PREVIEW_SIZE_OPTIONS}
+          onChange={onPreviewSizeChange}
+        />
+      </div>
       <label>
         <span>Per Page</span>
         <select aria-label="Assets per page" value={pageSize} onChange={(event) => onPageSizeChange(Number(event.currentTarget.value))}>
