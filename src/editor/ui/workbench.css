@@ -33,7 +33,7 @@
   align-items: center;
   gap: var(--ui-space-4);
 }
-
+.workbench-pane-header-aside.has-actions { flex: 1 1 auto; min-width: 0; justify-content: flex-end; }
 .workbench-pane-header-meta {
   color: var(--ui-color-text-muted);
   font-size: var(--ui-font-size-meta);

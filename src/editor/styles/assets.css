@@ -21,8 +21,8 @@
 
 
 
-.text-workbench-header p,
-.asset-workbench-header p {
+.text-workbench-header .workbench-pane-header-copy > small,
+.asset-workbench-header .workbench-pane-header-copy > small {
   margin: 0;
   color: #99b6cc;
   font-size: 12px;

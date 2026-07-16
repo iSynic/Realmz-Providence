@@ -8,7 +8,7 @@ import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities
 import { resourceUsageLinks } from "../contentLinks";
 import { canCopyLibraryAssetToScenario } from "../resourceResolver";
 import { tileColor } from "../components/TileSprite";
-import { ScrollArea } from "../ui";
+import { PanelHeader, ScrollArea } from "../ui";
 import { renderListKey } from "../renderKeys";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { TutorialTip } from "../components/TutorialTip";
@@ -242,17 +242,17 @@ export function ResourcesPanel({
   ]);
   return (
     <section className="editor-full-panel asset-workbench">
-      <header className="asset-workbench-header">
-        <div>
-          <h1>
-            <TutorialTip title="Assets Workbench" body={ASSETS_WORKBENCH_HELP} side="below">
-              <span>Assets</span>
-            </TutorialTip>
-          </h1>
-          <p>Import, preview, replace, and locate scenario resources.</p>
-        </div>
-        <AssetImportBar onImportAssets={section === "custom" || project ? onImportAssets : undefined} compact libraryScope={section === "custom" ? "custom-library" : "scenario"} />
-      </header>
+      <PanelHeader
+        className="asset-workbench-header"
+        headingLevel={1}
+        title={(
+          <TutorialTip title="Assets Workbench" body={ASSETS_WORKBENCH_HELP} side="below">
+            <span>Assets</span>
+          </TutorialTip>
+        )}
+        description="Import, preview, replace, and locate scenario resources."
+        actions={<AssetImportBar onImportAssets={section === "custom" || project ? onImportAssets : undefined} compact libraryScope={section === "custom" ? "custom-library" : "scenario"} />}
+      />
       <div className="asset-section-tabs" role="tablist" aria-label="Asset sections">
         {PRIMARY_ASSET_SECTIONS.map((item) => (
           <button

@@ -46,7 +46,7 @@ import {
 } from "../classicTextPreview";
 import { type PreviewRuntimeContext } from "../previewUrls";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
-import { SearchField, WorkbenchTabs, type WorkbenchTabOption } from "../ui";
+import { PanelHeader, SearchField, WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 import "../styles/text-search.css";
 
 const DIVINITY_TEXT_SEPARATOR = `${" ".repeat(20)}\uf8ff${" ".repeat(20)}`;
@@ -286,16 +286,17 @@ export function TextPanel({
 
   return (
     <section className="text-workbench">
-      <header className="text-workbench-header">
-        <div>
-          <h1>
-            <TutorialTip title="String Editor" body={TEXT_WORKBENCH_HELP} side="below">
-              <span>String Editor</span>
-            </TutorialTip>
-          </h1>
-          <p>{hasOptionLabels ? "Edit scenario strings and imported two-choice option labels used by Realmz dialogs." : "Edit scenario strings used by Realmz dialogs."}</p>
-        </div>
-        <div className="text-workbench-actions">
+      <PanelHeader
+        className="text-workbench-header"
+        headingLevel={1}
+        title={(
+          <TutorialTip title="String Editor" body={TEXT_WORKBENCH_HELP} side="below">
+            <span>String Editor</span>
+          </TutorialTip>
+        )}
+        description={hasOptionLabels ? "Edit scenario strings and imported two-choice option labels used by Realmz dialogs." : "Edit scenario strings used by Realmz dialogs."}
+        actions={(
+          <div className="text-workbench-actions">
           <b>
             {records.length.toLocaleString()} strings
             {hasOptionLabels ? ` | ${optionRecords.length.toLocaleString()} option labels` : ""}
@@ -370,8 +371,9 @@ export function TextPanel({
           >
             <FileText size={14} /> New Scrolling Text {nextScrollingTextId}
           </button>
-        </div>
-      </header>
+          </div>
+        )}
+      />
       <WorkbenchTabs
         ariaLabel="String editors"
         className="text-authoring-tabs"

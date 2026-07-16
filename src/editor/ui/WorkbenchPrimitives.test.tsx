@@ -17,6 +17,7 @@ describe("Workbench primitives", () => {
     expect(markup).toContain("workbench-pane-header-copy");
     expect(markup).toContain("workbench-pane-header-meta");
     expect(markup).toContain("workbench-pane-header-aside");
+    expect(markup).toContain("has-actions");
     expect(markup).toContain("199 items");
   });
 

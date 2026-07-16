@@ -25,7 +25,7 @@ export function PanelHeader({ title, eyebrow, description, meta, actions, classN
         {description && <small>{description}</small>}
       </div>
       {(meta || actions) && (
-        <div className="workbench-pane-header-aside">
+        <div className={classNames("workbench-pane-header-aside", Boolean(actions) && "has-actions")}>
           {meta && <span className="workbench-pane-header-meta">{meta}</span>}
           {actions}
         </div>
