@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import type { PreviewRuntimeContext } from "../../previewUrls";
@@ -74,21 +74,15 @@ export function TargetRecordWorkbench({
   onSelectRecordType?: (recordType: RealmzTargetRecordKind) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
-  const records = targetRecords(project, recordType);
+  const records = useMemo(() => targetRecords(project, recordType), [project, recordType]);
   const selectedId = targetIdFromSelection(selectedEntity?.id ?? "", recordType) ?? records[0]?.id ?? 1;
   const visibleRecords = useMemo(() => includeSelectedRecord(records, selectedId, 80), [records, selectedId]);
   const opcode = opcodeForTargetRecord(recordType);
-  const nextId = nextTargetRecordId(project, recordType);
+  const nextId = useMemo(() => nextTargetRecordId(project, recordType), [project, recordType]);
   const recordHelp = targetRecordHelp(recordType);
   const encounterRecords = isEncounterRecordType(recordType);
   const [recordsCollapsedByType, setRecordsCollapsedByType] = useState<Record<string, boolean>>({});
   const recordsCollapsed = encounterRecords ? recordsCollapsedByType[recordType] ?? true : false;
-  const [editorReady, setEditorReady] = useState(false);
-  useEffect(() => {
-    setEditorReady(false);
-    const handle = window.setTimeout(() => setEditorReady(true), 120);
-    return () => window.clearTimeout(handle);
-  }, [recordType, selectedId]);
   return (
     <article className="domain-target-workbench">
       <header>
@@ -148,25 +142,21 @@ export function TargetRecordWorkbench({
           </ScrollArea>
         )}
         <div className="domain-target-editor">
-          {editorReady ? (
-            <TargetRecordEditor
-              project={project}
-              catalog={catalog}
-              opcode={opcode}
-              targetId={selectedId}
-              recordType={recordType}
-              presentation="workbench"
-              desktopRuntime={previewContext.desktopRuntime}
-              projectDir={previewContext.projectDir}
-              workspaceDir={previewContext.workspaceDir}
-              onSelectEntity={onSelectEntity}
-              onSelectEditor={onSelectEditor}
-              onSelectEncounterRecordType={onSelectRecordType}
-              onApplyCommand={onApplyCommand}
-            />
-          ) : (
-            <div className="domain-target-editor-placeholder">Loading selected {targetRecordLabel(recordType).toLowerCase()}...</div>
-          )}
+          <TargetRecordEditor
+            project={project}
+            catalog={catalog}
+            opcode={opcode}
+            targetId={selectedId}
+            recordType={recordType}
+            presentation="workbench"
+            desktopRuntime={previewContext.desktopRuntime}
+            projectDir={previewContext.projectDir}
+            workspaceDir={previewContext.workspaceDir}
+            onSelectEntity={onSelectEntity}
+            onSelectEditor={onSelectEditor}
+            onSelectEncounterRecordType={onSelectRecordType}
+            onApplyCommand={onApplyCommand}
+          />
         </div>
       </div>
     </article>

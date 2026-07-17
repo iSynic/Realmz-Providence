@@ -1,5 +1,10 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { createBrowserProject } from "../../browser/project";
+import type { Project, RealmzTargetRecordKind } from "../../types";
 import {
+  TargetRecordWorkbench,
   selectedTargetRecordTypeFromEntity,
   targetRecordTypeFromEditor,
   targetRecordTypesForEditor
@@ -31,4 +36,98 @@ describe("TargetRecordWorkbench routing", () => {
     expect(selectedTargetRecordTypeFromEntity("time:7", [...recordTypes])).toBe("timedEncounter");
     expect(selectedTargetRecordTypeFromEntity("item:7", [...recordTypes])).toBeNull();
   });
+
+  it("renders every encounter editor synchronously without a loading teardown", () => {
+    const project = encounterProject();
+    const cases: Array<{ recordType: RealmzTargetRecordKind; entityId: string; label: string }> = [
+      { recordType: "simpleEncounter", entityId: "encounter:simple:1", label: "Simple Encounter 1" },
+      { recordType: "complexEncounter", entityId: "encounter:complex:2", label: "Complex Encounter 2" },
+      { recordType: "thiefEncounter", entityId: "thief:3", label: "Rogue Encounter 3" },
+      { recordType: "timedEncounter", entityId: "time:4", label: "Time Encounter 4" }
+    ];
+
+    for (const entry of cases) {
+      const markup = renderToStaticMarkup(createElement(TargetRecordWorkbench, {
+        project,
+        catalog: null,
+        recordType: entry.recordType,
+        selectedEntity: { type: "encounter", id: entry.entityId },
+        previewContext: { desktopRuntime: false, projectDir: "", workspaceDir: "" },
+        onSelectEntity: () => undefined
+      }));
+
+      expect(markup).toContain(entry.label);
+      expect(markup).toContain("encounter-record-picker-row");
+      expect(markup).not.toContain("domain-target-editor-placeholder");
+      expect(markup).not.toContain("Loading selected");
+    }
+  });
 });
+
+function encounterProject(): Project {
+  const project = createBrowserProject("Persistent encounter workbench");
+  project.simpleEncounters = [{
+    id: 1,
+    actions: [],
+    choiceResults: [0, 0, 0, 0],
+    canBackOut: false,
+    maxTimes: 0,
+    casteSuccess: 0,
+    prompt: 0,
+    texts: ["", "", "", ""]
+  }];
+  project.complexEncounters = [{
+    id: 2,
+    actions: [],
+    actionResult: 0,
+    wordResult: 0,
+    groups: [],
+    spellIds: [],
+    spellResults: [],
+    itemIds: [],
+    itemResults: [],
+    choiceResults: [0, 0, 0, 0],
+    wordResults: [],
+    canBackOut: false,
+    thief: false,
+    maxTimes: 0,
+    casteSuccess: 0,
+    thiefSuccess: 0,
+    thiefFail: 0,
+    prompt: 0,
+    texts: []
+  }];
+  project.thiefEncounters = [{
+    id: 3,
+    typeFlags: new Array(10).fill(false),
+    modifiers: new Array(8).fill(0),
+    successCodes: new Array(8).fill(0),
+    failureCodes: new Array(8).fill(0),
+    successText: new Array(8).fill(0),
+    failureText: new Array(8).fill(0),
+    successSounds: new Array(8).fill(0),
+    failureSounds: new Array(8).fill(0),
+    spell: 0,
+    lowDamage: 0,
+    highDamage: 0,
+    tumblers: 0,
+    prompts: [0, 0, 0],
+    promptSounds: [0, 0, 0]
+  }];
+  project.timedEncounters = [{
+    id: 4,
+    day: -1,
+    increment: -1,
+    percent: 100,
+    door: 0,
+    requiredLevel: 0,
+    requiredRandomRect: 0,
+    requiredX: 0,
+    requiredY: 0,
+    requiredItem: 0,
+    requiredQuest: 0,
+    locationKind: "any",
+    stuff: new Array(10).fill(0)
+  }];
+  return project;
+}

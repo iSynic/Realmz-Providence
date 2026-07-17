@@ -181,6 +181,11 @@ export function EncounterShell({
   }, [actionResult, actions, canBackOut, casteSuccess, catalog, choiceResults, groups, id, itemIds, itemResults, maxTimes, project, prompt, recordKind, resultFlowSources, spellIds, spellResults, texts, thief, thiefSuccess, wordResult, wordResults]);
   const [promptEditorOpen, setPromptEditorOpen] = useState(false);
   const [copyPanelOpen, setCopyPanelOpen] = useState(false);
+  useEffect(() => {
+    setSelectedResultIndex(null);
+    setPromptEditorOpen(false);
+    setCopyPanelOpen(false);
+  }, [id, recordKind]);
   const promptId = Math.abs(prompt);
   const promptRecord = promptId > 0 ? project.messages?.find((record) => record.id === promptId) ?? null : null;
   const [rogueTargetDraft, setRogueTargetDraft] = useState(thiefSuccess ?? 0);

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Project, SelectedEntity } from "../../types";
 import { ReferenceField, type ReferencePickerOption } from "../../ui";
@@ -77,9 +78,9 @@ export function EncounterRecordPicker({
   onSelectEntity?: (entity: SelectedEntity) => void;
   className?: string;
 }) {
-  const options = encounterRecordPickerOptions(project, recordType);
+  const options = useMemo(() => encounterRecordPickerOptions(project, recordType), [project, recordType]);
   const selected = options.find((option) => option.value === id) ?? null;
-  const records = encounterRecordsForType(project, recordType);
+  const records = useMemo(() => encounterRecordsForType(project, recordType), [project, recordType]);
   const currentIndex = records.findIndex((record) => record.id === id);
   const previousId = adjacentEncounterRecordId(records, id, -1);
   const nextId = adjacentEncounterRecordId(records, id, 1);
