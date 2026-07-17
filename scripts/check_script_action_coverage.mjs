@@ -8,6 +8,7 @@ const actionPointModulePaths = [
   "ActionPointActionChooser.tsx",
   "ActionPointAuthoringPanel.tsx",
   "ActionPointCreateBar.tsx",
+  "ActionPointDialogs.tsx",
   "ActionPointEvidence.tsx",
   "ActionPointInlineTargetEditor.tsx",
   "ActionPointInventory.tsx",
@@ -50,6 +51,7 @@ const resourcesPanelPath = path.join(root, "src/editor/panels/ResourcesPanel.tsx
 const resourceWidgetsPath = path.join(root, "src/editor/panels/resources/ResourceWidgets.tsx");
 const globalSearchPath = path.join(root, "src/editor/globalSearch.ts");
 const edcdPath = path.join(root, "src/editor/components/EdcdRowEditor.tsx");
+const edcdReferenceTargetFieldPath = path.join(root, "src/editor/components/EdcdReferenceTargetField.tsx");
 const edcdRowsPath = path.join(root, "src/editor/edcdRows.ts");
 const edcdTargetsPath = path.join(root, "src/editor/edcdTargets.ts");
 const appUtilsPath = path.join(root, "src/editor/app/appUtils.ts");
@@ -95,6 +97,7 @@ const resourcesPanel = fs.readFileSync(resourcesPanelPath, "utf8");
 const resourceWidgets = fs.readFileSync(resourceWidgetsPath, "utf8");
 const globalSearch = fs.readFileSync(globalSearchPath, "utf8");
 const edcd = fs.readFileSync(edcdPath, "utf8");
+const edcdReferenceTargetField = fs.readFileSync(edcdReferenceTargetFieldPath, "utf8");
 const edcdRows = fs.readFileSync(edcdRowsPath, "utf8");
 const edcdTargets = fs.readFileSync(edcdTargetsPath, "utf8");
 const appUtils = fs.readFileSync(appUtilsPath, "utf8");
@@ -714,12 +717,12 @@ if (!itemIdField.includes("export function ItemIdField")) {
   failures.push("ItemIdField is missing.");
 } else {
   for (const snippet of [
-    "type=\"search\"",
+    "ReferenceField",
     "placeholder=\"Search item # or name...\"",
-    "chooseItem(firstOption)",
-    "script-item-results",
-    "script-item-selected-row",
-    "itemCategoryBadge(option.category)"
+    "rawOptionForQuery",
+    "itemCategoryBadge(option.category)",
+    "resultNoun=\"item\"",
+    "onChange={onCommit}"
   ]) {
     if (!itemIdField.includes(snippet)) failures.push(`ItemIdField is missing search-only item authoring behavior: ${snippet}`);
   }
@@ -740,12 +743,21 @@ if (!edcdSearchTargetField) {
   failures.push("EDCD search target field is missing.");
 } else {
   for (const snippet of [
-    "onKeyDown={handleSearchKeyDown}",
-    "chooseOption(firstOption)",
-    "className=\"btn btn-secondary btn-xs icon-only\"",
-    "className=\"btn btn-danger btn-xs icon-only\""
+    "EdcdReferenceTargetField",
+    "rawOptionForQuery",
+    "selectedEntity={selected?.entity}",
+    "onChange={onChange}",
+    "onOpen={onOpen}"
   ]) {
     if (!edcdSearchTargetField[0].includes(snippet)) failures.push(`EDCD search target field is missing compact search behavior: ${snippet}`);
+  }
+  for (const snippet of [
+    "ReferenceField",
+    "className=\"btn btn-secondary btn-xs icon-only\"",
+    "clearLabel={clearLabel}",
+    "currentActions={currentActions}"
+  ]) {
+    if (!edcdReferenceTargetField.includes(snippet)) failures.push(`Shared EDCD reference target field is missing compact search behavior: ${snippet}`);
   }
   if (edcdSearchTargetField[0].includes("Open {label}")) {
     failures.push("EDCD search target fields should use compact open icons, not an inline Open label button.");
@@ -761,7 +773,7 @@ if (!edcdSelectTargetField) {
     "edcd-target-inline-detail",
     "EdcdMacroFlowPreview",
     "edcdTargetKindUsesSearch(targetKind)",
-    "edcd-search-selected-target"
+    "EdcdReferenceTargetField"
   ]) {
     if (!edcdSelectTargetField[0].includes(snippet)) failures.push(`EDCD select target field is missing compact target behavior: ${snippet}`);
   }
@@ -977,7 +989,7 @@ for (const snippet of [
   "const openTargetEntity = useCallback",
   "const previewMapCoordinate = useCallback",
   "const openTargetMapCoordinate = useCallback",
-  "ScriptPreviewDialog",
+  "ScriptPreviewPanel",
   "onPreviewEntity={previewEntity}",
   "onInspect={onPreviewEntity}",
   "ScriptDestructiveActionDialog",

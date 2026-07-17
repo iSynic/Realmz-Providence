@@ -16,6 +16,7 @@ const bundled = await build({
   },
   bundle: true,
   format: "esm",
+  loader: { ".css": "empty" },
   platform: "node",
   target: "node24",
   write: false,
