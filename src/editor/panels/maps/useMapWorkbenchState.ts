@@ -12,6 +12,7 @@ import {
   type SmartBrushDrawMode
 } from "../../map/mapCellShapes";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
+import { connectedSelectionSmartMaskCells } from "../../map/connectedSelectionActions";
 import { analyzeMapPaintOperation, applyMapPaintImpactToSmartPlan } from "../../map/mapPaintSafeguards";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../../map/superTileStamps";
 import type { ConnectedCellSelection, ConnectedTileMatchMode } from "../../map/connectedMapSelection";
@@ -165,6 +166,15 @@ export function useMapWorkbenchState({
     if (tool === "paint" || tool === "bucket" || tool === "stamp") setPaletteOpen(true);
   };
   const clearSmartBrushMask = () => { resetSmartBrushMask(); setSmartBrushDrawing(false); };
+  const loadSmartBrushMaskFromCells = (cells: ReadonlyArray<{ x: number; y: number }>) => {
+    if (!selectedMap || selectedMap.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null) return;
+    const next = connectedSelectionSmartMaskCells(selectedMap, cells);
+    if (next.length === 0) return;
+    commitSmartBrushMaskStep(smartBrushMask, next);
+    setSmartBrushDrawing(false);
+    setPaintMode("smart");
+    openCanvasTool("paint");
+  };
   const reshapeSmartBrushMask = (operation: "grow" | "shrink") => {
     if (!selectedMap || smartBrushMask.length === 0) return;
     const next = operation === "grow"
@@ -252,6 +262,7 @@ export function useMapWorkbenchState({
       smartBrushPlan,
       visibleSmartBrushPlan,
       clearSmartBrushMask,
+      loadSmartBrushMaskFromCells,
       growSmartBrushMask: () => reshapeSmartBrushMask("grow"),
       shrinkSmartBrushMask: () => reshapeSmartBrushMask("shrink"),
       applySmartBrush

@@ -258,7 +258,7 @@
 }
 
 .connected-selection-heading,
-.connected-selection-actions section > div {
+.connected-selection-actions > section > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -283,7 +283,7 @@
   gap: 7px;
 }
 
-.connected-selection-actions section {
+.connected-selection-actions > section {
   display: grid;
   gap: 5px;
   padding: 8px;
@@ -321,11 +321,11 @@
   width: 100%;
 }
 
-.connected-selection-actions section > div span {
+.connected-selection-actions > section > div span {
   font-size: 10px;
 }
 
-.connected-selection-actions label {
+.connected-selection-actions > section > label {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 92px;
   align-items: center;
@@ -336,13 +336,46 @@
   text-transform: uppercase;
 }
 
-.connected-selection-actions input {
+.connected-selection-actions > section > label input {
   min-width: 0;
   width: 100%;
 }
 
-.connected-selection-actions button {
+.connected-selection-actions > section > label select {
+  min-width: 0;
   width: 100%;
+}
+
+.connected-selection-actions > section > button,
+.connected-selection-smart-actions button {
+  width: 100%;
+}
+
+.connected-selection-smart-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.connected-selection-palette {
+  min-width: 0;
+  overflow: hidden;
+  border-top: 1px solid #294356;
+  padding-top: 7px;
+}
+
+.connected-selection-palette .paint-palette-panel {
+  gap: 6px;
+  padding: 0;
+}
+
+.connected-selection-palette .paint-palette-grid {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.connected-selection-palette .paint-palette-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .context-section.subtle {

@@ -55,6 +55,7 @@ type PaintPalettePanelProps = {
   onSelectSuperTileStamp?: (stampId: string) => void;
   onActivateStampTool?: () => void;
   stampOnly?: boolean;
+  showStampMode?: boolean;
   onSetVariationTiles: (tiles: number[] | null) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   variant?: "bar" | "sidebar";
@@ -97,6 +98,7 @@ export function PaintPalettePanel({
   onSelectSuperTileStamp,
   onActivateStampTool,
   stampOnly = false,
+  showStampMode = true,
   onSetVariationTiles,
   paintVariation,
   onSetActivePaintGroup,
@@ -219,6 +221,10 @@ export function PaintPalettePanel({
   }, [mode, onSetMode, variant]);
 
   useEffect(() => {
+    if (!showStampMode && mode === "super") onSetMode("landlook");
+  }, [mode, onSetMode, showStampMode]);
+
+  useEffect(() => {
     if (variant !== "bar") return;
     const button = buttonRefs.current.get(focusTile);
     button?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: variant === "bar" ? "center" : "nearest" });
@@ -323,7 +329,7 @@ export function PaintPalettePanel({
           ariaLabel="Tile palette mode"
           className="paint-palette-tabs"
           value={mode}
-          options={PALETTE_MODE_OPTIONS}
+          options={showStampMode ? PALETTE_MODE_OPTIONS : PALETTE_MODE_OPTIONS.filter((option) => option.value !== "super")}
           onChange={onSetMode}
         />
       )}

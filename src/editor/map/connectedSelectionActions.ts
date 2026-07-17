@@ -4,6 +4,7 @@ import type {
   MapPaintIntent,
   PaintCellChange,
   ProjectCommand,
+  SmartBrushMaskCell,
   SmartBrushPlan,
   SmartBrushPreset,
   TilesetAsset
@@ -78,6 +79,13 @@ export function buildConnectedSelectionSmartTerrainPlan(
   atlas: AtlasEntry | null
 ) {
   return buildSmartTerrainChanges(map, [...cells], preset, tileset, atlas);
+}
+
+export function connectedSelectionSmartMaskCells(
+  map: MapEntity,
+  cells: ReadonlyArray<{ x: number; y: number }>
+): SmartBrushMaskCell[] {
+  return hydrateSelectedCells(map, cells).map(({ x, y }) => ({ x, y }));
 }
 
 export function connectedSelectionSmartTerrainCommand(

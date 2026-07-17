@@ -97,6 +97,7 @@ export function MapInspectorSidebar({
       smartBrushMask,
       visibleSmartBrushPlan: smartBrushPlan,
       clearSmartBrushMask: onClearSmartBrushMask,
+      loadSmartBrushMaskFromCells: onLoadSmartBrushMaskFromCells,
       growSmartBrushMask: onGrowSmartBrushMask,
       shrinkSmartBrushMask: onShrinkSmartBrushMask,
       applySmartBrush: onApplySmartBrush
@@ -239,6 +240,8 @@ export function MapInspectorSidebar({
             selection={activeSelection}
             map={selectedMap}
             project={state.project}
+            libraryAssets={state.libraryCatalog?.assets ?? []}
+            atlasStatus={state.atlasStatus}
             selectedTileset={selectedTileset}
             atlas={atlas}
             icons={state.iconEntries}
@@ -250,10 +253,19 @@ export function MapInspectorSidebar({
             onClearConnectedSelection={() => onSetConnectedSelection(null)}
             onSetConnectedSelection={onSetConnectedSelection}
             selectedTile={state.selectedTile}
+            onSelectTile={onSelectTile}
             paintVariation={paintVariation}
             activePaintGroupId={activePaintGroupId}
+            onSetActivePaintGroup={onSetActivePaintGroup}
+            paintPaletteMode={paintPaletteMode}
+            onSetPaintPaletteMode={onSetPaintPaletteMode}
+            activeCustomPaletteId={activeCustomPaletteId}
+            onSetActiveCustomPaletteId={onSetActiveCustomPaletteId}
             variationTiles={variationTiles}
+            onSetPaletteVariationTiles={onSetPaletteVariationTiles}
             smartBrushPreset={smartBrushPreset}
+            onSetSmartBrushPreset={onSetSmartBrushPreset}
+            onUseSelectionAsSmartMask={onLoadSmartBrushMaskFromCells}
           />
         ) : workbenchMode !== "canvas" ? (
           <MapModeInspector

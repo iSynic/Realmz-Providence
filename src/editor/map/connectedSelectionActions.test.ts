@@ -5,6 +5,7 @@ import {
   buildConnectedSelectionFillPlan,
   buildConnectedSelectionReplacePlan,
   connectedSelectionPaintCommand,
+  connectedSelectionSmartMaskCells,
   connectedSelectionSmartTerrainCommand
 } from "./connectedSelectionActions";
 
@@ -84,6 +85,23 @@ describe("connected selection actions", () => {
       label: "Apply water terrain to selected cells",
       cells: [{ x: 0, y: 0, index: 0, from: 1, to: 60 }]
     });
+  });
+
+  it("loads a valid, stable smart mask from the connected selection", () => {
+    const map = landMap([
+      [1, 2],
+      [3, 4]
+    ]);
+
+    expect(connectedSelectionSmartMaskCells(map, [
+      { x: 1, y: 1 },
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+      { x: -1, y: 0 }
+    ])).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 1 }
+    ]);
   });
 });
 
