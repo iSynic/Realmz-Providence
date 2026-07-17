@@ -1,13 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import type { EditorState } from "../../store";
-import type { DungeonCellFlag, MapEntity, MapPaintVariation, Project, ProjectCommand, SelectedEntity, TilesetAsset } from "../../types";
+import type {
+  DungeonCellFlag,
+  MapEntity,
+  MapPaintVariation,
+  Project,
+  ProjectCommand,
+  SelectedEntity,
+  SmartBrushPreset,
+  TilesetAsset
+} from "../../types";
 import {
   buildConnectedSelectionClearPlan,
   buildConnectedSelectionFillPlan,
   buildConnectedSelectionReplacePlan,
-  connectedSelectionPaintCommand
+  buildConnectedSelectionSmartTerrainPlan,
+  connectedSelectionPaintCommand,
+  connectedSelectionSmartTerrainCommand
 } from "../../map/connectedSelectionActions";
+import { captureMapStampFromCells, createMapStampId } from "../../map/customMapStamps";
 import { paintSeed } from "../../map/paintResolver";
+import { SMART_BRUSH_PRESETS } from "../../map/smartTerrainBrush";
 import { tileValueAt } from "../../map/geometry";
 import { TriggerSelectionDetails } from "./MapActionPointInspector";
 import { MapCellSelectionInspector } from "./MapCellSelectionInspector";
@@ -32,7 +45,8 @@ export function MapSelectionInspector({
   selectedTile,
   paintVariation,
   activePaintGroupId,
-  variationTiles
+  variationTiles,
+  smartBrushPreset
 }: {
   selection: MapSelection;
   map: MapEntity | null;
@@ -50,6 +64,7 @@ export function MapSelectionInspector({
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
   variationTiles: number[] | null;
+  smartBrushPreset: SmartBrushPreset;
 }) {
   return (
     <section className="context-panel map-selection-inspector">
@@ -85,10 +100,13 @@ export function MapSelectionInspector({
           selection={selection.selection}
           map={map}
           selectedTileset={selectedTileset}
+          atlas={atlas}
+          project={project}
           selectedTile={selectedTile}
           paintVariation={paintVariation}
           activePaintGroupId={activePaintGroupId}
           variationTiles={variationTiles}
+          smartBrushPreset={smartBrushPreset}
           onApplyCommand={onApplyCommand}
           onClearSelection={onClearConnectedSelection}
         />
@@ -117,20 +135,26 @@ function ConnectedSelectionActions({
   selection,
   map,
   selectedTileset,
+  atlas,
+  project,
   selectedTile,
   paintVariation,
   activePaintGroupId,
   variationTiles,
+  smartBrushPreset,
   onApplyCommand,
   onClearSelection
 }: {
   selection: Extract<MapSelection, { kind: "cells" }>["selection"];
   map: MapEntity | null;
   selectedTileset: TilesetAsset | null;
+  atlas: EditorState["atlasEntries"][string] | null;
+  project: Project | null;
   selectedTile: number;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
   variationTiles: number[] | null;
+  smartBrushPreset: SmartBrushPreset;
   onApplyCommand: (command: ProjectCommand) => void;
   onClearSelection: () => void;
 }) {
@@ -157,11 +181,43 @@ function ConnectedSelectionActions({
     () => map ? buildConnectedSelectionClearPlan(map, selection.cells, selectedTileset) : null,
     [map, selectedTileset, selection.cells]
   );
+  const smartPlan = useMemo(
+    () => map ? buildConnectedSelectionSmartTerrainPlan(map, selection.cells, smartBrushPreset, selectedTileset, atlas) : null,
+    [atlas, map, selectedTileset, selection.cells, smartBrushPreset]
+  );
+  const stampPreview = useMemo(
+    () => map ? captureMapStampFromCells(map, selection.cells, "Selection stamp", "map-stamp:selection-preview") : null,
+    [map, selection.cells]
+  );
+  const stampTooLarge = Boolean(stampPreview && (stampPreview.width > 32 || stampPreview.height > 32));
   const applyPlan = (label: string, plan: typeof fillPlan) => {
     if (!map || !plan) return;
     const command = connectedSelectionPaintCommand(map, label, plan);
     if (command) onApplyCommand(command);
   };
+  const applySmartTerrain = () => {
+    if (!map || !smartPlan) return;
+    const command = connectedSelectionSmartTerrainCommand(map, smartBrushPreset, smartPlan);
+    if (command) onApplyCommand(command);
+  };
+  const createStamp = () => {
+    if (!map || !project || !stampPreview || stampTooLarge) return;
+    const fallbackName = `Stamp ${(project.editorMetadata?.mapStamps?.length ?? 0) + 1}`;
+    const name = window.prompt("Name this map stamp", fallbackName)?.trim();
+    if (!name) return;
+    const stamp = captureMapStampFromCells(map, selection.cells, name, createMapStampId(name));
+    if (!stamp) return;
+    onApplyCommand({
+      kind: "createMapStamp",
+      label: `Create stamp ${stamp.name}`,
+      id: stamp.id,
+      name: stamp.name,
+      width: stamp.width,
+      height: stamp.height,
+      cells: stamp.cells
+    });
+  };
+  const smartPresetLabel = SMART_BRUSH_PRESETS.find((preset) => preset.id === smartBrushPreset)?.label ?? smartBrushPreset;
   return (
     <div className="connected-selection-summary">
       <div className="connected-selection-heading">
@@ -195,6 +251,26 @@ function ConnectedSelectionActions({
             <small>{affectedCellsLabel(clearPlan?.changes.length ?? 0, selection.cells.length)}</small>
             <button className="btn btn-danger btn-xs" type="button" disabled={!clearPlan?.changes.length} onClick={() => applyPlan("Clear selected cells", clearPlan)}>
               Clear Selected Cells
+            </button>
+          </section>
+          <section>
+            <div><strong>Smart Terrain</strong><span>{smartPresetLabel}</span></div>
+            <small>
+              {smartPlan?.reason ?? `${(smartPlan?.changedCount ?? 0).toLocaleString()} cells will change${smartPlan?.skippedCount ? `; ${smartPlan.skippedCount.toLocaleString()} protected cells skipped` : ""}`}
+            </small>
+            <button className="btn btn-primary btn-xs" type="button" disabled={!smartPlan?.changedCount} onClick={applySmartTerrain}>
+              Apply {smartPresetLabel}
+            </button>
+          </section>
+          <section>
+            <div><strong>Reusable Stamp</strong><span>{stampPreview ? `${stampPreview.width}x${stampPreview.height}` : "No cells"}</span></div>
+            <small>
+              {stampTooLarge
+                ? "Selection exceeds the 32x32 reusable stamp limit"
+                : `${selection.cells.length.toLocaleString()} selected cells; unselected cells inside the bounds stay transparent`}
+            </small>
+            <button className="btn btn-secondary btn-xs" type="button" disabled={!project || !stampPreview || stampTooLarge} onClick={createStamp}>
+              Create Reusable Stamp
             </button>
           </section>
         </div>

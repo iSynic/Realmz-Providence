@@ -46,6 +46,42 @@ export function captureMapStampFromRegion(
   return { id, name: normalizeStampName(name, 1), width, height, cells, createdAt: now, updatedAt: now };
 }
 
+export function captureMapStampFromCells(
+  map: MapEntity,
+  selectedCells: ReadonlyArray<{ x: number; y: number }>,
+  name: string,
+  id = createMapStampId(name)
+): CustomMapStamp | null {
+  const unique = new Map<string, { x: number; y: number }>();
+  for (const cell of selectedCells) {
+    if (!Number.isInteger(cell.x) || !Number.isInteger(cell.y)) continue;
+    if (cell.x < 0 || cell.y < 0 || cell.x >= map.width || cell.y >= map.height) continue;
+    unique.set(`${cell.x}:${cell.y}`, { x: cell.x, y: cell.y });
+  }
+  const cells = [...unique.values()];
+  if (cells.length === 0) return null;
+  const left = Math.min(...cells.map((cell) => cell.x));
+  const right = Math.max(...cells.map((cell) => cell.x));
+  const top = Math.min(...cells.map((cell) => cell.y));
+  const bottom = Math.max(...cells.map((cell) => cell.y));
+  const now = new Date().toISOString();
+  return {
+    id,
+    name: normalizeStampName(name, 1),
+    width: right - left + 1,
+    height: bottom - top + 1,
+    cells: cells
+      .map((cell) => ({
+        x: cell.x - left,
+        y: cell.y - top,
+        tile: map.tiles[mapTileIndex(map, cell.x, cell.y)]
+      }))
+      .sort((a, b) => a.y - b.y || a.x - b.x),
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
 export function normalizeMapStamps(stamps: CustomMapStamp[]) {
   const used = new Set<string>();
   return stamps.map((stamp, index) => {

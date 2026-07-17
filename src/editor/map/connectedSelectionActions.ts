@@ -1,6 +1,16 @@
-import type { MapEntity, MapPaintIntent, PaintCellChange, ProjectCommand, TilesetAsset } from "../types";
+import type {
+  AtlasEntry,
+  MapEntity,
+  MapPaintIntent,
+  PaintCellChange,
+  ProjectCommand,
+  SmartBrushPlan,
+  SmartBrushPreset,
+  TilesetAsset
+} from "../types";
 import { mapTileIndex, tileValueAt } from "./geometry";
 import { buildPaintChangesWithResolver, makePaintTileResolver } from "./paintResolver";
+import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges } from "./smartTerrainBrush";
 import { clearTileForMap } from "./tileClear";
 
 export type ConnectedSelectionActionPlan = {
@@ -60,6 +70,31 @@ export function connectedSelectionPaintCommand(
   return { kind: "paintTiles", mapId: map.id, label, cells: plan.changes };
 }
 
+export function buildConnectedSelectionSmartTerrainPlan(
+  map: MapEntity,
+  cells: ReadonlyArray<{ x: number; y: number }>,
+  preset: SmartBrushPreset,
+  tileset: TilesetAsset | null,
+  atlas: AtlasEntry | null
+) {
+  return buildSmartTerrainChanges(map, [...cells], preset, tileset, atlas);
+}
+
+export function connectedSelectionSmartTerrainCommand(
+  map: MapEntity,
+  preset: SmartBrushPreset,
+  plan: SmartBrushPlan
+): Extract<ProjectCommand, { kind: "paintTiles" }> | null {
+  const changes = buildSmartTerrainPaintChanges(plan);
+  if (changes.length === 0) return null;
+  return {
+    kind: "paintTiles",
+    mapId: map.id,
+    label: `Apply ${smartTerrainLabel(preset)} to selected cells`,
+    cells: changes
+  };
+}
+
 function hydrateSelectedCells(
   map: MapEntity,
   cells: ReadonlyArray<{ x: number; y: number }>
@@ -81,4 +116,10 @@ function hydrateSelectedCells(
       tile: tileValueAt(map, cell.x, cell.y)
     }))
     .sort((left, right) => left.y - right.y || left.x - right.x);
+}
+
+function smartTerrainLabel(preset: SmartBrushPreset) {
+  if (preset === "forest") return "forest terrain";
+  if (preset === "mountains") return "mountain terrain";
+  return "water terrain";
 }

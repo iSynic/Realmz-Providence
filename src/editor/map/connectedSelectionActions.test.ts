@@ -4,7 +4,8 @@ import {
   buildConnectedSelectionClearPlan,
   buildConnectedSelectionFillPlan,
   buildConnectedSelectionReplacePlan,
-  connectedSelectionPaintCommand
+  connectedSelectionPaintCommand,
+  connectedSelectionSmartTerrainCommand
 } from "./connectedSelectionActions";
 
 describe("connected selection actions", () => {
@@ -64,6 +65,25 @@ describe("connected selection actions", () => {
 
     expect(plan.selectedCount).toBe(1);
     expect(plan.changes).toHaveLength(1);
+  });
+
+  it("applies a smart terrain plan as one paint command", () => {
+    const map = landMap([[1]]);
+    const command = connectedSelectionSmartTerrainCommand(map, "water", {
+      cells: [{ x: 0, y: 0, index: 0, from: 1, to: 60, role: "center" }],
+      skipped: [],
+      changedCount: 1,
+      skippedCount: 0,
+      profileConfidence: "reviewed-rules",
+      reason: null
+    });
+
+    expect(command).toEqual({
+      kind: "paintTiles",
+      mapId: "land:0",
+      label: "Apply water terrain to selected cells",
+      cells: [{ x: 0, y: 0, index: 0, from: 1, to: 60 }]
+    });
   });
 });
 

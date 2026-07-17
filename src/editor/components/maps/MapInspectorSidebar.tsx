@@ -232,6 +232,7 @@ export function MapInspectorSidebar({
             paintVariation={paintVariation}
             activePaintGroupId={activePaintGroupId}
             variationTiles={variationTiles}
+            smartBrushPreset={smartBrushPreset}
           />
         ) : workbenchMode !== "canvas" ? (
           <MapModeInspector
