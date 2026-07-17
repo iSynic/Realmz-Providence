@@ -90,6 +90,10 @@ export function MapInspectorSidebar({
     smartBrush: {
       smartBrushPreset,
       setSmartBrushPreset: onSetSmartBrushPreset,
+      smartBrushDrawMode,
+      setSmartBrushDrawMode: onSetSmartBrushDrawMode,
+      smartBrushShapeFill,
+      setSmartBrushShapeFill: onSetSmartBrushShapeFill,
       smartBrushMask,
       visibleSmartBrushPlan: smartBrushPlan,
       clearSmartBrushMask: onClearSmartBrushMask,
@@ -196,6 +200,10 @@ export function MapInspectorSidebar({
             onSetGlobalMapStamps={onSetGlobalMapStamps}
             smartBrushPreset={smartBrushPreset}
             onSetSmartBrushPreset={onSetSmartBrushPreset}
+            smartBrushDrawMode={smartBrushDrawMode}
+            onSetSmartBrushDrawMode={onSetSmartBrushDrawMode}
+            smartBrushShapeFill={smartBrushShapeFill}
+            onSetSmartBrushShapeFill={onSetSmartBrushShapeFill}
             smartBrushMask={smartBrushMask}
             smartBrushPlan={smartBrushPlan}
             onClearSmartBrushMask={onClearSmartBrushMask}

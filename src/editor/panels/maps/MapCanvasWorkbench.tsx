@@ -79,6 +79,8 @@ export function MapCanvasWorkbench({
     stamps: { globalMapStamps, setGlobalMapStamps, selectedSuperTileStamp, setSelectedSuperTileStampId },
     smartBrush: {
       smartBrushMask,
+      smartBrushDrawMode,
+      smartBrushShapeFill,
       setSmartBrushMask,
       commitSmartBrushMaskStep,
       smartBrushDrawing,
@@ -88,7 +90,9 @@ export function MapCanvasWorkbench({
     selection: {
       connectedSelection,
       setConnectedSelection,
-      connectedSelectionMode
+      connectedSelectionMode,
+      selectionDrawMode,
+      selectionShapeFill
     }
   } = workbench;
   const visibleTriggers = useMemo(
@@ -157,7 +161,11 @@ export function MapCanvasWorkbench({
           selectedRegion={selectedRegion}
           connectedSelection={connectedSelection}
           connectedSelectionMode={connectedSelectionMode}
+          selectionDrawMode={selectionDrawMode}
+          selectionShapeFill={selectionShapeFill}
           smartBrushMask={smartBrushMask}
+          smartBrushDrawMode={smartBrushDrawMode}
+          smartBrushShapeFill={smartBrushShapeFill}
           smartBrushPlan={paintMode === "smart" ? visibleSmartBrushPlan : null}
           smartBrushDrawing={paintMode === "smart" && smartBrushDrawing}
           globalMapStamps={globalMapStamps}

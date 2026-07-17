@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   growMapCells,
   mapEllipseCells,
+  mapGeometryCells,
   mapLineCells,
   mapRectangleCells,
   shrinkMapCells
@@ -53,6 +54,15 @@ describe("map cell shapes", () => {
       { x: 2, y: 4 },
       { x: 2, y: 5 }
     ]);
+  });
+
+  it("dispatches shared geometry for selection and Smart Mask callers", () => {
+    expect(mapGeometryCells("line", { x: 1, y: 1 }, { x: 3, y: 1 }, "outline", BOUNDS))
+      .toEqual(mapLineCells({ x: 1, y: 1 }, { x: 3, y: 1 }, BOUNDS));
+    expect(mapGeometryCells("rectangle", { x: 1, y: 1 }, { x: 3, y: 3 }, "filled", BOUNDS))
+      .toEqual(mapRectangleCells({ x: 1, y: 1 }, { x: 3, y: 3 }, "filled", BOUNDS));
+    expect(mapGeometryCells("ellipse", { x: 1, y: 1 }, { x: 5, y: 5 }, "outline", BOUNDS))
+      .toEqual(mapEllipseCells({ x: 1, y: 1 }, { x: 5, y: 5 }, "outline", BOUNDS));
   });
 
   it("grows and shrinks one orthogonal ring while respecting map edges", () => {

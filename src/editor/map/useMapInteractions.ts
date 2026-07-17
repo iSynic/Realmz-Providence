@@ -28,7 +28,13 @@ import { setDungeonCellFlags } from "./dungeonCellFlags";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
 import { buildSuperTileStampChanges, MapStamp, MapStampPreviewCell, superTileStampPreviewCells } from "./superTileStamps";
-import { filledClosedSmartBrushPathCells, orthogonalSmartBrushPathCells } from "./smartBrushMask";
+import { filledEnclosedSmartBrushMaskCells, orthogonalSmartBrushPathCells } from "./smartBrushMask";
+import {
+  mapGeometryCells,
+  type MapSelectionDrawMode,
+  type MapShapeFill,
+  type SmartBrushDrawMode
+} from "./mapCellShapes";
 import {
   connectedMapCellsByTile,
   updateConnectedCellSelection,
@@ -57,9 +63,13 @@ export function useMapInteractions({
   selectedRegion,
   connectedSelection,
   connectedSelectionMode,
+  selectionDrawMode,
+  selectionShapeFill,
   tileAttributes,
   smartBrushMask,
   smartBrushDrawing,
+  smartBrushDrawMode,
+  smartBrushShapeFill,
   overlayCanvasRef,
   wrapRef,
   onSelectCell,
@@ -99,9 +109,13 @@ export function useMapInteractions({
   selectedRegion: MapRegionSelection | null;
   connectedSelection: ConnectedCellSelection | null;
   connectedSelectionMode: ConnectedTileMatchMode;
+  selectionDrawMode: MapSelectionDrawMode;
+  selectionShapeFill: MapShapeFill;
   tileAttributes: TileAttributeProfile[];
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushDrawing: boolean;
+  smartBrushDrawMode: SmartBrushDrawMode;
+  smartBrushShapeFill: MapShapeFill;
   overlayCanvasRef: RefObject<HTMLCanvasElement | null>;
   wrapRef: RefObject<HTMLDivElement | null>;
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
@@ -127,6 +141,9 @@ export function useMapInteractions({
     x: number;
     y: number;
     moved: boolean;
+    mode: MapSelectionDrawMode;
+    fill: MapShapeFill;
+    operation: "replace" | "add" | "subtract";
   } | null>(null);
   const paintActiveRef = useRef(false);
   const dungeonDrawActiveRef = useRef(false);
@@ -138,8 +155,11 @@ export function useMapInteractions({
   const smartMaskDragRef = useRef<{
     before: SmartBrushMaskCell[];
     cells: Map<string, SmartBrushMaskCell>;
+    start: { x: number; y: number };
     last: { x: number; y: number } | null;
     path: Array<{ x: number; y: number }>;
+    mode: SmartBrushDrawMode;
+    fill: MapShapeFill;
   } | null>(null);
   const strokeCellsRef = useRef<Set<string>>(new Set());
   const paintSequenceRef = useRef(0);
@@ -153,6 +173,7 @@ export function useMapInteractions({
   const [paintCursor, setPaintCursor] = useState<{ x: number; y: number; tile: number } | null>(null);
   const [stampCursor, setStampCursor] = useState<MapStampPreviewCell[] | null>(null);
   const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
+  const [shapePreview, setShapePreview] = useState<Array<{ x: number; y: number }> | null>(null);
   const bucketPreview = useMemo(() => {
     if (activeTool !== "bucket" || !hover) return null;
     return buildPaintBucketPlan({
@@ -494,12 +515,28 @@ export function useMapInteractions({
     setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
   }
 
+  function updateSmartMaskShape(cell: { x: number; y: number }) {
+    const drag = smartMaskDragRef.current;
+    if (!drag || drag.mode === "freehand") return;
+    const cells = new Map(drag.before.map((before) => [`${before.x}:${before.y}`, before]));
+    for (const shapeCell of mapGeometryCells(drag.mode, drag.start, cell, drag.fill, map)) {
+      if (!cellInRegion(shapeCell, selectedRegion)) continue;
+      cells.set(`${shapeCell.x}:${shapeCell.y}`, shapeCell);
+    }
+    drag.cells = cells;
+    onSetSmartBrushMask([...cells.values()]);
+    setHover(cell);
+    setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+  }
+
   function finishSmartMaskDrag() {
     const drag = smartMaskDragRef.current;
     if (!drag) return;
     let changed = false;
-    for (const cell of filledClosedSmartBrushPathCells(drag.path, map)) {
-      changed = addSmartMaskCell(cell) || changed;
+    if (drag.mode === "freehand") {
+      for (const cell of filledEnclosedSmartBrushMaskCells([...drag.cells.values()], map)) {
+        changed = addSmartMaskCell(cell) || changed;
+      }
     }
     const mask = [...drag.cells.values()];
     if (changed) onSetSmartBrushMask(mask);
@@ -562,6 +599,7 @@ export function useMapInteractions({
     stampCursor,
     bucketPreview,
     regionPreview,
+    shapePreview,
     overlayHandlers: {
       onPointerDown(event: PointerEvent<HTMLCanvasElement>) {
         event.currentTarget.focus();
@@ -572,10 +610,10 @@ export function useMapInteractions({
           return;
         }
         if (activeTool === "select") {
-          if (connectedSelection) onSetConnectedSelection(null);
+          if (selectionDrawMode === "area" && connectedSelection) onSetConnectedSelection(null);
           const cell = cellFromEvent(event);
           const hit = targetAt(cell);
-          if (shouldClearCurrentSelectionBeforeInspect(cell, hit)) {
+          if (selectionDrawMode === "area" && shouldClearCurrentSelectionBeforeInspect(cell, hit)) {
             clearCurrentSelection(cell, hit);
             return;
           }
@@ -585,7 +623,10 @@ export function useMapInteractions({
             start: cell,
             x: event.clientX,
             y: event.clientY,
-            moved: false
+            moved: false,
+            mode: selectionDrawMode,
+            fill: selectionShapeFill,
+            operation: event.altKey ? "subtract" : event.shiftKey ? "add" : "replace"
           };
           event.currentTarget.setPointerCapture(event.pointerId);
           return;
@@ -628,10 +669,20 @@ export function useMapInteractions({
           return;
         }
         if (activeTool === "paint" && paintMode === "smart") {
+          const start = cellFromEvent(event);
           const existing = new Map(smartBrushMask.map((cell) => [`${cell.x}:${cell.y}`, cell]));
-          smartMaskDragRef.current = { before: [...smartBrushMask], cells: existing, last: null, path: [] };
+          smartMaskDragRef.current = {
+            before: [...smartBrushMask],
+            cells: existing,
+            start,
+            last: null,
+            path: [],
+            mode: smartBrushDrawMode,
+            fill: smartBrushShapeFill
+          };
           onSetSmartBrushDrawing(true);
-          addSmartMaskPath(cellFromEvent(event));
+          if (smartBrushDrawMode === "freehand") addSmartMaskPath(start);
+          else updateSmartMaskShape(start);
           event.currentTarget.setPointerCapture(event.pointerId);
           return;
         }
@@ -665,10 +716,32 @@ export function useMapInteractions({
           const dx = event.clientX - selectDragRef.current.x;
           const dy = event.clientY - selectDragRef.current.y;
           if (selectDragRef.current.moved || Math.hypot(dx, dy) > 4) {
-            if (!selectDragRef.current.moved) onSelectCell(null);
+            if (!selectDragRef.current.moved) {
+              onSelectCell(null);
+              if (selectDragRef.current.mode !== "area") onSetSelectedRegion(null);
+            }
             selectDragRef.current.moved = true;
             setHoverTarget(null);
-            setRegionPreview(normalizeRegionBounds(selectDragRef.current.start, cell));
+            if (selectDragRef.current.mode === "area") {
+              setRegionPreview(normalizeRegionBounds(selectDragRef.current.start, cell));
+              setShapePreview(null);
+            } else {
+              setRegionPreview(null);
+              const shapeCells = mapGeometryCells(
+                selectDragRef.current.mode,
+                selectDragRef.current.start,
+                cell,
+                selectDragRef.current.fill,
+                map
+              );
+              setShapePreview(updateConnectedCellSelection(
+                connectedSelection,
+                shapeCells,
+                selectDragRef.current.start,
+                "exact",
+                selectDragRef.current.operation
+              )?.cells ?? []);
+            }
             return;
           }
           setHoverTarget(targetAt(cell));
@@ -694,7 +767,8 @@ export function useMapInteractions({
         }
         if (smartMaskDragRef.current) {
           const cell = cellFromEvent(event);
-          addSmartMaskPath(cell);
+          if (smartMaskDragRef.current.mode === "freehand") addSmartMaskPath(cell);
+          else updateSmartMaskShape(cell);
           return;
         }
         const cell = cellFromEvent(event);
@@ -730,16 +804,31 @@ export function useMapInteractions({
           return;
         }
         if (selectDragRef.current) {
-          const didDrag = selectDragRef.current.moved;
-          const start = selectDragRef.current.start;
+          const drag = selectDragRef.current;
+          const didDrag = drag.moved;
+          const start = drag.start;
           selectDragRef.current = null;
           if (!didDrag) {
             if (!(selectedRegion && cellInRegion(start, selectedRegion))) applyToolAt(event);
-          } else {
+          } else if (drag.mode === "area") {
             const end = cellFromEvent(event);
             setRegionPreview(null);
             onSetSelectedRegion(normalizeRegionBounds(start, end));
             onSelectCell(null);
+            setHoverTarget(null);
+          } else {
+            const end = cellFromEvent(event);
+            const cells = mapGeometryCells(drag.mode, start, end, drag.fill, map);
+            setShapePreview(null);
+            onSetSelectedRegion(null);
+            onClearSelection();
+            onSetConnectedSelection(updateConnectedCellSelection(
+              connectedSelection,
+              cells,
+              start,
+              "exact",
+              drag.operation
+            ));
             setHoverTarget(null);
           }
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -791,8 +880,10 @@ export function useMapInteractions({
           return;
         }
         if (smartMaskDragRef.current) {
-          finishSmartMaskDrag();
           const cell = cellFromEvent(event);
+          if (smartMaskDragRef.current.mode === "freehand") addSmartMaskPath(cell);
+          else updateSmartMaskShape(cell);
+          finishSmartMaskDrag();
           setHover(cell);
           setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
           if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -814,6 +905,7 @@ export function useMapInteractions({
         smartMaskDragRef.current = null;
         if (smartBrushDrawing) onSetSmartBrushDrawing(false);
         setRegionPreview(null);
+        setShapePreview(null);
         setHoverTarget(null);
         setPaintCursor(null);
         setStampCursor(null);
@@ -838,6 +930,7 @@ export function useMapInteractions({
         if (event.key !== "Escape") return;
         selectDragRef.current = null;
         setRegionPreview(null);
+        setShapePreview(null);
         setPaintCursor(null);
         setStampCursor(null);
         onSetConnectedSelection(null);

@@ -2,6 +2,7 @@ import { TOOLS } from "../../constants";
 import type { EditorState } from "../../store";
 import type { EditorTool, MapEntity, MapWorkbenchMode, TilesetAsset } from "../../types";
 import type { ConnectedTileMatchMode } from "../../map/connectedMapSelection";
+import type { MapSelectionDrawMode, MapShapeFill } from "../../map/mapCellShapes";
 import { SegmentedControl, type SegmentedControlOption } from "../../ui";
 import { TutorialTip } from "../TutorialTip";
 import { mapWorkbenchModeLabel } from "./mapBrowserModel";
@@ -16,6 +17,16 @@ const CONNECTED_MATCH_OPTIONS: ReadonlyArray<SegmentedControlOption<ConnectedTil
   { value: "semantic-family", label: "Terrain", title: "Match the known terrain family, including center and transition variants" },
   { value: "behavior", label: "Behavior", title: "Match known Realmz movement and blocking behavior" }
 ];
+const SELECTION_DRAW_OPTIONS: ReadonlyArray<SegmentedControlOption<MapSelectionDrawMode>> = [
+  { value: "area", label: "Area", title: "Drag a filled rectangular authoring region" },
+  { value: "line", label: "Line", title: "Drag an orthogonally connected line selection" },
+  { value: "rectangle", label: "Rect", title: "Drag a rectangular cell selection" },
+  { value: "ellipse", label: "Ellipse", title: "Drag an elliptical cell selection" }
+];
+const SHAPE_FILL_OPTIONS: ReadonlyArray<SegmentedControlOption<MapShapeFill>> = [
+  { value: "outline", label: "Outline" },
+  { value: "filled", label: "Filled" }
+];
 
 export function MapToolset({
   state,
@@ -24,8 +35,12 @@ export function MapToolset({
   atlas,
   workbenchMode,
   connectedSelectionMode,
+  selectionDrawMode,
+  selectionShapeFill,
   onSetWorkbenchMode,
   onSetConnectedSelectionMode,
+  onSetSelectionDrawMode,
+  onSetSelectionShapeFill,
   onSetTool,
   onSelectTile
 }: {
@@ -35,8 +50,12 @@ export function MapToolset({
   atlas: EditorState["atlasEntries"][string] | null;
   workbenchMode: MapWorkbenchMode;
   connectedSelectionMode: ConnectedTileMatchMode;
+  selectionDrawMode: MapSelectionDrawMode;
+  selectionShapeFill: MapShapeFill;
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onSetConnectedSelectionMode: (mode: ConnectedTileMatchMode) => void;
+  onSetSelectionDrawMode: (mode: MapSelectionDrawMode) => void;
+  onSetSelectionShapeFill: (fill: MapShapeFill) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
 }) {
@@ -71,6 +90,30 @@ export function MapToolset({
                 onChange={onSetConnectedSelectionMode}
                 className="wand-match-control"
               />
+            </div>
+          )}
+          {state.activeTool === "select" && (
+            <div className="map-sidebar-group selection-shape-group">
+              <div className="map-sidebar-group-title">Selection Shape</div>
+              <SegmentedControl
+                ariaLabel="Selection shape"
+                value={selectionDrawMode}
+                options={SELECTION_DRAW_OPTIONS}
+                onChange={onSetSelectionDrawMode}
+                className="selection-shape-control"
+              />
+              {(selectionDrawMode === "rectangle" || selectionDrawMode === "ellipse") && (
+                <SegmentedControl
+                  ariaLabel="Selection shape fill"
+                  value={selectionShapeFill}
+                  options={SHAPE_FILL_OPTIONS}
+                  onChange={onSetSelectionShapeFill}
+                  className="shape-fill-control"
+                />
+              )}
+              {selectionDrawMode !== "area" && (
+                <small className="context-capacity-note">Drag on the map. Shift adds to the current selection; Alt subtracts.</small>
+              )}
             </div>
           )}
           {isDungeon ? (

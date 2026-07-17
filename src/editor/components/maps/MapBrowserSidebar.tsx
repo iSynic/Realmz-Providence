@@ -13,6 +13,7 @@ import { ScrollArea } from "../../ui";
 import { ResizablePane } from "../ResizablePane";
 import { type MapContextFocus } from "./mapBrowserModel";
 import type { ConnectedTileMatchMode } from "../../map/connectedMapSelection";
+import type { MapSelectionDrawMode, MapShapeFill } from "../../map/mapCellShapes";
 import { MapOutliner } from "./MapOutliner";
 import { MapToolset } from "./MapToolset";
 
@@ -23,6 +24,8 @@ export function MapBrowserSidebar({
   atlas,
   workbenchMode,
   connectedSelectionMode,
+  selectionDrawMode,
+  selectionShapeFill,
   selectedRandomLevel,
   contextFocus,
   previewMode,
@@ -31,6 +34,8 @@ export function MapBrowserSidebar({
   onSetPreviewFocalPoint,
   onSetWorkbenchMode,
   onSetConnectedSelectionMode,
+  onSetSelectionDrawMode,
+  onSetSelectionShapeFill,
   onSelectMap,
   onSetTool,
   onSelectTile,
@@ -42,6 +47,8 @@ export function MapBrowserSidebar({
   atlas: EditorState["atlasEntries"][string] | null;
   workbenchMode: MapWorkbenchMode;
   connectedSelectionMode: ConnectedTileMatchMode;
+  selectionDrawMode: MapSelectionDrawMode;
+  selectionShapeFill: MapShapeFill;
   selectedRandomLevel: RandomLevel | null;
   contextFocus: MapContextFocus;
   previewMode: MapPreviewMode;
@@ -50,6 +57,8 @@ export function MapBrowserSidebar({
   onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
   onSetConnectedSelectionMode: (mode: ConnectedTileMatchMode) => void;
+  onSetSelectionDrawMode: (mode: MapSelectionDrawMode) => void;
+  onSetSelectionShapeFill: (fill: MapShapeFill) => void;
   onSelectMap: (id: string) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
@@ -88,8 +97,12 @@ export function MapBrowserSidebar({
           atlas={atlas}
           workbenchMode={workbenchMode}
           connectedSelectionMode={connectedSelectionMode}
+          selectionDrawMode={selectionDrawMode}
+          selectionShapeFill={selectionShapeFill}
           onSetWorkbenchMode={onSetWorkbenchMode}
           onSetConnectedSelectionMode={onSetConnectedSelectionMode}
+          onSetSelectionDrawMode={onSetSelectionDrawMode}
+          onSetSelectionShapeFill={onSetSelectionShapeFill}
           onSetTool={onSetTool}
           onSelectTile={onSelectTile}
         />

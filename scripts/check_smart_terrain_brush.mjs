@@ -29,7 +29,7 @@ try {
   const requireFromCheck = createRequire(path.join(tmpDir, "check.cjs"));
   const { alignSmartTerrainPlacementEdges } = requireFromCheck("./alignment.js");
   const { buildSmartTerrainChanges, smartBrushProfileForTileset } = requireFromCheck("./brush.js");
-  const { filledClosedSmartBrushPathCells, orthogonalSmartBrushPathCells, sameSmartBrushMask } = requireFromCheck("./mask.js");
+  const { filledClosedSmartBrushPathCells, filledEnclosedSmartBrushMaskCells, orthogonalSmartBrushPathCells, sameSmartBrushMask } = requireFromCheck("./mask.js");
   const { smartTerrainConnectionMasksForTile, smartTerrainTileConnects } = requireFromCheck("./topology.js");
   const { createProjectFromScenarioSeed } = requireFromCheck("./seed.js");
   const tileset = { landlook: 0, baseTile: 156 };
@@ -122,7 +122,30 @@ try {
   const openPath = [{ x: 2, y: 2 }, { x: 2, y: 6 }, { x: 6, y: 6 }, { x: 6, y: 3 }];
   expect(filledClosedSmartBrushPathCells(openPath, { width: 10, height: 10 }).length === 0, "an open Smart Brush stroke should not fill a lasso interior");
   const closedPath = [...openPath, { x: 2, y: 2 }];
-  expect(filledClosedSmartBrushPathCells(closedPath, { width: 10, height: 10 }).length > 0, "a Smart Brush stroke closed on its starting cell should fill its interior");
+  const closedFill = filledClosedSmartBrushPathCells(closedPath, { width: 10, height: 10 });
+  expect(closedFill.length > 0, "a Smart Brush stroke closed on its starting cell should fill its interior");
+  const touchingPath = [{ x: 2, y: 2 }, { x: 2, y: 6 }, { x: 6, y: 6 }, { x: 6, y: 2 }, { x: 3, y: 2 }];
+  expect(filledClosedSmartBrushPathCells(touchingPath, { width: 10, height: 10 }).length === 9, "a Smart Brush stroke whose endpoints touch should close and fill its interior");
+  const crossingPath = [{ x: 2, y: 2 }, { x: 2, y: 6 }, { x: 6, y: 6 }, { x: 6, y: 2 }, { x: 1, y: 2 }];
+  expect(filledClosedSmartBrushPathCells(crossingPath, { width: 10, height: 10 }).length === 9, "a sparse pointer segment crossing the starting cell should close and fill its interior");
+  const initialSegmentTouch = [{ x: 2, y: 1 }, { x: 2, y: 6 }, { x: 6, y: 6 }, { x: 6, y: 3 }, { x: 3, y: 3 }];
+  expect(filledClosedSmartBrushPathCells(initialSegmentTouch, { width: 10, height: 10 }).length === 6, "a Smart Brush stroke ending against its initial segment should fill without returning to the first cell");
+  const initialSegmentCrossing = [{ x: 2, y: 1 }, { x: 2, y: 6 }, { x: 6, y: 6 }, { x: 6, y: 3 }, { x: 1, y: 3 }];
+  expect(filledClosedSmartBrushPathCells(initialSegmentCrossing, { width: 10, height: 10 }).length === 6, "a sparse release segment crossing an earlier stroke segment should fill the enclosed loop");
+  const roundedPath = [
+    { x: 5, y: 2 }, { x: 7, y: 3 }, { x: 8, y: 5 }, { x: 7, y: 7 },
+    { x: 5, y: 8 }, { x: 3, y: 7 }, { x: 2, y: 5 }, { x: 3, y: 3 }, { x: 4, y: 2 }
+  ];
+  expect(filledClosedSmartBrushPathCells(roundedPath, { width: 12, height: 12 }).some((cell) => cell.x === 5 && cell.y === 5), "a rounded Smart Brush loop with touching endpoints should fill its center");
+  const multiStrokeBoundary = [
+    ...orthogonalSmartBrushPathCells({ x: 2, y: 2 }, { x: 2, y: 6 }),
+    ...orthogonalSmartBrushPathCells({ x: 2, y: 6 }, { x: 6, y: 6 }),
+    ...orthogonalSmartBrushPathCells({ x: 6, y: 6 }, { x: 6, y: 2 }),
+    ...orthogonalSmartBrushPathCells({ x: 6, y: 2 }, { x: 2, y: 2 })
+  ];
+  expect(filledEnclosedSmartBrushMaskCells(multiStrokeBoundary, { width: 10, height: 10 }).length === 9, "a Smart Brush mask closed across multiple strokes should fill its interior");
+  const openMultiStrokeBoundary = multiStrokeBoundary.filter((cell) => !(cell.x === 4 && cell.y === 2));
+  expect(filledEnclosedSmartBrushMaskCells(openMultiStrokeBoundary, { width: 10, height: 10 }).length === 0, "a visible gap in a multi-stroke Smart Brush mask should remain open");
   expect(sameSmartBrushMask([{ x: 1, y: 1 }, { x: 2, y: 2 }], [{ x: 2, y: 2 }, { x: 1, y: 1 }]), "Smart Brush mask history should compare snapshots independent of insertion order");
   const diagonalStroke = orthogonalSmartBrushPathCells({ x: 2, y: 2 }, { x: 5, y: 5 });
   expect(diagonalStroke.length === 7, "diagonal Smart Brush movement should interpolate a connected four-directional path");

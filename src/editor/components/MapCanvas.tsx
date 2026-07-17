@@ -29,6 +29,7 @@ import {
 import { clampScroll, mapCellFromTileIndex, MAP_CELLS } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
 import type { ConnectedCellSelection, ConnectedTileMatchMode } from "../map/connectedMapSelection";
+import type { MapSelectionDrawMode, MapShapeFill, SmartBrushDrawMode } from "../map/mapCellShapes";
 import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
 import { hasSecretMarkerTile, showsCombatClearingOverlay, showsHiddenWalkableOverlay } from "../map/secrets";
 import { loadMapOverlaySprites } from "../map/mapOverlaySprites";
@@ -102,7 +103,11 @@ export function RealmzMapCanvas({
   selectedRegion,
   connectedSelection,
   connectedSelectionMode,
+  selectionDrawMode,
+  selectionShapeFill,
   smartBrushMask,
+  smartBrushDrawMode,
+  smartBrushShapeFill,
   smartBrushPlan,
   smartBrushDrawing,
   globalMapStamps,
@@ -153,7 +158,11 @@ export function RealmzMapCanvas({
   selectedRegion: MapRegionSelection | null;
   connectedSelection: ConnectedCellSelection | null;
   connectedSelectionMode: ConnectedTileMatchMode;
+  selectionDrawMode: MapSelectionDrawMode;
+  selectionShapeFill: MapShapeFill;
   smartBrushMask: SmartBrushMaskCell[];
+  smartBrushDrawMode: SmartBrushDrawMode;
+  smartBrushShapeFill: MapShapeFill;
   smartBrushPlan: SmartBrushPlan | null;
   smartBrushDrawing: boolean;
   globalMapStamps: CustomMapStamp[];
@@ -321,7 +330,7 @@ export function RealmzMapCanvas({
     drawBaseMapLayer(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
     baseRenderRef.current = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
   }, [atlas, canvasCssSize, icons, map, smoothTiles, viewOptions]);
-  const { hover, hoverTarget, paintCursor, stampCursor, bucketPreview, regionPreview, overlayHandlers } = useMapInteractions({
+  const { hover, hoverTarget, paintCursor, stampCursor, bucketPreview, regionPreview, shapePreview, overlayHandlers } = useMapInteractions({
     map,
     activeTool,
     paintMode,
@@ -342,9 +351,13 @@ export function RealmzMapCanvas({
     selectedRegion,
     connectedSelection,
     connectedSelectionMode,
+    selectionDrawMode,
+    selectionShapeFill,
     tileAttributes,
     smartBrushMask,
     smartBrushDrawing,
+    smartBrushDrawMode,
+    smartBrushShapeFill,
     overlayCanvasRef,
     wrapRef,
     onSelectCell,
@@ -428,6 +441,7 @@ export function RealmzMapCanvas({
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
     if (connectedSelection) drawConnectedCellSelection(ctx, connectedSelection.cells, cell);
     if (bucketPreview) drawConnectedCellSelection(ctx, bucketPreview, cell, "preview");
+    if (shapePreview) drawConnectedCellSelection(ctx, shapePreview, cell, "preview");
     if (smartBrushDrawing && smartBrushMask.length > 0) {
       drawSmartTerrainMask(ctx, smartBrushMask, cell);
     } else if (smartBrushPlan && (smartBrushPlan.cells.length > 0 || smartBrushPlan.skipped.length > 0)) {
@@ -452,6 +466,7 @@ export function RealmzMapCanvas({
     selectedRegion,
     connectedSelection,
     bucketPreview,
+    shapePreview,
     smartBrushMask,
     smartBrushPlan,
     smartBrushDrawing,

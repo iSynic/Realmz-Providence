@@ -4,7 +4,13 @@ import type { LandLayoutCellSelection } from "../../components/maps/LandLayoutWo
 import type { EditorState } from "../../store";
 import { readGlobalMapStamps, writeGlobalMapStamps } from "../../map/customMapStamps";
 import { DUNGEON_DEFAULT_DRAW_FLAGS } from "../../map/dungeonCellFlags";
-import { growMapCells, shrinkMapCells } from "../../map/mapCellShapes";
+import {
+  growMapCells,
+  shrinkMapCells,
+  type MapSelectionDrawMode,
+  type MapShapeFill,
+  type SmartBrushDrawMode
+} from "../../map/mapCellShapes";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../../map/superTileStamps";
 import type { ConnectedCellSelection, ConnectedTileMatchMode } from "../../map/connectedMapSelection";
@@ -61,7 +67,11 @@ export function useMapWorkbenchState({
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
   const [connectedSelection, setConnectedSelection] = useState<ConnectedCellSelection | null>(null);
   const [connectedSelectionMode, setConnectedSelectionMode] = useState<ConnectedTileMatchMode>("semantic-family");
+  const [selectionDrawMode, setSelectionDrawMode] = useState<MapSelectionDrawMode>("area");
+  const [selectionShapeFill, setSelectionShapeFill] = useState<MapShapeFill>("filled");
   const [smartBrushPreset, setSmartBrushPreset] = useState<SmartBrushPreset>("mountains");
+  const [smartBrushDrawMode, setSmartBrushDrawMode] = useState<SmartBrushDrawMode>("freehand");
+  const [smartBrushShapeFill, setSmartBrushShapeFill] = useState<MapShapeFill>("filled");
   const { smartBrushMask, setSmartBrushMask, commitSmartBrushMaskStep, canUndoSmartBrushMaskStep, undoSmartBrushMaskStep, resetSmartBrushMask } = useSmartBrushMaskHistory();
   const [smartBrushDrawing, setSmartBrushDrawing] = useState(false);
   const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
@@ -197,7 +207,11 @@ export function useMapWorkbenchState({
       connectedSelection,
       setConnectedSelection,
       connectedSelectionMode,
-      setConnectedSelectionMode
+      setConnectedSelectionMode,
+      selectionDrawMode,
+      setSelectionDrawMode,
+      selectionShapeFill,
+      setSelectionShapeFill
     },
     stamps: {
       globalMapStamps,
@@ -208,6 +222,10 @@ export function useMapWorkbenchState({
     smartBrush: {
       smartBrushPreset,
       setSmartBrushPreset,
+      smartBrushDrawMode,
+      setSmartBrushDrawMode,
+      smartBrushShapeFill,
+      setSmartBrushShapeFill,
       smartBrushMask,
       setSmartBrushMask,
       commitSmartBrushMaskStep,

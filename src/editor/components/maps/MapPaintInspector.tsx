@@ -27,6 +27,7 @@ import { PanelSection, SegmentedControl, type SegmentedControlOption } from "../
 import { clearRegion, fillRegion, paintModeLabel, regionLabel } from "./mapRegionUiUtils";
 import { tileAttributeLabel } from "./mapTileUiUtils";
 import { PaintPaletteSurface } from "./PaintPaletteSurface";
+import type { MapShapeFill, SmartBrushDrawMode } from "../../map/mapCellShapes";
 
 export function MapPaintInspector({
   state,
@@ -51,6 +52,10 @@ export function MapPaintInspector({
   onSetGlobalMapStamps,
   smartBrushPreset,
   onSetSmartBrushPreset,
+  smartBrushDrawMode,
+  onSetSmartBrushDrawMode,
+  smartBrushShapeFill,
+  onSetSmartBrushShapeFill,
   smartBrushMask,
   smartBrushPlan,
   onClearSmartBrushMask,
@@ -87,6 +92,10 @@ export function MapPaintInspector({
   onSetGlobalMapStamps: (stamps: CustomMapStamp[]) => void;
   smartBrushPreset: SmartBrushPreset;
   onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
+  smartBrushDrawMode: SmartBrushDrawMode;
+  onSetSmartBrushDrawMode: (mode: SmartBrushDrawMode) => void;
+  smartBrushShapeFill: MapShapeFill;
+  onSetSmartBrushShapeFill: (fill: MapShapeFill) => void;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
@@ -167,6 +176,10 @@ export function MapPaintInspector({
         selectedRegion={selectedRegion}
         smartBrushPreset={smartBrushPreset}
         onSetSmartBrushPreset={onSetSmartBrushPreset}
+        smartBrushDrawMode={smartBrushDrawMode}
+        onSetSmartBrushDrawMode={onSetSmartBrushDrawMode}
+        smartBrushShapeFill={smartBrushShapeFill}
+        onSetSmartBrushShapeFill={onSetSmartBrushShapeFill}
         smartBrushMask={smartBrushMask}
         smartBrushPlan={smartBrushPlan}
         onClearSmartBrushMask={onClearSmartBrushMask}
@@ -280,6 +293,16 @@ const PAINT_MODES: Array<{ id: MapPaintMode; label: string; body: string }> = [
   { id: "clear", label: "Eraser", body: "Restore cells to the current map's clear tile." },
   { id: "smart", label: "Smart", body: "Beta: draw a terrain mask and resolve mountain, water, or forest edges automatically." }
 ];
+const SMART_BRUSH_DRAW_OPTIONS: ReadonlyArray<SegmentedControlOption<SmartBrushDrawMode>> = [
+  { value: "freehand", label: "Freehand" },
+  { value: "line", label: "Line" },
+  { value: "rectangle", label: "Rect" },
+  { value: "ellipse", label: "Ellipse" }
+];
+const SMART_BRUSH_FILL_OPTIONS: ReadonlyArray<SegmentedControlOption<MapShapeFill>> = [
+  { value: "outline", label: "Outline" },
+  { value: "filled", label: "Filled" }
+];
 
 function PaintModePanel({
   map,
@@ -295,6 +318,10 @@ function PaintModePanel({
   selectedRegion,
   smartBrushPreset,
   onSetSmartBrushPreset,
+  smartBrushDrawMode,
+  onSetSmartBrushDrawMode,
+  smartBrushShapeFill,
+  onSetSmartBrushShapeFill,
   smartBrushMask,
   smartBrushPlan,
   onClearSmartBrushMask,
@@ -319,6 +346,10 @@ function PaintModePanel({
   selectedRegion: MapRegionSelection | null;
   smartBrushPreset: SmartBrushPreset;
   onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
+  smartBrushDrawMode: SmartBrushDrawMode;
+  onSetSmartBrushDrawMode: (mode: SmartBrushDrawMode) => void;
+  smartBrushShapeFill: MapShapeFill;
+  onSetSmartBrushShapeFill: (fill: MapShapeFill) => void;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
@@ -402,6 +433,25 @@ function PaintModePanel({
               ))}
             </select>
           </label>
+          <div className="smart-brush-shape-controls">
+            <span className="paint-control-label">Mask Shape</span>
+            <SegmentedControl
+              ariaLabel="Smart Mask shape"
+              value={smartBrushDrawMode}
+              options={SMART_BRUSH_DRAW_OPTIONS}
+              onChange={onSetSmartBrushDrawMode}
+              className="smart-brush-shape-control"
+            />
+            {(smartBrushDrawMode === "rectangle" || smartBrushDrawMode === "ellipse") && (
+              <SegmentedControl
+                ariaLabel="Smart Mask shape fill"
+                value={smartBrushShapeFill}
+                options={SMART_BRUSH_FILL_OPTIONS}
+                onChange={onSetSmartBrushShapeFill}
+                className="shape-fill-control"
+              />
+            )}
+          </div>
           <InfoGrid
             rows={[
               ["Mask Cells", smartBrushMask.length],

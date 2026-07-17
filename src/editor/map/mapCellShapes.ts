@@ -1,6 +1,9 @@
 export type MapShapeCell = { x: number; y: number };
 export type MapCellBounds = { width: number; height: number };
 export type MapShapeFill = "outline" | "filled";
+export type MapGeometryShape = "line" | "rectangle" | "ellipse";
+export type MapSelectionDrawMode = "area" | MapGeometryShape;
+export type SmartBrushDrawMode = "freehand" | MapGeometryShape;
 
 const ORTHOGONAL_OFFSETS = [
   { x: 0, y: -1 },
@@ -93,6 +96,18 @@ export function mapEllipseCells(
     }
   }
   return cells;
+}
+
+export function mapGeometryCells(
+  shape: MapGeometryShape,
+  start: MapShapeCell,
+  end: MapShapeCell,
+  fill: MapShapeFill,
+  bounds: MapCellBounds
+) {
+  if (shape === "line") return mapLineCells(start, end, bounds);
+  if (shape === "rectangle") return mapRectangleCells(start, end, fill, bounds);
+  return mapEllipseCells(start, end, fill, bounds);
 }
 
 export function growMapCells(cells: ReadonlyArray<MapShapeCell>, bounds: MapCellBounds) {
