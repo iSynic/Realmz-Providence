@@ -14,6 +14,7 @@ import {
   Map as MapIcon,
   MessageSquareText,
   MousePointer2,
+  PaintBucket,
   RectangleHorizontal,
   Spline,
   Stamp,
@@ -55,8 +56,10 @@ export const TABS: { id: EditorTab; label: string; icon: JSX.Element }[] = [
 
 export const TOOLS: { id: EditorTool; label: string; icon: JSX.Element; hint: string }[] = [
   { id: "select", label: "Select", icon: <MousePointer2 size={16} />, hint: "Click to inspect tiles and linked records. Drag to select a rectangular map region." },
+  { id: "wand", label: "Magic Wand", icon: <WandSparkles size={16} />, hint: "Select connected map cells. Shift adds a component and Alt removes one." },
   { id: "pan", label: "Pan", icon: <Hand size={16} />, hint: "Drag to move around the map canvas. Right-click-drag pans from any map tool." },
   { id: "paint", label: "Paint", icon: <Brush size={16} />, hint: "Paint standard landlook tiles, special land tiles, and icon-backed Realmz tile values onto the map." },
+  { id: "bucket", label: "Fill", icon: <PaintBucket size={16} />, hint: "Replace connected matching terrain with the selected tile or variation group in one undoable fill." },
   { id: "stamp", label: "Stamp", icon: <Stamp size={16} />, hint: "Place prebuilt multi-tile brushes such as Realmz tree pairs and large special-land structures." },
   { id: "dungeon-draw", label: "Draw", icon: <PencilLine size={16} />, hint: "Draw dungeon cells with the selected wall, door, stair, column, movement, unmapped, and battle-wall flags." },
   { id: "trigger", label: "Action Point", icon: <Binary size={16} />, hint: "Click to create or select Action Points on this map." },

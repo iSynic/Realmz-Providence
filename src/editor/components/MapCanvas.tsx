@@ -321,7 +321,7 @@ export function RealmzMapCanvas({
     drawBaseMapLayer(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
     baseRenderRef.current = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
   }, [atlas, canvasCssSize, icons, map, smoothTiles, viewOptions]);
-  const { hover, hoverTarget, paintCursor, stampCursor, regionPreview, overlayHandlers } = useMapInteractions({
+  const { hover, hoverTarget, paintCursor, stampCursor, bucketPreview, regionPreview, overlayHandlers } = useMapInteractions({
     map,
     activeTool,
     paintMode,
@@ -427,6 +427,7 @@ export function RealmzMapCanvas({
     if (showMapRecords) drawMapRecords(ctx, map, mapRecords, selectedEntity, cell);
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
     if (connectedSelection) drawConnectedCellSelection(ctx, connectedSelection.cells, cell);
+    if (bucketPreview) drawConnectedCellSelection(ctx, bucketPreview, cell, "preview");
     if (smartBrushDrawing && smartBrushMask.length > 0) {
       drawSmartTerrainMask(ctx, smartBrushMask, cell);
     } else if (smartBrushPlan && (smartBrushPlan.cells.length > 0 || smartBrushPlan.skipped.length > 0)) {
@@ -450,6 +451,7 @@ export function RealmzMapCanvas({
     selectedCell,
     selectedRegion,
     connectedSelection,
+    bucketPreview,
     smartBrushMask,
     smartBrushPlan,
     smartBrushDrawing,
@@ -725,6 +727,7 @@ function combatClearingOverlaySignature(map: MapEntity) {
 function cursorForTool(tool: EditorTool, paintMode: MapPaintMode, target: MapHitTarget | null) {
   if (tool === "pan") return "grab";
   if (tool === "paint" && paintMode === "smart") return "crosshair";
+  if (tool === "bucket") return "crosshair";
   if (tool === "paint") return "none";
   if (tool === "stamp") return "copy";
   if (tool === "dungeon-draw") return "none";

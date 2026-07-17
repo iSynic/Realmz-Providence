@@ -7,7 +7,7 @@ import { TutorialTip } from "../TutorialTip";
 import { mapWorkbenchModeLabel } from "./mapBrowserModel";
 import { PaintTileSummary } from "./MapPaintInspector";
 
-const LAND_AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "stamp", "trigger", "random"];
+const LAND_AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "bucket", "stamp", "trigger", "random"];
 const DUNGEON_AUTHORING_TOOL_IDS: EditorTool[] = ["dungeon-draw", "trigger", "random"];
 const NAVIGATION_TOOL_IDS: EditorTool[] = ["select", "wand", "pan", "sample"];
 const TOOL_BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
@@ -61,11 +61,11 @@ export function MapToolset({
               </div>
             </div>
           </div>
-          {state.activeTool === "wand" && (
+          {(state.activeTool === "wand" || state.activeTool === "bucket") && (
             <div className="map-sidebar-group wand-match-group">
               <div className="map-sidebar-group-title">Connected Match</div>
               <SegmentedControl
-                ariaLabel="Magic Wand connected tile match"
+                ariaLabel={`${state.activeTool === "wand" ? "Magic Wand" : "Paint Bucket"} connected tile match`}
                 value={connectedSelectionMode}
                 options={CONNECTED_MATCH_OPTIONS}
                 onChange={onSetConnectedSelectionMode}

@@ -17,7 +17,7 @@ export interface MapInspectorTransition {
 }
 
 export function compatibleMapTool(levelType: LevelType | null, activeTool: EditorTool) {
-  if (levelType === "dungeon" && (activeTool === "paint" || activeTool === "stamp")) return "select";
+  if (levelType === "dungeon" && (activeTool === "paint" || activeTool === "bucket" || activeTool === "stamp")) return "select";
   if (levelType !== "dungeon" && activeTool === "dungeon-draw") return "select";
   return activeTool;
 }
@@ -35,7 +35,7 @@ export function resolveMapInspectorRoute({
   hasSelection: boolean;
   hasSelectedRegion: boolean;
 }): MapInspectorRoute {
-  const showPaint = workbenchMode === "canvas" && levelType !== "dungeon" && (activeTool === "paint" || activeTool === "stamp" || hasSelectedRegion);
+  const showPaint = workbenchMode === "canvas" && levelType !== "dungeon" && (activeTool === "paint" || activeTool === "bucket" || activeTool === "stamp" || hasSelectedRegion);
   const showDungeonDraw = workbenchMode === "canvas" && levelType === "dungeon" && activeTool === "dungeon-draw";
   const showSelection = workbenchMode === "canvas" && !showPaint && !showDungeonDraw && hasSelection;
   const choice = showPaint

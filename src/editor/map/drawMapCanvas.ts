@@ -626,7 +626,8 @@ export function drawRegionSelection(
 export function drawConnectedCellSelection(
   ctx: CanvasRenderingContext2D,
   cells: Array<{ x: number; y: number }>,
-  cellSize: number
+  cellSize: number,
+  mode: "selected" | "preview" = "selected"
 ) {
   if (cells.length === 0) return;
   const selected = new Set(cells.map((cell) => `${cell.x}:${cell.y}`));
@@ -634,7 +635,7 @@ export function drawConnectedCellSelection(
   const lineWidth = Math.max(1.5, Math.min(4, cellSize * 0.11));
 
   ctx.save();
-  ctx.fillStyle = "rgba(128, 234, 255, 0.18)";
+  ctx.fillStyle = mode === "preview" ? "rgba(243, 200, 105, 0.18)" : "rgba(128, 234, 255, 0.18)";
   for (const selectedCell of cells) {
     ctx.fillRect(
       selectedCell.x * cellSize + inset,
@@ -667,9 +668,10 @@ export function drawConnectedCellSelection(
       ctx.lineTo(left, top);
     }
   }
-  ctx.strokeStyle = "#80eaff";
+  ctx.strokeStyle = mode === "preview" ? "#f3c869" : "#80eaff";
   ctx.lineWidth = lineWidth;
   ctx.lineJoin = "miter";
+  if (mode === "preview") ctx.setLineDash([Math.max(3, cellSize * 0.25), Math.max(2, cellSize * 0.16)]);
   ctx.stroke();
   ctx.restore();
 }

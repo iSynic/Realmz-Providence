@@ -1,4 +1,4 @@
-import { KeyboardEvent, MouseEvent, PointerEvent, RefObject, useEffect, useRef, useState } from "react";
+import { KeyboardEvent, MouseEvent, PointerEvent, RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
   EditorTool,
   DungeonCellFlag,
@@ -22,6 +22,7 @@ import { cellFromCanvasPoint, mapTileIndex, tileValueAt } from "./geometry";
 import { hitTestMapTarget } from "./hitTest";
 import { normalizeRegionBounds } from "./regionPaint";
 import { makePaintTileResolver, paintSeed } from "./paintResolver";
+import { buildPaintBucketCommand, buildPaintBucketPlan } from "./paintBucket";
 import { clearTileForMap } from "./tileClear";
 import { setDungeonCellFlags } from "./dungeonCellFlags";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
@@ -152,6 +153,39 @@ export function useMapInteractions({
   const [paintCursor, setPaintCursor] = useState<{ x: number; y: number; tile: number } | null>(null);
   const [stampCursor, setStampCursor] = useState<MapStampPreviewCell[] | null>(null);
   const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
+  const bucketPreview = useMemo(() => {
+    if (activeTool !== "bucket" || !hover) return null;
+    return buildPaintBucketPlan({
+      map,
+      start: hover,
+      matchMode: connectedSelectionMode,
+      tileset: selectedTileset,
+      attributes: tileAttributes,
+      intent: {
+        selectedTile,
+        selectedTileset,
+        variation: paintVariation,
+        activeGroupId: activePaintGroupId,
+        variationTiles,
+        seed: paintSeed("bucket-preview", map.id, hover.x, hover.y, selectedTile, activePaintGroupId, variationTiles?.join(","))
+      },
+      region: selectedRegion,
+      selectionCells: connectedSelection?.cells
+    }).component;
+  }, [
+    activePaintGroupId,
+    activeTool,
+    connectedSelection?.cells,
+    connectedSelectionMode,
+    hover,
+    map,
+    paintVariation,
+    selectedRegion,
+    selectedTile,
+    selectedTileset,
+    tileAttributes,
+    variationTiles
+  ]);
 
   useEffect(() => {
     if (isBrushLikeTool(activeTool, paintMode) || activeTool === "dungeon-draw") return;
@@ -316,6 +350,34 @@ export function useMapInteractions({
     onCommitPaintStroke();
   }
 
+  function fillConnectedAt(cell: { x: number; y: number }) {
+    const command = buildPaintBucketCommand({
+      map,
+      start: cell,
+      matchMode: connectedSelectionMode,
+      tileset: selectedTileset,
+      attributes: tileAttributes,
+      intent: {
+        selectedTile,
+        selectedTileset,
+        variation: paintVariation,
+        activeGroupId: activePaintGroupId,
+        variationTiles,
+        seed: paintSeed("bucket", map.id, cell.x, cell.y, selectedTile, activePaintGroupId, variationTiles?.join(","))
+      },
+      region: selectedRegion,
+      selectionCells: connectedSelection?.cells
+    });
+    const from = tileValueAt(map, cell.x, cell.y);
+    setHoverTarget({ kind: "cell", cell: { ...cell, tile: from } });
+    if (!command) return;
+    onBeginPaintStroke(command.label);
+    onApplyCommand(command);
+    onCommitPaintStroke();
+    const anchorChange = command.cells.find((change) => change.x === cell.x && change.y === cell.y);
+    selectTargetCell({ ...cell, tile: anchorChange?.to ?? from });
+  }
+
   function startPan(event: PointerEvent<HTMLCanvasElement>) {
     const wrap = wrapRef.current;
     if (!wrap) return false;
@@ -393,6 +455,10 @@ export function useMapInteractions({
     }
     if (activeTool === "stamp") {
       placeStampAt(cell);
+      return;
+    }
+    if (activeTool === "bucket") {
+      fillConnectedAt(cell);
       return;
     }
     if (activeTool === "dungeon-draw") {
@@ -494,6 +560,7 @@ export function useMapInteractions({
     hoverTarget,
     paintCursor,
     stampCursor,
+    bucketPreview,
     regionPreview,
     overlayHandlers: {
       onPointerDown(event: PointerEvent<HTMLCanvasElement>) {

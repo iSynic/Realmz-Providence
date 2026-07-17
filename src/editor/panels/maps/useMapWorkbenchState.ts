@@ -135,7 +135,7 @@ export function useMapWorkbenchState({
   const openCanvasTool = (tool: EditorTool) => {
     setWorkbenchMode("canvas");
     onSetTool(tool);
-    if (tool === "paint" || tool === "stamp") setPaletteOpen(true);
+    if (tool === "paint" || tool === "bucket" || tool === "stamp") setPaletteOpen(true);
   };
   const clearSmartBrushMask = () => { resetSmartBrushMask(); setSmartBrushDrawing(false); };
   const applySmartBrush = () => {

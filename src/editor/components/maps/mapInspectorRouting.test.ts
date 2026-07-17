@@ -4,6 +4,7 @@ import { compatibleMapTool, resolveMapInspectorRoute, transitionToMapInspector }
 describe("map inspector routing", () => {
   it("prioritizes paint, dungeon draw, selection, and setup on the canvas", () => {
     expect(resolveMapInspectorRoute({ workbenchMode: "canvas", activeTool: "paint", levelType: "land", hasSelection: true, hasSelectedRegion: false }).choice).toBe("paint");
+    expect(resolveMapInspectorRoute({ workbenchMode: "canvas", activeTool: "bucket", levelType: "land", hasSelection: true, hasSelectedRegion: false }).choice).toBe("paint");
     expect(resolveMapInspectorRoute({ workbenchMode: "canvas", activeTool: "dungeon-draw", levelType: "dungeon", hasSelection: true, hasSelectedRegion: false }).choice).toBe("dungeon-draw");
     expect(resolveMapInspectorRoute({ workbenchMode: "canvas", activeTool: "select", levelType: "land", hasSelection: true, hasSelectedRegion: false }).choice).toBe("selection");
     expect(resolveMapInspectorRoute({ workbenchMode: "canvas", activeTool: "select", levelType: "land", hasSelection: false, hasSelectedRegion: false }).choice).toBe("setup");
@@ -17,6 +18,7 @@ describe("map inspector routing", () => {
 
   it("normalizes tools that are invalid for the current map family", () => {
     expect(compatibleMapTool("dungeon", "paint")).toBe("select");
+    expect(compatibleMapTool("dungeon", "bucket")).toBe("select");
     expect(compatibleMapTool("dungeon", "stamp")).toBe("select");
     expect(compatibleMapTool("land", "dungeon-draw")).toBe("select");
     expect(compatibleMapTool("land", "paint")).toBe("paint");
