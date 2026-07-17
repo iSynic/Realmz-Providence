@@ -2,7 +2,19 @@
 
 ## User-Facing Unlock
 
-This card unlocks a Scenario/Scripts editor surface for global macro hooks. Providence can show source-backed slots for scenario start, party death, quitting/end-game, shop entry, and temple entry, with macro target pickers that resolve to callable `Data ED3` rows. Unproven slots remain preserved evidence until Divinity binary or additional Realmz source anchors explain them.
+This card unlocks Divinity's author-facing Global Macros workflow. The Scenario Data screen assigns Extra Action Point scripts to scenario start, party death, quitting/end-game, the Shop button, and the Temple button. Providence exposes those five assignments in Scenario and shows their assigned `Data ED3` rows through a filtered Global Macros view in Action Points. Unproven slots remain preserved evidence.
+
+## Divinity Manual Evidence
+
+The bundled Divinity manual documents a **Global Macros** section inside **Scenario Startup Information**. It says authors script an Extra Action Point and assign it to one of five automatic times in the Scenario Data screen:
+
+- Start: when the player starts a new adventure.
+- Death: when the party is killed.
+- Quit: when the player quits without dying.
+- Shops: when the player clicks the Shop button; direct scripted shop entry does not run it.
+- Temples: when the player clicks the Temple button.
+
+The manual does not define a separate Global Event record or editor. Global Macro scripts are ordinary Extra Action Point rows selected by the five Scenario Data fields.
 
 ## Realmz Anchors
 
@@ -32,7 +44,17 @@ This card unlocks a Scenario/Scripts editor surface for global macro hooks. Prov
 
 ## Corpus Evidence
 
-The local output corpus under `F:\Realmz\out_win_clang\Scenarios` has `Global` in 28 of 28 checked scenarios, always 60 bytes.
+The combined local corpus under `F:\Realmz\base\Realmz\Scenarios` and `F:\Realmz\out_win_clang\Scenarios` contains 37 unique scenarios with a 60-byte `Global` file. Fourteen have any nonzero slot, but only eight use a source-backed Global Macro slot.
+
+Observed source-backed usage is limited to Start, Death, and Quit:
+
+- Start: 6 scenarios.
+- Death: 4 scenarios.
+- Quit: 5 scenarios.
+- Shop: 0 scenarios.
+- Temple: 0 scenarios.
+
+This makes Global Macros a real but optional authoring feature. Most scenarios leave all five assignments at zero.
 
 Representative nonzero examples:
 
@@ -57,14 +79,14 @@ The broader 44-scenario inventory also reports `Global` in every analyzed scenar
 
 ## Editor Follow-Up
 
-- Scenario tool: add a compact Global Macro Hooks section with rows for source-backed slots.
-- Scripts tool: let macro target pickers include macros reached from source-backed Global slots.
+- Scenario tool: present Divinity's five Global Macro X-AP assignments with searchable Extra Action Point pickers.
+- Scripts tool: treat Global Macros as a filtered view of assigned Extra Action Points, not a separate record type.
 - Validation: warn when a source-backed nonzero hook points to a missing `Data ED3` row.
 - Validation: label nonzero unproven slots as preserved data with no confirmed runtime consumer.
 - Writer: update only the 30 owned signed-short slots, preserving file size and signed big-endian encoding.
 
-## Divinity Evidence Needed
+## Remaining Evidence Needed
 
-- Confirm Divinity labels/defaults for slots 0-5.
-- Determine whether Divinity exposes slots 3 or 6-29, or whether those are legacy/padding/runtime flags.
-- Capture the Scenario Data / Global Macro UI write behavior from the Mac binary before making all 30 slots user-editable.
+- Determine why unconsumed slot 3 is nonzero in `Mithril Vault`.
+- Determine why slot 29 is `1` in ten scenarios and whether it is editor metadata, a compatibility flag, or runtime state.
+- Keep slots 3 and 6-29 preservation-only unless a source consumer or explicit authoring contract is found.

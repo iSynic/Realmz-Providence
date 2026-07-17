@@ -117,7 +117,7 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   "scenario-startup": "Scenario Startup",
   "scenario-restriction": "Scenario Restriction",
   "registration-security": "Registration Security",
-  "global-macro": "Global Event",
+  "global-macro": "Global Macro",
   "land-layout": "Land Layout",
   "special-land-tile": "Special Land Tile",
   "library-file": "Library File"

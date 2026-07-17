@@ -36,7 +36,7 @@ export const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string;
     editors: [
       { id: "action-points", label: "Action Points / GOSUBs", entityTypes: ["trigger", "action-slot"] },
       { id: "macros", label: "Macros", entityTypes: ["macro"], createType: "macro" },
-      { id: "global-macros", label: "Global Events", entityTypes: ["global-macro"], createType: "global-macro" },
+      { id: "global-macros", label: "Global Macro Scripts", entityTypes: ["global-macro"], createType: "global-macro" },
       { id: "quests", label: "Quests", entityTypes: ["quest flag"], createType: "quest flag" }
     ]
   },
@@ -46,7 +46,7 @@ export const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string;
     editors: [
       { id: "startup", label: "Scenario Startup Information", entityTypes: ["scenario-startup", "scenario", "contact-info"], createType: "scenario-startup" },
       { id: "restrictions", label: "Scenario Restrictions", entityTypes: ["scenario-restriction"], createType: "scenario-restriction" },
-      { id: "global-macros", label: "Global Events", entityTypes: ["global-macro", "macro"], createType: "global-macro" },
+      { id: "global-macros", label: "Global Macros", entityTypes: ["global-macro", "macro"], createType: "global-macro" },
       { id: "registration", label: "Scenario Security / Registration Codes", entityTypes: ["registration-security", "action-slot"] }
     ]
   },
@@ -171,7 +171,7 @@ export function directRowsForEditor(project: Project, editor: DomainEditor): Dir
     ];
   }
   if (editor.id === "global-macros") {
-    return project.scenario.globalMacroHooks ? [{ id: "scenario:global-macros", label: "Global Events", type: "global-macro", summary: "Scenario global hooks" }] : [];
+    return project.scenario.globalMacroHooks ? [{ id: "scenario:global-macros", label: "Global Macros", type: "global-macro", summary: "Five automatic Extra Action Point assignments" }] : [];
   }
   if (editor.id === "quests") {
     return (project.questLabels ?? []).map((record) => ({ id: `quest-flag:${record.id}`, label: record.label || `Quest ${record.id}`, type: "quest flag", summary: record.note ?? "" }));

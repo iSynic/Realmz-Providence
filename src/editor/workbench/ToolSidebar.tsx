@@ -41,9 +41,7 @@ export function ToolSidebar({
   if (activeDomain === "scripts" && activeWorkbench === "project") return null;
   if (activeDomain === "rules" && activeWorkbench === "project") return null;
   if (activeDomain === "text" && activeWorkbench === "project") return null;
-  if (activeDomain === "scenario" && activeWorkbench === "project") {
-    return <ScenarioToolSidebar project={project} />;
-  }
+  if (activeDomain === "scenario" && activeWorkbench === "project") return null;
   return (
     <ResizablePane
       className="tool-sidebar"
@@ -97,52 +95,6 @@ export function ToolSidebar({
               </TutorialTip>
             );
           })}
-        </div>
-      </section>
-    </ResizablePane>
-  );
-}
-
-function ScenarioToolSidebar({ project }: { project: Project | null }) {
-  const links = [
-    { id: "scenario-startup", label: "Startup Shell", detail: "Marker file, recommended level, starting land and coordinates.", badge: project?.scenario.shell ? "ok" : "new" },
-    { id: "scenario-contact", label: "Contact Info", detail: "Title, version, author, web, email, and description.", badge: project?.scenario.contactInfo ? "ok" : "new" },
-    { id: "scenario-restrictions", label: "Restrictions", detail: "Race, caste, party-size, and level admission rules.", badge: project?.scenario.restrictions ? "on" : "off" },
-    { id: "scenario-readiness", label: "Load Readiness", detail: "Realmz shell checks and export confidence.", badge: String(project?.validation.errors.length ?? 0) }
-  ];
-  return (
-    <ResizablePane
-      className="tool-sidebar"
-      ariaLabel="Scenario table of contents"
-      storageKey="providence.toolSidebarWidth.v3"
-      defaultWidth={280}
-      minWidth={250}
-      maxWidth={480}
-      edge="right"
-    >
-      <section className="tool-sidebar-card scenario-toc-card">
-        <header>
-          <div>
-            <strong>Scenario</strong>
-            <span>Table of contents</span>
-          </div>
-        </header>
-        <p>Jump to the scenario-wide records you can edit or verify.</p>
-        <div className="tool-sidebar-list scenario-toc-list">
-          {links.map((link) => (
-            <button
-              key={link.id}
-              type="button"
-              onClick={() => document.getElementById(link.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            >
-              <span className="tool-sidebar-glyph">{link.label.slice(0, 2).toUpperCase()}</span>
-              <span>
-                <strong>{link.label}</strong>
-                <small>{link.detail}</small>
-              </span>
-              <b>{link.badge}</b>
-            </button>
-          ))}
         </div>
       </section>
     </ResizablePane>

@@ -12,7 +12,7 @@ import { WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 export const PRIMARY_SCRIPT_EDITOR_TABS: ReadonlyArray<WorkbenchTabOption<string>> = [
   { value: "action-points", label: "Action Points", title: "Create and edit map Action Points." },
   { value: "macros", label: "Extra Action Points", title: "Extra Action Points and branch targets." },
-  { value: "global-macros", label: "Global Events", title: "Scenario-wide event hooks and startup logic." },
+  { value: "global-macros", label: "Global Macros", title: "Extra Action Point scripts assigned in Scenario > Global Macros." },
   { value: "quests", label: "Story Flags", title: "Beta story-flag labels, decoded usage, and optional author notes." }
 ];
 

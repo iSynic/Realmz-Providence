@@ -68,7 +68,7 @@ export function issueCountsBySlot(issues: ScriptDiagnostic[]) {
 
 function authorFacingExtraActionKind(classification: string) {
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
-  if (classification === "Global Macro") return "Global Event";
+  if (classification === "Global Macro") return "Global Macro";
   if (classification === "Random Encounter Action") return "Random Encounter Action";
   if (classification === "Timed Encounter Action") return "Timed Encounter Action";
   if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";
@@ -104,7 +104,7 @@ export const EXTRA_ACTION_INVENTORY_FILTERS: Array<{ id: ScriptInventoryFilter; 
 
 export function scriptTabKind(activeEditor: string) {
   if (activeEditor === "macros") return "reusable-actions";
-  if (activeEditor === "global-macros") return "global-events";
+  if (activeEditor === "global-macros") return "global-macros";
   if (activeEditor === "quests") return "quests";
   if (activeEditor === "settings-rows") return "settings-rows";
   if (activeEditor === "ed3-evidence") return "reusable-actions";
@@ -114,7 +114,7 @@ export function scriptTabKind(activeEditor: string) {
 export function extraActionTabClassification(project: Project | null, trigger: TriggerRecord) {
   if (trigger.source !== "Data ED3") return "map-action-point";
   const classification = extraActionPointClassification(project, trigger);
-  if (classification === "Global Macro") return "global-events";
+  if (classification === "Global Macro") return "global-macros";
   return "reusable-actions";
 }
 
@@ -165,7 +165,7 @@ export function isReusableActionPoint(trigger: TriggerRecord) {
 export function triggerVisibleForEditor(project: Project | null, trigger: TriggerRecord, activeEditor: string) {
   const tabKind = scriptTabKind(activeEditor);
   if (tabKind === "reusable-actions") return trigger.source === "Data ED3";
-  if (tabKind === "global-events") return extraActionTabClassification(project, trigger) === "global-events";
+  if (tabKind === "global-macros") return extraActionTabClassification(project, trigger) === "global-macros";
   if (activeEditor === "action-points") return trigger.source !== "Data ED3" && trigger.levelType != null && trigger.levelIndex != null;
   if (activeEditor === "quests") return trigger.actions.some((action) => [46, 47, 76, 77].includes(action.code));
   if (activeEditor === "settings-rows") return false;
@@ -176,10 +176,45 @@ export function scriptPanelTitle(activeEditor: string) {
   if (activeEditor === "action-points") return "Action Points";
   if (activeEditor === "macros") return "Extra Action Points";
   if (activeEditor === "ed3-evidence") return "Extra Action Points";
-  if (activeEditor === "global-macros") return "Global Events";
+  if (activeEditor === "global-macros") return "Global Macro Scripts";
   if (activeEditor === "quests") return "Quests";
   if (activeEditor === "settings-rows") return "Data EDCD Storage";
   return "Action Points";
+}
+
+export function scriptPanelDescription(activeEditor: string) {
+  if (activeEditor === "global-macros") return "Extra Action Points assigned to Start, Death, Quit, Shop, or Temple in Scenario > Global Macros.";
+  if (activeEditor === "macros" || activeEditor === "ed3-evidence") return "Create and reuse Extra Action Point scripts across scenario systems.";
+  if (activeEditor === "quests") return "Inspect story-flag labels and the scripts that read or change them.";
+  return "Build scenario behavior from clear steps, targets, choices, and Extra Action Points.";
+}
+
+export function scriptInventoryPresentation(activeEditor: string) {
+  if (activeEditor === "global-macros") {
+    return {
+      placeholder: "Search global macro scripts...",
+      ariaLabel: "Search global macro scripts",
+      resultNoun: "global macro",
+      listAriaLabel: "Global Macro Scripts",
+      emptyCopy: "Assign an Extra Action Point in Scenario > Global Macros to edit it here."
+    };
+  }
+  if (activeEditor === "macros" || activeEditor === "ed3-evidence") {
+    return {
+      placeholder: "Search Extra Action Points...",
+      ariaLabel: "Search Extra Action Points",
+      resultNoun: "Extra Action Point",
+      listAriaLabel: "Extra Action Points",
+      emptyCopy: "Create or select an Extra Action Point to build its script steps."
+    };
+  }
+  return {
+    placeholder: "Search Action Points...",
+    ariaLabel: "Search Action Points",
+    resultNoun: "Action Point",
+    listAriaLabel: "Action Points",
+    emptyCopy: "Create or select an Action Point to build its script steps."
+  };
 }
 
 function ed3RootTypeIncludes(project: Project | null, trigger: TriggerRecord, needle: string) {

@@ -292,7 +292,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Use the map picker and coordinate controls in Startup Info; verify the chosen cell in Land/Dungeon Maps before release.",
           "Treat zero or blank restriction fields according to the label shown by the editor rather than assuming every zero forbids entry.",
           "Keep title, author, version, and contact fields consistent with the exported folder and release notes.",
-          "Use Global Events in Action Points for startup, death, quit, shop, and temple behavior; Scenario shows the hooks that connect those scripts."
+          "Use Scenario > Global Macros to assign Extra Action Points to Start, Death, Quit, Shop, and Temple. Open Global Macros in Action Points to edit only the scripts currently assigned there."
         ]
       },
       {
@@ -343,7 +343,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Startup fields",
-        caption: "Scenario-wide startup, release identity, restrictions, security, and load-readiness controls.",
+        caption: "Scenario-wide startup, release identity, restrictions, Global Macros, and security controls.",
         imageSrc: "/manual/gallery/scenario-shell.png"
       }
     ]
@@ -574,7 +574,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Inside The Action Point Editor",
         paragraphs: [
-          "The record browser selects an Action Point, Extra Action Point, Global Event, or Quest. An Action Point header shows its source record, map location, activation chance, and filled step count. The step list contains the ordered Realmz CODE and ID slots; selecting a step opens the guided action editor beside it.",
+          "The record browser selects an Action Point, Extra Action Point, Global Macro, or Quest. An Action Point header shows its source record, map location, activation chance, and filled step count. The step list contains the ordered Realmz CODE and ID slots; selecting a step opens the guided action editor beside it.",
           "Change Action opens the action catalog. The selected action replaces raw numbers with named controls such as destination level and coordinates, string, sound, battle, treasure, condition, or result slot. Apply Step stores the current controls in that slot. Move, duplicate, and delete buttons operate on the selected step."
         ],
         points: [
@@ -589,7 +589,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         steps: [
           {
             title: "Choose the script owner",
-            body: "Use Action Points for map-triggered behavior, Extra Action Points for reusable calls, Global Events for scenario lifecycle hooks, and Quests for quest state and references. Name the script by what it does, not by its numeric slot.",
+            body: "Use Action Points for map-triggered behavior and Extra Action Points for reusable calls. Scenario > Global Macros assigns five automatic triggers to those Extra Action Points; the Global Macros tab is a filtered view of the assigned scripts. Name a script by what it does, not by its numeric slot.",
             result: "The behavior lives in the smallest reusable record that owns it."
           },
           {

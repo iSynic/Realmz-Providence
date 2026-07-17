@@ -30,8 +30,10 @@ import {
   scriptMatchesInventoryFilter,
   scriptDescriptor,
   scriptIdentity,
+  scriptInventoryPresentation,
   scriptLabel,
   scriptMatchesQuery,
+  scriptPanelDescription,
   scriptPanelTitle,
   scriptTabKind,
   triggerMatchesSelection,
@@ -62,7 +64,7 @@ import { useActionPointStepDrafts } from "./useActionPointStepDrafts";
 import { useActionPointWarningDiagnostics, useSelectedActionPointDiagnostics } from "./useActionPointDiagnostics";
 
 const SCRIPT_WORKBENCH_HELP =
-  "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, global hooks, quest usage, CODE/ID steps, Action Settings, targets, diagnostics, and source evidence.";
+  "Scripts is the Divinity Action Point hub: map triggers, reusable Extra Action Points, Global Macro scripts, story-flag usage, CODE/ID steps, Action Settings, targets, diagnostics, and source evidence.";
 
 function shouldSuppressInlineTargetRecordPanel(recordType: RealmzTargetRecordKind | undefined) {
   return recordType === "simpleEncounter" || recordType === "complexEncounter";
@@ -122,6 +124,7 @@ function ActionPointAuthoringWorkbench({
   onApplyCommand
 }: Omit<ActionPointAuthoringPanelProps, "project"> & { project: Project }) {
   const activeTabKind = scriptTabKind(activeEditor);
+  const inventoryPresentation = scriptInventoryPresentation(activeEditor);
   const scripts = useMemo(
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
     [project, activeEditor]
@@ -357,7 +360,7 @@ function ActionPointAuthoringWorkbench({
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger), selectedCombatMacroContext) : "Action Point";
   const selectedMarkerState = selectedTrigger && !isMacro ? actionPointMarkerStateForTrigger(project, selectedTrigger) : "none";
   const selectedIsSecret = isSecretActionPointState(selectedMarkerState);
-  const deleteMacroLabel = selectedExtraActionClassification === "Global Event" ? "Delete Global Event" : "Delete Extra Action Point";
+  const deleteMacroLabel = selectedExtraActionClassification === "Global Macro" ? "Delete Global Macro" : "Delete Extra Action Point";
   const moveMapKey = selectedTrigger && !isMacro && selectedTrigger.levelType && selectedTrigger.levelIndex != null
     ? `${selectedTrigger.levelType}:${selectedTrigger.levelIndex}`
     : "";
@@ -571,7 +574,7 @@ function ActionPointAuthoringWorkbench({
           <TutorialTip title="Scripts Workbench" body={SCRIPT_WORKBENCH_HELP} side="below">
             <strong>{scriptPanelTitle(activeEditor)}</strong>
           </TutorialTip>
-          <small>Build scenario behavior from clear steps, targets, choices, and Extra Action Points.</small>
+          <small>{scriptPanelDescription(activeEditor)}</small>
         </div>
         <div className="script-toolbar">
           {activeTabKind === "reusable-actions" && (
@@ -616,6 +619,10 @@ function ActionPointAuthoringWorkbench({
           warningScanReady={warningScanReady}
           hiddenScriptCount={hiddenScriptCount}
           diagnosticsById={visibleDiagnosticsById}
+          searchPlaceholder={inventoryPresentation.placeholder}
+          searchAriaLabel={inventoryPresentation.ariaLabel}
+          resultNoun={inventoryPresentation.resultNoun}
+          listAriaLabel={inventoryPresentation.listAriaLabel}
           onSetScriptQuery={setScriptQuery}
           onSetInventoryFilter={setInventoryFilter}
           onSelectTrigger={handleSelectTrigger}
@@ -722,7 +729,7 @@ function ActionPointAuthoringWorkbench({
               )}
             </>
           ) : (
-            <p className="empty-copy compact">Create or select an Action Point to build its script steps.</p>
+            <p className="empty-copy compact">{inventoryPresentation.emptyCopy}</p>
           )}
         </div>
       </div>

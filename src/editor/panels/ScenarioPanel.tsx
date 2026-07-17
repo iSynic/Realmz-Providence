@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
-import { Project, ProjectCommand, SelectedEntity } from "../types";
-import { CollapsibleSection, FieldRow, FormField, FormGrid, PanelHeader, ValidationGate, type WorkbenchIssue } from "../ui";
+import { Project, ProjectCommand } from "../types";
+import {
+  FormField,
+  FormGrid,
+  PanelHeader,
+  ReferenceField,
+  numericReferenceQuery,
+  type ReferencePickerOption
+} from "../ui";
 import { ruleCasteOptions, ruleRaceOptions } from "../ruleNames";
+import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
+import { isCallableMacro } from "../semanticGraph";
 import {
   SECURITY_SEGMENT_LENGTH,
   cleanRegistrationName,
@@ -13,13 +22,12 @@ import {
   registrationVariantsFor
 } from "../registrationCodes";
 
-const SCENARIO_HELP = "Scenario owns the startup shell Realmz checks before play begins: marker/main fields, contact metadata, party restrictions, global hooks, registration segments, and load-readiness.";
+const SCENARIO_HELP = "Scenario owns the startup shell Realmz checks before play begins: marker/main fields, contact metadata, party restrictions, Global Macros, and registration segments.";
 const STARTUP_HELP = "The marker/main scenario file stores recommended level, maximum party level, startup land/X/Y, creator-user check, and two registration/security code segments.";
 const CONTACT_HELP = "Data CI stores release-facing scenario title, version, author/contact text, payment/title strings, and the public description.";
-const HUB_HELP = "Divinity's Scenario area links to pictures, rules overrides, security, global hooks, and release metadata. Providence routes those deeper editors to their focused tools.";
+const SHORTCUTS_HELP = "Scenario-wide records live in their focused Providence editors. These shortcuts keep the related tools close without duplicating their authoring interfaces here.";
 const RESTRICTIONS_HELP = "Data RI optionally bans races/castes and gates party size or character level before a party can enter the scenario.";
-const READINESS_HELP = "Load Readiness checks whether Realmz can select and start the exported scenario. The broader Linter still owns full release validation.";
-const GLOBAL_EVENTS_HELP = "Global event hooks live in the Global source file. Start, Death, Quit, Shop, and Temple have source-backed runtime consumers; reserved slots are preserved.";
+const GLOBAL_MACROS_HELP = "Divinity's Scenario Data screen assigns Extra Action Point scripts to five automatic triggers: Start, Death, Quit, Shop, and Temple. Providence preserves the rest of the Global file without presenting unproven slots as author controls.";
 const SECURITY_HELP = "Legacy security stores two 20-character code segments in the marker/main file. Changing them changes the registration code players need.";
 const REGISTRATION_GENERATOR_HELP = "The generator shows evidence-labeled algorithms. Divinity Coder/custom-scenario codes and bundled Fantasoft scenario codes are different formula families.";
 const STARTUP_LEVEL_HELP = "Recommended level is the party level target shown during party selection.";
@@ -32,30 +40,31 @@ type ScenarioPanelProps = {
   project: Project;
   onApplyCommand: (command: ProjectCommand) => void;
   onSelectMap: (id: string) => void;
-  onSelectEntity?: (entity: SelectedEntity) => void;
   onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
 };
 
-export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEntity, onOpenTool }: ScenarioPanelProps) {
+export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool }: ScenarioPanelProps) {
   const shell = project.scenario.shell ?? defaultShell(project);
   const contact = project.scenario.contactInfo ?? defaultContact(project);
   const restrictions = project.scenario.restrictions;
   const securityBackup = project.scenario.securityBackup ?? null;
   const startupMap = project.maps.find((map) => map.levelType === "land" && map.index === shell.landLevel) ?? null;
-  const issues = scenarioIssues(project, shell);
-  const readiness = readinessRows(project, issues);
-  const readinessProblems = readiness.filter((row) => !row.ok);
   const hookRows = globalHooks(project);
-  const startHook = hookRows.find((hook) => hook.slot === 0);
-  const nextStartupMacroId = nextStartupTestMacroRecordIndex(project);
+  const macroPickerOptions = useMemo(() => globalMacroPickerOptions(project), [project]);
   return (
     <section className="scenario-workbench">
       <PanelHeader
         className="scenario-hero"
         headingLevel={1}
         title={<HelpTitle title="Scenario" help={SCENARIO_HELP} />}
-        description="Author startup, contact, party restrictions, and Realmz load-readiness."
+        description="Author startup, contact, party restrictions, Global Macros, and registration."
         meta={project.scenario.name}
+      />
+
+      <ScenarioShortcutBar
+        project={project}
+        shell={shell}
+        onOpenTool={onOpenTool}
       />
 
       <div className="scenario-grid">
@@ -133,15 +142,6 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
             </button>
             <span>{startupMap ? `${startupMap.name} at ${shell.lookX},${shell.lookY}` : "Startup land does not resolve to a map."}</span>
           </div>
-          <EvidenceBox
-            title="Technical Details"
-            rows={[
-              ["Startup fields", "Recommended level, maximum level, starting land, and starting position are editable Realmz fields."],
-              ["Security fields", "Two encoded 20-byte registration segments are stored in the startup shell."],
-              ["Offset 60", "Creator/user check is a Str255. Empty means no check."],
-              ["Additional data", `${shell.trailingBytes?.length ?? 0} imported byte(s) kept intact.`]
-            ]}
-          />
         </article>
 
         <SecurityRegistrationCard
@@ -175,57 +175,51 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
           </FormField>
         </article>
 
-        <article id="scenario-authoring-hub" className="scenario-card">
+        <article id="scenario-global-macros" className="scenario-card">
           <header>
             <div>
-              <HelpTitle title="Divinity Scenario Hub" help={HUB_HELP} />
-              <small>Scenario links into focused Providence tools</small>
+              <HelpTitle title="Global Macros" help={GLOBAL_MACROS_HELP} />
+              <small>Automatic triggers assigned to Extra Action Points</small>
             </div>
-            <b>roadmap</b>
+            <b>{activeGlobalHookCount(project)}</b>
           </header>
-          <div className="scenario-hub-grid">
-            <HubCard
-              title="Picture Editor"
-              detail="Scenario pictures 30000-30128; splash/default title picture 30128."
-              status={`${project.assets.filter((asset) => asset.kind === "picture").length} managed picture(s)`}
-              action="Open Assets"
-              onClick={() => onOpenTool("assets", "project-assets")}
-            />
-            <HubCard
-              title="Spell Overrides"
-              detail="Scenario custom spell records. Names and descriptions are editable notes until resource packaging is finished."
-              status={`${(project.spellOverrides ?? []).length}/105 parsed`}
-              action="Open Spells"
-              onClick={() => onOpenTool("rules", "spells")}
-            />
-            <HubCard
-              title="Race Overrides"
-              detail="Scenario race overrides replace shared race data for third-party scenarios."
-              status={`${(project.raceOverrides ?? []).length}/30 parsed`}
-              action="Open Races"
-              onClick={() => onOpenTool("rules", "races")}
-            />
-            <HubCard
-              title="Caste Overrides"
-              detail="Scenario caste overrides replace shared caste data for third-party scenarios."
-              status={`${(project.casteOverrides ?? []).length}/30 parsed`}
-              action="Open Castes"
-              onClick={() => onOpenTool("rules", "castes")}
-            />
-            <HubCard
-              title="Security / Registration"
-              detail="Review or unlock the two Divinity registration code segments."
-              status={shell.codeseg1.some(Boolean) || shell.codeseg2.some(Boolean) ? "already set" : "empty"}
-              action="Review Security"
-              onClick={() => document.getElementById("scenario-security")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            />
-            <HubCard
-              title="Global Events"
-              detail="Start, death, quit, shop, and temple event hooks."
-              status={activeGlobalHookCount(project)}
-              action="Open Events"
-              onClick={() => onOpenTool("scripts", "global-macros")}
-            />
+          <div className="scenario-card-actions">
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onOpenTool("scripts", "global-macros")}>
+              Open Assigned Scripts
+            </button>
+          </div>
+          <div className="scenario-global-hook-grid">
+            {hookRows.map((hook) => (
+              <FormField
+                key={hook.slot}
+                label={`${hook.label} X-AP`}
+                hint={hook.authorHelp}
+              >
+                <ReferenceField
+                  ariaLabel={`Choose ${hook.label.toLowerCase()} global macro`}
+                  placeholder="Search Extra Action Point # or descriptor..."
+                  options={macroPickerOptions}
+                  value={hook.door}
+                  current={globalMacroCurrent(project, hook.door)}
+                  rawOptionForQuery={(query) => globalMacroRawOption(query, macroPickerOptions)}
+                  resultNoun="macro"
+                  resultNounPlural="macros"
+                  emptyBody="Create or name an Extra Action Point, then assign it as this global macro."
+                  initialVisibleCount={40}
+                  visibleCountStep={40}
+                  clearLabel={`Clear ${hook.label} global macro`}
+                  compact
+                  compactPanelTitle={`${hook.label} Global Macro`}
+                  compactStorageKey={`scenario.eventHooks.${hook.slot}`}
+                  onChange={(door) => onApplyCommand({
+                    kind: "updateGlobalMacroHook",
+                    label: `Update ${hook.label} global macro`,
+                    slot: hook.slot,
+                    door
+                  })}
+                />
+              </FormField>
+            ))}
           </div>
         </article>
 
@@ -257,13 +251,13 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
               <div className="scenario-restriction-grid">
                 <RestrictionChecklist
                   title="Races"
-                  options={ruleRaceOptions(project)}
+                  options={ruleRaceOptions(project).slice(0, REALMZ_RACES.length)}
                   selected={restrictions.bannedRaces}
                   onChange={(bannedRaces) => updateRestrictions(onApplyCommand, { bannedRaces })}
                 />
                 <RestrictionChecklist
                   title="Castes"
-                  options={ruleCasteOptions(project)}
+                  options={ruleCasteOptions(project).slice(0, REALMZ_CASTES.length)}
                   selected={restrictions.bannedCastes}
                   onChange={(bannedCastes) => updateRestrictions(onApplyCommand, { bannedCastes })}
                 />
@@ -307,98 +301,43 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onSelectEn
           )}
         </article>
 
-        <article id="scenario-readiness" className="scenario-card">
-          <header>
-            <div>
-              <HelpTitle title="Load Readiness" help={READINESS_HELP} />
-              <small>Realmz standard scenario shell</small>
-            </div>
-            <b>{readinessProblems.length ? `${readinessProblems.length} issue(s)` : "ready"}</b>
-          </header>
-          <ValidationGate
-            className="scenario-readiness-gate"
-            ok={readinessProblems.length === 0}
-            title="Realmz startup package"
-            okLabel="Ready to load"
-            blockedLabel="Startup review required"
-            detail={readinessProblems.length === 0
-              ? `${readiness.length.toLocaleString()} startup and package checks passed.`
-              : `${readinessProblems.length.toLocaleString()} of ${readiness.length.toLocaleString()} startup and package checks need attention.`}
-            issues={readinessProblems.map((row): WorkbenchIssue => ({
-              id: row.label,
-              severity: "warning",
-              message: row.label,
-              detail: row.detail
-            }))}
-          />
-        </article>
-
-        <article id="scenario-global-macros" className="scenario-card">
-          <header>
-            <div>
-              <HelpTitle title="Global Events" help={GLOBAL_EVENTS_HELP} />
-              <small>Global file, seven Divinity-visible slots</small>
-            </div>
-            <b>{activeGlobalHookCount(project)}</b>
-          </header>
-          <p className="scenario-note">Shop and Temple hooks fire only from the shop/temple button flow. Sending the party to a shop by negative shop ID does not trigger these hooks.</p>
-          {startHook?.door === 0 && (
-            <p className="scenario-note scenario-note-warning">Start is set to 0, which classic Realmz treats as no startup macro. Use a nonzero Extra Action Point row when building a startup smoke test.</p>
-          )}
-          <div className="scenario-card-actions">
-            <button
-              type="button"
-              className="btn btn-secondary btn-xs"
-              onClick={() => {
-                onApplyCommand({ kind: "createStartupTestMacro", label: "Create startup test macro" });
-                onSelectEntity?.({ type: "macro", id: `Data ED3:macro:${nextStartupMacroId}` });
-                onOpenTool("scripts", "global-macros");
-              }}
-            >
-              Create Startup Test Macro
-            </button>
-          </div>
-          <div className="scenario-global-hook-grid">
-            {hookRows.map((hook) => (
-              <FormField
-                key={hook.slot}
-                label={hook.label}
-                hint={hook.sourceBacked ? hook.runtimeConsumer : "Reserved slot kept intact."}
-                className={hook.sourceBacked ? undefined : "is-preserved"}
-              >
-                <input
-                  type="number"
-                  defaultValue={hook.door}
-                  onBlur={(event) => {
-                    const door = Number(event.currentTarget.value);
-                    if (Number.isFinite(door) && door !== hook.door) {
-                      onApplyCommand({ kind: "updateGlobalMacroHook", label: `Update ${hook.label} global macro`, slot: hook.slot, door });
-                    }
-                  }}
-                />
-              </FormField>
-            ))}
-          </div>
-        </article>
       </div>
     </section>
   );
 }
 
-function HubCard({ title, detail, status, action, onClick }: { title: string; detail: string; status: string; action?: string; onClick?: () => void }) {
+function ScenarioShortcutBar({
+  project,
+  shell,
+  onOpenTool
+}: {
+  project: Project;
+  shell: NonNullable<Project["scenario"]["shell"]>;
+  onOpenTool: ScenarioPanelProps["onOpenTool"];
+}) {
+  const shortcuts = [
+    { label: "Assets", status: project.assets.filter((asset) => asset.kind === "picture").length, onClick: () => onOpenTool("assets", "project-assets") },
+    { label: "Spells", status: (project.spellOverrides ?? []).length, onClick: () => onOpenTool("rules", "spells") },
+    { label: "Races", status: (project.raceOverrides ?? []).length, onClick: () => onOpenTool("rules", "races") },
+    { label: "Castes", status: (project.casteOverrides ?? []).length, onClick: () => onOpenTool("rules", "castes") },
+    {
+      label: "Security",
+      status: shell.codeseg1.some(Boolean) || shell.codeseg2.some(Boolean) ? "set" : "empty",
+      onClick: () => document.getElementById("scenario-security")?.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  ];
   return (
-    <div className="scenario-hub-card">
-      <strong>{title}</strong>
-      <span>{detail}</span>
-      <footer>
-        <small>{status}</small>
-        {action && onClick && (
-          <button type="button" className="btn btn-secondary btn-xs" onClick={onClick}>
-            {action}
+    <section className="scenario-shortcuts" aria-label="Related scenario editors">
+      <HelpTitle title="Related Editors" help={SHORTCUTS_HELP} />
+      <div>
+        {shortcuts.map((shortcut) => (
+          <button key={shortcut.label} type="button" onClick={shortcut.onClick}>
+            <span>{shortcut.label}</span>
+            <b>{shortcut.status}</b>
           </button>
-        )}
-      </footer>
-    </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -515,10 +454,7 @@ function SecurityRegistrationCard({
       </FormGrid>
       <section className="scenario-registration-generator">
         <header>
-          <div>
-            <HelpTitle title="Registration Code Generator" help={REGISTRATION_GENERATOR_HELP} />
-            <small>Verified evidence and source-ported candidate formulas for {registrationScenarioName}.</small>
-          </div>
+          <HelpTitle title="Registration Code Generator" help={REGISTRATION_GENERATOR_HELP} />
           <b>{primaryRegistrationVariant?.code ?? "ready"}</b>
         </header>
         <FormGrid>
@@ -553,23 +489,12 @@ function SecurityRegistrationCard({
             </article>
           ))}
         </div>
-        <p className="scenario-note">
-          Verified codes match known official evidence for the same scenario, name, and serial. Candidate codes are source-ported formulas still being tested against Realmz/Divinity behavior.
-        </p>
       </section>
       {unlocked && (
         <p className="scenario-security-warning">
           Changing these values changes the registration code players need for the scenario. Keep a copy of the exact text you enter.
         </p>
       )}
-      <EvidenceBox
-        title="Technical Details"
-        rows={[
-          ["Startup bytes", `${bytePreview(shell.codeseg1)} / ${bytePreview(shell.codeseg2)}`],
-          ["Security backup", securityBackup ? `present (${bytePreview(securityBackup.codeseg1)})` : "No security backup imported; Providence will create a zero-mask backup when applying edits."],
-          ["Realmz decode", "segment2 = stored segment2 - backup segment1; segment1 = stored segment1 - segment2"]
-        ]}
-      />
     </article>
   );
 }
@@ -647,24 +572,22 @@ function RestrictionChecklist({
   onChange: (selected: number[]) => void;
 }) {
   const selectedSet = new Set(selected);
+  const visibleSelectedCount = selected.filter((id) => id >= 1 && id <= options.length).length;
   return (
     <section className="scenario-restriction-list">
       <header>
         <span>{title}</span>
-        <b>{selected.length}</b>
+        <b>{visibleSelectedCount}</b>
       </header>
       <div>
-        {Array.from({ length: 30 }, (_, index) => {
+        {options.map((label, index) => {
           const id = index + 1;
-          const label = options[index] ?? `Unused ${id}`;
           const checked = selectedSet.has(id);
-          const disabled = index >= options.length;
           return (
-            <label key={`${title}:${id}`} className={disabled ? "is-unused" : ""}>
+            <label key={`${title}:${id}`}>
               <input
                 type="checkbox"
                 checked={checked}
-                disabled={disabled}
                 onChange={(event) => {
                   const next = event.currentTarget.checked
                     ? [...selectedSet, id]
@@ -678,21 +601,6 @@ function RestrictionChecklist({
         })}
       </div>
     </section>
-  );
-}
-
-function EvidenceBox({ title, rows }: { title: string; rows: [string, string][] }) {
-  return (
-    <CollapsibleSection
-      className="scenario-evidence"
-      title={title}
-      density="compact"
-      defaultOpen={false}
-    >
-      {rows.map(([label, value]) => (
-        <FieldRow key={label} label={label} value={<code>{value}</code>} />
-      ))}
-    </CollapsibleSection>
   );
 }
 
@@ -747,68 +655,87 @@ function defaultRestrictions(): NonNullable<Project["scenario"]["restrictions"]>
 
 function globalHooks(project: Project) {
   const defaults = [
-    { slot: 0, label: "Start", door: 0, sourceBacked: true, runtimeConsumer: "mainscreeninit/new-game start" },
-    { slot: 1, label: "Death", door: 0, sourceBacked: true, runtimeConsumer: "partyloss death/revive path" },
-    { slot: 2, label: "Quit", door: 0, sourceBacked: true, runtimeConsumer: "end current game" },
-    { slot: 3, label: "Reserved", door: 0, sourceBacked: false, runtimeConsumer: "reserved" },
-    { slot: 4, label: "Shop", door: 0, sourceBacked: true, runtimeConsumer: "shop button when a shop is available" },
-    { slot: 5, label: "Temple", door: 0, sourceBacked: true, runtimeConsumer: "shop/temple button when a temple is available" },
-    { slot: 6, label: "Reserved", door: 0, sourceBacked: false, runtimeConsumer: "reserved" }
+    { slot: 0, label: "Start", door: 0, sourceBacked: true, authorHelp: "Runs when the player starts a new adventure." },
+    { slot: 1, label: "Death", door: 0, sourceBacked: true, authorHelp: "Runs when the party is killed." },
+    { slot: 2, label: "Quit", door: 0, sourceBacked: true, authorHelp: "Runs when the player quits the adventure, but not when the party dies." },
+    { slot: 3, label: "Reserved", door: 0, sourceBacked: false, authorHelp: "Preserved imported value." },
+    { slot: 4, label: "Shop", door: 0, sourceBacked: true, authorHelp: "Runs when the player clicks the Shop button, not when a script sends the party directly to a shop." },
+    { slot: 5, label: "Temple", door: 0, sourceBacked: true, authorHelp: "Runs when the player clicks the Temple button." },
+    { slot: 6, label: "Reserved", door: 0, sourceBacked: false, authorHelp: "Preserved imported value." }
   ];
   const existing = project.scenario.globalMacroHooks?.slots ?? [];
-  return defaults.map((fallback) => existing.find((hook) => hook.slot === fallback.slot) ?? fallback);
+  return defaults
+    .map((fallback) => ({ ...fallback, ...(existing.find((hook) => hook.slot === fallback.slot) ?? {}) }))
+    .filter((hook) => hook.sourceBacked);
+}
+
+function globalMacroPickerOptions(project: Project): ReferencePickerOption<number>[] {
+  const referencedRows = new Set(globalHooks(project).map((hook) => hook.door).filter((door) => door !== 0));
+  return project.triggers
+    .filter((trigger) => trigger.source === "Data ED3" && trigger.recordIndex > 0 && (isCallableMacro(project, trigger) || referencedRows.has(trigger.recordIndex)))
+    .sort((a, b) => a.recordIndex - b.recordIndex)
+    .map((trigger) => {
+      const label = globalMacroLabel(project, trigger.recordIndex);
+      const detail = `${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}${trigger.active ? "" : " | imported inactive row"}`;
+      return {
+        key: `global-macro:${trigger.recordIndex}`,
+        value: trigger.recordIndex,
+        label,
+        detail,
+        searchText: `${label} ${detail} ${trigger.id} ${trigger.actions.map((action) => action.label).join(" ")}`,
+        title: `Assign Extra Action Point ${trigger.recordIndex} as this global macro.`
+      };
+    });
+}
+
+function globalMacroCurrent(project: Project, recordIndex: number) {
+  if (recordIndex === 0) {
+    return {
+      label: "No macro selected",
+      detail: "Realmz performs no reusable script for this event.",
+      state: "empty" as const
+    };
+  }
+  const trigger = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === recordIndex);
+  if (!trigger) {
+    return {
+      label: `Extra Action Point ${recordIndex}`,
+      detail: "This referenced Data ED3 row is not available in the project.",
+      state: "unresolved" as const
+    };
+  }
+  return {
+    label: globalMacroLabel(project, recordIndex),
+    detail: `${trigger.actions.length} step${trigger.actions.length === 1 ? "" : "s"}`,
+    state: "resolved" as const
+  };
+}
+
+function globalMacroRawOption(query: string, options: ReferencePickerOption<number>[]): ReferencePickerOption<number> | null {
+  const recordIndex = numericReferenceQuery(query);
+  if (recordIndex == null || recordIndex <= 0 || options.some((option) => option.value === recordIndex)) return null;
+  return {
+    key: `raw-global-macro:${recordIndex}`,
+    value: recordIndex,
+    label: `Use Extra Action Point ${recordIndex}`,
+    detail: "Reference this raw Data ED3 row even though it is not currently classified as a callable macro.",
+    searchText: `${recordIndex} raw Data ED3 Extra Action Point`,
+    title: `Use raw Extra Action Point ${recordIndex}`
+  };
+}
+
+function globalMacroLabel(project: Project, recordIndex: number) {
+  const trigger = project.triggers.find((candidate) => candidate.source === "Data ED3" && candidate.recordIndex === recordIndex);
+  const descriptor = trigger ? project.editorMetadata?.displayNames?.[trigger.id]?.label?.trim() : "";
+  return descriptor ? `Extra Action Point ${recordIndex} - ${descriptor}` : `Extra Action Point ${recordIndex}`;
 }
 
 function activeGlobalHookCount(project: Project) {
   const count = globalHooks(project).filter((hook) => hook.door !== 0).length;
-  return count === 1 ? "1 active hook" : `${count} active hooks`;
-}
-
-function nextStartupTestMacroRecordIndex(project: Project) {
-  const macros = project.triggers.filter((trigger) => trigger.source === "Data ED3");
-  const reusable = macros
-    .filter((trigger) => trigger.recordIndex > 0 && !trigger.active && trigger.actions.length === 0)
-    .sort((a, b) => a.recordIndex - b.recordIndex)[0];
-  if (reusable) return reusable.recordIndex;
-  return Math.max(0, ...macros.map((trigger) => trigger.recordIndex)) + 1;
+  return count === 1 ? "1 assigned macro" : `${count} assigned macros`;
 }
 
 function clampInt(value: number, min: number, max: number) {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.trunc(value)));
-}
-
-function bytePreview(bytes: number[] | undefined | null) {
-  return normalizedSecurityBytes(bytes)
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join(" ");
-}
-
-function scenarioIssues(project: Project, shell: NonNullable<Project["scenario"]["shell"]>) {
-  const issues: string[] = [];
-  if (!shell.sourceFile.trim()) issues.push("Marker file name is empty.");
-  if (!project.maps.some((map) => map.levelType === "land" && map.index === shell.landLevel)) issues.push("Startup land does not resolve to an imported land map.");
-  if (shell.lookX < 0 || shell.lookX >= 90 || shell.lookY < 0 || shell.lookY >= 90) issues.push("Startup coordinates must be within 0..89.");
-  if (!project.source.files.some((file) => file.name === "Scenario")) issues.push("Scenario resource fork is missing.");
-  return issues;
-}
-
-function readinessRows(project: Project, issues: string[]) {
-  const hasFile = (name: string) => project.source.files.some((file) => file.name === name);
-  const startupIssue = issues.find((issue) => !issue.includes("resource fork"));
-  const firstStartFiles = ["Data DD", "Data LD", "Data RD"];
-  const missingFirstStartFiles = firstStartFiles.filter((name) => !hasFile(name));
-  return [
-    { label: "Marker/main file", ok: Boolean(project.scenario.shell), detail: project.scenario.shell?.sourceFile ?? "Will be created from edited startup shell." },
-    { label: "Scenario resource fork", ok: hasFile("Scenario"), detail: hasFile("Scenario") ? "Resource fork present." : "Missing Scenario resource fork." },
-    { label: "Startup fields", ok: !startupIssue, detail: startupIssue ?? "Startup map and coordinates are valid." },
-    {
-      label: "First-start records",
-      ok: missingFirstStartFiles.length === 0,
-      detail: missingFirstStartFiles.length === 0
-        ? "Outdoor trigger, land, and random-level records are present."
-        : `Missing ${missingFirstStartFiles.join(", ")}.`
-    },
-    { label: "Contact info", ok: Boolean(project.scenario.contactInfo), detail: project.scenario.contactInfo ? "Editable." : "No contact record." }
-  ];
 }

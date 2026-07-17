@@ -848,9 +848,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "authoring",
     label: "Scenario",
     title: "Startup, Restrictions, Contact Info, and Security",
-    summary: "Author the scenario shell Realmz checks before play begins: marker/main startup fields, contact metadata, party restrictions, global hooks, registration segments, and load-readiness gates.",
+    summary: "Author the scenario shell Realmz checks before play begins: marker/main startup fields, contact metadata, party restrictions, Global Macros, and registration segments.",
     tags: ["scenario", "startup", "Data CI", "Data RI", "Global", "registration", "security", "Scenario resource fork", "release"],
-    badges: ["load-ready", "shell-aware"],
+    badges: ["startup-aware", "shell-aware"],
     references: [
       DIVINITY_CHAPTERS.startup,
       MARKDOWN_REFERENCES.scenarioStartupEvidence,
@@ -864,8 +864,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "What Scenario Owns",
         paragraphs: [
-          "Scenario is the Providence workbench for the startup shell Realmz reads before launching a new game. It covers the marker/main scenario file, contact/release text, party admission restrictions, global event hooks, legacy security segments, and load-readiness checks.",
-          "This tool is intentionally separate from Maps, Assets, Rules, and Scripts. Scenario decides whether the package can be selected and started; the other tools author the content the party reaches after startup."
+          "Scenario is the Providence workbench for the startup shell Realmz reads before launching a new game. It covers the marker/main scenario file, contact/release text, party admission restrictions, Global Macros, and legacy security segments.",
+          "This tool is intentionally separate from Maps, Assets, Rules, Scripts, and release validation. The Linter and Export tools own package-readiness checks."
         ],
         cards: [
           {
@@ -922,7 +922,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Maximum Number Of Characters should stay in the Realmz party-size range.",
           "Maximum Level Of Any Character uses zero for no extra level cap.",
-          "Banned Races and Banned Castes should be checked carefully against Rules overrides.",
+          "Banned Races and Banned Castes list the stock Realmz options. Scenario-custom races and castes are intentionally not offered as exclusions.",
           "Restriction Message is the text Realmz shows in the restriction dialog.",
           "Validation should warn when every race or every caste is banned."
         ],
@@ -952,31 +952,17 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         }
       },
       {
-        title: "Global Events and Scenario Hub",
+        title: "Global Macros and Related Editors",
         paragraphs: [
-          "Divinity's Scenario area is a hub: it links startup data to pictures, rules overrides, security, contact info, and global macro hooks. Providence mirrors that split by linking from Scenario into the focused tools that own each deeper editor.",
-          "Global event hooks live in the Global source file. Start, Death, Quit, Shop, and Temple have source-backed runtime consumers; reserved slots should be preserved unless further evidence promotes them."
+          "Scenario keeps a compact Related Editors strip for pictures, rules overrides, and security. Each shortcut opens the focused tool that owns those records instead of duplicating a second editor inside Scenario.",
+          "Divinity calls the automatic Start, Death, Quit, Shop, and Temple assignments Global Macros. Each assignment selects an Extra Action Point script from Data ED3; the Global Macros tab in Action Points is only a filtered view of those assigned scripts, not a separate record format."
         ],
         points: [
-          "Start runs during new-game/startup flow. A Start hook value of 0 means no startup macro, so tests should use a nonzero Extra Action Point row.",
-          "Death and Quit attach to party loss/revive and game-exit paths.",
-          "Shop and Temple fire from the button flow; teleporting or sending a party to a shop by negative shop ID does not trigger these hooks.",
+          "Start runs when the player starts a new adventure; Death runs when the party is killed; Quit runs when the player quits without dying.",
+          "Shop and Temple run from their buttons. Sending the party directly to a shop with a negative shop ID does not run the Shop macro.",
+          "Use each searchable X-AP picker to assign an Extra Action Point by number or project descriptor. A value of 0 means no macro.",
           "Scenario pictures are managed in Assets, including the Divinity title/splash picture range.",
           "Spell, race, and caste overrides are managed in Rules."
-        ]
-      },
-      {
-        title: "Load Readiness",
-        paragraphs: [
-          "Load Readiness checks whether Realmz can select and start the exported scenario. It is not the same as full release validation, but it catches missing shell pieces early.",
-          "The minimum startup model includes the marker/main file, Scenario resource fork, valid startup map/coordinates, contact info when present, and first-start source files for outdoor data."
-        ],
-        points: [
-          "Marker/main file must have a non-empty source name.",
-          "Scenario resource fork should be present for Realmz resource lookup.",
-          "Startup land and coordinates should resolve to an authored land map.",
-          "First-start outdoor files such as Data DD, Data LD, and Data RD are checked here.",
-          "The Linter and Export tools still own broader release blockers."
         ]
       },
       {
@@ -993,7 +979,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Scenario shell overview",
-        caption: "Reserved for a screenshot showing Startup Shell, Security / Registration, Contact Info, Restrictions, Global Events, and Load Readiness together."
+        caption: "Reserved for a screenshot showing the compact Related Editors strip, Startup Shell, Security / Registration, Contact Info, Global Macros, and Restrictions together."
       }
     ]
   },
@@ -1321,7 +1307,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "What Scripts Owns",
         paragraphs: [
-          "Scripts is Providence's Action Point hub. It owns map and dungeon Action Points, reusable Extra Action Points, Global Event hooks, quest-flag usage, opcode settings, target links, and the source evidence needed to understand how Realmz will execute a selected step.",
+          "Scripts is Providence's Action Point hub. It owns map and dungeon Action Points, reusable Extra Action Points, the Global Macro Scripts filtered from Scenario assignments, quest-flag usage, opcode settings, target links, and the source evidence needed to understand how Realmz will execute a selected step.",
           "The workbench borrows a modern visual-scripting shape, but it does not compile a new runtime. Every authored step still becomes Realmz CODE, ID, and sometimes Action Settings that Classic already understands."
         ],
         cards: [
@@ -1351,13 +1337,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Action Points/GOSUBs map to the Scripts workbench inventory, eight-step editor, flow preview, and Clear/Reuse controls.",
           "Scripting Codes 1-127 map to the Action catalog, selected opcode help card, target picker, and Settings section.",
-          "Macros/Quests map to Extra Action Points, Global Events, quest usage summaries, and branch/action diagnostics.",
+          "Macros/Quests map to Extra Action Points, assigned Global Macro Scripts, quest usage summaries, and branch/action diagnostics.",
           "Random Rectangles, battles, monster death actions, timed encounters, and door items can all call Extra Action Points; those incoming paths affect whether imported Extra Action Points are shown as callable."
         ],
         callout: {
           tone: "info",
           title: "Providence names the storage without making authors live there",
-          body: "Data DD, Data DDD, Data ED3, and Data EDCD remain visible in Technical Details, but normal authoring labels should say Action Point, Extra Action Point, Global Event, Step, Target, and Settings."
+          body: "Data DD, Data DDD, Data ED3, and Data EDCD remain visible in Technical Details, but normal authoring labels should say Action Point, Extra Action Point, Global Macro, Step, Target, and Settings."
         }
       },
       {
@@ -1406,7 +1392,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Authoring Workflow",
         points: [
-          "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior and preserved imported ED3 rows, Global Events for scenario hooks, and Quests for flag usage.",
+          "Choose the right tab: Action Points for map-cell scripts, Extra Action Points for reusable behavior and preserved imported ED3 rows, Global Macros for the Extra Action Points currently assigned in Scenario, and Quests for flag usage.",
           "Filter the inventory before editing. Current Map is fastest while map authoring; Warnings is best before release; Reusable shows empty fixed slots that can be repurposed safely.",
           "Create or select an Action Point, then edit its map cell, activation chance, Secret state, and goto fields. For dungeons, paint Allow Move directions in Dungeon Draw; an AP on that secret-passage cell is automatically treated as Secret.",
           "Choose a step, pick an action, inspect the Divinity help, set a target or Settings fields, then Apply Step. Dirty step changes are draft-only until applied, and the shared unapplied-changes dialog protects them when navigating away.",
@@ -1448,8 +1434,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "Positive and negative values can have different meanings. Examples include one-shot vs repeat random rectangles, signed battle macro behavior, negative sound sequencing, and branch/backstep sentinels.",
-          "Global Events are source-backed hooks such as new game, party death, quit/end game, before shop, and before temple. Start hook row 0 means no startup macro, so smoke-test macros should use a nonzero Extra Action Point row.",
-          "Other Global slots remain preserved evidence until a source-backed consumer is known.",
+          "Divinity Global Macros assign the new-adventure, party-death, quit, Shop-button, and Temple-button triggers to Extra Action Point rows. A value of 0 means no macro.",
+          "Other Global-file slots remain preserved evidence until a source-backed consumer is known; they are not ordinary author controls.",
           "Unlinked Extra APs are preserved imported script rows inside the Extra Action Points filters. Duplicate or promote them into authored behavior before relying on them as callable scenario logic."
         ],
         callout: {

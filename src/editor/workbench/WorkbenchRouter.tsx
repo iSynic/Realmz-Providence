@@ -180,7 +180,6 @@ function WorkbenchRouterContent({
         selectedEntity={state.selectedEntity}
         atlasEntries={state.atlasEntries}
         icons={state.iconEntries}
-        onSelectEntity={onSelectEntity}
         onOpenTool={onOpenTool}
         onOpenRelatedMap={onOpenPlayerMapTarget}
         onApplyCommand={onApplyCommand}

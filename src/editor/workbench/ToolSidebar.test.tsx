@@ -20,4 +20,19 @@ describe("ToolSidebar", () => {
     expect(markup.match(/<button[^>]*tabindex="0"/g)).toHaveLength(1);
     expect(markup).not.toMatch(/class="tutorial-tip[^>]*tabindex/);
   });
+
+  it("does not duplicate Scenario navigation with a table-of-contents sidebar", () => {
+    const markup = renderToStaticMarkup(
+      <ToolSidebar
+        activeDomain="scenario"
+        activeEditor="domain"
+        activeWorkbench="project"
+        project={null}
+        catalog={null}
+        onSelectEditor={() => undefined}
+      />
+    );
+
+    expect(markup).toBe("");
+  });
 });

@@ -1,15 +1,3 @@
-.scenario-toc-card .tool-sidebar-list button {
-  align-items: flex-start;
-}
-
-
-
-.scenario-toc-card .tool-sidebar-list button b {
-  text-transform: uppercase;
-}
-
-
-
 .item-workbench {
   display: grid;
   gap: 12px;
@@ -2678,6 +2666,7 @@
 
 
 .scenario-workbench > .scenario-hero,
+.scenario-workbench > .scenario-shortcuts,
 .scenario-workbench > .scenario-grid {
   width: min(100%, 1500px);
   box-sizing: border-box;
@@ -2693,8 +2682,8 @@
   border: 1px solid #2a3038;
   border-radius: 7px;
   background: #151719;
-  padding: 14px;
-  margin-bottom: 12px;
+  padding: 11px 12px;
+  margin-bottom: 8px;
 }
 
 
@@ -2726,8 +2715,8 @@
 
 .scenario-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   align-items: start;
 }
 
@@ -2735,11 +2724,11 @@
 
 .scenario-card {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid #26333f;
   border-radius: 7px;
   background: #10161d;
-  padding: 12px;
+  padding: 10px;
 }
 
 
@@ -2908,22 +2897,11 @@
   gap: 12px;
 }
 
-.scenario-registration-generator > header div {
-  display: grid;
-  gap: 3px;
-}
-
 .scenario-registration-generator > header span {
   color: #eff6ff;
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
-}
-
-.scenario-registration-generator > header small {
-  color: #9bb2c8;
-  font-size: 10px;
-  font-weight: 800;
 }
 
 .scenario-registration-generator > header b {
@@ -3108,22 +3086,10 @@
 
 
 
-.scenario-restriction-list label.is-unused {
-  color: #536476;
-}
-
-
-
 .scenario-restriction-list input {
   width: 14px;
   height: 14px;
   accent-color: #8fd26f;
-}
-
-
-
-.scenario-restriction-list input:disabled {
-  opacity: 0.35;
 }
 
 
@@ -3135,43 +3101,8 @@
 
 
 
-.scenario-evidence {
-  background: #0d131a;
-}
-
-
-
-.scenario-evidence .workbench-panel-section-body {
-  display: grid;
-  gap: 0;
-}
-
-
-
-.scenario-evidence .workbench-field-row {
-  grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
-}
-
-
-
-.scenario-evidence code {
-  color: #d6e6f5;
-  font-size: 10px;
-  line-height: 1.45;
-  word-break: break-word;
-}
-
-
-
-.scenario-readiness-gate {
-  margin: 0;
-}
-
-
-
 @media (max-width: 760px) {
-  .scenario-restriction-grid,
-  .scenario-evidence .workbench-field-row {
+  .scenario-restriction-grid {
     grid-template-columns: 1fr;
   }
 
@@ -3224,33 +3155,66 @@
 
 
 
-.scenario-hub-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 8px;
-}
-
-
-
-.scenario-hub-card {
-  display: grid;
-  gap: 5px;
+.scenario-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
-  padding: 10px;
-  border: 1px solid #2b3b48;
-  border-radius: 6px;
-  background: #10161d;
+  margin-bottom: 8px;
+  border: 1px solid #26333f;
+  border-radius: 7px;
+  background: #0d141b;
+  padding: 7px 8px;
 }
 
-
-
-.scenario-hub-card strong {
-  color: #e8f1fa;
+.scenario-shortcuts > .tutorial-tip {
+  flex: 0 0 auto;
+  color: #9db0c1;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
+.scenario-shortcuts > div {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+}
 
+.scenario-shortcuts button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid #304253;
+  border-radius: 5px;
+  background: #111b24;
+  color: #dfeaf4;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
 
-.scenario-hub-card span,
+.scenario-shortcuts button:hover,
+.scenario-shortcuts button:focus-visible {
+  border-color: #4a789f;
+  background: #13283a;
+}
+
+.scenario-shortcuts button b {
+  color: #f2c66f;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .scenario-note {
   color: #9db0c1;
   font-size: 11px;
@@ -3269,23 +3233,6 @@
 
 
 
-.scenario-hub-card small {
-  color: #f2c66f;
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-
-
-.scenario-hub-card footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-
-
 .scenario-global-hook-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -3294,6 +3241,13 @@
 
 
 
-.scenario-global-hook-grid .workbench-form-field.is-preserved {
-  opacity: .78;
+@media (max-width: 1180px) {
+  .scenario-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .scenario-shortcuts {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

@@ -58,9 +58,9 @@ const AUDIT_BY_PAGE = {
   4: audit({
     status: "partial",
     domain: "Action Points",
-    tools: ["Action Points", "Extra Action Points", "Global Events", "Quests"],
+    tools: ["Action Points", "Extra Action Points", "Global Macros", "Quests"],
     parityKeys: ["Action Points / GOSUBs", "Macros / Quests"],
-    registryLabels: ["Action Points", "Extra Action Points", "Global Events", "Quests"],
+    registryLabels: ["Action Points", "Extra Action Points", "Global Macros", "Quests"],
     summary: "Manual AP/GOSUB workflow covers AP records, Extra APs, stack/GOSUB behavior, code/id slots, and script linking.",
     handling: "Providence authors APs, reachable macros, EDCD rows, quest links, diagnostics, and preserves unlinked ED3 evidence.",
     evidence: ["docs/divinity-parity-map.md: Scripts V1/V2 contracts", "docs/generated/ap-opcode-coverage.json", "docs/generated/extra-ap-reachability-source-map.json"],

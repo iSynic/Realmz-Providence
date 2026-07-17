@@ -97,7 +97,7 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     tools: [
       t({ id: "action-points", label: "Action Points", iconLabel: "AP", workbench: "project", description: "Create and edit map Action Points.", entityTypes: ["trigger", "action-slot"], defaultInspector: "semantic" }),
       t({ id: "macros", label: "Extra Action Points", iconLabel: "EA", workbench: "project", description: "Extra Action Points and branch targets.", entityTypes: ["macro"], defaultInspector: "semantic" }),
-      t({ id: "global-macros", label: "Global Events", iconLabel: "GE", workbench: "project", description: "Scenario-wide event hooks and startup logic.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
+      t({ id: "global-macros", label: "Global Macros", iconLabel: "GM", workbench: "project", description: "Extra Action Point scripts assigned in Scenario > Global Macros.", entityTypes: ["global-macro"], defaultInspector: "semantic" }),
       t({ id: "quests", label: "Quests", iconLabel: "Q", workbench: "project", description: "Quest flags and script references.", entityTypes: ["quest flag"], defaultInspector: "semantic" })
     ]
   },

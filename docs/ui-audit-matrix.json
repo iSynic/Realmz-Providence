@@ -37,7 +37,7 @@
       ] }
     ] } },
     { "key": "scripts.macros", "domain": "scripts", "editor": "macros", "label": "Extra Action Points", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
-    { "key": "scripts.global-macros", "domain": "scripts", "editor": "global-macros", "label": "Global Events", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
+    { "key": "scripts.global-macros", "domain": "scripts", "editor": "global-macros", "label": "Global Macros", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
     { "key": "scripts.quests", "domain": "scripts", "editor": "quests", "label": "Quests", "workbenches": ["project"], "track": "ISY-334", "capture": { "route": "ready", "baseline": "planned" } },
 
     { "key": "scenario.startup", "domain": "scenario", "editor": "startup", "label": "Startup Info", "workbenches": ["project"], "track": "ISY-338", "capture": { "route": "ready", "baseline": "covered", "galleryPreset": "scenario" } },

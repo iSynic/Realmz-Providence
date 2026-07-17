@@ -24,6 +24,10 @@ export function ActionPointInventory({
   warningScanReady,
   hiddenScriptCount,
   diagnosticsById,
+  searchPlaceholder,
+  searchAriaLabel,
+  resultNoun,
+  listAriaLabel,
   onSetScriptQuery,
   onSetInventoryFilter,
   onSelectTrigger,
@@ -44,6 +48,10 @@ export function ActionPointInventory({
   warningScanReady: boolean;
   hiddenScriptCount: number;
   diagnosticsById: Map<string, ScriptDiagnostic[]>;
+  searchPlaceholder: string;
+  searchAriaLabel: string;
+  resultNoun: string;
+  listAriaLabel: string;
   onSetScriptQuery: (query: string) => void;
   onSetInventoryFilter: (filter: ScriptInventoryFilter) => void;
   onSelectTrigger: (trigger: TriggerRecord) => void;
@@ -56,10 +64,10 @@ export function ActionPointInventory({
           className="script-inventory-search"
           value={scriptQuery}
           onChange={onSetScriptQuery}
-          placeholder="Search action points..."
-          ariaLabel="Search action points"
+          placeholder={searchPlaceholder}
+          ariaLabel={searchAriaLabel}
           resultCount={filteredScripts.length}
-          resultNoun="action point"
+          resultNoun={resultNoun}
           status={`${scripts.length.toLocaleString()} total`}
         />
         <small className="script-capacity-note">
@@ -81,7 +89,7 @@ export function ActionPointInventory({
           </div>
         )}
       </div>
-      <ScrollArea className="realmz-script-list" aria-label="Action Points and Extra Action Points">
+      <ScrollArea className="realmz-script-list" aria-label={listAriaLabel}>
         {visibleScripts.map((trigger) => (
           <ScriptListItem
             key={trigger.id}

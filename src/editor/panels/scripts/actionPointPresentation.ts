@@ -26,7 +26,7 @@ export function authorFacingExtraActionKind(classification: string, combatMacroC
   if (combatMacroContext?.kind === "monster") return "Monster Macro";
   if (combatMacroContext?.kind === "mixed") return "Combat Macro";
   if (classification === "Callable Extra Action Point") return "Extra Action Point";
-  if (classification === "Global Macro") return "Global Event";
+  if (classification === "Global Macro") return "Global Macro";
   if (classification === "Random Encounter Action") return "Random Encounter Action";
   if (classification === "Timed Encounter Action") return "Timed Encounter Action";
   if (classification === "Battle / Monster / Item Action") return "Source-Linked Extra Action";

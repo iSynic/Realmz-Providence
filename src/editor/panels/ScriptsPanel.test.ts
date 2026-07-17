@@ -12,4 +12,9 @@ describe("ScriptsPanel navigation", () => {
     expect(isAdvancedScriptStorageEditor("settings-rows")).toBe(true);
     expect(isAdvancedScriptStorageEditor("action-points")).toBe(false);
   });
+
+  it("names lifecycle-owned Data ED3 scripts as global macros", () => {
+    expect(PRIMARY_SCRIPT_EDITOR_TABS.find((tab) => tab.value === "global-macros")?.label).toBe("Global Macros");
+    expect(PRIMARY_SCRIPT_EDITOR_TABS.find((tab) => tab.value === "global-macros")?.title).toContain("Scenario > Global Macros");
+  });
 });

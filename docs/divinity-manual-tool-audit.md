@@ -31,7 +31,7 @@ This audit compares Divinity Manual 7.0 chapters to Providence tools. It tracks 
 | 1 | Getting Started | partial | Project / Scenario | New/Open/Import, Scenario, Export |
 | 2 | Land Editor • Land Layout Editor | partial | Maps | Land Editor, Land Layout |
 | 3 | Scenario Startup Information | partial | Scenario | Startup Info, Restrictions, Contact Info, Security |
-| 4 | Action Points • GOSUBs | partial | Action Points | Action Points, Extra Action Points, Global Events, Quests |
+| 4 | Action Points • GOSUBs | partial | Action Points | Action Points, Extra Action Points, Global Macros, Quests |
 | 5 | Scripting Codes 1 - 29 | partial | Scripts | Action Points, Extra Action Points, Code Helper |
 | 6 | Scripting Codes 30 - 59 | partial | Scripts | Action Points, Extra Action Points, Code Helper |
 | 7 | Scripting Codes 60 - 89 | partial | Scripts | Action Points, Extra Action Points, Code Helper |
@@ -168,9 +168,9 @@ Recommended follow-up:
 
 - Status: `partial`
 - Providence domain: Action Points
-- Providence tools: Action Points, Extra Action Points, Global Events, Quests
+- Providence tools: Action Points, Extra Action Points, Global Macros, Quests
 - Existing parity map: Action Points / GOSUBs -> Action Point Hub; Macros / Quests -> Scripts
-- Registry tools: Action Points/Action Points; Action Points/Extra Action Points; Action Points/Global Events; Action Points/Quests
+- Registry tools: Action Points/Action Points; Action Points/Extra Action Points; Action Points/Global Macros; Action Points/Quests
 
 Manual claim summary:
 
