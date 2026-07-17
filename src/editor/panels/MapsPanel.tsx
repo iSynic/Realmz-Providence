@@ -1,7 +1,10 @@
+import { useEffect } from "react";
+import type { TransientUndoScope } from "../app/transientUndo";
 import { EditorState } from "../store";
 import { LevelType, MapEntity, MapPreviewFocalPoint, MapViewFlag, MapWorkbenchMode, ProjectCommand, RandomLevel, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MapContextSidebar, MapSelectionSidebar } from "../components/MapContextSidebar";
 import { buildCreateMapAction } from "../components/maps/mapBrowserModel";
+import { MapSectionTabs } from "../components/maps/MapSectionTabs";
 import { MapAuxiliaryWorkbenches } from "./maps/MapAuxiliaryWorkbenches";
 import { MapCanvasWorkbench } from "./maps/MapCanvasWorkbench";
 import { useMapSelectionShortcuts } from "./maps/useMapSelectionShortcuts";
@@ -30,7 +33,8 @@ export function MapsPanel({
   onBeginPaintStroke,
   onApplyCommand,
   onCommitPaintStroke,
-  onCancelPaintStroke
+  onCancelPaintStroke,
+  onSetTransientUndoScope
 }: {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -55,6 +59,7 @@ export function MapsPanel({
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
+  onSetTransientUndoScope: (scope: TransientUndoScope | null) => void;
 }) {
   const workbench = useMapWorkbenchState({
     project: state.project,
@@ -80,6 +85,18 @@ export function MapsPanel({
     },
     openCanvasTool
   } = workbench;
+  const {
+    paint: { paintMode },
+    smartBrush: { canUndoSmartBrushMaskStep, undoSmartBrushMaskStep }
+  } = workbench;
+  useEffect(() => {
+    if (paintMode !== "smart" || !canUndoSmartBrushMaskStep) {
+      onSetTransientUndoScope(null);
+      return;
+    }
+    onSetTransientUndoScope({ label: "Smart Brush mask stroke", undo: undoSmartBrushMaskStep });
+    return () => onSetTransientUndoScope(null);
+  }, [canUndoSmartBrushMaskStep, onSetTransientUndoScope, paintMode, undoSmartBrushMaskStep]);
   useMapSelectionShortcuts({
     activeTool: state.activeTool,
     selectedCell: state.selectedCell,
@@ -125,6 +142,7 @@ export function MapsPanel({
       />
 
       <section className={`editor-canvas-area map-workbench-area map-workbench-${workbenchMode}`}>
+        <MapSectionTabs value={workbenchMode} onChange={switchWorkbenchMode} />
         {workbenchMode === "canvas" && (
           <MapCanvasWorkbench
             state={state}

@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { DEFAULT_DIVINITY_ROOT, DEFAULT_EXPORT, DEFAULT_REALMZ_DATA_ROOT, DEFAULT_WORKSPACE } from "./editor/constants";
 import { CloseProjectDialog, ProjectNameDialog, ProjectStart } from "./editor/app/AppStart";
 import {
@@ -13,6 +13,7 @@ import { useAssetActions } from "./editor/app/useAssetActions";
 import { useAppBootstrapEffects } from "./editor/app/useAppBootstrapEffects";
 import { useProjectLifecycleActions } from "./editor/app/useProjectLifecycleActions";
 import { DraftChangeGuardProvider, useDraftChangeGuardController } from "./editor/app/draftChangeGuard";
+import { invokePreferredUndo, type TransientUndoScope } from "./editor/app/transientUndo";
 import { canUseBrowserFileSystem } from "./editor/browser/fsAccess";
 import {
   PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES,
@@ -107,6 +108,7 @@ export function App() {
   const [assetSearchHint, setAssetSearchHint] = useState<AssetSearchHint | null>(null);
   const [projectNameDraft, setProjectNameDraft] = useState("Untitled Scenario");
   const [state, dispatch] = useReducer(editorReducer, desktopRuntime, initialEditorState);
+  const [transientUndoScope, setTransientUndoScope] = useState<TransientUndoScope | null>(null);
   const draftGuard = useDraftChangeGuardController();
   const importedMapIconCacheRef = useRef<{ key: string; ids: number[] }>({ key: "", ids: [] });
   const historyNavigationRef = useRef(false);
@@ -272,7 +274,13 @@ export function App() {
       state.selectedTile
     ]
   );
-  const undoLabel = state.past.length > 0 ? state.past[state.past.length - 1].label : null;
+  const undoProjectChange = useCallback(() => dispatch({ type: "undo" }), []);
+  const redoProjectChange = useCallback(() => dispatch({ type: "redo" }), []);
+  const undoPreferredChange = useCallback(
+    () => invokePreferredUndo(transientUndoScope, undoProjectChange),
+    [transientUndoScope, undoProjectChange]
+  );
+  const undoLabel = transientUndoScope?.label ?? (state.past.length > 0 ? state.past[state.past.length - 1].label : null);
   const redoLabel = state.future.length > 0 ? state.future[0].label : null;
   const activeStatus = state.groupLabel
     ? `${state.groupLabel}${state.groupChangeCount ? ` (${state.groupChangeCount} cells)` : ""}`
@@ -289,7 +297,9 @@ export function App() {
     projectDir,
     setProjectDir,
     atlasLoadKey,
-    iconLoadKey
+    iconLoadKey,
+    onUndo: undoPreferredChange,
+    onRedo: redoProjectChange
   });
 
   const {
@@ -666,6 +676,7 @@ export function App() {
       activeStatus={activeStatus}
       undoLabel={undoLabel}
       redoLabel={redoLabel}
+      canUndo={transientUndoScope != null || state.past.length > 0}
       canSave={Boolean(state.project)}
       canExport={Boolean(state.project)}
       tutorialEnabled={state.tutorialEnabled}
@@ -688,8 +699,8 @@ export function App() {
       onOpenProject={() => confirmBeforeDraftDiscard("open another project", () => chooseExistingProject())}
       onCloseProject={() => confirmBeforeDraftDiscard("close the project", ({ appliedDrafts }) => requestCloseProject({ assumeDirty: appliedDrafts }))}
       onImportScenario={() => confirmBeforeDraftDiscard("import a scenario", () => importScenario())}
-      onUndo={() => dispatch({ type: "undo" })}
-      onRedo={() => dispatch({ type: "redo" })}
+      onUndo={undoPreferredChange}
+      onRedo={redoProjectChange}
       onSave={saveProject}
       onExport={exportProject}
       onSelectDomain={(domain) => {
@@ -755,6 +766,7 @@ export function App() {
         onApplyCommand={applyProjectCommand}
         onCommitPaintStroke={() => dispatch({ type: "commitCommandGroup" })}
         onCancelPaintStroke={() => dispatch({ type: "cancelCommandGroup" })}
+        onSetTransientUndoScope={setTransientUndoScope}
         onCreateDraft={createDraftEntry}
         onUpdateDraft={updateDraftEntry}
         onUpdateLibraryCatalog={updateLibraryCatalog}

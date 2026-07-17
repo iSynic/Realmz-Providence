@@ -228,11 +228,6 @@
   --pane-accent-rgb: 56, 189, 248;
 }
 
-.map-sections-group {
-  --pane-accent: #7aa8ff;
-  --pane-accent-rgb: 122, 168, 255;
-}
-
 .canvas-tools-group {
   --pane-accent: #7ddf8a;
   --pane-accent-rgb: 125, 223, 138;
@@ -463,17 +458,6 @@
 
 
 
-.map-toolset-mode-control {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  width: 100%;
-  padding: 0;
-}
-
-
-
-.map-toolset-mode-control > button,
 .paint-mode-control > button,
 .paint-variation-control > button,
 .paint-variation-compact button,
@@ -498,8 +482,6 @@
 
 
 
-.map-toolset-mode-control > button:hover,
-.map-toolset-mode-control > button.is-selected,
 .paint-mode-control > button.is-selected,
 .paint-mode-control > button:hover,
 .paint-variation-control > button.is-selected,
@@ -508,12 +490,6 @@
   border-color: #3c78b2;
   background: #172d48;
   color: #b9ddff;
-}
-
-.map-sections-group .map-toolset-mode-control > button.is-selected {
-  border-color: rgba(122, 168, 255, 0.88);
-  background: #17294a;
-  color: #c9dcff;
 }
 
 .paint-mode-control > button:hover,
@@ -534,11 +510,18 @@
   color: #bff8ed;
 }
 
+.paint-palette-tabs button {
+  justify-items: center;
+  text-align: center;
+}
 
 
-.map-toolset-mode-control > button span {
-  font-size: 11px;
-  font-weight: 900;
+
+.paint-mode-control > button,
+.paint-variation-control > button,
+.paint-variation-compact button {
+  justify-items: center;
+  text-align: center;
 }
 
 

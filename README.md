@@ -17,7 +17,7 @@ Providence is not a clone of Divinity's interface. It presents the same game con
 
 ## Download
 
-The current release is **Realmz Providence 0.3.4**.
+The current release is **Realmz Providence 0.4.0**.
 
 | Platform | Package |
 | --- | --- |
@@ -220,7 +220,7 @@ The committed manual gallery can be refreshed against a selected project with `n
 
 ## Status and Contributing
 
-Providence is under active development. Version 0.3.4 supports substantial end-to-end scenario authoring and export, but a real Realmz scenario remains the final compatibility test. Bug reports should include the source scenario or a minimal project package, the owning editor, the affected record or coordinates, the expected Realmz behavior, and whether the problem occurs in the browser, desktop app, exported scenario, or game runtime.
+Providence is under active development. Version 0.4.0 supports substantial end-to-end scenario authoring and export, but a real Realmz scenario remains the final compatibility test. Bug reports should include the source scenario or a minimal project package, the owning editor, the affected record or coordinates, the expected Realmz behavior, and whether the problem occurs in the browser, desktop app, exported scenario, or game runtime.
 
 Before submitting code, keep changes scoped, run the relevant focused checks, and use `npm run check` when the affected surface crosses project, export, or shared-record boundaries. Refactors should also follow the [Codebase Stabilization Baseline](docs/codebase-stabilization-baseline.md), which defines the repository's ownership and no-behavior-change constraints.
 

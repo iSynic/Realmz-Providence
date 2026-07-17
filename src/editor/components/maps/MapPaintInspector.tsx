@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Undo2 } from "lucide-react";
 import type { EditorState } from "../../store";
 import type {
   CustomMapStamp,
@@ -55,8 +54,6 @@ export function MapPaintInspector({
   smartBrushMask,
   smartBrushPlan,
   onClearSmartBrushMask,
-  canUndoSmartBrushMaskStep,
-  onUndoSmartBrushMaskStep,
   onApplySmartBrush,
   selectedSuperTileStampId,
   onSelectSuperTileStamp,
@@ -91,8 +88,6 @@ export function MapPaintInspector({
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
-  canUndoSmartBrushMaskStep: boolean;
-  onUndoSmartBrushMaskStep: () => void;
   onApplySmartBrush: () => void;
   selectedSuperTileStampId: string | null;
   onSelectSuperTileStamp: (stampId: string) => void;
@@ -171,8 +166,6 @@ export function MapPaintInspector({
         smartBrushMask={smartBrushMask}
         smartBrushPlan={smartBrushPlan}
         onClearSmartBrushMask={onClearSmartBrushMask}
-        canUndoSmartBrushMaskStep={canUndoSmartBrushMaskStep}
-        onUndoSmartBrushMaskStep={onUndoSmartBrushMaskStep}
         onApplySmartBrush={onApplySmartBrush}
         onApplyCommand={onApplyCommand}
         showVariation={state.activeTool !== "stamp"}
@@ -299,8 +292,6 @@ function PaintModePanel({
   smartBrushMask,
   smartBrushPlan,
   onClearSmartBrushMask,
-  canUndoSmartBrushMaskStep,
-  onUndoSmartBrushMaskStep,
   onApplySmartBrush,
   onApplyCommand,
   showVariation,
@@ -323,8 +314,6 @@ function PaintModePanel({
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
-  canUndoSmartBrushMaskStep: boolean;
-  onUndoSmartBrushMaskStep: () => void;
   onApplySmartBrush: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
   showVariation: boolean;
@@ -434,20 +423,8 @@ function PaintModePanel({
             <button className="btn btn-primary btn-xs context-action-button" type="button" disabled={smartBrushPlan.changedCount === 0} onClick={onApplySmartBrush}>
               Apply Smart Terrain ({smartBrushPlan.changedCount})
             </button>
-            <button
-              className="btn btn-secondary btn-xs context-action-button"
-              type="button"
-              disabled={!canUndoSmartBrushMaskStep}
-              onClick={onUndoSmartBrushMaskStep}
-              title="Undo the last Smart Brush mask stroke"
-            >
-              <Undo2 size={13} aria-hidden="true" /> Undo Last Stroke
-            </button>
             <button className="btn btn-secondary btn-xs context-action-button" type="button" disabled={smartBrushMask.length === 0} onClick={onClearSmartBrushMask}>
               Clear Smart Mask
-            </button>
-            <button className="btn btn-ghost btn-xs context-action-button" type="button" disabled={smartBrushMask.length === 0} onClick={onClearSmartBrushMask}>
-              Cancel Preview
             </button>
           </div>
         </div>

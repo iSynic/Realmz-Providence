@@ -20,6 +20,7 @@ export function ProvidenceEditorShell({
   activeStatus,
   undoLabel,
   redoLabel,
+  canUndo,
   canSave,
   canExport,
   tutorialEnabled,
@@ -57,6 +58,7 @@ export function ProvidenceEditorShell({
   activeStatus: string;
   undoLabel: string | null;
   redoLabel: string | null;
+  canUndo: boolean;
   canSave: boolean;
   canExport: boolean;
   tutorialEnabled: boolean;
@@ -112,7 +114,7 @@ export function ProvidenceEditorShell({
         browserPreviewStatus={browserPreviewStatus}
         undoLabel={undoLabel}
         redoLabel={redoLabel}
-        canUndo={state.past.length > 0}
+        canUndo={canUndo}
         canRedo={state.future.length > 0}
         canSave={canSave}
         canExport={canExport}

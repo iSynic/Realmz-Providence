@@ -719,6 +719,19 @@
   margin: 0;
 }
 
+.smart-brush-panel .context-action-stack {
+  justify-items: center;
+  padding-top: 2px;
+}
+
+.smart-brush-panel .context-action-stack .context-action-button {
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  justify-self: center;
+}
+
 .context-debug-details {
   padding: 6px;
   border: 1px dashed #314354;

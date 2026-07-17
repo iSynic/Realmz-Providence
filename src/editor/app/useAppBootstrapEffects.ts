@@ -48,7 +48,9 @@ export function useAppBootstrapEffects({
   projectDir,
   setProjectDir,
   atlasLoadKey,
-  iconLoadKey
+  iconLoadKey,
+  onUndo,
+  onRedo
 }: {
   state: EditorState;
   dispatch: Dispatch<EditorAction>;
@@ -58,6 +60,8 @@ export function useAppBootstrapEffects({
   setProjectDir: (value: string) => void;
   atlasLoadKey: string;
   iconLoadKey: string;
+  onUndo: () => void;
+  onRedo: () => void;
 }) {
   const loadedIconOverlayKeyRef = useRef("");
   const loadingIconOverlayKeyRef = useRef("");
@@ -285,15 +289,15 @@ export function useAppBootstrapEffects({
       const key = event.key.toLowerCase();
       if (key === "z") {
         event.preventDefault();
-        dispatch({ type: event.shiftKey ? "redo" : "undo" });
+        event.shiftKey ? onRedo() : onUndo();
       } else if (key === "y") {
         event.preventDefault();
-        dispatch({ type: "redo" });
+        onRedo();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [dispatch, state.groupLabel]);
+  }, [dispatch, onRedo, onUndo, state.groupLabel]);
 
   useEffect(() => {
     let disposed = false;

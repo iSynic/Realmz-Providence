@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { MapEntity, Project } from "../../types";
 import { LandLayoutEditor } from "./LandLayoutWorkbench";
 import { LandCellSecretEditor } from "./MapActionPointInspector";
+import { MapSectionTabs } from "./MapSectionTabs";
 
 describe("map segmented controls", () => {
   it("uses the shared selected and roving-tab contract for land secret state", () => {
@@ -38,5 +39,17 @@ describe("map segmented controls", () => {
     expect(markup).toContain('class="is-selected"');
     expect(markup).toContain('aria-pressed="true" tabindex="0"');
     expect(markup.match(/tabindex="-1"/g)).toHaveLength(1);
+  });
+
+  it("presents map sections as horizontal workbench tabs", () => {
+    const markup = renderToStaticMarkup(
+      <MapSectionTabs value="canvas" onChange={() => undefined} />
+    );
+
+    expect(markup).toContain('aria-label="Map workbench sections"');
+    expect(markup).toContain('role="tablist"');
+    expect(markup).toContain('aria-selected="true" tabindex="0" class="is-selected"');
+    expect(markup).toContain("Random Encounters");
+    expect(markup.match(/role="tab"/g)).toHaveLength(4);
   });
 });

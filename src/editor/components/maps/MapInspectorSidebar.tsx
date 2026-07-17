@@ -89,8 +89,6 @@ export function MapInspectorSidebar({
       smartBrushMask,
       visibleSmartBrushPlan: smartBrushPlan,
       clearSmartBrushMask: onClearSmartBrushMask,
-      canUndoSmartBrushMaskStep,
-      undoSmartBrushMaskStep: onUndoSmartBrushMaskStep,
       applySmartBrush: onApplySmartBrush
     },
     openCanvasTool: onSetTool
@@ -191,8 +189,7 @@ export function MapInspectorSidebar({
             onSetSmartBrushPreset={onSetSmartBrushPreset}
             smartBrushMask={smartBrushMask}
             smartBrushPlan={smartBrushPlan}
-            onClearSmartBrushMask={onClearSmartBrushMask} canUndoSmartBrushMaskStep={canUndoSmartBrushMaskStep}
-            onUndoSmartBrushMaskStep={onUndoSmartBrushMaskStep}
+            onClearSmartBrushMask={onClearSmartBrushMask}
             onApplySmartBrush={onApplySmartBrush}
             selectedSuperTileStampId={selectedSuperTileStampId}
             onSelectSuperTileStamp={onSelectSuperTileStamp}

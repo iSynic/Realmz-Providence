@@ -1,22 +1,10 @@
 import { TOOLS } from "../../constants";
 import type { EditorState } from "../../store";
 import type { EditorTool, MapEntity, MapWorkbenchMode, TilesetAsset } from "../../types";
-import { SegmentedControl, type SegmentedControlOption } from "../../ui";
 import { TutorialTip } from "../TutorialTip";
 import { mapWorkbenchModeLabel } from "./mapBrowserModel";
 import { PaintTileSummary } from "./MapPaintInspector";
 
-const MAP_TOOLSET_MODES: Array<{ id: MapWorkbenchMode; label: string; body: string }> = [
-  { id: "canvas", label: "Canvas", body: "Map painting and placement" },
-  { id: "land-layout", label: "Land Layout", body: "Outdoor adjacency grid" },
-  { id: "land-tiles", label: "Land Tiles", body: "Tile attributes and combat map" },
-  { id: "random-areas", label: "Random Encounters", body: "Encounter rectangles" }
-];
-const MAP_TOOLSET_MODE_OPTIONS: ReadonlyArray<SegmentedControlOption<MapWorkbenchMode>> = MAP_TOOLSET_MODES.map((mode) => ({
-  value: mode.id,
-  label: mode.label,
-  title: mode.body
-}));
 const LAND_AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "stamp", "trigger", "random"];
 const DUNGEON_AUTHORING_TOOL_IDS: EditorTool[] = ["dungeon-draw", "trigger", "random"];
 const NAVIGATION_TOOL_IDS: EditorTool[] = ["select", "pan", "sample"];
@@ -48,16 +36,6 @@ export function MapToolset({
       <div className="panel-header">
         <span>Map Toolset</span>
         <small>{workbenchMode === "canvas" ? toolLabel(state.activeTool) : mapWorkbenchModeLabel(workbenchMode)}</small>
-      </div>
-      <div className="map-sidebar-group map-sections-group">
-        <div className="map-sidebar-group-title">Map Sections</div>
-        <SegmentedControl
-          className="map-toolset-mode-control"
-          ariaLabel="Map workbench modes"
-          value={workbenchMode}
-          options={MAP_TOOLSET_MODE_OPTIONS}
-          onChange={onSetWorkbenchMode}
-        />
       </div>
       {workbenchMode === "canvas" ? (
         <>

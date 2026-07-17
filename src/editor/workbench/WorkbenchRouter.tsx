@@ -3,6 +3,7 @@ import { EditorState } from "../store";
 import { AssetSearchHint, BenchmarkReport, ExportReport, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
+import type { TransientUndoScope } from "../app/transientUndo";
 import {
   LazyCombatPanel as CombatPanel,
   LazyExportPanel as ExportPanel,
@@ -68,6 +69,7 @@ function WorkbenchRouterContent({
   onApplyCommand,
   onCommitPaintStroke,
   onCancelPaintStroke,
+  onSetTransientUndoScope,
   onCreateDraft,
   onUpdateDraft,
   onUpdateLibraryCatalog,
@@ -166,6 +168,7 @@ function WorkbenchRouterContent({
         onApplyCommand={onApplyCommand}
         onCommitPaintStroke={onCommitPaintStroke}
         onCancelPaintStroke={onCancelPaintStroke}
+        onSetTransientUndoScope={onSetTransientUndoScope}
       />
     );
   }
@@ -405,6 +408,7 @@ type WorkbenchRouterProps = {
   onApplyCommand: (command: ProjectCommand) => void;
   onCommitPaintStroke: () => void;
   onCancelPaintStroke: () => void;
+  onSetTransientUndoScope: (scope: TransientUndoScope | null) => void;
   onCreateDraft: (spec: LibraryDraftSpec) => void;
   onUpdateDraft: (entityId: string, changes: { label?: string; notes?: string }) => void;
   onUpdateLibraryCatalog: (catalog: LibraryCatalog, status: string) => void;
