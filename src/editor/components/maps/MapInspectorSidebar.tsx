@@ -265,6 +265,8 @@ export function MapInspectorSidebar({
             onSetPaletteVariationTiles={onSetPaletteVariationTiles}
             smartBrushPreset={smartBrushPreset}
             onSetSmartBrushPreset={onSetSmartBrushPreset}
+            protectMapFeatures={protectMapFeatures}
+            onSetProtectMapFeatures={onSetProtectMapFeatures}
             onUseSelectionAsSmartMask={onLoadSmartBrushMaskFromCells}
           />
         ) : workbenchMode !== "canvas" ? (

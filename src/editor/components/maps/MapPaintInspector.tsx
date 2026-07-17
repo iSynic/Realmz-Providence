@@ -35,7 +35,7 @@ import { tileAttributeLabel } from "./mapTileUiUtils";
 import { PaintPaletteSurface } from "./PaintPaletteSurface";
 import type { MapShapeFill, SmartBrushDrawMode } from "../../map/mapCellShapes";
 import { analyzeMapPaintOperation, type MapPaintOperationImpact } from "../../map/mapPaintSafeguards";
-import { MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
+import { MapPaintOperationSummary, MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
 
 export function MapPaintInspector({
   state,
@@ -655,8 +655,8 @@ function RegionPaintActions({
         onSetEnabled={onSetProtectMapFeatures}
       />
       <div className="paint-region-operation-previews">
-        <RegionOperationImpact label="Fill preview" impact={fillImpact} />
-        <RegionOperationImpact label="Clear preview" impact={clearImpact} />
+        <MapPaintOperationSummary label="Fill preview" impact={fillImpact} />
+        <MapPaintOperationSummary label="Clear preview" impact={clearImpact} />
       </div>
       <div className="paint-region-action-buttons">
         <button
@@ -674,31 +674,6 @@ function RegionPaintActions({
           Clear ({clearImpact?.allowedChanges.length.toLocaleString() ?? 0})
         </button>
       </div>
-    </div>
-  );
-}
-
-function RegionOperationImpact({
-  label,
-  impact
-}: {
-  label: string;
-  impact: MapPaintOperationImpact | null;
-}) {
-  if (!impact) return null;
-  return (
-    <div className="paint-region-operation-impact">
-      <strong>{label}</strong>
-      <span>
-        {impact.allowedChanges.length.toLocaleString()} will change
-        {impact.protectedChanges.length > 0
-          ? `; ${impact.protectedChanges.length.toLocaleString()} protected`
-          : ""}
-      </span>
-      <small>
-        {impact.sourceComposition.slice(0, 3).map(({ tile, count }) => `Tile ${tile} x${count.toLocaleString()}`).join(" | ") || "No source tiles"}
-        {impact.sourceComposition.length > 3 ? ` | +${impact.sourceComposition.length - 3} more` : ""}
-      </small>
     </div>
   );
 }

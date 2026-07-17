@@ -721,7 +721,7 @@
   gap: 6px;
 }
 
-.paint-region-operation-impact {
+.map-paint-operation-impact {
   display: grid;
   min-width: 0;
   gap: 3px;
@@ -730,13 +730,13 @@
   background: var(--ui-color-surface-raised);
 }
 
-.paint-region-operation-impact span,
-.paint-region-operation-impact small {
+.map-paint-operation-impact span,
+.map-paint-operation-impact small {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.paint-region-operation-impact small {
+.map-paint-operation-impact small {
   color: var(--ui-color-text-muted);
 }
 

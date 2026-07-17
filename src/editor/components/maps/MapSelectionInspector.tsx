@@ -49,6 +49,8 @@ export function MapSelectionInspector({
   onSetPaletteVariationTiles,
   smartBrushPreset,
   onSetSmartBrushPreset,
+  protectMapFeatures,
+  onSetProtectMapFeatures,
   onUseSelectionAsSmartMask
 }: {
   selection: MapSelection;
@@ -79,6 +81,8 @@ export function MapSelectionInspector({
   onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   smartBrushPreset: SmartBrushPreset;
   onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
+  protectMapFeatures: boolean;
+  onSetProtectMapFeatures: (enabled: boolean) => void;
   onUseSelectionAsSmartMask: (cells: ReadonlyArray<{ x: number; y: number }>) => void;
 }) {
   return (
@@ -132,6 +136,8 @@ export function MapSelectionInspector({
           onSetPaletteVariationTiles={onSetPaletteVariationTiles}
           smartBrushPreset={smartBrushPreset}
           onSetSmartBrushPreset={onSetSmartBrushPreset}
+          protectMapFeatures={protectMapFeatures}
+          onSetProtectMapFeatures={onSetProtectMapFeatures}
           onUseSelectionAsSmartMask={onUseSelectionAsSmartMask}
           onApplyCommand={onApplyCommand}
           onSetSelection={onSetConnectedSelection}

@@ -45,3 +45,28 @@ export function MapPaintProtectionSummary({
     </section>
   );
 }
+
+export function MapPaintOperationSummary({
+  label,
+  impact
+}: {
+  label: string;
+  impact: MapPaintOperationImpact | null;
+}) {
+  if (!impact) return null;
+  return (
+    <div className="map-paint-operation-impact">
+      <strong>{label}</strong>
+      <span>
+        {impact.allowedChanges.length.toLocaleString()} will change
+        {impact.protectedChanges.length > 0
+          ? `; ${impact.protectedChanges.length.toLocaleString()} protected`
+          : ""}
+      </span>
+      <small>
+        {impact.sourceComposition.slice(0, 3).map(({ tile, count }) => `Tile ${tile} x${count.toLocaleString()}`).join(" | ") || "No source tiles"}
+        {impact.sourceComposition.length > 3 ? ` | +${impact.sourceComposition.length - 3} more` : ""}
+      </small>
+    </div>
+  );
+}

@@ -4,6 +4,7 @@ import type {
   LibraryAsset,
   MapEntity,
   MapPaintVariation,
+  PaintCellChange,
   Project,
   ProjectCommand,
   SmartBrushPreset,
@@ -23,7 +24,9 @@ import { paintSeed } from "../../map/paintResolver";
 import { SMART_BRUSH_PRESETS, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
 import { tileValueAt } from "../../map/geometry";
 import { reshapeConnectedCellSelection, type ConnectedCellSelection } from "../../map/connectedMapSelection";
+import { analyzeMapPaintOperation, applyMapPaintImpactToSmartPlan } from "../../map/mapPaintSafeguards";
 import { PaintPalettePanel } from "../TileSelectionBar";
+import { MapPaintOperationSummary, MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
 
 export function ConnectedSelectionActions({
   selection,
@@ -46,6 +49,8 @@ export function ConnectedSelectionActions({
   onSetPaletteVariationTiles,
   smartBrushPreset,
   onSetSmartBrushPreset,
+  protectMapFeatures,
+  onSetProtectMapFeatures,
   onUseSelectionAsSmartMask,
   onApplyCommand,
   onSetSelection,
@@ -71,6 +76,8 @@ export function ConnectedSelectionActions({
   onSetPaletteVariationTiles: (tiles: number[] | null) => void;
   smartBrushPreset: SmartBrushPreset;
   onSetSmartBrushPreset: (preset: SmartBrushPreset) => void;
+  protectMapFeatures: boolean;
+  onSetProtectMapFeatures: (enabled: boolean) => void;
   onUseSelectionAsSmartMask: (cells: ReadonlyArray<{ x: number; y: number }>) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onSetSelection: (selection: ConnectedCellSelection | null) => void;
@@ -104,6 +111,30 @@ export function ConnectedSelectionActions({
     () => map ? buildConnectedSelectionSmartTerrainPlan(map, selection.cells, smartBrushPreset, selectedTileset, atlas) : null,
     [atlas, map, selectedTileset, selection.cells, smartBrushPreset]
   );
+  const fillImpact = useMemo(
+    () => connectedSelectionImpact(map, fillPlan?.changes ?? [], project, selectedTileset, protectMapFeatures),
+    [fillPlan, map, project, protectMapFeatures, selectedTileset]
+  );
+  const replaceImpact = useMemo(
+    () => connectedSelectionImpact(map, replacePlan?.changes ?? [], project, selectedTileset, protectMapFeatures),
+    [map, project, protectMapFeatures, replacePlan, selectedTileset]
+  );
+  const clearImpact = useMemo(
+    () => connectedSelectionImpact(map, clearPlan?.changes ?? [], project, selectedTileset, protectMapFeatures),
+    [clearPlan, map, project, protectMapFeatures, selectedTileset]
+  );
+  const rawSmartCommand = useMemo(
+    () => map && smartPlan ? connectedSelectionSmartTerrainCommand(map, smartBrushPreset, smartPlan) : null,
+    [map, smartBrushPreset, smartPlan]
+  );
+  const smartImpact = useMemo(
+    () => connectedSelectionImpact(map, rawSmartCommand?.cells ?? [], project, selectedTileset, protectMapFeatures),
+    [map, project, protectMapFeatures, rawSmartCommand, selectedTileset]
+  );
+  const protectedSmartPlan = useMemo(
+    () => smartPlan && smartImpact ? applyMapPaintImpactToSmartPlan(smartPlan, smartImpact) : smartPlan,
+    [smartImpact, smartPlan]
+  );
   const stampPreview = useMemo(
     () => map ? captureMapStampFromCells(map, selection.cells, "Selection stamp", "map-stamp:selection-preview") : null,
     [map, selection.cells]
@@ -111,14 +142,14 @@ export function ConnectedSelectionActions({
   const stampTooLarge = Boolean(stampPreview && (stampPreview.width > 32 || stampPreview.height > 32));
   const smartPresetLabel = SMART_BRUSH_PRESETS.find((preset) => preset.id === smartBrushPreset)?.label ?? smartBrushPreset;
   const smartTerrainAvailable = map?.levelType === "land" && smartBrushProfileForTileset(selectedTileset) != null;
-  const applyPlan = (label: string, plan: typeof fillPlan) => {
-    if (!map || !plan) return;
-    const command = connectedSelectionPaintCommand(map, label, plan);
+  const applyPlan = (label: string, plan: typeof fillPlan, impact: typeof fillImpact) => {
+    if (!map || !plan || !impact) return;
+    const command = connectedSelectionPaintCommand(map, label, { ...plan, changes: impact.allowedChanges });
     if (command) onApplyCommand(command);
   };
   const applySmartTerrain = () => {
-    if (!map || !smartPlan) return;
-    const command = connectedSelectionSmartTerrainCommand(map, smartBrushPreset, smartPlan);
+    if (!map || !protectedSmartPlan) return;
+    const command = connectedSelectionSmartTerrainCommand(map, smartBrushPreset, protectedSmartPlan);
     if (command) onApplyCommand(command);
   };
   const createStamp = () => {
@@ -160,9 +191,14 @@ export function ConnectedSelectionActions({
       </section>
       {map?.levelType === "land" && (
         <div className="connected-selection-actions">
+          <MapPaintProtectionSummary
+            enabled={protectMapFeatures}
+            impact={null}
+            onSetEnabled={onSetProtectMapFeatures}
+          />
           <section>
-            <div><strong>Fill</strong><span>Paint {selectedTile}</span></div>
-            <small>{affectedCellsLabel(fillPlan?.changes.length ?? 0, selection.cells.length)}</small>
+            <div className="connected-selection-action-heading"><strong>Fill</strong><span>Paint {selectedTile}</span></div>
+            <MapPaintOperationSummary label="Fill preview" impact={fillImpact} />
             <button className="btn btn-secondary btn-xs" type="button" aria-expanded={paletteOpen} onClick={() => setPaletteOpen((current) => !current)}>
               {paletteOpen ? "Hide Tile Palette" : "Choose Fill Tile"}
             </button>
@@ -192,37 +228,37 @@ export function ConnectedSelectionActions({
                 />
               </div>
             )}
-            <button className="btn btn-primary btn-xs" type="button" disabled={!fillPlan?.changes.length} onClick={() => applyPlan("Fill selected cells", fillPlan)}>Fill Selection</button>
+            <button className="btn btn-primary btn-xs" type="button" disabled={!fillImpact?.allowedChanges.length} onClick={() => applyPlan("Fill selected cells", fillPlan, fillImpact)}>Fill Selection</button>
           </section>
           <section>
             <label>
               <span>Replace Tile</span>
               <input type="number" value={sourceTile} onChange={(event) => setSourceTile(Number(event.target.value) || 0)} />
             </label>
-            <small>{affectedCellsLabel(replacePlan?.changes.length ?? 0, selection.cells.length)}</small>
-            <button className="btn btn-secondary btn-xs" type="button" disabled={!replacePlan?.changes.length} onClick={() => applyPlan(`Replace tile ${sourceTile} in selection`, replacePlan)}>Replace In Selection</button>
+            <MapPaintOperationSummary label="Replace preview" impact={replaceImpact} />
+            <button className="btn btn-secondary btn-xs" type="button" disabled={!replaceImpact?.allowedChanges.length} onClick={() => applyPlan(`Replace tile ${sourceTile} in selection`, replacePlan, replaceImpact)}>Replace In Selection</button>
           </section>
           <section>
-            <div><strong>Clear</strong><span>Restore base terrain</span></div>
-            <small>{affectedCellsLabel(clearPlan?.changes.length ?? 0, selection.cells.length)}</small>
-            <button className="btn btn-danger btn-xs" type="button" disabled={!clearPlan?.changes.length} onClick={() => applyPlan("Clear selected cells", clearPlan)}>Clear Selected Cells</button>
+            <div className="connected-selection-action-heading"><strong>Clear</strong><span>Restore base terrain</span></div>
+            <MapPaintOperationSummary label="Clear preview" impact={clearImpact} />
+            <button className="btn btn-danger btn-xs" type="button" disabled={!clearImpact?.allowedChanges.length} onClick={() => applyPlan("Clear selected cells", clearPlan, clearImpact)}>Clear Selected Cells</button>
           </section>
           <section>
-            <div><strong>Smart Terrain</strong><span>{smartPresetLabel}</span></div>
+            <div className="connected-selection-action-heading"><strong>Smart Terrain</strong><span>{smartPresetLabel}</span></div>
             <label>
               <span>Terrain Type</span>
               <select aria-label="Connected selection terrain type" value={smartBrushPreset} onChange={(event) => onSetSmartBrushPreset(event.currentTarget.value as SmartBrushPreset)}>
                 {SMART_BRUSH_PRESETS.map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}
               </select>
             </label>
-            <small>{smartPlan?.reason ?? `${(smartPlan?.changedCount ?? 0).toLocaleString()} cells will change${smartPlan?.skippedCount ? `; ${smartPlan.skippedCount.toLocaleString()} protected cells skipped` : ""}`}</small>
+            {smartPlan?.reason ? <small>{smartPlan.reason}</small> : <MapPaintOperationSummary label="Smart preview" impact={smartImpact} />}
             <div className="connected-selection-smart-actions">
-              <button className="btn btn-primary btn-xs" type="button" disabled={!smartPlan?.changedCount} onClick={applySmartTerrain}>Apply {smartPresetLabel}</button>
+              <button className="btn btn-primary btn-xs" type="button" disabled={!protectedSmartPlan?.changedCount} onClick={applySmartTerrain}>Apply {smartPresetLabel}</button>
               <button className="btn btn-secondary btn-xs" type="button" disabled={!smartTerrainAvailable || selection.cells.length === 0} onClick={() => onUseSelectionAsSmartMask(selection.cells)}>Use As Smart Mask</button>
             </div>
           </section>
           <section>
-            <div><strong>Reusable Stamp</strong><span>{stampPreview ? `${stampPreview.width}x${stampPreview.height}` : "No cells"}</span></div>
+            <div className="connected-selection-action-heading"><strong>Reusable Stamp</strong><span>{stampPreview ? `${stampPreview.width}x${stampPreview.height}` : "No cells"}</span></div>
             <small>{stampTooLarge ? "Selection exceeds the 32x32 reusable stamp limit" : `${selection.cells.length.toLocaleString()} selected cells; unselected cells inside the bounds stay transparent`}</small>
             <button className="btn btn-secondary btn-xs" type="button" disabled={!project || !stampPreview || stampTooLarge} onClick={createStamp}>Create Reusable Stamp</button>
           </section>
@@ -233,12 +269,25 @@ export function ConnectedSelectionActions({
   );
 }
 
-function affectedCellsLabel(changed: number, selected: number) {
-  return changed === 0 ? `No changes across ${selected.toLocaleString()} selected cells` : `${changed.toLocaleString()} of ${selected.toLocaleString()} selected cells will change`;
-}
-
 function connectedMatchModeLabel(mode: ConnectedCellSelection["matchMode"]) {
   if (mode === "semantic-family") return "Terrain family";
   if (mode === "behavior") return "Realmz behavior";
   return "Exact tile";
+}
+
+function connectedSelectionImpact(
+  map: MapEntity | null,
+  changes: ReadonlyArray<PaintCellChange>,
+  project: Project | null,
+  tileset: TilesetAsset | null,
+  protectFeatures: boolean
+) {
+  if (!map) return null;
+  return analyzeMapPaintOperation({
+    map,
+    changes,
+    triggers: project?.triggers ?? [],
+    tileset,
+    protectFeatures
+  });
 }

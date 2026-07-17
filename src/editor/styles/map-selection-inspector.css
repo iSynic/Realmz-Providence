@@ -258,7 +258,7 @@
 }
 
 .connected-selection-heading,
-.connected-selection-actions > section > div {
+.connected-selection-action-heading {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -321,7 +321,7 @@
   width: 100%;
 }
 
-.connected-selection-actions > section > div span {
+.connected-selection-action-heading span {
   font-size: 10px;
 }
 
