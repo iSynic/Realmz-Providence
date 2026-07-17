@@ -228,6 +228,10 @@ export function MapInspectorSidebar({
             onOpenScripts={onOpenScripts}
             onApplyCommand={onApplyCommand}
             onClearConnectedSelection={() => onSetConnectedSelection(null)}
+            selectedTile={state.selectedTile}
+            paintVariation={paintVariation}
+            activePaintGroupId={activePaintGroupId}
+            variationTiles={variationTiles}
           />
         ) : workbenchMode !== "canvas" ? (
           <MapModeInspector
