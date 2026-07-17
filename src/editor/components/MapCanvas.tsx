@@ -106,6 +106,7 @@ export function RealmzMapCanvas({
   onSetSelectedRegion,
   onClearSelection,
   onSetSmartBrushMask,
+  onCommitSmartBrushMaskStep,
   onSetSmartBrushDrawing,
   onSampleTile,
   onSelectEntity,
@@ -153,6 +154,7 @@ export function RealmzMapCanvas({
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   onClearSelection: () => void;
   onSetSmartBrushMask: (mask: SmartBrushMaskCell[]) => void;
+  onCommitSmartBrushMaskStep: (before: SmartBrushMaskCell[], after: SmartBrushMaskCell[]) => void;
   onSetSmartBrushDrawing: (drawing: boolean) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
@@ -338,6 +340,7 @@ export function RealmzMapCanvas({
     onSetSelectedRegion,
     onClearSelection,
     onSetSmartBrushMask,
+    onCommitSmartBrushMaskStep,
     onSetSmartBrushDrawing,
     onSampleTile,
     onSelectEntity,

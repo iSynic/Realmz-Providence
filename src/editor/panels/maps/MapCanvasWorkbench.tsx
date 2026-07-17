@@ -16,7 +16,6 @@ import type {
   TriggerRecord
 } from "../../types";
 import type { MapWorkbenchState } from "./useMapWorkbenchState";
-
 export function MapCanvasWorkbench({
   state,
   selectedMap,
@@ -81,6 +80,7 @@ export function MapCanvasWorkbench({
     smartBrush: {
       smartBrushMask,
       setSmartBrushMask,
+      commitSmartBrushMaskStep,
       smartBrushDrawing,
       setSmartBrushDrawing,
       visibleSmartBrushPlan
@@ -158,6 +158,7 @@ export function MapCanvasWorkbench({
           onSetSelectedRegion={setSelectedRegion}
           onClearSelection={onClearSelection}
           onSetSmartBrushMask={setSmartBrushMask}
+          onCommitSmartBrushMaskStep={commitSmartBrushMaskStep}
           onSetSmartBrushDrawing={setSmartBrushDrawing}
           onSampleTile={onSelectTile}
           onSelectEntity={onSelectEntity}
@@ -174,7 +175,6 @@ export function MapCanvasWorkbench({
     </>
   );
 }
-
 function MapEmptyState({
   hasProject,
   onCreateMap

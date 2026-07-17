@@ -6,6 +6,7 @@ import { readGlobalMapStamps, writeGlobalMapStamps } from "../../map/customMapSt
 import { DUNGEON_DEFAULT_DRAW_FLAGS } from "../../map/dungeonCellFlags";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../../map/superTileStamps";
+import { useSmartBrushMaskHistory } from "./useSmartBrushMaskHistory";
 import type {
   CustomMapStamp,
   DungeonCellFlag,
@@ -19,7 +20,6 @@ import type {
   MapWorkbenchMode,
   Project,
   ProjectCommand,
-  SmartBrushMaskCell,
   SmartBrushPreset,
   TilePaletteCategory,
   TilesetAsset
@@ -58,16 +58,16 @@ export function useMapWorkbenchState({
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
   const [smartBrushPreset, setSmartBrushPreset] = useState<SmartBrushPreset>("mountains");
-  const [smartBrushMask, setSmartBrushMask] = useState<SmartBrushMaskCell[]>([]);
+  const { smartBrushMask, setSmartBrushMask, commitSmartBrushMaskStep, canUndoSmartBrushMaskStep, undoSmartBrushMaskStep, resetSmartBrushMask } = useSmartBrushMaskHistory();
   const [smartBrushDrawing, setSmartBrushDrawing] = useState(false);
   const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
 
   useEffect(() => {
     setSelectedRegion(null);
-    setSmartBrushMask([]);
+    resetSmartBrushMask();
     setSmartBrushDrawing(false);
     setPreviewFocalPoint(null);
-  }, [selectedMap?.id]);
+  }, [resetSmartBrushMask, selectedMap?.id]);
   useEffect(() => {
     if (typeof localStorage === "undefined") return;
     localStorage.setItem(MAP_WORKBENCH_MODE_STORAGE_KEY, workbenchMode);
@@ -123,20 +123,17 @@ export function useMapWorkbenchState({
     if (paintMode !== "smart") return;
     if (!selectedMap || selectedMap.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null) {
       setPaintMode("brush");
-      setSmartBrushMask([]);
+      resetSmartBrushMask();
       setSmartBrushDrawing(false);
     }
-  }, [paintMode, selectedMap, selectedTileset]);
+  }, [paintMode, resetSmartBrushMask, selectedMap, selectedTileset]);
 
   const openCanvasTool = (tool: EditorTool) => {
     setWorkbenchMode("canvas");
     onSetTool(tool);
     if (tool === "paint" || tool === "stamp") setPaletteOpen(true);
   };
-  const clearSmartBrushMask = () => {
-    setSmartBrushMask([]);
-    setSmartBrushDrawing(false);
-  };
+  const clearSmartBrushMask = () => { resetSmartBrushMask(); setSmartBrushDrawing(false); };
   const applySmartBrush = () => {
     if (!selectedMap) return;
     const cells = buildSmartTerrainPaintChanges(smartBrushPlan);
@@ -147,7 +144,7 @@ export function useMapWorkbenchState({
       mapId: selectedMap.id,
       cells
     });
-    setSmartBrushMask([]);
+    resetSmartBrushMask();
   };
 
   return {
@@ -194,6 +191,9 @@ export function useMapWorkbenchState({
       setSmartBrushPreset,
       smartBrushMask,
       setSmartBrushMask,
+      commitSmartBrushMaskStep,
+      canUndoSmartBrushMaskStep,
+      undoSmartBrushMaskStep,
       smartBrushDrawing,
       setSmartBrushDrawing,
       smartBrushPlan,

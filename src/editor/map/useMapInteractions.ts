@@ -26,6 +26,7 @@ import { setDungeonCellFlags } from "./dungeonCellFlags";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
 import { buildSuperTileStampChanges, MapStamp, MapStampPreviewCell, superTileStampPreviewCells } from "./superTileStamps";
+import { filledClosedSmartBrushPathCells, orthogonalSmartBrushPathCells } from "./smartBrushMask";
 
 export function useMapInteractions({
   map,
@@ -54,6 +55,7 @@ export function useMapInteractions({
   onSetSelectedRegion,
   onClearSelection,
   onSetSmartBrushMask,
+  onCommitSmartBrushMaskStep,
   onSetSmartBrushDrawing,
   onSampleTile,
   onSelectEntity,
@@ -91,6 +93,7 @@ export function useMapInteractions({
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
   onClearSelection: () => void;
   onSetSmartBrushMask: (mask: SmartBrushMaskCell[]) => void;
+  onCommitSmartBrushMaskStep: (before: SmartBrushMaskCell[], after: SmartBrushMaskCell[]) => void;
   onSetSmartBrushDrawing: (drawing: boolean) => void;
   onSampleTile: (tile: number) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
@@ -117,6 +120,7 @@ export function useMapInteractions({
     moved: boolean;
   } | null>(null);
   const smartMaskDragRef = useRef<{
+    before: SmartBrushMaskCell[];
     cells: Map<string, SmartBrushMaskCell>;
     last: { x: number; y: number } | null;
     path: Array<{ x: number; y: number }>;
@@ -395,7 +399,7 @@ export function useMapInteractions({
     if (!drag) return;
     let changed = false;
     const start = drag.last ?? cell;
-    for (const step of lineCells(start, cell)) {
+    for (const step of orthogonalSmartBrushPathCells(start, cell)) {
       changed = addSmartMaskCell(step) || changed;
     }
     drag.last = cell;
@@ -410,10 +414,12 @@ export function useMapInteractions({
     const drag = smartMaskDragRef.current;
     if (!drag) return;
     let changed = false;
-    for (const cell of filledLassoCells(drag.path, map)) {
+    for (const cell of filledClosedSmartBrushPathCells(drag.path, map)) {
       changed = addSmartMaskCell(cell) || changed;
     }
-    if (changed) onSetSmartBrushMask([...drag.cells.values()]);
+    const mask = [...drag.cells.values()];
+    if (changed) onSetSmartBrushMask(mask);
+    onCommitSmartBrushMaskStep(drag.before, mask);
     smartMaskDragRef.current = null;
     onSetSmartBrushDrawing(false);
   }
@@ -515,7 +521,7 @@ export function useMapInteractions({
         }
         if (activeTool === "paint" && paintMode === "smart") {
           const existing = new Map(smartBrushMask.map((cell) => [`${cell.x}:${cell.y}`, cell]));
-          smartMaskDragRef.current = { cells: existing, last: null, path: [] };
+          smartMaskDragRef.current = { before: [...smartBrushMask], cells: existing, last: null, path: [] };
           onSetSmartBrushDrawing(true);
           addSmartMaskPath(cellFromEvent(event));
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -696,6 +702,7 @@ export function useMapInteractions({
         panRef.current = null;
         selectDragRef.current = null;
         randomDragRef.current = null;
+        if (smartMaskDragRef.current) onSetSmartBrushMask(smartMaskDragRef.current.before);
         smartMaskDragRef.current = null;
         if (smartBrushDrawing) onSetSmartBrushDrawing(false);
         setRegionPreview(null);
@@ -794,49 +801,6 @@ function lineCells(start: { x: number; y: number }, end: { x: number; y: number 
     }
   }
   return cells;
-}
-
-function filledLassoCells(path: Array<{ x: number; y: number }>, map: MapEntity) {
-  if (path.length < 4) return [];
-  const first = path[0];
-  const last = path[path.length - 1];
-  const bounds = path.reduce(
-    (acc, point) => ({
-      left: Math.min(acc.left, point.x),
-      right: Math.max(acc.right, point.x),
-      top: Math.min(acc.top, point.y),
-      bottom: Math.max(acc.bottom, point.y)
-    }),
-    { left: first.x, right: first.x, top: first.y, bottom: first.y }
-  );
-  const width = bounds.right - bounds.left + 1;
-  const height = bounds.bottom - bounds.top + 1;
-  const closeDistance = Math.abs(first.x - last.x) + Math.abs(first.y - last.y);
-  if (width < 3 || height < 3 || closeDistance > Math.max(3, Math.min(width, height))) return [];
-
-  const polygon = path.map((point) => ({ x: point.x + 0.5, y: point.y + 0.5 }));
-  const cells: Array<{ x: number; y: number }> = [];
-  const left = Math.max(0, bounds.left);
-  const right = Math.min(map.width - 1, bounds.right);
-  const top = Math.max(0, bounds.top);
-  const bottom = Math.min(map.height - 1, bounds.bottom);
-  for (let y = top; y <= bottom; y += 1) {
-    for (let x = left; x <= right; x += 1) {
-      if (pointInPolygon(x + 0.5, y + 0.5, polygon)) cells.push({ x, y });
-    }
-  }
-  return cells;
-}
-
-function pointInPolygon(x: number, y: number, polygon: Array<{ x: number; y: number }>) {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
-    const a = polygon[i];
-    const b = polygon[j];
-    const intersects = (a.y > y) !== (b.y > y) && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y || Number.EPSILON) + a.x;
-    if (intersects) inside = !inside;
-  }
-  return inside;
 }
 
 function isBrushLikeTool(activeTool: EditorTool, paintMode: MapPaintMode) {

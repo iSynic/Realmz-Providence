@@ -213,6 +213,13 @@ function resolveSmartTerrainMatch(
     return { tile, score: 1, neighborMask, source: "center", samples: presetProfile.sampleCount ?? null };
   }
 
+  const narrowWaterMask = preset === "water" && isNarrowWaterTopology(context) ? neighborMask & 0x0f : 0;
+  const narrowWaterCandidates = narrowWaterMask > 0 ? presetProfile.curatedMasks?.[String(narrowWaterMask)] ?? [] : [];
+  if (narrowWaterCandidates.length > 0) {
+    const tile = seededPick(narrowWaterCandidates, map.id, preset, cell, `narrow-water:${narrowWaterMask}`);
+    return { tile, score: 1, neighborMask: narrowWaterMask, source: "curated-mask", samples: null };
+  }
+
   const reviewedWaterTile = preset === "water" ? reviewedBroadWaterTile(context, role) : null;
   if (reviewedWaterTile !== null) {
     return { tile: reviewedWaterTile, score: 1, neighborMask, source: "curated-mask", samples: null };
@@ -611,6 +618,17 @@ function distanceToMaskBoundary(cell: SmartBrushMaskCell, maskSet: Set<string>) 
 function isNarrowContext(context: SmartTerrainShapeContext) {
   const cardinals = [context.n, context.s, context.e, context.w].filter(Boolean).length;
   return cardinals <= 2;
+}
+
+function isNarrowWaterTopology(context: SmartTerrainShapeContext) {
+  const cardinals = [context.n, context.s, context.e, context.w].filter(Boolean).length;
+  if (cardinals === 0 || cardinals > 3) return false;
+  return !(
+    (context.n && context.e && context.ne) ||
+    (context.e && context.s && context.se) ||
+    (context.s && context.w && context.sw) ||
+    (context.w && context.n && context.nw)
+  );
 }
 
 function isSmartTerrainReplaceable(tile: number, preset: SmartBrushPreset, profile: SmartBrushProfile, clearTile: number) {

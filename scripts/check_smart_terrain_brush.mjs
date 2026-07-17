@@ -15,6 +15,7 @@ try {
     entryPoints: {
       alignment: path.join(root, "src", "editor", "map", "smartTerrainAlignment.ts"),
       brush: path.join(root, "src", "editor", "map", "smartTerrainBrush.ts"),
+      mask: path.join(root, "src", "editor", "map", "smartBrushMask.ts"),
       topology: path.join(root, "src", "editor", "map", "smartTerrainTopology.ts"),
       seed: path.join(root, "src", "editor", "scenarioSeed.ts")
     },
@@ -28,6 +29,7 @@ try {
   const requireFromCheck = createRequire(path.join(tmpDir, "check.cjs"));
   const { alignSmartTerrainPlacementEdges } = requireFromCheck("./alignment.js");
   const { buildSmartTerrainChanges, smartBrushProfileForTileset } = requireFromCheck("./brush.js");
+  const { filledClosedSmartBrushPathCells, orthogonalSmartBrushPathCells, sameSmartBrushMask } = requireFromCheck("./mask.js");
   const { smartTerrainConnectionMasksForTile, smartTerrainTileConnects } = requireFromCheck("./topology.js");
   const { createProjectFromScenarioSeed } = requireFromCheck("./seed.js");
   const tileset = { landlook: 0, baseTile: 156 };
@@ -103,6 +105,28 @@ try {
   expectStreamCell(horizontalStream, 13, 10, 10, 39, "horizontal stream interior");
   expectStreamCell(horizontalStream, 14, 10, 8, 43, "horizontal stream east endpoint");
   expect(horizontalStream.profileConfidence === "reviewed-rules", "a fully audited horizontal stream should report reviewed-rule confidence");
+
+  const curvedStream = planForMask(buildSmartTerrainChanges, tileset, [
+    { x: 10, y: 10 }, { x: 10, y: 11 }, { x: 10, y: 12 },
+    { x: 11, y: 12 }, { x: 12, y: 12 }, { x: 12, y: 13 },
+    { x: 12, y: 14 }, { x: 13, y: 14 }, { x: 14, y: 14 }
+  ], "water", loadedAtlas);
+  expectStreamCell(curvedStream, 10, 11, 5, 38, "curved stream vertical approach");
+  expectStreamCell(curvedStream, 10, 12, 3, 50, "curved stream southeast bend");
+  expectStreamCell(curvedStream, 11, 12, 10, 39, "curved stream horizontal segment");
+  expectStreamCell(curvedStream, 12, 12, 12, 49, "curved stream southwest bend");
+  expectStreamCell(curvedStream, 12, 13, 5, 38, "curved stream second vertical segment");
+  expectStreamCell(curvedStream, 12, 14, 3, 50, "curved stream second southeast bend");
+  expect(curvedStream.profileConfidence === "reviewed-rules", "a curved one-cell stream should remain entirely on reviewed narrow-water rules");
+
+  const openPath = [{ x: 2, y: 2 }, { x: 2, y: 6 }, { x: 6, y: 6 }, { x: 6, y: 3 }];
+  expect(filledClosedSmartBrushPathCells(openPath, { width: 10, height: 10 }).length === 0, "an open Smart Brush stroke should not fill a lasso interior");
+  const closedPath = [...openPath, { x: 2, y: 2 }];
+  expect(filledClosedSmartBrushPathCells(closedPath, { width: 10, height: 10 }).length > 0, "a Smart Brush stroke closed on its starting cell should fill its interior");
+  expect(sameSmartBrushMask([{ x: 1, y: 1 }, { x: 2, y: 2 }], [{ x: 2, y: 2 }, { x: 1, y: 1 }]), "Smart Brush mask history should compare snapshots independent of insertion order");
+  const diagonalStroke = orthogonalSmartBrushPathCells({ x: 2, y: 2 }, { x: 5, y: 5 });
+  expect(diagonalStroke.length === 7, "diagonal Smart Brush movement should interpolate a connected four-directional path");
+  expect(diagonalStroke.every((cell, index) => index === 0 || Math.abs(cell.x - diagonalStroke[index - 1].x) + Math.abs(cell.y - diagonalStroke[index - 1].y) === 1), "interpolated Smart Brush cells should never connect only at a corner");
 
   const broadNorthEastCorner = planForMask(buildSmartTerrainChanges, tileset, [
     { x: 20, y: 20 }, { x: 19, y: 20 }, { x: 20, y: 21 }, { x: 19, y: 21 }

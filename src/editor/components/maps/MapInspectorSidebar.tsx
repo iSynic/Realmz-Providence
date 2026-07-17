@@ -24,7 +24,6 @@ import {
   transitionToMapInspector,
   type MapSidebarInspector
 } from "./mapInspectorRouting";
-
 interface MapInspectorContext {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -34,7 +33,6 @@ interface MapInspectorContext {
   mapTriggers: TriggerRecord[];
   mapRecords: SemanticEntity[];
 }
-
 interface MapInspectorActions {
   onSelectTile: (tile: number) => void;
   onSetViewFlag: (flag: MapViewFlag, value: boolean) => void;
@@ -43,7 +41,6 @@ interface MapInspectorActions {
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
 }
-
 export function MapInspectorSidebar({
   context: {
     state,
@@ -92,6 +89,8 @@ export function MapInspectorSidebar({
       smartBrushMask,
       visibleSmartBrushPlan: smartBrushPlan,
       clearSmartBrushMask: onClearSmartBrushMask,
+      canUndoSmartBrushMaskStep,
+      undoSmartBrushMaskStep: onUndoSmartBrushMaskStep,
       applySmartBrush: onApplySmartBrush
     },
     openCanvasTool: onSetTool
@@ -192,7 +191,8 @@ export function MapInspectorSidebar({
             onSetSmartBrushPreset={onSetSmartBrushPreset}
             smartBrushMask={smartBrushMask}
             smartBrushPlan={smartBrushPlan}
-            onClearSmartBrushMask={onClearSmartBrushMask}
+            onClearSmartBrushMask={onClearSmartBrushMask} canUndoSmartBrushMaskStep={canUndoSmartBrushMaskStep}
+            onUndoSmartBrushMaskStep={onUndoSmartBrushMaskStep}
             onApplySmartBrush={onApplySmartBrush}
             selectedSuperTileStampId={selectedSuperTileStampId}
             onSelectSuperTileStamp={onSelectSuperTileStamp}
