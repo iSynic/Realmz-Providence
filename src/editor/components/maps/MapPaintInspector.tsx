@@ -15,7 +15,6 @@ import type {
   TilePaletteCategory,
   TilesetAsset
 } from "../../types";
-import { regionCellCount } from "../../map/regionPaint";
 import { classifyTileValue } from "../../map/tileMetadata";
 import { SMART_BRUSH_PRESETS, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
 import { InfoGrid } from "../InfoGrid";
@@ -28,14 +27,13 @@ import {
   applyRegionPaintOperation,
   buildClearRegionOperation,
   buildFillRegionOperation,
-  paintModeLabel,
-  regionLabel
+  paintModeLabel
 } from "./mapRegionUiUtils";
 import { tileAttributeLabel } from "./mapTileUiUtils";
 import { PaintPaletteSurface } from "./PaintPaletteSurface";
 import type { MapShapeFill, SmartBrushDrawMode } from "../../map/mapCellShapes";
 import { analyzeMapPaintOperation, type MapPaintOperationImpact } from "../../map/mapPaintSafeguards";
-import { MapPaintOperationSummary, MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
+import { MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
 
 export function MapPaintInspector({
   state,
@@ -629,7 +627,6 @@ function RegionPaintActions({
   [clearOperation, map, protectMapFeatures, selectedTileset, triggers]);
   return (
     <div className="paint-region-quick-actions">
-      <span>{regionLabel(region)} | {regionCellCount(region).toLocaleString()} cells</span>
       <label className="paint-fill-chance">
         <TutorialTip
           title="Chance To Fill"
@@ -654,12 +651,9 @@ function RegionPaintActions({
         impact={null}
         onSetEnabled={onSetProtectMapFeatures}
       />
-      <div className="paint-region-operation-previews">
-        <MapPaintOperationSummary label="Fill preview" impact={fillImpact} />
-        <MapPaintOperationSummary label="Clear preview" impact={clearImpact} />
-      </div>
       <div className="paint-region-action-buttons">
         <button
+          className="paint-region-fill"
           type="button"
           disabled={!fillImpact || fillImpact.allowedChanges.length === 0}
           onClick={() => applyRegionPaintOperation(map, fillOperation, fillImpact?.allowedChanges ?? [], onApplyCommand)}
@@ -667,6 +661,7 @@ function RegionPaintActions({
           Fill ({fillImpact?.allowedChanges.length.toLocaleString() ?? 0})
         </button>
         <button
+          className="paint-region-clear"
           type="button"
           disabled={!clearImpact || clearImpact.allowedChanges.length === 0}
           onClick={() => applyRegionPaintOperation(map, clearOperation, clearImpact?.allowedChanges ?? [], onApplyCommand)}

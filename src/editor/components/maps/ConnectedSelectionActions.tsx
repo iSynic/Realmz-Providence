@@ -26,7 +26,7 @@ import { tileValueAt } from "../../map/geometry";
 import { reshapeConnectedCellSelection, type ConnectedCellSelection } from "../../map/connectedMapSelection";
 import { analyzeMapPaintOperation, applyMapPaintImpactToSmartPlan } from "../../map/mapPaintSafeguards";
 import { PaintPalettePanel } from "../TileSelectionBar";
-import { MapPaintOperationSummary, MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
+import { MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
 
 export function ConnectedSelectionActions({
   selection,
@@ -179,9 +179,6 @@ export function ConnectedSelectionActions({
         <strong>Connected Cell Selection</strong>
         <span>{selection.cells.length.toLocaleString()} {selection.cells.length === 1 ? "cell" : "cells"}</span>
       </div>
-      <small>
-        {connectedMatchModeLabel(selection.matchMode)} | Anchor {selection.anchor.x}, {selection.anchor.y} | Tile {anchorTile}
-      </small>
       <section className="connected-selection-shape-card">
         <div><strong>Selection Shape</strong><span>One orthogonal cell ring</span></div>
         <div className="connected-selection-shape-actions">
@@ -198,7 +195,6 @@ export function ConnectedSelectionActions({
           />
           <section>
             <div className="connected-selection-action-heading"><strong>Fill</strong><span>Paint {selectedTile}</span></div>
-            <MapPaintOperationSummary label="Fill preview" impact={fillImpact} />
             <button className="btn btn-secondary btn-xs" type="button" aria-expanded={paletteOpen} onClick={() => setPaletteOpen((current) => !current)}>
               {paletteOpen ? "Hide Tile Palette" : "Choose Fill Tile"}
             </button>
@@ -228,20 +224,18 @@ export function ConnectedSelectionActions({
                 />
               </div>
             )}
-            <button className="btn btn-primary btn-xs" type="button" disabled={!fillImpact?.allowedChanges.length} onClick={() => applyPlan("Fill selected cells", fillPlan, fillImpact)}>Fill Selection</button>
+            <button className="btn btn-primary btn-xs" type="button" disabled={!fillImpact?.allowedChanges.length} onClick={() => applyPlan("Fill selected cells", fillPlan, fillImpact)}>Fill Selection ({fillImpact?.allowedChanges.length.toLocaleString() ?? 0})</button>
           </section>
           <section>
             <label>
               <span>Replace Tile</span>
               <input type="number" value={sourceTile} onChange={(event) => setSourceTile(Number(event.target.value) || 0)} />
             </label>
-            <MapPaintOperationSummary label="Replace preview" impact={replaceImpact} />
-            <button className="btn btn-secondary btn-xs" type="button" disabled={!replaceImpact?.allowedChanges.length} onClick={() => applyPlan(`Replace tile ${sourceTile} in selection`, replacePlan, replaceImpact)}>Replace In Selection</button>
+            <button className="btn btn-secondary btn-xs" type="button" disabled={!replaceImpact?.allowedChanges.length} onClick={() => applyPlan(`Replace tile ${sourceTile} in selection`, replacePlan, replaceImpact)}>Replace In Selection ({replaceImpact?.allowedChanges.length.toLocaleString() ?? 0})</button>
           </section>
           <section>
             <div className="connected-selection-action-heading"><strong>Clear</strong><span>Restore base terrain</span></div>
-            <MapPaintOperationSummary label="Clear preview" impact={clearImpact} />
-            <button className="btn btn-danger btn-xs" type="button" disabled={!clearImpact?.allowedChanges.length} onClick={() => applyPlan("Clear selected cells", clearPlan, clearImpact)}>Clear Selected Cells</button>
+            <button className="btn btn-danger btn-xs" type="button" disabled={!clearImpact?.allowedChanges.length} onClick={() => applyPlan("Clear selected cells", clearPlan, clearImpact)}>Clear Selected Cells ({clearImpact?.allowedChanges.length.toLocaleString() ?? 0})</button>
           </section>
           <section>
             <div className="connected-selection-action-heading"><strong>Smart Terrain</strong><span>{smartPresetLabel}</span></div>
@@ -251,9 +245,9 @@ export function ConnectedSelectionActions({
                 {SMART_BRUSH_PRESETS.map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}
               </select>
             </label>
-            {smartPlan?.reason ? <small>{smartPlan.reason}</small> : <MapPaintOperationSummary label="Smart preview" impact={smartImpact} />}
+            {smartPlan?.reason && <small>{smartPlan.reason}</small>}
             <div className="connected-selection-smart-actions">
-              <button className="btn btn-primary btn-xs" type="button" disabled={!protectedSmartPlan?.changedCount} onClick={applySmartTerrain}>Apply {smartPresetLabel}</button>
+              <button className="btn btn-primary btn-xs" type="button" disabled={!protectedSmartPlan?.changedCount} onClick={applySmartTerrain}>Apply {smartPresetLabel} ({protectedSmartPlan?.changedCount.toLocaleString() ?? 0})</button>
               <button className="btn btn-secondary btn-xs" type="button" disabled={!smartTerrainAvailable || selection.cells.length === 0} onClick={() => onUseSelectionAsSmartMask(selection.cells)}>Use As Smart Mask</button>
             </div>
           </section>
@@ -267,12 +261,6 @@ export function ConnectedSelectionActions({
       <button className="btn btn-secondary btn-xs" type="button" onClick={onClearSelection}>Clear Selection</button>
     </div>
   );
-}
-
-function connectedMatchModeLabel(mode: ConnectedCellSelection["matchMode"]) {
-  if (mode === "semantic-family") return "Terrain family";
-  if (mode === "behavior") return "Realmz behavior";
-  return "Exact tile";
 }
 
 function connectedSelectionImpact(

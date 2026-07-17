@@ -712,32 +712,25 @@
 .paint-region-action-buttons {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+  gap: 8px;
 }
 
-.paint-region-operation-previews {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+.paint-region-action-buttons button {
+  min-height: 36px;
+  padding: 8px 10px;
+  font-size: 11px;
 }
 
-.map-paint-operation-impact {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-  padding: 6px;
-  border: 1px solid var(--ui-color-border-subtle);
-  background: var(--ui-color-surface-raised);
+.paint-region-action-buttons .paint-region-fill {
+  border-color: #2d7fc7;
+  background: #123759;
+  color: #d9efff;
 }
 
-.map-paint-operation-impact span,
-.map-paint-operation-impact small {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.map-paint-operation-impact small {
-  color: var(--ui-color-text-muted);
+.paint-region-action-buttons .paint-region-clear {
+  border-color: #a83b35;
+  background: #3a1717;
+  color: #ffd0cc;
 }
 
 .paint-region-quick-actions button:disabled {
@@ -763,20 +756,17 @@
 }
 
 .map-paint-protection-toggle {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
+  display: flex;
+  align-items: center;
   gap: 8px;
   cursor: pointer;
 }
 
-.map-paint-protection-toggle span,
 .map-paint-impact-summary {
   display: grid;
   gap: 3px;
 }
 
-.map-paint-protection-toggle small,
 .map-paint-impact-summary small {
   color: var(--ui-color-text-muted);
 }
