@@ -4,6 +4,14 @@ import { classifyTileValue, type TileValueMetadata } from "./tileMetadata";
 
 export type ConnectedTileMatchMode = "exact" | "semantic-family" | "behavior";
 
+export type ConnectedCellSelection = {
+  anchor: { x: number; y: number };
+  cells: Array<{ x: number; y: number }>;
+  matchMode: ConnectedTileMatchMode;
+};
+
+export type ConnectedSelectionOperation = "replace" | "add" | "subtract";
+
 export type ConnectedTileMatchOptions = {
   mode: ConnectedTileMatchMode;
   tileset: TilesetAsset | null;
@@ -48,10 +56,12 @@ export function collectConnectedMapCells(
     if (!matches(candidate, anchor)) continue;
 
     cells.push(candidate);
-    enqueueNeighbor(queue, current.x, current.y - 1, width, height);
-    enqueueNeighbor(queue, current.x - 1, current.y, width, height);
-    enqueueNeighbor(queue, current.x + 1, current.y, width, height);
-    enqueueNeighbor(queue, current.x, current.y + 1, width, height);
+    for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+      for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+        if (offsetX === 0 && offsetY === 0) continue;
+        enqueueNeighbor(queue, current.x + offsetX, current.y + offsetY, width, height);
+      }
+    }
   }
 
   return cells.sort((left, right) => left.y - right.y || left.x - right.x);
@@ -92,6 +102,28 @@ export function connectedMapCellsByTile(
   });
 }
 
+export function updateConnectedCellSelection(
+  current: ConnectedCellSelection | null,
+  component: Array<{ x: number; y: number }>,
+  anchor: { x: number; y: number },
+  matchMode: ConnectedTileMatchMode,
+  operation: ConnectedSelectionOperation
+): ConnectedCellSelection | null {
+  const cells = operation === "replace"
+    ? new Map<string, { x: number; y: number }>()
+    : new Map((current?.cells ?? []).map((cell) => [cellKey(cell), cell]));
+
+  for (const cell of component) {
+    const key = cellKey(cell);
+    if (operation === "subtract") cells.delete(key);
+    else cells.set(key, { x: cell.x, y: cell.y });
+  }
+
+  const ordered = [...cells.values()].sort((left, right) => left.y - right.y || left.x - right.x);
+  if (ordered.length === 0) return null;
+  return { anchor, cells: ordered, matchMode };
+}
+
 function semanticFamily(metadata: TileValueMetadata) {
   if (metadata.kind !== "standard-atlas") return null;
   const category = metadata.visual?.category ?? null;
@@ -117,4 +149,8 @@ function enqueueNeighbor(
 
 function isMapCoordinate(x: number, y: number, width: number, height: number) {
   return Number.isInteger(x) && Number.isInteger(y) && x >= 0 && y >= 0 && x < width && y < height;
+}
+
+function cellKey(cell: { x: number; y: number }) {
+  return `${cell.x}:${cell.y}`;
 }

@@ -18,7 +18,8 @@ export function MapSelectionInspector({
   onSetDungeonDrawFlags,
   onSelectEntity,
   onOpenScripts,
-  onApplyCommand
+  onApplyCommand,
+  onClearConnectedSelection
 }: {
   selection: MapSelection;
   map: MapEntity | null;
@@ -31,6 +32,7 @@ export function MapSelectionInspector({
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenScripts: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
+  onClearConnectedSelection: () => void;
 }) {
   return (
     <section className="context-panel map-selection-inspector">
@@ -61,6 +63,20 @@ export function MapSelectionInspector({
           onApplyCommand={onApplyCommand}
         />
       )}
+      {selection.kind === "cells" && (
+        <div className="connected-selection-summary">
+          <div>
+            <strong>Connected Cell Selection</strong>
+            <span>{selection.selection.cells.length.toLocaleString()} cells</span>
+          </div>
+          <small>
+            {connectedMatchModeLabel(selection.selection.matchMode)} | Anchor {selection.selection.anchor.x}, {selection.selection.anchor.y}
+          </small>
+          <button className="btn btn-secondary btn-xs" type="button" onClick={onClearConnectedSelection}>
+            Clear Selection
+          </button>
+        </div>
+      )}
       {selection.kind === "trigger" && (
         <TriggerSelectionDetails
           project={project}
@@ -79,4 +95,10 @@ export function MapSelectionInspector({
       {project && <small className="context-footnote">{project.scenario.name}</small>}
     </section>
   );
+}
+
+function connectedMatchModeLabel(mode: "exact" | "semantic-family" | "behavior") {
+  if (mode === "semantic-family") return "Terrain family";
+  if (mode === "behavior") return "Realmz behavior";
+  return "Exact tile";
 }

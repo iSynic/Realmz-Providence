@@ -12,6 +12,7 @@ import type {
 import { ScrollArea } from "../../ui";
 import { ResizablePane } from "../ResizablePane";
 import { type MapContextFocus } from "./mapBrowserModel";
+import type { ConnectedTileMatchMode } from "../../map/connectedMapSelection";
 import { MapOutliner } from "./MapOutliner";
 import { MapToolset } from "./MapToolset";
 
@@ -21,6 +22,7 @@ export function MapBrowserSidebar({
   selectedTileset,
   atlas,
   workbenchMode,
+  connectedSelectionMode,
   selectedRandomLevel,
   contextFocus,
   previewMode,
@@ -28,6 +30,7 @@ export function MapBrowserSidebar({
   onSetPreviewMode,
   onSetPreviewFocalPoint,
   onSetWorkbenchMode,
+  onSetConnectedSelectionMode,
   onSelectMap,
   onSetTool,
   onSelectTile,
@@ -38,6 +41,7 @@ export function MapBrowserSidebar({
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
   workbenchMode: MapWorkbenchMode;
+  connectedSelectionMode: ConnectedTileMatchMode;
   selectedRandomLevel: RandomLevel | null;
   contextFocus: MapContextFocus;
   previewMode: MapPreviewMode;
@@ -45,6 +49,7 @@ export function MapBrowserSidebar({
   onSetPreviewMode: (mode: MapPreviewMode) => void;
   onSetPreviewFocalPoint: (point: MapPreviewFocalPoint | null) => void;
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
+  onSetConnectedSelectionMode: (mode: ConnectedTileMatchMode) => void;
   onSelectMap: (id: string) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
@@ -82,7 +87,9 @@ export function MapBrowserSidebar({
           selectedTileset={selectedTileset}
           atlas={atlas}
           workbenchMode={workbenchMode}
+          connectedSelectionMode={connectedSelectionMode}
           onSetWorkbenchMode={onSetWorkbenchMode}
+          onSetConnectedSelectionMode={onSetConnectedSelectionMode}
           onSetTool={onSetTool}
           onSelectTile={onSelectTile}
         />

@@ -22,7 +22,7 @@ export type AssetSearchHint = {
   kindFilter?: ManagedAssetKind | "all";
   selectedEntityId?: string | null;
 };
-export type EditorTool = "select" | "paint" | "stamp" | "dungeon-draw" | "trigger" | "random" | "sample" | "pan";
+export type EditorTool = "select" | "wand" | "paint" | "stamp" | "dungeon-draw" | "trigger" | "random" | "sample" | "pan";
 export type MapWorkbenchMode = "canvas" | "land-layout" | "land-tiles" | "random-areas";
 export type MapPaintMode = "brush" | "clear" | "smart";
 export type MapPaintVariation = "single" | "cycle-group" | "random-group";

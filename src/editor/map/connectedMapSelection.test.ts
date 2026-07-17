@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MapEntity, TileAttributeProfile, TilesetAsset } from "../types";
-import { collectConnectedMapCells, connectedMapCellsByTile } from "./connectedMapSelection";
+import { collectConnectedMapCells, connectedMapCellsByTile, updateConnectedCellSelection } from "./connectedMapSelection";
 
 const plainsTileset = {
   id: "landlook-plains",
@@ -18,7 +18,7 @@ const plainsTileset = {
 } satisfies TilesetAsset;
 
 describe("collectConnectedMapCells", () => {
-  it("collects only the bounded four-way component in deterministic row order", () => {
+  it("collects only the bounded eight-way component in deterministic row order", () => {
     const map = landMap([
       [1, 1, 2, 1],
       [1, 2, 2, 1],
@@ -33,14 +33,17 @@ describe("collectConnectedMapCells", () => {
       ]);
   });
 
-  it("does not connect diagonally adjacent cells", () => {
+  it("connects diagonally adjacent cells for narrow curved terrain", () => {
     const map = dungeonMap([
       [1, 2],
       [2, 1]
     ]);
 
     expect(connectedMapCellsByTile(map, { x: 0, y: 0 }, { mode: "exact", tileset: null }))
-      .toEqual([{ x: 0, y: 0, tile: 1 }]);
+      .toEqual([
+        { x: 0, y: 0, tile: 1 },
+        { x: 1, y: 1, tile: 1 }
+      ]);
   });
 
   it("preserves holes inside a connected component", () => {
@@ -61,7 +64,7 @@ describe("collectConnectedMapCells", () => {
 
     expect(cells).toHaveLength(8_100);
     expect(cells[0]).toEqual({ x: 0, y: 0, tile: 7 });
-    expect(cells.at(-1)).toEqual({ x: 89, y: 89, tile: 7 });
+    expect(cells[cells.length - 1]).toEqual({ x: 89, y: 89, tile: 7 });
   });
 
   it("returns no cells for a start outside the map", () => {
@@ -99,7 +102,32 @@ describe("connectedMapCellsByTile", () => {
     })).toEqual([
       { x: 0, y: 0, tile: 38 },
       { x: 1, y: 0, tile: 39 },
-      { x: 0, y: 1, tile: 40 }
+      { x: 0, y: 1, tile: 40 },
+      { x: 2, y: 1, tile: 39 },
+      { x: 1, y: 2, tile: 39 },
+      { x: 2, y: 2, tile: 39 }
+    ]);
+  });
+
+  it("includes mountain transition tiles with the solid center terrain family", () => {
+    const map = landMap([
+      [156, 66, 67, 156],
+      [85, 61, 61, 68],
+      [156, 69, 70, 156]
+    ]);
+
+    expect(connectedMapCellsByTile(map, { x: 1, y: 1 }, {
+      mode: "semantic-family",
+      tileset: plainsTileset
+    })).toEqual([
+      { x: 1, y: 0, tile: 66 },
+      { x: 2, y: 0, tile: 67 },
+      { x: 0, y: 1, tile: 85 },
+      { x: 1, y: 1, tile: 61 },
+      { x: 2, y: 1, tile: 61 },
+      { x: 3, y: 1, tile: 68 },
+      { x: 1, y: 2, tile: 69 },
+      { x: 2, y: 2, tile: 70 }
     ]);
   });
 
@@ -121,7 +149,8 @@ describe("connectedMapCellsByTile", () => {
     })).toEqual([
       { x: 0, y: 0, tile: 10 },
       { x: 1, y: 0, tile: 11 },
-      { x: 0, y: 1, tile: 11 }
+      { x: 0, y: 1, tile: 11 },
+      { x: 2, y: 1, tile: 11 }
     ]);
   });
 
@@ -141,6 +170,42 @@ describe("connectedMapCellsByTile", () => {
         ]);
     }
   );
+});
+
+describe("updateConnectedCellSelection", () => {
+  const initial = {
+    anchor: { x: 0, y: 0 },
+    cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }],
+    matchMode: "exact" as const
+  };
+
+  it("replaces the previous selection", () => {
+    expect(updateConnectedCellSelection(initial, [{ x: 4, y: 3 }], { x: 4, y: 3 }, "behavior", "replace"))
+      .toEqual({
+        anchor: { x: 4, y: 3 },
+        cells: [{ x: 4, y: 3 }],
+        matchMode: "behavior"
+      });
+  });
+
+  it("adds a component without duplicating cells", () => {
+    expect(updateConnectedCellSelection(initial, [{ x: 1, y: 0 }, { x: 2, y: 0 }], { x: 2, y: 0 }, "exact", "add"))
+      .toEqual({
+        anchor: { x: 2, y: 0 },
+        cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }],
+        matchMode: "exact"
+      });
+  });
+
+  it("subtracts a component and clears an empty selection", () => {
+    expect(updateConnectedCellSelection(initial, [{ x: 1, y: 0 }], { x: 1, y: 0 }, "exact", "subtract"))
+      .toEqual({
+        anchor: { x: 1, y: 0 },
+        cells: [{ x: 0, y: 0 }],
+        matchMode: "exact"
+      });
+    expect(updateConnectedCellSelection(initial, initial.cells, { x: 0, y: 0 }, "exact", "subtract")).toBeNull();
+  });
 });
 
 function landMap(rows: number[][]) {

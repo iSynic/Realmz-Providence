@@ -18,7 +18,8 @@ import {
   Spline,
   Stamp,
   Sword,
-  UserCog
+  UserCog,
+  WandSparkles
 } from "lucide-react";
 import { EditorTab, EditorTool } from "./types";
 

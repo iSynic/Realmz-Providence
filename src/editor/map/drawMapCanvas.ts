@@ -623,6 +623,57 @@ export function drawRegionSelection(
   ctx.restore();
 }
 
+export function drawConnectedCellSelection(
+  ctx: CanvasRenderingContext2D,
+  cells: Array<{ x: number; y: number }>,
+  cellSize: number
+) {
+  if (cells.length === 0) return;
+  const selected = new Set(cells.map((cell) => `${cell.x}:${cell.y}`));
+  const inset = Math.max(1, Math.min(2, cellSize * 0.08));
+  const lineWidth = Math.max(1.5, Math.min(4, cellSize * 0.11));
+
+  ctx.save();
+  ctx.fillStyle = "rgba(128, 234, 255, 0.18)";
+  for (const selectedCell of cells) {
+    ctx.fillRect(
+      selectedCell.x * cellSize + inset,
+      selectedCell.y * cellSize + inset,
+      Math.max(1, cellSize - inset * 2),
+      Math.max(1, cellSize - inset * 2)
+    );
+  }
+
+  ctx.beginPath();
+  for (const selectedCell of cells) {
+    const left = selectedCell.x * cellSize;
+    const top = selectedCell.y * cellSize;
+    const right = left + cellSize;
+    const bottom = top + cellSize;
+    if (!selected.has(`${selectedCell.x}:${selectedCell.y - 1}`)) {
+      ctx.moveTo(left, top);
+      ctx.lineTo(right, top);
+    }
+    if (!selected.has(`${selectedCell.x + 1}:${selectedCell.y}`)) {
+      ctx.moveTo(right, top);
+      ctx.lineTo(right, bottom);
+    }
+    if (!selected.has(`${selectedCell.x}:${selectedCell.y + 1}`)) {
+      ctx.moveTo(right, bottom);
+      ctx.lineTo(left, bottom);
+    }
+    if (!selected.has(`${selectedCell.x - 1}:${selectedCell.y}`)) {
+      ctx.moveTo(left, bottom);
+      ctx.lineTo(left, top);
+    }
+  }
+  ctx.strokeStyle = "#80eaff";
+  ctx.lineWidth = lineWidth;
+  ctx.lineJoin = "miter";
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function triggerOverlayKind(trigger: TriggerRecord): "battle" | "encounter" | "map" | "quest" | "text" | "trigger" {
   const categories = new Set(trigger.actions.map((action) => action.category));
   if (categories.has("Combat") || categories.has("combat")) return "battle";

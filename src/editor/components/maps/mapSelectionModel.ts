@@ -9,10 +9,12 @@ import type {
   TriggerRecord
 } from "../../types";
 import { triggerEntityId } from "../../utils";
+import type { ConnectedCellSelection } from "../../map/connectedMapSelection";
 
 export type MapSelection =
   | { kind: "cell"; cell: { x: number; y: number; tile: number }; triggers: TriggerRecord[]; rects: RandomLevel["rects"]; records: SemanticEntity[] }
   | { kind: "region"; region: MapRegionSelection }
+  | { kind: "cells"; selection: ConnectedCellSelection }
   | { kind: "trigger"; trigger: TriggerRecord }
   | { kind: "random"; rect: RandomLevel["rects"][number] }
   | { kind: "record"; record: SemanticEntity };
@@ -22,11 +24,13 @@ export function resolveMapSelection(
   selectedEntity: SelectedEntity | null,
   selectedCell: { x: number; y: number; tile: number } | null,
   selectedRegion: MapRegionSelection | null,
+  connectedSelection: ConnectedCellSelection | null,
   triggers: TriggerRecord[],
   randomLevel: RandomLevel | null,
   mapRecords: SemanticEntity[]
 ): MapSelection | null {
   if (selectedRegion) return { kind: "region", region: selectedRegion };
+  if (connectedSelection) return { kind: "cells", selection: connectedSelection };
   if (map && selectedEntity?.id) {
     const trigger = triggers.find((candidate) => triggerEntityId(candidate.levelType, candidate.levelIndex, candidate.recordIndex, candidate.source) === selectedEntity.id);
     if (trigger) return { kind: "trigger", trigger };

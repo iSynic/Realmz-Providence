@@ -14,6 +14,7 @@ import {
   SelectedEntity,
   SemanticEntity,
   SmartBrushMaskCell,
+  TileAttributeProfile,
   TilesetAsset,
   TriggerRecord
 } from "../types";
@@ -27,6 +28,12 @@ import { nextActionPointRecordIndex } from "../actionPointCapacity";
 import { selectEntityFromId, triggerEntityId } from "../utils";
 import { buildSuperTileStampChanges, MapStamp, MapStampPreviewCell, superTileStampPreviewCells } from "./superTileStamps";
 import { filledClosedSmartBrushPathCells, orthogonalSmartBrushPathCells } from "./smartBrushMask";
+import {
+  connectedMapCellsByTile,
+  updateConnectedCellSelection,
+  type ConnectedCellSelection,
+  type ConnectedTileMatchMode
+} from "./connectedMapSelection";
 
 export function useMapInteractions({
   map,
@@ -47,12 +54,16 @@ export function useMapInteractions({
   selectedEntity,
   selectedCell,
   selectedRegion,
+  connectedSelection,
+  connectedSelectionMode,
+  tileAttributes,
   smartBrushMask,
   smartBrushDrawing,
   overlayCanvasRef,
   wrapRef,
   onSelectCell,
   onSetSelectedRegion,
+  onSetConnectedSelection,
   onClearSelection,
   onSetSmartBrushMask,
   onCommitSmartBrushMaskStep,
@@ -85,12 +96,16 @@ export function useMapInteractions({
   selectedEntity: SelectedEntity | null;
   selectedCell: { x: number; y: number; tile: number } | null;
   selectedRegion: MapRegionSelection | null;
+  connectedSelection: ConnectedCellSelection | null;
+  connectedSelectionMode: ConnectedTileMatchMode;
+  tileAttributes: TileAttributeProfile[];
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushDrawing: boolean;
   overlayCanvasRef: RefObject<HTMLCanvasElement | null>;
   wrapRef: RefObject<HTMLDivElement | null>;
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  onSetConnectedSelection: (selection: ConnectedCellSelection | null) => void;
   onClearSelection: () => void;
   onSetSmartBrushMask: (mask: SmartBrushMaskCell[]) => void;
   onCommitSmartBrushMaskStep: (before: SmartBrushMaskCell[], after: SmartBrushMaskCell[]) => void;
@@ -333,6 +348,7 @@ export function useMapInteractions({
     setHover(cell);
     updatePaintCursor(cell);
     if (activeTool === "sample") {
+      if (connectedSelection) onSetConnectedSelection(null);
       const tile = tileValueAt(map, cell.x, cell.y);
       setHoverTarget({ kind: "cell", cell: { ...cell, tile } });
       selectTargetCell({ ...cell, tile });
@@ -340,6 +356,7 @@ export function useMapInteractions({
       return;
     }
     if (activeTool === "trigger") {
+      if (connectedSelection) onSetConnectedSelection(null);
       const hit = targetAt(cell);
       setHoverTarget(hit);
       selectTargetCell(hit.cell);
@@ -363,6 +380,7 @@ export function useMapInteractions({
       return;
     }
     if (activeTool === "random") {
+      if (connectedSelection) onSetConnectedSelection(null);
       const hit = targetAt(cell);
       setHoverTarget(hit);
       selectTargetCell(hit.cell);
@@ -487,6 +505,7 @@ export function useMapInteractions({
           return;
         }
         if (activeTool === "select") {
+          if (connectedSelection) onSetConnectedSelection(null);
           const cell = cellFromEvent(event);
           const hit = targetAt(cell);
           if (shouldClearCurrentSelectionBeforeInspect(cell, hit)) {
@@ -504,11 +523,33 @@ export function useMapInteractions({
           event.currentTarget.setPointerCapture(event.pointerId);
           return;
         }
+        if (activeTool === "wand") {
+          const cell = cellFromEvent(event);
+          const component = connectedMapCellsByTile(map, cell, {
+            mode: connectedSelectionMode,
+            tileset: selectedTileset,
+            attributes: tileAttributes
+          });
+          const operation = event.altKey ? "subtract" : event.shiftKey ? "add" : "replace";
+          onClearSelection();
+          onSetSelectedRegion(null);
+          onSetConnectedSelection(updateConnectedCellSelection(
+            connectedSelection,
+            component,
+            cell,
+            connectedSelectionMode,
+            operation
+          ));
+          setHover(cell);
+          setHoverTarget({ kind: "cell", cell: { ...cell, tile: tileValueAt(map, cell.x, cell.y) } });
+          return;
+        }
         if (activeTool === "pan") {
           startPan(event);
           return;
         }
         if (activeTool === "random") {
+          if (connectedSelection) onSetConnectedSelection(null);
           const cell = cellFromEvent(event);
           const hit = targetAt(cell);
           const rectIndex = hit.kind === "randomRect" ? hit.rect.rectIndex : selectedRandomRectIndex(map, selectedEntity);
@@ -732,6 +773,9 @@ export function useMapInteractions({
         setRegionPreview(null);
         setPaintCursor(null);
         setStampCursor(null);
+        onSetConnectedSelection(null);
+        onSetSelectedRegion(null);
+        onClearSelection();
         finishPaintStroke(false);
         finishDungeonDrawStroke(false);
       }

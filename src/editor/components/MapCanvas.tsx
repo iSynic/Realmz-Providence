@@ -28,6 +28,7 @@ import {
 } from "../types";
 import { clampScroll, mapCellFromTileIndex, MAP_CELLS } from "../map/geometry";
 import { useMapInteractions } from "../map/useMapInteractions";
+import type { ConnectedCellSelection, ConnectedTileMatchMode } from "../map/connectedMapSelection";
 import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
 import { hasSecretMarkerTile, showsCombatClearingOverlay, showsHiddenWalkableOverlay } from "../map/secrets";
 import { loadMapOverlaySprites } from "../map/mapOverlaySprites";
@@ -36,6 +37,7 @@ import {
   drawBaseMap,
   drawBaseMapCell,
   drawCombatClearingOverlay,
+  drawConnectedCellSelection,
   drawCoordinateLabels,
   drawHover,
   drawMapRecords,
@@ -98,12 +100,15 @@ export function RealmzMapCanvas({
   selectedEntity,
   selectedCell,
   selectedRegion,
+  connectedSelection,
+  connectedSelectionMode,
   smartBrushMask,
   smartBrushPlan,
   smartBrushDrawing,
   globalMapStamps,
   onSelectCell,
   onSetSelectedRegion,
+  onSetConnectedSelection,
   onClearSelection,
   onSetSmartBrushMask,
   onCommitSmartBrushMaskStep,
@@ -146,12 +151,15 @@ export function RealmzMapCanvas({
   selectedEntity: SelectedEntity | null;
   selectedCell: { x: number; y: number; tile: number } | null;
   selectedRegion: MapRegionSelection | null;
+  connectedSelection: ConnectedCellSelection | null;
+  connectedSelectionMode: ConnectedTileMatchMode;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan | null;
   smartBrushDrawing: boolean;
   globalMapStamps: CustomMapStamp[];
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
+  onSetConnectedSelection: (selection: ConnectedCellSelection | null) => void;
   onClearSelection: () => void;
   onSetSmartBrushMask: (mask: SmartBrushMaskCell[]) => void;
   onCommitSmartBrushMaskStep: (before: SmartBrushMaskCell[], after: SmartBrushMaskCell[]) => void;
@@ -332,12 +340,16 @@ export function RealmzMapCanvas({
     selectedEntity,
     selectedCell,
     selectedRegion,
+    connectedSelection,
+    connectedSelectionMode,
+    tileAttributes,
     smartBrushMask,
     smartBrushDrawing,
     overlayCanvasRef,
     wrapRef,
     onSelectCell,
     onSetSelectedRegion,
+    onSetConnectedSelection,
     onClearSelection,
     onSetSmartBrushMask,
     onCommitSmartBrushMaskStep,
@@ -414,12 +426,13 @@ export function RealmzMapCanvas({
     drawTriggers(ctx, triggers, selectedEntity, cell);
     if (showMapRecords) drawMapRecords(ctx, map, mapRecords, selectedEntity, cell);
     if (selectedRegion) drawRegionSelection(ctx, selectedRegion, cell, "selected");
+    if (connectedSelection) drawConnectedCellSelection(ctx, connectedSelection.cells, cell);
     if (smartBrushDrawing && smartBrushMask.length > 0) {
       drawSmartTerrainMask(ctx, smartBrushMask, cell);
     } else if (smartBrushPlan && (smartBrushPlan.cells.length > 0 || smartBrushPlan.skipped.length > 0)) {
       drawSmartTerrainPreview(ctx, { cells: smartBrushPlan.cells, skipped: smartBrushPlan.skipped, atlas, icons, viewOptions, cell });
     }
-    if (selectedCell && !selectedRegion && !paintCursor && !stampCursor) drawSelectedCell(ctx, selectedCell, cell);
+    if (selectedCell && !selectedRegion && !connectedSelection && !paintCursor && !stampCursor) drawSelectedCell(ctx, selectedCell, cell);
     if (regionPreview) drawRegionSelection(ctx, regionPreview, cell, "preview");
     if (paintCursor) drawPaintCursor(ctx, { cursor: paintCursor, atlas, icons, viewOptions, cell, allowIconFallback: map.levelType !== "dungeon" });
     else if (stampCursor) drawStampCursor(ctx, { cursor: stampCursor, atlas, icons, viewOptions, cell });
@@ -436,6 +449,7 @@ export function RealmzMapCanvas({
     selectedEntity,
     selectedCell,
     selectedRegion,
+    connectedSelection,
     smartBrushMask,
     smartBrushPlan,
     smartBrushDrawing,

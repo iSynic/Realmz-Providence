@@ -1,14 +1,21 @@
 import { TOOLS } from "../../constants";
 import type { EditorState } from "../../store";
 import type { EditorTool, MapEntity, MapWorkbenchMode, TilesetAsset } from "../../types";
+import type { ConnectedTileMatchMode } from "../../map/connectedMapSelection";
+import { SegmentedControl, type SegmentedControlOption } from "../../ui";
 import { TutorialTip } from "../TutorialTip";
 import { mapWorkbenchModeLabel } from "./mapBrowserModel";
 import { PaintTileSummary } from "./MapPaintInspector";
 
 const LAND_AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "stamp", "trigger", "random"];
 const DUNGEON_AUTHORING_TOOL_IDS: EditorTool[] = ["dungeon-draw", "trigger", "random"];
-const NAVIGATION_TOOL_IDS: EditorTool[] = ["select", "pan", "sample"];
+const NAVIGATION_TOOL_IDS: EditorTool[] = ["select", "wand", "pan", "sample"];
 const TOOL_BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
+const CONNECTED_MATCH_OPTIONS: ReadonlyArray<SegmentedControlOption<ConnectedTileMatchMode>> = [
+  { value: "exact", label: "Exact", title: "Match the exact raw tile value" },
+  { value: "semantic-family", label: "Terrain", title: "Match the known terrain family, including center and transition variants" },
+  { value: "behavior", label: "Behavior", title: "Match known Realmz movement and blocking behavior" }
+];
 
 export function MapToolset({
   state,
@@ -16,7 +23,9 @@ export function MapToolset({
   selectedTileset,
   atlas,
   workbenchMode,
+  connectedSelectionMode,
   onSetWorkbenchMode,
+  onSetConnectedSelectionMode,
   onSetTool,
   onSelectTile
 }: {
@@ -25,7 +34,9 @@ export function MapToolset({
   selectedTileset: TilesetAsset | null;
   atlas: EditorState["atlasEntries"][string] | null;
   workbenchMode: MapWorkbenchMode;
+  connectedSelectionMode: ConnectedTileMatchMode;
   onSetWorkbenchMode: (mode: MapWorkbenchMode) => void;
+  onSetConnectedSelectionMode: (mode: ConnectedTileMatchMode) => void;
   onSetTool: (tool: EditorTool) => void;
   onSelectTile: (tile: number) => void;
 }) {
@@ -50,6 +61,18 @@ export function MapToolset({
               </div>
             </div>
           </div>
+          {state.activeTool === "wand" && (
+            <div className="map-sidebar-group wand-match-group">
+              <div className="map-sidebar-group-title">Connected Match</div>
+              <SegmentedControl
+                ariaLabel="Magic Wand connected tile match"
+                value={connectedSelectionMode}
+                options={CONNECTED_MATCH_OPTIONS}
+                onChange={onSetConnectedSelectionMode}
+                className="wand-match-control"
+              />
+            </div>
+          )}
           {isDungeon ? (
             <div className="map-toolset-mode-notice">
               <strong>Dungeon cells use flags</strong>

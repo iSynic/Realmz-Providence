@@ -77,6 +77,10 @@ export function MapInspectorSidebar({
       selectedRegion,
       setSelectedRegion: onSetSelectedRegion
     },
+    selection: {
+      connectedSelection,
+      setConnectedSelection: onSetConnectedSelection
+    },
     stamps: {
       globalMapStamps,
       setGlobalMapStamps: onSetGlobalMapStamps,
@@ -115,7 +119,7 @@ export function MapInspectorSidebar({
     const compatibleTool = compatibleMapTool(selectedMap?.levelType ?? null, state.activeTool);
     if (compatibleTool !== state.activeTool) onSetTool(compatibleTool);
   }, [onSetTool, selectedMap?.levelType, state.activeTool]);
-  const selection = resolveMapSelection(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, mapTriggers, selectedRandomLevel, mapRecords);
+  const selection = resolveMapSelection(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, connectedSelection, mapTriggers, selectedRandomLevel, mapRecords);
   const selectedMapIsDungeon = selectedMap?.levelType === "dungeon";
   const route = resolveMapInspectorRoute({
     workbenchMode,
@@ -129,7 +133,10 @@ export function MapInspectorSidebar({
     const transition = transitionToMapInspector(choice, { isDungeon: selectedMapIsDungeon, hasSelection: selection != null });
     if (!transition) return;
     if (transition.clearRegion) onSetSelectedRegion(null);
-    if (transition.clearSelection) onClearSelection();
+    if (transition.clearSelection) {
+      onSetConnectedSelection(null);
+      onClearSelection();
+    }
     onSetWorkbenchMode(transition.workbenchMode);
     if (transition.tool) onSetTool(transition.tool);
   };
@@ -220,6 +227,7 @@ export function MapInspectorSidebar({
             onSelectEntity={onSelectEntity}
             onOpenScripts={onOpenScripts}
             onApplyCommand={onApplyCommand}
+            onClearConnectedSelection={() => onSetConnectedSelection(null)}
           />
         ) : workbenchMode !== "canvas" ? (
           <MapModeInspector

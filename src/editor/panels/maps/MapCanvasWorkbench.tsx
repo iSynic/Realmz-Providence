@@ -84,6 +84,11 @@ export function MapCanvasWorkbench({
       smartBrushDrawing,
       setSmartBrushDrawing,
       visibleSmartBrushPlan
+    },
+    selection: {
+      connectedSelection,
+      setConnectedSelection,
+      connectedSelectionMode
     }
   } = workbench;
   const visibleTriggers = useMemo(
@@ -150,12 +155,15 @@ export function MapCanvasWorkbench({
           selectedEntity={state.selectedEntity}
           selectedCell={state.selectedCell}
           selectedRegion={selectedRegion}
+          connectedSelection={connectedSelection}
+          connectedSelectionMode={connectedSelectionMode}
           smartBrushMask={smartBrushMask}
           smartBrushPlan={paintMode === "smart" ? visibleSmartBrushPlan : null}
           smartBrushDrawing={paintMode === "smart" && smartBrushDrawing}
           globalMapStamps={globalMapStamps}
           onSelectCell={onSelectCell}
           onSetSelectedRegion={setSelectedRegion}
+          onSetConnectedSelection={setConnectedSelection}
           onClearSelection={onClearSelection}
           onSetSmartBrushMask={setSmartBrushMask}
           onCommitSmartBrushMaskStep={commitSmartBrushMaskStep}

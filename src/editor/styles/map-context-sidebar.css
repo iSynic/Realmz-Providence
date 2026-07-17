@@ -233,6 +233,23 @@
   --pane-accent-rgb: 125, 223, 138;
 }
 
+.wand-match-group {
+  --pane-accent: #80eaff;
+  --pane-accent-rgb: 128, 234, 255;
+}
+
+.wand-match-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.wand-match-control > button {
+  min-width: 0;
+  padding-inline: 6px;
+  font-size: 10px;
+}
+
 .map-sidebar-group-title {
   color: var(--pane-accent);
   font-size: 10px;

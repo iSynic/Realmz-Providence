@@ -83,6 +83,10 @@ export function MapsPanel({
       selectedRegion,
       setSelectedRegion
     },
+    selection: {
+      connectedSelectionMode,
+      setConnectedSelectionMode
+    },
     openCanvasTool
   } = workbench;
   const {
@@ -128,6 +132,7 @@ export function MapsPanel({
         selectedTileset={selectedTileset}
         atlas={atlas}
         workbenchMode={workbenchMode}
+        connectedSelectionMode={connectedSelectionMode}
         selectedRandomLevel={selectedRandomLevel}
         contextFocus={contextFocus}
         previewMode={previewMode}
@@ -135,6 +140,7 @@ export function MapsPanel({
         onSetPreviewMode={setPreviewMode}
         onSetPreviewFocalPoint={setPreviewFocalPoint}
         onSetWorkbenchMode={switchWorkbenchMode}
+        onSetConnectedSelectionMode={setConnectedSelectionMode}
         onSelectMap={onSelectMap}
         onSetTool={openCanvasTool}
         onSelectTile={onSelectTile}

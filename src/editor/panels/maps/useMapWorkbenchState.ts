@@ -6,6 +6,7 @@ import { readGlobalMapStamps, writeGlobalMapStamps } from "../../map/customMapSt
 import { DUNGEON_DEFAULT_DRAW_FLAGS } from "../../map/dungeonCellFlags";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../../map/superTileStamps";
+import type { ConnectedCellSelection, ConnectedTileMatchMode } from "../../map/connectedMapSelection";
 import { useSmartBrushMaskHistory } from "./useSmartBrushMaskHistory";
 import type {
   CustomMapStamp,
@@ -57,6 +58,8 @@ export function useMapWorkbenchState({
   const [previewMode, setPreviewMode] = useState<MapPreviewMode>("off");
   const [previewFocalPoint, setPreviewFocalPoint] = useState<MapPreviewFocalPoint | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<MapRegionSelection | null>(null);
+  const [connectedSelection, setConnectedSelection] = useState<ConnectedCellSelection | null>(null);
+  const [connectedSelectionMode, setConnectedSelectionMode] = useState<ConnectedTileMatchMode>("semantic-family");
   const [smartBrushPreset, setSmartBrushPreset] = useState<SmartBrushPreset>("mountains");
   const { smartBrushMask, setSmartBrushMask, commitSmartBrushMaskStep, canUndoSmartBrushMaskStep, undoSmartBrushMaskStep, resetSmartBrushMask } = useSmartBrushMaskHistory();
   const [smartBrushDrawing, setSmartBrushDrawing] = useState(false);
@@ -64,6 +67,7 @@ export function useMapWorkbenchState({
 
   useEffect(() => {
     setSelectedRegion(null);
+    setConnectedSelection(null);
     resetSmartBrushMask();
     setSmartBrushDrawing(false);
     setPreviewFocalPoint(null);
@@ -179,6 +183,12 @@ export function useMapWorkbenchState({
       setPaletteVariationTiles,
       selectedRegion,
       setSelectedRegion
+    },
+    selection: {
+      connectedSelection,
+      setConnectedSelection,
+      connectedSelectionMode,
+      setConnectedSelectionMode
     },
     stamps: {
       globalMapStamps,

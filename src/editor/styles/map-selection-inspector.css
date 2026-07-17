@@ -248,6 +248,35 @@
   color: #f3ca76;
 }
 
+.connected-selection-summary {
+  display: grid;
+  gap: 8px;
+  margin: 10px;
+  padding: 10px;
+  border-left: 3px solid #80eaff;
+  background: rgba(128, 234, 255, 0.07);
+}
+
+.connected-selection-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.connected-selection-summary strong {
+  color: #eefaff;
+}
+
+.connected-selection-summary span,
+.connected-selection-summary small {
+  color: #9bc9d2;
+}
+
+.connected-selection-summary button {
+  justify-self: start;
+}
+
 .context-section.subtle {
   border-color: #24313d;
   background: #10161d;

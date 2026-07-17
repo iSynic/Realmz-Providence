@@ -40,25 +40,35 @@ const mapRecord = {
 describe("resolveMapSelection", () => {
   it("keeps region selection authoritative", () => {
     const region = { left: 1, top: 2, right: 3, bottom: 4 } as unknown as MapRegionSelection;
-    const selection = resolveMapSelection(map, null, { x: 5, y: 6, tile: 10 }, region, [trigger], null, []);
+    const selection = resolveMapSelection(map, null, { x: 5, y: 6, tile: 10 }, region, null, [trigger], null, []);
     expect(selection).toEqual({ kind: "region", region });
   });
 
   it("resolves selected map records before the selected cell", () => {
     const selected = { type: "trigger", id: triggerEntityId("land", 0, 3, "Data DD") } as SelectedEntity;
-    const selection = resolveMapSelection(map, selected, { x: 1, y: 1, tile: 10 }, null, [trigger], null, []);
+    const selection = resolveMapSelection(map, selected, { x: 1, y: 1, tile: 10 }, null, null, [trigger], null, []);
     expect(selection).toEqual({ kind: "trigger", trigger });
   });
 
   it("aggregates cell Action Points, random rectangles, and map records", () => {
     const randomLevel = { levelType: "land", levelIndex: 0, rects: [rect] } as unknown as RandomLevel;
-    const selection = resolveMapSelection(map, null, { x: 5, y: 6, tile: 10 }, null, [trigger], randomLevel, [mapRecord]);
+    const selection = resolveMapSelection(map, null, { x: 5, y: 6, tile: 10 }, null, null, [trigger], randomLevel, [mapRecord]);
     expect(selection).toMatchObject({
       kind: "cell",
       triggers: [trigger],
       rects: [rect],
       records: [mapRecord]
     });
+  });
+
+  it("keeps a connected cell set distinct from rectangular regions", () => {
+    const connected = {
+      anchor: { x: 5, y: 6 },
+      cells: [{ x: 5, y: 6 }, { x: 5, y: 7 }],
+      matchMode: "exact" as const
+    };
+    const selection = resolveMapSelection(map, null, null, null, connected, [trigger], null, []);
+    expect(selection).toEqual({ kind: "cells", selection: connected });
   });
 });
 
