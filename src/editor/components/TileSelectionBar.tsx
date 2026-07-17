@@ -6,6 +6,7 @@ import { landlookGroupById, landlookGroupTiles, landlookTileGroups } from "../ma
 import { PAINTABLE_REFERENCE_ACTOR_ICON_VALUES, PAINTABLE_REFERENCE_SPECIAL_ICON_VALUES, tileIconCandidates } from "../map/renderValues";
 import { builtInStampToMapStamp, customMapStampToMapStamp, MapStamp, MapStampCategory, superTileStampsForMap } from "../map/superTileStamps";
 import { captureMapStampFromRegion, createMapStampId, normalizeMapStamps } from "../map/customMapStamps";
+import { tileMatchesPaletteQuery } from "../map/tilePaletteSearch";
 import { isActorOrCreatureIconId, isMapPlaceableLibraryAsset } from "../resourceResolver";
 import { tileColor } from "./TileSprite";
 import { TileSwatch } from "./TileSwatch";
@@ -171,10 +172,9 @@ export function PaintPalettePanel({
   const buttonRefs = useRef(new Map<number, HTMLButtonElement>());
   const focusTile = inspectedTile ?? selectedTile;
   const filteredTiles = useMemo(() => {
-    const normalized = query.trim();
-    if (!normalized) return paletteTiles;
-    return paletteTiles.filter((tile) => String(tile).includes(normalized));
-  }, [paletteTiles, query]);
+    if (!query.trim()) return paletteTiles;
+    return paletteTiles.filter((tile) => tileMatchesPaletteQuery(tile, query, tileset, tileAttributes, icons));
+  }, [icons, paletteTiles, query, tileAttributes, tileset]);
   const filteredSuperTileStamps = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return superTileStamps;
@@ -390,8 +390,8 @@ export function PaintPalettePanel({
           inputClassName="paint-palette-search-input"
           value={query}
           onChange={setQuery}
-          placeholder={mode === "super" ? "Search stamps or tile id..." : "Search tile id..."}
-          ariaLabel={mode === "super" ? "Search stamps or tile id" : "Search tile id"}
+          placeholder={mode === "super" ? "Search stamps or tile id..." : "Search tile id, name, or trait..."}
+          ariaLabel={mode === "super" ? "Search stamps or tile id" : "Search tile id, name, or trait"}
           resultCount={mode === "super" ? filteredSuperTileStamps.length : filteredTiles.length}
           resultNoun={mode === "super" ? "stamp" : "tile"}
         />
