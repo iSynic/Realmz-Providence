@@ -4,7 +4,6 @@ import { type ResourceExportScope, resourceExportScope } from "../../resourceRes
 export type AssetSection = "project" | "custom" | "realmz" | "divinity" | "records" | "advanced";
 
 export const COPY_TO_SCENARIO_ASSETS_LABEL = "Copy to Scenario Assets";
-export const MOVE_TO_SCENARIO_ASSETS_LABEL = "Move to Scenario Assets";
 export const ADD_TO_CUSTOM_LIBRARY_LABEL = "Add to Custom Library";
 
 export function assetSectionHelp(section: AssetSection) {

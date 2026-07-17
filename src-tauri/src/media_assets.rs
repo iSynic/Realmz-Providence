@@ -251,6 +251,7 @@ pub fn copy_library_asset_to_project(
     mut project: ProvidenceProject,
     asset: LibraryAsset,
     resource_id: i16,
+    kind: Option<ManagedAssetKind>,
 ) -> Result<ProvidenceProject> {
     if asset.source.contains(":realmz:") {
         return Err(ProvidenceError::message(
@@ -268,6 +269,7 @@ pub fn copy_library_asset_to_project(
         &resource_bytes,
         &token,
         format!("asset:{token}"),
+        kind,
     )?;
     project.assets.push(copied);
     project.validation = validate_project_impl(&project);
@@ -732,6 +734,7 @@ fn write_reference_library_asset(
     resource_bytes: &[u8],
     token: &str,
     asset_id: String,
+    requested_kind: Option<ManagedAssetKind>,
 ) -> Result<ManagedAsset> {
     let asset_dir = project_root.join("assets").join("media").join(token);
     if asset_dir.exists() {
@@ -771,7 +774,8 @@ fn write_reference_library_asset(
     Ok(ManagedAsset {
         id: asset_id,
         label: asset.label.trim().to_string(),
-        kind: managed_asset_kind_for_library(asset, resource_type),
+        kind: requested_kind
+            .unwrap_or_else(|| managed_asset_kind_for_library(asset, resource_type)),
         resource_type: resource_type.to_string(),
         resource_id,
         file_name: original_name.clone(),
@@ -792,7 +796,9 @@ fn write_reference_library_asset(
         export_state: ManagedAssetExportState::Ready,
         library_scope: Some(ManagedAssetLibraryScope::Scenario),
         provenance: format!("copied from reference asset {}", asset.source),
-        linked_entity: None,
+        linked_entity: requested_kind
+            .filter(|kind| matches!(kind, ManagedAssetKind::SpecialLandTile))
+            .map(|_| format!("special-land-tile:{resource_id}")),
         conversion: None,
     })
 }

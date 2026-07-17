@@ -1019,7 +1019,13 @@ fn bitmap_rows<'a>(
                 value
             };
             let available = packed_length.min(data.len().saturating_sub(cursor));
-            let decoded = decode_packbits_row(data, cursor, available, command.row_bytes);
+            let decoded = decode_pict_packbits_row(
+                data,
+                cursor,
+                available,
+                command.row_bytes,
+                command.pack_type,
+            );
             cursor += available;
             Some(decoded)
         } else {
@@ -1030,6 +1036,42 @@ fn bitmap_rows<'a>(
             Some(decoded)
         }
     })
+}
+
+fn decode_pict_packbits_row(
+    data: &[u8],
+    offset: usize,
+    packed_length: usize,
+    expected: usize,
+    pack_type: usize,
+) -> Vec<u8> {
+    if pack_type != 3 {
+        return decode_packbits_row(data, offset, packed_length, expected);
+    }
+
+    let end = (offset + packed_length).min(data.len());
+    let mut cursor = offset;
+    let mut output = Vec::with_capacity(expected);
+    while cursor < end && output.len() < expected {
+        let control = data[cursor] as i8;
+        cursor += 1;
+        if (0..=127).contains(&control) {
+            let byte_count = (control as usize + 1) * 2;
+            let available = byte_count.min(end.saturating_sub(cursor));
+            output.extend_from_slice(&data[cursor..cursor + available]);
+            cursor += available;
+        } else if (-127..=-1).contains(&control) && cursor + 2 <= end {
+            let count = (1i16 - control as i16) as usize;
+            let pixel = [data[cursor], data[cursor + 1]];
+            cursor += 2;
+            for _ in 0..count {
+                output.extend_from_slice(&pixel);
+            }
+        }
+    }
+    output.resize(expected, 0);
+    output.truncate(expected);
+    output
 }
 
 fn indexed_pixel(row: &[u8], x: usize, pixel_size: usize) -> usize {
@@ -1451,7 +1493,7 @@ fn decode_direct_bits_rect(
             value
         };
         let available = packed_length.min(data.len().saturating_sub(cursor));
-        let row = decode_packbits_row(data, cursor, available, rect.row_bytes);
+        let row = decode_pict_packbits_row(data, cursor, available, rect.row_bytes, rect.pack_type);
         cursor += available;
         if y >= height {
             continue;
@@ -1604,8 +1646,7 @@ mod tests {
 
     #[test]
     fn decodes_trial_by_fire_directbits_planar_rows() {
-        let path =
-            Path::new("F:/Realmz/out_win_clang/Scenarios/Trial by Fire/Scenario.rsrc");
+        let path = Path::new("F:/Realmz/out_win_clang/Scenarios/Trial by Fire/Scenario.rsrc");
         if !path.exists() {
             eprintln!("Skipping Trial by Fire PICT fixture; local fixture is absent.");
             return;
@@ -1668,6 +1709,18 @@ mod tests {
         assert_eq!(decoded.image.width, 1);
         assert_eq!(decoded.image.height, 1);
         assert_eq!(&decoded.image.rgba[0..4], &[255, 0, 0, 255]);
+    }
+
+    #[test]
+    fn decodes_sixteen_bit_word_packbits_rect() {
+        let pict = directbits16_word_packbits_rect_fixture();
+        let decoded = decode_pict(&pict).expect("word-packed DirectBitsRect should decode");
+        assert_eq!(decoded.format, "directbits-16-packbits");
+        assert_eq!(decoded.image.width, 4);
+        assert_eq!(decoded.image.height, 1);
+        for pixel in decoded.image.rgba.chunks_exact(4) {
+            assert_eq!(pixel, &[255, 0, 0, 255]);
+        }
     }
 
     #[test]
@@ -1767,6 +1820,34 @@ mod tests {
         push_u16(&mut bytes, 0);
         bytes.push(3);
         bytes.push(1);
+        push_u16(&mut bytes, 0x7c00);
+        push_u16(&mut bytes, END_PICTURE as u16);
+        bytes
+    }
+
+    fn directbits16_word_packbits_rect_fixture() -> Vec<u8> {
+        let mut bytes = pict_header(4, 1);
+        push_u16(&mut bytes, DIRECT_BITS_RECT as u16);
+        push_u32(&mut bytes, 0);
+        push_u16(&mut bytes, 0x8008);
+        push_rect(&mut bytes, 0, 0, 1, 4);
+        push_u16(&mut bytes, 0);
+        push_u16(&mut bytes, 3);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_u16(&mut bytes, 16);
+        push_u16(&mut bytes, 16);
+        push_u16(&mut bytes, 3);
+        push_u16(&mut bytes, 5);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_u32(&mut bytes, 0);
+        push_rect(&mut bytes, 0, 0, 1, 4);
+        push_rect(&mut bytes, 0, 0, 1, 4);
+        push_u16(&mut bytes, 0);
+        bytes.push(3);
+        bytes.push(0xfd);
         push_u16(&mut bytes, 0x7c00);
         push_u16(&mut bytes, END_PICTURE as u16);
         bytes

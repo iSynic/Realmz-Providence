@@ -3,10 +3,17 @@ import { Dispatch } from "react";
 import { createBrowserWorkspace, inspectBrowserBundledLibraryAssetPreview, loadBrowserBundledLibraryResourceData } from "../browser/library";
 import { inspectResourcePreview } from "../browser/resourcePreview";
 import { saveBrowserCustomAssets } from "../browser/workspaceStore";
-import { fileToMediaAssetRequest, MediaAssetImportOptions, nextResourceId, requestToBrowserAsset, requestToBrowserReplacement } from "../mediaAssets";
+import {
+  fileToMediaAssetRequest,
+  MediaAssetImportOptions,
+  nextResourceId,
+  nextScenarioResourceIdInRange,
+  requestToBrowserAsset,
+  requestToBrowserReplacement
+} from "../mediaAssets";
 import { canCopyLibraryAssetToScenario, managedAssetKindForLibrary } from "../resourceResolver";
 import { EditorAction, EditorState } from "../store";
-import { LibraryAsset, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProvidenceWorkspace } from "../types";
+import { LibraryAsset, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProvidenceWorkspace, ReferenceAssetScenarioCopyKind } from "../types";
 import { commandError } from "../utils";
 
 export function useAssetActions({
@@ -35,7 +42,7 @@ export function useAssetActions({
       dispatch({ type: "setStatus", status: `Importing ${files.length} ${kind} asset(s)...` });
       for (const file of files) {
         const scenarioAssets = (project.assets ?? []).filter((asset) => asset.libraryScope !== "custom-library");
-        const request = await fileToMediaAssetRequest(file, kind, nextResourceId(scenarioAssets, kind), {
+        const request = await fileToMediaAssetRequest(file, kind, nextScenarioResourceIdInRange(scenarioAssets, kind), {
           ...options,
           libraryScope: "scenario"
         });
@@ -206,14 +213,19 @@ export function useAssetActions({
 
   async function copyCustomLibraryAssetToScenario(assetId: string) {
     if (!state.project) return;
-    const asset = (state.workspace?.customAssets ?? []).find((candidate) => candidate.id === assetId);
+    const workspaceAsset = (state.workspace?.customAssets ?? []).find((candidate) => candidate.id === assetId);
+    const legacyProjectAsset = (state.project.assets ?? []).find((candidate) => candidate.id === assetId && candidate.libraryScope === "custom-library");
+    const asset = workspaceAsset ?? legacyProjectAsset;
     if (!asset) {
       dispatch({ type: "setStatus", status: "Scenario copy failed: Custom Library asset no longer exists." });
       return;
     }
     try {
       dispatch({ type: "setStatus", status: `Copying ${asset.label} to Scenario Assets...` });
-      if (desktopRuntime) {
+      if (legacyProjectAsset) {
+        const copied = duplicateManagedAsset(asset, "scenario", "project-custom-copy", "copied from legacy project custom library", nextScenarioResourceId(state.project, asset.kind));
+        dispatch({ type: "applyCommand", command: { kind: "attachProjectAsset", label: `Copy ${asset.label} to Scenario Assets`, asset: copied } });
+      } else if (desktopRuntime) {
         const project = await invoke<Project>("copy_workspace_asset_to_project", {
           workspaceDir,
           projectDir,
@@ -233,7 +245,7 @@ export function useAssetActions({
     }
   }
 
-  async function copyReferenceAssetToScenario(assetId: string) {
+  async function copyReferenceAssetToScenario(assetId: string, requestedKind?: ReferenceAssetScenarioCopyKind) {
     if (!state.project) return;
     const asset = state.libraryCatalog?.assets.find((candidate) => candidate.id === assetId) ?? null;
     if (!asset) {
@@ -251,13 +263,14 @@ export function useAssetActions({
     try {
       dispatch({ type: "setStatus", status: `Copying ${asset.label} to Scenario Assets...` });
       if (desktopRuntime) {
-        const kind = managedAssetKindForLibrary(asset);
+        const kind = requestedKind ?? managedAssetKindForLibrary(asset);
         const project = await invoke<Project>("copy_library_asset_to_project", {
           workspaceDir,
           projectDir,
           project: state.project,
           asset,
-          resourceId: nextScenarioResourceId(state.project, kind)
+          resourceId: nextScenarioResourceId(state.project, kind),
+          kind
         });
         dispatch({ type: "markSaved", project });
         dispatch({ type: "setProject", project, selectedMapId });
@@ -265,8 +278,8 @@ export function useAssetActions({
         const data = await loadBrowserBundledLibraryResourceData(asset);
         if (!data) throw new Error("reference resource bytes were not available in the bundled library");
         const preview = await inspectBrowserBundledLibraryAssetPreview(asset);
-        const kind = managedAssetKindForLibrary(asset);
-        const managed = referenceLibraryAssetToManagedAsset(asset, data, preview.dataUrl, nextScenarioResourceId(state.project, kind));
+        const kind = requestedKind ?? managedAssetKindForLibrary(asset);
+        const managed = referenceLibraryAssetToManagedAsset(asset, data, preview.dataUrl, nextScenarioResourceId(state.project, kind), kind);
         dispatch({ type: "applyCommand", command: { kind: "attachProjectAsset", label: `Copy ${asset.label} to Scenario Assets`, asset: managed } });
       }
       dispatch({ type: "setStatus", status: `Copied ${asset.label} to Scenario Assets` });
@@ -327,12 +340,17 @@ function duplicateManagedAsset(
   };
 }
 
-function referenceLibraryAssetToManagedAsset(asset: LibraryAsset, resourceData: Uint8Array, previewDataUrl: string | null, resourceId: number): ManagedAsset {
+function referenceLibraryAssetToManagedAsset(
+  asset: LibraryAsset,
+  resourceData: Uint8Array,
+  previewDataUrl: string | null,
+  resourceId: number,
+  kind = managedAssetKindForLibrary(asset)
+): ManagedAsset {
   const resourceBase64 = bytesToBase64(resourceData);
   const resourceType = asset.resourceType ?? asset.type;
   const mimeType = asset.mimeType ?? mimeForResource(resourceType);
   const payloadUrl = `data:${mimeType};base64,${resourceBase64}`;
-  const kind = managedAssetKindForLibrary(asset);
   const decodedPreview = asset.resourceType ? inspectResourcePreview(asset.resourceType, resourceData).dataUrl : null;
   return {
     id: `asset:browser-reference:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
@@ -361,7 +379,25 @@ function referenceLibraryAssetToManagedAsset(asset: LibraryAsset, resourceData: 
 }
 
 function nextScenarioResourceId(project: Project, kind: ManagedAssetKind) {
-  return nextResourceId((project.assets ?? []).filter((asset) => asset.libraryScope !== "custom-library"), kind);
+  const occupied: Array<Pick<ManagedAsset, "kind" | "resourceType" | "resourceId">> = [
+    ...(project.assets ?? []).filter((asset) => asset.libraryScope !== "custom-library"),
+    ...(project.assetCatalog.pictures ?? []).map((asset) => ({ kind: "picture" as const, resourceType: asset.resourceType, resourceId: asset.resourceId })),
+    ...(project.assetCatalog.sounds ?? []).map((asset) => ({ kind: "sound" as const, resourceType: asset.resourceType, resourceId: asset.resourceId })),
+    ...(project.assetCatalog.icons ?? []).map((asset) => ({
+      kind: asset.resourceId < 0 ? "special-land-tile" as const : "icon" as const,
+      resourceType: asset.resourceType,
+      resourceId: asset.resourceId
+    })),
+    ...(project.scenarioIconResources ?? []).map((asset) => ({ kind: "icon" as const, resourceType: "cicn", resourceId: asset.resourceId })),
+    ...(project.semanticSchema?.entities ?? []).flatMap((entity) => {
+      const resourceType = typeof entity.summary.resourceType === "string" ? entity.summary.resourceType : typeof entity.summary.type === "string" ? entity.summary.type : "";
+      const resourceId = typeof entity.summary.resourceId === "number" ? entity.summary.resourceId : null;
+      return resourceId !== null && (resourceType === "TEXT" || resourceType === "STR#" || resourceType === "styl")
+        ? [{ kind: "text" as const, resourceType, resourceId }]
+        : [];
+    })
+  ];
+  return nextScenarioResourceIdInRange(occupied, kind);
 }
 
 function safeReferenceFileName(asset: LibraryAsset, resourceType: string, resourceId: number) {

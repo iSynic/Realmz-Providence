@@ -11,6 +11,7 @@ const sourceFiles = [
   "src/editor/browser/binaryWriters.ts",
   "src/editor/browser/resourceFork.ts",
   "src/editor/browser/fsAccess.ts",
+  "src/editor/browser/shopRecords.ts",
   "src/editor/browser/scenarioPackage.ts"
 ];
 

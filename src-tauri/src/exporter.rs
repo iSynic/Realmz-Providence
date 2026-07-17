@@ -16,7 +16,7 @@ use crate::realmz::{
 };
 use crate::resource_fork::{
     decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
-    parse_resource_fork_entries, ResourceForkEntry,
+    merge_resource_entries_with_removals, parse_resource_fork_entries, ResourceForkEntry,
 };
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::collections::BTreeSet;
@@ -802,10 +802,23 @@ fn write_managed_resources(
             asset.resource_type, asset.resource_id, asset.label
         ));
     }
-    if updates.is_empty() {
+    let removals = project
+        .editor_metadata
+        .removed_scenario_resources
+        .iter()
+        .map(|resource| (resource.resource_type.clone(), resource.resource_id))
+        .collect::<Vec<_>>();
+    if updates.is_empty() && removals.is_empty() {
         return Ok(result);
     }
-    let (resource_bytes, replaced) = merge_resource_entries(&original, updates)?;
+    let (resource_bytes, replaced) =
+        merge_resource_entries_with_removals(&original, updates, &removals)?;
+    if !removals.is_empty() {
+        result.resource_warnings.push(format!(
+            "{} scenario resource(s) were intentionally removed from the exported resource fork.",
+            removals.len()
+        ));
+    }
     if replaced > 0 {
         result.resource_warnings.push(format!(
             "{replaced} existing resource(s) were replaced by managed assets."
@@ -1047,10 +1060,7 @@ fn map_name_resource_updates(
     project: &ProvidenceProject,
     original_resource_fork: &[u8],
 ) -> Vec<ResourceForkEntry> {
-    map_name_resource_updates_for_records(
-        &project.map_records,
-        original_resource_fork,
-    )
+    map_name_resource_updates_for_records(&project.map_records, original_resource_fork)
 }
 
 fn map_name_resource_updates_for_records(
@@ -1065,10 +1075,7 @@ fn map_name_resource_updates_for_records(
     if !has_authored_names {
         return Vec::new();
     }
-    let primary_names: Vec<String> = map_records
-        .iter()
-        .map(map_record_primary_name)
-        .collect();
+    let primary_names: Vec<String> = map_records.iter().map(map_record_primary_name).collect();
     let secondary_names: Vec<String> = map_records
         .iter()
         .map(|record| {
@@ -1134,9 +1141,9 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        managed_asset_resource_bytes, managed_resource_type_supported,
-        map_name_resource_updates_for_records, monster_icon_override_updates,
-        append_preserved_shop_source_suffix, preserve_imported_fixed_length,
+        append_preserved_shop_source_suffix, managed_asset_resource_bytes,
+        managed_resource_type_supported, map_name_resource_updates_for_records,
+        monster_icon_override_updates, preserve_imported_fixed_length,
         scenario_icon_resource_updates, ResourceExportResult,
     };
     use crate::project::{

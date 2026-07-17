@@ -85,8 +85,15 @@ export function parseResourceFork(original: Uint8Array): ResourceEntry[] {
   return resources;
 }
 
-export function mergeResourceEntries(original: Uint8Array, updates: ResourceForkUpdate[]) {
-  const entries = parseResourceFork(original).map(resourceEntryToUpdate);
+export function mergeResourceEntries(
+  original: Uint8Array,
+  updates: ResourceForkUpdate[],
+  removals: Array<{ resourceType: string; resourceId: number }> = []
+) {
+  const removed = new Set(removals.map((resource) => `${resource.resourceType}:${resource.resourceId}`));
+  const entries = parseResourceFork(original)
+    .filter((entry) => !removed.has(`${entry.resourceType}:${entry.id}`))
+    .map(resourceEntryToUpdate);
   let replaced = 0;
   for (const update of updates) {
     const existingIndex = entries.findIndex((entry) => entry.resourceType === update.resourceType && entry.id === update.id);

@@ -69,8 +69,20 @@ export function normalizedEditorMetadata(project: Project): Project["editorMetad
     tilePalettes: normalizePalettes(project.editorMetadata?.tilePalettes ?? []),
     mapStamps: normalizeMapStamps(project.editorMetadata?.mapStamps ?? []),
     questThreads: normalizeQuestThreads(project.editorMetadata?.questThreads ?? []),
-    questContextSources: normalizeQuestContextSources(project.editorMetadata?.questContextSources ?? [])
+    questContextSources: normalizeQuestContextSources(project.editorMetadata?.questContextSources ?? []),
+    removedScenarioResources: normalizeRemovedScenarioResources(project.editorMetadata?.removedScenarioResources ?? [])
   };
+}
+
+function normalizeRemovedScenarioResources(resources: Project["editorMetadata"]["removedScenarioResources"]) {
+  const seen = new Set<string>();
+  return resources.filter((resource) => {
+    if (resource.resourceType.length !== 4 || !Number.isInteger(resource.resourceId)) return false;
+    const key = `${resource.resourceType}:${resource.resourceId}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function updatePalette(project: Project, paletteId: string, update: (palette: TilePalette) => TilePalette) {

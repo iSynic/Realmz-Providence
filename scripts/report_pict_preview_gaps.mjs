@@ -9,6 +9,14 @@ const PICT_30121_FAMILY_IDS = new Set(
 
 const DEFAULT_CORPUS = [
   {
+    label: "Spires of Steel",
+    focusIds: [170],
+    candidates: [
+      "tmp/pict-corpus-fixed/Spires of Steel.providence/project.json",
+      "tmp/pict-corpus/Spires of Steel.providence/project.json"
+    ]
+  },
+  {
     label: "Wrath of the Mind Lords",
     focusIds: [30121],
     candidates: [

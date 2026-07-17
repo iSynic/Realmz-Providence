@@ -5,6 +5,8 @@ import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "../soundReferences";
+import { isScenarioDisplayPictureId } from "../mediaAssets";
+import { canReferenceLibraryAssetByStockId } from "../resourceResolver";
 import {
   ReferencePicker,
   ReferencePreview,
@@ -438,9 +440,10 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
     addTextResourceTargets(project, options, catalog);
   }
   if (code === 9 || code === 27) {
-    const wantedKinds = code === 9 ? new Set(["sound"]) : new Set(["picture", "icon"]);
+    const wantedKinds = code === 9 ? new Set(["sound"]) : new Set(["picture"]);
     for (const asset of project.assets ?? []) {
-      if (!wantedKinds.has(asset.kind)) continue;
+      if (asset.libraryScope === "custom-library" || !wantedKinds.has(asset.kind)) continue;
+      if (code === 27 && !isScenarioDisplayPictureId(asset.resourceId)) continue;
       options.push({
         key: asset.id,
         value: asset.resourceId,
@@ -469,6 +472,7 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
     }
     if (code === 27) {
       for (const asset of project.assetCatalog.pictures ?? []) {
+        if (!isScenarioDisplayPictureId(asset.resourceId)) continue;
         options.push({
           key: `resource:${asset.resourceType}:${asset.resourceId}`,
           value: asset.resourceId,
@@ -478,19 +482,9 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
           previewPath: asset.previewPath
         });
       }
-      for (const asset of project.assetCatalog.icons ?? []) {
-        options.push({
-          key: `resource:${asset.resourceType}:${asset.resourceId}`,
-          value: asset.resourceId,
-          label: `${asset.name || `${asset.resourceType} ${asset.resourceId}`} (${asset.resourceType.trim()} ${asset.resourceId})`,
-          detail: `icon | ${asset.source}`,
-          entity: { type: "resource", id: `resource:${asset.resourceType}:${asset.resourceId}` },
-          previewPath: asset.previewPath
-        });
-      }
     }
     for (const asset of catalog?.assets ?? []) {
-      if (asset.resourceId == null || !wantedKinds.has(asset.type)) continue;
+      if (asset.resourceId == null || !wantedKinds.has(asset.type) || !canReferenceLibraryAssetByStockId(asset)) continue;
       const resourceType = asset.resourceType?.trim() || asset.type;
       options.push({
         key: asset.id,
@@ -790,28 +784,16 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     if (code === 27) {
       const pictureAsset = (project.assetCatalog.pictures ?? []).find((candidate) => candidate.resourceId === id);
       if (pictureAsset) {
+        const isDisplayPicture = isScenarioDisplayPictureId(pictureAsset.resourceId);
         return {
           key: `resource:${pictureAsset.resourceType}:${pictureAsset.resourceId}`,
           value: pictureAsset.resourceId,
           label: `${pictureAsset.name || `${pictureAsset.resourceType.trim()} ${pictureAsset.resourceId}`} (${pictureAsset.resourceType.trim()} ${pictureAsset.resourceId})`,
           detail: `picture | ${pictureAsset.source}`,
-          compatibility: "Realmz resource",
+          compatibility: isDisplayPicture ? "Scenario display picture" : "Runtime override ID; not an ordinary scenario display picture",
           sourceState: "Scenario resource",
           entity: { type: "resource", id: `resource:${pictureAsset.resourceType}:${pictureAsset.resourceId}` },
           previewPath: pictureAsset.previewPath
-        };
-      }
-      const iconAsset = (project.assetCatalog.icons ?? []).find((candidate) => candidate.resourceId === id);
-      if (iconAsset) {
-        return {
-          key: `resource:${iconAsset.resourceType}:${iconAsset.resourceId}`,
-          value: iconAsset.resourceId,
-          label: `${iconAsset.name || `${iconAsset.resourceType.trim()} ${iconAsset.resourceId}`} (${iconAsset.resourceType.trim()} ${iconAsset.resourceId})`,
-          detail: `icon | ${iconAsset.source}`,
-          compatibility: "Realmz resource",
-          sourceState: "Scenario resource",
-          entity: { type: "resource", id: `resource:${iconAsset.resourceType}:${iconAsset.resourceId}` },
-          previewPath: iconAsset.previewPath
         };
       }
       if (id >= 30000) {
@@ -1225,7 +1207,7 @@ function entityMatchesOpcodeTarget(entity: SemanticEntity, code: number) {
   if (code === 62 && entity.type === "resource") return String(entity.summary.type ?? entity.summary.resourceType ?? "").trim() === "TEXT";
   if (code === 27 && entity.type === "resource") {
     const resourceType = String(entity.summary.type ?? "").trim();
-    return resourceType === "PICT" || resourceType === "cicn";
+    return resourceType === "PICT";
   }
   return true;
 }

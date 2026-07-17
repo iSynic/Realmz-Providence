@@ -94,7 +94,8 @@ export function isProjectEmpty(project: Project) {
     project.editorMetadata?.tilePalettes,
     project.editorMetadata?.mapStamps,
     project.editorMetadata?.questThreads,
-    project.editorMetadata?.questContextSources
+    project.editorMetadata?.questContextSources,
+    project.editorMetadata?.removedScenarioResources
   ].some((records) => (records?.length ?? 0) > 0);
   return (
     !hasAuthoredRecords &&

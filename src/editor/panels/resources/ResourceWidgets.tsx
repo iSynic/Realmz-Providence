@@ -14,6 +14,7 @@ import { useResolvedPreviewUrl } from "../../previewUrls";
 import { FloatingWorkbenchPanel, ScrollArea, SegmentedControl } from "../../ui";
 import { renderListKey } from "../../renderKeys";
 import { ResourceExportScope, canCopyLibraryAssetToScenario, isMapPlaceableLibraryAsset, managedAssetKindForLibrary, resourceExportScope, resourceExportScopeLabel, resourceOrigin, resourceOriginLabel, resourceRole } from "../../resourceResolver";
+import { referenceAssetCopyLabel } from "./referenceAssetUse";
 import {
   MediaAssetImportOptions,
   SCENARIO_PICTURE_MAX_ID,
@@ -89,7 +90,10 @@ export function assetMatchesSection(asset: ManagedAsset, section: AssetSection) 
 export function libraryAssetMatchesSection(asset: LibraryAsset, section: AssetSection, showUiReference = false) {
   if (section !== "realmz" && section !== "divinity" && section !== "advanced") return false;
   const origin = resourceOrigin(asset);
-  if (section === "realmz") return origin === "realmz-library" || origin === "divinity-reference";
+  if (section === "realmz") {
+    if (asset.resourceType?.trim() === "PICT") return false;
+    return origin === "realmz-library" || origin === "divinity-reference";
+  }
   if (section === "advanced") return showUiReference && origin === "ui-reference";
   return origin === "divinity-reference" || (showUiReference && origin === "ui-reference");
 }
@@ -293,7 +297,7 @@ export function SpecialLandAssetCard({
       <div className="asset-facts">
         <span>tile {asset.resourceId}</span>
         <span>cicn</span>
-        <span>{assetExportLabel(asset.exportState)}</span>
+        <span>{managedAssetExportLabel(asset)}</span>
         <span>32 x 32 export</span>
       </div>
       <div className="asset-card-actions">
@@ -457,7 +461,7 @@ export function ManagedAssetCard({
       </label>
       <div className="asset-facts">
         <span>{asset.kind}</span>
-        <span>{assetExportLabel(asset.exportState)}</span>
+        <span>{managedAssetExportLabel(asset)}</span>
         <span>{usages.length} use{usages.length === 1 ? "" : "s"}</span>
         {asset.width && asset.height ? <span>{asset.width} x {asset.height}</span> : null}
         {asset.durationMs ? <span>{(asset.durationMs / 1000).toFixed(1)}s</span> : null}
@@ -529,9 +533,11 @@ export function projectAssetRangeNotes(asset: ManagedAsset) {
 
 export function PreviewStatusFilters({
   value,
+  counts,
   onChange
 }: {
   value: ResourcePreviewStatus | "all";
+  counts?: ReadonlyMap<ResourcePreviewStatus | "all", number>;
   onChange: (value: ResourcePreviewStatus | "all") => void;
 }) {
   const options: Array<ResourcePreviewStatus | "all"> = [
@@ -555,7 +561,8 @@ export function PreviewStatusFilters({
           <TutorialTip title={previewFilterLabel(option)} body={PREVIEW_STATUS_FILTER_HELP} side="below">
             <span>{previewFilterLabel(option)}</span>
           </TutorialTip>
-        )
+        ),
+        meta: counts?.get(option)?.toLocaleString() ?? "0"
       }))}
       onChange={onChange}
     />
@@ -607,6 +614,8 @@ export function LibraryAssetCard({
   const lastSelectedPreviewKey = useRef("");
   const origin = resourceOrigin(asset);
   const scope = resourceExportScope(asset);
+  const ownershipLabel = compactReferenceOwnershipLabel(scope);
+  const sourceLabel = compactReferenceSourceLabel(asset);
   const canCopyToScenario = Boolean(onCopyToScenario && canCopyLibraryAssetToScenario(asset));
   const placeable = isMapPlaceableLibraryAsset(asset);
   useEffect(() => {
@@ -647,6 +656,9 @@ export function LibraryAssetCard({
         />
         <strong>{asset.label}</strong>
         <small>{asset.resourceType ?? asset.type} {asset.resourceId ?? ""}</small>
+        <small className={`asset-card-ownership ${scope}`} title={`${resourceExportScopeLabel(scope)} | ${asset.relativePath}`}>
+          {ownershipLabel} | {sourceLabel}
+        </small>
         {canCopyToScenario && (
           <button
             className="btn btn-secondary btn-xs compact-asset-scope-button"
@@ -656,7 +668,7 @@ export function LibraryAssetCard({
               onCopyToScenario?.(asset.id);
             }}
           >
-            {COPY_TO_SCENARIO_ASSETS_LABEL}
+            {referenceAssetCopyLabel(asset)}
           </button>
         )}
       </article>
@@ -701,7 +713,7 @@ export function LibraryAssetCard({
       <div className="asset-card-actions">
         {canCopyToScenario && (
           <button className="btn btn-secondary btn-xs" type="button" onClick={() => onCopyToScenario?.(asset.id)}>
-            {COPY_TO_SCENARIO_ASSETS_LABEL}
+            {referenceAssetCopyLabel(asset)}
           </button>
         )}
         <TutorialTip title="Reference Asset Detail" body={LIBRARY_DETAIL_HELP} side="below">
@@ -712,6 +724,19 @@ export function LibraryAssetCard({
       </div>
     </article>
   );
+}
+
+function compactReferenceOwnershipLabel(scope: ResourceExportScope) {
+  if (scope === "realmz-built-in-reference") return "Use stock ID";
+  if (scope === "divinity-reference") return "Copy required";
+  if (scope === "ui-reference") return "Editor UI only";
+  return "Inspect ownership";
+}
+
+function compactReferenceSourceLabel(asset: LibraryAsset) {
+  const resourcePath = asset.relativePath.split("#", 1)[0];
+  const parts = resourcePath.split(/[\\/]/);
+  return parts[parts.length - 1] || asset.source;
 }
 
 export function AssetPagination({
@@ -1314,7 +1339,7 @@ export function ManagedResourceDetail({
         <ResourceFactGrid rows={[
           ["Resource", `${item.asset.resourceType} ${item.asset.resourceId}`],
           ["Kind", kindLabel(item.asset.kind)],
-          ["Export", assetExportLabel(item.asset.exportState)],
+          ["Export", managedAssetExportLabel(item.asset)],
           ["Output", managedOutputSummary(item.asset)],
           ["Original", managedSourceSummary(item.asset)],
           ["Original Bytes", formatBytes(item.asset.bytes)]
@@ -1349,7 +1374,7 @@ export function ManagedResourceDetail({
       <ResourceFactGrid rows={[
         ["Resource", `${item.asset.resourceType} ${item.asset.resourceId}`],
         ["Kind", kindLabel(item.asset.kind)],
-        ["Export", assetExportLabel(item.asset.exportState)],
+        ["Export", managedAssetExportLabel(item.asset)],
         ["Output", managedOutputSummary(item.asset)],
         ["Original", managedSourceSummary(item.asset)],
         ["Original Bytes", formatBytes(item.asset.bytes)]
@@ -1364,6 +1389,7 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
   const [failedPreview, setFailedPreview] = useState<string | null>(null);
   const [imageScale, setImageScale] = useState<"fit" | 1 | 2 | 4>("fit");
   const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
+  const imageViewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => setFailedPreview(null), [preview]);
   useEffect(() => {
     setImageScale("fit");
@@ -1403,17 +1429,27 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
             </button>
           ))}
         </div>
-        <div className="resource-detail-image-viewport">
+        <div ref={imageViewportRef} className="resource-detail-image-viewport">
           <img
             className={`resource-detail-image ${imageScale === "fit" ? "fit" : "scaled"}`}
             src={usablePreview}
             alt={label}
             width={scaledSize?.width}
             height={scaledSize?.height}
-            onLoad={(event) => setNaturalSize({
-              width: event.currentTarget.naturalWidth,
-              height: event.currentTarget.naturalHeight
-            })}
+            onLoad={(event) => {
+              const size = {
+                width: event.currentTarget.naturalWidth,
+                height: event.currentTarget.naturalHeight
+              };
+              const viewport = imageViewportRef.current;
+              setNaturalSize(size);
+              setImageScale(defaultResourcePreviewScale(
+                size.width,
+                size.height,
+                viewport?.clientWidth ?? 0,
+                viewport?.clientHeight ?? 0
+              ));
+            }}
             onError={() => setFailedPreview(usablePreview)}
           />
         </div>
@@ -1426,6 +1462,16 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
       <span>{kind === "text" ? "No readable text available" : "No preview available"}</span>
     </div>
   );
+}
+
+export function defaultResourcePreviewScale(
+  naturalWidth: number,
+  naturalHeight: number,
+  viewportWidth: number,
+  viewportHeight: number
+): "fit" | 1 {
+  if (viewportWidth <= 0 || viewportHeight <= 0) return "fit";
+  return naturalWidth <= viewportWidth && naturalHeight <= viewportHeight ? 1 : "fit";
 }
 
 function decodeTextDataUrl(dataUrl: string) {
@@ -1886,6 +1932,11 @@ export function assetExportLabel(state: ManagedAsset["exportState"]) {
   if (state === "preview-only") return "Preview only";
   if (state === "blocked") return "Needs attention";
   return "Project asset";
+}
+
+export function managedAssetExportLabel(asset: ManagedAsset) {
+  if (asset.libraryScope === "custom-library") return "Not in scenario exports";
+  return assetExportLabel(asset.exportState);
 }
 
 export function diagnosticPreviewText(diagnostic: string | ResourcePreviewDiagnostic) {

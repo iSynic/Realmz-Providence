@@ -219,10 +219,11 @@ function writeManagedResources(
     ...scenarioIconResourceUpdates(project.scenarioItems, project.scenarioIconResources, result),
     ...managedAssetResourceUpdates(project.assets ?? [], original, result)
   ];
-  if (updates.length === 0) {
+  const removals = project.editorMetadata?.removedScenarioResources ?? [];
+  if (updates.length === 0 && removals.length === 0) {
     return { ...result, resourceBytes: original };
   }
-  const merged = mergeResourceEntries(original, updates);
+  const merged = mergeResourceEntries(original, updates, removals);
   if (merged.replaced > 0) {
     result.resourceWarnings.push(`${merged.replaced} existing resource(s) were replaced by browser resource updates.`);
   }
@@ -235,7 +236,8 @@ function hasResourceUpdates(project: Project) {
     (project.assets ?? []).some((asset) => asset.libraryScope !== "custom-library") ||
     (project.monsterIconOverrides ?? []).length > 0 ||
     (project.scenarioIconResources ?? []).length > 0 ||
-    (project.mapRecords ?? []).length > 0
+    (project.mapRecords ?? []).length > 0 ||
+    (project.editorMetadata?.removedScenarioResources ?? []).length > 0
   );
 }
 

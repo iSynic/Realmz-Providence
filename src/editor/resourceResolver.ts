@@ -91,6 +91,10 @@ export function canCopyLibraryAssetToScenario(asset: LibraryAsset) {
   return Boolean(asset.resourceType && asset.resourceId != null);
 }
 
+export function canReferenceLibraryAssetByStockId(asset: LibraryAsset) {
+  return resourceExportScope(asset) === "realmz-built-in-reference" && Boolean(asset.resourceType && asset.resourceId != null);
+}
+
 export function resourceRole(asset: ManagedAsset | LibraryAsset): ResourceRole {
   if ("exportState" in asset) {
     if (asset.linkedEntity?.startsWith("landlook:") && asset.resourceType === "PICT") return "tile-atlas";

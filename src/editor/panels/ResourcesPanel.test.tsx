@@ -16,7 +16,7 @@ describe("ResourcesPanel controls", () => {
 
     expect(markup).toContain('type="search"');
     expect(markup).toContain('aria-label="Search scenario assets"');
-    expect(markup).toContain("0 assets");
+    expect(markup).toContain("0 scenario assets");
     expect(markup).not.toContain('aria-label="Resource preview filters"');
   });
 

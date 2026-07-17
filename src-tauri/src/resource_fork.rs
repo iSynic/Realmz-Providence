@@ -260,7 +260,20 @@ pub fn merge_resource_entries(
     original: &[u8],
     updates: Vec<ResourceForkEntry>,
 ) -> Result<(Vec<u8>, usize)> {
+    merge_resource_entries_with_removals(original, updates, &[])
+}
+
+pub fn merge_resource_entries_with_removals(
+    original: &[u8],
+    updates: Vec<ResourceForkEntry>,
+    removals: &[(String, i32)],
+) -> Result<(Vec<u8>, usize)> {
     let mut entries = parse_resource_fork_entries(original);
+    entries.retain(|entry| {
+        !removals.iter().any(|(resource_type, resource_id)| {
+            entry.resource_type == *resource_type && i32::from(entry.id) == *resource_id
+        })
+    });
     let mut replaced = 0usize;
     for update in updates {
         if let Some(existing) = entries
@@ -1486,6 +1499,41 @@ mod tests {
         assert!(entries
             .iter()
             .any(|entry| entry.resource_type == "snd " && entry.id == 201));
+    }
+
+    #[test]
+    fn resource_fork_removes_excluded_entries() {
+        let original = write_resource_fork(&[
+            ResourceForkEntry {
+                resource_type: "PICT".to_string(),
+                id: 170,
+                name: "Interface override".to_string(),
+                attributes: 0,
+                data: vec![1, 2],
+            },
+            ResourceForkEntry {
+                resource_type: "TEXT".to_string(),
+                id: 7,
+                name: "Message".to_string(),
+                attributes: 0,
+                data: vec![3, 4],
+            },
+        ])
+        .expect("write original");
+        let (merged, replaced) = merge_resource_entries_with_removals(
+            &original,
+            Vec::new(),
+            &[("PICT".to_string(), 170)],
+        )
+        .expect("remove resource");
+        let entries = parse_resource_fork_entries(&merged);
+        assert_eq!(replaced, 0);
+        assert!(!entries
+            .iter()
+            .any(|entry| entry.resource_type == "PICT" && entry.id == 170));
+        assert!(entries
+            .iter()
+            .any(|entry| entry.resource_type == "TEXT" && entry.id == 7));
     }
 
     #[test]

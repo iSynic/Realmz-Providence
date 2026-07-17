@@ -305,6 +305,15 @@ pub struct EditorMetadata {
     pub quest_threads: Vec<QuestThread>,
     #[serde(default)]
     pub quest_context_sources: Vec<QuestContextSource>,
+    #[serde(default)]
+    pub removed_scenario_resources: Vec<RemovedScenarioResource>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemovedScenarioResource {
+    pub resource_type: String,
+    pub resource_id: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

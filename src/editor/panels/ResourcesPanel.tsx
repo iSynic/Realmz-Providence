@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProjectCommand, ReferenceAssetScenarioCopyKind, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { browserReferenceAtlasToken } from "../browser/atlasPaths";
 import { loadBrowserScenarioResourcePreview } from "../browser/project";
@@ -8,9 +8,9 @@ import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities
 import { resourceUsageLinks } from "../contentLinks";
 import { canCopyLibraryAssetToScenario } from "../resourceResolver";
 import { tileColor } from "../components/TileSprite";
-import { IssueList, PanelHeader, ScrollArea, SearchField, SegmentedControl } from "../ui";
+import { IssueList, ModalDialog, ModalDialogActions, ModalDialogHeader, PanelHeader, ScrollArea, SearchField, SegmentedControl } from "../ui";
 import { renderListKey } from "../renderKeys";
-import { MediaAssetImportOptions } from "../mediaAssets";
+import { MediaAssetImportOptions, SCENARIO_PICTURE_MAX_ID, SCENARIO_PICTURE_MIN_ID, SCENARIO_SPLASH_PICTURE_ID } from "../mediaAssets";
 import { TutorialTip } from "../components/TutorialTip";
 import {
   PRIMARY_ASSET_SECTIONS,
@@ -40,7 +40,17 @@ import {
   useDeferredProjectPreview
 } from "./resources/ResourceWidgets";
 import { RecordsPanel } from "./RecordsPanel";
-import { ADD_TO_CUSTOM_LIBRARY_LABEL, COPY_TO_SCENARIO_ASSETS_LABEL, MOVE_TO_SCENARIO_ASSETS_LABEL, type AssetSection, assetSectionHelp } from "./resources/assetOwnership";
+import { ADD_TO_CUSTOM_LIBRARY_LABEL, COPY_TO_SCENARIO_ASSETS_LABEL, type AssetSection, assetSectionHelp } from "./resources/assetOwnership";
+import { createIconLibraryEntry } from "../iconLibrary";
+import { loadLibraryResourceBase64 } from "../libraryResourceData";
+import {
+  findReferenceMonsterIconPair,
+  referenceAssetCopyLabel,
+  referenceAssetNeedsUseChoice,
+  referenceIconUseDescription,
+  referenceIconUseScenarioKind,
+  type ReferenceIconUse
+} from "./resources/referenceAssetUse";
 
 type AssetPreviewSize = "small" | "medium" | "large";
 type ManagedGalleryItem = { type: "managed"; asset: ManagedAsset; root: "project" | "workspace" };
@@ -82,6 +92,8 @@ export function ResourcesPanel({
   onAddAssetToCustomLibrary,
   onCopyCustomAssetToScenario,
   onCopyReferenceAssetToScenario,
+  onUpdateLibraryCatalog,
+  onApplyCommand,
   onSelectPaintTile
 }: {
   project: Project | null;
@@ -102,7 +114,9 @@ export function ResourcesPanel({
   onDeleteCustomAsset?: (assetId: string) => void;
   onAddAssetToCustomLibrary?: (assetId: string) => void;
   onCopyCustomAssetToScenario?: (assetId: string) => void;
-  onCopyReferenceAssetToScenario?: (assetId: string) => void;
+  onCopyReferenceAssetToScenario?: (assetId: string, kind?: ReferenceAssetScenarioCopyKind) => void;
+  onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
   onSelectPaintTile?: (tile: number) => void;
 }) {
   const libraryAssets = catalog?.assets ?? [];
@@ -126,7 +140,95 @@ export function ResourcesPanel({
   const [assetPageSize, setAssetPageSize] = useState(100);
   const [assetPreviewSize, setAssetPreviewSize] = useState<AssetPreviewSize>("small");
   const [selectedAsset, setSelectedAsset] = useState<ResourcePreviewItem | null>(null);
+  const [referenceUseAsset, setReferenceUseAsset] = useState<LibraryAsset | null>(null);
+  const [referenceUseBusy, setReferenceUseBusy] = useState(false);
+  const [referenceUseError, setReferenceUseError] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
+  const requestReferenceAssetCopy = (assetId: string) => {
+    const asset = libraryAssets.find((candidate) => candidate.id === assetId);
+    if (!asset || !referenceAssetNeedsUseChoice(asset)) {
+      onCopyReferenceAssetToScenario?.(assetId);
+      return;
+    }
+    setReferenceUseError("");
+    setReferenceUseAsset(asset);
+  };
+  const applyReferenceIconUse = async (use: ReferenceIconUse) => {
+    const asset = referenceUseAsset;
+    if (!asset || asset.resourceId == null) return;
+    setReferenceUseBusy(true);
+    setReferenceUseError("");
+    try {
+      const scenarioKind = referenceIconUseScenarioKind(use);
+      if (scenarioKind) {
+        await onCopyReferenceAssetToScenario?.(asset.id, scenarioKind);
+      } else if (use === "item-icon-library") {
+        if (!onUpdateLibraryCatalog) throw new Error("The Providence Icon Library is not available in this workspace.");
+        const resourceBase64 = await loadLibraryResourceBase64(asset, { desktopRuntime, projectDir, workspaceDir }, catalog);
+        if (!resourceBase64) throw new Error("The selected icon resource bytes could not be loaded.");
+        const { catalog: nextCatalog, entity } = createIconLibraryEntry(catalog ?? null, catalog?.managedPath ?? "browser://workspace/library", {
+          kind: "item-icon",
+          label: asset.label,
+          origin: referenceIconOrigin(asset),
+          resources: [{
+            role: "item",
+            resourceType: "cicn",
+            resourceId: Math.abs(asset.resourceId),
+            label: asset.label,
+            resourceBase64,
+            previewPath: asset.previewPath,
+            bytes: asset.bytes,
+            sha256: asset.sha256
+          }]
+        });
+        onUpdateLibraryCatalog(nextCatalog, entity ? `Added ${entity.label} to the Providence Icon Library` : "Updated Providence Icon Library");
+      } else {
+        if (!onUpdateLibraryCatalog) throw new Error("The Providence Icon Library is not available in this workspace.");
+        const pair = findReferenceMonsterIconPair(catalog, asset);
+        if (!pair) throw new Error("Monster icon sets require both facing cicn resources.");
+        const [baseResourceBase64, pairedResourceBase64] = await Promise.all([
+          loadLibraryResourceBase64(pair.base, { desktopRuntime, projectDir, workspaceDir }, catalog),
+          loadLibraryResourceBase64(pair.paired, { desktopRuntime, projectDir, workspaceDir }, catalog)
+        ]);
+        if (!baseResourceBase64 || !pairedResourceBase64) throw new Error("Both monster facing resources must be available.");
+        const label = monsterPairLabel(pair.base.label);
+        const { catalog: nextCatalog, entity } = createIconLibraryEntry(catalog ?? null, catalog?.managedPath ?? "browser://workspace/library", {
+          kind: "monster-pair",
+          label,
+          origin: { kind: "monster-mash", sourceId: pair.base.id, sourceLabel: label },
+          facingMode: "custom",
+          resources: [
+            {
+              role: "base",
+              resourceType: "cicn",
+              resourceId: Math.abs(pair.base.resourceId),
+              label: pair.base.label,
+              resourceBase64: baseResourceBase64,
+              previewPath: pair.base.previewPath,
+              bytes: pair.base.bytes,
+              sha256: pair.base.sha256
+            },
+            {
+              role: "paired",
+              resourceType: "cicn",
+              resourceId: Math.abs(pair.paired.resourceId),
+              label: pair.paired.label,
+              resourceBase64: pairedResourceBase64,
+              previewPath: pair.paired.previewPath,
+              bytes: pair.paired.bytes,
+              sha256: pair.paired.sha256
+            }
+          ]
+        });
+        onUpdateLibraryCatalog(nextCatalog, entity ? `Added ${entity.label} to the Providence Icon Library` : "Updated Providence Icon Library");
+      }
+      setReferenceUseAsset(null);
+    } catch (error) {
+      setReferenceUseError(error instanceof Error ? error.message : "Unable to use the selected icon.");
+    } finally {
+      setReferenceUseBusy(false);
+    }
+  };
   useEffect(() => {
     if (!searchHint) return;
     setQuery(searchHint.query ?? "");
@@ -172,14 +274,28 @@ export function ResourcesPanel({
   useEffect(() => {
     setSelectedAsset(null);
   }, [section]);
-  const matchingLibraryAssets = useMemo(() => libraryAssets
+  useEffect(() => {
+    if (isReferenceAssetSection && kindFilter === "picture") setKindFilter("all");
+  }, [isReferenceAssetSection, kindFilter]);
+  const filteredLibraryAssets = useMemo(() => libraryAssets
     .filter((asset) => {
       if (!libraryAssetMatchesSection(asset, section, showUiReference)) return false;
       if (!libraryAssetMatchesKind(asset, kindFilter)) return false;
       if (normalizedQuery && !assetSearchText(asset.label, asset.resourceType ?? "", asset.resourceId ?? null, asset.relativePath).includes(normalizedQuery)) return false;
-      if (libraryPreviewFilter === "all") return true;
-      return estimatedPreviewStatus(asset) === libraryPreviewFilter;
-    }), [kindFilter, libraryAssets, libraryPreviewFilter, normalizedQuery, section, showUiReference]);
+      return true;
+    }), [kindFilter, libraryAssets, normalizedQuery, section, showUiReference]);
+  const libraryPreviewCounts = useMemo(() => {
+    const counts = new Map<ResourcePreviewStatus | "all", number>([["all", filteredLibraryAssets.length]]);
+    for (const asset of filteredLibraryAssets) {
+      const status = estimatedPreviewStatus(asset);
+      counts.set(status, (counts.get(status) ?? 0) + 1);
+    }
+    return counts;
+  }, [filteredLibraryAssets]);
+  const matchingLibraryAssets = useMemo(() => libraryPreviewFilter === "all"
+    ? filteredLibraryAssets
+    : filteredLibraryAssets.filter((asset) => estimatedPreviewStatus(asset) === libraryPreviewFilter),
+  [filteredLibraryAssets, libraryPreviewFilter]);
   const libraryPageSize = effectiveAssetPageSize(assetPageSize, matchingLibraryAssets.length);
   const projectPageSize = effectiveAssetPageSize(assetPageSize, projectGalleryItems.length);
   const libraryPageCount = Math.max(1, Math.ceil(matchingLibraryAssets.length / libraryPageSize));
@@ -283,13 +399,11 @@ export function ResourcesPanel({
             onChange={setQuery}
             placeholder="Search assets..."
             ariaLabel={section === "project" ? "Search scenario assets" : section === "custom" ? "Search custom library assets" : "Search reference assets"}
-            resultCount={isManagedAssetSection ? projectGalleryItems.length : matchingLibraryAssets.length}
-            resultNoun="asset"
           />
           <TutorialTip title="Asset Kind Filter" body={ASSET_KIND_FILTER_HELP} side="below">
             <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
               <option value="all">All Types</option>
-              <option value="picture">Pictures</option>
+              {!isReferenceAssetSection && <option value="picture">Pictures</option>}
               <option value="sound">Sounds</option>
               <option value="icon">Icons</option>
               <option value="special-land-tile">Special Land Tiles</option>
@@ -297,7 +411,7 @@ export function ResourcesPanel({
               <option value="other">Other</option>
             </select>
           </TutorialTip>
-          {isReferenceAssetSection && <PreviewStatusFilters value={libraryPreviewFilter} onChange={setLibraryPreviewFilter} />}
+          {isReferenceAssetSection && <PreviewStatusFilters value={libraryPreviewFilter} counts={libraryPreviewCounts} onChange={setLibraryPreviewFilter} />}
           {section === "divinity" && (
             <label className="asset-inline-toggle" title="Show Divinity/Realmz application interface artwork. These resources are not scenario media.">
               <input type="checkbox" checked={showUiReference} onChange={(event) => setShowUiReference(event.currentTarget.checked)} />
@@ -380,10 +494,9 @@ export function ResourcesPanel({
                         onReplaceAsset={item.root === "project" ? onReplaceAsset : undefined}
                         onDeleteAsset={item.root === "workspace" ? onDeleteCustomAsset : onDeleteAsset}
                         onSelectPaintTile={onSelectPaintTile}
-                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? COPY_TO_SCENARIO_ASSETS_LABEL : undefined : section === "custom" ? MOVE_TO_SCENARIO_ASSETS_LABEL : ADD_TO_CUSTOM_LIBRARY_LABEL}
+                        libraryActionLabel={section === "custom" ? project && onCopyCustomAssetToScenario ? COPY_TO_SCENARIO_ASSETS_LABEL : undefined : ADD_TO_CUSTOM_LIBRARY_LABEL}
                         onMoveAssetScope={(assetId) => {
-                          if (item.root === "workspace") onCopyCustomAssetToScenario?.(assetId);
-                          else if (section === "custom") onUpdateAsset?.(assetId, { libraryScope: "scenario" });
+                          if (section === "custom") onCopyCustomAssetToScenario?.(assetId);
                           else onAddAssetToCustomLibrary?.(assetId);
                         }}
                         onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [], assetRoot: item.root })}
@@ -401,10 +514,9 @@ export function ResourcesPanel({
                         onUpdateAsset={item.root === "workspace" ? onUpdateCustomAsset : onUpdateAsset}
                         onDeleteAsset={item.root === "workspace" ? onDeleteCustomAsset : onDeleteAsset}
                         onSelectEntity={onSelectEntity}
-                        libraryActionLabel={item.root === "workspace" ? project && onCopyCustomAssetToScenario ? COPY_TO_SCENARIO_ASSETS_LABEL : undefined : section === "custom" ? MOVE_TO_SCENARIO_ASSETS_LABEL : ADD_TO_CUSTOM_LIBRARY_LABEL}
+                        libraryActionLabel={section === "custom" ? project && onCopyCustomAssetToScenario ? COPY_TO_SCENARIO_ASSETS_LABEL : undefined : ADD_TO_CUSTOM_LIBRARY_LABEL}
                         onMoveAssetScope={(assetId) => {
-                          if (item.root === "workspace") onCopyCustomAssetToScenario?.(assetId);
-                          else if (section === "custom") onUpdateAsset?.(assetId, { libraryScope: "scenario" });
+                          if (section === "custom") onCopyCustomAssetToScenario?.(assetId);
                           else onAddAssetToCustomLibrary?.(assetId);
                         }}
                         onSelect={(preview) => setSelectedAsset({ type: "managed", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [], assetRoot: item.root })}
@@ -424,6 +536,16 @@ export function ResourcesPanel({
                   projectDir={projectDir}
                   workspaceDir={workspaceDir}
                   onOpenDetail={(item) => setPreviewItem(item)}
+                  onReplaceAsset={onReplaceAsset}
+                  onDeleteAsset={onDeleteAsset}
+                  onDeleteCustomAsset={onDeleteCustomAsset}
+                  onAddAssetToCustomLibrary={onAddAssetToCustomLibrary}
+                  onCopyCustomAssetToScenario={project ? onCopyCustomAssetToScenario : undefined}
+                  onRemoveScenarioResource={(resourceType, resourceId, source) => {
+                    if (!onApplyCommand) return;
+                    onApplyCommand({ kind: "removeScenarioResource", label: `Remove ${resourceType.trim()} ${resourceId}`, resourceType, resourceId, source });
+                    setSelectedAsset(null);
+                  }}
                   onSelectEntity={onSelectEntity}
                 />
               </div>
@@ -461,7 +583,7 @@ export function ResourcesPanel({
                         selected={selectedAssetKey === asset.id}
                         onSelectEntity={onSelectEntity}
                         onSelect={(preview) => setSelectedAsset({ type: "library", asset, preview, usages: project ? resourceUsageLinks(project, asset.resourceType, asset.resourceId) : [] })}
-                        onCopyToScenario={project ? onCopyReferenceAssetToScenario : undefined}
+                        onCopyToScenario={project ? requestReferenceAssetCopy : undefined}
                       />
                     ))}
                     {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
@@ -478,7 +600,7 @@ export function ResourcesPanel({
                   projectDir={projectDir}
                   workspaceDir={workspaceDir}
                   onOpenDetail={(item) => setPreviewItem(item)}
-                  onCopyReferenceAssetToScenario={project ? onCopyReferenceAssetToScenario : undefined}
+                  onCopyReferenceAssetToScenario={project ? requestReferenceAssetCopy : undefined}
                   onSelectEntity={onSelectEntity}
                 />
               </div>
@@ -595,7 +717,115 @@ export function ResourcesPanel({
           onSelectEntity={onSelectEntity}
         />
       )}
+      {referenceUseAsset && (
+        <ReferenceIconUseDialog
+          asset={referenceUseAsset}
+          catalog={catalog}
+          busy={referenceUseBusy}
+          error={referenceUseError}
+          libraryAvailable={Boolean(onUpdateLibraryCatalog)}
+          onChoose={(use) => void applyReferenceIconUse(use)}
+          onClose={() => {
+            if (referenceUseBusy) return;
+            setReferenceUseAsset(null);
+            setReferenceUseError("");
+          }}
+        />
+      )}
     </section>
+  );
+}
+
+function ReferenceIconUseDialog({
+  asset,
+  catalog,
+  busy,
+  error,
+  libraryAvailable,
+  onChoose,
+  onClose
+}: {
+  asset: LibraryAsset;
+  catalog?: LibraryCatalog | null;
+  busy: boolean;
+  error: string;
+  libraryAvailable: boolean;
+  onChoose: (use: ReferenceIconUse) => void;
+  onClose: () => void;
+}) {
+  const pair = findReferenceMonsterIconPair(catalog, asset);
+  const sourceText = `${asset.source} ${asset.relativePath}`.toLowerCase();
+  const itemLibraryAsset = sourceText.includes("vault of arcana") || sourceText.includes("bag of holding");
+  const choices: Array<{ use: ReferenceIconUse; title: string; detail: string; disabled?: boolean; recommended?: boolean }> = [
+    {
+      use: "scenario-item-icon",
+      title: "Scenario Item Icon",
+      detail: referenceIconUseDescription("scenario-item-icon"),
+      recommended: itemLibraryAsset
+    },
+    {
+      use: "item-icon-library",
+      title: "Reusable Item Library",
+      detail: referenceIconUseDescription("item-icon-library"),
+      disabled: !libraryAvailable
+    },
+    {
+      use: "monster-icon-library",
+      title: "Monster Icon Set",
+      detail: pair ? referenceIconUseDescription("monster-icon-library") : "Unavailable for this resource. Monster art needs a matched base and paired-facing cicn.",
+      disabled: !libraryAvailable || !pair
+    },
+    {
+      use: "special-land-tile",
+      title: "Special Land Tile",
+      detail: referenceIconUseDescription("special-land-tile")
+    },
+    {
+      use: "scenario-icon",
+      title: "Other Scenario Icon",
+      detail: referenceIconUseDescription("scenario-icon")
+    }
+  ];
+  return (
+    <ModalDialog
+      ariaLabelledBy="reference-icon-use-title"
+      className="reference-icon-use-dialog"
+      dismissDisabled={busy}
+      onDismiss={onClose}
+    >
+      <ModalDialogHeader
+        title="Choose Icon Use"
+        titleId="reference-icon-use-title"
+        description="The intended consumer determines where Providence stores the cicn and which ID rules apply."
+        actions={<button type="button" className="btn btn-secondary btn-xs" disabled={busy} onClick={onClose}>Close</button>}
+      />
+      <div className="reference-icon-use-source">
+        <strong>{asset.label}</strong>
+        <span>cicn {asset.resourceId}</span>
+        <small>{asset.source}</small>
+      </div>
+      <div className="reference-icon-use-options">
+        {choices.map((choice) => (
+          <button
+            key={choice.use}
+            type="button"
+            className="reference-icon-use-option"
+            disabled={busy || choice.disabled}
+            onClick={() => onChoose(choice.use)}
+          >
+            <span>
+              <strong>{choice.title}</strong>
+              {choice.recommended && <b>Recommended</b>}
+            </span>
+            <small>{choice.detail}</small>
+          </button>
+        ))}
+      </div>
+      {error && <p className="reference-icon-use-error" role="alert">{error}</p>}
+      <ModalDialogActions>
+        <span>{busy ? "Loading reference resource data..." : "Choices labeled Scenario copy into the current project; Library choices remain reusable across projects."}</span>
+      </ModalDialogActions>
+    </ModalDialog>
   );
 }
 
@@ -641,6 +871,12 @@ function AssetSelectionInspector({
   projectDir,
   workspaceDir,
   onOpenDetail,
+  onReplaceAsset,
+  onDeleteAsset,
+  onDeleteCustomAsset,
+  onAddAssetToCustomLibrary,
+  onCopyCustomAssetToScenario,
+  onRemoveScenarioResource,
   onCopyReferenceAssetToScenario,
   onSelectEntity
 }: {
@@ -651,11 +887,32 @@ function AssetSelectionInspector({
   projectDir: string;
   workspaceDir: string;
   onOpenDetail: (item: ResourcePreviewItem) => void;
+  onReplaceAsset?: (assetId: string, file: File) => void;
+  onDeleteAsset?: (assetId: string) => void;
+  onDeleteCustomAsset?: (assetId: string) => void;
+  onAddAssetToCustomLibrary?: (assetId: string) => void;
+  onCopyCustomAssetToScenario?: (assetId: string) => void;
+  onRemoveScenarioResource?: (resourceType: string, resourceId: number, source: string) => void;
   onCopyReferenceAssetToScenario?: (assetId: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
   const title = item ? resourcePreviewItemTitle(item) : "No Asset Selected";
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const showCopyReferenceAction = item?.type === "library" && Boolean(onCopyReferenceAssetToScenario && canCopyLibraryAssetToScenario(item.asset));
+  const managedRoot = item?.type === "managed" ? item.assetRoot ?? "project" : null;
+  const showCopyCustomAction = item?.type === "managed" && item.asset.libraryScope === "custom-library" && Boolean(onCopyCustomAssetToScenario);
+  const showAddCustomAction = item?.type === "managed" && item.asset.libraryScope !== "custom-library" && Boolean(onAddAssetToCustomLibrary);
+  const showReplaceAction = item?.type === "managed" && managedRoot === "project" && Boolean(onReplaceAsset);
+  const showDeleteManagedAction = item?.type === "managed" && Boolean(managedRoot === "workspace" ? onDeleteCustomAsset : onDeleteAsset);
+  const resourceType = item?.type === "resource" ? resourceTypeFromSummary(item.entity.summary) : null;
+  const resourceId = item?.type === "resource" ? resourceIdFromSummary(item.entity.summary) : null;
+  const showRemoveResourceAction = item?.type === "resource" && resourceType !== null && resourceId !== null && Boolean(onRemoveScenarioResource);
+  const deleteManaged = () => {
+    if (item?.type !== "managed") return;
+    if (!window.confirm(`Delete ${item.asset.label}? Records that still use ${item.asset.resourceType.trim()} ${item.asset.resourceId} may become missing.`)) return;
+    if (managedRoot === "workspace") onDeleteCustomAsset?.(item.asset.id);
+    else onDeleteAsset?.(item.asset.id);
+  };
   return (
     <aside className="asset-selection-inspector" aria-label="Selected asset inspector">
       <header>
@@ -666,7 +923,35 @@ function AssetSelectionInspector({
         <div className="panel-header-actions">
           {showCopyReferenceAction && (
             <button type="button" className="btn btn-secondary btn-xs" onClick={() => item?.type === "library" && onCopyReferenceAssetToScenario?.(item.asset.id)}>
+              {item?.type === "library" ? referenceAssetCopyLabel(item.asset) : COPY_TO_SCENARIO_ASSETS_LABEL}
+            </button>
+          )}
+          {showCopyCustomAction && item?.type === "managed" && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onCopyCustomAssetToScenario?.(item.asset.id)}>
               {COPY_TO_SCENARIO_ASSETS_LABEL}
+            </button>
+          )}
+          {showAddCustomAction && item?.type === "managed" && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => onAddAssetToCustomLibrary?.(item.asset.id)}>
+              {ADD_TO_CUSTOM_LIBRARY_LABEL}
+            </button>
+          )}
+          {showReplaceAction && (
+            <button type="button" className="btn btn-secondary btn-xs" onClick={() => replaceInputRef.current?.click()}>Replace</button>
+          )}
+          {showDeleteManagedAction && (
+            <button type="button" className="btn btn-danger btn-xs" onClick={deleteManaged}>Delete</button>
+          )}
+          {showRemoveResourceAction && item?.type === "resource" && resourceType !== null && resourceId !== null && (
+            <button
+              type="button"
+              className="btn btn-danger btn-xs"
+              onClick={() => {
+                if (!window.confirm(`Remove ${resourceType.trim()} ${resourceId} from this scenario export? Existing references may become missing.`)) return;
+                onRemoveScenarioResource?.(resourceType, resourceId, item.entity.source);
+              }}
+            >
+              Remove from Scenario
             </button>
           )}
           <button type="button" className="btn btn-secondary btn-xs" disabled={!item} onClick={() => item && onOpenDetail(item)}>
@@ -679,6 +964,17 @@ function AssetSelectionInspector({
       ) : (
         <p className="empty-copy compact">Select an asset to inspect preview scale, source, export scope, decoded metadata, and usage links.</p>
       )}
+      <input
+        ref={replaceInputRef}
+        type="file"
+        accept={item?.type === "managed" && item.asset.kind === "sound" ? "audio/*" : "image/*"}
+        hidden
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0] ?? null;
+          if (file && item?.type === "managed") onReplaceAsset?.(item.asset.id, file);
+          event.currentTarget.value = "";
+        }}
+      />
     </aside>
   );
 }
@@ -804,6 +1100,7 @@ function ScenarioResourceAssetCard({
       />
       <strong>{asset.entity.label}</strong>
       <small>{asset.resourceType} {asset.resourceId}</small>
+      {scenarioPictureOverrideWarning(asset.resourceType, asset.resourceId) && <small className="asset-card-warning">Runtime override ID</small>}
     </article>
   );
 }
@@ -853,10 +1150,13 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   if (!project) return [];
   const assets: ScenarioResourceAsset[] = [];
   const seen = new Set<string>();
+  const removed = new Set((project.editorMetadata?.removedScenarioResources ?? []).map((resource) => `${resource.resourceType}:${resource.resourceId}`));
   const managedResourceKeys = new Set((project.assets ?? [])
     .filter((asset) => asset.libraryScope !== "custom-library")
     .map((asset) => `${asset.resourceType.trim()}:${asset.resourceId}`));
   const addResource = (resourceType: string, resourceId: number, label: string, source: string, previewPath?: string | null, extraSummary: Record<string, unknown> = {}) => {
+    if (!isScenarioResourceSource(source)) return;
+    if (removed.has(`${resourceType}:${resourceId}`)) return;
     const key = `${resourceType}:${resourceId}:${source}`;
     if (seen.has(key)) return;
     seen.add(key);
@@ -902,6 +1202,11 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   return assets.sort((a, b) => a.resourceType.localeCompare(b.resourceType) || a.resourceId - b.resourceId || a.source.localeCompare(b.source));
 }
 
+function isScenarioResourceSource(source: string) {
+  const normalized = source.toLowerCase();
+  return normalized.includes("scenario resource") || normalized.includes("scenario.rsrc");
+}
+
 function textResourceSummaryFromSemanticEntity(entity: SemanticEntity) {
   const summary: Record<string, unknown> = {
     ...entity.summary,
@@ -941,9 +1246,15 @@ function directResourceEntity(resourceType: string, resourceId: number, label: s
       scenarioSupplied: true,
       previewDataUrl: previewPath ?? "",
       previewStatus,
+      authoringWarning: scenarioPictureOverrideWarning(resourceType, resourceId),
       ...summary
     }
   };
+}
+
+function scenarioPictureOverrideWarning(resourceType: string, resourceId: number) {
+  if (resourceType !== "PICT" || resourceId === SCENARIO_SPLASH_PICTURE_ID || (resourceId >= SCENARIO_PICTURE_MIN_ID && resourceId <= SCENARIO_PICTURE_MAX_ID)) return "";
+  return "This PICT ID is outside normal scenario picture ranges and may override Realmz interface, landlook, or runtime art. Keep it only when that override is intentional; do not select it as an ordinary Display Picture target.";
 }
 
 function initialScenarioPreviewStatus(resourceType: string, previewPath?: string | null): ResourcePreviewStatus {
@@ -1059,4 +1370,16 @@ function assetSearchText(label: string, resourceType: string | null | undefined,
 
 function soundResourceIdMatches(availableId: number, requestedId: number) {
   return availableId === requestedId || Math.abs(availableId) === Math.abs(requestedId);
+}
+
+function referenceIconOrigin(asset: LibraryAsset) {
+  const sourceText = `${asset.source} ${asset.relativePath}`.toLowerCase();
+  if (sourceText.includes("vault of arcana")) {
+    return { kind: "vault-of-arcana" as const, sourceId: asset.id, sourceLabel: asset.label };
+  }
+  return { kind: "external-resource" as const, sourceId: asset.id, sourceLabel: asset.label };
+}
+
+function monsterPairLabel(label: string) {
+  return label.replace(/\s+(base|left|right|paired|facing)\b.*$/i, "").trim() || label;
 }

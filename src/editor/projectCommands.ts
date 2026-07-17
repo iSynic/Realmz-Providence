@@ -25,6 +25,7 @@ import {
 import {
   attachProjectAsset,
   deleteProjectAsset,
+  removeScenarioResource,
   replaceProjectAsset,
   replaceCustomLandlookAtlas,
   updateProjectAsset
@@ -238,6 +239,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "replaceCustomLandlookAtlas") return replaceCustomLandlookAtlas(project, command);
   if (command.kind === "updateProjectAsset") return updateProjectAsset(project, command);
   if (command.kind === "deleteProjectAsset") return deleteProjectAsset(project, command);
+  if (command.kind === "removeScenarioResource") return removeScenarioResource(project, command);
   return project;
 }
 

@@ -17,6 +17,11 @@ const MAX_IMAGE_PIXELS = 4096 * 4096;
 export const SCENARIO_PICTURE_MIN_ID = 30000;
 export const SCENARIO_PICTURE_MAX_ID = 30128;
 export const SCENARIO_SPLASH_PICTURE_ID = 30128;
+export const SCENARIO_DISPLAY_PICTURE_MAX_ID = SCENARIO_SPLASH_PICTURE_ID - 1;
+
+export function isScenarioDisplayPictureId(resourceId: number) {
+  return resourceId >= SCENARIO_PICTURE_MIN_ID && resourceId < SCENARIO_SPLASH_PICTURE_ID;
+}
 export const SCENARIO_SOUND_MIN_ID = 200;
 export const SCENARIO_SOUND_MAX_ID = 500;
 
@@ -286,7 +291,7 @@ export function assetTargetForKind(kind: ManagedAssetKind): AssetImportTarget {
   return "scenario-picture";
 }
 
-export function nextResourceId(assets: ManagedAsset[], kind: ManagedAssetKind) {
+export function nextResourceId(assets: Array<Pick<ManagedAsset, "kind" | "resourceType" | "resourceId">>, kind: ManagedAssetKind) {
   if (kind === "special-land-tile") {
     const used = new Set(
       assets
@@ -298,7 +303,13 @@ export function nextResourceId(assets: ManagedAsset[], kind: ManagedAssetKind) {
     return id;
   }
   if (kind === "picture") {
-    return nextIdInRange(assets, kind, SCENARIO_PICTURE_MIN_ID, SCENARIO_PICTURE_MAX_ID);
+    const used = new Set(assets.filter((asset) => asset.kind === kind).map((asset) => asset.resourceId));
+    for (let id = SCENARIO_PICTURE_MIN_ID; id <= SCENARIO_DISPLAY_PICTURE_MAX_ID; id += 1) {
+      if (!used.has(id)) return id;
+    }
+    let provisionalId = SCENARIO_SPLASH_PICTURE_ID + 1;
+    while (used.has(provisionalId)) provisionalId += 1;
+    return provisionalId;
   }
   if (kind === "sound") {
     return nextIdInRange(assets, kind, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID);
@@ -316,7 +327,20 @@ export function nextResourceId(assets: ManagedAsset[], kind: ManagedAssetKind) {
   return id;
 }
 
-function nextIdInRange(assets: ManagedAsset[], kind: ManagedAssetKind, min: number, max: number) {
+export function nextScenarioResourceIdInRange(
+  assets: Array<Pick<ManagedAsset, "kind" | "resourceType" | "resourceId">>,
+  kind: ManagedAssetKind
+) {
+  if (kind === "picture") {
+    return nextIdInRangeOrThrow(assets, kind, SCENARIO_PICTURE_MIN_ID, SCENARIO_DISPLAY_PICTURE_MAX_ID, "scenario picture");
+  }
+  if (kind === "sound") {
+    return nextIdInRangeOrThrow(assets, kind, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID, "scenario sound");
+  }
+  return nextResourceId(assets, kind);
+}
+
+function nextIdInRange(assets: Array<Pick<ManagedAsset, "kind" | "resourceType" | "resourceId">>, kind: ManagedAssetKind, min: number, max: number) {
   const used = new Set(assets.filter((asset) => asset.kind === kind).map((asset) => asset.resourceId));
   for (let id = min; id <= max; id += 1) {
     if (!used.has(id)) return id;
@@ -324,6 +348,20 @@ function nextIdInRange(assets: ManagedAsset[], kind: ManagedAssetKind, min: numb
   let fallback = max + 1;
   while (used.has(fallback)) fallback += 1;
   return fallback;
+}
+
+function nextIdInRangeOrThrow(
+  assets: Array<Pick<ManagedAsset, "kind" | "resourceType" | "resourceId">>,
+  kind: ManagedAssetKind,
+  min: number,
+  max: number,
+  label: string
+) {
+  const used = new Set(assets.filter((asset) => asset.kind === kind).map((asset) => asset.resourceId));
+  for (let id = min; id <= max; id += 1) {
+    if (!used.has(id)) return id;
+  }
+  throw new Error(`No unused ${label} resource ID remains in the valid ${min}-${max} range.`);
 }
 
 function requestToConversion(request: MediaAssetImportRequest): ManagedAssetConversion {

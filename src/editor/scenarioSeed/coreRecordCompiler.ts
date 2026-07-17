@@ -11,7 +11,7 @@ import type {
   ScenarioItemRecord,
   TreasureRecord
 } from "../types";
-import { nextResourceId } from "../mediaAssets";
+import { nextScenarioResourceIdInRange } from "../mediaAssets";
 import { monsterLibraryEntryDescription, monsterLibraryEntryTemplate } from "../monsterLibrary";
 import { copyCurrentMonsterToAllSets, generateMonsterVariants } from "../projectCommands/targetRecordCommands";
 import { createCasteOverride, createRaceOverride, createSpellOverride } from "../projectCommands/scenarioRulesCommands";
@@ -67,7 +67,7 @@ export function compileScenarioSeedAssets(
       addDiagnostic(context, "error", "invalid-asset-source", `Asset "${seedAsset.assetId}" is not a Custom Library asset.`, "asset", seedAsset.key);
       continue;
     }
-    const resourceId = seedAsset.resourceId ?? nextResourceId(projectAssets, source.kind);
+    const resourceId = seedAsset.resourceId ?? nextScenarioResourceIdInRange(projectAssets, source.kind);
     validateScenarioAssetResourceId(source.kind, resourceId, seedAsset.key, context);
     if (projectAssets.some((asset) => asset.resourceType === source.resourceType && asset.resourceId === resourceId)) {
       addDiagnostic(context, "error", "duplicate-asset-resource", `Asset "${seedAsset.key}" duplicates ${source.resourceType} resource ID ${resourceId}.`, "asset", seedAsset.key);

@@ -570,7 +570,7 @@ function* bitmapRows(data: Uint8Array, command: BitmapDrawCommand): Generator<nu
       const packedLength = command.rowBytes > 250 ? (u16At(data, cursor) ?? 0) : (data[cursor] ?? 0);
       cursor += command.rowBytes > 250 ? 2 : 1;
       const availableLength = Math.min(packedLength, Math.max(0, data.byteLength - cursor));
-      const decoded = decodePackBitsRow(data, cursor, availableLength, command.rowBytes);
+      const decoded = decodePictPackBitsRow(data, cursor, availableLength, command.rowBytes, command.packType);
       cursor += availableLength;
       yield decoded;
     } else {
@@ -759,7 +759,7 @@ function decodeDirectBitsPict(pict: Uint8Array, summary: Record<string, string>)
     const packedLength = rect.rowBytes > 250 ? (u16At(pict, cursor) ?? 0) : (pict[cursor] ?? 0);
     cursor += rect.rowBytes > 250 ? 2 : 1;
     const availableLength = Math.min(packedLength, Math.max(0, pict.byteLength - cursor));
-    const row = decodePackBitsRow(pict, cursor, availableLength, rect.rowBytes);
+    const row = decodePictPackBitsRow(pict, cursor, availableLength, rect.rowBytes, rect.packType);
     cursor += availableLength;
     if (y >= height) continue;
     for (let x = 0; x < width; x += 1) {
@@ -878,6 +878,36 @@ function decodePackBitsRow(buffer: Uint8Array, offset: number, packedLength: num
       const count = 1 - control;
       const value = buffer[cursor++] ?? 0;
       for (let index = 0; index < count; index += 1) output.push(value);
+    }
+  }
+  while (output.length < expectedLength) output.push(0);
+  return output.slice(0, expectedLength);
+}
+
+function decodePictPackBitsRow(
+  buffer: Uint8Array,
+  offset: number,
+  packedLength: number,
+  expectedLength: number,
+  packType: number
+) {
+  if (packType !== 3) return decodePackBitsRow(buffer, offset, packedLength, expectedLength);
+
+  const end = Math.min(offset + packedLength, buffer.byteLength);
+  const output: number[] = [];
+  let cursor = offset;
+  while (cursor < end && output.length < expectedLength) {
+    const unsigned = buffer[cursor] ?? 0;
+    const control = unsigned >= 128 ? unsigned - 256 : unsigned;
+    cursor += 1;
+    if (control >= 0 && control <= 127) {
+      const byteCount = (control + 1) * 2;
+      for (let index = 0; index < byteCount && cursor < end; index += 1) output.push(buffer[cursor++] ?? 0);
+    } else if (control >= -127 && control <= -1 && cursor + 1 < end) {
+      const count = 1 - control;
+      const high = buffer[cursor++] ?? 0;
+      const low = buffer[cursor++] ?? 0;
+      for (let index = 0; index < count; index += 1) output.push(high, low);
     }
   }
   while (output.length < expectedLength) output.push(0);

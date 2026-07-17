@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LibraryAsset } from "../../types";
-import { canCopyLibraryAssetToScenario } from "../../resourceResolver";
+import { canCopyLibraryAssetToScenario, canReferenceLibraryAssetByStockId } from "../../resourceResolver";
 import { assetSectionHelp, referenceAssetOwnershipGuidance, resourceScopeHelp } from "./assetOwnership";
 
 function libraryAsset(overrides: Partial<LibraryAsset> = {}): LibraryAsset {
@@ -24,6 +24,7 @@ describe("asset ownership guidance", () => {
     expect(referenceAssetOwnershipGuidance(asset)).toContain("Use its existing stock ID");
     expect(referenceAssetOwnershipGuidance(asset)).toContain("PICT 100");
     expect(canCopyLibraryAssetToScenario(asset)).toBe(false);
+    expect(canReferenceLibraryAssetByStockId(asset)).toBe(true);
   });
 
   it("explains that non-stock Divinity media receives a scenario-owned ID", () => {
@@ -31,6 +32,7 @@ describe("asset ownership guidance", () => {
     expect(referenceAssetOwnershipGuidance(asset)).toContain("scenario-owned asset");
     expect(referenceAssetOwnershipGuidance(asset)).toContain("valid scenario resource ID");
     expect(canCopyLibraryAssetToScenario(asset)).toBe(true);
+    expect(canReferenceLibraryAssetByStockId(asset)).toBe(false);
   });
 
   it("treats the Custom Library as Providence-wide reusable storage", () => {

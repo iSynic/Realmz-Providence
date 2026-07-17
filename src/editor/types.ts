@@ -140,6 +140,7 @@ export type MapViewOptions = Record<MapViewFlag, boolean>;
 export type PaintCellChange = { x: number; y: number; index: number; from: number; to: number };
 export type BattleGridCellChange = { index: number; from: number; to: number };
 export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
+export type ReferenceAssetScenarioCopyKind = "icon" | "special-land-tile";
 export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
 export type ManagedAssetLibraryScope = "scenario" | "custom-library";
 export type AssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound" | "text" | "raw-resource";
@@ -522,6 +523,12 @@ export type EditorMetadata = {
   mapStamps: CustomMapStamp[];
   questThreads: QuestThread[];
   questContextSources: QuestContextSource[];
+  removedScenarioResources: RemovedScenarioResource[];
+};
+
+export type RemovedScenarioResource = {
+  resourceType: string;
+  resourceId: number;
 };
 
 export type TilePalette = {
@@ -1365,6 +1372,7 @@ export type ProjectCommand =
   | { kind: "replaceProjectAsset"; label: string; assetId: string; asset: ManagedAsset }
   | { kind: "updateProjectAsset"; label: string; assetId: string; changes: Partial<Pick<ManagedAsset, "label" | "resourceId" | "linkedEntity" | "libraryScope">> }
   | { kind: "deleteProjectAsset"; label: string; assetId: string }
+  | { kind: "removeScenarioResource"; label: string; resourceType: string; resourceId: number; source: string }
   | {
       kind: "updateScenarioStartup";
       label: string;
