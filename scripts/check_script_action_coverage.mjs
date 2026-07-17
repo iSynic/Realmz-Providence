@@ -830,7 +830,7 @@ for (const snippet of [
 for (const snippet of [
   "extraActionTabClassification",
   "scriptTabKind",
-  "global-events",
+  "global-macros",
   "EXTRA_ACTION_INVENTORY_FILTERS",
   "ed3-unlinked",
   "ed3-battle",
