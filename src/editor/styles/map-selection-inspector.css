@@ -292,6 +292,35 @@
   background: rgba(7, 18, 26, 0.62);
 }
 
+.connected-selection-shape-card {
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #2b4758;
+  border-radius: 5px;
+  background: rgba(7, 18, 26, 0.62);
+}
+
+.connected-selection-shape-card > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.connected-selection-shape-actions,
+.smart-mask-shape-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.connected-selection-shape-actions button,
+.smart-mask-shape-actions button {
+  min-width: 0;
+  width: 100%;
+}
+
 .connected-selection-actions section > div span {
   font-size: 10px;
 }

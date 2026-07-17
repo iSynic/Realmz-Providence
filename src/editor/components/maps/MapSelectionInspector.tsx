@@ -22,6 +22,7 @@ import { captureMapStampFromCells, createMapStampId } from "../../map/customMapS
 import { paintSeed } from "../../map/paintResolver";
 import { SMART_BRUSH_PRESETS } from "../../map/smartTerrainBrush";
 import { tileValueAt } from "../../map/geometry";
+import { reshapeConnectedCellSelection, type ConnectedCellSelection } from "../../map/connectedMapSelection";
 import { TriggerSelectionDetails } from "./MapActionPointInspector";
 import { MapCellSelectionInspector } from "./MapCellSelectionInspector";
 import { RecordSelectionDetails } from "./MapRecordsWorkbench";
@@ -42,6 +43,7 @@ export function MapSelectionInspector({
   onOpenScripts,
   onApplyCommand,
   onClearConnectedSelection,
+  onSetConnectedSelection,
   selectedTile,
   paintVariation,
   activePaintGroupId,
@@ -60,6 +62,7 @@ export function MapSelectionInspector({
   onOpenScripts: (entity: SelectedEntity) => void;
   onApplyCommand: (command: ProjectCommand) => void;
   onClearConnectedSelection: () => void;
+  onSetConnectedSelection: (selection: ConnectedCellSelection | null) => void;
   selectedTile: number;
   paintVariation: MapPaintVariation;
   activePaintGroupId: string;
@@ -108,6 +111,7 @@ export function MapSelectionInspector({
           variationTiles={variationTiles}
           smartBrushPreset={smartBrushPreset}
           onApplyCommand={onApplyCommand}
+          onSetSelection={onSetConnectedSelection}
           onClearSelection={onClearConnectedSelection}
         />
       )}
@@ -143,6 +147,7 @@ function ConnectedSelectionActions({
   variationTiles,
   smartBrushPreset,
   onApplyCommand,
+  onSetSelection,
   onClearSelection
 }: {
   selection: Extract<MapSelection, { kind: "cells" }>["selection"];
@@ -156,6 +161,7 @@ function ConnectedSelectionActions({
   variationTiles: number[] | null;
   smartBrushPreset: SmartBrushPreset;
   onApplyCommand: (command: ProjectCommand) => void;
+  onSetSelection: (selection: ConnectedCellSelection | null) => void;
   onClearSelection: () => void;
 }) {
   const anchorTile = map ? tileValueAt(map, selection.anchor.x, selection.anchor.y) : 0;
@@ -218,15 +224,30 @@ function ConnectedSelectionActions({
     });
   };
   const smartPresetLabel = SMART_BRUSH_PRESETS.find((preset) => preset.id === smartBrushPreset)?.label ?? smartBrushPreset;
+  const reshapeSelection = (operation: "grow" | "shrink") => {
+    if (!map) return;
+    onSetSelection(reshapeConnectedCellSelection(selection, operation, map));
+  };
   return (
     <div className="connected-selection-summary">
       <div className="connected-selection-heading">
         <strong>Connected Cell Selection</strong>
-        <span>{selection.cells.length.toLocaleString()} cells</span>
+        <span>{selection.cells.length.toLocaleString()} {selection.cells.length === 1 ? "cell" : "cells"}</span>
       </div>
       <small>
         {connectedMatchModeLabel(selection.matchMode)} | Anchor {selection.anchor.x}, {selection.anchor.y} | Tile {anchorTile}
       </small>
+      <section className="connected-selection-shape-card">
+        <div><strong>Selection Shape</strong><span>One orthogonal cell ring</span></div>
+        <div className="connected-selection-shape-actions">
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => reshapeSelection("grow")}>
+            Grow Selection
+          </button>
+          <button className="btn btn-secondary btn-xs" type="button" onClick={() => reshapeSelection("shrink")}>
+            Shrink Selection
+          </button>
+        </div>
+      </section>
       {map?.levelType === "land" && (
         <div className="connected-selection-actions">
           <section>

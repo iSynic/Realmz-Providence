@@ -54,6 +54,8 @@ export function MapPaintInspector({
   smartBrushMask,
   smartBrushPlan,
   onClearSmartBrushMask,
+  onGrowSmartBrushMask,
+  onShrinkSmartBrushMask,
   onApplySmartBrush,
   selectedSuperTileStampId,
   onSelectSuperTileStamp,
@@ -88,6 +90,8 @@ export function MapPaintInspector({
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
+  onGrowSmartBrushMask: () => void;
+  onShrinkSmartBrushMask: () => void;
   onApplySmartBrush: () => void;
   selectedSuperTileStampId: string | null;
   onSelectSuperTileStamp: (stampId: string) => void;
@@ -166,6 +170,8 @@ export function MapPaintInspector({
         smartBrushMask={smartBrushMask}
         smartBrushPlan={smartBrushPlan}
         onClearSmartBrushMask={onClearSmartBrushMask}
+        onGrowSmartBrushMask={onGrowSmartBrushMask}
+        onShrinkSmartBrushMask={onShrinkSmartBrushMask}
         onApplySmartBrush={onApplySmartBrush}
         onApplyCommand={onApplyCommand}
         showVariation={state.activeTool !== "stamp"}
@@ -292,6 +298,8 @@ function PaintModePanel({
   smartBrushMask,
   smartBrushPlan,
   onClearSmartBrushMask,
+  onGrowSmartBrushMask,
+  onShrinkSmartBrushMask,
   onApplySmartBrush,
   onApplyCommand,
   showVariation,
@@ -314,6 +322,8 @@ function PaintModePanel({
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
   onClearSmartBrushMask: () => void;
+  onGrowSmartBrushMask: () => void;
+  onShrinkSmartBrushMask: () => void;
   onApplySmartBrush: () => void;
   onApplyCommand: (command: ProjectCommand) => void;
   showVariation: boolean;
@@ -423,6 +433,14 @@ function PaintModePanel({
             <button className="btn btn-primary btn-xs context-action-button" type="button" disabled={smartBrushPlan.changedCount === 0} onClick={onApplySmartBrush}>
               Apply Smart Terrain ({smartBrushPlan.changedCount})
             </button>
+            <div className="smart-mask-shape-actions">
+              <button className="btn btn-secondary btn-xs" type="button" disabled={smartBrushMask.length === 0} onClick={onGrowSmartBrushMask}>
+                Grow Mask
+              </button>
+              <button className="btn btn-secondary btn-xs" type="button" disabled={smartBrushMask.length === 0} onClick={onShrinkSmartBrushMask}>
+                Shrink Mask
+              </button>
+            </div>
             <button className="btn btn-secondary btn-xs context-action-button" type="button" disabled={smartBrushMask.length === 0} onClick={onClearSmartBrushMask}>
               Clear Smart Mask
             </button>

@@ -93,6 +93,8 @@ export function MapInspectorSidebar({
       smartBrushMask,
       visibleSmartBrushPlan: smartBrushPlan,
       clearSmartBrushMask: onClearSmartBrushMask,
+      growSmartBrushMask: onGrowSmartBrushMask,
+      shrinkSmartBrushMask: onShrinkSmartBrushMask,
       applySmartBrush: onApplySmartBrush
     },
     openCanvasTool: onSetTool
@@ -197,6 +199,8 @@ export function MapInspectorSidebar({
             smartBrushMask={smartBrushMask}
             smartBrushPlan={smartBrushPlan}
             onClearSmartBrushMask={onClearSmartBrushMask}
+            onGrowSmartBrushMask={onGrowSmartBrushMask}
+            onShrinkSmartBrushMask={onShrinkSmartBrushMask}
             onApplySmartBrush={onApplySmartBrush}
             selectedSuperTileStampId={selectedSuperTileStampId}
             onSelectSuperTileStamp={onSelectSuperTileStamp}
@@ -228,6 +232,7 @@ export function MapInspectorSidebar({
             onOpenScripts={onOpenScripts}
             onApplyCommand={onApplyCommand}
             onClearConnectedSelection={() => onSetConnectedSelection(null)}
+            onSetConnectedSelection={onSetConnectedSelection}
             selectedTile={state.selectedTile}
             paintVariation={paintVariation}
             activePaintGroupId={activePaintGroupId}

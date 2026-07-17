@@ -1,6 +1,7 @@
 import type { MapEntity, TileAttributeFlag, TileAttributeProfile, TilesetAsset } from "../types";
 import { MAP_CELLS, type MapCell, tileValueAt } from "./geometry";
 import { classifyTileValue, type TileValueMetadata } from "./tileMetadata";
+import { growMapCells, shrinkMapCells, type MapCellBounds } from "./mapCellShapes";
 
 export type ConnectedTileMatchMode = "exact" | "semantic-family" | "behavior";
 
@@ -11,6 +12,7 @@ export type ConnectedCellSelection = {
 };
 
 export type ConnectedSelectionOperation = "replace" | "add" | "subtract";
+export type ConnectedSelectionShapeOperation = "grow" | "shrink";
 
 export type ConnectedTileMatchOptions = {
   mode: ConnectedTileMatchMode;
@@ -122,6 +124,22 @@ export function updateConnectedCellSelection(
   const ordered = [...cells.values()].sort((left, right) => left.y - right.y || left.x - right.x);
   if (ordered.length === 0) return null;
   return { anchor, cells: ordered, matchMode };
+}
+
+export function reshapeConnectedCellSelection(
+  current: ConnectedCellSelection | null,
+  operation: ConnectedSelectionShapeOperation,
+  bounds: MapCellBounds
+): ConnectedCellSelection | null {
+  if (!current) return null;
+  const cells = operation === "grow"
+    ? growMapCells(current.cells, bounds)
+    : shrinkMapCells(current.cells, bounds);
+  if (cells.length === 0) return null;
+  const anchor = cells.some((cell) => cell.x === current.anchor.x && cell.y === current.anchor.y)
+    ? current.anchor
+    : cells[0];
+  return { ...current, anchor, cells };
 }
 
 function semanticFamily(metadata: TileValueMetadata) {

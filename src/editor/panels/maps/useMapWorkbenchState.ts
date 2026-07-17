@@ -4,6 +4,7 @@ import type { LandLayoutCellSelection } from "../../components/maps/LandLayoutWo
 import type { EditorState } from "../../store";
 import { readGlobalMapStamps, writeGlobalMapStamps } from "../../map/customMapStamps";
 import { DUNGEON_DEFAULT_DRAW_FLAGS } from "../../map/dungeonCellFlags";
+import { growMapCells, shrinkMapCells } from "../../map/mapCellShapes";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../../map/superTileStamps";
 import type { ConnectedCellSelection, ConnectedTileMatchMode } from "../../map/connectedMapSelection";
@@ -138,6 +139,14 @@ export function useMapWorkbenchState({
     if (tool === "paint" || tool === "bucket" || tool === "stamp") setPaletteOpen(true);
   };
   const clearSmartBrushMask = () => { resetSmartBrushMask(); setSmartBrushDrawing(false); };
+  const reshapeSmartBrushMask = (operation: "grow" | "shrink") => {
+    if (!selectedMap || smartBrushMask.length === 0) return;
+    const next = operation === "grow"
+      ? growMapCells(smartBrushMask, selectedMap)
+      : shrinkMapCells(smartBrushMask, selectedMap);
+    commitSmartBrushMaskStep(smartBrushMask, next);
+    setSmartBrushDrawing(false);
+  };
   const applySmartBrush = () => {
     if (!selectedMap) return;
     const cells = buildSmartTerrainPaintChanges(smartBrushPlan);
@@ -209,6 +218,8 @@ export function useMapWorkbenchState({
       smartBrushPlan,
       visibleSmartBrushPlan,
       clearSmartBrushMask,
+      growSmartBrushMask: () => reshapeSmartBrushMask("grow"),
+      shrinkSmartBrushMask: () => reshapeSmartBrushMask("shrink"),
       applySmartBrush
     },
     openCanvasTool

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { MapEntity, TileAttributeProfile, TilesetAsset } from "../types";
-import { collectConnectedMapCells, connectedMapCellsByTile, updateConnectedCellSelection } from "./connectedMapSelection";
+import {
+  collectConnectedMapCells,
+  connectedMapCellsByTile,
+  reshapeConnectedCellSelection,
+  updateConnectedCellSelection
+} from "./connectedMapSelection";
 
 const plainsTileset = {
   id: "landlook-plains",
@@ -205,6 +210,32 @@ describe("updateConnectedCellSelection", () => {
         matchMode: "exact"
       });
     expect(updateConnectedCellSelection(initial, initial.cells, { x: 0, y: 0 }, "exact", "subtract")).toBeNull();
+  });
+});
+
+describe("reshapeConnectedCellSelection", () => {
+  const initial = {
+    anchor: { x: 2, y: 2 },
+    cells: [{ x: 2, y: 2 }],
+    matchMode: "semantic-family" as const
+  };
+
+  it("grows by one orthogonal ring while preserving selection metadata", () => {
+    expect(reshapeConnectedCellSelection(initial, "grow", { width: 5, height: 5 })).toEqual({
+      anchor: { x: 2, y: 2 },
+      cells: [
+        { x: 2, y: 1 },
+        { x: 1, y: 2 },
+        { x: 2, y: 2 },
+        { x: 3, y: 2 },
+        { x: 2, y: 3 }
+      ],
+      matchMode: "semantic-family"
+    });
+  });
+
+  it("shrinks to null when no interior cells remain", () => {
+    expect(reshapeConnectedCellSelection(initial, "shrink", { width: 5, height: 5 })).toBeNull();
   });
 });
 
