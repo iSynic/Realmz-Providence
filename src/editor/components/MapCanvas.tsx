@@ -110,6 +110,7 @@ export function RealmzMapCanvas({
   smartBrushShapeFill,
   smartBrushPlan,
   smartBrushDrawing,
+  protectMapFeatures,
   globalMapStamps,
   onSelectCell,
   onSetSelectedRegion,
@@ -165,6 +166,7 @@ export function RealmzMapCanvas({
   smartBrushShapeFill: MapShapeFill;
   smartBrushPlan: SmartBrushPlan | null;
   smartBrushDrawing: boolean;
+  protectMapFeatures: boolean;
   globalMapStamps: CustomMapStamp[];
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
   onSetSelectedRegion: (region: MapRegionSelection | null) => void;
@@ -330,7 +332,7 @@ export function RealmzMapCanvas({
     drawBaseMapLayer(ctx, { map, atlas, icons, smoothTiles, viewOptions, size });
     baseRenderRef.current = baseRenderSnapshot({ map, atlas, icons, smoothTiles, viewOptions, size });
   }, [atlas, canvasCssSize, icons, map, smoothTiles, viewOptions]);
-  const { hover, hoverTarget, paintCursor, stampCursor, bucketPreview, regionPreview, shapePreview, overlayHandlers } = useMapInteractions({
+  const { hover, hoverTarget, paintCursor, stampCursor, bucketPreview, bucketImpact, regionPreview, shapePreview, overlayHandlers } = useMapInteractions({
     map,
     activeTool,
     paintMode,
@@ -342,6 +344,7 @@ export function RealmzMapCanvas({
     dungeonDrawFlags,
     selectedTileset: tileset,
     triggers,
+    protectionTriggers: allTriggers,
     randomLevel,
     mapRecords,
     showRandomRects,
@@ -358,6 +361,7 @@ export function RealmzMapCanvas({
     smartBrushDrawing,
     smartBrushDrawMode,
     smartBrushShapeFill,
+    protectMapFeatures,
     overlayCanvasRef,
     wrapRef,
     onSelectCell,
@@ -582,6 +586,7 @@ export function RealmzMapCanvas({
           mapRecords={showMapRecords ? mapRecords : []}
           activeTool={activeTool}
           selectedTile={selectedTile}
+          bucketImpact={bucketImpact}
           tilesetLabel={viewOptions.showRealTiles && atlas ? `${atlas.asset.name} atlas` : `${tileset?.name ?? "unknown"} decoded`}
         />
       </div>

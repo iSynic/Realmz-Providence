@@ -12,6 +12,7 @@ import {
   type SmartBrushDrawMode
 } from "../../map/mapCellShapes";
 import { buildSmartTerrainChanges, buildSmartTerrainPaintChanges, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
+import { analyzeMapPaintOperation, applyMapPaintImpactToSmartPlan } from "../../map/mapPaintSafeguards";
 import { builtInStampToMapStamp, customMapStampToMapStamp, superTileStampsForMap } from "../../map/superTileStamps";
 import type { ConnectedCellSelection, ConnectedTileMatchMode } from "../../map/connectedMapSelection";
 import { useSmartBrushMaskHistory } from "./useSmartBrushMaskHistory";
@@ -72,6 +73,7 @@ export function useMapWorkbenchState({
   const [smartBrushPreset, setSmartBrushPreset] = useState<SmartBrushPreset>("mountains");
   const [smartBrushDrawMode, setSmartBrushDrawMode] = useState<SmartBrushDrawMode>("freehand");
   const [smartBrushShapeFill, setSmartBrushShapeFill] = useState<MapShapeFill>("filled");
+  const [protectMapFeatures, setProtectMapFeatures] = useState(true);
   const { smartBrushMask, setSmartBrushMask, commitSmartBrushMaskStep, canUndoSmartBrushMaskStep, undoSmartBrushMaskStep, resetSmartBrushMask } = useSmartBrushMaskHistory();
   const [smartBrushDrawing, setSmartBrushDrawing] = useState(false);
   const [selectedLayoutCell, setSelectedLayoutCell] = useState<LandLayoutCellSelection>(null);
@@ -101,9 +103,23 @@ export function useMapWorkbenchState({
     [globalMapStamps, project?.editorMetadata?.mapStamps, selectedMap, selectedTileset]
   );
   const selectedSuperTileStamp = availableSuperTileStamps.find((stamp) => stamp.id === selectedSuperTileStampId) ?? availableSuperTileStamps[0] ?? null;
-  const smartBrushPlan = useMemo(
+  const rawSmartBrushPlan = useMemo(
     () => buildSmartTerrainChanges(selectedMap, smartBrushMask, smartBrushPreset, selectedTileset, atlas),
     [atlas, selectedMap, selectedTileset, smartBrushMask, smartBrushPreset]
+  );
+  const smartBrushImpact = useMemo(() => selectedMap
+    ? analyzeMapPaintOperation({
+        map: selectedMap,
+        changes: buildSmartTerrainPaintChanges(rawSmartBrushPlan),
+        triggers: project?.triggers ?? [],
+        tileset: selectedTileset,
+        protectFeatures: protectMapFeatures
+      })
+    : null,
+  [project?.triggers, protectMapFeatures, rawSmartBrushPlan, selectedMap, selectedTileset]);
+  const smartBrushPlan = useMemo(
+    () => smartBrushImpact ? applyMapPaintImpactToSmartPlan(rawSmartBrushPlan, smartBrushImpact) : rawSmartBrushPlan,
+    [rawSmartBrushPlan, smartBrushImpact]
   );
   const visibleSmartBrushPlan = smartBrushDrawing
     ? {
@@ -239,6 +255,11 @@ export function useMapWorkbenchState({
       growSmartBrushMask: () => reshapeSmartBrushMask("grow"),
       shrinkSmartBrushMask: () => reshapeSmartBrushMask("shrink"),
       applySmartBrush
+    },
+    safeguards: {
+      protectMapFeatures,
+      setProtectMapFeatures,
+      smartBrushImpact
     },
     openCanvasTool
   };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { EditorState } from "../../store";
 import type {
   CustomMapStamp,
@@ -24,10 +24,18 @@ import { TileSwatch } from "../TileSwatch";
 import { tileColor } from "../TileSprite";
 import { TutorialTip } from "../TutorialTip";
 import { PanelSection, SegmentedControl, type SegmentedControlOption } from "../../ui";
-import { clearRegion, fillRegion, paintModeLabel, regionLabel } from "./mapRegionUiUtils";
+import {
+  applyRegionPaintOperation,
+  buildClearRegionOperation,
+  buildFillRegionOperation,
+  paintModeLabel,
+  regionLabel
+} from "./mapRegionUiUtils";
 import { tileAttributeLabel } from "./mapTileUiUtils";
 import { PaintPaletteSurface } from "./PaintPaletteSurface";
 import type { MapShapeFill, SmartBrushDrawMode } from "../../map/mapCellShapes";
+import { analyzeMapPaintOperation, type MapPaintOperationImpact } from "../../map/mapPaintSafeguards";
+import { MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
 
 export function MapPaintInspector({
   state,
@@ -58,6 +66,9 @@ export function MapPaintInspector({
   onSetSmartBrushShapeFill,
   smartBrushMask,
   smartBrushPlan,
+  smartBrushImpact,
+  protectMapFeatures,
+  onSetProtectMapFeatures,
   onClearSmartBrushMask,
   onGrowSmartBrushMask,
   onShrinkSmartBrushMask,
@@ -98,6 +109,9 @@ export function MapPaintInspector({
   onSetSmartBrushShapeFill: (fill: MapShapeFill) => void;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
+  smartBrushImpact: MapPaintOperationImpact | null;
+  protectMapFeatures: boolean;
+  onSetProtectMapFeatures: (enabled: boolean) => void;
   onClearSmartBrushMask: () => void;
   onGrowSmartBrushMask: () => void;
   onShrinkSmartBrushMask: () => void;
@@ -182,6 +196,10 @@ export function MapPaintInspector({
         onSetSmartBrushShapeFill={onSetSmartBrushShapeFill}
         smartBrushMask={smartBrushMask}
         smartBrushPlan={smartBrushPlan}
+        smartBrushImpact={smartBrushImpact}
+        protectMapFeatures={protectMapFeatures}
+        onSetProtectMapFeatures={onSetProtectMapFeatures}
+        triggers={state.project?.triggers ?? []}
         onClearSmartBrushMask={onClearSmartBrushMask}
         onGrowSmartBrushMask={onGrowSmartBrushMask}
         onShrinkSmartBrushMask={onShrinkSmartBrushMask}
@@ -189,6 +207,7 @@ export function MapPaintInspector({
         onApplyCommand={onApplyCommand}
         showVariation={state.activeTool !== "stamp"}
         onSetPaintVariation={onSetPaintVariation}
+        showBucketProtection={state.activeTool === "bucket"}
         onActivatePaintTool={() => {
           if (state.activeTool !== "paint") onSetTool("paint");
         }}
@@ -283,6 +302,7 @@ function compactTileTraits(meaning: ReturnType<typeof classifyTileValue>) {
     .filter((flag) => flag !== "unknown-metadata")
     .slice(0, 3)
     .map(tileAttributeLabel);
+  if (meaning.visual?.connections?.length) traits.unshift(`Connects ${meaning.visual.connections.map((direction) => direction[0].toUpperCase()).join("/")}`);
   if (meaning.attributes?.movementSoundId != null) traits.push(`snd ${meaning.attributes.movementSoundId}`);
   if (meaning.attributes?.movementCost != null) traits.push(`move ${meaning.attributes.movementCost}`);
   return traits.length ? traits.join(" | ") : meaning.kind.replace(/-/g, " ");
@@ -324,6 +344,10 @@ function PaintModePanel({
   onSetSmartBrushShapeFill,
   smartBrushMask,
   smartBrushPlan,
+  smartBrushImpact,
+  protectMapFeatures,
+  onSetProtectMapFeatures,
+  triggers,
   onClearSmartBrushMask,
   onGrowSmartBrushMask,
   onShrinkSmartBrushMask,
@@ -331,6 +355,7 @@ function PaintModePanel({
   onApplyCommand,
   showVariation,
   onSetPaintVariation,
+  showBucketProtection,
   onActivatePaintTool
 }: {
   map: MapEntity | null;
@@ -352,6 +377,10 @@ function PaintModePanel({
   onSetSmartBrushShapeFill: (fill: MapShapeFill) => void;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
+  smartBrushImpact: MapPaintOperationImpact | null;
+  protectMapFeatures: boolean;
+  onSetProtectMapFeatures: (enabled: boolean) => void;
+  triggers: Project["triggers"];
   onClearSmartBrushMask: () => void;
   onGrowSmartBrushMask: () => void;
   onShrinkSmartBrushMask: () => void;
@@ -359,10 +388,13 @@ function PaintModePanel({
   onApplyCommand: (command: ProjectCommand) => void;
   showVariation: boolean;
   onSetPaintVariation: (variation: MapPaintVariation) => void;
+  showBucketProtection: boolean;
   onActivatePaintTool: () => void;
 }) {
   const smartUnavailable = paintMode === "smart" && smartBrushPlan.reason != null && smartBrushMask.length === 0;
   const smartDisabled = !map || map.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null;
+  const lowConfidenceCount = smartBrushPlan.cells.filter((cell) => cell.confidence === "low").length;
+  const unresolvedCount = smartBrushPlan.cells.filter((cell) => cell.confidence === "unresolved").length;
   const activeVariation = PAINT_VARIATION_OPTIONS.find((variation) => variation.id === paintVariation) ?? PAINT_VARIATION_OPTIONS[0];
   const setMode = (mode: MapPaintMode) => {
     onSetPaintMode(mode);
@@ -416,6 +448,13 @@ function PaintModePanel({
           />
         </div>
       )}
+      {showBucketProtection && paintMode !== "smart" && !selectedRegion && (
+        <MapPaintProtectionSummary
+          enabled={protectMapFeatures}
+          impact={null}
+          onSetEnabled={onSetProtectMapFeatures}
+        />
+      )}
       {paintMode === "smart" && (
         <div className="smart-brush-panel">
           <label className="map-number-field">
@@ -457,14 +496,21 @@ function PaintModePanel({
               ["Mask Cells", smartBrushMask.length],
               ["Will Change", smartBrushPlan.changedCount],
               ["Preserved", smartBrushPlan.skippedCount],
+              ["Needs Review", lowConfidenceCount + unresolvedCount],
+              ["Unresolved", unresolvedCount],
               ["Profile", smartBrushPlan.profileConfidence === "reviewed-rules" ? "reviewed rules" : smartBrushPlan.profileConfidence === "corpus-ranked" ? "corpus ranked" : smartBrushPlan.profileConfidence === "pixel-ranked" ? "pixel ranked" : smartBrushPlan.profileConfidence === "curated-fallback" ? "curated fallback" : "unsupported"],
               ["Landlook", selectedTileset?.landlook ?? "none"]
             ]}
           />
+          <MapPaintProtectionSummary
+            enabled={protectMapFeatures}
+            impact={smartBrushImpact}
+            onSetEnabled={onSetProtectMapFeatures}
+          />
           {smartBrushPlan.reason && <p className={`context-capacity-note${smartUnavailable ? " blocked" : ""}`}>{smartBrushPlan.reason}</p>}
           {!smartBrushPlan.reason && (
             <p className="empty-copy compact">
-              Preview preserves roads, buildings, icon-backed tiles, and unrelated terrain. Yellow outlined cells are preserved.
+              Cyan cells use reviewed or supported matches. Orange cells need review, red cells are unresolved, and yellow cells are preserved.
             </p>
           )}
           {smartBrushPlan.cells.length > 0 && (
@@ -473,7 +519,7 @@ function PaintModePanel({
               <div className="context-chip-row">
                 {smartBrushPlan.cells.slice(0, 6).map((cell) => (
                   <span key={`${cell.x}:${cell.y}`} className="context-chip">
-                    {cell.x},{cell.y} m{cell.neighborMask ?? "-"} {cell.from}{"->"}{cell.to} {cell.source ?? "fallback"}{cell.samples != null ? ` ${cell.samples}` : ""}{cell.score != null ? ` ${cell.score.toFixed(2)}` : ""}
+                    {cell.x},{cell.y} m{cell.neighborMask ?? "-"} {cell.from}{"->"}{cell.to} {cell.source ?? "fallback"} {cell.confidence ?? "unresolved"}{cell.samples != null ? ` ${cell.samples}` : ""}{cell.score != null ? ` ${cell.score.toFixed(2)}` : ""}
                   </span>
                 ))}
               </div>
@@ -498,32 +544,162 @@ function PaintModePanel({
         </div>
       )}
       {selectedRegion && paintMode !== "smart" && (
-        <div className="paint-region-quick-actions">
-          <span>{regionLabel(selectedRegion)} | {regionCellCount(selectedRegion).toLocaleString()} cells</span>
-          <label className="paint-fill-chance">
-            <TutorialTip
-              title="Chance To Fill"
-              body="Use less than 100% to scatter the selected tile, random group, cycle group, or custom palette across a region. This is useful for flavor tiles such as rocks, trees, graves, and ruins."
-              side="right"
-            >
-              <span>Chance To Fill</span>
-            </TutorialTip>
-            <b>{paintFillChance}%</b>
-            <input
-              type="range"
-              min={1}
-              max={100}
-              step={1}
-              value={paintFillChance}
-              onChange={(event) => onSetPaintFillChance(Number(event.currentTarget.value))}
-            />
-            <small>{paintFillChance === 100 ? "Fill every eligible cell." : `Scatter paint across about ${paintFillChance}% of the selected region.`}</small>
-          </label>
-          <button type="button" onClick={() => fillRegion(map, selectedRegion, selectedTile, selectedTileset, paintVariation, activePaintGroupId, variationTiles, paintFillChance, onApplyCommand)}>Fill</button>
-          <button type="button" onClick={() => clearRegion(map, selectedRegion, selectedTileset, onApplyCommand)}>Clear</button>
-        </div>
+        <RegionPaintActions
+          map={map}
+          region={selectedRegion}
+          selectedTile={selectedTile}
+          selectedTileset={selectedTileset}
+          paintVariation={paintVariation}
+          activePaintGroupId={activePaintGroupId}
+          variationTiles={variationTiles}
+          paintFillChance={paintFillChance}
+          onSetPaintFillChance={onSetPaintFillChance}
+          triggers={triggers}
+          protectMapFeatures={protectMapFeatures}
+          onSetProtectMapFeatures={onSetProtectMapFeatures}
+          onApplyCommand={onApplyCommand}
+        />
       )}
     </PanelSection>
+  );
+}
+
+function RegionPaintActions({
+  map,
+  region,
+  selectedTile,
+  selectedTileset,
+  paintVariation,
+  activePaintGroupId,
+  variationTiles,
+  paintFillChance,
+  onSetPaintFillChance,
+  triggers,
+  protectMapFeatures,
+  onSetProtectMapFeatures,
+  onApplyCommand
+}: {
+  map: MapEntity | null;
+  region: MapRegionSelection;
+  selectedTile: number;
+  selectedTileset: TilesetAsset | null;
+  paintVariation: MapPaintVariation;
+  activePaintGroupId: string;
+  variationTiles: number[] | null | undefined;
+  paintFillChance: number;
+  onSetPaintFillChance: (chance: number) => void;
+  triggers: Project["triggers"];
+  protectMapFeatures: boolean;
+  onSetProtectMapFeatures: (enabled: boolean) => void;
+  onApplyCommand: (command: ProjectCommand) => void;
+}) {
+  const fillOperation = useMemo(() => buildFillRegionOperation(
+    map,
+    region,
+    selectedTile,
+    selectedTileset,
+    paintVariation,
+    activePaintGroupId,
+    variationTiles,
+    paintFillChance
+  ), [activePaintGroupId, map, paintFillChance, paintVariation, region, selectedTile, selectedTileset, variationTiles]);
+  const clearOperation = useMemo(
+    () => buildClearRegionOperation(map, region, selectedTileset),
+    [map, region, selectedTileset]
+  );
+  const fillImpact = useMemo(() => map && fillOperation
+    ? analyzeMapPaintOperation({
+        map,
+        changes: fillOperation.changes,
+        triggers,
+        tileset: selectedTileset,
+        protectFeatures: protectMapFeatures
+      })
+    : null,
+  [fillOperation, map, protectMapFeatures, selectedTileset, triggers]);
+  const clearImpact = useMemo(() => map && clearOperation
+    ? analyzeMapPaintOperation({
+        map,
+        changes: clearOperation.changes,
+        triggers,
+        tileset: selectedTileset,
+        protectFeatures: protectMapFeatures
+      })
+    : null,
+  [clearOperation, map, protectMapFeatures, selectedTileset, triggers]);
+  return (
+    <div className="paint-region-quick-actions">
+      <span>{regionLabel(region)} | {regionCellCount(region).toLocaleString()} cells</span>
+      <label className="paint-fill-chance">
+        <TutorialTip
+          title="Chance To Fill"
+          body="Use less than 100% to scatter the selected tile, random group, cycle group, or custom palette across a region. This is useful for flavor tiles such as rocks, trees, graves, and ruins."
+          side="right"
+        >
+          <span>Chance To Fill</span>
+        </TutorialTip>
+        <b>{paintFillChance}%</b>
+        <input
+          type="range"
+          min={1}
+          max={100}
+          step={1}
+          value={paintFillChance}
+          onChange={(event) => onSetPaintFillChance(Number(event.currentTarget.value))}
+        />
+        <small>{paintFillChance === 100 ? "Fill every eligible cell." : `Scatter paint across about ${paintFillChance}% of the selected region.`}</small>
+      </label>
+      <MapPaintProtectionSummary
+        enabled={protectMapFeatures}
+        impact={null}
+        onSetEnabled={onSetProtectMapFeatures}
+      />
+      <div className="paint-region-operation-previews">
+        <RegionOperationImpact label="Fill preview" impact={fillImpact} />
+        <RegionOperationImpact label="Clear preview" impact={clearImpact} />
+      </div>
+      <div className="paint-region-action-buttons">
+        <button
+          type="button"
+          disabled={!fillImpact || fillImpact.allowedChanges.length === 0}
+          onClick={() => applyRegionPaintOperation(map, fillOperation, fillImpact?.allowedChanges ?? [], onApplyCommand)}
+        >
+          Fill ({fillImpact?.allowedChanges.length.toLocaleString() ?? 0})
+        </button>
+        <button
+          type="button"
+          disabled={!clearImpact || clearImpact.allowedChanges.length === 0}
+          onClick={() => applyRegionPaintOperation(map, clearOperation, clearImpact?.allowedChanges ?? [], onApplyCommand)}
+        >
+          Clear ({clearImpact?.allowedChanges.length.toLocaleString() ?? 0})
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function RegionOperationImpact({
+  label,
+  impact
+}: {
+  label: string;
+  impact: MapPaintOperationImpact | null;
+}) {
+  if (!impact) return null;
+  return (
+    <div className="paint-region-operation-impact">
+      <strong>{label}</strong>
+      <span>
+        {impact.allowedChanges.length.toLocaleString()} will change
+        {impact.protectedChanges.length > 0
+          ? `; ${impact.protectedChanges.length.toLocaleString()} protected`
+          : ""}
+      </span>
+      <small>
+        {impact.sourceComposition.slice(0, 3).map(({ tile, count }) => `Tile ${tile} x${count.toLocaleString()}`).join(" | ") || "No source tiles"}
+        {impact.sourceComposition.length > 3 ? ` | +${impact.sourceComposition.length - 3} more` : ""}
+      </small>
+    </div>
   );
 }
 

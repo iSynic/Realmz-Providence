@@ -22,7 +22,7 @@ import { cellFromCanvasPoint, mapTileIndex, tileValueAt } from "./geometry";
 import { hitTestMapTarget } from "./hitTest";
 import { normalizeRegionBounds } from "./regionPaint";
 import { makePaintTileResolver, paintSeed } from "./paintResolver";
-import { buildPaintBucketCommand, buildPaintBucketPlan } from "./paintBucket";
+import { buildPaintBucketPlan } from "./paintBucket";
 import { clearTileForMap } from "./tileClear";
 import { setDungeonCellFlags } from "./dungeonCellFlags";
 import { nextActionPointRecordIndex } from "../actionPointCapacity";
@@ -41,6 +41,7 @@ import {
   type ConnectedCellSelection,
   type ConnectedTileMatchMode
 } from "./connectedMapSelection";
+import { analyzeMapPaintOperation } from "./mapPaintSafeguards";
 
 export function useMapInteractions({
   map,
@@ -54,6 +55,7 @@ export function useMapInteractions({
   dungeonDrawFlags,
   selectedTileset,
   triggers,
+  protectionTriggers,
   randomLevel,
   mapRecords,
   showRandomRects,
@@ -70,6 +72,7 @@ export function useMapInteractions({
   smartBrushDrawing,
   smartBrushDrawMode,
   smartBrushShapeFill,
+  protectMapFeatures,
   overlayCanvasRef,
   wrapRef,
   onSelectCell,
@@ -100,6 +103,7 @@ export function useMapInteractions({
   dungeonDrawFlags: Record<DungeonCellFlag, boolean>;
   selectedTileset: TilesetAsset | null;
   triggers: TriggerRecord[];
+  protectionTriggers: TriggerRecord[];
   randomLevel: RandomLevel | null;
   mapRecords: SemanticEntity[];
   showRandomRects: boolean;
@@ -116,6 +120,7 @@ export function useMapInteractions({
   smartBrushDrawing: boolean;
   smartBrushDrawMode: SmartBrushDrawMode;
   smartBrushShapeFill: MapShapeFill;
+  protectMapFeatures: boolean;
   overlayCanvasRef: RefObject<HTMLCanvasElement | null>;
   wrapRef: RefObject<HTMLDivElement | null>;
   onSelectCell: (cell: { x: number; y: number; tile: number } | null) => void;
@@ -174,7 +179,7 @@ export function useMapInteractions({
   const [stampCursor, setStampCursor] = useState<MapStampPreviewCell[] | null>(null);
   const [regionPreview, setRegionPreview] = useState<MapRegionSelection | null>(null);
   const [shapePreview, setShapePreview] = useState<Array<{ x: number; y: number }> | null>(null);
-  const bucketPreview = useMemo(() => {
+  const bucketPlan = useMemo(() => {
     if (activeTool !== "bucket" || !hover) return null;
     return buildPaintBucketPlan({
       map,
@@ -192,7 +197,7 @@ export function useMapInteractions({
       },
       region: selectedRegion,
       selectionCells: connectedSelection?.cells
-    }).component;
+    });
   }, [
     activePaintGroupId,
     activeTool,
@@ -207,6 +212,21 @@ export function useMapInteractions({
     tileAttributes,
     variationTiles
   ]);
+  const bucketImpact = useMemo(() => bucketPlan
+    ? analyzeMapPaintOperation({
+        map,
+        changes: bucketPlan.changes,
+        triggers: protectionTriggers,
+        tileset: selectedTileset,
+        protectFeatures: protectMapFeatures
+      })
+    : null,
+  [bucketPlan, map, protectMapFeatures, protectionTriggers, selectedTileset]);
+  const bucketPreview = useMemo(() => bucketImpact?.allowedChanges.map((change) => ({
+    x: change.x,
+    y: change.y,
+    tile: change.from
+  })) ?? null, [bucketImpact]);
 
   useEffect(() => {
     if (isBrushLikeTool(activeTool, paintMode) || activeTool === "dungeon-draw") return;
@@ -372,7 +392,7 @@ export function useMapInteractions({
   }
 
   function fillConnectedAt(cell: { x: number; y: number }) {
-    const command = buildPaintBucketCommand({
+    const plan = buildPaintBucketPlan({
       map,
       start: cell,
       matchMode: connectedSelectionMode,
@@ -389,9 +409,22 @@ export function useMapInteractions({
       region: selectedRegion,
       selectionCells: connectedSelection?.cells
     });
+    const impact = analyzeMapPaintOperation({
+      map,
+      changes: plan.changes,
+      triggers: protectionTriggers,
+      tileset: selectedTileset,
+      protectFeatures: protectMapFeatures
+    });
     const from = tileValueAt(map, cell.x, cell.y);
     setHoverTarget({ kind: "cell", cell: { ...cell, tile: from } });
-    if (!command) return;
+    if (impact.allowedChanges.length === 0) return;
+    const command: Extract<ProjectCommand, { kind: "paintTiles" }> = {
+      kind: "paintTiles",
+      mapId: map.id,
+      label: "Fill connected terrain",
+      cells: impact.allowedChanges
+    };
     onBeginPaintStroke(command.label);
     onApplyCommand(command);
     onCommitPaintStroke();
@@ -598,6 +631,7 @@ export function useMapInteractions({
     paintCursor,
     stampCursor,
     bucketPreview,
+    bucketImpact,
     regionPreview,
     shapePreview,
     overlayHandlers: {

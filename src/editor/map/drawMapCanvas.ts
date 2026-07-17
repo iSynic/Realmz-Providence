@@ -128,10 +128,22 @@ export function drawSmartTerrainPreview(
     drawTileValueCell(ctx, { tile: preview.to, x: preview.x, y: preview.y, atlas, icons, viewOptions, cell });
   }
   ctx.globalAlpha = 1;
-  ctx.strokeStyle = "rgba(111, 211, 255, 0.96)";
   ctx.lineWidth = Math.max(1, cell * 0.09);
   for (const preview of cells) {
+    ctx.strokeStyle = preview.confidence === "unresolved"
+      ? "rgba(255, 92, 92, 0.98)"
+      : preview.confidence === "low"
+        ? "rgba(255, 170, 70, 0.98)"
+        : "rgba(111, 211, 255, 0.96)";
     ctx.strokeRect(preview.x * cell + 1, preview.y * cell + 1, cell - 2, cell - 2);
+    if (preview.confidence === "unresolved") {
+      ctx.beginPath();
+      ctx.moveTo(preview.x * cell + cell * 0.25, preview.y * cell + cell * 0.25);
+      ctx.lineTo(preview.x * cell + cell * 0.75, preview.y * cell + cell * 0.75);
+      ctx.moveTo(preview.x * cell + cell * 0.75, preview.y * cell + cell * 0.25);
+      ctx.lineTo(preview.x * cell + cell * 0.25, preview.y * cell + cell * 0.75);
+      ctx.stroke();
+    }
   }
   ctx.fillStyle = "rgba(9, 13, 18, 0.34)";
   ctx.strokeStyle = "rgba(255, 212, 122, 0.82)";

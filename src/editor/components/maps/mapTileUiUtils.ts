@@ -89,6 +89,7 @@ export function tileAttributeRows(meaning: ReturnType<typeof classifyTileValue>)
     ["Behavior Source", attributeSourceLabel(attributes)],
     ["Visual Group", meaning.visual ? landlookVisualCategoryLabel(meaning.visual.category) : "unknown"],
     ["Visual Confidence", meaning.visual?.confidence ?? "unknown"],
+    ["Connects", meaning.visual?.connections?.map((direction) => direction[0].toUpperCase()).join(" / ") ?? "not documented"],
     ["Visual Notes", meaning.visual?.notes ?? "none"],
     ["Solidity", solidTypeLabel(attributes?.solidType)],
     ["Passability", passabilityLabel(attributes)],

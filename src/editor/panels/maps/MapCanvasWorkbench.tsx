@@ -93,7 +93,8 @@ export function MapCanvasWorkbench({
       connectedSelectionMode,
       selectionDrawMode,
       selectionShapeFill
-    }
+    },
+    safeguards: { protectMapFeatures }
   } = workbench;
   const visibleTriggers = useMemo(
     () => state.showTriggers ? mapTriggers : [],
@@ -168,6 +169,7 @@ export function MapCanvasWorkbench({
           smartBrushShapeFill={smartBrushShapeFill}
           smartBrushPlan={paintMode === "smart" ? visibleSmartBrushPlan : null}
           smartBrushDrawing={paintMode === "smart" && smartBrushDrawing}
+          protectMapFeatures={protectMapFeatures}
           globalMapStamps={globalMapStamps}
           onSelectCell={onSelectCell}
           onSetSelectedRegion={setSelectedRegion}

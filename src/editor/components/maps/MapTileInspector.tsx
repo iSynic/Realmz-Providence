@@ -59,6 +59,8 @@ export function TileMeaningInspector({
         <b>{yesNo(attributes?.pathFlag)}</b>
         <span>Road Art</span>
         <b>{meaning.attributeFlags.includes("visual-path") ? "yes" : "no"}</b>
+        <span>Connects</span>
+        <b>{meaning.visual?.connections?.map((direction) => direction[0].toUpperCase()).join(" / ") ?? "not documented"}</b>
         <span>Boat Required</span><b>{attributes?.boatRequirement ?? "unknown"}</b>
         <span>Blocks LOS</span>
         <b>{yesNo(attributes?.blocksLos)}</b>

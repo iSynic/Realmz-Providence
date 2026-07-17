@@ -17,12 +17,60 @@ export type LandlookTileVisualCategory =
   | "uncertain";
 
 export type LandlookTileVisualConfidence = "known" | "likely" | "uncertain";
+export type LandlookTileConnection = "north" | "east" | "south" | "west";
 
 export type LandlookTileVisualSemantics = {
   label: string;
   category: LandlookTileVisualCategory;
   confidence: LandlookTileVisualConfidence;
   notes?: string;
+  connections?: LandlookTileConnection[];
+};
+
+const REVIEWED_TILE_CONNECTIONS: Record<number, LandlookTileConnection[]> = {
+  21: ["north", "south"],
+  22: ["east", "west"],
+  23: ["east", "west"],
+  24: ["north", "south"],
+  38: ["north", "south"],
+  39: ["east", "west"],
+  40: ["north"],
+  41: ["east"],
+  42: ["south"],
+  43: ["west"],
+  44: ["north", "east", "west"],
+  45: ["north", "east", "south"],
+  46: ["east", "south", "west"],
+  47: ["north", "south", "west"],
+  48: ["east", "south"],
+  49: ["south", "west"],
+  50: ["north", "east"],
+  51: ["north", "west"],
+  105: ["east", "west"],
+  106: ["east", "west"],
+  107: ["north", "south"],
+  108: ["north", "south"],
+  109: ["east", "west"],
+  110: ["east", "west"],
+  111: ["north", "south"],
+  112: ["north", "south"],
+  130: ["east", "west"],
+  131: ["north", "south"],
+  132: ["east", "west"],
+  133: ["north", "south"],
+  134: ["north", "east", "south", "west"],
+  135: ["east", "south", "west"],
+  136: ["north", "east", "west"],
+  137: ["north", "east", "south"],
+  138: ["north", "south", "west"],
+  139: ["east", "south"],
+  140: ["north", "west"],
+  141: ["north", "east"],
+  142: ["south", "west"],
+  143: ["east"],
+  144: ["south"],
+  145: ["west"],
+  146: ["north"]
 };
 
 type SemanticRange = {
@@ -665,15 +713,21 @@ const STANDARD_LANDLOOK_VISUAL_PROFILES: Record<number, LandlookVisualProfile> =
 export function landlookTileVisualSemantics(tile: number, landlook?: number | null): LandlookTileVisualSemantics | null {
   const profile = STANDARD_LANDLOOK_VISUAL_PROFILES[landlook ?? 0] ?? STANDARD_LANDLOOK_VISUAL_PROFILES[0];
   const exact = profile.exact?.[tile];
-  if (exact) return exact;
+  if (exact) return withReviewedConnections(tile, exact);
   const range = (profile.ranges ?? PLAINS_RANGES).find((entry) => tile >= entry.first && tile <= entry.last);
   if (!range) return null;
-  return {
+  return withReviewedConnections(tile, {
     label: range.label,
     category: range.category,
     confidence: range.confidence ?? "likely",
     notes: range.notes
-  };
+  });
+}
+
+function withReviewedConnections(tile: number, semantics: LandlookTileVisualSemantics) {
+  if (!["water-shore", "road", "cave-transition"].includes(semantics.category)) return semantics;
+  const connections = REVIEWED_TILE_CONNECTIONS[tile];
+  return connections ? { ...semantics, connections } : semantics;
 }
 
 function relabelRanges(ranges: SemanticRange[], labels: Partial<Record<LandlookTileVisualCategory, string>>) {

@@ -98,7 +98,18 @@ export function buildSmartTerrainChanges(
     const role = smartTerrainRoleForPreset(context, preset);
     const match = resolveSmartTerrainMatch(map, cell, context, maskSet, preset, profile, tileset, atlas);
     const index = mapTileIndex(map, cell.x, cell.y);
-    planCells.push({ ...cell, index, from, to: match.tile, role, score: match.score, neighborMask: match.neighborMask, source: match.source, samples: match.samples });
+    planCells.push({
+      ...cell,
+      index,
+      from,
+      to: match.tile,
+      role,
+      score: match.score,
+      neighborMask: match.neighborMask,
+      source: match.source,
+      samples: match.samples,
+      confidence: smartTerrainCellConfidence(match.source, match.samples)
+    });
   }
 
   const alignedCells = preset === "water" && atlas
@@ -115,6 +126,14 @@ export function buildSmartTerrainChanges(
       : fallbackConfidence,
     reason: null
   };
+}
+
+export function smartTerrainCellConfidence(source: string | null | undefined, samples: number | null | undefined) {
+  if (source === "center" || source === "curated-mask" || source === "curated-role") return "reviewed" as const;
+  if (source === "corpus-mask-prior" && (samples ?? 0) >= 2) return "supported" as const;
+  if (source === "corpus-mask-prior" || source === "corpus-role") return "low" as const;
+  if (source === "fallback") return "unresolved" as const;
+  return source === "corpus-family" ? "low" as const : "unresolved" as const;
 }
 
 function alignWaterTerrainEdges(

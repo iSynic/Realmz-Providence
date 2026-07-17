@@ -74,7 +74,8 @@ export type SmartBrushProfile = {
     fallbackRoles: Partial<Record<SmartBrushRole, number>>;
   }>;
 };
-export type SmartBrushPreviewCell = SmartBrushMaskCell & { index: number; from: number; to: number; role: SmartBrushRole; score?: number | null; neighborMask?: number; source?: string; samples?: number | null };
+export type SmartBrushCellConfidence = "reviewed" | "supported" | "low" | "unresolved";
+export type SmartBrushPreviewCell = SmartBrushMaskCell & { index: number; from: number; to: number; role: SmartBrushRole; score?: number | null; neighborMask?: number; source?: string; samples?: number | null; confidence?: SmartBrushCellConfidence };
 export type SmartBrushPlan = {
   cells: SmartBrushPreviewCell[];
   skipped: SmartBrushMaskCell[];

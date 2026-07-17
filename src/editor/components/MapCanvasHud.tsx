@@ -4,6 +4,7 @@ import { mapRecordContainsCell, mapRecordTerrainFootprint, randomRectCellBounds,
 import { hasSecretPathTile, isCombatClearingTerrain, isConcealedWalkableTerrain, isSecretWalkableTile } from "../map/secrets";
 import { landCellSecretState } from "../map/actionPointMarkers";
 import { triggerOverlayKind } from "../map/drawMapCanvas";
+import type { MapPaintOperationImpact } from "../map/mapPaintSafeguards";
 
 export function MapKeyHud({
   setHudRef,
@@ -17,6 +18,7 @@ export function MapKeyHud({
   mapRecords,
   activeTool,
   selectedTile,
+  bucketImpact,
   tilesetLabel
 }: {
   setHudRef: (node: HTMLDivElement | null) => void;
@@ -30,6 +32,7 @@ export function MapKeyHud({
   mapRecords: SemanticEntity[];
   activeTool: EditorTool;
   selectedTile: number;
+  bucketImpact: MapPaintOperationImpact | null;
   tilesetLabel: string;
 }) {
   const visibleMapRecords = mapRecords.filter((record) => mapRecordTerrainFootprint(record, map));
@@ -65,6 +68,16 @@ export function MapKeyHud({
             <div key={box}>{box}</div>
           ))}
           {boxes.length > 4 && <div>+ {boxes.length - 4} more</div>}
+        </div>
+      )}
+      {activeTool === "bucket" && bucketImpact && bucketImpact.requestedCount > 0 && (
+        <div className="map-key-row map-key-paint-impact">
+          Fill preview: {bucketImpact.allowedChanges.length.toLocaleString()} will change
+          {bucketImpact.protectedChanges.length > 0 ? ` | ${bucketImpact.protectedChanges.length.toLocaleString()} protected` : ""}
+          <div>
+            Source: {bucketImpact.sourceComposition.slice(0, 3).map(({ tile, count }) => `tile ${tile} x${count.toLocaleString()}`).join(" | ")}
+            {bucketImpact.sourceComposition.length > 3 ? ` | +${bucketImpact.sourceComposition.length - 3} more` : ""}
+          </div>
         </div>
       )}
       <div className="map-key-row subtle">
