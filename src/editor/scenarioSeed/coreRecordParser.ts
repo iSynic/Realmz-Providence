@@ -131,7 +131,7 @@ export function parseQuest(input: unknown, path: string, ctx: ParseContext): Sce
   const id = optionalInteger(value.id, `${path}.id`, ctx);
   const label = requireString(value.label, `${path}.label`, ctx);
   const note = optionalString(value.note, `${path}.note`, ctx);
-  checkIntegerRange(id, `${path}.id`, 0, null, ctx);
+  checkIntegerRange(id, `${path}.id`, 1, 126, ctx);
   return { ...(key !== undefined ? { key } : {}), ...(id !== undefined ? { id } : {}), label: label ?? "", ...(note !== undefined ? { note } : {}) };
 }
 

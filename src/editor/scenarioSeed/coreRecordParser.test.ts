@@ -39,6 +39,18 @@ describe("scenario seed core record parsers", () => {
     expect(ctx.errors).toEqual([]);
   });
 
+  it("rejects reserved quest flag IDs", () => {
+    const ctx = context();
+
+    parseQuest({ id: 0, label: "Always unavailable" }, "$.quests[0]", ctx);
+    parseQuest({ id: 127, label: "Registration marker" }, "$.quests[1]", ctx);
+
+    expect(ctx.errors).toEqual([
+      "$.quests[0].id must be greater than or equal to 1.",
+      "$.quests[1].id must be less than or equal to 126."
+    ]);
+  });
+
   it("retains normalized monster data while reporting fixed-array diagnostics", () => {
     const ctx = context();
 

@@ -72,7 +72,7 @@ function checkMinimal(createProjectFromScenarioSeed, parseScenarioSeed) {
   expect(result.project.messages.length === 1, "minimal seed should create one message");
   expect(result.project.scenario.shell?.landLevel === 0 && result.project.scenario.shell.lookX === 10 && result.project.scenario.shell.lookY === 12, "minimal seed should author Startup Info from scenario.start");
   expect(allocationId(result, "messages", "hello") === 0, "hello message should allocate to ID 0");
-  expect(allocationId(result, "quests", "started") === 0, "started quest should allocate to ID 0");
+  expect(allocationId(result, "quests", "started") === 1, "started quest should allocate to runtime-valid ID 1");
   expect(allocationId(result, "actionPoints", "start-ap") === 0, "start-ap should allocate to record 0");
   expect(result.project.triggers[0]?.coordinate?.x === 10 && result.project.triggers[0]?.coordinate?.y === 12, "start-ap should use named region coordinates");
   expect(actionCodes(result.project.triggers[0]).join(",") === "1,47", "minimal AP should emit message and set quest opcodes");

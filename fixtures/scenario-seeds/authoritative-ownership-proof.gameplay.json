@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "name": "Providence authoritative ownership runtime proof",
+  "diagnostics": {
+    "traceStart": true,
+    "traceActions": true,
+    "traceRender": true,
+    "captureOnTimeout": true,
+    "autoAckTextboxes": true,
+    "autoAckFlashMessages": true,
+    "autoChooseEncounters": false,
+    "autoChooseTreasure": false,
+    "autoChoiceIndex": 1
+  },
+  "requiredCharacters": ["Beldar", "Dirk"],
+  "steps": [
+    {
+      "name": "start",
+      "command": "startScenario",
+      "characters": ["Beldar", "Dirk"],
+      "assert": {
+        "partyCountAtLeast": 2,
+        "partyContains": ["Beldar", "Dirk"]
+      }
+    },
+    {
+      "name": "noclip",
+      "command": "setNoclip",
+      "enabled": true,
+      "assert": { "noclip": true }
+    },
+    {
+      "name": "before-trigger",
+      "command": "warpOutdoor",
+      "map": 0,
+      "look": 0,
+      "x": 10,
+      "y": 12,
+      "assert": { "globalX": 10, "globalY": 12 }
+    },
+    {
+      "name": "trigger-message",
+      "command": "move",
+      "direction": "east",
+      "assert": {
+        "globalX": 11,
+        "globalY": 12,
+        "questEquals": { "1": 1 }
+      }
+    },
+    {
+      "name": "save-triggered-position",
+      "command": "saveSlot",
+      "slot": "A",
+      "assert": { "saveSlotAExists": true }
+    },
+    {
+      "name": "move-away",
+      "command": "warpOutdoor",
+      "map": 0,
+      "look": 0,
+      "x": 20,
+      "y": 20,
+      "assert": { "globalX": 20, "globalY": 20 }
+    },
+    {
+      "name": "load-triggered-position",
+      "command": "loadSlot",
+      "slot": "A",
+      "assert": {
+        "sameAs": {
+          "from": "trigger-message",
+          "fields": ["globalX", "globalY", "landLevel", "inDungeon", "partyCount", "characters"]
+        },
+        "questEquals": { "1": 1 }
+      }
+    }
+  ],
+  "assertions": {
+    "globalX": 11,
+    "globalY": 12,
+    "landLevel": 0,
+    "inDungeon": false,
+    "partyCountAtLeast": 2,
+    "questEquals": { "1": 1 }
+  }
+}

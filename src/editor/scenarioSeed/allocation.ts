@@ -21,7 +21,7 @@ export function allocateScenarioSeed(
   options: ScenarioSeedAllocationOptions
 ) {
   allocateRecordIds(seed.messages ?? [], "message", context.messages, context.allocations.messages, context);
-  allocateRecordIds(seed.quests ?? [], "quest", context.quests, context.allocations.quests, context);
+  allocateRecordIds(seed.quests ?? [], "quest", context.quests, context.allocations.quests, context, 1);
   allocateRecordIds(seed.battles ?? [], "battle", context.battles, context.allocations.battles, context);
   allocateRecordIds(seed.monsters ?? [], "monster", context.monsters, context.allocations.monsters, context);
   allocateRecordIds(seed.treasures ?? [], "treasure", context.treasures, context.allocations.treasures, context);

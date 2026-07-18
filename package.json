@@ -60,6 +60,7 @@
     "smoke:oracle": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke.ps1",
     "smoke:oracle:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_smoke_matrix.ps1",
     "smoke:oracle:gameplay": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay.ps1",
+    "smoke:oracle:authoritative": "powershell -ExecutionPolicy Bypass -File scripts/run_authoritative_realmz_runtime.ps1",
     "smoke:oracle:gameplay:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_gameplay_matrix.ps1",
     "smoke:oracle:corpus": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus.ps1",
     "smoke:oracle:corpus:matrix": "powershell -ExecutionPolicy Bypass -File scripts/run_oracle_corpus_matrix.ps1",

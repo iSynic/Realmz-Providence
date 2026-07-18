@@ -49,6 +49,21 @@ describe("scenario seed deterministic allocation", () => {
     })]);
   });
 
+  it("allocates quest flags from the runtime-valid range", () => {
+    const context = createScenarioSeedCompilerContext();
+    const seed: ScenarioSeed = {
+      schemaVersion: 1,
+      scenario: { name: "Quest allocation" },
+      quests: [{ key: "first", label: "First authored quest" }]
+    };
+
+    allocateScenarioSeed(seed, context, { operationRegions: () => [] });
+
+    expect(seed.quests).toEqual([{ key: "first", id: 1, label: "First authored quest" }]);
+    expect(context.quests.get("first")).toBe(1);
+    expect(context.allocations.quests).toEqual([{ key: "first", id: 1, explicit: false }]);
+  });
+
   it("resolves numeric and keyed references with stable unresolved diagnostics", () => {
     const context = createScenarioSeedCompilerContext();
     context.battles.set("gate", 7);

@@ -39,6 +39,8 @@ expect(project.triggers.length === 1, `Expected one Action Point, found ${projec
 expect(project.messages.length === 1, `Expected one message, found ${project.messages.length}`);
 expect(project.source.files.length === 0, "Fresh canonical project must not inventory source files");
 expect(project.source.immutable === false, "Fresh canonical project must not be immutable");
+const questAction = project.triggers[0].actions.find((action) => action.rawCode === 47);
+expect(questAction?.id === 1, `First authored quest flag must be runtime-valid ID 1, found ${questAction?.id}`);
 
 project.scenario.projectPath = projectDir;
 project.source.rawSourcesDir = "";
@@ -94,7 +96,8 @@ const summary = {
     sourceFileCount: project.source.files.length,
     maps: project.maps.length,
     actionPoints: project.triggers.length,
-    messages: project.messages.length
+    messages: project.messages.length,
+    questFlags: project.questLabels.map((quest) => quest.id)
   },
   nativeOutputs: {
     deterministic: true,
@@ -116,7 +119,8 @@ const summary = {
   },
   runtime: {
     realmzStarted: false,
-    note: "Unmodified Realmz movement, Action Point, save, and reload remain the next runtime gate."
+    gameplayScript: "fixtures/scenario-seeds/authoritative-ownership-proof.gameplay.json",
+    note: "Run npm run smoke:oracle:authoritative for the external Realmz movement, Action Point, save, and reload gate."
   }
 };
 const summaryPath = path.join(proofRoot, "proof-summary.json");
