@@ -11,6 +11,7 @@ pub fn build_semantic_schema(
     source_files: &[SourceFile],
     parsed: &ParsedScenario,
     managed_assets: &[ManagedAsset],
+    canonical_records: bool,
 ) -> SemanticSchema {
     let mut schema = SemanticSchema {
         schema_version: SEMANTIC_SCHEMA_VERSION,
@@ -23,9 +24,13 @@ pub fn build_semantic_schema(
     add_random_levels(&mut schema, &parsed.random_levels);
     triggers::add_triggers(&mut schema, &parsed.triggers, &parsed.extracodes, buffers);
     add_extracodes(&mut schema, &parsed.extracodes);
-    records::add_encounters(&mut schema, buffers);
     let map_names = map_names::resource_map_names(buffers);
-    records::add_fixed_collections(&mut schema, buffers, &parsed.maps, &map_names);
+    if canonical_records {
+        records::add_canonical_supporting_collections(&mut schema, parsed);
+    } else {
+        records::add_encounters(&mut schema, buffers);
+        records::add_fixed_collections(&mut schema, buffers, &parsed.maps, &map_names);
+    }
     resources::add_resources(&mut schema, buffers);
     resources::add_managed_resources(&mut schema, managed_assets);
     map_names::add_map_name_links(&mut schema, buffers);

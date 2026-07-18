@@ -17,6 +17,7 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
+import { writeScenarioItems, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 
 export type BrowserSemanticBuildProgress = {
   phase: string;
@@ -28,6 +29,7 @@ export type BrowserSemanticBuildProgress = {
 
 export function buildBrowserSemanticSchema(projectParts: {
   scenario: Project["scenario"];
+  canonicalRecords: boolean;
   buffers: Map<string, Uint8Array>;
   sourceFiles: SourceFile[];
   maps: MapEntity[];
@@ -38,6 +40,10 @@ export function buildBrowserSemanticSchema(projectParts: {
   battles: BattleRecord[];
   monsters: MonsterRecord[];
   monsterSets: MonsterSet[];
+  scenarioItems: Project["scenarioItems"];
+  treasures: Project["treasures"];
+  thiefEncounters: Project["thiefEncounters"];
+  timedEncounters: Project["timedEncounters"];
   assets: Project["assets"];
   assetCatalog: Project["assetCatalog"];
   records: Project["records"];
@@ -78,7 +84,11 @@ export function buildBrowserSemanticSchema(projectParts: {
       detail: `${projectParts.records.alignments.length.toLocaleString()} decoded record alignment(s)`,
       run: () => {
         addRecordAlignments(schema, projectParts.records.alignments);
-        addSupportingRecords(schema, projectParts.buffers);
+        if (projectParts.canonicalRecords) {
+          addCanonicalSupportingRecords(schema, projectParts);
+        } else {
+          addSupportingRecords(schema, projectParts.buffers);
+        }
       }
     },
     {
@@ -282,6 +292,96 @@ function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8
   addMenuRecords(schema, buffers.get("Data MENU"));
   addSolidsRecords(schema, buffers.get("Data Solids"));
   addItemRecords(schema, buffers.get("Data NI"));
+}
+
+function addCanonicalSupportingRecords(
+  schema: SemanticSchema,
+  projectParts: Pick<
+    Parameters<typeof buildBrowserSemanticSchema>[0],
+    "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
+  >
+) {
+  const buffers = new Map<string, Uint8Array>();
+  const sources: Array<{ name: string; path: string; ids: Set<number> }> = [];
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data NI", "project.json#scenarioItems", projectParts.scenarioItems, writeScenarioItems);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD", "project.json#treasures", projectParts.treasures, writeTreasures);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD2", "project.json#thiefEncounters", projectParts.thiefEncounters, writeThiefEncounters);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD3", "project.json#timedEncounters", projectParts.timedEncounters, writeTimedEncounters);
+  if (buffers.size === 0) return;
+
+  addSupportingRecords(schema, buffers);
+  retainCanonicalSupportingRecords(schema, sources);
+}
+
+function addCanonicalSupportingBuffer<T extends { id: number }>(
+  schema: SemanticSchema,
+  buffers: Map<string, Uint8Array>,
+  sources: Array<{ name: string; path: string; ids: Set<number> }>,
+  name: string,
+  path: string,
+  records: T[],
+  encode: (records: T[]) => Uint8Array
+) {
+  if (records.length === 0) return;
+  try {
+    const canonicalRecords = records.map((record) => ({ ...record, authored: true, rawBytes: [] }));
+    const bytes = encode(canonicalRecords);
+    buffers.set(name, bytes);
+    sources.push({ name, path, ids: new Set(records.map((record) => record.id)) });
+    schema.sources.push({
+      id: sourceId(name),
+      type: "canonical compiler input",
+      origin: "authored-source",
+      name,
+      path,
+      exists: true,
+      bytes: bytes.byteLength,
+      sha256: null,
+      layout: layoutFor(name),
+      confidence: "confirmed"
+    });
+  } catch (error) {
+    schema.diagnostics.push({
+      id: `diagnostic:canonical-record-encoding:${name.replace(/\s+/g, "-").toLowerCase()}`,
+      type: "canonical-record-encoding",
+      severity: "error",
+      confidence: "confirmed",
+      source: name,
+      message: `Could not map canonical ${name} records: ${error instanceof Error ? error.message : String(error)}`,
+      data: {}
+    });
+  }
+}
+
+function retainCanonicalSupportingRecords(
+  schema: SemanticSchema,
+  sources: Array<{ name: string; ids: Set<number> }>
+) {
+  const sourceIds = new Set(sources.map(({ name }) => sourceId(name)));
+  const allowedRecords = new Set(
+    sources.flatMap(({ name, ids }) => [...ids].map((id) => `record:${name}:${id}`))
+  );
+  const removedEntities = new Set(
+    schema.entities
+      .filter((entity) => sourceIds.has(sourceId(entity.source)) && entity.recordRef !== null && !allowedRecords.has(entity.recordRef))
+      .map((entity) => entity.id)
+  );
+  schema.records = schema.records.filter((record) => !sourceIds.has(record.source) || allowedRecords.has(record.id));
+  schema.entities = schema.entities.filter((entity) => !removedEntities.has(entity.id));
+  schema.links = schema.links.filter((link) => !removedEntities.has(link.from));
+  for (const record of schema.records) {
+    if (!allowedRecords.has(record.id)) continue;
+    record.editState = "editable";
+    record.confidence = "confirmed";
+    record.summary.canonical = true;
+  }
+  for (const entity of schema.entities) {
+    if (entity.recordRef === null || !allowedRecords.has(entity.recordRef)) continue;
+    entity.editState = "editable";
+    entity.confidence = "confirmed";
+    entity.editable = true;
+    entity.summary.canonical = true;
+  }
 }
 
 function addTreasureRecords(schema: SemanticSchema, buffer?: Uint8Array) {

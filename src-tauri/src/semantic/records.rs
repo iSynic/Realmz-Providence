@@ -1,9 +1,226 @@
 use super::common::*;
 use super::map_names::{map_record_name, ResourceMapName};
 use crate::project::*;
-use crate::realmz::{shop_prefix_record_count, COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES};
+use crate::realmz::{
+    shop_prefix_record_count, write_scenario_items, write_thief_encounters, write_timed_encounters,
+    write_treasures, ParsedScenario, COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES,
+};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
+
+pub(super) fn add_canonical_supporting_collections(
+    schema: &mut SemanticSchema,
+    parsed: &ParsedScenario,
+) {
+    let scenario_items: Vec<_> = parsed
+        .scenario_items
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record.raw_bytes.clear();
+            record
+        })
+        .collect();
+    let treasures: Vec<_> = parsed
+        .treasures
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record.raw_bytes.clear();
+            record
+        })
+        .collect();
+    let thief_encounters: Vec<_> = parsed
+        .thief_encounters
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record.raw_bytes.clear();
+            record
+        })
+        .collect();
+    let timed_encounters: Vec<_> = parsed
+        .timed_encounters
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record.raw_bytes.clear();
+            record
+        })
+        .collect();
+    let mut buffers = BTreeMap::new();
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data NI",
+        "project.json#scenarioItems",
+        !scenario_items.is_empty(),
+        write_scenario_items(&scenario_items),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data TD",
+        "project.json#treasures",
+        !treasures.is_empty(),
+        write_treasures(&treasures),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data TD2",
+        "project.json#thiefEncounters",
+        !thief_encounters.is_empty(),
+        write_thief_encounters(&thief_encounters),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data TD3",
+        "project.json#timedEncounters",
+        !timed_encounters.is_empty(),
+        write_timed_encounters(&timed_encounters),
+    );
+    if buffers.is_empty() {
+        return;
+    }
+
+    add_fixed_collections(schema, &buffers, &parsed.maps, &BTreeMap::new());
+    retain_canonical_records(
+        schema,
+        [
+            (
+                "Data NI",
+                parsed
+                    .scenario_items
+                    .iter()
+                    .map(|record| record.id)
+                    .collect(),
+            ),
+            (
+                "Data TD",
+                parsed.treasures.iter().map(|record| record.id).collect(),
+            ),
+            (
+                "Data TD2",
+                parsed
+                    .thief_encounters
+                    .iter()
+                    .map(|record| record.id)
+                    .collect(),
+            ),
+            (
+                "Data TD3",
+                parsed
+                    .timed_encounters
+                    .iter()
+                    .map(|record| record.id)
+                    .collect(),
+            ),
+        ],
+    );
+}
+
+fn insert_canonical_buffer(
+    schema: &mut SemanticSchema,
+    buffers: &mut BTreeMap<String, Vec<u8>>,
+    source: &str,
+    path: &str,
+    present: bool,
+    encoded: crate::error::Result<Vec<u8>>,
+) {
+    if !present {
+        return;
+    }
+    match encoded {
+        Ok(bytes) => {
+            schema.sources.push(SemanticSource {
+                id: source_id(source),
+                source_type: "canonical compiler input".to_string(),
+                origin: SemanticSourceOrigin::AuthoredSource,
+                name: source.to_string(),
+                path: Some(path.to_string()),
+                exists: true,
+                bytes: bytes.len() as u64,
+                sha256: None,
+                layout: layout_for(source),
+                confidence: Confidence::Confirmed,
+            });
+            buffers.insert(source.to_string(), bytes);
+        }
+        Err(error) => schema.diagnostics.push(SemanticDiagnostic {
+            id: format!(
+                "diagnostic:canonical-record-encoding:{}",
+                source.replace(' ', "-").to_lowercase()
+            ),
+            diagnostic_type: "canonical-record-encoding".to_string(),
+            severity: DiagnosticSeverity::Error,
+            confidence: Confidence::Confirmed,
+            source: Some(source.to_string()),
+            message: format!("Could not map canonical {source} records: {error}"),
+            data: BTreeMap::new(),
+        }),
+    }
+}
+
+fn retain_canonical_records<const N: usize>(
+    schema: &mut SemanticSchema,
+    sources: [(&str, BTreeSet<usize>); N],
+) {
+    let source_ids: BTreeSet<_> = sources
+        .iter()
+        .map(|(source, _)| source_id(source))
+        .collect();
+    let allowed_records: BTreeSet<_> = sources
+        .iter()
+        .flat_map(|(source, ids)| ids.iter().map(move |id| format!("record:{source}:{id}")))
+        .collect();
+    let removed_entities: BTreeSet<_> = schema
+        .entities
+        .iter()
+        .filter(|entity| {
+            source_ids.contains(&source_id(&entity.source))
+                && entity
+                    .record_ref
+                    .as_ref()
+                    .is_some_and(|record| !allowed_records.contains(record))
+        })
+        .map(|entity| entity.id.clone())
+        .collect();
+    schema.records.retain(|record| {
+        !source_ids.contains(&record.source) || allowed_records.contains(&record.id)
+    });
+    schema
+        .entities
+        .retain(|entity| !removed_entities.contains(&entity.id));
+    schema
+        .links
+        .retain(|link| !removed_entities.contains(&link.from));
+    for record in &mut schema.records {
+        if !allowed_records.contains(&record.id) {
+            continue;
+        }
+        record.edit_state = SemanticEditState::Editable;
+        record.confidence = Confidence::Confirmed;
+        record.summary.insert("canonical".to_string(), json!(true));
+    }
+    for entity in &mut schema.entities {
+        if entity
+            .record_ref
+            .as_ref()
+            .is_some_and(|record| allowed_records.contains(record))
+        {
+            entity.edit_state = SemanticEditState::Editable;
+            entity.confidence = Confidence::Confirmed;
+            entity.editable = true;
+            entity.summary.insert("canonical".to_string(), json!(true));
+        }
+    }
+}
 
 pub(super) fn add_encounters(schema: &mut SemanticSchema, buffers: &BTreeMap<String, Vec<u8>>) {
     if let Some(buffer) = buffers.get("Data ED") {

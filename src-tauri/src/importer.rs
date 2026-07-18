@@ -592,6 +592,7 @@ fn build_semantic_schema(project: &mut ProvidenceProject, buffers: &BTreeMap<Str
         &project.source.files,
         &semantic_parsed,
         &project.assets,
+        !project.source.requires_compatibility_annex(),
     );
 }
 
@@ -2497,7 +2498,126 @@ mod tests {
             .find(|entity| entity.id == "treasure:0")
             .expect("raw-enriched treasure entity");
         assert_eq!(treasure.summary.get("gold"), Some(&serde_json::json!(77)));
+        assert_eq!(treasure.edit_state, SemanticEditState::InspectOnly);
+        assert!(matches!(treasure.confidence, Confidence::SourceBacked));
+        assert!(!treasure.editable);
+        assert!(!treasure.summary.contains_key("canonical"));
         assert!(schema.sources.iter().any(|source| source.name == "Data TD"));
+    }
+
+    #[test]
+    fn authored_semantic_mapping_indexes_canonical_supporting_records_without_sparse_slots() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Canonical Supporting Records.providence");
+        let mut project = create_project("Canonical Supporting Records".to_string(), &project_dir)
+            .expect("project");
+
+        let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
+            .into_iter()
+            .next()
+            .expect("item template");
+        item.id = 4;
+        item.item_id = 901;
+        item.icon_id = 321;
+        item.cost = 45;
+        item.authored = false;
+        item.raw_bytes.fill(0xA5);
+        project.scenario_items = vec![item];
+
+        let mut treasure = crate::realmz::parse_treasures(&vec![0; crate::realmz::TREASURE_BYTES])
+            .into_iter()
+            .next()
+            .expect("treasure template");
+        treasure.id = 3;
+        treasure.item_ids = vec![901];
+        treasure.gold = 77;
+        treasure.authored = false;
+        treasure.raw_bytes.fill(0xA5);
+        project.treasures = vec![treasure];
+
+        let mut thief =
+            crate::realmz::parse_thief_encounters(&vec![0; crate::realmz::THIEF_ENCOUNTER_BYTES])
+                .into_iter()
+                .next()
+                .expect("thief template");
+        thief.id = 2;
+        thief.type_flags[0] = true;
+        thief.prompts[0] = 17;
+        thief.authored = false;
+        thief.raw_bytes.fill(0xA5);
+        project.thief_encounters = vec![thief];
+
+        let mut timed =
+            crate::realmz::parse_timed_encounters(&vec![0; crate::realmz::TIMED_ENCOUNTER_BYTES])
+                .into_iter()
+                .next()
+                .expect("timed template");
+        timed.id = 3;
+        timed.day = 5;
+        timed.required_item = 901;
+        timed.required_quest = 6;
+        timed.location_kind = "land".to_string();
+        timed.stuff[0] = 1;
+        timed.authored = false;
+        timed.raw_bytes.fill(0xA5);
+        project.timed_encounters = vec![timed];
+
+        let schema = build_project_semantic_schema(&project_dir, &project)
+            .expect("build authored semantic schema");
+        for entity_id in ["item:901", "treasure:3", "thief:2", "time:3"] {
+            let entity = schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == entity_id)
+                .unwrap_or_else(|| panic!("canonical entity {entity_id}"));
+            assert_eq!(entity.edit_state, SemanticEditState::Editable);
+            assert!(matches!(entity.confidence, Confidence::Confirmed));
+            assert!(entity.editable);
+            assert_eq!(
+                entity.summary.get("canonical"),
+                Some(&serde_json::json!(true))
+            );
+            let record = schema
+                .records
+                .iter()
+                .find(|record| Some(&record.id) == entity.record_ref.as_ref())
+                .unwrap_or_else(|| panic!("canonical record for {entity_id}"));
+            assert_eq!(record.edit_state, SemanticEditState::Editable);
+            assert!(matches!(record.confidence, Confidence::Confirmed));
+            assert_eq!(
+                record.summary.get("canonical"),
+                Some(&serde_json::json!(true))
+            );
+        }
+        for entity_id in ["item:800", "treasure:0", "thief:0", "time:0"] {
+            assert!(
+                !schema.entities.iter().any(|entity| entity.id == entity_id),
+                "sparse compiler slot {entity_id} must not become a semantic entity"
+            );
+        }
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "treasure:3")
+                .and_then(|entity| entity.summary.get("gold")),
+            Some(&serde_json::json!(77))
+        );
+        for (source, path) in [
+            ("Data NI", "project.json#scenarioItems"),
+            ("Data TD", "project.json#treasures"),
+            ("Data TD2", "project.json#thiefEncounters"),
+            ("Data TD3", "project.json#timedEncounters"),
+        ] {
+            let source = schema
+                .sources
+                .iter()
+                .find(|candidate| candidate.name == source)
+                .unwrap_or_else(|| panic!("canonical source {source}"));
+            assert_eq!(source.path.as_deref(), Some(path));
+            assert!(matches!(source.confidence, Confidence::Confirmed));
+            assert_eq!(source.origin, SemanticSourceOrigin::AuthoredSource);
+        }
     }
 
     #[test]

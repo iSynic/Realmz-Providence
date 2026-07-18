@@ -109,10 +109,19 @@ directly from canonical asset metadata. Imported projects retain raw-buffer enri
 poison-snapshot tests enforce both sides of the boundary; direct canonical summaries for the
 remaining supporting record families are still an incremental coverage task.
 
-Branch validation through the twelfth slice completed on 2026-07-18:
+The thirteenth slice closes the first four supporting-record semantic gaps. Authored desktop and
+browser projects now compile canonical scenario items (`Data NI`), treasures (`Data TD`), thief
+encounters (`Data TD2`), and timed encounters (`Data TD3`) through the existing deterministic
+native writers and proven semantic decoders. Their canonical records are confirmed and editable;
+embedded compatibility bytes are ignored, and zero-filled native slots used to encode sparse
+record IDs are not exposed as project entities. Imported buffers retain their source-backed,
+inspect-only evidence path. Messages, shops, and simple/complex encounters remain the next
+direct-canonical semantic tier.
 
-- full Rust suite: 201 passed, 2 ignored;
-- full TypeScript suite: 523 passed, plus typecheck;
+Branch validation through the thirteenth slice completed on 2026-07-18:
+
+- full Rust suite: 202 passed, 2 ignored;
+- full TypeScript suite: 524 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -121,7 +130,7 @@ Branch validation through the twelfth slice completed on 2026-07-18:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 523 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 524 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly/economy,
 and CSS files. Those files are outside this slice; architecture, lint, unit, typecheck, UI audit,
 production build, scenario proof, package parity, and the full Rust suite were run independently.
@@ -484,8 +493,9 @@ must not be called fresh-authoritative merely because imported round trips are f
    at the compatibility boundary.
 7. **Implemented at the semantic-source boundary:** authored indices consume canonical project
    fields and managed scenario resources with no raw buffers; imported indices retain raw-buffer
-   enrichment. Direct canonical summaries still need to replace legacy parsers for several
-   supporting record families.
+   enrichment. Scenario items, treasures, thief encounters, and timed encounters now receive
+   direct canonical summaries. Messages, shops, and simple/complex encounters remain on the
+   incremental coverage list.
 8. **Implemented on the investigation branch:** persist/import/export `itemTexts` in Rust and gate
    its TypeScript/Rust/native-folder conformance in the ownership proof.
 9. Gate browser and desktop output with the same golden manifest/byte fixtures. Prefer one Rust
@@ -507,9 +517,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. They must become annex slices rather than
    normal canonical fields.
-5. **Canonical semantic coverage:** authored semantic mapping no longer consumes raw files, but
-   several supporting record summaries are still produced only by imported-buffer parsers and
-   therefore do not yet appear in a fresh project's semantic graph.
+5. **Canonical semantic coverage:** authored semantic mapping now covers scenario items,
+   treasures, thief encounters, and timed encounters without raw files. Messages, shops, and
+   simple/complex encounters still need the same direct-canonical mapping before the semantic
+   graph covers every editor-owned supporting family.
 6. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
    writing, not construction from zero, and overstate at least the Race/Caste suffixes.
 7. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern

@@ -6,6 +6,7 @@ import {
   validateBrowserProject
 } from "./project";
 import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
+import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
   it("uses the authored compiler manifest instead of source inventory", () => {
@@ -138,7 +139,91 @@ describe("browser project native manifest validation", () => {
 
     const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);
 
-    expect(semanticSchema.entities.find((entity) => entity.id === "treasure:0")?.summary.gold).toBe(77);
+    expect(semanticSchema.entities.find((entity) => entity.id === "treasure:0")).toMatchObject({
+      editState: "inspect-only",
+      confidence: "source-backed",
+      editable: false,
+      summary: { gold: 77 }
+    });
     expect(semanticSchema.sources.some((source) => source.name === "Data TD")).toBe(true);
+  });
+
+  it("indexes canonical supporting records without exposing sparse compiler slots", async () => {
+    const project = createBrowserProject("Canonical Supporting Records");
+    const parsed = parseScenarioBuffers(new Map([
+      ["Data NI", new Uint8Array(100)],
+      ["Data TD", new Uint8Array(48)],
+      ["Data TD2", new Uint8Array(118)],
+      ["Data TD3", new Uint8Array(40)]
+    ]));
+    project.scenarioItems = [{
+      ...parsed.scenarioItems[0],
+      id: 4,
+      itemId: 901,
+      iconId: 321,
+      cost: 45,
+      authored: false,
+      rawBytes: new Array(100).fill(0xa5)
+    }];
+    project.treasures = [{
+      ...parsed.treasures[0],
+      id: 3,
+      itemIds: [901],
+      gold: 77,
+      authored: false,
+      rawBytes: new Array(48).fill(0xa5)
+    }];
+    project.thiefEncounters = [{
+      ...parsed.thiefEncounters[0],
+      id: 2,
+      typeFlags: [true, ...parsed.thiefEncounters[0].typeFlags.slice(1)],
+      prompts: [17, 0, 0],
+      authored: false,
+      rawBytes: new Array(118).fill(0xa5)
+    }];
+    project.timedEncounters = [{
+      ...parsed.timedEncounters[0],
+      id: 3,
+      day: 5,
+      requiredItem: 901,
+      requiredQuest: 6,
+      locationKind: "land",
+      stuff: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      authored: false,
+      rawBytes: new Array(40).fill(0xa5)
+    }];
+
+    const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);
+
+    for (const entityId of ["item:901", "treasure:3", "thief:2", "time:3"]) {
+      const entity = semanticSchema.entities.find((candidate) => candidate.id === entityId);
+      expect(entity).toMatchObject({
+        editState: "editable",
+        confidence: "confirmed",
+        editable: true,
+        summary: { canonical: true }
+      });
+      expect(semanticSchema.records.find((record) => record.id === entity?.recordRef)).toMatchObject({
+        editState: "editable",
+        confidence: "confirmed",
+        summary: { canonical: true }
+      });
+    }
+    for (const entityId of ["item:800", "treasure:0", "thief:0", "time:0"]) {
+      expect(semanticSchema.entities.some((entity) => entity.id === entityId)).toBe(false);
+    }
+    expect(semanticSchema.entities.find((entity) => entity.id === "treasure:3")?.summary.gold).toBe(77);
+    for (const [name, path] of [
+      ["Data NI", "project.json#scenarioItems"],
+      ["Data TD", "project.json#treasures"],
+      ["Data TD2", "project.json#thiefEncounters"],
+      ["Data TD3", "project.json#timedEncounters"]
+    ]) {
+      expect(semanticSchema.sources.find((source) => source.name === name)).toMatchObject({
+        path,
+        origin: "authored-source",
+        confidence: "confirmed"
+      });
+    }
   });
 });

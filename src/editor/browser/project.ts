@@ -258,6 +258,7 @@ export async function buildBrowserSemanticSchemaForProject(
   const importedProject = requiresCompatibilityAnnex(project);
   const request = {
     scenario: project.scenario,
+    canonicalRecords: !importedProject,
     buffers: importedProject ? pending?.files ?? new Map<string, Uint8Array>() : new Map<string, Uint8Array>(),
     sourceFiles: importedProject ? pending?.sourceFiles ?? project.source.files ?? [] : [],
     maps: project.maps,
@@ -268,6 +269,10 @@ export async function buildBrowserSemanticSchemaForProject(
     battles: project.battles,
     monsters: project.monsters,
     monsterSets: project.monsterSets,
+    scenarioItems: project.scenarioItems,
+    treasures: project.treasures,
+    thiefEncounters: project.thiefEncounters,
+    timedEncounters: project.timedEncounters,
     assets: project.assets,
     assetCatalog: project.assetCatalog,
     records: project.records
