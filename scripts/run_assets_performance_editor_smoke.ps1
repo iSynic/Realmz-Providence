@@ -69,9 +69,8 @@ $requiredResourceProbes = @(
   "Scenario picture selected preview",
   "Scenario icon selected preview",
   "Scenario sound selected preview",
-  "Reference picture selected preview",
-  "Reference icon selected preview",
-  "Reference sound selected preview"
+  "Realmz Gallery icon selected preview",
+  "Realmz Gallery sound selected preview"
 )
 $probeLabels = @($result.probes | ForEach-Object { [string]$_.label })
 foreach ($requiredProbe in $requiredResourceProbes) {

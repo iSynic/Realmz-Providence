@@ -745,9 +745,8 @@ function defaultAssetResourceProbes(): AssetResourceProbeRequest[] {
     { label: "Scenario picture selected preview", section: "project", kind: "picture", resourceType: "PICT", expectedPreview: "image", searchByResourceId: true },
     { label: "Scenario icon selected preview", section: "project", kind: "icon", resourceType: "cicn", expectedPreview: "image", searchByResourceId: true },
     { label: "Scenario sound selected preview", section: "project", kind: "sound", resourceType: "snd", expectedPreview: "audio", searchByResourceId: true },
-    { label: "Reference picture selected preview", section: "realmz", kind: "picture", resourceType: "PICT", expectedPreview: "image", searchByResourceId: true },
-    { label: "Reference icon selected preview", section: "realmz", kind: "icon", resourceType: "cicn", expectedPreview: "image", searchByResourceId: true },
-    { label: "Reference sound selected preview", section: "realmz", kind: "sound", resourceType: "snd", expectedPreview: "audio", searchByResourceId: true }
+    { label: "Realmz Gallery icon selected preview", section: "realmz", kind: "icon", resourceType: "cicn", expectedPreview: "image", searchByResourceId: true },
+    { label: "Realmz Gallery sound selected preview", section: "realmz", kind: "sound", resourceType: "snd", expectedPreview: "audio", searchByResourceId: true }
   ];
 }
 
