@@ -30,8 +30,6 @@ pub fn create_project(
 ) -> Result<ProvidenceProject> {
     let (project_name, project_dir) = unique_project_target(&project_name, project_dir.as_ref());
     fs::create_dir_all(&project_dir).with_path(&project_dir)?;
-    fs::create_dir_all(project_dir.join(RAW_SOURCES_DIR))
-        .with_path(project_dir.join(RAW_SOURCES_DIR))?;
     fs::create_dir_all(project_dir.join(ASSETS_DIR)).with_path(project_dir.join(ASSETS_DIR))?;
     let project_path_text = project_dir
         .canonicalize()
@@ -55,7 +53,7 @@ pub fn create_project(
         },
         source: SourceSnapshot {
             source_path: format!("generated://{}", scenario_id(&project_name)),
-            raw_sources_dir: RAW_SOURCES_DIR.to_string(),
+            raw_sources_dir: String::new(),
             files: Vec::new(),
             immutable: false,
         },
@@ -95,126 +93,9 @@ pub fn create_project(
         semantic_schema: SemanticSchema::default(),
         validation: ValidationReport::default(),
     };
-    project.source.files = seed_generated_raw_sources(&project_dir, &project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
-}
-
-fn seed_generated_raw_sources(
-    project_dir: &Path,
-    project: &ProvidenceProject,
-) -> Result<Vec<SourceFile>> {
-    const SCENARIO_SUPPORT_BYTES: usize = 600;
-    const SCENARIO_ITEM_TABLE_BYTES: usize = 200 * crate::realmz::ITEM_BYTES;
-    const TILE_SOLIDS_BYTES: usize = 1024;
-    const EMPTY_RUNTIME_TABLES: &[&str] = &[
-        "Data DL", "Data RDD", "Data SD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD",
-    ];
-
-    let shell = project.scenario.shell.as_ref().ok_or_else(|| {
-        ProvidenceError::message("Generated scenarios require scenario shell metadata.")
-    })?;
-    let shell_name = if shell.source_file.trim().is_empty() {
-        project.scenario.name.as_str()
-    } else {
-        shell.source_file.as_str()
-    };
-    let shell_bytes = crate::realmz::write_scenario_shell(shell)?;
-    let land_level_count = project
-        .maps
-        .iter()
-        .filter(|map| map.level_type == LevelType::Land)
-        .count()
-        .max(1);
-    let dungeon_level_count = project
-        .maps
-        .iter()
-        .filter(|map| map.level_type == LevelType::Dungeon)
-        .count();
-    let mut entries = vec![
-        (
-            shell_name.to_string(),
-            shell_bytes.clone(),
-            SourceFileRole::SupportedBinary,
-            true,
-        ),
-        (
-            "Scenario".to_string(),
-            vec![0; SCENARIO_SUPPORT_BYTES],
-            SourceFileRole::PassThrough,
-            false,
-        ),
-        (
-            "Scenario.rsrc".to_string(),
-            crate::resource_fork::write_resource_fork(&[])?,
-            SourceFileRole::ResourceFork,
-            false,
-        ),
-        (
-            "Data CS".to_string(),
-            shell_bytes,
-            SourceFileRole::SupportedBinary,
-            true,
-        ),
-        (
-            "Data DD".to_string(),
-            crate::realmz::write_door_file_for_levels(
-                &project.triggers,
-                LevelType::Land,
-                land_level_count,
-            )?,
-            SourceFileRole::SupportedBinary,
-            true,
-        ),
-        (
-            "Data DDD".to_string(),
-            crate::realmz::write_door_file_for_levels(
-                &project.triggers,
-                LevelType::Dungeon,
-                dungeon_level_count,
-            )?,
-            SourceFileRole::SupportedBinary,
-            true,
-        ),
-        (
-            "Data NI".to_string(),
-            vec![0; SCENARIO_ITEM_TABLE_BYTES],
-            SourceFileRole::SupportedBinary,
-            true,
-        ),
-        (
-            "Data Solids".to_string(),
-            vec![0; TILE_SOLIDS_BYTES],
-            SourceFileRole::SupportedBinary,
-            true,
-        ),
-    ];
-    entries.extend(EMPTY_RUNTIME_TABLES.iter().map(|name| {
-        (
-            (*name).to_string(),
-            Vec::new(),
-            SourceFileRole::SupportedBinary,
-            true,
-        )
-    }));
-    entries.sort_by(|left, right| left.0.cmp(&right.0));
-
-    let raw_dir = project_dir.join(RAW_SOURCES_DIR);
-    let mut files = Vec::with_capacity(entries.len());
-    for (name, bytes, role, editable) in entries {
-        let path = raw_dir.join(&name);
-        fs::write(&path, &bytes).with_path(&path)?;
-        files.push(SourceFile {
-            name: name.clone(),
-            relative_path: name,
-            bytes: bytes.len() as u64,
-            sha256: sha256_hex(&bytes),
-            role,
-            editable,
-        });
-    }
-    Ok(files)
 }
 
 fn unique_project_target(project_name: &str, requested_dir: &Path) -> (String, PathBuf) {
@@ -2212,6 +2093,25 @@ pub fn project_file_path(project_dir: impl AsRef<Path>) -> PathBuf {
 mod tests {
     use super::*;
 
+    fn flat_file_bytes(dir: &Path) -> BTreeMap<String, Vec<u8>> {
+        fs::read_dir(dir)
+            .expect("read export directory")
+            .filter_map(|entry| {
+                let entry = entry.expect("read export entry");
+                entry
+                    .file_type()
+                    .expect("read export entry type")
+                    .is_file()
+                    .then(|| {
+                        (
+                            entry.file_name().to_string_lossy().to_string(),
+                            fs::read(entry.path()).expect("read exported file"),
+                        )
+                    })
+            })
+            .collect()
+    }
+
     #[test]
     fn map_icon_normalization_matches_realmz_positive_and_negative_specials() {
         assert_eq!(normalize_icon_id(200), None);
@@ -2296,20 +2196,46 @@ mod tests {
     }
 
     #[test]
-    fn create_project_seeds_exportable_realmz_runtime_files() {
+    fn create_project_exports_complete_runtime_baseline_without_raw_sources() {
         let temp = tempfile::tempdir().expect("tempdir");
         let project_dir = temp.path().join("Starter.providence");
         let mut project =
             create_project("Starter".to_string(), &project_dir).expect("create project");
         let raw_dir = project_dir.join(RAW_SOURCES_DIR);
+        assert!(
+            !raw_dir.exists(),
+            "fresh projects must not create a preservation annex"
+        );
+        assert!(project.source.raw_sources_dir.is_empty());
+        assert!(project.source.files.is_empty());
+        assert!(!project.source.immutable);
 
+        let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
+            .into_iter()
+            .next()
+            .expect("blank item record");
+        item.authored = true;
+        item.item_id = 901;
+        project.scenario_items.push(item);
+
+        let output_dir = temp.path().join("Starter");
+        let report = crate::exporter::export_project(
+            &project_dir,
+            &project,
+            &output_dir,
+            ScenarioTarget::WindowsRealmzFolder,
+        )
+        .expect("export generated project");
+        assert!(report.pass_through_files.is_empty());
         for (name, expected_bytes) in [
             ("Starter", 316),
             ("Scenario", 600),
             ("Data CS", 316),
             ("Data DD", crate::realmz::DOOR_LEVEL_BYTES),
             ("Data DDD", 0),
+            ("Data LD", FIELD_BYTES),
             ("Data DL", 0),
+            ("Data RD", RANDLEVEL_BYTES),
             ("Data RDD", 0),
             ("Data SD", 0),
             ("Data TD2", 0),
@@ -2321,63 +2247,51 @@ mod tests {
             ("Data Solids", 1024),
         ] {
             assert_eq!(
-                fs::metadata(raw_dir.join(name))
-                    .unwrap_or_else(|_| panic!("missing generated raw source {name}"))
+                fs::metadata(output_dir.join(name))
+                    .unwrap_or_else(|_| panic!("missing generated runtime file {name}"))
                     .len() as usize,
                 expected_bytes,
                 "unexpected generated size for {name}"
             );
         }
-        let resource_bytes = fs::read(raw_dir.join("Scenario.rsrc")).expect("resource fork");
+        let resource_bytes = fs::read(output_dir.join("Scenario.rsrc")).expect("resource fork");
         assert!(
             resource_bytes.len() >= 46,
             "empty resource fork should be structurally valid"
         );
         assert!(crate::resource_fork::parse_resource_fork_entries(&resource_bytes).is_empty());
-        assert!(project.source.files.iter().any(|file| {
-            file.name == "Scenario.rsrc" && matches!(file.role, SourceFileRole::ResourceFork)
-        }));
 
-        let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
-            .into_iter()
-            .next()
-            .expect("blank item record");
-        item.authored = true;
-        item.item_id = 901;
-        project.scenario_items.push(item);
-
-        let output_dir = temp.path().join("Starter");
+        let repeat_output_dir = temp.path().join("Starter Repeat");
         crate::exporter::export_project(
             &project_dir,
             &project,
-            &output_dir,
+            &repeat_output_dir,
             ScenarioTarget::WindowsRealmzFolder,
         )
-        .expect("export generated project");
+        .expect("repeat generated project export");
         assert_eq!(
-            fs::metadata(output_dir.join("Data LD"))
-                .expect("Data LD")
-                .len() as usize,
-            FIELD_BYTES
+            flat_file_bytes(&output_dir),
+            flat_file_bytes(&repeat_output_dir),
+            "fresh compilation should be byte-deterministic"
         );
+
+        let classic_output_dir = temp.path().join("Starter Classic");
+        let classic_report = crate::exporter::export_project(
+            &project_dir,
+            &project,
+            &classic_output_dir,
+            ScenarioTarget::MacClassicFolder,
+        )
+        .expect("export generated project for classic Realmz");
+        assert!(classic_report.pass_through_files.is_empty());
         assert_eq!(
-            fs::metadata(output_dir.join("Data RD"))
-                .expect("Data RD")
-                .len() as usize,
-            RANDLEVEL_BYTES
+            fs::metadata(classic_output_dir.join("Scenario"))
+                .expect("classic Scenario support file")
+                .len(),
+            600
         );
-        assert_eq!(
-            fs::metadata(output_dir.join("Data DD"))
-                .expect("Data DD")
-                .len() as usize,
-            crate::realmz::DOOR_LEVEL_BYTES
-        );
-        assert_eq!(
-            fs::metadata(output_dir.join("Data NI"))
-                .expect("Data NI")
-                .len() as usize,
-            200 * crate::realmz::ITEM_BYTES
-        );
+        assert!(classic_output_dir.join("Scenario.rsrc").is_file());
+
         let reimport_dir = temp.path().join("Reimported.providence");
         let reimported =
             import_scenario(&output_dir, &reimport_dir).expect("reimport generated export");
@@ -2389,6 +2303,16 @@ mod tests {
                 .count(),
             1
         );
+
+        fs::remove_dir_all(reimport_dir.join(RAW_SOURCES_DIR)).expect("remove imported annex");
+        let error = crate::exporter::export_project(
+            &reimport_dir,
+            &reimported,
+            temp.path().join("Unsafe re-export"),
+            ScenarioTarget::WindowsRealmzFolder,
+        )
+        .expect_err("imported projects must retain their preservation annex");
+        assert!(error.to_string().contains("Missing raw source snapshot"));
     }
 
     #[test]

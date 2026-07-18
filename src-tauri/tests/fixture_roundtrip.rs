@@ -2979,12 +2979,21 @@ fn resource_path_with_entry(
     resource_type: &str,
     id: i16,
 ) -> Option<std::path::PathBuf> {
-    project
+    let mut candidates = project
         .source
         .files
         .iter()
         .filter(|file| matches!(file.role, SourceFileRole::ResourceFork))
         .map(|file| root.join(&file.relative_path))
+        .collect::<Vec<_>>();
+    for name in ["Scenario.rsrc", "Scenario.rsf", "Scenario"] {
+        let candidate = root.join(name);
+        if !candidates.contains(&candidate) {
+            candidates.push(candidate);
+        }
+    }
+    candidates
+        .into_iter()
         .find(|path| resource_entry(path, resource_type, id).is_some())
 }
 

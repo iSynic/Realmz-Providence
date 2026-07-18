@@ -48,31 +48,42 @@ pub fn export_project(
 ) -> Result<ExportReport> {
     let project_dir = project_dir.as_ref();
     let output_dir = output_dir.as_ref();
-    let raw_dir = project_dir.join(RAW_SOURCES_DIR);
-    if !raw_dir.is_dir() {
+    let raw_dir = project_dir.join(if project.source.raw_sources_dir.trim().is_empty() {
+        RAW_SOURCES_DIR
+    } else {
+        project.source.raw_sources_dir.as_str()
+    });
+    let preserves_source_snapshot = preserves_source_snapshot(project);
+    if preserves_source_snapshot && !raw_dir.is_dir() {
         return Err(ProvidenceError::message(format!(
             "Missing raw source snapshot: {}",
             raw_dir.display()
         )));
     }
+    let preserved_raw_dir = preserves_source_snapshot.then_some(raw_dir.as_path());
     fs::create_dir_all(output_dir).with_path(output_dir)?;
 
     let mut pass_through_files = Vec::new();
-    for entry in WalkDir::new(&raw_dir).max_depth(1).min_depth(1) {
-        let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
-        if !entry.file_type().is_file() {
-            continue;
+    if preserves_source_snapshot {
+        for entry in WalkDir::new(&raw_dir).max_depth(1).min_depth(1) {
+            let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
+            if !entry.file_type().is_file() {
+                continue;
+            }
+            let name = entry.file_name().to_string_lossy().to_string();
+            if is_custom_names_support_file(&name) || is_generated_runtime_cache_file(&name) {
+                continue;
+            }
+            let dest = output_dir.join(&name);
+            fs::copy(entry.path(), &dest).with_path(&dest)?;
+            pass_through_files.push(name);
         }
-        let name = entry.file_name().to_string_lossy().to_string();
-        if is_custom_names_support_file(&name) || is_generated_runtime_cache_file(&name) {
-            continue;
-        }
-        let dest = output_dir.join(&name);
-        fs::copy(entry.path(), &dest).with_path(&dest)?;
-        pass_through_files.push(name);
     }
 
     let mut written_files = Vec::new();
+    if !preserves_source_snapshot {
+        write_authored_runtime_baseline(output_dir, project, target, &mut written_files)?;
+    }
     if let Some(shell) = &project.scenario.shell {
         write_if_nonempty(
             output_dir,
@@ -204,7 +215,7 @@ pub fn export_project(
             "Data ED3",
             write_macro_file(&project.triggers)?,
             DOOR_BYTES,
-            &raw_dir,
+            preserved_raw_dir,
         )?,
         &mut written_files,
     )?;
@@ -215,7 +226,7 @@ pub fn export_project(
             "Data EDCD",
             write_extracodes(&project.extracodes)?,
             EXTRACODE_BYTES,
-            &raw_dir,
+            preserved_raw_dir,
         )?,
         &mut written_files,
     )?;
@@ -224,7 +235,7 @@ pub fn export_project(
         "Data SD2",
         write_messages(&project.messages)?,
         crate::realmz::MESSAGE_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -232,7 +243,7 @@ pub fn export_project(
         "Data OD",
         write_option_labels(&project.option_labels)?,
         crate::realmz::OPTION_LABEL_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -240,7 +251,7 @@ pub fn export_project(
         "Data MD2",
         write_map_records(&project.map_records)?,
         crate::realmz::MAP_RECORD_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -248,7 +259,7 @@ pub fn export_project(
         "Data BD",
         write_battles(&project.battles)?,
         crate::realmz::BATTLE_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -256,7 +267,7 @@ pub fn export_project(
         "Data MD",
         write_monsters(&project.monsters)?,
         crate::realmz::MONSTER_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     for monster_set in &project.monster_sets {
@@ -265,7 +276,7 @@ pub fn export_project(
             &monster_set.source_file,
             write_monster_set(monster_set)?,
             crate::realmz::MONSTER_BYTES,
-            &raw_dir,
+            preserved_raw_dir,
             &mut written_files,
         )?;
     }
@@ -274,19 +285,23 @@ pub fn export_project(
         "Data DES",
         write_monster_descriptions(&project.monster_descriptions)?,
         crate::realmz::MONSTER_DESCRIPTION_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
+    let mut scenario_item_bytes = overlay_zero_filled_fixed_capacity(
+        "Data NI",
+        write_scenario_items(&project.scenario_items)?,
+        preserved_raw_dir,
+    )?;
+    if !preserves_source_snapshot {
+        scenario_item_bytes.resize(200 * crate::realmz::ITEM_BYTES, 0);
+    }
     write_fixed_if_nonempty(
         output_dir,
         "Data NI",
-        overlay_zero_filled_fixed_capacity(
-            "Data NI",
-            write_scenario_items(&project.scenario_items)?,
-            &raw_dir,
-        )?,
+        scenario_item_bytes,
         crate::realmz::ITEM_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -294,15 +309,15 @@ pub fn export_project(
         "Data TD",
         write_treasures(&project.treasures)?,
         crate::realmz::TREASURE_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
         output_dir,
         "Data SD",
-        append_preserved_shop_source_suffix(write_shops(&project.shops)?, &raw_dir)?,
+        append_preserved_shop_source_suffix(write_shops(&project.shops)?, preserved_raw_dir)?,
         crate::realmz::SHOP_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -310,7 +325,7 @@ pub fn export_project(
         "Data ED",
         write_simple_encounters(&project.simple_encounters)?,
         crate::realmz::SIMPLE_ENCOUNTER_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -318,7 +333,7 @@ pub fn export_project(
         "Data ED2",
         write_complex_encounters(&project.complex_encounters)?,
         crate::realmz::COMPLEX_ENCOUNTER_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -326,7 +341,7 @@ pub fn export_project(
         "Data TD2",
         write_thief_encounters(&project.thief_encounters)?,
         crate::realmz::THIEF_ENCOUNTER_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -334,18 +349,18 @@ pub fn export_project(
         "Data TD3",
         write_timed_encounters(&project.timed_encounters)?,
         crate::realmz::TIMED_ENCOUNTER_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_spell_overrides_preserving_tail(
         output_dir,
-        &raw_dir,
+        preserved_raw_dir,
         &project.spell_overrides,
         &mut written_files,
     )?;
     write_custom_spell_name_resources(
         output_dir,
-        &raw_dir,
+        preserved_raw_dir,
         &project.spell_overrides,
         &mut written_files,
     )?;
@@ -354,7 +369,7 @@ pub fn export_project(
         "Data Race",
         write_race_overrides(&project.race_overrides)?,
         crate::realmz::RACE_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -362,14 +377,17 @@ pub fn export_project(
         "Data Caste",
         write_caste_overrides(&project.caste_overrides)?,
         crate::realmz::CASTE_BYTES,
-        &raw_dir,
+        preserved_raw_dir,
         &mut written_files,
     )?;
-    let resource_result = write_managed_resources(project_dir, output_dir, project, target)?;
+    let resource_result =
+        write_managed_resources(project_dir, output_dir, preserved_raw_dir, project, target)?;
     if resource_result.resource_file_written {
         written_files.push(resource_result.resource_file_name.clone());
     }
 
+    let mut unique_written = BTreeSet::new();
+    written_files.retain(|name| unique_written.insert(name.clone()));
     let written: BTreeSet<&str> = written_files.iter().map(String::as_str).collect();
     pass_through_files.retain(|name| !written.contains(name.as_str()));
     let warnings = if project.validation.ok {
@@ -393,6 +411,58 @@ pub fn export_project(
         target_compatibility_issues,
         target_compatibility,
     })
+}
+
+fn preserves_source_snapshot(project: &ProvidenceProject) -> bool {
+    project.source.immutable || !project.source.files.is_empty()
+}
+
+fn write_authored_runtime_baseline(
+    output_dir: &Path,
+    project: &ProvidenceProject,
+    target: ScenarioTarget,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    const SCENARIO_SUPPORT_BYTES: usize = 600;
+    const SCENARIO_ITEM_TABLE_BYTES: usize = 200 * crate::realmz::ITEM_BYTES;
+    const TILE_SOLIDS_BYTES: usize = 1024;
+    const EMPTY_RUNTIME_TABLES: &[&str] = &[
+        "Data DL", "Data RDD", "Data SD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD",
+    ];
+
+    let shell = project.scenario.shell.as_ref().ok_or_else(|| {
+        ProvidenceError::message("Authored scenarios require scenario shell metadata.")
+    })?;
+    let entries = [
+        ("Scenario".to_string(), vec![0; SCENARIO_SUPPORT_BYTES]),
+        (
+            resource_file_name(project, target),
+            crate::resource_fork::write_resource_fork(&[])?,
+        ),
+        ("Data CS".to_string(), write_scenario_shell(shell)?),
+        ("Data NI".to_string(), vec![0; SCENARIO_ITEM_TABLE_BYTES]),
+        ("Data Solids".to_string(), vec![0; TILE_SOLIDS_BYTES]),
+    ];
+    for (name, bytes) in entries {
+        write_generated_file(output_dir, &name, bytes, written_files)?;
+    }
+    write_generated_file(output_dir, "Data DDD", Vec::new(), written_files)?;
+    for name in EMPTY_RUNTIME_TABLES {
+        write_generated_file(output_dir, name, Vec::new(), written_files)?;
+    }
+    Ok(())
+}
+
+fn write_generated_file(
+    output_dir: &Path,
+    name: &str,
+    bytes: Vec<u8>,
+    written: &mut Vec<String>,
+) -> Result<()> {
+    let path = output_dir.join(name);
+    fs::write(&path, bytes).with_path(&path)?;
+    written.push(name.to_string());
+    Ok(())
 }
 
 fn target_compatibility_issues_for_export(
@@ -432,17 +502,19 @@ fn write_fixed_if_nonempty(
     name: &str,
     mut bytes: Vec<u8>,
     record_bytes: usize,
-    raw_dir: &Path,
+    raw_dir: Option<&Path>,
     written: &mut Vec<String>,
 ) -> Result<()> {
     if bytes.is_empty() {
         return Ok(());
     }
-    let raw_path = raw_dir.join(name);
-    if raw_path.is_file() {
-        let raw = fs::read(&raw_path).with_path(&raw_path)?;
-        if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
-            bytes.extend_from_slice(&raw[bytes.len()..]);
+    if let Some(raw_dir) = raw_dir {
+        let raw_path = raw_dir.join(name);
+        if raw_path.is_file() {
+            let raw = fs::read(&raw_path).with_path(&raw_path)?;
+            if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
+                bytes.extend_from_slice(&raw[bytes.len()..]);
+            }
         }
     }
     write_if_nonempty(output_dir, name, bytes, written)
@@ -451,8 +523,11 @@ fn write_fixed_if_nonempty(
 fn overlay_zero_filled_fixed_capacity(
     name: &str,
     bytes: Vec<u8>,
-    raw_dir: &Path,
+    raw_dir: Option<&Path>,
 ) -> Result<Vec<u8>> {
+    let Some(raw_dir) = raw_dir else {
+        return Ok(bytes);
+    };
     let raw_path = raw_dir.join(name);
     if bytes.is_empty() || !raw_path.is_file() {
         return Ok(bytes);
@@ -465,7 +540,13 @@ fn overlay_zero_filled_fixed_capacity(
     Ok(raw)
 }
 
-fn append_preserved_shop_source_suffix(mut bytes: Vec<u8>, raw_dir: &Path) -> Result<Vec<u8>> {
+fn append_preserved_shop_source_suffix(
+    mut bytes: Vec<u8>,
+    raw_dir: Option<&Path>,
+) -> Result<Vec<u8>> {
+    let Some(raw_dir) = raw_dir else {
+        return Ok(bytes);
+    };
     let raw_path = raw_dir.join("Data SD");
     if bytes.is_empty() || !raw_path.is_file() {
         return Ok(bytes);
@@ -492,8 +573,11 @@ fn preserve_imported_fixed_length(
     name: &str,
     mut bytes: Vec<u8>,
     record_bytes: usize,
-    raw_dir: &Path,
+    raw_dir: Option<&Path>,
 ) -> Result<Vec<u8>> {
+    let Some(raw_dir) = raw_dir else {
+        return Ok(bytes);
+    };
     let raw_path = raw_dir.join(name);
     if !raw_path.is_file() {
         return Ok(bytes);
@@ -512,7 +596,7 @@ fn preserve_imported_fixed_length(
 
 fn write_spell_overrides_preserving_tail(
     output_dir: &Path,
-    raw_dir: &Path,
+    raw_dir: Option<&Path>,
     records: &[crate::project::ScenarioSpellOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
@@ -520,11 +604,16 @@ fn write_spell_overrides_preserving_tail(
     if overlay.is_empty() {
         return Ok(());
     }
-    let raw_path = raw_dir.join("Data Spell");
-    let mut bytes = if raw_path.is_file() {
-        fs::read(&raw_path).with_path(&raw_path)?
-    } else {
-        Vec::new()
+    let mut bytes = match raw_dir {
+        Some(raw_dir) => {
+            let raw_path = raw_dir.join("Data Spell");
+            if raw_path.is_file() {
+                fs::read(&raw_path).with_path(&raw_path)?
+            } else {
+                Vec::new()
+            }
+        }
+        None => Vec::new(),
     };
     if bytes.len() < overlay.len() {
         bytes.resize(overlay.len(), 0);
@@ -535,13 +624,16 @@ fn write_spell_overrides_preserving_tail(
 
 fn write_custom_spell_name_resources(
     output_dir: &Path,
-    raw_dir: &Path,
+    raw_dir: Option<&Path>,
     records: &[crate::project::ScenarioSpellOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
     if records.is_empty() {
         return Ok(());
     }
+    let Some(raw_dir) = raw_dir else {
+        return Ok(());
+    };
     let Some((resource_file_name, original)) = data_spell_resource_fork(raw_dir)? else {
         return Ok(());
     };
@@ -706,6 +798,7 @@ fn hex_digit(value: u8) -> std::result::Result<u8, String> {
 fn write_managed_resources(
     project_dir: &Path,
     output_dir: &Path,
+    raw_dir: Option<&Path>,
     project: &ProvidenceProject,
     target: ScenarioTarget,
 ) -> Result<ResourceExportResult> {
@@ -713,21 +806,24 @@ fn write_managed_resources(
         resource_file_name: resource_file_name(project, target),
         ..ResourceExportResult::default()
     };
-    let raw_dir = project_dir.join(RAW_SOURCES_DIR);
-    let raw_resource_path = raw_dir.join(&result.resource_file_name);
-    let original = if raw_resource_path.is_file() {
-        fs::read(&raw_resource_path).with_path(&raw_resource_path)?
-    } else {
-        match source_resource_bytes(project, &raw_dir, target)? {
-            Some(bytes) => bytes,
-            None => {
-                result.resource_warnings.push(format!(
-                    "No source resource fork named {} was found; creating one for export resources.",
-                    result.resource_file_name
-                ));
-                Vec::new()
+    let original = if let Some(raw_dir) = raw_dir {
+        let raw_resource_path = raw_dir.join(&result.resource_file_name);
+        if raw_resource_path.is_file() {
+            fs::read(&raw_resource_path).with_path(&raw_resource_path)?
+        } else {
+            match source_resource_bytes(project, raw_dir, target)? {
+                Some(bytes) => bytes,
+                None => {
+                    result.resource_warnings.push(format!(
+                        "No source resource fork named {} was found; creating one for export resources.",
+                        result.resource_file_name
+                    ));
+                    Vec::new()
+                }
             }
         }
+    } else {
+        crate::resource_fork::write_resource_fork(&[])?
     };
     let original_entries = parse_resource_fork_entries(&original);
     result.preserved_resources = original_entries.len();
@@ -1048,7 +1144,8 @@ fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> St
             }
         })
         .unwrap_or_else(|| {
-            if target == ScenarioTarget::WindowsRealmzFolder {
+            if target == ScenarioTarget::WindowsRealmzFolder || !preserves_source_snapshot(project)
+            {
                 "Scenario.rsrc".to_string()
             } else {
                 "Scenario".to_string()
@@ -1270,7 +1367,7 @@ mod tests {
         fs::write(raw_dir.join("Data EDCD"), vec![0x7Au8; 30]).unwrap();
 
         let bytes =
-            preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, raw_dir).unwrap();
+            preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, Some(raw_dir)).unwrap();
 
         assert_eq!(bytes.len(), 30);
         assert_eq!(&bytes[..10], &[1u8; 10]);
@@ -1283,7 +1380,8 @@ mod tests {
         let raw_dir = temp.path();
         fs::write(raw_dir.join("Data EDCD"), vec![9u8, 8, 7, 6, 5]).unwrap();
 
-        let bytes = preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, raw_dir).unwrap();
+        let bytes =
+            preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, Some(raw_dir)).unwrap();
 
         assert_eq!(bytes, vec![1u8, 2, 7, 6, 5]);
     }
@@ -1306,7 +1404,7 @@ mod tests {
         let mut modeled = valid.clone();
         modeled.extend_from_slice(&vec![1u8; crate::realmz::SHOP_BYTES]);
 
-        let bytes = append_preserved_shop_source_suffix(modeled.clone(), raw_dir).unwrap();
+        let bytes = append_preserved_shop_source_suffix(modeled.clone(), Some(raw_dir)).unwrap();
 
         assert_eq!(&bytes[..modeled.len()], modeled);
         assert_eq!(&bytes[modeled.len()..], foreign);

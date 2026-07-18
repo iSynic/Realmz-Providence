@@ -519,7 +519,7 @@ export function useProjectLifecycleActions({
           ? { ...result.project.source, rawSourcesDir: shell.source.rawSourcesDir || "raw-sources" }
           : {
               ...result.project.source,
-              rawSourcesDir: shell.source.rawSourcesDir || "raw-sources",
+              rawSourcesDir: shell.source.rawSourcesDir,
               files: shell.source.files
             },
         assets: result.project.assets.filter((asset) => !customResourceKeys.has(`${asset.resourceType}:${asset.resourceId}`))
