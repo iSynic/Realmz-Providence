@@ -1,4 +1,5 @@
 mod commands;
+mod compatibility_annex;
 pub mod dungeon;
 pub mod error;
 pub mod evidence;

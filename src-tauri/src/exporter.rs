@@ -1,5 +1,5 @@
+use crate::compatibility_annex::CompatibilityAnnex;
 use crate::error::{IoPath, ProvidenceError, Result};
-use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
     ItemTextRecord, LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
     ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget,
@@ -23,7 +23,6 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -49,34 +48,19 @@ pub fn export_project(
 ) -> Result<ExportReport> {
     let project_dir = project_dir.as_ref();
     let output_dir = output_dir.as_ref();
-    let raw_dir = project_dir.join(if project.source.raw_sources_dir.trim().is_empty() {
-        RAW_SOURCES_DIR
-    } else {
-        project.source.raw_sources_dir.as_str()
-    });
-    let preserves_source_snapshot = project.source.requires_compatibility_annex();
-    if preserves_source_snapshot && !raw_dir.is_dir() {
-        return Err(ProvidenceError::message(format!(
-            "Missing raw source snapshot: {}",
-            raw_dir.display()
-        )));
-    }
-    let preserved_raw_dir = preserves_source_snapshot.then_some(raw_dir.as_path());
+    let compatibility_annex = CompatibilityAnnex::for_project(project_dir, project)?;
+    let preserves_source_snapshot = compatibility_annex.is_some();
+    let compatibility_annex = compatibility_annex.as_ref();
     fs::create_dir_all(output_dir).with_path(output_dir)?;
 
     let mut pass_through_files = Vec::new();
-    if preserves_source_snapshot {
-        for entry in WalkDir::new(&raw_dir).max_depth(1).min_depth(1) {
-            let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
-            if !entry.file_type().is_file() {
-                continue;
-            }
-            let name = entry.file_name().to_string_lossy().to_string();
+    if let Some(annex) = compatibility_annex {
+        for (name, source_bytes) in annex.top_level_files()? {
             if is_custom_names_support_file(&name) || is_generated_runtime_cache_file(&name) {
                 continue;
             }
             let dest = output_dir.join(&name);
-            fs::copy(entry.path(), &dest).with_path(&dest)?;
+            fs::write(&dest, source_bytes).with_path(&dest)?;
             pass_through_files.push(name);
         }
     }
@@ -216,7 +200,7 @@ pub fn export_project(
             "Data ED3",
             write_macro_file(&project.triggers)?,
             DOOR_BYTES,
-            preserved_raw_dir,
+            compatibility_annex,
         )?,
         &mut written_files,
     )?;
@@ -227,7 +211,7 @@ pub fn export_project(
             "Data EDCD",
             write_extracodes(&project.extracodes)?,
             EXTRACODE_BYTES,
-            preserved_raw_dir,
+            compatibility_annex,
         )?,
         &mut written_files,
     )?;
@@ -236,7 +220,7 @@ pub fn export_project(
         "Data SD2",
         write_messages(&project.messages)?,
         crate::realmz::MESSAGE_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -244,7 +228,7 @@ pub fn export_project(
         "Data OD",
         write_option_labels(&project.option_labels)?,
         crate::realmz::OPTION_LABEL_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -252,7 +236,7 @@ pub fn export_project(
         "Data MD2",
         write_map_records(&project.map_records)?,
         crate::realmz::MAP_RECORD_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -260,7 +244,7 @@ pub fn export_project(
         "Data BD",
         write_battles(&project.battles)?,
         crate::realmz::BATTLE_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -268,7 +252,7 @@ pub fn export_project(
         "Data MD",
         write_monsters(&project.monsters)?,
         crate::realmz::MONSTER_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     for monster_set in &project.monster_sets {
@@ -277,7 +261,7 @@ pub fn export_project(
             &monster_set.source_file,
             write_monster_set(monster_set)?,
             crate::realmz::MONSTER_BYTES,
-            preserved_raw_dir,
+            compatibility_annex,
             &mut written_files,
         )?;
     }
@@ -286,13 +270,13 @@ pub fn export_project(
         "Data DES",
         write_monster_descriptions(&project.monster_descriptions)?,
         crate::realmz::MONSTER_DESCRIPTION_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     let mut scenario_item_bytes = overlay_zero_filled_fixed_capacity(
         "Data NI",
         write_scenario_items(&project.scenario_items)?,
-        preserved_raw_dir,
+        compatibility_annex,
     )?;
     if !preserves_source_snapshot {
         scenario_item_bytes.resize(200 * crate::realmz::ITEM_BYTES, 0);
@@ -302,7 +286,7 @@ pub fn export_project(
         "Data NI",
         scenario_item_bytes,
         crate::realmz::ITEM_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -310,15 +294,15 @@ pub fn export_project(
         "Data TD",
         write_treasures(&project.treasures)?,
         crate::realmz::TREASURE_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
         output_dir,
         "Data SD",
-        append_preserved_shop_source_suffix(write_shops(&project.shops)?, preserved_raw_dir)?,
+        append_preserved_shop_source_suffix(write_shops(&project.shops)?, compatibility_annex)?,
         crate::realmz::SHOP_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -326,7 +310,7 @@ pub fn export_project(
         "Data ED",
         write_simple_encounters(&project.simple_encounters)?,
         crate::realmz::SIMPLE_ENCOUNTER_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -334,7 +318,7 @@ pub fn export_project(
         "Data ED2",
         write_complex_encounters(&project.complex_encounters)?,
         crate::realmz::COMPLEX_ENCOUNTER_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -342,7 +326,7 @@ pub fn export_project(
         "Data TD2",
         write_thief_encounters(&project.thief_encounters)?,
         crate::realmz::THIEF_ENCOUNTER_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_fixed_if_nonempty(
@@ -350,41 +334,46 @@ pub fn export_project(
         "Data TD3",
         write_timed_encounters(&project.timed_encounters)?,
         crate::realmz::TIMED_ENCOUNTER_BYTES,
-        preserved_raw_dir,
+        compatibility_annex,
         &mut written_files,
     )?;
     write_spell_overrides_preserving_tail(
         output_dir,
-        preserved_raw_dir,
+        compatibility_annex,
         &project.spell_overrides,
         &mut written_files,
     )?;
     write_custom_spell_name_resources(
         output_dir,
-        preserved_raw_dir,
+        compatibility_annex,
         &project.spell_overrides,
         &mut written_files,
     )?;
     write_item_text_resources(
         output_dir,
-        preserved_raw_dir,
+        compatibility_annex,
         &project.item_texts,
         &mut written_files,
     )?;
     write_race_overrides_for_export(
         output_dir,
-        preserved_raw_dir,
+        compatibility_annex,
         &project.race_overrides,
         &mut written_files,
     )?;
     write_caste_overrides_for_export(
         output_dir,
-        preserved_raw_dir,
+        compatibility_annex,
         &project.caste_overrides,
         &mut written_files,
     )?;
-    let resource_result =
-        write_managed_resources(project_dir, output_dir, preserved_raw_dir, project, target)?;
+    let resource_result = write_managed_resources(
+        project_dir,
+        output_dir,
+        compatibility_annex,
+        project,
+        target,
+    )?;
     if resource_result.resource_file_written {
         written_files.push(resource_result.resource_file_name.clone());
     }
@@ -501,19 +490,18 @@ fn write_fixed_if_nonempty(
     name: &str,
     mut bytes: Vec<u8>,
     record_bytes: usize,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     written: &mut Vec<String>,
 ) -> Result<()> {
     if bytes.is_empty() {
         return Ok(());
     }
-    if let Some(raw_dir) = raw_dir {
-        let raw_path = raw_dir.join(name);
-        if raw_path.is_file() {
-            let raw = fs::read(&raw_path).with_path(&raw_path)?;
-            if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
-                bytes.extend_from_slice(&raw[bytes.len()..]);
-            }
+    if let Some(raw) = match annex {
+        Some(annex) => annex.read(name)?,
+        None => None,
+    } {
+        if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
+            bytes.extend_from_slice(&raw[bytes.len()..]);
         }
     }
     write_if_nonempty(output_dir, name, bytes, written)
@@ -522,16 +510,17 @@ fn write_fixed_if_nonempty(
 fn overlay_zero_filled_fixed_capacity(
     name: &str,
     bytes: Vec<u8>,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
 ) -> Result<Vec<u8>> {
-    let Some(raw_dir) = raw_dir else {
+    let Some(annex) = annex else {
         return Ok(bytes);
     };
-    let raw_path = raw_dir.join(name);
-    if bytes.is_empty() || !raw_path.is_file() {
+    let Some(mut raw) = annex.read(name)? else {
+        return Ok(bytes);
+    };
+    if bytes.is_empty() {
         return Ok(bytes);
     }
-    let mut raw = fs::read(&raw_path).with_path(&raw_path)?;
     if raw.len() <= bytes.len() || raw.iter().any(|byte| *byte != 0) {
         return Ok(bytes);
     }
@@ -541,16 +530,17 @@ fn overlay_zero_filled_fixed_capacity(
 
 fn append_preserved_shop_source_suffix(
     mut bytes: Vec<u8>,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
 ) -> Result<Vec<u8>> {
-    let Some(raw_dir) = raw_dir else {
+    let Some(annex) = annex else {
         return Ok(bytes);
     };
-    let raw_path = raw_dir.join("Data SD");
-    if bytes.is_empty() || !raw_path.is_file() {
+    let Some(raw) = annex.read("Data SD")? else {
+        return Ok(bytes);
+    };
+    if bytes.is_empty() {
         return Ok(bytes);
     }
-    let raw = fs::read(&raw_path).with_path(&raw_path)?;
     let source_prefix_bytes =
         crate::realmz::shop_prefix_record_count(&raw) * crate::realmz::SHOP_BYTES;
     let full_source_bytes = raw.len() / crate::realmz::SHOP_BYTES * crate::realmz::SHOP_BYTES;
@@ -572,16 +562,14 @@ fn preserve_imported_fixed_length(
     name: &str,
     mut bytes: Vec<u8>,
     record_bytes: usize,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
 ) -> Result<Vec<u8>> {
-    let Some(raw_dir) = raw_dir else {
+    let Some(annex) = annex else {
         return Ok(bytes);
     };
-    let raw_path = raw_dir.join(name);
-    if !raw_path.is_file() {
+    let Some(raw) = annex.read(name)? else {
         return Ok(bytes);
-    }
-    let raw = fs::read(&raw_path).with_path(&raw_path)?;
+    };
     if raw.len() <= bytes.len() {
         return Ok(bytes);
     }
@@ -611,13 +599,14 @@ struct RulesCompilerBaselineFamily {
 
 fn write_race_overrides_for_export(
     output_dir: &Path,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     records: &[ScenarioRaceOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
-    let source_backed = raw_dir
-        .map(|raw_dir| raw_dir.join("Data Race").is_file())
-        .unwrap_or(false);
+    let source_backed = match annex {
+        Some(annex) => annex.contains("Data Race")?,
+        None => false,
+    };
     let sanitized;
     let writer_records = if source_backed {
         records
@@ -634,7 +623,7 @@ fn write_race_overrides_for_export(
     };
     write_rule_overrides_for_export(
         output_dir,
-        raw_dir,
+        annex,
         "Data Race",
         crate::realmz::RACE_BYTES,
         crate::realmz::RACE_OVERRIDE_RECORDS,
@@ -646,13 +635,14 @@ fn write_race_overrides_for_export(
 
 fn write_caste_overrides_for_export(
     output_dir: &Path,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     records: &[ScenarioCasteOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
-    let source_backed = raw_dir
-        .map(|raw_dir| raw_dir.join("Data Caste").is_file())
-        .unwrap_or(false);
+    let source_backed = match annex {
+        Some(annex) => annex.contains("Data Caste")?,
+        None => false,
+    };
     let sanitized;
     let writer_records = if source_backed {
         records
@@ -669,7 +659,7 @@ fn write_caste_overrides_for_export(
     };
     write_rule_overrides_for_export(
         output_dir,
-        raw_dir,
+        annex,
         "Data Caste",
         crate::realmz::CASTE_BYTES,
         crate::realmz::CASTE_OVERRIDE_RECORDS,
@@ -682,7 +672,7 @@ fn write_caste_overrides_for_export(
 #[allow(clippy::too_many_arguments)]
 fn write_rule_overrides_for_export(
     output_dir: &Path,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     name: &str,
     record_bytes: usize,
     fresh_records: usize,
@@ -693,8 +683,11 @@ fn write_rule_overrides_for_export(
     if record_ids.is_empty() {
         return Ok(());
     }
-    let raw_path = raw_dir.map(|raw_dir| raw_dir.join(name));
-    let source_backed = raw_path.as_ref().is_some_and(|path| path.is_file());
+    let raw = match annex {
+        Some(annex) => annex.read(name)?,
+        None => None,
+    };
+    let source_backed = raw.is_some();
     if !source_backed {
         if let Some(id) = record_ids.iter().find(|id| **id >= fresh_records) {
             return Err(ProvidenceError::message(format!(
@@ -704,8 +697,7 @@ fn write_rule_overrides_for_export(
         }
     }
 
-    let (mut body, tail) = if let Some(raw_path) = raw_path.filter(|path| path.is_file()) {
-        let mut raw = fs::read(&raw_path).with_path(&raw_path)?;
+    let (mut body, tail) = if let Some(mut raw) = raw {
         let body_bytes = raw.len() / record_bytes * record_bytes;
         let tail = raw.split_off(body_bytes);
         (raw, tail)
@@ -781,7 +773,7 @@ fn rule_compiler_baseline_bytes(
 
 fn write_spell_overrides_preserving_tail(
     output_dir: &Path,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     records: &[ScenarioSpellOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
@@ -799,11 +791,11 @@ fn write_spell_overrides_preserving_tail(
         return Ok(());
     }
     let fresh_capacity = crate::realmz::SPELL_OVERRIDE_RECORDS * crate::realmz::SPELL_BYTES;
-    let raw_path = raw_dir.map(|raw_dir| raw_dir.join("Data Spell"));
-    let mut bytes = if let Some(raw_path) = raw_path.filter(|path| path.is_file()) {
-        fs::read(&raw_path).with_path(&raw_path)?
-    } else {
-        vec![0; fresh_capacity]
+    let mut bytes = match annex {
+        Some(annex) => annex
+            .read("Data Spell")?
+            .unwrap_or_else(|| vec![0; fresh_capacity]),
+        None => vec![0; fresh_capacity],
     };
     if bytes.len() < overlay.len() {
         bytes.resize(overlay.len(), 0);
@@ -814,12 +806,12 @@ fn write_spell_overrides_preserving_tail(
 
 fn write_custom_spell_name_resources(
     output_dir: &Path,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     records: &[ScenarioSpellOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
-    let preserved = match raw_dir {
-        Some(raw_dir) => data_spell_resource_fork(raw_dir)?,
+    let preserved = match annex {
+        Some(annex) => data_spell_resource_fork(annex)?,
         None => None,
     };
     let source_backed = preserved.is_some();
@@ -902,13 +894,11 @@ fn custom_spell_name_resource_updates(
     updates
 }
 
-fn data_spell_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>> {
+fn data_spell_resource_fork(annex: &CompatibilityAnnex) -> Result<Option<(String, Vec<u8>)>> {
     for name in ["Data Spell.rsrc", "Data Spell.rsf", "._Data Spell"] {
-        let path = raw_dir.join(name);
-        if !path.is_file() {
+        let Some(bytes) = annex.read(name)? else {
             continue;
-        }
-        let bytes = fs::read(&path).with_path(&path)?;
+        };
         if parse_resource_fork_entries(&bytes)
             .iter()
             .any(|entry| entry.resource_type == "STR#" && (5000..=5006).contains(&entry.id))
@@ -921,7 +911,7 @@ fn data_spell_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>>
 
 fn write_item_text_resources(
     output_dir: &Path,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     records: &[ItemTextRecord],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
@@ -932,8 +922,8 @@ fn write_item_text_resources(
     if authored.is_empty() {
         return Ok(());
     }
-    let (resource_file_name, original) = match raw_dir {
-        Some(raw_dir) => data_id_resource_fork(raw_dir)?
+    let (resource_file_name, original) = match annex {
+        Some(annex) => data_id_resource_fork(annex)?
             .unwrap_or_else(|| ("Data ID.rsrc".to_string(), Vec::new())),
         None => ("Data ID.rsrc".to_string(), Vec::new()),
     };
@@ -950,13 +940,11 @@ fn write_item_text_resources(
     Ok(())
 }
 
-fn data_id_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>> {
+fn data_id_resource_fork(annex: &CompatibilityAnnex) -> Result<Option<(String, Vec<u8>)>> {
     for name in ["Data ID.rsrc", "Data ID.rsf", "._Data ID", "Data ID"] {
-        let path = raw_dir.join(name);
-        if !path.is_file() {
+        let Some(bytes) = annex.read(name)? else {
             continue;
-        }
-        let bytes = fs::read(&path).with_path(&path)?;
+        };
         if parse_resource_fork_entries(&bytes).iter().any(|entry| {
             entry.resource_type == "STR#" && item_text_resource_base(entry.id).is_some()
         }) {
@@ -1148,7 +1136,7 @@ fn hex_digit(value: u8) -> std::result::Result<u8, String> {
 fn write_managed_resources(
     project_dir: &Path,
     output_dir: &Path,
-    raw_dir: Option<&Path>,
+    annex: Option<&CompatibilityAnnex>,
     project: &ProvidenceProject,
     target: ScenarioTarget,
 ) -> Result<ResourceExportResult> {
@@ -1156,12 +1144,11 @@ fn write_managed_resources(
         resource_file_name: resource_file_name(project, target),
         ..ResourceExportResult::default()
     };
-    let original = if let Some(raw_dir) = raw_dir {
-        let raw_resource_path = raw_dir.join(&result.resource_file_name);
-        if raw_resource_path.is_file() {
-            fs::read(&raw_resource_path).with_path(&raw_resource_path)?
+    let original = if let Some(annex) = annex {
+        if let Some(bytes) = annex.read(&result.resource_file_name)? {
+            bytes
         } else {
-            match source_resource_bytes(project, raw_dir, target)? {
+            match source_resource_bytes(project, annex, target)? {
                 Some(bytes) => bytes,
                 None => {
                     result.resource_warnings.push(format!(
@@ -1440,7 +1427,7 @@ fn scenario_icon_resource_updates(
 
 fn source_resource_bytes(
     project: &ProvidenceProject,
-    raw_dir: &Path,
+    annex: &CompatibilityAnnex,
     target: ScenarioTarget,
 ) -> Result<Option<Vec<u8>>> {
     for file in project
@@ -1452,9 +1439,8 @@ fn source_resource_bytes(
         if target == ScenarioTarget::WindowsRealmzFolder && file.name == "Scenario" {
             continue;
         }
-        let path = raw_dir.join(&file.relative_path);
-        if path.is_file() {
-            return fs::read(&path).with_path(&path).map(Some);
+        if let Some(bytes) = annex.read(&file.relative_path)? {
+            return Ok(Some(bytes));
         }
     }
     Ok(None)
@@ -1597,6 +1583,7 @@ mod tests {
         write_race_overrides_for_export, write_spell_overrides_preserving_tail,
         ResourceExportResult,
     };
+    use crate::compatibility_annex::CompatibilityAnnex;
     use crate::project::{
         Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
         MapRecord, MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
@@ -1885,10 +1872,10 @@ mod tests {
         caste.authored = true;
         caste.start_money = 42;
 
+        let annex = CompatibilityAnnex::from_root(&raw_dir);
         let mut written = Vec::new();
-        write_race_overrides_for_export(&output_dir, Some(&raw_dir), &[race], &mut written)
-            .unwrap();
-        write_caste_overrides_for_export(&output_dir, Some(&raw_dir), &[caste], &mut written)
+        write_race_overrides_for_export(&output_dir, Some(&annex), &[race], &mut written).unwrap();
+        write_caste_overrides_for_export(&output_dir, Some(&annex), &[caste], &mut written)
             .unwrap();
 
         let race_output = fs::read(output_dir.join("Data Race")).unwrap();
@@ -1979,9 +1966,10 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let raw_dir = temp.path();
         fs::write(raw_dir.join("Data EDCD"), vec![0x7Au8; 30]).unwrap();
+        let annex = CompatibilityAnnex::from_root(raw_dir);
 
         let bytes =
-            preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, Some(raw_dir)).unwrap();
+            preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, Some(&annex)).unwrap();
 
         assert_eq!(bytes.len(), 30);
         assert_eq!(&bytes[..10], &[1u8; 10]);
@@ -1993,9 +1981,10 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let raw_dir = temp.path();
         fs::write(raw_dir.join("Data EDCD"), vec![9u8, 8, 7, 6, 5]).unwrap();
+        let annex = CompatibilityAnnex::from_root(raw_dir);
 
         let bytes =
-            preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, Some(raw_dir)).unwrap();
+            preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, Some(&annex)).unwrap();
 
         assert_eq!(bytes, vec![1u8, 2, 7, 6, 5]);
     }
@@ -2017,8 +2006,9 @@ mod tests {
         .unwrap();
         let mut modeled = valid.clone();
         modeled.extend_from_slice(&vec![1u8; crate::realmz::SHOP_BYTES]);
+        let annex = CompatibilityAnnex::from_root(raw_dir);
 
-        let bytes = append_preserved_shop_source_suffix(modeled.clone(), Some(raw_dir)).unwrap();
+        let bytes = append_preserved_shop_source_suffix(modeled.clone(), Some(&annex)).unwrap();
 
         assert_eq!(&bytes[..modeled.len()], modeled);
         assert_eq!(&bytes[modeled.len()..], foreign);

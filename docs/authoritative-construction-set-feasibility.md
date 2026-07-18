@@ -81,13 +81,21 @@ rows, and malformed tails retain compatibility preservation. The ownership proof
 race and one caste through TypeScript compilation, Rust save/open, byte-identical native output,
 semantic reimport, and the unmodified Realmz runtime.
 
+The ninth slice makes the export-time compatibility boundary explicit. Rust export now resolves
+legacy files only through a bounded `CompatibilityAnnex`, and browser export constructs its annex
+wrapper only for imported projects. Authored projects never receive either resolver, even when a
+stray desktop `raw-sources` directory or browser snapshot is supplied. Poison-annex proof cases
+fail if authored compilation enumerates pass-through files or reads a preserved record tail, while
+the imported fixture corpus remains byte-identical.
+
 Branch validation completed on 2026-07-18:
 
-- full Rust suite: 194 passed, 2 ignored;
+- full Rust suite: 195 passed, 2 ignored;
 - full TypeScript suite: 519 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
+- authored poison-annex access guard in both Rust and browser compilers;
 - Oracle runtime ownership proof with seven successful gameplay steps and no fatal markers;
 - browser/desktop imported-scenario parity check.
 - production browser build, UI audit, and a live fresh-project native-export smoke.
@@ -429,7 +437,8 @@ must not be called fresh-authoritative merely because imported round trips are f
    - `authored` projects have no source inventory requirement;
    - `imported` projects may reference a compatibility annex;
    - template derivation must retain annex data only when the selected template is imported.
-2. Make `raw-sources` optional in desktop and browser project packages.
+2. **Implemented on the investigation branch:** make `raw-sources` optional in desktop and browser
+   project packages.
 3. Extract a filesystem-independent native manifest compiler from `exporter.rs`.
 4. Make compiler defaults explicit:
    - 600-byte `Scenario` support file;
@@ -440,8 +449,10 @@ must not be called fresh-authoritative merely because imported round trips are f
    - **implemented:** fixed 105-record `Data Spell` output and fresh custom-spell name resources;
    - required zero-length startup files;
    - neutral `Data CS` and `Data Solids` policy.
-5. Move preservation helpers behind an optional compatibility-annex interface. Fresh compilation
-   must fail a test if it attempts an annex read.
+5. **Implemented at the export boundary:** move preservation helpers behind an optional,
+   path-bounded compatibility-annex interface. Fresh compilation has poison-annex tests that fail
+   if it enumerates or reads supplied legacy material. Embedded imported record bytes still need
+   migration into the annex model.
 6. Build validation from the compiler's expected manifest, not `project.source.files`.
 7. Build semantic indices from canonical project data and managed resources; use raw buffers only
    to enrich imported compatibility evidence.
@@ -463,8 +474,9 @@ must not be called fresh-authoritative merely because imported round trips are f
 3. **Generated canonical schema:** the `itemTexts` gap is closed and proof-gated, but TypeScript and
    Rust DTOs are still maintained manually. A language-neutral schema and generated DTO checks are
    still needed to prevent the next field-level drift.
-4. **Preserved bytes inside records:** several project records still embed unowned bytes. They must
-   become imported annex slices, not required fresh-project fields.
+4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
+   imported project records still embed unowned bytes. They must become annex slices rather than
+   normal canonical fields.
 5. **Raw-derived validation/semantics:** source inventories and semantic hydration still assume that
    files precede the canonical project.
 6. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
@@ -549,8 +561,9 @@ stock Classic execution remains a target-specific compatibility gate.
 
 ### Phase 3: Legacy compatibility isolation
 
-- Move raw file copies, record bytes, tails, arbitrary resources, and media payloads into an
-  explicit annex.
+- **Implemented for export-time files/tails:** route raw file copies, preserved lengths/tails, and
+  source resources through an explicit bounded annex resolver; continue by moving embedded record
+  bytes and imported media payloads behind the same boundary.
 - Migrate imported projects without dropping bytes.
 - Ensure authored projects do not accumulate annex data merely by being saved or exported.
 

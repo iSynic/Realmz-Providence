@@ -78,8 +78,41 @@ const classicFilesA = await readFlatDirectory(classicOutputA);
 const classicFilesB = await readFlatDirectory(classicOutputB);
 const browserWindowsPackage = createBrowserScenarioPackageZip(project, null, "windows-realmz-folder");
 const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "mac-classic-folder");
+const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
+  rootName: "ANNEX READ TRAP",
+  sourceKind: "browser-scenario-import",
+  targetPlatform: "windows-realmz",
+  capturedAt: "2026-07-18T00:00:00.000Z",
+  files: [
+    {
+      name: "Data NI",
+      relativePath: "Data NI",
+      originalRelativePath: "Data NI",
+      bytes: 20_001,
+      sha256: "must-not-be-read",
+      role: "supported-binary",
+      editable: true,
+      targetPlatform: "windows-realmz",
+      captureConfidence: "captured",
+      bytesData: new Uint8Array(20_001).fill(0xA5)
+    },
+    {
+      name: "ANNEX ENUMERATION TRAP",
+      relativePath: "ANNEX ENUMERATION TRAP",
+      originalRelativePath: "ANNEX ENUMERATION TRAP",
+      bytes: 3,
+      sha256: "must-not-be-enumerated",
+      role: "pass-through",
+      editable: false,
+      targetPlatform: "windows-realmz",
+      captureConfidence: "captured",
+      bytesData: new Uint8Array([1, 2, 3])
+    }
+  ]
+}, "windows-realmz-folder");
 const browserWindowsFiles = browserPackageFiles(browserWindowsPackage.zip, readStoredZip);
 const browserClassicFiles = browserPackageFiles(browserClassicPackage.zip, readStoredZip);
+const browserAnnexTrapFiles = browserPackageFiles(browserAnnexTrapPackage.zip, readStoredZip);
 assertCompleteNativeFolder(windowsFilesA, "Windows");
 assertCompleteNativeFolder(classicFilesA, "Classic Mac");
 assertCompleteNativeFolder(browserWindowsFiles, "browser Windows");
@@ -88,8 +121,10 @@ assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
 assertFileMapsEqual(windowsFilesA, browserWindowsFiles, "Rust/browser Windows compile");
 assertFileMapsEqual(classicFilesA, browserClassicFiles, "Rust/browser Classic-Mac compile");
+assertFileMapsEqual(browserWindowsFiles, browserAnnexTrapFiles, "authored browser annex access guard");
 expect(browserWindowsPackage.report.passThroughFiles.length === 0, "Browser Windows authored compile must not pass through compatibility files");
 expect(browserClassicPackage.report.passThroughFiles.length === 0, "Browser Classic-Mac authored compile must not pass through compatibility files");
+expect(browserAnnexTrapPackage.report.passThroughFiles.length === 0, "Authored browser compile must ignore a supplied compatibility snapshot");
 await writeFlatDirectory(browserWindowsOutput, browserWindowsFiles);
 await writeFlatDirectory(browserClassicOutput, browserClassicFiles);
 
@@ -124,6 +159,7 @@ const summary = {
     path: relative(projectDir),
     origin: project.source.origin,
     rawSourcesPresent: false,
+    annexAccessGuard: "passed",
     sourceFileCount: project.source.files.length,
     maps: project.maps.length,
     actionPoints: project.triggers.length,

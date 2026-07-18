@@ -2403,8 +2403,17 @@ mod tests {
         assert!(!project.source.immutable);
         assert_eq!(project.source.origin, Some(ProjectOrigin::Authored));
 
-        // Origin, not legacy snapshot flags, owns the compiler boundary.
+        // Origin, not legacy snapshot flags or a stray directory, owns the compiler boundary.
         project.source.immutable = true;
+        project.source.raw_sources_dir = RAW_SOURCES_DIR.to_string();
+        fs::create_dir_all(&raw_dir).expect("create authored annex trap");
+        fs::write(
+            raw_dir.join("Data NI"),
+            vec![0xA5_u8; 200 * crate::realmz::ITEM_BYTES + 1],
+        )
+        .expect("write authored annex tail-read trap");
+        fs::write(raw_dir.join("ANNEX READ TRAP"), [1_u8, 2, 3])
+            .expect("write authored annex pass-through trap");
 
         let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
             .into_iter()
@@ -2423,6 +2432,17 @@ mod tests {
         )
         .expect("export generated project");
         assert!(report.pass_through_files.is_empty());
+        assert_eq!(
+            fs::metadata(output_dir.join("Data NI"))
+                .expect("generated item table")
+                .len() as usize,
+            200 * crate::realmz::ITEM_BYTES,
+            "authored compilation must not preserve a malformed tail from a stray annex"
+        );
+        assert!(
+            !output_dir.join("ANNEX READ TRAP").exists(),
+            "authored compilation must not enumerate a stray annex"
+        );
         for (name, expected_bytes) in [
             ("Starter", 316),
             ("Scenario", 600),
@@ -2439,7 +2459,6 @@ mod tests {
             ("Data ED", 0),
             ("Data ED2", 0),
             ("Data MD", 0),
-            ("Data NI", 200 * crate::realmz::ITEM_BYTES),
             ("Data Solids", 1024),
         ] {
             assert_eq!(

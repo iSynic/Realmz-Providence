@@ -55,6 +55,7 @@ import {
   writeTreasures
 } from "./binaryWriters";
 import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
+import { BrowserCompatibilityAnnex } from "./compatibilityAnnex";
 import { encodeStringListResource, mergeResourceEntries, parseResourceFork, parseStringListResource, type ResourceForkUpdate } from "./resourceFork";
 import { createStoredZip } from "./zip";
 import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioSpellOverride, ScenarioTarget } from "../types";
@@ -112,11 +113,11 @@ export function createBrowserScenarioPackageZip(
     throw new Error("Browser scenario ZIP export expects a Mac Classic or Windows Realmz target.");
   }
   const importedProject = requiresCompatibilityAnnex(project);
-  if (importedProject && (!rawSources || rawSources.files.length === 0)) {
+  const compatibilityAnnex = importedProject && rawSources ? new BrowserCompatibilityAnnex(rawSources) : null;
+  if (importedProject && (!compatibilityAnnex || compatibilityAnnex.files().length === 0)) {
     throw new Error("Missing browser raw source snapshot. Reimport the scenario in this browser, or open a Providence project ZIP that includes raw-sources.");
   }
-  const rawFiles = importedProject ? rawSources!.files : [];
-  const missingRawSources = importedProject ? missingProjectSourceSnapshotFiles(project, rawSources!) : [];
+  const missingRawSources = compatibilityAnnex ? missingProjectSourceSnapshotFiles(project, compatibilityAnnex) : [];
   if (missingRawSources.length > 0) {
     throw new Error([
       "Browser scenario ZIP export is missing captured raw source bytes required by the project source inventory.",
@@ -127,7 +128,7 @@ export function createBrowserScenarioPackageZip(
   }
 
   const generatedAt = new Date();
-  const importedRootName = importedProject ? rawSources!.rootName : "";
+  const importedRootName = compatibilityAnnex?.rootName ?? "";
   const rootName = safePackageName(project.scenario.name || importedRootName || "Untitled Scenario");
   const outputFiles = new Map<string, Uint8Array>();
   const passThroughFiles: string[] = [];
@@ -138,7 +139,7 @@ export function createBrowserScenarioPackageZip(
     outputFiles.set(file.path, file.bytes);
   }
 
-  for (const source of rawFiles) {
+  for (const source of compatibilityAnnex?.files() ?? []) {
     if (isCustomNamesSupportFile(source.name) || isGeneratedRuntimeCacheFile(source.name)) {
       continue;
     }
@@ -147,12 +148,12 @@ export function createBrowserScenarioPackageZip(
     passThroughFiles.push(outputPath);
   }
 
-  const binaryWrites = writeSupportedBinaryRecords(project, rawFiles);
+  const binaryWrites = writeSupportedBinaryRecords(project, compatibilityAnnex);
   for (const write of binaryWrites) {
     outputFiles.set(write.path, overlayCompilerBaseline(write.bytes, compilerBaselineByPath.get(write.path)));
   }
 
-  const resourceResult = writeManagedResources(project, rawFiles, target);
+  const resourceResult = writeManagedResources(project, compatibilityAnnex, target);
   if (resourceResult.resourceFileWritten) {
     outputFiles.set(resourceResult.resourceFilePath, resourceResult.resourceBytes);
   }
@@ -178,7 +179,7 @@ export function createBrowserScenarioPackageZip(
   const warnings = [
     ...(project.validation.ok ? [] : project.validation.warnings),
     ...projectOnlyScenarioExportWarnings(project),
-    ...itemTextExportWarnings(project, rawFiles)
+    ...itemTextExportWarnings(project, compatibilityAnnex)
   ];
   return {
     fileName,
@@ -201,11 +202,11 @@ export function createBrowserScenarioPackageZip(
 
 function writeManagedResources(
   project: Project,
-  rawFiles: BrowserRawSourceFile[],
+  annex: BrowserCompatibilityAnnex | null,
   target: ScenarioTarget
 ): ResourceExportResult & { resourceBytes: Uint8Array } {
-  const selected = sourceResourceFile(project, rawFiles, target);
-  const resourceFileName = resourceFileNameForProject(project, rawFiles, target);
+  const selected = sourceResourceFile(project, annex, target);
+  const resourceFileName = resourceFileNameForProject(project, annex, target);
   const resourceFilePath = target === "windows-realmz-folder" && resourceFileName === "Scenario"
     ? "Scenario.rsrc"
     : resourceFileName;
@@ -251,92 +252,92 @@ function hasResourceUpdates(project: Project) {
   );
 }
 
-function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourceFile[]) {
+function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibilityAnnex | null) {
   const writes: BinaryWriteResult[] = [];
   if (project.scenario.shell?.authored) {
     writes.push({
       path: scenarioShellFileName(project),
-      bytes: preserveMalformedRawTail(scenarioShellFileName(project), writeScenarioShell(project.scenario.shell), SCENARIO_SHELL_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail(scenarioShellFileName(project), writeScenarioShell(project.scenario.shell), SCENARIO_SHELL_BYTES, annex)
     });
   }
   if (project.scenario.supportFile?.authored) {
     const supportFileName = project.scenario.supportFile.sourceFile?.trim() || "Scenario";
     writes.push({
       path: supportFileName,
-      bytes: preserveRawOverlay(supportFileName, writeScenarioSupportFile(project.scenario.supportFile), rawFiles)
+      bytes: preserveRawOverlay(supportFileName, writeScenarioSupportFile(project.scenario.supportFile), annex)
     });
   }
   if (project.scenario.securityBackup?.authored) {
     writes.push({
       path: "Data CS",
-      bytes: preserveMalformedRawTail("Data CS", writeScenarioShell(project.scenario.securityBackup), SCENARIO_SHELL_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data CS", writeScenarioShell(project.scenario.securityBackup), SCENARIO_SHELL_BYTES, annex)
     });
   }
   if (project.messages.length > 0) {
     writes.push({
       path: "Data SD2",
-      bytes: preserveMalformedRawTail("Data SD2", writeMessages(project.messages), MESSAGE_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data SD2", writeMessages(project.messages), MESSAGE_RECORD_BYTES, annex)
     });
   }
   if (project.optionLabels.length > 0) {
     writes.push({
       path: "Data OD",
-      bytes: preserveMalformedRawTail("Data OD", writeOptionLabels(project.optionLabels), OPTION_LABEL_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data OD", writeOptionLabels(project.optionLabels), OPTION_LABEL_RECORD_BYTES, annex)
     });
   }
   if (project.battles.length > 0) {
     writes.push({
       path: "Data BD",
-      bytes: preserveMalformedRawTail("Data BD", writeBattles(project.battles), BATTLE_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data BD", writeBattles(project.battles), BATTLE_RECORD_BYTES, annex)
     });
   }
   if (project.monsters.length > 0) {
     writes.push({
       path: "Data MD",
-      bytes: preserveMalformedRawTail("Data MD", writeMonsters(project.monsters), MONSTER_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data MD", writeMonsters(project.monsters), MONSTER_RECORD_BYTES, annex)
     });
   }
   for (const monsterSet of project.monsterSets) {
     if (monsterSet.monsters.length === 0) continue;
     writes.push({
       path: monsterSet.sourceFile,
-      bytes: preserveMalformedRawTail(monsterSet.sourceFile, writeMonsters(monsterSet.monsters), MONSTER_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail(monsterSet.sourceFile, writeMonsters(monsterSet.monsters), MONSTER_RECORD_BYTES, annex)
     });
   }
   if (project.monsterDescriptions.length > 0) {
     writes.push({
       path: "Data DES",
-      bytes: preserveMalformedRawTail("Data DES", writeMonsterDescriptions(project.monsterDescriptions), MONSTER_DESCRIPTION_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data DES", writeMonsterDescriptions(project.monsterDescriptions), MONSTER_DESCRIPTION_RECORD_BYTES, annex)
     });
   }
   if (project.maps.some((map) => map.levelType === "land")) {
     writes.push({
       path: "Data LD",
-      bytes: preserveMalformedRawTail("Data LD", writeMapFields(project.maps, "land"), FIELD_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data LD", writeMapFields(project.maps, "land"), FIELD_RECORD_BYTES, annex)
     });
   }
   if (project.maps.some((map) => map.levelType === "dungeon")) {
     writes.push({
       path: "Data DL",
-      bytes: preserveMalformedRawTail("Data DL", writeMapFields(project.maps, "dungeon"), FIELD_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data DL", writeMapFields(project.maps, "dungeon"), FIELD_RECORD_BYTES, annex)
     });
   }
   if (project.mapRecords.length > 0) {
     writes.push({
       path: "Data MD2",
-      bytes: preserveMalformedRawTail("Data MD2", writeMapRecords(project.mapRecords), MAP_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data MD2", writeMapRecords(project.mapRecords), MAP_RECORD_BYTES, annex)
     });
   }
   if (project.randomLevels.some((level) => level.levelType === "land")) {
     writes.push({
       path: "Data RD",
-      bytes: preserveMalformedRawTail("Data RD", writeRandomLevels(project.randomLevels, "land"), RANDOM_LEVEL_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data RD", writeRandomLevels(project.randomLevels, "land"), RANDOM_LEVEL_RECORD_BYTES, annex)
     });
   }
   if (project.randomLevels.some((level) => level.levelType === "dungeon")) {
     writes.push({
       path: "Data RDD",
-      bytes: preserveMalformedRawTail("Data RDD", writeRandomLevels(project.randomLevels, "dungeon"), RANDOM_LEVEL_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data RDD", writeRandomLevels(project.randomLevels, "dungeon"), RANDOM_LEVEL_RECORD_BYTES, annex)
     });
   }
   if (project.maps.some((map) => map.levelType === "land") || project.triggers.some((trigger) => trigger.levelType === "land")) {
@@ -346,7 +347,7 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
         "Data DD",
         writeDoorFile(project.triggers, "land", project.maps.filter((map) => map.levelType === "land").length),
         DOOR_LEVEL_RECORD_BYTES,
-        rawFiles
+        annex
       )
     });
   }
@@ -357,32 +358,32 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
         "Data DDD",
         writeDoorFile(project.triggers, "dungeon", project.maps.filter((map) => map.levelType === "dungeon").length),
         DOOR_LEVEL_RECORD_BYTES,
-        rawFiles
+        annex
       )
     });
   }
   if (project.triggers.some((trigger) => trigger.source === "Data ED3")) {
     writes.push({
       path: "Data ED3",
-      bytes: preserveMalformedRawTail("Data ED3", writeMacroFile(project.triggers), DOOR_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data ED3", writeMacroFile(project.triggers), DOOR_RECORD_BYTES, annex)
     });
   }
   if (project.extracodes.length > 0) {
     writes.push({
       path: "Data EDCD",
-      bytes: preserveMalformedRawTail("Data EDCD", writeExtraCodes(project.extracodes), EXTRACODE_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data EDCD", writeExtraCodes(project.extracodes), EXTRACODE_RECORD_BYTES, annex)
     });
   }
   if (project.scenario.globalMacroHooks) {
     writes.push({
       path: "Global",
-      bytes: preserveMalformedRawTail("Global", writeGlobalMacroHooks(project.scenario.globalMacroHooks), GLOBAL_MACRO_HOOK_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Global", writeGlobalMacroHooks(project.scenario.globalMacroHooks), GLOBAL_MACRO_HOOK_BYTES, annex)
     });
   }
   if (project.landLayout) {
     writes.push({
       path: "Layout",
-      bytes: preserveMalformedRawTail("Layout", writeLandLayout(project.landLayout), LAND_LAYOUT_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Layout", writeLandLayout(project.landLayout), LAND_LAYOUT_RECORD_BYTES, annex)
     });
   }
   for (const landlook of project.customLandlooks ?? []) {
@@ -395,84 +396,84 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
   if (project.scenario.contactInfo) {
     writes.push({
       path: "Data CI",
-      bytes: preserveMalformedRawTail("Data CI", writeScenarioContactInfo(project.scenario.contactInfo), SCENARIO_CONTACT_INFO_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data CI", writeScenarioContactInfo(project.scenario.contactInfo), SCENARIO_CONTACT_INFO_BYTES, annex)
     });
   }
   if (project.scenario.restrictions) {
     writes.push({
       path: "Data RI",
-      bytes: preserveMalformedRawTail("Data RI", writeScenarioRestrictions(project.scenario.restrictions), SCENARIO_RESTRICTIONS_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data RI", writeScenarioRestrictions(project.scenario.restrictions), SCENARIO_RESTRICTIONS_BYTES, annex)
     });
   }
   if (project.scenarioItems.length > 0) {
     writes.push({
       path: "Data NI",
-      bytes: preserveZeroFilledRawCapacity("Data NI", writeScenarioItems(project.scenarioItems), ITEM_RECORD_BYTES, rawFiles)
+      bytes: preserveZeroFilledRawCapacity("Data NI", writeScenarioItems(project.scenarioItems), ITEM_RECORD_BYTES, annex)
     });
   }
   if (project.treasures.length > 0) {
     writes.push({
       path: "Data TD",
-      bytes: preserveMalformedRawTail("Data TD", writeTreasures(project.treasures), TREASURE_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data TD", writeTreasures(project.treasures), TREASURE_RECORD_BYTES, annex)
     });
   }
   if (project.shops.length > 0) {
     writes.push({
       path: "Data SD",
-      bytes: appendPreservedShopSourceSuffix(writeShops(project.shops), rawSourceBytes("Data SD", rawFiles))
+      bytes: appendPreservedShopSourceSuffix(writeShops(project.shops), rawSourceBytes("Data SD", annex))
     });
   }
   if (project.spellOverrides.length > 0) {
     writes.push({
       path: "Data Spell",
-      bytes: writeSpellOverridesForExport(project.spellOverrides, rawFiles)
+      bytes: writeSpellOverridesForExport(project.spellOverrides, annex)
     });
-    const spellNameResourceWrite = writeCustomSpellNameResources(project, rawFiles);
+    const spellNameResourceWrite = writeCustomSpellNameResources(project, annex);
     if (spellNameResourceWrite) writes.push(spellNameResourceWrite);
   }
-  const itemTextResourceWrite = writeItemTextResources(project, rawFiles);
+  const itemTextResourceWrite = writeItemTextResources(project, annex);
   if (itemTextResourceWrite) writes.push(itemTextResourceWrite);
   if (project.raceOverrides.length > 0) {
     writes.push({
       path: "Data Race",
-      bytes: writeRuleOverridesForExport("Data Race", project.raceOverrides, RACE_RECORD_BYTES, RACE_COMPILER_BASELINE, rawFiles, writeRaceOverrides)
+      bytes: writeRuleOverridesForExport("Data Race", project.raceOverrides, RACE_RECORD_BYTES, RACE_COMPILER_BASELINE, annex, writeRaceOverrides)
     });
   }
   if (project.casteOverrides.length > 0) {
     writes.push({
       path: "Data Caste",
-      bytes: writeRuleOverridesForExport("Data Caste", project.casteOverrides, CASTE_RECORD_BYTES, CASTE_COMPILER_BASELINE, rawFiles, writeCasteOverrides)
+      bytes: writeRuleOverridesForExport("Data Caste", project.casteOverrides, CASTE_RECORD_BYTES, CASTE_COMPILER_BASELINE, annex, writeCasteOverrides)
     });
   }
   if (project.simpleEncounters.length > 0) {
     writes.push({
       path: "Data ED",
-      bytes: preserveMalformedRawTail("Data ED", writeSimpleEncounters(project.simpleEncounters), SIMPLE_ENCOUNTER_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data ED", writeSimpleEncounters(project.simpleEncounters), SIMPLE_ENCOUNTER_RECORD_BYTES, annex)
     });
   }
   if (project.complexEncounters.length > 0) {
     writes.push({
       path: "Data ED2",
-      bytes: preserveMalformedRawTail("Data ED2", writeComplexEncounters(project.complexEncounters), COMPLEX_ENCOUNTER_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data ED2", writeComplexEncounters(project.complexEncounters), COMPLEX_ENCOUNTER_RECORD_BYTES, annex)
     });
   }
   if (project.thiefEncounters.length > 0) {
     writes.push({
       path: "Data TD2",
-      bytes: preserveMalformedRawTail("Data TD2", writeThiefEncounters(project.thiefEncounters), THIEF_ENCOUNTER_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data TD2", writeThiefEncounters(project.thiefEncounters), THIEF_ENCOUNTER_RECORD_BYTES, annex)
     });
   }
   if (project.timedEncounters.length > 0) {
     writes.push({
       path: "Data TD3",
-      bytes: preserveMalformedRawTail("Data TD3", writeTimedEncounters(project.timedEncounters), TIMED_ENCOUNTER_RECORD_BYTES, rawFiles)
+      bytes: preserveMalformedRawTail("Data TD3", writeTimedEncounters(project.timedEncounters), TIMED_ENCOUNTER_RECORD_BYTES, annex)
     });
   }
   return writes.filter((write) => write.bytes.byteLength > 0);
 }
 
-function writeCustomSpellNameResources(project: Project, rawFiles: BrowserRawSourceFile[]): BinaryWriteResult | null {
-  const source = dataSpellResourceFork(rawFiles);
+function writeCustomSpellNameResources(project: Project, annex: BrowserCompatibilityAnnex | null): BinaryWriteResult | null {
+  const source = dataSpellResourceFork(annex);
   const candidates = project.spellOverrides.filter((record) => (
     record.id >= 0
     && record.id < CUSTOM_SPELL_RECORDS
@@ -515,12 +516,12 @@ function writeCustomSpellNameResources(project: Project, rawFiles: BrowserRawSou
   };
 }
 
-function writeSpellOverridesForExport(records: ScenarioSpellOverride[], rawFiles: BrowserRawSourceFile[]) {
+function writeSpellOverridesForExport(records: ScenarioSpellOverride[], annex: BrowserCompatibilityAnnex | null) {
   const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= CUSTOM_SPELL_RECORDS);
   if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..104 custom slot range.`);
   const overlay = writeSpellOverrides(records);
-  const raw = rawSourceBytes("Data Spell", rawFiles);
-  if (raw) return preserveRawOverlay("Data Spell", overlay, rawFiles);
+  const raw = rawSourceBytes("Data Spell", annex);
+  if (raw) return preserveRawOverlay("Data Spell", overlay, annex);
   const output = new Uint8Array(CUSTOM_SPELL_RECORDS * SPELL_RECORD_BYTES);
   output.set(overlay);
   return output;
@@ -531,10 +532,10 @@ function writeRuleOverridesForExport<T extends { id: number; rawBytes?: number[]
   records: T[],
   recordBytes: number,
   freshBaseline: Uint8Array,
-  rawFiles: BrowserRawSourceFile[],
+  annex: BrowserCompatibilityAnnex | null,
   writer: (records: T[]) => Uint8Array
 ) {
-  const raw = rawSourceBytes(fileName, rawFiles);
+  const raw = rawSourceBytes(fileName, annex);
   const structurallyInvalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0);
   if (structurallyInvalid) throw new Error(`${fileName} record ${structurallyInvalid.id} must use a non-negative integer slot.`);
   const freshInvalid = !raw && records.find((record) => record.id >= RULE_OVERRIDE_RECORDS);
@@ -567,10 +568,10 @@ function ruleCompilerBaselineBytes(family: "race" | "caste", recordBytes: number
   return bytes;
 }
 
-function writeItemTextResources(project: Project, rawFiles: BrowserRawSourceFile[]): BinaryWriteResult | null {
+function writeItemTextResources(project: Project, annex: BrowserCompatibilityAnnex | null): BinaryWriteResult | null {
   const authored = (project.itemTexts ?? []).filter((record) => record.authored && record.itemId > 0 && record.itemId < 1000);
   if (authored.length === 0) return null;
-  const source = dataIdResourceFork(rawFiles);
+  const source = dataIdResourceFork(annex);
   const original = source?.bytesData ?? new Uint8Array();
   const entries = parseResourceFork(original);
   const updates: ResourceForkUpdate[] = [];
@@ -612,8 +613,8 @@ function writeItemTextResources(project: Project, rawFiles: BrowserRawSourceFile
   };
 }
 
-function dataIdResourceFork(rawFiles: BrowserRawSourceFile[]) {
-  for (const source of rawFiles) {
+function dataIdResourceFork(annex: BrowserCompatibilityAnnex | null) {
+  for (const source of annex?.files() ?? []) {
     const outputPath = outputPathForRawSource(source).toLowerCase();
     const name = source.name.toLowerCase();
     if (!["data id", "data id.rsrc", "data id.rsf", "._data id"].includes(name) && !outputPath.endsWith("/data id") && !outputPath.endsWith("/data id.rsrc") && !outputPath.endsWith("/data id.rsf") && !outputPath.endsWith("/._data id")) {
@@ -639,9 +640,9 @@ function itemTextResourceName(offset: number) {
   return "Item Descriptions";
 }
 
-function dataSpellResourceFork(rawFiles: BrowserRawSourceFile[]) {
+function dataSpellResourceFork(annex: BrowserCompatibilityAnnex | null) {
   for (const name of ["Data Spell.rsrc", "Data Spell.rsf", "._Data Spell"]) {
-    const source = rawFiles.find((file) => file.name === name || outputPathForRawSource(file) === name);
+    const source = annex?.find((file) => file.name === name || outputPathForRawSource(file) === name);
     if (!source) continue;
     if (parseResourceFork(source.bytesData).some((entry) => entry.resourceType === "STR#" && entry.id >= 5000 && entry.id <= 5006)) {
       return source;
@@ -824,34 +825,34 @@ function mapRecordPrimaryName(record: MapRecord) {
   return `Map ${record.id + 1}`;
 }
 
-function sourceResourceFile(project: Project, rawFiles: BrowserRawSourceFile[], target: ScenarioTarget) {
-  const resourceFileName = resourceFileNameForProject(project, rawFiles, target);
-  const exact = rawFiles.find((file) => (
+function sourceResourceFile(project: Project, annex: BrowserCompatibilityAnnex | null, target: ScenarioTarget) {
+  const resourceFileName = resourceFileNameForProject(project, annex, target);
+  const exact = annex?.find((file) => (
     file.role === "resource-fork" &&
     !isWindowsRawScenarioResourceFork(file, target) &&
     parseResourceFork(file.bytesData).length > 0 &&
     (file.name.toLowerCase() === resourceFileName.toLowerCase() || outputPathForRawSource(file).toLowerCase() === resourceFileName.toLowerCase())
   ));
   if (exact) return exact;
-  return rawFiles.find((file) => (
+  return annex?.find((file) => (
     file.role === "resource-fork" &&
     !isWindowsRawScenarioResourceFork(file, target) &&
     parseResourceFork(file.bytesData).length > 0
   )) ?? null;
 }
 
-function resourceFileNameForProject(project: Project, rawFiles: BrowserRawSourceFile[], target: ScenarioTarget) {
+function resourceFileNameForProject(project: Project, annex: BrowserCompatibilityAnnex | null, target: ScenarioTarget) {
   const shellName = scenarioShellFileName(project);
   const preferred = uniqueStrings(["Scenario.rsrc", "Scenario.rsf", `${shellName}.rsrc`, `${shellName}.rsf`, "Scenario"]);
   for (const candidate of preferred) {
-    const file = rawFiles.find((source) => source.role === "resource-fork" && source.name.toLowerCase() === candidate.toLowerCase());
+    const file = annex?.find((source) => source.role === "resource-fork" && source.name.toLowerCase() === candidate.toLowerCase());
     if (!file) continue;
     if (isWindowsRawScenarioResourceFork(file, target)) {
       return "Scenario.rsrc";
     }
     return file.name;
   }
-  const resourceFile = rawFiles.find((source) => source.role === "resource-fork");
+  const resourceFile = annex?.find((source) => source.role === "resource-fork");
   if (resourceFile) {
     if (isWindowsRawScenarioResourceFork(resourceFile, target)) return "Scenario.rsrc";
     return resourceFile.name;
@@ -879,8 +880,8 @@ function isWindowsRawScenarioResourceFork(source: BrowserRawSourceFile, target: 
   return target === "windows-realmz-folder" && source.name === "Scenario";
 }
 
-function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordBytes: number, rawFiles: BrowserRawSourceFile[]) {
-  const raw = rawSourceBytes(fileName, rawFiles);
+function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordBytes: number, annex: BrowserCompatibilityAnnex | null) {
+  const raw = rawSourceBytes(fileName, annex);
   if (!raw || raw.byteLength <= bytes.byteLength || raw.byteLength % recordBytes === 0) {
     return bytes;
   }
@@ -890,35 +891,35 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
   return output;
 }
 
-function preserveZeroFilledRawCapacity(fileName: string, bytes: Uint8Array, recordBytes: number, rawFiles: BrowserRawSourceFile[]) {
-  const raw = rawSourceBytes(fileName, rawFiles);
+function preserveZeroFilledRawCapacity(fileName: string, bytes: Uint8Array, recordBytes: number, annex: BrowserCompatibilityAnnex | null) {
+  const raw = rawSourceBytes(fileName, annex);
   if (!raw || raw.byteLength <= bytes.byteLength || raw.some((byte) => byte !== 0)) {
-    return preserveMalformedRawTail(fileName, bytes, recordBytes, rawFiles);
+    return preserveMalformedRawTail(fileName, bytes, recordBytes, annex);
   }
   const output = new Uint8Array(raw);
   output.set(bytes);
   return output;
 }
 
-function preserveRawOverlay(fileName: string, bytes: Uint8Array, rawFiles: BrowserRawSourceFile[]) {
-  const raw = rawSourceBytes(fileName, rawFiles);
+function preserveRawOverlay(fileName: string, bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {
+  const raw = rawSourceBytes(fileName, annex);
   if (!raw || raw.byteLength <= bytes.byteLength) return bytes;
   const output = new Uint8Array(raw);
   output.set(bytes);
   return output;
 }
 
-function rawSourceBytes(fileName: string, rawFiles: BrowserRawSourceFile[]) {
+function rawSourceBytes(fileName: string, annex: BrowserCompatibilityAnnex | null) {
   const normalizedName = normalizePackagePath(fileName).toLowerCase();
-  return rawFiles.find((source) => (
+  return annex?.find((source) => (
     normalizePackagePath(source.name).toLowerCase() === normalizedName ||
     normalizePackagePath(source.relativePath || "").toLowerCase() === normalizedName
   ))?.bytesData ?? null;
 }
 
-function missingProjectSourceSnapshotFiles(project: Project, rawSources: BrowserRawSourceSnapshot) {
+function missingProjectSourceSnapshotFiles(project: Project, annex: BrowserCompatibilityAnnex) {
   const captured = new Set<string>();
-  for (const source of rawSources.files) {
+  for (const source of annex.files()) {
     for (const path of [source.relativePath, source.originalRelativePath, source.name]) {
       const key = normalizePackagePath(path || "");
       if (key) captured.add(key.toLowerCase());
@@ -941,9 +942,9 @@ function projectOnlyScenarioExportWarnings(project: Project) {
   ];
 }
 
-function itemTextExportWarnings(project: Project, rawFiles: BrowserRawSourceFile[]) {
+function itemTextExportWarnings(project: Project, annex: BrowserCompatibilityAnnex | null) {
   const authored = (project.itemTexts ?? []).some((record) => record.authored);
-  if (!authored || dataIdResourceFork(rawFiles) || canCreateCustomItemTextResource(project)) return [];
+  if (!authored || dataIdResourceFork(annex) || canCreateCustomItemTextResource(project)) return [];
   return [
     "Custom item name/description edits need a captured Data ID resource fork for scenario ZIP export. They remain preserved in the Providence project package."
   ];

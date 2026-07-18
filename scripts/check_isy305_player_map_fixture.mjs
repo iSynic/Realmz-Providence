@@ -14,6 +14,9 @@ const sourceFiles = [
   "src/editor/browser/shopRecords.ts",
   "src/editor/browser/resourceFork.ts",
   "src/editor/browser/fsAccess.ts",
+  "src/editor/browser/compatibilityAnnex.ts",
+  "src/editor/browser/scenarioCompilerBaseline.ts",
+  "src/editor/projectOrigin.ts",
   "src/editor/browser/scenarioPackage.ts"
 ];
 
