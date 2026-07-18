@@ -58,6 +58,8 @@ import { encodeStringListResource, mergeResourceEntries, parseResourceFork, pars
 import { createStoredZip } from "./zip";
 import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioTarget } from "../types";
 import { appendPreservedShopSourceSuffix } from "./shopRecords";
+import { requiresCompatibilityAnnex } from "../projectOrigin";
+import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
 
 type ZipEntry = {
   path: string;
@@ -101,10 +103,12 @@ export function createBrowserScenarioPackageZip(
   if (target === "providence-portable-folder") {
     throw new Error("Browser scenario ZIP export expects a Mac Classic or Windows Realmz target.");
   }
-  if (!rawSources || rawSources.files.length === 0) {
+  const importedProject = requiresCompatibilityAnnex(project);
+  if (importedProject && (!rawSources || rawSources.files.length === 0)) {
     throw new Error("Missing browser raw source snapshot. Reimport the scenario in this browser, or open a Providence project ZIP that includes raw-sources.");
   }
-  const missingRawSources = missingProjectSourceSnapshotFiles(project, rawSources);
+  const rawFiles = importedProject ? rawSources!.files : [];
+  const missingRawSources = importedProject ? missingProjectSourceSnapshotFiles(project, rawSources!) : [];
   if (missingRawSources.length > 0) {
     throw new Error([
       "Browser scenario ZIP export is missing captured raw source bytes required by the project source inventory.",
@@ -114,22 +118,19 @@ export function createBrowserScenarioPackageZip(
     ].filter(Boolean).join("\n"));
   }
 
-  const unsupportedAuthoredState = unsupportedAuthoredBinaryState(project);
-  if (unsupportedAuthoredState.length > 0) {
-    throw new Error([
-      "Browser scenario ZIP export is available for unchanged imported source snapshots and resource-only mutations.",
-      "This project has authored binary record changes that still need the browser writer port:",
-      ...unsupportedAuthoredState.slice(0, 10).map((label) => `- ${label}`),
-      unsupportedAuthoredState.length > 10 ? `- ${unsupportedAuthoredState.length - 10} more authored change group(s)` : ""
-    ].filter(Boolean).join("\n"));
-  }
-
   const generatedAt = new Date();
-  const rootName = safePackageName(project.scenario.name || rawSources.rootName || "Untitled Scenario");
+  const importedRootName = importedProject ? rawSources!.rootName : "";
+  const rootName = safePackageName(project.scenario.name || importedRootName || "Untitled Scenario");
   const outputFiles = new Map<string, Uint8Array>();
   const passThroughFiles: string[] = [];
+  const compilerBaseline = importedProject ? [] : createAuthoredScenarioCompilerBaseline(project);
+  const compilerBaselineByPath = new Map(compilerBaseline.map((file) => [file.path, file.bytes]));
 
-  for (const source of rawSources.files) {
+  for (const file of compilerBaseline) {
+    outputFiles.set(file.path, file.bytes);
+  }
+
+  for (const source of rawFiles) {
     if (isCustomNamesSupportFile(source.name) || isGeneratedRuntimeCacheFile(source.name)) {
       continue;
     }
@@ -138,20 +139,21 @@ export function createBrowserScenarioPackageZip(
     passThroughFiles.push(outputPath);
   }
 
-  const binaryWrites = writeSupportedBinaryRecords(project, rawSources.files);
+  const binaryWrites = writeSupportedBinaryRecords(project, rawFiles);
   for (const write of binaryWrites) {
-    outputFiles.set(write.path, write.bytes);
+    outputFiles.set(write.path, overlayCompilerBaseline(write.bytes, compilerBaselineByPath.get(write.path)));
   }
 
-  const resourceResult = writeManagedResources(project, rawSources.files, target);
+  const resourceResult = writeManagedResources(project, rawFiles, target);
   if (resourceResult.resourceFileWritten) {
     outputFiles.set(resourceResult.resourceFilePath, resourceResult.resourceBytes);
   }
 
-  const writtenFiles = [
+  const writtenFiles = uniqueStrings([
+    ...compilerBaseline.map((file) => file.path),
     ...binaryWrites.map((write) => write.path),
     ...(resourceResult.resourceFileWritten ? [resourceResult.resourceFilePath] : [])
-  ];
+  ]);
   const written = new Set(writtenFiles);
   const filteredPassThrough = passThroughFiles.filter((path) => !written.has(path));
   const entries: ZipEntry[] = [...outputFiles.entries()]
@@ -168,7 +170,7 @@ export function createBrowserScenarioPackageZip(
   const warnings = [
     ...(project.validation.ok ? [] : project.validation.warnings),
     ...projectOnlyScenarioExportWarnings(project),
-    ...itemTextExportWarnings(project, rawSources.files)
+    ...itemTextExportWarnings(project, rawFiles)
   ];
   return {
     fileName,
@@ -784,7 +786,15 @@ function resourceFileNameForProject(project: Project, rawFiles: BrowserRawSource
     if (isWindowsRawScenarioResourceFork(resourceFile, target)) return "Scenario.rsrc";
     return resourceFile.name;
   }
+  if (!requiresCompatibilityAnnex(project)) return "Scenario.rsrc";
   return target === "windows-realmz-folder" ? "Scenario.rsrc" : "Scenario";
+}
+
+function overlayCompilerBaseline(bytes: Uint8Array, baseline: Uint8Array | undefined) {
+  if (!baseline || baseline.byteLength <= bytes.byteLength) return bytes;
+  const output = new Uint8Array(baseline);
+  output.set(bytes);
+  return output;
 }
 
 function scenarioShellFileName(project: Project) {
@@ -852,11 +862,6 @@ function missingProjectSourceSnapshotFiles(project: Project, rawSources: Browser
     }
     return true;
   });
-}
-
-function unsupportedAuthoredBinaryState(_project: Project) {
-  const labels: string[] = [];
-  return [...new Set(labels)];
 }
 
 function projectOnlyScenarioExportWarnings(project: Project) {

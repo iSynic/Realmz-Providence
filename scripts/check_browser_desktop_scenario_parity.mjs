@@ -16,7 +16,9 @@ const sourceFiles = [
   "src/editor/browser/shopRecords.ts",
   "src/editor/browser/resourceFork.ts",
   "src/editor/browser/fsAccess.ts",
-  "src/editor/browser/scenarioPackage.ts"
+  "src/editor/browser/scenarioCompilerBaseline.ts",
+  "src/editor/browser/scenarioPackage.ts",
+  "src/editor/projectOrigin.ts"
 ];
 
 await fs.rm(buildRoot, { recursive: true, force: true });

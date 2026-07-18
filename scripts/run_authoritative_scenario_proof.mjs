@@ -16,6 +16,8 @@ const windowsOutputA = path.join(proofRoot, "native-windows-a", "Providence Owne
 const windowsOutputB = path.join(proofRoot, "native-windows-b", "Providence Ownership Proof");
 const classicOutputA = path.join(proofRoot, "native-classic-a", "Providence Ownership Proof");
 const classicOutputB = path.join(proofRoot, "native-classic-b", "Providence Ownership Proof");
+const browserWindowsOutput = path.join(proofRoot, "browser-native-windows", "Providence Ownership Proof");
+const browserClassicOutput = path.join(proofRoot, "browser-native-classic", "Providence Ownership Proof");
 const reimportDir = path.join(proofRoot, "reimported.providence");
 const scenarioName = "Providence Ownership Proof";
 
@@ -25,6 +27,8 @@ await bundleScenarioCompiler();
 
 const requireFromBuild = createRequire(path.join(buildRoot, "proof.cjs"));
 const { createProjectFromScenarioSeed } = requireFromBuild("./scenarioSeed.cjs");
+const { createBrowserScenarioPackageZip } = requireFromBuild("./scenarioPackage.cjs");
+const { readStoredZip } = requireFromBuild("./zip.cjs");
 const seed = JSON.parse(await fs.readFile(fixturePath, "utf8"));
 const result = createProjectFromScenarioSeed(seed, {
   now: "2026-07-18T00:00:00.000Z",
@@ -63,10 +67,22 @@ const windowsFilesA = await readFlatDirectory(windowsOutputA);
 const windowsFilesB = await readFlatDirectory(windowsOutputB);
 const classicFilesA = await readFlatDirectory(classicOutputA);
 const classicFilesB = await readFlatDirectory(classicOutputB);
+const browserWindowsPackage = createBrowserScenarioPackageZip(project, null, "windows-realmz-folder");
+const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "mac-classic-folder");
+const browserWindowsFiles = browserPackageFiles(browserWindowsPackage.zip, readStoredZip);
+const browserClassicFiles = browserPackageFiles(browserClassicPackage.zip, readStoredZip);
 assertCompleteNativeFolder(windowsFilesA, "Windows");
 assertCompleteNativeFolder(classicFilesA, "Classic Mac");
+assertCompleteNativeFolder(browserWindowsFiles, "browser Windows");
+assertCompleteNativeFolder(browserClassicFiles, "browser Classic Mac");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
+assertFileMapsEqual(windowsFilesA, browserWindowsFiles, "Rust/browser Windows compile");
+assertFileMapsEqual(classicFilesA, browserClassicFiles, "Rust/browser Classic-Mac compile");
+expect(browserWindowsPackage.report.passThroughFiles.length === 0, "Browser Windows authored compile must not pass through compatibility files");
+expect(browserClassicPackage.report.passThroughFiles.length === 0, "Browser Classic-Mac authored compile must not pass through compatibility files");
+await writeFlatDirectory(browserWindowsOutput, browserWindowsFiles);
+await writeFlatDirectory(browserClassicOutput, browserClassicFiles);
 
 await runCargoExample("import_scenario_project", [windowsOutputA, reimportDir, `${scenarioName} Reimported`]);
 const reimported = JSON.parse(await fs.readFile(path.join(reimportDir, "project.json"), "utf8"));
@@ -104,6 +120,7 @@ const summary = {
   },
   nativeOutputs: {
     deterministic: true,
+    browserDesktopByteParity: true,
     windows: {
       path: relative(windowsOutputA),
       manifest: fileManifest(windowsFilesA)
@@ -111,6 +128,16 @@ const summary = {
     classicMac: {
       path: relative(classicOutputA),
       manifest: fileManifest(classicFilesA)
+    },
+    browserWindows: {
+      path: relative(browserWindowsOutput),
+      passThroughFiles: browserWindowsPackage.report.passThroughFiles.length,
+      manifest: fileManifest(browserWindowsFiles)
+    },
+    browserClassicMac: {
+      path: relative(browserClassicOutput),
+      passThroughFiles: browserClassicPackage.report.passThroughFiles.length,
+      manifest: fileManifest(browserClassicFiles)
     }
   },
   conservativeReimport: {
@@ -133,14 +160,20 @@ console.log("Authoritative scenario compiler proof passed.");
 console.log(`- Canonical project: ${relative(projectDir)} (no raw-sources)`);
 console.log(`- Native Windows folder: ${relative(windowsOutputA)}`);
 console.log(`- Native Classic-Mac folder: ${relative(classicOutputA)}`);
+console.log(`- Browser/native byte parity: Windows and Classic-Mac (no raw sources)`);
 console.log(`- Proof summary: ${relative(summaryPath)}`);
 
 async function bundleScenarioCompiler() {
   const requireFromRoot = createRequire(path.join(repoRoot, "package.json"));
   const { build } = requireFromRoot("esbuild");
   await build({
-    entryPoints: [path.join(repoRoot, "src", "editor", "scenarioSeed.ts")],
-    outfile: path.join(buildRoot, "scenarioSeed.cjs"),
+    entryPoints: {
+      scenarioSeed: path.join(repoRoot, "src", "editor", "scenarioSeed.ts"),
+      scenarioPackage: path.join(repoRoot, "src", "editor", "browser", "scenarioPackage.ts"),
+      zip: path.join(repoRoot, "src", "editor", "browser", "zip.ts")
+    },
+    outdir: buildRoot,
+    outExtension: { ".js": ".cjs" },
     bundle: true,
     platform: "node",
     format: "cjs",
@@ -204,6 +237,22 @@ async function readFlatDirectory(root) {
     files.set(entry.name, new Uint8Array(await fs.readFile(path.join(root, entry.name))));
   }
   return new Map([...files].sort(([left], [right]) => left.localeCompare(right)));
+}
+
+function browserPackageFiles(zipBytes, readZip) {
+  const files = new Map();
+  for (const entry of readZip(zipBytes)) {
+    const name = entry.path.split("/").slice(1).join("/");
+    if (name && !name.includes("/")) files.set(name, entry.bytes);
+  }
+  return new Map([...files].sort(([left], [right]) => left.localeCompare(right)));
+}
+
+async function writeFlatDirectory(root, files) {
+  await fs.mkdir(root, { recursive: true });
+  for (const [name, bytes] of files) {
+    await fs.writeFile(path.join(root, name), bytes);
+  }
 }
 
 function assertFileMapsEqual(left, right, label) {

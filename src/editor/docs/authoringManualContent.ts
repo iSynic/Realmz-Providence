@@ -231,7 +231,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Browser And Desktop Differences",
         paragraphs: [
           "Desktop is the release-grade environment for filesystem-heavy workflows. Browser preview is useful for fast iteration and visual review, but it has browser file-access limits.",
-          "Browser export can produce Providence project ZIPs and snapshot-backed scenario ZIPs when the needed raw-source material is present. If raw sources are missing, Export should say so instead of pretending it can build a complete classic package."
+          "Browser export can produce Providence project ZIPs and native scenario ZIPs. Authored projects compile from canonical Providence data; imported projects still need their compatibility annex so unsupported source material can pass through unchanged."
         ]
       },
       {

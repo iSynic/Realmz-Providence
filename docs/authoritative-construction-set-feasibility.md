@@ -48,6 +48,15 @@ projects are upgraded on open using the former `immutable`/source-inventory sign
 now consults origin alone, and an authored browser project ZIP no longer contains or references a
 `raw-sources` compatibility annex. Imported packages retain their captured bytes unchanged.
 
+The fifth slice removes the browser-native generated-snapshot adapter. The browser compiler now
+emits its startup shell, 600-byte support file, valid empty resource fork, security backup, fixed
+`Data NI` capacity, `Data Solids`, door tables, and required empty runtime tables directly. Fresh
+browser projects and Scenario-JSON projects no longer create a source inventory or save a generated
+annex. Imported projects still require their captured annex and retain byte-for-byte pass-through
+behavior. The nine Scenario-JSON lanes now exercise 18 direct no-annex browser-native exports, and
+the authoritative proof requires the TypeScript and Rust compilers to emit byte-identical Windows
+and Classic-Mac native file manifests from the same canonical project.
+
 Branch validation completed on 2026-07-18:
 
 - full Rust suite: 188 passed, 2 ignored;
@@ -57,6 +66,12 @@ Branch validation completed on 2026-07-18:
 - canonical-to-native authoritative scenario proof;
 - Oracle runtime ownership proof with seven successful gameplay steps and no fatal markers;
 - browser/desktop imported-scenario parity check.
+- production browser build, UI audit, and a live fresh-project native-export smoke.
+
+The aggregate `npm run check` currently stops after the 518 passing TypeScript tests because the
+module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly/economy,
+and CSS files. Those files are outside this slice; architecture, lint, unit, typecheck, UI audit,
+production build, scenario proof, package parity, and the full Rust suite were run independently.
 
 ## Verdict
 
@@ -76,10 +91,10 @@ Providence already has the major parts of a construction set:
 - import, round-trip, fixture, browser/desktop parity, and scenario-generation test suites;
 - an established editor UI that operates primarily on semantic project fields.
 
-The investigation branch has removed that coupling from fresh desktop projects: they compile from
-canonical data without manufacturing a raw snapshot. The browser-native scenario exporter still
-uses a generated snapshot adapter, but that is a bounded second compiler surface, not evidence that
-the project model or editor must be replaced.
+The investigation branch has removed that coupling from fresh desktop and browser projects: both
+compile from canonical data without manufacturing or consulting a raw snapshot. Imported projects
+alone retain a compatibility annex. The remaining browser/desktop duplication is a consolidation
+and parity-hardening task, not evidence that the project model or editor must be replaced.
 
 The recommended design is:
 
@@ -128,8 +143,9 @@ them from the emitted scenario source files.
   desktop project.
 - The Scenario JSON smoke compiles nine representative lanes and produces 18 Windows/Mac package
   exports.
-- The generated-baseline check emits the marker, `Scenario`, resource fork, fixed item capacity,
-  maps, door tables, and required empty startup tables.
+- The authored compiler-baseline check passes `null` for browser raw sources and emits the marker,
+  `Scenario`, resource fork, fixed item capacity, maps, door tables, and required empty startup
+  tables without mutating canonical source metadata.
 - Browser and desktop scenario packaging currently produce byte-equivalent results for the parity
   fixtures, including an edited City of Bywater corpus case.
 - The Tauri/UI boundary already passes the project into an export command. Extracting compiler
@@ -138,6 +154,11 @@ them from the emitted scenario source files.
   makes that value authoritative over the older `immutable` and source-inventory signals.
 - Authored browser project ZIPs round-trip with no `raw-sources` directory or annex manifest;
   imported packages still round-trip their captured raw files.
+- A live browser smoke created and saved a fresh project, selected Windows native export, and
+  produced a compiler report with the complete startup/map/contact manifest and zero pass-through
+  files.
+- The authoritative ownership proof compares every emitted file and requires no-annex browser and
+  desktop output to be byte-identical for both Windows and Classic-Mac targets.
 
 ### Not yet proven
 
@@ -165,18 +186,14 @@ the editor. Some record types still carry `rawBytes`, but new records already in
 bytes deterministically. The compiler can instead zero-initialize unowned bytes for authored
 projects and consult preserved bytes only for imported projects.
 
-### `raw-sources` is concentrated at import/export and hydration boundaries
+### `raw-sources` is concentrated at imported compatibility and hydration boundaries
 
-The important raw-source dependencies are:
+The remaining important raw-source dependencies are:
 
-- desktop project creation currently creates `raw-sources` and calls
-  `seed_generated_raw_sources`;
-- desktop export rejects a missing raw directory, copies it first, then overlays writes;
-- browser generation calls `attachGeneratedScenarioBaseline` to create the equivalent in-memory
-  snapshot;
-- browser scenario export rejects a missing snapshot and copies it first;
-- fixed-record helpers preserve malformed file tails, fixed capacities, shop suffixes, and spell
-  tails from raw files;
+- desktop and browser scenario imports capture source bytes into the compatibility annex;
+- imported native export rejects a missing annex, copies it first, then overlays supported writes;
+- fixed-record helpers preserve malformed file tails, imported capacities, shop suffixes, and spell
+  tails only when annex bytes are available;
 - project open/semantic hydration can backfill missing fields and derived semantic data from raw
   files;
 - validation derives exportable/pass-through inventories from `project.source.files`;
@@ -185,10 +202,11 @@ The important raw-source dependencies are:
 These are real dependencies, but they are bounded. Normal project commands and most panels do not
 read raw source files. They operate on `Project` fields.
 
-### The synthetic baseline is already an implicit compiler manifest
+### The former synthetic baseline is now an explicit compiler manifest
 
-Both `src-tauri/src/importer.rs::seed_generated_raw_sources` and
-`src/editor/browser/generatedScenarioBaseline.ts` construct the same content-neutral package:
+Both `src-tauri/src/exporter.rs::write_authored_runtime_baseline` and
+`src/editor/browser/scenarioCompilerBaseline.ts::createAuthoredScenarioCompilerBaseline` construct
+the same content-neutral package directly as authored compiler output:
 
 - authored startup marker;
 - 600-byte zero-filled `Scenario` data fork;
@@ -199,8 +217,8 @@ Both `src-tauri/src/importer.rs::seed_generated_raw_sources` and
 - 1,024-byte zero-filled `Data Solids`;
 - required zero-length startup tables.
 
-The refactor should move this policy into the compiler rather than first materializing it as
-preserved input.
+Neither path materializes these files as preserved input or adds them to the canonical project's
+source inventory.
 
 ### The UI is not inseparable from imported byte identity
 
@@ -279,8 +297,8 @@ Legend:
 - **Generated**: the current model and writer can construct fresh bytes without imported content.
 - **Generated + compatibility**: fresh bytes can be deterministic, but legacy exports currently
   retain explicit raw fields, reserved ranges, or file tails.
-- **Baseline placeholder**: current fresh export receives the file from the synthetic raw baseline;
-  the compiler must own the default/capacity policy directly.
+- **Compiler baseline**: the authored compiler owns the deterministic default/capacity policy and
+  emits it without a compatibility annex.
 - **Pass-through**: current exporter copies the family and has no complete fresh authoring path.
 - **Legacy annex**: known compatibility or distribution material that should never be required by a
   fresh project.
@@ -291,13 +309,13 @@ Legend:
 | Native file/family | Current ownership | Fresh authoritative target | Evidence/remaining issue |
 | --- | --- | --- | --- |
 | `<ScenarioName>` marker/main file | Generated + compatibility | Generate 316-byte shell | Five startup integers, code segments, and creator string are written; imported 316-320 tail remains annex data. |
-| `Scenario` 600-byte data fork | Baseline placeholder | Generate neutral 600-byte file or a typed support record | Writer defaults to 600 zero bytes, but only offsets 23 and 38 are modeled. Runtime sufficiency needs the proof scenario. |
-| `Scenario.rsrc` / native `Scenario` resource fork | Baseline placeholder plus generated overlays | Always construct a valid target resource fork | Resource writer can build/merge entries, map names, icons, pictures, sounds, text, and styles, but currently writes nothing when there are no updates and relies on the baseline copy. |
-| `Data CS` | Baseline placeholder / imported security data | Generate neutral fresh security backup; annex imported bytes | Fresh baseline duplicates shell bytes. Imported security/editability behavior remains preserve-only. |
+| `Scenario` 600-byte data fork | Compiler baseline | Generate neutral 600-byte file or a typed support record | Both compilers emit 600 bytes directly; only offsets 23 and 38 are modeled. The modern runtime proof accepts the neutral default. |
+| `Scenario.rsrc` / native `Scenario` resource fork | Compiler baseline plus generated overlays | Always construct a valid target resource fork | Both compilers emit a structurally valid empty fork and can build/merge map names, icons, pictures, sounds, text, and styles. |
+| `Data CS` | Generated + imported compatibility | Generate neutral fresh security backup; annex imported bytes | Authored compilation duplicates shell bytes. Imported security/editability behavior remains preserve-only. |
 | `Data CI` | Generated | Generate from contact metadata | Complete 4,608-byte writer. |
 | `Data RI` | Generated, optional | Generate when restrictions exist | Complete 320-byte writer. |
 | `Global` | Generated + compatibility | Generate 60 bytes with zero defaults for reserved slots | Runtime-backed slots are modeled; imported reserved slots 3 and 6-29 remain annex data. |
-| `Data Solids` | Baseline placeholder plus generated writer | Generate exactly 1,024 bytes | Desktop has a writer, but a blank project currently gets capacity from the baseline. Realmz can also create zeros if absent, but deterministic output should include it. |
+| `Data Solids` | Compiler baseline plus generated writer | Generate exactly 1,024 bytes | Both authored compilers emit the neutral 1,024-byte table directly. |
 
 ### Maps, Action Points, and scripts
 
@@ -306,9 +324,9 @@ Legend:
 | `Data LD` | Generated | Generate all 16,200-byte land levels | Complete field writer and fixture coverage. |
 | `Data DL` | Generated + compatibility | Generate authored dungeon bitfields; zero runtime/preserved bits | High/sign bit and revealed/runtime-state bits are preserved on legacy import. They are not needed as imported identity for fresh authoring. |
 | `Data DD` | Generated | Generate one table per land level | Complete trigger-table writer. |
-| `Data DDD` | Generated, but empty file comes from baseline | Emit the file even with zero dungeon levels | Writer is complete; current `write_if_nonempty` drops the required empty file. |
+| `Data DDD` | Generated | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; the semantic writer overlays populated dungeon tables. |
 | `Data RD` | Generated | Generate one random-level record per land level | `rawValues` is currently a low-level canonical array, not an external snapshot. It can be normalized later without blocking ownership. |
-| `Data RDD` | Generated, but empty file comes from baseline | Emit the file even with zero dungeon levels | Same empty-file policy issue as `Data DDD`. |
+| `Data RDD` | Generated | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; the semantic writer overlays populated random levels. |
 | `Data ED3` | Generated | Generate fixed Extra Action Point rows | Current export only uses raw input to preserve a longer imported allocation. Fresh allocation is deterministic. |
 | `Data EDCD` | Generated | Generate EDCD settings rows | Complete fixed-row writer and deterministic Scenario JSON allocation. |
 | `Layout` | Generated + compatibility, optional | Generate 256-byte layout core | Imported optional bytes 256-511 remain annex data. |
@@ -323,13 +341,13 @@ Legend:
 | `Data MD`, `Data MD1`, `Data MD-1` | Generated | Generate monster records/sets | Complete 210-byte record writer for fresh records. |
 | `Data DES` | Generated | Generate monster descriptions | Complete fixed-record writer. |
 | `Data MD2` | Generated + compatibility | Generate structured map records | Bytes 74-75 and malformed file tails are preserved for legacy imports. Marker UI has a raw-byte fallback that should migrate to structured markers. |
-| `Data NI` | Baseline placeholder plus generated overlay | Always generate exactly 200 x 100 bytes | Core/effect fields are written; bytes 56-69 are compatibility words. Current fixed capacity comes from the synthetic raw file. |
+| `Data NI` | Generated + compatibility | Always generate exactly 200 x 100 bytes | Core/effect fields are overlaid on a compiler-owned fixed-capacity table; bytes 56-69 remain compatibility words for legacy imports. |
 | `Data TD` | Generated | Generate treasure records | Complete fixed-record writer. |
-| `Data SD` | Generated + legacy suffix | Generate only authored shop records for fresh projects | Complete 3,002-byte shop records. Imported foreign/trailing blocks are currently appended and belong in the annex. Required empty file currently comes from the baseline. |
-| `Data ED` | Generated + compatibility | Generate simple encounters | Byte 103 and malformed file tails are preserved for legacy imports. Required empty file currently comes from the baseline. |
-| `Data ED2` | Generated + compatibility | Generate complex encounters | Bytes 104-150 and 157 plus malformed file tails are legacy compatibility. Required empty file currently comes from the baseline. |
-| `Data TD2` | Generated | Generate rogue/thief encounters | Complete writer; required empty file currently comes from the baseline. |
-| `Data TD3` | Generated with explicit compatibility slots | Generate timed encounters and zero reserved `stuff[1..9]` | The model carries the ten-word array; only `stuff[0]` has confirmed runtime meaning. Required empty file currently comes from the baseline. |
+| `Data SD` | Generated + legacy suffix | Generate only authored shop records for fresh projects | Complete 3,002-byte shop records. Imported foreign/trailing blocks are appended from the annex; authored compilation emits the required empty file directly. |
+| `Data ED` | Generated + compatibility | Generate simple encounters | Byte 103 and malformed file tails are preserved for legacy imports; authored compilation emits the required empty file directly. |
+| `Data ED2` | Generated + compatibility | Generate complex encounters | Bytes 104-150 and 157 plus malformed file tails are legacy compatibility; authored compilation emits the required empty file directly. |
+| `Data TD2` | Generated | Generate rogue/thief encounters | Complete writer; authored compilation emits the required empty file directly. |
+| `Data TD3` | Generated with explicit compatibility slots | Generate timed encounters and zero reserved `stuff[1..9]` | The model carries the ten-word array; only `stuff[0]` has confirmed runtime meaning. Authored compilation emits the required empty file directly. |
 
 ### Rules and resource-bearing optional families
 
@@ -409,24 +427,23 @@ must not be called fresh-authoritative merely because imported round trips are f
 
 ## Principal Blockers And Remaining Unknowns
 
-1. **Browser-native preservation adapter:** desktop native export is origin-aware and accepts an
-   authored project with no annex. Browser project packaging is also annex-free for authored
-   projects, but browser native scenario export still expects a raw snapshot/generated baseline.
-2. **Browser compiler emission policy:** the desktop compiler emits the runtime-proven minimum
-   defaults directly; the browser path still materializes them through a generated baseline.
-3. **Optional resource families:** the minimum empty main fork is runtime-proven, but fresh
+1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
+   annex and the minimum ownership fixture enforces byte parity, but they still implement the native
+   manifest in Rust and TypeScript. Broader golden fixtures or a shared Rust/Wasm compiler should
+   prevent policy drift across optional families.
+2. **Optional resource families:** the minimum empty main fork is runtime-proven, but fresh
    spell/item string forks and other optional resource families remain incomplete.
-4. **Canonical contract drift:** `itemTexts` is currently browser/TypeScript-only and can be lost at
+3. **Canonical contract drift:** `itemTexts` is currently browser/TypeScript-only and can be lost at
    the Rust persistence boundary.
-5. **Preserved bytes inside records:** several project records still embed unowned bytes. They must
+4. **Preserved bytes inside records:** several project records still embed unowned bytes. They must
    become imported annex slices, not required fresh-project fields.
-6. **Raw-derived validation/semantics:** source inventories and semantic hydration still assume that
+5. **Raw-derived validation/semantics:** source inventories and semantic hydration still assume that
    files precede the canonical project.
-7. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
+6. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
    writing, not construction from zero, and overstate at least the Race/Caste suffixes.
-8. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern
+7. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern
    Oracle runtime through save/reload, but stock Classic Realmz has not run the Classic-Mac target.
-9. **Optional feature debt:** custom spell names, desktop item text, custom music, and some extracted
+8. **Optional feature debt:** custom spell names, desktop item text, custom music, and some extracted
    resource-sidecar forms need production decisions after the minimum proof.
 
 The unknowns are implementation and acceptance questions, not evidence of a repository-level

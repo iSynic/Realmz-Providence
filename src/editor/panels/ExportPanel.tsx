@@ -13,15 +13,16 @@ import {
   sourceByName,
   unresolvedLinks
 } from "../semanticGraph";
+import { requiresCompatibilityAnnex } from "../projectOrigin";
 
 type BrowserExportTarget = "project-zip" | "mac-classic-scenario-zip" | "windows-realmz-scenario-zip";
 
-const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export downloads either a Providence project ZIP package or a scenario ZIP from the captured raw-source snapshot.";
+const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export downloads either a Providence project ZIP package or a compiled scenario ZIP.";
 const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
 const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads the selected ZIP artifact.";
 const EXPORT_JSON_HELP = "Download the current project.json directly. This is useful as a small browser backup or for inspecting the project state without extracting the ZIP package.";
-const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export packages the captured raw source snapshot and applies browser-supported record and resource updates. The export report calls out project-only labels, resource warnings, and missing raw-source material.";
-const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are Realmz folders built from captured raw sources.";
+const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export compiles authored projects from canonical data. Imported projects also preserve unsupported source material from their compatibility annex. The export report calls out project-only labels, resource warnings, and missing imported material.";
+const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are compiled Realmz folders.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
 const EXPORT_PLAN_HELP = "Readiness previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
@@ -387,13 +388,13 @@ function exportDiagnostics(
   if (
     !context.desktopRuntime &&
     context.browserTarget !== "project-zip" &&
-    !hasGeneratedBrowserBaseline(project) &&
+    requiresCompatibilityAnnex(project) &&
     context.plan.exportableSources.length === 0 &&
     context.plan.passThroughSources.length === 0
   ) {
     diagnostics.push({
       kind: "warning",
-      message: "Scenario ZIP export needs a captured raw source snapshot.",
+      message: "This imported scenario needs its captured compatibility annex for scenario ZIP export.",
       detail: "Import a Realmz scenario or open a Providence project ZIP that includes raw-sources."
     });
   }
@@ -471,17 +472,5 @@ type ExportPlanSource = {
 function exportPlanSource(project: Project, name: string): ExportPlanSource | null {
   const semanticSource = sourceByName(project, name);
   if (semanticSource) return semanticSource;
-  if (!hasGeneratedBrowserBaseline(project)) return null;
-  const sourceFile = project.source.files.find((file) => file.name === name);
-  if (!sourceFile) return null;
-  return {
-    id: `source:file:${sourceFile.name}`,
-    name: sourceFile.name,
-    bytes: sourceFile.bytes,
-    origin: "generated Realmz runtime baseline"
-  };
-}
-
-function hasGeneratedBrowserBaseline(project: Project) {
-  return project.source.rawSourcesDir === "generated-runtime" && project.source.files.length > 0;
+  return null;
 }

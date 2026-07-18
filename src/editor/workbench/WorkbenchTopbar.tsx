@@ -36,7 +36,7 @@ const TOPBAR_REDO_HELP =
 const TOPBAR_SAVE_HELP =
   "Save writes the Providence project package on desktop. In browser mode, Save persists the current project in browser-local storage.";
 const TOPBAR_EXPORT_HELP =
-  "Export writes a Realmz-readable scenario folder on desktop. In browser mode, Export downloads a Providence project ZIP backup or a conservative scenario ZIP from captured raw sources.";
+  "Export writes a Realmz-readable scenario folder on desktop. In browser mode, Export downloads a Providence project ZIP backup or a compiled scenario ZIP; imported projects preserve unsupported material from their compatibility annex.";
 const TOPBAR_HISTORY_HELP =
   "Workbench history moves backward and forward through recently visited Providence tools and selected records without changing the project itself.";
 

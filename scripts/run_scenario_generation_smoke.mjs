@@ -18,7 +18,6 @@ try {
     entryPoints: {
       seed: path.join(root, "src", "editor", "scenarioSeed.ts"),
       report: path.join(root, "src", "editor", "scenarioSeedReport.ts"),
-      baseline: path.join(root, "src", "editor", "browser", "generatedScenarioBaseline.ts"),
       scenarioPackage: path.join(root, "src", "editor", "browser", "scenarioPackage.ts"),
       zip: path.join(root, "src", "editor", "browser", "zip.ts")
     },
@@ -32,7 +31,6 @@ try {
   const requireFromSmoke = createRequire(path.join(tmpDir, "smoke.cjs"));
   const { createProjectFromScenarioSeed } = requireFromSmoke("./seed.js");
   const { createScenarioSeedPreflightOutcome } = requireFromSmoke("./report.js");
-  const { attachGeneratedScenarioBaseline } = requireFromSmoke("./baseline.js");
   const { createBrowserScenarioPackageZip } = requireFromSmoke("./scenarioPackage.js");
   const { readStoredZip } = requireFromSmoke("./zip.js");
 
@@ -145,7 +143,6 @@ try {
         lane,
         createProjectFromScenarioSeed,
         createScenarioSeedPreflightOutcome,
-        attachGeneratedScenarioBaseline,
         createBrowserScenarioPackageZip,
         readStoredZip
       });
@@ -170,7 +167,6 @@ async function runLane({
   lane,
   createProjectFromScenarioSeed,
   createScenarioSeedPreflightOutcome,
-  attachGeneratedScenarioBaseline,
   createBrowserScenarioPackageZip,
   readStoredZip
 }) {
@@ -191,19 +187,19 @@ async function runLane({
   expect(preflight.ok, `${lane.name}: preflight report should be ready`);
   expect(JSON.parse(preflight.reportJson).reportVersion === 1, `${lane.name}: preflight report should retain its versioned contract`);
 
-  const generated = await attachGeneratedScenarioBaseline(result.project, fixedOptions.now);
-  expect(generated.project.validation.ok, `${lane.name}: generated runtime validation should pass (${generated.project.validation.errors.join("; ")})`);
-  expect(generated.rawSources.sourceKind === "generated-scenario-baseline", `${lane.name}: generated runtime source kind should be explicit`);
+  expect(result.project.source.origin === "authored", `${lane.name}: generated project should be explicitly authored`);
+  expect(result.project.source.files.length === 0, `${lane.name}: generated project should not need a source-file inventory`);
 
   let exportCount = 0;
   for (const target of ["windows-realmz-folder", "mac-classic-folder"]) {
-    const packageResult = createBrowserScenarioPackageZip(generated.project, generated.rawSources, target);
+    const packageResult = createBrowserScenarioPackageZip(result.project, null, target);
     const files = new Map(readStoredZip(packageResult.zip).map((entry) => [entry.path.split("/").slice(1).join("/"), entry.bytes]));
     expect(packageResult.zip.byteLength > 0, `${lane.name}/${target}: package ZIP should not be empty`);
     expect(packageResult.report.blockedAssets.length === 0, `${lane.name}/${target}: package should not contain blocked assets`);
-    for (const name of [generated.project.scenario.name, "Scenario", "Scenario.rsrc", "Data CS", "Data LD", "Data DD", "Data NI", "Data Solids"]) {
+    for (const name of [result.project.scenario.name, "Scenario", "Scenario.rsrc", "Data CS", "Data LD", "Data DD", "Data NI", "Data Solids"]) {
       expect(files.has(name), `${lane.name}/${target}: package should contain ${name}`);
     }
+    expect(packageResult.report.passThroughFiles.length === 0, `${lane.name}/${target}: authored package should not contain compatibility pass-through files`);
     for (const name of lane.expectedWrites) {
       expect(packageResult.report.writtenFiles.includes(name), `${lane.name}/${target}: export report should include authored ${name}`);
       expect((files.get(name)?.byteLength ?? 0) > 0, `${lane.name}/${target}: authored ${name} should not be empty`);

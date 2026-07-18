@@ -587,12 +587,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Desktop And Browser Preview",
         paragraphs: [
           "Desktop is Providence's primary target. It owns native folder dialogs, persistent project save, scenario export, desktop smoke testing, and release builds.",
-          "Browser preview is useful for quick UI work and some import experiments. Save stores a local browser project, Export downloads Providence project ZIP backups or snapshot-backed scenario ZIPs, and raw scenario folder import still depends on the browser's File System Access support."
+          "Browser preview is useful for quick UI work and some import experiments. Save stores a local browser project, Export downloads Providence project ZIP backups or compiled native scenario ZIPs, and raw scenario folder import still depends on the browser's File System Access support."
         ],
         points: [
           "Trust desktop for final parity checks, fixture reproduction, and public release validation.",
           "Use browser preview for fast interface review, but confirm file-heavy workflows again in desktop.",
-          "Browser scenario ZIP export is snapshot-backed: it preserves captured raw sources, applies supported record/resource updates, and reports project-only labels or missing raw-source material in the export report.",
+          "Browser scenario ZIP export compiles authored projects from canonical data. For imported projects it also preserves captured raw sources, applies supported record/resource updates, and reports missing compatibility material.",
           "When a topbar action is disabled in browser preview, read the status text; it usually reflects runtime file-system limits rather than missing scenario support."
         ]
       },
@@ -611,7 +611,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Save, Dirty, Undo, Redo",
         paragraphs: [
-          "Save writes the Providence project package on desktop and stores the current project in browser-local storage in browser preview. It is separate from Export, which writes a Realmz scenario folder on desktop or downloads a Providence project ZIP or snapshot-backed scenario ZIP in browser preview.",
+          "Save writes the Providence project package on desktop and stores the current project in browser-local storage in browser preview. It is separate from Export, which writes a Realmz scenario folder on desktop or downloads a Providence project ZIP or compiled scenario ZIP in browser preview.",
           "The Dirty badge means the package has unsaved editor changes. Undo and Redo operate on Providence project commands, such as map painting, resource edits, record changes, custom palettes, or metadata changes.",
           "Direct tools such as map painting, Action Point movement, and battle-grid monster placement apply immediately. Draft editors such as Action Point steps, strings, option labels, and scrolling TEXT/styl require Apply Changes before they become project commands."
         ],
