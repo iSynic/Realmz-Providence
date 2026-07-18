@@ -1,6 +1,7 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::ProvidenceProject;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use walkdir::WalkDir;
@@ -8,6 +9,11 @@ use walkdir::WalkDir;
 #[derive(Debug)]
 pub(crate) struct CompatibilityAnnex {
     root: PathBuf,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct CompatibilityAnnexSnapshot {
+    files: BTreeMap<String, Vec<u8>>,
 }
 
 impl CompatibilityAnnex {
@@ -38,48 +44,66 @@ impl CompatibilityAnnex {
         Self { root: root.into() }
     }
 
-    fn path(&self, relative_path: &str) -> Result<PathBuf> {
-        let relative = Path::new(relative_path);
-        if relative.components().any(|component| {
-            matches!(
-                component,
-                Component::ParentDir | Component::RootDir | Component::Prefix(_)
-            )
-        }) {
-            return Err(ProvidenceError::message(format!(
-                "Compatibility annex path must stay relative: {relative_path}"
-            )));
-        }
-        Ok(self.root.join(relative))
-    }
-
-    pub(crate) fn contains(&self, relative_path: &str) -> Result<bool> {
-        Ok(self.path(relative_path)?.is_file())
-    }
-
-    pub(crate) fn read(&self, relative_path: &str) -> Result<Option<Vec<u8>>> {
-        let path = self.path(relative_path)?;
-        if !path.is_file() {
-            return Ok(None);
-        }
-        fs::read(&path).with_path(&path).map(Some)
-    }
-
-    pub(crate) fn top_level_files(&self) -> Result<Vec<(String, Vec<u8>)>> {
-        let mut files = Vec::new();
-        for entry in WalkDir::new(&self.root).max_depth(1).min_depth(1) {
+    pub(crate) fn snapshot(&self) -> Result<CompatibilityAnnexSnapshot> {
+        let mut files = BTreeMap::new();
+        for entry in WalkDir::new(&self.root).min_depth(1) {
             let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
             if entry.file_type().is_file() {
                 let path = entry.path();
-                files.push((
-                    entry.file_name().to_string_lossy().to_string(),
-                    fs::read(path).with_path(path)?,
-                ));
+                let relative = path
+                    .strip_prefix(&self.root)
+                    .map_err(|error| ProvidenceError::message(error.to_string()))?;
+                let key = normalize_relative_path(&relative.to_string_lossy())?;
+                files.insert(key, fs::read(path).with_path(path)?);
             }
         }
-        files.sort_by(|left, right| left.0.cmp(&right.0));
-        Ok(files)
+        Ok(CompatibilityAnnexSnapshot { files })
     }
+}
+
+impl CompatibilityAnnexSnapshot {
+    pub(crate) fn contains(&self, relative_path: &str) -> Result<bool> {
+        Ok(self
+            .files
+            .contains_key(&normalize_relative_path(relative_path)?))
+    }
+
+    pub(crate) fn read(&self, relative_path: &str) -> Result<Option<Vec<u8>>> {
+        Ok(self
+            .files
+            .get(&normalize_relative_path(relative_path)?)
+            .cloned())
+    }
+
+    pub(crate) fn top_level_files(&self) -> Vec<(String, Vec<u8>)> {
+        self.files
+            .iter()
+            .filter(|(name, _)| !name.contains('/'))
+            .map(|(name, bytes)| (name.clone(), bytes.clone()))
+            .collect()
+    }
+}
+
+fn normalize_relative_path(relative_path: &str) -> Result<String> {
+    let relative = Path::new(relative_path);
+    if relative.components().any(|component| {
+        matches!(
+            component,
+            Component::ParentDir | Component::RootDir | Component::Prefix(_)
+        )
+    }) {
+        return Err(ProvidenceError::message(format!(
+            "Compatibility annex path must stay relative: {relative_path}"
+        )));
+    }
+    Ok(relative
+        .components()
+        .filter_map(|component| match component {
+            Component::Normal(value) => Some(value.to_string_lossy()),
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join("/"))
 }
 
 #[cfg(test)]
@@ -90,8 +114,9 @@ mod tests {
     fn rejects_paths_outside_the_annex_root() {
         let temp = tempfile::tempdir().unwrap();
         let annex = CompatibilityAnnex::from_root(temp.path());
+        let snapshot = annex.snapshot().unwrap();
 
-        let error = annex
+        let error = snapshot
             .read("../outside")
             .expect_err("annex traversal must be rejected");
 

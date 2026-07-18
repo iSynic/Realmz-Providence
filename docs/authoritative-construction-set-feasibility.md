@@ -88,16 +88,24 @@ stray desktop `raw-sources` directory or browser snapshot is supplied. Poison-an
 fail if authored compilation enumerates pass-through files or reads a preserved record tail, while
 the imported fixture corpus remains byte-identical.
 
+The tenth slice separates Rust compilation from filesystem materialization. Desktop export first
+preloads the optional compatibility annex and managed-asset payloads, then a path-free compiler
+builds an ordered `NativeScenarioManifest` containing every generated and pass-through file. Only
+the final exporter boundary creates the output directory and writes the completed manifest. A
+direct unit proof deletes the fresh project's directory before compiling twice and requires the
+same complete manifest, while the imported fixture corpus and browser/desktop parity remain
+byte-identical.
+
 Branch validation completed on 2026-07-18:
 
-- full Rust suite: 195 passed, 2 ignored;
+- full Rust suite: 197 passed, 2 ignored;
 - full TypeScript suite: 519 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
 - authored poison-annex access guard in both Rust and browser compilers;
 - Oracle runtime ownership proof with seven successful gameplay steps and no fatal markers;
-- browser/desktop imported-scenario parity check.
+- browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
 The aggregate `npm run check` currently stops after the 519 passing TypeScript tests because the
@@ -439,7 +447,10 @@ must not be called fresh-authoritative merely because imported round trips are f
    - template derivation must retain annex data only when the selected template is imported.
 2. **Implemented on the investigation branch:** make `raw-sources` optional in desktop and browser
    project packages.
-3. Extract a filesystem-independent native manifest compiler from `exporter.rs`.
+3. **Implemented as a compiler/materializer seam:** preload filesystem-backed inputs, compile an
+   ordered native file/resource manifest without paths or filesystem access, and materialize it
+   only at the desktop export boundary. Moving the pure orchestration into a separate Rust source
+   module is now optional organizational cleanup rather than an architectural prerequisite.
 4. Make compiler defaults explicit:
    - 600-byte `Scenario` support file;
    - valid main resource fork even with no authored resources;
@@ -543,10 +554,11 @@ serialized contract.
 
 ### Phase 1: Deterministic compiler seam
 
-- Extract the native file/resource manifest compiler.
-- Keep filesystem and ZIP materialization outside it.
-- Port synthetic baseline policy into explicit compiler defaults.
-- Retain current exporter behavior as the imported-project adapter.
+- **Implemented:** compile an ordered native file/resource manifest from preloaded inputs.
+- **Implemented for desktop:** keep filesystem materialization outside the compiler; browser ZIP
+  materialization remains separately byte-parity-gated.
+- **Implemented:** port synthetic baseline policy into explicit compiler defaults.
+- **Implemented:** retain imported compatibility behavior through a preloaded annex snapshot.
 
 Exit: fresh compile succeeds with an access guard proving no raw/annex reads.
 

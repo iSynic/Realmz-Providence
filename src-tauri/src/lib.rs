@@ -7,6 +7,7 @@ pub mod exporter;
 pub mod harness;
 pub mod importer;
 pub mod media_assets;
+mod native_manifest;
 pub mod project;
 pub mod project_package;
 pub mod realmz;

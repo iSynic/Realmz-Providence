@@ -1,5 +1,6 @@
-use crate::compatibility_annex::CompatibilityAnnex;
+use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot};
 use crate::error::{IoPath, ProvidenceError, Result};
+use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
     ItemTextRecord, LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
     ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget,
@@ -40,6 +41,21 @@ pub struct ExportReport {
     pub target_compatibility: TargetCompatibilityBuckets,
 }
 
+#[derive(Debug)]
+struct NativeCompilerInputs {
+    compatibility_annex: Option<CompatibilityAnnexSnapshot>,
+    managed_asset_bytes: Vec<Option<std::result::Result<Vec<u8>, String>>>,
+}
+
+#[derive(Debug)]
+struct RealmzCompilation {
+    manifest: NativeScenarioManifest,
+    resource_result: ResourceExportResult,
+    warnings: Vec<String>,
+    target_compatibility_issues: Vec<TargetCompatibilityIssue>,
+    target_compatibility: TargetCompatibilityBuckets,
+}
+
 pub fn export_project(
     project_dir: impl AsRef<Path>,
     project: &ProvidenceProject,
@@ -49,112 +65,122 @@ pub fn export_project(
     let project_dir = project_dir.as_ref();
     let output_dir = output_dir.as_ref();
     let compatibility_annex = CompatibilityAnnex::for_project(project_dir, project)?;
-    let preserves_source_snapshot = compatibility_annex.is_some();
-    let compatibility_annex = compatibility_annex.as_ref();
-    fs::create_dir_all(output_dir).with_path(output_dir)?;
+    let inputs = NativeCompilerInputs {
+        compatibility_annex: compatibility_annex
+            .as_ref()
+            .map(CompatibilityAnnex::snapshot)
+            .transpose()?,
+        managed_asset_bytes: resolve_managed_asset_bytes(project_dir, project),
+    };
+    let compilation = compile_realmz_scenario(project, target, &inputs)?;
+    materialize_manifest(&compilation.manifest, output_dir)?;
+    Ok(ExportReport {
+        output_path: output_dir.to_string_lossy().to_string(),
+        target,
+        written_files: compilation.manifest.written_files().to_vec(),
+        pass_through_files: compilation.manifest.pass_through_files().to_vec(),
+        written_resources: compilation.resource_result.written_resources,
+        preserved_resources: compilation.resource_result.preserved_resources,
+        resource_warnings: compilation.resource_result.resource_warnings,
+        blocked_assets: compilation.resource_result.blocked_assets,
+        warnings: compilation.warnings,
+        target_compatibility_issues: compilation.target_compatibility_issues,
+        target_compatibility: compilation.target_compatibility,
+    })
+}
 
-    let mut pass_through_files = Vec::new();
+fn compile_realmz_scenario(
+    project: &ProvidenceProject,
+    target: ScenarioTarget,
+    inputs: &NativeCompilerInputs,
+) -> Result<RealmzCompilation> {
+    let compatibility_annex = inputs.compatibility_annex.as_ref();
+    let preserves_source_snapshot = compatibility_annex.is_some();
+    let mut manifest = NativeScenarioManifest::default();
+
     if let Some(annex) = compatibility_annex {
-        for (name, source_bytes) in annex.top_level_files()? {
+        for (name, source_bytes) in annex.top_level_files() {
             if is_custom_names_support_file(&name) || is_generated_runtime_cache_file(&name) {
                 continue;
             }
-            let dest = output_dir.join(&name);
-            fs::write(&dest, source_bytes).with_path(&dest)?;
-            pass_through_files.push(name);
+            manifest.insert_pass_through(name, source_bytes);
         }
     }
 
-    let mut written_files = Vec::new();
     if !preserves_source_snapshot {
-        write_authored_runtime_baseline(output_dir, project, target, &mut written_files)?;
+        write_authored_runtime_baseline(&mut manifest, project, target)?;
     }
     if let Some(shell) = &project.scenario.shell {
         write_if_nonempty(
-            output_dir,
+            &mut manifest,
             scenario_shell_file_name(project),
             write_scenario_shell(shell)?,
-            &mut written_files,
         )?;
     }
     if let Some(support_file) = &project.scenario.support_file {
         write_if_nonempty(
-            output_dir,
+            &mut manifest,
             &support_file.source_file,
             write_scenario_support_file(support_file)?,
-            &mut written_files,
         )?;
     }
     if let Some(contact_info) = &project.scenario.contact_info {
         write_if_nonempty(
-            output_dir,
+            &mut manifest,
             "Data CI",
             write_scenario_contact_info(contact_info)?,
-            &mut written_files,
         )?;
     }
     if let Some(restrictions) = &project.scenario.restrictions {
         write_if_nonempty(
-            output_dir,
+            &mut manifest,
             "Data RI",
             write_scenario_restrictions(restrictions)?,
-            &mut written_files,
         )?;
     }
     if let Some(global_hooks) = &project.scenario.global_macro_hooks {
         write_if_nonempty(
-            output_dir,
+            &mut manifest,
             "Global",
             write_global_macro_hooks(global_hooks)?,
-            &mut written_files,
         )?;
     }
     if let Some(security_backup) = &project.scenario.security_backup {
         write_if_nonempty(
-            output_dir,
+            &mut manifest,
             "Data CS",
             write_scenario_shell(security_backup)?,
-            &mut written_files,
         )?;
     }
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data LD",
         write_fields(&project.maps, LevelType::Land)?,
-        &mut written_files,
     )?;
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data DL",
         write_fields(&project.maps, LevelType::Dungeon)?,
-        &mut written_files,
     )?;
     if let Some(layout) = &project.land_layout {
-        write_if_nonempty(
-            output_dir,
-            "Layout",
-            write_land_layout(layout)?,
-            &mut written_files,
-        )?;
+        write_if_nonempty(&mut manifest, "Layout", write_land_layout(layout)?)?;
     }
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data Solids",
         write_tile_solids(&project.tile_attributes)?,
-        &mut written_files,
     )?;
     for landlook in &project.custom_landlooks {
         if landlook.authored {
             write_if_nonempty(
-                output_dir,
+                &mut manifest,
                 &landlook.source_file,
                 write_custom_landlook_metadata(landlook)?,
-                &mut written_files,
             )?;
         }
     }
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data DD",
         write_door_file_for_levels(
             &project.triggers,
@@ -165,10 +191,9 @@ pub fn export_project(
                 .filter(|map| map.level_type == LevelType::Land)
                 .count(),
         )?,
-        &mut written_files,
     )?;
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data DDD",
         write_door_file_for_levels(
             &project.triggers,
@@ -179,22 +204,19 @@ pub fn export_project(
                 .filter(|map| map.level_type == LevelType::Dungeon)
                 .count(),
         )?,
-        &mut written_files,
     )?;
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data RD",
         write_random_levels(&project.random_levels, LevelType::Land)?,
-        &mut written_files,
     )?;
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data RDD",
         write_random_levels(&project.random_levels, LevelType::Dungeon)?,
-        &mut written_files,
     )?;
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data ED3",
         preserve_imported_fixed_length(
             "Data ED3",
@@ -202,10 +224,9 @@ pub fn export_project(
             DOOR_BYTES,
             compatibility_annex,
         )?,
-        &mut written_files,
     )?;
     write_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data EDCD",
         preserve_imported_fixed_length(
             "Data EDCD",
@@ -213,65 +234,57 @@ pub fn export_project(
             EXTRACODE_BYTES,
             compatibility_annex,
         )?,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data SD2",
         write_messages(&project.messages)?,
         crate::realmz::MESSAGE_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data OD",
         write_option_labels(&project.option_labels)?,
         crate::realmz::OPTION_LABEL_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data MD2",
         write_map_records(&project.map_records)?,
         crate::realmz::MAP_RECORD_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data BD",
         write_battles(&project.battles)?,
         crate::realmz::BATTLE_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data MD",
         write_monsters(&project.monsters)?,
         crate::realmz::MONSTER_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     for monster_set in &project.monster_sets {
         write_fixed_if_nonempty(
-            output_dir,
+            &mut manifest,
             &monster_set.source_file,
             write_monster_set(monster_set)?,
             crate::realmz::MONSTER_BYTES,
             compatibility_annex,
-            &mut written_files,
         )?;
     }
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data DES",
         write_monster_descriptions(&project.monster_descriptions)?,
         crate::realmz::MONSTER_DESCRIPTION_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     let mut scenario_item_bytes = overlay_zero_filled_fixed_capacity(
         "Data NI",
@@ -282,106 +295,75 @@ pub fn export_project(
         scenario_item_bytes.resize(200 * crate::realmz::ITEM_BYTES, 0);
     }
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data NI",
         scenario_item_bytes,
         crate::realmz::ITEM_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data TD",
         write_treasures(&project.treasures)?,
         crate::realmz::TREASURE_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data SD",
         append_preserved_shop_source_suffix(write_shops(&project.shops)?, compatibility_annex)?,
         crate::realmz::SHOP_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data ED",
         write_simple_encounters(&project.simple_encounters)?,
         crate::realmz::SIMPLE_ENCOUNTER_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data ED2",
         write_complex_encounters(&project.complex_encounters)?,
         crate::realmz::COMPLEX_ENCOUNTER_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data TD2",
         write_thief_encounters(&project.thief_encounters)?,
         crate::realmz::THIEF_ENCOUNTER_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_fixed_if_nonempty(
-        output_dir,
+        &mut manifest,
         "Data TD3",
         write_timed_encounters(&project.timed_encounters)?,
         crate::realmz::TIMED_ENCOUNTER_BYTES,
         compatibility_annex,
-        &mut written_files,
     )?;
     write_spell_overrides_preserving_tail(
-        output_dir,
+        &mut manifest,
         compatibility_annex,
         &project.spell_overrides,
-        &mut written_files,
     )?;
     write_custom_spell_name_resources(
-        output_dir,
+        &mut manifest,
         compatibility_annex,
         &project.spell_overrides,
-        &mut written_files,
     )?;
-    write_item_text_resources(
-        output_dir,
-        compatibility_annex,
-        &project.item_texts,
-        &mut written_files,
-    )?;
-    write_race_overrides_for_export(
-        output_dir,
-        compatibility_annex,
-        &project.race_overrides,
-        &mut written_files,
-    )?;
-    write_caste_overrides_for_export(
-        output_dir,
-        compatibility_annex,
-        &project.caste_overrides,
-        &mut written_files,
-    )?;
+    write_item_text_resources(&mut manifest, compatibility_annex, &project.item_texts)?;
+    write_race_overrides_for_export(&mut manifest, compatibility_annex, &project.race_overrides)?;
+    write_caste_overrides_for_export(&mut manifest, compatibility_annex, &project.caste_overrides)?;
     let resource_result = write_managed_resources(
-        project_dir,
-        output_dir,
+        &mut manifest,
         compatibility_annex,
+        &inputs.managed_asset_bytes,
         project,
         target,
     )?;
-    if resource_result.resource_file_written {
-        written_files.push(resource_result.resource_file_name.clone());
-    }
 
-    let mut unique_written = BTreeSet::new();
-    written_files.retain(|name| unique_written.insert(name.clone()));
-    let written: BTreeSet<&str> = written_files.iter().map(String::as_str).collect();
-    pass_through_files.retain(|name| !written.contains(name.as_str()));
     let warnings = if project.validation.ok {
         Vec::new()
     } else {
@@ -390,15 +372,9 @@ pub fn export_project(
     let target_compatibility_issues = target_compatibility_issues_for_export(project, target);
     let target_compatibility =
         crate::validation::bucket_target_compatibility_issues(&target_compatibility_issues);
-    Ok(ExportReport {
-        output_path: output_dir.to_string_lossy().to_string(),
-        target,
-        written_files,
-        pass_through_files,
-        written_resources: resource_result.written_resources,
-        preserved_resources: resource_result.preserved_resources,
-        resource_warnings: resource_result.resource_warnings,
-        blocked_assets: resource_result.blocked_assets,
+    Ok(RealmzCompilation {
+        manifest,
+        resource_result,
         warnings,
         target_compatibility_issues,
         target_compatibility,
@@ -406,10 +382,9 @@ pub fn export_project(
 }
 
 fn write_authored_runtime_baseline(
-    output_dir: &Path,
+    manifest: &mut NativeScenarioManifest,
     project: &ProvidenceProject,
     target: ScenarioTarget,
-    written_files: &mut Vec<String>,
 ) -> Result<()> {
     const SCENARIO_SUPPORT_BYTES: usize = 600;
     const SCENARIO_ITEM_TABLE_BYTES: usize = 200 * crate::realmz::ITEM_BYTES;
@@ -432,25 +407,46 @@ fn write_authored_runtime_baseline(
         ("Data Solids".to_string(), vec![0; TILE_SOLIDS_BYTES]),
     ];
     for (name, bytes) in entries {
-        write_generated_file(output_dir, &name, bytes, written_files)?;
+        manifest.insert_generated(name, bytes);
     }
-    write_generated_file(output_dir, "Data DDD", Vec::new(), written_files)?;
+    manifest.insert_generated("Data DDD", Vec::new());
     for name in EMPTY_RUNTIME_TABLES {
-        write_generated_file(output_dir, name, Vec::new(), written_files)?;
+        manifest.insert_generated(*name, Vec::new());
     }
     Ok(())
 }
 
-fn write_generated_file(
-    output_dir: &Path,
-    name: &str,
-    bytes: Vec<u8>,
-    written: &mut Vec<String>,
-) -> Result<()> {
-    let path = output_dir.join(name);
-    fs::write(&path, bytes).with_path(&path)?;
-    written.push(name.to_string());
+fn materialize_manifest(manifest: &NativeScenarioManifest, output_dir: &Path) -> Result<()> {
+    fs::create_dir_all(output_dir).with_path(output_dir)?;
+    for (name, bytes) in manifest.files() {
+        let path = output_dir.join(name);
+        fs::write(&path, bytes).with_path(&path)?;
+    }
     Ok(())
+}
+
+fn resolve_managed_asset_bytes(
+    project_dir: &Path,
+    project: &ProvidenceProject,
+) -> Vec<Option<std::result::Result<Vec<u8>, String>>> {
+    project
+        .assets
+        .iter()
+        .map(|asset| {
+            if matches!(
+                asset.library_scope,
+                Some(crate::project::ManagedAssetLibraryScope::CustomLibrary)
+            ) || !matches!(
+                asset.export_state,
+                crate::project::ManagedAssetExportState::Ready
+            ) || !managed_resource_type_supported(asset.resource_type.as_str())
+            {
+                None
+            } else {
+                Some(managed_asset_resource_bytes(project_dir, asset))
+            }
+        })
+        .collect()
 }
 
 fn target_compatibility_issues_for_export(
@@ -471,27 +467,23 @@ fn target_compatibility_issues_for_export(
 }
 
 fn write_if_nonempty(
-    output_dir: &Path,
+    manifest: &mut NativeScenarioManifest,
     name: &str,
     bytes: Vec<u8>,
-    written: &mut Vec<String>,
 ) -> Result<()> {
     if bytes.is_empty() {
         return Ok(());
     }
-    let path = output_dir.join(name);
-    fs::write(&path, bytes).with_path(&path)?;
-    written.push(name.to_string());
+    manifest.insert_generated(name, bytes);
     Ok(())
 }
 
 fn write_fixed_if_nonempty(
-    output_dir: &Path,
+    manifest: &mut NativeScenarioManifest,
     name: &str,
     mut bytes: Vec<u8>,
     record_bytes: usize,
-    annex: Option<&CompatibilityAnnex>,
-    written: &mut Vec<String>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<()> {
     if bytes.is_empty() {
         return Ok(());
@@ -504,13 +496,13 @@ fn write_fixed_if_nonempty(
             bytes.extend_from_slice(&raw[bytes.len()..]);
         }
     }
-    write_if_nonempty(output_dir, name, bytes, written)
+    write_if_nonempty(manifest, name, bytes)
 }
 
 fn overlay_zero_filled_fixed_capacity(
     name: &str,
     bytes: Vec<u8>,
-    annex: Option<&CompatibilityAnnex>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
     let Some(annex) = annex else {
         return Ok(bytes);
@@ -530,7 +522,7 @@ fn overlay_zero_filled_fixed_capacity(
 
 fn append_preserved_shop_source_suffix(
     mut bytes: Vec<u8>,
-    annex: Option<&CompatibilityAnnex>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
     let Some(annex) = annex else {
         return Ok(bytes);
@@ -562,7 +554,7 @@ fn preserve_imported_fixed_length(
     name: &str,
     mut bytes: Vec<u8>,
     record_bytes: usize,
-    annex: Option<&CompatibilityAnnex>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
     let Some(annex) = annex else {
         return Ok(bytes);
@@ -598,10 +590,9 @@ struct RulesCompilerBaselineFamily {
 }
 
 fn write_race_overrides_for_export(
-    output_dir: &Path,
-    annex: Option<&CompatibilityAnnex>,
+    manifest: &mut NativeScenarioManifest,
+    annex: Option<&CompatibilityAnnexSnapshot>,
     records: &[ScenarioRaceOverride],
-    written_files: &mut Vec<String>,
 ) -> Result<()> {
     let source_backed = match annex {
         Some(annex) => annex.contains("Data Race")?,
@@ -622,22 +613,20 @@ fn write_race_overrides_for_export(
         sanitized.as_slice()
     };
     write_rule_overrides_for_export(
-        output_dir,
+        manifest,
         annex,
         "Data Race",
         crate::realmz::RACE_BYTES,
         crate::realmz::RACE_OVERRIDE_RECORDS,
         records.iter().map(|record| record.id).collect(),
         write_race_overrides(writer_records)?,
-        written_files,
     )
 }
 
 fn write_caste_overrides_for_export(
-    output_dir: &Path,
-    annex: Option<&CompatibilityAnnex>,
+    manifest: &mut NativeScenarioManifest,
+    annex: Option<&CompatibilityAnnexSnapshot>,
     records: &[ScenarioCasteOverride],
-    written_files: &mut Vec<String>,
 ) -> Result<()> {
     let source_backed = match annex {
         Some(annex) => annex.contains("Data Caste")?,
@@ -658,27 +647,25 @@ fn write_caste_overrides_for_export(
         sanitized.as_slice()
     };
     write_rule_overrides_for_export(
-        output_dir,
+        manifest,
         annex,
         "Data Caste",
         crate::realmz::CASTE_BYTES,
         crate::realmz::CASTE_OVERRIDE_RECORDS,
         records.iter().map(|record| record.id).collect(),
         write_caste_overrides(writer_records)?,
-        written_files,
     )
 }
 
 #[allow(clippy::too_many_arguments)]
 fn write_rule_overrides_for_export(
-    output_dir: &Path,
-    annex: Option<&CompatibilityAnnex>,
+    manifest: &mut NativeScenarioManifest,
+    annex: Option<&CompatibilityAnnexSnapshot>,
     name: &str,
     record_bytes: usize,
     fresh_records: usize,
     record_ids: Vec<usize>,
     encoded: Vec<u8>,
-    written_files: &mut Vec<String>,
 ) -> Result<()> {
     if record_ids.is_empty() {
         return Ok(());
@@ -724,7 +711,7 @@ fn write_rule_overrides_for_export(
         body[start..end].copy_from_slice(record);
     }
     body.extend_from_slice(&tail);
-    write_if_nonempty(output_dir, name, body, written_files)
+    write_if_nonempty(manifest, name, body)
 }
 
 fn rule_compiler_baseline_bytes(
@@ -772,10 +759,9 @@ fn rule_compiler_baseline_bytes(
 }
 
 fn write_spell_overrides_preserving_tail(
-    output_dir: &Path,
-    annex: Option<&CompatibilityAnnex>,
+    manifest: &mut NativeScenarioManifest,
+    annex: Option<&CompatibilityAnnexSnapshot>,
     records: &[ScenarioSpellOverride],
-    written_files: &mut Vec<String>,
 ) -> Result<()> {
     if let Some(record) = records
         .iter()
@@ -801,14 +787,13 @@ fn write_spell_overrides_preserving_tail(
         bytes.resize(overlay.len(), 0);
     }
     bytes[..overlay.len()].copy_from_slice(&overlay);
-    write_if_nonempty(output_dir, "Data Spell", bytes, written_files)
+    write_if_nonempty(manifest, "Data Spell", bytes)
 }
 
 fn write_custom_spell_name_resources(
-    output_dir: &Path,
-    annex: Option<&CompatibilityAnnex>,
+    manifest: &mut NativeScenarioManifest,
+    annex: Option<&CompatibilityAnnexSnapshot>,
     records: &[ScenarioSpellOverride],
-    written_files: &mut Vec<String>,
 ) -> Result<()> {
     let preserved = match annex {
         Some(annex) => data_spell_resource_fork(annex)?,
@@ -831,11 +816,7 @@ fn write_custom_spell_name_resources(
         return Ok(());
     }
     let (resource_bytes, _) = merge_resource_entries(&original, updates)?;
-    let dest = output_dir.join(&resource_file_name);
-    fs::write(&dest, resource_bytes).with_path(&dest)?;
-    if !written_files.iter().any(|name| name == &resource_file_name) {
-        written_files.push(resource_file_name);
-    }
+    manifest.insert_generated(resource_file_name, resource_bytes);
     Ok(())
 }
 
@@ -894,7 +875,9 @@ fn custom_spell_name_resource_updates(
     updates
 }
 
-fn data_spell_resource_fork(annex: &CompatibilityAnnex) -> Result<Option<(String, Vec<u8>)>> {
+fn data_spell_resource_fork(
+    annex: &CompatibilityAnnexSnapshot,
+) -> Result<Option<(String, Vec<u8>)>> {
     for name in ["Data Spell.rsrc", "Data Spell.rsf", "._Data Spell"] {
         let Some(bytes) = annex.read(name)? else {
             continue;
@@ -910,10 +893,9 @@ fn data_spell_resource_fork(annex: &CompatibilityAnnex) -> Result<Option<(String
 }
 
 fn write_item_text_resources(
-    output_dir: &Path,
-    annex: Option<&CompatibilityAnnex>,
+    manifest: &mut NativeScenarioManifest,
+    annex: Option<&CompatibilityAnnexSnapshot>,
     records: &[ItemTextRecord],
-    written_files: &mut Vec<String>,
 ) -> Result<()> {
     let authored = records
         .iter()
@@ -932,15 +914,11 @@ fn write_item_text_resources(
         return Ok(());
     }
     let (resource_bytes, _) = merge_resource_entries(&original, updates)?;
-    let dest = output_dir.join(&resource_file_name);
-    fs::write(&dest, resource_bytes).with_path(&dest)?;
-    if !written_files.iter().any(|name| name == &resource_file_name) {
-        written_files.push(resource_file_name);
-    }
+    manifest.insert_generated(resource_file_name, resource_bytes);
     Ok(())
 }
 
-fn data_id_resource_fork(annex: &CompatibilityAnnex) -> Result<Option<(String, Vec<u8>)>> {
+fn data_id_resource_fork(annex: &CompatibilityAnnexSnapshot) -> Result<Option<(String, Vec<u8>)>> {
     for name in ["Data ID.rsrc", "Data ID.rsf", "._Data ID", "Data ID"] {
         let Some(bytes) = annex.read(name)? else {
             continue;
@@ -1055,7 +1033,6 @@ fn custom_spell_resource_name(level_index: usize) -> &'static str {
 
 #[derive(Debug, Default)]
 struct ResourceExportResult {
-    resource_file_written: bool,
     resource_file_name: String,
     written_resources: Vec<String>,
     preserved_resources: usize,
@@ -1134,9 +1111,9 @@ fn hex_digit(value: u8) -> std::result::Result<u8, String> {
 }
 
 fn write_managed_resources(
-    project_dir: &Path,
-    output_dir: &Path,
-    annex: Option<&CompatibilityAnnex>,
+    manifest: &mut NativeScenarioManifest,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+    managed_asset_bytes: &[Option<std::result::Result<Vec<u8>, String>>],
     project: &ProvidenceProject,
     target: ScenarioTarget,
 ) -> Result<ResourceExportResult> {
@@ -1176,7 +1153,7 @@ fn write_managed_resources(
         &mut result,
     ));
     let mut scrolling_text_runtime_warning_emitted = false;
-    for asset in &project.assets {
+    for (asset_index, asset) in project.assets.iter().enumerate() {
         if matches!(
             asset.library_scope,
             Some(crate::project::ManagedAssetLibraryScope::CustomLibrary)
@@ -1197,12 +1174,22 @@ fn write_managed_resources(
             ));
             continue;
         }
-        let data = match managed_asset_resource_bytes(project_dir, asset) {
-            Ok(data) => data,
-            Err(error) => {
+        let data = match managed_asset_bytes
+            .get(asset_index)
+            .and_then(Option::as_ref)
+        {
+            Some(Ok(data)) => data.clone(),
+            Some(Err(error)) => {
                 result.blocked_assets.push(format!(
                     "{} is missing converted resource bytes: {}",
                     asset.label, error
+                ));
+                continue;
+            }
+            None => {
+                result.blocked_assets.push(format!(
+                    "{} is missing converted resource bytes: compiler input was not resolved",
+                    asset.label
                 ));
                 continue;
             }
@@ -1257,9 +1244,7 @@ fn write_managed_resources(
             "{replaced} existing resource(s) were replaced by managed assets."
         ));
     }
-    let dest = output_dir.join(&result.resource_file_name);
-    fs::write(&dest, resource_bytes).with_path(&dest)?;
-    result.resource_file_written = true;
+    manifest.insert_generated(result.resource_file_name.clone(), resource_bytes);
     Ok(result)
 }
 
@@ -1427,7 +1412,7 @@ fn scenario_icon_resource_updates(
 
 fn source_resource_bytes(
     project: &ProvidenceProject,
-    annex: &CompatibilityAnnex,
+    annex: &CompatibilityAnnexSnapshot,
     target: ScenarioTarget,
 ) -> Result<Option<Vec<u8>>> {
     for file in project
@@ -1575,19 +1560,21 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        append_preserved_shop_source_suffix, custom_spell_name_resource_updates,
-        item_text_resource_updates, managed_asset_resource_bytes, managed_resource_type_supported,
+        append_preserved_shop_source_suffix, compile_realmz_scenario,
+        custom_spell_name_resource_updates, item_text_resource_updates,
+        managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_fixed_length, rule_compiler_baseline_bytes,
         scenario_icon_resource_updates, write_caste_overrides_for_export,
         write_race_overrides_for_export, write_spell_overrides_preserving_tail,
-        ResourceExportResult,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
+    use crate::native_manifest::NativeScenarioManifest;
     use crate::project::{
         Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
         MapRecord, MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
-        ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
+        ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord, ScenarioTarget,
     };
     use crate::resource_fork::{
         decode_string_list_resource, encode_string_list_resource, write_resource_fork,
@@ -1595,6 +1582,30 @@ mod tests {
     };
     use base64::{engine::general_purpose::STANDARD, Engine as _};
     use std::fs;
+
+    #[test]
+    fn authored_compiler_is_independent_of_the_project_filesystem() {
+        let temp = tempfile::tempdir().unwrap();
+        let project_dir = temp.path().join("Manifest Proof.providence");
+        let project =
+            crate::importer::create_project("Manifest Proof".to_string(), &project_dir).unwrap();
+        fs::remove_dir_all(&project_dir).unwrap();
+        let inputs = NativeCompilerInputs {
+            compatibility_annex: None,
+            managed_asset_bytes: project.assets.iter().map(|_| None).collect(),
+        };
+
+        let first = compile_realmz_scenario(&project, ScenarioTarget::WindowsRealmzFolder, &inputs)
+            .unwrap();
+        let second =
+            compile_realmz_scenario(&project, ScenarioTarget::WindowsRealmzFolder, &inputs)
+                .unwrap();
+
+        assert_eq!(first.manifest.files(), second.manifest.files());
+        assert_eq!(first.manifest.files()["Scenario"].len(), 600);
+        assert!(first.manifest.files().contains_key("Scenario.rsrc"));
+        assert!(first.manifest.pass_through_files().is_empty());
+    }
 
     #[test]
     fn managed_text_asset_resource_data_url_exports_plain_text() {
@@ -1704,23 +1715,17 @@ mod tests {
 
     #[test]
     fn fresh_spell_export_uses_fixed_capacity_and_creates_name_resource_metadata() {
-        let temp = tempfile::tempdir().unwrap();
         let record = authored_spell(16, "Providence Ward");
-        let mut written = Vec::new();
+        let mut manifest = NativeScenarioManifest::default();
 
-        write_spell_overrides_preserving_tail(
-            temp.path(),
-            None,
-            std::slice::from_ref(&record),
-            &mut written,
-        )
-        .unwrap();
+        write_spell_overrides_preserving_tail(&mut manifest, None, std::slice::from_ref(&record))
+            .unwrap();
 
         assert_eq!(
-            fs::metadata(temp.path().join("Data Spell")).unwrap().len() as usize,
+            manifest.files()["Data Spell"].len(),
             crate::realmz::SPELL_OVERRIDE_RECORDS * crate::realmz::SPELL_BYTES
         );
-        assert_eq!(written, vec!["Data Spell".to_string()]);
+        assert_eq!(manifest.written_files(), ["Data Spell"]);
 
         let updates = custom_spell_name_resource_updates(&[&record], &[]);
         assert_eq!(updates.len(), 1);
@@ -1770,7 +1775,6 @@ mod tests {
 
     #[test]
     fn fresh_rule_exports_use_fixed_compiler_baselines_and_semantic_spare_words() {
-        let temp = tempfile::tempdir().unwrap();
         let mut race =
             crate::realmz::parse_race_overrides(&vec![0; 20 * crate::realmz::RACE_BYTES])
                 .pop()
@@ -1792,24 +1796,13 @@ mod tests {
         caste.spare2.as_mut().unwrap()[1] = -654;
         caste.spacer.as_mut().unwrap()[62] = 789;
 
-        let mut written = Vec::new();
-        write_race_overrides_for_export(
-            temp.path(),
-            None,
-            std::slice::from_ref(&race),
-            &mut written,
-        )
-        .unwrap();
-        write_caste_overrides_for_export(
-            temp.path(),
-            None,
-            std::slice::from_ref(&caste),
-            &mut written,
-        )
-        .unwrap();
+        let mut manifest = NativeScenarioManifest::default();
+        write_race_overrides_for_export(&mut manifest, None, std::slice::from_ref(&race)).unwrap();
+        write_caste_overrides_for_export(&mut manifest, None, std::slice::from_ref(&caste))
+            .unwrap();
 
-        let race_bytes = fs::read(temp.path().join("Data Race")).unwrap();
-        let caste_bytes = fs::read(temp.path().join("Data Caste")).unwrap();
+        let race_bytes = &manifest.files()["Data Race"];
+        let caste_bytes = &manifest.files()["Data Caste"];
         assert_eq!(
             race_bytes.len(),
             crate::realmz::RACE_OVERRIDE_RECORDS * crate::realmz::RACE_BYTES
@@ -1847,16 +1840,14 @@ mod tests {
             caste_record[500], 0xcd,
             "fresh raw bytes must not leak into output"
         );
-        assert_eq!(written, vec!["Data Race", "Data Caste"]);
+        assert_eq!(manifest.written_files(), ["Data Race", "Data Caste"]);
     }
 
     #[test]
     fn imported_rule_exports_preserve_aligned_rows_and_malformed_tails() {
         let temp = tempfile::tempdir().unwrap();
         let raw_dir = temp.path().join("raw-sources");
-        let output_dir = temp.path().join("output");
         fs::create_dir_all(&raw_dir).unwrap();
-        fs::create_dir_all(&output_dir).unwrap();
 
         let mut race_source = vec![0x5a; 2 * crate::realmz::RACE_BYTES];
         race_source.extend_from_slice(&[0xde, 0xad]);
@@ -1872,14 +1863,13 @@ mod tests {
         caste.authored = true;
         caste.start_money = 42;
 
-        let annex = CompatibilityAnnex::from_root(&raw_dir);
-        let mut written = Vec::new();
-        write_race_overrides_for_export(&output_dir, Some(&annex), &[race], &mut written).unwrap();
-        write_caste_overrides_for_export(&output_dir, Some(&annex), &[caste], &mut written)
-            .unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+        let mut manifest = NativeScenarioManifest::default();
+        write_race_overrides_for_export(&mut manifest, Some(&annex), &[race]).unwrap();
+        write_caste_overrides_for_export(&mut manifest, Some(&annex), &[caste]).unwrap();
 
-        let race_output = fs::read(output_dir.join("Data Race")).unwrap();
-        let caste_output = fs::read(output_dir.join("Data Caste")).unwrap();
+        let race_output = &manifest.files()["Data Race"];
+        let caste_output = &manifest.files()["Data Caste"];
         assert_eq!(race_output.len(), race_source.len());
         assert_eq!(caste_output.len(), caste_source.len());
         assert_eq!(
@@ -1966,7 +1956,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let raw_dir = temp.path();
         fs::write(raw_dir.join("Data EDCD"), vec![0x7Au8; 30]).unwrap();
-        let annex = CompatibilityAnnex::from_root(raw_dir);
+        let annex = CompatibilityAnnex::from_root(raw_dir).snapshot().unwrap();
 
         let bytes =
             preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, Some(&annex)).unwrap();
@@ -1981,7 +1971,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let raw_dir = temp.path();
         fs::write(raw_dir.join("Data EDCD"), vec![9u8, 8, 7, 6, 5]).unwrap();
-        let annex = CompatibilityAnnex::from_root(raw_dir);
+        let annex = CompatibilityAnnex::from_root(raw_dir).snapshot().unwrap();
 
         let bytes =
             preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, Some(&annex)).unwrap();
@@ -2006,7 +1996,7 @@ mod tests {
         .unwrap();
         let mut modeled = valid.clone();
         modeled.extend_from_slice(&vec![1u8; crate::realmz::SHOP_BYTES]);
-        let annex = CompatibilityAnnex::from_root(raw_dir);
+        let annex = CompatibilityAnnex::from_root(raw_dir).snapshot().unwrap();
 
         let bytes = append_preserved_shop_source_suffix(modeled.clone(), Some(&annex)).unwrap();
 
