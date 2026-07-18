@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+pub use crate::generated::project_contract::{
+    ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
+};
+
 pub const PROJECT_SCHEMA_VERSION: u32 =
     crate::generated::project_contract::PROVIDENCE_PROJECT_SCHEMA_VERSION;
 pub const SEMANTIC_SCHEMA_VERSION: u32 = 5;
@@ -569,24 +573,6 @@ pub enum ManagedAssetExportState {
     PreviewOnly,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SourceSnapshot {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub origin: Option<ProjectOrigin>,
-    pub source_path: String,
-    pub raw_sources_dir: String,
-    pub files: Vec<SourceFile>,
-    pub immutable: bool,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum ProjectOrigin {
-    Authored,
-    Imported,
-}
-
 impl SourceSnapshot {
     pub fn resolved_origin(&self) -> ProjectOrigin {
         self.origin.unwrap_or_else(|| {
@@ -607,17 +593,6 @@ impl SourceSnapshot {
     pub fn requires_compatibility_annex(&self) -> bool {
         self.resolved_origin() == ProjectOrigin::Imported
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SourceFile {
-    pub name: String,
-    pub relative_path: String,
-    pub bytes: u64,
-    pub sha256: String,
-    pub role: SourceFileRole,
-    pub editable: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -819,15 +794,6 @@ pub struct ByteRange {
     pub start: usize,
     pub length: usize,
     pub end_exclusive: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum SourceFileRole {
-    SupportedBinary,
-    PassThrough,
-    ResourceFork,
-    Unknown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

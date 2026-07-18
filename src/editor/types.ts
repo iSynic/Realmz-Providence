@@ -1,3 +1,10 @@
+import type {
+  ProvidenceProjectOrigin,
+  ProvidenceProjectSource,
+  ProvidenceSourceFile,
+  ProvidenceSourceFileRole
+} from "./generated/providenceProjectContract";
+
 export type LevelType = "land" | "dungeon";
 export type EditorTab =
   | "maps"
@@ -1423,16 +1430,8 @@ export type MapCoordinateTarget = {
   y: number;
 };
 
-export type ProjectOrigin = "authored" | "imported";
-
-export type ProjectSource = {
-  /** Missing only while a schema-v4 project is being normalized. */
-  origin?: ProjectOrigin;
-  sourcePath: string;
-  rawSourcesDir?: string;
-  immutable: boolean;
-  files: SourceFile[];
-};
+export type ProjectOrigin = ProvidenceProjectOrigin;
+export type ProjectSource = ProvidenceProjectSource;
 
 export type Project = {
   schemaVersion: number;
@@ -1599,14 +1598,8 @@ export type LibraryDiagnostic = {
   data: Record<string, unknown>;
 };
 
-export type SourceFile = {
-  name: string;
-  relativePath: string;
-  bytes: number;
-  sha256: string;
-  role: string;
-  editable: boolean;
-};
+export type SourceFile = ProvidenceSourceFile;
+export type SourceFileRole = ProvidenceSourceFileRole;
 
 export type MapEntity = {
   id: string;

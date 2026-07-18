@@ -49,5 +49,52 @@ export const PROVIDENCE_DERIVED_PROJECT_FIELDS = [
   "semanticSchema"
 ] as const;
 
+export const PROVIDENCE_PROJECT_SOURCE_FIELDS = [
+  "origin",
+  "sourcePath",
+  "rawSourcesDir",
+  "files",
+  "immutable"
+] as const;
+
+export const PROVIDENCE_SOURCE_FILE_FIELDS = [
+  "name",
+  "relativePath",
+  "bytes",
+  "sha256",
+  "role",
+  "editable"
+] as const;
+
+export type ProvidenceProjectOrigin = "authored" | "imported";
+
+export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
+
+export type ProvidenceSourceFile = {
+  name: string;
+  relativePath: string;
+  bytes: number;
+  sha256: string;
+  role: ProvidenceSourceFileRole;
+  editable: boolean;
+};
+
+export type ProvidencePersistedProjectSource = {
+  origin: ProvidenceProjectOrigin;
+  sourcePath: string;
+  rawSourcesDir: string;
+  files: ProvidenceSourceFile[];
+  immutable: boolean;
+};
+
+/** Migration-tolerant runtime form; persisted schema-v5 projects require origin. */
+export type ProvidenceProjectSource = {
+  origin?: ProvidenceProjectOrigin;
+  sourcePath: string;
+  rawSourcesDir: string;
+  files: ProvidenceSourceFile[];
+  immutable: boolean;
+};
+
 export type ProvidencePersistedProjectField = typeof PROVIDENCE_PROJECT_FIELDS[number];
 export type ProvidenceDerivedProjectField = typeof PROVIDENCE_DERIVED_PROJECT_FIELDS[number];

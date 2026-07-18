@@ -37,12 +37,24 @@ describe("project origin", () => {
   it("upgrades a legacy project contract in memory", () => {
     const project = {
       schemaVersion: 4,
-      source: source({ immutable: true })
+      source: source({
+        immutable: true,
+        files: [{
+          name: "Legacy Notes",
+          relativePath: "Legacy Notes",
+          bytes: 12,
+          sha256: "fixture",
+          // Deliberately malformed schema-v4 input must not enter canonical state.
+          role: "legacy-note" as ProjectSource["files"][number]["role"],
+          editable: false
+        }]
+      })
     } as Project;
 
     normalizeProjectContract(project);
 
     expect(project.schemaVersion).toBe(5);
     expect(project.source.origin).toBe("imported");
+    expect(project.source.files[0].role).toBe("unknown");
   });
 });

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://isynic.github.io/realmz-providence/schemas/providence-project.schema.json",
   "title": "Realmz Providence Canonical Project",
-  "description": "The versioned, persisted Providence project contract. This first generated seam owns the top-level project inventory and source-origin boundary; nested domain DTO schemas remain incremental work.",
+  "description": "The versioned, persisted Providence project contract. The generated seam owns the top-level project inventory plus source-origin and source-file DTOs; remaining nested domain DTO schemas are incremental work.",
   "type": "object",
   "additionalProperties": false,
   "x-providence-contract-scope": "persisted-project-top-level",
@@ -110,11 +110,14 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceProjectSource",
+      "x-providence-typescript-persisted-name": "ProvidencePersistedProjectSource",
+      "x-providence-rust-name": "SourceSnapshot",
+      "x-providence-runtime-optional": ["origin"],
       "required": ["origin", "sourcePath", "rawSourcesDir", "files", "immutable"],
       "properties": {
         "origin": {
-          "type": "string",
-          "enum": ["authored", "imported"],
+          "$ref": "#/$defs/projectOrigin",
           "description": "Authored projects compile from canonical data; imported projects may consult the compatibility annex."
         },
         "sourcePath": { "type": "string" },
@@ -132,15 +135,31 @@
     "sourceFile": {
       "type": "object",
       "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceSourceFile",
+      "x-providence-rust-name": "SourceFile",
       "required": ["name", "relativePath", "bytes", "sha256", "role", "editable"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
         "relativePath": { "type": "string", "minLength": 1 },
-        "bytes": { "type": "integer", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0, "x-providence-rust-type": "u64" },
         "sha256": { "type": "string" },
-        "role": { "type": "string" },
+        "role": { "$ref": "#/$defs/sourceFileRole" },
         "editable": { "type": "boolean" }
       }
+    },
+    "projectOrigin": {
+      "type": "string",
+      "enum": ["authored", "imported"],
+      "x-providence-typescript-name": "ProvidenceProjectOrigin",
+      "x-providence-rust-name": "ProjectOrigin",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq"]
+    },
+    "sourceFileRole": {
+      "type": "string",
+      "enum": ["supported-binary", "pass-through", "resource-fork", "unknown"],
+      "x-providence-typescript-name": "ProvidenceSourceFileRole",
+      "x-providence-rust-name": "SourceFileRole",
+      "x-providence-rust-derives": ["Debug", "Clone", "Serialize", "Deserialize"]
     }
   }
 }

@@ -1,4 +1,5 @@
 import type { SourceFile } from "../types";
+import { normalizeSourceFileRole } from "../projectOrigin";
 import { readStoredZip } from "./zip";
 
 export type BrowserRawSourceFile = SourceFile & {
@@ -425,7 +426,7 @@ async function rawSourcesFromManifest(
       originalRelativePath: manifestFile.originalRelativePath || relativePath,
       bytes: file.bytes.byteLength,
       sha256,
-      role: manifestFile.role || roleForFile(name, new Set()),
+      role: normalizeSourceFileRole(manifestFile.role, roleForFile(name, new Set())),
       editable: manifestFile.editable ?? false,
       bytesData: file.bytes,
       targetPlatform: manifestFile.targetPlatform || manifest.targetPlatform || "unknown",
@@ -465,7 +466,7 @@ export async function sha256Hex(bytes: Uint8Array) {
   return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
 }
 
-function roleForFile(name: string, tracked: Set<string>) {
+function roleForFile(name: string, tracked: Set<string>): SourceFile["role"] {
   if (SUPPORTED_WRITE_FILES.has(name)) return "supported-binary";
   if (isResourceFileName(name)) return "resource-fork";
   if (tracked.has(name)) return "pass-through";

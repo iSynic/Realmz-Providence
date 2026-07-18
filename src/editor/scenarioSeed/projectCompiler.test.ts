@@ -27,7 +27,7 @@ describe("scenario seed project compiler", () => {
       sourcePath: "fixture://template",
       rawSourcesDir: "template-raw",
       immutable: true,
-      files: [{ name: "Data BD", relativePath: "Data BD", bytes: 12, sha256: "fixture", role: "battle", editable: true }]
+      files: [{ name: "Data BD", relativePath: "Data BD", bytes: 12, sha256: "fixture", role: "supported-binary", editable: true }]
     };
     template.messages = [{ id: 8, text: "Preserved", rawBytes: [], authored: true }];
     const seed: ScenarioSeed = {

@@ -39,7 +39,7 @@ for (const sourceFile of sourceFiles) {
 const requireFromBuild = createRequire(path.join(buildRoot, "check.cjs"));
 const { createBrowserProjectPackageZip } = requireFromBuild("./src/editor/browser/projectPackage.js");
 const { readProjectPackage } = requireFromBuild("./src/editor/browser/fsAccess.js");
-const { readStoredZip } = requireFromBuild("./src/editor/browser/zip.js");
+const { createStoredZip, readStoredZip } = requireFromBuild("./src/editor/browser/zip.js");
 
 const rawBytes = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);
 const rawSha256 = sha256Hex(rawBytes);
@@ -133,6 +133,25 @@ expect(reopened.rawSources.files[0].sha256 === rawSha256, "reopened raw source S
 expect(bytesEqual(reopened.rawSources.files[0].bytesData, rawBytes), "reopened raw source payload changed");
 expect(reopened.rawSources.files[0].targetPlatform === "windows-realmz", "reopened raw source target platform changed");
 expect(reopened.rawSources.files[0].captureConfidence === "captured", "reopened raw source capture confidence changed");
+
+const legacyRawManifest = JSON.parse(JSON.stringify(rawManifest));
+legacyRawManifest.files[0].role = "battle";
+const legacyZip = createStoredZip(entries.map((entry) => ({
+  ...entry,
+  bytes: entry.path === `${rootName}/raw-sources-manifest.json`
+    ? new TextEncoder().encode(JSON.stringify(legacyRawManifest))
+    : entry.bytes
+})));
+const reopenedLegacy = await readProjectPackage({
+  kind: "project-zip-file",
+  name: "Legacy Fixture Scenario.providence.zip",
+  file: {
+    async arrayBuffer() {
+      return legacyZip.buffer.slice(legacyZip.byteOffset, legacyZip.byteOffset + legacyZip.byteLength);
+    }
+  }
+});
+expect(reopenedLegacy.rawSources.files[0].role === "supported-binary", "legacy raw-source role did not normalize at the package boundary");
 
 const authoredProject = {
   ...project,
