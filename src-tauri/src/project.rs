@@ -91,6 +91,8 @@ pub struct ProvidenceProject {
     #[serde(default)]
     pub scenario_items: Vec<ScenarioItemRecord>,
     #[serde(default)]
+    pub item_texts: Vec<ItemTextRecord>,
+    #[serde(default)]
     pub treasures: Vec<TreasureRecord>,
     #[serde(default)]
     pub shops: Vec<ShopRecord>,
@@ -1286,6 +1288,20 @@ pub struct ScenarioItemRecord {
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemTextRecord {
+    pub id: usize,
+    pub item_id: i16,
+    pub unidentified_name: String,
+    pub identified_name: String,
+    pub description: String,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

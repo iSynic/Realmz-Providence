@@ -75,6 +75,7 @@ pub fn create_project(
         monster_icon_overrides: Vec::new(),
         scenario_icon_resources: Vec::new(),
         scenario_items: Vec::new(),
+        item_texts: Vec::new(),
         treasures: Vec::new(),
         shops: Vec::new(),
         simple_encounters: Vec::new(),
@@ -272,6 +273,7 @@ fn import_scenario_with_name(
         monster_icon_overrides: Vec::new(),
         scenario_icon_resources: Vec::new(),
         scenario_items: parsed.scenario_items,
+        item_texts: Vec::new(),
         treasures: parsed.treasures,
         shops: parsed.shops,
         simple_encounters: parsed.simple_encounters,
@@ -291,6 +293,7 @@ fn import_scenario_with_name(
         semantic_schema: SemanticSchema::default(),
         validation: ValidationReport::default(),
     };
+    hydrate_item_texts(&source_path, &mut project)?;
     hydrate_custom_spell_names(&source_path, &mut project)?;
     hydrate_rule_names(&source_path, Some(&raw_dir), &mut project)?;
     import_picture_assets(&source_path, &assets_dir, &mut project)?;
@@ -323,6 +326,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     } else {
         project.source.raw_sources_dir.as_str()
     });
+    hydrate_item_texts(&raw_dir, &mut project)?;
     hydrate_custom_spell_names(&raw_dir, &mut project)?;
     hydrate_rule_names(&raw_dir, None, &mut project)?;
     import_picture_assets(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
@@ -346,6 +350,7 @@ pub fn open_project_for_semantic_mapping(
     } else {
         project.source.raw_sources_dir.as_str()
     });
+    hydrate_item_texts(&raw_dir, &mut project)?;
     hydrate_custom_spell_names(&raw_dir, &mut project)?;
     hydrate_rule_names(&raw_dir, None, &mut project)?;
     Ok(project)
@@ -432,6 +437,7 @@ struct ProjectFile<'a> {
     monster_icon_overrides: &'a [MonsterIconOverride],
     scenario_icon_resources: &'a [ScenarioIconResource],
     scenario_items: &'a [ScenarioItemRecord],
+    item_texts: &'a [ItemTextRecord],
     treasures: &'a [TreasureRecord],
     shops: &'a [ShopRecord],
     simple_encounters: &'a [SimpleEncounterRecord],
@@ -475,6 +481,7 @@ impl<'a> From<&'a ProvidenceProject> for ProjectFile<'a> {
             monster_icon_overrides: &project.monster_icon_overrides,
             scenario_icon_resources: &project.scenario_icon_resources,
             scenario_items: &project.scenario_items,
+            item_texts: &project.item_texts,
             treasures: &project.treasures,
             shops: &project.shops,
             simple_encounters: &project.simple_encounters,
@@ -1375,6 +1382,81 @@ fn monster_icon_target_id(value: i16) -> Option<i32> {
     (target <= i32::from(i16::MAX)).then_some(target)
 }
 
+fn hydrate_item_texts(source_path: &Path, project: &mut ProvidenceProject) -> Result<()> {
+    for resource_path in data_id_resource_candidates(source_path) {
+        if !resource_path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&resource_path).with_path(&resource_path)?;
+        for entry in crate::resource_fork::parse_resource_fork_entries(&bytes) {
+            if entry.resource_type != "STR#" {
+                continue;
+            }
+            let Some(resource_base) = item_text_resource_base(entry.id) else {
+                continue;
+            };
+            let slot_kind = entry.id - resource_base;
+            let strings = crate::resource_fork::decode_string_list_resource(&entry.data);
+            for (index, text) in strings.into_iter().enumerate() {
+                let item_id = i32::from(resource_base) + index as i32;
+                if !(1..1000).contains(&item_id) {
+                    continue;
+                }
+                if text.trim().is_empty() && slot_kind != 2 {
+                    continue;
+                }
+                let item_id = item_id as i16;
+                let existing_index = project
+                    .item_texts
+                    .iter()
+                    .position(|record| record.item_id == item_id);
+                let record_index = if let Some(existing_index) = existing_index {
+                    if project.item_texts[existing_index].authored {
+                        continue;
+                    }
+                    existing_index
+                } else {
+                    project.item_texts.push(ItemTextRecord {
+                        id: item_id as usize,
+                        item_id,
+                        unidentified_name: String::new(),
+                        identified_name: String::new(),
+                        description: String::new(),
+                        authored: false,
+                        provenance: None,
+                    });
+                    project.item_texts.len() - 1
+                };
+                let record = &mut project.item_texts[record_index];
+                match slot_kind {
+                    0 => record.unidentified_name = text,
+                    1 => record.identified_name = text,
+                    2 => record.description = text,
+                    _ => continue,
+                }
+                record.provenance = Some(Provenance {
+                    source_file: resource_path.to_string_lossy().to_string(),
+                    record_index: item_id as usize,
+                    byte_offset: 0,
+                    byte_length: entry.data.len(),
+                    confidence: Confidence::SourceBacked,
+                });
+            }
+        }
+    }
+    project.item_texts.sort_by_key(|record| record.item_id);
+    Ok(())
+}
+
+fn item_text_resource_base(resource_id: i16) -> Option<i16> {
+    let offset = resource_id.rem_euclid(200);
+    if !matches!(offset, 0..=2) {
+        return None;
+    }
+    let base = resource_id - offset;
+    (0..1000).contains(&base).then_some(base)
+}
+
 fn hydrate_custom_spell_names(source_path: &Path, project: &mut ProvidenceProject) -> Result<()> {
     if project.spell_overrides.is_empty() {
         return Ok(());
@@ -2016,6 +2098,16 @@ fn data_spell_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
     ]
 }
 
+fn data_id_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
+    dedupe_paths(vec![
+        source_path.join("Data ID.rsrc"),
+        source_path.join("Data ID.rsf"),
+        source_path.join("._Data ID"),
+        source_path.join(".rsrc").join("Data ID"),
+        source_path.join("Data ID"),
+    ])
+}
+
 fn custom_names_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
     let mut candidates = vec![
         source_path.join(CUSTOM_NAMES_SOURCE_FILE),
@@ -2174,6 +2266,10 @@ mod tests {
             .as_object_mut()
             .expect("source object")
             .remove("origin");
+        saved
+            .as_object_mut()
+            .expect("project object")
+            .remove("itemTexts");
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2183,11 +2279,72 @@ mod tests {
         let opened = open_project(&project_dir).expect("open legacy project");
         assert_eq!(opened.schema_version, PROJECT_SCHEMA_VERSION);
         assert_eq!(opened.source.origin, Some(ProjectOrigin::Authored));
+        assert!(opened.item_texts.is_empty());
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
         assert_eq!(upgraded["schemaVersion"], PROJECT_SCHEMA_VERSION);
         assert_eq!(upgraded["source"]["origin"], "authored");
+        assert_eq!(upgraded["itemTexts"], serde_json::json!([]));
+    }
+
+    #[test]
+    fn hydrates_item_texts_from_data_id_resource_fork() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source_dir = temp.path().join("Scenario");
+        fs::create_dir_all(&source_dir).expect("source directory");
+        let mut unidentified = vec![String::new(); 200];
+        let mut identified = vec![String::new(); 200];
+        let mut descriptions = vec![String::new(); 200];
+        unidentified[101] = "Unknown Providence Token".to_string();
+        identified[101] = "Providence Token".to_string();
+        descriptions[101] = "Compiled from canonical Providence data.".to_string();
+        let bytes = crate::resource_fork::write_resource_fork(&[
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "STR#".to_string(),
+                id: 800,
+                name: "Item Unidentified Names".to_string(),
+                attributes: 0,
+                data: crate::resource_fork::encode_string_list_resource(&unidentified),
+            },
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "STR#".to_string(),
+                id: 801,
+                name: "Item Names".to_string(),
+                attributes: 0,
+                data: crate::resource_fork::encode_string_list_resource(&identified),
+            },
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "STR#".to_string(),
+                id: 802,
+                name: "Item Descriptions".to_string(),
+                attributes: 0,
+                data: crate::resource_fork::encode_string_list_resource(&descriptions),
+            },
+        ])
+        .expect("item text resource fork");
+        fs::write(source_dir.join("Data ID.rsrc"), bytes).expect("write Data ID resource fork");
+        let project_dir = temp.path().join("Project.providence");
+        let mut project = create_project("Project".to_string(), &project_dir).expect("project");
+
+        hydrate_item_texts(&source_dir, &mut project).expect("hydrate item texts");
+
+        let record = project
+            .item_texts
+            .iter()
+            .find(|record| record.item_id == 901)
+            .expect("item 901 text");
+        assert_eq!(record.unidentified_name, "Unknown Providence Token");
+        assert_eq!(record.identified_name, "Providence Token");
+        assert_eq!(
+            record.description,
+            "Compiled from canonical Providence data."
+        );
+        assert!(!record.authored);
+        assert!(matches!(
+            record.provenance.as_ref().unwrap().confidence,
+            Confidence::SourceBacked
+        ));
     }
 
     #[test]

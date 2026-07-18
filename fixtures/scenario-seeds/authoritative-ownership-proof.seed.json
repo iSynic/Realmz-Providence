@@ -26,6 +26,17 @@
   "quests": [
     { "key": "ownership-proven", "label": "Providence ownership proof triggered" }
   ],
+  "items": [
+    {
+      "key": "ownership-token",
+      "itemId": 901,
+      "unidentifiedName": "Unknown Providence Token",
+      "identifiedName": "Providence Token",
+      "description": "This item text was compiled from canonical Providence data.",
+      "typeName": "scenarioItem",
+      "cost": 1
+    }
+  ],
   "actionPoints": [
     {
       "key": "ownership-action-point",

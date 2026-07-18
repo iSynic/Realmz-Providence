@@ -2663,6 +2663,7 @@ mod tests {
             monster_icon_overrides: Vec::new(),
             scenario_icon_resources: Vec::new(),
             scenario_items: Vec::new(),
+            item_texts: Vec::new(),
             treasures: Vec::new(),
             shops: Vec::new(),
             simple_encounters: Vec::new(),

@@ -1,8 +1,8 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
-    LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject, ScenarioTarget,
-    TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    ItemTextRecord, LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
+    ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -364,6 +364,12 @@ pub fn export_project(
         &project.spell_overrides,
         &mut written_files,
     )?;
+    write_item_text_resources(
+        output_dir,
+        preserved_raw_dir,
+        &project.item_texts,
+        &mut written_files,
+    )?;
     write_fixed_if_nonempty(
         output_dir,
         "Data Race",
@@ -694,6 +700,125 @@ fn data_spell_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>>
         }
     }
     Ok(None)
+}
+
+fn write_item_text_resources(
+    output_dir: &Path,
+    raw_dir: Option<&Path>,
+    records: &[ItemTextRecord],
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let authored = records
+        .iter()
+        .filter(|record| record.authored && (1..1000).contains(&record.item_id))
+        .collect::<Vec<_>>();
+    if authored.is_empty() {
+        return Ok(());
+    }
+    let (resource_file_name, original) = match raw_dir {
+        Some(raw_dir) => data_id_resource_fork(raw_dir)?
+            .unwrap_or_else(|| ("Data ID.rsrc".to_string(), Vec::new())),
+        None => ("Data ID.rsrc".to_string(), Vec::new()),
+    };
+    let updates = item_text_resource_updates(&authored, &original);
+    if updates.is_empty() {
+        return Ok(());
+    }
+    let (resource_bytes, _) = merge_resource_entries(&original, updates)?;
+    let dest = output_dir.join(&resource_file_name);
+    fs::write(&dest, resource_bytes).with_path(&dest)?;
+    if !written_files.iter().any(|name| name == &resource_file_name) {
+        written_files.push(resource_file_name);
+    }
+    Ok(())
+}
+
+fn data_id_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>> {
+    for name in ["Data ID.rsrc", "Data ID.rsf", "._Data ID", "Data ID"] {
+        let path = raw_dir.join(name);
+        if !path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&path).with_path(&path)?;
+        if parse_resource_fork_entries(&bytes).iter().any(|entry| {
+            entry.resource_type == "STR#" && item_text_resource_base(entry.id).is_some()
+        }) {
+            return Ok(Some((name.to_string(), bytes)));
+        }
+    }
+    Ok(None)
+}
+
+fn item_text_resource_updates(
+    records: &[&ItemTextRecord],
+    original: &[u8],
+) -> Vec<ResourceForkEntry> {
+    let entries = parse_resource_fork_entries(original);
+    let families = records
+        .iter()
+        .map(|record| record.item_id / 200 * 200)
+        .collect::<BTreeSet<_>>();
+    let mut updates = Vec::new();
+    for base in families {
+        for offset in 0..=2i16 {
+            let resource_id = base + offset;
+            let existing = entries
+                .iter()
+                .find(|entry| entry.resource_type == "STR#" && entry.id == resource_id);
+            let mut strings = existing
+                .map(|entry| decode_string_list_resource(&entry.data))
+                .unwrap_or_default();
+            strings.resize(200, String::new());
+            let mut changed = false;
+            for record in records {
+                if record.item_id / 200 * 200 != base {
+                    continue;
+                }
+                let index = (record.item_id - base) as usize;
+                let next = match offset {
+                    0 => &record.unidentified_name,
+                    1 => &record.identified_name,
+                    _ => &record.description,
+                };
+                if strings[index] == *next {
+                    continue;
+                }
+                strings[index] = next.clone();
+                changed = true;
+            }
+            if changed {
+                updates.push(ResourceForkEntry {
+                    resource_type: existing
+                        .map(|entry| entry.resource_type.clone())
+                        .unwrap_or_else(|| "STR#".to_string()),
+                    id: existing.map(|entry| entry.id).unwrap_or(resource_id),
+                    name: existing
+                        .map(|entry| entry.name.clone())
+                        .unwrap_or_else(|| item_text_resource_name(offset).to_string()),
+                    attributes: existing.map(|entry| entry.attributes).unwrap_or(0),
+                    data: encode_string_list_resource(&strings),
+                });
+            }
+        }
+    }
+    updates
+}
+
+fn item_text_resource_base(resource_id: i16) -> Option<i16> {
+    let offset = resource_id.rem_euclid(200);
+    if !matches!(offset, 0..=2) {
+        return None;
+    }
+    let base = resource_id - offset;
+    (0..1000).contains(&base).then_some(base)
+}
+
+fn item_text_resource_name(offset: i16) -> &'static str {
+    match offset {
+        0 => "Item Unidentified Names",
+        1 => "Item Names",
+        _ => "Item Descriptions",
+    }
 }
 
 fn is_custom_names_support_file(name: &str) -> bool {
@@ -1235,14 +1360,14 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        append_preserved_shop_source_suffix, managed_asset_resource_bytes,
-        managed_resource_type_supported, map_name_resource_updates_for_records,
-        monster_icon_override_updates, preserve_imported_fixed_length,
-        scenario_icon_resource_updates, ResourceExportResult,
+        append_preserved_shop_source_suffix, item_text_resource_updates,
+        managed_asset_resource_bytes, managed_resource_type_supported,
+        map_name_resource_updates_for_records, monster_icon_override_updates,
+        preserve_imported_fixed_length, scenario_icon_resource_updates, ResourceExportResult,
     };
     use crate::project::{
-        Confidence, ManagedAsset, ManagedAssetExportState, ManagedAssetKind, MapRecord,
-        MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
+        Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
+        MapRecord, MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
         ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
     };
     use crate::resource_fork::{
@@ -1288,6 +1413,74 @@ mod tests {
             managed_asset_resource_bytes(std::path::Path::new("."), &asset).unwrap(),
             b"scrolling text".to_vec()
         );
+    }
+
+    #[test]
+    fn item_text_resource_updates_generate_all_strings_and_preserve_existing_metadata() {
+        let mut existing_names = vec![String::new(); 200];
+        existing_names[101] = "Old unidentified name".to_string();
+        let original = write_resource_fork(&[
+            ResourceForkEntry {
+                resource_type: "STR#".to_string(),
+                id: 800,
+                name: "Existing item names".to_string(),
+                attributes: 7,
+                data: encode_string_list_resource(&existing_names),
+            },
+            ResourceForkEntry {
+                resource_type: "TEXT".to_string(),
+                id: 42,
+                name: "Unrelated".to_string(),
+                attributes: 0,
+                data: b"preserve me".to_vec(),
+            },
+        ])
+        .unwrap();
+        let record = ItemTextRecord {
+            id: 901,
+            item_id: 901,
+            unidentified_name: "Unknown Providence Token".to_string(),
+            identified_name: "Providence Token".to_string(),
+            description: "Compiled from canonical Providence data.".to_string(),
+            authored: true,
+            provenance: None,
+        };
+
+        let updates = item_text_resource_updates(&[&record], &original);
+
+        assert_eq!(updates.len(), 3);
+        for (offset, expected) in [
+            (0, "Unknown Providence Token"),
+            (1, "Providence Token"),
+            (2, "Compiled from canonical Providence data."),
+        ] {
+            let update = updates
+                .iter()
+                .find(|entry| entry.resource_type == "STR#" && entry.id == 800 + offset)
+                .expect("item text resource update");
+            assert_eq!(decode_string_list_resource(&update.data)[101], expected);
+        }
+        let unidentified = updates
+            .iter()
+            .find(|entry| entry.id == 800)
+            .expect("unidentified item strings");
+        assert_eq!(unidentified.name, "Existing item names");
+        assert_eq!(unidentified.attributes, 7);
+        assert_eq!(
+            updates.iter().find(|entry| entry.id == 801).unwrap().name,
+            "Item Names"
+        );
+        assert_eq!(
+            updates.iter().find(|entry| entry.id == 802).unwrap().name,
+            "Item Descriptions"
+        );
+
+        let (merged, _) = crate::resource_fork::merge_resource_entries(&original, updates).unwrap();
+        assert!(crate::resource_fork::parse_resource_fork_entries(&merged)
+            .iter()
+            .any(|entry| entry.resource_type == "TEXT"
+                && entry.id == 42
+                && entry.data == b"preserve me"));
     }
 
     #[test]

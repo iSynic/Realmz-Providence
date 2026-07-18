@@ -41,6 +41,9 @@ expect(project.validation.ok, `Canonical project validation failed: ${project.va
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 1, `Expected one Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 1, `Expected one message, found ${project.messages.length}`);
+expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
+expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
+assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.schemaVersion === 5, `Canonical project must use schema v5, found v${project.schemaVersion}`);
 expect(project.source.origin === "authored", `Fresh canonical project must declare authored origin, found ${project.source.origin}`);
 expect(project.source.files.length === 0, "Fresh canonical project must not inventory source files");
@@ -104,6 +107,7 @@ expect(
   reimported.messages.some((message) => message.text === "Providence owns this scenario."),
   "Reimport should recover the authored message"
 );
+assertOwnershipItemText(reimported.itemTexts, "Reimport");
 
 const summary = {
   proofVersion: 1,
@@ -116,6 +120,7 @@ const summary = {
     maps: project.maps.length,
     actionPoints: project.triggers.length,
     messages: project.messages.length,
+    itemTexts: project.itemTexts.length,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
   nativeOutputs: {
@@ -145,7 +150,8 @@ const summary = {
     immutable: reimported.source.immutable,
     compatibilityAnnexPresent: true,
     activeActionPointRecovered: true,
-    messageRecovered: true
+    messageRecovered: true,
+    itemTextRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -201,6 +207,7 @@ async function assertNoRawSources(stage) {
   expect(!await pathExists(path.join(projectDir, "raw-sources")), `Fresh project created raw-sources ${stage}`);
   const savedProject = JSON.parse(await fs.readFile(path.join(projectDir, "project.json"), "utf8"));
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
+  assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
 }
 
 function assertCompleteNativeFolder(files, label) {
@@ -224,10 +231,21 @@ function assertCompleteNativeFolder(files, label) {
   }
   expect(files.has("Scenario.rsrc"), `${label} output is missing Scenario.rsrc`);
   expect(files.get("Scenario.rsrc").byteLength >= 46, `${label} Scenario.rsrc is not structurally plausible`);
+  expect(files.has("Data ID.rsrc"), `${label} output is missing canonical item text resources`);
+  expect(files.get("Data ID.rsrc").byteLength >= 46, `${label} Data ID.rsrc is not structurally plausible`);
   expect(files.has("Data SD2"), `${label} output is missing authored messages`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
+  expect(files.get("Data NI").some((byte) => byte !== 0), `${label} Data NI does not contain the authored scenario item`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
+}
+
+function assertOwnershipItemText(records, label) {
+  const itemText = records?.find((record) => record.itemId === 901);
+  expect(itemText, `${label} is missing item-text record 901`);
+  expect(itemText.unidentifiedName === "Unknown Providence Token", `${label} has the wrong unidentified item name`);
+  expect(itemText.identifiedName === "Providence Token", `${label} has the wrong identified item name`);
+  expect(itemText.description === "This item text was compiled from canonical Providence data.", `${label} has the wrong item description`);
 }
 
 async function readFlatDirectory(root) {
