@@ -16,6 +16,7 @@ const sourceFiles = [
   "src/editor/browser/ruleCompiler.ts",
   "src/editor/browser/compatibilityAnnex.ts",
   "src/editor/browser/scenarioPackage.ts",
+  "src/editor/generated/providenceProjectContract.ts",
   "src/editor/projectOrigin.ts"
 ];
 

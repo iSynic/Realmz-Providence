@@ -102,11 +102,13 @@
     "check:generated-scenario-baseline": "node scripts/check_generated_scenario_baseline.mjs",
     "generate:rules-compiler-baseline": "node scripts/generate_rules_compiler_baseline.mjs",
     "check:rules-compiler-baseline": "node scripts/generate_rules_compiler_baseline.mjs --check",
+    "generate:providence-project-contract": "node scripts/generate_providence_project_contract.mjs",
+    "check:providence-project-contract": "node scripts/generate_providence_project_contract.mjs --check",
     "check:authoritative-scenario-proof": "node scripts/run_authoritative_scenario_proof.mjs",
     "smoke:scenario-generation": "node scripts/run_scenario_generation_smoke.mjs",
     "check:scenario-seed": "node scripts/check_scenario_seed_schema.mjs && node scripts/check_scenario_seed_fixtures.mjs && node scripts/check_scenario_seed_report.mjs && npm run smoke:scenario-generation && npm run check:authoritative-scenario-proof",
     "check:evidence-lab": "node scripts/check_evidence_lab_policy.mjs",
-    "check": "npm run check:refactor-guardrails && npm run check:ui-audit && npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:rules-compiler-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
+    "check": "npm run check:refactor-guardrails && npm run check:ui-audit && npm run check:providence-project-contract && npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:rules-compiler-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

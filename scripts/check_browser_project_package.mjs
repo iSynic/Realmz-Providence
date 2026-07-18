@@ -10,6 +10,7 @@ const buildRoot = path.join(repoRoot, "tmp", "browser-project-package-check");
 const sourceFiles = [
   "src/editor/browser/zip.ts",
   "src/editor/browser/fsAccess.ts",
+  "src/editor/generated/providenceProjectContract.ts",
   "src/editor/projectOrigin.ts",
   "src/editor/browser/projectPackage.ts"
 ];

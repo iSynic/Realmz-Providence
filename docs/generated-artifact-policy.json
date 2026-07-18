@@ -2,6 +2,13 @@
   "schemaVersion": 1,
   "generatedFamilies": [
     {
+      "name": "Providence project contract",
+      "command": "generate:providence-project-contract",
+      "outputs": [
+        "src/editor/generated/providenceProjectContract.ts"
+      ]
+    },
+    {
       "name": "Scenario no-edit round-trip ledger",
       "command": "archaeology:roundtrip-audit",
       "outputs": [

@@ -1,6 +1,7 @@
 import type { Project, ProjectOrigin, ProjectSource } from "./types";
+import { PROVIDENCE_PROJECT_SCHEMA_VERSION } from "./generated/providenceProjectContract";
 
-export const PROJECT_SCHEMA_VERSION = 5;
+export const PROJECT_SCHEMA_VERSION = PROVIDENCE_PROJECT_SCHEMA_VERSION;
 
 export function resolvedProjectOrigin(source: ProjectSource): ProjectOrigin {
   if (source.origin === "authored" || source.origin === "imported") return source.origin;

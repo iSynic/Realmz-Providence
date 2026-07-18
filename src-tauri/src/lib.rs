@@ -4,6 +4,7 @@ pub mod dungeon;
 pub mod error;
 pub mod evidence;
 pub mod exporter;
+mod generated;
 pub mod harness;
 pub mod importer;
 pub mod media_assets;

@@ -16,6 +16,7 @@ const sourceFiles = [
   "src/editor/browser/fsAccess.ts",
   "src/editor/browser/compatibilityAnnex.ts",
   "src/editor/browser/scenarioCompilerBaseline.ts",
+  "src/editor/generated/providenceProjectContract.ts",
   "src/editor/projectOrigin.ts",
   "src/editor/browser/scenarioPackage.ts"
 ];

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://isynic.github.io/realmz-providence/schemas/providence-project.schema.json",
+  "title": "Realmz Providence Canonical Project",
+  "description": "The versioned, persisted Providence project contract. This first generated seam owns the top-level project inventory and source-origin boundary; nested domain DTO schemas remain incremental work.",
+  "type": "object",
+  "additionalProperties": false,
+  "x-providence-contract-scope": "persisted-project-top-level",
+  "x-providence-derived-fields": ["semanticSchema"],
+  "required": [
+    "schemaVersion",
+    "appVersion",
+    "scenario",
+    "source",
+    "maps",
+    "landLayout",
+    "mapRecords",
+    "tileAttributes",
+    "customLandlooks",
+    "triggers",
+    "randomLevels",
+    "extracodes",
+    "messages",
+    "optionLabels",
+    "battles",
+    "monsters",
+    "monsterSets",
+    "monsterDescriptions",
+    "monsterIconOverrides",
+    "scenarioIconResources",
+    "scenarioItems",
+    "itemTexts",
+    "treasures",
+    "shops",
+    "simpleEncounters",
+    "complexEncounters",
+    "thiefEncounters",
+    "timedEncounters",
+    "questLabels",
+    "spellOverrides",
+    "raceOverrides",
+    "casteOverrides",
+    "ruleNames",
+    "assets",
+    "assetCatalog",
+    "editorMetadata",
+    "records",
+    "diagnostics",
+    "validation"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 5,
+      "description": "Providence persisted-project schema version."
+    },
+    "appVersion": { "type": "string" },
+    "scenario": { "$ref": "#/$defs/canonicalObject" },
+    "source": { "$ref": "#/$defs/source" },
+    "maps": { "$ref": "#/$defs/canonicalRecordArray" },
+    "landLayout": {
+      "oneOf": [
+        { "$ref": "#/$defs/canonicalObject" },
+        { "type": "null" }
+      ]
+    },
+    "mapRecords": { "$ref": "#/$defs/canonicalRecordArray" },
+    "tileAttributes": { "$ref": "#/$defs/canonicalRecordArray" },
+    "customLandlooks": { "$ref": "#/$defs/canonicalRecordArray" },
+    "triggers": { "$ref": "#/$defs/canonicalRecordArray" },
+    "randomLevels": { "$ref": "#/$defs/canonicalRecordArray" },
+    "extracodes": { "$ref": "#/$defs/canonicalRecordArray" },
+    "messages": { "$ref": "#/$defs/canonicalRecordArray" },
+    "optionLabels": { "$ref": "#/$defs/canonicalRecordArray" },
+    "battles": { "$ref": "#/$defs/canonicalRecordArray" },
+    "monsters": { "$ref": "#/$defs/canonicalRecordArray" },
+    "monsterSets": { "$ref": "#/$defs/canonicalRecordArray" },
+    "monsterDescriptions": { "$ref": "#/$defs/canonicalRecordArray" },
+    "monsterIconOverrides": { "$ref": "#/$defs/canonicalRecordArray" },
+    "scenarioIconResources": { "$ref": "#/$defs/canonicalRecordArray" },
+    "scenarioItems": { "$ref": "#/$defs/canonicalRecordArray" },
+    "itemTexts": { "$ref": "#/$defs/canonicalRecordArray" },
+    "treasures": { "$ref": "#/$defs/canonicalRecordArray" },
+    "shops": { "$ref": "#/$defs/canonicalRecordArray" },
+    "simpleEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
+    "complexEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
+    "thiefEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
+    "timedEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
+    "questLabels": { "$ref": "#/$defs/canonicalRecordArray" },
+    "spellOverrides": { "$ref": "#/$defs/canonicalRecordArray" },
+    "raceOverrides": { "$ref": "#/$defs/canonicalRecordArray" },
+    "casteOverrides": { "$ref": "#/$defs/canonicalRecordArray" },
+    "ruleNames": { "$ref": "#/$defs/canonicalObject" },
+    "assets": { "$ref": "#/$defs/canonicalRecordArray" },
+    "assetCatalog": { "$ref": "#/$defs/canonicalObject" },
+    "editorMetadata": { "$ref": "#/$defs/canonicalObject" },
+    "records": { "$ref": "#/$defs/canonicalObject" },
+    "diagnostics": { "$ref": "#/$defs/canonicalRecordArray" },
+    "validation": { "$ref": "#/$defs/canonicalObject" }
+  },
+  "$defs": {
+    "canonicalObject": {
+      "type": "object",
+      "description": "A canonical nested DTO whose field-level schema will be generated in a later slice."
+    },
+    "canonicalRecordArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/canonicalObject" }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["origin", "sourcePath", "rawSourcesDir", "files", "immutable"],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "enum": ["authored", "imported"],
+          "description": "Authored projects compile from canonical data; imported projects may consult the compatibility annex."
+        },
+        "sourcePath": { "type": "string" },
+        "rawSourcesDir": {
+          "type": "string",
+          "description": "Compatibility-annex location. It is empty for normal authored projects."
+        },
+        "files": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/sourceFile" }
+        },
+        "immutable": { "type": "boolean" }
+      }
+    },
+    "sourceFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "relativePath", "bytes", "sha256", "role", "editable"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "relativePath": { "type": "string", "minLength": 1 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "sha256": { "type": "string" },
+        "role": { "type": "string" },
+        "editable": { "type": "boolean" }
+      }
+    }
+  }
+}
