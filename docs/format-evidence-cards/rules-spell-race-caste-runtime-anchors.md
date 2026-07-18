@@ -104,7 +104,7 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 | 44 | 16 | `drvbonus[8]` | Damage/resistance/vulnerability bonuses. |
 | 60 | 12 | `attbonus[6]` | Attribute bonuses. |
 | 72 | 24 | `minmax[12]` | Attribute min/max values. |
-| 96 | 16 | `spare[8]` | Preserve. |
+| 96 | 16 | `spare[8]` | Structurally modeled; semantics remain reserved. |
 | 112 | 80 | `conditions[40]` | Condition/level evidence. |
 | 192 | 2 | `maxage` | Maximum age. |
 | 194 | 2 | `doesnotdie` | Mortality/age evidence. |
@@ -120,7 +120,7 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 | 334 | 2 | `defaulticonset` | Default icon set. |
 | 336 | 8 | `itemtypes[2]` | Allowed item type bitset. |
 | 344 | 2 | `descriptors` | Race descriptor/class bitset. |
-| 346 | 62 | `spacer[31]` | Preserve. |
+| 346 | 62 | `spacer[31]` | Structurally modeled; semantics remain reserved. |
 
 ## Caste Layout
 
@@ -142,7 +142,7 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 | 228 | 4 | `tohit[2]` | Level-up to-hit values. |
 | 232 | 4 | `missile[2]` | Level-up missile values. |
 | 236 | 4 | `hand2hand[2]` | Level-up hand-to-hand values. |
-| 240 | 8 | `spare1[2]`, `spare2[2]` | Preserve. |
+| 240 | 8 | `spare1[2]`, `spare2[2]` | Structurally modeled; semantics remain reserved. |
 | 248 | 2 | `casteclass` | Caste class used by item restrictions. |
 | 250 | 2 | `minimumagegroup` | Minimum age group. |
 | 252 | 2 | `movebonus` | Movement bonus. |
@@ -159,7 +159,7 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 | 444 | 2 | `defaulticon` | Default icon. |
 | 446 | 2 | `maxspellsattacks` | Spell/attack cap evidence. |
 | 448 | 2 | `spellssofar` | Spell progression evidence. |
-| 450 | 126 | `spacer[63]` | Preserve. |
+| 450 | 126 | `spacer[63]` | Structurally modeled; semantics remain reserved. |
 
 ## Corpus Evidence
 
@@ -228,8 +228,8 @@ The May 2026 Scenario screenshots show Divinity's Scenario area as a hub for sta
 | Family | Writable now | Preserve-first |
 | --- | --- | --- |
 | `Data Spell` | 105 runtime-read 30-byte spell records | Tail/resource fork names, descriptions, and packaging evidence |
-| `Data Race` | 30 x 408-byte scenario override fields mapped in `struct race` | Any unknown spacer bytes |
-| `Data Caste` | 30 x 576-byte scenario override fields mapped in `struct caste` | Unknown spacer bytes and labels requiring Divinity binary evidence |
+| `Data Race` | Complete 30 x 408-byte scenario table, including structural `spare`/`spacer` arrays | Labels remain project-only because Realmz reads the global Custom Names resource |
+| `Data Caste` | Complete 30 x 576-byte scenario table, including structural `spare1`/`spare2`/`spacer` arrays | Labels remain project-only because Realmz reads the global Custom Names resource |
 | `Global` | Seven Divinity-visible hook doors, with source-backed labels on known consumers | Unlabeled/reserved hook slots |
 | Scenario pictures | Managed `PICT` range `30000..30128` when resource writing is available | Unrecognized resource metadata and non-picture fork content |
 

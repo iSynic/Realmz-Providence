@@ -22,13 +22,30 @@ export function validateScenarioSeed(seed: ScenarioSeed, context: ParseContext) 
   validateUniqueIds(seed.thiefEncounters, "thiefEncounters", context);
   validateUniqueIds(seed.timedEncounters, "timedEncounters", context);
   validateUniqueIds(seed.spells, "spells", context);
+  validateRecordIdRange(seed.spells, "spells", 0, 104, context);
   validateUniqueIds(seed.races, "races", context);
+  validateRecordIdRange(seed.races, "races", 0, 29, context);
   validateUniqueIds(seed.castes, "castes", context);
-  if ((seed.races?.length ?? 0) > 70) context.errors.push("$.races can contain at most 70 override records.");
+  validateRecordIdRange(seed.castes, "castes", 0, 29, context);
+  if ((seed.races?.length ?? 0) > 30) context.errors.push("$.races can contain at most 30 override records.");
   if ((seed.castes?.length ?? 0) > 30) context.errors.push("$.castes can contain at most 30 override records.");
   validateUniqueIds(seed.extraActionPoints, "extraActionPoints", context);
   validateMaps(seed.maps, context);
   validateScenarioStart(seed.scenario, seed.maps, context);
+}
+
+function validateRecordIdRange(
+  records: Array<{ id?: number }> | undefined,
+  family: string,
+  minimum: number,
+  maximum: number,
+  context: ParseContext
+) {
+  for (const [index, record] of (records ?? []).entries()) {
+    if (record.id !== undefined && (record.id < minimum || record.id > maximum)) {
+      context.errors.push(`$.${family}[${index}].id ${record.id} is outside the ${minimum}..${maximum} record range.`);
+    }
+  }
 }
 
 export function validateMaxArrayLength(

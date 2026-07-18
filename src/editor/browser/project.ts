@@ -984,15 +984,17 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
   }
 
   for (const race of project.raceOverrides ?? []) {
-    if (race.id < 0 || race.id > 69) errors.push(`Race override ${race.id} is outside Data Race's 0..69 record range.`);
+    if (race.id < 0 || race.id > 29) errors.push(`Race override ${race.id} is outside Data Race's 0..29 record range.`);
     validateLength(errors, `Race ${race.id} +/- To Hit`, race.plusMinusToHit, 8);
     validateLength(errors, `Race ${race.id} Special Ability`, race.specialAbility, 14);
     validateLength(errors, `Race ${race.id} DRVs`, race.drvBonus, 8);
     validateLength(errors, `Race ${race.id} Att Bonus`, race.attBonus, 6);
     validateLength(errors, `Race ${race.id} Attribute Min/Max`, race.minMax, 12);
+    if (race.spare) validateLength(errors, `Race ${race.id} Spare Words`, race.spare, 8);
     validateLength(errors, `Race ${race.id} Conditions`, race.conditions, 40);
     validateLength(errors, `Race ${race.id} Caste Permissions`, race.canCaste, 30);
     validateLength(errors, `Race ${race.id} Item Type Words`, race.itemTypes, 2);
+    if (race.spacer) validateLength(errors, `Race ${race.id} Spacer Words`, race.spacer, 31);
     for (const [field, values] of [
       ["+/- To Hit", race.plusMinusToHit],
       ["Special Ability", race.specialAbility],
@@ -1014,6 +1016,8 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
     ] as const) validateRange(errors, `Race ${race.id} ${field}`, value, -32768, 32767, "signed 16-bit");
     validateNumberArray(errors, `Race ${race.id} Caste Permissions`, race.canCaste, 0, 255, "unsigned byte");
     validateNumberArray(errors, `Race ${race.id} Item Type Words`, race.itemTypes, -2147483648, 2147483647, "signed 32-bit");
+    if (race.spare) validateNumberArray(errors, `Race ${race.id} Spare Words`, race.spare, -32768, 32767, "signed 16-bit");
+    if (race.spacer) validateNumberArray(errors, `Race ${race.id} Spacer Words`, race.spacer, -32768, 32767, "signed 16-bit");
     validateRaceMatrices(race.id, race.ageRange, race.ageChange, errors);
     if (race.minMax.length >= 12) validateMinMaxPairs(`Race ${race.id}`, race.minMax, warnings);
   }
@@ -1043,7 +1047,13 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
     validateLength(errors, `Caste ${caste.id} Bonus Attack Rounds`, caste.attacks, 10);
     validateNumberArray(errors, `Caste ${caste.id} Bonus Attack Rounds`, caste.attacks, 0, 255, "unsigned byte");
     validateLength(errors, `Caste ${caste.id} Item Type Words`, caste.itemTypes, 2);
+    if (caste.spare1) validateLength(errors, `Caste ${caste.id} Spare 1 Words`, caste.spare1, 2);
+    if (caste.spare2) validateLength(errors, `Caste ${caste.id} Spare 2 Words`, caste.spare2, 2);
+    if (caste.spacer) validateLength(errors, `Caste ${caste.id} Spacer Words`, caste.spacer, 63);
     validateNumberArray(errors, `Caste ${caste.id} Item Type Words`, caste.itemTypes, -2147483648, 2147483647, "signed 32-bit");
+    if (caste.spare1) validateNumberArray(errors, `Caste ${caste.id} Spare 1 Words`, caste.spare1, -32768, 32767, "signed 16-bit");
+    if (caste.spare2) validateNumberArray(errors, `Caste ${caste.id} Spare 2 Words`, caste.spare2, -32768, 32767, "signed 16-bit");
+    if (caste.spacer) validateNumberArray(errors, `Caste ${caste.id} Spacer Words`, caste.spacer, -32768, 32767, "signed 16-bit");
     for (const [field, value] of [
       ["Can Use Missile Weapons", caste.canUseMissile],
       ["Missile Bonus Damage", caste.getsMissileBonus],

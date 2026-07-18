@@ -1028,6 +1028,7 @@ export type ScenarioRaceOverride = {
   drvBonus: number[];
   attBonus: number[];
   minMax: number[];
+  spare?: number[];
   conditions: number[];
   maxAge: number;
   doesNotDie: number;
@@ -1043,6 +1044,7 @@ export type ScenarioRaceOverride = {
   defaultIconSet: number;
   itemTypes: number[];
   descriptors: number;
+  spacer?: number[];
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;
@@ -1065,6 +1067,8 @@ export type ScenarioCasteOverride = {
   toHit: number[];
   missile: number[];
   hand2Hand: number[];
+  spare1?: number[];
+  spare2?: number[];
   casteClass: number;
   minimumAgeGroup: number;
   moveBonus: number;
@@ -1081,6 +1085,7 @@ export type ScenarioCasteOverride = {
   defaultIcon: number;
   maxSpellsAttacks: number;
   spellsSoFar: number;
+  spacer?: number[];
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;

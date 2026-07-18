@@ -47,8 +47,8 @@ pub use maps::{
 };
 pub use rules::{
     parse_caste_overrides, parse_race_overrides, parse_spell_overrides, write_caste_overrides,
-    write_race_overrides, write_spell_overrides, CASTE_BYTES, RACE_BYTES, SPELL_BYTES,
-    SPELL_OVERRIDE_RECORDS,
+    write_race_overrides, write_spell_overrides, CASTE_BYTES, CASTE_OVERRIDE_RECORDS, RACE_BYTES,
+    RACE_OVERRIDE_RECORDS, SPELL_BYTES, SPELL_OVERRIDE_RECORDS,
 };
 pub use scenario::{
     parse_global_macro_hooks, parse_scenario_contact_info, parse_scenario_restrictions,

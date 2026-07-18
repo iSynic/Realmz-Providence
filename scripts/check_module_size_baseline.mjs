@@ -62,7 +62,7 @@ const MODULE_BASELINES = [
   { path: "src-tauri/src/realmz/landlooks.rs", maximum: 843, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/maps.rs", maximum: 625, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/record_bytes.rs", maximum: 300, owner: "ISY-320" },
-  { path: "src-tauri/src/realmz/rules.rs", maximum: 425, owner: "ISY-320" },
+  { path: "src-tauri/src/realmz/rules.rs", maximum: 447, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/scenario.rs", maximum: 538, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/text_records.rs", maximum: 102, owner: "ISY-320" },
   { path: "src/editor/styles/script-surfaces.css", maximum: 7, owner: "ISY-321" },

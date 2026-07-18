@@ -160,7 +160,10 @@ export function compileScenarioSeedCoreRecords(
   if (seed.castes !== undefined) {
     let rulesProject: Project = { ...compiled, casteOverrides: [] };
     for (const { key: _key, id, ...caste } of seed.castes) {
-      const template = { ...caste, startItems: caste.startItems?.map((item) => resolveItemRef(item, context)) };
+      const { startItems, ...casteTemplate } = caste;
+      const template = startItems
+        ? { ...casteTemplate, startItems: startItems.map((item) => resolveItemRef(item, context)) }
+        : casteTemplate;
       rulesProject = createCasteOverride(rulesProject, id, template);
     }
     compiled = { ...compiled, casteOverrides: rulesProject.casteOverrides, ruleNames: rulesProject.ruleNames };

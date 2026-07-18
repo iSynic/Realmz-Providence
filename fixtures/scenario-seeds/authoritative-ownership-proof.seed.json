@@ -50,6 +50,28 @@
       "inCamp": false
     }
   ],
+  "races": [
+    {
+      "key": "providence-kin",
+      "id": 19,
+      "displayName": "Providence Kin",
+      "baseMove": 11,
+      "maxAge": 120,
+      "magRes": 7,
+      "canRegenerate": 1
+    }
+  ],
+  "castes": [
+    {
+      "key": "providence-warden",
+      "id": 20,
+      "displayName": "Providence Warden",
+      "casteClass": 2,
+      "moveBonus": 1,
+      "magRes": 5,
+      "startMoney": 25
+    }
+  ],
   "actionPoints": [
     {
       "key": "ownership-action-point",

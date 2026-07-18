@@ -5,7 +5,7 @@
     { "key": "apprentice-staff", "itemId": 901, "identifiedName": "Apprentice Staff", "typeName": "meleeWeapon" }
   ],
   "races": [
-    { "key": "stoneborn", "id": 30, "displayName": "Stoneborn", "baseMove": 9, "maxAge": 180, "magRes": 15, "canRegenerate": 1 }
+    { "key": "stoneborn", "id": 29, "displayName": "Stoneborn", "baseMove": 9, "maxAge": 180, "magRes": 15, "canRegenerate": 1 }
   ],
   "castes": [
     {

@@ -2,7 +2,8 @@ use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
     ItemTextRecord, LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
-    ScenarioSpellOverride, ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget,
+    TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -370,20 +371,16 @@ pub fn export_project(
         &project.item_texts,
         &mut written_files,
     )?;
-    write_fixed_if_nonempty(
+    write_race_overrides_for_export(
         output_dir,
-        "Data Race",
-        write_race_overrides(&project.race_overrides)?,
-        crate::realmz::RACE_BYTES,
         preserved_raw_dir,
+        &project.race_overrides,
         &mut written_files,
     )?;
-    write_fixed_if_nonempty(
+    write_caste_overrides_for_export(
         output_dir,
-        "Data Caste",
-        write_caste_overrides(&project.caste_overrides)?,
-        crate::realmz::CASTE_BYTES,
         preserved_raw_dir,
+        &project.caste_overrides,
         &mut written_files,
     )?;
     let resource_result =
@@ -592,6 +589,192 @@ fn preserve_imported_fixed_length(
         bytes.resize(raw.len(), 0);
     } else {
         bytes.extend_from_slice(&raw[bytes.len()..]);
+    }
+    Ok(bytes)
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RulesCompilerBaseline {
+    schema_version: u32,
+    race: RulesCompilerBaselineFamily,
+    caste: RulesCompilerBaselineFamily,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RulesCompilerBaselineFamily {
+    record_bytes: usize,
+    records: usize,
+    bytes_base64: String,
+}
+
+fn write_race_overrides_for_export(
+    output_dir: &Path,
+    raw_dir: Option<&Path>,
+    records: &[ScenarioRaceOverride],
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let source_backed = raw_dir
+        .map(|raw_dir| raw_dir.join("Data Race").is_file())
+        .unwrap_or(false);
+    let sanitized;
+    let writer_records = if source_backed {
+        records
+    } else {
+        sanitized = records
+            .iter()
+            .cloned()
+            .map(|mut record| {
+                record.raw_bytes.clear();
+                record
+            })
+            .collect::<Vec<_>>();
+        sanitized.as_slice()
+    };
+    write_rule_overrides_for_export(
+        output_dir,
+        raw_dir,
+        "Data Race",
+        crate::realmz::RACE_BYTES,
+        crate::realmz::RACE_OVERRIDE_RECORDS,
+        records.iter().map(|record| record.id).collect(),
+        write_race_overrides(writer_records)?,
+        written_files,
+    )
+}
+
+fn write_caste_overrides_for_export(
+    output_dir: &Path,
+    raw_dir: Option<&Path>,
+    records: &[ScenarioCasteOverride],
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let source_backed = raw_dir
+        .map(|raw_dir| raw_dir.join("Data Caste").is_file())
+        .unwrap_or(false);
+    let sanitized;
+    let writer_records = if source_backed {
+        records
+    } else {
+        sanitized = records
+            .iter()
+            .cloned()
+            .map(|mut record| {
+                record.raw_bytes.clear();
+                record
+            })
+            .collect::<Vec<_>>();
+        sanitized.as_slice()
+    };
+    write_rule_overrides_for_export(
+        output_dir,
+        raw_dir,
+        "Data Caste",
+        crate::realmz::CASTE_BYTES,
+        crate::realmz::CASTE_OVERRIDE_RECORDS,
+        records.iter().map(|record| record.id).collect(),
+        write_caste_overrides(writer_records)?,
+        written_files,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn write_rule_overrides_for_export(
+    output_dir: &Path,
+    raw_dir: Option<&Path>,
+    name: &str,
+    record_bytes: usize,
+    fresh_records: usize,
+    record_ids: Vec<usize>,
+    encoded: Vec<u8>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    if record_ids.is_empty() {
+        return Ok(());
+    }
+    let raw_path = raw_dir.map(|raw_dir| raw_dir.join(name));
+    let source_backed = raw_path.as_ref().is_some_and(|path| path.is_file());
+    if !source_backed {
+        if let Some(id) = record_ids.iter().find(|id| **id >= fresh_records) {
+            return Err(ProvidenceError::message(format!(
+                "{name} record {id} is outside the fresh 0..{} scenario slot range.",
+                fresh_records - 1
+            )));
+        }
+    }
+
+    let (mut body, tail) = if let Some(raw_path) = raw_path.filter(|path| path.is_file()) {
+        let mut raw = fs::read(&raw_path).with_path(&raw_path)?;
+        let body_bytes = raw.len() / record_bytes * record_bytes;
+        let tail = raw.split_off(body_bytes);
+        (raw, tail)
+    } else {
+        (
+            rule_compiler_baseline_bytes(name, record_bytes, fresh_records)?,
+            Vec::new(),
+        )
+    };
+    let required_body_bytes = record_ids
+        .iter()
+        .map(|id| (id + 1) * record_bytes)
+        .max()
+        .unwrap_or(0);
+    if body.len() < required_body_bytes {
+        body.resize(required_body_bytes, 0);
+    }
+    for id in record_ids {
+        let start = id * record_bytes;
+        let end = start + record_bytes;
+        let record = encoded.get(start..end).ok_or_else(|| {
+            ProvidenceError::message(format!("{name} writer did not produce record {id}."))
+        })?;
+        body[start..end].copy_from_slice(record);
+    }
+    body.extend_from_slice(&tail);
+    write_if_nonempty(output_dir, name, body, written_files)
+}
+
+fn rule_compiler_baseline_bytes(
+    name: &str,
+    record_bytes: usize,
+    records: usize,
+) -> Result<Vec<u8>> {
+    let baseline: RulesCompilerBaseline =
+        serde_json::from_str(include_str!("../../src/shared/rulesCompilerBaseline.json")).map_err(
+            |error| ProvidenceError::message(format!("Invalid rules compiler baseline: {error}")),
+        )?;
+    if baseline.schema_version != 1 {
+        return Err(ProvidenceError::message(format!(
+            "Unsupported rules compiler baseline schema {}.",
+            baseline.schema_version
+        )));
+    }
+    let family = match name {
+        "Data Race" => baseline.race,
+        "Data Caste" => baseline.caste,
+        _ => {
+            return Err(ProvidenceError::message(format!(
+                "No rules compiler baseline exists for {name}."
+            )))
+        }
+    };
+    if family.record_bytes != record_bytes || family.records != records {
+        return Err(ProvidenceError::message(format!(
+            "Rules compiler baseline metadata for {name} is invalid."
+        )));
+    }
+    let bytes = STANDARD.decode(&family.bytes_base64).map_err(|error| {
+        ProvidenceError::message(format!(
+            "Rules compiler baseline for {name} is not base64: {error}"
+        ))
+    })?;
+    if bytes.len() != record_bytes * records {
+        return Err(ProvidenceError::message(format!(
+            "Rules compiler baseline for {name} has {} bytes; expected {}.",
+            bytes.len(),
+            record_bytes * records
+        )));
     }
     Ok(bytes)
 }
@@ -1409,8 +1592,10 @@ mod tests {
         append_preserved_shop_source_suffix, custom_spell_name_resource_updates,
         item_text_resource_updates, managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
-        preserve_imported_fixed_length, scenario_icon_resource_updates,
-        write_spell_overrides_preserving_tail, ResourceExportResult,
+        preserve_imported_fixed_length, rule_compiler_baseline_bytes,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        ResourceExportResult,
     };
     use crate::project::{
         Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
@@ -1594,6 +1779,132 @@ mod tests {
             .any(|entry| entry.resource_type == "TEXT"
                 && entry.id == 42
                 && entry.data == b"preserve me"));
+    }
+
+    #[test]
+    fn fresh_rule_exports_use_fixed_compiler_baselines_and_semantic_spare_words() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut race =
+            crate::realmz::parse_race_overrides(&vec![0; 20 * crate::realmz::RACE_BYTES])
+                .pop()
+                .unwrap();
+        race.authored = true;
+        race.raw_bytes = vec![0xab; crate::realmz::RACE_BYTES];
+        race.base_move = 11;
+        race.spare.as_mut().unwrap()[0] = 123;
+        race.spacer.as_mut().unwrap()[30] = -321;
+
+        let mut caste =
+            crate::realmz::parse_caste_overrides(&vec![0; 21 * crate::realmz::CASTE_BYTES])
+                .pop()
+                .unwrap();
+        caste.authored = true;
+        caste.raw_bytes = vec![0xcd; crate::realmz::CASTE_BYTES];
+        caste.start_money = 25;
+        caste.spare1.as_mut().unwrap()[0] = 456;
+        caste.spare2.as_mut().unwrap()[1] = -654;
+        caste.spacer.as_mut().unwrap()[62] = 789;
+
+        let mut written = Vec::new();
+        write_race_overrides_for_export(
+            temp.path(),
+            None,
+            std::slice::from_ref(&race),
+            &mut written,
+        )
+        .unwrap();
+        write_caste_overrides_for_export(
+            temp.path(),
+            None,
+            std::slice::from_ref(&caste),
+            &mut written,
+        )
+        .unwrap();
+
+        let race_bytes = fs::read(temp.path().join("Data Race")).unwrap();
+        let caste_bytes = fs::read(temp.path().join("Data Caste")).unwrap();
+        assert_eq!(
+            race_bytes.len(),
+            crate::realmz::RACE_OVERRIDE_RECORDS * crate::realmz::RACE_BYTES
+        );
+        assert_eq!(
+            caste_bytes.len(),
+            crate::realmz::CASTE_OVERRIDE_RECORDS * crate::realmz::CASTE_BYTES
+        );
+        let race_baseline = rule_compiler_baseline_bytes(
+            "Data Race",
+            crate::realmz::RACE_BYTES,
+            crate::realmz::RACE_OVERRIDE_RECORDS,
+        )
+        .unwrap();
+        assert_eq!(
+            &race_bytes[..crate::realmz::RACE_BYTES],
+            &race_baseline[..crate::realmz::RACE_BYTES]
+        );
+        let race_record =
+            &race_bytes[19 * crate::realmz::RACE_BYTES..20 * crate::realmz::RACE_BYTES];
+        assert_eq!(crate::realmz::i16_be(race_record, 96), 123);
+        assert_eq!(crate::realmz::i16_be(race_record, 196), 11);
+        assert_eq!(crate::realmz::i16_be(race_record, 406), -321);
+        assert_ne!(
+            race_record[350], 0xab,
+            "fresh raw bytes must not leak into output"
+        );
+        let caste_record =
+            &caste_bytes[20 * crate::realmz::CASTE_BYTES..21 * crate::realmz::CASTE_BYTES];
+        assert_eq!(crate::realmz::i16_be(caste_record, 240), 456);
+        assert_eq!(crate::realmz::i16_be(caste_record, 246), -654);
+        assert_eq!(crate::realmz::i16_be(caste_record, 384), 25);
+        assert_eq!(crate::realmz::i16_be(caste_record, 574), 789);
+        assert_ne!(
+            caste_record[500], 0xcd,
+            "fresh raw bytes must not leak into output"
+        );
+        assert_eq!(written, vec!["Data Race", "Data Caste"]);
+    }
+
+    #[test]
+    fn imported_rule_exports_preserve_aligned_rows_and_malformed_tails() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        let output_dir = temp.path().join("output");
+        fs::create_dir_all(&raw_dir).unwrap();
+        fs::create_dir_all(&output_dir).unwrap();
+
+        let mut race_source = vec![0x5a; 2 * crate::realmz::RACE_BYTES];
+        race_source.extend_from_slice(&[0xde, 0xad]);
+        fs::write(raw_dir.join("Data Race"), &race_source).unwrap();
+        let mut race = crate::realmz::parse_race_overrides(&race_source)[1].clone();
+        race.authored = true;
+        race.base_move = 12;
+
+        let mut caste_source = vec![0x6b; 2 * crate::realmz::CASTE_BYTES];
+        caste_source.extend_from_slice(&[0xbe, 0xef, 0x01]);
+        fs::write(raw_dir.join("Data Caste"), &caste_source).unwrap();
+        let mut caste = crate::realmz::parse_caste_overrides(&caste_source)[1].clone();
+        caste.authored = true;
+        caste.start_money = 42;
+
+        let mut written = Vec::new();
+        write_race_overrides_for_export(&output_dir, Some(&raw_dir), &[race], &mut written)
+            .unwrap();
+        write_caste_overrides_for_export(&output_dir, Some(&raw_dir), &[caste], &mut written)
+            .unwrap();
+
+        let race_output = fs::read(output_dir.join("Data Race")).unwrap();
+        let caste_output = fs::read(output_dir.join("Data Caste")).unwrap();
+        assert_eq!(race_output.len(), race_source.len());
+        assert_eq!(caste_output.len(), caste_source.len());
+        assert_eq!(
+            &race_output[..crate::realmz::RACE_BYTES],
+            &race_source[..crate::realmz::RACE_BYTES]
+        );
+        assert_eq!(&race_output[race_output.len() - 2..], &[0xde, 0xad]);
+        assert_eq!(
+            &caste_output[..crate::realmz::CASTE_BYTES],
+            &caste_source[..crate::realmz::CASTE_BYTES]
+        );
+        assert_eq!(&caste_output[caste_output.len() - 3..], &[0xbe, 0xef, 0x01]);
     }
 
     #[test]

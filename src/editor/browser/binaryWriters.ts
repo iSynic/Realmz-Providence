@@ -554,6 +554,7 @@ export function writeRaceOverrides(records: ScenarioRaceOverride[]) {
     writeI16Array(target, 44, record.drvBonus, 8);
     writeI16Array(target, 60, record.attBonus, 6);
     writeI16Array(target, 72, record.minMax, 12);
+    if (record.spare) writeI16Array(target, 96, record.spare, 8);
     writeI16Array(target, 112, record.conditions, 40);
     writeI16(target, 192, record.maxAge);
     writeI16(target, 194, record.doesNotDie);
@@ -572,6 +573,7 @@ export function writeRaceOverrides(records: ScenarioRaceOverride[]) {
     writeI32(target, 336, record.itemTypes[0] ?? 0);
     writeI32(target, 340, record.itemTypes[1] ?? 0);
     writeI16(target, 344, record.descriptors);
+    if (record.spacer) writeI16Array(target, 346, record.spacer, 31);
   });
 }
 
@@ -596,6 +598,8 @@ export function writeCasteOverrides(records: ScenarioCasteOverride[]) {
     writeI16Array(target, 228, record.toHit, 2);
     writeI16Array(target, 232, record.missile, 2);
     writeI16Array(target, 236, record.hand2Hand, 2);
+    if (record.spare1) writeI16Array(target, 240, record.spare1, 2);
+    if (record.spare2) writeI16Array(target, 244, record.spare2, 2);
     writeI16(target, 248, record.casteClass);
     writeI16(target, 250, record.minimumAgeGroup);
     writeI16(target, 252, record.moveBonus);
@@ -613,6 +617,7 @@ export function writeCasteOverrides(records: ScenarioCasteOverride[]) {
     writeI16(target, 444, record.defaultIcon);
     writeI16(target, 446, record.maxSpellsAttacks);
     writeI16(target, 448, record.spellsSoFar);
+    if (record.spacer) writeI16Array(target, 450, record.spacer, 63);
   });
 }
 

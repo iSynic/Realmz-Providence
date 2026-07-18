@@ -16,6 +16,17 @@ describe("scenario seed parsing", () => {
 });
 
 describe("scenario seed compilation", () => {
+  it("rejects race rows beyond the 30-record scenario table", () => {
+    const result = createProjectFromScenarioSeed({
+      schemaVersion: 1,
+      scenario: { name: "Invalid Race Slot" },
+      races: [{ id: 30, displayName: "Outside Scenario Capacity" }]
+    }, { now: "2026-01-01T00:00:00.000Z" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.join("\n")).toContain("0..29");
+  });
+
   it("allocates keyed records and resolves encounter responses deterministically", () => {
     const result = createProjectFromScenarioSeed({
       schemaVersion: 1,

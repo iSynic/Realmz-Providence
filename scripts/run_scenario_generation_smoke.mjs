@@ -96,6 +96,12 @@ try {
       inspect: (result) => {
         expect(result.project.raceOverrides.length === 1, "rules: expected one race override");
         expect(result.project.casteOverrides.length === 1, "rules: expected one caste override");
+        expect(result.project.raceOverrides[0]?.rawBytes?.length === 0, "rules: fresh race override should not contain compatibility bytes");
+        expect(result.project.casteOverrides[0]?.rawBytes?.length === 0, "rules: fresh caste override should not contain compatibility bytes");
+      },
+      inspectPackage: (_packageResult, files) => {
+        expect(files.get("Data Race")?.byteLength === 30 * 408, "rules: expected fixed 30-row Data Race output");
+        expect(files.get("Data Caste")?.byteLength === 30 * 576, "rules: expected fixed 30-row Data Caste output");
       }
     },
     {

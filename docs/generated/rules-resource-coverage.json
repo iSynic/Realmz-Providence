@@ -127,7 +127,7 @@
         "size": 16,
         "name": "Reserved race words",
         "internal": "spare[8]",
-        "status": "preserved-known"
+        "status": "decoded-writable"
       },
       {
         "offset": 112,
@@ -148,7 +148,7 @@
         "size": 62,
         "name": "Reserved race tail",
         "internal": "spacer[31]",
-        "status": "preserved-known"
+        "status": "decoded-writable"
       }
     ],
     "Data Caste": [
@@ -164,7 +164,7 @@
         "size": 8,
         "name": "Reserved caste words",
         "internal": "spare1/spare2",
-        "status": "preserved-known"
+        "status": "decoded-writable"
       },
       {
         "offset": 248,
@@ -178,7 +178,7 @@
         "size": 126,
         "name": "Reserved caste tail",
         "internal": "spacer[63]",
-        "status": "preserved-known"
+        "status": "decoded-writable"
       }
     ]
   },

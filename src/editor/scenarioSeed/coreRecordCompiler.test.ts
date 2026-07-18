@@ -47,7 +47,7 @@ describe("scenario seed core record compiler", () => {
       treasures: [{ id: 2, itemIds: [805], gold: 12 }],
       shops: [{ id: 3, stock: [{ itemId: 805, quantity: 2 }] }],
       spells: [{ id: 0, displayName: "Bell Ward", cost: 4 }],
-      races: [{ id: 30, displayName: "Stoneborn", baseMove: 9 }],
+      races: [{ id: 29, displayName: "Stoneborn", baseMove: 9 }],
       castes: [{ id: 10, displayName: "Bell Warden", startItems: [805] }]
     };
 
@@ -74,7 +74,7 @@ describe("scenario seed core record compiler", () => {
     expect(compiled.shops[0]?.itemIds[0]).toBe(805);
     expect(compiled.shops[0]?.quantities[0]).toBe(2);
     expect(compiled.spellOverrides[0]).toMatchObject({ id: 0, displayName: "Bell Ward", cost: 4 });
-    expect(compiled.raceOverrides[0]).toMatchObject({ id: 30, displayName: "Stoneborn", baseMove: 9 });
+    expect(compiled.raceOverrides[0]).toMatchObject({ id: 29, displayName: "Stoneborn", baseMove: 9, rawBytes: [] });
     expect(compiled.casteOverrides[0]?.startItems[0]).toBe(805);
   });
 

@@ -43,6 +43,11 @@ for (const sourceFile of sourceFiles) {
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, transpiled);
 }
+await fs.mkdir(path.join(buildRoot, "src", "shared"), { recursive: true });
+await fs.copyFile(
+  path.join(repoRoot, "src", "shared", "rulesCompilerBaseline.json"),
+  path.join(buildRoot, "src", "shared", "rulesCompilerBaseline.json")
+);
 
 const requireFromBuild = createRequire(path.join(buildRoot, "check.cjs"));
 const { createBrowserScenarioPackageZip } = requireFromBuild("./src/editor/browser/scenarioPackage.js");

@@ -560,13 +560,13 @@ function checkRuleOverrides(createProjectFromScenarioSeed) {
   const result = createProjectFromScenarioSeed(readSeed("rules-overrides.seed.json"));
   expect(result.ok, "race and caste override seed should create a project");
   if (!result.ok) return;
-  expect(allocationId(result, "races", "stoneborn") === 30 && allocationId(result, "castes", "bell-warden") === 10, "race and caste allocation reports should preserve explicit IDs");
-  const race = result.project.raceOverrides.find((record) => record.id === 30);
+  expect(allocationId(result, "races", "stoneborn") === 29 && allocationId(result, "castes", "bell-warden") === 10, "race and caste allocation reports should preserve explicit IDs");
+  const race = result.project.raceOverrides.find((record) => record.id === 29);
   expect(race?.displayName === "Stoneborn" && race?.baseMove === 9 && race?.maxAge === 180 && race?.minMax.length === 12, "race overrides should merge seed fields with fixed Rules defaults");
   const caste = result.project.casteOverrides.find((record) => record.id === 10);
   expect(caste?.displayName === "Bell Warden" && caste?.startMoney === 75 && caste?.startItems[0] === 901, "caste overrides should resolve keyed starting items");
-  expect(caste?.spellcasters.length === 4 && caste?.conditions.length === 40 && caste?.rawBytes?.length === 576, "caste overrides should retain fixed binary-safe dimensions");
-  expect(result.project.ruleNames.raceNames[30] === "Stoneborn" && result.project.ruleNames.casteNames[10] === "Bell Warden", "generated rule names should follow race and caste override labels");
+  expect(caste?.spellcasters.length === 4 && caste?.conditions.length === 40 && caste?.rawBytes?.length === 0, "fresh caste overrides should retain canonical dimensions without compatibility bytes");
+  expect(result.project.ruleNames.raceNames[29] === "Stoneborn" && result.project.ruleNames.casteNames[10] === "Bell Warden", "generated rule names should follow race and caste override labels");
 }
 
 function checkRandomRectangles(createProjectFromScenarioSeed) {

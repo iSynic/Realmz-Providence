@@ -135,10 +135,10 @@ function nextSpellOverrideId(records: ScenarioSpellOverride[]) {
 }
 
 export function createRaceOverride(project: Project, id?: number, template?: Partial<ScenarioRaceOverride>) {
-  const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 70);
+  const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 30);
   if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
   const displayName = template?.displayName?.trim() || defaultRaceName(nextId);
-  const record = { ...emptyRaceOverride(nextId), ...template, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
+  const record = { ...emptyRaceOverride(nextId), ...template, displayName, id: nextId, rawBytes: [], authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
   const withName = setRuleName(project, "race", nextId, displayName, true);
   return {
     ...withName,
@@ -152,7 +152,7 @@ export function createCasteOverride(project: Project, id?: number, template?: Pa
   const existing = records.find((record) => record.id === nextId);
   if (existing && !isBlankCasteOverride(existing)) return project;
   const displayName = template?.displayName?.trim() || defaultCasteName(nextId);
-  const record = { ...emptyCasteOverride(nextId), ...template, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
+  const record = { ...emptyCasteOverride(nextId), ...template, displayName, id: nextId, rawBytes: [], authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
   const withName = setRuleName(project, "caste", nextId, displayName, true);
   return {
     ...withName,
@@ -437,6 +437,7 @@ export function emptyRaceOverride(id: number): ScenarioRaceOverride {
     drvBonus: new Array(8).fill(0),
     attBonus: new Array(6).fill(0),
     minMax: [3, 25, 3, 25, 3, 25, 3, 25, 3, 25, 3, 25],
+    spare: new Array(8).fill(0),
     conditions: new Array(40).fill(0),
     maxAge: 70,
     doesNotDie: 0,
@@ -452,7 +453,8 @@ export function emptyRaceOverride(id: number): ScenarioRaceOverride {
     defaultIconSet: 0,
     itemTypes: [0, 0],
     descriptors: 0,
-    rawBytes: new Array(408).fill(0),
+    spacer: new Array(31).fill(0),
+    rawBytes: [],
     authored: true,
     provenance: authoredProvenance("Data Race", id, id * 408, 408)
   };
@@ -476,6 +478,8 @@ export function emptyCasteOverride(id: number): ScenarioCasteOverride {
     toHit: [0, 0],
     missile: [0, 0],
     hand2Hand: [0, 0],
+    spare1: [0, 0],
+    spare2: [0, 0],
     casteClass: 0,
     minimumAgeGroup: 0,
     moveBonus: 0,
@@ -492,7 +496,8 @@ export function emptyCasteOverride(id: number): ScenarioCasteOverride {
     defaultIcon: 0,
     maxSpellsAttacks: 0,
     spellsSoFar: 0,
-    rawBytes: new Array(576).fill(0),
+    spacer: new Array(63).fill(0),
+    rawBytes: [],
     authored: true,
     provenance: authoredProvenance("Data Caste", id, id * 576, 576)
   };

@@ -2308,7 +2308,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Shared spells come from Data S; scenario custom spells come from Data Spell.",
           "Shared races come from Data Race; third-party scenarios can provide scenario-local Data Race overrides.",
           "Shared castes come from Data Caste; third-party scenarios can provide scenario-local Data Caste overrides.",
-          "Race and caste override files are fixed 30-record tables, so Providence preserves unknown spacer bytes while editing known fields.",
+          "Race and caste override files are fixed 30-record tables. Providence models their reserved spare/spacer words explicitly and uses a versioned compiler baseline for untouched rows.",
           "Providence compiles canonical custom spell names into scenario STR# 5000 through 5006 resources."
         ],
         callout: {
@@ -2325,7 +2325,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "For spells, copy a built-in spell into the matching Custom class slot or create an empty Custom spell slot before editing fields.",
-          "For races, Customize In This Scenario creates the matching Data Race row and keeps the remaining 30-record table source-backed.",
+          "For races, Customize In This Scenario creates the matching Data Race row and compiles the remaining 30-record table from Providence's checked baseline.",
           "For castes, Customize In This Scenario creates the matching Data Caste row for class, spellcasting, progression, item use, and starting equipment edits.",
           "Clear Scenario Custom should be used deliberately; it removes the scenario override and restores the shared Realmz behavior for that ID.",
           "After changing a rule, check the tools that reference it instead of assuming the change is isolated."
@@ -2343,7 +2343,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Preserved",
-            body: "Unknown spacer bytes, Data Spell packaging tail, and resource-fork evidence that Providence can roundtrip but does not fully explain yet.",
+            body: "Imported record tails, the Data Spell packaging tail, and resource-fork evidence that Providence can roundtrip but does not fully explain yet.",
             facts: ["roundtrip first"]
           }
         ]
@@ -2427,13 +2427,13 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Preservation and Unknowns",
         paragraphs: [
-          "Providence is intentionally strict about byte ownership here. Source-backed fields are editable; unknown spacer bytes and undecoded packaging evidence are preserved rather than guessed.",
+          "Providence is intentionally strict about byte ownership here. Source-backed fields and structurally reserved words are canonical; undecoded imported packaging evidence remains compatibility data.",
           "The current Rules UI follows Realmz source anchors and Divinity manual/editor evidence, but a few labels are still source-backed approximations rather than final Divinity wording."
         ],
         points: [
           "Fresh Data Spell output owns all 105 custom spell records and canonical name resources; imported extra tails and unrelated resources remain preserved compatibility data.",
-          "Data Race override files are 30 x 408-byte tables; unknown spacer bytes remain intact when known fields are edited.",
-          "Data Caste override files are 30 x 576-byte tables; progression, victory, spellcasting, starting items, item use, and combat fields are source-backed.",
+          "Data Race override files are 30 x 408-byte tables; fresh output owns every word, including the reserved spare and spacer arrays.",
+          "Data Caste override files are 30 x 576-byte tables; progression, victory, spellcasting, starting items, item use, combat, and reserved arrays are source-backed structurally.",
           "Race and caste names are safest as editor-authored display labels unless a scenario/resource storage path is proven for that package.",
           "When a label seems vague, prefer the field help and evidence references over renaming the field casually."
         ]

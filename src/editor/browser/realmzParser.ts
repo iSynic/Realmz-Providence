@@ -894,6 +894,7 @@ function parseRaceOverrides(buffer: Uint8Array | undefined): ScenarioRaceOverrid
       drvBonus: readI16s(record, 44, 8),
       attBonus: readI16s(record, 60, 6),
       minMax: readI16s(record, 72, 12),
+      spare: readI16s(record, 96, 8),
       conditions: readI16s(record, 112, 40),
       maxAge: i16(record, 192),
       doesNotDie: i16(record, 194),
@@ -909,6 +910,7 @@ function parseRaceOverrides(buffer: Uint8Array | undefined): ScenarioRaceOverrid
       defaultIconSet: i16(record, 334),
       itemTypes: [i32(record, 336), i32(record, 340)],
       descriptors: i16(record, 344),
+      spacer: readI16s(record, 346, 31),
       rawBytes: Array.from(record),
       authored: false,
       provenance: provenance("Data Race", id, start, RACE_BYTES, "source-backed")
@@ -939,6 +941,8 @@ function parseCasteOverrides(buffer: Uint8Array | undefined): ScenarioCasteOverr
       toHit: readI16s(record, 228, 2),
       missile: readI16s(record, 232, 2),
       hand2Hand: readI16s(record, 236, 2),
+      spare1: readI16s(record, 240, 2),
+      spare2: readI16s(record, 244, 2),
       casteClass: i16(record, 248),
       minimumAgeGroup: i16(record, 250),
       moveBonus: i16(record, 252),
@@ -955,6 +959,7 @@ function parseCasteOverrides(buffer: Uint8Array | undefined): ScenarioCasteOverr
       defaultIcon: i16(record, 444),
       maxSpellsAttacks: i16(record, 446),
       spellsSoFar: i16(record, 448),
+      spacer: readI16s(record, 450, 63),
       rawBytes: Array.from(record),
       authored: false,
       provenance: provenance("Data Caste", id, start, CASTE_BYTES, "source-backed")

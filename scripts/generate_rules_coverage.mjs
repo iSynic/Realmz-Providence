@@ -58,16 +58,16 @@ const FIELD_OWNERSHIP = {
   ],
   "Data Race": [
     { offset: 0, size: 96, name: "Combat, abilities, attributes", internal: "plusminustohit/specialability/drvbonus/attbonus/minmax", status: "decoded-writable" },
-    { offset: 96, size: 16, name: "Reserved race words", internal: "spare[8]", status: "preserved-known" },
+    { offset: 96, size: 16, name: "Reserved race words", internal: "spare[8]", status: "decoded-writable" },
     { offset: 112, size: 222, name: "Conditions, movement, caste compatibility, age, item, and portrait fields", internal: "conditions..canregenerate", status: "decoded-writable" },
     { offset: 334, size: 12, name: "Default portrait set, item masks, descriptors", internal: "defaulticonset/itemtypes/descriptors", status: "decoded-writable" },
-    { offset: 346, size: 62, name: "Reserved race tail", internal: "spacer[31]", status: "preserved-known" }
+    { offset: 346, size: 62, name: "Reserved race tail", internal: "spacer[31]", status: "decoded-writable" }
   ],
   "Data Caste": [
     { offset: 0, size: 240, name: "Abilities, spellcasting, attributes, conditions, and level-up values", internal: "specialability..hand2hand", status: "decoded-writable" },
-    { offset: 240, size: 8, name: "Reserved caste words", internal: "spare1/spare2", status: "preserved-known" },
+    { offset: 240, size: 8, name: "Reserved caste words", internal: "spare1/spare2", status: "decoded-writable" },
     { offset: 248, size: 202, name: "Class, movement, victory points, starting items, attacks, items, icon, spell caps", internal: "casteclass..spellssofar", status: "decoded-writable" },
-    { offset: 450, size: 126, name: "Reserved caste tail", internal: "spacer[63]", status: "preserved-known" }
+    { offset: 450, size: 126, name: "Reserved caste tail", internal: "spacer[63]", status: "decoded-writable" }
   ]
 };
 

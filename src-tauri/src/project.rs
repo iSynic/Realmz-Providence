@@ -1479,6 +1479,8 @@ pub struct ScenarioRaceOverride {
     pub drv_bonus: Vec<i16>,
     pub att_bonus: Vec<i16>,
     pub min_max: Vec<i16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spare: Option<Vec<i16>>,
     pub conditions: Vec<i16>,
     pub max_age: i16,
     pub does_not_die: i16,
@@ -1494,6 +1496,8 @@ pub struct ScenarioRaceOverride {
     pub default_icon_set: i16,
     pub item_types: Vec<i32>,
     pub descriptors: i16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spacer: Option<Vec<i16>>,
     #[serde(default)]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]
@@ -1521,6 +1525,10 @@ pub struct ScenarioCasteOverride {
     pub to_hit: Vec<i16>,
     pub missile: Vec<i16>,
     pub hand2_hand: Vec<i16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spare1: Option<Vec<i16>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spare2: Option<Vec<i16>>,
     pub caste_class: i16,
     pub minimum_age_group: i16,
     pub move_bonus: i16,
@@ -1537,6 +1545,8 @@ pub struct ScenarioCasteOverride {
     pub default_icon: i16,
     pub max_spells_attacks: i16,
     pub spells_so_far: i16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub spacer: Option<Vec<i16>>,
     #[serde(default)]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

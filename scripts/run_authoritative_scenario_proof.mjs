@@ -46,6 +46,10 @@ expect(project.itemTexts.length === 1, `Expected one item-text record, found ${p
 assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);
 assertOwnershipSpell(project.spellOverrides, "Canonical project");
+expect(project.raceOverrides.length === 1, `Expected one race override, found ${project.raceOverrides.length}`);
+expect(project.casteOverrides.length === 1, `Expected one caste override, found ${project.casteOverrides.length}`);
+assertOwnershipRules(project, "Canonical project", true);
+assertNoFreshRuleCompatibilityBytes(project, "Canonical project");
 expect(project.schemaVersion === 5, `Canonical project must use schema v5, found v${project.schemaVersion}`);
 expect(project.source.origin === "authored", `Fresh canonical project must declare authored origin, found ${project.source.origin}`);
 expect(project.source.files.length === 0, "Fresh canonical project must not inventory source files");
@@ -111,6 +115,7 @@ expect(
 );
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipSpell(reimported.spellOverrides, "Reimport");
+assertOwnershipRules(reimported, "Reimport", false);
 
 const summary = {
   proofVersion: 1,
@@ -125,6 +130,8 @@ const summary = {
     messages: project.messages.length,
     itemTexts: project.itemTexts.length,
     customSpells: project.spellOverrides.length,
+    raceOverrides: project.raceOverrides.length,
+    casteOverrides: project.casteOverrides.length,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
   nativeOutputs: {
@@ -156,7 +163,9 @@ const summary = {
     activeActionPointRecovered: true,
     messageRecovered: true,
     itemTextRecovered: true,
-    customSpellRecovered: true
+    customSpellRecovered: true,
+    raceOverrideRecovered: true,
+    casteOverrideRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -214,6 +223,8 @@ async function assertNoRawSources(stage) {
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipSpell(savedProject.spellOverrides, `Rust-saved project ${stage}`);
+  assertOwnershipRules(savedProject, `Rust-saved project ${stage}`, true);
+  assertNoFreshRuleCompatibilityBytes(savedProject, `Rust-saved project ${stage}`);
 }
 
 function assertCompleteNativeFolder(files, label) {
@@ -226,6 +237,8 @@ function assertCompleteNativeFolder(files, label) {
     ["Data DD", 100 * 40],
     ["Data NI", 200 * 100],
     ["Data Spell", 105 * 30],
+    ["Data Race", 30 * 408],
+    ["Data Caste", 30 * 576],
     ["Data Solids", 1024]
   ]);
   for (const [name, bytes] of exactSizes) {
@@ -263,6 +276,24 @@ function assertOwnershipSpell(records, label) {
   expect(spell.displayName === "Providence Ward", `${label} has the wrong custom spell name`);
   expect(spell.cost === 4, `${label} has the wrong custom spell cost`);
   expect(spell.inCombat === true && spell.inCamp === false, `${label} has the wrong custom spell availability`);
+}
+
+function assertOwnershipRules(project, label, expectCanonicalNames) {
+  const race = project.raceOverrides?.find((record) => record.id === 19);
+  expect(race, `${label} is missing race override 19`);
+  expect(race.baseMove === 11 && race.maxAge === 120 && race.magRes === 7 && race.canRegenerate === 1, `${label} has the wrong race semantics`);
+  const caste = project.casteOverrides?.find((record) => record.id === 20);
+  expect(caste, `${label} is missing caste override 20`);
+  expect(caste.casteClass === 2 && caste.moveBonus === 1 && caste.magRes === 5 && caste.startMoney === 25, `${label} has the wrong caste semantics`);
+  if (expectCanonicalNames) {
+    expect(race.displayName === "Providence Kin", `${label} has the wrong canonical race label`);
+    expect(caste.displayName === "Providence Warden", `${label} has the wrong canonical caste label`);
+  }
+}
+
+function assertNoFreshRuleCompatibilityBytes(project, label) {
+  expect(project.raceOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} race overrides contain compatibility bytes`);
+  expect(project.casteOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} caste overrides contain compatibility bytes`);
 }
 
 async function readFlatDirectory(root) {

@@ -193,7 +193,7 @@ export function nextSpellPackedId(entry: SpellRuleEntry) {
   return spellPackedId(entry.spellcasterClass, Math.floor(next / 12), next % 12);
 }
 
-export const RACE_RECORD_LIMIT = 70;
+export const RACE_RECORD_LIMIT = 30;
 export const STANDARD_RACE_COUNT = REALMZ_RACES.length;
 export const CASTE_RECORD_LIMIT = 30;
 export const STANDARD_CASTE_COUNT = REALMZ_CASTES.length;
@@ -275,6 +275,7 @@ export function raceFromSummary(summary: Record<string, unknown>, id: number): S
     drvBonus: numArray(summary.drvBonus, 8),
     attBonus: numArray(summary.attBonus, 6),
     minMax: numArray(summary.minMax, 12, 0),
+    spare: numArray(summary.spare, 8),
     conditions: numArray(summary.conditions, 40),
     maxAge: num(summary.maxAge),
     doesNotDie: num(summary.doesNotDie),
@@ -290,6 +291,7 @@ export function raceFromSummary(summary: Record<string, unknown>, id: number): S
     defaultIconSet: num(summary.defaultIconSet),
     itemTypes: numArray(summary.itemTypes, 2),
     descriptors: num(summary.descriptors),
+    spacer: numArray(summary.spacer, 31),
     rawBytes: numArray(summary.rawBytes, 408),
     authored: false,
     provenance: undefined
@@ -314,6 +316,8 @@ export function casteFromSummary(summary: Record<string, unknown>, id: number): 
     toHit: numArray(summary.toHit, 2),
     missile: numArray(summary.missile, 2),
     hand2Hand: numArray(summary.hand2Hand, 2),
+    spare1: numArray(summary.spare1, 2),
+    spare2: numArray(summary.spare2, 2),
     casteClass: num(summary.casteClass),
     minimumAgeGroup: num(summary.minimumAgeGroup),
     moveBonus: num(summary.moveBonus),
@@ -330,6 +334,7 @@ export function casteFromSummary(summary: Record<string, unknown>, id: number): 
     defaultIcon: num(summary.defaultIcon),
     maxSpellsAttacks: num(summary.maxSpellsAttacks),
     spellsSoFar: num(summary.spellsSoFar),
+    spacer: numArray(summary.spacer, 63),
     rawBytes: numArray(summary.rawBytes, 576),
     authored: false,
     provenance: undefined
@@ -357,6 +362,8 @@ export function isBlankImportedCasteRecord(record: ScenarioCasteOverride | null 
     allZero(record.toHit) &&
     allZero(record.missile) &&
     allZero(record.hand2Hand) &&
+    allZero(record.spare1 ?? []) &&
+    allZero(record.spare2 ?? []) &&
     record.casteClass === 0 &&
     record.minimumAgeGroup === 0 &&
     record.moveBonus === 0 &&
@@ -372,7 +379,8 @@ export function isBlankImportedCasteRecord(record: ScenarioCasteOverride | null 
     allZero(record.itemTypes) &&
     record.defaultIcon === 0 &&
     record.maxSpellsAttacks === 0 &&
-    record.spellsSoFar === 0
+    record.spellsSoFar === 0 &&
+    allZero(record.spacer ?? [])
   );
 }
 
@@ -385,6 +393,7 @@ export function emptyRaceView(id: number): ScenarioRaceOverride {
     drvBonus: new Array(8).fill(0),
     attBonus: new Array(6).fill(0),
     minMax: [3, 25, 3, 25, 3, 25, 3, 25, 3, 25, 3, 25],
+    spare: new Array(8).fill(0),
     conditions: new Array(40).fill(0),
     maxAge: 70,
     doesNotDie: 0,
@@ -400,6 +409,7 @@ export function emptyRaceView(id: number): ScenarioRaceOverride {
     defaultIconSet: 0,
     itemTypes: [0, 0],
     descriptors: 0,
+    spacer: new Array(31).fill(0),
     rawBytes: [],
     authored: false,
     provenance: undefined
@@ -424,6 +434,8 @@ export function emptyCasteView(id: number): ScenarioCasteOverride {
     toHit: [0, 0],
     missile: [0, 0],
     hand2Hand: [0, 0],
+    spare1: [0, 0],
+    spare2: [0, 0],
     casteClass: 0,
     minimumAgeGroup: 0,
     moveBonus: 0,
@@ -440,6 +452,7 @@ export function emptyCasteView(id: number): ScenarioCasteOverride {
     defaultIcon: 0,
     maxSpellsAttacks: 0,
     spellsSoFar: 0,
+    spacer: new Array(63).fill(0),
     rawBytes: [],
     authored: false,
     provenance: undefined
