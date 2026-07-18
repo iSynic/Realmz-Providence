@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "scenario": {
+    "name": "Providence Ownership Proof",
+    "version": "0.1",
+    "author": "Providence",
+    "description": "A minimal scenario compiled entirely from canonical Providence data.",
+    "start": { "landLevel": 0, "x": 10, "y": 12 }
+  },
+  "maps": [
+    {
+      "key": "proof-field",
+      "levelType": "land",
+      "index": 0,
+      "landlook": 0,
+      "fillTile": 156,
+      "regions": [
+        { "key": "start", "x": 10, "y": 12 },
+        { "key": "ownership-trigger", "x": 11, "y": 12 }
+      ]
+    }
+  ],
+  "messages": [
+    { "key": "ownership-message", "text": "Providence owns this scenario." }
+  ],
+  "quests": [
+    { "key": "ownership-proven", "label": "Providence ownership proof triggered" }
+  ],
+  "actionPoints": [
+    {
+      "key": "ownership-action-point",
+      "map": "proof-field",
+      "at": "ownership-trigger",
+      "percent": 100,
+      "steps": [
+        { "kind": "message", "message": "ownership-message" },
+        { "kind": "setQuestFlag", "quest": "ownership-proven" }
+      ]
+    }
+  ]
+}

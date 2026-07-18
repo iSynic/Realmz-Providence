@@ -20,8 +20,18 @@ The first bounded compiler slice now:
 - produces the same fresh Windows folder bytes on repeated compilation and emits the same
   `Scenario`/`Scenario.rsrc` convention for the Classic-Mac folder target.
 
+The second proof slice adds `authoritative-ownership-proof.seed.json` and a repository gate that:
+
+- compiles one walkable land map, one message, and one Action Point with a persistent quest flag;
+- serializes the TypeScript canonical model directly as `project.json`, with no generated raw
+  snapshot adapter;
+- opens that project through Rust and compiles complete Windows and Classic-Mac native folders;
+- proves repeated Windows and Classic-Mac compilation is byte-identical for each target;
+- reimports the native Windows folder and recovers the map, Action Point actions, and message;
+- confirms `raw-sources` appears only on that conservative legacy reimport boundary.
+
 This is implementation evidence for the branch decision, not the completed gameplay proof. The
-Action Point/message fixture and unmodified-Realmz movement/save/reload run remain open.
+unmodified-Realmz start, movement, Action Point, save, and reload run remains open.
 
 Branch validation completed on 2026-07-18:
 
@@ -29,6 +39,7 @@ Branch validation completed on 2026-07-18:
 - TypeScript typecheck;
 - nine-lane Scenario JSON generation smoke with 18 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
+- canonical-to-native authoritative scenario proof;
 - browser/desktop imported-scenario parity check.
 
 ## Verdict
