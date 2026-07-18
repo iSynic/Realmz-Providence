@@ -508,6 +508,12 @@
   box-shadow: inset 3px 0 0 #2b8fd8;
 }
 
+.monster-record-list-spacer {
+  width: 100%;
+  flex: 0 0 auto;
+  pointer-events: none;
+}
+
 .combat-record-scroll button.multi-selected {
   background: #0f2f28;
   box-shadow: inset 3px 0 0 #25be7b;

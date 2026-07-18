@@ -3,6 +3,7 @@ import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { IconEntry, MonsterRecord, MonsterSetId, Project } from "../../types";
 import { ScrollArea, SearchField } from "../../ui";
 import { MONSTER_SET_OPTIONS, type CombatLookups } from "./combatLookups";
+import { useFixedRecordListWindow } from "./fixedRecordListWindow";
 import { MonsterIcon, samePreviewContextInputs, sameProjectIconInputs } from "./MonsterIconPreview";
 
 export type ScenarioMonsterListEntry = {
@@ -59,6 +60,8 @@ export function ScenarioMonsterList({
   onDragLeave,
   onDrop
 }: ScenarioMonsterListProps) {
+  const { onViewportRef, range } = useFixedRecordListWindow(entries.length, query);
+  const visibleEntries = entries.slice(range.startIndex, range.endIndex);
   return (
     <aside
       className={`combat-record-list scenario-monster-list${dropActive ? " drop-active" : ""}`}
@@ -80,8 +83,9 @@ export function ScenarioMonsterList({
       </header>
       <SearchField value={query} onChange={onQuery} placeholder="Search scenario monsters..."
         ariaLabel="Search scenario monsters" resultCount={entries.length} resultNoun="monster" />
-      <ScrollArea shellClassName="combat-record-scroll-shell" className="combat-record-scroll" aria-label="Scenario monster results">
-        {entries.map((entry) => (
+      <ScrollArea shellClassName="combat-record-scroll-shell" className="combat-record-scroll" aria-label="Scenario monster results" onViewportRef={onViewportRef}>
+        {range.topSpacer > 0 ? <div className="monster-record-list-spacer" style={{ height: range.topSpacer }} /> : null}
+        {visibleEntries.map((entry) => (
           <ScenarioMonsterRow
             key={entry.id}
             entry={entry}
@@ -96,6 +100,7 @@ export function ScenarioMonsterList({
             onDragEnd={onDragEnd}
           />
         ))}
+        {range.bottomSpacer > 0 ? <div className="monster-record-list-spacer" style={{ height: range.bottomSpacer }} /> : null}
         {entries.length === 0 && <p className="empty-copy compact">No scenario monsters match that search.</p>}
       </ScrollArea>
     </aside>

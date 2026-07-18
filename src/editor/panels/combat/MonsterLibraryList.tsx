@@ -1,6 +1,7 @@
 import { DragEvent, MouseEvent, ReactNode } from "react";
 import type { LibraryCatalog } from "../../types";
 import { ScrollArea, SearchField, SegmentedControl } from "../../ui";
+import { useFixedRecordListWindow } from "./fixedRecordListWindow";
 import type { MonsterLibraryScopeFilter } from "./monsterLibraryFilters";
 import "./monster-library-audit.css";
 
@@ -65,6 +66,8 @@ export function MonsterLibraryList({
   entryFacts,
   renderIcon
 }: MonsterLibraryListProps) {
+  const { onViewportRef, range } = useFixedRecordListWindow(entries.length, `${query}\n${scope}`);
+  const visibleEntries = entries.slice(range.startIndex, range.endIndex);
   return (
     <aside
       className={`combat-record-list scrapbook-list combined-scrapbook-list${dropActive ? " drop-active" : ""}`}
@@ -115,8 +118,9 @@ export function MonsterLibraryList({
           onChange={onScopeChange}
         />
       </div>
-      <ScrollArea shellClassName="combat-record-scroll-shell" className="combat-record-scroll" aria-label="Monster Library results">
-        {entries.map((entry) => {
+      <ScrollArea shellClassName="combat-record-scroll-shell" className="combat-record-scroll" aria-label="Monster Library results" onViewportRef={onViewportRef}>
+        {range.topSpacer > 0 ? <div className="monster-record-list-spacer" style={{ height: range.topSpacer }} /> : null}
+        {visibleEntries.map((entry) => {
           const selectedForCopy = selectionActive && selectedIds.includes(entry.id);
           const selectedEntry = selectionActive && entry.id === selectedId;
           return (
@@ -139,6 +143,7 @@ export function MonsterLibraryList({
             </button>
           );
         })}
+        {range.bottomSpacer > 0 ? <div className="monster-record-list-spacer" style={{ height: range.bottomSpacer }} /> : null}
         {entries.length === 0 && <p className="empty-copy compact">No library monsters match that search.</p>}
       </ScrollArea>
     </aside>
