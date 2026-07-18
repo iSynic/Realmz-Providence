@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeOptionLabels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
 
 export type BrowserSemanticBuildProgress = {
@@ -92,7 +92,7 @@ export function buildBrowserSemanticSchema(projectParts: {
       run: () => {
         addRecordAlignments(schema, projectParts.records.alignments);
         if (projectParts.canonicalRecords) {
-          addCanonicalSupportingRecords(schema, projectParts);
+          addCanonicalRecordCollections(schema, projectParts);
         } else {
           addSupportingRecords(schema, projectParts.buffers);
         }
@@ -294,6 +294,10 @@ function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8
   addMessageRecords(schema, buffers.get("Data SD2"));
   addOptionLabelRecords(schema, buffers.get("Data OD"));
   addMonsterDescriptionRecords(schema, buffers.get("Data DES"));
+  addMonsterRecords(schema, buffers.get("Data MD"), "Data MD", "monster", "monster");
+  addMonsterRecords(schema, buffers.get("Data MD1"), "Data MD1", "alternate-monster", "monster-set:1");
+  addMonsterRecords(schema, buffers.get("Data MD-1"), "Data MD-1", "alternate-monster", "monster-set:-1");
+  addBattleRecords(schema, buffers.get("Data BD"));
   addShopRecords(schema, buffers.get("Data SD"));
   addSimpleEncounterRecords(schema, buffers.get("Data ED"));
   addComplexEncounterRecords(schema, buffers.get("Data ED2"));
@@ -307,32 +311,38 @@ function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8
   addItemRecords(schema, buffers.get("Data NI"));
 }
 
-function addCanonicalSupportingRecords(
+function addCanonicalRecordCollections(
   schema: SemanticSchema,
   projectParts: Pick<
     Parameters<typeof buildBrowserSemanticSchema>[0],
-    "messages" | "optionLabels" | "monsterDescriptions" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
+    "battles" | "monsters" | "monsterSets" | "messages" | "optionLabels" | "monsterDescriptions" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
   >
 ) {
   const buffers = new Map<string, Uint8Array>();
   const sources: Array<{ name: string; path: string; ids: Set<number> }> = [];
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data SD2", "project.json#messages", projectParts.messages, writeMessages);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data OD", "project.json#optionLabels", projectParts.optionLabels, writeOptionLabels);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data DES", "project.json#monsterDescriptions", projectParts.monsterDescriptions, writeMonsterDescriptions);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data SD", "project.json#shops", projectParts.shops, writeShops);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data ED", "project.json#simpleEncounters", projectParts.simpleEncounters, writeSimpleEncounters);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data ED2", "project.json#complexEncounters", projectParts.complexEncounters, writeComplexEncounters);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data NI", "project.json#scenarioItems", projectParts.scenarioItems, writeScenarioItems);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD", "project.json#treasures", projectParts.treasures, writeTreasures);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD2", "project.json#thiefEncounters", projectParts.thiefEncounters, writeThiefEncounters);
-  addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD3", "project.json#timedEncounters", projectParts.timedEncounters, writeTimedEncounters);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data SD2", "project.json#messages", projectParts.messages, writeMessages);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data OD", "project.json#optionLabels", projectParts.optionLabels, writeOptionLabels);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data DES", "project.json#monsterDescriptions", projectParts.monsterDescriptions, writeMonsterDescriptions);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data BD", "project.json#battles", projectParts.battles, writeBattles);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data MD", "project.json#monsters", projectParts.monsters, writeMonsters);
+  for (const monsterSet of projectParts.monsterSets) {
+    if (monsterSet.sourceFile !== "Data MD1" && monsterSet.sourceFile !== "Data MD-1") continue;
+    addCanonicalRecordBuffer(schema, buffers, sources, monsterSet.sourceFile, `project.json#monsterSets/${monsterSet.setId}`, monsterSet.monsters, writeMonsters);
+  }
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data SD", "project.json#shops", projectParts.shops, writeShops);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data ED", "project.json#simpleEncounters", projectParts.simpleEncounters, writeSimpleEncounters);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data ED2", "project.json#complexEncounters", projectParts.complexEncounters, writeComplexEncounters);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data NI", "project.json#scenarioItems", projectParts.scenarioItems, writeScenarioItems);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data TD", "project.json#treasures", projectParts.treasures, writeTreasures);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data TD2", "project.json#thiefEncounters", projectParts.thiefEncounters, writeThiefEncounters);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data TD3", "project.json#timedEncounters", projectParts.timedEncounters, writeTimedEncounters);
   if (buffers.size === 0) return;
 
   addSupportingRecords(schema, buffers);
-  retainCanonicalSupportingRecords(schema, sources);
+  retainCanonicalRecords(schema, sources);
 }
 
-function addCanonicalSupportingBuffer<T extends { id: number }>(
+function addCanonicalRecordBuffer<T extends { id: number }>(
   schema: SemanticSchema,
   buffers: Map<string, Uint8Array>,
   sources: Array<{ name: string; path: string; ids: Set<number> }>,
@@ -372,7 +382,7 @@ function addCanonicalSupportingBuffer<T extends { id: number }>(
   }
 }
 
-function retainCanonicalSupportingRecords(
+function retainCanonicalRecords(
   schema: SemanticSchema,
   sources: Array<{ name: string; ids: Set<number> }>
 ) {
@@ -442,6 +452,80 @@ function addPascalTextRecords(
     const label = text || `${fallbackLabel} ${index}`;
     upsertRecord(schema, browserRecord(source, index, recordBytes, entityType, label, summary));
     schema.entities.push(browserEntity(`${entityPrefix}:${index}`, entityType, label, source, `record:${source}:${index}`, start, recordBytes, summary));
+  }
+}
+
+function addMonsterRecords(
+  schema: SemanticSchema,
+  buffer: Uint8Array | undefined,
+  source: string,
+  entityType: string,
+  entityPrefix: string
+) {
+  if (!buffer) return;
+  const recordBytes = 210;
+  const count = Math.floor(buffer.byteLength / recordBytes);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * recordBytes;
+    const name = decodeClassicText(buffer.slice(start + 170, start + 210));
+    const summary = {
+      id: index,
+      hd: buffer[start] ?? 0,
+      bonus: buffer[start + 1] ?? 0,
+      dx: buffer[start + 2] ?? 0,
+      nameStringId: buffer[start + 3] ?? 0,
+      movementMax: buffer[start + 4] ?? 0,
+      ac: signedByteAt(buffer, start + 5),
+      iconId: i16At(buffer, start + 98),
+      exp: i16At(buffer, start + 102),
+      staminaMax: i16At(buffer, start + 106),
+      todoOnDeath: i16At(buffer, start + 166),
+      maxSpellPoints: i16At(buffer, start + 168),
+      name
+    };
+    const entityId = `${entityPrefix}:${index}`;
+    const label = name || `Monster ${index}`;
+    upsertRecord(schema, browserRecord(source, index, recordBytes, entityType, label, summary));
+    schema.entities.push(browserEntity(entityId, entityType, label, source, `record:${source}:${index}`, start, recordBytes, summary));
+    if (summary.iconId !== 0) {
+      pushLink(schema, entityId, `resource:cicn:${summary.iconId}`, "uses_resource", "source-backed", { field: "iconId" });
+    }
+  }
+}
+
+function addBattleRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const recordBytes = 346;
+  const count = Math.floor(buffer.byteLength / recordBytes);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * recordBytes;
+    const monsters = [...new Set(Array.from({ length: 13 * 13 }, (_, slot) => i16At(buffer, start + slot * 2)).filter((id) => id !== 0))]
+      .sort((left, right) => left - right);
+    const summary = {
+      id: index,
+      dist: signedByteAt(buffer, start + 338),
+      messageBefore: i16At(buffer, start + 340),
+      messageAfter: i16At(buffer, start + 342),
+      battleMacro: i16At(buffer, start + 344),
+      monsterSlots: Array.from({ length: 13 * 13 }, (_, slot) => i16At(buffer, start + slot * 2)).filter((id) => id !== 0).length,
+      monsters
+    };
+    const entityId = `battle:${index}`;
+    upsertRecord(schema, browserRecord("Data BD", index, recordBytes, "battle", `Battle ${index}`, summary));
+    schema.entities.push(browserEntity(entityId, "battle", `Battle ${index}`, "Data BD", `record:Data BD:${index}`, start, recordBytes, summary));
+    for (const monsterId of monsters) {
+      if (schema.entities.some((entity) => entity.id === `monster:${monsterId}`)) {
+        pushLink(schema, entityId, `monster:${monsterId}`, "uses_monster", "source-backed");
+      }
+    }
+    for (const [messageId, kind] of [
+      [summary.messageBefore, "shows_message_before"],
+      [summary.messageAfter, "shows_message_after"]
+    ] as const) {
+      if (messageId !== 0 && schema.entities.some((entity) => entity.id === `message:${messageId}`)) {
+        pushLink(schema, entityId, `message:${messageId}`, kind, "source-backed");
+      }
+    }
   }
 }
 
@@ -936,7 +1020,11 @@ function addMonsters(schema: SemanticSchema, monsters: MonsterRecord[], monsterS
 function addMonsterSetRecords(schema: SemanticSchema, monsters: MonsterRecord[], source: string, setLabel: string, entityType: string) {
   for (const monster of monsters ?? []) {
     if (monster.deathMacro <= 0) continue;
-    const entityId = source === "Data MD" ? `monster:${monster.id}` : `monster:${source}:${monster.id}`;
+    const entityId = source === "Data MD1"
+      ? `monster-set:1:${monster.id}`
+      : source === "Data MD-1"
+        ? `monster-set:-1:${monster.id}`
+        : `monster:${monster.id}`;
     pushLink(schema, entityId, `macro:${monster.deathMacro}`, "calls_macro", "source-backed", {
       field: "deathMacro",
       sourceFile: source,

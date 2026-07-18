@@ -131,6 +131,18 @@ describe("browser project native manifest validation", () => {
     const importedMonsterDescription = new Uint8Array(256);
     importedMonsterDescription[0] = 16;
     importedMonsterDescription.set(new TextEncoder().encode("Imported monster"), 1);
+    const importedBattle = new Uint8Array(346);
+    importedBattle[338] = 0xfc;
+    const importedMonster = new Uint8Array(210);
+    importedMonster[0] = 7;
+    importedMonster.set([0x01, 0x41], 98);
+    importedMonster.set(new TextEncoder().encode("Imported monster"), 170);
+    const importedNormalMonster = new Uint8Array(importedMonster);
+    importedNormalMonster.fill(0, 170, 210);
+    importedNormalMonster.set(new TextEncoder().encode("Imported normal"), 170);
+    const importedMegaMonster = new Uint8Array(importedMonster);
+    importedMegaMonster.fill(0, 170, 210);
+    importedMegaMonster.set(new TextEncoder().encode("Imported mega"), 170);
     const importedShop = new Uint8Array(3002);
     importedShop.set([0x03, 0x85], 0);
     importedShop[2000] = 3;
@@ -147,6 +159,10 @@ describe("browser project native manifest validation", () => {
       ["Data SD2", importedMessage],
       ["Data OD", importedOptionLabel],
       ["Data DES", importedMonsterDescription],
+      ["Data BD", importedBattle],
+      ["Data MD", importedMonster],
+      ["Data MD1", importedNormalMonster],
+      ["Data MD-1", importedMegaMonster],
       ["Data SD", importedShop],
       ["Data ED", importedSimpleEncounter],
       ["Data ED2", importedComplexEncounter]
@@ -181,6 +197,10 @@ describe("browser project native manifest validation", () => {
       "message:0",
       "option-label:0",
       "monster-description:0",
+      "battle:0",
+      "monster:0",
+      "monster-set:1:0",
+      "monster-set:-1:0",
       "shop:0",
       "encounter:simple:0",
       "encounter:complex:0"
@@ -195,7 +215,7 @@ describe("browser project native manifest validation", () => {
     expect(semanticSchema.sources.some((source) => source.name === "Data TD")).toBe(true);
   });
 
-  it("indexes canonical supporting records without exposing sparse compiler slots", async () => {
+  it("indexes canonical record collections without exposing sparse compiler slots", async () => {
     const project = createBrowserProject("Canonical Supporting Records");
     const parsed = parseScenarioBuffers(new Map([
       ["Data NI", new Uint8Array(100)],
@@ -205,6 +225,10 @@ describe("browser project native manifest validation", () => {
       ["Data SD2", new Uint8Array(256)],
       ["Data OD", new Uint8Array(25)],
       ["Data DES", new Uint8Array(256)],
+      ["Data BD", new Uint8Array(346)],
+      ["Data MD", new Uint8Array(210)],
+      ["Data MD1", new Uint8Array(210)],
+      ["Data MD-1", new Uint8Array(210)],
       ["Data SD", new Uint8Array(3002)],
       ["Data ED", new Uint8Array(426)],
       ["Data ED2", new Uint8Array(520)]
@@ -266,6 +290,50 @@ describe("browser project native manifest validation", () => {
       authored: false,
       rawBytes: new Array(256).fill(0xa5)
     }];
+    project.battles = [{
+      ...parsed.battles[0],
+      id: 3,
+      grid: [2, ...parsed.battles[0].grid.slice(1)],
+      dist: -4,
+      messageBefore: 5,
+      authored: false,
+      rawBytes: new Array(346).fill(0xa5)
+    }];
+    project.monsters = [{
+      ...parsed.monsters[0],
+      id: 2,
+      hitDice: 7,
+      iconId: 321,
+      exp: 88,
+      displayName: "Canonical monster",
+      authored: false,
+      rawBytes: new Array(210).fill(0xa5)
+    }];
+    const normalMonsterSet = parsed.monsterSets.find((set) => set.setId === 1)!;
+    const megaMonsterSet = parsed.monsterSets.find((set) => set.setId === -1)!;
+    project.monsterSets = [{
+      ...normalMonsterSet,
+      monsters: [{
+        ...normalMonsterSet.monsters[0],
+        id: 1,
+        iconId: 322,
+        deathMacro: 11,
+        displayName: "Canonical normal monster",
+        authored: false,
+        rawBytes: new Array(210).fill(0xa5)
+      }]
+    }, {
+      ...megaMonsterSet,
+      monsters: [{
+        ...megaMonsterSet.monsters[0],
+        id: 2,
+        iconId: 323,
+        deathMacro: 12,
+        displayName: "Canonical mega monster",
+        authored: false,
+        rawBytes: new Array(210).fill(0xa5)
+      }]
+    }];
     project.shops = [{
       ...parsed.shops[0],
       id: 2,
@@ -305,6 +373,10 @@ describe("browser project native manifest validation", () => {
       "message:5",
       "option-label:6",
       "monster-description:7",
+      "battle:3",
+      "monster:2",
+      "monster-set:1:1",
+      "monster-set:-1:2",
       "shop:2",
       "encounter:simple:2",
       "encounter:complex:4"
@@ -330,6 +402,10 @@ describe("browser project native manifest validation", () => {
       "message:0",
       "option-label:0",
       "monster-description:0",
+      "battle:0",
+      "monster:0",
+      "monster-set:1:0",
+      "monster-set:-1:0",
       "shop:0",
       "encounter:simple:0",
       "encounter:complex:0"
@@ -341,6 +417,8 @@ describe("browser project native manifest validation", () => {
     expect(semanticSchema.entities.find((entity) => entity.id === "option-label:6")?.summary.text).toBe("Canonical option");
     expect(semanticSchema.entities.find((entity) => entity.id === "option-label:6")?.summary.shortcut).toBe("c");
     expect(semanticSchema.entities.find((entity) => entity.id === "monster-description:7")?.summary.text).toBe("Canonical monster description");
+    expect(semanticSchema.entities.find((entity) => entity.id === "battle:3")?.summary.dist).toBe(-4);
+    expect(semanticSchema.entities.find((entity) => entity.id === "monster:2")?.summary.name).toBe("Canonical monster");
     expect(semanticSchema.entities.find((entity) => entity.id === "shop:2")?.summary.inflation).toBe(120);
     expect(semanticSchema.entities.find((entity) => entity.id === "encounter:simple:2")?.summary.prompt).toBe(12);
     expect(semanticSchema.links).toContainEqual(expect.objectContaining({
@@ -348,6 +426,17 @@ describe("browser project native manifest validation", () => {
       to: "thief:2",
       kind: "uses_thief_encounter"
     }));
+    for (const [from, to, kind] of [
+      ["battle:3", "monster:2", "uses_monster"],
+      ["battle:3", "message:5", "shows_message_before"],
+      ["monster:2", "resource:cicn:321", "uses_resource"],
+      ["monster-set:1:1", "resource:cicn:322", "uses_resource"],
+      ["monster-set:-1:2", "resource:cicn:323", "uses_resource"],
+      ["monster-set:1:1", "macro:11", "calls_macro"],
+      ["monster-set:-1:2", "macro:12", "calls_macro"]
+    ]) {
+      expect(semanticSchema.links).toContainEqual(expect.objectContaining({ from, to, kind }));
+    }
     for (const [name, path] of [
       ["Data NI", "project.json#scenarioItems"],
       ["Data TD", "project.json#treasures"],
@@ -356,6 +445,10 @@ describe("browser project native manifest validation", () => {
       ["Data SD2", "project.json#messages"],
       ["Data OD", "project.json#optionLabels"],
       ["Data DES", "project.json#monsterDescriptions"],
+      ["Data BD", "project.json#battles"],
+      ["Data MD", "project.json#monsters"],
+      ["Data MD1", "project.json#monsterSets/1"],
+      ["Data MD-1", "project.json#monsterSets/-1"],
       ["Data SD", "project.json#shops"],
       ["Data ED", "project.json#simpleEncounters"],
       ["Data ED2", "project.json#complexEncounters"]

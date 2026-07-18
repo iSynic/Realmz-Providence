@@ -2502,6 +2502,18 @@ mod tests {
         monster_description[1..17].copy_from_slice(b"Imported monster");
         fs::write(raw_dir.join("Data DES"), monster_description)
             .expect("write imported monster description");
+        let mut battle = vec![0_u8; crate::realmz::BATTLE_BYTES];
+        battle[338] = (-4_i8) as u8;
+        fs::write(raw_dir.join("Data BD"), battle).expect("write imported battle");
+        let mut monster = vec![0_u8; crate::realmz::MONSTER_BYTES];
+        monster[0] = 7;
+        crate::realmz::write_i16_be(&mut monster, 98, 321);
+        monster[170..186].copy_from_slice(b"Imported monster");
+        fs::write(raw_dir.join("Data MD"), &monster).expect("write imported monster");
+        monster[170..186].copy_from_slice(b"Imported normal ");
+        fs::write(raw_dir.join("Data MD1"), &monster).expect("write imported normal set");
+        monster[170..186].copy_from_slice(b"Imported mega   ");
+        fs::write(raw_dir.join("Data MD-1"), monster).expect("write imported mega set");
         let mut shop = vec![0_u8; crate::realmz::SHOP_BYTES];
         crate::realmz::write_i16_be(&mut shop, 0, 901);
         shop[2000] = 3;
@@ -2534,6 +2546,10 @@ mod tests {
             "message:0",
             "option-label:0",
             "monster-description:0",
+            "battle:0",
+            "monster:0",
+            "monster-set:1:0",
+            "monster-set:-1:0",
             "shop:0",
             "encounter:simple:0",
             "encounter:complex:0",
@@ -2551,7 +2567,7 @@ mod tests {
     }
 
     #[test]
-    fn authored_semantic_mapping_indexes_canonical_supporting_records_without_sparse_slots() {
+    fn authored_semantic_mapping_indexes_canonical_record_collections_without_sparse_slots() {
         let temp = tempfile::tempdir().expect("tempdir");
         let project_dir = temp.path().join("Canonical Supporting Records.providence");
         let mut project = create_project("Canonical Supporting Records".to_string(), &project_dir)
@@ -2602,6 +2618,52 @@ mod tests {
         monster_description.authored = false;
         monster_description.raw_bytes.fill(0xA5);
         project.monster_descriptions = vec![monster_description];
+
+        let mut battle = crate::realmz::parse_battles(&vec![0; crate::realmz::BATTLE_BYTES])
+            .into_iter()
+            .next()
+            .expect("battle template");
+        battle.id = 3;
+        battle.grid[0] = 2;
+        battle.dist = -4;
+        battle.message_before = 5;
+        battle.authored = false;
+        battle.raw_bytes.fill(0xA5);
+        project.battles = vec![battle];
+
+        let mut monster = crate::realmz::parse_monsters(&vec![0; crate::realmz::MONSTER_BYTES])
+            .into_iter()
+            .next()
+            .expect("monster template");
+        monster.id = 2;
+        monster.hit_dice = 7;
+        monster.icon_id = 321;
+        monster.exp = 88;
+        monster.display_name = "Canonical monster".to_string();
+        monster.authored = false;
+        monster.raw_bytes.fill(0xA5);
+        project.monsters = vec![monster];
+
+        let mut normal_set =
+            crate::realmz::parse_monster_set(&vec![0; crate::realmz::MONSTER_BYTES], "Data MD1", 1);
+        normal_set.monsters[0].id = 1;
+        normal_set.monsters[0].icon_id = 322;
+        normal_set.monsters[0].death_macro = 11;
+        normal_set.monsters[0].display_name = "Canonical normal monster".to_string();
+        normal_set.monsters[0].authored = false;
+        normal_set.monsters[0].raw_bytes.fill(0xA5);
+        let mut mega_set = crate::realmz::parse_monster_set(
+            &vec![0; crate::realmz::MONSTER_BYTES],
+            "Data MD-1",
+            -1,
+        );
+        mega_set.monsters[0].id = 2;
+        mega_set.monsters[0].icon_id = 323;
+        mega_set.monsters[0].death_macro = 12;
+        mega_set.monsters[0].display_name = "Canonical mega monster".to_string();
+        mega_set.monsters[0].authored = false;
+        mega_set.monsters[0].raw_bytes.fill(0xA5);
+        project.monster_sets = vec![normal_set, mega_set];
 
         let mut shop = crate::realmz::parse_shops(&vec![0; crate::realmz::SHOP_BYTES])
             .into_iter()
@@ -2690,6 +2752,10 @@ mod tests {
             "message:5",
             "option-label:6",
             "monster-description:7",
+            "battle:3",
+            "monster:2",
+            "monster-set:1:1",
+            "monster-set:-1:2",
             "shop:2",
             "encounter:simple:2",
             "encounter:complex:4",
@@ -2726,6 +2792,10 @@ mod tests {
             "message:0",
             "option-label:0",
             "monster-description:0",
+            "battle:0",
+            "monster:0",
+            "monster-set:1:0",
+            "monster-set:-1:0",
             "shop:0",
             "encounter:simple:0",
             "encounter:complex:0",
@@ -2775,6 +2845,22 @@ mod tests {
             schema
                 .entities
                 .iter()
+                .find(|entity| entity.id == "battle:3")
+                .and_then(|entity| entity.summary.get("dist")),
+            Some(&serde_json::json!(-4))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "monster:2")
+                .and_then(|entity| entity.summary.get("name")),
+            Some(&serde_json::json!("Canonical monster"))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
                 .find(|entity| entity.id == "shop:2")
                 .and_then(|entity| entity.summary.get("inflation")),
             Some(&serde_json::json!(120))
@@ -2792,10 +2878,28 @@ mod tests {
                 && link.to == "thief:2"
                 && link.kind == "uses_thief_encounter"
         }));
+        for (from, to, kind) in [
+            ("battle:3", "monster:2", "uses_monster"),
+            ("battle:3", "message:5", "shows_message_before"),
+            ("monster:2", "resource:cicn:321", "uses_resource"),
+            ("monster-set:1:1", "resource:cicn:322", "uses_resource"),
+            ("monster-set:-1:2", "resource:cicn:323", "uses_resource"),
+            ("monster-set:1:1", "macro:11", "calls_macro"),
+            ("monster-set:-1:2", "macro:12", "calls_macro"),
+        ] {
+            assert!(schema
+                .links
+                .iter()
+                .any(|link| link.from == from && link.to == to && link.kind == kind));
+        }
         for (source, path) in [
             ("Data SD2", "project.json#messages"),
             ("Data OD", "project.json#optionLabels"),
             ("Data DES", "project.json#monsterDescriptions"),
+            ("Data BD", "project.json#battles"),
+            ("Data MD", "project.json#monsters"),
+            ("Data MD1", "project.json#monsterSets/1"),
+            ("Data MD-1", "project.json#monsterSets/-1"),
             ("Data SD", "project.json#shops"),
             ("Data ED", "project.json#simpleEncounters"),
             ("Data ED2", "project.json#complexEncounters"),

@@ -26,7 +26,7 @@ pub fn build_semantic_schema(
     add_extracodes(&mut schema, &parsed.extracodes);
     let map_names = map_names::resource_map_names(buffers);
     if canonical_records {
-        records::add_canonical_supporting_collections(&mut schema, parsed);
+        records::add_canonical_record_collections(&mut schema, parsed);
     } else {
         records::add_encounters(&mut schema, buffers);
         records::add_fixed_collections(&mut schema, buffers, &parsed.maps, &map_names);

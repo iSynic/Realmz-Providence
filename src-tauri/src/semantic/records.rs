@@ -2,15 +2,16 @@ use super::common::*;
 use super::map_names::{map_record_name, ResourceMapName};
 use crate::project::*;
 use crate::realmz::{
-    shop_prefix_record_count, write_complex_encounters, write_messages, write_monster_descriptions,
-    write_option_labels, write_scenario_items, write_shops, write_simple_encounters,
-    write_thief_encounters, write_timed_encounters, write_treasures, ParsedScenario,
-    COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES,
+    shop_prefix_record_count, write_battles, write_complex_encounters, write_messages,
+    write_monster_descriptions, write_monster_set, write_monsters, write_option_labels,
+    write_scenario_items, write_shops, write_simple_encounters, write_thief_encounters,
+    write_timed_encounters, write_treasures, ParsedScenario, COMPLEX_ENCOUNTER_BYTES,
+    SIMPLE_ENCOUNTER_BYTES,
 };
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
 
-pub(super) fn add_canonical_supporting_collections(
+pub(super) fn add_canonical_record_collections(
     schema: &mut SemanticSchema,
     parsed: &ParsedScenario,
 ) {
@@ -30,6 +31,20 @@ pub(super) fn add_canonical_supporting_collections(
     let messages = canonical_records!(parsed.messages);
     let option_labels = canonical_records!(parsed.option_labels);
     let monster_descriptions = canonical_records!(parsed.monster_descriptions);
+    let battles = canonical_records!(parsed.battles);
+    let monsters = canonical_records!(parsed.monsters);
+    let monster_sets: Vec<_> = parsed
+        .monster_sets
+        .iter()
+        .cloned()
+        .map(|mut set| {
+            for monster in &mut set.monsters {
+                monster.authored = true;
+                monster.raw_bytes.clear();
+            }
+            set
+        })
+        .collect();
     let shops = canonical_records!(parsed.shops);
     let simple_encounters = canonical_records!(parsed.simple_encounters);
     let complex_encounters = canonical_records!(parsed.complex_encounters);
@@ -62,6 +77,35 @@ pub(super) fn add_canonical_supporting_collections(
         !monster_descriptions.is_empty(),
         write_monster_descriptions(&monster_descriptions),
     );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data BD",
+        "project.json#battles",
+        !battles.is_empty(),
+        write_battles(&battles),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data MD",
+        "project.json#monsters",
+        !monsters.is_empty(),
+        write_monsters(&monsters),
+    );
+    for monster_set in &monster_sets {
+        if !matches!(monster_set.source_file.as_str(), "Data MD1" | "Data MD-1") {
+            continue;
+        }
+        insert_canonical_buffer(
+            schema,
+            &mut buffers,
+            &monster_set.source_file,
+            &format!("project.json#monsterSets/{}", monster_set.set_id),
+            !monster_set.monsters.is_empty(),
+            write_monster_set(monster_set),
+        );
+    }
     insert_canonical_buffer(
         schema,
         &mut buffers,
@@ -124,79 +168,98 @@ pub(super) fn add_canonical_supporting_collections(
 
     add_encounters(schema, &buffers);
     add_fixed_collections(schema, &buffers, &parsed.maps, &BTreeMap::new());
-    retain_canonical_records(
-        schema,
-        [
-            (
-                "Data SD2",
-                parsed.messages.iter().map(|record| record.id).collect(),
-            ),
-            (
-                "Data OD",
-                parsed
-                    .option_labels
-                    .iter()
-                    .map(|record| record.id)
-                    .collect(),
-            ),
-            (
-                "Data DES",
-                parsed
-                    .monster_descriptions
-                    .iter()
-                    .map(|record| record.id)
-                    .collect(),
-            ),
-            (
-                "Data SD",
-                parsed.shops.iter().map(|record| record.id).collect(),
-            ),
-            (
-                "Data ED",
-                parsed
-                    .simple_encounters
-                    .iter()
-                    .map(|record| record.id)
-                    .collect(),
-            ),
-            (
-                "Data ED2",
-                parsed
-                    .complex_encounters
-                    .iter()
-                    .map(|record| record.id)
-                    .collect(),
-            ),
-            (
-                "Data NI",
-                parsed
-                    .scenario_items
-                    .iter()
-                    .map(|record| record.id)
-                    .collect(),
-            ),
-            (
-                "Data TD",
-                parsed.treasures.iter().map(|record| record.id).collect(),
-            ),
-            (
-                "Data TD2",
-                parsed
-                    .thief_encounters
-                    .iter()
-                    .map(|record| record.id)
-                    .collect(),
-            ),
-            (
-                "Data TD3",
-                parsed
-                    .timed_encounters
-                    .iter()
-                    .map(|record| record.id)
-                    .collect(),
-            ),
-        ],
-    );
+    let mut canonical_sources = vec![
+        (
+            "Data BD",
+            parsed.battles.iter().map(|record| record.id).collect(),
+        ),
+        (
+            "Data MD",
+            parsed.monsters.iter().map(|record| record.id).collect(),
+        ),
+        (
+            "Data SD2",
+            parsed.messages.iter().map(|record| record.id).collect(),
+        ),
+        (
+            "Data OD",
+            parsed
+                .option_labels
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data DES",
+            parsed
+                .monster_descriptions
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data SD",
+            parsed.shops.iter().map(|record| record.id).collect(),
+        ),
+        (
+            "Data ED",
+            parsed
+                .simple_encounters
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data ED2",
+            parsed
+                .complex_encounters
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data NI",
+            parsed
+                .scenario_items
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data TD",
+            parsed.treasures.iter().map(|record| record.id).collect(),
+        ),
+        (
+            "Data TD2",
+            parsed
+                .thief_encounters
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data TD3",
+            parsed
+                .timed_encounters
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+    ];
+    for monster_set in &parsed.monster_sets {
+        if !matches!(monster_set.source_file.as_str(), "Data MD1" | "Data MD-1") {
+            continue;
+        }
+        canonical_sources.push((
+            monster_set.source_file.as_str(),
+            monster_set
+                .monsters
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ));
+    }
+    retain_canonical_records(schema, canonical_sources);
 }
 
 fn insert_canonical_buffer(
@@ -241,10 +304,7 @@ fn insert_canonical_buffer(
     }
 }
 
-fn retain_canonical_records<const N: usize>(
-    schema: &mut SemanticSchema,
-    sources: [(&str, BTreeSet<usize>); N],
-) {
+fn retain_canonical_records(schema: &mut SemanticSchema, sources: Vec<(&str, BTreeSet<usize>)>) {
     let source_ids: BTreeSet<_> = sources
         .iter()
         .map(|(source, _)| source_id(source))
@@ -918,7 +978,7 @@ fn add_monster_links(schema: &mut SemanticSchema) {
     let monsters: Vec<_> = schema
         .entities
         .iter()
-        .filter(|entity| entity.entity_type == "monster")
+        .filter(|entity| matches!(entity.entity_type.as_str(), "monster" | "alternate-monster"))
         .cloned()
         .collect();
     for monster in monsters {
