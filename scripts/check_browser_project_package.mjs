@@ -10,6 +10,7 @@ const buildRoot = path.join(repoRoot, "tmp", "browser-project-package-check");
 const sourceFiles = [
   "src/editor/browser/zip.ts",
   "src/editor/browser/fsAccess.ts",
+  "src/editor/projectOrigin.ts",
   "src/editor/browser/projectPackage.ts"
 ];
 
@@ -42,7 +43,7 @@ const { readStoredZip } = requireFromBuild("./src/editor/browser/zip.js");
 const rawBytes = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7]);
 const rawSha256 = sha256Hex(rawBytes);
 const project = {
-  schemaVersion: 4,
+  schemaVersion: 5,
   appVersion: "browser-package-check",
   scenario: {
     name: "Fixture Scenario",
@@ -50,6 +51,7 @@ const project = {
     importedAt: "2026-07-04T00:00:00.000Z"
   },
   source: {
+    origin: "imported",
     sourcePath: "browser://Fixture Scenario",
     rawSourcesDir: "browser-memory",
     immutable: true,
@@ -124,11 +126,51 @@ const reopened = await readProjectPackage({
 });
 const reopenedProject = JSON.parse(reopened.projectJson);
 expect(reopenedProject.source.rawSourcesDir === "raw-sources", "reopened project.json did not point at packaged raw-sources");
+expect(reopenedProject.source.origin === "imported", "reopened imported project lost its explicit origin");
 expect(reopened.rawSources?.files?.length === 1, "reopened package did not rebuild one raw source");
 expect(reopened.rawSources.files[0].sha256 === rawSha256, "reopened raw source SHA-256 changed");
 expect(bytesEqual(reopened.rawSources.files[0].bytesData, rawBytes), "reopened raw source payload changed");
 expect(reopened.rawSources.files[0].targetPlatform === "windows-realmz", "reopened raw source target platform changed");
 expect(reopened.rawSources.files[0].captureConfidence === "captured", "reopened raw source capture confidence changed");
+
+const authoredProject = {
+  ...project,
+  scenario: {
+    ...project.scenario,
+    name: "Authored Scenario",
+    projectPath: "browser://Authored Scenario.providence"
+  },
+  source: {
+    origin: "authored",
+    sourcePath: "generated://authored-scenario",
+    rawSourcesDir: "",
+    immutable: false,
+    files: []
+  },
+  assets: []
+};
+const authoredZip = createBrowserProjectPackageZip(authoredProject);
+const authoredRoot = "Authored Scenario.providence";
+const authoredEntries = readStoredZip(authoredZip);
+const authoredEntryMap = new Map(authoredEntries.map((entry) => [entry.path, entry.bytes]));
+expect(!authoredEntryMap.has(`${authoredRoot}/raw-sources-manifest.json`), "authored project ZIP should not contain a compatibility-annex manifest");
+expect(!authoredEntries.some((entry) => entry.path.startsWith(`${authoredRoot}/raw-sources/`)), "authored project ZIP should not contain raw source payloads");
+const authoredManifest = jsonEntry(authoredEntryMap, `${authoredRoot}/package-manifest.json`);
+expect(authoredManifest.source.origin === "authored", "authored package manifest lost its explicit origin");
+expect(authoredManifest.contents.rawSourcesManifest === null, "authored package manifest should not reference a compatibility annex");
+const reopenedAuthored = await readProjectPackage({
+  kind: "project-zip-file",
+  name: "Authored Scenario.providence.zip",
+  file: {
+    async arrayBuffer() {
+      return authoredZip.buffer.slice(authoredZip.byteOffset, authoredZip.byteOffset + authoredZip.byteLength);
+    }
+  }
+});
+const reopenedAuthoredProject = JSON.parse(reopenedAuthored.projectJson);
+expect(reopenedAuthoredProject.source.origin === "authored", "reopened authored project lost its explicit origin");
+expect(reopenedAuthoredProject.source.rawSourcesDir === "", "reopened authored project should not point at raw-sources");
+expect(reopenedAuthored.rawSources === null, "reopened authored project should not rebuild a raw source snapshot");
 
 console.log("Browser project package ZIP checks passed.");
 

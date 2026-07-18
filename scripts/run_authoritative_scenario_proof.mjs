@@ -37,6 +37,8 @@ expect(project.validation.ok, `Canonical project validation failed: ${project.va
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 1, `Expected one Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 1, `Expected one message, found ${project.messages.length}`);
+expect(project.schemaVersion === 5, `Canonical project must use schema v5, found v${project.schemaVersion}`);
+expect(project.source.origin === "authored", `Fresh canonical project must declare authored origin, found ${project.source.origin}`);
 expect(project.source.files.length === 0, "Fresh canonical project must not inventory source files");
 expect(project.source.immutable === false, "Fresh canonical project must not be immutable");
 const questAction = project.triggers[0].actions.find((action) => action.rawCode === 47);
@@ -92,6 +94,7 @@ const summary = {
   scenarioName,
   canonicalProject: {
     path: relative(projectDir),
+    origin: project.source.origin,
     rawSourcesPresent: false,
     sourceFileCount: project.source.files.length,
     maps: project.maps.length,

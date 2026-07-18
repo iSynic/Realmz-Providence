@@ -11,6 +11,7 @@ const buildRoot = path.join(repoRoot, "tmp", "isy305-player-map-fixture-check");
 const sourceFiles = [
   "src/editor/browser/zip.ts",
   "src/editor/browser/binaryWriters.ts",
+  "src/editor/browser/shopRecords.ts",
   "src/editor/browser/resourceFork.ts",
   "src/editor/browser/fsAccess.ts",
   "src/editor/browser/scenarioPackage.ts"
@@ -200,7 +201,7 @@ async function loadFixture(name, expectedCount) {
 
 function fixtureProject(name, rawFiles, records, primaryNames, secondaryNames) {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     appVersion: "isy305-player-map-fixture-check",
     scenario: {
       name,
@@ -214,6 +215,7 @@ function fixtureProject(name, rawFiles, records, primaryNames, secondaryNames) {
       securityBackup: null
     },
     source: {
+      origin: "imported",
       sourcePath: `browser://${name}`,
       rawSourcesDir: "browser-memory",
       immutable: true,

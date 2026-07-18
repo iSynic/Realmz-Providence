@@ -303,6 +303,7 @@ pub fn save_project(
     project_dir: String,
     mut project: ProvidenceProject,
 ) -> Result<ProvidenceProject> {
+    project.normalize_project_contract();
     project.validation = validate_project_impl(&project);
     save_project_impl(project_dir, &project)?;
     Ok(project)

@@ -1418,11 +1418,22 @@ export type MapCoordinateTarget = {
   y: number;
 };
 
+export type ProjectOrigin = "authored" | "imported";
+
+export type ProjectSource = {
+  /** Missing only while a schema-v4 project is being normalized. */
+  origin?: ProjectOrigin;
+  sourcePath: string;
+  rawSourcesDir?: string;
+  immutable: boolean;
+  files: SourceFile[];
+};
+
 export type Project = {
   schemaVersion: number;
   appVersion: string;
   scenario: ScenarioMeta;
-  source: { sourcePath: string; rawSourcesDir?: string; immutable: boolean; files: SourceFile[] };
+  source: ProjectSource;
   maps: MapEntity[];
   landLayout?: LandLayout | null;
   triggers: TriggerRecord[];

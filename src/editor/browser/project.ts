@@ -9,6 +9,7 @@ import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourc
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
 import { defaultRuleNames } from "../ruleNames";
+import { normalizeProjectContract, PROJECT_SCHEMA_VERSION } from "../projectOrigin";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const MAP_SIZE = 90;
@@ -31,7 +32,7 @@ let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = 
 export function createBrowserProject(projectName: string): Project {
   const safeName = projectName.trim() || "Untitled Scenario";
   const project: Project = createDefaultLandLevelProject({
-    schemaVersion: 4,
+    schemaVersion: PROJECT_SCHEMA_VERSION,
     appVersion: "browser-preview",
     scenario: {
       name: safeName,
@@ -45,10 +46,11 @@ export function createBrowserProject(projectName: string): Project {
       securityBackup: null
     },
     source: {
+      origin: "authored",
       sourcePath: "",
-      rawSourcesDir: "browser-memory",
+      rawSourcesDir: "",
       files: [],
-      immutable: true
+      immutable: false
     },
     maps: [],
     landLayout: null,
@@ -139,7 +141,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
   const projectPath = `browser://${scenarioName}.providence`;
   const scenarioShell = parseImportedScenarioShell(scenarioName, files) ?? defaultScenarioShell(scenarioName);
   const project: Project = {
-    schemaVersion: 4,
+    schemaVersion: PROJECT_SCHEMA_VERSION,
     appVersion: "browser-preview",
     scenario: {
       name: scenarioName,
@@ -153,6 +155,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       securityBackup: parseScenarioShell("Data CS", files.get("Data CS"))
     },
     source: {
+      origin: "imported",
       sourcePath: `browser://${scenarioName}`,
       rawSourcesDir: "browser-memory",
       files: sourceFiles,
@@ -541,6 +544,7 @@ export async function openBrowserProject(source: BrowserProjectSource): Promise<
 }
 
 export function normalizeBrowserProject(project: Project): Project {
+  normalizeProjectContract(project);
   project.assets ??= [];
   project.scenario.shell ??= defaultScenarioShell(project.scenario.name);
   project.scenario.contactInfo ??= defaultScenarioContactInfo(project.scenario.name);

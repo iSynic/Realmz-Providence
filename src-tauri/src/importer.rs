@@ -52,6 +52,7 @@ pub fn create_project(
             security_backup: None,
         },
         source: SourceSnapshot {
+            origin: Some(ProjectOrigin::Authored),
             source_path: format!("generated://{}", scenario_id(&project_name)),
             raw_sources_dir: String::new(),
             files: Vec::new(),
@@ -248,6 +249,7 @@ fn import_scenario_with_name(
             security_backup,
         },
         source: SourceSnapshot {
+            origin: Some(ProjectOrigin::Imported),
             source_path: source_path.to_string_lossy().to_string(),
             raw_sources_dir: RAW_SOURCES_DIR.to_string(),
             files: source_files,
@@ -352,7 +354,10 @@ pub fn open_project_for_semantic_mapping(
 fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     let project_path = project_dir.join(PROJECT_FILE_NAME);
     let text = fs::read_to_string(&project_path).with_path(&project_path)?;
-    serde_json::from_str(&text).with_json_path(project_path)
+    let mut project: ProvidenceProject =
+        serde_json::from_str(&text).with_json_path(project_path)?;
+    project.normalize_project_contract();
+    Ok(project)
 }
 
 pub fn save_project(project_dir: impl AsRef<Path>, project: &ProvidenceProject) -> Result<()> {
@@ -2156,6 +2161,36 @@ mod tests {
     }
 
     #[test]
+    fn open_project_upgrades_legacy_source_origin() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Legacy Starter.providence");
+        create_project("Legacy Starter".to_string(), &project_dir).expect("create project");
+        let project_path = project_dir.join(PROJECT_FILE_NAME);
+        let mut saved: serde_json::Value =
+            serde_json::from_slice(&fs::read(&project_path).expect("read project fixture"))
+                .expect("parse project fixture");
+        saved["schemaVersion"] = serde_json::json!(4);
+        saved["source"]
+            .as_object_mut()
+            .expect("source object")
+            .remove("origin");
+        fs::write(
+            &project_path,
+            serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
+        )
+        .expect("write legacy project fixture");
+
+        let opened = open_project(&project_dir).expect("open legacy project");
+        assert_eq!(opened.schema_version, PROJECT_SCHEMA_VERSION);
+        assert_eq!(opened.source.origin, Some(ProjectOrigin::Authored));
+        let upgraded: serde_json::Value =
+            serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
+                .expect("parse upgraded project");
+        assert_eq!(upgraded["schemaVersion"], PROJECT_SCHEMA_VERSION);
+        assert_eq!(upgraded["source"]["origin"], "authored");
+    }
+
+    #[test]
     fn create_project_seeds_default_land_level_zero() {
         let temp = tempfile::tempdir().expect("tempdir");
         let project_dir = temp.path().join("Starter.providence");
@@ -2209,6 +2244,10 @@ mod tests {
         assert!(project.source.raw_sources_dir.is_empty());
         assert!(project.source.files.is_empty());
         assert!(!project.source.immutable);
+        assert_eq!(project.source.origin, Some(ProjectOrigin::Authored));
+
+        // Origin, not legacy snapshot flags, owns the compiler boundary.
+        project.source.immutable = true;
 
         let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
             .into_iter()
@@ -2293,8 +2332,9 @@ mod tests {
         assert!(classic_output_dir.join("Scenario.rsrc").is_file());
 
         let reimport_dir = temp.path().join("Reimported.providence");
-        let reimported =
+        let mut reimported =
             import_scenario(&output_dir, &reimport_dir).expect("reimport generated export");
+        assert_eq!(reimported.source.origin, Some(ProjectOrigin::Imported));
         assert_eq!(
             reimported
                 .maps
@@ -2304,6 +2344,9 @@ mod tests {
             1
         );
 
+        // Imported origin still requires the annex even if legacy flags are cleared.
+        reimported.source.immutable = false;
+        reimported.source.files.clear();
         fs::remove_dir_all(reimport_dir.join(RAW_SOURCES_DIR)).expect("remove imported annex");
         let error = crate::exporter::export_project(
             &reimport_dir,

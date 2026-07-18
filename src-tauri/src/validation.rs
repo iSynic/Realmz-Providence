@@ -2640,6 +2640,7 @@ mod tests {
                 security_backup: None,
             },
             source: SourceSnapshot {
+                origin: Some(ProjectOrigin::Authored),
                 source_path: String::new(),
                 raw_sources_dir: String::new(),
                 files: Vec::new(),

@@ -23,6 +23,7 @@ describe("scenario seed project compiler", () => {
   it("clones a base template and applies final scenario metadata without mutating the template", () => {
     const template = createBrowserProject("Template Source");
     template.source = {
+      origin: "imported",
       sourcePath: "fixture://template",
       rawSourcesDir: "template-raw",
       immutable: true,
@@ -60,13 +61,31 @@ describe("scenario seed project compiler", () => {
     });
     expect(result.project.scenario.shell).toMatchObject({ landLevel: 2, lookX: 7, lookY: 9, sourceFile: "Compiled Scenario" });
     expect(result.project.scenario.contactInfo).toMatchObject({ scenarioName: "Compiled Scenario", author: "Providence", version: "1.0" });
-    expect(result.project.source).toMatchObject({ sourcePath: "seed://compiled-scenario", rawSourcesDir: "template-raw", immutable: false });
+    expect(result.project.source).toMatchObject({ origin: "imported", sourcePath: "seed://compiled-scenario", rawSourcesDir: "template-raw", immutable: false });
     expect(result.project.source.files).toEqual(template.source.files);
     expect(result.project.source.files).not.toBe(template.source.files);
     expect(result.project.messages).toEqual(template.messages);
     expect(template.scenario.name).toBe("Template Source");
     expect(template.source.immutable).toBe(true);
     expect(result.warnings).toContain("parser warning");
+  });
+
+  it("creates a schema-v5 authored project without a compatibility annex", () => {
+    const result = compileScenarioSeedProject({
+      schemaVersion: 1,
+      scenario: { name: "Authored From Zero" }
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.project.schemaVersion).toBe(5);
+    expect(result.project.source).toEqual({
+      origin: "authored",
+      sourcePath: "seed://authored-from-zero",
+      rawSourcesDir: "",
+      immutable: false,
+      files: []
+    });
   });
 
   it("replaces only trigger domains explicitly supplied by the seed", () => {

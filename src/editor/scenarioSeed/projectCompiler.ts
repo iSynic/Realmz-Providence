@@ -1,4 +1,5 @@
 import { createBrowserProject, validateBrowserProject } from "../browser/project";
+import { PROJECT_SCHEMA_VERSION, resolvedProjectOrigin } from "../projectOrigin";
 import type { LibraryCatalog, Project } from "../types";
 import { allocateScenarioSeed } from "./allocation";
 import {
@@ -12,8 +13,6 @@ import { addScenarioSeedMapPlacementDiagnostics, addScenarioSeedTopologyDiagnost
 import { compileScenarioSeedMaps, scenarioSeedOperationRegions } from "./mapCompiler";
 import { applyScenarioSeedMapOperation } from "./mapOperationCompiler";
 import { compileScenarioSeedScripts, syncActionPointMarkers, type ScenarioSeedScriptCompilation } from "./scriptCompiler";
-
-const PROJECT_SCHEMA_VERSION = 4;
 
 export function compileScenarioSeedProject(
   seed: ScenarioSeed,
@@ -91,6 +90,7 @@ function initializeScenarioSeedProject(
   const scenarioDefaults = createBrowserProject(seed.scenario.name).scenario;
   const scenarioShell = project.scenario.shell ?? scenarioDefaults.shell;
   const contactInfo = project.scenario.contactInfo ?? scenarioDefaults.contactInfo;
+  const origin = baseTemplate === "blank" ? "authored" : resolvedProjectOrigin(project.source);
   return {
     ...project,
     schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -130,10 +130,11 @@ function initializeScenarioSeedProject(
         : null
     },
     source: {
+      origin,
       sourcePath: `seed://${slugify(seed.scenario.name)}`,
-      rawSourcesDir: baseTemplate === "blank" ? "scenario-seed" : project.source.rawSourcesDir || "scenario-seed",
+      rawSourcesDir: origin === "authored" ? "" : project.source.rawSourcesDir || "raw-sources",
       immutable: false,
-      files: baseTemplate === "blank" ? [] : [...(project.source.files ?? [])]
+      files: origin === "authored" ? [] : [...(project.source.files ?? [])]
     }
   };
 }

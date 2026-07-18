@@ -1,4 +1,5 @@
 import type { ManagedAsset, Project } from "../types";
+import { resolvedProjectOrigin } from "../projectOrigin";
 import type { BrowserRawSourceSnapshot } from "./fsAccess";
 import { createStoredZip } from "./zip";
 
@@ -37,6 +38,7 @@ export function browserProjectPackageFileName(project: Project) {
 export function createBrowserProjectPackageZip(project: Project, rawSources?: BrowserRawSourceSnapshot | null) {
   const generatedAt = new Date();
   const rootName = `${safePackageName(project.scenario.name || "Untitled Scenario")}.providence`;
+  const includesRawSources = rawSources !== null && rawSources !== undefined;
   const entries: PackageEntry[] = [];
   const usedPaths = new Set<string>();
 
@@ -50,7 +52,8 @@ export function createBrowserProjectPackageZip(project: Project, rawSources?: Br
     ...project,
     source: {
       ...project.source,
-      rawSourcesDir: "raw-sources"
+      origin: resolvedProjectOrigin(project.source),
+      rawSourcesDir: includesRawSources ? "raw-sources" : ""
     }
   };
   addEntry(`${rootName}/project.json`, jsonBytes(packageProject));
@@ -76,16 +79,18 @@ export function createBrowserProjectPackageZip(project: Project, rawSources?: Br
   }
 
   const assetFiles = addManagedAssetFiles(rootName, project.assets ?? [], addEntry);
-  addEntry(`${rootName}/raw-sources-manifest.json`, jsonBytes({
-    schemaVersion: 1,
-    sourceKind: rawSources?.sourceKind ?? null,
-    capturedAt: rawSources?.capturedAt ?? null,
-    rootName: rawSources?.rootName ?? null,
-    targetPlatform: rawSources?.targetPlatform ?? null,
-    capturedFileCount: rawSourceFiles.length,
-    capturedBytes: rawSourceFiles.reduce((sum, file) => sum + file.bytes, 0),
-    files: rawSourceFiles
-  }));
+  if (includesRawSources) {
+    addEntry(`${rootName}/raw-sources-manifest.json`, jsonBytes({
+      schemaVersion: 1,
+      sourceKind: rawSources?.sourceKind ?? null,
+      capturedAt: rawSources?.capturedAt ?? null,
+      rootName: rawSources?.rootName ?? null,
+      targetPlatform: rawSources?.targetPlatform ?? null,
+      capturedFileCount: rawSourceFiles.length,
+      capturedBytes: rawSourceFiles.reduce((sum, file) => sum + file.bytes, 0),
+      files: rawSourceFiles
+    }));
+  }
   addEntry(`${rootName}/assets/managed/manifest.json`, jsonBytes({
     schemaVersion: 1,
     generatedAt: generatedAt.toISOString(),
@@ -105,8 +110,9 @@ export function createBrowserProjectPackageZip(project: Project, rawSources?: Br
       importedAt: project.scenario.importedAt
     },
     source: {
+      origin: resolvedProjectOrigin(project.source),
       sourcePath: project.source.sourcePath,
-      rawSourcesDir: "raw-sources",
+      rawSourcesDir: includesRawSources ? "raw-sources" : "",
       rawSourceKind: rawSources?.sourceKind ?? null,
       rawSourceTargetPlatform: rawSources?.targetPlatform ?? null,
       capturedAt: rawSources?.capturedAt ?? null,
@@ -115,7 +121,7 @@ export function createBrowserProjectPackageZip(project: Project, rawSources?: Br
     },
     contents: {
       projectJson: "project.json",
-      rawSourcesManifest: "raw-sources-manifest.json",
+      rawSourcesManifest: includesRawSources ? "raw-sources-manifest.json" : null,
       managedAssetsManifest: "assets/managed/manifest.json",
       rawSourceFiles: rawSourceFiles.length,
       managedAssetFiles: assetFiles.length

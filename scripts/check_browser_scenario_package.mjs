@@ -2304,7 +2304,7 @@ function sourceFile(name, bytes, role) {
 
 function fixtureProject(files) {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     appVersion: "browser-scenario-package-check",
     scenario: {
       name: "Fixture Scenario",
@@ -2318,6 +2318,7 @@ function fixtureProject(files) {
       securityBackup: null
     },
     source: {
+      origin: "imported",
       sourcePath: "browser://Fixture Scenario",
       rawSourcesDir: "browser-memory",
       immutable: true,

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-pub const PROJECT_SCHEMA_VERSION: u32 = 4;
+pub const PROJECT_SCHEMA_VERSION: u32 = 5;
 pub const SEMANTIC_SCHEMA_VERSION: u32 = 5;
 pub const MAP_SIZE: usize = 90;
 pub const RACE_NAME_LIMIT: usize = 70;
@@ -569,10 +569,41 @@ pub enum ManagedAssetExportState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceSnapshot {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin: Option<ProjectOrigin>,
     pub source_path: String,
     pub raw_sources_dir: String,
     pub files: Vec<SourceFile>,
     pub immutable: bool,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ProjectOrigin {
+    Authored,
+    Imported,
+}
+
+impl SourceSnapshot {
+    pub fn resolved_origin(&self) -> ProjectOrigin {
+        self.origin.unwrap_or_else(|| {
+            if self.immutable || !self.files.is_empty() {
+                ProjectOrigin::Imported
+            } else {
+                ProjectOrigin::Authored
+            }
+        })
+    }
+
+    pub fn ensure_origin(&mut self) {
+        if self.origin.is_none() {
+            self.origin = Some(self.resolved_origin());
+        }
+    }
+
+    pub fn requires_compatibility_annex(&self) -> bool {
+        self.resolved_origin() == ProjectOrigin::Imported
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1868,6 +1899,13 @@ pub enum ScenarioTarget {
 }
 
 impl ProvidenceProject {
+    pub fn normalize_project_contract(&mut self) {
+        self.source.ensure_origin();
+        if self.schema_version < PROJECT_SCHEMA_VERSION {
+            self.schema_version = PROJECT_SCHEMA_VERSION;
+        }
+    }
+
     pub fn map_by_id_mut(&mut self, id: &str) -> Option<&mut MapEntity> {
         self.maps.iter_mut().find(|map| map.id == id)
     }
@@ -1875,7 +1913,32 @@ impl ProvidenceProject {
 
 #[cfg(test)]
 mod tests {
-    use super::ActionCategory;
+    use super::{ActionCategory, ProjectOrigin, SourceSnapshot};
+
+    #[test]
+    fn source_origin_migrates_legacy_snapshot_signals() {
+        let authored = SourceSnapshot {
+            origin: None,
+            source_path: "generated://starter".to_string(),
+            raw_sources_dir: String::new(),
+            files: Vec::new(),
+            immutable: false,
+        };
+        assert_eq!(authored.resolved_origin(), ProjectOrigin::Authored);
+        assert!(!authored.requires_compatibility_annex());
+
+        let mut imported = SourceSnapshot {
+            origin: None,
+            source_path: "fixture://legacy".to_string(),
+            raw_sources_dir: "raw-sources".to_string(),
+            files: Vec::new(),
+            immutable: true,
+        };
+        assert_eq!(imported.resolved_origin(), ProjectOrigin::Imported);
+        assert!(imported.requires_compatibility_annex());
+        imported.ensure_origin();
+        assert_eq!(imported.origin, Some(ProjectOrigin::Imported));
+    }
 
     #[test]
     fn action_category_accepts_legacy_browser_package_labels() {

@@ -569,7 +569,7 @@ function firstByteDifference(left, right) {
 
 function fixtureProject(files) {
   return {
-    schemaVersion: 4,
+    schemaVersion: 5,
     appVersion: "browser-desktop-scenario-parity-check",
     scenario: {
       name: scenarioName,
@@ -583,6 +583,7 @@ function fixtureProject(files) {
       securityBackup: null
     },
     source: {
+      origin: "imported",
       sourcePath: `browser://${scenarioName}`,
       rawSourcesDir: "browser-memory",
       immutable: true,

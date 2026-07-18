@@ -1,0 +1,18 @@
+import type { Project, ProjectOrigin, ProjectSource } from "./types";
+
+export const PROJECT_SCHEMA_VERSION = 5;
+
+export function resolvedProjectOrigin(source: ProjectSource): ProjectOrigin {
+  if (source.origin === "authored" || source.origin === "imported") return source.origin;
+  return source.immutable || source.files.length > 0 ? "imported" : "authored";
+}
+
+export function requiresCompatibilityAnnex(project: Pick<Project, "source">) {
+  return resolvedProjectOrigin(project.source) === "imported";
+}
+
+export function normalizeProjectContract(project: Project): Project {
+  project.source.origin = resolvedProjectOrigin(project.source);
+  if (project.schemaVersion < PROJECT_SCHEMA_VERSION) project.schemaVersion = PROJECT_SCHEMA_VERSION;
+  return project;
+}

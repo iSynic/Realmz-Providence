@@ -101,6 +101,7 @@ function checkBaseTemplate(createProjectFromScenarioSeed) {
   template.maps[0].tiles[0] = 222;
   template.maps[0].tiles[1 * 90 + 1] = 3156;
   template.scenario.shell.recLevel = 7;
+  template.source.origin = "imported";
   template.source.rawSourcesDir = "template-raw";
   template.assets = [{ ...mockCustomAsset("asset:template:picture", "picture", "PICT", 30000), libraryScope: "scenario" }];
 
@@ -117,6 +118,7 @@ function checkBaseTemplate(createProjectFromScenarioSeed) {
   expect(result.project.messages.some((message) => message.id === 77 && message.text === "Template message"), "omitted message family should inherit from the base template");
   expect(result.project.questLabels.length === 0, "an explicitly declared empty family should replace inherited template records");
   expect(result.project.assets[0]?.id === "asset:template:picture", "omitted asset family should inherit scenario assets from the base template");
+  expect(result.project.source.origin === "imported", "an imported template should retain its compatibility boundary");
   expect(result.project.source.rawSourcesDir === "template-raw", "template raw-source metadata should remain available as baseline evidence");
   expect(result.project.triggers.filter((trigger) => trigger.source !== "Data ED3").length === 1, "declared map Action Points should replace template map Action Points");
   expect(result.project.triggers.some((trigger) => trigger.source === "Data ED3" && trigger.recordIndex === 9), "omitted Extra Action Points should inherit from the template");

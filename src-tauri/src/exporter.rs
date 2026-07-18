@@ -53,7 +53,7 @@ pub fn export_project(
     } else {
         project.source.raw_sources_dir.as_str()
     });
-    let preserves_source_snapshot = preserves_source_snapshot(project);
+    let preserves_source_snapshot = project.source.requires_compatibility_annex();
     if preserves_source_snapshot && !raw_dir.is_dir() {
         return Err(ProvidenceError::message(format!(
             "Missing raw source snapshot: {}",
@@ -411,10 +411,6 @@ pub fn export_project(
         target_compatibility_issues,
         target_compatibility,
     })
-}
-
-fn preserves_source_snapshot(project: &ProvidenceProject) -> bool {
-    project.source.immutable || !project.source.files.is_empty()
 }
 
 fn write_authored_runtime_baseline(
@@ -1144,7 +1140,8 @@ fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> St
             }
         })
         .unwrap_or_else(|| {
-            if target == ScenarioTarget::WindowsRealmzFolder || !preserves_source_snapshot(project)
+            if target == ScenarioTarget::WindowsRealmzFolder
+                || !project.source.requires_compatibility_annex()
             {
                 "Scenario.rsrc".to_string()
             } else {
