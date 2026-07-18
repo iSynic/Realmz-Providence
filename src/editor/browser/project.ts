@@ -255,10 +255,11 @@ export async function buildBrowserSemanticSchemaForProject(
 ): Promise<{ semanticSchema: Project["semanticSchema"]; validation: Project["validation"] }> {
   const key = browserSemanticCacheKey(project);
   const pending = pendingBrowserSemantics.get(key);
+  const importedProject = requiresCompatibilityAnnex(project);
   const request = {
     scenario: project.scenario,
-    buffers: pending?.files ?? new Map<string, Uint8Array>(),
-    sourceFiles: pending?.sourceFiles ?? project.source.files ?? [],
+    buffers: importedProject ? pending?.files ?? new Map<string, Uint8Array>() : new Map<string, Uint8Array>(),
+    sourceFiles: importedProject ? pending?.sourceFiles ?? project.source.files ?? [] : [],
     maps: project.maps,
     mapRecords: project.mapRecords,
     randomLevels: project.randomLevels,
@@ -267,6 +268,7 @@ export async function buildBrowserSemanticSchemaForProject(
     battles: project.battles,
     monsters: project.monsters,
     monsterSets: project.monsterSets,
+    assets: project.assets,
     assetCatalog: project.assetCatalog,
     records: project.records
   };

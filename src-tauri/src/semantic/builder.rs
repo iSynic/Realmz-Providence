@@ -10,6 +10,7 @@ pub fn build_semantic_schema(
     buffers: &BTreeMap<String, Vec<u8>>,
     source_files: &[SourceFile],
     parsed: &ParsedScenario,
+    managed_assets: &[ManagedAsset],
 ) -> SemanticSchema {
     let mut schema = SemanticSchema {
         schema_version: SEMANTIC_SCHEMA_VERSION,
@@ -26,6 +27,7 @@ pub fn build_semantic_schema(
     let map_names = map_names::resource_map_names(buffers);
     records::add_fixed_collections(&mut schema, buffers, &parsed.maps, &map_names);
     resources::add_resources(&mut schema, buffers);
+    resources::add_managed_resources(&mut schema, managed_assets);
     map_names::add_map_name_links(&mut schema, buffers);
     metadata::add_scenario_metadata_links(&mut schema, scenario);
     add_tile_assets(&mut schema, &parsed.asset_catalog);

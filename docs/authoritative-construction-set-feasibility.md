@@ -96,10 +96,23 @@ direct unit proof deletes the fresh project's directory before compiling twice a
 same complete manifest, while the imported fixture corpus and browser/desktop parity remain
 byte-identical.
 
-Branch validation completed on 2026-07-18:
+The eleventh slice makes authored validation consume the compiler's expected native manifest
+instead of treating `project.source.files` as the export inventory. The Export panel now reports
+compiler output for fresh projects, while imported validation remains source-driven at the
+compatibility boundary.
 
-- full Rust suite: 197 passed, 2 ignored;
-- full TypeScript suite: 519 passed, plus typecheck;
+The twelfth slice makes the same origin boundary explicit for semantic mapping. Authored desktop
+and browser projects now build their semantic graph with no compatibility buffers, even when a
+stray `raw-sources` directory or registered browser snapshot exists. Canonical maps, Action Points,
+and other directly modeled families remain available, and managed scenario resources are indexed
+directly from canonical asset metadata. Imported projects retain raw-buffer enrichment. Focused
+poison-snapshot tests enforce both sides of the boundary; direct canonical summaries for the
+remaining supporting record families are still an incremental coverage task.
+
+Branch validation through the twelfth slice completed on 2026-07-18:
+
+- full Rust suite: 201 passed, 2 ignored;
+- full TypeScript suite: 523 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -108,7 +121,7 @@ Branch validation completed on 2026-07-18:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 519 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 523 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly/economy,
 and CSS files. Those files are outside this slice; architecture, lint, unit, typecheck, UI audit,
 production build, scenario proof, package parity, and the full Rust suite were run independently.
@@ -234,8 +247,8 @@ The remaining important raw-source dependencies are:
 - imported native export rejects a missing annex, copies it first, then overlays supported writes;
 - fixed-record helpers preserve malformed file tails, imported capacities, shop suffixes, and spell
   tails only when annex bytes are available;
-- project open/semantic hydration can backfill missing fields and derived semantic data from raw
-  files;
+- imported-project open and semantic hydration can backfill missing fields and compatibility
+  evidence from raw files; authored open/mapping no longer consults those buffers;
 - imported-project validation derives compatibility pass-through inventories from
   `project.source.files`; authored validation now derives its expected files from the native
   compiler manifest;
@@ -469,8 +482,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 6. **Implemented for authored projects:** build validation and the Export panel's source plan from
    the compiler's expected native manifest. Imported projects remain intentionally source-driven
    at the compatibility boundary.
-7. Build semantic indices from canonical project data and managed resources; use raw buffers only
-   to enrich imported compatibility evidence.
+7. **Implemented at the semantic-source boundary:** authored indices consume canonical project
+   fields and managed scenario resources with no raw buffers; imported indices retain raw-buffer
+   enrichment. Direct canonical summaries still need to replace legacy parsers for several
+   supporting record families.
 8. **Implemented on the investigation branch:** persist/import/export `itemTexts` in Rust and gate
    its TypeScript/Rust/native-folder conformance in the ownership proof.
 9. Gate browser and desktop output with the same golden manifest/byte fixtures. Prefer one Rust
@@ -492,8 +507,9 @@ must not be called fresh-authoritative merely because imported round trips are f
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. They must become annex slices rather than
    normal canonical fields.
-5. **Raw-derived validation/semantics:** source inventories and semantic hydration still assume that
-   files precede the canonical project.
+5. **Canonical semantic coverage:** authored semantic mapping no longer consumes raw files, but
+   several supporting record summaries are still produced only by imported-buffer parsers and
+   therefore do not yet appear in a fresh project's semantic graph.
 6. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
    writing, not construction from zero, and overstate at least the Race/Caste suffixes.
 7. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern

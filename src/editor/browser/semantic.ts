@@ -38,6 +38,7 @@ export function buildBrowserSemanticSchema(projectParts: {
   battles: BattleRecord[];
   monsters: MonsterRecord[];
   monsterSets: MonsterSet[];
+  assets: Project["assets"];
   assetCatalog: Project["assetCatalog"];
   records: Project["records"];
 }, onProgress?: (progress: BrowserSemanticBuildProgress) => void): SemanticSchema {
@@ -119,11 +120,12 @@ export function buildBrowserSemanticSchema(projectParts: {
     {
       phase: "resources",
       label: "Mapping Resources",
-      detail: `${(projectParts.assetCatalog.tilesets.length + (projectParts.assetCatalog.icons?.length ?? 0) + (projectParts.assetCatalog.sounds?.length ?? 0)).toLocaleString()} catalog resource(s)`,
+      detail: `${(projectParts.assets.length + projectParts.assetCatalog.tilesets.length + (projectParts.assetCatalog.icons?.length ?? 0) + (projectParts.assetCatalog.sounds?.length ?? 0)).toLocaleString()} canonical and catalog resource(s)`,
       run: () => {
         addTileAssets(schema, projectParts.assetCatalog);
         addRenderProfiles(schema, projectParts.maps, projectParts.assetCatalog);
         addResourceEntities(schema, projectParts.buffers, projectParts.sourceFiles);
+        addManagedResourceEntities(schema, projectParts.assets);
       }
     },
     {
@@ -1375,6 +1377,99 @@ function addResourceEntities(schema: SemanticSchema, buffers: Map<string, Uint8A
     }
     addResourceTypeEntities(schema, file.name, resources);
     addResourceMemberEntities(schema, file.name, resources);
+  }
+}
+
+function addManagedResourceEntities(schema: SemanticSchema, assets: Project["assets"]) {
+  const scenarioAssets = assets.filter((asset) => asset.libraryScope !== "custom-library" && asset.exportState === "ready");
+  if (scenarioAssets.length === 0) return;
+  const sourceName = "Providence managed scenario assets";
+  const sourceKey = sourceId(sourceName);
+  if (!schema.sources.some((source) => source.id === sourceKey)) {
+    schema.sources.push({
+      id: sourceKey,
+      type: "managed resources",
+      origin: "authored-source",
+      name: sourceName,
+      path: "project.json#assets",
+      exists: true,
+      bytes: scenarioAssets.reduce((total, asset) => total + asset.bytes, 0),
+      sha256: null,
+      layout: null,
+      confidence: "confirmed"
+    });
+  }
+  for (const asset of scenarioAssets) {
+    const typeId = resourceTypeId(asset.resourceType);
+    if (!schema.entities.some((entity) => entity.id === typeId)) {
+      schema.entities.push({
+        id: typeId,
+        type: "resource type",
+        label: `${asset.resourceType} resources`,
+        editState: "editable",
+        confidence: "confirmed",
+        source: sourceName,
+        recordRef: null,
+        byteRange: null,
+        editable: true,
+        summary: { type: asset.resourceType, managed: true }
+      });
+    }
+    const entityId = resourceEntityId(asset.resourceType, asset.resourceId);
+    const recordId = `record:managed-asset:${asset.id}`;
+    const summary = {
+      type: asset.resourceType,
+      resourceType: asset.resourceType,
+      resourceId: asset.resourceId,
+      managedAssetId: asset.id,
+      kind: asset.kind,
+      bytes: asset.bytes,
+      sha256: asset.sha256,
+      mimeType: asset.mimeType,
+      exportState: asset.exportState,
+      managed: true,
+      scenarioSupplied: true
+    };
+    schema.records = schema.records.filter((record) => record.id !== recordId);
+    schema.records.push({
+      id: recordId,
+      source: sourceKey,
+      type: "managed resource",
+      label: asset.label,
+      editState: "editable",
+      byteRange: null,
+      confidence: "confirmed",
+      summary
+    });
+    const existing = schema.entities.find((entity) => entity.id === entityId);
+    if (existing) {
+      Object.assign(existing, {
+        label: asset.label,
+        editState: "editable",
+        confidence: "confirmed",
+        source: sourceName,
+        recordRef: recordId,
+        byteRange: null,
+        editable: true,
+        summary: { ...existing.summary, ...summary }
+      });
+    } else {
+      schema.entities.push({
+        id: entityId,
+        type: "resource",
+        label: asset.label,
+        editState: "editable",
+        confidence: "confirmed",
+        source: sourceName,
+        recordRef: recordId,
+        byteRange: null,
+        editable: true,
+        summary
+      });
+    }
+    if (!schema.links.some((link) => link.from === entityId && link.to === typeId)) {
+      pushLink(schema, entityId, typeId, "member_of_resource_type", "confirmed", { managedAssetId: asset.id });
+    }
   }
 }
 

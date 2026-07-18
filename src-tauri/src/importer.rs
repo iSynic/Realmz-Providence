@@ -300,7 +300,7 @@ fn import_scenario_with_name(
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
     import_sound_assets(&source_path, &assets_dir, &mut project)?;
-    build_semantic_schema_from_raw_sources(project_dir, &mut project)?;
+    build_semantic_schema_from_imported_sources(project_dir, &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
     Ok(project)
@@ -320,19 +320,7 @@ pub fn open_project(project_dir: impl AsRef<Path>) -> Result<ProvidenceProject> 
     let mut project = read_saved_project(project_dir)?;
     backfill_tileset_metadata(&mut project);
     ensure_reference_tile_attributes(&mut project)?;
-    hydrate_scenario_metadata(project_dir, &mut project)?;
-    let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
-        RAW_SOURCES_DIR
-    } else {
-        project.source.raw_sources_dir.as_str()
-    });
-    hydrate_item_texts(&raw_dir, &mut project)?;
-    hydrate_custom_spell_names(&raw_dir, &mut project)?;
-    hydrate_rule_names(&raw_dir, None, &mut project)?;
-    import_picture_assets(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
-    refresh_custom_tile_atlases(project_dir, &mut project)?;
-    import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
-    import_sound_assets(&raw_dir, &project_dir.join(ASSETS_DIR), &mut project)?;
+    hydrate_imported_compatibility_state(project_dir, &mut project, true)?;
     save_project(project_dir, &project)?;
     Ok(project)
 }
@@ -344,16 +332,34 @@ pub fn open_project_for_semantic_mapping(
     let mut project = read_saved_project(project_dir)?;
     backfill_tileset_metadata(&mut project);
     ensure_reference_tile_attributes(&mut project)?;
-    hydrate_scenario_metadata(project_dir, &mut project)?;
+    hydrate_imported_compatibility_state(project_dir, &mut project, false)?;
+    Ok(project)
+}
+
+fn hydrate_imported_compatibility_state(
+    project_dir: &Path,
+    project: &mut ProvidenceProject,
+    include_asset_previews: bool,
+) -> Result<()> {
+    if !project.source.requires_compatibility_annex() {
+        return Ok(());
+    }
+    hydrate_scenario_metadata(project_dir, project)?;
     let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
         RAW_SOURCES_DIR
     } else {
         project.source.raw_sources_dir.as_str()
     });
-    hydrate_item_texts(&raw_dir, &mut project)?;
-    hydrate_custom_spell_names(&raw_dir, &mut project)?;
-    hydrate_rule_names(&raw_dir, None, &mut project)?;
-    Ok(project)
+    hydrate_item_texts(&raw_dir, project)?;
+    hydrate_custom_spell_names(&raw_dir, project)?;
+    hydrate_rule_names(&raw_dir, None, project)?;
+    if include_asset_previews {
+        import_picture_assets(&raw_dir, &project_dir.join(ASSETS_DIR), project)?;
+        refresh_custom_tile_atlases(project_dir, project)?;
+        import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), project)?;
+        import_sound_assets(&raw_dir, &project_dir.join(ASSETS_DIR), project)?;
+    }
+    Ok(())
 }
 
 fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
@@ -504,6 +510,10 @@ impl<'a> From<&'a ProvidenceProject> for ProjectFile<'a> {
 }
 
 fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) -> Result<()> {
+    if !project.source.requires_compatibility_annex() {
+        build_semantic_schema(project, &BTreeMap::new());
+        return Ok(());
+    }
     let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
         RAW_SOURCES_DIR
     } else {
@@ -521,10 +531,15 @@ fn refresh_semantic_schema(project_dir: &Path, project: &mut ProvidenceProject) 
     Ok(())
 }
 
-fn build_semantic_schema_from_raw_sources(
+fn build_semantic_schema_from_imported_sources(
     project_dir: &Path,
     project: &mut ProvidenceProject,
 ) -> Result<()> {
+    if !project.source.requires_compatibility_annex() {
+        return Err(ProvidenceError::message(
+            "Imported semantic enrichment requires an imported project.",
+        ));
+    }
     let raw_dir = project_dir.join(if project.source.raw_sources_dir.is_empty() {
         RAW_SOURCES_DIR
     } else {
@@ -576,6 +591,7 @@ fn build_semantic_schema(project: &mut ProvidenceProject, buffers: &BTreeMap<Str
         &buffers,
         &project.source.files,
         &semantic_parsed,
+        &project.assets,
     );
 }
 
@@ -2385,6 +2401,103 @@ mod tests {
             project_dir.join(PROJECT_FILE_NAME).is_file(),
             "created project should still be saved to disk"
         );
+    }
+
+    #[test]
+    fn authored_semantic_mapping_ignores_stray_annex_and_indexes_managed_resources() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Semantic Boundary.providence");
+        let mut project =
+            create_project("Semantic Boundary".to_string(), &project_dir).expect("project");
+        project.source.immutable = true;
+        project.source.raw_sources_dir = RAW_SOURCES_DIR.to_string();
+        project.assets.push(ManagedAsset {
+            id: "managed:TEXT:-200:authored".to_string(),
+            label: "Authored Scrolling Text".to_string(),
+            kind: ManagedAssetKind::Text,
+            resource_type: "TEXT".to_string(),
+            resource_id: -200,
+            file_name: "scrolling-text--200.txt".to_string(),
+            original_path: String::new(),
+            preview_path: String::new(),
+            resource_path: format!(
+                "data:text/plain;base64,{}",
+                STANDARD.encode(b"canonical text")
+            ),
+            mime_type: "text/plain".to_string(),
+            bytes: 14,
+            sha256: "canonical".to_string(),
+            width: None,
+            height: None,
+            duration_ms: None,
+            sample_rate: None,
+            channels: None,
+            export_state: ManagedAssetExportState::Ready,
+            library_scope: None,
+            provenance: "authored test".to_string(),
+            linked_entity: Some("resource:TEXT:-200".to_string()),
+            conversion: None,
+        });
+        save_project(&project_dir, &project).expect("save authored project");
+
+        let raw_dir = project_dir.join(RAW_SOURCES_DIR);
+        fs::create_dir_all(&raw_dir).expect("create annex trap");
+        let mut treasure = vec![0_u8; crate::realmz::TREASURE_BYTES];
+        treasure[1] = 42;
+        treasure[43] = 99;
+        fs::write(raw_dir.join("Data TD"), treasure).expect("write treasure trap");
+        fs::write(raw_dir.join("Data RI"), vec![0_u8; 320]).expect("write metadata trap");
+
+        let opened = open_project(&project_dir).expect("open authored project");
+        assert!(opened.scenario.restrictions.is_none());
+        assert!(opened.treasures.is_empty());
+
+        let schema = build_project_semantic_schema(&project_dir, &opened)
+            .expect("build authored semantic schema");
+        assert!(schema
+            .entities
+            .iter()
+            .any(|entity| entity.id == "map:land:0"));
+        assert!(schema
+            .entities
+            .iter()
+            .any(|entity| entity.id == "resource:TEXT:-200"
+                && entity.editable
+                && entity.summary.get("managed") == Some(&serde_json::json!(true))));
+        assert!(!schema
+            .entities
+            .iter()
+            .any(|entity| entity.id == "treasure:0"));
+        assert!(!schema.sources.iter().any(|source| source.name == "Data TD"));
+    }
+
+    #[test]
+    fn imported_semantic_mapping_retains_raw_buffer_enrichment() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Imported Semantic Boundary.providence");
+        let mut project = create_project("Imported Semantic Boundary".to_string(), &project_dir)
+            .expect("project");
+        project.source.origin = Some(ProjectOrigin::Imported);
+        project.source.immutable = true;
+        project.source.raw_sources_dir = RAW_SOURCES_DIR.to_string();
+        save_project(&project_dir, &project).expect("save imported project");
+
+        let raw_dir = project_dir.join(RAW_SOURCES_DIR);
+        fs::create_dir_all(&raw_dir).expect("create annex");
+        let mut treasure = vec![0_u8; crate::realmz::TREASURE_BYTES];
+        treasure[1] = 42;
+        treasure[43] = 77;
+        fs::write(raw_dir.join("Data TD"), treasure).expect("write imported treasure");
+
+        let schema = build_project_semantic_schema(&project_dir, &project)
+            .expect("build imported semantic schema");
+        let treasure = schema
+            .entities
+            .iter()
+            .find(|entity| entity.id == "treasure:0")
+            .expect("raw-enriched treasure entity");
+        assert_eq!(treasure.summary.get("gold"), Some(&serde_json::json!(77)));
+        assert!(schema.sources.iter().any(|source| source.name == "Data TD"));
     }
 
     #[test]

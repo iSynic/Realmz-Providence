@@ -33,6 +33,154 @@ pub(super) fn add_resources(schema: &mut SemanticSchema, buffers: &BTreeMap<Stri
     }
 }
 
+pub(super) fn add_managed_resources(schema: &mut SemanticSchema, assets: &[ManagedAsset]) {
+    let assets: Vec<_> = assets
+        .iter()
+        .filter(|asset| {
+            matches!(asset.export_state, ManagedAssetExportState::Ready)
+                && !matches!(
+                    asset.library_scope,
+                    Some(ManagedAssetLibraryScope::CustomLibrary)
+                )
+        })
+        .collect();
+    if assets.is_empty() {
+        return;
+    }
+
+    let source_name = "Providence managed scenario assets";
+    if !schema
+        .sources
+        .iter()
+        .any(|source| source.id == source_id(source_name))
+    {
+        schema.sources.push(SemanticSource {
+            id: source_id(source_name),
+            source_type: "managed resources".to_string(),
+            origin: SemanticSourceOrigin::AuthoredSource,
+            name: source_name.to_string(),
+            path: Some("project.json#assets".to_string()),
+            exists: true,
+            bytes: assets.iter().map(|asset| asset.bytes).sum(),
+            sha256: None,
+            layout: None,
+            confidence: Confidence::Confirmed,
+        });
+    }
+
+    for asset in assets {
+        let type_id = resource_type_id(&asset.resource_type);
+        if !schema.entities.iter().any(|entity| entity.id == type_id) {
+            schema.entities.push(SemanticEntity {
+                id: type_id.clone(),
+                entity_type: "resource type".to_string(),
+                label: format!("{} resources", printable_token(&asset.resource_type)),
+                edit_state: SemanticEditState::Editable,
+                confidence: Confidence::Confirmed,
+                source: source_name.to_string(),
+                record_ref: None,
+                byte_range: None,
+                editable: true,
+                summary: summary([
+                    ("type", json!(asset.resource_type)),
+                    ("managed", json!(true)),
+                ]),
+            });
+        }
+
+        let entity_id = resource_entity_id(&asset.resource_type, asset.resource_id);
+        let record_id = format!("record:managed-asset:{}", asset.id);
+        let managed_summary = summary([
+            ("type", json!(asset.resource_type)),
+            ("resourceType", json!(asset.resource_type)),
+            ("resourceId", json!(asset.resource_id)),
+            ("managedAssetId", json!(asset.id)),
+            ("kind", json!(managed_asset_kind(asset.kind))),
+            ("bytes", json!(asset.bytes)),
+            ("sha256", json!(asset.sha256)),
+            ("mimeType", json!(asset.mime_type)),
+            (
+                "exportState",
+                json!(managed_asset_export_state(asset.export_state)),
+            ),
+            ("managed", json!(true)),
+            ("scenarioSupplied", json!(true)),
+        ]);
+        schema.records.retain(|record| record.id != record_id);
+        schema.records.push(SemanticRecord {
+            id: record_id.clone(),
+            source: source_id(source_name),
+            record_type: "managed resource".to_string(),
+            label: asset.label.clone(),
+            edit_state: SemanticEditState::Editable,
+            byte_range: None,
+            confidence: Confidence::Confirmed,
+            summary: managed_summary.clone(),
+        });
+        if let Some(entity) = schema
+            .entities
+            .iter_mut()
+            .find(|entity| entity.id == entity_id)
+        {
+            entity.label = asset.label.clone();
+            entity.edit_state = SemanticEditState::Editable;
+            entity.confidence = Confidence::Confirmed;
+            entity.source = source_name.to_string();
+            entity.record_ref = Some(record_id.clone());
+            entity.byte_range = None;
+            entity.editable = true;
+            entity.summary.extend(managed_summary.clone());
+        } else {
+            schema.entities.push(SemanticEntity {
+                id: entity_id.clone(),
+                entity_type: "resource".to_string(),
+                label: asset.label.clone(),
+                edit_state: SemanticEditState::Editable,
+                confidence: Confidence::Confirmed,
+                source: source_name.to_string(),
+                record_ref: Some(record_id),
+                byte_range: None,
+                editable: true,
+                summary: managed_summary,
+            });
+        }
+        if !schema
+            .links
+            .iter()
+            .any(|link| link.from == entity_id && link.to == type_id)
+        {
+            push_link(
+                schema,
+                &entity_id,
+                &type_id,
+                "member_of_resource_type",
+                Confidence::Confirmed,
+                vec![source_id(source_name)],
+                BTreeMap::new(),
+            );
+        }
+    }
+}
+
+fn managed_asset_kind(kind: ManagedAssetKind) -> &'static str {
+    match kind {
+        ManagedAssetKind::Picture => "picture",
+        ManagedAssetKind::Icon => "icon",
+        ManagedAssetKind::SpecialLandTile => "special-land-tile",
+        ManagedAssetKind::Sound => "sound",
+        ManagedAssetKind::Text => "text",
+        ManagedAssetKind::Other => "other",
+    }
+}
+
+fn managed_asset_export_state(state: ManagedAssetExportState) -> &'static str {
+    match state {
+        ManagedAssetExportState::Ready => "ready",
+        ManagedAssetExportState::Blocked => "blocked",
+        ManagedAssetExportState::PreviewOnly => "preview-only",
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct ResourceEntry {
     pub(crate) resource_type: String,
