@@ -21,6 +21,7 @@ import {
   SCENARIO_SHELL_BYTES,
   SHOP_RECORD_BYTES,
   SIMPLE_ENCOUNTER_RECORD_BYTES,
+  SPELL_RECORD_BYTES,
   TREASURE_RECORD_BYTES,
   THIEF_ENCOUNTER_RECORD_BYTES,
   TIMED_ENCOUNTER_RECORD_BYTES,
@@ -56,7 +57,7 @@ import {
 import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
 import { encodeStringListResource, mergeResourceEntries, parseResourceFork, parseStringListResource, type ResourceForkUpdate } from "./resourceFork";
 import { createStoredZip } from "./zip";
-import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioTarget } from "../types";
+import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioSpellOverride, ScenarioTarget } from "../types";
 import { appendPreservedShopSourceSuffix } from "./shopRecords";
 import { requiresCompatibilityAnnex } from "../projectOrigin";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
@@ -89,6 +90,9 @@ export type BrowserScenarioPackageResult = {
 };
 
 const SUPPORTED_MANAGED_RESOURCE_TYPES = new Set(["PICT", "cicn", "snd ", "TEXT", "styl"]);
+const CUSTOM_SPELL_RECORDS = 105;
+const CUSTOM_SPELL_LEVELS = 7;
+const CUSTOM_SPELLS_PER_LEVEL = 15;
 
 export function browserScenarioPackageFileName(project: Project, target: ScenarioTarget) {
   const suffix = target === "windows-realmz-folder" ? "windows-realmz-scenario" : "mac-classic-scenario";
@@ -417,7 +421,7 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
   if (project.spellOverrides.length > 0) {
     writes.push({
       path: "Data Spell",
-      bytes: preserveRawOverlay("Data Spell", writeSpellOverrides(project.spellOverrides), rawFiles)
+      bytes: writeSpellOverridesForExport(project.spellOverrides, rawFiles)
     });
     const spellNameResourceWrite = writeCustomSpellNameResources(project, rawFiles);
     if (spellNameResourceWrite) writes.push(spellNameResourceWrite);
@@ -465,40 +469,57 @@ function writeSupportedBinaryRecords(project: Project, rawFiles: BrowserRawSourc
 
 function writeCustomSpellNameResources(project: Project, rawFiles: BrowserRawSourceFile[]): BinaryWriteResult | null {
   const source = dataSpellResourceFork(rawFiles);
-  if (!source) return null;
-  const entries = parseResourceFork(source.bytesData);
+  const candidates = project.spellOverrides.filter((record) => (
+    record.id >= 0
+    && record.id < CUSTOM_SPELL_RECORDS
+    && (source != null || record.authored)
+  ));
+  if (candidates.length === 0) return null;
+  const original = source?.bytesData ?? new Uint8Array();
+  const entries = parseResourceFork(original);
   const updates: ResourceForkUpdate[] = [];
-  for (let levelIndex = 0; levelIndex < 7; levelIndex += 1) {
+  for (let levelIndex = 0; levelIndex < CUSTOM_SPELL_LEVELS; levelIndex += 1) {
     const resourceId = 5000 + levelIndex;
     const entry = entries.find((candidate) => candidate.resourceType === "STR#" && candidate.id === resourceId);
-    if (!entry) continue;
-    const names = parseStringListResource(entry.data);
-    while (names.length < 15) names.push("");
+    const names = entry ? parseStringListResource(entry.data) : [];
+    while (names.length < CUSTOM_SPELLS_PER_LEVEL) names.push("");
     let changed = false;
-    for (let slotIndex = 0; slotIndex < 15; slotIndex += 1) {
-      const customId = levelIndex * 15 + slotIndex;
-      const record = project.spellOverrides.find((candidate) => candidate.id === customId);
+    for (let slotIndex = 0; slotIndex < CUSTOM_SPELLS_PER_LEVEL; slotIndex += 1) {
+      const customId = levelIndex * CUSTOM_SPELLS_PER_LEVEL + slotIndex;
+      const record = candidates.find((candidate) => candidate.id === customId);
       if (!record) continue;
-      const displayName = record.displayName?.trim() ?? "";
-      if (!displayName || displayName === names[slotIndex] || displayName === defaultCustomSpellName(customId)) continue;
-      names[slotIndex] = record.displayName ?? displayName;
+      const displayName = record.displayName?.trim() || defaultCustomSpellName(customId);
+      if (source && !record.authored && displayName === defaultCustomSpellName(customId)) continue;
+      if (displayName === names[slotIndex]) continue;
+      names[slotIndex] = displayName;
       changed = true;
     }
     if (changed) {
       updates.push({
-        resourceType: entry.resourceType,
-        id: entry.id,
-        name: entry.name,
-        attributes: entry.attributes,
+        resourceType: entry?.resourceType ?? "STR#",
+        id: entry?.id ?? resourceId,
+        name: entry?.name ?? customSpellResourceName(levelIndex),
+        attributes: entry?.attributes ?? 32,
         data: encodeStringListResource(names)
       });
     }
   }
   if (updates.length === 0) return null;
   return {
-    path: outputPathForRawSource(source),
-    bytes: mergeResourceEntries(source.bytesData, updates).bytes
+    path: source ? outputPathForRawSource(source) : "Data Spell.rsrc",
+    bytes: mergeResourceEntries(original, updates).bytes
   };
+}
+
+function writeSpellOverridesForExport(records: ScenarioSpellOverride[], rawFiles: BrowserRawSourceFile[]) {
+  const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= CUSTOM_SPELL_RECORDS);
+  if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..104 custom slot range.`);
+  const overlay = writeSpellOverrides(records);
+  const raw = rawSourceBytes("Data Spell", rawFiles);
+  if (raw) return preserveRawOverlay("Data Spell", overlay, rawFiles);
+  const output = new Uint8Array(CUSTOM_SPELL_RECORDS * SPELL_RECORD_BYTES);
+  output.set(overlay);
+  return output;
 }
 
 function writeItemTextResources(project: Project, rawFiles: BrowserRawSourceFile[]): BinaryWriteResult | null {
@@ -586,6 +607,10 @@ function dataSpellResourceFork(rawFiles: BrowserRawSourceFile[]) {
 
 function defaultCustomSpellName(customId: number) {
   return `Custom Spell ${customId}`;
+}
+
+function customSpellResourceName(levelIndex: number) {
+  return `Custom ${["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"][levelIndex]}`;
 }
 
 function managedAssetResourceUpdates(assets: ManagedAsset[], originalResourceFork: Uint8Array, result: ResourceExportResult) {

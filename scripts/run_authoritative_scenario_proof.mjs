@@ -44,6 +44,8 @@ expect(project.messages.length === 1, `Expected one message, found ${project.mes
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
 expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
 assertOwnershipItemText(project.itemTexts, "Canonical project");
+expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);
+assertOwnershipSpell(project.spellOverrides, "Canonical project");
 expect(project.schemaVersion === 5, `Canonical project must use schema v5, found v${project.schemaVersion}`);
 expect(project.source.origin === "authored", `Fresh canonical project must declare authored origin, found ${project.source.origin}`);
 expect(project.source.files.length === 0, "Fresh canonical project must not inventory source files");
@@ -108,6 +110,7 @@ expect(
   "Reimport should recover the authored message"
 );
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
+assertOwnershipSpell(reimported.spellOverrides, "Reimport");
 
 const summary = {
   proofVersion: 1,
@@ -121,6 +124,7 @@ const summary = {
     actionPoints: project.triggers.length,
     messages: project.messages.length,
     itemTexts: project.itemTexts.length,
+    customSpells: project.spellOverrides.length,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
   nativeOutputs: {
@@ -151,7 +155,8 @@ const summary = {
     compatibilityAnnexPresent: true,
     activeActionPointRecovered: true,
     messageRecovered: true,
-    itemTextRecovered: true
+    itemTextRecovered: true,
+    customSpellRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -208,6 +213,7 @@ async function assertNoRawSources(stage) {
   const savedProject = JSON.parse(await fs.readFile(path.join(projectDir, "project.json"), "utf8"));
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
+  assertOwnershipSpell(savedProject.spellOverrides, `Rust-saved project ${stage}`);
 }
 
 function assertCompleteNativeFolder(files, label) {
@@ -219,6 +225,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data RD", 644],
     ["Data DD", 100 * 40],
     ["Data NI", 200 * 100],
+    ["Data Spell", 105 * 30],
     ["Data Solids", 1024]
   ]);
   for (const [name, bytes] of exactSizes) {
@@ -233,6 +240,8 @@ function assertCompleteNativeFolder(files, label) {
   expect(files.get("Scenario.rsrc").byteLength >= 46, `${label} Scenario.rsrc is not structurally plausible`);
   expect(files.has("Data ID.rsrc"), `${label} output is missing canonical item text resources`);
   expect(files.get("Data ID.rsrc").byteLength >= 46, `${label} Data ID.rsrc is not structurally plausible`);
+  expect(files.has("Data Spell.rsrc"), `${label} output is missing canonical custom-spell names`);
+  expect(files.get("Data Spell.rsrc").byteLength >= 46, `${label} Data Spell.rsrc is not structurally plausible`);
   expect(files.has("Data SD2"), `${label} output is missing authored messages`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
@@ -246,6 +255,14 @@ function assertOwnershipItemText(records, label) {
   expect(itemText.unidentifiedName === "Unknown Providence Token", `${label} has the wrong unidentified item name`);
   expect(itemText.identifiedName === "Providence Token", `${label} has the wrong identified item name`);
   expect(itemText.description === "This item text was compiled from canonical Providence data.", `${label} has the wrong item description`);
+}
+
+function assertOwnershipSpell(records, label) {
+  const spell = records?.find((record) => record.id === 16);
+  expect(spell, `${label} is missing custom spell 16`);
+  expect(spell.displayName === "Providence Ward", `${label} has the wrong custom spell name`);
+  expect(spell.cost === 4, `${label} has the wrong custom spell cost`);
+  expect(spell.inCombat === true && spell.inCamp === false, `${label} has the wrong custom spell availability`);
 }
 
 async function readFlatDirectory(root) {

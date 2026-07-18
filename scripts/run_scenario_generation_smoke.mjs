@@ -99,6 +99,18 @@ try {
       }
     },
     {
+      name: "custom-spells",
+      fixture: "spells.seed.json",
+      expectedWrites: ["Data Spell", "Data Spell.rsrc"],
+      inspect: (result) => {
+        expect(result.project.spellOverrides.length === 2, "custom-spells: expected two canonical spell overrides");
+      },
+      inspectPackage: (_packageResult, files) => {
+        expect(files.get("Data Spell")?.byteLength === 105 * 30, "custom-spells: expected fixed 105-row Data Spell output");
+        expect((files.get("Data Spell.rsrc")?.byteLength ?? 0) >= 46, "custom-spells: expected a structurally plausible fresh name resource fork");
+      }
+    },
+    {
       name: "monster-library",
       fixture: "monsters.seed.json",
       options: { libraryCatalog: mockMonsterLibraryCatalog() },
@@ -204,7 +216,7 @@ async function runLane({
       expect(packageResult.report.writtenFiles.includes(name), `${lane.name}/${target}: export report should include authored ${name}`);
       expect((files.get(name)?.byteLength ?? 0) > 0, `${lane.name}/${target}: authored ${name} should not be empty`);
     }
-    lane.inspectPackage?.(packageResult);
+    lane.inspectPackage?.(packageResult, files, target);
     exportCount += 1;
   }
 

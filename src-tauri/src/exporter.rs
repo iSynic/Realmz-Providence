@@ -2,7 +2,7 @@ use crate::error::{IoPath, ProvidenceError, Result};
 use crate::importer::RAW_SOURCES_DIR;
 use crate::project::{
     ItemTextRecord, LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
-    ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    ScenarioSpellOverride, ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -599,23 +599,28 @@ fn preserve_imported_fixed_length(
 fn write_spell_overrides_preserving_tail(
     output_dir: &Path,
     raw_dir: Option<&Path>,
-    records: &[crate::project::ScenarioSpellOverride],
+    records: &[ScenarioSpellOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
+    if let Some(record) = records
+        .iter()
+        .find(|record| record.id >= crate::realmz::SPELL_OVERRIDE_RECORDS)
+    {
+        return Err(ProvidenceError::message(format!(
+            "Custom spell {} is outside Data Spell's 0..104 custom slot range.",
+            record.id
+        )));
+    }
     let overlay = write_spell_overrides(records)?;
     if overlay.is_empty() {
         return Ok(());
     }
-    let mut bytes = match raw_dir {
-        Some(raw_dir) => {
-            let raw_path = raw_dir.join("Data Spell");
-            if raw_path.is_file() {
-                fs::read(&raw_path).with_path(&raw_path)?
-            } else {
-                Vec::new()
-            }
-        }
-        None => Vec::new(),
+    let fresh_capacity = crate::realmz::SPELL_OVERRIDE_RECORDS * crate::realmz::SPELL_BYTES;
+    let raw_path = raw_dir.map(|raw_dir| raw_dir.join("Data Spell"));
+    let mut bytes = if let Some(raw_path) = raw_path.filter(|path| path.is_file()) {
+        fs::read(&raw_path).with_path(&raw_path)?
+    } else {
+        vec![0; fresh_capacity]
     };
     if bytes.len() < overlay.len() {
         bytes.resize(overlay.len(), 0);
@@ -627,52 +632,26 @@ fn write_spell_overrides_preserving_tail(
 fn write_custom_spell_name_resources(
     output_dir: &Path,
     raw_dir: Option<&Path>,
-    records: &[crate::project::ScenarioSpellOverride],
+    records: &[ScenarioSpellOverride],
     written_files: &mut Vec<String>,
 ) -> Result<()> {
-    if records.is_empty() {
+    let preserved = match raw_dir {
+        Some(raw_dir) => data_spell_resource_fork(raw_dir)?,
+        None => None,
+    };
+    let source_backed = preserved.is_some();
+    let candidates = records
+        .iter()
+        .filter(|record| {
+            record.id < crate::realmz::SPELL_OVERRIDE_RECORDS && (source_backed || record.authored)
+        })
+        .collect::<Vec<_>>();
+    if candidates.is_empty() {
         return Ok(());
     }
-    let Some(raw_dir) = raw_dir else {
-        return Ok(());
-    };
-    let Some((resource_file_name, original)) = data_spell_resource_fork(raw_dir)? else {
-        return Ok(());
-    };
-    let entries = parse_resource_fork_entries(&original);
-    let mut updates = Vec::new();
-    for level_index in 0..7usize {
-        let resource_id = 5000 + level_index as i16;
-        let Some(mut entry) = entries
-            .iter()
-            .find(|entry| entry.resource_type == "STR#" && entry.id == resource_id)
-            .cloned()
-        else {
-            continue;
-        };
-        let mut names = decode_string_list_resource(&entry.data);
-        names.resize(15, String::new());
-        let mut changed = false;
-        for slot_index in 0..15usize {
-            let custom_id = level_index * 15 + slot_index;
-            let Some(record) = records.iter().find(|record| record.id == custom_id) else {
-                continue;
-            };
-            let display_name = record.display_name.trim();
-            if display_name.is_empty()
-                || display_name == names[slot_index]
-                || display_name == default_custom_spell_name(custom_id)
-            {
-                continue;
-            }
-            names[slot_index] = record.display_name.clone();
-            changed = true;
-        }
-        if changed {
-            entry.data = encode_string_list_resource(&names);
-            updates.push(entry);
-        }
-    }
+    let (resource_file_name, original) =
+        preserved.unwrap_or_else(|| ("Data Spell.rsrc".to_string(), Vec::new()));
+    let updates = custom_spell_name_resource_updates(&candidates, &original);
     if updates.is_empty() {
         return Ok(());
     }
@@ -683,6 +662,61 @@ fn write_custom_spell_name_resources(
         written_files.push(resource_file_name);
     }
     Ok(())
+}
+
+fn custom_spell_name_resource_updates(
+    records: &[&ScenarioSpellOverride],
+    original: &[u8],
+) -> Vec<ResourceForkEntry> {
+    let entries = parse_resource_fork_entries(&original);
+    let mut updates = Vec::new();
+    for level_index in 0..7usize {
+        let resource_id = 5000 + level_index as i16;
+        let existing = entries
+            .iter()
+            .find(|entry| entry.resource_type == "STR#" && entry.id == resource_id);
+        let mut names = existing
+            .map(|entry| decode_string_list_resource(&entry.data))
+            .unwrap_or_default();
+        names.resize(15, String::new());
+        let mut changed = false;
+        for slot_index in 0..15usize {
+            let custom_id = level_index * 15 + slot_index;
+            let Some(record) = records.iter().find(|record| record.id == custom_id) else {
+                continue;
+            };
+            let display_name = if record.display_name.trim().is_empty() {
+                default_custom_spell_name(custom_id)
+            } else {
+                record.display_name.trim().to_string()
+            };
+            if existing.is_some()
+                && !record.authored
+                && display_name == default_custom_spell_name(custom_id)
+            {
+                continue;
+            }
+            if display_name == names[slot_index] {
+                continue;
+            }
+            names[slot_index] = display_name;
+            changed = true;
+        }
+        if changed {
+            updates.push(ResourceForkEntry {
+                resource_type: existing
+                    .map(|entry| entry.resource_type.clone())
+                    .unwrap_or_else(|| "STR#".to_string()),
+                id: existing.map(|entry| entry.id).unwrap_or(resource_id),
+                name: existing
+                    .map(|entry| entry.name.clone())
+                    .unwrap_or_else(|| custom_spell_resource_name(level_index).to_string()),
+                attributes: existing.map(|entry| entry.attributes).unwrap_or(32),
+                data: encode_string_list_resource(&names),
+            });
+        }
+    }
+    updates
 }
 
 fn data_spell_resource_fork(raw_dir: &Path) -> Result<Option<(String, Vec<u8>)>> {
@@ -834,6 +868,18 @@ fn is_generated_runtime_cache_file(name: &str) -> bool {
 
 fn default_custom_spell_name(custom_id: usize) -> String {
     format!("Custom Spell {custom_id}")
+}
+
+fn custom_spell_resource_name(level_index: usize) -> &'static str {
+    [
+        "Custom 1st",
+        "Custom 2nd",
+        "Custom 3rd",
+        "Custom 4th",
+        "Custom 5th",
+        "Custom 6th",
+        "Custom 7th",
+    ][level_index]
 }
 
 #[derive(Debug, Default)]
@@ -1360,10 +1406,11 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        append_preserved_shop_source_suffix, item_text_resource_updates,
-        managed_asset_resource_bytes, managed_resource_type_supported,
+        append_preserved_shop_source_suffix, custom_spell_name_resource_updates,
+        item_text_resource_updates, managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
-        preserve_imported_fixed_length, scenario_icon_resource_updates, ResourceExportResult,
+        preserve_imported_fixed_length, scenario_icon_resource_updates,
+        write_spell_overrides_preserving_tail, ResourceExportResult,
     };
     use crate::project::{
         Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
@@ -1475,6 +1522,72 @@ mod tests {
             "Item Descriptions"
         );
 
+        let (merged, _) = crate::resource_fork::merge_resource_entries(&original, updates).unwrap();
+        assert!(crate::resource_fork::parse_resource_fork_entries(&merged)
+            .iter()
+            .any(|entry| entry.resource_type == "TEXT"
+                && entry.id == 42
+                && entry.data == b"preserve me"));
+    }
+
+    #[test]
+    fn fresh_spell_export_uses_fixed_capacity_and_creates_name_resource_metadata() {
+        let temp = tempfile::tempdir().unwrap();
+        let record = authored_spell(16, "Providence Ward");
+        let mut written = Vec::new();
+
+        write_spell_overrides_preserving_tail(
+            temp.path(),
+            None,
+            std::slice::from_ref(&record),
+            &mut written,
+        )
+        .unwrap();
+
+        assert_eq!(
+            fs::metadata(temp.path().join("Data Spell")).unwrap().len() as usize,
+            crate::realmz::SPELL_OVERRIDE_RECORDS * crate::realmz::SPELL_BYTES
+        );
+        assert_eq!(written, vec!["Data Spell".to_string()]);
+
+        let updates = custom_spell_name_resource_updates(&[&record], &[]);
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].resource_type, "STR#");
+        assert_eq!(updates[0].id, 5001);
+        assert_eq!(updates[0].name, "Custom 2nd");
+        assert_eq!(updates[0].attributes, 32);
+        assert_eq!(
+            decode_string_list_resource(&updates[0].data)[1],
+            "Providence Ward"
+        );
+    }
+
+    #[test]
+    fn spell_name_updates_preserve_imported_entry_metadata_and_unrelated_resources() {
+        let record = authored_spell(16, "Providence Ward");
+        let original = write_resource_fork(&[
+            ResourceForkEntry {
+                resource_type: "STR#".to_string(),
+                id: 5001,
+                name: "Existing second level".to_string(),
+                attributes: 7,
+                data: encode_string_list_resource(&vec![String::new(); 15]),
+            },
+            ResourceForkEntry {
+                resource_type: "TEXT".to_string(),
+                id: 42,
+                name: "Unrelated".to_string(),
+                attributes: 0,
+                data: b"preserve me".to_vec(),
+            },
+        ])
+        .unwrap();
+
+        let updates = custom_spell_name_resource_updates(&[&record], &original);
+
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].name, "Existing second level");
+        assert_eq!(updates[0].attributes, 7);
         let (merged, _) = crate::resource_fork::merge_resource_entries(&original, updates).unwrap();
         assert!(crate::resource_fork::parse_resource_fork_entries(&merged)
             .iter()
@@ -1746,6 +1859,17 @@ mod tests {
                 confidence: Confidence::Confirmed,
             },
         }
+    }
+
+    fn authored_spell(id: usize, display_name: &str) -> crate::project::ScenarioSpellOverride {
+        let mut records =
+            crate::realmz::parse_spell_overrides(&vec![0; (id + 1) * crate::realmz::SPELL_BYTES]);
+        let mut record = records.pop().expect("spell record");
+        record.authored = true;
+        record.display_name = display_name.to_string();
+        record.cost = 4;
+        record.in_combat = true;
+        record
     }
 
     fn map_names_resource(id: i16, names: &[&str]) -> ResourceForkEntry {

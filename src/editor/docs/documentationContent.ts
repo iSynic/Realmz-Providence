@@ -2309,7 +2309,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Shared races come from Data Race; third-party scenarios can provide scenario-local Data Race overrides.",
           "Shared castes come from Data Caste; third-party scenarios can provide scenario-local Data Caste overrides.",
           "Race and caste override files are fixed 30-record tables, so Providence preserves unknown spacer bytes while editing known fields.",
-          "Custom spell names are tied to STR# 5000 through 5006 resources when scenario Data Spell packaging is present."
+          "Providence compiles canonical custom spell names into scenario STR# 5000 through 5006 resources."
         ],
         callout: {
           tone: "info",
@@ -2374,7 +2374,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Math fields include range, hit bonus, save/DRV adjustment, resistance class, SP cost, spell class, and damage type.",
           "Damage And Duration separates fixed values from power-scaled values.",
           "Presentation connects cast/resolution animations, Fastplot queue art, sound resources, and the special effect handler.",
-          "Custom spell names use STR# 5000 through 5006 when Data Spell resource packaging is present; descriptions remain less certain and should be treated as editor notes."
+          "Providence emits custom spell names through STR# 5000 through 5006; descriptions are editor notes because no distinct scenario-local description resource is known."
         ]
       },
       {
@@ -2431,7 +2431,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "The current Rules UI follows Realmz source anchors and Divinity manual/editor evidence, but a few labels are still source-backed approximations rather than final Divinity wording."
         ],
         points: [
-          "Data Spell owns 105 custom spell records; its extra tail/resource packaging is preserved while name packaging evidence continues to be mapped.",
+          "Fresh Data Spell output owns all 105 custom spell records and canonical name resources; imported extra tails and unrelated resources remain preserved compatibility data.",
           "Data Race override files are 30 x 408-byte tables; unknown spacer bytes remain intact when known fields are edited.",
           "Data Caste override files are 30 x 576-byte tables; progression, victory, spellcasting, starting items, item use, and combat fields are source-backed.",
           "Race and caste names are safest as editor-authored display labels unless a scenario/resource storage path is proven for that package.",

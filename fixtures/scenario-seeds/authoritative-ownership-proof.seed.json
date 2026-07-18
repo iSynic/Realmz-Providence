@@ -37,6 +37,19 @@
       "cost": 1
     }
   ],
+  "spells": [
+    {
+      "key": "providence-ward",
+      "id": 16,
+      "displayName": "Providence Ward",
+      "cost": 4,
+      "duration1": 3,
+      "targetType": 1,
+      "spellClass": 4,
+      "inCombat": true,
+      "inCamp": false
+    }
+  ],
   "actionPoints": [
     {
       "key": "ownership-action-point",
