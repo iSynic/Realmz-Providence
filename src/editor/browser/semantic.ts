@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { writeComplexEncounters, writeMessages, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeOptionLabels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
 
 export type BrowserSemanticBuildProgress = {
@@ -42,6 +42,8 @@ export function buildBrowserSemanticSchema(projectParts: {
   monsters: MonsterRecord[];
   monsterSets: MonsterSet[];
   messages: Project["messages"];
+  optionLabels: Project["optionLabels"];
+  monsterDescriptions: Project["monsterDescriptions"];
   shops: Project["shops"];
   simpleEncounters: Project["simpleEncounters"];
   complexEncounters: Project["complexEncounters"];
@@ -290,6 +292,8 @@ function addScenarioEntity(schema: SemanticSchema, scenario: Project["scenario"]
 
 function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8Array>) {
   addMessageRecords(schema, buffers.get("Data SD2"));
+  addOptionLabelRecords(schema, buffers.get("Data OD"));
+  addMonsterDescriptionRecords(schema, buffers.get("Data DES"));
   addShopRecords(schema, buffers.get("Data SD"));
   addSimpleEncounterRecords(schema, buffers.get("Data ED"));
   addComplexEncounterRecords(schema, buffers.get("Data ED2"));
@@ -307,12 +311,14 @@ function addCanonicalSupportingRecords(
   schema: SemanticSchema,
   projectParts: Pick<
     Parameters<typeof buildBrowserSemanticSchema>[0],
-    "messages" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
+    "messages" | "optionLabels" | "monsterDescriptions" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
   >
 ) {
   const buffers = new Map<string, Uint8Array>();
   const sources: Array<{ name: string; path: string; ids: Set<number> }> = [];
   addCanonicalSupportingBuffer(schema, buffers, sources, "Data SD2", "project.json#messages", projectParts.messages, writeMessages);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data OD", "project.json#optionLabels", projectParts.optionLabels, writeOptionLabels);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data DES", "project.json#monsterDescriptions", projectParts.monsterDescriptions, writeMonsterDescriptions);
   addCanonicalSupportingBuffer(schema, buffers, sources, "Data SD", "project.json#shops", projectParts.shops, writeShops);
   addCanonicalSupportingBuffer(schema, buffers, sources, "Data ED", "project.json#simpleEncounters", projectParts.simpleEncounters, writeSimpleEncounters);
   addCanonicalSupportingBuffer(schema, buffers, sources, "Data ED2", "project.json#complexEncounters", projectParts.complexEncounters, writeComplexEncounters);
@@ -398,20 +404,44 @@ function retainCanonicalSupportingRecords(
 }
 
 function addMessageRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  addPascalTextRecords(schema, buffer, "Data SD2", 256, "message", "message", "Message");
+}
+
+function addOptionLabelRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  addPascalTextRecords(schema, buffer, "Data OD", OPTION_LABEL_BYTES, "option-label", "option-label", "Option Label");
+}
+
+function addMonsterDescriptionRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  addPascalTextRecords(schema, buffer, "Data DES", MONSTER_DESCRIPTION_BYTES, "monster-description", "monster-description", "Monster Description");
+}
+
+function addPascalTextRecords(
+  schema: SemanticSchema,
+  buffer: Uint8Array | undefined,
+  source: string,
+  recordBytes: number,
+  entityType: string,
+  entityPrefix: string,
+  fallbackLabel: string
+) {
   if (!buffer) return;
-  const recordBytes = 256;
   const count = Math.floor(buffer.byteLength / recordBytes);
   for (let index = 0; index < count; index += 1) {
     const start = index * recordBytes;
     const text = pascalTextAt(buffer, start, recordBytes);
-    const summary = {
+    const summary: Record<string, unknown> = {
       id: index,
       length: buffer[start] ?? 0,
       text,
       preview: text.slice(0, 96)
     };
-    upsertRecord(schema, browserRecord("Data SD2", index, recordBytes, "message", text || `Message ${index}`, summary));
-    schema.entities.push(browserEntity(`message:${index}`, "message", text || `Message ${index}`, "Data SD2", `record:Data SD2:${index}`, start, recordBytes, summary));
+    if (source === "Data OD") {
+      summary.preview = text.slice(0, 24);
+      summary.shortcut = text.trimStart()[0]?.toLowerCase() ?? null;
+    }
+    const label = text || `${fallbackLabel} ${index}`;
+    upsertRecord(schema, browserRecord(source, index, recordBytes, entityType, label, summary));
+    schema.entities.push(browserEntity(`${entityPrefix}:${index}`, entityType, label, source, `record:${source}:${index}`, start, recordBytes, summary));
   }
 }
 

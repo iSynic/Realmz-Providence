@@ -127,7 +127,14 @@ explicit canonical IDs become confirmed/editable, and sparse native padding rema
 Imported records retain source-backed, inspect-only semantics and complex encounters retain their
 thief-encounter links.
 
-Branch validation through the fourteenth slice completed on 2026-07-18:
+The fifteenth slice extends canonical semantic ownership to the remaining fixed-text records:
+option labels (`Data OD`) and monster descriptions (`Data DES`). Both runtimes now encode authored
+project records with the deterministic native writers, decode their semantic summaries from those
+bytes, ignore embedded compatibility payloads, and prune sparse native slots. Imported text
+records remain source-backed and inspect-only. This leaves combat records and rule overrides as
+separate semantic-coverage slices with their own cross-record and fixed-capacity concerns.
+
+Branch validation through the fifteenth slice completed on 2026-07-18:
 
 - full Rust suite: 202 passed, 2 ignored;
 - full TypeScript suite: 524 passed, plus typecheck;
@@ -503,7 +510,8 @@ must not be called fresh-authoritative merely because imported round trips are f
 7. **Implemented at the semantic-source boundary:** authored indices consume canonical project
    fields and managed scenario resources with no raw buffers; imported indices retain raw-buffer
    enrichment. Scenario items, treasures, thief/timed encounters, messages, shops, and
-   simple/complex encounters now receive direct canonical summaries in both runtimes.
+   simple/complex encounters, option labels, and monster descriptions now receive direct canonical
+   summaries in both runtimes.
 8. **Implemented on the investigation branch:** persist/import/export `itemTexts` in Rust and gate
    its TypeScript/Rust/native-folder conformance in the ownership proof.
 9. Gate browser and desktop output with the same golden manifest/byte fixtures. Prefer one Rust
@@ -525,10 +533,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. They must become annex slices rather than
    normal canonical fields.
-5. **Canonical semantic coverage:** the editor-owned supporting tier now maps directly from
-   canonical data in both runtimes. Remaining fixed-family semantic gaps include option labels,
-   monster descriptions, broader combat records, and rule overrides; these are coverage work, not
-   raw-source dependencies in the compiler.
+5. **Canonical semantic coverage:** the editor-owned supporting and fixed-text tiers now map
+   directly from canonical data in both runtimes. Remaining fixed-family semantic gaps include
+   broader combat records and rule overrides; these are coverage work, not raw-source dependencies
+   in the compiler.
 6. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
    writing, not construction from zero, and overstate at least the Race/Caste suffixes.
 7. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern

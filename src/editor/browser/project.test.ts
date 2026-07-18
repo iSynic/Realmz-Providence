@@ -125,6 +125,12 @@ describe("browser project native manifest validation", () => {
     const importedMessage = new Uint8Array(256);
     importedMessage[0] = 8;
     importedMessage.set(new TextEncoder().encode("Imported"), 1);
+    const importedOptionLabel = new Uint8Array(25);
+    importedOptionLabel[0] = 15;
+    importedOptionLabel.set(new TextEncoder().encode("Imported option"), 1);
+    const importedMonsterDescription = new Uint8Array(256);
+    importedMonsterDescription[0] = 16;
+    importedMonsterDescription.set(new TextEncoder().encode("Imported monster"), 1);
     const importedShop = new Uint8Array(3002);
     importedShop.set([0x03, 0x85], 0);
     importedShop[2000] = 3;
@@ -139,6 +145,8 @@ describe("browser project native manifest validation", () => {
     const importedBuffers = new Map([
       ["Data TD", importedTreasure],
       ["Data SD2", importedMessage],
+      ["Data OD", importedOptionLabel],
+      ["Data DES", importedMonsterDescription],
       ["Data SD", importedShop],
       ["Data ED", importedSimpleEncounter],
       ["Data ED2", importedComplexEncounter]
@@ -169,7 +177,14 @@ describe("browser project native manifest validation", () => {
       editable: false,
       summary: { gold: 77 }
     });
-    for (const entityId of ["message:0", "shop:0", "encounter:simple:0", "encounter:complex:0"]) {
+    for (const entityId of [
+      "message:0",
+      "option-label:0",
+      "monster-description:0",
+      "shop:0",
+      "encounter:simple:0",
+      "encounter:complex:0"
+    ]) {
       expect(semanticSchema.entities.find((entity) => entity.id === entityId)).toMatchObject({
         editState: "inspect-only",
         confidence: "source-backed",
@@ -188,6 +203,8 @@ describe("browser project native manifest validation", () => {
       ["Data TD2", new Uint8Array(118)],
       ["Data TD3", new Uint8Array(40)],
       ["Data SD2", new Uint8Array(256)],
+      ["Data OD", new Uint8Array(25)],
+      ["Data DES", new Uint8Array(256)],
       ["Data SD", new Uint8Array(3002)],
       ["Data ED", new Uint8Array(426)],
       ["Data ED2", new Uint8Array(520)]
@@ -235,6 +252,20 @@ describe("browser project native manifest validation", () => {
       authored: false,
       rawBytes: new Array(256).fill(0xa5)
     }];
+    project.optionLabels = [{
+      ...parsed.optionLabels[0],
+      id: 6,
+      text: "Canonical option",
+      authored: false,
+      rawBytes: new Array(25).fill(0xa5)
+    }];
+    project.monsterDescriptions = [{
+      ...parsed.monsterDescriptions[0],
+      id: 7,
+      text: "Canonical monster description",
+      authored: false,
+      rawBytes: new Array(256).fill(0xa5)
+    }];
     project.shops = [{
       ...parsed.shops[0],
       id: 2,
@@ -272,6 +303,8 @@ describe("browser project native manifest validation", () => {
       "thief:2",
       "time:3",
       "message:5",
+      "option-label:6",
+      "monster-description:7",
       "shop:2",
       "encounter:simple:2",
       "encounter:complex:4"
@@ -295,6 +328,8 @@ describe("browser project native manifest validation", () => {
       "thief:0",
       "time:0",
       "message:0",
+      "option-label:0",
+      "monster-description:0",
       "shop:0",
       "encounter:simple:0",
       "encounter:complex:0"
@@ -303,6 +338,9 @@ describe("browser project native manifest validation", () => {
     }
     expect(semanticSchema.entities.find((entity) => entity.id === "treasure:3")?.summary.gold).toBe(77);
     expect(semanticSchema.entities.find((entity) => entity.id === "message:5")?.summary.text).toBe("Canonical message");
+    expect(semanticSchema.entities.find((entity) => entity.id === "option-label:6")?.summary.text).toBe("Canonical option");
+    expect(semanticSchema.entities.find((entity) => entity.id === "option-label:6")?.summary.shortcut).toBe("c");
+    expect(semanticSchema.entities.find((entity) => entity.id === "monster-description:7")?.summary.text).toBe("Canonical monster description");
     expect(semanticSchema.entities.find((entity) => entity.id === "shop:2")?.summary.inflation).toBe(120);
     expect(semanticSchema.entities.find((entity) => entity.id === "encounter:simple:2")?.summary.prompt).toBe(12);
     expect(semanticSchema.links).toContainEqual(expect.objectContaining({
@@ -316,6 +354,8 @@ describe("browser project native manifest validation", () => {
       ["Data TD2", "project.json#thiefEncounters"],
       ["Data TD3", "project.json#timedEncounters"],
       ["Data SD2", "project.json#messages"],
+      ["Data OD", "project.json#optionLabels"],
+      ["Data DES", "project.json#monsterDescriptions"],
       ["Data SD", "project.json#shops"],
       ["Data ED", "project.json#simpleEncounters"],
       ["Data ED2", "project.json#complexEncounters"]

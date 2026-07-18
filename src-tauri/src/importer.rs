@@ -2493,6 +2493,15 @@ mod tests {
         message[0] = 8;
         message[1..9].copy_from_slice(b"Imported");
         fs::write(raw_dir.join("Data SD2"), message).expect("write imported message");
+        let mut option_label = vec![0_u8; crate::realmz::OPTION_LABEL_BYTES];
+        option_label[0] = 15;
+        option_label[1..16].copy_from_slice(b"Imported option");
+        fs::write(raw_dir.join("Data OD"), option_label).expect("write imported option label");
+        let mut monster_description = vec![0_u8; crate::realmz::MONSTER_DESCRIPTION_BYTES];
+        monster_description[0] = 16;
+        monster_description[1..17].copy_from_slice(b"Imported monster");
+        fs::write(raw_dir.join("Data DES"), monster_description)
+            .expect("write imported monster description");
         let mut shop = vec![0_u8; crate::realmz::SHOP_BYTES];
         crate::realmz::write_i16_be(&mut shop, 0, 901);
         shop[2000] = 3;
@@ -2523,6 +2532,8 @@ mod tests {
         assert!(schema.sources.iter().any(|source| source.name == "Data TD"));
         for entity_id in [
             "message:0",
+            "option-label:0",
+            "monster-description:0",
             "shop:0",
             "encounter:simple:0",
             "encounter:complex:0",
@@ -2567,6 +2578,30 @@ mod tests {
         message.authored = false;
         message.raw_bytes.fill(0xA5);
         project.messages = vec![message];
+
+        let mut option_label =
+            crate::realmz::parse_option_labels(&vec![0; crate::realmz::OPTION_LABEL_BYTES])
+                .into_iter()
+                .next()
+                .expect("option-label template");
+        option_label.id = 6;
+        option_label.text = "Canonical option".to_string();
+        option_label.authored = false;
+        option_label.raw_bytes.fill(0xA5);
+        project.option_labels = vec![option_label];
+
+        let mut monster_description = crate::realmz::parse_monster_descriptions(&vec![
+            0;
+            crate::realmz::MONSTER_DESCRIPTION_BYTES
+        ])
+        .into_iter()
+        .next()
+        .expect("monster-description template");
+        monster_description.id = 7;
+        monster_description.text = "Canonical monster description".to_string();
+        monster_description.authored = false;
+        monster_description.raw_bytes.fill(0xA5);
+        project.monster_descriptions = vec![monster_description];
 
         let mut shop = crate::realmz::parse_shops(&vec![0; crate::realmz::SHOP_BYTES])
             .into_iter()
@@ -2653,6 +2688,8 @@ mod tests {
             .expect("build authored semantic schema");
         for entity_id in [
             "message:5",
+            "option-label:6",
+            "monster-description:7",
             "shop:2",
             "encounter:simple:2",
             "encounter:complex:4",
@@ -2687,6 +2724,8 @@ mod tests {
         }
         for entity_id in [
             "message:0",
+            "option-label:0",
+            "monster-description:0",
             "shop:0",
             "encounter:simple:0",
             "encounter:complex:0",
@@ -2720,6 +2759,22 @@ mod tests {
             schema
                 .entities
                 .iter()
+                .find(|entity| entity.id == "option-label:6")
+                .and_then(|entity| entity.summary.get("text")),
+            Some(&serde_json::json!("Canonical option"))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "monster-description:7")
+                .and_then(|entity| entity.summary.get("text")),
+            Some(&serde_json::json!("Canonical monster description"))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
                 .find(|entity| entity.id == "shop:2")
                 .and_then(|entity| entity.summary.get("inflation")),
             Some(&serde_json::json!(120))
@@ -2739,6 +2794,8 @@ mod tests {
         }));
         for (source, path) in [
             ("Data SD2", "project.json#messages"),
+            ("Data OD", "project.json#optionLabels"),
+            ("Data DES", "project.json#monsterDescriptions"),
             ("Data SD", "project.json#shops"),
             ("Data ED", "project.json#simpleEncounters"),
             ("Data ED2", "project.json#complexEncounters"),

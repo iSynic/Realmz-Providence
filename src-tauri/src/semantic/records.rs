@@ -2,9 +2,10 @@ use super::common::*;
 use super::map_names::{map_record_name, ResourceMapName};
 use crate::project::*;
 use crate::realmz::{
-    shop_prefix_record_count, write_complex_encounters, write_messages, write_scenario_items,
-    write_shops, write_simple_encounters, write_thief_encounters, write_timed_encounters,
-    write_treasures, ParsedScenario, COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES,
+    shop_prefix_record_count, write_complex_encounters, write_messages, write_monster_descriptions,
+    write_option_labels, write_scenario_items, write_shops, write_simple_encounters,
+    write_thief_encounters, write_timed_encounters, write_treasures, ParsedScenario,
+    COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES,
 };
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -27,6 +28,8 @@ pub(super) fn add_canonical_supporting_collections(
         };
     }
     let messages = canonical_records!(parsed.messages);
+    let option_labels = canonical_records!(parsed.option_labels);
+    let monster_descriptions = canonical_records!(parsed.monster_descriptions);
     let shops = canonical_records!(parsed.shops);
     let simple_encounters = canonical_records!(parsed.simple_encounters);
     let complex_encounters = canonical_records!(parsed.complex_encounters);
@@ -42,6 +45,22 @@ pub(super) fn add_canonical_supporting_collections(
         "project.json#messages",
         !messages.is_empty(),
         write_messages(&messages),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data OD",
+        "project.json#optionLabels",
+        !option_labels.is_empty(),
+        write_option_labels(&option_labels),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data DES",
+        "project.json#monsterDescriptions",
+        !monster_descriptions.is_empty(),
+        write_monster_descriptions(&monster_descriptions),
     );
     insert_canonical_buffer(
         schema,
@@ -111,6 +130,22 @@ pub(super) fn add_canonical_supporting_collections(
             (
                 "Data SD2",
                 parsed.messages.iter().map(|record| record.id).collect(),
+            ),
+            (
+                "Data OD",
+                parsed
+                    .option_labels
+                    .iter()
+                    .map(|record| record.id)
+                    .collect(),
+            ),
+            (
+                "Data DES",
+                parsed
+                    .monster_descriptions
+                    .iter()
+                    .map(|record| record.id)
+                    .collect(),
             ),
             (
                 "Data SD",

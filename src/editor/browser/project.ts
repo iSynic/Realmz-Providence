@@ -270,6 +270,8 @@ export async function buildBrowserSemanticSchemaForProject(
     monsters: project.monsters,
     monsterSets: project.monsterSets,
     messages: project.messages,
+    optionLabels: project.optionLabels,
+    monsterDescriptions: project.monsterDescriptions,
     shops: project.shops,
     simpleEncounters: project.simpleEncounters,
     complexEncounters: project.complexEncounters,
