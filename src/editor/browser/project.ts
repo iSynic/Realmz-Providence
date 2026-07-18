@@ -9,7 +9,8 @@ import { assetFallbacks, blockedSemanticObjects, generatedRuntimeCaches, resourc
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { tileIconCandidates } from "../map/renderValues";
 import { defaultRuleNames } from "../ruleNames";
-import { normalizeProjectContract, PROJECT_SCHEMA_VERSION } from "../projectOrigin";
+import { normalizeProjectContract, PROJECT_SCHEMA_VERSION, requiresCompatibilityAnnex } from "../projectOrigin";
+import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const MAP_SIZE = 90;
@@ -788,6 +789,16 @@ function isLegacyLocalReferencePath(value: string) {
 export function validateBrowserProject(project: Project): ValidationReport {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const importedProject = requiresCompatibilityAnnex(project);
+  let authoredManifestFiles: string[] | null = null;
+  if (!importedProject) {
+    try {
+      authoredManifestFiles = expectedAuthoredScenarioManifestFiles(project, "windows-realmz-folder");
+    } catch (error) {
+      errors.push(`Native scenario compiler: ${error instanceof Error ? error.message : String(error)}`);
+      authoredManifestFiles = [];
+    }
+  }
   if (project.maps.length === 0) errors.push("Project has no maps. At least one land or dungeon map is required.");
   for (const map of project.maps) {
     if (map.width !== 90 || map.height !== 90 || map.tiles.length !== 8100) {
@@ -894,18 +905,20 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (record.summary.edited === true) errors.push(`${record.id} is marked edited but its semantic edit state is blocked.`);
   }
   const sourceNames = new Set(project.source.files.map((file) => file.name));
-  validateTileAttributes(project, sourceNames, warnings);
+  validateTileAttributes(project, new Set(authoredManifestFiles ?? sourceNames), warnings);
   validateMapRecords(project, errors, warnings);
-  const exportableFiles = [
-    ...SUPPORTED_WRITE_FILES,
-    project.scenario.shell?.sourceFile?.trim() ?? "",
-    project.scenario.supportFile?.sourceFile?.trim() ?? ""
-  ].filter((name, index, names) =>
-    name && names.indexOf(name) === index && (sourceNames.has(name) || (name === "Layout" && project.landLayout))
-  );
-  const passThroughFiles = project.source.files
-    .filter((file) => !isBrowserWritableSourceFile(project, file.name) && !isGeneratedRuntimeCacheFile(file.name))
-    .map((file) => file.name);
+  const exportableFiles = authoredManifestFiles ?? [
+      ...SUPPORTED_WRITE_FILES,
+      project.scenario.shell?.sourceFile?.trim() ?? "",
+      project.scenario.supportFile?.sourceFile?.trim() ?? ""
+    ].filter((name, index, names) =>
+      name && names.indexOf(name) === index && (sourceNames.has(name) || (name === "Layout" && project.landLayout))
+    );
+  const passThroughFiles = importedProject
+    ? project.source.files
+      .filter((file) => !isBrowserWritableSourceFile(project, file.name) && !isGeneratedRuntimeCacheFile(file.name))
+      .map((file) => file.name)
+    : [];
   if (passThroughFiles.length > 0) {
     warnings.push(`${passThroughFiles.length.toLocaleString()} preserved source file(s) will pass through unchanged because Providence does not author those file families directly: ${passThroughFiles.slice(0, 10).join(", ")}.`);
   }

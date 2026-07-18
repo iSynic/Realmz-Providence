@@ -25,8 +25,8 @@ const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export compiles autho
 const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are compiled Realmz folders.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
-const EXPORT_PLAN_HELP = "Readiness previews the current project boundary before writing: writer-supported records, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
-const EXPORT_SOURCES_HELP = "Export sources show writer-supported source files and pass-through files. Writer-supported files are encoded from project data; pass-through files are copied from the source snapshot.";
+const EXPORT_PLAN_HELP = "Readiness previews the current project boundary before writing: compiler output, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
+const EXPORT_SOURCES_HELP = "Export sources show the compiler's expected native manifest and imported compatibility files. Compiler files are generated from project data; pass-through files are copied from the compatibility annex.";
 
 export function ExportPanel({
   project,
@@ -159,7 +159,7 @@ export function ExportPanel({
             <InfoGrid
               rows={[
                 ["Writable Records", plan.editableRecords.toLocaleString()],
-                ["Writer Sources", plan.exportableSources.length.toLocaleString()],
+                ["Compiler Files", plan.exportableSources.length.toLocaleString()],
                 ["Pass-through", plan.passThroughFiles.toLocaleString()],
                 ["Resource Gaps", plan.resourceGaps.toLocaleString()],
                 ["Asset Fallbacks", plan.assetFallbacks.toLocaleString()],
@@ -176,7 +176,7 @@ export function ExportPanel({
             </TutorialTip>
             <InfoGrid
               rows={[
-                ["Encoded Sources", plan.exportableSources.length.toLocaleString()],
+                ["Generated Files", plan.exportableSources.length.toLocaleString()],
                 ["Copied Sources", plan.passThroughSources.length.toLocaleString()]
               ]}
             />
@@ -233,8 +233,8 @@ function SourceRows({ plan }: { plan: ReturnType<typeof exportPlan> }) {
     ...plan.exportableSources.map((source) => ({
       id: `exportable:${source.name}`,
       name: source.name,
-      mode: "writer-supported",
-      detail: `${source.bytes.toLocaleString()} source bytes`
+      mode: "compiler-output",
+      detail: source.bytes == null ? source.origin : `${source.bytes.toLocaleString()} source bytes`
     })),
     ...plan.passThroughSources.map((source) => ({
       id: source.id,
@@ -252,8 +252,8 @@ function SourceRows({ plan }: { plan: ReturnType<typeof exportPlan> }) {
           title={source.name}
           subtitle={source.mode}
           meta={source.detail}
-          status={source.mode === "writer-supported" ? "Encoded" : "Copied"}
-          statusTone={source.mode === "writer-supported" ? "success" : "info"}
+          status={source.mode === "compiler-output" ? "Generated" : "Copied"}
+          statusTone={source.mode === "compiler-output" ? "success" : "info"}
         />
       ))}
     </ScrollArea>
@@ -443,7 +443,7 @@ function exportPlan(project: Project | null) {
   }
   const blocked = blockedSemanticObjects(project);
   const exportableSources = project.validation.exportableFiles
-    .map((name) => exportPlanSource(project, name))
+    .map((name) => exportPlanSource(project, name, true))
     .filter(Boolean) as ExportPlanSource[];
   const passThroughSources = project.validation.passThroughFiles
     .map((name) => exportPlanSource(project, name))
@@ -465,12 +465,26 @@ function exportPlan(project: Project | null) {
 type ExportPlanSource = {
   id: string;
   name: string;
-  bytes: number;
+  bytes: number | null;
   origin: string;
 };
 
-function exportPlanSource(project: Project, name: string): ExportPlanSource | null {
+function exportPlanSource(project: Project, name: string, compilerOutput = false): ExportPlanSource | null {
   const semanticSource = sourceByName(project, name);
   if (semanticSource) return semanticSource;
-  return null;
+  const sourceFile = project.source.files.find((file) => file.name === name);
+  if (sourceFile) {
+    return {
+      id: `source:file:${name}`,
+      name,
+      bytes: sourceFile.bytes,
+      origin: "Imported compatibility annex"
+    };
+  }
+  return compilerOutput ? {
+    id: `compiler:file:${name}`,
+    name,
+    bytes: null,
+    origin: "Generated from authoritative project data"
+  } : null;
 }

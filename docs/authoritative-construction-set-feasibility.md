@@ -236,7 +236,9 @@ The remaining important raw-source dependencies are:
   tails only when annex bytes are available;
 - project open/semantic hydration can backfill missing fields and derived semantic data from raw
   files;
-- validation derives exportable/pass-through inventories from `project.source.files`;
+- imported-project validation derives compatibility pass-through inventories from
+  `project.source.files`; authored validation now derives its expected files from the native
+  compiler manifest;
 - project packages retain raw payloads for conservative legacy round trips.
 
 These are real dependencies, but they are bounded. Normal project commands and most panels do not
@@ -464,7 +466,9 @@ must not be called fresh-authoritative merely because imported round trips are f
    path-bounded compatibility-annex interface. Fresh compilation has poison-annex tests that fail
    if it enumerates or reads supplied legacy material. Embedded imported record bytes still need
    migration into the annex model.
-6. Build validation from the compiler's expected manifest, not `project.source.files`.
+6. **Implemented for authored projects:** build validation and the Export panel's source plan from
+   the compiler's expected native manifest. Imported projects remain intentionally source-driven
+   at the compatibility boundary.
 7. Build semantic indices from canonical project data and managed resources; use raw buffers only
    to enrich imported compatibility evidence.
 8. **Implemented on the investigation branch:** persist/import/export `itemTexts` in Rust and gate

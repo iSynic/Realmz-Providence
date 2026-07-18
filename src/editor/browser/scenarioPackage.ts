@@ -85,6 +85,13 @@ type BinaryWriteResult = {
   bytes: Uint8Array;
 };
 
+type BrowserScenarioCompilation = {
+  outputFiles: Map<string, Uint8Array>;
+  writtenFiles: string[];
+  passThroughFiles: string[];
+  resourceResult: ResourceExportResult;
+};
+
 export type BrowserScenarioPackageResult = {
   fileName: string;
   zip: Uint8Array;
@@ -102,6 +109,14 @@ const CASTE_COMPILER_BASELINE = ruleCompilerBaselineBytes("caste", CASTE_RECORD_
 export function browserScenarioPackageFileName(project: Project, target: ScenarioTarget) {
   const suffix = target === "windows-realmz-folder" ? "windows-realmz-scenario" : "mac-classic-scenario";
   return `${safePackageName(project.scenario.name || "Untitled Scenario")}.${suffix}.zip`;
+}
+
+export function expectedAuthoredScenarioManifestFiles(project: Project, target: ScenarioTarget) {
+  if (requiresCompatibilityAnnex(project)) {
+    throw new Error("Expected authored scenario manifest files are only available for authored projects.");
+  }
+  return [...compileBrowserScenarioManifest(project, null, target).outputFiles.keys()]
+    .sort((left, right) => left.localeCompare(right));
 }
 
 export function createBrowserScenarioPackageZip(
@@ -130,42 +145,8 @@ export function createBrowserScenarioPackageZip(
   const generatedAt = new Date();
   const importedRootName = compatibilityAnnex?.rootName ?? "";
   const rootName = safePackageName(project.scenario.name || importedRootName || "Untitled Scenario");
-  const outputFiles = new Map<string, Uint8Array>();
-  const passThroughFiles: string[] = [];
-  const compilerBaseline = importedProject ? [] : createAuthoredScenarioCompilerBaseline(project);
-  const compilerBaselineByPath = new Map(compilerBaseline.map((file) => [file.path, file.bytes]));
-
-  for (const file of compilerBaseline) {
-    outputFiles.set(file.path, file.bytes);
-  }
-
-  for (const source of compatibilityAnnex?.files() ?? []) {
-    if (isCustomNamesSupportFile(source.name) || isGeneratedRuntimeCacheFile(source.name)) {
-      continue;
-    }
-    const outputPath = outputPathForRawSource(source);
-    outputFiles.set(outputPath, source.bytesData);
-    passThroughFiles.push(outputPath);
-  }
-
-  const binaryWrites = writeSupportedBinaryRecords(project, compatibilityAnnex);
-  for (const write of binaryWrites) {
-    outputFiles.set(write.path, overlayCompilerBaseline(write.bytes, compilerBaselineByPath.get(write.path)));
-  }
-
-  const resourceResult = writeManagedResources(project, compatibilityAnnex, target);
-  if (resourceResult.resourceFileWritten) {
-    outputFiles.set(resourceResult.resourceFilePath, resourceResult.resourceBytes);
-  }
-
-  const writtenFiles = uniqueStrings([
-    ...compilerBaseline.map((file) => file.path),
-    ...binaryWrites.map((write) => write.path),
-    ...(resourceResult.resourceFileWritten ? [resourceResult.resourceFilePath] : [])
-  ]);
-  const written = new Set(writtenFiles);
-  const filteredPassThrough = passThroughFiles.filter((path) => !written.has(path));
-  const entries: ZipEntry[] = [...outputFiles.entries()]
+  const compilation = compileBrowserScenarioManifest(project, compatibilityAnnex, target);
+  const entries: ZipEntry[] = [...compilation.outputFiles.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([path, bytes]) => ({
       path: `${rootName}/${path}`,
@@ -187,16 +168,59 @@ export function createBrowserScenarioPackageZip(
     report: {
       outputPath: `browser-download://${fileName}`,
       target,
-      writtenFiles,
-      passThroughFiles: filteredPassThrough,
-      writtenResources: resourceResult.writtenResources,
-      preservedResources: resourceResult.preservedResources,
-      resourceWarnings: resourceResult.resourceWarnings,
-      blockedAssets: resourceResult.blockedAssets,
+      writtenFiles: compilation.writtenFiles,
+      passThroughFiles: compilation.passThroughFiles,
+      writtenResources: compilation.resourceResult.writtenResources,
+      preservedResources: compilation.resourceResult.preservedResources,
+      resourceWarnings: compilation.resourceResult.resourceWarnings,
+      blockedAssets: compilation.resourceResult.blockedAssets,
       warnings,
       targetCompatibilityIssues,
       targetCompatibility: bucketTargetCompatibility(targetCompatibilityIssues)
     }
+  };
+}
+
+function compileBrowserScenarioManifest(
+  project: Project,
+  compatibilityAnnex: BrowserCompatibilityAnnex | null,
+  target: ScenarioTarget
+): BrowserScenarioCompilation {
+  const outputFiles = new Map<string, Uint8Array>();
+  const passThroughFiles: string[] = [];
+  const compilerBaseline = requiresCompatibilityAnnex(project) ? [] : createAuthoredScenarioCompilerBaseline(project);
+  const compilerBaselineByPath = new Map(compilerBaseline.map((file) => [file.path, file.bytes]));
+
+  for (const file of compilerBaseline) {
+    outputFiles.set(file.path, file.bytes);
+  }
+  for (const source of compatibilityAnnex?.files() ?? []) {
+    if (isCustomNamesSupportFile(source.name) || isGeneratedRuntimeCacheFile(source.name)) continue;
+    const outputPath = outputPathForRawSource(source);
+    outputFiles.set(outputPath, source.bytesData);
+    passThroughFiles.push(outputPath);
+  }
+
+  const binaryWrites = writeSupportedBinaryRecords(project, compatibilityAnnex);
+  for (const write of binaryWrites) {
+    outputFiles.set(write.path, overlayCompilerBaseline(write.bytes, compilerBaselineByPath.get(write.path)));
+  }
+  const resourceResult = writeManagedResources(project, compatibilityAnnex, target);
+  if (resourceResult.resourceFileWritten) {
+    outputFiles.set(resourceResult.resourceFilePath, resourceResult.resourceBytes);
+  }
+
+  const writtenFiles = uniqueStrings([
+    ...compilerBaseline.map((file) => file.path),
+    ...binaryWrites.map((write) => write.path),
+    ...(resourceResult.resourceFileWritten ? [resourceResult.resourceFilePath] : [])
+  ]);
+  const written = new Set(writtenFiles);
+  return {
+    outputFiles,
+    writtenFiles,
+    passThroughFiles: passThroughFiles.filter((path) => !written.has(path)),
+    resourceResult
   };
 }
 

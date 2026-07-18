@@ -117,6 +117,7 @@ assertCompleteNativeFolder(windowsFilesA, "Windows");
 assertCompleteNativeFolder(classicFilesA, "Classic Mac");
 assertCompleteNativeFolder(browserWindowsFiles, "browser Windows");
 assertCompleteNativeFolder(browserClassicFiles, "browser Classic Mac");
+assertManifestNamesEqual(project.validation.exportableFiles, browserWindowsFiles, "Browser validation manifest");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
 assertFileMapsEqual(windowsFilesA, browserWindowsFiles, "Rust/browser Windows compile");
@@ -362,6 +363,12 @@ function assertFileMapsEqual(left, right, label) {
   for (const [name, bytes] of left) {
     expect(Buffer.from(bytes).equals(Buffer.from(right.get(name))), `${label} produced different bytes for ${name}`);
   }
+}
+
+function assertManifestNamesEqual(expectedNames, files, label) {
+  const expected = [...expectedNames].sort((left, right) => left.localeCompare(right));
+  const actual = [...files.keys()].sort((left, right) => left.localeCompare(right));
+  expect(expected.join("\n") === actual.join("\n"), `${label} does not match the compiler output file set`);
 }
 
 function fileManifest(files) {

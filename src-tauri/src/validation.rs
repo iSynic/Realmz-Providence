@@ -11,6 +11,21 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     let mut warnings = Vec::new();
     let mut exportable_files = Vec::new();
     let mut pass_through_files = Vec::new();
+    let imported_project = project.source.requires_compatibility_annex();
+    let authored_manifest_files = if imported_project {
+        None
+    } else {
+        match crate::exporter::expected_authored_scenario_manifest_files(
+            project,
+            ScenarioTarget::WindowsRealmzFolder,
+        ) {
+            Ok(files) => Some(files),
+            Err(error) => {
+                errors.push(format!("Native scenario compiler: {error}"));
+                Some(Vec::new())
+            }
+        }
+    };
     const SCENARIO_PICTURE_MIN_ID: i16 = 30000;
     const SCENARIO_PICTURE_MAX_ID: i16 = 30128;
     const SCENARIO_SOUND_MIN_ID: i16 = 200;
@@ -235,7 +250,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     validate_map_records(project, &mut errors, &mut warnings);
-    validate_tile_attributes(project, &mut warnings);
+    validate_tile_attributes(project, authored_manifest_files.as_deref(), &mut warnings);
     for message in &project.messages {
         let message_bytes = classic_text_len(&message.text);
         if message_bytes > 255 {
@@ -840,12 +855,17 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     }
     validate_semantic_schema(project, &mut errors, &mut warnings);
 
-    let has_scenario_file = project
-        .source
-        .files
-        .iter()
-        .any(|file| file.name == "Scenario");
-    if !has_scenario_file {
+    let has_scenario_file = authored_manifest_files.as_ref().map_or_else(
+        || {
+            project
+                .source
+                .files
+                .iter()
+                .any(|file| file.name == "Scenario")
+        },
+        |files| files.iter().any(|file| file == "Scenario"),
+    );
+    if imported_project && !has_scenario_file {
         warnings.push(
             "No Scenario file was imported; exported folders may not appear in Realmz menus."
                 .to_string(),
@@ -875,18 +895,22 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 shell.land_level
             ));
         }
-    } else {
+    } else if imported_project {
         warnings.push("No parsed Scenario startup shell is available; export will rely on source pass-through.".to_string());
     }
     validate_rules_overrides(project, &mut errors, &mut warnings);
-    for file in &project.source.files {
-        if is_generated_cache_name(&file.name) {
-            continue;
-        }
-        if matches!(file.role, SourceFileRole::SupportedBinary) {
-            exportable_files.push(file.name.clone());
-        } else {
-            pass_through_files.push(file.name.clone());
+    if let Some(files) = authored_manifest_files {
+        exportable_files.extend(files);
+    } else {
+        for file in &project.source.files {
+            if is_generated_cache_name(&file.name) {
+                continue;
+            }
+            if matches!(file.role, SourceFileRole::SupportedBinary) {
+                exportable_files.push(file.name.clone());
+            } else {
+                pass_through_files.push(file.name.clone());
+            }
         }
     }
     exportable_files.sort();
@@ -1242,12 +1266,21 @@ fn random_rects_overlap(a: &RandomRect, b: &RandomRect) -> bool {
     a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
 }
 
-fn validate_tile_attributes(project: &ProvidenceProject, warnings: &mut Vec<String>) {
-    let has_solids = project
-        .source
-        .files
-        .iter()
-        .any(|file| file.name == "Data Solids");
+fn validate_tile_attributes(
+    project: &ProvidenceProject,
+    authored_manifest_files: Option<&[String]>,
+    warnings: &mut Vec<String>,
+) {
+    let has_solids = authored_manifest_files.map_or_else(
+        || {
+            project
+                .source
+                .files
+                .iter()
+                .any(|file| file.name == "Data Solids")
+        },
+        |files| files.iter().any(|file| file == "Data Solids"),
+    );
     if !has_solids {
         warnings.push(
             "Data Solids is missing; special negative tile solidity will remain unknown."
@@ -2586,6 +2619,71 @@ mod tests {
     }
 
     #[test]
+    fn authored_validation_uses_the_compiler_manifest_instead_of_source_inventory() {
+        let mut project = empty_project();
+        project.maps.push(test_map(LevelType::Land, 0, 1));
+        project.scenario.shell = Some(test_scenario_shell("Authored Validation"));
+        project.source.files.push(test_source_file(
+            "ANNEX POISON",
+            SourceFileRole::PassThrough,
+            false,
+        ));
+
+        let report = validate_project(&project);
+        let expected = crate::exporter::expected_authored_scenario_manifest_files(
+            &project,
+            ScenarioTarget::WindowsRealmzFolder,
+        )
+        .expect("compile authored manifest");
+
+        assert_eq!(report.exportable_files, expected);
+        assert!(report.pass_through_files.is_empty());
+        assert!(report
+            .exportable_files
+            .iter()
+            .any(|name| name == "Scenario"));
+        assert!(report
+            .exportable_files
+            .iter()
+            .any(|name| name == "Scenario.rsrc"));
+        assert!(report
+            .exportable_files
+            .iter()
+            .any(|name| name == "Data Solids"));
+        assert!(!report
+            .exportable_files
+            .iter()
+            .any(|name| name == "ANNEX POISON"));
+        assert!(!report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("No Scenario file was imported")));
+        assert!(!report
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("Data Solids is missing")));
+    }
+
+    #[test]
+    fn imported_validation_keeps_source_inventory_as_its_compatibility_boundary() {
+        let mut project = empty_project();
+        project.source.origin = Some(ProjectOrigin::Imported);
+        project.source.files = vec![
+            test_source_file("Data SD2", SourceFileRole::SupportedBinary, true),
+            test_source_file("Legacy Notes", SourceFileRole::PassThrough, false),
+        ];
+
+        let report = validate_project(&project);
+
+        assert_eq!(report.exportable_files, ["Data SD2"]);
+        assert_eq!(report.pass_through_files, ["Legacy Notes"]);
+        assert!(!report
+            .exportable_files
+            .iter()
+            .any(|name| name == "Scenario.rsrc"));
+    }
+
+    #[test]
     fn validates_map_indices_must_be_dense() {
         let mut project = empty_project();
         project.maps.push(test_map(LevelType::Land, 1, 1));
@@ -2705,6 +2803,35 @@ mod tests {
             diagnostics: Vec::new(),
             semantic_schema: SemanticSchema::default(),
             validation: ValidationReport::default(),
+        }
+    }
+
+    fn test_scenario_shell(source_file: &str) -> ScenarioShell {
+        ScenarioShell {
+            source_file: source_file.to_string(),
+            rec_level: 1,
+            max_level: 999,
+            land_level: 0,
+            look_x: 0,
+            look_y: 0,
+            creator_user: String::new(),
+            codeseg1: vec![0; 20],
+            codeseg2: vec![0; 20],
+            trailing_bytes: Vec::new(),
+            raw_bytes: Vec::new(),
+            authored: true,
+            provenance: None,
+        }
+    }
+
+    fn test_source_file(name: &str, role: SourceFileRole, editable: bool) -> SourceFile {
+        SourceFile {
+            name: name.to_string(),
+            relative_path: name.to_string(),
+            bytes: 1,
+            sha256: "fixture".to_string(),
+            role,
+            editable,
         }
     }
 

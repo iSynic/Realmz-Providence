@@ -89,6 +89,23 @@ pub fn export_project(
     })
 }
 
+pub(crate) fn expected_authored_scenario_manifest_files(
+    project: &ProvidenceProject,
+    target: ScenarioTarget,
+) -> Result<Vec<String>> {
+    if project.source.requires_compatibility_annex() {
+        return Err(ProvidenceError::message(
+            "Expected authored scenario manifest files are only available for authored projects.",
+        ));
+    }
+    let inputs = NativeCompilerInputs {
+        compatibility_annex: None,
+        managed_asset_bytes: project.assets.iter().map(|_| None).collect(),
+    };
+    let compilation = compile_realmz_scenario(project, target, &inputs)?;
+    Ok(compilation.manifest.files().keys().cloned().collect())
+}
+
 fn compile_realmz_scenario(
     project: &ProvidenceProject,
     target: ScenarioTarget,
