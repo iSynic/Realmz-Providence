@@ -143,9 +143,17 @@ bytes cannot influence authored summaries. Imported combat buffers retain their 
 inspect-only path, and non-native monster-set filenames remain compatibility material rather than
 new canonical output families.
 
-Branch validation through the sixteenth slice completed on 2026-07-18:
+The seventeenth slice closes the remaining fixed-family semantic gap for custom spells
+(`Data Spell`), races (`Data Race`), and castes (`Data Caste`). Fresh fixed-capacity byte
+construction now lives in shared compiler helpers used by desktop export and desktop semantics,
+with equivalent shared browser helpers used by browser export and browser semantics. Canonical
+summaries are decoded from the exact 105-, 30-, and 30-record native buffers, embedded imported
+record bytes cannot affect authored results, and compiler-baseline slots not present in the project
+remain hidden. Imported rule files retain source-backed, inspect-only semantics.
 
-- full Rust suite: 202 passed, 2 ignored;
+Branch validation through the seventeenth slice completed on 2026-07-18:
+
+- full Rust suite: 203 passed, 2 ignored;
 - full TypeScript suite: 524 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
@@ -521,7 +529,9 @@ must not be called fresh-authoritative merely because imported round trips are f
    enrichment. Scenario items, treasures, thief/timed encounters, messages, shops, and
    simple/complex encounters, option labels, and monster descriptions now receive direct canonical
    summaries in both runtimes. Battles, primary monsters, and both native alternate monster sets
-   now follow the same writer-decoder path with their cross-record links.
+   now follow the same writer-decoder path with their cross-record links. Spell, race, and caste
+   overrides are decoded from the exact fixed-capacity fresh compiler buffers and hide baseline-only
+   slots.
 8. **Implemented on the investigation branch:** persist/import/export `itemTexts` in Rust and gate
    its TypeScript/Rust/native-folder conformance in the ownership proof.
 9. Gate browser and desktop output with the same golden manifest/byte fixtures. Prefer one Rust
@@ -543,10 +553,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. They must become annex slices rather than
    normal canonical fields.
-5. **Canonical semantic coverage:** the editor-owned supporting and fixed-text tiers now map
-   directly from canonical data in both runtimes, as do battles and all three native monster
-   families. Rule overrides remain the principal fixed-family semantic gap; this is coverage work,
-   not a raw-source dependency in the compiler.
+5. **Canonical semantic coverage:** all currently modeled supporting, fixed-text, combat, and rule
+   override families now map directly from canonical compiler bytes in both runtimes. Remaining
+   semantic work concerns optional resource/media families and deeper field/link enrichment, not a
+   fixed native-family ownership gap.
 6. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
    writing, not construction from zero, and overstate at least the Race/Caste suffixes.
 7. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern

@@ -2528,6 +2528,15 @@ mod tests {
         complex[155] = 2;
         crate::realmz::write_i16_be(&mut complex, 158, 18);
         fs::write(raw_dir.join("Data ED2"), complex).expect("write imported complex encounter");
+        let mut spell = vec![0_u8; crate::realmz::SPELL_BYTES];
+        spell[10] = 41;
+        fs::write(raw_dir.join("Data Spell"), spell).expect("write imported spell override");
+        let mut race = vec![0_u8; crate::realmz::RACE_BYTES];
+        crate::realmz::write_i16_be(&mut race, 196, 13);
+        fs::write(raw_dir.join("Data Race"), race).expect("write imported race override");
+        let mut caste = vec![0_u8; crate::realmz::CASTE_BYTES];
+        crate::realmz::write_i16_be(&mut caste, 384, 222);
+        fs::write(raw_dir.join("Data Caste"), caste).expect("write imported caste override");
 
         let schema = build_project_semantic_schema(&project_dir, &project)
             .expect("build imported semantic schema");
@@ -2553,6 +2562,9 @@ mod tests {
             "shop:0",
             "encounter:simple:0",
             "encounter:complex:0",
+            "spell-override:0",
+            "race-override:0",
+            "caste-override:0",
         ] {
             let entity = schema
                 .entities
@@ -2746,6 +2758,36 @@ mod tests {
         timed.raw_bytes.fill(0xA5);
         project.timed_encounters = vec![timed];
 
+        let mut spell = crate::realmz::parse_spell_overrides(&vec![0; crate::realmz::SPELL_BYTES])
+            .into_iter()
+            .next()
+            .expect("spell template");
+        spell.id = 16;
+        spell.cost = 41;
+        spell.authored = false;
+        spell.raw_bytes.fill(0xA5);
+        project.spell_overrides = vec![spell];
+
+        let mut race = crate::realmz::parse_race_overrides(&vec![0; crate::realmz::RACE_BYTES])
+            .into_iter()
+            .next()
+            .expect("race template");
+        race.id = 2;
+        race.base_move = 13;
+        race.authored = false;
+        race.raw_bytes.fill(0xA5);
+        project.race_overrides = vec![race];
+
+        let mut caste = crate::realmz::parse_caste_overrides(&vec![0; crate::realmz::CASTE_BYTES])
+            .into_iter()
+            .next()
+            .expect("caste template");
+        caste.id = 3;
+        caste.start_money = 222;
+        caste.authored = false;
+        caste.raw_bytes.fill(0xA5);
+        project.caste_overrides = vec![caste];
+
         let schema = build_project_semantic_schema(&project_dir, &project)
             .expect("build authored semantic schema");
         for entity_id in [
@@ -2763,6 +2805,9 @@ mod tests {
             "treasure:3",
             "thief:2",
             "time:3",
+            "spell-override:16",
+            "race-override:2",
+            "caste-override:3",
         ] {
             let entity = schema
                 .entities
@@ -2803,6 +2848,9 @@ mod tests {
             "treasure:0",
             "thief:0",
             "time:0",
+            "spell-override:0",
+            "race-override:0",
+            "caste-override:0",
         ] {
             assert!(
                 !schema.entities.iter().any(|entity| entity.id == entity_id),
@@ -2873,6 +2921,30 @@ mod tests {
                 .and_then(|entity| entity.summary.get("prompt")),
             Some(&serde_json::json!(12))
         );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "spell-override:16")
+                .and_then(|entity| entity.summary.get("cost")),
+            Some(&serde_json::json!(41))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "race-override:2")
+                .and_then(|entity| entity.summary.get("baseMove")),
+            Some(&serde_json::json!(13))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "caste-override:3")
+                .and_then(|entity| entity.summary.get("startMoney")),
+            Some(&serde_json::json!(222))
+        );
         assert!(schema.links.iter().any(|link| {
             link.from == "encounter:complex:4"
                 && link.to == "thief:2"
@@ -2907,6 +2979,9 @@ mod tests {
             ("Data TD", "project.json#treasures"),
             ("Data TD2", "project.json#thiefEncounters"),
             ("Data TD3", "project.json#timedEncounters"),
+            ("Data Spell", "project.json#spellOverrides"),
+            ("Data Race", "project.json#raceOverrides"),
+            ("Data Caste", "project.json#casteOverrides"),
         ] {
             let source = schema
                 .sources
@@ -2916,6 +2991,29 @@ mod tests {
             assert_eq!(source.path.as_deref(), Some(path));
             assert!(matches!(source.confidence, Confidence::Confirmed));
             assert_eq!(source.origin, SemanticSourceOrigin::AuthoredSource);
+        }
+        for (source, bytes) in [
+            (
+                "Data Spell",
+                crate::realmz::SPELL_OVERRIDE_RECORDS * crate::realmz::SPELL_BYTES,
+            ),
+            (
+                "Data Race",
+                crate::realmz::RACE_OVERRIDE_RECORDS * crate::realmz::RACE_BYTES,
+            ),
+            (
+                "Data Caste",
+                crate::realmz::CASTE_OVERRIDE_RECORDS * crate::realmz::CASTE_BYTES,
+            ),
+        ] {
+            assert_eq!(
+                schema
+                    .sources
+                    .iter()
+                    .find(|candidate| candidate.name == source)
+                    .map(|source| source.bytes),
+                Some(bytes as u64)
+            );
         }
     }
 

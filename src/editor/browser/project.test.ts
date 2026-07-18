@@ -154,6 +154,12 @@ describe("browser project native manifest validation", () => {
     importedComplexEncounter[152] = 1;
     importedComplexEncounter[155] = 2;
     importedComplexEncounter.set([0x00, 0x12], 158);
+    const importedSpell = new Uint8Array(30);
+    importedSpell[10] = 41;
+    const importedRace = new Uint8Array(408);
+    importedRace.set([0x00, 0x0d], 196);
+    const importedCaste = new Uint8Array(576);
+    importedCaste.set([0x00, 0xde], 384);
     const importedBuffers = new Map([
       ["Data TD", importedTreasure],
       ["Data SD2", importedMessage],
@@ -165,7 +171,10 @@ describe("browser project native manifest validation", () => {
       ["Data MD-1", importedMegaMonster],
       ["Data SD", importedShop],
       ["Data ED", importedSimpleEncounter],
-      ["Data ED2", importedComplexEncounter]
+      ["Data ED2", importedComplexEncounter],
+      ["Data Spell", importedSpell],
+      ["Data Race", importedRace],
+      ["Data Caste", importedCaste]
     ]);
     project.source.files = Array.from(importedBuffers, ([name, bytes]) => ({
       name,
@@ -203,7 +212,10 @@ describe("browser project native manifest validation", () => {
       "monster-set:-1:0",
       "shop:0",
       "encounter:simple:0",
-      "encounter:complex:0"
+      "encounter:complex:0",
+      "spell-override:0",
+      "race-override:0",
+      "caste-override:0"
     ]) {
       expect(semanticSchema.entities.find((entity) => entity.id === entityId)).toMatchObject({
         editState: "inspect-only",
@@ -231,7 +243,10 @@ describe("browser project native manifest validation", () => {
       ["Data MD-1", new Uint8Array(210)],
       ["Data SD", new Uint8Array(3002)],
       ["Data ED", new Uint8Array(426)],
-      ["Data ED2", new Uint8Array(520)]
+      ["Data ED2", new Uint8Array(520)],
+      ["Data Spell", new Uint8Array(30)],
+      ["Data Race", new Uint8Array(408)],
+      ["Data Caste", new Uint8Array(576)]
     ]));
     project.scenarioItems = [{
       ...parsed.scenarioItems[0],
@@ -362,6 +377,27 @@ describe("browser project native manifest validation", () => {
       authored: false,
       rawBytes: new Array(520).fill(0xa5)
     }];
+    project.spellOverrides = [{
+      ...parsed.spellOverrides[0],
+      id: 16,
+      cost: 41,
+      authored: false,
+      rawBytes: new Array(30).fill(0xa5)
+    }];
+    project.raceOverrides = [{
+      ...parsed.raceOverrides[0],
+      id: 2,
+      baseMove: 13,
+      authored: false,
+      rawBytes: new Array(408).fill(0xa5)
+    }];
+    project.casteOverrides = [{
+      ...parsed.casteOverrides[0],
+      id: 3,
+      startMoney: 222,
+      authored: false,
+      rawBytes: new Array(576).fill(0xa5)
+    }];
 
     const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);
 
@@ -379,7 +415,10 @@ describe("browser project native manifest validation", () => {
       "monster-set:-1:2",
       "shop:2",
       "encounter:simple:2",
-      "encounter:complex:4"
+      "encounter:complex:4",
+      "spell-override:16",
+      "race-override:2",
+      "caste-override:3"
     ]) {
       const entity = semanticSchema.entities.find((candidate) => candidate.id === entityId);
       expect(entity).toMatchObject({
@@ -408,7 +447,10 @@ describe("browser project native manifest validation", () => {
       "monster-set:-1:0",
       "shop:0",
       "encounter:simple:0",
-      "encounter:complex:0"
+      "encounter:complex:0",
+      "spell-override:0",
+      "race-override:0",
+      "caste-override:0"
     ]) {
       expect(semanticSchema.entities.some((entity) => entity.id === entityId)).toBe(false);
     }
@@ -421,6 +463,9 @@ describe("browser project native manifest validation", () => {
     expect(semanticSchema.entities.find((entity) => entity.id === "monster:2")?.summary.name).toBe("Canonical monster");
     expect(semanticSchema.entities.find((entity) => entity.id === "shop:2")?.summary.inflation).toBe(120);
     expect(semanticSchema.entities.find((entity) => entity.id === "encounter:simple:2")?.summary.prompt).toBe(12);
+    expect(semanticSchema.entities.find((entity) => entity.id === "spell-override:16")?.summary.cost).toBe(41);
+    expect(semanticSchema.entities.find((entity) => entity.id === "race-override:2")?.summary.baseMove).toBe(13);
+    expect(semanticSchema.entities.find((entity) => entity.id === "caste-override:3")?.summary.startMoney).toBe(222);
     expect(semanticSchema.links).toContainEqual(expect.objectContaining({
       from: "encounter:complex:4",
       to: "thief:2",
@@ -451,7 +496,10 @@ describe("browser project native manifest validation", () => {
       ["Data MD-1", "project.json#monsterSets/-1"],
       ["Data SD", "project.json#shops"],
       ["Data ED", "project.json#simpleEncounters"],
-      ["Data ED2", "project.json#complexEncounters"]
+      ["Data ED2", "project.json#complexEncounters"],
+      ["Data Spell", "project.json#spellOverrides"],
+      ["Data Race", "project.json#raceOverrides"],
+      ["Data Caste", "project.json#casteOverrides"]
     ]) {
       expect(semanticSchema.sources.find((source) => source.name === name)).toMatchObject({
         path,
@@ -459,5 +507,8 @@ describe("browser project native manifest validation", () => {
         confidence: "confirmed"
       });
     }
+    expect(semanticSchema.sources.find((source) => source.name === "Data Spell")?.bytes).toBe(105 * 30);
+    expect(semanticSchema.sources.find((source) => source.name === "Data Race")?.bytes).toBe(30 * 408);
+    expect(semanticSchema.sources.find((source) => source.name === "Data Caste")?.bytes).toBe(30 * 576);
   });
 });

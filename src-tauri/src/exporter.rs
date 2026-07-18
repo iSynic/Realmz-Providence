@@ -20,6 +20,9 @@ use crate::resource_fork::{
     decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
     merge_resource_entries_with_removals, parse_resource_fork_entries, ResourceForkEntry,
 };
+use crate::rule_compiler::{
+    write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
+};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use std::collections::BTreeSet;
 use std::fs;
@@ -590,22 +593,6 @@ fn preserve_imported_fixed_length(
     Ok(bytes)
 }
 
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RulesCompilerBaseline {
-    schema_version: u32,
-    race: RulesCompilerBaselineFamily,
-    caste: RulesCompilerBaselineFamily,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RulesCompilerBaselineFamily {
-    record_bytes: usize,
-    records: usize,
-    bytes_base64: String,
-}
-
 fn write_race_overrides_for_export(
     manifest: &mut NativeScenarioManifest,
     annex: Option<&CompatibilityAnnexSnapshot>,
@@ -615,28 +602,16 @@ fn write_race_overrides_for_export(
         Some(annex) => annex.contains("Data Race")?,
         None => false,
     };
-    let sanitized;
-    let writer_records = if source_backed {
-        records
-    } else {
-        sanitized = records
-            .iter()
-            .cloned()
-            .map(|mut record| {
-                record.raw_bytes.clear();
-                record
-            })
-            .collect::<Vec<_>>();
-        sanitized.as_slice()
-    };
+    if !source_backed {
+        return write_if_nonempty(manifest, "Data Race", write_fresh_race_overrides(records)?);
+    }
     write_rule_overrides_for_export(
         manifest,
         annex,
         "Data Race",
         crate::realmz::RACE_BYTES,
-        crate::realmz::RACE_OVERRIDE_RECORDS,
         records.iter().map(|record| record.id).collect(),
-        write_race_overrides(writer_records)?,
+        write_race_overrides(records)?,
     )
 }
 
@@ -649,28 +624,20 @@ fn write_caste_overrides_for_export(
         Some(annex) => annex.contains("Data Caste")?,
         None => false,
     };
-    let sanitized;
-    let writer_records = if source_backed {
-        records
-    } else {
-        sanitized = records
-            .iter()
-            .cloned()
-            .map(|mut record| {
-                record.raw_bytes.clear();
-                record
-            })
-            .collect::<Vec<_>>();
-        sanitized.as_slice()
-    };
+    if !source_backed {
+        return write_if_nonempty(
+            manifest,
+            "Data Caste",
+            write_fresh_caste_overrides(records)?,
+        );
+    }
     write_rule_overrides_for_export(
         manifest,
         annex,
         "Data Caste",
         crate::realmz::CASTE_BYTES,
-        crate::realmz::CASTE_OVERRIDE_RECORDS,
         records.iter().map(|record| record.id).collect(),
-        write_caste_overrides(writer_records)?,
+        write_caste_overrides(records)?,
     )
 }
 
@@ -680,7 +647,6 @@ fn write_rule_overrides_for_export(
     annex: Option<&CompatibilityAnnexSnapshot>,
     name: &str,
     record_bytes: usize,
-    fresh_records: usize,
     record_ids: Vec<usize>,
     encoded: Vec<u8>,
 ) -> Result<()> {
@@ -690,27 +656,13 @@ fn write_rule_overrides_for_export(
     let raw = match annex {
         Some(annex) => annex.read(name)?,
         None => None,
-    };
-    let source_backed = raw.is_some();
-    if !source_backed {
-        if let Some(id) = record_ids.iter().find(|id| **id >= fresh_records) {
-            return Err(ProvidenceError::message(format!(
-                "{name} record {id} is outside the fresh 0..{} scenario slot range.",
-                fresh_records - 1
-            )));
-        }
     }
-
-    let (mut body, tail) = if let Some(mut raw) = raw {
-        let body_bytes = raw.len() / record_bytes * record_bytes;
-        let tail = raw.split_off(body_bytes);
-        (raw, tail)
-    } else {
-        (
-            rule_compiler_baseline_bytes(name, record_bytes, fresh_records)?,
-            Vec::new(),
-        )
-    };
+    .ok_or_else(|| {
+        ProvidenceError::message(format!("Missing compatibility annex source {name}."))
+    })?;
+    let mut body = raw;
+    let body_bytes = body.len() / record_bytes * record_bytes;
+    let tail = body.split_off(body_bytes);
     let required_body_bytes = record_ids
         .iter()
         .map(|id| (id + 1) * record_bytes)
@@ -731,50 +683,6 @@ fn write_rule_overrides_for_export(
     write_if_nonempty(manifest, name, body)
 }
 
-fn rule_compiler_baseline_bytes(
-    name: &str,
-    record_bytes: usize,
-    records: usize,
-) -> Result<Vec<u8>> {
-    let baseline: RulesCompilerBaseline =
-        serde_json::from_str(include_str!("../../src/shared/rulesCompilerBaseline.json")).map_err(
-            |error| ProvidenceError::message(format!("Invalid rules compiler baseline: {error}")),
-        )?;
-    if baseline.schema_version != 1 {
-        return Err(ProvidenceError::message(format!(
-            "Unsupported rules compiler baseline schema {}.",
-            baseline.schema_version
-        )));
-    }
-    let family = match name {
-        "Data Race" => baseline.race,
-        "Data Caste" => baseline.caste,
-        _ => {
-            return Err(ProvidenceError::message(format!(
-                "No rules compiler baseline exists for {name}."
-            )))
-        }
-    };
-    if family.record_bytes != record_bytes || family.records != records {
-        return Err(ProvidenceError::message(format!(
-            "Rules compiler baseline metadata for {name} is invalid."
-        )));
-    }
-    let bytes = STANDARD.decode(&family.bytes_base64).map_err(|error| {
-        ProvidenceError::message(format!(
-            "Rules compiler baseline for {name} is not base64: {error}"
-        ))
-    })?;
-    if bytes.len() != record_bytes * records {
-        return Err(ProvidenceError::message(format!(
-            "Rules compiler baseline for {name} has {} bytes; expected {}.",
-            bytes.len(),
-            record_bytes * records
-        )));
-    }
-    Ok(bytes)
-}
-
 fn write_spell_overrides_preserving_tail(
     manifest: &mut NativeScenarioManifest,
     annex: Option<&CompatibilityAnnexSnapshot>,
@@ -793,12 +701,15 @@ fn write_spell_overrides_preserving_tail(
     if overlay.is_empty() {
         return Ok(());
     }
-    let fresh_capacity = crate::realmz::SPELL_OVERRIDE_RECORDS * crate::realmz::SPELL_BYTES;
-    let mut bytes = match annex {
-        Some(annex) => annex
-            .read("Data Spell")?
-            .unwrap_or_else(|| vec![0; fresh_capacity]),
-        None => vec![0; fresh_capacity],
+    let Some(mut bytes) = (match annex {
+        Some(annex) => annex.read("Data Spell")?,
+        None => None,
+    }) else {
+        return write_if_nonempty(
+            manifest,
+            "Data Spell",
+            write_fresh_spell_overrides(records)?,
+        );
     };
     if bytes.len() < overlay.len() {
         bytes.resize(overlay.len(), 0);
@@ -1581,10 +1492,9 @@ mod tests {
         custom_spell_name_resource_updates, item_text_resource_updates,
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
-        preserve_imported_fixed_length, rule_compiler_baseline_bytes,
-        scenario_icon_resource_updates, write_caste_overrides_for_export,
-        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
-        NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_fixed_length, scenario_icon_resource_updates,
+        write_caste_overrides_for_export, write_race_overrides_for_export,
+        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1597,6 +1507,7 @@ mod tests {
         decode_string_list_resource, encode_string_list_resource, write_resource_fork,
         ResourceForkEntry,
     };
+    use crate::rule_compiler::rule_compiler_baseline_bytes;
     use base64::{engine::general_purpose::STANDARD, Engine as _};
     use std::fs;
 

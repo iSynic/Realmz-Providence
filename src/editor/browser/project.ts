@@ -279,6 +279,9 @@ export async function buildBrowserSemanticSchemaForProject(
     treasures: project.treasures,
     thiefEncounters: project.thiefEncounters,
     timedEncounters: project.timedEncounters,
+    spellOverrides: project.spellOverrides,
+    raceOverrides: project.raceOverrides,
+    casteOverrides: project.casteOverrides,
     assets: project.assets,
     assetCatalog: project.assetCatalog,
     records: project.records

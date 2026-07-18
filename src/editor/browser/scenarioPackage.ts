@@ -21,7 +21,6 @@ import {
   SCENARIO_SHELL_BYTES,
   SHOP_RECORD_BYTES,
   SIMPLE_ENCOUNTER_RECORD_BYTES,
-  SPELL_RECORD_BYTES,
   TREASURE_RECORD_BYTES,
   THIEF_ENCOUNTER_RECORD_BYTES,
   TIMED_ENCOUNTER_RECORD_BYTES,
@@ -62,7 +61,7 @@ import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResour
 import { appendPreservedShopSourceSuffix } from "./shopRecords";
 import { requiresCompatibilityAnnex } from "../projectOrigin";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
-import rulesCompilerBaseline from "../../shared/rulesCompilerBaseline.json";
+import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
 type ZipEntry = {
   path: string;
@@ -99,12 +98,8 @@ export type BrowserScenarioPackageResult = {
 };
 
 const SUPPORTED_MANAGED_RESOURCE_TYPES = new Set(["PICT", "cicn", "snd ", "TEXT", "styl"]);
-const CUSTOM_SPELL_RECORDS = 105;
 const CUSTOM_SPELL_LEVELS = 7;
 const CUSTOM_SPELLS_PER_LEVEL = 15;
-const RULE_OVERRIDE_RECORDS = 30;
-const RACE_COMPILER_BASELINE = ruleCompilerBaselineBytes("race", RACE_RECORD_BYTES, RULE_OVERRIDE_RECORDS);
-const CASTE_COMPILER_BASELINE = ruleCompilerBaselineBytes("caste", CASTE_RECORD_BYTES, RULE_OVERRIDE_RECORDS);
 
 export function browserScenarioPackageFileName(project: Project, target: ScenarioTarget) {
   const suffix = target === "windows-realmz-folder" ? "windows-realmz-scenario" : "mac-classic-scenario";
@@ -460,13 +455,13 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.raceOverrides.length > 0) {
     writes.push({
       path: "Data Race",
-      bytes: writeRuleOverridesForExport("Data Race", project.raceOverrides, RACE_RECORD_BYTES, RACE_COMPILER_BASELINE, annex, writeRaceOverrides)
+      bytes: writeRuleOverridesForExport("Data Race", project.raceOverrides, RACE_RECORD_BYTES, annex, writeRaceOverrides, writeFreshRaceOverrides)
     });
   }
   if (project.casteOverrides.length > 0) {
     writes.push({
       path: "Data Caste",
-      bytes: writeRuleOverridesForExport("Data Caste", project.casteOverrides, CASTE_RECORD_BYTES, CASTE_COMPILER_BASELINE, annex, writeCasteOverrides)
+      bytes: writeRuleOverridesForExport("Data Caste", project.casteOverrides, CASTE_RECORD_BYTES, annex, writeCasteOverrides, writeFreshCasteOverrides)
     });
   }
   if (project.simpleEncounters.length > 0) {
@@ -546,50 +541,37 @@ function writeSpellOverridesForExport(records: ScenarioSpellOverride[], annex: B
   const overlay = writeSpellOverrides(records);
   const raw = rawSourceBytes("Data Spell", annex);
   if (raw) return preserveRawOverlay("Data Spell", overlay, annex);
-  const output = new Uint8Array(CUSTOM_SPELL_RECORDS * SPELL_RECORD_BYTES);
-  output.set(overlay);
-  return output;
+  return writeFreshSpellOverrides(records);
 }
 
 function writeRuleOverridesForExport<T extends { id: number; rawBytes?: number[] }>(
   fileName: "Data Race" | "Data Caste",
   records: T[],
   recordBytes: number,
-  freshBaseline: Uint8Array,
   annex: BrowserCompatibilityAnnex | null,
-  writer: (records: T[]) => Uint8Array
+  writer: (records: T[]) => Uint8Array,
+  freshWriter: (records: T[]) => Uint8Array
 ) {
   const raw = rawSourceBytes(fileName, annex);
   const structurallyInvalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0);
   if (structurallyInvalid) throw new Error(`${fileName} record ${structurallyInvalid.id} must use a non-negative integer slot.`);
-  const freshInvalid = !raw && records.find((record) => record.id >= RULE_OVERRIDE_RECORDS);
-  if (freshInvalid) throw new Error(`${fileName} record ${freshInvalid.id} is outside the fresh 0..29 scenario slot range.`);
+  if (!raw) return freshWriter(records);
 
-  const encoded = writer(raw ? records : records.map((record) => ({ ...record, rawBytes: [] })));
-  const sourceBodyBytes = raw ? Math.floor(raw.byteLength / recordBytes) * recordBytes : freshBaseline.byteLength;
+  const encoded = writer(records);
+  const sourceBodyBytes = Math.floor(raw.byteLength / recordBytes) * recordBytes;
   const requiredBodyBytes = records.reduce((maximum, record) => Math.max(maximum, (record.id + 1) * recordBytes), sourceBodyBytes);
   const body = new Uint8Array(requiredBodyBytes);
-  body.set(raw ? raw.slice(0, sourceBodyBytes) : freshBaseline);
+  body.set(raw.slice(0, sourceBodyBytes));
   for (const record of records) {
     const start = record.id * recordBytes;
     body.set(encoded.slice(start, start + recordBytes), start);
   }
-  const tail = raw?.slice(sourceBodyBytes) ?? new Uint8Array();
+  const tail = raw.slice(sourceBodyBytes);
   if (tail.byteLength === 0) return body;
   const output = new Uint8Array(body.byteLength + tail.byteLength);
   output.set(body);
   output.set(tail, body.byteLength);
   return output;
-}
-
-function ruleCompilerBaselineBytes(family: "race" | "caste", recordBytes: number, records: number) {
-  const entry = rulesCompilerBaseline[family];
-  if (rulesCompilerBaseline.schemaVersion !== 1 || entry.recordBytes !== recordBytes || entry.records !== records) {
-    throw new Error(`Rules compiler baseline metadata for ${family} is invalid.`);
-  }
-  const bytes = base64Bytes(entry.bytesBase64);
-  if (!bytes || bytes.byteLength !== recordBytes * records) throw new Error(`Rules compiler baseline bytes for ${family} are invalid.`);
-  return bytes;
 }
 
 function writeItemTextResources(project: Project, annex: BrowserCompatibilityAnnex | null): BinaryWriteResult | null {

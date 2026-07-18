@@ -5,8 +5,11 @@ use crate::realmz::{
     shop_prefix_record_count, write_battles, write_complex_encounters, write_messages,
     write_monster_descriptions, write_monster_set, write_monsters, write_option_labels,
     write_scenario_items, write_shops, write_simple_encounters, write_thief_encounters,
-    write_timed_encounters, write_treasures, ParsedScenario, COMPLEX_ENCOUNTER_BYTES,
-    SIMPLE_ENCOUNTER_BYTES,
+    write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES,
+    RACE_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
+};
+use crate::rule_compiler::{
+    write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
 };
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
@@ -52,6 +55,9 @@ pub(super) fn add_canonical_record_collections(
     let treasures = canonical_records!(parsed.treasures);
     let thief_encounters = canonical_records!(parsed.thief_encounters);
     let timed_encounters = canonical_records!(parsed.timed_encounters);
+    let spell_overrides = canonical_records!(parsed.spell_overrides);
+    let race_overrides = canonical_records!(parsed.race_overrides);
+    let caste_overrides = canonical_records!(parsed.caste_overrides);
     let mut buffers = BTreeMap::new();
     insert_canonical_buffer(
         schema,
@@ -162,6 +168,30 @@ pub(super) fn add_canonical_record_collections(
         !timed_encounters.is_empty(),
         write_timed_encounters(&timed_encounters),
     );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data Spell",
+        "project.json#spellOverrides",
+        !spell_overrides.is_empty(),
+        write_fresh_spell_overrides(&spell_overrides),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data Race",
+        "project.json#raceOverrides",
+        !race_overrides.is_empty(),
+        write_fresh_race_overrides(&race_overrides),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data Caste",
+        "project.json#casteOverrides",
+        !caste_overrides.is_empty(),
+        write_fresh_caste_overrides(&caste_overrides),
+    );
     if buffers.is_empty() {
         return;
     }
@@ -241,6 +271,30 @@ pub(super) fn add_canonical_record_collections(
             "Data TD3",
             parsed
                 .timed_encounters
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data Spell",
+            parsed
+                .spell_overrides
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data Race",
+            parsed
+                .race_overrides
+                .iter()
+                .map(|record| record.id)
+                .collect(),
+        ),
+        (
+            "Data Caste",
+            parsed
+                .caste_overrides
                 .iter()
                 .map(|record| record.id)
                 .collect(),
@@ -496,6 +550,33 @@ pub(super) fn add_fixed_collections(
         "timed-encounter",
         "time",
         parse_timed_encounter,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Data Spell",
+        SPELL_BYTES,
+        "spell-override",
+        "spell-override",
+        parse_spell_override,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Data Race",
+        RACE_BYTES,
+        "race-override",
+        "race-override",
+        parse_race_override,
+    );
+    parse_fixed_collection(
+        schema,
+        buffers,
+        "Data Caste",
+        CASTE_BYTES,
+        "caste-override",
+        "caste-override",
+        parse_caste_override,
     );
     parse_fixed_collection(
         schema,
@@ -1885,6 +1966,100 @@ fn parse_timed_encounter(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
                 i16_be(buffer, 6)
             )),
         ),
+    ])
+}
+
+fn parse_spell_override(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
+    summary([
+        ("id", json!(id)),
+        ("range1", json!(buffer[0])),
+        ("range2", json!(buffer[1])),
+        ("queueIcon", json!(buffer[2])),
+        ("toHitBonus", json!(buffer[3] as i8)),
+        ("saveBonus", json!(buffer[4] as i8)),
+        ("fixedTargetNum", json!(buffer[5])),
+        ("canRotate", json!(buffer[6])),
+        ("saveAdjust", json!(buffer[7] as i8)),
+        ("cannot", json!(buffer[8])),
+        ("resistAdjust", json!(buffer[9] as i8)),
+        ("cost", json!(buffer[10])),
+        (
+            "damage",
+            json!([buffer[11], buffer[12], buffer[13], buffer[14]]),
+        ),
+        (
+            "duration",
+            json!([buffer[15], buffer[16], buffer[17], buffer[18]]),
+        ),
+        ("spellLooks", json!([buffer[19], buffer[20]])),
+        ("sounds", json!([buffer[21], buffer[22]])),
+        ("targetType", json!(buffer[23])),
+        ("size", json!(buffer[24])),
+        ("special", json!(buffer[25])),
+        ("damageType", json!(buffer[26])),
+        ("spellClass", json!(buffer[27])),
+        ("inCombat", json!(buffer[28] != 0)),
+        ("inCamp", json!(buffer[29] != 0)),
+    ])
+}
+
+fn parse_race_override(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
+    summary([
+        ("id", json!(id)),
+        ("maxAge", json!(i16_be(buffer, 192))),
+        ("doesNotDie", json!(i16_be(buffer, 194))),
+        ("baseMove", json!(i16_be(buffer, 196))),
+        ("magRes", json!(i16_be(buffer, 198))),
+        ("twoHand", json!(i16_be(buffer, 200))),
+        ("missile", json!(i16_be(buffer, 202))),
+        ("numOfAttacks", json!(read_short_array(buffer, 204, 2))),
+        (
+            "casteSlots",
+            json!(buffer[208..238]
+                .iter()
+                .enumerate()
+                .filter_map(|(slot, enabled)| (*enabled != 0).then_some(slot))
+                .collect::<Vec<_>>()),
+        ),
+        ("canRegenerate", json!(buffer[333])),
+        ("defaultIconSet", json!(i16_be(buffer, 334))),
+        (
+            "itemTypes",
+            json!([i32_be(buffer, 336), i32_be(buffer, 340)]),
+        ),
+        ("descriptors", json!(i16_be(buffer, 344))),
+    ])
+}
+
+fn parse_caste_override(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
+    summary([
+        ("id", json!(id)),
+        ("canUseMissile", json!(i16_be(buffer, 212))),
+        ("getsMissileBonus", json!(i16_be(buffer, 214))),
+        ("stamina", json!(read_short_array(buffer, 216, 2))),
+        ("strength", json!(read_short_array(buffer, 220, 2))),
+        ("dodge", json!(read_short_array(buffer, 224, 2))),
+        ("toHit", json!(read_short_array(buffer, 228, 2))),
+        ("missile", json!(read_short_array(buffer, 232, 2))),
+        ("hand2Hand", json!(read_short_array(buffer, 236, 2))),
+        ("casteClass", json!(i16_be(buffer, 248))),
+        ("minimumAgeGroup", json!(i16_be(buffer, 250))),
+        ("moveBonus", json!(i16_be(buffer, 252))),
+        ("magRes", json!(i16_be(buffer, 254))),
+        ("twoHand", json!(i16_be(buffer, 256))),
+        ("maxStaminaBonus", json!(i16_be(buffer, 258))),
+        ("bonusAttacks", json!(i16_be(buffer, 260))),
+        ("maxAttacks", json!(i16_be(buffer, 262))),
+        ("startMoney", json!(i16_be(buffer, 384))),
+        ("startItems", json!(read_short_array(buffer, 386, 20))),
+        ("attacks", json!(buffer[426..436].to_vec())),
+        (
+            "itemTypes",
+            json!([i32_be(buffer, 436), i32_be(buffer, 440)]),
+        ),
+        ("defaultIcon", json!(i16_be(buffer, 444))),
+        ("maxSpellsAttacks", json!(i16_be(buffer, 446))),
+        ("spellsSoFar", json!(i16_be(buffer, 448))),
     ])
 }
 

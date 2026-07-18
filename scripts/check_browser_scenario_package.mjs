@@ -13,6 +13,7 @@ const sourceFiles = [
   "src/editor/browser/fsAccess.ts",
   "src/editor/browser/shopRecords.ts",
   "src/editor/browser/scenarioCompilerBaseline.ts",
+  "src/editor/browser/ruleCompiler.ts",
   "src/editor/browser/compatibilityAnnex.ts",
   "src/editor/browser/scenarioPackage.ts",
   "src/editor/projectOrigin.ts"

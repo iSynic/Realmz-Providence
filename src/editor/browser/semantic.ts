@@ -17,8 +17,9 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { writeBattles, writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
+import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
 export type BrowserSemanticBuildProgress = {
   phase: string;
@@ -51,6 +52,9 @@ export function buildBrowserSemanticSchema(projectParts: {
   treasures: Project["treasures"];
   thiefEncounters: Project["thiefEncounters"];
   timedEncounters: Project["timedEncounters"];
+  spellOverrides: Project["spellOverrides"];
+  raceOverrides: Project["raceOverrides"];
+  casteOverrides: Project["casteOverrides"];
   assets: Project["assets"];
   assetCatalog: Project["assetCatalog"];
   records: Project["records"];
@@ -304,6 +308,9 @@ function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8
   addTreasureRecords(schema, buffers.get("Data TD"));
   addThiefRecords(schema, buffers.get("Data TD2"));
   addTimedRecords(schema, buffers.get("Data TD3"));
+  addSpellOverrideRecords(schema, buffers.get("Data Spell"));
+  addRaceOverrideRecords(schema, buffers.get("Data Race"));
+  addCasteOverrideRecords(schema, buffers.get("Data Caste"));
   addContactRecords(schema, buffers.get("Data CI"));
   addGlobalMacroRecords(schema, buffers.get("Global"));
   addMenuRecords(schema, buffers.get("Data MENU"));
@@ -315,7 +322,7 @@ function addCanonicalRecordCollections(
   schema: SemanticSchema,
   projectParts: Pick<
     Parameters<typeof buildBrowserSemanticSchema>[0],
-    "battles" | "monsters" | "monsterSets" | "messages" | "optionLabels" | "monsterDescriptions" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
+    "battles" | "monsters" | "monsterSets" | "messages" | "optionLabels" | "monsterDescriptions" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters" | "spellOverrides" | "raceOverrides" | "casteOverrides"
   >
 ) {
   const buffers = new Map<string, Uint8Array>();
@@ -336,6 +343,9 @@ function addCanonicalRecordCollections(
   addCanonicalRecordBuffer(schema, buffers, sources, "Data TD", "project.json#treasures", projectParts.treasures, writeTreasures);
   addCanonicalRecordBuffer(schema, buffers, sources, "Data TD2", "project.json#thiefEncounters", projectParts.thiefEncounters, writeThiefEncounters);
   addCanonicalRecordBuffer(schema, buffers, sources, "Data TD3", "project.json#timedEncounters", projectParts.timedEncounters, writeTimedEncounters);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data Spell", "project.json#spellOverrides", projectParts.spellOverrides, writeFreshSpellOverrides);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data Race", "project.json#raceOverrides", projectParts.raceOverrides, writeFreshRaceOverrides);
+  addCanonicalRecordBuffer(schema, buffers, sources, "Data Caste", "project.json#casteOverrides", projectParts.casteOverrides, writeFreshCasteOverrides);
   if (buffers.size === 0) return;
 
   addSupportingRecords(schema, buffers);
@@ -673,6 +683,105 @@ function addTimedRecords(schema: SemanticSchema, buffer?: Uint8Array) {
     if (summary.door > 0) pushLink(schema, `time:${index}`, `macro:${summary.door}`, "calls_macro", "source-backed");
     if (summary.requiredItem > 0) pushLink(schema, `time:${index}`, `item:${summary.requiredItem}`, "requires_item", "source-backed");
     if (summary.requiredQuest >= 0) pushLink(schema, `time:${index}`, `quest-flag:${summary.requiredQuest}`, "reads_flag", "source-backed");
+  }
+}
+
+function addSpellOverrideRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const count = Math.floor(buffer.byteLength / SPELL_RECORD_BYTES);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * SPELL_RECORD_BYTES;
+    const summary = {
+      id: index,
+      range1: buffer[start],
+      range2: buffer[start + 1],
+      queueIcon: buffer[start + 2],
+      toHitBonus: signedByteAt(buffer, start + 3),
+      saveBonus: signedByteAt(buffer, start + 4),
+      fixedTargetNum: buffer[start + 5],
+      canRotate: buffer[start + 6],
+      saveAdjust: signedByteAt(buffer, start + 7),
+      cannot: buffer[start + 8],
+      resistAdjust: signedByteAt(buffer, start + 9),
+      cost: buffer[start + 10],
+      damage: Array.from(buffer.slice(start + 11, start + 15)),
+      duration: Array.from(buffer.slice(start + 15, start + 19)),
+      spellLooks: Array.from(buffer.slice(start + 19, start + 21)),
+      sounds: Array.from(buffer.slice(start + 21, start + 23)),
+      targetType: buffer[start + 23],
+      size: buffer[start + 24],
+      special: buffer[start + 25],
+      damageType: buffer[start + 26],
+      spellClass: buffer[start + 27],
+      inCombat: buffer[start + 28] !== 0,
+      inCamp: buffer[start + 29] !== 0
+    };
+    const label = `Spell-override ${index}`;
+    upsertRecord(schema, browserRecord("Data Spell", index, SPELL_RECORD_BYTES, "spell-override", label, summary));
+    schema.entities.push(browserEntity(`spell-override:${index}`, "spell-override", label, "Data Spell", `record:Data Spell:${index}`, start, SPELL_RECORD_BYTES, summary));
+  }
+}
+
+function addRaceOverrideRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const count = Math.floor(buffer.byteLength / RACE_RECORD_BYTES);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * RACE_RECORD_BYTES;
+    const summary = {
+      id: index,
+      maxAge: i16At(buffer, start + 192),
+      doesNotDie: i16At(buffer, start + 194),
+      baseMove: i16At(buffer, start + 196),
+      magRes: i16At(buffer, start + 198),
+      twoHand: i16At(buffer, start + 200),
+      missile: i16At(buffer, start + 202),
+      numOfAttacks: shortArray(buffer, start + 204, 2),
+      casteSlots: Array.from(buffer.slice(start + 208, start + 238)).flatMap((enabled, slot) => enabled !== 0 ? [slot] : []),
+      canRegenerate: buffer[start + 333],
+      defaultIconSet: i16At(buffer, start + 334),
+      itemTypes: [i32At(buffer, start + 336), i32At(buffer, start + 340)],
+      descriptors: i16At(buffer, start + 344)
+    };
+    const label = `Race-override ${index}`;
+    upsertRecord(schema, browserRecord("Data Race", index, RACE_RECORD_BYTES, "race-override", label, summary));
+    schema.entities.push(browserEntity(`race-override:${index}`, "race-override", label, "Data Race", `record:Data Race:${index}`, start, RACE_RECORD_BYTES, summary));
+  }
+}
+
+function addCasteOverrideRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const count = Math.floor(buffer.byteLength / CASTE_RECORD_BYTES);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * CASTE_RECORD_BYTES;
+    const summary = {
+      id: index,
+      canUseMissile: i16At(buffer, start + 212),
+      getsMissileBonus: i16At(buffer, start + 214),
+      stamina: shortArray(buffer, start + 216, 2),
+      strength: shortArray(buffer, start + 220, 2),
+      dodge: shortArray(buffer, start + 224, 2),
+      toHit: shortArray(buffer, start + 228, 2),
+      missile: shortArray(buffer, start + 232, 2),
+      hand2Hand: shortArray(buffer, start + 236, 2),
+      casteClass: i16At(buffer, start + 248),
+      minimumAgeGroup: i16At(buffer, start + 250),
+      moveBonus: i16At(buffer, start + 252),
+      magRes: i16At(buffer, start + 254),
+      twoHand: i16At(buffer, start + 256),
+      maxStaminaBonus: i16At(buffer, start + 258),
+      bonusAttacks: i16At(buffer, start + 260),
+      maxAttacks: i16At(buffer, start + 262),
+      startMoney: i16At(buffer, start + 384),
+      startItems: shortArray(buffer, start + 386, 20),
+      attacks: Array.from(buffer.slice(start + 426, start + 436)),
+      itemTypes: [i32At(buffer, start + 436), i32At(buffer, start + 440)],
+      defaultIcon: i16At(buffer, start + 444),
+      maxSpellsAttacks: i16At(buffer, start + 446),
+      spellsSoFar: i16At(buffer, start + 448)
+    };
+    const label = `Caste-override ${index}`;
+    upsertRecord(schema, browserRecord("Data Caste", index, CASTE_RECORD_BYTES, "caste-override", label, summary));
+    schema.entities.push(browserEntity(`caste-override:${index}`, "caste-override", label, "Data Caste", `record:Data Caste:${index}`, start, CASTE_RECORD_BYTES, summary));
   }
 }
 
@@ -2450,6 +2559,9 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data TD": ["treasure", 48],
   "Data TD2": ["thief encounters", 118],
   "Data TD3": ["timed encounters", 40],
+  "Data Spell": ["spell overrides", SPELL_RECORD_BYTES],
+  "Data Race": ["race overrides", RACE_RECORD_BYTES],
+  "Data Caste": ["caste overrides", CASTE_RECORD_BYTES],
   "Data CI": ["scenario contact", 4608],
   "Data RI": ["scenario restrictions", 320],
   "Data CS": ["scenario security backup", 316],
