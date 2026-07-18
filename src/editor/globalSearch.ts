@@ -2,6 +2,7 @@ import { DOCUMENTATION_TOPICS, documentationSearchText } from "./docs/authoringM
 import { itemReferenceOptions } from "./itemReferences";
 import { monsterReferenceOptions } from "./monsterReferences";
 import { AssetWorkbenchSection, EditorTab, LibraryCatalog, ManagedAsset, ManagedAssetKind, Project, SelectedEntity } from "./types";
+import { authoringLibraryCollection } from "./assetLibraryClassification";
 import { issuesFor, selectEntityFromId, triggerEntityId } from "./utils";
 import { ed3DiagnosticForTrigger } from "./scriptDiagnostics";
 import { buildEdcdRowUsages } from "./edcdRows";
@@ -476,6 +477,9 @@ function catalogRows(catalog: LibraryCatalog) {
     });
   }
   for (const asset of catalog.assets ?? []) {
+    const collection = authoringLibraryCollection(asset);
+    if (collection === "excluded") continue;
+    const assetSection: AssetWorkbenchSection = collection === "built-in-custom" ? "custom" : "realmz";
     add({
       id: asset.id,
       scope: "assets",
@@ -483,14 +487,14 @@ function catalogRows(catalog: LibraryCatalog) {
       title: asset.label,
       subtitle: [asset.resourceType, asset.resourceId, asset.source].filter((part) => part !== null && part !== undefined && part !== "").join(" | "),
       snippet: asset.relativePath,
-      badges: ["Reference Asset", asset.type],
+      badges: [collection === "built-in-custom" ? "Built-in Custom Library" : "Realmz Gallery", asset.type],
       route: {
         kind: "workbench",
         workbench: "library",
         domain: "assets",
         editor: "library-assets",
         searchHint: assetSearchHint(asset.resourceType ?? asset.type, asset.resourceId, asset.label),
-        assetSection: libraryAssetSearchSection(asset),
+        assetSection,
         assetKindFilter: assetKindFilter(asset.resourceType ?? asset.type, asset.type)
       },
       selectedEntity: selectEntityFromId(asset.id),

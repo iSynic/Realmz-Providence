@@ -236,7 +236,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Resources",
-            body: "Scenario assets, decoded resource catalog entries, tile atlases, pictures, sounds, icons, and reference assets.",
+            body: "Scenario assets, decoded resource catalog entries, tile atlases, pictures, sounds, icons, the Custom Library, and Realmz Gallery.",
             facts: ["asset-aware"]
           },
           {
@@ -258,7 +258,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         cards: [
           { title: "Scenario", body: "Editable project records and labels from the current Providence project.", facts: ["project"] },
-          { title: "Assets", body: "Project-owned media plus reference assets that can explain a resource ID or preview.", facts: ["PICT", "snd", "cicn"] },
+          { title: "Assets", body: "Project-owned media, reusable custom assets, and stock Realmz resources organized by how scenarios consume them.", facts: ["PICT", "snd", "cicn"] },
           { title: "Libraries", body: "Bundled Realmz and Divinity reference entries such as built-in monsters, items, spells, races, castes, and source records.", facts: ["reference-only"] },
           { title: "Docs", body: "Providence handbook topics, status language, Divinity crosswalks, and troubleshooting notes.", facts: ["handbook"] },
           { title: "Diagnostics", body: "Project validation and diagnostic messages, routed to Linter when opened.", facts: ["warnings"] }
@@ -1964,7 +1964,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Asset preview strip",
-        caption: "Reserved for a screenshot showing project assets, reference assets, preview status badges, export-scope badges, and usage links."
+        caption: "Reserved for a screenshot showing Scenario Assets, Custom Library, Realmz Gallery, preview status badges, export-scope badges, and usage links."
       },
       {
         title: "Special tile rendering",

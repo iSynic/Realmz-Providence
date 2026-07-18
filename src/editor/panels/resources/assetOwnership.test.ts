@@ -27,16 +27,22 @@ describe("asset ownership guidance", () => {
     expect(canReferenceLibraryAssetByStockId(asset)).toBe(true);
   });
 
-  it("explains that non-stock Divinity media receives a scenario-owned ID", () => {
-    const asset = libraryAsset({ source: "Divinity Import", relativePath: "Divinity/PICT 100" });
-    expect(referenceAssetOwnershipGuidance(asset)).toContain("scenario-owned asset");
-    expect(referenceAssetOwnershipGuidance(asset)).toContain("valid scenario resource ID");
+  it("explains that built-in custom media remains reusable until copied", () => {
+    const asset = libraryAsset({
+      type: "icon",
+      source: "library-source:divinity:vault-of-arcana",
+      relativePath: "Divinity Data\\Vault of Arcana.rsrc#cicn:30118",
+      resourceType: "cicn",
+      resourceId: 30118
+    });
+    expect(referenceAssetOwnershipGuidance(asset)).toContain("protected built-in Custom Library asset");
+    expect(referenceAssetOwnershipGuidance(asset)).toContain("Copy it into Scenario Assets");
     expect(canCopyLibraryAssetToScenario(asset)).toBe(true);
     expect(canReferenceLibraryAssetByStockId(asset)).toBe(false);
   });
 
   it("treats the Custom Library as Providence-wide reusable storage", () => {
-    expect(assetSectionHelp("custom")).toContain("every scenario");
+    expect(assetSectionHelp("custom")).toContain("protected built-in custom assets");
     expect(resourceScopeHelp("custom-library")).toContain("Providence-wide Custom Library");
   });
 });

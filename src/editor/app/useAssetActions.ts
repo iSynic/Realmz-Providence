@@ -13,7 +13,7 @@ import {
 } from "../mediaAssets";
 import { canCopyLibraryAssetToScenario, managedAssetKindForLibrary } from "../resourceResolver";
 import { EditorAction, EditorState } from "../store";
-import { LibraryAsset, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProvidenceWorkspace, ReferenceAssetScenarioCopyKind } from "../types";
+import { LibraryAsset, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProvidenceWorkspace, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult } from "../types";
 import { commandError } from "../utils";
 
 export function useAssetActions({
@@ -246,30 +246,31 @@ export function useAssetActions({
   }
 
   async function copyReferenceAssetToScenario(assetId: string, requestedKind?: ReferenceAssetScenarioCopyKind) {
-    if (!state.project) return;
+    if (!state.project) return null;
     const asset = state.libraryCatalog?.assets.find((candidate) => candidate.id === assetId) ?? null;
     if (!asset) {
       dispatch({ type: "setStatus", status: "Reference asset copy failed: asset no longer exists." });
-      return;
+      return null;
     }
     if (!canCopyLibraryAssetToScenario(asset)) {
       dispatch({ type: "setStatus", status: "Reference asset already belongs to Realmz stock resources; use its existing resource ID instead of copying it." });
-      return;
+      return null;
     }
     if (!asset.resourceType || asset.resourceId == null) {
       dispatch({ type: "setStatus", status: "Reference asset copy failed: resource type or ID is missing." });
-      return;
+      return null;
     }
     try {
       dispatch({ type: "setStatus", status: `Copying ${asset.label} to Scenario Assets...` });
+      const kind = requestedKind ?? managedAssetKindForLibrary(asset);
+      const resourceId = nextScenarioResourceId(state.project, kind);
       if (desktopRuntime) {
-        const kind = requestedKind ?? managedAssetKindForLibrary(asset);
         const project = await invoke<Project>("copy_library_asset_to_project", {
           workspaceDir,
           projectDir,
           project: state.project,
           asset,
-          resourceId: nextScenarioResourceId(state.project, kind),
+          resourceId,
           kind
         });
         dispatch({ type: "markSaved", project });
@@ -278,13 +279,14 @@ export function useAssetActions({
         const data = await loadBrowserBundledLibraryResourceData(asset);
         if (!data) throw new Error("reference resource bytes were not available in the bundled library");
         const preview = await inspectBrowserBundledLibraryAssetPreview(asset);
-        const kind = requestedKind ?? managedAssetKindForLibrary(asset);
-        const managed = referenceLibraryAssetToManagedAsset(asset, data, preview.dataUrl, nextScenarioResourceId(state.project, kind), kind);
+        const managed = referenceLibraryAssetToManagedAsset(asset, data, preview.dataUrl, resourceId, kind);
         dispatch({ type: "applyCommand", command: { kind: "attachProjectAsset", label: `Copy ${asset.label} to Scenario Assets`, asset: managed } });
       }
       dispatch({ type: "setStatus", status: `Copied ${asset.label} to Scenario Assets` });
+      return { kind, label: asset.label, resourceId } satisfies ReferenceAssetScenarioCopyResult;
     } catch (error) {
       dispatch({ type: "setStatus", status: `Reference asset copy failed: ${commandError(error)}` });
+      return null;
     }
   }
 
@@ -372,7 +374,7 @@ function referenceLibraryAssetToManagedAsset(
     channels: null,
     exportState: "ready",
     libraryScope: "scenario",
-    provenance: `copied from reference asset ${asset.source}`,
+    provenance: `copied from built-in Custom Library asset ${asset.source}`,
     linkedEntity: kind === "special-land-tile" ? `special-land-tile:${resourceId}` : null,
     conversion: null
   };

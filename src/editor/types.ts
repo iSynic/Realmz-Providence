@@ -141,6 +141,11 @@ export type PaintCellChange = { x: number; y: number; index: number; from: numbe
 export type BattleGridCellChange = { index: number; from: number; to: number };
 export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
 export type ReferenceAssetScenarioCopyKind = "icon" | "special-land-tile";
+export type ReferenceAssetScenarioCopyResult = {
+  kind: ManagedAssetKind;
+  label: string;
+  resourceId: number;
+};
 export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
 export type ManagedAssetLibraryScope = "scenario" | "custom-library";
 export type AssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound" | "text" | "raw-resource";

@@ -5,7 +5,7 @@ const MONSTER_ICON_PAIR_OFFSET = 308;
 export type ReferenceIconUse =
   | "scenario-item-icon"
   | "item-icon-library"
-  | "monster-icon-library"
+  | "scenario-monster-icon"
   | "special-land-tile"
   | "scenario-icon";
 
@@ -45,7 +45,7 @@ export function findReferenceMonsterIconPair(
 export function referenceIconUseDescription(use: ReferenceIconUse) {
   if (use === "scenario-item-icon") return "Copy the cicn into Scenario Assets in the custom item-icon range so it can be selected in Economy > Item Editor.";
   if (use === "item-icon-library") return "Add reusable item art to the Providence Icon Library without changing the current scenario.";
-  if (use === "monster-icon-library") return "Add both facing resources to the Providence Icon Library, then choose a scenario target in Combat > Build Icon Set.";
+  if (use === "scenario-monster-icon") return "Copy both facing cicn resources into Scenario Assets as this scenario's override for the selected monster icon set.";
   if (use === "special-land-tile") return "Copy the cicn into Scenario Assets with a negative map-tile ID so it can be painted on Land/Dungeon maps.";
   return "Copy the cicn directly into Scenario Assets in the high custom-icon range for a record that reads an icon ID.";
 }

@@ -25,6 +25,7 @@ import {
 } from "../../mediaAssets";
 import { AssetImportBar } from "./AssetImportDialog";
 import { COPY_TO_SCENARIO_ASSETS_LABEL, type AssetSection, referenceAssetOwnershipGuidance, resourceScopeHelp } from "./assetOwnership";
+import { authoringLibraryCollection } from "../../assetLibraryClassification";
 
 export type { AssetSection } from "./assetOwnership";
 export const LIBRARY_PAGE_SIZE = 20;
@@ -37,7 +38,7 @@ const ASSET_USAGE_LINKS_HELP = "Used By links are decoded semantic references to
 const SPECIAL_LAND_PAINT_HELP = "Select for painting sends this negative cicn tile value to Maps. Realmz draws the current landlook base tile first, then overlays the transparent special-land icon.";
 const SPECIAL_LAND_REPLACE_HELP = "Replacing a Special Land Tile reconverts an image to a 32 x 32 cicn overlay while keeping the same negative tile/resource ID.";
 const PREVIEW_STATUS_FILTER_HELP = "Preview filters help separate usable media from text-only, metadata-only, unsupported, malformed, and missing fallback resources. They do not change export scope.";
-const LIBRARY_DETAIL_HELP = "Open Detail inspects this read-only reference asset, its preview diagnostics, origin, export scope, and any project usage links. Reference assets do not become scenario-owned unless explicitly imported.";
+const LIBRARY_DETAIL_HELP = "Open Detail inspects this read-only bundled asset, its preview diagnostics, usage rules, and any project links. Built-in Custom Library assets remain protected; Realmz Gallery assets stay available by stock ID.";
 const RESOURCE_PREVIEW_HELP = "Preview opens the detail window for the decoded media, conversion notes, source/origin labels, preview diagnostics, and usage links.";
 const RESOURCE_DETAIL_WINDOW_HELP = "The resource detail window compares scenario-owned, reference, and raw resource evidence. Use it to verify origin, export scope, conversion output, decoded fields, and usage before editing.";
 const RESOURCE_OUTPUT_HELP = "Realmz-ready output is the converted resource Providence will package or preview for Realmz: PICT for pictures, snd for sounds, or cicn for icons and special land tiles.";
@@ -46,7 +47,7 @@ const RESOURCE_SOURCE_HELP = "Original source is the file imported into Providen
 export const ASSET_SECTIONS: Array<{ id: AssetSection; editor: string; label: string }> = [
   { id: "project", editor: "project-assets", label: "Scenario Assets" },
   { id: "custom", editor: "custom-library-assets", label: "Custom Library" },
-  { id: "realmz", editor: "library-assets", label: "Reference Assets" },
+  { id: "realmz", editor: "library-assets", label: "Realmz Gallery" },
   { id: "divinity", editor: "divinity-reference", label: "Divinity UI Reference" },
   { id: "records", editor: "decoded-records", label: "Decoded Records" },
   { id: "advanced", editor: "resource-forks", label: "Technical Inventory" }
@@ -74,7 +75,7 @@ export function assetKindFilterFromEditor(activeEditor: string): ManagedAssetKin
 }
 
 export function assetSectionTitle(section: AssetSection) {
-  if (section === "realmz") return "Reference Assets";
+  if (section === "realmz") return "Realmz Gallery";
   if (section === "custom") return "Custom Library";
   if (section === "divinity") return "Divinity UI Reference";
   if (section === "advanced") return "Technical Inventory";
@@ -88,14 +89,13 @@ export function assetMatchesSection(asset: ManagedAsset, section: AssetSection) 
 }
 
 export function libraryAssetMatchesSection(asset: LibraryAsset, section: AssetSection, showUiReference = false) {
-  if (section !== "realmz" && section !== "divinity" && section !== "advanced") return false;
+  if (section !== "custom" && section !== "realmz" && section !== "divinity" && section !== "advanced") return false;
+  const collection = authoringLibraryCollection(asset);
+  if (section === "custom") return collection === "built-in-custom";
+  if (section === "realmz") return collection === "realmz-gallery";
   const origin = resourceOrigin(asset);
-  if (section === "realmz") {
-    if (asset.resourceType?.trim() === "PICT") return false;
-    return origin === "realmz-library" || origin === "divinity-reference";
-  }
   if (section === "advanced") return showUiReference && origin === "ui-reference";
-  return origin === "divinity-reference" || (showUiReference && origin === "ui-reference");
+  return collection === "excluded" && (origin === "divinity-reference" || (showUiReference && origin === "ui-reference"));
 }
 
 export function assetMatchesKind(kind: ManagedAssetKind, filter: ManagedAssetKind | "all") {
@@ -110,7 +110,7 @@ export function libraryAssetMatchesKind(asset: LibraryAsset, filter: ManagedAsse
 
 export function assetAuthoringGuidance(section: AssetSection, kindFilter: ManagedAssetKind | "all") {
   if (section === "custom") {
-    return "Custom Library assets live in the Providence workspace and stay available to every scenario. Copy them into Scenario Assets only when that scenario should ship them.";
+    return "Built-in assets ship with Providence and cannot be deleted. Assets you add remain reusable in this workspace. Copy either kind into Scenario Assets only when that scenario should ship it.";
   }
   if (section !== "project") return "";
   if (kindFilter === "picture") {
@@ -614,7 +614,7 @@ export function LibraryAssetCard({
   const lastSelectedPreviewKey = useRef("");
   const origin = resourceOrigin(asset);
   const scope = resourceExportScope(asset);
-  const ownershipLabel = compactReferenceOwnershipLabel(scope);
+  const ownershipLabel = compactLibraryOwnershipLabel(asset, scope);
   const sourceLabel = compactReferenceSourceLabel(asset);
   const canCopyToScenario = Boolean(onCopyToScenario && canCopyLibraryAssetToScenario(asset));
   const placeable = isMapPlaceableLibraryAsset(asset);
@@ -716,7 +716,7 @@ export function LibraryAssetCard({
             {referenceAssetCopyLabel(asset)}
           </button>
         )}
-        <TutorialTip title="Reference Asset Detail" body={LIBRARY_DETAIL_HELP} side="below">
+        <TutorialTip title="Bundled Asset Detail" body={LIBRARY_DETAIL_HELP} side="below">
           <button className="btn btn-secondary btn-xs" type="button" onClick={() => onOpenPreview?.(preview)}>
             Open Detail
           </button>
@@ -726,7 +726,8 @@ export function LibraryAssetCard({
   );
 }
 
-function compactReferenceOwnershipLabel(scope: ResourceExportScope) {
+function compactLibraryOwnershipLabel(asset: LibraryAsset, scope: ResourceExportScope) {
+  if (authoringLibraryCollection(asset) === "built-in-custom") return "Built-in";
   if (scope === "realmz-built-in-reference") return "Use stock ID";
   if (scope === "divinity-reference") return "Copy required";
   if (scope === "ui-reference") return "Editor UI only";
@@ -876,7 +877,9 @@ export function ResourcePreviewWindow({
   const title = item.type === "resource" ? item.entity.label : item.asset.label;
   const eyebrow = item.type === "managed"
     ? item.asset.libraryScope === "custom-library" ? "Custom Library Asset" : "Scenario Asset"
-    : item.type === "library" ? "Reference Asset" : "Raw Resource";
+    : item.type === "library"
+      ? authoringLibraryCollection(item.asset) === "built-in-custom" ? "Built-in Custom Library Asset" : authoringLibraryCollection(item.asset) === "realmz-gallery" ? "Realmz Gallery Asset" : "Technical Library Asset"
+      : "Raw Resource";
   return (
     <FloatingWorkbenchPanel
       title={title}

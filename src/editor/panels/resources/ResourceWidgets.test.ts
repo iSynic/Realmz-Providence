@@ -17,12 +17,21 @@ function referenceAsset(resourceType: string, resourceId: number): LibraryAsset 
 }
 
 describe("libraryAssetMatchesSection", () => {
-  it.each([-302, 302])("hides PICT %i from author-facing Reference Assets", (resourceId) => {
+  it.each([-302, 302])("hides PICT %i from author-facing bundled collections", (resourceId) => {
     expect(libraryAssetMatchesSection(referenceAsset("PICT", resourceId), "realmz")).toBe(false);
+    expect(libraryAssetMatchesSection(referenceAsset("PICT", resourceId), "custom")).toBe(false);
   });
 
-  it("keeps non-PICT Realmz assets in Reference Assets", () => {
+  it("keeps non-PICT Realmz assets in the Realmz Gallery", () => {
     expect(libraryAssetMatchesSection(referenceAsset("cicn", 302), "realmz")).toBe(true);
+  });
+
+  it("places non-UI Divinity data icons in the built-in Custom Library", () => {
+    const asset = referenceAsset("cicn", 398);
+    asset.source = "library-source:divinity:monster-mash";
+    asset.relativePath = "Divinity Data\\Monster Mash.rsrc#cicn:398";
+    expect(libraryAssetMatchesSection(asset, "custom")).toBe(true);
+    expect(libraryAssetMatchesSection(asset, "realmz")).toBe(false);
   });
 });
 

@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ReferenceAssetScenarioCopyKind, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import type { TransientUndoScope } from "../app/transientUndo";
@@ -421,7 +421,7 @@ type WorkbenchRouterProps = {
   onDeleteCustomAsset: (assetId: string) => void;
   onAddAssetToCustomLibrary: (assetId: string) => void;
   onCopyCustomAssetToScenario: (assetId: string) => void;
-  onCopyReferenceAssetToScenario: (assetId: string, kind?: ReferenceAssetScenarioCopyKind) => void;
+  onCopyReferenceAssetToScenario: (assetId: string, kind?: ReferenceAssetScenarioCopyKind) => Promise<ReferenceAssetScenarioCopyResult | null>;
   onValidate: () => void;
   onExport: (target?: ScenarioTarget) => void;
   onExportProjectJson: () => void;

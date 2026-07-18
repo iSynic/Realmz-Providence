@@ -146,7 +146,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Common Pitfalls",
         points: [
           "Do not start from Technical Records unless you are investigating a specific warning or compatibility boundary.",
-          "Do not treat Reference Assets or bundled libraries as scenario-owned data until you intentionally copy or import something into the project.",
+          "Do not treat Realmz Gallery or bundled Custom Library assets as scenario-owned data until you intentionally copy or import something into the project.",
           "Do not export as a substitute for saving the Providence project. Save is authoring state; export is Realmz output.",
           "Do not ignore warnings that point to missing visible results, missing resources, or unsupported target packaging."
         ]
@@ -1075,8 +1075,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     groupId: "chapters",
     label: "Assets",
     title: "Assets, Custom Library, and Resource IDs",
-    summary: "Import, preview, preserve, replace, and move media between Scenario Assets, the Providence Custom Library, and read-only Reference Assets.",
-    tags: ["assets", "PICT", "snd", "cicn", "TEXT", "STR#", "styl", "raw", "custom library", "reference assets", "resource IDs"],
+    summary: "Import, preview, preserve, replace, and move media between Scenario Assets, the Providence Custom Library, and the stock-ID Realmz Gallery.",
+    tags: ["assets", "PICT", "snd", "cicn", "TEXT", "STR#", "styl", "raw", "custom library", "Realmz Gallery", "resource IDs"],
     badges: ["chapter", "resources"],
     references: [
       DIVINITY_CHAPTERS.icons,
@@ -1093,26 +1093,27 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Asset Lanes",
         paragraphs: [
-          "Assets imports, previews, replaces, and organizes the media used by a scenario. The three primary tabs distinguish media that ships with the current scenario, reusable Providence media available to every project, and stock or reference media that can already be selected by ID.",
-          "Not every previewable asset belongs in the scenario package. Stock Realmz resources can be referenced by stock ID. Non-stock library material becomes a Scenario Asset before the scenario can depend on it in Realmz."
+          "Assets imports, previews, replaces, and organizes the media used by a scenario. The three primary tabs distinguish media that ships with the current scenario, reusable non-stock media available to every project, and stock Realmz media that can already be selected by ID.",
+          "Not every previewable asset belongs in the scenario package. Realmz Gallery resources stay referenceable by stock ID. Custom Library material becomes a Scenario Asset before the scenario can depend on it in Realmz."
         ],
         cards: [
           { title: "Scenario Assets", body: "Project-owned resources that ship in the scenario package.", facts: ["exports"] },
-          { title: "Custom Library", body: "A living Providence library of reusable non-stock assets that can be copied into any scenario when needed.", facts: ["reusable"] },
-          { title: "Reference Assets", body: "Realmz and useful Divinity/reference material for previewing, comparing, and resolving stock IDs.", facts: ["read-only"] },
+          { title: "Custom Library", body: "Protected built-in custom art plus user-managed reusable assets that can be copied into any scenario.", facts: ["reusable"] },
+          { title: "Realmz Gallery", body: "Stock Realmz icons, sounds, and special land tiles that are selected by their existing IDs and never bundled as copies.", facts: ["stock IDs"] },
           { title: "Technical Inventory", body: "An advanced inventory of raw resource entries used when troubleshooting an import or export.", facts: ["advanced"] }
         ]
       },
       {
         title: "Inside Assets",
         paragraphs: [
-          "Scenario Assets, Custom Library, and Reference Assets are the main views. Search and type filters narrow the grid. Selecting a card opens the inspector, where the asset label, resource type and ID, ownership, decoded metadata, usage links, and preview controls appear together.",
+          "Scenario Assets, Custom Library, and Realmz Gallery are the main views. Search and type filters narrow the grid. Selecting a card opens the inspector, where the asset label, resource type and ID, ownership, decoded metadata, usage links, and preview controls appear together.",
           "Import opens a target chooser for pictures, icons, special land tiles, sounds, TEXT, STR#, styl, and raw resources. Image previews support Fit and integer scales. Sounds can be played. Text and raw records use readable previews instead of an empty image frame."
         ],
         points: [
           "Add to Custom Library keeps reusable non-stock media available across Providence projects without adding it to the current scenario.",
           "Add to Scenario Assets copies eligible non-stock library media into the current scenario and assigns a valid ID for that resource type.",
-          "Stock Realmz reference assets do not offer a scenario copy when the same asset can be selected by its existing stock ID.",
+          "Realmz Gallery assets do not offer a scenario copy because the same asset can be selected by its existing stock ID.",
+          "Built-in Custom Library assets are distributed with Providence and cannot be deleted; user-added Custom Library assets remain editable and removable.",
           "Replace keeps the scenario asset's role and ID while updating its contents; delete removes the scenario-owned resource after usage links are reviewed.",
           "Technical Inventory is opened separately and is not the normal place to organize author-facing media."
         ]
@@ -1122,7 +1123,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         steps: [
           {
             title: "Choose the ownership lane",
-            body: "Import into Scenario Assets when this scenario must ship the resource. Import into Custom Library when the non-stock asset should remain reusable across Providence projects. Use Reference Assets only to inspect stock or bundled reference material.",
+            body: "Import into Scenario Assets when this scenario must ship the resource. Import into Custom Library when the non-stock asset should remain reusable across Providence projects. Use Realmz Gallery to find the stock ID for material Realmz already supplies.",
             result: "The resource's storage scope matches how authors and Realmz will use it."
           },
           {
@@ -1132,12 +1133,12 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Preview before copying",
-            body: "Inspect the asset at Fit and useful integer scales, play sounds, and read text or raw metadata. For Reference Assets, determine whether Realmz already owns the stock ID before offering a scenario copy.",
+            body: "Inspect the asset at Fit and useful integer scales, play sounds, and read text or raw metadata. Realmz Gallery entries stay stock-ID references; Custom Library entries can be copied when the scenario needs them.",
             result: "The selected asset is recognizable and is copied only when the scenario needs to own it."
           },
           {
             title: "Copy non-stock material into the scenario",
-            body: "Use Add to Scenario Assets for a Custom Library or non-stock reference asset required at runtime. The copy action assigns a valid scenario-range ID, avoids conflicts, and keeps the preview available in Scenario Assets.",
+            body: "Use Add to Scenario Assets for a Custom Library asset required at runtime. The copy action assigns a valid scenario-range ID, avoids conflicts, and keeps the preview available in Scenario Assets.",
             result: "The scenario now owns an exportable resource with a valid type-specific ID."
           },
           {
@@ -1168,7 +1169,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Common Pitfalls",
         points: [
-          "Do not copy stock Realmz assets into the scenario just because they are visible in Reference Assets.",
+          "Do not copy stock Realmz assets into the scenario; select their existing IDs from Realmz Gallery.",
           "Do not assume a copied asset is correct until its preview and ID show correctly in Scenario Assets.",
           "Do not place Custom Library assets in exports until they are intentionally moved or copied to Scenario Assets.",
           "Do not edit narrative text in Assets when the Strings & Text chapter owns the authoring workflow."
@@ -1178,7 +1179,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     visualSlots: [
       {
         title: "Asset lanes",
-        caption: "Scenario Assets, Custom Library, Reference Assets, type filters, previews, and the selection inspector.",
+        caption: "Scenario Assets, Custom Library, Realmz Gallery, type filters, previews, and the selection inspector.",
         imageSrc: "/manual/gallery/assets.png"
       }
     ]
@@ -1408,7 +1409,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     label: "Libraries Appendix",
     title: "Reference Libraries and Shared Data",
     summary: "Use bundled Realmz, Divinity, and Providence library material without confusing it with scenario-owned records or assets.",
-    tags: ["library", "Realmz", "Divinity", "Custom Library", "reference assets", "Monster Library", "items", "rules"],
+    tags: ["library", "Realmz", "Divinity", "Custom Library", "Realmz Gallery", "Monster Library", "items", "rules"],
     badges: ["appendix", "reference"],
     references: [DIVINITY_CHAPTERS.gettingStarted, DIVINITY_CHAPTERS.icons, MARKDOWN_REFERENCES.resourceTaxonomyEvidence, MARKDOWN_REFERENCES.coreRecordEvidence],
     relatedTopicIds: ["assets", "combat", "economy", "rules", "records-evidence"],

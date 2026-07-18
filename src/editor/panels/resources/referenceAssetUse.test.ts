@@ -4,6 +4,7 @@ import {
   findReferenceMonsterIconPair,
   referenceAssetCopyLabel,
   referenceAssetNeedsUseChoice,
+  referenceIconUseDescription,
   referenceIconUseScenarioKind
 } from "./referenceAssetUse";
 
@@ -56,10 +57,26 @@ describe("reference asset use", () => {
     expect(findReferenceMonsterIconPair(catalog([vault]), vault)).toBeNull();
   });
 
-  it("routes scenario item icons into Scenario Assets", () => {
-    expect(referenceIconUseScenarioKind("scenario-item-icon")).toBe("icon");
-    expect(referenceIconUseScenarioKind("special-land-tile")).toBe("special-land-tile");
-    expect(referenceIconUseScenarioKind("item-icon-library")).toBeNull();
-    expect(referenceIconUseScenarioKind("monster-icon-library")).toBeNull();
+  it.each([
+    ["scenario-item-icon", "icon"],
+    ["item-icon-library", null],
+    ["scenario-monster-icon", null],
+    ["special-land-tile", "special-land-tile"],
+    ["scenario-icon", "icon"]
+  ] as const)("routes %s to its expected storage workflow", (use, expectedKind) => {
+    expect(referenceIconUseScenarioKind(use)).toBe(expectedKind);
+  });
+
+  it.each([
+    "scenario-item-icon",
+    "scenario-monster-icon",
+    "special-land-tile",
+    "scenario-icon"
+  ] as const)("describes %s as scenario-owned", (use) => {
+    expect(referenceIconUseDescription(use)).toContain("Scenario Assets");
+  });
+
+  it("keeps the reusable item icon choice outside the scenario", () => {
+    expect(referenceIconUseDescription("item-icon-library")).toContain("without changing the current scenario");
   });
 });

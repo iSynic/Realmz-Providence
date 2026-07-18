@@ -1,5 +1,6 @@
 import { LibraryAsset, ManagedAsset, ManagedAssetKind, Project } from "./types";
 import { resourceUsageLinks, ContentUsageLink } from "./contentLinks";
+import { authoringLibraryCollection } from "./assetLibraryClassification";
 
 export type ResourceOrigin = "scenario" | "realmz-library" | "divinity-reference" | "ui-reference" | "unknown";
 export type ResourceExportScope =
@@ -67,6 +68,7 @@ export function resourceExportScope(asset: ManagedAsset | LibraryAsset): Resourc
     if (asset.exportState === "blocked") return "scenario-blocked";
     return "scenario-preview-only";
   }
+  if (authoringLibraryCollection(asset) === "built-in-custom") return "custom-library";
   const origin = resourceOrigin(asset);
   if (origin === "realmz-library") return "realmz-built-in-reference";
   if (origin === "divinity-reference") return "divinity-reference";
@@ -86,6 +88,8 @@ export function resourceExportScopeLabel(scope: ResourceExportScope) {
 }
 
 export function canCopyLibraryAssetToScenario(asset: LibraryAsset) {
+  const collection = authoringLibraryCollection(asset);
+  if (collection === "excluded" || collection === "realmz-gallery") return false;
   const scope = resourceExportScope(asset);
   if (scope === "realmz-built-in-reference" || scope === "ui-reference") return false;
   return Boolean(asset.resourceType && asset.resourceId != null);

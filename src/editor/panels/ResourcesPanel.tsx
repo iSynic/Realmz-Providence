@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProjectCommand, ReferenceAssetScenarioCopyKind, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
+import { AssetSearchHint, LibraryAsset, LibraryCatalog, ManagedAsset, ManagedAssetKind, ManagedAssetLibraryScope, Project, ProjectCommand, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, ResourcePreviewDiagnostic, ResourcePreviewStatus, SelectedEntity, SemanticEntity } from "../types";
 import { compactValue, selectEntityFromId, semanticLabel } from "../utils";
 import { browserReferenceAtlasToken } from "../browser/atlasPaths";
 import { loadBrowserScenarioResourcePreview } from "../browser/project";
+import { resourcePreviewDataUrlFromBase64 } from "../browser/resourcePreview";
 import { useResolvedPreviewUrl } from "../previewUrls";
 import { resourceConsumers, resourceGaps, resourceMembersForType, schemaEntities } from "../semanticGraph";
 import { resourceUsageLinks } from "../contentLinks";
@@ -56,7 +57,8 @@ type AssetPreviewSize = "small" | "medium" | "large";
 type ManagedGalleryItem = { type: "managed"; asset: ManagedAsset; root: "project" | "workspace" };
 type ProjectGalleryItem =
   | { type: "scenario"; asset: ScenarioResourceAsset }
-  | ManagedGalleryItem;
+  | ManagedGalleryItem
+  | { type: "library"; asset: LibraryAsset };
 
 const ASSET_PAGE_SIZE_OPTIONS = [50, 100, 200, 500, 0];
 const ASSET_PREVIEW_SIZE_OPTIONS: Array<{ value: AssetPreviewSize; label: string }> = [
@@ -114,7 +116,7 @@ export function ResourcesPanel({
   onDeleteCustomAsset?: (assetId: string) => void;
   onAddAssetToCustomLibrary?: (assetId: string) => void;
   onCopyCustomAssetToScenario?: (assetId: string) => void;
-  onCopyReferenceAssetToScenario?: (assetId: string, kind?: ReferenceAssetScenarioCopyKind) => void;
+  onCopyReferenceAssetToScenario?: (assetId: string, kind?: ReferenceAssetScenarioCopyKind) => Promise<ReferenceAssetScenarioCopyResult | null>;
   onUpdateLibraryCatalog?: (catalog: LibraryCatalog, status: string) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   onSelectPaintTile?: (tile: number) => void;
@@ -144,10 +146,18 @@ export function ResourcesPanel({
   const [referenceUseBusy, setReferenceUseBusy] = useState(false);
   const [referenceUseError, setReferenceUseError] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
+  const revealScenarioCopy = (result: ReferenceAssetScenarioCopyResult) => {
+    setSectionOverride("project");
+    setKindFilter(result.kind);
+    setQuery(String(result.resourceId));
+    setLibraryPage(0);
+  };
   const requestReferenceAssetCopy = (assetId: string) => {
     const asset = libraryAssets.find((candidate) => candidate.id === assetId);
     if (!asset || !referenceAssetNeedsUseChoice(asset)) {
-      onCopyReferenceAssetToScenario?.(assetId);
+      void onCopyReferenceAssetToScenario?.(assetId).then((result) => {
+        if (result) revealScenarioCopy(result);
+      });
       return;
     }
     setReferenceUseError("");
@@ -158,10 +168,13 @@ export function ResourcesPanel({
     if (!asset || asset.resourceId == null) return;
     setReferenceUseBusy(true);
     setReferenceUseError("");
+    let copiedToScenario: ReferenceAssetScenarioCopyResult | "monster-pair" | null = null;
     try {
       const scenarioKind = referenceIconUseScenarioKind(use);
       if (scenarioKind) {
-        await onCopyReferenceAssetToScenario?.(asset.id, scenarioKind);
+        if (!onCopyReferenceAssetToScenario) throw new Error("Open a scenario before copying this icon.");
+        copiedToScenario = await onCopyReferenceAssetToScenario(asset.id, scenarioKind);
+        if (!copiedToScenario) throw new Error("The icon could not be copied. See the application status for details.");
       } else if (use === "item-icon-library") {
         if (!onUpdateLibraryCatalog) throw new Error("The Providence Icon Library is not available in this workspace.");
         const resourceBase64 = await loadLibraryResourceBase64(asset, { desktopRuntime, projectDir, workspaceDir }, catalog);
@@ -182,8 +195,8 @@ export function ResourcesPanel({
           }]
         });
         onUpdateLibraryCatalog(nextCatalog, entity ? `Added ${entity.label} to the Providence Icon Library` : "Updated Providence Icon Library");
-      } else {
-        if (!onUpdateLibraryCatalog) throw new Error("The Providence Icon Library is not available in this workspace.");
+      } else if (use === "scenario-monster-icon") {
+        if (!onApplyCommand) throw new Error("Open a scenario before copying this monster icon set.");
         const pair = findReferenceMonsterIconPair(catalog, asset);
         if (!pair) throw new Error("Monster icon sets require both facing cicn resources.");
         const [baseResourceBase64, pairedResourceBase64] = await Promise.all([
@@ -192,37 +205,35 @@ export function ResourcesPanel({
         ]);
         if (!baseResourceBase64 || !pairedResourceBase64) throw new Error("Both monster facing resources must be available.");
         const label = monsterPairLabel(pair.base.label);
-        const { catalog: nextCatalog, entity } = createIconLibraryEntry(catalog ?? null, catalog?.managedPath ?? "browser://workspace/library", {
-          kind: "monster-pair",
-          label,
-          origin: { kind: "monster-mash", sourceId: pair.base.id, sourceLabel: label },
-          facingMode: "custom",
-          resources: [
-            {
-              role: "base",
-              resourceType: "cicn",
-              resourceId: Math.abs(pair.base.resourceId),
-              label: pair.base.label,
-              resourceBase64: baseResourceBase64,
-              previewPath: pair.base.previewPath,
-              bytes: pair.base.bytes,
-              sha256: pair.base.sha256
-            },
-            {
-              role: "paired",
-              resourceType: "cicn",
-              resourceId: Math.abs(pair.paired.resourceId),
-              label: pair.paired.label,
-              resourceBase64: pairedResourceBase64,
-              previewPath: pair.paired.previewPath,
-              bytes: pair.paired.bytes,
-              sha256: pair.paired.sha256
-            }
-          ]
+        const targetBaseIconId = Math.abs(pair.base.resourceId);
+        onApplyCommand({
+          kind: "upsertMonsterIconOverride",
+          label: `Copy ${label} to Scenario Assets`,
+          override: {
+            targetBaseIconId,
+            sourceBaseIconId: targetBaseIconId,
+            sourceKind: "monster-mash",
+            sourceLabel: label,
+            sourceBaseResourceBase64: baseResourceBase64,
+            sourcePairedResourceBase64: pairedResourceBase64,
+            imported: true
+          }
         });
-        onUpdateLibraryCatalog(nextCatalog, entity ? `Added ${entity.label} to the Providence Icon Library` : "Updated Providence Icon Library");
+        copiedToScenario = "monster-pair";
+      } else {
+        throw new Error("This icon use is not supported.");
       }
       setReferenceUseAsset(null);
+      if (copiedToScenario) {
+        if (copiedToScenario === "monster-pair") {
+          setSectionOverride("project");
+          setKindFilter("icon");
+          setQuery(asset.label);
+          setLibraryPage(0);
+        } else {
+          revealScenarioCopy(copiedToScenario);
+        }
+      }
     } catch (error) {
       setReferenceUseError(error instanceof Error ? error.message : "Unable to use the selected icon.");
     } finally {
@@ -262,10 +273,6 @@ export function ResourcesPanel({
     assetMatchesKind(asset.kind, kindFilter) &&
     (!normalizedQuery || assetSearchText(asset.entity.label, asset.resourceType, asset.resourceId, asset.source).includes(normalizedQuery))
   ), [allScenarioResources, kindFilter, normalizedQuery, section]);
-  const projectGalleryItems = useMemo<ProjectGalleryItem[]>(() => [
-    ...scenarioResources.map((asset) => ({ type: "scenario" as const, asset })),
-    ...managedGalleryItems
-  ], [managedGalleryItems, scenarioResources]);
   const isManagedAssetSection = section === "project" || section === "custom";
   const isReferenceAssetSection = section === "realmz" || section === "divinity";
   useEffect(() => {
@@ -296,6 +303,11 @@ export function ResourcesPanel({
     ? filteredLibraryAssets
     : filteredLibraryAssets.filter((asset) => estimatedPreviewStatus(asset) === libraryPreviewFilter),
   [filteredLibraryAssets, libraryPreviewFilter]);
+  const projectGalleryItems = useMemo<ProjectGalleryItem[]>(() => [
+    ...scenarioResources.map((asset) => ({ type: "scenario" as const, asset })),
+    ...managedGalleryItems,
+    ...(section === "custom" ? filteredLibraryAssets.map((asset) => ({ type: "library" as const, asset })) : [])
+  ], [filteredLibraryAssets, managedGalleryItems, scenarioResources, section]);
   const libraryPageSize = effectiveAssetPageSize(assetPageSize, matchingLibraryAssets.length);
   const projectPageSize = effectiveAssetPageSize(assetPageSize, projectGalleryItems.length);
   const libraryPageCount = Math.max(1, Math.ceil(matchingLibraryAssets.length / libraryPageSize));
@@ -398,7 +410,7 @@ export function ResourcesPanel({
             value={query}
             onChange={setQuery}
             placeholder="Search assets..."
-            ariaLabel={section === "project" ? "Search scenario assets" : section === "custom" ? "Search custom library assets" : "Search reference assets"}
+            ariaLabel={section === "project" ? "Search scenario assets" : section === "custom" ? "Search custom library assets" : section === "realmz" ? "Search Realmz Gallery" : "Search technical assets"}
           />
           <TutorialTip title="Asset Kind Filter" body={ASSET_KIND_FILTER_HELP} side="below">
             <select value={kindFilter} onChange={(event) => setKindFilter(event.currentTarget.value as ManagedAssetKind | "all")} aria-label="Asset kind filter">
@@ -432,7 +444,7 @@ export function ResourcesPanel({
             <TutorialTip title={assetSectionTitle(section)} body={assetSectionHelp(section)} side="below">
               <span>{assetSectionTitle(section)}</span>
             </TutorialTip>
-            <b>{isManagedAssetSection ? `${projectGalleryItems.length.toLocaleString()} ${section === "custom" ? "library" : "scenario"} asset${projectGalleryItems.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} reference asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
+            <b>{isManagedAssetSection ? `${projectGalleryItems.length.toLocaleString()} ${section === "custom" ? "library" : "scenario"} asset${projectGalleryItems.length === 1 ? "" : "s"}` : `${matchingLibraryAssets.length.toLocaleString()} ${section === "realmz" ? "stock" : "technical"} asset${matchingLibraryAssets.length === 1 ? "" : "s"}`}</b>
           </div>
           {kindFilter === "special-land-tile" && (
             <div className="special-land-explainer">
@@ -450,7 +462,7 @@ export function ResourcesPanel({
           {isManagedAssetSection && kindFilter === "special-land-tile" && (
             <AssetImportBar compact fixedKind="special-land-tile" label="Import Tile" libraryScope={section === "custom" ? "custom-library" : "scenario"} onImportAssets={section === "custom" || project ? onImportAssets : undefined} />
           )}
-          {isManagedAssetSection && <div className="asset-subsection-heading">{section === "custom" ? "Providence Custom Library" : "Ships With This Scenario"}</div>}
+          {isManagedAssetSection && <div className="asset-subsection-heading">{section === "custom" ? "Built-in and User Custom Assets" : "Ships With This Scenario"}</div>}
           {isManagedAssetSection && (
             <>
               <AssetGalleryControls
@@ -482,6 +494,19 @@ export function ResourcesPanel({
                         workspaceDir={workspaceDir}
                         selected={selectedAssetKey === item.asset.entity.id}
                         onSelect={() => setSelectedAsset({ type: "resource", entity: item.asset.entity, consumers: project ? directResourceConsumers(project, item.asset) : [] })}
+                      />
+                    ) : item.type === "library" ? (
+                      <LibraryAssetCard
+                        key={renderListKey("built-in-custom-asset", item.asset, index)}
+                        asset={item.asset}
+                        project={project}
+                        desktopRuntime={desktopRuntime}
+                        workspaceDir={workspaceDir}
+                        compact
+                        selected={selectedAssetKey === item.asset.id}
+                        onSelectEntity={onSelectEntity}
+                        onSelect={(preview) => setSelectedAsset({ type: "library", asset: item.asset, preview, usages: project ? resourceUsageLinks(project, item.asset.resourceType, item.asset.resourceId) : [] })}
+                        onCopyToScenario={project ? requestReferenceAssetCopy : undefined}
                       />
                     ) : item.asset.kind === "special-land-tile" ? (
                       <SpecialLandAssetCard
@@ -523,7 +548,7 @@ export function ResourcesPanel({
                       />
                     ))}
                     {(section === "custom" || project) && projectGalleryItems.length === 0 && (
-                      <p className="empty-copy compact">{section === "custom" ? "No custom library assets yet. Import reusable Providence media or add scenario assets here for future scenarios." : "No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario."}</p>
+                      <p className="empty-copy compact">{section === "custom" ? "No custom assets match this search. Import reusable media here to add it to the user-managed library." : "No scenario assets in this section yet. Imported assets here are the media Providence will package with this scenario."}</p>
                     )}
                     {!project && section !== "custom" && <p className="empty-copy compact">Open a project to manage scenario assets.</p>}
                   </div>
@@ -541,9 +566,22 @@ export function ResourcesPanel({
                   onDeleteCustomAsset={onDeleteCustomAsset}
                   onAddAssetToCustomLibrary={onAddAssetToCustomLibrary}
                   onCopyCustomAssetToScenario={project ? onCopyCustomAssetToScenario : undefined}
-                  onRemoveScenarioResource={(resourceType, resourceId, source) => {
+                  onCopyReferenceAssetToScenario={project ? requestReferenceAssetCopy : undefined}
+                  onRemoveScenarioResource={(entity) => {
                     if (!onApplyCommand) return;
-                    onApplyCommand({ kind: "removeScenarioResource", label: `Remove ${resourceType.trim()} ${resourceId}`, resourceType, resourceId, source });
+                    const targetBaseIconId = numberSummary(entity.summary.monsterIconTargetBaseId);
+                    if (targetBaseIconId !== null) {
+                      onApplyCommand({
+                        kind: "deleteMonsterIconOverride",
+                        label: `Remove monster icon set ${targetBaseIconId} from Scenario Assets`,
+                        targetBaseIconId
+                      });
+                    } else {
+                      const resourceType = resourceTypeFromSummary(entity.summary);
+                      const resourceId = resourceIdFromSummary(entity.summary);
+                      if (resourceType === null || resourceId === null) return;
+                      onApplyCommand({ kind: "removeScenarioResource", label: `Remove ${resourceType.trim()} ${resourceId}`, resourceType, resourceId, source: entity.source });
+                    }
                     setSelectedAsset(null);
                   }}
                   onSelectEntity={onSelectEntity}
@@ -587,7 +625,7 @@ export function ResourcesPanel({
                       />
                     ))}
                     {visibleLibraryAssets.length === 0 && libraryAssets.length > 0 && (
-                      <p className="empty-copy compact">No reference assets match this search.</p>
+                      <p className="empty-copy compact">No {section === "realmz" ? "stock Realmz" : "technical"} assets match this search.</p>
                     )}
                     {libraryAssets.length === 0 && <p className="empty-copy compact">Bundled libraries did not expose media assets.</p>}
                   </div>
@@ -724,6 +762,7 @@ export function ResourcesPanel({
           busy={referenceUseBusy}
           error={referenceUseError}
           libraryAvailable={Boolean(onUpdateLibraryCatalog)}
+          scenarioAvailable={Boolean(project && onApplyCommand)}
           onChoose={(use) => void applyReferenceIconUse(use)}
           onClose={() => {
             if (referenceUseBusy) return;
@@ -742,6 +781,7 @@ function ReferenceIconUseDialog({
   busy,
   error,
   libraryAvailable,
+  scenarioAvailable,
   onChoose,
   onClose
 }: {
@@ -750,6 +790,7 @@ function ReferenceIconUseDialog({
   busy: boolean;
   error: string;
   libraryAvailable: boolean;
+  scenarioAvailable: boolean;
   onChoose: (use: ReferenceIconUse) => void;
   onClose: () => void;
 }) {
@@ -770,10 +811,12 @@ function ReferenceIconUseDialog({
       disabled: !libraryAvailable
     },
     {
-      use: "monster-icon-library",
-      title: "Monster Icon Set",
-      detail: pair ? referenceIconUseDescription("monster-icon-library") : "Unavailable for this resource. Monster art needs a matched base and paired-facing cicn.",
-      disabled: !libraryAvailable || !pair
+      use: "scenario-monster-icon",
+      title: "Scenario Monster Icon Set",
+      detail: pair
+        ? `Copy both facing resources into Scenario Assets as cicn ${Math.abs(pair.base.resourceId)} and ${Math.abs(pair.paired.resourceId)}.`
+        : "Unavailable for this resource. Monster art needs a matched base and paired-facing cicn.",
+      disabled: !scenarioAvailable || !pair
     },
     {
       use: "special-land-tile",
@@ -823,7 +866,7 @@ function ReferenceIconUseDialog({
       </div>
       {error && <p className="reference-icon-use-error" role="alert">{error}</p>}
       <ModalDialogActions>
-        <span>{busy ? "Loading reference resource data..." : "Choices labeled Scenario copy into the current project; Library choices remain reusable across projects."}</span>
+        <span>{busy ? "Loading built-in asset data..." : "Scenario choices copy into the current project; library choices remain reusable across projects."}</span>
       </ModalDialogActions>
     </ModalDialog>
   );
@@ -892,7 +935,7 @@ function AssetSelectionInspector({
   onDeleteCustomAsset?: (assetId: string) => void;
   onAddAssetToCustomLibrary?: (assetId: string) => void;
   onCopyCustomAssetToScenario?: (assetId: string) => void;
-  onRemoveScenarioResource?: (resourceType: string, resourceId: number, source: string) => void;
+  onRemoveScenarioResource?: (entity: SemanticEntity) => void;
   onCopyReferenceAssetToScenario?: (assetId: string) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
 }) {
@@ -947,11 +990,15 @@ function AssetSelectionInspector({
               type="button"
               className="btn btn-danger btn-xs"
               onClick={() => {
-                if (!window.confirm(`Remove ${resourceType.trim()} ${resourceId} from this scenario export? Existing references may become missing.`)) return;
-                onRemoveScenarioResource?.(resourceType, resourceId, item.entity.source);
+                const monsterIconTargetBaseId = numberSummary(item.entity.summary.monsterIconTargetBaseId);
+                const prompt = monsterIconTargetBaseId !== null
+                  ? `Remove the paired monster icon set ${monsterIconTargetBaseId}/${monsterIconTargetBaseId + 308} from this scenario?`
+                  : `Remove ${resourceType.trim()} ${resourceId} from this scenario export? Existing references may become missing.`;
+                if (!window.confirm(prompt)) return;
+                onRemoveScenarioResource?.(item.entity);
               }}
             >
-              Remove from Scenario
+              {numberSummary(item.entity.summary.monsterIconTargetBaseId) !== null ? "Remove Icon Set" : "Remove from Scenario"}
             </button>
           )}
           <button type="button" className="btn btn-secondary btn-xs" disabled={!item} onClick={() => item && onOpenDetail(item)}>
@@ -1027,7 +1074,7 @@ function previewItemForEntityId(
     };
   }
   const libraryAsset = libraryAssets.find((asset) => asset.id === entityId);
-  if (libraryAsset && (section === "realmz" || section === "divinity")) {
+  if (libraryAsset && (section === "custom" || section === "realmz" || section === "divinity")) {
     return {
       type: "library",
       asset: libraryAsset,
@@ -1181,6 +1228,24 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
   for (const sound of project.assetCatalog.sounds ?? []) {
     addResource(sound.resourceType, sound.resourceId, sound.name || `${sound.resourceType} ${sound.resourceId}`, sound.source, sound.previewPath);
   }
+  for (const override of project.monsterIconOverrides ?? []) {
+    const baseId = Math.abs(override.targetBaseIconId);
+    const pairedId = baseId + 308;
+    const label = override.sourceLabel?.trim() || `Monster Icon ${baseId}`;
+    const source = `Scenario resource: monster icon override ${baseId}`;
+    const addOverrideResource = (resourceId: number, facing: "Base" | "Alternate", resourceBase64: string) => {
+      if (assets.some((asset) => asset.resourceType === "cicn" && Math.abs(asset.resourceId) === resourceId)) return;
+      addResource("cicn", resourceId, `${label} - ${facing}`, source, resourcePreviewDataUrlFromBase64("cicn", resourceBase64), {
+        family: "monster-icon-override",
+        monsterIconTargetBaseId: baseId,
+        facing: facing.toLowerCase(),
+        bytes: base64ByteLength(resourceBase64),
+        previewStatus: "preview-ready"
+      });
+    };
+    addOverrideResource(baseId, "Base", override.sourceBaseResourceBase64);
+    addOverrideResource(pairedId, "Alternate", override.sourcePairedResourceBase64);
+  }
   for (const tileset of project.assetCatalog.tilesets ?? []) {
     if (tileset.pictId == null) continue;
     addResource("PICT", tileset.pictId, tileset.name, tileset.source, tileset.imagePath, {
@@ -1200,6 +1265,13 @@ function scenarioResourceAssets(project: Project | null): ScenarioResourceAsset[
     addResource(resourceType, resourceId, entity.label || `${resourceType} ${resourceId}`, entity.source, previewPath, summary);
   }
   return assets.sort((a, b) => a.resourceType.localeCompare(b.resourceType) || a.resourceId - b.resourceId || a.source.localeCompare(b.source));
+}
+
+function base64ByteLength(value: string) {
+  const normalized = value.replace(/\s+/g, "");
+  if (!normalized) return 0;
+  const padding = normalized.endsWith("==") ? 2 : normalized.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor(normalized.length * 3 / 4) - padding);
 }
 
 function isScenarioResourceSource(source: string) {

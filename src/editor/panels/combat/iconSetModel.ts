@@ -1,4 +1,4 @@
-import { inspectResourcePreview } from "../../browser/resourcePreview";
+import { resourcePreviewDataUrlFromBase64 } from "../../browser/resourcePreview";
 import {
   iconLibraryEntryKind,
   iconLibraryMonsterPairMetadata,
@@ -312,16 +312,7 @@ export function normalizedMonsterIconBaseId(baseId: number) {
 }
 
 export function previewPathFromCicnBase64(resourceBase64: string, fallback: string | null) {
-  try {
-    const binary = atob(resourceBase64);
-    const bytes = new Uint8Array(binary.length);
-    for (let index = 0; index < binary.length; index += 1) {
-      bytes[index] = binary.charCodeAt(index);
-    }
-    return inspectResourcePreview("cicn", bytes).dataUrl ?? fallback;
-  } catch {
-    return fallback;
-  }
+  return resourcePreviewDataUrlFromBase64("cicn", resourceBase64) ?? fallback;
 }
 
 function monsterReferencedIconIds(project: Project) {

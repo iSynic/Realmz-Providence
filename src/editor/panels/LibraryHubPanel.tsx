@@ -63,7 +63,7 @@ export function LibraryHubPanel({
       />
       <p className="library-note">
         <TutorialTip title="Bundled Reference Data" body={LIBRARY_PACKAGE_HELP} side="below">
-          <span>Realmz and Divinity reference assets are packaged with Providence. Rebuild this catalog from source only during developer asset updates.</span>
+          <span>Realmz stock assets and Providence's protected built-in custom assets are packaged with the app. Rebuild this catalog from source only during developer asset updates.</span>
         </TutorialTip>
       </p>
       <div className="library-summary-grid">

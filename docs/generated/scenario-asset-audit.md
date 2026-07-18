@@ -49,7 +49,7 @@ Providence preserves nonstandard imported resources because shipped scenarios pr
 
 - **Scenario Assets** ship in the scenario resource fork. Imported raw scenario resources can now be removed explicitly; removal is recorded in project metadata and applied by browser packaging and desktop export.
 - **Custom Library** is Providence-wide reusable material. Copying an asset to Scenario Assets creates a scenario-owned duplicate with a collision-free scenario resource ID. The reusable source remains in Custom Library until explicitly deleted there.
-- **Realmz Reference Assets** are not copied when Realmz already owns the resource. Authoring pickers reference the stock resource ID.
+- **Realmz Gallery** assets are not copied when Realmz already owns the resource. Authoring pickers reference the stock resource ID.
 - **Divinity-only reference media** is not safe to reference by stock ID. Eligible media must be copied into Scenario Assets and assigned a valid scenario-owned ID before an authoring picker offers it.
 - Project asset ID allocation considers managed assets, imported scenario resources, icon resources, and parsed text resources to avoid collisions.
 

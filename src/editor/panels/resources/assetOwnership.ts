@@ -8,8 +8,8 @@ export const ADD_TO_CUSTOM_LIBRARY_LABEL = "Add to Custom Library";
 
 export function assetSectionHelp(section: AssetSection) {
   if (section === "project") return "Import and manage media that ships with this scenario.";
-  if (section === "custom") return "Keep reusable Providence assets available to every scenario, then copy them into Scenario Assets when they should ship.";
-  if (section === "realmz") return "Browse useful stock and reference media. Realmz stock stays reference-only by ID; eligible non-stock media can be copied into Scenario Assets.";
+  if (section === "custom") return "Use Providence's protected built-in custom assets and add your own reusable media, then copy what a scenario needs into Scenario Assets.";
+  if (section === "realmz") return "Browse stock Realmz icons, sounds, and special land tiles. Use their existing IDs without bundling copies in the scenario.";
   if (section === "divinity") return "Editor UI reference material kept out of normal authoring views.";
   if (section === "records") return "Parsed scenario records and resource references.";
   return "Raw resource listings, diagnostics, and compatibility records.";
@@ -17,6 +17,9 @@ export function assetSectionHelp(section: AssetSection) {
 
 export function referenceAssetOwnershipGuidance(asset: LibraryAsset) {
   const scope = resourceExportScope(asset);
+  if (scope === "custom-library") {
+    return "This protected built-in Custom Library asset remains available to every project. Copy it into Scenario Assets when the current scenario should ship it.";
+  }
   if (scope === "realmz-built-in-reference") {
     return `Realmz already supplies ${resourceIdentity(asset)}. Use its existing stock ID; no scenario copy is needed.`;
   }

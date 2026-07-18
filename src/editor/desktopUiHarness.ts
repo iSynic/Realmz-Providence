@@ -795,7 +795,7 @@ async function probeAssetResource(request: AssetResourceProbeRequest) {
 }
 
 async function selectAssetSection(section: AssetResourceProbeRequest["section"]) {
-  const label = section === "realmz" ? "Reference Assets" : "Scenario Assets";
+  const label = section === "realmz" ? "Realmz Gallery" : "Scenario Assets";
   const tab = [...document.querySelectorAll<HTMLButtonElement>(".asset-section-tabs button")]
     .find((button) => button.textContent?.includes(label));
   if (!tab) throw new Error(`No Assets section tab found for ${label}.`);

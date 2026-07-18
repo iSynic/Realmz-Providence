@@ -17,7 +17,7 @@ Providence is not a clone of Divinity's interface. It presents the same game con
 
 ## Download
 
-The current release is **Realmz Providence 0.4.1**.
+The current release is **Realmz Providence 0.4.2**.
 
 | Platform | Package |
 | --- | --- |
@@ -56,12 +56,12 @@ Action Points are shown as ordered, named steps with focused controls for their 
 
 ### Combat and reusable assets
 
-Combat combines battle layout, scenario monsters, the reusable monster library, and monster previews. Assets are separated by how authors use them: bundled Scenario Assets, the reusable Custom Library, and stock Reference Assets.
+Combat combines battle layout, scenario monsters, the reusable monster library, and monster previews. Assets are separated by how authors use them: bundled Scenario Assets, the reusable Custom Library, and the stock-ID Realmz Gallery.
 
 <table>
   <tr>
     <td width="50%"><img src="public/manual/gallery/combat.png" alt="Battle grid and monster library authoring"></td>
-    <td width="50%"><img src="public/manual/gallery/assets.png" alt="Scenario Assets, Custom Library, and Reference Assets"></td>
+    <td width="50%"><img src="public/manual/gallery/assets.png" alt="Scenario Assets, Custom Library, and Realmz Gallery"></td>
   </tr>
   <tr>
     <td><strong>Combat</strong><br>Build battle grids, browse monsters with their icons and statistics, and keep scenario-specific records separate from reusable library entries.</td>
@@ -112,8 +112,8 @@ Strings are searchable, editable, byte-aware, and linked to their uses throughou
 ### Assets and references
 
 - Scenario pictures, CICN icons, sounds, TEXT, STR#, styl, special land tiles, and preserved raw resources
-- A global Custom Library for reusable Providence material that is not yet tied to a scenario
-- Reference Assets for Realmz-owned material that can be used by stock ID
+- A global Custom Library with protected built-in custom art plus user-managed reusable assets
+- A Realmz Gallery for stock icons, sounds, and special land tiles that can be used by ID without bundling
 - Safe scenario ID allocation when a library asset must become scenario-owned
 
 ### Scenario generation
@@ -220,7 +220,7 @@ The committed manual gallery can be refreshed against a selected project with `n
 
 ## Status and Contributing
 
-Providence is under active development. Version 0.4.1 supports substantial end-to-end scenario authoring and export, but a real Realmz scenario remains the final compatibility test. Bug reports should include the source scenario or a minimal project package, the owning editor, the affected record or coordinates, the expected Realmz behavior, and whether the problem occurs in the browser, desktop app, exported scenario, or game runtime.
+Providence is under active development. Version 0.4.2 supports substantial end-to-end scenario authoring and export, but a real Realmz scenario remains the final compatibility test. Bug reports should include the source scenario or a minimal project package, the owning editor, the affected record or coordinates, the expected Realmz behavior, and whether the problem occurs in the browser, desktop app, exported scenario, or game runtime.
 
 Before submitting code, keep changes scoped, run the relevant focused checks, and use `npm run check` when the affected surface crosses project, export, or shared-record boundaries. Refactors should also follow the [Codebase Stabilization Baseline](docs/codebase-stabilization-baseline.md), which defines the repository's ownership and no-behavior-change constraints.
 

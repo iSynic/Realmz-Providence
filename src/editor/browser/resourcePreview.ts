@@ -80,6 +80,17 @@ export function inspectResourcePreview(resourceType: string, data: Uint8Array): 
   }
 }
 
+export function resourcePreviewDataUrlFromBase64(resourceType: string, resourceBase64: string) {
+  try {
+    const binary = atob(resourceBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+    return inspectResourcePreview(resourceType, bytes).dataUrl;
+  } catch {
+    return null;
+  }
+}
+
 function imageToDataUrl(image: DecodedImage) {
   const canvas = document.createElement("canvas");
   canvas.width = image.width;
