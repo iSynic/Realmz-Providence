@@ -118,7 +118,16 @@ record IDs are not exposed as project entities. Imported buffers retain their so
 inspect-only evidence path. Messages, shops, and simple/complex encounters remain the next
 direct-canonical semantic tier.
 
-Branch validation through the thirteenth slice completed on 2026-07-18:
+The fourteenth slice completes that supporting-record tier. Authored desktop and browser projects
+now compile canonical messages (`Data SD2`), shops (`Data SD`), simple encounters (`Data ED`), and
+complex encounters (`Data ED2`) through the same native writers used by export and map the result
+through the proven semantic decoders. Poison-byte regressions prove that embedded imported bytes
+cannot influence the authored path even when a record is mislabeled `authored: false`; only
+explicit canonical IDs become confirmed/editable, and sparse native padding remains hidden.
+Imported records retain source-backed, inspect-only semantics and complex encounters retain their
+thief-encounter links.
+
+Branch validation through the fourteenth slice completed on 2026-07-18:
 
 - full Rust suite: 202 passed, 2 ignored;
 - full TypeScript suite: 524 passed, plus typecheck;
@@ -493,9 +502,8 @@ must not be called fresh-authoritative merely because imported round trips are f
    at the compatibility boundary.
 7. **Implemented at the semantic-source boundary:** authored indices consume canonical project
    fields and managed scenario resources with no raw buffers; imported indices retain raw-buffer
-   enrichment. Scenario items, treasures, thief encounters, and timed encounters now receive
-   direct canonical summaries. Messages, shops, and simple/complex encounters remain on the
-   incremental coverage list.
+   enrichment. Scenario items, treasures, thief/timed encounters, messages, shops, and
+   simple/complex encounters now receive direct canonical summaries in both runtimes.
 8. **Implemented on the investigation branch:** persist/import/export `itemTexts` in Rust and gate
    its TypeScript/Rust/native-folder conformance in the ownership proof.
 9. Gate browser and desktop output with the same golden manifest/byte fixtures. Prefer one Rust
@@ -517,10 +525,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. They must become annex slices rather than
    normal canonical fields.
-5. **Canonical semantic coverage:** authored semantic mapping now covers scenario items,
-   treasures, thief encounters, and timed encounters without raw files. Messages, shops, and
-   simple/complex encounters still need the same direct-canonical mapping before the semantic
-   graph covers every editor-owned supporting family.
+5. **Canonical semantic coverage:** the editor-owned supporting tier now maps directly from
+   canonical data in both runtimes. Remaining fixed-family semantic gaps include option labels,
+   monster descriptions, broader combat records, and rule overrides; these are coverage work, not
+   raw-source dependencies in the compiler.
 6. **Ownership-reporting mismatch:** current completeness reports prove conservative imported
    writing, not construction from zero, and overstate at least the Race/Caste suffixes.
 7. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern

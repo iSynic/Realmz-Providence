@@ -2489,6 +2489,24 @@ mod tests {
         treasure[1] = 42;
         treasure[43] = 77;
         fs::write(raw_dir.join("Data TD"), treasure).expect("write imported treasure");
+        let mut message = vec![0_u8; crate::realmz::MESSAGE_BYTES];
+        message[0] = 8;
+        message[1..9].copy_from_slice(b"Imported");
+        fs::write(raw_dir.join("Data SD2"), message).expect("write imported message");
+        let mut shop = vec![0_u8; crate::realmz::SHOP_BYTES];
+        crate::realmz::write_i16_be(&mut shop, 0, 901);
+        shop[2000] = 3;
+        crate::realmz::write_i16_be(&mut shop, 3000, 120);
+        fs::write(raw_dir.join("Data SD"), shop).expect("write imported shop");
+        let mut simple = vec![0_u8; crate::realmz::SIMPLE_ENCOUNTER_BYTES];
+        simple[100] = 1;
+        crate::realmz::write_i16_be(&mut simple, 104, 12);
+        fs::write(raw_dir.join("Data ED"), simple).expect("write imported simple encounter");
+        let mut complex = vec![0_u8; crate::realmz::COMPLEX_ENCOUNTER_BYTES];
+        complex[152] = 1;
+        complex[155] = 2;
+        crate::realmz::write_i16_be(&mut complex, 158, 18);
+        fs::write(raw_dir.join("Data ED2"), complex).expect("write imported complex encounter");
 
         let schema = build_project_semantic_schema(&project_dir, &project)
             .expect("build imported semantic schema");
@@ -2503,6 +2521,22 @@ mod tests {
         assert!(!treasure.editable);
         assert!(!treasure.summary.contains_key("canonical"));
         assert!(schema.sources.iter().any(|source| source.name == "Data TD"));
+        for entity_id in [
+            "message:0",
+            "shop:0",
+            "encounter:simple:0",
+            "encounter:complex:0",
+        ] {
+            let entity = schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == entity_id)
+                .unwrap_or_else(|| panic!("imported entity {entity_id}"));
+            assert_eq!(entity.edit_state, SemanticEditState::InspectOnly);
+            assert!(matches!(entity.confidence, Confidence::SourceBacked));
+            assert!(!entity.editable);
+            assert!(!entity.summary.contains_key("canonical"));
+        }
     }
 
     #[test]
@@ -2523,6 +2557,59 @@ mod tests {
         item.authored = false;
         item.raw_bytes.fill(0xA5);
         project.scenario_items = vec![item];
+
+        let mut message = crate::realmz::parse_messages(&vec![0; crate::realmz::MESSAGE_BYTES])
+            .into_iter()
+            .next()
+            .expect("message template");
+        message.id = 5;
+        message.text = "Canonical message".to_string();
+        message.authored = false;
+        message.raw_bytes.fill(0xA5);
+        project.messages = vec![message];
+
+        let mut shop = crate::realmz::parse_shops(&vec![0; crate::realmz::SHOP_BYTES])
+            .into_iter()
+            .next()
+            .expect("shop template");
+        shop.id = 2;
+        shop.item_ids = vec![901];
+        shop.quantities = vec![3];
+        shop.inflation = 120;
+        shop.authored = false;
+        shop.raw_bytes.fill(0xA5);
+        project.shops = vec![shop];
+
+        let mut simple = crate::realmz::parse_simple_encounter_records(&vec![
+            0;
+            crate::realmz::SIMPLE_ENCOUNTER_BYTES
+        ])
+        .into_iter()
+        .next()
+        .expect("simple encounter template");
+        simple.id = 2;
+        simple.can_back_out = true;
+        simple.prompt = 12;
+        simple.texts[0] = "A simple choice".to_string();
+        simple.authored = false;
+        simple.raw_bytes.fill(0xA5);
+        project.simple_encounters = vec![simple];
+
+        let mut complex = crate::realmz::parse_complex_encounter_records(&vec![
+            0;
+            crate::realmz::COMPLEX_ENCOUNTER_BYTES
+        ])
+        .into_iter()
+        .next()
+        .expect("complex encounter template");
+        complex.id = 4;
+        complex.thief = true;
+        complex.thief_success = 2;
+        complex.prompt = 18;
+        complex.texts[0] = "A complex choice".to_string();
+        complex.authored = false;
+        complex.raw_bytes.fill(0xA5);
+        project.complex_encounters = vec![complex];
 
         let mut treasure = crate::realmz::parse_treasures(&vec![0; crate::realmz::TREASURE_BYTES])
             .into_iter()
@@ -2564,7 +2651,16 @@ mod tests {
 
         let schema = build_project_semantic_schema(&project_dir, &project)
             .expect("build authored semantic schema");
-        for entity_id in ["item:901", "treasure:3", "thief:2", "time:3"] {
+        for entity_id in [
+            "message:5",
+            "shop:2",
+            "encounter:simple:2",
+            "encounter:complex:4",
+            "item:901",
+            "treasure:3",
+            "thief:2",
+            "time:3",
+        ] {
             let entity = schema
                 .entities
                 .iter()
@@ -2589,7 +2685,16 @@ mod tests {
                 Some(&serde_json::json!(true))
             );
         }
-        for entity_id in ["item:800", "treasure:0", "thief:0", "time:0"] {
+        for entity_id in [
+            "message:0",
+            "shop:0",
+            "encounter:simple:0",
+            "encounter:complex:0",
+            "item:800",
+            "treasure:0",
+            "thief:0",
+            "time:0",
+        ] {
             assert!(
                 !schema.entities.iter().any(|entity| entity.id == entity_id),
                 "sparse compiler slot {entity_id} must not become a semantic entity"
@@ -2603,7 +2708,40 @@ mod tests {
                 .and_then(|entity| entity.summary.get("gold")),
             Some(&serde_json::json!(77))
         );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "message:5")
+                .and_then(|entity| entity.summary.get("text")),
+            Some(&serde_json::json!("Canonical message"))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "shop:2")
+                .and_then(|entity| entity.summary.get("inflation")),
+            Some(&serde_json::json!(120))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "encounter:simple:2")
+                .and_then(|entity| entity.summary.get("prompt")),
+            Some(&serde_json::json!(12))
+        );
+        assert!(schema.links.iter().any(|link| {
+            link.from == "encounter:complex:4"
+                && link.to == "thief:2"
+                && link.kind == "uses_thief_encounter"
+        }));
         for (source, path) in [
+            ("Data SD2", "project.json#messages"),
+            ("Data SD", "project.json#shops"),
+            ("Data ED", "project.json#simpleEncounters"),
+            ("Data ED2", "project.json#complexEncounters"),
             ("Data NI", "project.json#scenarioItems"),
             ("Data TD", "project.json#treasures"),
             ("Data TD2", "project.json#thiefEncounters"),

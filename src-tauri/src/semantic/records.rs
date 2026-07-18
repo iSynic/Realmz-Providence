@@ -2,7 +2,8 @@ use super::common::*;
 use super::map_names::{map_record_name, ResourceMapName};
 use crate::project::*;
 use crate::realmz::{
-    shop_prefix_record_count, write_scenario_items, write_thief_encounters, write_timed_encounters,
+    shop_prefix_record_count, write_complex_encounters, write_messages, write_scenario_items,
+    write_shops, write_simple_encounters, write_thief_encounters, write_timed_encounters,
     write_treasures, ParsedScenario, COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES,
 };
 use serde_json::{json, Value};
@@ -12,47 +13,60 @@ pub(super) fn add_canonical_supporting_collections(
     schema: &mut SemanticSchema,
     parsed: &ParsedScenario,
 ) {
-    let scenario_items: Vec<_> = parsed
-        .scenario_items
-        .iter()
-        .cloned()
-        .map(|mut record| {
-            record.authored = true;
-            record.raw_bytes.clear();
-            record
-        })
-        .collect();
-    let treasures: Vec<_> = parsed
-        .treasures
-        .iter()
-        .cloned()
-        .map(|mut record| {
-            record.authored = true;
-            record.raw_bytes.clear();
-            record
-        })
-        .collect();
-    let thief_encounters: Vec<_> = parsed
-        .thief_encounters
-        .iter()
-        .cloned()
-        .map(|mut record| {
-            record.authored = true;
-            record.raw_bytes.clear();
-            record
-        })
-        .collect();
-    let timed_encounters: Vec<_> = parsed
-        .timed_encounters
-        .iter()
-        .cloned()
-        .map(|mut record| {
-            record.authored = true;
-            record.raw_bytes.clear();
-            record
-        })
-        .collect();
+    macro_rules! canonical_records {
+        ($records:expr) => {
+            $records
+                .iter()
+                .cloned()
+                .map(|mut record| {
+                    record.authored = true;
+                    record.raw_bytes.clear();
+                    record
+                })
+                .collect::<Vec<_>>()
+        };
+    }
+    let messages = canonical_records!(parsed.messages);
+    let shops = canonical_records!(parsed.shops);
+    let simple_encounters = canonical_records!(parsed.simple_encounters);
+    let complex_encounters = canonical_records!(parsed.complex_encounters);
+    let scenario_items = canonical_records!(parsed.scenario_items);
+    let treasures = canonical_records!(parsed.treasures);
+    let thief_encounters = canonical_records!(parsed.thief_encounters);
+    let timed_encounters = canonical_records!(parsed.timed_encounters);
     let mut buffers = BTreeMap::new();
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data SD2",
+        "project.json#messages",
+        !messages.is_empty(),
+        write_messages(&messages),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data SD",
+        "project.json#shops",
+        !shops.is_empty(),
+        write_shops(&shops),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data ED",
+        "project.json#simpleEncounters",
+        !simple_encounters.is_empty(),
+        write_simple_encounters(&simple_encounters),
+    );
+    insert_canonical_buffer(
+        schema,
+        &mut buffers,
+        "Data ED2",
+        "project.json#complexEncounters",
+        !complex_encounters.is_empty(),
+        write_complex_encounters(&complex_encounters),
+    );
     insert_canonical_buffer(
         schema,
         &mut buffers,
@@ -89,10 +103,35 @@ pub(super) fn add_canonical_supporting_collections(
         return;
     }
 
+    add_encounters(schema, &buffers);
     add_fixed_collections(schema, &buffers, &parsed.maps, &BTreeMap::new());
     retain_canonical_records(
         schema,
         [
+            (
+                "Data SD2",
+                parsed.messages.iter().map(|record| record.id).collect(),
+            ),
+            (
+                "Data SD",
+                parsed.shops.iter().map(|record| record.id).collect(),
+            ),
+            (
+                "Data ED",
+                parsed
+                    .simple_encounters
+                    .iter()
+                    .map(|record| record.id)
+                    .collect(),
+            ),
+            (
+                "Data ED2",
+                parsed
+                    .complex_encounters
+                    .iter()
+                    .map(|record| record.id)
+                    .collect(),
+            ),
             (
                 "Data NI",
                 parsed

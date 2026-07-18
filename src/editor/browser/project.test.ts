@@ -122,19 +122,43 @@ describe("browser project native manifest validation", () => {
     const importedTreasure = new Uint8Array(48);
     importedTreasure[1] = 42;
     importedTreasure[43] = 77;
-    project.source.files = [{
-      name: "Data TD",
-      relativePath: "Data TD",
-      bytes: importedTreasure.byteLength,
+    const importedMessage = new Uint8Array(256);
+    importedMessage[0] = 8;
+    importedMessage.set(new TextEncoder().encode("Imported"), 1);
+    const importedShop = new Uint8Array(3002);
+    importedShop.set([0x03, 0x85], 0);
+    importedShop[2000] = 3;
+    importedShop.set([0x00, 0x78], 3000);
+    const importedSimpleEncounter = new Uint8Array(426);
+    importedSimpleEncounter[100] = 1;
+    importedSimpleEncounter.set([0x00, 0x0c], 104);
+    const importedComplexEncounter = new Uint8Array(520);
+    importedComplexEncounter[152] = 1;
+    importedComplexEncounter[155] = 2;
+    importedComplexEncounter.set([0x00, 0x12], 158);
+    const importedBuffers = new Map([
+      ["Data TD", importedTreasure],
+      ["Data SD2", importedMessage],
+      ["Data SD", importedShop],
+      ["Data ED", importedSimpleEncounter],
+      ["Data ED2", importedComplexEncounter]
+    ]);
+    project.source.files = Array.from(importedBuffers, ([name, bytes]) => ({
+      name,
+      relativePath: name,
+      bytes: bytes.byteLength,
       sha256: "imported",
-      role: "supported-binary",
+      role: "supported-binary" as const,
       editable: true
-    }];
+    }));
     registerBrowserSourceSnapshot(project, {
       capturedAt: "2026-07-18T00:00:00.000Z",
       rootName: "Imported Semantic Boundary",
-      totalBytes: importedTreasure.byteLength,
-      files: [{ ...project.source.files[0], bytesData: importedTreasure }]
+      totalBytes: Array.from(importedBuffers.values()).reduce((total, bytes) => total + bytes.byteLength, 0),
+      files: project.source.files.map((file) => ({
+        ...file,
+        bytesData: importedBuffers.get(file.name)!
+      }))
     });
 
     const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);
@@ -145,6 +169,14 @@ describe("browser project native manifest validation", () => {
       editable: false,
       summary: { gold: 77 }
     });
+    for (const entityId of ["message:0", "shop:0", "encounter:simple:0", "encounter:complex:0"]) {
+      expect(semanticSchema.entities.find((entity) => entity.id === entityId)).toMatchObject({
+        editState: "inspect-only",
+        confidence: "source-backed",
+        editable: false
+      });
+      expect(semanticSchema.entities.find((entity) => entity.id === entityId)?.summary.canonical).toBeUndefined();
+    }
     expect(semanticSchema.sources.some((source) => source.name === "Data TD")).toBe(true);
   });
 
@@ -154,7 +186,11 @@ describe("browser project native manifest validation", () => {
       ["Data NI", new Uint8Array(100)],
       ["Data TD", new Uint8Array(48)],
       ["Data TD2", new Uint8Array(118)],
-      ["Data TD3", new Uint8Array(40)]
+      ["Data TD3", new Uint8Array(40)],
+      ["Data SD2", new Uint8Array(256)],
+      ["Data SD", new Uint8Array(3002)],
+      ["Data ED", new Uint8Array(426)],
+      ["Data ED2", new Uint8Array(520)]
     ]));
     project.scenarioItems = [{
       ...parsed.scenarioItems[0],
@@ -192,10 +228,54 @@ describe("browser project native manifest validation", () => {
       authored: false,
       rawBytes: new Array(40).fill(0xa5)
     }];
+    project.messages = [{
+      ...parsed.messages[0],
+      id: 5,
+      text: "Canonical message",
+      authored: false,
+      rawBytes: new Array(256).fill(0xa5)
+    }];
+    project.shops = [{
+      ...parsed.shops[0],
+      id: 2,
+      itemIds: [901],
+      quantities: [3],
+      inflation: 120,
+      authored: false,
+      rawBytes: new Array(3002).fill(0xa5)
+    }];
+    project.simpleEncounters = [{
+      ...parsed.simpleEncounters[0],
+      id: 2,
+      canBackOut: true,
+      prompt: 12,
+      texts: ["Canonical simple encounter", "", "", ""],
+      authored: false,
+      rawBytes: new Array(426).fill(0xa5)
+    }];
+    project.complexEncounters = [{
+      ...parsed.complexEncounters[0],
+      id: 4,
+      thief: true,
+      thiefSuccess: 2,
+      prompt: 18,
+      texts: ["Canonical complex encounter", "", "", "", "", "", "", "", ""],
+      authored: false,
+      rawBytes: new Array(520).fill(0xa5)
+    }];
 
     const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);
 
-    for (const entityId of ["item:901", "treasure:3", "thief:2", "time:3"]) {
+    for (const entityId of [
+      "item:901",
+      "treasure:3",
+      "thief:2",
+      "time:3",
+      "message:5",
+      "shop:2",
+      "encounter:simple:2",
+      "encounter:complex:4"
+    ]) {
       const entity = semanticSchema.entities.find((candidate) => candidate.id === entityId);
       expect(entity).toMatchObject({
         editState: "editable",
@@ -209,15 +289,36 @@ describe("browser project native manifest validation", () => {
         summary: { canonical: true }
       });
     }
-    for (const entityId of ["item:800", "treasure:0", "thief:0", "time:0"]) {
+    for (const entityId of [
+      "item:800",
+      "treasure:0",
+      "thief:0",
+      "time:0",
+      "message:0",
+      "shop:0",
+      "encounter:simple:0",
+      "encounter:complex:0"
+    ]) {
       expect(semanticSchema.entities.some((entity) => entity.id === entityId)).toBe(false);
     }
     expect(semanticSchema.entities.find((entity) => entity.id === "treasure:3")?.summary.gold).toBe(77);
+    expect(semanticSchema.entities.find((entity) => entity.id === "message:5")?.summary.text).toBe("Canonical message");
+    expect(semanticSchema.entities.find((entity) => entity.id === "shop:2")?.summary.inflation).toBe(120);
+    expect(semanticSchema.entities.find((entity) => entity.id === "encounter:simple:2")?.summary.prompt).toBe(12);
+    expect(semanticSchema.links).toContainEqual(expect.objectContaining({
+      from: "encounter:complex:4",
+      to: "thief:2",
+      kind: "uses_thief_encounter"
+    }));
     for (const [name, path] of [
       ["Data NI", "project.json#scenarioItems"],
       ["Data TD", "project.json#treasures"],
       ["Data TD2", "project.json#thiefEncounters"],
-      ["Data TD3", "project.json#timedEncounters"]
+      ["Data TD3", "project.json#timedEncounters"],
+      ["Data SD2", "project.json#messages"],
+      ["Data SD", "project.json#shops"],
+      ["Data ED", "project.json#simpleEncounters"],
+      ["Data ED2", "project.json#complexEncounters"]
     ]) {
       expect(semanticSchema.sources.find((source) => source.name === name)).toMatchObject({
         path,

@@ -17,7 +17,8 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { writeScenarioItems, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeComplexEncounters, writeMessages, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { shopPrefixRecordCount } from "./shopRecords";
 
 export type BrowserSemanticBuildProgress = {
   phase: string;
@@ -40,6 +41,10 @@ export function buildBrowserSemanticSchema(projectParts: {
   battles: BattleRecord[];
   monsters: MonsterRecord[];
   monsterSets: MonsterSet[];
+  messages: Project["messages"];
+  shops: Project["shops"];
+  simpleEncounters: Project["simpleEncounters"];
+  complexEncounters: Project["complexEncounters"];
   scenarioItems: Project["scenarioItems"];
   treasures: Project["treasures"];
   thiefEncounters: Project["thiefEncounters"];
@@ -284,6 +289,10 @@ function addScenarioEntity(schema: SemanticSchema, scenario: Project["scenario"]
 }
 
 function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8Array>) {
+  addMessageRecords(schema, buffers.get("Data SD2"));
+  addShopRecords(schema, buffers.get("Data SD"));
+  addSimpleEncounterRecords(schema, buffers.get("Data ED"));
+  addComplexEncounterRecords(schema, buffers.get("Data ED2"));
   addTreasureRecords(schema, buffers.get("Data TD"));
   addThiefRecords(schema, buffers.get("Data TD2"));
   addTimedRecords(schema, buffers.get("Data TD3"));
@@ -298,11 +307,15 @@ function addCanonicalSupportingRecords(
   schema: SemanticSchema,
   projectParts: Pick<
     Parameters<typeof buildBrowserSemanticSchema>[0],
-    "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
+    "messages" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters"
   >
 ) {
   const buffers = new Map<string, Uint8Array>();
   const sources: Array<{ name: string; path: string; ids: Set<number> }> = [];
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data SD2", "project.json#messages", projectParts.messages, writeMessages);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data SD", "project.json#shops", projectParts.shops, writeShops);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data ED", "project.json#simpleEncounters", projectParts.simpleEncounters, writeSimpleEncounters);
+  addCanonicalSupportingBuffer(schema, buffers, sources, "Data ED2", "project.json#complexEncounters", projectParts.complexEncounters, writeComplexEncounters);
   addCanonicalSupportingBuffer(schema, buffers, sources, "Data NI", "project.json#scenarioItems", projectParts.scenarioItems, writeScenarioItems);
   addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD", "project.json#treasures", projectParts.treasures, writeTreasures);
   addCanonicalSupportingBuffer(schema, buffers, sources, "Data TD2", "project.json#thiefEncounters", projectParts.thiefEncounters, writeThiefEncounters);
@@ -381,6 +394,92 @@ function retainCanonicalSupportingRecords(
     entity.confidence = "confirmed";
     entity.editable = true;
     entity.summary.canonical = true;
+  }
+}
+
+function addMessageRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const recordBytes = 256;
+  const count = Math.floor(buffer.byteLength / recordBytes);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * recordBytes;
+    const text = pascalTextAt(buffer, start, recordBytes);
+    const summary = {
+      id: index,
+      length: buffer[start] ?? 0,
+      text,
+      preview: text.slice(0, 96)
+    };
+    upsertRecord(schema, browserRecord("Data SD2", index, recordBytes, "message", text || `Message ${index}`, summary));
+    schema.entities.push(browserEntity(`message:${index}`, "message", text || `Message ${index}`, "Data SD2", `record:Data SD2:${index}`, start, recordBytes, summary));
+  }
+}
+
+function addShopRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const recordBytes = 3002;
+  const count = shopPrefixRecordCount(buffer);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * recordBytes;
+    const itemIds = Array.from({ length: 1000 }, (_, slot) => i16At(buffer, start + slot * 2)).filter((itemId) => itemId !== 0);
+    const summary = {
+      id: index,
+      itemCount: itemIds.length,
+      quantitySlots: Array.from(buffer.slice(start + 2000, start + 3000)).filter((value) => value !== 0).length,
+      inflation: i16At(buffer, start + 3000),
+      sampleItems: itemIds.slice(0, 18)
+    };
+    upsertRecord(schema, browserRecord("Data SD", index, recordBytes, "shop", `Shop ${index}`, summary));
+    schema.entities.push(browserEntity(`shop:${index}`, "shop", `Shop ${index}`, "Data SD", `record:Data SD:${index}`, start, recordBytes, summary));
+  }
+}
+
+function addSimpleEncounterRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const recordBytes = 426;
+  const count = Math.floor(buffer.byteLength / recordBytes);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * recordBytes;
+    const summary = {
+      kind: "simple",
+      id: index,
+      prompt: i16At(buffer, start + 104),
+      canBackOut: buffer[start + 100] !== 0,
+      maxTimes: signedByteAt(buffer, start + 101),
+      casteSuccess: signedByteAt(buffer, start + 102),
+      nonzeroActions: Array.from(buffer.slice(start, start + 32)).filter((value) => value !== 0).length,
+      text: Array.from({ length: 4 }, (_, slot) => pascalTextAt(buffer, start + 106 + slot * 80, 80)).filter((value) => value.length > 0)
+    };
+    upsertRecord(schema, browserRecord("Data ED", index, recordBytes, "simple encounter", `Simple Encounter ${index}`, summary));
+    schema.entities.push(browserEntity(`encounter:simple:${index}`, "simple encounter", `Simple Encounter ${index}`, "Data ED", `record:Data ED:${index}`, start, recordBytes, summary));
+  }
+}
+
+function addComplexEncounterRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  const recordBytes = 520;
+  const count = Math.floor(buffer.byteLength / recordBytes);
+  for (let index = 0; index < count; index += 1) {
+    const start = index * recordBytes;
+    const summary = {
+      kind: "complex",
+      id: index,
+      prompt: i16At(buffer, start + 158),
+      canBackOut: buffer[start + 151] !== 0,
+      thief: buffer[start + 152] !== 0,
+      maxTimes: signedByteAt(buffer, start + 153),
+      casteSuccess: signedByteAt(buffer, start + 154),
+      thiefSuccess: signedByteAt(buffer, start + 155),
+      thiefFail: signedByteAt(buffer, start + 156),
+      nonzeroActions: Array.from(buffer.slice(start, start + 32)).filter((value) => value !== 0).length,
+      text: Array.from({ length: 9 }, (_, slot) => pascalTextAt(buffer, start + 160 + slot * 40, 40)).filter((value) => value.length > 0)
+    };
+    const entityId = `encounter:complex:${index}`;
+    upsertRecord(schema, browserRecord("Data ED2", index, recordBytes, "complex encounter", `Complex Encounter ${index}`, summary));
+    schema.entities.push(browserEntity(entityId, "complex encounter", `Complex Encounter ${index}`, "Data ED2", `record:Data ED2:${index}`, start, recordBytes, summary));
+    if (summary.thief && summary.thiefSuccess > 0) {
+      pushLink(schema, entityId, `thief:${summary.thiefSuccess}`, "uses_thief_encounter", "source-backed", { field: "thiefSuccess" });
+    }
   }
 }
 
@@ -2045,6 +2144,16 @@ function i16At(buffer: Uint8Array, offset: number) {
   if (offset + 2 > buffer.byteLength) return 0;
   const value = (buffer[offset] << 8) | buffer[offset + 1];
   return value & 0x8000 ? value - 0x10000 : value;
+}
+
+function signedByteAt(buffer: Uint8Array, offset: number) {
+  const value = buffer[offset] ?? 0;
+  return value > 127 ? value - 256 : value;
+}
+
+function pascalTextAt(buffer: Uint8Array, start: number, capacity: number) {
+  const length = Math.min(buffer[start] ?? 0, Math.max(0, capacity - 1), Math.max(0, buffer.byteLength - start - 1));
+  return decodeClassicText(buffer.slice(start + 1, start + 1 + length));
 }
 
 function u16At(buffer: Uint8Array, offset: number) {
