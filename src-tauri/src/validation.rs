@@ -505,9 +505,16 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for shop in &project.shops {
-        if shop.item_ids.len() > 1000 || shop.quantities.len() > 1000 {
+        if !shop.raw_bytes.is_empty() && shop.raw_bytes.len() != crate::realmz::SHOP_BYTES {
             errors.push(format!(
-                "Shop {} exceeds Data SD capacity of 1000 item and quantity slots.",
+                "Shop {} has invalid {}-byte compatibility storage.",
+                shop.id,
+                crate::realmz::SHOP_BYTES
+            ));
+        }
+        if shop.item_ids.len() != 1000 || shop.quantities.len() != 1000 {
+            errors.push(format!(
+                "Shop {} must define 1000 item and quantity slots for Data SD.",
                 shop.id
             ));
         }

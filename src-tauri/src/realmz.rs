@@ -11,6 +11,7 @@ mod record_bytes;
 mod rules;
 mod scenario;
 mod scenario_items;
+mod shops;
 mod text_records;
 pub use action_points::{
     parse_door_file, parse_extracodes, parse_macro_file, write_door_file,
@@ -43,6 +44,7 @@ pub use maps::{
     MAP_RECORD_BYTES, MAP_RECORD_MARKERS, MAP_RECORD_MARKER_BYTES,
 };
 pub use random_levels::{parse_random_levels, write_random_levels, RANDLEVEL_BYTES};
+pub use record_bytes::{i16_be, write_i16_be};
 pub use rules::{
     parse_caste_overrides, parse_race_overrides, parse_spell_overrides, write_caste_overrides,
     write_race_overrides, write_spell_overrides, CASTE_BYTES, CASTE_OVERRIDE_RECORDS, RACE_BYTES,
@@ -59,8 +61,6 @@ pub use text_records::{
     parse_messages, parse_option_labels, write_messages, write_option_labels, MESSAGE_BYTES,
     OPTION_LABEL_BYTES,
 };
-
-pub use record_bytes::{i16_be, write_i16_be};
 
 #[cfg(test)]
 mod tests {
@@ -308,10 +308,10 @@ mod tests {
 
         let shop = ShopRecord {
             id: 0,
-            item_ids: vec![21],
-            quantities: vec![9],
+            item_ids: [vec![21], vec![0; 999]].concat(),
+            quantities: [vec![9], vec![0; 999]].concat(),
             inflation: 125,
-            raw_bytes: vec![0; SHOP_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data SD", 0, 0, SHOP_BYTES),
         };

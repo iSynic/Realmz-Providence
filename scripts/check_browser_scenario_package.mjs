@@ -869,8 +869,8 @@ const itemEconomyProject = {
     { ...treasureRecord(1, { itemIds: [901, 902, -903, ...new Array(17).fill(0)], exp: 50, gold: 60, gems: 70, jewelry: 80 }), rawBytes: Array.from(sourceTreasures.slice(48, 96)), authored: true }
   ],
   shops: [
-    { id: 0, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, rawBytes: Array.from(sourceShops.slice(0, 3002)), authored: false },
-    { id: 1, itemIds: [901, 902, -903], quantities: [1, 2, 255], inflation: -12, rawBytes: Array.from(sourceShops.slice(3002, 6004)), authored: true }
+    shopRecordFromRaw(0, sourceShops.slice(0, 3002)),
+    { ...shopRecord(1, { itemIds: [901, 902, -903, ...new Array(997).fill(0)], quantities: [1, 2, 255, ...new Array(997).fill(0)], inflation: -12 }), rawBytes: Array.from(sourceShops.slice(3002, 6004)), authored: true }
   ]
 };
 const itemEconomyUpdate = createBrowserScenarioPackageZip(itemEconomyProject, rawSources, "mac-classic-folder");
@@ -889,7 +889,7 @@ expect(bytesEqual(writtenScenarioItems?.slice(0, 100), sourceScenarioItems.slice
 expect(bytesEqual(writtenScenarioItems?.slice(100, 200), scenarioItemRow(authoredItem)), "Authored item row should encode item fields");
 expect(bytesEqual(writtenTreasures?.slice(0, 48), sourceTreasures.slice(0, 48)), "Unauthored treasure row should remain byte-identical");
 expect(bytesEqual(writtenTreasures?.slice(48, 96), treasureRow({ itemIds: [901, 902, -903], exp: 50, gold: 60, gems: 70, jewelry: 80 })), "Authored treasure row should encode treasure fields");
-expect(bytesEqual(writtenShops?.slice(0, 3002), sourceShops.slice(0, 3002)), "Unauthored shop row should remain byte-identical");
+expect(bytesEqual(writtenShops?.slice(0, 3002), sourceShops.slice(0, 3002)), "Imported shop row should semantically recompile byte-identically");
 expect(bytesEqual(writtenShops?.slice(3002, 6004), shopRow({ itemIds: [901, 902, -903], quantities: [1, 2, 255], inflation: -12 })), "Authored shop row should encode shop fields");
 
 const authoredSpell = spellRecord(1, {
@@ -1899,6 +1899,28 @@ function treasureRow({ itemIds, exp, gold, gems, jewelry }) {
   setI16(output, 44, gems);
   setI16(output, 46, jewelry);
   return output;
+}
+
+function shopRecord(id, overrides = {}) {
+  return {
+    id,
+    itemIds: new Array(1000).fill(0),
+    quantities: new Array(1000).fill(0),
+    inflation: 0,
+    authored: true,
+    provenance: { sourceFile: "Data SD", recordIndex: id, byteOffset: id * 3002, byteLength: 3002, confidence: "fixture-backed" },
+    ...overrides
+  };
+}
+
+function shopRecordFromRaw(id, bytes) {
+  return shopRecord(id, {
+    itemIds: Array.from({ length: 1000 }, (_, slot) => readI16(bytes, slot * 2)),
+    quantities: Array.from(bytes.slice(2000, 3000)),
+    inflation: readI16(bytes, 3000),
+    rawBytes: Array.from(bytes),
+    authored: false
+  });
 }
 
 function shopRow({ itemIds, quantities, inflation }) {

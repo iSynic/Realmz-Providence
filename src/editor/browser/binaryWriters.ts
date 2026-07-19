@@ -540,14 +540,16 @@ export function writeTreasures(records: TreasureRecord[]) {
 
 export function writeShops(records: ShopRecord[]) {
   return writeFixedRecords(records, SHOP_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === SHOP_RECORD_BYTES) return;
-    if (record.itemIds.length > 1000 || record.quantities.length > 1000) {
-      throw new Error(`Shop ${record.id} exceeds Realmz shop slot capacity`);
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== SHOP_RECORD_BYTES) {
+      throw new Error(`Shop ${record.id} has invalid compatibility byte storage`);
+    }
+    if (record.itemIds.length !== 1000 || record.quantities.length !== 1000) {
+      throw new Error(`Shop ${record.id} must define 1000 item and quantity slots`);
     }
     for (let slot = 0; slot < 1000; slot += 1) {
-      writeI16(target, slot * 2, record.itemIds[slot] ?? 0);
-      target[2000 + slot] = (record.quantities[slot] ?? 0) & 0xff;
+      writeI16(target, slot * 2, record.itemIds[slot]);
+      target[2000 + slot] = record.quantities[slot] & 0xff;
     }
     writeI16(target, 3000, record.inflation);
   });

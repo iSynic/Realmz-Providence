@@ -323,7 +323,6 @@ function buildShop(seed: ScenarioSeedShop, context: ScenarioSeedCompilerContext)
     itemIds,
     quantities,
     inflation: seed.inflation ?? 0,
-    rawBytes: new Array(SHOP_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data SD", id, id * SHOP_BYTES, SHOP_BYTES)
   };

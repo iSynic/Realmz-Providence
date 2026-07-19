@@ -208,6 +208,17 @@ pub const PROVIDENCE_TREASURE_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_SHOP_FIELDS: &[&str] = &[
+    "id",
+    "itemIds",
+    "quantities",
+    "inflation",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -445,6 +456,22 @@ pub struct TreasureRecord {
     pub gold: i16,
     pub gems: i16,
     pub jewelry: i16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ShopRecord {
+    pub id: usize,
+    #[serde(default)]
+    pub item_ids: Vec<i16>,
+    #[serde(default)]
+    pub quantities: Vec<u8>,
+    pub inflation: i16,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

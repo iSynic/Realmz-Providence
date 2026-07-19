@@ -71,7 +71,7 @@ These are the safest next authoring targets because Realmz directly opens them f
 | Monsters | `Data MD` | combat setup, bestiary/menu cache, summons, death macros | High-value next editor after Maps because battles/encounters need monster pickers. |
 | Battles | `Data BD` | combat setup and battle triggers | Writable shell exists; should deepen once monsters are editable. |
 | Treasure | `Data TD` | opcode `10` reward path and booty flow | Fully semantic 48-byte writer; fresh records require twenty item slots and no imported byte identity. |
-| Shops | `Data SD` | copied to `CS`; shop runtime stock mutates there | Writable shell exists; needs item picker confidence and cache/source explanation. |
+| Shops | `Data SD` | copied to `CS`; shop runtime stock mutates there | Fully semantic 3,002-byte source-row writer; classified foreign suffix data remains annex-only. |
 | Simple Encounters | `Data ED` | copied to `CE`; action rows plus text buffers | Writable shell exists; needs prompt/text syntax explanation and better forms. |
 | Complex Encounters | `Data ED2` | copied to `CE2`; action rows, spell/item/thief branches | Writable shell exists; needs richer field forms. |
 | Thief/Rogue Encounters | `Data TD2` | copied to `CT`; thief encounter flow | Parser/editor still mostly future work. |
@@ -122,8 +122,8 @@ Focused Rules anchors refine these rough units:
    - Runtime anchors now prove battle placement, generated bestiary cache rules, spawn/add-ally usage, signed battle-grid side flips, and `todoondeath` macro execution. See `monster-record-runtime-anchors.md`.
 4. **Battles**: deepen `Data BD` once monster placement has a real picker and grid semantics are fixture-backed.
    - Runtime anchors now prove the 13x13 signed monster grid, before/after message references, distance field, and negative battle macro activation. See `battle-record-runtime-anchors.md`.
-5. **Treasure/Shops**: treasure storage is fully canonical; deepen the shop shell after item picker confidence improves.
-   - Runtime anchors now prove treasure source records and complete semantic compilation, plus the shop source/runtime cache split, item-family ID ranges, random treasure values, and runtime shop mutation behavior. See `item-treasure-shop-runtime-anchors.md`.
+5. **Treasure/Shops**: treasure and ordinary shop storage are fully canonical; continue improving item-picker workflow and the source/runtime cache explanation.
+   - Runtime anchors now prove complete treasure/shop source-record compilation, the shop source/runtime cache split, item-family ID ranges, random treasure values, and runtime shop mutation behavior. See `item-treasure-shop-runtime-anchors.md`.
 6. **Encounters**: deepen simple/complex/thief/timed encounters after messages, actions, items, spells, and monsters have stable pickers.
    - Runtime anchors now prove simple/complex headers, inline buffers, runtime cache mutation, and complex spell/item/thief/word/action outcomes. See `encounter-record-runtime-anchors.md`.
    - Thief/timed anchors now prove `Data TD2` and `Data TD3` record sizes, source/cache split, timed gates, and thief trap state mutation. See `thief-timed-encounter-runtime-anchors.md`.

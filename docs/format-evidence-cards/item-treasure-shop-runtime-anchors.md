@@ -20,7 +20,7 @@ Realmz splits this area into three data roles:
 - **Treasure source records** live in scenario `Data TD` and are loaded directly when a treasure action fires.
 - **Shop source records** live in scenario `Data SD`, but first-start copies them into runtime `CS`. Active shop changes mutate `CS`, not the scenario source file.
 
-Providence exposes Treasure and Shop editors plus a strong item picker/library. Scenario `Data NI` is now a fully semantic 200-row local supply/special item table. Treasure records likewise compile all 48 bytes from twenty canonical item slots and four reward words; imported record bytes are not part of their authored identity. Legacy item imports retain only bounded compatibility encodings, while malformed `Data TD` file tails remain in the compatibility annex.
+Providence exposes Treasure and Shop editors plus a strong item picker/library. Scenario `Data NI` is now a fully semantic 200-row local supply/special item table. Treasure records likewise compile all 48 bytes from twenty canonical item slots and four reward words. Ordinary shop rows compile all 3,002 bytes from one thousand item IDs, one thousand quantities, and inflation. Imported treasure/shop record bytes are not part of their authored identity. Legacy item imports retain only bounded compatibility encodings, while malformed file tails and the classified foreign `Data SD` suffix remain in the compatibility annex.
 
 ## Realmz Source Anchors
 
@@ -87,13 +87,13 @@ Providence owns this complete 48-byte layout semantically. Fresh constructors re
 | 2000 | 1000 | `num[1000]` | Quantity bytes. |
 | 3000 | 2 | `inflation` | Big-endian short. Used by shop pricing logic. |
 
-The authored source file is scenario `Data SD`. Runtime shop state is copied into `CS` at first start, then shop purchases/sales and opcode `51` mutate `CS`. Providence should show this distinction clearly: editing source shop records affects new runs/exported scenarios, not an already-running save's current shop stock.
+The authored source file is scenario `Data SD`. Runtime shop state is copied into `CS` at first start, then shop purchases/sales and opcode `51` mutate `CS`. Providence owns each ordinary source row semantically: fresh and imported rows are compiled from the canonical slot arrays and inflation, without consulting `rawBytes`. Editing source shop records affects new runs/exported scenarios, not an already-running save's current shop stock.
 
 ### City of Bywater ownership boundary
 
 Both known City of Bywater copies are 63,042 bytes, or 21 full 3,002-byte blocks. Records 0-15 have coherent shop structure: item IDs stay in Realmz's 0-999 item families, stock quantities correspond to used item slots, and inflation values are plausible. Records 16-20 are dense foreign data rather than authored shop stock: each has 966-1,000 nonzero item words, 640-980 item words outside `+/-999`, and 979-1,000 nonzero quantity bytes. The five-block suffix is byte-identical in both scenario copies (`SHA-256 a871d55f9ba5269423e28ed1932243d1226e48c27d5e6cd7c1a5da1917c01426`).
 
-Providence therefore owns bytes 0-48,031 as 16 editable shop records and treats bytes 48,032-63,041 as preserved non-shop source data. Import exposes shops 0-15 only. Export overlays the edited shop prefix onto the original `Data SD` and carries the suffix unchanged. The classifier is deliberately narrow: it only removes a contiguous trailing run of overwhelmingly dense, out-of-range records, so sparse malformed shops remain visible for diagnosis and a dense record before a later plausible shop is not hidden.
+Providence therefore owns bytes 0-48,031 as 16 editable shop records and treats bytes 48,032-63,041 as preserved non-shop source data. Import exposes shops 0-15 only. Export recompiles the canonical shop prefix and appends the suffix unchanged from the compatibility annex. The classifier is deliberately narrow: it only removes a contiguous trailing run of overwhelmingly dense, out-of-range records, so sparse malformed shops remain visible for diagnosis and a dense record before a later plausible shop is not hidden.
 
 ## Corpus Evidence
 

@@ -589,7 +589,11 @@ export function normalizeBrowserProject(project: Project): Project {
     ...record,
     itemIds: normalizedTreasureItemIds(record)
   }));
-  project.shops ??= [];
+  project.shops = (project.shops ?? []).map((record) => ({
+    ...record,
+    itemIds: normalizedShopItemIds(record),
+    quantities: normalizedShopQuantities(record)
+  }));
   project.simpleEncounters ??= [];
   project.complexEncounters ??= [];
   project.thiefEncounters ??= [];
@@ -656,6 +660,22 @@ function normalizedTreasureItemIds(record: Project["treasures"][number]) {
     const raw = record.rawBytes ?? [];
     return raw.length >= offset + 2 ? readSignedI16(raw, offset) : 0;
   });
+}
+
+function normalizedShopItemIds(record: Project["shops"][number]) {
+  return Array.from({ length: 1000 }, (_, slot) => {
+    const existing = record.itemIds?.[slot];
+    if (existing != null) return existing;
+    const offset = slot * 2;
+    const raw = record.rawBytes ?? [];
+    return raw.length >= offset + 2 ? readSignedI16(raw, offset) : 0;
+  });
+}
+
+function normalizedShopQuantities(record: Project["shops"][number]) {
+  return Array.from({ length: 1000 }, (_, slot) =>
+    record.quantities?.[slot] ?? record.rawBytes?.[2000 + slot] ?? 0
+  );
 }
 
 export async function ensureBrowserReferenceTileAttributes(project: Project) {
@@ -963,6 +983,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
   validateMapRecords(project, errors, warnings);
   validateScenarioItems(project, errors, warnings);
   validateTreasures(project, errors);
+  validateShops(project, errors);
   const exportableFiles = authoredManifestFiles ?? [
       ...SUPPORTED_WRITE_FILES,
       project.scenario.shell?.sourceFile?.trim() ?? "",
@@ -1274,6 +1295,18 @@ function validateTreasures(project: Project, errors: string[]) {
     }
     if ((treasure.itemIds?.length ?? 0) !== 20) {
       errors.push(`Treasure ${treasure.id} must define 20 semantic item slots.`);
+    }
+  }
+}
+
+function validateShops(project: Project, errors: string[]) {
+  for (const shop of project.shops ?? []) {
+    const rawBytes = shop.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 3002) {
+      errors.push(`Shop ${shop.id} has invalid 3002-byte compatibility storage.`);
+    }
+    if ((shop.itemIds?.length ?? 0) !== 1000 || (shop.quantities?.length ?? 0) !== 1000) {
+      errors.push(`Shop ${shop.id} must define 1000 semantic item and quantity slots.`);
     }
   }
 }

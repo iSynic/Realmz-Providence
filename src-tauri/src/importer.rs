@@ -2682,8 +2682,8 @@ mod tests {
             .next()
             .expect("shop template");
         shop.id = 2;
-        shop.item_ids = vec![901];
-        shop.quantities = vec![3];
+        shop.item_ids = [vec![901], vec![0; 999]].concat();
+        shop.quantities = [vec![3], vec![0; 999]].concat();
         shop.inflation = 120;
         shop.authored = false;
         shop.raw_bytes.fill(0xA5);

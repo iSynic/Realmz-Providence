@@ -57,6 +57,27 @@ describe("project command facade", () => {
     expect(next.treasures[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh shops from semantic data without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Shop");
+
+    const next = applyProjectCommand(project, {
+      kind: "updateShopRecord",
+      label: "Create shop",
+      id: 4,
+      changes: {
+        itemIds: [901, ...new Array(999).fill(0)],
+        quantities: [3, ...new Array(999).fill(0)],
+        inflation: 105
+      }
+    });
+
+    expect(next.shops).toHaveLength(1);
+    expect(next.shops[0].inflation).toBe(105);
+    expect(next.shops[0].itemIds).toHaveLength(1000);
+    expect(next.shops[0].quantities).toHaveLength(1000);
+    expect(next.shops[0].rawBytes).toBeUndefined();
+  });
+
   it("applies an immutable command and exposes history metadata", () => {
     const project = createBrowserProject("Command Facade");
     const originalTile = project.maps[0].tiles[0];

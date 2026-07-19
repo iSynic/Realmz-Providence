@@ -723,8 +723,8 @@ export function emptyScenarioItem(id: number): ScenarioItemRecord {
   };
 }
 
-function emptyShop(id: number): ShopRecord {
-  return { id, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, rawBytes: new Array(3002).fill(0), authored: true, provenance: authoredProvenance("Data SD", id, id * 3002, 3002) };
+export function emptyShop(id: number): ShopRecord {
+  return { id, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, authored: true, provenance: authoredProvenance("Data SD", id, id * 3002, 3002) };
 }
 
 function emptySimpleEncounter(id: number): SimpleEncounterRecord {

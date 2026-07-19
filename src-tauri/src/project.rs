@@ -5,7 +5,7 @@ pub use crate::generated::project_contract::{
     Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker, MapRecord,
     MapRecordRect, MapRender, Provenance, RandomLevel, RandomRect, RenderMode, ScenarioContactInfo,
     ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions,
-    ScenarioShell, ScenarioSupportFile, TreasureRecord,
+    ScenarioShell, ScenarioSupportFile, ShopRecord, TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -890,20 +890,6 @@ pub struct MonsterSet {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ShopRecord {
-    pub id: usize,
-    pub item_ids: Vec<i16>,
-    pub quantities: Vec<u8>,
-    pub inflation: i16,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct MonsterDescriptionRecord {
     pub id: usize,
     pub text: String,
@@ -1560,6 +1546,9 @@ impl ProvidenceProject {
         for record in &mut self.treasures {
             normalize_treasure_item_ids(record);
         }
+        for record in &mut self.shops {
+            normalize_shop_slots(record);
+        }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;
         }
@@ -1633,10 +1622,37 @@ fn normalize_treasure_item_ids(record: &mut TreasureRecord) {
         .collect();
 }
 
+fn normalize_shop_slots(record: &mut ShopRecord) {
+    let existing_item_ids = record.item_ids.clone();
+    let existing_quantities = record.quantities.clone();
+    let raw_bytes = record.raw_bytes.clone();
+    record.item_ids = (0..1000)
+        .map(|slot| {
+            existing_item_ids.get(slot).copied().unwrap_or_else(|| {
+                let offset = slot * 2;
+                if raw_bytes.len() >= offset + 2 {
+                    project_i16(&raw_bytes, offset)
+                } else {
+                    0
+                }
+            })
+        })
+        .collect();
+    record.quantities = (0..1000)
+        .map(|slot| {
+            existing_quantities
+                .get(slot)
+                .copied()
+                .or_else(|| raw_bytes.get(2000 + slot).copied())
+                .unwrap_or(0)
+        })
+        .collect();
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_map_record_markers, normalize_scenario_item_spare_words,
+        normalize_map_record_markers, normalize_scenario_item_spare_words, normalize_shop_slots,
         normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord, MapRecordRect,
         ProjectOrigin, Provenance, SourceSnapshot,
     };
@@ -1724,6 +1740,28 @@ mod tests {
         assert_eq!(record.item_ids[0], 901);
         assert_eq!(record.item_ids[1], -321);
         assert!(record.item_ids[2..].iter().all(|value| *value == 0));
+    }
+
+    #[test]
+    fn shop_normalization_backfills_legacy_inventory_slots() {
+        let mut raw_bytes = vec![0; crate::realmz::SHOP_BYTES];
+        raw_bytes[2..4].copy_from_slice(&(-321i16).to_be_bytes());
+        raw_bytes[2001] = 7;
+        let mut record = crate::realmz::parse_shops(&raw_bytes)
+            .into_iter()
+            .next()
+            .expect("shop");
+        record.item_ids = vec![901];
+        record.quantities = vec![3];
+
+        normalize_shop_slots(&mut record);
+
+        assert_eq!(record.item_ids.len(), 1000);
+        assert_eq!(record.quantities.len(), 1000);
+        assert_eq!(record.item_ids[..2], [901, -321]);
+        assert_eq!(record.quantities[..2], [3, 7]);
+        assert!(record.item_ids[2..].iter().all(|value| *value == 0));
+        assert!(record.quantities[2..].iter().all(|value| *value == 0));
     }
 
     #[test]

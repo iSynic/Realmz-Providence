@@ -48,6 +48,10 @@ expect(project.treasures.length === 1, `Expected one treasure, found ${project.t
 expect((project.treasures[0].rawBytes?.length ?? 0) === 0, "Fresh canonical treasure must not carry compatibility bytes");
 expect(project.treasures[0].itemIds?.length === 20, "Fresh canonical treasure must own all twenty item slots");
 expect(project.treasures[0].itemIds[0] === 901 && project.treasures[0].gold === 1, "Fresh canonical treasure has the wrong semantic rewards");
+expect(project.shops.length === 1, `Expected one shop, found ${project.shops.length}`);
+expect((project.shops[0].rawBytes?.length ?? 0) === 0, "Fresh canonical shop must not carry compatibility bytes");
+expect(project.shops[0].itemIds?.length === 1000 && project.shops[0].quantities?.length === 1000, "Fresh canonical shop must own all stock slots");
+expect(project.shops[0].itemIds[0] === 901 && project.shops[0].quantities[0] === 1 && project.shops[0].inflation === 105, "Fresh canonical shop has the wrong semantic stock");
 expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
 assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);
@@ -157,6 +161,7 @@ expect(
 );
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
+assertOwnershipShop(reimported.shops, "Reimport");
 assertOwnershipSpell(reimported.spellOverrides, "Reimport");
 assertOwnershipRules(reimported, "Reimport", false);
 
@@ -174,6 +179,7 @@ const summary = {
     messages: project.messages.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
+    shops: project.shops.length,
     customSpells: project.spellOverrides.length,
     raceOverrides: project.raceOverrides.length,
     casteOverrides: project.casteOverrides.length,
@@ -209,6 +215,7 @@ const summary = {
     messageRecovered: true,
     itemTextRecovered: true,
     treasureRecovered: true,
+    shopRecovered: true,
     customSpellRecovered: true,
     raceOverrideRecovered: true,
     casteOverrideRecovered: true
@@ -270,6 +277,8 @@ async function assertNoRawSources(stage) {
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
   expect(savedProject.treasures?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} treasures contain compatibility bytes`);
+  assertOwnershipShop(savedProject.shops, `Rust-saved project ${stage}`);
+  expect(savedProject.shops?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} shops contain compatibility bytes`);
   assertOwnershipSpell(savedProject.spellOverrides, `Rust-saved project ${stage}`);
   assertOwnershipRules(savedProject, `Rust-saved project ${stage}`, true);
   assertNoFreshRuleCompatibilityBytes(savedProject, `Rust-saved project ${stage}`);
@@ -285,6 +294,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data DD", 100 * 40],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
+    ["Data SD", 3002],
     ["Data Spell", 105 * 30],
     ["Data Race", 30 * 408],
     ["Data Caste", 30 * 576],
@@ -294,7 +304,7 @@ function assertCompleteNativeFolder(files, label) {
     expect(files.has(name), `${label} output is missing ${name}`);
     expect(files.get(name).byteLength === bytes, `${label} ${name} should be ${bytes} bytes, found ${files.get(name).byteLength}`);
   }
-  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data SD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD"]) {
+  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD"]) {
     expect(files.has(name), `${label} output is missing required empty table ${name}`);
     expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
@@ -309,6 +319,7 @@ function assertCompleteNativeFolder(files, label) {
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
   expect(files.get("Data NI").some((byte) => byte !== 0), `${label} Data NI does not contain the authored scenario item`);
   expect(files.get("Data TD").some((byte) => byte !== 0), `${label} Data TD does not contain the authored treasure`);
+  expect(files.get("Data SD").some((byte) => byte !== 0), `${label} Data SD does not contain the authored shop`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
 }
 
@@ -325,6 +336,13 @@ function assertOwnershipTreasure(records, label) {
   expect(treasure, `${label} is missing treasure 0`);
   expect(treasure.itemIds?.length === 20, `${label} treasure has the wrong item-slot inventory`);
   expect(treasure.itemIds[0] === 901 && treasure.gold === 1, `${label} treasure has the wrong semantic rewards`);
+}
+
+function assertOwnershipShop(records, label) {
+  const shop = records?.find((record) => record.id === 0);
+  expect(shop, `${label} is missing shop 0`);
+  expect(shop.itemIds?.length === 1000 && shop.quantities?.length === 1000, `${label} shop has the wrong stock-slot inventory`);
+  expect(shop.itemIds[0] === 901 && shop.quantities[0] === 1 && shop.inflation === 105, `${label} shop has the wrong semantic stock`);
 }
 
 function assertOwnershipSpell(records, label) {

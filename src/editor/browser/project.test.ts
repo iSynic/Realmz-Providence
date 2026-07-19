@@ -101,6 +101,24 @@ describe("browser project native manifest validation", () => {
     expect(itemIds.slice(2)).toEqual(new Array(18).fill(0));
   });
 
+  it("backfills shop inventories when opening legacy browser projects", () => {
+    const bytes = new Uint8Array(3002);
+    bytes.set([0xfe, 0xbf], 2);
+    bytes[2001] = 7;
+    const record = parseScenarioBuffers(new Map([["Data SD", bytes]])).shops[0];
+    const project = createBrowserProject("Legacy Shop");
+    project.shops = [{ ...record, itemIds: [901], quantities: [3] }];
+
+    const shop = normalizeBrowserProject(project).shops[0];
+
+    expect(shop.itemIds).toHaveLength(1000);
+    expect(shop.quantities).toHaveLength(1000);
+    expect(shop.itemIds.slice(0, 2)).toEqual([901, -321]);
+    expect(shop.quantities.slice(0, 2)).toEqual([3, 7]);
+    expect(shop.itemIds.slice(2)).toEqual(new Array(998).fill(0));
+    expect(shop.quantities.slice(2)).toEqual(new Array(998).fill(0));
+  });
+
   it("uses the authored compiler manifest instead of source inventory", () => {
     const project = createBrowserProject("Authored Validation");
     project.source.origin = "authored";
@@ -444,8 +462,8 @@ describe("browser project native manifest validation", () => {
     project.shops = [{
       ...parsed.shops[0],
       id: 2,
-      itemIds: [901],
-      quantities: [3],
+      itemIds: [901, ...new Array(999).fill(0)],
+      quantities: [3, ...new Array(999).fill(0)],
       inflation: 120,
       authored: false,
       rawBytes: new Array(3002).fill(0xa5)

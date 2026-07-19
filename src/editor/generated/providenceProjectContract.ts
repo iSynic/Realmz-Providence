@@ -197,6 +197,16 @@ export const PROVIDENCE_TREASURE_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_SHOP_FIELDS = [
+  "id",
+  "itemIds",
+  "quantities",
+  "inflation",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -363,6 +373,16 @@ export type ProvidenceTreasureRecord = {
   gold: number;
   gems: number;
   jewelry: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceShopRecord = {
+  id: number;
+  itemIds: number[];
+  quantities: number[];
+  inflation: number;
   rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;

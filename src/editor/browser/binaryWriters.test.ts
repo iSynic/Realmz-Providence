@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyScenarioItem, emptyTreasure } from "../projectCommands/targetRecordCommands";
+import { emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeMapRecords, writeRandomLevels, writeScenarioItems, writeTreasures } from "./binaryWriters";
+import { writeMapRecords, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -235,6 +235,46 @@ describe("browser treasure writer", () => {
   });
 });
 
+describe("browser shop writer", () => {
+  it("compiles a fresh record entirely from semantic fields", () => {
+    const record = {
+      ...emptyShop(0),
+      itemIds: Array.from({ length: 1000 }, (_, slot) => (slot % 1999) - 999),
+      quantities: Array.from({ length: 1000 }, (_, slot) => slot & 0xff),
+      inflation: -12
+    };
+
+    expect(record.rawBytes).toBeUndefined();
+    const output = writeShops([record]);
+
+    expect(output).toHaveLength(3002);
+    expect(i16(output, 0)).toBe(-999);
+    expect(i16(output, 1998)).toBe(0);
+    expect(output[2000]).toBe(0);
+    expect(output[2999]).toBe(231);
+    expect(i16(output, 3000)).toBe(-12);
+  });
+
+  it("recompiles imported rows without record byte identity", () => {
+    const input = new Uint8Array(3002);
+    for (let slot = 0; slot < 1000; slot += 1) {
+      setI16(input, slot * 2, (slot % 1999) - 999);
+      input[2000 + slot] = slot & 0xff;
+    }
+    setI16(input, 3000, -12);
+    const imported = parseScenarioBuffers(new Map([["Data SD", input]])).shops[0];
+
+    expect(writeShops([{ ...imported, rawBytes: new Array(3002).fill(0xa5) }])).toEqual(input);
+  });
+
+  it("rejects malformed compatibility bytes and slot inventories", () => {
+    expect(() => writeShops([{ ...emptyShop(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+    expect(() => writeShops([{ ...emptyShop(0), itemIds: [] }]))
+      .toThrow("must define 1000 item and quantity slots");
+  });
+});
+
 function randomLevel(overrides: Partial<RandomLevel> = {}): RandomLevel {
   const levelType = overrides.levelType ?? "land";
   const source = levelType === "land" ? "Data RD" : "Data RDD";
@@ -285,6 +325,11 @@ function mapRecord(overrides: Partial<MapRecord> = {}): MapRecord {
 function i16(bytes: Uint8Array, offset: number) {
   const value = ((bytes[offset] ?? 0) << 8) | (bytes[offset + 1] ?? 0);
   return value >= 0x8000 ? value - 0x10000 : value;
+}
+
+function setI16(bytes: Uint8Array, offset: number, value: number) {
+  bytes[offset] = (value >> 8) & 0xff;
+  bytes[offset + 1] = value & 0xff;
 }
 
 function i32(bytes: Uint8Array, offset: number) {

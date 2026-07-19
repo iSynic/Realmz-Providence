@@ -44,6 +44,15 @@
       "gold": 1
     }
   ],
+  "shops": [
+    {
+      "key": "ownership-shop",
+      "stock": [
+        { "itemId": "ownership-token", "quantity": 1 }
+      ],
+      "inflation": 105
+    }
+  ],
   "spells": [
     {
       "key": "providence-ward",
