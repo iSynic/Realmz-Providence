@@ -44,6 +44,10 @@ expect(project.messages.length === 1, `Expected one message, found ${project.mes
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
 expect((project.scenarioItems[0].rawBytes?.length ?? 0) === 0, "Fresh canonical scenario item must not carry compatibility bytes");
 expect(project.scenarioItems[0].spare2?.length === 7, "Fresh canonical scenario item must own all seven spare words");
+expect(project.treasures.length === 1, `Expected one treasure, found ${project.treasures.length}`);
+expect((project.treasures[0].rawBytes?.length ?? 0) === 0, "Fresh canonical treasure must not carry compatibility bytes");
+expect(project.treasures[0].itemIds?.length === 20, "Fresh canonical treasure must own all twenty item slots");
+expect(project.treasures[0].itemIds[0] === 901 && project.treasures[0].gold === 1, "Fresh canonical treasure has the wrong semantic rewards");
 expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
 assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);
@@ -152,6 +156,7 @@ expect(
   "Reimport should recover the authored message"
 );
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
+assertOwnershipTreasure(reimported.treasures, "Reimport");
 assertOwnershipSpell(reimported.spellOverrides, "Reimport");
 assertOwnershipRules(reimported, "Reimport", false);
 
@@ -168,6 +173,7 @@ const summary = {
     actionPoints: project.triggers.length,
     messages: project.messages.length,
     itemTexts: project.itemTexts.length,
+    treasures: project.treasures.length,
     customSpells: project.spellOverrides.length,
     raceOverrides: project.raceOverrides.length,
     casteOverrides: project.casteOverrides.length,
@@ -202,6 +208,7 @@ const summary = {
     activeActionPointRecovered: true,
     messageRecovered: true,
     itemTextRecovered: true,
+    treasureRecovered: true,
     customSpellRecovered: true,
     raceOverrideRecovered: true,
     casteOverrideRecovered: true
@@ -261,6 +268,8 @@ async function assertNoRawSources(stage) {
   const savedProject = JSON.parse(await fs.readFile(path.join(projectDir, "project.json"), "utf8"));
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
+  assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
+  expect(savedProject.treasures?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} treasures contain compatibility bytes`);
   assertOwnershipSpell(savedProject.spellOverrides, `Rust-saved project ${stage}`);
   assertOwnershipRules(savedProject, `Rust-saved project ${stage}`, true);
   assertNoFreshRuleCompatibilityBytes(savedProject, `Rust-saved project ${stage}`);
@@ -275,6 +284,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data RD", 644],
     ["Data DD", 100 * 40],
     ["Data NI", 200 * 100],
+    ["Data TD", 48],
     ["Data Spell", 105 * 30],
     ["Data Race", 30 * 408],
     ["Data Caste", 30 * 576],
@@ -298,6 +308,7 @@ function assertCompleteNativeFolder(files, label) {
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
   expect(files.get("Data NI").some((byte) => byte !== 0), `${label} Data NI does not contain the authored scenario item`);
+  expect(files.get("Data TD").some((byte) => byte !== 0), `${label} Data TD does not contain the authored treasure`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
 }
 
@@ -307,6 +318,13 @@ function assertOwnershipItemText(records, label) {
   expect(itemText.unidentifiedName === "Unknown Providence Token", `${label} has the wrong unidentified item name`);
   expect(itemText.identifiedName === "Providence Token", `${label} has the wrong identified item name`);
   expect(itemText.description === "This item text was compiled from canonical Providence data.", `${label} has the wrong item description`);
+}
+
+function assertOwnershipTreasure(records, label) {
+  const treasure = records?.find((record) => record.id === 0);
+  expect(treasure, `${label} is missing treasure 0`);
+  expect(treasure.itemIds?.length === 20, `${label} treasure has the wrong item-slot inventory`);
+  expect(treasure.itemIds[0] === 901 && treasure.gold === 1, `${label} treasure has the wrong semantic rewards`);
 }
 
 function assertOwnershipSpell(records, label) {

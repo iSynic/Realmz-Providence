@@ -458,7 +458,10 @@
       ],
       "missingEvidence": [],
       "evidence": [
+        "src-tauri/src/realmz/economy.rs:fresh_treasure_compiles_all_semantic_fields",
+        "src-tauri/src/realmz/economy.rs:imported_treasure_recompiles_without_record_byte_identity",
         "src-tauri/src/realmz/economy.rs:treasure_storage_mutates_only_owned_fields",
+        "src-tauri/src/project.rs:treasure_normalization_backfills_legacy_item_slots",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -468,9 +471,33 @@
       ],
       "evidenceChecks": [
         {
+          "reference": "src-tauri/src/realmz/economy.rs:fresh_treasure_compiles_all_semantic_fields",
+          "file": "src-tauri/src/realmz/economy.rs",
+          "anchor": "fresh_treasure_compiles_all_semantic_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/economy.rs:imported_treasure_recompiles_without_record_byte_identity",
+          "file": "src-tauri/src/realmz/economy.rs",
+          "anchor": "imported_treasure_recompiles_without_record_byte_identity",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
           "reference": "src-tauri/src/realmz/economy.rs:treasure_storage_mutates_only_owned_fields",
           "file": "src-tauri/src/realmz/economy.rs",
           "anchor": "treasure_storage_mutates_only_owned_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/project.rs:treasure_normalization_backfills_legacy_item_slots",
+          "file": "src-tauri/src/project.rs",
+          "anchor": "treasure_normalization_backfills_legacy_item_slots",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -563,7 +590,7 @@
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "This gate covers source treasure rewards only; shop stock/runtime shop cache writing stays outside this batch."
+      "preservationPolicy": "Fresh treasure records compile all 48 bytes from twenty item IDs and four reward words without rawBytes. Imported records recompile from decoded semantics; only malformed file tails remain compatibility-annex data."
     },
     {
       "container": "Data BD",

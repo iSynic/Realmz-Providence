@@ -20,7 +20,7 @@ Realmz splits this area into three data roles:
 - **Treasure source records** live in scenario `Data TD` and are loaded directly when a treasure action fires.
 - **Shop source records** live in scenario `Data SD`, but first-start copies them into runtime `CS`. Active shop changes mutate `CS`, not the scenario source file.
 
-Providence exposes Treasure and Shop editors plus a strong item picker/library. Scenario `Data NI` is now a fully semantic 200-row local supply/special item table; fresh records compile without imported bytes, while legacy imports retain only bounded compatibility encodings.
+Providence exposes Treasure and Shop editors plus a strong item picker/library. Scenario `Data NI` is now a fully semantic 200-row local supply/special item table. Treasure records likewise compile all 48 bytes from twenty canonical item slots and four reward words; imported record bytes are not part of their authored identity. Legacy item imports retain only bounded compatibility encodings, while malformed `Data TD` file tails remain in the compatibility annex.
 
 ## Realmz Source Anchors
 
@@ -74,6 +74,8 @@ The Divinity guide narrows the authoring promise further: the Item Editor can ed
 | 46 | 2 | `jewelry` | Jewelry reward. Negative values randomize. |
 
 Treasure action opcode `10` reads `Data TD` by ID and passes the record to `booty(1)`. Opcode `65` does not read a `Data TD` record; it builds a temporary treasure with random items from an EDCD item range.
+
+Providence owns this complete 48-byte layout semantically. Fresh constructors require exactly twenty item slots and do not synthesize `rawBytes`; both native compilers rebuild imported rows from decoded values as well. The optional 48-byte field accepted while opening older projects is migration input, not pass-through record identity.
 
 ## Shop Byte Layout
 

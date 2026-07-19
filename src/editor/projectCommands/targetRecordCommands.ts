@@ -669,8 +669,8 @@ function emptyMonsterDescription(id: number): MonsterDescriptionRecord {
   };
 }
 
-function emptyTreasure(id: number): TreasureRecord {
-  return { id, itemIds: new Array(20).fill(0), exp: 0, gold: 0, gems: 0, jewelry: 0, rawBytes: new Array(48).fill(0), authored: true, provenance: authoredProvenance("Data TD", id, id * 48, 48) };
+export function emptyTreasure(id: number): TreasureRecord {
+  return { id, itemIds: new Array(20).fill(0), exp: 0, gold: 0, gems: 0, jewelry: 0, authored: true, provenance: authoredProvenance("Data TD", id, id * 48, 48) };
 }
 
 export function emptyScenarioItem(id: number): ScenarioItemRecord {

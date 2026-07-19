@@ -22,7 +22,8 @@ import type {
   ProvidenceScenarioShell,
   ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
-  ProvidenceSourceFileRole
+  ProvidenceSourceFileRole,
+  ProvidenceTreasureRecord
 } from "./generated/providenceProjectContract";
 
 export type Confidence = ProvidenceConfidence;
@@ -38,6 +39,7 @@ export type MapRecord = ProvidenceMapRecord;
 export type RandomRect = ProvidenceRandomRect;
 export type RandomLevel = ProvidenceRandomLevel;
 export type ScenarioItemRecord = ProvidenceScenarioItemRecord;
+export type TreasureRecord = ProvidenceTreasureRecord;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -775,18 +777,6 @@ export type MonsterSet = {
   sourceFile: string;
   setId: MonsterSetId;
   monsters: MonsterRecord[];
-};
-
-export type TreasureRecord = {
-  id: number;
-  itemIds: number[];
-  exp: number;
-  gold: number;
-  gems: number;
-  jewelry: number;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
 };
 
 export type ShopRecord = {

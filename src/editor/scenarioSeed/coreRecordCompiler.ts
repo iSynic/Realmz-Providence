@@ -305,7 +305,6 @@ function buildTreasure(seed: ScenarioSeedTreasure, context: ScenarioSeedCompiler
     gold: seed.gold ?? 0,
     gems: seed.gems ?? 0,
     jewelry: seed.jewelry ?? 0,
-    rawBytes: new Array(TREASURE_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data TD", id, id * TREASURE_BYTES, TREASURE_BYTES)
   };

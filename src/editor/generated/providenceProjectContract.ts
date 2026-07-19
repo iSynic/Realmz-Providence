@@ -185,6 +185,18 @@ export const PROVIDENCE_SCENARIO_ITEM_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_TREASURE_FIELDS = [
+  "id",
+  "itemIds",
+  "exp",
+  "gold",
+  "gems",
+  "jewelry",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -339,6 +351,18 @@ export type ProvidenceScenarioItemRecord = {
   special5: number;
   weightPerCharge: number;
   dropOnEmpty: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceTreasureRecord = {
+  id: number;
+  itemIds: number[];
+  exp: number;
+  gold: number;
+  gems: number;
+  jewelry: number;
   rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;

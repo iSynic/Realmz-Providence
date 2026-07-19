@@ -292,12 +292,12 @@ mod tests {
 
         let treasure = TreasureRecord {
             id: 0,
-            item_ids: vec![11, 12],
+            item_ids: [vec![11, 12], vec![0; 18]].concat(),
             exp: 100,
             gold: 200,
             gems: 3,
             jewelry: 4,
-            raw_bytes: vec![0; TREASURE_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data TD", 0, 0, TREASURE_BYTES),
         };

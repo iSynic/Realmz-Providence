@@ -41,6 +41,22 @@ describe("project command facade", () => {
     expect(next.scenarioItems[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh treasures from semantic data without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Treasure");
+
+    const next = applyProjectCommand(project, {
+      kind: "updateTreasureRecord",
+      label: "Create treasure",
+      id: 4,
+      changes: { itemIds: [901, ...new Array(19).fill(0)], gold: 25 }
+    });
+
+    expect(next.treasures).toHaveLength(1);
+    expect(next.treasures[0].gold).toBe(25);
+    expect(next.treasures[0].itemIds).toHaveLength(20);
+    expect(next.treasures[0].rawBytes).toBeUndefined();
+  });
+
   it("applies an immutable command and exposes history metadata", () => {
     const project = createBrowserProject("Command Facade");
     const originalTile = project.maps[0].tiles[0];

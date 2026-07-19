@@ -65,9 +65,10 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
-const recordDefinitionNames = ["scenarioItemRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
+const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -97,6 +98,7 @@ expect(schema.properties?.landLayout?.oneOf?.[0]?.$ref === "#/$defs/landLayout",
 expect(schema.properties?.mapRecords?.items?.$ref === "#/$defs/mapRecord", "project mapRecords must contain canonical map-record DTOs");
 expect(schema.properties?.randomLevels?.items?.$ref === "#/$defs/randomLevel", "project randomLevels must contain canonical random-level DTOs");
 expect(schema.properties?.scenarioItems?.items?.$ref === "#/$defs/scenarioItemRecord", "project scenarioItems must contain canonical scenario-item DTOs");
+expect(schema.properties?.treasures?.items?.$ref === "#/$defs/treasureRecord", "project treasures must contain canonical treasure DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
 expectSameArray(renderModeSchema.enum ?? [], ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"], "Map render-mode vocabulary");
 for (const [index, definition] of mapDefinitions.entries()) {
@@ -154,12 +156,18 @@ expect(scenarioItemRecordSchema.properties?.spare2?.minItems === 7 && scenarioIt
 expect(scenarioItemRecordSchema.properties?.type?.["x-providence-rust-field-name"] === "item_type", "scenario-item type must use the non-keyword Rust field name item_type");
 expect(scenarioItemRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "scenario-item provenance must reference canonical provenance");
 expectSameArray(scenarioItemRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Scenario-item omitted empty compatibility inventory");
+const treasureFields = ["id", "itemIds", "exp", "gold", "gems", "jewelry", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(treasureRecordSchema.properties ?? {}), treasureFields, "Treasure field inventory");
+expectSameArray(treasureRecordSchema.required ?? [], treasureFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Treasure authored field inventory");
+expect(treasureRecordSchema.properties?.itemIds?.minItems === 20 && treasureRecordSchema.properties?.itemIds?.maxItems === 20, "treasure itemIds must retain twenty Realmz slots");
+expect(treasureRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "treasure provenance must reference canonical provenance");
+expectSameArray(treasureRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Treasure omitted empty compatibility inventory");
 const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -215,6 +223,7 @@ for (const alias of [
   "export type RandomRect = ProvidenceRandomRect;",
   "export type RandomLevel = ProvidenceRandomLevel;",
   "export type ScenarioItemRecord = ProvidenceScenarioItemRecord;",
+  "export type TreasureRecord = ProvidenceTreasureRecord;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -234,6 +243,7 @@ for (const mapType of ["MapRender", "MapEntity", "LandLayout", "MapMarker", "Map
   expect(!typesSource.includes(`export type ${mapType} = {`), `types.ts must not handwrite ${mapType}`);
 }
 expect(!typesSource.includes("export type ScenarioItemRecord = {"), "types.ts must not handwrite ScenarioItemRecord");
+expect(!typesSource.includes("export type TreasureRecord = {"), "types.ts must not handwrite TreasureRecord");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!typesSource.includes(`export type ${scenarioType} = {`), `types.ts must not handwrite ${scenarioType}`);
 }
@@ -263,6 +273,7 @@ expectSameSet(rustGeneratedReExports, [
   "ScenarioRestrictions",
   "ScenarioShell",
   "ScenarioSupportFile",
+  "TreasureRecord",
   "SourceFile",
   "SourceFileRole",
   "SourceSnapshot"
@@ -282,6 +293,7 @@ expect(!rustProjectSource.includes("pub struct MapRecord {"), "project.rs must n
 expect(!rustProjectSource.includes("pub struct RandomRect {"), "project.rs must not handwrite RandomRect");
 expect(!rustProjectSource.includes("pub struct RandomLevel {"), "project.rs must not handwrite RandomLevel");
 expect(!rustProjectSource.includes("pub struct ScenarioItemRecord {"), "project.rs must not handwrite ScenarioItemRecord");
+expect(!rustProjectSource.includes("pub struct TreasureRecord {"), "project.rs must not handwrite TreasureRecord");
 expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
 expect(!rustProjectSource.includes("pub enum RenderMode {"), "project.rs must not handwrite RenderMode");
 expect(rustProjectSource.includes("impl LevelType {"), "project.rs must retain handwritten LevelType behavior methods");
@@ -390,6 +402,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_MAP_RECORD_FIELDS = ${JSON.stringify(Object.keys(mapRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_RANDOM_LEVEL_FIELDS = ${JSON.stringify(Object.keys(randomLevelSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SCENARIO_ITEM_FIELDS = ${JSON.stringify(Object.keys(scenarioItemRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_TREASURE_FIELDS = ${JSON.stringify(Object.keys(treasureRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
     renderTypeScriptEnum(confidence) + `\n` +
@@ -436,6 +449,8 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[\n${renderArray(Object.keys(randomLevelSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioItemRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_TREASURE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(treasureRecordSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
     renderRustEnum(confidence) + `\n` +

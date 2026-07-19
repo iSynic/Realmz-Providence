@@ -37,6 +37,13 @@
       "cost": 1
     }
   ],
+  "treasures": [
+    {
+      "key": "ownership-treasure",
+      "itemIds": ["ownership-token"],
+      "gold": 1
+    }
+  ],
   "spells": [
     {
       "key": "providence-ward",

@@ -2725,7 +2725,8 @@ mod tests {
             .next()
             .expect("treasure template");
         treasure.id = 3;
-        treasure.item_ids = vec![901];
+        treasure.item_ids = vec![0; 20];
+        treasure.item_ids[0] = 901;
         treasure.gold = 77;
         treasure.authored = false;
         treasure.raw_bytes.fill(0xA5);

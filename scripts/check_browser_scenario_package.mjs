@@ -865,8 +865,8 @@ const itemEconomyProject = {
     { ...authoredItem, rawBytes: Array.from(sourceScenarioItems.slice(100, 200)), authored: true }
   ],
   treasures: [
-    { id: 0, itemIds: new Array(20).fill(0), exp: 0, gold: 0, gems: 0, jewelry: 0, rawBytes: Array.from(sourceTreasures.slice(0, 48)), authored: false },
-    { id: 1, itemIds: [901, 902, -903], exp: 50, gold: 60, gems: 70, jewelry: 80, rawBytes: Array.from(sourceTreasures.slice(48, 96)), authored: true }
+    treasureRecordFromRaw(0, sourceTreasures.slice(0, 48)),
+    { ...treasureRecord(1, { itemIds: [901, 902, -903, ...new Array(17).fill(0)], exp: 50, gold: 60, gems: 70, jewelry: 80 }), rawBytes: Array.from(sourceTreasures.slice(48, 96)), authored: true }
   ],
   shops: [
     { id: 0, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, rawBytes: Array.from(sourceShops.slice(0, 3002)), authored: false },
@@ -1863,6 +1863,32 @@ function scenarioItemRow(record) {
   setI16(output, 96, record.weightPerCharge);
   setI16(output, 98, record.dropOnEmpty);
   return output;
+}
+
+function treasureRecord(id, overrides = {}) {
+  return {
+    id,
+    itemIds: new Array(20).fill(0),
+    exp: 0,
+    gold: 0,
+    gems: 0,
+    jewelry: 0,
+    authored: true,
+    provenance: { sourceFile: "Data TD", recordIndex: id, byteOffset: id * 48, byteLength: 48, confidence: "fixture-backed" },
+    ...overrides
+  };
+}
+
+function treasureRecordFromRaw(id, bytes) {
+  return treasureRecord(id, {
+    itemIds: Array.from({ length: 20 }, (_, slot) => readI16(bytes, slot * 2)),
+    exp: readI16(bytes, 40),
+    gold: readI16(bytes, 42),
+    gems: readI16(bytes, 44),
+    jewelry: readI16(bytes, 46),
+    rawBytes: Array.from(bytes),
+    authored: false
+  });
 }
 
 function treasureRow({ itemIds, exp, gold, gems, jewelry }) {

@@ -31,22 +31,20 @@ pub fn parse_treasures(buffer: &[u8]) -> Vec<TreasureRecord> {
 
 pub fn write_treasures(records: &[TreasureRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, TREASURE_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, TREASURE_BYTES) {
-            return Ok(());
-        }
-        if record.item_ids.len() > 20 {
+        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != TREASURE_BYTES {
             return Err(ProvidenceError::message(format!(
-                "Treasure {} has more than 20 item slots",
+                "Treasure {} has invalid compatibility byte storage",
                 record.id
             )));
         }
-        for slot in 0..20 {
-            write_i16_be(
-                buffer,
-                slot * 2,
-                record.item_ids.get(slot).copied().unwrap_or(0),
-            );
+        if record.item_ids.len() != 20 {
+            return Err(ProvidenceError::message(format!(
+                "Treasure {} must define 20 item slots",
+                record.id
+            )));
+        }
+        for (slot, item_id) in record.item_ids.iter().enumerate() {
+            write_i16_be(buffer, slot * 2, *item_id);
         }
         write_i16_be(buffer, 40, record.exp);
         write_i16_be(buffer, 42, record.gold);
@@ -159,6 +157,61 @@ mod tests {
             changed_offsets(&input, &output),
             vec![treasure_start + 40, treasure_start + 41]
         );
+    }
+
+    #[test]
+    fn fresh_treasure_compiles_all_semantic_fields() {
+        let mut treasure = parse_treasures(&vec![0; TREASURE_BYTES])
+            .into_iter()
+            .next()
+            .expect("treasure");
+        treasure.raw_bytes.clear();
+        treasure.item_ids = (0..20).map(|slot| 900 + slot).collect();
+        treasure.exp = -10;
+        treasure.gold = 20;
+        treasure.gems = 30;
+        treasure.jewelry = 40;
+
+        let output = write_treasures(&[treasure]).unwrap();
+
+        assert_eq!(output.len(), TREASURE_BYTES);
+        assert_eq!(i16_be(&output, 0), 900);
+        assert_eq!(i16_be(&output, 38), 919);
+        assert_eq!(i16_be(&output, 40), -10);
+        assert_eq!(i16_be(&output, 42), 20);
+        assert_eq!(i16_be(&output, 44), 30);
+        assert_eq!(i16_be(&output, 46), 40);
+    }
+
+    #[test]
+    fn imported_treasure_recompiles_without_record_byte_identity() {
+        let input: Vec<u8> = (0..TREASURE_BYTES)
+            .map(|offset| (offset * 5) as u8)
+            .collect();
+        let mut treasures = parse_treasures(&input);
+        treasures[0].raw_bytes = vec![0xA5; TREASURE_BYTES];
+
+        assert_eq!(write_treasures(&treasures).unwrap(), input);
+    }
+
+    #[test]
+    fn treasure_writer_rejects_malformed_canonical_storage() {
+        let mut treasure = parse_treasures(&vec![0; TREASURE_BYTES])
+            .into_iter()
+            .next()
+            .expect("treasure");
+        treasure.raw_bytes = vec![1];
+        assert!(write_treasures(&[treasure.clone()])
+            .unwrap_err()
+            .to_string()
+            .contains("invalid compatibility byte storage"));
+
+        treasure.raw_bytes.clear();
+        treasure.item_ids.clear();
+        assert!(write_treasures(&[treasure])
+            .unwrap_err()
+            .to_string()
+            .contains("must define 20 item slots"));
     }
 
     #[test]

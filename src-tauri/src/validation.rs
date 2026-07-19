@@ -454,9 +454,18 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for treasure in &project.treasures {
-        if treasure.item_ids.len() > 20 {
+        if !treasure.raw_bytes.is_empty()
+            && treasure.raw_bytes.len() != crate::realmz::TREASURE_BYTES
+        {
             errors.push(format!(
-                "Treasure {} has {} item slots; Data TD supports 20.",
+                "Treasure {} has invalid {}-byte compatibility storage.",
+                treasure.id,
+                crate::realmz::TREASURE_BYTES
+            ));
+        }
+        if treasure.item_ids.len() != 20 {
+            errors.push(format!(
+                "Treasure {} has {} item slots; Data TD requires 20.",
                 treasure.id,
                 treasure.item_ids.len()
             ));

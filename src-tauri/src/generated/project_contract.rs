@@ -195,6 +195,19 @@ pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_TREASURE_FIELDS: &[&str] = &[
+    "id",
+    "itemIds",
+    "exp",
+    "gold",
+    "gems",
+    "jewelry",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -415,6 +428,23 @@ pub struct ScenarioItemRecord {
     pub special5: i16,
     pub weight_per_charge: i16,
     pub drop_on_empty: i16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TreasureRecord {
+    pub id: usize,
+    #[serde(default)]
+    pub item_ids: Vec<i16>,
+    pub exp: i16,
+    pub gold: i16,
+    pub gems: i16,
+    pub jewelry: i16,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

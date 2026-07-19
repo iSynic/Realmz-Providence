@@ -5,7 +5,7 @@ pub use crate::generated::project_contract::{
     Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker, MapRecord,
     MapRecordRect, MapRender, Provenance, RandomLevel, RandomRect, RenderMode, ScenarioContactInfo,
     ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions,
-    ScenarioShell, ScenarioSupportFile,
+    ScenarioShell, ScenarioSupportFile, TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -890,22 +890,6 @@ pub struct MonsterSet {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TreasureRecord {
-    pub id: usize,
-    pub item_ids: Vec<i16>,
-    pub exp: i16,
-    pub gold: i16,
-    pub gems: i16,
-    pub jewelry: i16,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ShopRecord {
     pub id: usize,
     pub item_ids: Vec<i16>,
@@ -1573,6 +1557,9 @@ impl ProvidenceProject {
         for record in &mut self.scenario_items {
             normalize_scenario_item_spare_words(record);
         }
+        for record in &mut self.treasures {
+            normalize_treasure_item_ids(record);
+        }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;
         }
@@ -1629,11 +1616,29 @@ fn normalize_scenario_item_spare_words(record: &mut ScenarioItemRecord) {
         .collect();
 }
 
+fn normalize_treasure_item_ids(record: &mut TreasureRecord) {
+    let existing = record.item_ids.clone();
+    let raw_bytes = record.raw_bytes.clone();
+    record.item_ids = (0..20)
+        .map(|slot| {
+            existing.get(slot).copied().unwrap_or_else(|| {
+                let offset = slot * 2;
+                if raw_bytes.len() >= offset + 2 {
+                    project_i16(&raw_bytes, offset)
+                } else {
+                    0
+                }
+            })
+        })
+        .collect();
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_map_record_markers, normalize_scenario_item_spare_words, ActionCategory,
-        Confidence, MapRecord, MapRecordRect, ProjectOrigin, Provenance, SourceSnapshot,
+        normalize_map_record_markers, normalize_scenario_item_spare_words,
+        normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord, MapRecordRect,
+        ProjectOrigin, Provenance, SourceSnapshot,
     };
 
     #[test]
@@ -1701,6 +1706,24 @@ mod tests {
         assert_eq!(record.spare2.len(), 7);
         assert_eq!(record.spare2[0], -321);
         assert!(record.spare2[1..].iter().all(|value| *value == 0));
+    }
+
+    #[test]
+    fn treasure_normalization_backfills_legacy_item_slots() {
+        let mut raw_bytes = vec![0; crate::realmz::TREASURE_BYTES];
+        raw_bytes[2..4].copy_from_slice(&(-321i16).to_be_bytes());
+        let mut record = crate::realmz::parse_treasures(&raw_bytes)
+            .into_iter()
+            .next()
+            .expect("treasure");
+        record.item_ids = vec![901];
+
+        normalize_treasure_item_ids(&mut record);
+
+        assert_eq!(record.item_ids.len(), 20);
+        assert_eq!(record.item_ids[0], 901);
+        assert_eq!(record.item_ids[1], -321);
+        assert!(record.item_ids[2..].iter().all(|value| *value == 0));
     }
 
     #[test]

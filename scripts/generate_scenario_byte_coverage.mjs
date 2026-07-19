@@ -717,13 +717,16 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Jewelry reward", internal: "jewelry", offset: 46, bytes: 2, type: "i16be" }
     ],
     evidence: [
+      "src-tauri/src/realmz/economy.rs:fresh_treasure_compiles_all_semantic_fields",
+      "src-tauri/src/realmz/economy.rs:imported_treasure_recompiles_without_record_byte_identity",
       "src-tauri/src/realmz/economy.rs:treasure_storage_mutates_only_owned_fields",
+      "src-tauri/src/project.rs:treasure_normalization_backfills_legacy_item_slots",
       ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/item-treasure-shop-evidence.json",
       "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
     ],
-    preservationPolicy: "This gate covers source treasure rewards only; shop stock/runtime shop cache writing stays outside this batch."
+    preservationPolicy: "Fresh treasure records compile all 48 bytes from twenty item IDs and four reward words without rawBytes. Imported records recompile from decoded semantics; only malformed file tails remain compatibility-annex data."
   },
   {
     container: "Data BD",

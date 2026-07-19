@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyScenarioItem } from "../projectCommands/targetRecordCommands";
+import { emptyScenarioItem, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeMapRecords, writeRandomLevels, writeScenarioItems } from "./binaryWriters";
+import { writeMapRecords, writeRandomLevels, writeScenarioItems, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -196,6 +196,42 @@ describe("browser scenario-item writer", () => {
       .toThrow("invalid compatibility byte storage");
     expect(() => writeScenarioItems([{ ...emptyScenarioItem(0), spare2: [] }]))
       .toThrow("must define 7 spare words");
+  });
+});
+
+describe("browser treasure writer", () => {
+  it("compiles a fresh record entirely from semantic fields", () => {
+    const record = {
+      ...emptyTreasure(0),
+      itemIds: Array.from({ length: 20 }, (_, slot) => 900 + slot),
+      exp: -10,
+      gold: 20,
+      gems: 30,
+      jewelry: 40
+    };
+
+    expect(record.rawBytes).toBeUndefined();
+    const output = writeTreasures([record]);
+
+    expect(output).toHaveLength(48);
+    expect(i16(output, 0)).toBe(900);
+    expect(i16(output, 38)).toBe(919);
+    expect(i16(output, 40)).toBe(-10);
+    expect(i16(output, 46)).toBe(40);
+  });
+
+  it("recompiles imported rows without record byte identity", () => {
+    const input = Uint8Array.from({ length: 48 }, (_, offset) => offset * 5);
+    const imported = parseScenarioBuffers(new Map([["Data TD", input]])).treasures[0];
+
+    expect(writeTreasures([{ ...imported, rawBytes: new Array(48).fill(0xa5) }])).toEqual(input);
+  });
+
+  it("rejects malformed compatibility bytes and item-slot inventories", () => {
+    expect(() => writeTreasures([{ ...emptyTreasure(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+    expect(() => writeTreasures([{ ...emptyTreasure(0), itemIds: [] }]))
+      .toThrow("must define 20 item slots");
   });
 });
 
