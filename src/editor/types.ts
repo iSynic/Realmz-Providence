@@ -1,6 +1,13 @@
 import type {
+  ProvidenceGlobalMacroHook,
   ProvidenceProjectOrigin,
   ProvidenceProjectSource,
+  ProvidenceScenarioContactInfo,
+  ProvidenceScenarioGlobalMacroHooks,
+  ProvidenceScenarioMeta,
+  ProvidenceScenarioRestrictions,
+  ProvidenceScenarioShell,
+  ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
   ProvidenceSourceFileRole
 } from "./generated/providenceProjectContract";
@@ -645,84 +652,13 @@ export type RealmzScriptDraft = {
   slots: RealmzActionSlotDraft[];
 };
 
-export type ScenarioShell = {
-  sourceFile: string;
-  recLevel: number;
-  maxLevel: number;
-  landLevel: number;
-  lookX: number;
-  lookY: number;
-  creatorUser: string;
-  codeseg1: number[];
-  codeseg2: number[];
-  trailingBytes: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ScenarioSupportFile = {
-  sourceFile: string;
-  divinityStringEditorSlot?: number | null;
-  divinityStringSoundId?: number | null;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ScenarioContactInfo = {
-  scenarioName: string;
-  version: string;
-  date: string;
-  author: string;
-  email: string;
-  web: string;
-  fee: string;
-  payInfo: string[];
-  titles: string[];
-  description: string;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ScenarioRestrictions = {
-  description: string;
-  maxPartyCharacters: number;
-  maxPartyLevel: number;
-  bannedRaces: number[];
-  bannedCastes: number[];
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type GlobalMacroHook = {
-  slot: number;
-  label: string;
-  door: number;
-  sourceBacked: boolean;
-  runtimeConsumer: string;
-};
-
-export type ScenarioGlobalMacroHooks = {
-  slots: GlobalMacroHook[];
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ScenarioMeta = {
-  id?: string;
-  name: string;
-  projectPath: string;
-  importedAt: string;
-  shell?: ScenarioShell | null;
-  supportFile?: ScenarioSupportFile | null;
-  contactInfo?: ScenarioContactInfo | null;
-  restrictions?: ScenarioRestrictions | null;
-  globalMacroHooks?: ScenarioGlobalMacroHooks | null;
-  securityBackup?: ScenarioShell | null;
-};
+export type ScenarioShell = ProvidenceScenarioShell;
+export type ScenarioSupportFile = ProvidenceScenarioSupportFile;
+export type ScenarioContactInfo = ProvidenceScenarioContactInfo;
+export type ScenarioRestrictions = ProvidenceScenarioRestrictions;
+export type GlobalMacroHook = ProvidenceGlobalMacroHook;
+export type ScenarioGlobalMacroHooks = ProvidenceScenarioGlobalMacroHooks;
+export type ScenarioMeta = ProvidenceScenarioMeta;
 
 export type ScenarioStartupFields = Partial<ScenarioMeta>;
 export type RealmzTargetRecordKind = "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter" | "questLabel";

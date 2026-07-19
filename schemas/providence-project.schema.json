@@ -55,7 +55,7 @@
       "description": "Providence persisted-project schema version."
     },
     "appVersion": { "type": "string" },
-    "scenario": { "$ref": "#/$defs/canonicalObject" },
+    "scenario": { "$ref": "#/$defs/scenarioMeta" },
     "source": { "$ref": "#/$defs/source" },
     "maps": { "$ref": "#/$defs/canonicalRecordArray" },
     "landLayout": {
@@ -99,6 +99,211 @@
     "validation": { "$ref": "#/$defs/canonicalObject" }
   },
   "$defs": {
+    "scenarioMeta": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceScenarioMeta",
+      "x-providence-rust-name": "ScenarioMeta",
+      "x-providence-rust-optional": ["shell", "supportFile", "contactInfo", "restrictions", "globalMacroHooks", "securityBackup"],
+      "x-providence-rust-default": ["id", "shell", "supportFile", "contactInfo", "restrictions", "globalMacroHooks", "securityBackup"],
+      "required": ["name", "projectPath", "importedAt"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "minLength": 1 },
+        "projectPath": { "type": "string" },
+        "importedAt": { "type": "string" },
+        "shell": {
+          "oneOf": [
+            { "$ref": "#/$defs/scenarioShell" },
+            { "type": "null" }
+          ]
+        },
+        "supportFile": {
+          "oneOf": [
+            { "$ref": "#/$defs/scenarioSupportFile" },
+            { "type": "null" }
+          ]
+        },
+        "contactInfo": {
+          "oneOf": [
+            { "$ref": "#/$defs/scenarioContactInfo" },
+            { "type": "null" }
+          ]
+        },
+        "restrictions": {
+          "oneOf": [
+            { "$ref": "#/$defs/scenarioRestrictions" },
+            { "type": "null" }
+          ]
+        },
+        "globalMacroHooks": {
+          "oneOf": [
+            { "$ref": "#/$defs/scenarioGlobalMacroHooks" },
+            { "type": "null" }
+          ]
+        },
+        "securityBackup": {
+          "oneOf": [
+            { "$ref": "#/$defs/scenarioShell" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "scenarioShell": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceScenarioShell",
+      "x-providence-rust-name": "ScenarioShell",
+      "x-providence-rust-optional": ["provenance"],
+      "x-providence-rust-default": ["codeseg1", "codeseg2", "trailingBytes", "rawBytes", "authored", "provenance"],
+      "required": ["sourceFile", "recLevel", "maxLevel", "landLevel", "lookX", "lookY", "creatorUser", "codeseg1", "codeseg2", "trailingBytes"],
+      "properties": {
+        "sourceFile": { "type": "string" },
+        "recLevel": { "type": "integer", "x-providence-rust-type": "i32" },
+        "maxLevel": { "type": "integer", "x-providence-rust-type": "i32" },
+        "landLevel": { "type": "integer", "x-providence-rust-type": "i32" },
+        "lookX": { "type": "integer", "x-providence-rust-type": "i32" },
+        "lookY": { "type": "integer", "x-providence-rust-type": "i32" },
+        "creatorUser": { "type": "string" },
+        "codeseg1": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" } },
+        "codeseg2": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" } },
+        "trailingBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": {
+          "oneOf": [
+            { "$ref": "#/$defs/provenanceReference" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "scenarioSupportFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceScenarioSupportFile",
+      "x-providence-rust-name": "ScenarioSupportFile",
+      "x-providence-rust-optional": ["divinityStringEditorSlot", "divinityStringSoundId", "provenance"],
+      "x-providence-rust-default": ["divinityStringEditorSlot", "divinityStringSoundId", "rawBytes", "authored", "provenance"],
+      "required": ["sourceFile"],
+      "properties": {
+        "sourceFile": { "type": "string" },
+        "divinityStringEditorSlot": {
+          "oneOf": [
+            { "type": "integer", "x-providence-rust-type": "i32" },
+            { "type": "null" }
+          ]
+        },
+        "divinityStringSoundId": {
+          "oneOf": [
+            { "type": "integer", "x-providence-rust-type": "i32" },
+            { "type": "null" }
+          ]
+        },
+        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": {
+          "oneOf": [
+            { "$ref": "#/$defs/provenanceReference" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "scenarioContactInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceScenarioContactInfo",
+      "x-providence-rust-name": "ScenarioContactInfo",
+      "x-providence-rust-optional": ["provenance"],
+      "x-providence-rust-default": ["payInfo", "titles", "rawBytes", "authored", "provenance"],
+      "required": ["scenarioName", "version", "date", "author", "email", "web", "fee", "payInfo", "titles", "description"],
+      "properties": {
+        "scenarioName": { "type": "string" },
+        "version": { "type": "string" },
+        "date": { "type": "string" },
+        "author": { "type": "string" },
+        "email": { "type": "string" },
+        "web": { "type": "string" },
+        "fee": { "type": "string" },
+        "payInfo": { "type": "array", "items": { "type": "string" } },
+        "titles": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": {
+          "oneOf": [
+            { "$ref": "#/$defs/provenanceReference" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "scenarioRestrictions": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceScenarioRestrictions",
+      "x-providence-rust-name": "ScenarioRestrictions",
+      "x-providence-rust-optional": ["provenance"],
+      "x-providence-rust-default": ["bannedRaces", "bannedCastes", "rawBytes", "authored", "provenance"],
+      "required": ["description", "maxPartyCharacters", "maxPartyLevel", "bannedRaces", "bannedCastes"],
+      "properties": {
+        "description": { "type": "string" },
+        "maxPartyCharacters": { "type": "integer", "x-providence-rust-type": "i16" },
+        "maxPartyLevel": { "type": "integer", "x-providence-rust-type": "i16" },
+        "bannedRaces": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" } },
+        "bannedCastes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" } },
+        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": {
+          "oneOf": [
+            { "$ref": "#/$defs/provenanceReference" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "globalMacroHook": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceGlobalMacroHook",
+      "x-providence-rust-name": "GlobalMacroHook",
+      "required": ["slot", "label", "door", "sourceBacked", "runtimeConsumer"],
+      "properties": {
+        "slot": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "label": { "type": "string" },
+        "door": { "type": "integer", "x-providence-rust-type": "i16" },
+        "sourceBacked": { "type": "boolean" },
+        "runtimeConsumer": { "type": "string" }
+      }
+    },
+    "scenarioGlobalMacroHooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceScenarioGlobalMacroHooks",
+      "x-providence-rust-name": "ScenarioGlobalMacroHooks",
+      "x-providence-rust-optional": ["provenance"],
+      "x-providence-rust-default": ["rawBytes", "authored", "provenance"],
+      "required": ["slots"],
+      "properties": {
+        "slots": { "type": "array", "items": { "$ref": "#/$defs/globalMacroHook" } },
+        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": {
+          "oneOf": [
+            { "$ref": "#/$defs/provenanceReference" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "provenanceReference": {
+      "type": "object",
+      "x-providence-external": true,
+      "x-providence-typescript-name": "import(\"../types\").Provenance",
+      "x-providence-rust-name": "crate::project::Provenance"
+    },
     "canonicalObject": {
       "type": "object",
       "description": "A canonical nested DTO whose field-level schema will be generated in a later slice."
@@ -114,6 +319,7 @@
       "x-providence-typescript-persisted-name": "ProvidencePersistedProjectSource",
       "x-providence-rust-name": "SourceSnapshot",
       "x-providence-runtime-optional": ["origin"],
+      "x-providence-rust-skip-none": ["origin"],
       "required": ["origin", "sourcePath", "rawSourcesDir", "files", "immutable"],
       "properties": {
         "origin": {

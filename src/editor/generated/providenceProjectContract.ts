@@ -66,6 +66,19 @@ export const PROVIDENCE_SOURCE_FILE_FIELDS = [
   "editable"
 ] as const;
 
+export const PROVIDENCE_SCENARIO_FIELDS = [
+  "id",
+  "name",
+  "projectPath",
+  "importedAt",
+  "shell",
+  "supportFile",
+  "contactInfo",
+  "restrictions",
+  "globalMacroHooks",
+  "securityBackup"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -94,6 +107,86 @@ export type ProvidenceProjectSource = {
   rawSourcesDir: string;
   files: ProvidenceSourceFile[];
   immutable: boolean;
+};
+
+export type ProvidenceScenarioShell = {
+  sourceFile: string;
+  recLevel: number;
+  maxLevel: number;
+  landLevel: number;
+  lookX: number;
+  lookY: number;
+  creatorUser: string;
+  codeseg1: number[];
+  codeseg2: number[];
+  trailingBytes: number[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: import("../types").Provenance | null;
+};
+
+export type ProvidenceScenarioSupportFile = {
+  sourceFile: string;
+  divinityStringEditorSlot?: number | null;
+  divinityStringSoundId?: number | null;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: import("../types").Provenance | null;
+};
+
+export type ProvidenceScenarioContactInfo = {
+  scenarioName: string;
+  version: string;
+  date: string;
+  author: string;
+  email: string;
+  web: string;
+  fee: string;
+  payInfo: string[];
+  titles: string[];
+  description: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: import("../types").Provenance | null;
+};
+
+export type ProvidenceScenarioRestrictions = {
+  description: string;
+  maxPartyCharacters: number;
+  maxPartyLevel: number;
+  bannedRaces: number[];
+  bannedCastes: number[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: import("../types").Provenance | null;
+};
+
+export type ProvidenceGlobalMacroHook = {
+  slot: number;
+  label: string;
+  door: number;
+  sourceBacked: boolean;
+  runtimeConsumer: string;
+};
+
+export type ProvidenceScenarioGlobalMacroHooks = {
+  slots: ProvidenceGlobalMacroHook[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: import("../types").Provenance | null;
+};
+
+export type ProvidenceScenarioMeta = {
+  id?: string;
+  name: string;
+  projectPath: string;
+  importedAt: string;
+  shell?: ProvidenceScenarioShell | null;
+  supportFile?: ProvidenceScenarioSupportFile | null;
+  contactInfo?: ProvidenceScenarioContactInfo | null;
+  restrictions?: ProvidenceScenarioRestrictions | null;
+  globalMacroHooks?: ProvidenceScenarioGlobalMacroHooks | null;
+  securityBackup?: ProvidenceScenarioShell | null;
 };
 
 export type ProvidencePersistedProjectField = typeof PROVIDENCE_PROJECT_FIELDS[number];

@@ -70,6 +70,20 @@ pub const PROVIDENCE_SOURCE_FILE_FIELDS: &[&str] = &[
     "editable",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_SCENARIO_FIELDS: &[&str] = &[
+    "id",
+    "name",
+    "projectPath",
+    "importedAt",
+    "shell",
+    "supportFile",
+    "contactInfo",
+    "restrictions",
+    "globalMacroHooks",
+    "securityBackup",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -106,4 +120,129 @@ pub struct SourceSnapshot {
     pub raw_sources_dir: String,
     pub files: Vec<SourceFile>,
     pub immutable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioShell {
+    pub source_file: String,
+    pub rec_level: i32,
+    pub max_level: i32,
+    pub land_level: i32,
+    pub look_x: i32,
+    pub look_y: i32,
+    pub creator_user: String,
+    #[serde(default)]
+    pub codeseg1: Vec<u8>,
+    #[serde(default)]
+    pub codeseg2: Vec<u8>,
+    #[serde(default)]
+    pub trailing_bytes: Vec<u8>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<crate::project::Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioSupportFile {
+    pub source_file: String,
+    #[serde(default)]
+    pub divinity_string_editor_slot: Option<i32>,
+    #[serde(default)]
+    pub divinity_string_sound_id: Option<i32>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<crate::project::Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioContactInfo {
+    pub scenario_name: String,
+    pub version: String,
+    pub date: String,
+    pub author: String,
+    pub email: String,
+    pub web: String,
+    pub fee: String,
+    #[serde(default)]
+    pub pay_info: Vec<String>,
+    #[serde(default)]
+    pub titles: Vec<String>,
+    pub description: String,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<crate::project::Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioRestrictions {
+    pub description: String,
+    pub max_party_characters: i16,
+    pub max_party_level: i16,
+    #[serde(default)]
+    pub banned_races: Vec<u8>,
+    #[serde(default)]
+    pub banned_castes: Vec<u8>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<crate::project::Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GlobalMacroHook {
+    pub slot: usize,
+    pub label: String,
+    pub door: i16,
+    pub source_backed: bool,
+    pub runtime_consumer: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioGlobalMacroHooks {
+    pub slots: Vec<GlobalMacroHook>,
+    #[serde(default)]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<crate::project::Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioMeta {
+    #[serde(default)]
+    pub id: String,
+    pub name: String,
+    pub project_path: String,
+    pub imported_at: String,
+    #[serde(default)]
+    pub shell: Option<ScenarioShell>,
+    #[serde(default)]
+    pub support_file: Option<ScenarioSupportFile>,
+    #[serde(default)]
+    pub contact_info: Option<ScenarioContactInfo>,
+    #[serde(default)]
+    pub restrictions: Option<ScenarioRestrictions>,
+    #[serde(default)]
+    pub global_macro_hooks: Option<ScenarioGlobalMacroHooks>,
+    #[serde(default)]
+    pub security_backup: Option<ScenarioShell>,
 }
