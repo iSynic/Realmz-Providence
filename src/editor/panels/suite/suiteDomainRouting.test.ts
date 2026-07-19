@@ -13,7 +13,7 @@ function map(id: string, levelType: "land" | "dungeon", index: number): MapEntit
     width: 2,
     height: 2,
     tiles: [0, 0, 0, 0],
-    render: { tilesetId: levelType === "land" ? "landlook-0" : "dungeon-0", landlook: null, mode: levelType === "land" ? "outdoor-landlook" : "dungeon" },
+    render: { tilesetId: levelType === "land" ? "landlook-0" : "dungeon-0", landlook: null, mode: levelType === "land" ? "outdoor-landlook" : "dungeon-top-down" },
     provenance: { sourceFile: "fixture", recordIndex: index, byteOffset: 0, byteLength: 8, confidence: "fixture-backed" }
   };
 }

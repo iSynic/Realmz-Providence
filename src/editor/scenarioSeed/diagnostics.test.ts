@@ -54,7 +54,8 @@ describe("scenario seed compiler diagnostics", () => {
       width: 90,
       height: 90,
       tiles: new Array(90 * 90).fill(156),
-      render: { tilesetId: "landlook-0", landlook: 0, mode: "outdoor-landlook" }
+      render: { tilesetId: "landlook-0", landlook: 0, mode: "outdoor-landlook" },
+      provenance: { sourceFile: "fixture", recordIndex: 0, byteOffset: 0, byteLength: 90 * 90 * 2, confidence: "fixture-backed" }
     };
     map.tiles[mapTileIndex(map, 4, 5)] = 60;
     map.tiles[mapTileIndex(map, 8, 9)] = 60;

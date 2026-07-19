@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    Confidence, GlobalMacroHook, Provenance, ScenarioContactInfo, ScenarioGlobalMacroHooks,
-    ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
+    Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapRender, Provenance,
+    RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioMeta, ScenarioRestrictions,
+    ScenarioShell, ScenarioSupportFile,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -677,34 +678,6 @@ pub struct ByteRange {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MapEntity {
-    pub id: String,
-    pub level_type: LevelType,
-    pub source: String,
-    pub index: usize,
-    pub name: String,
-    pub width: usize,
-    pub height: usize,
-    pub tiles: Vec<i16>,
-    pub render: MapRender,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LandLayout {
-    pub rows: usize,
-    pub cols: usize,
-    pub cells: Vec<i16>,
-    #[serde(default)]
-    pub trailing_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Option<Provenance>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct MapRecord {
     pub id: usize,
     #[serde(default)]
@@ -752,13 +725,6 @@ pub struct MapRecordRect {
     pub right: i16,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(rename_all = "kebab-case")]
-pub enum LevelType {
-    Land,
-    Dungeon,
-}
-
 impl LevelType {
     pub fn as_str(self) -> &'static str {
         match self {
@@ -787,22 +753,6 @@ impl LevelType {
             Self::Dungeon => "Data RDD",
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MapRender {
-    pub tileset_id: String,
-    pub landlook: Option<i8>,
-    pub mode: RenderMode,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum RenderMode {
-    OutdoorLandlook,
-    DungeonTopDown,
-    AbstractFallback,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

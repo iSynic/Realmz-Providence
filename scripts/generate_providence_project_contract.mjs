@@ -53,6 +53,13 @@ const scenarioDefinitions = scenarioDefinitionNames.map((name) => schema.$defs?.
 const scenarioMetaSchema = schema.$defs?.scenarioMeta ?? {};
 const confidenceSchema = schema.$defs?.confidence ?? {};
 const provenanceSchema = schema.$defs?.provenance ?? {};
+const mapDefinitionNames = ["levelType", "renderMode", "mapRender", "mapEntity", "landLayout"];
+const mapDefinitions = mapDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
+const levelTypeSchema = schema.$defs?.levelType ?? {};
+const renderModeSchema = schema.$defs?.renderMode ?? {};
+const mapRenderSchema = schema.$defs?.mapRender ?? {};
+const mapEntitySchema = schema.$defs?.mapEntity ?? {};
+const landLayoutSchema = schema.$defs?.landLayout ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -77,6 +84,26 @@ expect(provenanceSchema.additionalProperties === false, "provenance must reject 
 expectSameArray(Object.keys(provenanceSchema.properties ?? {}), ["sourceFile", "recordIndex", "byteOffset", "byteLength", "confidence"], "Provenance field inventory");
 expectSameArray(provenanceSchema.required ?? [], Object.keys(provenanceSchema.properties ?? {}), "Provenance required field inventory");
 expect(provenanceSchema.properties?.confidence?.$ref === "#/$defs/confidence", "provenance confidence must reference the canonical confidence enum");
+expect(schema.properties?.maps?.items?.$ref === "#/$defs/mapEntity", "project maps must contain canonical map DTOs");
+expect(schema.properties?.landLayout?.oneOf?.[0]?.$ref === "#/$defs/landLayout", "project landLayout must reference the canonical layout DTO");
+expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
+expectSameArray(renderModeSchema.enum ?? [], ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"], "Map render-mode vocabulary");
+for (const [index, definition] of mapDefinitions.entries()) {
+  const definitionName = mapDefinitionNames[index];
+  expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);
+  if (definition.type === "object") expect(definition.additionalProperties === false, `${definitionName} must reject unknown fields`);
+  expect(typeof definition["x-providence-typescript-name"] === "string", `${definitionName} must declare its TypeScript name`);
+  expect(typeof definition["x-providence-rust-name"] === "string", `${definitionName} must declare its Rust name`);
+}
+expectSameArray(Object.keys(mapEntitySchema.properties ?? {}), ["id", "levelType", "source", "index", "name", "width", "height", "tiles", "render", "provenance"], "Map identity field inventory");
+expectSameArray(mapEntitySchema.required ?? [], Object.keys(mapEntitySchema.properties ?? {}), "Map required field inventory");
+expect(mapEntitySchema.properties?.levelType?.$ref === "#/$defs/levelType", "map levelType must reference the canonical level enum");
+expect(mapEntitySchema.properties?.render?.$ref === "#/$defs/mapRender", "map render must reference canonical render metadata");
+expect(mapEntitySchema.properties?.provenance?.$ref === "#/$defs/provenance", "map provenance must reference canonical provenance");
+expect(mapRenderSchema.properties?.mode?.$ref === "#/$defs/renderMode", "map render mode must reference the canonical mode enum");
+expectSameSet(Object.entries(landLayoutSchema.properties ?? {})
+  .filter(([, property]) => property["x-providence-compatibility-only"] === true)
+  .map(([field]) => `LandLayout.${field}`), ["LandLayout.trailingBytes"], "Map compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -121,6 +148,11 @@ for (const alias of [
   "export type SourceFileRole = ProvidenceSourceFileRole;",
   "export type Confidence = ProvidenceConfidence;",
   "export type Provenance = ProvidenceProvenance;",
+  "export type LevelType = ProvidenceLevelType;",
+  "export type RenderMode = ProvidenceRenderMode;",
+  "export type MapRender = ProvidenceMapRender;",
+  "export type MapEntity = ProvidenceMapEntity;",
+  "export type LandLayout = ProvidenceLandLayout;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -136,6 +168,9 @@ expect(!typesSource.includes('export type ProjectOrigin = "authored"'), "types.t
 expect(!typesSource.includes("export type ProjectSource = {"), "types.ts must not handwrite ProjectSource");
 expect(!typesSource.includes("export type SourceFile = {"), "types.ts must not handwrite SourceFile");
 expect(!typesSource.includes("export type Provenance = {"), "types.ts must not handwrite Provenance");
+for (const mapType of ["MapRender", "MapEntity", "LandLayout"]) {
+  expect(!typesSource.includes(`export type ${mapType} = {`), `types.ts must not handwrite ${mapType}`);
+}
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!typesSource.includes(`export type ${scenarioType} = {`), `types.ts must not handwrite ${scenarioType}`);
 }
@@ -146,8 +181,13 @@ expect(rustGeneratedReExports.length > 0, "project.rs must re-export the generat
 expectSameSet(rustGeneratedReExports, [
   "Confidence",
   "GlobalMacroHook",
+  "LandLayout",
+  "LevelType",
+  "MapEntity",
+  "MapRender",
   "ProjectOrigin",
   "Provenance",
+  "RenderMode",
   "ScenarioContactInfo",
   "ScenarioGlobalMacroHooks",
   "ScenarioMeta",
@@ -164,6 +204,12 @@ expect(!rustProjectSource.includes("pub struct SourceFile {"), "project.rs must 
 expect(!rustProjectSource.includes("pub enum SourceFileRole {"), "project.rs must not handwrite SourceFileRole");
 expect(!rustProjectSource.includes("pub struct Provenance {"), "project.rs must not handwrite Provenance");
 expect(!rustProjectSource.includes("pub enum Confidence {"), "project.rs must not handwrite Confidence");
+expect(!rustProjectSource.includes("pub struct MapEntity {"), "project.rs must not handwrite MapEntity");
+expect(!rustProjectSource.includes("pub struct MapRender {"), "project.rs must not handwrite MapRender");
+expect(!rustProjectSource.includes("pub struct LandLayout {"), "project.rs must not handwrite LandLayout");
+expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
+expect(!rustProjectSource.includes("pub enum RenderMode {"), "project.rs must not handwrite RenderMode");
+expect(rustProjectSource.includes("impl LevelType {"), "project.rs must retain handwritten LevelType behavior methods");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!rustProjectSource.includes(`pub struct ${scenarioType} {`), `project.rs must not handwrite ${scenarioType}`);
 }
@@ -264,10 +310,13 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_PROJECT_SOURCE_FIELDS = ${JSON.stringify(Object.keys(source.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SOURCE_FILE_FIELDS = ${JSON.stringify(Object.keys(sourceFile.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SCENARIO_FIELDS = ${JSON.stringify(Object.keys(scenarioMetaSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_MAP_FIELDS = ${JSON.stringify(Object.keys(mapEntitySchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_LAND_LAYOUT_FIELDS = ${JSON.stringify(Object.keys(landLayoutSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
     renderTypeScriptEnum(confidence) + `\n` +
     renderTypeScriptObject(provenance["x-providence-typescript-name"], provenance, new Set()) + `\n` +
+    mapDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     renderTypeScriptObject(sourceFileName, sourceFile, new Set()) + `\n` +
     renderTypeScriptObject(persistedSourceName, source, new Set()) + `\n` +
     `/** Migration-tolerant runtime form; persisted schema-v5 projects require origin. */\n` +
@@ -298,10 +347,15 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_SOURCE_FILE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(sourceFile.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SCENARIO_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioMetaSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_MAP_FIELDS: &[&str] = &[\n${renderArray(Object.keys(mapEntitySchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[\n${renderArray(Object.keys(landLayoutSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
     renderRustEnum(confidence) + `\n` +
     renderRustStruct(provenance) + `\n` +
+    mapDefinitions.map(renderRustDefinition).join("\n") + `\n` +
     renderRustStruct(sourceFile) + `\n` +
     renderRustStruct(source) + `\n` +
     scenarioTypes.map(renderRustStruct).join("\n");
@@ -311,6 +365,12 @@ function renderTypeScriptEnum(definition) {
   const name = definition["x-providence-typescript-name"];
   const values = definition.enum ?? [];
   return `export type ${name} = ${values.map((value) => JSON.stringify(value)).join(" | ")};\n`;
+}
+
+function renderTypeScriptDefinition(definition) {
+  return Array.isArray(definition.enum)
+    ? renderTypeScriptEnum(definition)
+    : renderTypeScriptObject(definition["x-providence-typescript-name"], definition, optionalFieldsFromSchema(definition));
 }
 
 function renderTypeScriptObject(name, definition, optionalFields) {
@@ -342,6 +402,10 @@ function renderRustEnum(definition) {
   const derives = definition["x-providence-rust-derives"] ?? ["Debug", "Clone", "Serialize", "Deserialize"];
   const variants = (definition.enum ?? []).map((value) => `    ${kebabToPascal(value)},`).join("\n");
   return `#[derive(${derives.join(", ")})]\n#[serde(rename_all = "kebab-case")]\npub enum ${name} {\n${variants}\n}\n`;
+}
+
+function renderRustDefinition(definition) {
+  return Array.isArray(definition.enum) ? renderRustEnum(definition) : renderRustStruct(definition);
 }
 
 function renderRustStruct(definition) {

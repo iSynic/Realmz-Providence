@@ -2,18 +2,21 @@ import { describe, expect, it } from "vitest";
 import type { MapEntity, TilesetAsset } from "../../types";
 import { buildClearLevelCommand, buildDungeonMappingCommand } from "./mapSetupModel";
 
-function map(levelType: MapEntity["levelType"], tiles: number[]) {
+function map(levelType: MapEntity["levelType"], tiles: number[]): MapEntity {
   return {
     id: `${levelType}:2`,
     levelType,
+    source: levelType === "land" ? "Data LD" : "Data DL",
     index: 2,
+    name: `${levelType} 2`,
     width: 2,
     height: 2,
     tiles,
     render: levelType === "land"
-      ? { mode: "landlook", landlook: 0, tilesetId: "plains" }
-      : { mode: "dungeon-top-down", tilesetId: "dungeon" }
-  } as MapEntity;
+      ? { mode: "outdoor-landlook", landlook: 0, tilesetId: "plains" }
+      : { mode: "dungeon-top-down", landlook: null, tilesetId: "dungeon" },
+    provenance: { sourceFile: "fixture", recordIndex: 2, byteOffset: 0, byteLength: 8, confidence: "fixture-backed" }
+  };
 }
 
 describe("map setup commands", () => {

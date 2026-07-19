@@ -31,7 +31,7 @@ describe("scenario seed map compiler", () => {
       name: "Dungeon 2",
       width: 90,
       height: 90,
-      render: { tilesetId: "landlook-4", landlook: 4, mode: "dungeon-landlook" }
+      render: { tilesetId: "landlook-4", landlook: 4, mode: "dungeon-top-down" }
     });
     expect(result.maps[0].tiles.every((tile) => tile === 40)).toBe(true);
     expect(contexts).toHaveLength(2);

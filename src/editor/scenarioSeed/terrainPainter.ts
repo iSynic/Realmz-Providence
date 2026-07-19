@@ -23,11 +23,13 @@ export function applyTerrainCells(
   terrain: SmartBrushPreset,
   mapContext: ScenarioSeedMapOperationContext
 ) {
+  const source = mapContext.levelType === "land" ? "Data LD" : "Data DL";
+  const recordIndex = Number(mapContext.mapSeed.split(":")[1] ?? 0);
   const map: MapEntity = {
     id: mapContext.mapSeed,
     levelType: mapContext.levelType,
-    source: mapContext.levelType === "land" ? "Data LD" : "Data D",
-    index: Number(mapContext.mapSeed.split(":")[1] ?? 0),
+    source,
+    index: recordIndex,
     name: mapContext.mapSeed,
     width: MAP_SIZE,
     height: MAP_SIZE,
@@ -35,7 +37,14 @@ export function applyTerrainCells(
     render: {
       tilesetId: `landlook-${mapContext.landlook}`,
       landlook: mapContext.landlook,
-      mode: "outdoor-landlook"
+      mode: mapContext.levelType === "land" ? "outdoor-landlook" : "dungeon-top-down"
+    },
+    provenance: {
+      sourceFile: source,
+      recordIndex,
+      byteOffset: 0,
+      byteLength: tiles.length * 2,
+      confidence: "inferred"
     }
   };
   const tileset: TilesetAsset = {

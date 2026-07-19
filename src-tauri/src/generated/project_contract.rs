@@ -84,6 +84,30 @@ pub const PROVIDENCE_SCENARIO_FIELDS: &[&str] = &[
     "securityBackup",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_MAP_FIELDS: &[&str] = &[
+    "id",
+    "levelType",
+    "source",
+    "index",
+    "name",
+    "width",
+    "height",
+    "tiles",
+    "render",
+    "provenance",
+];
+
+#[allow(dead_code)]
+pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[
+    "rows",
+    "cols",
+    "cells",
+    "trailingBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -118,6 +142,59 @@ pub struct Provenance {
     pub byte_offset: usize,
     pub byte_length: usize,
     pub confidence: Confidence,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum LevelType {
+    Land,
+    Dungeon,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RenderMode {
+    OutdoorLandlook,
+    DungeonTopDown,
+    AbstractFallback,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapRender {
+    pub tileset_id: String,
+    #[serde(default)]
+    pub landlook: Option<i8>,
+    pub mode: RenderMode,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapEntity {
+    pub id: String,
+    pub level_type: LevelType,
+    pub source: String,
+    pub index: usize,
+    pub name: String,
+    pub width: usize,
+    pub height: usize,
+    pub tiles: Vec<i16>,
+    pub render: MapRender,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LandLayout {
+    pub rows: usize,
+    pub cols: usize,
+    pub cells: Vec<i16>,
+    #[serde(default)]
+    pub trailing_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default)]
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

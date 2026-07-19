@@ -79,6 +79,28 @@ export const PROVIDENCE_SCENARIO_FIELDS = [
   "securityBackup"
 ] as const;
 
+export const PROVIDENCE_MAP_FIELDS = [
+  "id",
+  "levelType",
+  "source",
+  "index",
+  "name",
+  "width",
+  "height",
+  "tiles",
+  "render",
+  "provenance"
+] as const;
+
+export const PROVIDENCE_LAND_LAYOUT_FIELDS = [
+  "rows",
+  "cols",
+  "cells",
+  "trailingBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -91,6 +113,38 @@ export type ProvidenceProvenance = {
   byteOffset: number;
   byteLength: number;
   confidence: ProvidenceConfidence;
+};
+
+export type ProvidenceLevelType = "land" | "dungeon";
+
+export type ProvidenceRenderMode = "outdoor-landlook" | "dungeon-top-down" | "abstract-fallback";
+
+export type ProvidenceMapRender = {
+  tilesetId: string;
+  landlook: number | null;
+  mode: ProvidenceRenderMode;
+};
+
+export type ProvidenceMapEntity = {
+  id: string;
+  levelType: ProvidenceLevelType;
+  source: string;
+  index: number;
+  name: string;
+  width: number;
+  height: number;
+  tiles: number[];
+  render: ProvidenceMapRender;
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceLandLayout = {
+  rows: number;
+  cols: number;
+  cells: number[];
+  trailingBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance | null;
 };
 
 export type ProvidenceSourceFile = {

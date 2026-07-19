@@ -740,7 +740,7 @@ function ensureRandomLevel(project: Project, levelType: RandomLevel["levelType"]
 
 function replaceRandomLevel(project: Project, level: RandomLevel) {
   const randomLevels = upsertRandomLevel(project.randomLevels, level);
-  const maps = project.maps.map((map) => {
+  const maps = project.maps.map((map): MapEntity => {
     if (map.levelType !== level.levelType || map.index !== level.levelIndex) return map;
     const previousLandlook = map.render.landlook;
     const nextLandlook = level.levelType === "dungeon" ? -1 : level.landlook;

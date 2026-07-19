@@ -117,15 +117,19 @@ function paintIntent(overrides: Partial<MapPaintIntent> = {}): MapPaintIntent {
   };
 }
 
-function landMap(rows: number[][]) {
+function landMap(rows: number[][]): MapEntity {
   const height = rows.length;
   const width = rows[0]?.length ?? 0;
   return {
     id: "land:0",
     levelType: "land",
+    source: "Data LD",
+    index: 0,
+    name: "Land 0",
     width,
     height,
-    render: { mode: "land-atlas", landlook: 0 },
-    tiles: Array.from({ length: width }, (_, x) => rows.map((row) => row[x])).flat()
-  } as MapEntity;
+    render: { mode: "outdoor-landlook", landlook: 0, tilesetId: "landlook-0" },
+    tiles: Array.from({ length: width }, (_, x) => rows.map((row) => row[x])).flat(),
+    provenance: { sourceFile: "fixture", recordIndex: 0, byteOffset: 0, byteLength: width * height * 2, confidence: "fixture-backed" }
+  };
 }

@@ -46,6 +46,11 @@ function map(id: string, levelType: "land" | "dungeon", tiles: number[]): MapEnt
     width: 2,
     height: 2,
     tiles,
-    render: { tilesetId: `${levelType}-0`, landlook: levelType === "land" ? 99 : null, mode: levelType }
+    render: {
+      tilesetId: `${levelType}-0`,
+      landlook: levelType === "land" ? 99 : null,
+      mode: levelType === "land" ? "outdoor-landlook" : "dungeon-top-down"
+    },
+    provenance: { sourceFile: "fixture", recordIndex: 0, byteOffset: 0, byteLength: 8, confidence: "fixture-backed" }
   };
 }

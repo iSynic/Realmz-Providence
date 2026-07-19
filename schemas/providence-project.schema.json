@@ -57,10 +57,13 @@
     "appVersion": { "type": "string" },
     "scenario": { "$ref": "#/$defs/scenarioMeta" },
     "source": { "$ref": "#/$defs/source" },
-    "maps": { "$ref": "#/$defs/canonicalRecordArray" },
+    "maps": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/mapEntity" }
+    },
     "landLayout": {
       "oneOf": [
-        { "$ref": "#/$defs/canonicalObject" },
+        { "$ref": "#/$defs/landLayout" },
         { "type": "null" }
       ]
     },
@@ -99,6 +102,78 @@
     "validation": { "$ref": "#/$defs/canonicalObject" }
   },
   "$defs": {
+    "levelType": {
+      "type": "string",
+      "enum": ["land", "dungeon"],
+      "x-providence-typescript-name": "ProvidenceLevelType",
+      "x-providence-rust-name": "LevelType",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "renderMode": {
+      "type": "string",
+      "enum": ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"],
+      "x-providence-typescript-name": "ProvidenceRenderMode",
+      "x-providence-rust-name": "RenderMode"
+    },
+    "mapRender": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceMapRender",
+      "x-providence-rust-name": "MapRender",
+      "x-providence-rust-optional": ["landlook"],
+      "required": ["tilesetId", "landlook", "mode"],
+      "properties": {
+        "tilesetId": { "type": "string" },
+        "landlook": {
+          "oneOf": [
+            { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+            { "type": "null" }
+          ]
+        },
+        "mode": { "$ref": "#/$defs/renderMode" }
+      }
+    },
+    "mapEntity": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceMapEntity",
+      "x-providence-rust-name": "MapEntity",
+      "required": ["id", "levelType", "source", "index", "name", "width", "height", "tiles", "render", "provenance"],
+      "properties": {
+        "id": { "type": "string" },
+        "levelType": { "$ref": "#/$defs/levelType" },
+        "source": { "type": "string" },
+        "index": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "name": { "type": "string" },
+        "width": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "height": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "tiles": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
+        "render": { "$ref": "#/$defs/mapRender" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "landLayout": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceLandLayout",
+      "x-providence-rust-name": "LandLayout",
+      "x-providence-rust-optional": ["provenance"],
+      "x-providence-rust-default": ["trailingBytes", "authored", "provenance"],
+      "required": ["rows", "cols", "cells"],
+      "properties": {
+        "rows": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "cols": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "cells": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
+        "trailingBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": {
+          "oneOf": [
+            { "$ref": "#/$defs/provenance" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
     "scenarioMeta": {
       "type": "object",
       "additionalProperties": false,

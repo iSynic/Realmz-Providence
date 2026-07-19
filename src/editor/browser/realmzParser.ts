@@ -374,7 +374,8 @@ function parseFields(buffer: Uint8Array | undefined, levelType: LevelType, sourc
       width: MAP_SIZE,
       height: MAP_SIZE,
       tiles,
-      render: { tilesetId: "abstract-fallback", landlook: null, mode: "abstract-fallback" }
+      render: { tilesetId: "abstract-fallback", landlook: null, mode: "abstract-fallback" },
+      provenance: provenance(source, levelIndex, start, FIELD_BYTES, "source-backed")
     });
   }
   return maps;

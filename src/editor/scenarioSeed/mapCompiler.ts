@@ -127,7 +127,7 @@ function buildMap(
     render: {
       tilesetId: `landlook-${landlook}`,
       landlook,
-      mode: levelType === "land" ? "outdoor-landlook" : "dungeon-landlook"
+      mode: levelType === "land" ? "outdoor-landlook" : "dungeon-top-down"
     },
     provenance: authoredProvenance(source, index, index * FIELD_BYTES, FIELD_BYTES)
   };

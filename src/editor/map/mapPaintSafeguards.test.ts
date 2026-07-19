@@ -11,7 +11,8 @@ const map: MapEntity = {
   width: 4,
   height: 4,
   tiles: Array(16).fill(1),
-  render: { tilesetId: "plains", landlook: 0, mode: "land" }
+  render: { tilesetId: "plains", landlook: 0, mode: "outdoor-landlook" },
+  provenance: { sourceFile: "fixture", recordIndex: 0, byteOffset: 0, byteLength: 32, confidence: "fixture-backed" }
 };
 
 const changes: PaintCellChange[] = [

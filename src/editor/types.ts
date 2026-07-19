@@ -1,9 +1,14 @@
 import type {
   ProvidenceConfidence,
   ProvidenceGlobalMacroHook,
+  ProvidenceLandLayout,
+  ProvidenceLevelType,
+  ProvidenceMapEntity,
+  ProvidenceMapRender,
   ProvidenceProjectOrigin,
   ProvidenceProjectSource,
   ProvidenceProvenance,
+  ProvidenceRenderMode,
   ProvidenceScenarioContactInfo,
   ProvidenceScenarioGlobalMacroHooks,
   ProvidenceScenarioMeta,
@@ -16,8 +21,11 @@ import type {
 
 export type Confidence = ProvidenceConfidence;
 export type Provenance = ProvidenceProvenance;
-
-export type LevelType = "land" | "dungeon";
+export type LevelType = ProvidenceLevelType;
+export type RenderMode = ProvidenceRenderMode;
+export type MapRender = ProvidenceMapRender;
+export type MapEntity = ProvidenceMapEntity;
+export type LandLayout = ProvidenceLandLayout;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -1541,28 +1549,6 @@ export type LibraryDiagnostic = {
 
 export type SourceFile = ProvidenceSourceFile;
 export type SourceFileRole = ProvidenceSourceFileRole;
-
-export type MapEntity = {
-  id: string;
-  levelType: LevelType;
-  source: string;
-  index: number;
-  name: string;
-  width: number;
-  height: number;
-  tiles: number[];
-  render: { tilesetId: string; landlook: number | null; mode: string };
-  provenance?: Provenance;
-};
-
-export type LandLayout = {
-  rows: number;
-  cols: number;
-  cells: number[];
-  trailingBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
 
 export type TriggerRecord = {
   id: string;

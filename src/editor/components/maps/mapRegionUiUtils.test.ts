@@ -11,7 +11,8 @@ const map = {
   width: 2,
   height: 2,
   tiles: [1, 2, 3, 4],
-  render: { tilesetId: "plains", landlook: 0, mode: "land" }
+  render: { tilesetId: "plains", landlook: 0, mode: "outdoor-landlook" },
+  provenance: { sourceFile: "fixture", recordIndex: 0, byteOffset: 0, byteLength: 8, confidence: "fixture-backed" }
 } as MapEntity;
 
 describe("region paint operations", () => {
