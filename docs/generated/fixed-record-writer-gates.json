@@ -7,6 +7,7 @@
     "byteCoverage": "docs/generated/scenario-byte-ownership.json",
     "fixtureRoundtrip": "src-tauri/tests/fixture_roundtrip.rs",
     "fixedRecordWriters": [
+      "src-tauri/src/realmz/messages.rs",
       "src-tauri/src/realmz/text_records.rs",
       "src-tauri/src/realmz/combat.rs",
       "src-tauri/src/realmz/economy.rs",
@@ -111,8 +112,11 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
-        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz/messages.rs:fresh_message_compiles_complete_semantic_row",
+        "src-tauri/src/realmz/messages.rs:imported_message_compiles_without_record_byte_identity",
+        "src-tauri/src/exporter.rs:imported_message_export_reads_legacy_bytes_only_from_annex",
+        "src-tauri/src/realmz/messages.rs:write_messages",
+        "src-tauri/src/realmz/messages.rs:parse_messages",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
@@ -121,17 +125,41 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
-          "file": "src-tauri/src/realmz/text_records.rs",
-          "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "reference": "src-tauri/src/realmz/messages.rs:fresh_message_compiles_complete_semantic_row",
+          "file": "src-tauri/src/realmz/messages.rs",
+          "anchor": "fresh_message_compiles_complete_semantic_row",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
-          "file": "src-tauri/src/realmz.rs",
-          "anchor": "target_records_round_trip_full_records",
+          "reference": "src-tauri/src/realmz/messages.rs:imported_message_compiles_without_record_byte_identity",
+          "file": "src-tauri/src/realmz/messages.rs",
+          "anchor": "imported_message_compiles_without_record_byte_identity",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/exporter.rs:imported_message_export_reads_legacy_bytes_only_from_annex",
+          "file": "src-tauri/src/exporter.rs",
+          "anchor": "imported_message_export_reads_legacy_bytes_only_from_annex",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/messages.rs:write_messages",
+          "file": "src-tauri/src/realmz/messages.rs",
+          "anchor": "write_messages",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/messages.rs:parse_messages",
+          "file": "src-tauri/src/realmz/messages.rs",
+          "anchor": "parse_messages",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -179,16 +207,16 @@
       ],
       "ownedFields": [
         {
-          "field": "Message text",
+          "field": "Message row",
           "internal": "text",
           "offset": 0,
           "bytes": 256,
-          "type": "Str255/raw tail"
+          "type": "Str255 + deterministic zero fill"
         }
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Imported message bytes remain raw-preserved until the record is authored; authored strings rewrite only the fixed Str255 record."
+      "preservationPolicy": "Fresh and authored messages compile the complete 256-byte row from canonical text without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
     },
     {
       "container": "Data OD",
@@ -218,7 +246,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz/text_records.rs:option_label_writer_mutates_only_owned_pascal_bytes",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -228,9 +256,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "reference": "src-tauri/src/realmz/text_records.rs:option_label_writer_mutates_only_owned_pascal_bytes",
           "file": "src-tauri/src/realmz/text_records.rs",
-          "anchor": "fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+          "anchor": "option_label_writer_mutates_only_owned_pascal_bytes",
           "fileExists": true,
           "anchorPresent": true,
           "present": true

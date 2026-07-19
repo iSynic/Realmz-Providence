@@ -295,7 +295,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.messages.length > 0) {
     writes.push({
       path: "Data SD2",
-      bytes: preserveMalformedRawTail("Data SD2", writeMessages(project.messages), MESSAGE_RECORD_BYTES, annex)
+      bytes: writeMessagesForExport(project.messages, annex)
     });
   }
   if (project.optionLabels.length > 0) {
@@ -894,6 +894,26 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
   output.set(raw.slice(bytes.byteLength), bytes.byteLength);
+  return output;
+}
+
+function writeMessagesForExport(messages: Project["messages"], annex: BrowserCompatibilityAnnex | null) {
+  const bytes = writeMessages(messages);
+  const raw = rawSourceBytes("Data SD2", annex);
+  if (!raw || bytes.byteLength === 0) return bytes;
+  const completeSourceBytes = Math.floor(raw.byteLength / MESSAGE_RECORD_BYTES) * MESSAGE_RECORD_BYTES;
+  const tail = raw.slice(completeSourceBytes);
+  const output = new Uint8Array(bytes.byteLength + tail.byteLength);
+  output.set(bytes);
+  for (const message of messages) {
+    if (message.authored) continue;
+    const start = message.id * MESSAGE_RECORD_BYTES;
+    const end = start + MESSAGE_RECORD_BYTES;
+    if (end <= bytes.byteLength && end <= completeSourceBytes) {
+      output.set(raw.slice(start, end), start);
+    }
+  }
+  output.set(tail, bytes.byteLength);
   return output;
 }
 

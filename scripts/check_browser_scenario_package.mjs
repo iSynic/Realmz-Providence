@@ -62,8 +62,10 @@ const sourceResourceFork = writeResourceFork([
 const sourceMessages = new Uint8Array(512);
 sourceMessages[0] = 1;
 sourceMessages[1] = "Z".charCodeAt(0);
+sourceMessages[200] = 0x91;
 sourceMessages[256] = 1;
 sourceMessages[257] = "X".charCodeAt(0);
+sourceMessages[500] = 0x92;
 const sourceOptionLabels = new Uint8Array(75);
 sourceOptionLabels[0] = 1;
 sourceOptionLabels[1] = "A".charCodeAt(0);
@@ -303,8 +305,8 @@ expect(ruleNameWarningUpdate.report.warnings.some((warning) => warning.includes(
 const textUpdateProject = {
   ...project,
   messages: [
-    { id: 0, text: "Z", rawBytes: Array.from(sourceMessages.slice(0, 256)), authored: false },
-    { id: 1, text: "Go", rawBytes: Array.from(sourceMessages.slice(256, 512)), authored: true }
+    { id: 0, text: "Z", rawBytes: new Array(256).fill(0x11), authored: false },
+    { id: 1, text: "Go", rawBytes: new Array(256).fill(0x22), authored: true }
   ],
   optionLabels: [
     { id: 0, text: "A", rawBytes: Array.from(sourceOptionLabels.slice(0, 25)), authored: false },
@@ -322,8 +324,8 @@ const writtenMessages = textUpdatedFiles.get("Data SD2");
 const writtenOptions = textUpdatedFiles.get("Data OD");
 expect(writtenMessages?.byteLength === 512, "Written Data SD2 should retain source row count");
 expect(writtenOptions?.byteLength === 75, "Written Data OD should retain source row count");
-expect(bytesEqual(writtenMessages?.slice(0, 256), sourceMessages.slice(0, 256)), "Unauthored message row should remain byte-identical");
-expect(bytesEqual(writtenMessages?.slice(256, 512), pascalRow(256, "Go")), "Authored message row should encode Pascal text");
+expect(bytesEqual(writtenMessages?.slice(0, 256), sourceMessages.slice(0, 256)), "Unauthored message row should preserve legacy bytes from the annex");
+expect(bytesEqual(writtenMessages?.slice(256, 512), pascalRow(256, "Go")), "Authored message row should compile canonical Pascal text without embedded raw-byte identity");
 expect(bytesEqual(writtenOptions?.slice(0, 25), sourceOptionLabels.slice(0, 25)), "Unauthored option label row should remain byte-identical");
 expect(bytesEqual(writtenOptions?.slice(50, 75), pascalRow(25, "On")), "Authored option label row should encode Pascal text");
 

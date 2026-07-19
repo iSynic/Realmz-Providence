@@ -6,6 +6,7 @@ mod economy;
 mod encounters;
 mod landlooks;
 mod maps;
+mod messages;
 mod random_levels;
 mod record_bytes;
 mod rules;
@@ -70,10 +71,7 @@ mod tests {
 
     #[test]
     fn target_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 5] = [
-            (MESSAGE_BYTES, |bytes| {
-                write_messages(&parse_messages(bytes)).unwrap()
-            }),
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 4] = [
             (OPTION_LABEL_BYTES, |bytes| {
                 write_option_labels(&parse_option_labels(bytes)).unwrap()
             }),
@@ -101,9 +99,9 @@ mod tests {
         let message = MessageRecord {
             id: 0,
             text: "Hello".to_string(),
-            raw_bytes: vec![0; MESSAGE_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
-            provenance: provenance("Data SD2", 0, 0, MESSAGE_BYTES),
+            provenance: Some(provenance("Data SD2", 0, 0, MESSAGE_BYTES)),
         };
         let message_bytes = write_messages(&[message]).unwrap();
         assert_eq!(message_bytes.len(), MESSAGE_BYTES);

@@ -207,6 +207,14 @@ export const PROVIDENCE_SHOP_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_MESSAGE_FIELDS = [
+  "id",
+  "text",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -386,6 +394,14 @@ export type ProvidenceShopRecord = {
   rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceMessageRecord = {
+  id: number;
+  text: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance;
 };
 
 export type ProvidenceSourceFile = {

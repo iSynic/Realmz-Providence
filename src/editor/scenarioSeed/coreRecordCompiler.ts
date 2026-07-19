@@ -101,7 +101,6 @@ export function compileScenarioSeedCoreRecords(
       messages: seed.messages.map((message) => ({
         id: message.id ?? 0,
         text: message.text,
-        rawBytes: new Array(MESSAGE_BYTES).fill(0),
         authored: true,
         provenance: authoredProvenance("Data SD2", message.id ?? 0, (message.id ?? 0) * MESSAGE_BYTES, MESSAGE_BYTES)
       }))

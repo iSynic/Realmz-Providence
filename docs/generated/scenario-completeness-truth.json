@@ -1077,8 +1077,11 @@
       "evidence": [
         "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/strings-data-od-string-sound.md",
-        "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
-        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz/messages.rs:fresh_message_compiles_complete_semantic_row",
+        "src-tauri/src/realmz/messages.rs:imported_message_compiles_without_record_byte_identity",
+        "src-tauri/src/exporter.rs:imported_message_export_reads_legacy_bytes_only_from_annex",
+        "src-tauri/src/realmz/messages.rs:write_messages",
+        "src-tauri/src/realmz/messages.rs:parse_messages",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
@@ -1783,7 +1786,7 @@
       "evidence": [
         "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/strings-data-od-string-sound.md",
-        "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+        "src-tauri/src/realmz/text_records.rs:option_label_writer_mutates_only_owned_pascal_bytes",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",

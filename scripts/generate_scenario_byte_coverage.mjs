@@ -331,8 +331,17 @@ const TARGET_RECORD_WRITER_EVIDENCE = [
   "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets"
 ];
 
-const FIXED_RECORD_TEXT_WRITER_EVIDENCE = [
-  "src-tauri/src/realmz/text_records.rs:fixed_record_text_writers_mutate_only_owned_pascal_bytes",
+const MESSAGE_FIXED_RECORD_WRITER_EVIDENCE = [
+  "src-tauri/src/realmz/messages.rs:fresh_message_compiles_complete_semantic_row",
+  "src-tauri/src/realmz/messages.rs:imported_message_compiles_without_record_byte_identity",
+  "src-tauri/src/exporter.rs:imported_message_export_reads_legacy_bytes_only_from_annex",
+  "src-tauri/src/realmz/messages.rs:write_messages",
+  "src-tauri/src/realmz/messages.rs:parse_messages",
+  "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets"
+];
+
+const OPTION_LABEL_FIXED_RECORD_WRITER_EVIDENCE = [
+  "src-tauri/src/realmz/text_records.rs:option_label_writer_mutates_only_owned_pascal_bytes",
   ...TARGET_RECORD_WRITER_EVIDENCE
 ];
 
@@ -666,15 +675,15 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
     rowKind: "Str255 message record",
     semanticExposure: "strings-workbench",
     ownedFields: [
-      { field: "Message text", internal: "text", offset: 0, bytes: 256, type: "Str255/raw tail" }
+      { field: "Message row", internal: "text", offset: 0, bytes: 256, type: "Str255 + deterministic zero fill" }
     ],
     evidence: [
-      ...FIXED_RECORD_TEXT_WRITER_EVIDENCE,
+      ...MESSAGE_FIXED_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/format-evidence-cards/text-message-runtime-anchors.md",
       "docs/format-evidence-cards/strings-data-od-string-sound.md"
     ],
-    preservationPolicy: "Imported message bytes remain raw-preserved until the record is authored; authored strings rewrite only the fixed Str255 record."
+    preservationPolicy: "Fresh and authored messages compile the complete 256-byte row from canonical text without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
   },
   {
     container: "Data OD",
@@ -685,7 +694,7 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Option label", internal: "text", offset: 0, bytes: 25, type: "Str24/raw tail" }
     ],
     evidence: [
-      ...FIXED_RECORD_TEXT_WRITER_EVIDENCE,
+      ...OPTION_LABEL_FIXED_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/string-sound-audit.json",
       "docs/format-evidence-cards/strings-data-od-string-sound.md"
@@ -978,6 +987,7 @@ function buildFixedRecordWriterGates(aggregate) {
       byteCoverage: "docs/generated/scenario-byte-ownership.json",
       fixtureRoundtrip: "src-tauri/tests/fixture_roundtrip.rs",
       fixedRecordWriters: [
+        "src-tauri/src/realmz/messages.rs",
         "src-tauri/src/realmz/text_records.rs",
         "src-tauri/src/realmz/combat.rs",
         "src-tauri/src/realmz/economy.rs",

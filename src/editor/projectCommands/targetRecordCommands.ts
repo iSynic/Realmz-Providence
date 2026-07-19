@@ -592,8 +592,8 @@ export function upsertQuestLabel(project: Project, quest: { id: number; label: s
   return { ...project, questLabels: quests };
 }
 
-function emptyMessage(id: number): MessageRecord {
-  return { id, text: "", rawBytes: new Array(256).fill(0), authored: true, provenance: authoredProvenance("Data SD2", id, id * 256, 256) };
+export function emptyMessage(id: number): MessageRecord {
+  return { id, text: "", authored: true, provenance: authoredProvenance("Data SD2", id, id * 256, 256) };
 }
 
 function emptyOptionLabel(id: number): OptionLabelRecord {

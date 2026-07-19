@@ -232,6 +232,14 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     validate_map_records(project, &mut errors, &mut warnings);
     validate_tile_attributes(project, authored_manifest_files.as_deref(), &mut warnings);
     for message in &project.messages {
+        if !message.raw_bytes.is_empty() && message.raw_bytes.len() != crate::realmz::MESSAGE_BYTES
+        {
+            errors.push(format!(
+                "Message {} has invalid {}-byte compatibility storage.",
+                message.id,
+                crate::realmz::MESSAGE_BYTES
+            ));
+        }
         let message_bytes = classic_text_len(&message.text);
         if message_bytes > 255 {
             errors.push(format!(

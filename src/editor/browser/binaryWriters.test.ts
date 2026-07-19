@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
+import { emptyMessage, emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeMapRecords, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
+import { writeMapRecords, writeMessages, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -232,6 +232,35 @@ describe("browser treasure writer", () => {
       .toThrow("invalid compatibility byte storage");
     expect(() => writeTreasures([{ ...emptyTreasure(0), itemIds: [] }]))
       .toThrow("must define 20 item slots");
+  });
+});
+
+describe("browser message writer", () => {
+  it("compiles a fresh record entirely from semantic text", () => {
+    const record = { ...emptyMessage(0), text: "Providence" };
+
+    expect(record.rawBytes).toBeUndefined();
+    const output = writeMessages([record]);
+
+    expect(output).toHaveLength(256);
+    expect(Array.from(output.slice(0, 11))).toEqual(Array.from(new TextEncoder().encode("\nProvidence")));
+    expect(Array.from(output.slice(11))).toEqual(new Array(245).fill(0));
+  });
+
+  it("recompiles imported text without record byte identity", () => {
+    const input = new Uint8Array(256).fill(0xa5);
+    input.set([2, "G".charCodeAt(0), "o".charCodeAt(0)]);
+    const imported = parseScenarioBuffers(new Map([["Data SD2", input]])).messages[0];
+
+    const output = writeMessages([{ ...imported, rawBytes: new Array(256).fill(0x5a) }]);
+
+    expect(Array.from(output.slice(0, 3))).toEqual([2, 71, 111]);
+    expect(Array.from(output.slice(3))).toEqual(new Array(253).fill(0));
+  });
+
+  it("rejects malformed compatibility storage", () => {
+    expect(() => writeMessages([{ ...emptyMessage(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
   });
 });
 

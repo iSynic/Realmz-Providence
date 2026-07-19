@@ -82,7 +82,13 @@ type PascalTextRecord = {
 };
 
 export function writeMessages(records: MessageRecord[]) {
-  return writePascalTextRecords(records, MESSAGE_RECORD_BYTES);
+  return writeFixedRecords(records, MESSAGE_RECORD_BYTES, (record, target) => {
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== MESSAGE_RECORD_BYTES) {
+      throw new Error(`Message ${record.id} has invalid compatibility byte storage`);
+    }
+    encodePascalText(target, record.text);
+  });
 }
 
 export function writeOptionLabels(records: OptionLabelRecord[]) {

@@ -3,9 +3,9 @@ use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
     Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker, MapRecord,
-    MapRecordRect, MapRender, Provenance, RandomLevel, RandomRect, RenderMode, ScenarioContactInfo,
-    ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions,
-    ScenarioShell, ScenarioSupportFile, ShopRecord, TreasureRecord,
+    MapRecordRect, MapRender, MessageRecord, Provenance, RandomLevel, RandomRect, RenderMode,
+    ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta,
+    ScenarioRestrictions, ScenarioShell, ScenarioSupportFile, ShopRecord, TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -780,18 +780,6 @@ pub enum ActionCategory {
 pub struct ExtraCodeRow {
     pub id: usize,
     pub values: [i16; 5],
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MessageRecord {
-    pub id: usize,
-    pub text: String,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
     pub provenance: Provenance,
 }
 

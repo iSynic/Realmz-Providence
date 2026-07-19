@@ -2,9 +2,9 @@ use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot}
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
-    ItemTextRecord, LevelType, MonsterIconOverride, MonsterIconOverrideSource, ProvidenceProject,
-    ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget,
-    TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    ItemTextRecord, LevelType, MessageRecord, MonsterIconOverride, MonsterIconOverrideSource,
+    ProvidenceProject, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride,
+    ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -255,13 +255,7 @@ fn compile_realmz_scenario(
             compatibility_annex,
         )?,
     )?;
-    write_fixed_if_nonempty(
-        &mut manifest,
-        "Data SD2",
-        write_messages(&project.messages)?,
-        crate::realmz::MESSAGE_BYTES,
-        compatibility_annex,
-    )?;
+    write_messages_for_export(&mut manifest, &project.messages, compatibility_annex)?;
     write_fixed_if_nonempty(
         &mut manifest,
         "Data OD",
@@ -517,6 +511,42 @@ fn write_fixed_if_nonempty(
         }
     }
     write_if_nonempty(manifest, name, bytes)
+}
+
+fn write_messages_for_export(
+    manifest: &mut NativeScenarioManifest,
+    records: &[MessageRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_message_rows(write_messages(records)?, records, annex)?;
+    write_if_nonempty(manifest, "Data SD2", bytes)
+}
+
+fn preserve_imported_message_rows(
+    mut bytes: Vec<u8>,
+    records: &[MessageRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    if bytes.is_empty() {
+        return Ok(bytes);
+    }
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read("Data SD2")?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    let complete_source_bytes =
+        raw.len() / crate::realmz::MESSAGE_BYTES * crate::realmz::MESSAGE_BYTES;
+    for record in records.iter().filter(|record| !record.authored) {
+        let start = record.id * crate::realmz::MESSAGE_BYTES;
+        let end = start + crate::realmz::MESSAGE_BYTES;
+        if end <= bytes.len() && end <= complete_source_bytes {
+            bytes[start..end].copy_from_slice(&raw[start..end]);
+        }
+    }
+    bytes.extend_from_slice(&raw[complete_source_bytes..]);
+    Ok(bytes)
 }
 
 fn overlay_zero_filled_fixed_capacity(
@@ -1492,9 +1522,10 @@ mod tests {
         custom_spell_name_resource_updates, item_text_resource_updates,
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
-        preserve_imported_fixed_length, scenario_icon_resource_updates,
-        write_caste_overrides_for_export, write_race_overrides_for_export,
-        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_fixed_length, preserve_imported_message_rows,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1770,6 +1801,47 @@ mod tests {
             "fresh raw bytes must not leak into output"
         );
         assert_eq!(manifest.written_files(), ["Data Race", "Data Caste"]);
+    }
+
+    #[test]
+    fn imported_message_export_reads_legacy_bytes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let mut source = vec![0xa5; 2 * crate::realmz::MESSAGE_BYTES];
+        source[0] = 1;
+        source[1] = b'Z';
+        source[crate::realmz::MESSAGE_BYTES] = 1;
+        source[crate::realmz::MESSAGE_BYTES + 1] = b'X';
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data SD2"), &source).unwrap();
+
+        let mut messages = crate::realmz::parse_messages(&source);
+        messages[0].raw_bytes.fill(0x11);
+        messages[1].raw_bytes.fill(0x22);
+        messages[1].text = "Go".to_string();
+        messages[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_message_rows(
+            crate::realmz::write_messages(&messages).unwrap(),
+            &messages,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(
+            &output[..crate::realmz::MESSAGE_BYTES],
+            &source[..crate::realmz::MESSAGE_BYTES]
+        );
+        let authored = &output[crate::realmz::MESSAGE_BYTES..2 * crate::realmz::MESSAGE_BYTES];
+        assert_eq!(&authored[..3], b"\x02Go");
+        assert!(authored[3..].iter().all(|byte| *byte == 0));
+        assert_eq!(
+            &output[2 * crate::realmz::MESSAGE_BYTES..],
+            &[0xde, 0xad, 0xbe]
+        );
     }
 
     #[test]

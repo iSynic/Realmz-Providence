@@ -41,6 +41,11 @@ This note makes the Text tool and encounter target editors less mysterious. Prov
 - negative message IDs can suppress click-wait in `textbox` because `class == -1` sets click behavior from the sign before taking `abs(index)`;
 - messages can become journal/note entries through the `n` key/autonote path.
 
+The canonical authoring contract owns the full row: the semantic text compiles to one length byte,
+its Classic-text payload, and deterministic zero fill through byte 255. `rawBytes` is not needed for
+fresh compilation and does not drive either native writer. Imported rows may contain unrelated bytes
+after the declared payload; those bytes remain legacy compatibility material rather than message data.
+
 Providence editor implication: message records should be the main Text workbench, not buried inside individual script slots. Script, encounter, map, shop, and note editors should link into that central message record.
 
 ## Encounter Inline Text Buffers
@@ -77,6 +82,12 @@ The local 28-scenario output corpus shows:
 - City of Bywater `Data ED` is `8,520` bytes, which is 20 simple encounter records at 426 bytes each;
 - City of Bywater `Data ED2` is `7,280` bytes, which is 14 complex encounter records at 520 bytes each.
 
+A focused 2026-07-18 scan of 25 locally visible `Data SD2` files found 24,442 complete rows. Of
+those, 22,862 rows contained nonzero bytes after the declared Str255 payload; eight files also had
+malformed file tails. This proves that conservative legacy export must read unchanged rows and tails
+from the compatibility annex even though canonical Providence messages compile without record-byte
+identity.
+
 ## Providence Follow-Up
 
 - Make Text a first-class message workbench with create, duplicate, clear, search, references, byte-length validation, and link-back to every source use.
@@ -84,6 +95,8 @@ The local 28-scenario output corpus shows:
 - In encounter editors, rename inline buffer sections to `Choice Display Text` or `Encounter Button Text`.
 - Show decoded action/result rows next to the display text so users can understand what happens when that line is chosen.
 - Keep `Data OD` as an optional two-choice prompt source backed by 25-byte option-label records; if missing, show `Data SD2` fallback explicitly.
+- Treat canonical message compilation as implemented: fresh/authored rows are deterministic, while
+  unchanged imported rows and malformed tails are annex-preserved at the export boundary.
 - Runtime `CE`/`CE2` mutation should remain generated state evidence. Edits should write source `Data ED`/`Data ED2`.
 
 ## Validation Rules

@@ -8,6 +8,21 @@ import {
 import type { ProjectCommand } from "./types";
 
 describe("project command facade", () => {
+  it("creates fresh messages from semantic text without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Message");
+
+    const next = applyProjectCommand(project, {
+      kind: "updateMessageRecord",
+      label: "Create message",
+      id: 4,
+      changes: { text: "Providence owns this message." }
+    });
+
+    expect(next.messages).toHaveLength(1);
+    expect(next.messages[0].text).toBe("Providence owns this message.");
+    expect(next.messages[0].rawBytes).toBeUndefined();
+  });
+
   it("creates fresh map records from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Player Map");
 

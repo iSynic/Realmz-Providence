@@ -920,7 +920,15 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
     for (const warning of asset.conversion?.warnings ?? []) warnings.push(`${asset.label} import note: ${warning}`);
   }
-  for (const message of project.messages ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);
+  for (const message of project.messages ?? []) {
+    const rawBytes = message.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 256) {
+      errors.push(`Message ${message.id} has invalid 256-byte compatibility storage.`);
+    }
+    if (message.text.length > 255) errors.push(`Message ${message.id} is too long for Realmz's 255-character message slot.`);
+    if (!/^[\x00-\x7F]*$/.test(message.text)) warnings.push(`Message ${message.id} contains non-ASCII text and may not render as intended.`);
+    appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);
+  }
   for (const option of project.optionLabels ?? []) {
     if (option.text.length > 24) errors.push(`Option label ${option.id} is too long for Realmz's 24-character option string slot.`);
     if (!/^[\x00-\x7F]*$/.test(option.text)) warnings.push(`Option label ${option.id} contains non-ASCII text and may not render as intended.`);

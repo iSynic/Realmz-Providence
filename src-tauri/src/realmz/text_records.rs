@@ -1,36 +1,13 @@
 use crate::error::Result;
-use crate::project::{MessageRecord, OptionLabelRecord};
+use crate::project::OptionLabelRecord;
 
+pub use super::messages::{parse_messages, write_messages, MESSAGE_BYTES};
 use super::record_bytes::{
     copy_raw, decode_pascal_text, encode_pascal_text, parse_fixed_records, preserve_raw,
     provenance, write_fixed_records,
 };
 
-pub const MESSAGE_BYTES: usize = 256;
 pub const OPTION_LABEL_BYTES: usize = 25;
-
-pub fn parse_messages(buffer: &[u8]) -> Vec<MessageRecord> {
-    parse_fixed_records(buffer, MESSAGE_BYTES)
-        .map(|(id, start, record)| MessageRecord {
-            id,
-            text: decode_pascal_text(record),
-            raw_bytes: record.to_vec(),
-            authored: false,
-            provenance: provenance("Data SD2", id, start, MESSAGE_BYTES),
-        })
-        .collect()
-}
-
-pub fn write_messages(records: &[MessageRecord]) -> Result<Vec<u8>> {
-    write_fixed_records(records, MESSAGE_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, MESSAGE_BYTES) {
-            return Ok(());
-        }
-        encode_pascal_text(buffer, &record.text)?;
-        Ok(())
-    })
-}
 
 pub fn parse_option_labels(buffer: &[u8]) -> Vec<OptionLabelRecord> {
     parse_fixed_records(buffer, OPTION_LABEL_BYTES)
@@ -69,21 +46,7 @@ mod tests {
     }
 
     #[test]
-    fn fixed_record_text_writers_mutate_only_owned_pascal_bytes() {
-        let mut message_input = vec![0u8; MESSAGE_BYTES * 2];
-        message_input[0] = 1;
-        message_input[1] = b'Z';
-        let message_start = MESSAGE_BYTES;
-        let mut messages = parse_messages(&message_input);
-        messages[1].authored = true;
-        messages[1].text = "Go".to_string();
-        let message_output = write_messages(&messages).unwrap();
-        assert_eq!(message_output.len(), message_input.len());
-        assert_eq!(
-            changed_offsets(&message_input, &message_output),
-            vec![message_start, message_start + 1, message_start + 2]
-        );
-
+    fn option_label_writer_mutates_only_owned_pascal_bytes() {
         let mut option_input = vec![0u8; OPTION_LABEL_BYTES * 3];
         option_input[1] = 1;
         option_input[2] = b'Q';
