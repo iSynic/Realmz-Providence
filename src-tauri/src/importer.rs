@@ -2287,6 +2287,32 @@ mod tests {
             .as_object_mut()
             .expect("project object")
             .remove("itemTexts");
+        saved["complexEncounters"] = serde_json::json!([{
+            "id": 0,
+            "actions": [],
+            "groups": [],
+            "spellIds": [],
+            "spellResults": [],
+            "itemIds": [],
+            "itemResults": [],
+            "choiceResults": [254],
+            "wordResults": [7],
+            "canBackOut": false,
+            "thief": false,
+            "maxTimes": 0,
+            "casteSuccess": 0,
+            "thiefSuccess": 0,
+            "thiefFail": 0,
+            "prompt": 0,
+            "texts": [],
+            "provenance": {
+                "sourceFile": "Data ED2",
+                "recordIndex": 0,
+                "byteOffset": 0,
+                "byteLength": 520,
+                "confidence": "fixture-backed"
+            }
+        }]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2297,12 +2323,24 @@ mod tests {
         assert_eq!(opened.schema_version, PROJECT_SCHEMA_VERSION);
         assert_eq!(opened.source.origin, Some(ProjectOrigin::Authored));
         assert!(opened.item_texts.is_empty());
+        assert_eq!(opened.complex_encounters[0].action_result, -2);
+        assert_eq!(opened.complex_encounters[0].word_result, 7);
+        assert!(opened.complex_encounters[0].choice_results.is_empty());
+        assert!(opened.complex_encounters[0].word_results.is_empty());
+        assert_eq!(opened.complex_encounters[0].groups.len(), 8);
+        assert_eq!(opened.complex_encounters[0].texts.len(), 9);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
         assert_eq!(upgraded["schemaVersion"], PROJECT_SCHEMA_VERSION);
         assert_eq!(upgraded["source"]["origin"], "authored");
         assert_eq!(upgraded["itemTexts"], serde_json::json!([]));
+        assert!(upgraded["complexEncounters"][0]
+            .get("choiceResults")
+            .is_none());
+        assert!(upgraded["complexEncounters"][0]
+            .get("wordResults")
+            .is_none());
     }
 
     #[test]

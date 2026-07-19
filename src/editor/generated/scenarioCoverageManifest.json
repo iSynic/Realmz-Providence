@@ -36,14 +36,14 @@
     "strictCompleteness": {
       "containerCount": 57,
       "semanticOwnershipCounts": {
-        "mixed": 10,
-        "complete": 45,
+        "mixed": 9,
+        "complete": 46,
         "runtime-only": 1,
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "partially-proven": 12,
-        "fixture-proven": 23,
+        "partially-proven": 11,
+        "fixture-proven": 24,
         "preserve-only": 8,
         "not-applicable": 14
       },
@@ -58,16 +58,16 @@
       "scenarioSemantics": {
         "label": "Scenario Semantics",
         "status": "complete",
-        "completeContainers": 45,
-        "mixedContainers": 10,
+        "completeContainers": 46,
+        "mixedContainers": 9,
         "needsFormatWorkContainers": 0,
-        "percentContainers": 78.95
+        "percentContainers": 80.7
       },
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "complete",
-        "fixtureProvenContainers": 22,
-        "partiallyProvenContainers": 13,
+        "fixtureProvenContainers": 23,
+        "partiallyProvenContainers": 12,
         "writerGatedContainers": 0,
         "percentContainers": 61.4
       },
@@ -81,7 +81,7 @@
       "codecInternals": {
         "label": "Codec Internals",
         "status": "stage-two-optional",
-        "preservedOrCustomPayloadBytes": 82793990,
+        "preservedOrCustomPayloadBytes": 81312230,
         "decodedResourcePayloadBytes": 841240
       },
       "strictOutstanding": {
@@ -302,11 +302,11 @@
     {
       "container": "Data ED2",
       "label": "Complex encounter records",
-      "status": "Partially Editable",
-      "coverageStatus": "mixed-writable-preserved",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
       "truth": {
-        "semanticOwnership": "mixed",
-        "writerReadiness": "partially-proven",
+        "semanticOwnership": "complete",
+        "writerReadiness": "fixture-proven",
         "evidenceQuality": "fixture-backed",
         "riskFlags": []
       },
@@ -338,7 +338,7 @@
         47840,
         48360
       ],
-      "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Data MD2",

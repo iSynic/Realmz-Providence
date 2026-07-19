@@ -111,7 +111,6 @@ export function buildEncounterDecisionSources({
   itemIds,
   itemResults,
   choiceResults,
-  wordResults,
   thief,
   rogueId,
   rogueRecord,
@@ -127,7 +126,6 @@ export function buildEncounterDecisionSources({
   itemIds: number[];
   itemResults: number[];
   choiceResults: number[];
-  wordResults?: number[];
   thief: boolean;
   rogueId: number;
   rogueRecord?: Project["thiefEncounters"][number];
@@ -178,11 +176,6 @@ export function buildEncounterDecisionSources({
     const result = itemResults[slot] ?? 0;
     if (result !== 0) {
       sources.push(encounterDecisionSource(`item-${slot}`, `Item ${itemId || slot + 1}`, `Party uses the configured item response in slot ${slot + 1}.`, result, actions));
-    }
-  });
-  (wordResults ?? []).forEach((result, slot) => {
-    if (result !== 0 && slot > 0) {
-      sources.push(encounterDecisionSource(`word-result-${slot}`, `Word result ${slot + 1}`, "Preserved alternate word-result field.", result, actions));
     }
   });
   if (thief && rogueRecord) {

@@ -704,11 +704,13 @@ export function writeSimpleEncounters(records: SimpleEncounterRecord[]) {
 
 export function writeComplexEncounters(records: ComplexEncounterRecord[]) {
   return writeFixedRecords(records, COMPLEX_ENCOUNTER_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === COMPLEX_ENCOUNTER_RECORD_BYTES) return;
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== COMPLEX_ENCOUNTER_RECORD_BYTES) {
+      throw new Error(`Complex encounter ${record.id} has invalid compatibility byte storage`);
+    }
     writeEncounterActions(target, record.actions);
-    target[96] = fallbackI8(record.actionResult, record.choiceResults, 0) & 0xff;
-    target[97] = fallbackI8(record.wordResult, record.wordResults, 0) & 0xff;
+    target[96] = record.actionResult & 0xff;
+    target[97] = record.wordResult & 0xff;
     writeI8Array(target, 98, record.groups, 8);
     writeI16Array(target, 106, record.spellIds, 10);
     writeI8Array(target, 126, record.spellResults, 10);
@@ -720,6 +722,7 @@ export function writeComplexEncounters(records: ComplexEncounterRecord[]) {
     target[154] = record.casteSuccess & 0xff;
     target[155] = record.thiefSuccess & 0xff;
     target[156] = record.thiefFail & 0xff;
+    target[157] = 0;
     writeI16(target, 158, record.prompt);
     for (let slot = 0; slot < 9; slot += 1) {
       encodePascalText(target.subarray(160 + slot * 40, 160 + slot * 40 + 40), record.texts[slot] ?? "");
@@ -869,10 +872,6 @@ function writeEncounterActions(target: Uint8Array, actions: EncounterActionRow[]
     target[action.slot] = action.rawCode & 0xff;
     writeI16(target, 32 + action.slot * 2, action.id);
   }
-}
-
-function fallbackI8(value: number, values: number[], index: number) {
-  return value !== 0 ? value : values[index] ?? 0;
 }
 
 function writeMapstatsRecord(output: Uint8Array, tile: number, record: CustomLandlookMetadata["records"][number]) {

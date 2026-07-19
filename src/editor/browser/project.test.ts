@@ -11,6 +11,43 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
+  it("migrates obsolete complex encounter result aliases into canonical fields", () => {
+    const project = createBrowserProject("Legacy complex encounter aliases");
+    project.complexEncounters = [{
+      id: 0,
+      actions: [],
+      actionResult: 0,
+      wordResult: undefined,
+      groups: [],
+      spellIds: [],
+      spellResults: [],
+      itemIds: [],
+      itemResults: [],
+      choiceResults: [0xfe],
+      wordResults: [7],
+      canBackOut: false,
+      thief: false,
+      maxTimes: 0,
+      casteSuccess: 0,
+      thiefSuccess: 0,
+      thiefFail: 0,
+      prompt: 0,
+      texts: [],
+      provenance: { sourceFile: "Data ED2", recordIndex: 0, byteOffset: 0, byteLength: 520, confidence: "fixture-backed" }
+    } as unknown as Project["complexEncounters"][number]];
+
+    const normalized = normalizeBrowserProject(project).complexEncounters[0];
+
+    expect(normalized.actionResult).toBe(-2);
+    expect(normalized.wordResult).toBe(7);
+    expect(normalized.choiceResults).toBeUndefined();
+    expect(normalized.wordResults).toBeUndefined();
+    expect(normalized.groups).toHaveLength(8);
+    expect(normalized.spellIds).toHaveLength(10);
+    expect(normalized.itemIds).toHaveLength(5);
+    expect(normalized.texts).toHaveLength(9);
+  });
+
   it("parses player-map markers into canonical semantic slots", () => {
     const bytes = new Uint8Array(340);
     bytes.set([0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d], 0);

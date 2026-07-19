@@ -510,27 +510,33 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
     gate: "complex-encounter-record-writer",
     rowKind: "520-byte complex encounter record",
     semanticExposure: "complex-encounter-storage",
-    partialOnly: true,
     ownedFields: [
       { field: "Encounter action codes", internal: "code[32]", offset: 0, bytes: 32, type: "i8[32]" },
       { field: "Encounter action IDs", internal: "id[32]", offset: 32, bytes: 64, type: "i16be[32]" },
-      { field: "Choice and word results", internal: "choiceResults[4]/wordResults[4]", offset: 96, bytes: 8, type: "u8[8]" },
+      { field: "Action result", internal: "actionResult", offset: 96, bytes: 1, type: "i8" },
+      { field: "Word result", internal: "wordResult", offset: 97, bytes: 1, type: "i8" },
+      { field: "Required-action flags", internal: "groups[8]", offset: 98, bytes: 8, type: "i8[8]" },
+      { field: "Spell IDs", internal: "spellIds[10]", offset: 106, bytes: 20, type: "i16be[10]" },
+      { field: "Spell results", internal: "spellResults[10]", offset: 126, bytes: 10, type: "i8[10]" },
+      { field: "Item IDs", internal: "itemIds[5]", offset: 136, bytes: 10, type: "i16be[5]" },
+      { field: "Item results", internal: "itemResults[5]", offset: 146, bytes: 5, type: "i8[5]" },
       { field: "Back-out, thief, and outcome fields", internal: "canBackOut/thief/maxTimes/casteSuccess/thiefSuccess/thiefFail", offset: 151, bytes: 6, type: "u8/i8" },
+      { field: "Alignment padding", internal: "padding", offset: 157, bytes: 1, type: "deterministic zero" },
       { field: "Prompt string", internal: "prompt", offset: 158, bytes: 2, type: "i16be" },
       { field: "Inline encounter text", internal: "texts[9]", offset: 160, bytes: 360, type: "Pascal[9]" }
     ],
-    preservedRanges: [
-      { field: "Compatibility bytes", internal: "raw[104..151]", offset: 104, bytes: 47, type: "raw-preserved" },
-      { field: "Compatibility byte", internal: "raw[157]", offset: 157, bytes: 1, type: "raw-preserved" }
-    ],
+    preservedRanges: [],
     evidence: [
-      "src-tauri/src/realmz/encounters.rs:encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps",
+      "src-tauri/src/realmz/encounters.rs:fresh_complex_encounter_compiles_complete_semantic_row",
+      "src-tauri/src/realmz/encounters.rs:imported_complex_encounter_compiles_without_record_byte_identity",
+      "src-tauri/src/exporter.rs:imported_complex_encounter_export_reads_legacy_bytes_only_from_annex",
       "src-tauri/src/realmz/encounters.rs:write_complex_encounters",
       "src-tauri/src/realmz/encounters.rs:parse_complex_encounter_records",
+      "scripts/run_authoritative_scenario_proof.mjs:assertOwnershipComplexEncounter",
       "docs/generated/encounter-record-evidence.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Complex encounter records rewrite modeled action, result, prompt, and text fields when authored. Bytes 104..151 and 157 remain preserve-only."
+    preservationPolicy: "Fresh and authored complex encounters compile all 520 bytes from canonical semantics, including deterministic zero alignment padding, without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
   },
   {
     container: "Data SD",
@@ -2383,7 +2389,6 @@ function coverageStatusForFile(file) {
   if (name === SCENARIO_STARTUP_SHELL_CONTAINER) return "mixed-writable-preserved";
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
-  if (name === "Data ED2") return "mixed-writable-preserved";
   if (name === "Data MD2") return "mixed-writable-preserved";
   if (name === "Layout" && file.byteSizes?.size > 0 && [...file.byteSizes].some((size) => size > (RECORD_LAYOUTS.Layout?.recordBytes ?? 256))) return "mixed-writable-preserved";
   if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
@@ -2531,12 +2536,7 @@ function byteRangesForFile(file, layout) {
   }
   if (file.name === "Data ED2") {
     return [
-      { start: 0, length: 96, endExclusive: 96, status: "decoded-writable", field: "Encounter actions", internal: "code[32]/id[32]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 96, length: 8, endExclusive: 104, status: "decoded-writable", field: "Choice and word results", internal: "choiceResults/wordResults", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 104, length: 47, endExclusive: 151, status: "preserved-known", field: "Compatibility bytes", internal: "raw[104..151]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 151, length: 6, endExclusive: 157, status: "decoded-writable", field: "Encounter outcome fields", internal: "canBackOut/thief/maxTimes/casteSuccess/thiefSuccess/thiefFail", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 157, length: 1, endExclusive: 158, status: "preserved-known", field: "Compatibility byte", internal: "raw[157]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 158, length: 362, endExclusive: 520, status: "decoded-writable", field: "Prompt and inline encounter text", internal: "prompt/texts[9]", writerGate: "docs/generated/encounter-shop-writer-gates.json" }
+      { start: 0, length: 520, endExclusive: 520, status: "decoded-writable", field: "Complete complex encounter row", internal: "semantic fields plus deterministic alignment padding", writerGate: "docs/generated/encounter-shop-writer-gates.json" }
     ];
   }
   if (file.name === "Data MD2") {

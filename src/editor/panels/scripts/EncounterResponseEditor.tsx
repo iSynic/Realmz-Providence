@@ -60,7 +60,7 @@ export function EncounterResponseEditor({
   actions: EncounterActionRow[];
   onTextCommit: (slot: number, text: string) => void;
   onChoiceCommit: (slot: number, value: number) => void;
-  onComplexCommit: (changes: Partial<Pick<Project["complexEncounters"][number], "actionResult" | "wordResult" | "groups" | "spellIds" | "spellResults" | "itemIds" | "itemResults" | "choiceResults" | "wordResults">>) => void;
+  onComplexCommit: (changes: Partial<Pick<Project["complexEncounters"][number], "actionResult" | "wordResult" | "groups" | "spellIds" | "spellResults" | "itemIds" | "itemResults">>) => void;
 }) {
   const count = recordKind === "simple" ? 4 : 9;
   const maxLength = recordKind === "simple" ? 79 : 39;
@@ -110,7 +110,7 @@ export function EncounterResponseEditor({
                 label="Action Result"
                 value={actionResult}
                 actions={actions}
-                onCommit={(value) => onComplexCommit({ actionResult: value, choiceResults: [value, 0, 0, 0] })}
+                onCommit={(value) => onComplexCommit({ actionResult: value })}
               />
             </div>
           </section>
@@ -173,7 +173,7 @@ export function EncounterResponseEditor({
                 label="Typed Reply Result"
                 value={wordResult}
                 actions={actions}
-                onCommit={(value) => onComplexCommit({ wordResult: value, wordResults: [value, 0, 0, 0] })}
+                onCommit={(value) => onComplexCommit({ wordResult: value })}
               />
             </div>
           </section>

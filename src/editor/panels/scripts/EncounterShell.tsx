@@ -51,7 +51,6 @@ export function EncounterShell({
   itemIds = [],
   itemResults = [],
   choiceResults,
-  wordResults,
   thief,
   thiefSuccess,
   actions,
@@ -85,7 +84,6 @@ export function EncounterShell({
   itemIds?: number[];
   itemResults?: number[];
   choiceResults: number[];
-  wordResults?: number[];
   thief?: boolean;
   thiefSuccess?: number;
   actions: EncounterActionRow[];
@@ -118,7 +116,6 @@ export function EncounterShell({
     itemIds,
     itemResults,
     choiceResults,
-    wordResults,
     thief: Boolean(thief),
     rogueId: thiefSuccess ?? 0,
     rogueRecord,
@@ -137,8 +134,7 @@ export function EncounterShell({
     texts,
     thief,
     thiefSuccess,
-    wordResult,
-    wordResults
+    wordResult
   ]);
   const resultFlowWarningCount = resultFlowSources.filter((source) => source.status !== "visible" && source.result !== 0).length;
   const resultFlowPreviewSections = useMemo(() => {
@@ -165,8 +161,6 @@ export function EncounterShell({
         spellResults,
         itemIds,
         itemResults,
-        choiceResults,
-        wordResults,
         canBackOut,
         maxTimes,
         casteSuccess,
@@ -178,7 +172,7 @@ export function EncounterShell({
       ...encounterCopyResponseSections(project, catalog, recordKind, previewSource),
       ...encounterCopyResultSections(previewSource, resultFlowSources)
     ];
-  }, [actionResult, actions, canBackOut, casteSuccess, catalog, choiceResults, groups, id, itemIds, itemResults, maxTimes, project, prompt, recordKind, resultFlowSources, spellIds, spellResults, texts, thief, thiefSuccess, wordResult, wordResults]);
+  }, [actionResult, actions, canBackOut, casteSuccess, catalog, choiceResults, groups, id, itemIds, itemResults, maxTimes, project, prompt, recordKind, resultFlowSources, spellIds, spellResults, texts, thief, thiefSuccess, wordResult]);
   const [promptEditorOpen, setPromptEditorOpen] = useState(false);
   const [copyPanelOpen, setCopyPanelOpen] = useState(false);
   useEffect(() => {

@@ -5,9 +5,9 @@ use crate::project::{
 };
 
 use super::record_bytes::{
-    copy_raw, decode_pascal_text, encode_pascal_text, fallback_i8, i16_be, parse_fixed_records,
-    preserve_raw, provenance, read_i16_array, signed_bytes, write_fixed_records, write_i16_array,
-    write_i16_be, write_i8_array,
+    copy_raw, decode_pascal_text, encode_pascal_text, i16_be, parse_fixed_records, preserve_raw,
+    provenance, read_i16_array, signed_bytes, write_fixed_records, write_i16_array, write_i16_be,
+    write_i8_array,
 };
 
 pub const SIMPLE_ENCOUNTER_BYTES: usize = 426;
@@ -65,8 +65,8 @@ pub fn parse_complex_encounter_records(buffer: &[u8]) -> Vec<ComplexEncounterRec
         .map(|(id, start, record)| ComplexEncounterRecord {
             id,
             actions: parse_encounter_actions(record),
-            choice_results: vec![record[96], 0, 0, 0],
-            word_results: vec![record[97], 0, 0, 0],
+            choice_results: Vec::new(),
+            word_results: Vec::new(),
             action_result: record[96] as i8,
             word_result: record[97] as i8,
             groups: signed_bytes(&record[98..106]),
@@ -93,13 +93,15 @@ pub fn parse_complex_encounter_records(buffer: &[u8]) -> Vec<ComplexEncounterRec
 
 pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, COMPLEX_ENCOUNTER_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, COMPLEX_ENCOUNTER_BYTES) {
-            return Ok(());
+        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != COMPLEX_ENCOUNTER_BYTES {
+            return Err(ProvidenceError::message(format!(
+                "Complex encounter {} has invalid compatibility byte storage",
+                record.id
+            )));
         }
         write_encounter_actions(buffer, &record.actions)?;
-        buffer[96] = fallback_i8(record.action_result, &record.choice_results, 0) as u8;
-        buffer[97] = fallback_i8(record.word_result, &record.word_results, 0) as u8;
+        buffer[96] = record.action_result as u8;
+        buffer[97] = record.word_result as u8;
         write_i8_array(buffer, 98, &record.groups, 8);
         for slot in 0..10 {
             write_i16_be(
@@ -123,6 +125,7 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
         buffer[154] = record.caste_success as u8;
         buffer[155] = record.thief_success as u8;
         buffer[156] = record.thief_fail as u8;
+        buffer[157] = 0;
         write_i16_be(buffer, 158, record.prompt);
         for slot in 0..9 {
             encode_pascal_text(
@@ -295,10 +298,7 @@ mod tests {
 
     #[test]
     fn encounter_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 3] = [
-            (COMPLEX_ENCOUNTER_BYTES, |bytes| {
-                write_complex_encounters(&parse_complex_encounter_records(bytes)).unwrap()
-            }),
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 2] = [
             (THIEF_ENCOUNTER_BYTES, |bytes| {
                 write_thief_encounters(&parse_thief_encounters(bytes)).unwrap()
             }),
@@ -373,70 +373,61 @@ mod tests {
     }
 
     #[test]
-    fn encounter_storage_complex_mutates_only_owned_fields_and_preserves_gaps() {
-        let mut input = vec![0u8; COMPLEX_ENCOUNTER_BYTES * 2];
-        let encounter_start = COMPLEX_ENCOUNTER_BYTES;
-        for offset in 104..151 {
-            input[encounter_start + offset] = 0xA5;
-        }
-        input[encounter_start + 157] = 0x5A;
-
-        let mut encounters = parse_complex_encounter_records(&input);
-        encounters[1].authored = true;
-        encounters[1].actions.push(EncounterActionRow {
+    fn fresh_complex_encounter_compiles_complete_semantic_row() {
+        let mut encounter =
+            parse_complex_encounter_records(&vec![0; COMPLEX_ENCOUNTER_BYTES]).remove(0);
+        encounter.raw_bytes.clear();
+        encounter.authored = true;
+        encounter.actions.push(EncounterActionRow {
             slot: 4,
             raw_code: -2,
             id: 0x0304,
         });
-        encounters[1].action_result = 6;
-        encounters[1].word_result = 7;
-        encounters[1].groups[4] = -8;
-        encounters[1].spell_ids[0] = 0x1112;
-        encounters[1].spell_results[1] = -9;
-        encounters[1].item_ids[2] = 0x1314;
-        encounters[1].item_results[3] = -10;
-        encounters[1].can_back_out = true;
-        encounters[1].thief = true;
-        encounters[1].max_times = -3;
-        encounters[1].caste_success = 4;
-        encounters[1].thief_success = -5;
-        encounters[1].thief_fail = 8;
-        encounters[1].prompt = 0x0506;
-        encounters[1].texts[0] = "Hi".to_string();
+        encounter.action_result = 6;
+        encounter.word_result = 7;
+        encounter.groups[4] = -8;
+        encounter.spell_ids[0] = 0x1112;
+        encounter.spell_results[1] = -9;
+        encounter.item_ids[2] = 0x1314;
+        encounter.item_results[3] = -10;
+        encounter.can_back_out = true;
+        encounter.thief = true;
+        encounter.max_times = -3;
+        encounter.caste_success = 4;
+        encounter.thief_success = -5;
+        encounter.thief_fail = 8;
+        encounter.prompt = 0x0506;
+        encounter.texts[0] = "Hi".to_string();
 
-        let output = write_complex_encounters(&encounters).unwrap();
-        assert_eq!(output.len(), input.len());
-        assert_eq!(output[encounter_start + 104], 0xA5);
-        assert_eq!(output[encounter_start + 105], 0xA5);
-        assert_eq!(output[encounter_start + 157], 0x5A);
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![
-                encounter_start + 4,
-                encounter_start + 40,
-                encounter_start + 41,
-                encounter_start + 96,
-                encounter_start + 97,
-                encounter_start + 102,
-                encounter_start + 106,
-                encounter_start + 107,
-                encounter_start + 127,
-                encounter_start + 140,
-                encounter_start + 141,
-                encounter_start + 149,
-                encounter_start + 151,
-                encounter_start + 152,
-                encounter_start + 153,
-                encounter_start + 154,
-                encounter_start + 155,
-                encounter_start + 156,
-                encounter_start + 158,
-                encounter_start + 159,
-                encounter_start + 160,
-                encounter_start + 161,
-                encounter_start + 162,
-            ]
-        );
+        let output = write_complex_encounters(&[encounter]).unwrap();
+        assert_eq!(output.len(), COMPLEX_ENCOUNTER_BYTES);
+        assert_eq!(output[4] as i8, -2);
+        assert_eq!(i16_be(&output, 40), 0x0304);
+        assert_eq!(&output[96..106], &[6, 7, 0, 0, 0, 0, 0xf8, 0, 0, 0]);
+        assert_eq!(i16_be(&output, 106), 0x1112);
+        assert_eq!(output[127] as i8, -9);
+        assert_eq!(i16_be(&output, 140), 0x1314);
+        assert_eq!(output[149] as i8, -10);
+        assert_eq!(&output[151..158], &[1, 1, 0xfd, 4, 0xfb, 8, 0]);
+        assert_eq!(i16_be(&output, 158), 0x0506);
+        assert_eq!(&output[160..163], &[2, b'H', b'i']);
+    }
+
+    #[test]
+    fn imported_complex_encounter_compiles_without_record_byte_identity() {
+        let mut input = vec![0u8; COMPLEX_ENCOUNTER_BYTES];
+        input[96] = 6;
+        input[157] = 0x5a;
+        input[160..164].copy_from_slice(&[2, b'H', b'i', 0xcc]);
+        let mut records = parse_complex_encounter_records(&input);
+        records[0].raw_bytes.fill(0xa5);
+        let output = write_complex_encounters(&records).unwrap();
+        assert_ne!(output, input);
+        assert_eq!(output[96], 6);
+        assert_eq!(output[157], 0);
+        assert_eq!(&output[160..164], &[2, b'H', b'i', 0]);
+        records[0].raw_bytes = vec![1];
+        assert!(write_complex_encounters(&records).is_err());
     }
 
     #[test]

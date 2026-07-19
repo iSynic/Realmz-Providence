@@ -72,14 +72,6 @@ pub(super) fn signed_bytes(buffer: &[u8]) -> Vec<i8> {
     buffer.iter().map(|value| *value as i8).collect()
 }
 
-pub(super) fn fallback_i8(value: i8, values: &[u8], index: usize) -> i8 {
-    if value != 0 {
-        value
-    } else {
-        values.get(index).copied().unwrap_or(0) as i8
-    }
-}
-
 pub(super) fn read_i16_array(buffer: &[u8], offset: usize, count: usize) -> Vec<i16> {
     (0..count)
         .map(|index| i16_be(buffer, offset + index * 2))

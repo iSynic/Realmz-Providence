@@ -42,8 +42,6 @@ describe("encounter copy changes", () => {
       spellResults: [3],
       itemIds: [900],
       itemResults: [4],
-      choiceResults: [1],
-      wordResults: [2],
       canBackOut: false,
       thief: true,
       maxTimes: 1,
@@ -55,7 +53,7 @@ describe("encounter copy changes", () => {
     const changes = encounterCopyChanges(source);
 
     expect(changes.id).toBeUndefined();
-    for (const key of ["texts", "actions", "groups", "spellIds", "spellResults", "itemIds", "itemResults", "choiceResults", "wordResults"] as const) {
+    for (const key of ["texts", "actions", "groups", "spellIds", "spellResults", "itemIds", "itemResults"] as const) {
       expect(changes[key]).toEqual(source[key]);
       expect(changes[key]).not.toBe(source[key]);
     }

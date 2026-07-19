@@ -135,12 +135,13 @@ sourceSimpleEncounters[427] = 0x64;
 sourceSimpleEncounters[426 + 103] = 0xa5;
 sourceSimpleEncounters[103] = 0xb6;
 sourceSimpleEncounters.set([0xde, 0xad, 0xbe], 852);
-const sourceComplexEncounters = new Uint8Array(1040);
+const sourceComplexEncounters = new Uint8Array(1043);
 sourceComplexEncounters[0] = 0x65;
 sourceComplexEncounters[1] = 0x66;
 sourceComplexEncounters[520] = 0x67;
 sourceComplexEncounters[521] = 0x68;
 sourceComplexEncounters[520 + 157] = 0x5a;
+sourceComplexEncounters.set([0xde, 0xad, 0xbe], 1040);
 const sourceThiefEncounters = new Uint8Array(236);
 sourceThiefEncounters[0] = 0x69;
 sourceThiefEncounters[1] = 0x6a;
@@ -1095,8 +1096,8 @@ const encounterProject = {
     { ...authoredSimpleEncounter, rawBytes: new Array(426).fill(0x22), authored: true }
   ],
   complexEncounters: [
-    complexEncounterRecord(0, { rawBytes: Array.from(sourceComplexEncounters.slice(0, 520)), authored: false }),
-    { ...authoredComplexEncounter, rawBytes: Array.from(sourceComplexEncounters.slice(520, 1040)), authored: true }
+    complexEncounterRecord(0, { rawBytes: new Array(520).fill(0x11), authored: false }),
+    { ...authoredComplexEncounter, rawBytes: new Array(520).fill(0x22), authored: true }
   ],
   thiefEncounters: [
     thiefEncounterRecord(0, { rawBytes: Array.from(sourceThiefEncounters.slice(0, 118)), authored: false }),
@@ -1118,16 +1119,17 @@ const writtenComplexEncounters = encounterFiles.get("Data ED2");
 const writtenThiefEncounters = encounterFiles.get("Data TD2");
 const writtenTimedEncounters = encounterFiles.get("Data TD3");
 expect(writtenSimpleEncounters?.byteLength === 855, "Written Data ED should retain source rows and malformed tail");
-expect(writtenComplexEncounters?.byteLength === 1040, "Written Data ED2 should retain source row count");
+expect(writtenComplexEncounters?.byteLength === 1043, "Written Data ED2 should retain source rows and malformed tail");
 expect(writtenThiefEncounters?.byteLength === 236, "Written Data TD2 should retain source row count");
 expect(writtenTimedEncounters?.byteLength === 80, "Written Data TD3 should retain source row count");
 expect(bytesEqual(writtenSimpleEncounters?.slice(0, 426), sourceSimpleEncounters.slice(0, 426)), "Unauthored simple encounter row should preserve legacy bytes from the annex");
 expect(bytesEqual(writtenSimpleEncounters?.slice(426, 852), simpleEncounterRow(authoredSimpleEncounter)), "Authored simple encounter row should compile every byte without embedded raw identity");
 expect(writtenSimpleEncounters?.[426 + 103] === 0, "Authored simple encounter alignment padding should be deterministic zero");
 expect(bytesEqual(writtenSimpleEncounters?.slice(852), new Uint8Array([0xde, 0xad, 0xbe])), "Malformed Data ED tail should remain annex-owned");
-expect(bytesEqual(writtenComplexEncounters?.slice(0, 520), sourceComplexEncounters.slice(0, 520)), "Unauthored complex encounter row should remain byte-identical");
-expect(bytesEqual(writtenComplexEncounters?.slice(520, 1040), complexEncounterRow(authoredComplexEncounter, sourceComplexEncounters.slice(520, 1040))), "Authored complex encounter row should encode fields and preserve gaps");
-expect(writtenComplexEncounters?.[520 + 157] === 0x5a, "Authored complex encounter row should preserve known gap byte");
+expect(bytesEqual(writtenComplexEncounters?.slice(0, 520), sourceComplexEncounters.slice(0, 520)), "Unauthored complex encounter row should preserve legacy bytes from the annex");
+expect(bytesEqual(writtenComplexEncounters?.slice(520, 1040), complexEncounterRow(authoredComplexEncounter)), "Authored complex encounter row should compile every byte without embedded raw identity");
+expect(writtenComplexEncounters?.[520 + 157] === 0, "Authored complex encounter alignment padding should be deterministic zero");
+expect(bytesEqual(writtenComplexEncounters?.slice(1040), new Uint8Array([0xde, 0xad, 0xbe])), "Malformed Data ED2 tail should remain annex-owned");
 expect(bytesEqual(writtenThiefEncounters?.slice(0, 118), sourceThiefEncounters.slice(0, 118)), "Unauthored thief encounter row should remain byte-identical");
 expect(bytesEqual(writtenThiefEncounters?.slice(118, 236), thiefEncounterRow(authoredThiefEncounter)), "Authored thief encounter row should encode fields");
 expect(bytesEqual(writtenTimedEncounters?.slice(0, 40), sourceTimedEncounters.slice(0, 40)), "Unauthored timed encounter row should remain byte-identical");
@@ -2192,8 +2194,6 @@ function complexEncounterRecord(id, overrides = {}) {
     spellResults: new Array(10).fill(0),
     itemIds: new Array(5).fill(0),
     itemResults: new Array(5).fill(0),
-    choiceResults: new Array(4).fill(0),
-    wordResults: new Array(4).fill(0),
     canBackOut: false,
     thief: false,
     maxTimes: 0,
@@ -2202,18 +2202,16 @@ function complexEncounterRecord(id, overrides = {}) {
     thiefFail: 0,
     prompt: 0,
     texts: new Array(9).fill(""),
-    rawBytes: new Array(520).fill(0),
     authored: true,
     ...overrides
   };
 }
 
-function complexEncounterRow(record, rawBytes = new Uint8Array(520)) {
+function complexEncounterRow(record) {
   const output = new Uint8Array(520);
-  output.set(rawBytes.slice(0, 520));
   setEncounterActions(output, record.actions);
-  output[96] = fallbackI8(record.actionResult, record.choiceResults, 0) & 0xff;
-  output[97] = fallbackI8(record.wordResult, record.wordResults, 0) & 0xff;
+  output[96] = record.actionResult & 0xff;
+  output[97] = record.wordResult & 0xff;
   setI8Array(output, 98, record.groups, 8);
   setI16Array(output, 106, record.spellIds, 10);
   setI8Array(output, 126, record.spellResults, 10);
@@ -2324,10 +2322,6 @@ function setPascalText(target, text) {
   const bytes = new Uint8Array([...text].map((char) => char.charCodeAt(0)));
   target[0] = bytes.byteLength;
   target.set(bytes, 1);
-}
-
-function fallbackI8(value, values, index) {
-  return value !== 0 ? value : values[index] ?? 0;
 }
 
 function setI8Array(output, offset, values, count) {

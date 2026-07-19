@@ -602,6 +602,15 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for encounter in &project.complex_encounters {
+        if !encounter.raw_bytes.is_empty()
+            && encounter.raw_bytes.len() != crate::realmz::COMPLEX_ENCOUNTER_BYTES
+        {
+            errors.push(format!(
+                "Complex encounter {} has invalid {}-byte compatibility storage.",
+                encounter.id,
+                crate::realmz::COMPLEX_ENCOUNTER_BYTES
+            ));
+        }
         if encounter.authored {
             validate_encounter_actions(
                 "Complex encounter",
@@ -611,19 +620,20 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 &mut errors,
                 &mut warnings,
             );
-            if encounter.choice_results.len() > 4 {
-                errors.push(format!(
-                    "Complex encounter {} has {} choice result rows; Data ED2 supports 4.",
-                    encounter.id,
-                    encounter.choice_results.len()
-                ));
-            }
-            if encounter.word_results.len() > 4 {
-                errors.push(format!(
-                    "Complex encounter {} has {} word result rows; Data ED2 supports 4.",
-                    encounter.id,
-                    encounter.word_results.len()
-                ));
+            for (label, actual, expected) in [
+                ("group flags", encounter.groups.len(), 8),
+                ("spell IDs", encounter.spell_ids.len(), 10),
+                ("spell results", encounter.spell_results.len(), 10),
+                ("item IDs", encounter.item_ids.len(), 5),
+                ("item results", encounter.item_results.len(), 5),
+                ("texts", encounter.texts.len(), 9),
+            ] {
+                if actual != expected {
+                    errors.push(format!(
+                        "Complex encounter {} has {} {}; Data ED2 requires exactly {}.",
+                        encounter.id, actual, label, expected
+                    ));
+                }
             }
             validate_optional_reference(
                 "Complex encounter",
@@ -659,7 +669,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     encounter.id
                 ));
             }
-        } else if encounter.raw_bytes.len() != crate::realmz::COMPLEX_ENCOUNTER_BYTES {
+        } else if encounter.raw_bytes.is_empty() {
             warnings.push(format!(
                 "Complex encounter {} has incomplete preserved source bytes and should be re-imported before editing.",
                 encounter.id

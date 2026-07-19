@@ -188,8 +188,7 @@ export function TargetRecordEditor({
             spellResults={record.spellResults}
             itemIds={record.itemIds}
             itemResults={record.itemResults}
-            choiceResults={record.choiceResults}
-            wordResults={record.wordResults}
+            choiceResults={[]}
             thief={record.thief}
             thiefSuccess={record.thiefSuccess}
             actions={record.actions}
@@ -990,8 +989,7 @@ function EncounterTargetCard({
       spellResults: complex.spellResults,
       itemIds: complex.itemIds,
       itemResults: complex.itemResults,
-      choiceResults: complex.choiceResults,
-      wordResults: complex.wordResults,
+      choiceResults: [],
       thief: complex.thief,
       rogueId: complex.thiefSuccess,
       rogueRecord,

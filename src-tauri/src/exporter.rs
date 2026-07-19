@@ -2,10 +2,10 @@ use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot}
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
-    BattleRecord, ItemTextRecord, LevelType, MessageRecord, MonsterIconOverride,
-    MonsterIconOverrideSource, OptionLabelRecord, ProvidenceProject, ScenarioCasteOverride,
-    ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget, SimpleEncounterRecord,
-    TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    BattleRecord, ComplexEncounterRecord, ItemTextRecord, LevelType, MessageRecord,
+    MonsterIconOverride, MonsterIconOverrideSource, OptionLabelRecord, ProvidenceProject,
+    ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget,
+    SimpleEncounterRecord, TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -323,11 +323,9 @@ fn compile_realmz_scenario(
         &project.simple_encounters,
         compatibility_annex,
     )?;
-    write_fixed_if_nonempty(
+    write_complex_encounters_for_export(
         &mut manifest,
-        "Data ED2",
-        write_complex_encounters(&project.complex_encounters)?,
-        crate::realmz::COMPLEX_ENCOUNTER_BYTES,
+        &project.complex_encounters,
         compatibility_annex,
     )?;
     write_fixed_if_nonempty(
@@ -537,6 +535,19 @@ fn write_simple_encounters_for_export(
     write_if_nonempty(manifest, "Data ED", bytes)
 }
 
+fn write_complex_encounters_for_export(
+    manifest: &mut NativeScenarioManifest,
+    records: &[ComplexEncounterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_complex_encounter_rows(
+        write_complex_encounters(records)?,
+        records,
+        annex,
+    )?;
+    write_if_nonempty(manifest, "Data ED2", bytes)
+}
+
 fn preserve_imported_message_rows(
     bytes: Vec<u8>,
     records: &[MessageRecord],
@@ -588,6 +599,20 @@ fn preserve_imported_simple_encounter_rows(
         bytes,
         "Data ED",
         crate::realmz::SIMPLE_ENCOUNTER_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )
+}
+
+fn preserve_imported_complex_encounter_rows(
+    bytes: Vec<u8>,
+    records: &[ComplexEncounterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    preserve_imported_fixed_rows(
+        bytes,
+        "Data ED2",
+        crate::realmz::COMPLEX_ENCOUNTER_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
     )
@@ -1594,11 +1619,12 @@ mod tests {
         custom_spell_name_resource_updates, item_text_resource_updates,
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
-        preserve_imported_battle_rows, preserve_imported_fixed_length,
-        preserve_imported_message_rows, preserve_imported_option_label_rows,
-        preserve_imported_simple_encounter_rows, scenario_icon_resource_updates,
-        write_caste_overrides_for_export, write_race_overrides_for_export,
-        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
+        preserve_imported_fixed_length, preserve_imported_message_rows,
+        preserve_imported_option_label_rows, preserve_imported_simple_encounter_rows,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -2061,6 +2087,56 @@ mod tests {
         assert_eq!(authored[103], 0);
         assert_eq!(crate::realmz::i16_be(authored, 104), 0x0506);
         assert_eq!(&authored[106..109], &[2, b'G', b'o']);
+        assert_eq!(&output[2 * record_bytes..], &[0xde, 0xad, 0xbe]);
+    }
+
+    #[test]
+    fn imported_complex_encounter_export_reads_legacy_bytes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let record_bytes = crate::realmz::COMPLEX_ENCOUNTER_BYTES;
+        let mut source = vec![0; 2 * record_bytes];
+        source[4] = 9;
+        source[157] = 0xb6;
+        let authored_start = record_bytes;
+        source[authored_start + 157] = 0x5a;
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data ED2"), &source).unwrap();
+
+        let mut encounters = crate::realmz::parse_complex_encounter_records(&source);
+        encounters[0].raw_bytes.fill(0x11);
+        encounters[1].raw_bytes.fill(0x22);
+        encounters[1].actions = vec![crate::project::EncounterActionRow {
+            slot: 3,
+            raw_code: -2,
+            id: 0x0304,
+        }];
+        encounters[1].action_result = 6;
+        encounters[1].word_result = 7;
+        encounters[1].groups[4] = -8;
+        encounters[1].prompt = 0x0506;
+        encounters[1].texts[0] = "Go".to_string();
+        encounters[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_complex_encounter_rows(
+            crate::realmz::write_complex_encounters(&encounters).unwrap(),
+            &encounters,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(&output[..record_bytes], &source[..record_bytes]);
+        let authored = &output[authored_start..2 * record_bytes];
+        assert_eq!(authored[3] as i8, -2);
+        assert_eq!(crate::realmz::i16_be(authored, 38), 0x0304);
+        assert_eq!(&authored[96..98], &[6, 7]);
+        assert_eq!(authored[102] as i8, -8);
+        assert_eq!(authored[157], 0);
+        assert_eq!(crate::realmz::i16_be(authored, 158), 0x0506);
+        assert_eq!(&authored[160..163], &[2, b'G', b'o']);
         assert_eq!(&output[2 * record_bytes..], &[0xde, 0xad, 0xbe]);
     }
 

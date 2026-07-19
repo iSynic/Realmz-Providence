@@ -2,11 +2,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    BattleRecord, Confidence, EncounterActionRow, GlobalMacroHook, LandLayout, LevelType,
-    MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender, MessageRecord, OptionLabelRecord,
-    Provenance, RandomLevel, RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks,
-    ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
-    ShopRecord, SimpleEncounterRecord, TreasureRecord,
+    BattleRecord, ComplexEncounterRecord, Confidence, EncounterActionRow, GlobalMacroHook,
+    LandLayout, LevelType, MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender,
+    MessageRecord, OptionLabelRecord, Provenance, RandomLevel, RandomRect, RenderMode,
+    ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta,
+    ScenarioRestrictions, ScenarioShell, ScenarioSupportFile, ShopRecord, SimpleEncounterRecord,
+    TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -877,42 +878,6 @@ pub struct ItemTextRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ComplexEncounterRecord {
-    pub id: usize,
-    pub actions: Vec<EncounterActionRow>,
-    pub choice_results: Vec<u8>,
-    pub word_results: Vec<u8>,
-    #[serde(default)]
-    pub action_result: i8,
-    #[serde(default)]
-    pub word_result: i8,
-    #[serde(default)]
-    pub groups: Vec<i8>,
-    #[serde(default)]
-    pub spell_ids: Vec<i16>,
-    #[serde(default)]
-    pub spell_results: Vec<i8>,
-    #[serde(default)]
-    pub item_ids: Vec<i16>,
-    #[serde(default)]
-    pub item_results: Vec<i8>,
-    pub can_back_out: bool,
-    pub thief: bool,
-    pub max_times: i8,
-    pub caste_success: i8,
-    pub thief_success: i8,
-    pub thief_fail: i8,
-    pub prompt: i16,
-    pub texts: Vec<String>,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TimedEncounterRecord {
     pub id: usize,
     pub day: i16,
@@ -1484,6 +1449,9 @@ impl ProvidenceProject {
         for record in &mut self.shops {
             normalize_shop_slots(record);
         }
+        for record in &mut self.complex_encounters {
+            normalize_complex_encounter(record);
+        }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;
         }
@@ -1492,6 +1460,32 @@ impl ProvidenceProject {
     pub fn map_by_id_mut(&mut self, id: &str) -> Option<&mut MapEntity> {
         self.maps.iter_mut().find(|map| map.id == id)
     }
+}
+
+fn normalize_complex_encounter(record: &mut ComplexEncounterRecord) {
+    if record.action_result == 0 {
+        if let Some(value) = record.choice_results.first() {
+            record.action_result = *value as i8;
+        }
+    }
+    if record.word_result == 0 {
+        if let Some(value) = record.word_results.first() {
+            record.word_result = *value as i8;
+        }
+    }
+    record.choice_results.clear();
+    record.word_results.clear();
+    resize_vec(&mut record.groups, 8, 0);
+    resize_vec(&mut record.spell_ids, 10, 0);
+    resize_vec(&mut record.spell_results, 10, 0);
+    resize_vec(&mut record.item_ids, 5, 0);
+    resize_vec(&mut record.item_results, 5, 0);
+    resize_vec(&mut record.texts, 9, String::new());
+}
+
+fn resize_vec<T: Clone>(values: &mut Vec<T>, length: usize, default: T) {
+    values.truncate(length);
+    values.resize(length, default);
 }
 
 fn normalize_map_record_markers(record: &mut MapRecord) {

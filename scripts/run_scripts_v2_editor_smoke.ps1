@@ -65,7 +65,7 @@ $commands = @(
   @{ kind = "updateSimpleEncounterRecord"; label = "Edit smoke simple encounter"; id = 40; changes = @{ prompt = 250; canBackOut = $true; maxTimes = 3; casteSuccess = 2; choiceResults = @(1, 2, 3, 4); texts = @("Simple smoke option", "", "", "Simple smoke final option"); actions = @(@{ slot = 0; rawCode = 1; id = 250 }, @{ slot = 1; rawCode = 10; id = 40 }, @{ slot = 2; rawCode = 65; id = 320 }) } },
   @{ kind = "updateActionSlot"; label = "Slot 4 simple encounter"; triggerId = "Data DD:0:5"; slot = 4; rawCode = 4; id = 40 },
   @{ kind = "createTargetRecord"; label = "Create smoke complex encounter"; recordType = "complexEncounter"; id = 40 },
-  @{ kind = "updateComplexEncounterRecord"; label = "Edit smoke complex encounter"; id = 40; changes = @{ prompt = 250; canBackOut = $true; thief = $true; maxTimes = 4; casteSuccess = 3; thiefSuccess = 2; thiefFail = -1; choiceResults = @(4, 3, 2, 1); wordResults = @(1, 3, 5, 7); texts = @("Complex smoke option", "", "", "", "", "", "", "", "Complex final"); actions = @(@{ slot = 0; rawCode = 1; id = 250 }, @{ slot = 1; rawCode = 6; id = 40 }, @{ slot = 2; rawCode = 2; id = 40 }) } },
+  @{ kind = "updateComplexEncounterRecord"; label = "Edit smoke complex encounter"; id = 40; changes = @{ prompt = 250; canBackOut = $true; thief = $true; maxTimes = 4; casteSuccess = 3; thiefSuccess = 2; thiefFail = -1; actionResult = 4; wordResult = 1; texts = @("Complex smoke option", "", "", "", "", "", "", "", "Complex final"); actions = @(@{ slot = 0; rawCode = 1; id = 250 }, @{ slot = 1; rawCode = 6; id = 40 }, @{ slot = 2; rawCode = 2; id = 40 }) } },
   @{ kind = "updateActionSlot"; label = "Slot 5 complex encounter"; triggerId = "Data DD:0:5"; slot = 5; rawCode = 5; id = 40 },
   @{ kind = "createTargetRecord"; label = "Create clearable battle"; recordType = "battle"; id = 41 },
   @{ kind = "updateBattleRecord"; label = "Edit clearable battle"; id = 41; changes = @{ dist = 9; messageBefore = 250; messageAfter = 250; battleMacro = 0; grid = $battleGrid } },
@@ -80,7 +80,7 @@ $commands = @(
   @{ kind = "updateSimpleEncounterRecord"; label = "Edit clearable simple encounter"; id = 41; changes = @{ prompt = 250; canBackOut = $true; maxTimes = 9; casteSuccess = 8; choiceResults = @(4, 3, 2, 1); texts = @("Clear simple", "", "", ""); actions = @(@{ slot = 0; rawCode = 1; id = 250 }) } },
   @{ kind = "deleteTargetRecord"; label = "Clear clearable simple encounter"; recordType = "simpleEncounter"; id = 41 },
   @{ kind = "createTargetRecord"; label = "Create clearable complex encounter"; recordType = "complexEncounter"; id = 41 },
-  @{ kind = "updateComplexEncounterRecord"; label = "Edit clearable complex encounter"; id = 41; changes = @{ prompt = 250; canBackOut = $true; thief = $true; maxTimes = 9; casteSuccess = 8; thiefSuccess = 7; thiefFail = 6; choiceResults = @(1, 2, 3, 4); wordResults = @(5, 6, 7, 8); texts = @("Clear complex", "", "", "", "", "", "", "", ""); actions = @(@{ slot = 0; rawCode = 6; id = 40 }) } },
+  @{ kind = "updateComplexEncounterRecord"; label = "Edit clearable complex encounter"; id = 41; changes = @{ prompt = 250; canBackOut = $true; thief = $true; maxTimes = 9; casteSuccess = 8; thiefSuccess = 7; thiefFail = 6; actionResult = 1; wordResult = 5; texts = @("Clear complex", "", "", "", "", "", "", "", ""); actions = @(@{ slot = 0; rawCode = 6; id = 40 }) } },
   @{ kind = "deleteTargetRecord"; label = "Clear clearable complex encounter"; recordType = "complexEncounter"; id = 41 },
   @{ kind = "applyRealmzScriptStep"; label = "Slot 7 random items EDCD"; triggerId = "Data DD:0:5"; slot = 7; opcode = 65; id = 320; edcdValues = @(1, 2, 3, 4, 5) },
   @{ kind = "duplicateActionSlot"; label = "Duplicate slot 0 to slot 6"; triggerId = "Data DD:0:5"; fromSlot = 0; toSlot = 6 },
@@ -137,13 +137,13 @@ $script = @{
       @{ recordType = "treasure"; id = 40; fields = @{ exp = 10; gold = 20; gems = 1; jewelry = 0; "itemIds.0" = 1; "itemIds.1" = 2; "itemIds.2" = 3; "itemIds.19" = 620 } },
       @{ recordType = "shop"; id = 40; fields = @{ inflation = 100; "itemIds.0" = 1; "quantities.0" = 3; "itemIds.999" = 845; "quantities.999" = 8 } },
       @{ recordType = "simpleEncounter"; id = 40; fields = @{ prompt = 250; canBackOut = $true; maxTimes = 3; casteSuccess = 2; "choiceResults.0" = 1; "choiceResults.3" = 4; "texts.0" = "Simple smoke option"; "texts.3" = "Simple smoke final option"; "actions.0.rawCode" = 1; "actions.0.id" = 250; "actions.1.rawCode" = 10; "actions.1.id" = 40; "actions.2.rawCode" = 65; "actions.2.id" = 320 } },
-      @{ recordType = "complexEncounter"; id = 40; fields = @{ prompt = 250; canBackOut = $true; thief = $true; maxTimes = 4; casteSuccess = 3; thiefSuccess = 2; thiefFail = -1; "choiceResults.0" = 4; "wordResults.3" = 7; "texts.0" = "Complex smoke option"; "texts.8" = "Complex final"; "actions.0.rawCode" = 1; "actions.0.id" = 250; "actions.1.rawCode" = 6; "actions.1.id" = 40; "actions.2.rawCode" = 2; "actions.2.id" = 40 } },
+      @{ recordType = "complexEncounter"; id = 40; fields = @{ prompt = 250; canBackOut = $true; thief = $true; maxTimes = 4; casteSuccess = 3; thiefSuccess = 2; thiefFail = -1; actionResult = 4; wordResult = 1; "texts.0" = "Complex smoke option"; "texts.8" = "Complex final"; "actions.0.rawCode" = 1; "actions.0.id" = 250; "actions.1.rawCode" = 6; "actions.1.id" = 40; "actions.2.rawCode" = 2; "actions.2.id" = 40 } },
       @{ recordType = "message"; id = 251; fields = @{ text = "" } },
       @{ recordType = "battle"; id = 41; fields = @{ dist = 0; messageBefore = 0; messageAfter = 0; battleMacro = 0; "grid.0" = 0; "grid.168" = 0 } },
       @{ recordType = "treasure"; id = 41; fields = @{ exp = 0; gold = 0; gems = 0; jewelry = 0; "itemIds.0" = 0; "itemIds.19" = 0 } },
       @{ recordType = "shop"; id = 41; fields = @{ inflation = 0; "itemIds.0" = 0; "quantities.0" = 0; "itemIds.999" = 0; "quantities.999" = 0 } },
       @{ recordType = "simpleEncounter"; id = 41; fields = @{ prompt = 0; canBackOut = $false; maxTimes = 0; casteSuccess = 0; "choiceResults.0" = 0; "texts.0" = ""; "actions.0" = $null } },
-      @{ recordType = "complexEncounter"; id = 41; fields = @{ prompt = 0; canBackOut = $false; thief = $false; maxTimes = 0; casteSuccess = 0; thiefSuccess = 0; thiefFail = 0; "choiceResults.0" = 0; "wordResults.0" = 0; "texts.0" = ""; "actions.0" = $null } }
+      @{ recordType = "complexEncounter"; id = 41; fields = @{ prompt = 0; canBackOut = $false; thief = $false; maxTimes = 0; casteSuccess = 0; thiefSuccess = 0; thiefFail = 0; actionResult = 0; wordResult = 0; "texts.0" = ""; "actions.0" = $null } }
     )
     targetRecordsAbsent = @(
       @{ recordType = "questLabel"; id = 77 }

@@ -47,6 +47,8 @@ assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
 expect(project.optionLabels.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical option labels must not carry compatibility bytes");
 assertOwnershipSimpleEncounter(project.simpleEncounters, "Canonical project");
 expect(project.simpleEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical simple encounters must not carry compatibility bytes");
+assertOwnershipComplexEncounter(project.complexEncounters, "Canonical project");
+expect(project.complexEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical complex encounters must not carry compatibility bytes");
 assertOwnershipBattle(project.battles, "Canonical project");
 expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical battles must not carry compatibility bytes");
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
@@ -170,6 +172,7 @@ expect(
 assertOwnershipMessage(reimported.messages, "Reimport");
 assertOwnershipOptionLabels(reimported.optionLabels, "Reimport");
 assertOwnershipSimpleEncounter(reimported.simpleEncounters, "Reimport");
+assertOwnershipComplexEncounter(reimported.complexEncounters, "Reimport");
 assertOwnershipBattle(reimported.battles, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
@@ -190,6 +193,7 @@ const summary = {
     actionPoints: project.triggers.length,
     messages: project.messages.length,
     simpleEncounters: project.simpleEncounters.length,
+    complexEncounters: project.complexEncounters.length,
     battles: project.battles.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
@@ -296,6 +300,8 @@ async function assertNoRawSources(stage) {
   expect(savedProject.optionLabels?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} option labels contain compatibility bytes`);
   assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
   expect(savedProject.simpleEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} simple encounters contain compatibility bytes`);
+  assertOwnershipComplexEncounter(savedProject.complexEncounters, `Rust-saved project ${stage}`);
+  expect(savedProject.complexEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} complex encounters contain compatibility bytes`);
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
   expect(savedProject.battles?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} battles contain compatibility bytes`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
@@ -319,6 +325,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data SD2", 256],
     ["Data OD", 50],
     ["Data ED", 426],
+    ["Data ED2", 520],
     ["Data BD", 346],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
@@ -332,7 +339,7 @@ function assertCompleteNativeFolder(files, label) {
     expect(files.has(name), `${label} output is missing ${name}`);
     expect(files.get(name).byteLength === bytes, `${label} ${name} should be ${bytes} bytes, found ${files.get(name).byteLength}`);
   }
-  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD2", "Data TD3", "Data ED2", "Data MD"]) {
+  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD2", "Data TD3", "Data MD"]) {
     expect(files.has(name), `${label} output is missing required empty table ${name}`);
     expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
@@ -360,6 +367,18 @@ function assertCompleteNativeFolder(files, label) {
   expect(simpleEncounter[103] === 0, `${label} Data ED alignment padding is not deterministic zero`);
   expect(readI16(simpleEncounter, 104) === 0, `${label} Data ED has the wrong prompt message ID`);
   expect(Buffer.from(simpleEncounter.slice(106, 115)).equals(Buffer.from([8, 67, 111, 110, 116, 105, 110, 117, 101])), `${label} Data ED has the wrong authored option text`);
+  const complexEncounter = files.get("Data ED2");
+  expect(complexEncounter[0] === 1 && complexEncounter[8] === 1 && complexEncounter[16] === 1 && complexEncounter[24] === 1, `${label} Data ED2 does not contain all four authored result scripts`);
+  expect(readI16(complexEncounter, 32) === 0 && readI16(complexEncounter, 48) === 0 && readI16(complexEncounter, 64) === 0 && readI16(complexEncounter, 80) === 0, `${label} Data ED2 result scripts have the wrong authored message ID`);
+  expect(complexEncounter[96] === 1 && complexEncounter[97] === 2, `${label} Data ED2 has the wrong physical or word result`);
+  expect(complexEncounter[98] === 1 && complexEncounter.slice(99, 106).every((byte) => byte === 0), `${label} Data ED2 has the wrong required-action flags`);
+  expect(readI16(complexEncounter, 106) === 16 && readI16(complexEncounter, 108) === 1100 && complexEncounter[126] === 3, `${label} Data ED2 has the wrong authored spell response`);
+  expect(readI16(complexEncounter, 136) === 901 && complexEncounter[146] === 4, `${label} Data ED2 has the wrong authored item response`);
+  expect(complexEncounter[151] === 1 && complexEncounter[152] === 0 && complexEncounter[153] === 1 && complexEncounter[154] === 0, `${label} Data ED2 has the wrong authored encounter controls`);
+  expect(complexEncounter[157] === 0, `${label} Data ED2 alignment padding is not deterministic zero`);
+  expect(readI16(complexEncounter, 158) === 0, `${label} Data ED2 has the wrong prompt message ID`);
+  expect(Buffer.from(complexEncounter.slice(160, 168)).equals(Buffer.from([7, 73, 110, 115, 112, 101, 99, 116])), `${label} Data ED2 has the wrong authored action text`);
+  expect(Buffer.from(complexEncounter.slice(480, 491)).equals(Buffer.from([10, 112, 114, 111, 118, 105, 100, 101, 110, 99, 101])), `${label} Data ED2 has the wrong authored typed reply`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
 }
 
@@ -392,6 +411,20 @@ function assertOwnershipSimpleEncounter(records, label) {
   expect(encounter.canBackOut === true && encounter.maxTimes === 1 && encounter.casteSuccess === 0, `${label} simple encounter has the wrong control fields`);
   expect(encounter.prompt === 0, `${label} simple encounter has the wrong prompt`);
   expect(encounter.texts?.join("\n") === "Continue\n\n\n", `${label} simple encounter has the wrong option text`);
+}
+
+function assertOwnershipComplexEncounter(records, label) {
+  const encounter = records?.find((record) => record.id === 0);
+  expect(encounter, `${label} is missing complex encounter 0`);
+  expect(encounter.actions?.map((action) => `${action.slot}:${action.rawCode}:${action.id}`).join(",") === "0:1:0,8:1:0,16:1:0,24:1:0", `${label} complex encounter has the wrong result scripts`);
+  expect(encounter.actionResult === 1 && encounter.wordResult === 2, `${label} complex encounter has the wrong physical or word result`);
+  expect(encounter.groups?.join(",") === "1,0,0,0,0,0,0,0", `${label} complex encounter has the wrong required-action flags`);
+  expect(encounter.spellIds?.length === 10 && encounter.spellIds[0] === 16 && encounter.spellIds[1] === 1100 && encounter.spellResults[0] === 3, `${label} complex encounter has the wrong spell response`);
+  expect(encounter.itemIds?.length === 5 && encounter.itemIds[0] === 901 && encounter.itemResults[0] === 4, `${label} complex encounter has the wrong item response`);
+  expect(encounter.canBackOut === true && encounter.thief === false && encounter.maxTimes === 1 && encounter.casteSuccess === 0, `${label} complex encounter has the wrong control fields`);
+  expect(encounter.prompt === 0, `${label} complex encounter has the wrong prompt`);
+  expect(encounter.texts?.length === 9 && encounter.texts[0] === "Inspect" && encounter.texts[8] === "providence", `${label} complex encounter has the wrong inline text`);
+  expect(encounter.choiceResults === undefined && encounter.wordResults === undefined, `${label} complex encounter still carries obsolete result aliases`);
 }
 
 function assertOwnershipBattle(records, label) {

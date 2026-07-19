@@ -93,8 +93,6 @@ function encounterProject(): Project {
     spellResults: [],
     itemIds: [],
     itemResults: [],
-    choiceResults: [0, 0, 0, 0],
-    wordResults: [],
     canBackOut: false,
     thief: false,
     maxTimes: 0,
@@ -102,7 +100,14 @@ function encounterProject(): Project {
     thiefSuccess: 0,
     thiefFail: 0,
     prompt: 0,
-    texts: []
+    texts: [],
+    provenance: {
+      sourceFile: "Data ED2",
+      recordIndex: 2,
+      byteOffset: 1040,
+      byteLength: 520,
+      confidence: "fixture-backed"
+    }
   }];
   project.thiefEncounters = [{
     id: 3,

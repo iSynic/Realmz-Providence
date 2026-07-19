@@ -473,7 +473,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.complexEncounters.length > 0) {
     writes.push({
       path: "Data ED2",
-      bytes: preserveMalformedRawTail("Data ED2", writeComplexEncounters(project.complexEncounters), COMPLEX_ENCOUNTER_RECORD_BYTES, annex)
+      bytes: writeComplexEncountersForExport(project.complexEncounters, annex)
     });
   }
   if (project.thiefEncounters.length > 0) {
@@ -911,6 +911,10 @@ function writeBattlesForExport(battles: Project["battles"], annex: BrowserCompat
 
 function writeSimpleEncountersForExport(encounters: Project["simpleEncounters"], annex: BrowserCompatibilityAnnex | null) {
   return preserveImportedFixedRows("Data ED", writeSimpleEncounters(encounters), encounters, SIMPLE_ENCOUNTER_RECORD_BYTES, annex);
+}
+
+function writeComplexEncountersForExport(encounters: Project["complexEncounters"], annex: BrowserCompatibilityAnnex | null) {
+  return preserveImportedFixedRows("Data ED2", writeComplexEncounters(encounters), encounters, COMPLEX_ENCOUNTER_RECORD_BYTES, annex);
 }
 
 function preserveImportedFixedRows(

@@ -102,10 +102,16 @@ Runtime stride is `sizeof enc2 + 360`, which is 520 bytes in source and corpus e
 | 153 | 1 | `maxtimes` | Attempt/try count copied into runtime `enctry`. |
 | 154 | 1 | `castesuccess` | Caste success/result evidence. Divinity labels still needed. |
 | 155 | 1 | `thiefsuccess` | `Data TD2` thief encounter ID used by thief/spell paths. |
-| 156 | 1 | `thieffail` / Rogue Reset Flag | Preserved legacy byte. Divinity labels this as `Rogue Reset Flag`, but modern Realmz does not consume it in current runtime evidence. |
-| 157 | 1 | padding/evidence | Preserve. |
+| 156 | 1 | `thieffail` / Rogue Reset Flag | Source-declared signed byte. Providence owns its canonical value; modern Realmz does not consume it in current runtime evidence. |
+| 157 | 1 | alignment padding | The authoritative compiler writes deterministic zero. Unchanged imported byte identity is restored only from the compatibility annex. |
 | 158 | 2 | `prompt` | Central `Data SD2` prompt message ID. Runtime displays `-abs(prompt)`. |
 | 160 | 360 | text buffers | Nine 40-byte inline display buffers. Buffer 8 is the word target text. |
+
+The current audit found no structural gap in this layout. Across 37 distinct data payloads and 954
+complete rows, byte 157 held six observed values and was nonzero 71 times, but Realmz never names
+or consumes it as a field; it is ABI alignment padding before the prompt word. Providence therefore
+owns every byte of a newly authored 520-byte row and emits byte 157 as zero. Imported row identity
+remains bounded to the compatibility annex.
 
 ## Complex Outcome Semantics
 
@@ -126,7 +132,7 @@ After any path returns a result, `newland` branches to one of the four result ac
 
 | File | Evidence |
 | --- | --- |
-| `Data ED2` | Clean 520-byte records across local output corpus; Trouble in the Sword Lands has 48,360 bytes = 93 records. |
+| `Data ED2` | A broader audit found 166 physical paths: four Finder metadata companions and 37 distinct data payloads. All 37 payloads were exactly divisible by 520, totaling 954 complete rows; byte 157 was nonzero in 71 rows. Trouble in the Sword Lands has 48,360 bytes = 93 records. |
 | `Data ED` | Runtime/source stride is 426 bytes. Of 37 distinct data payloads in the broader local audit, 14 are exactly aligned and 23 have historical tails. Complete authored rows are compiler-owned; legacy rows and tails are annex-preserved without invented field meanings. |
 
 ## Providence Editor Implications
@@ -134,6 +140,8 @@ After any path returns a result, `newland` branches to one of the four result ac
 - Keep editing scenario `Data ED` / `Data ED2`, not runtime `CE` / `CE2`.
 - Fresh simple encounters compile complete 426-byte records from canonical actions, results, controls, prompt, and text without `rawBytes`.
 - Byte 103 is deterministic compiler padding, while unchanged imported record bytes and historical tails are compatibility-annex concerns only.
+- Fresh complex encounters compile complete 520-byte records from canonical action rows, physical/word/group/spell/item routes, controls, prompt, and text without `rawBytes`.
+- Byte 157 is deterministic compiler padding. Unchanged imported rows and any future malformed tails are restored only from the compatibility annex.
 - Simple Encounter editor should expose four choices, four result action rows, four 80-byte display buffers, prompt message picker, back-out, max times, and caste success.
 - Complex Encounter editor should expose action result, word result, group flags, spell tests, item tests, thief hook, prompt picker, nine 40-byte buffers, and four result action rows.
 - Existing "Encounter Text" punctuation should remain authored display text unless a Divinity binary pass proves editor annotation semantics.
@@ -143,14 +151,14 @@ After any path returns a result, `newland` branches to one of the four result ac
 
 ## Validation Rules
 
-- `Data ED2` length should be divisible by 520.
+- `Data ED2` records must use the 520-byte stride; malformed embedded compatibility storage is rejected, while any legacy file tail remains annex-owned.
 - `Data ED` should parse source-backed 426-byte records, reject malformed embedded compatibility storage, and preserve imported trailing bytes only through the compatibility annex.
 - Prompt IDs should resolve to `Data SD2` messages when nonzero.
 - Simple choice results should map to available result rows or zero/eliminated state; only Option 1 may use the source-backed `-4` auto-run Result #4 sentinel.
 - Complex spell IDs should resolve through the spell picker or known class IDs below 7.
 - Complex item IDs should resolve through the item library.
 - `thiefsuccess` should resolve to `Data TD2` when thief/spell-trap behavior is enabled.
-- `thieffail` should be preserved as an unconsumed legacy byte, not edited as normal authoring and not treated as a Rogue Encounter reference.
+- `thieffail` remains a canonical source field with a deterministic authored default, but should not be treated as a Rogue Encounter reference because current modern runtime evidence does not consume it.
 - Inline simple buffers must fit 80 bytes; complex buffers must fit 40 bytes.
 - Action rows must use supported CODE/ID semantics and preserve unsupported imported behavior.
 
@@ -162,6 +170,5 @@ After any path returns a result, `newland` branches to one of the four result ac
 
 ## Providence Follow-Up
 
-- Follow-up: complete the `Data ED2` semantic compiler boundary, then continue encounter UI and validation refinement.
-- Correct/rename complex encounter model fields to match source-backed `encount2` semantics.
-- Build Encounter editors after message, item, spell, and thief pickers are available.
+- Follow-up: close the remaining thief/timed encounter byte-ownership slices while keeping their source-declared but runtime-unconsumed fields epistemically labeled.
+- Continue Encounter editor refinement on the canonical `encount2` model; migration-only aliases must not reappear in authoring UI or native writers.

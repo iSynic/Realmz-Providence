@@ -217,7 +217,9 @@ The tenth follow-up archaeology pass tightened `Core records` around simple and 
 - simple encounters have four choice results and four 80-byte display buffers;
 - complex encounters have one action result, one word result, eight action-picker group flags, ten spell tests, five item tests, thief hooks, and nine 40-byte display buffers;
 - the authoritative `Data ED` writer now compiles every byte of a fresh 426-byte row from semantic data and emits byte 103 as deterministic alignment padding;
-- a broader audit found 37 distinct data payloads, including 23 with historical tails and 42 of 194 aligned rows with nonzero padding, so unchanged imported rows and tails remain bounded compatibility-annex material rather than canonical project state.
+- a broader `Data ED` audit found 37 distinct data payloads, including 23 with historical tails and 42 of 194 aligned rows with nonzero padding, so unchanged imported rows and tails remain bounded compatibility-annex material rather than canonical project state;
+- the authoritative `Data ED2` writer now compiles every byte of a fresh 520-byte row from the source-declared semantic model and emits byte 157 as deterministic alignment padding;
+- a broader `Data ED2` audit found 37 distinct data payloads, all exactly aligned, totaling 954 complete rows with 71 nonzero legacy padding bytes. Imported row identity remains annex-only rather than canonical project state.
 
 Detailed evidence lives in `docs/format-evidence-cards/encounter-record-runtime-anchors.md` and `docs/generated/encounter-record-evidence.json`.
 

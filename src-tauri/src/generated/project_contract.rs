@@ -265,6 +265,32 @@ pub const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS: &[&str] = &[
+    "id",
+    "actions",
+    "actionResult",
+    "wordResult",
+    "groups",
+    "spellIds",
+    "spellResults",
+    "itemIds",
+    "itemResults",
+    "choiceResults",
+    "wordResults",
+    "canBackOut",
+    "thief",
+    "maxTimes",
+    "casteSuccess",
+    "thiefSuccess",
+    "thiefFail",
+    "prompt",
+    "texts",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -584,6 +610,44 @@ pub struct SimpleEncounterRecord {
     pub can_back_out: bool,
     pub max_times: i8,
     pub caste_success: i8,
+    pub prompt: i16,
+    pub texts: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ComplexEncounterRecord {
+    pub id: usize,
+    pub actions: Vec<EncounterActionRow>,
+    #[serde(default)]
+    pub action_result: i8,
+    #[serde(default)]
+    pub word_result: i8,
+    #[serde(default)]
+    pub groups: Vec<i8>,
+    #[serde(default)]
+    pub spell_ids: Vec<i16>,
+    #[serde(default)]
+    pub spell_results: Vec<i8>,
+    #[serde(default)]
+    pub item_ids: Vec<i16>,
+    #[serde(default)]
+    pub item_results: Vec<i8>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub choice_results: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub word_results: Vec<u8>,
+    pub can_back_out: bool,
+    pub thief: bool,
+    pub max_times: i8,
+    pub caste_success: i8,
+    pub thief_success: i8,
+    pub thief_fail: i8,
     pub prompt: i16,
     pub texts: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

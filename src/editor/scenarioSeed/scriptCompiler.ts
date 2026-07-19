@@ -340,8 +340,6 @@ function buildComplexEncounter(
     spellResults,
     itemIds,
     itemResults,
-    choiceResults: [seed.physicalResult ?? 0, 0, 0, 0],
-    wordResults: [seed.word?.result ?? 0, 0, 0, 0],
     canBackOut: seed.canBackOut ?? false,
     thief: Boolean(seed.thief),
     maxTimes: seed.maxTimes ?? 0,
@@ -350,7 +348,6 @@ function buildComplexEncounter(
     thiefFail: 0,
     prompt: seed.prompt === undefined ? 0 : resolveRef(seed.prompt, context.messages, "message", context),
     texts: [...physicalActions, seed.word?.text ?? ""],
-    rawBytes: new Array(COMPLEX_ENCOUNTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data ED2", id, id * COMPLEX_ENCOUNTER_BYTES, COMPLEX_ENCOUNTER_BYTES)
   };

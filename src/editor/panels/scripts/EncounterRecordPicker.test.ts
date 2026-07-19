@@ -40,8 +40,8 @@ describe("encounter record picker helpers", () => {
     const project = {
       messages: [{ id: 7, text: "The drowned bell tolls below the reef." }],
       complexEncounters: [
-        { id: 12, prompt: 0, texts: [], actions: [], actionResult: 0, wordResult: 0, spellResults: [], itemResults: [], choiceResults: [] },
-        { id: 3, prompt: 7, texts: [], actions: [{ slot: 0, rawCode: 1, id: 7 }], actionResult: 1, wordResult: 0, spellResults: [], itemResults: [], choiceResults: [] }
+        { id: 12, prompt: 0, texts: [], actions: [], actionResult: 0, wordResult: 0, spellResults: [], itemResults: [] },
+        { id: 3, prompt: 7, texts: [], actions: [{ slot: 0, rawCode: 1, id: 7 }], actionResult: 1, wordResult: 0, spellResults: [], itemResults: [] }
       ]
     } as unknown as Project;
 

@@ -777,8 +777,6 @@ function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounte
     spellResults: Array.from(record.subarray(126, 136), signedByte),
     itemIds: readI16s(record, 136, 5),
     itemResults: Array.from(record.subarray(146, 151), signedByte),
-    choiceResults: [signedByte(record[96]), 0, 0, 0],
-    wordResults: [signedByte(record[97]), 0, 0, 0],
     canBackOut: record[151] !== 0,
     thief: record[152] !== 0,
     maxTimes: signedByte(record[153]),

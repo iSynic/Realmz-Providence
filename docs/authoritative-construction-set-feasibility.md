@@ -286,10 +286,24 @@ from the compatibility annex at export. The ownership proof now authors a simple
 Scenario JSON, requires exact 426-byte `Data ED` output in both native targets and compilers, and
 semantically reimports the record.
 
-Branch validation through the thirty-first slice completed on 2026-07-19:
+The thirty-second slice closes complete byte ownership for each 520-byte `Data ED2`
+complex-encounter row. `ComplexEncounterRecord` now joins `EncounterActionRow` in the generated
+TypeScript/Rust project contract. The practical canonical model uses the source-declared action
+result, word result, eight group flags, ten spell routes, five item routes, controls, prompt, and
+nine inline text buffers; the obsolete `choiceResults`/`wordResults` arrays survive only as
+load-time migration inputs and are removed on normalization. Fresh UI/project-command and
+Scenario JSON constructors omit `rawBytes`, and both native writers compile all 520 bytes from
+canonical semantics with deterministic zero at alignment byte 157. A focused audit found 37
+distinct data payloads, all exactly aligned, totaling 954 complete rows; 71 rows carry nonzero
+legacy padding. Unchanged imported rows and any future malformed tails remain annex-owned. The
+ownership proof now authors physical, typed-word, spell, item, and all four result-script routes,
+requires exact 520-byte `Data ED2` output in both native targets and compilers, and semantically
+reimports the record.
 
-- full Rust suite: 231 passed, 2 ignored;
-- full TypeScript suite: 567 passed, plus typecheck;
+Branch validation through the thirty-second slice completed on 2026-07-19:
+
+- full Rust suite: 233 passed, 2 ignored;
+- full TypeScript suite: 571 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -632,7 +646,7 @@ Legend:
 | `Data TD` | Generated + malformed-tail annex | Generate all 48 record bytes from canonical semantics | Twenty item IDs and four reward words cover the full record. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Only malformed file tails remain annex data. |
 | `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Classified foreign suffix records and malformed tails are appended from the annex. |
 | `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Fresh/authored rows compile all 426 bytes from canonical actions, results, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and historical tails are restored only from the compatibility annex. |
-| `Data ED2` | Generated + compatibility | Generate complex encounters | Bytes 104-150 and 157 plus malformed file tails are legacy compatibility; authored compilation emits the required empty file directly. |
+| `Data ED2` | Generated + legacy row/tail annex | Generate complete deterministic complex encounters | Fresh/authored rows compile all 520 bytes from canonical actions, physical/word/group/spell/item routes, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data TD2` | Generated | Generate rogue/thief encounters | Complete writer; authored compilation emits the required empty file directly. |
 | `Data TD3` | Generated with explicit compatibility slots | Generate timed encounters and zero reserved `stuff[1..9]` | The model carries the ten-word array; only `stuff[0]` has confirmed runtime meaning. Authored compilation emits the required empty file directly. |
 

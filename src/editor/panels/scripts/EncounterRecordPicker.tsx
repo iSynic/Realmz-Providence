@@ -155,7 +155,7 @@ function encounterRecordSummary(project: Project, recordType: EncounterRecordPic
   }
   if (recordType === "complexEncounter") {
     const complex = record as Project["complexEncounters"][number];
-    const responseCount = [complex.actionResult, complex.wordResult, ...complex.spellResults, ...complex.itemResults, ...complex.choiceResults]
+    const responseCount = [complex.actionResult, complex.wordResult, ...complex.spellResults, ...complex.itemResults]
       .filter((value) => value !== 0).length;
     const resultCount = complex.actions?.filter((row) => row.rawCode !== 0 || row.id !== 0).length ?? 0;
     return joinRecordSummary(`${responseCount} responses`, `${resultCount} result steps`, encounterPromptExcerpt(project, complex.prompt, complex.texts));

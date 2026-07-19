@@ -113,7 +113,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/simpleEncounterRecord" }
     },
-    "complexEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
+    "complexEncounters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/complexEncounterRecord" }
+    },
     "thiefEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
     "timedEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
     "questLabels": { "$ref": "#/$defs/canonicalRecordArray" },
@@ -481,6 +484,39 @@
         "prompt": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "texts": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string" } },
         "rawBytes": { "type": "array", "minItems": 426, "maxItems": 426, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "complexEncounterRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceComplexEncounterRecord",
+      "x-providence-rust-name": "ComplexEncounterRecord",
+      "x-providence-rust-default": ["actionResult", "wordResult", "groups", "spellIds", "spellResults", "itemIds", "itemResults", "choiceResults", "wordResults", "rawBytes", "authored"],
+      "x-providence-rust-skip-empty": ["choiceResults", "wordResults", "rawBytes"],
+      "required": ["id", "actions", "actionResult", "wordResult", "groups", "spellIds", "spellResults", "itemIds", "itemResults", "canBackOut", "thief", "maxTimes", "casteSuccess", "thiefSuccess", "thiefFail", "prompt", "texts", "provenance"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "actions": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/encounterActionRow" } },
+        "actionResult": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "wordResult": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "groups": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" } },
+        "spellIds": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
+        "spellResults": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" } },
+        "itemIds": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
+        "itemResults": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" } },
+        "choiceResults": { "type": "array", "maxItems": 4, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-migration-only": true },
+        "wordResults": { "type": "array", "maxItems": 4, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-migration-only": true },
+        "canBackOut": { "type": "boolean" },
+        "thief": { "type": "boolean" },
+        "maxTimes": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "casteSuccess": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "thiefSuccess": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "thiefFail": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "prompt": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "texts": { "type": "array", "minItems": 9, "maxItems": 9, "items": { "type": "string" } },
+        "rawBytes": { "type": "array", "minItems": 520, "maxItems": 520, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

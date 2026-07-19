@@ -88,6 +88,9 @@ describe("scenario seed script compiler", () => {
       { id: 1, values: [2, 1, 0, 0, 0] },
       { id: 2, values: [10, 11, 0, 0, 0] }
     ]);
+    expect(result.complexEncounters[0].rawBytes).toBeUndefined();
+    expect(result.complexEncounters[0].choiceResults).toBeUndefined();
+    expect(result.complexEncounters[0].wordResults).toBeUndefined();
   });
 
   it("resolves semantic map regions into trigger location and identity", () => {

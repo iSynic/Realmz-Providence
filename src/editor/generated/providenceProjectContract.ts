@@ -249,6 +249,31 @@ export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS = [
+  "id",
+  "actions",
+  "actionResult",
+  "wordResult",
+  "groups",
+  "spellIds",
+  "spellResults",
+  "itemIds",
+  "itemResults",
+  "choiceResults",
+  "wordResults",
+  "canBackOut",
+  "thief",
+  "maxTimes",
+  "casteSuccess",
+  "thiefSuccess",
+  "thiefFail",
+  "prompt",
+  "texts",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -471,6 +496,31 @@ export type ProvidenceSimpleEncounterRecord = {
   canBackOut: boolean;
   maxTimes: number;
   casteSuccess: number;
+  prompt: number;
+  texts: string[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceComplexEncounterRecord = {
+  id: number;
+  actions: ProvidenceEncounterActionRow[];
+  actionResult: number;
+  wordResult: number;
+  groups: number[];
+  spellIds: number[];
+  spellResults: number[];
+  itemIds: number[];
+  itemResults: number[];
+  choiceResults?: number[];
+  wordResults?: number[];
+  canBackOut: boolean;
+  thief: boolean;
+  maxTimes: number;
+  casteSuccess: number;
+  thiefSuccess: number;
+  thiefFail: number;
   prompt: number;
   texts: string[];
   rawBytes?: number[];

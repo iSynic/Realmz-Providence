@@ -59,7 +59,7 @@
         { "offset": 154, "size": 1, "field": "castesuccess", "kind": "i8", "editorMeaning": "caste success/result evidence" },
         { "offset": 155, "size": 1, "field": "thiefsuccess", "kind": "i8", "editorMeaning": "Data TD2 thief encounter id/hook evidence" },
         { "offset": 156, "size": 1, "field": "thieffail", "kind": "i8", "editorMeaning": "thief failure result/evidence" },
-        { "offset": 157, "size": 1, "field": "padding", "kind": "raw", "editorMeaning": "preserve" },
+        { "offset": 157, "size": 1, "field": "padding", "kind": "deterministic-zero", "editorMeaning": "canonical compiler emits zero; imported byte identity belongs to the compatibility annex" },
         { "offset": 158, "size": 2, "field": "prompt", "kind": "be_i16", "editorMeaning": "Data SD2 prompt message id" },
         { "offset": 160, "size": 360, "field": "textBuffers", "kind": "pascal-ish-bytes[9][40]", "editorMeaning": "complex display buffers; buffer 8 is word target text" }
       ]
@@ -92,14 +92,26 @@
     "Data ED2": {
       "presence": "44/44",
       "recordSizeBytes": 520,
-      "largestObserved": { "scenario": "Trouble in the Sword Lands", "bytes": 48360, "records": 93 }
+      "physicalFilesAudited": 166,
+      "finderMetadataCompanions": 4,
+      "distinctDataPayloads": 37,
+      "exactAlignedPayloads": 37,
+      "tailBearingPayloads": 0,
+      "completeRowsAudited": 954,
+      "nonzeroPaddingRows": 71,
+      "paddingValues": { "0": 883, "8": 1, "32": 29, "66": 2, "68": 1, "85": 38 },
+      "largestObserved": { "scenario": "Trouble in the Sword Lands", "bytes": 48360, "records": 93 },
+      "ownershipConclusion": "All source-declared semantic fields cover bytes 0..156 and 158..519. Byte 157 is compiler-owned ABI padding and is deterministic zero for authored rows. Unchanged imported rows remain compatibility-annex data.",
+      "confidenceDebt": "No malformed Data ED2 tails were found in the local distinct-payload audit. Generic tail preservation remains bounded to legacy imports in case additional corpora contain one."
     }
   },
   "editorReadiness": {
     "simpleEncounter": "authoritative-semantic-writer-with-annex-only-legacy-preservation",
-    "complexEncounter": "ready-for-corrected-typed-model-and-ui",
+    "complexEncounter": "authoritative-semantic-writer-with-annex-only-legacy-preservation",
     "validation": [
       "Data ED2 length divisible by 520",
+      "Data ED2 canonical records use actionResult and wordResult; obsolete choiceResults/wordResults aliases are migration-only",
+      "fresh and authored Data ED2 rows compile byte 157 as deterministic zero",
       "Data ED parse uses the 426-byte runtime stride; export restores unchanged imported rows and trailing bytes only from the compatibility annex",
       "fresh and authored Data ED rows compile byte 103 as deterministic zero",
       "prompt ids resolve to Data SD2",

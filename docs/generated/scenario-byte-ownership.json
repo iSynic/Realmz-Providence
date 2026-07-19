@@ -38,8 +38,8 @@
   "summary": {
     "containerCount": 57,
     "statusCounts": {
-      "decoded-writable": 24,
-      "mixed-writable-preserved": 11,
+      "decoded-writable": 25,
+      "mixed-writable-preserved": 10,
       "preserved-known": 5,
       "understood-resource-container": 12,
       "runtime-cache": 1,
@@ -47,8 +47,8 @@
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 918102973,
-      "mixed-writable-preserved": 26837500,
+      "decoded-writable": 934155373,
+      "mixed-writable-preserved": 10785100,
       "preserved-known": 98410,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
@@ -519,7 +519,7 @@
     {
       "container": "Data ED2",
       "authorFacingName": "Complex encounter records",
-      "coverageStatus": "mixed-writable-preserved",
+      "coverageStatus": "decoded-writable",
       "role": "supported-binary",
       "observedScenarioCount": 35,
       "observedByteSizes": [
@@ -553,56 +553,11 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 96,
-          "endExclusive": 96,
-          "status": "decoded-writable",
-          "field": "Encounter actions",
-          "internal": "code[32]/id[32]",
-          "writerGate": "docs/generated/encounter-shop-writer-gates.json"
-        },
-        {
-          "start": 96,
-          "length": 8,
-          "endExclusive": 104,
-          "status": "decoded-writable",
-          "field": "Choice and word results",
-          "internal": "choiceResults/wordResults",
-          "writerGate": "docs/generated/encounter-shop-writer-gates.json"
-        },
-        {
-          "start": 104,
-          "length": 47,
-          "endExclusive": 151,
-          "status": "preserved-known",
-          "field": "Compatibility bytes",
-          "internal": "raw[104..151]",
-          "writerGate": "docs/generated/encounter-shop-writer-gates.json"
-        },
-        {
-          "start": 151,
-          "length": 6,
-          "endExclusive": 157,
-          "status": "decoded-writable",
-          "field": "Encounter outcome fields",
-          "internal": "canBackOut/thief/maxTimes/casteSuccess/thiefSuccess/thiefFail",
-          "writerGate": "docs/generated/encounter-shop-writer-gates.json"
-        },
-        {
-          "start": 157,
-          "length": 1,
-          "endExclusive": 158,
-          "status": "preserved-known",
-          "field": "Compatibility byte",
-          "internal": "raw[157]",
-          "writerGate": "docs/generated/encounter-shop-writer-gates.json"
-        },
-        {
-          "start": 158,
-          "length": 362,
+          "length": 520,
           "endExclusive": 520,
           "status": "decoded-writable",
-          "field": "Prompt and inline encounter text",
-          "internal": "prompt/texts[9]",
+          "field": "Complete complex encounter row",
+          "internal": "semantic fields plus deterministic alignment padding",
           "writerGate": "docs/generated/encounter-shop-writer-gates.json"
         }
       ],
@@ -612,7 +567,7 @@
         "docs/generated/encounter-record-evidence.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
-      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Data ED3",

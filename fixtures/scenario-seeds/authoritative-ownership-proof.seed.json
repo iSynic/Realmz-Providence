@@ -45,6 +45,32 @@
       "casteSuccess": 0
     }
   ],
+  "complexEncounters": [
+    {
+      "key": "ownership-complex-encounter",
+      "id": 0,
+      "prompt": "ownership-message",
+      "physicalActions": ["Inspect"],
+      "requiredPhysicalActions": [1],
+      "physicalResult": 1,
+      "word": { "text": "providence", "result": 2 },
+      "spells": [
+        { "spell": 16, "result": 3 }
+      ],
+      "items": [
+        { "item": "ownership-token", "result": 4 }
+      ],
+      "results": [
+        { "result": 1, "steps": [{ "kind": "message", "message": "ownership-message" }] },
+        { "result": 2, "steps": [{ "kind": "message", "message": "ownership-message" }] },
+        { "result": 3, "steps": [{ "kind": "message", "message": "ownership-message" }] },
+        { "result": 4, "steps": [{ "kind": "message", "message": "ownership-message" }] }
+      ],
+      "canBackOut": true,
+      "maxTimes": 1,
+      "casteSuccess": 0
+    }
+  ],
   "battles": [
     {
       "key": "ownership-battle",

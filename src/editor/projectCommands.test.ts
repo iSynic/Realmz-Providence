@@ -68,6 +68,24 @@ describe("project command facade", () => {
     expect(next.simpleEncounters[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh complex encounters from semantic fields without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Complex Encounter");
+
+    const next = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create complex encounter",
+      recordType: "complexEncounter",
+      id: 4
+    });
+
+    expect(next.complexEncounters).toHaveLength(1);
+    expect(next.complexEncounters[0].texts).toHaveLength(9);
+    expect(next.complexEncounters[0].spellIds).toHaveLength(10);
+    expect(next.complexEncounters[0].rawBytes).toBeUndefined();
+    expect(next.complexEncounters[0].choiceResults).toBeUndefined();
+    expect(next.complexEncounters[0].wordResults).toBeUndefined();
+  });
+
   it("creates fresh map records from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Player Map");
 

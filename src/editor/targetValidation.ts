@@ -192,8 +192,9 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       }
     } else {
       const complex = record as Project["complexEncounters"][number];
-      const actionResult = complex.actionResult ?? signedByteLike((complex.choiceResults ?? [])[0] ?? 0);
-      const wordResult = complex.wordResult ?? signedByteLike((complex.wordResults ?? [])[0] ?? 0);
+      if (complex.texts.length !== 9) issues.push(recordIssue("error", recordType, recordId, "complex-text-count", "Complex encounter has the wrong number of text slots.", "Realmz stores exactly nine complex-encounter text slots."));
+      const actionResult = complex.actionResult;
+      const wordResult = complex.wordResult;
       for (const [label, value] of [["action result", actionResult], ["word result", wordResult]] as const) {
         if (!isSignedByte(value)) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter ${label} is outside signed-byte range.`, `${label} has ${value}; Realmz stores this as one byte.`));
       }
@@ -204,7 +205,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
         ["item IDs", complex.itemIds ?? [], 5],
         ["item results", complex.itemResults ?? [], 5]
       ] as const) {
-        if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter has too many ${label}.`, `Realmz stores ${max} ${label}.`));
+        if (values.length !== max) issues.push(recordIssue("error", recordType, recordId, `complex-${label.replace(/\W+/g, "-")}`, `Complex encounter has the wrong number of ${label}.`, `Realmz stores exactly ${max} ${label}.`));
         for (const [slot, value] of values.entries()) {
           const isResult = label.includes("results") || label === "group flags";
           if (isResult ? !isSignedByte(value) : !isI16(value)) {
@@ -466,10 +467,6 @@ function isI16(value: number) {
 
 function isSignedByte(value: number) {
   return Number.isInteger(value) && value >= -128 && value <= 127;
-}
-
-function signedByteLike(value: number) {
-  return value > 127 ? value - 256 : value;
 }
 
 function asciiByteLength(value: string) {

@@ -595,7 +595,7 @@ export function normalizeBrowserProject(project: Project): Project {
     quantities: normalizedShopQuantities(record)
   }));
   project.simpleEncounters ??= [];
-  project.complexEncounters ??= [];
+  project.complexEncounters = (project.complexEncounters ?? []).map(normalizedComplexEncounter);
   project.thiefEncounters ??= [];
   project.timedEncounters ??= [];
   project.questLabels ??= [];
@@ -623,6 +623,36 @@ export function normalizeBrowserProject(project: Project): Project {
 
 function canonicalMapLevelName(levelType: Project["maps"][number]["levelType"], index: number) {
   return `${levelType === "dungeon" ? "Dungeon" : "Land"} level ${index}`;
+}
+
+function normalizedComplexEncounter(record: Project["complexEncounters"][number]): Project["complexEncounters"][number] {
+  const { choiceResults, wordResults, ...canonical } = record;
+  return {
+    ...canonical,
+    actionResult: normalizedComplexResult(record.actionResult, choiceResults),
+    wordResult: normalizedComplexResult(record.wordResult, wordResults),
+    groups: normalizedFixedArray(record.groups, 8, 0),
+    spellIds: normalizedFixedArray(record.spellIds, 10, 0),
+    spellResults: normalizedFixedArray(record.spellResults, 10, 0),
+    itemIds: normalizedFixedArray(record.itemIds, 5, 0),
+    itemResults: normalizedFixedArray(record.itemResults, 5, 0),
+    texts: normalizedFixedArray(record.texts, 9, "")
+  };
+}
+
+function normalizedComplexResult(value: number | undefined, obsoleteAlias: number[] | undefined) {
+  const aliasValue = obsoleteAlias?.[0];
+  if ((value === undefined || value === 0) && aliasValue !== undefined) return signedMigrationByte(aliasValue);
+  return value ?? 0;
+}
+
+function normalizedFixedArray<T>(values: T[] | undefined, length: number, fallback: T): T[] {
+  return Array.from({ length }, (_, index) => values?.[index] ?? fallback);
+}
+
+function signedMigrationByte(value: number) {
+  const byte = value & 0xff;
+  return byte & 0x80 ? byte - 0x100 : byte;
 }
 
 function normalizedMapRecordMarkers(record: Project["mapRecords"][number]) {
@@ -959,7 +989,13 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "simpleEncounter", encounter.id), errors, warnings);
   }
-  for (const encounter of project.complexEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
+  for (const encounter of project.complexEncounters ?? []) {
+    const rawBytes = encounter.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 520) {
+      errors.push(`Complex encounter ${encounter.id} has invalid 520-byte compatibility storage.`);
+    }
+    appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
+  }
   for (const encounter of project.thiefEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "thiefEncounter", encounter.id), errors, warnings);
   for (const encounter of project.timedEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "timedEncounter", encounter.id), errors, warnings);
   if (scenarioAssets.length > 0) {
