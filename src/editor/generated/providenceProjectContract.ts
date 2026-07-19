@@ -83,6 +83,16 @@ export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
 
+export type ProvidenceConfidence = "confirmed" | "source-backed" | "fixture-backed" | "inferred" | "unknown";
+
+export type ProvidenceProvenance = {
+  sourceFile: string;
+  recordIndex: number;
+  byteOffset: number;
+  byteLength: number;
+  confidence: ProvidenceConfidence;
+};
+
 export type ProvidenceSourceFile = {
   name: string;
   relativePath: string;
@@ -122,7 +132,7 @@ export type ProvidenceScenarioShell = {
   trailingBytes: number[];
   rawBytes?: number[];
   authored?: boolean;
-  provenance?: import("../types").Provenance | null;
+  provenance?: ProvidenceProvenance | null;
 };
 
 export type ProvidenceScenarioSupportFile = {
@@ -131,7 +141,7 @@ export type ProvidenceScenarioSupportFile = {
   divinityStringSoundId?: number | null;
   rawBytes?: number[];
   authored?: boolean;
-  provenance?: import("../types").Provenance | null;
+  provenance?: ProvidenceProvenance | null;
 };
 
 export type ProvidenceScenarioContactInfo = {
@@ -147,7 +157,7 @@ export type ProvidenceScenarioContactInfo = {
   description: string;
   rawBytes?: number[];
   authored?: boolean;
-  provenance?: import("../types").Provenance | null;
+  provenance?: ProvidenceProvenance | null;
 };
 
 export type ProvidenceScenarioRestrictions = {
@@ -158,7 +168,7 @@ export type ProvidenceScenarioRestrictions = {
   bannedCastes: number[];
   rawBytes?: number[];
   authored?: boolean;
-  provenance?: import("../types").Provenance | null;
+  provenance?: ProvidenceProvenance | null;
 };
 
 export type ProvidenceGlobalMacroHook = {
@@ -173,7 +183,7 @@ export type ProvidenceScenarioGlobalMacroHooks = {
   slots: ProvidenceGlobalMacroHook[];
   rawBytes?: number[];
   authored?: boolean;
-  provenance?: import("../types").Provenance | null;
+  provenance?: ProvidenceProvenance | null;
 };
 
 export type ProvidenceScenarioMeta = {

@@ -100,6 +100,26 @@ pub enum SourceFileRole {
     Unknown,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Confidence {
+    Confirmed,
+    SourceBacked,
+    FixtureBacked,
+    Inferred,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Provenance {
+    pub source_file: String,
+    pub record_index: usize,
+    pub byte_offset: usize,
+    pub byte_length: usize,
+    pub confidence: Confidence,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceFile {
@@ -143,7 +163,7 @@ pub struct ScenarioShell {
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]
-    pub provenance: Option<crate::project::Provenance>,
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -159,7 +179,7 @@ pub struct ScenarioSupportFile {
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]
-    pub provenance: Option<crate::project::Provenance>,
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -182,7 +202,7 @@ pub struct ScenarioContactInfo {
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]
-    pub provenance: Option<crate::project::Provenance>,
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -200,7 +220,7 @@ pub struct ScenarioRestrictions {
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]
-    pub provenance: Option<crate::project::Provenance>,
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -222,7 +242,7 @@ pub struct ScenarioGlobalMacroHooks {
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]
-    pub provenance: Option<crate::project::Provenance>,
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

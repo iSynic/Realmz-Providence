@@ -1,4 +1,4 @@
-import { BenchmarkReport, ItemTextRecord, Project, ScenarioShell, ValidationReport } from "../types";
+import { BenchmarkReport, ItemTextRecord, Project, RuleNames, ScenarioShell, ValidationReport } from "../types";
 import { BrowserProjectSource, BrowserRawSourceSnapshot, BrowserScenarioSource, SUPPORTED_WRITE_FILES, readProjectPackage, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
@@ -697,7 +697,7 @@ function backfillTilesetMetadata(project: Project) {
   }
 }
 
-function parseBrowserRuleNames(files: Map<string, Uint8Array>) {
+function parseBrowserRuleNames(files: Map<string, Uint8Array>): RuleNames {
   let ruleNames = defaultRuleNames();
   for (const [name, bytes] of files) {
     const normalized = name.replace(/\\/g, "/").toLowerCase();

@@ -3,6 +3,7 @@ import {
   Alignment,
   BattleRecord,
   ComplexEncounterRecord,
+  Confidence,
   Diagnostic,
   EncounterActionRow,
   ExtraCodeRow,
@@ -17,6 +18,7 @@ import {
   MonsterSet,
   MonsterSetId,
   OptionLabelRecord,
+  Provenance,
   RandomLevel,
   ScenarioItemRecord,
   ScenarioCasteOverride,
@@ -1446,7 +1448,7 @@ function customLandlookFallbackBaseTile(landlook: number) {
   return landlook >= 6 && landlook <= 8 ? 156 : null;
 }
 
-function provenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number, confidence: string) {
+function provenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number, confidence: Confidence): Provenance {
   return { sourceFile, recordIndex, byteOffset, byteLength, confidence };
 }
 

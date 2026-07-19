@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    GlobalMacroHook, ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioMeta,
-    ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
+    Confidence, GlobalMacroHook, Provenance, ScenarioContactInfo, ScenarioGlobalMacroHooks,
+    ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -803,26 +803,6 @@ pub enum RenderMode {
     OutdoorLandlook,
     DungeonTopDown,
     AbstractFallback,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Provenance {
-    pub source_file: String,
-    pub record_index: usize,
-    pub byte_offset: usize,
-    pub byte_length: usize,
-    pub confidence: Confidence,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Confidence {
-    Confirmed,
-    SourceBacked,
-    FixtureBacked,
-    Inferred,
-    Unknown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

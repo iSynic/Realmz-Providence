@@ -1,7 +1,9 @@
 import type {
+  ProvidenceConfidence,
   ProvidenceGlobalMacroHook,
   ProvidenceProjectOrigin,
   ProvidenceProjectSource,
+  ProvidenceProvenance,
   ProvidenceScenarioContactInfo,
   ProvidenceScenarioGlobalMacroHooks,
   ProvidenceScenarioMeta,
@@ -11,6 +13,9 @@ import type {
   ProvidenceSourceFile,
   ProvidenceSourceFileRole
 } from "./generated/providenceProjectContract";
+
+export type Confidence = ProvidenceConfidence;
+export type Provenance = ProvidenceProvenance;
 
 export type LevelType = "land" | "dungeon";
 export type EditorTab =
@@ -1644,14 +1649,6 @@ export type ResourceAsset = {
 
 export type AtlasEntry = { image: HTMLImageElement; url: string; asset: TilesetAsset };
 export type IconEntry = { image: HTMLImageElement; url: string; id: number };
-export type Provenance = {
-  sourceFile: string;
-  recordIndex: number;
-  byteOffset: number;
-  byteLength: number;
-  confidence: string;
-};
-
 export type Alignment = { source: string; recordBytes: number; count: number; trailingBytes: number; status: string };
 export type Diagnostic = { severity: string; code: string; message: string; source: string | null };
 

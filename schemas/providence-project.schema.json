@@ -173,7 +173,7 @@
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [
-            { "$ref": "#/$defs/provenanceReference" },
+            { "$ref": "#/$defs/provenance" },
             { "type": "null" }
           ]
         }
@@ -205,7 +205,7 @@
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [
-            { "$ref": "#/$defs/provenanceReference" },
+            { "$ref": "#/$defs/provenance" },
             { "type": "null" }
           ]
         }
@@ -234,7 +234,7 @@
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [
-            { "$ref": "#/$defs/provenanceReference" },
+            { "$ref": "#/$defs/provenance" },
             { "type": "null" }
           ]
         }
@@ -258,7 +258,7 @@
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [
-            { "$ref": "#/$defs/provenanceReference" },
+            { "$ref": "#/$defs/provenance" },
             { "type": "null" }
           ]
         }
@@ -292,17 +292,32 @@
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [
-            { "$ref": "#/$defs/provenanceReference" },
+            { "$ref": "#/$defs/provenance" },
             { "type": "null" }
           ]
         }
       }
     },
-    "provenanceReference": {
+    "confidence": {
+      "type": "string",
+      "enum": ["confirmed", "source-backed", "fixture-backed", "inferred", "unknown"],
+      "x-providence-typescript-name": "ProvidenceConfidence",
+      "x-providence-rust-name": "Confidence",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize"]
+    },
+    "provenance": {
       "type": "object",
-      "x-providence-external": true,
-      "x-providence-typescript-name": "import(\"../types\").Provenance",
-      "x-providence-rust-name": "crate::project::Provenance"
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceProvenance",
+      "x-providence-rust-name": "Provenance",
+      "required": ["sourceFile", "recordIndex", "byteOffset", "byteLength", "confidence"],
+      "properties": {
+        "sourceFile": { "type": "string" },
+        "recordIndex": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "byteOffset": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "byteLength": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "confidence": { "$ref": "#/$defs/confidence" }
+      }
     },
     "canonicalObject": {
       "type": "object",

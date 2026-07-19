@@ -51,6 +51,8 @@ const scenarioDefinitionNames = [
 ];
 const scenarioDefinitions = scenarioDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioMetaSchema = schema.$defs?.scenarioMeta ?? {};
+const confidenceSchema = schema.$defs?.confidence ?? {};
+const provenanceSchema = schema.$defs?.provenance ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -69,12 +71,24 @@ expect(sourceFileSchema.properties?.role?.$ref === "#/$defs/sourceFileRole", "so
 expect(sameArray(sourceFileRoleValues, ["supported-binary", "pass-through", "resource-fork", "unknown"]), "source-file roles must match the importer compatibility vocabulary");
 expect(schema.properties?.scenario?.$ref === "#/$defs/scenarioMeta", "project scenario must reference the canonical scenario DTO");
 expect(sameArray(scenarioMetaSchema.required ?? [], ["name", "projectPath", "importedAt"]), "scenario identity must require name, projectPath, and importedAt");
+expectSameArray(confidenceSchema.enum ?? [], ["confirmed", "source-backed", "fixture-backed", "inferred", "unknown"], "Provenance confidence vocabulary");
+expect(provenanceSchema.type === "object", "provenance must be an object schema");
+expect(provenanceSchema.additionalProperties === false, "provenance must reject unknown fields");
+expectSameArray(Object.keys(provenanceSchema.properties ?? {}), ["sourceFile", "recordIndex", "byteOffset", "byteLength", "confidence"], "Provenance field inventory");
+expectSameArray(provenanceSchema.required ?? [], Object.keys(provenanceSchema.properties ?? {}), "Provenance required field inventory");
+expect(provenanceSchema.properties?.confidence?.$ref === "#/$defs/confidence", "provenance confidence must reference the canonical confidence enum");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
   expect(definition.additionalProperties === false, `${definitionName} must reject unknown fields`);
   expect(typeof definition["x-providence-typescript-name"] === "string", `${definitionName} must declare its TypeScript name`);
   expect(typeof definition["x-providence-rust-name"] === "string", `${definitionName} must declare its Rust name`);
+}
+const scenarioProvenanceOwners = scenarioDefinitions
+  .filter((definition) => Object.hasOwn(definition.properties ?? {}, "provenance"));
+expect(scenarioProvenanceOwners.length === 5, "five scenario startup DTOs must carry provenance");
+for (const definition of scenarioProvenanceOwners) {
+  expect(definition.properties.provenance?.oneOf?.[0]?.$ref === "#/$defs/provenance", `${definition["x-providence-rust-name"]} must reference canonical provenance`);
 }
 expect(Object.hasOwn(schema.$defs?.scenarioShell?.properties ?? {}, "rawBytes"), "scenarioShell must expose imported rawBytes as compatibility-only data");
 const compatibilityScenarioFields = scenarioDefinitions.flatMap((definition) =>
@@ -105,6 +119,8 @@ for (const alias of [
   "export type ProjectSource = ProvidenceProjectSource;",
   "export type SourceFile = ProvidenceSourceFile;",
   "export type SourceFileRole = ProvidenceSourceFileRole;",
+  "export type Confidence = ProvidenceConfidence;",
+  "export type Provenance = ProvidenceProvenance;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -113,12 +129,13 @@ for (const alias of [
   "export type GlobalMacroHook = ProvidenceGlobalMacroHook;",
   "export type ScenarioGlobalMacroHooks = ProvidenceScenarioGlobalMacroHooks;"
 ]) {
-  expect(typesSource.includes(alias), `types.ts must consume generated source contract alias: ${alias}`);
+  expect(typesSource.includes(alias), `types.ts must consume generated project contract alias: ${alias}`);
 }
 expect(typesSource.includes('from "./generated/providenceProjectContract";'), "types.ts must import the generated source DTOs");
 expect(!typesSource.includes('export type ProjectOrigin = "authored"'), "types.ts must not handwrite ProjectOrigin");
 expect(!typesSource.includes("export type ProjectSource = {"), "types.ts must not handwrite ProjectSource");
 expect(!typesSource.includes("export type SourceFile = {"), "types.ts must not handwrite SourceFile");
+expect(!typesSource.includes("export type Provenance = {"), "types.ts must not handwrite Provenance");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!typesSource.includes(`export type ${scenarioType} = {`), `types.ts must not handwrite ${scenarioType}`);
 }
@@ -127,8 +144,10 @@ const rustGeneratedReExports = [...rustProjectSource.matchAll(/pub use crate::ge
   .flatMap((match) => match[1].split(",").map((value) => value.trim()).filter(Boolean));
 expect(rustGeneratedReExports.length > 0, "project.rs must re-export the generated project DTOs");
 expectSameSet(rustGeneratedReExports, [
+  "Confidence",
   "GlobalMacroHook",
   "ProjectOrigin",
+  "Provenance",
   "ScenarioContactInfo",
   "ScenarioGlobalMacroHooks",
   "ScenarioMeta",
@@ -143,12 +162,16 @@ expect(!rustProjectSource.includes("pub struct SourceSnapshot {"), "project.rs m
 expect(!rustProjectSource.includes("pub enum ProjectOrigin {"), "project.rs must not handwrite ProjectOrigin");
 expect(!rustProjectSource.includes("pub struct SourceFile {"), "project.rs must not handwrite SourceFile");
 expect(!rustProjectSource.includes("pub enum SourceFileRole {"), "project.rs must not handwrite SourceFileRole");
+expect(!rustProjectSource.includes("pub struct Provenance {"), "project.rs must not handwrite Provenance");
+expect(!rustProjectSource.includes("pub enum Confidence {"), "project.rs must not handwrite Confidence");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!rustProjectSource.includes(`pub struct ${scenarioType} {`), `project.rs must not handwrite ${scenarioType}`);
 }
 
-const tsOutput = renderTypeScript(schemaVersion, projectFields, derivedFields, sourceSchema, sourceFileSchema, projectOriginSchema, sourceFileRoleSchema, scenarioDefinitions);
-const rustOutput = renderRust(schemaVersion, projectFields, derivedFields, sourceSchema, sourceFileSchema, projectOriginSchema, sourceFileRoleSchema, scenarioDefinitions);
+const tsOutput = renderTypeScript(schemaVersion, projectFields, derivedFields, sourceSchema, sourceFileSchema, projectOriginSchema, sourceFileRoleSchema, confidenceSchema, provenanceSchema, scenarioDefinitions);
+const rustOutput = renderRust(schemaVersion, projectFields, derivedFields, sourceSchema, sourceFileSchema, projectOriginSchema, sourceFileRoleSchema, confidenceSchema, provenanceSchema, scenarioDefinitions);
+expect(!tsOutput.includes('import("../types")'), "generated TypeScript contract must not depend on handwritten project types");
+expect(!rustOutput.includes("crate::project::Provenance"), "generated Rust contract must not depend on handwritten provenance");
 const tsImport = 'import { PROVIDENCE_PROJECT_SCHEMA_VERSION } from "./generated/providenceProjectContract";';
 const tsAlias = "export const PROJECT_SCHEMA_VERSION = PROVIDENCE_PROJECT_SCHEMA_VERSION;";
 expect(projectOriginSource.includes(tsImport), "projectOrigin.ts must consume the generated TypeScript schema version");
@@ -228,7 +251,7 @@ function sameArray(left, right) {
   return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
-function renderTypeScript(version, fields, derived, source, sourceFile, projectOrigin, sourceFileRole, scenarioTypes) {
+function renderTypeScript(version, fields, derived, source, sourceFile, projectOrigin, sourceFileRole, confidence, provenance, scenarioTypes) {
   const runtimeSourceName = source["x-providence-typescript-name"];
   const persistedSourceName = source["x-providence-typescript-persisted-name"];
   const sourceFileName = sourceFile["x-providence-typescript-name"];
@@ -243,6 +266,8 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_SCENARIO_FIELDS = ${JSON.stringify(Object.keys(scenarioMetaSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
+    renderTypeScriptEnum(confidence) + `\n` +
+    renderTypeScriptObject(provenance["x-providence-typescript-name"], provenance, new Set()) + `\n` +
     renderTypeScriptObject(sourceFileName, sourceFile, new Set()) + `\n` +
     renderTypeScriptObject(persistedSourceName, source, new Set()) + `\n` +
     `/** Migration-tolerant runtime form; persisted schema-v5 projects require origin. */\n` +
@@ -256,7 +281,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export type ProvidenceDerivedProjectField = typeof PROVIDENCE_DERIVED_PROJECT_FIELDS[number];\n`;
 }
 
-function renderRust(version, fields, derived, source, sourceFile, projectOrigin, sourceFileRole, scenarioTypes) {
+function renderRust(version, fields, derived, source, sourceFile, projectOrigin, sourceFileRole, confidence, provenance, scenarioTypes) {
   const renderArray = (values) => values.map((value) => `    ${JSON.stringify(value)},`).join("\n");
   const renderCompactArray = (values) => values.map((value) => JSON.stringify(value)).join(", ");
   return `// Generated by scripts/generate_providence_project_contract.mjs; do not edit.\n` +
@@ -275,6 +300,8 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_SCENARIO_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioMetaSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
+    renderRustEnum(confidence) + `\n` +
+    renderRustStruct(provenance) + `\n` +
     renderRustStruct(sourceFile) + `\n` +
     renderRustStruct(source) + `\n` +
     scenarioTypes.map(renderRustStruct).join("\n");
