@@ -938,7 +938,13 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (!/^[\x00-\x7F]*$/.test(option.text)) warnings.push(`Option label ${option.id} contains non-ASCII text and may not render as intended.`);
   }
   validateRulesRecords(project, errors, warnings);
-  for (const battle of project.battles ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
+  for (const battle of project.battles ?? []) {
+    const rawBytes = battle.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 346) {
+      errors.push(`Battle ${battle.id} has invalid 346-byte compatibility storage.`);
+    }
+    appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
+  }
   for (const description of project.monsterDescriptions ?? []) {
     if (description.text.length > 255) errors.push(`Monster description ${description.id} is too long for Realmz's 255-character description slot.`);
     if (!/^[\x00-\x7F]*$/.test(description.text)) warnings.push(`Monster description ${description.id} contains non-ASCII text and may not render as intended.`);

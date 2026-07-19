@@ -27,6 +27,14 @@
     { "id": 0, "text": "Proceed" },
     { "id": 1, "text": "Withdraw" }
   ],
+  "battles": [
+    {
+      "key": "ownership-battle",
+      "id": 0,
+      "placements": [{ "x": 6, "y": 6, "monster": 1 }],
+      "dist": 3
+    }
+  ],
   "quests": [
     { "key": "ownership-proven", "label": "Providence ownership proof triggered" }
   ],

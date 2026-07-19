@@ -9,6 +9,7 @@
     "fixedRecordWriters": [
       "src-tauri/src/realmz/messages.rs",
       "src-tauri/src/realmz/option_labels.rs",
+      "src-tauri/src/realmz/battles.rs",
       "src-tauri/src/realmz/combat.rs",
       "src-tauri/src/realmz/economy.rs",
       "src-tauri/src/realmz/encounters.rs",
@@ -702,8 +703,11 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/combat.rs:battle_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz/battles.rs:fresh_battle_compiles_complete_semantic_row",
+        "src-tauri/src/realmz/battles.rs:imported_battle_compiles_without_record_byte_identity",
+        "src-tauri/src/exporter.rs:imported_battle_export_reads_legacy_bytes_only_from_annex",
+        "src-tauri/src/realmz/battles.rs:write_battles",
+        "src-tauri/src/realmz/battles.rs:parse_battles",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
@@ -712,17 +716,41 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/combat.rs:battle_storage_mutates_only_owned_fields",
-          "file": "src-tauri/src/realmz/combat.rs",
-          "anchor": "battle_storage_mutates_only_owned_fields",
+          "reference": "src-tauri/src/realmz/battles.rs:fresh_battle_compiles_complete_semantic_row",
+          "file": "src-tauri/src/realmz/battles.rs",
+          "anchor": "fresh_battle_compiles_complete_semantic_row",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
-          "file": "src-tauri/src/realmz.rs",
-          "anchor": "target_records_round_trip_full_records",
+          "reference": "src-tauri/src/realmz/battles.rs:imported_battle_compiles_without_record_byte_identity",
+          "file": "src-tauri/src/realmz/battles.rs",
+          "anchor": "imported_battle_compiles_without_record_byte_identity",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/exporter.rs:imported_battle_export_reads_legacy_bytes_only_from_annex",
+          "file": "src-tauri/src/exporter.rs",
+          "anchor": "imported_battle_export_reads_legacy_bytes_only_from_annex",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/battles.rs:write_battles",
+          "file": "src-tauri/src/realmz/battles.rs",
+          "anchor": "write_battles",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/battles.rs:parse_battles",
+          "file": "src-tauri/src/realmz/battles.rs",
+          "anchor": "parse_battles",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -784,6 +812,13 @@
           "type": "i8"
         },
         {
+          "field": "Alignment padding",
+          "internal": "padding",
+          "offset": 339,
+          "bytes": 1,
+          "type": "deterministic zero"
+        },
+        {
           "field": "Before-combat message",
           "internal": "messagebefore",
           "offset": 340,
@@ -805,17 +840,9 @@
           "type": "i16be"
         }
       ],
-      "preservedRanges": [
-        {
-          "field": "Alignment padding",
-          "internal": "padding",
-          "offset": 339,
-          "bytes": 1,
-          "type": "raw-preserved"
-        }
-      ],
-      "partialOnly": true,
-      "preservationPolicy": "This gate covers battle records only; monster template writers and encounter routing stay outside this batch."
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Fresh and authored battle records compile all 346 bytes from canonical semantics, including deterministic zero alignment padding, without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex. Monster template writers and encounter routing stay outside this batch."
     },
     {
       "container": "Data TD3",

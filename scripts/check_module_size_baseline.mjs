@@ -56,6 +56,7 @@ const MODULE_BASELINES = [
   { path: "src-tauri/src/realmz/action_points.rs", maximum: 583, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/assembly.rs", maximum: 444, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/asset_catalog.rs", maximum: 173, owner: "ISY-320" },
+  { path: "src-tauri/src/realmz/battles.rs", maximum: 150, owner: "authoritative-compiler" },
   { path: "src-tauri/src/realmz/combat.rs", maximum: 415, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/economy.rs", maximum: 308, owner: "ISY-320" },
   { path: "src-tauri/src/realmz/encounters.rs", maximum: 498, owner: "ISY-320" },

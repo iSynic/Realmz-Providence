@@ -307,7 +307,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.battles.length > 0) {
     writes.push({
       path: "Data BD",
-      bytes: preserveMalformedRawTail("Data BD", writeBattles(project.battles), BATTLE_RECORD_BYTES, annex)
+      bytes: writeBattlesForExport(project.battles, annex)
     });
   }
   if (project.monsters.length > 0) {
@@ -898,14 +898,18 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
 }
 
 function writeMessagesForExport(messages: Project["messages"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedTextRows("Data SD2", writeMessages(messages), messages, MESSAGE_RECORD_BYTES, annex);
+  return preserveImportedFixedRows("Data SD2", writeMessages(messages), messages, MESSAGE_RECORD_BYTES, annex);
 }
 
 function writeOptionLabelsForExport(options: Project["optionLabels"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedTextRows("Data OD", writeOptionLabels(options), options, OPTION_LABEL_RECORD_BYTES, annex);
+  return preserveImportedFixedRows("Data OD", writeOptionLabels(options), options, OPTION_LABEL_RECORD_BYTES, annex);
 }
 
-function preserveImportedTextRows(
+function writeBattlesForExport(battles: Project["battles"], annex: BrowserCompatibilityAnnex | null) {
+  return preserveImportedFixedRows("Data BD", writeBattles(battles), battles, BATTLE_RECORD_BYTES, annex);
+}
+
+function preserveImportedFixedRows(
   fileName: string,
   bytes: Uint8Array,
   records: Array<{ id: number; authored?: boolean }>,

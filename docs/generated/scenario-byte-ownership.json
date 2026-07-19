@@ -47,9 +47,9 @@
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 904546631,
+      "decoded-writable": 904564973,
       "mixed-writable-preserved": 40375500,
-      "preserved-known": 116752,
+      "preserved-known": 98410,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
       "custom-media-payload": 4733608,
@@ -100,29 +100,11 @@
       "byteRanges": [
         {
           "start": 0,
-          "length": 339,
-          "endExclusive": 339,
-          "status": "decoded-writable",
-          "field": "Battle setup fields",
-          "internal": "battle record fields",
-          "writerGate": "docs/generated/fixed-record-writer-gates.json"
-        },
-        {
-          "start": 339,
-          "length": 1,
-          "endExclusive": 340,
-          "status": "preserved-known",
-          "field": "Alignment padding",
-          "internal": "padding",
-          "writerGate": "docs/generated/fixed-record-writer-gates.json"
-        },
-        {
-          "start": 340,
-          "length": 6,
+          "length": 346,
           "endExclusive": 346,
           "status": "decoded-writable",
-          "field": "Battle text and macro links",
-          "internal": "message/macro fields",
+          "field": "Complete battle row",
+          "internal": "semantic fields plus deterministic alignment padding",
           "writerGate": "docs/generated/fixed-record-writer-gates.json"
         }
       ],

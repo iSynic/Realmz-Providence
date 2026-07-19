@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
+import { emptyBattle, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -289,6 +289,66 @@ describe("browser option-label writer", () => {
 
   it("rejects malformed compatibility storage", () => {
     expect(() => writeOptionLabels([{ ...emptyOptionLabel(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+  });
+});
+
+describe("browser battle writer", () => {
+  it("compiles a fresh record entirely from semantic fields", () => {
+    const record = {
+      ...emptyBattle(0),
+      grid: Array.from({ length: 13 * 13 }, (_, slot) => slot === 84 ? -7 : 0),
+      dist: 3,
+      messageBefore: 4,
+      messageAfter: 5,
+      battleMacro: -6
+    };
+
+    expect(record.rawBytes).toBeUndefined();
+    const output = writeBattles([record]);
+
+    expect(output).toHaveLength(346);
+    expect(i16(output, 84 * 2)).toBe(-7);
+    expect(output[338]).toBe(3);
+    expect(output[339]).toBe(0);
+    expect(i16(output, 340)).toBe(4);
+    expect(i16(output, 342)).toBe(5);
+    expect(i16(output, 344)).toBe(-6);
+  });
+
+  it("recompiles imported semantics without record byte identity", () => {
+    const input = new Uint8Array(346);
+    setI16(input, 12 * 2, 9);
+    input[338] = 2;
+    input[339] = 0xa5;
+    setI16(input, 340, 10);
+    setI16(input, 342, 11);
+    setI16(input, 344, -12);
+    const imported = parseScenarioBuffers(new Map([["Data BD", input]])).battles[0];
+
+    const output = writeBattles([{ ...imported, rawBytes: new Array(346).fill(0x5a) }]);
+
+    expect(i16(output, 12 * 2)).toBe(9);
+    expect(output[338]).toBe(2);
+    expect(output[339]).toBe(0);
+    expect(i16(output, 340)).toBe(10);
+    expect(i16(output, 342)).toBe(11);
+    expect(i16(output, 344)).toBe(-12);
+    expect(output).not.toEqual(input);
+  });
+
+  it("allows imported over-cap rows to compile before compatibility-annex overlay", () => {
+    const input = new Uint8Array(346);
+    for (let slot = 0; slot < 101; slot += 1) setI16(input, slot * 2, 1);
+    const imported = parseScenarioBuffers(new Map([["Data BD", input]])).battles[0];
+
+    expect(writeBattles([imported])).toEqual(input);
+    expect(() => writeBattles([{ ...imported, authored: true }]))
+      .toThrow("at most 100 loaded monsters");
+  });
+
+  it("rejects malformed compatibility storage", () => {
+    expect(() => writeBattles([{ ...emptyBattle(0), rawBytes: [1] }]))
       .toThrow("invalid compatibility byte storage");
   });
 });

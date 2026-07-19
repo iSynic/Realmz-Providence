@@ -103,19 +103,22 @@ export function writeOptionLabels(records: OptionLabelRecord[]) {
 
 export function writeBattles(records: BattleRecord[]) {
   return writeFixedRecords(records, BATTLE_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === BATTLE_RECORD_BYTES) return;
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== BATTLE_RECORD_BYTES) {
+      throw new Error(`Battle ${record.id} has invalid compatibility byte storage`);
+    }
     if (record.grid.length !== BATTLE_GRID_SLOTS) {
       throw new Error(`Battle ${record.id} must have a 13 x 13 monster grid`);
     }
     const placedMonsters = record.grid.filter((value) => value !== 0).length;
-    if (placedMonsters > BATTLE_RUNTIME_MONSTER_LIMIT) {
+    if (record.authored && placedMonsters > BATTLE_RUNTIME_MONSTER_LIMIT) {
       throw new Error(`Battle ${record.id} places ${placedMonsters} monsters; Realmz runtime supports at most ${BATTLE_RUNTIME_MONSTER_LIMIT} loaded monsters`);
     }
     for (let slot = 0; slot < BATTLE_GRID_SLOTS; slot += 1) {
       writeI16(target, slot * 2, record.grid[slot] ?? 0);
     }
     target[338] = record.dist & 0xff;
+    target[339] = 0;
     writeI16(target, 340, record.messageBefore);
     writeI16(target, 342, record.messageAfter);
     writeI16(target, 344, record.battleMacro);

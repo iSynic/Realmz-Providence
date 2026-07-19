@@ -75,8 +75,10 @@ sourceOptionLabels[51] = "Q".charCodeAt(0);
 const sourceBattles = new Uint8Array(692);
 sourceBattles[0] = 0xaa;
 sourceBattles[1] = 0xbb;
+sourceBattles[339] = 0xa5;
 sourceBattles[346] = 0xcc;
 sourceBattles[347] = 0xdd;
+sourceBattles[346 + 339] = 0xb6;
 const sourceMonsters = new Uint8Array(420);
 sourceMonsters[0] = 0x11;
 sourceMonsters[1] = 0x22;
@@ -337,8 +339,8 @@ battleGrid[168] = -3;
 const battleUpdateProject = {
   ...project,
   battles: [
-    { id: 0, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, rawBytes: Array.from(sourceBattles.slice(0, 346)), authored: false },
-    { id: 1, grid: battleGrid, dist: -2, messageBefore: 12, messageAfter: 13, battleMacro: 14, rawBytes: Array.from(sourceBattles.slice(346, 692)), authored: true }
+    { id: 0, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, rawBytes: new Array(346).fill(0x11), authored: false },
+    { id: 1, grid: battleGrid, dist: -2, messageBefore: 12, messageAfter: 13, battleMacro: 14, rawBytes: new Array(346).fill(0x22), authored: true }
   ]
 };
 const battleUpdate = createBrowserScenarioPackageZip(battleUpdateProject, rawSources, "mac-classic-folder");
@@ -347,8 +349,9 @@ expect(battleUpdate.report.writtenFiles.includes("Data BD"), "Authored battles s
 expect(!battleUpdate.report.passThroughFiles.includes("Data BD"), "Written Data BD should not be reported as pass-through");
 const writtenBattles = battleUpdatedFiles.get("Data BD");
 expect(writtenBattles?.byteLength === 692, "Written Data BD should retain source row count");
-expect(bytesEqual(writtenBattles?.slice(0, 346), sourceBattles.slice(0, 346)), "Unauthored battle row should remain byte-identical");
-expect(bytesEqual(writtenBattles?.slice(346, 692), battleRow({ grid: battleGrid, dist: -2, messageBefore: 12, messageAfter: 13, battleMacro: 14 })), "Authored battle row should encode combat fields");
+expect(bytesEqual(writtenBattles?.slice(0, 346), sourceBattles.slice(0, 346)), "Unauthored battle row should preserve legacy bytes from the annex");
+expect(bytesEqual(writtenBattles?.slice(346, 692), battleRow({ grid: battleGrid, dist: -2, messageBefore: 12, messageAfter: 13, battleMacro: 14 })), "Authored battle row should compile all semantic fields without embedded raw-byte identity");
+expect(writtenBattles?.[346 + 339] === 0, "Authored battle alignment padding should be deterministic zero");
 
 const authoredMonster = monsterRecord(1, {
   hitDice: 9,

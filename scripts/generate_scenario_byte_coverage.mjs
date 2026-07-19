@@ -349,6 +349,15 @@ const OPTION_LABEL_FIXED_RECORD_WRITER_EVIDENCE = [
   "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets"
 ];
 
+const BATTLE_FIXED_RECORD_WRITER_EVIDENCE = [
+  "src-tauri/src/realmz/battles.rs:fresh_battle_compiles_complete_semantic_row",
+  "src-tauri/src/realmz/battles.rs:imported_battle_compiles_without_record_byte_identity",
+  "src-tauri/src/exporter.rs:imported_battle_export_reads_legacy_bytes_only_from_annex",
+  "src-tauri/src/realmz/battles.rs:write_battles",
+  "src-tauri/src/realmz/battles.rs:parse_battles",
+  "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets"
+];
+
 const MAPS_STORAGE_WRITER_GATE_SPECS = [
   {
     container: "Data LD",
@@ -753,21 +762,18 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
     ownedFields: [
       { field: "Monster placement grid", internal: "battle[13][13]", offset: 0, bytes: 338, type: "i16be[169]" },
       { field: "Initial distance", internal: "dist", offset: 338, bytes: 1, type: "i8" },
+      { field: "Alignment padding", internal: "padding", offset: 339, bytes: 1, type: "deterministic zero" },
       { field: "Before-combat message", internal: "messagebefore", offset: 340, bytes: 2, type: "i16be" },
       { field: "After-combat message", internal: "messageafter", offset: 342, bytes: 2, type: "i16be" },
       { field: "Battle macro", internal: "battlemacro", offset: 344, bytes: 2, type: "i16be" }
     ],
-    preservedRanges: [
-      { field: "Alignment padding", internal: "padding", offset: 339, bytes: 1, type: "raw-preserved" }
-    ],
     evidence: [
-      "src-tauri/src/realmz/combat.rs:battle_storage_mutates_only_owned_fields",
-      ...TARGET_RECORD_WRITER_EVIDENCE,
+      ...BATTLE_FIXED_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/battle-record-evidence.json",
       "docs/format-evidence-cards/battle-record-runtime-anchors.md"
     ],
-    preservationPolicy: "This gate covers battle records only; monster template writers and encounter routing stay outside this batch."
+    preservationPolicy: "Fresh and authored battle records compile all 346 bytes from canonical semantics, including deterministic zero alignment padding, without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex. Monster template writers and encounter routing stay outside this batch."
   },
   {
     container: "Data TD3",
@@ -993,6 +999,7 @@ function buildFixedRecordWriterGates(aggregate) {
       fixedRecordWriters: [
         "src-tauri/src/realmz/messages.rs",
         "src-tauri/src/realmz/option_labels.rs",
+        "src-tauri/src/realmz/battles.rs",
         "src-tauri/src/realmz/combat.rs",
         "src-tauri/src/realmz/economy.rs",
         "src-tauri/src/realmz/encounters.rs",
@@ -2622,29 +2629,11 @@ function byteRangesForFile(file, layout) {
     return [
       {
         start: 0,
-        length: 339,
-        endExclusive: 339,
-        status: "decoded-writable",
-        field: "Battle setup fields",
-        internal: "battle record fields",
-        writerGate: "docs/generated/fixed-record-writer-gates.json"
-      },
-      {
-        start: 339,
-        length: 1,
-        endExclusive: 340,
-        status: "preserved-known",
-        field: "Alignment padding",
-        internal: "padding",
-        writerGate: "docs/generated/fixed-record-writer-gates.json"
-      },
-      {
-        start: 340,
-        length: 6,
+        length: 346,
         endExclusive: 346,
         status: "decoded-writable",
-        field: "Battle text and macro links",
-        internal: "message/macro fields",
+        field: "Complete battle row",
+        internal: "semantic fields plus deterministic alignment padding",
         writerGate: "docs/generated/fixed-record-writer-gates.json"
       }
     ];

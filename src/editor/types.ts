@@ -8,6 +8,7 @@ import type {
   ProvidenceMapRecord,
   ProvidenceMapRecordRect,
   ProvidenceMapRender,
+  ProvidenceBattleRecord,
   ProvidenceMessageRecord,
   ProvidenceOptionLabelRecord,
   ProvidenceProjectOrigin,
@@ -46,6 +47,7 @@ export type TreasureRecord = ProvidenceTreasureRecord;
 export type ShopRecord = ProvidenceShopRecord;
 export type MessageRecord = ProvidenceMessageRecord;
 export type OptionLabelRecord = ProvidenceOptionLabelRecord;
+export type BattleRecord = ProvidenceBattleRecord;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -695,18 +697,6 @@ export type ScenarioMeta = ProvidenceScenarioMeta;
 
 export type ScenarioStartupFields = Partial<ScenarioMeta>;
 export type RealmzTargetRecordKind = "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter" | "questLabel";
-
-export type BattleRecord = {
-  id: number;
-  grid: number[];
-  dist: number;
-  messageBefore: number;
-  messageAfter: number;
-  battleMacro: number;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
 
 export type MonsterRecord = {
   id: number;

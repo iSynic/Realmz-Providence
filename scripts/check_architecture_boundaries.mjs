@@ -385,6 +385,7 @@ async function checkStableFacades() {
   failures.push(...await requireTokens("src-tauri/src/realmz.rs", [
     "mod action_points;",
     "mod assembly;",
+    "mod battles;",
     "mod combat;",
     "mod economy;",
     "mod encounters;",
@@ -396,6 +397,7 @@ async function checkStableFacades() {
     "mod scenario;",
     "pub use action_points::",
     "pub use assembly::",
+    "pub use battles::",
     "pub use combat::",
     "pub use economy::",
     "pub use encounters::",

@@ -1,6 +1,7 @@
 mod action_points;
 mod assembly;
 mod asset_catalog;
+mod battles;
 mod combat;
 mod economy;
 mod encounters;
@@ -20,10 +21,10 @@ pub use action_points::{
     DOOR_LEVEL_BYTES, EXTRACODE_BYTES,
 };
 pub use assembly::{parse_scenario_buffers, ParsedScenario, SUPPORTED_WRITE_FILES, TRACKED_FILES};
+pub use battles::{parse_battles, write_battles, BATTLE_BYTES};
 pub use combat::{
-    parse_battles, parse_monster_descriptions, parse_monster_set, parse_monsters, write_battles,
-    write_monster_descriptions, write_monster_set, write_monsters, BATTLE_BYTES, MONSTER_BYTES,
-    MONSTER_DESCRIPTION_BYTES,
+    parse_monster_descriptions, parse_monster_set, parse_monsters, write_monster_descriptions,
+    write_monster_set, write_monsters, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES,
 };
 pub use economy::*;
 pub use encounters::{

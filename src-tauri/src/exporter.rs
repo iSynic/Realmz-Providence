@@ -2,9 +2,10 @@ use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot}
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
-    ItemTextRecord, LevelType, MessageRecord, MonsterIconOverride, MonsterIconOverrideSource,
-    OptionLabelRecord, ProvidenceProject, ScenarioCasteOverride, ScenarioRaceOverride,
-    ScenarioSpellOverride, ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    BattleRecord, ItemTextRecord, LevelType, MessageRecord, MonsterIconOverride,
+    MonsterIconOverrideSource, OptionLabelRecord, ProvidenceProject, ScenarioCasteOverride,
+    ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget, TargetCompatibilityBuckets,
+    TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -264,13 +265,7 @@ fn compile_realmz_scenario(
         crate::realmz::MAP_RECORD_BYTES,
         compatibility_annex,
     )?;
-    write_fixed_if_nonempty(
-        &mut manifest,
-        "Data BD",
-        write_battles(&project.battles)?,
-        crate::realmz::BATTLE_BYTES,
-        compatibility_annex,
-    )?;
+    write_battles_for_export(&mut manifest, &project.battles, compatibility_annex)?;
     write_fixed_if_nonempty(
         &mut manifest,
         "Data MD",
@@ -525,12 +520,21 @@ fn write_option_labels_for_export(
     write_if_nonempty(manifest, "Data OD", bytes)
 }
 
+fn write_battles_for_export(
+    manifest: &mut NativeScenarioManifest,
+    records: &[BattleRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_battle_rows(write_battles(records)?, records, annex)?;
+    write_if_nonempty(manifest, "Data BD", bytes)
+}
+
 fn preserve_imported_message_rows(
     bytes: Vec<u8>,
     records: &[MessageRecord],
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
-    preserve_imported_text_rows(
+    preserve_imported_fixed_rows(
         bytes,
         "Data SD2",
         crate::realmz::MESSAGE_BYTES,
@@ -544,7 +548,7 @@ fn preserve_imported_option_label_rows(
     records: &[OptionLabelRecord],
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
-    preserve_imported_text_rows(
+    preserve_imported_fixed_rows(
         bytes,
         "Data OD",
         crate::realmz::OPTION_LABEL_BYTES,
@@ -553,7 +557,21 @@ fn preserve_imported_option_label_rows(
     )
 }
 
-fn preserve_imported_text_rows(
+fn preserve_imported_battle_rows(
+    bytes: Vec<u8>,
+    records: &[BattleRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    preserve_imported_fixed_rows(
+        bytes,
+        "Data BD",
+        crate::realmz::BATTLE_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )
+}
+
+fn preserve_imported_fixed_rows(
     mut bytes: Vec<u8>,
     name: &str,
     record_bytes: usize,
@@ -1554,8 +1572,9 @@ mod tests {
         custom_spell_name_resource_updates, item_text_resource_updates,
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
-        preserve_imported_fixed_length, preserve_imported_message_rows,
-        preserve_imported_option_label_rows, scenario_icon_resource_updates,
+        preserve_imported_battle_rows, preserve_imported_fixed_length,
+        preserve_imported_message_rows, preserve_imported_option_label_rows,
+        scenario_icon_resource_updates,
         write_caste_overrides_for_export, write_race_overrides_for_export,
         write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
@@ -1914,6 +1933,56 @@ mod tests {
         assert!(authored[3..].iter().all(|byte| *byte == 0));
         assert_eq!(
             &output[2 * crate::realmz::OPTION_LABEL_BYTES..],
+            &[0xde, 0xad, 0xbe]
+        );
+    }
+
+    #[test]
+    fn imported_battle_export_reads_legacy_bytes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let mut source = vec![0; 2 * crate::realmz::BATTLE_BYTES];
+        crate::realmz::write_i16_be(&mut source, 12 * 2, 9);
+        source[338] = 2;
+        source[339] = 0xa5;
+        let authored_start = crate::realmz::BATTLE_BYTES;
+        source[authored_start + 339] = 0xb6;
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data BD"), &source).unwrap();
+
+        let mut battles = crate::realmz::parse_battles(&source);
+        battles[0].raw_bytes.fill(0x11);
+        battles[1].raw_bytes.fill(0x22);
+        battles[1].grid[84] = -7;
+        battles[1].dist = 3;
+        battles[1].message_before = 4;
+        battles[1].message_after = 5;
+        battles[1].battle_macro = -6;
+        battles[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_battle_rows(
+            crate::realmz::write_battles(&battles).unwrap(),
+            &battles,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(
+            &output[..crate::realmz::BATTLE_BYTES],
+            &source[..crate::realmz::BATTLE_BYTES]
+        );
+        let authored = &output[authored_start..2 * crate::realmz::BATTLE_BYTES];
+        assert_eq!(crate::realmz::i16_be(authored, 84 * 2), -7);
+        assert_eq!(authored[338], 3);
+        assert_eq!(authored[339], 0);
+        assert_eq!(crate::realmz::i16_be(authored, 340), 4);
+        assert_eq!(crate::realmz::i16_be(authored, 342), 5);
+        assert_eq!(crate::realmz::i16_be(authored, 344), -6);
+        assert_eq!(
+            &output[2 * crate::realmz::BATTLE_BYTES..],
             &[0xde, 0xad, 0xbe]
         );
     }

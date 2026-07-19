@@ -600,8 +600,8 @@ export function emptyOptionLabel(id: number): OptionLabelRecord {
   return { id, text: "", authored: true, provenance: authoredProvenance("Data OD", id, id * OPTION_LABEL_BYTES, OPTION_LABEL_BYTES) };
 }
 
-function emptyBattle(id: number): BattleRecord {
-  return { id, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, rawBytes: new Array(346).fill(0), authored: true, provenance: authoredProvenance("Data BD", id, id * 346, 346) };
+export function emptyBattle(id: number): BattleRecord {
+  return { id, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, authored: true, provenance: authoredProvenance("Data BD", id, id * 346, 346) };
 }
 
 function emptyMonster(id: number): MonsterRecord {

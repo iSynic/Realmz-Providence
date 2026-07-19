@@ -45,6 +45,8 @@ assertOwnershipMessage(project.messages, "Canonical project");
 expect((project.messages[0].rawBytes?.length ?? 0) === 0, "Fresh canonical message must not carry compatibility bytes");
 assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
 expect(project.optionLabels.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical option labels must not carry compatibility bytes");
+assertOwnershipBattle(project.battles, "Canonical project");
+expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical battles must not carry compatibility bytes");
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
 expect((project.scenarioItems[0].rawBytes?.length ?? 0) === 0, "Fresh canonical scenario item must not carry compatibility bytes");
 expect(project.scenarioItems[0].spare2?.length === 7, "Fresh canonical scenario item must own all seven spare words");
@@ -165,6 +167,7 @@ expect(
 );
 assertOwnershipMessage(reimported.messages, "Reimport");
 assertOwnershipOptionLabels(reimported.optionLabels, "Reimport");
+assertOwnershipBattle(reimported.battles, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
 assertOwnershipShop(reimported.shops, "Reimport");
@@ -183,6 +186,7 @@ const summary = {
     maps: project.maps.length,
     actionPoints: project.triggers.length,
     messages: project.messages.length,
+    battles: project.battles.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
     shops: project.shops.length,
@@ -219,6 +223,7 @@ const summary = {
     compatibilityAnnexPresent: true,
     activeActionPointRecovered: true,
     messageRecovered: true,
+    battleRecovered: true,
     itemTextRecovered: true,
     treasureRecovered: true,
     shopRecovered: true,
@@ -284,6 +289,8 @@ async function assertNoRawSources(stage) {
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
   expect(savedProject.optionLabels?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} option labels contain compatibility bytes`);
+  assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
+  expect(savedProject.battles?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} battles contain compatibility bytes`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
   expect(savedProject.treasures?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} treasures contain compatibility bytes`);
@@ -304,6 +311,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data DD", 100 * 40],
     ["Data SD2", 256],
     ["Data OD", 50],
+    ["Data BD", 346],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
     ["Data SD", 3002],
@@ -332,6 +340,10 @@ function assertCompleteNativeFolder(files, label) {
   expect(files.get("Data NI").some((byte) => byte !== 0), `${label} Data NI does not contain the authored scenario item`);
   expect(files.get("Data TD").some((byte) => byte !== 0), `${label} Data TD does not contain the authored treasure`);
   expect(files.get("Data SD").some((byte) => byte !== 0), `${label} Data SD does not contain the authored shop`);
+  const battle = files.get("Data BD");
+  expect(battle[84 * 2] === 0 && battle[84 * 2 + 1] === 1, `${label} Data BD does not contain the authored monster placement`);
+  expect(battle[338] === 3, `${label} Data BD has the wrong authored distance`);
+  expect(battle[339] === 0, `${label} Data BD alignment padding is not deterministic zero`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
 }
 
@@ -354,6 +366,15 @@ function assertOwnershipOptionLabels(records, label) {
   const withdraw = records?.find((record) => record.id === 1);
   expect(proceed?.text === "Proceed", `${label} has the wrong option label 0`);
   expect(withdraw?.text === "Withdraw", `${label} has the wrong option label 1`);
+}
+
+function assertOwnershipBattle(records, label) {
+  const battle = records?.find((record) => record.id === 0);
+  expect(battle, `${label} is missing battle 0`);
+  expect(battle.grid?.length === 13 * 13, `${label} battle has the wrong grid-slot inventory`);
+  expect(battle.grid[84] === 1, `${label} battle has the wrong authored monster placement`);
+  expect(battle.dist === 3, `${label} battle has the wrong authored distance`);
+  expect(battle.messageBefore === 0 && battle.messageAfter === 0 && battle.battleMacro === 0, `${label} battle has the wrong message or macro fields`);
 }
 
 function assertOwnershipTreasure(records, label) {

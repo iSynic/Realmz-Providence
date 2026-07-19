@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker, MapRecord,
-    MapRecordRect, MapRender, MessageRecord, OptionLabelRecord, Provenance, RandomLevel,
+    BattleRecord, Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker,
+    MapRecord, MapRecordRect, MapRender, MessageRecord, OptionLabelRecord, Provenance, RandomLevel,
     RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioItemRecord,
     ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile, ShopRecord,
     TreasureRecord,
@@ -781,22 +781,6 @@ pub enum ActionCategory {
 pub struct ExtraCodeRow {
     pub id: usize,
     pub values: [i16; 5],
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct BattleRecord {
-    pub id: usize,
-    pub grid: Vec<i16>,
-    pub dist: i8,
-    pub message_before: i16,
-    pub message_after: i16,
-    pub battle_macro: i16,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
     pub provenance: Provenance,
 }
 

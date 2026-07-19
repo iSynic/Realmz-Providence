@@ -56,8 +56,8 @@
       "offset": 339,
       "size": 1,
       "field": "padding",
-      "kind": "raw",
-      "editorMeaning": "alignment padding, preserve"
+      "kind": "deterministic-zero",
+      "editorMeaning": "alignment padding; fresh/authored rows emit zero and unchanged imported rows retain legacy bytes only through the compatibility annex"
     },
     {
       "offset": 340,
@@ -92,7 +92,7 @@
     "Negative battlemacro values activate combat-round macro execution."
   ],
   "corpusEvidence": {
-    "presence": "Data BD appears in all 44 analyzed scenarios.",
+    "presence": "Data BD appears in all 44 analyzed scenarios. A focused scan found 39 distinct authored-data payloads with 7,553 complete rows and no malformed tails; 866 rows have nonzero alignment padding. Four additional 32-byte .finf payloads are Finder metadata companions, not battle tables.",
     "recordSizeConfirmedBy": [
       { "scenario": "Price of Power", "bytes": 257770, "records": 745 },
       { "scenario": "Wrath of the Mind Lords", "bytes": 186148, "records": 538 },
@@ -104,7 +104,7 @@
   },
   "editorReadiness": {
     "parse": "high",
-    "write": "medium-after-fixture",
+    "write": "high",
     "ui": "ready-after-monster-picker",
     "validation": [
       "file length divisible by 346",

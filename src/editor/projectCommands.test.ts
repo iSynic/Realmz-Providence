@@ -38,6 +38,21 @@ describe("project command facade", () => {
     expect(next.optionLabels[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh battles from semantic fields without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Battle");
+
+    const next = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create battle",
+      recordType: "battle",
+      id: 4
+    });
+
+    expect(next.battles).toHaveLength(1);
+    expect(next.battles[0].grid).toHaveLength(13 * 13);
+    expect(next.battles[0].rawBytes).toBeUndefined();
+  });
+
   it("creates fresh map records from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Player Map");
 

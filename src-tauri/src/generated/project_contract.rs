@@ -237,6 +237,19 @@ pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_BATTLE_FIELDS: &[&str] = &[
+    "id",
+    "grid",
+    "dist",
+    "messageBefore",
+    "messageAfter",
+    "battleMacro",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -521,6 +534,22 @@ pub struct OptionLabelRecord {
     pub authored: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provenance: Option<Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BattleRecord {
+    pub id: usize,
+    pub grid: Vec<i16>,
+    pub dist: i8,
+    pub message_before: i16,
+    pub message_after: i16,
+    pub battle_macro: i16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

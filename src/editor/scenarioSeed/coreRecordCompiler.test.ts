@@ -72,6 +72,7 @@ describe("scenario seed core record compiler", () => {
     expect(compiled.monsterSets.find((set) => set.setId === -1)?.monsters[0]).toMatchObject({ id: 3, hitDice: 4 });
     expect(compiled.monsterSets.find((set) => set.setId === 1)?.monsters[0]).toMatchObject({ id: 3, hitDice: 4 });
     expect(compiled.battles[0]?.grid[2 * 13 + 1]).toBe(3);
+    expect(compiled.battles[0]?.rawBytes).toBeUndefined();
     expect(compiled.treasures[0]).toMatchObject({ id: 2, gold: 12, itemIds: expect.arrayContaining([805]) });
     expect(compiled.shops[0]).toMatchObject({ id: 3, inflation: 0 });
     expect(compiled.shops[0]?.itemIds[0]).toBe(805);

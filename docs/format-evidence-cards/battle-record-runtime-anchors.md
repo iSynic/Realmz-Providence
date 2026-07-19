@@ -38,7 +38,7 @@ Runtime loads battle records directly from the selected scenario folder. Battle 
 | ---: | ---: | --- | --- |
 | 0 | 338 | `battle[13][13]` | Big-endian signed shorts. `0` means empty. `abs(value)` is the `Data MD` monster record id. Negative values flip side/friendly state after load. |
 | 338 | 1 | `dist` | Random initial placement distance. Runtime calls `Rand(dist)`, so `0` is risky unless old scenarios deliberately use it. |
-| 339 | 1 | padding | Struct alignment padding before shorts. Preserve on import/export. |
+| 339 | 1 | padding | Struct alignment padding before shorts. Runtime conversion does not read it; fresh/authored rows use deterministic zero, while unchanged legacy rows retain it through the compatibility annex. |
 | 340 | 2 | `messagebefore` | `Data SD2` message id shown before combat if nonzero. |
 | 342 | 2 | `messageafter` | `Data SD2` message id copied to runtime for post-battle display. |
 | 344 | 2 | `battlemacro` | Battle-round macro state/id. Negative values activate the macro at round boundaries. |
@@ -74,9 +74,16 @@ The signed value is a compact Realmz encoding, not two separate fields. Providen
 | Trouble in the Sword Lands | 123,868 | 358 |
 | Half Truth | 103,454 | 299 |
 
+A focused local scan found 166 physical files named `Data BD`, deduplicating to 43 payloads. Four
+32-byte payloads live under `.finf` and are Finder metadata companions rather than authored battle
+tables. The remaining 39 distinct data payloads contain 7,553 complete rows with no malformed
+tails. Alignment byte 339 is nonzero in 866 rows and spans many values, which is consistent with
+uninitialized or legacy struct padding rather than authored battle semantics.
+
 ## Providence Editor Implications
 
-- Promote `Data BD` to a typed `Battle` collection with raw-byte preservation.
+- Keep `Data BD` as a typed canonical `Battle` collection; fresh/authored rows require no raw bytes,
+  while unchanged imported rows remain annex-preserved for byte identity.
 - Replace numeric monster cells with a 13x13 grid editor backed by Monster pickers.
 - Show negative monster IDs as a side/friendly toggle, not as an invalid monster id.
 - Make before/after messages first-class message pickers.
@@ -86,7 +93,8 @@ The signed value is a compact Realmz encoding, not two separate fields. Providen
 
 ## Validation Rules
 
-- `Data BD` file length must be divisible by 346.
+- Authored `Data BD` file length must be divisible by 346; 32-byte `.finf` Finder companions are not
+  battle tables.
 - Every nonzero grid entry should resolve to an existing `Data MD` monster record by `abs(value)`.
 - Warn if a battle has no nonzero monster grid entries.
 - Warn if `dist <= 0` unless preserving imported data.
@@ -104,6 +112,7 @@ The signed value is a compact Realmz encoding, not two separate fields. Providen
 ## Providence Follow-Up
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
-- Build `Data BD` parse/write fixtures with exact 346-byte preservation.
+- Treat the semantic 346-byte compiler and annex-only legacy row preservation as implemented and
+  fixture-covered.
 - Deepen the existing Battle target shell after Monster pickers are available.
 - Add battle-grid editing to the Battle tool and Script/AP target drawer.

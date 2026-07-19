@@ -217,7 +217,6 @@ function buildBattle(seed: ScenarioSeedBattle, context: ScenarioSeedCompilerCont
     messageBefore: seed.messageBefore ?? 0,
     messageAfter: seed.messageAfter ?? 0,
     battleMacro: seed.battleMacro ?? 0,
-    rawBytes: new Array(BATTLE_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data BD", id, id * BATTLE_BYTES, BATTLE_BYTES)
   };

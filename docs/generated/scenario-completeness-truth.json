@@ -29,14 +29,14 @@
   "summary": {
     "containerCount": 57,
     "semanticOwnershipCounts": {
-      "mixed": 12,
-      "complete": 43,
+      "mixed": 11,
+      "complete": 44,
       "runtime-only": 1,
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "partially-proven": 14,
-      "fixture-proven": 21,
+      "partially-proven": 13,
+      "fixture-proven": 22,
       "preserve-only": 8,
       "not-applicable": 14
     },
@@ -51,16 +51,16 @@
     "scenarioSemantics": {
       "label": "Scenario Semantics",
       "status": "complete",
-      "completeContainers": 43,
-      "mixedContainers": 12,
+      "completeContainers": 44,
+      "mixedContainers": 11,
       "needsFormatWorkContainers": 0,
-      "percentContainers": 75.44
+      "percentContainers": 77.19
     },
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "complete",
-      "fixtureProvenContainers": 20,
-      "partiallyProvenContainers": 15,
+      "fixtureProvenContainers": 21,
+      "partiallyProvenContainers": 14,
       "writerGatedContainers": 0,
       "percentContainers": 61.4
     },
@@ -74,7 +74,7 @@
     "codecInternals": {
       "label": "Codec Internals",
       "status": "stage-two-optional",
-      "preservedOrCustomPayloadBytes": 82843797,
+      "preservedOrCustomPayloadBytes": 82825455,
       "decodedResourcePayloadBytes": 841240
     },
     "strictOutstanding": {
@@ -126,15 +126,17 @@
         257770
       ],
       "effectiveStatuses": [
-        "decoded-writable",
-        "preserved-known"
+        "decoded-writable"
       ],
       "evidence": [
         "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/battle-record-evidence.json",
         "docs/format-evidence-cards/battle-record-runtime-anchors.md",
-        "src-tauri/src/realmz/combat.rs:battle_storage_mutates_only_owned_fields",
-        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz/battles.rs:fresh_battle_compiles_complete_semantic_row",
+        "src-tauri/src/realmz/battles.rs:imported_battle_compiles_without_record_byte_identity",
+        "src-tauri/src/exporter.rs:imported_battle_export_reads_legacy_bytes_only_from_annex",
+        "src-tauri/src/realmz/battles.rs:write_battles",
+        "src-tauri/src/realmz/battles.rs:parse_battles",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits"
@@ -142,14 +144,14 @@
       "fixtureGate": {
         "name": "battle-fixed-record-writer",
         "available": true,
-        "partialOnly": true,
+        "partialOnly": false,
         "evidencePresent": true,
         "missingEvidence": [],
         "source": "fixed-record-writer-gates"
       },
       "truth": {
-        "semanticOwnership": "mixed",
-        "writerReadiness": "partially-proven",
+        "semanticOwnership": "complete",
+        "writerReadiness": "fixture-proven",
         "evidenceQuality": "fixture-backed",
         "riskFlags": []
       }

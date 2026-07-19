@@ -193,6 +193,10 @@ The eighth follow-up archaeology pass tightened `Core records` around battles: R
 - use central `Data SD2` pickers for before/after battle messages;
 - expose `battlemacro` as sign-sensitive combat-round macro evidence until Divinity labels are proven.
 
+Providence now compiles all 346 bytes of fresh/authored battle rows from semantic project data,
+including deterministic zero alignment padding. Unchanged imported rows remain byte-identical only
+through the compatibility annex; embedded record bytes no longer drive the battle writer.
+
 Detailed evidence lives in `docs/format-evidence-cards/battle-record-runtime-anchors.md` and `docs/generated/battle-record-evidence.json`.
 
 The ninth follow-up archaeology pass tightened `Core records` around items, treasure, and shops. Realmz source proves the authoring split:

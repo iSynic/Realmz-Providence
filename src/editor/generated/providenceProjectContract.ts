@@ -223,6 +223,18 @@ export const PROVIDENCE_OPTION_LABEL_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_BATTLE_FIELDS = [
+  "id",
+  "grid",
+  "dist",
+  "messageBefore",
+  "messageAfter",
+  "battleMacro",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -418,6 +430,18 @@ export type ProvidenceOptionLabelRecord = {
   rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
+};
+
+export type ProvidenceBattleRecord = {
+  id: number;
+  grid: number[];
+  dist: number;
+  messageBefore: number;
+  messageAfter: number;
+  battleMacro: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
 };
 
 export type ProvidenceSourceFile = {

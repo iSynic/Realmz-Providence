@@ -4,8 +4,8 @@ use super::action_points::{
 };
 use super::asset_catalog::build_asset_catalog;
 use super::combat::{
-    parse_battles, parse_monster_descriptions, parse_monster_set, parse_monsters, BATTLE_BYTES,
-    MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES,
+    parse_monster_descriptions, parse_monster_set, parse_monsters, MONSTER_BYTES,
+    MONSTER_DESCRIPTION_BYTES,
 };
 use super::economy::{parse_shops, parse_treasures, SHOP_BYTES, TREASURE_BYTES};
 use super::encounters::{
@@ -26,7 +26,7 @@ use super::rules::{
     SPELL_BYTES,
 };
 use super::scenario_items::{parse_scenario_items, ITEM_BYTES};
-use super::{parse_messages, parse_option_labels, MESSAGE_BYTES, OPTION_LABEL_BYTES};
+use super::{parse_battles, parse_messages, parse_option_labels, BATTLE_BYTES, MESSAGE_BYTES, OPTION_LABEL_BYTES};
 use crate::project::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
