@@ -41,7 +41,8 @@
         {
           "label": "Continue",
           "steps": [
-            { "kind": "message", "message": "ownership-message" }
+            { "kind": "message", "message": "ownership-message" },
+            { "kind": "takeGold", "amount": 25 }
           ]
         }
       ],

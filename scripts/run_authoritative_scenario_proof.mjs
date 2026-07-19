@@ -70,6 +70,10 @@ assertOwnershipTileSolids(project, "Canonical project", false);
 assertOwnershipLandLayout(project, "Canonical project", true);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
+expect(project.triggers.every((record) => !("rawBytes" in record)), "Fresh canonical Action Points must not carry compatibility bytes");
+expect(project.extracodes.length === 1, `Expected one EDCD settings row, found ${project.extracodes.length}`);
+expect(project.extracodes[0].id === 0 && project.extracodes[0].values.join(",") === "25,0,0,0,0", "Fresh canonical EDCD settings have the wrong semantic values");
+expect(project.extracodes.every((record) => !("rawBytes" in record)), "Fresh canonical EDCD settings must not carry compatibility bytes");
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
 assertOwnershipMessage(project.messages, "Canonical project");
 expect(project.messages.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical messages must not carry compatibility bytes");
@@ -412,6 +416,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data TD2", 2 * 118],
     ["Data TD3", 40],
     ["Data ED3", 3 * 40],
+    ["Data EDCD", 10],
     ["Data BD", 346],
     ["Data MD", 2 * 210],
     ["Data DES", 2 * 256],
@@ -460,6 +465,11 @@ function assertCompleteNativeFolder(files, label) {
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this rogue encounter.")), `${label} Data SD2 is missing the authored rogue message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
+  const extraActionPoints = files.get("Data ED3");
+  expect(extraActionPoints.slice(0, 2 * 40).every((byte) => byte === 0), `${label} Data ED3 sparse rows are not deterministic zero`);
+  expect(extraActionPoints[2 * 40 + 7] === 100 && readI16(extraActionPoints, 2 * 40 + 8) === 1 && readI16(extraActionPoints, 2 * 40 + 24) === 0, `${label} Data ED3 has the wrong authored Extra Action Point`);
+  const extraCodes = files.get("Data EDCD");
+  expect(readI16(extraCodes, 0) === 25 && extraCodes.slice(2).every((byte) => byte === 0), `${label} Data EDCD has the wrong authored five-word settings row`);
   expect(files.get("Data NI").some((byte) => byte !== 0), `${label} Data NI does not contain the authored scenario item`);
   expect(files.get("Data TD").some((byte) => byte !== 0), `${label} Data TD does not contain the authored treasure`);
   expect(files.get("Data SD").some((byte) => byte !== 0), `${label} Data SD does not contain the authored shop`);

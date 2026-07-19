@@ -79,6 +79,8 @@ const rawFiles = [
   rawFile("Data SD2", pascalRecords(["A", "B"], 256), "supported-binary"),
   rawFile("Data OD", pascalRecords(["Yes", "No"], 25), "supported-binary"),
   rawFile("Data BD", fixedBytes(346, [0xaa, 0xbb]), "supported-binary"),
+  rawFile("Data ED3", extraActionFileWithCompatibilityTail(), "supported-binary"),
+  rawFile("Data EDCD", extraCodeFileWithCompatibilityTail(), "supported-binary"),
   rawFile("Layout", layoutWithCompatibilityTail(), "supported-binary"),
   rawFile("Data Solids", dataSolidsWithCompatibilityTail(), "supported-binary"),
   rawFile("Data MENU", [5, 6, 7], "unknown"),
@@ -94,6 +96,13 @@ await runCargoExample("import_scenario_project", [sourceDir, projectDir, scenari
 const importedProjectPath = path.join(projectDir, "project.json");
 const importedProject = JSON.parse(await fs.readFile(importedProjectPath, "utf8"));
 importedProject.landLayout = authoredLandLayout();
+const importedMacro = importedProject.triggers.find((trigger) => trigger.source === "Data ED3" && trigger.recordIndex === 0);
+expect(importedMacro, "Synthetic fixture should import its first Data ED3 row");
+importedMacro.actions[0] = actionRecord(importedMacro.actions[0], 0, 13, 14);
+importedProject.triggers = [importedMacro];
+expect(importedProject.extracodes.length >= 1, "Synthetic fixture should import Data EDCD rows");
+importedProject.extracodes[0].values = [101, 102, 103, 104, 105];
+importedProject.extracodes = importedProject.extracodes.slice(0, 1);
 await fs.writeFile(importedProjectPath, `${JSON.stringify(importedProject, null, 2)}\n`);
 
 const rawSources = {
@@ -105,13 +114,32 @@ const rawSources = {
   totalBytes: rawFiles.reduce((sum, file) => sum + file.bytesData.byteLength, 0),
   files: rawFiles
 };
-const browserProject = fixtureProject(rawFiles);
+const browserProject = {
+  ...fixtureProject(rawFiles),
+  triggers: JSON.parse(JSON.stringify(importedProject.triggers)),
+  extracodes: JSON.parse(JSON.stringify(importedProject.extracodes))
+};
 
 await compareScenarioCase("synthetic-fixture", projectDir, browserProject, rawSources, {
   expectedMissingFiles: ["Data MENU", "Custom Names.rsrc"],
-  requiredFiles: ["Layout", "Data Solids"],
-  requiredWrittenFiles: ["Layout", "Data Solids"],
-  preservedSourceSuffixes: [{ name: "Layout", offset: 256 }, { name: "Data Solids", offset: 1024 }]
+  requiredFiles: ["Data ED3", "Data EDCD", "Layout", "Data Solids"],
+  requiredWrittenFiles: ["Data ED3", "Data EDCD", "Layout", "Data Solids"],
+  preservedSourceSuffixes: [
+    { name: "Data ED3", offset: 80 },
+    { name: "Data EDCD", offset: 30 },
+    { name: "Layout", offset: 256 },
+    { name: "Data Solids", offset: 1024 }
+  ],
+  zeroFilledRanges: [
+    { name: "Data ED3", start: 40, end: 80 },
+    { name: "Data EDCD", start: 10, end: 30 }
+  ],
+  expectedByteValues: [
+    { name: "Data ED3", offset: 9, value: 13 },
+    { name: "Data ED3", offset: 25, value: 14 },
+    { name: "Data EDCD", offset: 1, value: 101 },
+    { name: "Data EDCD", offset: 9, value: 105 }
+  ]
 });
 await compareOptionalCorpusScenarios();
 
@@ -251,6 +279,14 @@ async function compareScenarioCase(caseId, importedProjectDir, project, sourceSn
       const source = sourceSnapshot.files.find((file) => file.name === name)?.bytesData;
       expect(source && bytesEqual(browserFiles.get(name)?.slice(outputOffset), source.slice(sourceOffset)), `${label}: browser output should preserve ${name} suffix from source byte ${sourceOffset}`);
       expect(source && bytesEqual(desktopFiles.get(name)?.slice(outputOffset), source.slice(sourceOffset)), `${label}: desktop output should preserve ${name} suffix from source byte ${sourceOffset}`);
+    }
+    for (const { name, start, end } of expectations.zeroFilledRanges ?? []) {
+      expect(browserFiles.get(name)?.slice(start, end).every((byte) => byte === 0), `${label}: browser output should zero ${name} bytes ${start}..${end}`);
+      expect(desktopFiles.get(name)?.slice(start, end).every((byte) => byte === 0), `${label}: desktop output should zero ${name} bytes ${start}..${end}`);
+    }
+    for (const { name, offset, value } of expectations.expectedByteValues ?? []) {
+      expect(browserFiles.get(name)?.[offset] === value, `${label}: browser output should compile ${name} byte ${offset} as ${value}`);
+      expect(desktopFiles.get(name)?.[offset] === value, `${label}: desktop output should compile ${name} byte ${offset} as ${value}`);
     }
     if (expectations.requiresTextStylResources) {
       expectTextStylResources(browserFiles, label);
@@ -717,6 +753,27 @@ function layoutWithCompatibilityTail() {
   return output;
 }
 
+function extraActionFileWithCompatibilityTail() {
+  const output = new Uint8Array(83);
+  output[7] = 100;
+  setI16(output, 8, 9);
+  setI16(output, 24, 10);
+  output[47] = 100;
+  setI16(output, 50, 11);
+  setI16(output, 66, 12);
+  output.set([0xde, 0xad, 0xbe], 80);
+  return output;
+}
+
+function extraCodeFileWithCompatibilityTail() {
+  const output = new Uint8Array(33);
+  setI16(output, 0, 1);
+  setI16(output, 10, 2);
+  setI16(output, 20, 3);
+  output.set([0xca, 0xfe, 0x01], 30);
+  return output;
+}
+
 function authoredLandLayout() {
   const cells = new Array(128).fill(0);
   cells[0] = -1;
@@ -744,6 +801,12 @@ function setI32(output, offset, value) {
   output[offset + 1] = (normalized >>> 16) & 0xff;
   output[offset + 2] = (normalized >>> 8) & 0xff;
   output[offset + 3] = normalized & 0xff;
+}
+
+function setI16(output, offset, value) {
+  const normalized = value < 0 ? value + 0x10000 : value;
+  output[offset] = (normalized >> 8) & 0xff;
+  output[offset + 1] = normalized & 0xff;
 }
 
 function bytesEqual(left, right) {

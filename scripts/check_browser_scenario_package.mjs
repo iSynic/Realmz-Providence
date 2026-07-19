@@ -190,12 +190,15 @@ const sourceLandDoors = new Uint8Array(DOOR_LEVEL_BYTES * 2);
 setDoor(sourceLandDoors.subarray(0, DOOR_BYTES), { doorid: 1, landid: 0, targetX: 2, targetY: 3, percent: 25, actions: [{ slot: 0, rawCode: 5, id: 6 }] });
 const sourceDungeonDoors = new Uint8Array(DOOR_LEVEL_BYTES);
 setDoor(sourceDungeonDoors.subarray(0, DOOR_BYTES), { doorid: 2, landid: 0, targetX: 4, targetY: 5, percent: 35, actions: [{ slot: 1, rawCode: -7, id: 8 }] });
-const sourceMacros = new Uint8Array(DOOR_BYTES * 2);
+const sourceMacros = new Uint8Array(DOOR_BYTES * 2 + 3);
 setDoor(sourceMacros.subarray(0, DOOR_BYTES), { doorid: 0, landid: 0, targetX: 0, targetY: 0, percent: 100, actions: [{ slot: 0, rawCode: 9, id: 10 }] });
-const sourceExtraCodes = new Uint8Array(30);
+setDoor(sourceMacros.subarray(DOOR_BYTES, DOOR_BYTES * 2), { doorid: 0, landid: 0, targetX: 0, targetY: 0, percent: 100, actions: [{ slot: 1, rawCode: 11, id: 12 }] });
+sourceMacros.set([0xde, 0xad, 0xbe], DOOR_BYTES * 2);
+const sourceExtraCodes = new Uint8Array(33);
 setI16(sourceExtraCodes, 0, 1);
 setI16(sourceExtraCodes, 10, 2);
 setI16(sourceExtraCodes, 20, 3);
+sourceExtraCodes.set([0xca, 0xfe, 0x01], 30);
 const sourceGlobalHooks = new Uint8Array(60);
 setI16(sourceGlobalHooks, 0, 1);
 setI16(sourceGlobalHooks, 8, 4);
@@ -556,9 +559,36 @@ expect(bytesEqual(mapFiles.get("Data DDD")?.slice(0, DOOR_BYTES), sourceDungeonD
 expect(bytesEqual(mapFiles.get("Data DDD")?.slice(3 * DOOR_BYTES, 4 * DOOR_BYTES), doorRow(authoredDungeonTrigger)), "Authored dungeon action point should encode trigger row");
 expect(bytesEqual(mapFiles.get("Data ED3")?.slice(0, DOOR_BYTES), sourceMacros.slice(0, DOOR_BYTES)), "Unauthored extra action point should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data ED3")?.slice(DOOR_BYTES, DOOR_BYTES * 2), doorRow(authoredMacro)), "Authored extra action point should encode trigger row");
+expect(bytesEqual(mapFiles.get("Data ED3")?.slice(DOOR_BYTES * 2), new Uint8Array([0xde, 0xad, 0xbe])), "Malformed Data ED3 tail should remain annex-owned");
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(0, 10), sourceExtraCodes.slice(0, 10)), "Unauthored EDCD row 0 should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(10, 20), sourceExtraCodes.slice(10, 20)), "Unauthored EDCD row 1 should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(20, 30), extraCodeRow([70, -71, 72, -73, 74])), "Authored EDCD row should encode parameter values");
+expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(30), new Uint8Array([0xca, 0xfe, 0x01])), "Malformed Data EDCD tail should remain annex-owned");
+
+const shrunkFixedRowProject = {
+  ...mapProject,
+  triggers: mapProject.triggers.filter((trigger) => trigger.source !== "Data ED3" || trigger.recordIndex === 0),
+  extracodes: mapProject.extracodes.slice(0, 1)
+};
+const shrunkFixedRowUpdate = createBrowserScenarioPackageZip(shrunkFixedRowProject, mapRawSources, "mac-classic-folder");
+const shrunkFixedRowFiles = unzipScenarioPackage(shrunkFixedRowUpdate.zip);
+expect(shrunkFixedRowFiles.get("Data ED3")?.byteLength === DOOR_BYTES * 2 + 3, "Shrunk Data ED3 should retain imported record capacity plus annex tail");
+expect(shrunkFixedRowFiles.get("Data ED3")?.slice(DOOR_BYTES, DOOR_BYTES * 2).every((byte) => byte === 0), "Removed Data ED3 rows should compile as deterministic neutral capacity");
+expect(bytesEqual(shrunkFixedRowFiles.get("Data ED3")?.slice(DOOR_BYTES * 2), new Uint8Array([0xde, 0xad, 0xbe])), "Shrunk Data ED3 should preserve only the annex-owned partial row");
+expect(shrunkFixedRowFiles.get("Data EDCD")?.byteLength === 33, "Shrunk Data EDCD should retain imported record capacity plus annex tail");
+expect(shrunkFixedRowFiles.get("Data EDCD")?.slice(10, 30).every((byte) => byte === 0), "Removed Data EDCD rows should compile as deterministic neutral capacity");
+expect(bytesEqual(shrunkFixedRowFiles.get("Data EDCD")?.slice(30), new Uint8Array([0xca, 0xfe, 0x01])), "Shrunk Data EDCD should preserve only the annex-owned partial row");
+
+const clearedFixedRowProject = {
+  ...mapProject,
+  triggers: mapProject.triggers.filter((trigger) => trigger.source !== "Data ED3"),
+  extracodes: []
+};
+const clearedFixedRowUpdate = createBrowserScenarioPackageZip(clearedFixedRowProject, mapRawSources, "mac-classic-folder");
+const clearedFixedRowFiles = unzipScenarioPackage(clearedFixedRowUpdate.zip);
+expect(clearedFixedRowUpdate.report.writtenFiles.includes("Data ED3") && clearedFixedRowUpdate.report.writtenFiles.includes("Data EDCD"), "Cleared imported ED3/EDCD files should remain compiler output rather than pass-through");
+expect(clearedFixedRowFiles.get("Data ED3")?.slice(0, DOOR_BYTES * 2).every((byte) => byte === 0), "Clearing all Data ED3 rows should retain only deterministic neutral capacity");
+expect(clearedFixedRowFiles.get("Data EDCD")?.slice(0, 30).every((byte) => byte === 0), "Clearing all Data EDCD rows should retain only deterministic neutral capacity");
 
 const mapNameSourceResourceFork = writeResourceFork([
   resource("STR#", -102, "Map Names", 0, encodeStringListResource(["Old Primary 0", "Old Primary 1"])),

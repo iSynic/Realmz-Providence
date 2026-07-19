@@ -267,7 +267,7 @@ fn compile_realmz_scenario(
     write_if_nonempty(
         &mut manifest,
         "Data ED3",
-        preserve_imported_fixed_length(
+        compile_fixed_rows_with_compatibility_annex(
             "Data ED3",
             write_macro_file(&project.triggers)?,
             DOOR_BYTES,
@@ -277,7 +277,7 @@ fn compile_realmz_scenario(
     write_if_nonempty(
         &mut manifest,
         "Data EDCD",
-        preserve_imported_fixed_length(
+        compile_fixed_rows_with_compatibility_annex(
             "Data EDCD",
             write_extracodes(&project.extracodes)?,
             EXTRACODE_BYTES,
@@ -932,7 +932,7 @@ fn append_preserved_shop_source_suffix(
     Ok(bytes)
 }
 
-fn preserve_imported_fixed_length(
+fn compile_fixed_rows_with_compatibility_annex(
     name: &str,
     mut bytes: Vec<u8>,
     record_bytes: usize,
@@ -944,14 +944,9 @@ fn preserve_imported_fixed_length(
     let Some(raw) = annex.read(name)? else {
         return Ok(bytes);
     };
-    if raw.len() <= bytes.len() {
-        return Ok(bytes);
-    }
-    if raw.len() % record_bytes == 0 {
-        bytes.resize(raw.len(), 0);
-    } else {
-        bytes.extend_from_slice(&raw[bytes.len()..]);
-    }
+    let complete_source_bytes = raw.len() / record_bytes * record_bytes;
+    bytes.resize(bytes.len().max(complete_source_bytes), 0);
+    bytes.extend_from_slice(&raw[complete_source_bytes..]);
     Ok(bytes)
 }
 
@@ -1903,20 +1898,19 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 #[cfg(test)]
 mod tests {
     use super::{
-        append_preserved_shop_source_suffix, compile_realmz_scenario,
-        custom_spell_name_resource_updates, item_text_resource_updates,
+        append_preserved_shop_source_suffix, compile_fixed_rows_with_compatibility_annex,
+        compile_realmz_scenario, custom_spell_name_resource_updates, item_text_resource_updates,
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
-        preserve_imported_fixed_length, preserve_imported_global_macro_hooks,
-        preserve_imported_land_layout_tail, preserve_imported_message_rows,
-        preserve_imported_monster_description_rows, preserve_imported_monster_rows,
-        preserve_imported_option_label_rows, preserve_imported_scenario_support_file,
-        preserve_imported_simple_encounter_rows, preserve_imported_singleton,
-        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
-        scenario_icon_resource_updates, write_caste_overrides_for_export,
-        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
-        NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_global_macro_hooks, preserve_imported_land_layout_tail,
+        preserve_imported_message_rows, preserve_imported_monster_description_rows,
+        preserve_imported_monster_rows, preserve_imported_option_label_rows,
+        preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
+        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
+        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
+        write_caste_overrides_for_export, write_race_overrides_for_export,
+        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -2989,25 +2983,71 @@ mod tests {
         fs::write(raw_dir.join("Data EDCD"), vec![0x7Au8; 30]).unwrap();
         let annex = CompatibilityAnnex::from_root(raw_dir).snapshot().unwrap();
 
-        let bytes =
-            preserve_imported_fixed_length("Data EDCD", vec![1u8; 10], 10, Some(&annex)).unwrap();
+        let bytes = compile_fixed_rows_with_compatibility_annex(
+            "Data EDCD",
+            vec![1u8; 10],
+            10,
+            Some(&annex),
+        )
+        .unwrap();
 
         assert_eq!(bytes.len(), 30);
         assert_eq!(&bytes[..10], &[1u8; 10]);
         assert_eq!(&bytes[10..], &[0u8; 20]);
+
+        let cleared =
+            compile_fixed_rows_with_compatibility_annex("Data EDCD", Vec::new(), 10, Some(&annex))
+                .unwrap();
+        assert_eq!(cleared, vec![0u8; 30]);
     }
 
     #[test]
     fn preserves_unknown_tail_bytes_for_malformed_fixed_row_file() {
         let temp = tempfile::tempdir().unwrap();
         let raw_dir = temp.path();
-        fs::write(raw_dir.join("Data EDCD"), vec![9u8, 8, 7, 6, 5]).unwrap();
+        fs::write(
+            raw_dir.join("Data EDCD"),
+            [vec![0x7Au8; 20], vec![9u8, 8, 7, 6, 5]].concat(),
+        )
+        .unwrap();
         let annex = CompatibilityAnnex::from_root(raw_dir).snapshot().unwrap();
 
-        let bytes =
-            preserve_imported_fixed_length("Data EDCD", vec![1u8, 2], 10, Some(&annex)).unwrap();
+        let bytes = compile_fixed_rows_with_compatibility_annex(
+            "Data EDCD",
+            vec![1u8; 10],
+            10,
+            Some(&annex),
+        )
+        .unwrap();
 
-        assert_eq!(bytes, vec![1u8, 2, 7, 6, 5]);
+        assert_eq!(bytes.len(), 25);
+        assert_eq!(&bytes[..10], &[1u8; 10]);
+        assert_eq!(&bytes[10..20], &[0u8; 10]);
+        assert_eq!(&bytes[20..], &[9u8, 8, 7, 6, 5]);
+    }
+
+    #[test]
+    fn appends_malformed_tail_after_new_canonical_rows() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path();
+        fs::write(
+            raw_dir.join("Data EDCD"),
+            [vec![0x7Au8; 10], vec![9u8, 8, 7, 6, 5]].concat(),
+        )
+        .unwrap();
+        let annex = CompatibilityAnnex::from_root(raw_dir).snapshot().unwrap();
+
+        let bytes = compile_fixed_rows_with_compatibility_annex(
+            "Data EDCD",
+            vec![1u8; 20],
+            10,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(bytes.len(), 25);
+        assert_eq!(&bytes[..20], &[1u8; 20]);
+        assert_eq!(&bytes[20..], &[9u8, 8, 7, 6, 5]);
     }
 
     #[test]

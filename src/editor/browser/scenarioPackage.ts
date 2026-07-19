@@ -385,16 +385,16 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
       )
     });
   }
-  if (project.triggers.some((trigger) => trigger.source === "Data ED3")) {
+  if (project.triggers.some((trigger) => trigger.source === "Data ED3") || rawSourceBytes("Data ED3", annex)) {
     writes.push({
       path: "Data ED3",
-      bytes: preserveMalformedRawTail("Data ED3", writeMacroFile(project.triggers), DOOR_RECORD_BYTES, annex)
+      bytes: compileFixedRowsWithCompatibilityAnnex("Data ED3", writeMacroFile(project.triggers), DOOR_RECORD_BYTES, annex)
     });
   }
-  if (project.extracodes.length > 0) {
+  if (project.extracodes.length > 0 || rawSourceBytes("Data EDCD", annex)) {
     writes.push({
       path: "Data EDCD",
-      bytes: preserveMalformedRawTail("Data EDCD", writeExtraCodes(project.extracodes), EXTRACODE_RECORD_BYTES, annex)
+      bytes: compileFixedRowsWithCompatibilityAnnex("Data EDCD", writeExtraCodes(project.extracodes), EXTRACODE_RECORD_BYTES, annex)
     });
   }
   if (project.scenario.globalMacroHooks) {
@@ -904,6 +904,23 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
   output.set(raw.slice(bytes.byteLength), bytes.byteLength);
+  return output;
+}
+
+function compileFixedRowsWithCompatibilityAnnex(
+  fileName: string,
+  bytes: Uint8Array,
+  recordBytes: number,
+  annex: BrowserCompatibilityAnnex | null
+) {
+  const raw = rawSourceBytes(fileName, annex);
+  if (!raw) return bytes;
+  const completeSourceBytes = Math.floor(raw.byteLength / recordBytes) * recordBytes;
+  const outputCoreBytes = Math.max(bytes.byteLength, completeSourceBytes);
+  const tail = raw.slice(completeSourceBytes);
+  const output = new Uint8Array(outputCoreBytes + tail.byteLength);
+  output.set(bytes);
+  output.set(tail, outputCoreBytes);
   return output;
 }
 

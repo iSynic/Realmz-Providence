@@ -435,9 +435,22 @@ for Windows and Classic Mac in both compilers, and recovers all 128 cells on nat
 focused Rust codec also moves out of `maps.rs`, reducing rather than extending the deferred
 ISY-320 refactor surface.
 
-Branch validation through the forty-third slice completed on 2026-07-19:
+The forty-fourth slice closes the compiler/compatibility boundary for `Data ED3` and `Data EDCD`.
+Realmz source establishes exact runtime records: ED3 uses the same 40-byte `struct door` shape as
+map Action Points, and EDCD is exactly five signed shorts. The canonical project already contains
+all of those fields and no embedded record bytes. Both compilers now regenerate every complete
+row from that semantic model. An imported file may retain its historical row capacity, but removed
+complete rows become deterministic zero records instead of being copied from source. Only a final
+partial-record suffix remains compatibility-annex identity. This fixes the prior browser/desktop
+drift on shrunk imports and prevents a malformed tail from pulling deleted complete source rows
+back into output. The parity fixture proves the rule with nonzero removed rows and partial suffixes
+for both files and both native targets. The fresh ownership seed now also emits a linked EDCD-backed
+action, requires exact 120-byte ED3 and 10-byte EDCD output, and checks their semantic words without
+`raw-sources`.
 
-- full Rust suite: 247 passed, 2 ignored;
+Branch validation through the forty-fourth slice completed on 2026-07-19:
+
+- full Rust suite: 248 passed, 2 ignored;
 - full TypeScript suite: 603 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
@@ -458,8 +471,10 @@ by separating exact-shape validation from the native codec. The `Data Solids` sl
 its 1,024-byte codec and tests into a focused module, returns `landlooks.rs` below its baseline, and
 does not add a new ISY-320 violation. The `Layout` slice likewise moves its codec and tests into a
 focused module and reduces `maps.rs`; the remaining size failures are the pre-existing ISY-319 map
-UI files, ISY-320 `assembly.rs`, and ISY-321 stylesheets. Architecture, lint, unit, typecheck, UI audit, production
-build, scenario proof, package parity, and the full Rust suite were run independently.
+UI files, ISY-320 `assembly.rs`, and ISY-321 stylesheets. The ED3/EDCD slice changes only the
+exporter/package boundary and adds no new module-size violation. Architecture, lint, unit,
+typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
+run independently.
 
 ## Verdict
 
@@ -773,8 +788,8 @@ Legend:
 | `Data DDD` | Generated | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; the semantic writer overlays populated dungeon tables. |
 | `Data RD` | Generated + bounded compatibility | Generate one random-level record per land level | Fresh records compile from canonical settings and rectangle data with no `rawValues`; imported 322-word storage remains an optional compatibility base for the final unmodeled byte and noncanonical legacy encodings. |
 | `Data RDD` | Generated + bounded compatibility | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; populated dungeon levels use the same semantic writer and optional imported compatibility base. |
-| `Data ED3` | Generated | Generate fixed Extra Action Point rows | Current export only uses raw input to preserve a longer imported allocation. Fresh allocation is deterministic. |
-| `Data EDCD` | Generated | Generate EDCD settings rows | Complete fixed-row writer and deterministic Scenario JSON allocation. |
+| `Data ED3` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every 40-byte Extra Action Point row | Both compilers write the complete `struct door` shape from canonical fields. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
+| `Data EDCD` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every five-word settings row | Both compilers write all five signed shorts from canonical values. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
 | `Layout` | Fully generated semantic grid + legacy annex tail, optional | Generate exactly 256 bytes from all 128 canonical cells | Both compilers require the 8 x 16 shape and ignore embedded `trailingBytes`. Imported optional bytes 256-511 remain preserve-only annex data, including exact 512-byte files. |
 
 ### Core records and encounters
