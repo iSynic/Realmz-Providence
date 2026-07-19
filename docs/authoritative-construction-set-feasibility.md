@@ -274,10 +274,22 @@ battle placement and distance from Scenario JSON, requires exact 346-byte `Data 
 zero padding, and semantically reimports the battle. The battle codec lives in a dedicated Rust
 module, so the slice reduces `combat.rs` without adding to deferred ISY-320 growth.
 
-Branch validation through the thirtieth slice completed on 2026-07-19:
+The thirty-first slice closes complete byte ownership for each 426-byte `Data ED` simple-encounter
+row. `EncounterActionRow` and `SimpleEncounterRecord` now come from the same generated schema in
+TypeScript and Rust. Fresh UI/project-command and Scenario JSON constructors omit `rawBytes`, and
+both native writers compile all action codes and IDs, choice results, controls, prompt, four Pascal
+text buffers, and deterministic zero alignment padding from canonical semantics. A broader local
+audit found 37 distinct data payloads: 14 were exactly aligned, while 23 carried historical tails;
+42 of 194 complete rows in the aligned payloads had nonzero legacy padding. Those observations do
+not make imported bytes canonical. Unchanged legacy rows and malformed tails are recovered only
+from the compatibility annex at export. The ownership proof now authors a simple encounter from
+Scenario JSON, requires exact 426-byte `Data ED` output in both native targets and compilers, and
+semantically reimports the record.
 
-- full Rust suite: 229 passed, 2 ignored;
-- full TypeScript suite: 563 passed, plus typecheck;
+Branch validation through the thirty-first slice completed on 2026-07-19:
+
+- full Rust suite: 231 passed, 2 ignored;
+- full TypeScript suite: 567 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -286,11 +298,12 @@ Branch validation through the thirtieth slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 563 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 567 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
-also removes that file from the current violation list. Architecture, lint, unit, typecheck, UI
+also removes that file from the current violation list, and the simple-encounter changes remain
+within the existing `encounters.rs` ceiling. Architecture, lint, unit, typecheck, UI
 audit, production build, scenario proof, package parity, and the full Rust suite were run
 independently.
 
@@ -618,7 +631,7 @@ Legend:
 | `Data NI` | Generated + bounded compatibility encoding | Always generate exactly 200 x 100 bytes | All 100 bytes are canonical semantic fields, including `spare2[7]`; fresh records omit `rawBytes`. Imported bytes may retain only an unchanged zero stored item-ID alias until its semantic ID changes. |
 | `Data TD` | Generated + malformed-tail annex | Generate all 48 record bytes from canonical semantics | Twenty item IDs and four reward words cover the full record. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Only malformed file tails remain annex data. |
 | `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Classified foreign suffix records and malformed tails are appended from the annex. |
-| `Data ED` | Generated + compatibility | Generate simple encounters | Byte 103 and malformed file tails are preserved for legacy imports; authored compilation emits the required empty file directly. |
+| `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Fresh/authored rows compile all 426 bytes from canonical actions, results, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and historical tails are restored only from the compatibility annex. |
 | `Data ED2` | Generated + compatibility | Generate complex encounters | Bytes 104-150 and 157 plus malformed file tails are legacy compatibility; authored compilation emits the required empty file directly. |
 | `Data TD2` | Generated | Generate rogue/thief encounters | Complete writer; authored compilation emits the required empty file directly. |
 | `Data TD3` | Generated with explicit compatibility slots | Generate timed encounters and zero reserved `stuff[1..9]` | The model carries the ten-word array; only `stuff[0]` has confirmed runtime meaning. Authored compilation emits the required empty file directly. |

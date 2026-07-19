@@ -4,8 +4,8 @@ use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
     BattleRecord, ItemTextRecord, LevelType, MessageRecord, MonsterIconOverride,
     MonsterIconOverrideSource, OptionLabelRecord, ProvidenceProject, ScenarioCasteOverride,
-    ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget, TargetCompatibilityBuckets,
-    TargetCompatibilityIssue,
+    ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget, SimpleEncounterRecord,
+    TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -318,11 +318,9 @@ fn compile_realmz_scenario(
         crate::realmz::SHOP_BYTES,
         compatibility_annex,
     )?;
-    write_fixed_if_nonempty(
+    write_simple_encounters_for_export(
         &mut manifest,
-        "Data ED",
-        write_simple_encounters(&project.simple_encounters)?,
-        crate::realmz::SIMPLE_ENCOUNTER_BYTES,
+        &project.simple_encounters,
         compatibility_annex,
     )?;
     write_fixed_if_nonempty(
@@ -529,6 +527,16 @@ fn write_battles_for_export(
     write_if_nonempty(manifest, "Data BD", bytes)
 }
 
+fn write_simple_encounters_for_export(
+    manifest: &mut NativeScenarioManifest,
+    records: &[SimpleEncounterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes =
+        preserve_imported_simple_encounter_rows(write_simple_encounters(records)?, records, annex)?;
+    write_if_nonempty(manifest, "Data ED", bytes)
+}
+
 fn preserve_imported_message_rows(
     bytes: Vec<u8>,
     records: &[MessageRecord],
@@ -566,6 +574,20 @@ fn preserve_imported_battle_rows(
         bytes,
         "Data BD",
         crate::realmz::BATTLE_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )
+}
+
+fn preserve_imported_simple_encounter_rows(
+    bytes: Vec<u8>,
+    records: &[SimpleEncounterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    preserve_imported_fixed_rows(
+        bytes,
+        "Data ED",
+        crate::realmz::SIMPLE_ENCOUNTER_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
     )
@@ -1574,7 +1596,7 @@ mod tests {
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_fixed_length,
         preserve_imported_message_rows, preserve_imported_option_label_rows,
-        scenario_icon_resource_updates,
+        preserve_imported_simple_encounter_rows, scenario_icon_resource_updates,
         write_caste_overrides_for_export, write_race_overrides_for_export,
         write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
@@ -1985,6 +2007,61 @@ mod tests {
             &output[2 * crate::realmz::BATTLE_BYTES..],
             &[0xde, 0xad, 0xbe]
         );
+    }
+
+    #[test]
+    fn imported_simple_encounter_export_reads_legacy_bytes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let record_bytes = crate::realmz::SIMPLE_ENCOUNTER_BYTES;
+        let mut source = vec![0; 2 * record_bytes];
+        source[3] = 9;
+        source[103] = 0xa5;
+        let authored_start = record_bytes;
+        source[authored_start + 103] = 0xb6;
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data ED"), &source).unwrap();
+
+        let mut encounters = crate::realmz::parse_simple_encounter_records(&source);
+        encounters[0].raw_bytes.fill(0x11);
+        encounters[1].raw_bytes.fill(0x22);
+        encounters[1].actions = vec![crate::project::EncounterActionRow {
+            slot: 3,
+            raw_code: -2,
+            id: 0x0304,
+        }];
+        encounters[1].choice_results = vec![0, 0, 7, 0];
+        encounters[1].can_back_out = true;
+        encounters[1].max_times = -3;
+        encounters[1].caste_success = 4;
+        encounters[1].prompt = 0x0506;
+        encounters[1].texts = vec![
+            "Go".to_string(),
+            String::new(),
+            String::new(),
+            String::new(),
+        ];
+        encounters[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_simple_encounter_rows(
+            crate::realmz::write_simple_encounters(&encounters).unwrap(),
+            &encounters,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(&output[..record_bytes], &source[..record_bytes]);
+        let authored = &output[authored_start..2 * record_bytes];
+        assert_eq!(authored[3] as i8, -2);
+        assert_eq!(crate::realmz::i16_be(authored, 38), 0x0304);
+        assert_eq!(authored[98], 7);
+        assert_eq!(authored[103], 0);
+        assert_eq!(crate::realmz::i16_be(authored, 104), 0x0506);
+        assert_eq!(&authored[106..109], &[2, b'G', b'o']);
+        assert_eq!(&output[2 * record_bytes..], &[0xde, 0xad, 0xbe]);
     }
 
     #[test]

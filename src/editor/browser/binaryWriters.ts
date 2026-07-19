@@ -685,8 +685,10 @@ export function writeCasteOverrides(records: ScenarioCasteOverride[]) {
 
 export function writeSimpleEncounters(records: SimpleEncounterRecord[]) {
   return writeFixedRecords(records, SIMPLE_ENCOUNTER_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === SIMPLE_ENCOUNTER_RECORD_BYTES) return;
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== SIMPLE_ENCOUNTER_RECORD_BYTES) {
+      throw new Error(`Simple encounter ${record.id} has invalid compatibility byte storage`);
+    }
     writeEncounterActions(target, record.actions);
     for (let slot = 0; slot < 4; slot += 1) {
       target[96 + slot] = (record.choiceResults[slot] ?? 0) & 0xff;
@@ -695,6 +697,7 @@ export function writeSimpleEncounters(records: SimpleEncounterRecord[]) {
     target[100] = record.canBackOut ? 1 : 0;
     target[101] = record.maxTimes & 0xff;
     target[102] = record.casteSuccess & 0xff;
+    target[103] = 0;
     writeI16(target, 104, record.prompt);
   });
 }

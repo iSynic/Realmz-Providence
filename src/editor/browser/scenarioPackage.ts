@@ -467,7 +467,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.simpleEncounters.length > 0) {
     writes.push({
       path: "Data ED",
-      bytes: preserveMalformedRawTail("Data ED", writeSimpleEncounters(project.simpleEncounters), SIMPLE_ENCOUNTER_RECORD_BYTES, annex)
+      bytes: writeSimpleEncountersForExport(project.simpleEncounters, annex)
     });
   }
   if (project.complexEncounters.length > 0) {
@@ -907,6 +907,10 @@ function writeOptionLabelsForExport(options: Project["optionLabels"], annex: Bro
 
 function writeBattlesForExport(battles: Project["battles"], annex: BrowserCompatibilityAnnex | null) {
   return preserveImportedFixedRows("Data BD", writeBattles(battles), battles, BATTLE_RECORD_BYTES, annex);
+}
+
+function writeSimpleEncountersForExport(encounters: Project["simpleEncounters"], annex: BrowserCompatibilityAnnex | null) {
+  return preserveImportedFixedRows("Data ED", writeSimpleEncounters(encounters), encounters, SIMPLE_ENCOUNTER_RECORD_BYTES, annex);
 }
 
 function preserveImportedFixedRows(

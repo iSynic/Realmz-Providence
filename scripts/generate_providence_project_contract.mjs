@@ -65,7 +65,7 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "encounterActionRow", "simpleEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
@@ -73,6 +73,8 @@ const shopRecordSchema = schema.$defs?.shopRecord ?? {};
 const messageRecordSchema = schema.$defs?.messageRecord ?? {};
 const optionLabelRecordSchema = schema.$defs?.optionLabelRecord ?? {};
 const battleRecordSchema = schema.$defs?.battleRecord ?? {};
+const encounterActionRowSchema = schema.$defs?.encounterActionRow ?? {};
+const simpleEncounterRecordSchema = schema.$defs?.simpleEncounterRecord ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -107,6 +109,7 @@ expect(schema.properties?.shops?.items?.$ref === "#/$defs/shopRecord", "project 
 expect(schema.properties?.messages?.items?.$ref === "#/$defs/messageRecord", "project messages must contain canonical message DTOs");
 expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabelRecord", "project optionLabels must contain canonical option-label DTOs");
 expect(schema.properties?.battles?.items?.$ref === "#/$defs/battleRecord", "project battles must contain canonical battle DTOs");
+expect(schema.properties?.simpleEncounters?.items?.$ref === "#/$defs/simpleEncounterRecord", "project simpleEncounters must contain canonical simple-encounter DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
 expectSameArray(renderModeSchema.enum ?? [], ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"], "Map render-mode vocabulary");
 for (const [index, definition] of mapDefinitions.entries()) {
@@ -200,12 +203,25 @@ expect(battleRecordSchema.properties?.grid?.minItems === 169 && battleRecordSche
 expect(battleRecordSchema.properties?.rawBytes?.minItems === 346 && battleRecordSchema.properties?.rawBytes?.maxItems === 346, "battle rawBytes must retain one complete Realmz battle row when compatibility bytes are present");
 expect(battleRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "battle provenance must reference canonical provenance");
 expectSameArray(battleRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Battle omitted empty compatibility inventory");
+const encounterActionFields = ["slot", "rawCode", "id"];
+expectSameArray(Object.keys(encounterActionRowSchema.properties ?? {}), encounterActionFields, "Encounter action field inventory");
+expectSameArray(encounterActionRowSchema.required ?? [], encounterActionFields, "Encounter action required field inventory");
+expect(encounterActionRowSchema.properties?.slot?.minimum === 0 && encounterActionRowSchema.properties?.slot?.maximum === 31, "encounter action slots must match Realmz's 32 action rows");
+expect(encounterActionRowSchema.properties?.rawCode?.minimum === -128 && encounterActionRowSchema.properties?.rawCode?.maximum === 127, "encounter action CODE must retain the signed byte domain");
+const simpleEncounterFields = ["id", "actions", "choiceResults", "canBackOut", "maxTimes", "casteSuccess", "prompt", "texts", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(simpleEncounterRecordSchema.properties ?? {}), simpleEncounterFields, "Simple-encounter field inventory");
+expectSameArray(simpleEncounterRecordSchema.required ?? [], simpleEncounterFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Simple-encounter authored field inventory");
+expect(simpleEncounterRecordSchema.properties?.actions?.items?.$ref === "#/$defs/encounterActionRow", "simple encounters must contain canonical encounter action rows");
+expect(simpleEncounterRecordSchema.properties?.choiceResults?.minItems === 4 && simpleEncounterRecordSchema.properties?.choiceResults?.maxItems === 4, "simple encounters must retain four choice-result slots");
+expect(simpleEncounterRecordSchema.properties?.texts?.minItems === 4 && simpleEncounterRecordSchema.properties?.texts?.maxItems === 4, "simple encounters must retain four inline text slots");
+expect(simpleEncounterRecordSchema.properties?.rawBytes?.minItems === 426 && simpleEncounterRecordSchema.properties?.rawBytes?.maxItems === 426, "simple-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
+expectSameArray(simpleEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Simple-encounter omitted empty compatibility inventory");
 const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "SimpleEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -266,6 +282,8 @@ for (const alias of [
   "export type MessageRecord = ProvidenceMessageRecord;",
   "export type OptionLabelRecord = ProvidenceOptionLabelRecord;",
   "export type BattleRecord = ProvidenceBattleRecord;",
+  "export type EncounterActionRow = ProvidenceEncounterActionRow;",
+  "export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -290,6 +308,8 @@ expect(!typesSource.includes("export type ShopRecord = {"), "types.ts must not h
 expect(!typesSource.includes("export type MessageRecord = {"), "types.ts must not handwrite MessageRecord");
 expect(!typesSource.includes("export type OptionLabelRecord = {"), "types.ts must not handwrite OptionLabelRecord");
 expect(!typesSource.includes("export type BattleRecord = {"), "types.ts must not handwrite BattleRecord");
+expect(!typesSource.includes("export type EncounterActionRow = {"), "types.ts must not handwrite EncounterActionRow");
+expect(!typesSource.includes("export type SimpleEncounterRecord = {"), "types.ts must not handwrite SimpleEncounterRecord");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!typesSource.includes(`export type ${scenarioType} = {`), `types.ts must not handwrite ${scenarioType}`);
 }
@@ -323,6 +343,8 @@ expectSameSet(rustGeneratedReExports, [
   "MessageRecord",
   "OptionLabelRecord",
   "BattleRecord",
+  "EncounterActionRow",
+  "SimpleEncounterRecord",
   "TreasureRecord",
   "SourceFile",
   "SourceFileRole",
@@ -348,6 +370,8 @@ expect(!rustProjectSource.includes("pub struct ShopRecord {"), "project.rs must 
 expect(!rustProjectSource.includes("pub struct MessageRecord {"), "project.rs must not handwrite MessageRecord");
 expect(!rustProjectSource.includes("pub struct OptionLabelRecord {"), "project.rs must not handwrite OptionLabelRecord");
 expect(!rustProjectSource.includes("pub struct BattleRecord {"), "project.rs must not handwrite BattleRecord");
+expect(!rustProjectSource.includes("pub struct EncounterActionRow {"), "project.rs must not handwrite EncounterActionRow");
+expect(!rustProjectSource.includes("pub struct SimpleEncounterRecord {"), "project.rs must not handwrite SimpleEncounterRecord");
 expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
 expect(!rustProjectSource.includes("pub enum RenderMode {"), "project.rs must not handwrite RenderMode");
 expect(rustProjectSource.includes("impl LevelType {"), "project.rs must retain handwritten LevelType behavior methods");
@@ -461,6 +485,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_MESSAGE_FIELDS = ${JSON.stringify(Object.keys(messageRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_OPTION_LABEL_FIELDS = ${JSON.stringify(Object.keys(optionLabelRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_BATTLE_FIELDS = ${JSON.stringify(Object.keys(battleRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(simpleEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
     renderTypeScriptEnum(confidence) + `\n` +
@@ -517,6 +542,8 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[\n${renderArray(Object.keys(optionLabelRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_BATTLE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(battleRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(simpleEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
     renderRustEnum(confidence) + `\n` +

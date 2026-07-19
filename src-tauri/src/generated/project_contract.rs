@@ -250,6 +250,21 @@ pub const PROVIDENCE_BATTLE_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS: &[&str] = &[
+    "id",
+    "actions",
+    "choiceResults",
+    "canBackOut",
+    "maxTimes",
+    "casteSuccess",
+    "prompt",
+    "texts",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -545,6 +560,32 @@ pub struct BattleRecord {
     pub message_before: i16,
     pub message_after: i16,
     pub battle_macro: i16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EncounterActionRow {
+    pub slot: usize,
+    pub raw_code: i16,
+    pub id: i16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SimpleEncounterRecord {
+    pub id: usize,
+    pub actions: Vec<EncounterActionRow>,
+    pub choice_results: Vec<u8>,
+    pub can_back_out: bool,
+    pub max_times: i8,
+    pub caste_success: i8,
+    pub prompt: i16,
+    pub texts: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

@@ -727,8 +727,8 @@ export function emptyShop(id: number): ShopRecord {
   return { id, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, authored: true, provenance: authoredProvenance("Data SD", id, id * 3002, 3002) };
 }
 
-function emptySimpleEncounter(id: number): SimpleEncounterRecord {
-  return { id, actions: [], choiceResults: [0, 0, 0, 0], canBackOut: false, maxTimes: 0, casteSuccess: 0, prompt: 0, texts: ["", "", "", ""], rawBytes: new Array(426).fill(0), authored: true, provenance: authoredProvenance("Data ED", id, id * 426, 426) };
+export function emptySimpleEncounter(id: number): SimpleEncounterRecord {
+  return { id, actions: [], choiceResults: [0, 0, 0, 0], canBackOut: false, maxTimes: 0, casteSuccess: 0, prompt: 0, texts: ["", "", "", ""], authored: true, provenance: authoredProvenance("Data ED", id, id * 426, 426) };
 }
 
 function emptyComplexEncounter(id: number): ComplexEncounterRecord {

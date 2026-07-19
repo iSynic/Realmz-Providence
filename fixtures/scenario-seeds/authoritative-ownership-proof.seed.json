@@ -27,6 +27,24 @@
     { "id": 0, "text": "Proceed" },
     { "id": 1, "text": "Withdraw" }
   ],
+  "simpleEncounters": [
+    {
+      "key": "ownership-encounter",
+      "id": 0,
+      "prompt": "ownership-message",
+      "options": [
+        {
+          "label": "Continue",
+          "steps": [
+            { "kind": "message", "message": "ownership-message" }
+          ]
+        }
+      ],
+      "canBackOut": true,
+      "maxTimes": 1,
+      "casteSuccess": 0
+    }
+  ],
   "battles": [
     {
       "key": "ownership-battle",

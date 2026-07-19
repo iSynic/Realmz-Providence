@@ -243,7 +243,6 @@ function buildSimpleEncounter(
     casteSuccess: seed.casteSuccess ?? 0,
     prompt: seed.prompt === undefined ? 0 : resolveRef(seed.prompt, context.messages, "message", context),
     texts: padStringArray(seed.options?.map((option) => option.label) ?? seed.texts ?? [], 4, ""),
-    rawBytes: new Array(SIMPLE_ENCOUNTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data ED", id, id * SIMPLE_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES)
   };

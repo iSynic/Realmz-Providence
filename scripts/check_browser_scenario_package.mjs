@@ -127,12 +127,14 @@ sourceCastes[1] = 0x5c;
 sourceCastes[576] = 0x5d;
 sourceCastes[577] = 0x5e;
 sourceCastes[576 + 450] = 0xcd;
-const sourceSimpleEncounters = new Uint8Array(852);
+const sourceSimpleEncounters = new Uint8Array(855);
 sourceSimpleEncounters[0] = 0x61;
 sourceSimpleEncounters[1] = 0x62;
 sourceSimpleEncounters[426] = 0x63;
 sourceSimpleEncounters[427] = 0x64;
 sourceSimpleEncounters[426 + 103] = 0xa5;
+sourceSimpleEncounters[103] = 0xb6;
+sourceSimpleEncounters.set([0xde, 0xad, 0xbe], 852);
 const sourceComplexEncounters = new Uint8Array(1040);
 sourceComplexEncounters[0] = 0x65;
 sourceComplexEncounters[1] = 0x66;
@@ -1089,8 +1091,8 @@ const authoredTimedEncounter = timedEncounterRecord(1, {
 const encounterProject = {
   ...project,
   simpleEncounters: [
-    simpleEncounterRecord(0, { rawBytes: Array.from(sourceSimpleEncounters.slice(0, 426)), authored: false }),
-    { ...authoredSimpleEncounter, rawBytes: Array.from(sourceSimpleEncounters.slice(426, 852)), authored: true }
+    simpleEncounterRecord(0, { rawBytes: new Array(426).fill(0x11), authored: false }),
+    { ...authoredSimpleEncounter, rawBytes: new Array(426).fill(0x22), authored: true }
   ],
   complexEncounters: [
     complexEncounterRecord(0, { rawBytes: Array.from(sourceComplexEncounters.slice(0, 520)), authored: false }),
@@ -1115,13 +1117,14 @@ const writtenSimpleEncounters = encounterFiles.get("Data ED");
 const writtenComplexEncounters = encounterFiles.get("Data ED2");
 const writtenThiefEncounters = encounterFiles.get("Data TD2");
 const writtenTimedEncounters = encounterFiles.get("Data TD3");
-expect(writtenSimpleEncounters?.byteLength === 852, "Written Data ED should retain source row count");
+expect(writtenSimpleEncounters?.byteLength === 855, "Written Data ED should retain source rows and malformed tail");
 expect(writtenComplexEncounters?.byteLength === 1040, "Written Data ED2 should retain source row count");
 expect(writtenThiefEncounters?.byteLength === 236, "Written Data TD2 should retain source row count");
 expect(writtenTimedEncounters?.byteLength === 80, "Written Data TD3 should retain source row count");
-expect(bytesEqual(writtenSimpleEncounters?.slice(0, 426), sourceSimpleEncounters.slice(0, 426)), "Unauthored simple encounter row should remain byte-identical");
-expect(bytesEqual(writtenSimpleEncounters?.slice(426, 852), simpleEncounterRow(authoredSimpleEncounter, sourceSimpleEncounters.slice(426, 852))), "Authored simple encounter row should encode fields and preserve gap");
-expect(writtenSimpleEncounters?.[426 + 103] === 0xa5, "Authored simple encounter row should preserve gap byte 103");
+expect(bytesEqual(writtenSimpleEncounters?.slice(0, 426), sourceSimpleEncounters.slice(0, 426)), "Unauthored simple encounter row should preserve legacy bytes from the annex");
+expect(bytesEqual(writtenSimpleEncounters?.slice(426, 852), simpleEncounterRow(authoredSimpleEncounter)), "Authored simple encounter row should compile every byte without embedded raw identity");
+expect(writtenSimpleEncounters?.[426 + 103] === 0, "Authored simple encounter alignment padding should be deterministic zero");
+expect(bytesEqual(writtenSimpleEncounters?.slice(852), new Uint8Array([0xde, 0xad, 0xbe])), "Malformed Data ED tail should remain annex-owned");
 expect(bytesEqual(writtenComplexEncounters?.slice(0, 520), sourceComplexEncounters.slice(0, 520)), "Unauthored complex encounter row should remain byte-identical");
 expect(bytesEqual(writtenComplexEncounters?.slice(520, 1040), complexEncounterRow(authoredComplexEncounter, sourceComplexEncounters.slice(520, 1040))), "Authored complex encounter row should encode fields and preserve gaps");
 expect(writtenComplexEncounters?.[520 + 157] === 0x5a, "Authored complex encounter row should preserve known gap byte");
@@ -2164,9 +2167,8 @@ function simpleEncounterRecord(id, overrides = {}) {
   };
 }
 
-function simpleEncounterRow(record, rawBytes = new Uint8Array(426)) {
+function simpleEncounterRow(record) {
   const output = new Uint8Array(426);
-  output.set(rawBytes.slice(0, 426));
   setEncounterActions(output, record.actions);
   for (let slot = 0; slot < 4; slot += 1) {
     output[96 + slot] = (record.choiceResults[slot] ?? 0) & 0xff;

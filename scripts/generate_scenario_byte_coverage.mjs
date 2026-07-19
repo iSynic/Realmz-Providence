@@ -483,26 +483,27 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
     gate: "simple-encounter-record-writer",
     rowKind: "426-byte simple encounter record",
     semanticExposure: "simple-encounter-storage",
-    partialOnly: true,
     ownedFields: [
       { field: "Encounter action codes", internal: "code[32]", offset: 0, bytes: 32, type: "i8[32]" },
       { field: "Encounter action IDs", internal: "id[32]", offset: 32, bytes: 64, type: "i16be[32]" },
       { field: "Choice results", internal: "choiceResults[4]", offset: 96, bytes: 4, type: "u8[4]" },
       { field: "Back-out and result flags", internal: "canBackOut/maxTimes/casteSuccess", offset: 100, bytes: 3, type: "u8/i8" },
+      { field: "Alignment padding", internal: "padding", offset: 103, bytes: 1, type: "deterministic zero" },
       { field: "Prompt string", internal: "prompt", offset: 104, bytes: 2, type: "i16be" },
       { field: "Inline encounter text", internal: "texts[4]", offset: 106, bytes: 320, type: "Pascal[4]" }
     ],
-    preservedRanges: [
-      { field: "Compatibility byte", internal: "raw[103]", offset: 103, bytes: 1, type: "raw-preserved" }
-    ],
+    preservedRanges: [],
     evidence: [
-      "src-tauri/src/realmz/encounters.rs:encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap",
+      "src-tauri/src/realmz/encounters.rs:fresh_simple_encounter_compiles_complete_semantic_row",
+      "src-tauri/src/realmz/encounters.rs:imported_simple_encounter_compiles_without_record_byte_identity",
+      "src-tauri/src/exporter.rs:imported_simple_encounter_export_reads_legacy_bytes_only_from_annex",
       "src-tauri/src/realmz/encounters.rs:write_simple_encounters",
       "src-tauri/src/realmz/encounters.rs:parse_simple_encounter_records",
+      "scripts/run_authoritative_scenario_proof.mjs:assertOwnershipSimpleEncounter",
       "docs/generated/encounter-record-evidence.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Simple encounter records rewrite modeled action, result, prompt, and text fields when authored. Byte 103 remains preserve-only."
+    preservationPolicy: "Fresh and authored simple encounters compile all 426 bytes from canonical semantics, including deterministic zero alignment padding, without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
   },
   {
     container: "Data ED2",
@@ -2382,7 +2383,7 @@ function coverageStatusForFile(file) {
   if (name === SCENARIO_STARTUP_SHELL_CONTAINER) return "mixed-writable-preserved";
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
-  if (name === "Data ED" || name === "Data ED2") return "mixed-writable-preserved";
+  if (name === "Data ED2") return "mixed-writable-preserved";
   if (name === "Data MD2") return "mixed-writable-preserved";
   if (name === "Layout" && file.byteSizes?.size > 0 && [...file.byteSizes].some((size) => size > (RECORD_LAYOUTS.Layout?.recordBytes ?? 256))) return "mixed-writable-preserved";
   if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
@@ -2525,11 +2526,7 @@ function byteRangesForFile(file, layout) {
   }
   if (file.name === "Data ED") {
     return [
-      { start: 0, length: 96, endExclusive: 96, status: "decoded-writable", field: "Encounter actions", internal: "code[32]/id[32]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 96, length: 7, endExclusive: 103, status: "decoded-writable", field: "Choice and encounter outcome fields", internal: "choiceResults/canBackOut/maxTimes/casteSuccess", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 103, length: 1, endExclusive: 104, status: "preserved-known", field: "Compatibility byte", internal: "raw[103]", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 104, length: 2, endExclusive: 106, status: "decoded-writable", field: "Prompt string", internal: "prompt", writerGate: "docs/generated/encounter-shop-writer-gates.json" },
-      { start: 106, length: 320, endExclusive: 426, status: "decoded-writable", field: "Inline encounter text", internal: "texts[4]", writerGate: "docs/generated/encounter-shop-writer-gates.json" }
+      { start: 0, length: 426, endExclusive: 426, status: "decoded-writable", field: "Complete simple encounter row", internal: "semantic fields plus deterministic alignment padding", writerGate: "docs/generated/encounter-shop-writer-gates.json" }
     ];
   }
   if (file.name === "Data ED2") {

@@ -71,7 +71,7 @@ Runtime stride is `sizeof enc + 320`, with four 80-byte display buffers. In Prov
 | 100 | 1 | `canbackout` | Controls whether the dialog includes the back-out/cancel affordance. |
 | 101 | 1 | `maxtimes` | Attempt/try count copied into runtime `enctry`. |
 | 102 | 1 | `castesuccess` | Caste success/result evidence. Divinity labels still needed. |
-| 103 | 1 | padding/evidence | Preserve. |
+| 103 | 1 | alignment padding | The authoritative compiler writes deterministic zero. Unchanged imported byte identity is restored only from the compatibility annex. |
 | 104 | 2 | `prompt` | Central `Data SD2` prompt message ID. Runtime displays `-abs(prompt)`. |
 | 106 | 320 | text buffers | Four 80-byte inline display buffers passed to `ParamText`. |
 
@@ -79,7 +79,9 @@ Modern Realmz checks `choiceresult[0] == -4` before opening the choice dialog an
 
 ### Simple Encounter Confidence Debt
 
-Some corpus `Data ED` files are not evenly divisible by 426. Realmz source copies records by reading `sizeof enc` and then four 80-byte buffers, so the Windows-port runtime stride is source-backed; however, corpus tails/packing differences should be preserved and investigated before changing parser or writer behavior. Providence should avoid aggressive truncation and should keep imported tail bytes as source evidence when present.
+A current audit found 166 physical `Data ED` paths: four 32-byte Finder metadata companions and 37 distinct data payloads. Fourteen distinct payloads are exact multiples of the 426-byte runtime stride, while 23 contain historical tails. Across 194 complete rows in the aligned payloads, byte 103 was nonzero in 42 rows, but Realmz never reads it as a field; it is ABI alignment padding between the byte fields and the big-endian prompt word.
+
+Providence therefore owns every byte of a newly authored 426-byte row and emits byte 103 as zero. It does not infer semantics for historical tails or require imported record identity in the canonical model. During legacy export, unchanged imported rows and any malformed tail are restored from the bounded compatibility annex.
 
 ## Complex Encounter Layout
 
@@ -125,11 +127,13 @@ After any path returns a result, `newland` branches to one of the four result ac
 | File | Evidence |
 | --- | --- |
 | `Data ED2` | Clean 520-byte records across local output corpus; Trouble in the Sword Lands has 48,360 bytes = 93 records. |
-| `Data ED` | Runtime/source stride is 426 bytes in the current port, but multiple corpus files have trailing bytes when divided by 426. This is a preserve/investigate case, not a reason to invent field meanings. |
+| `Data ED` | Runtime/source stride is 426 bytes. Of 37 distinct data payloads in the broader local audit, 14 are exactly aligned and 23 have historical tails. Complete authored rows are compiler-owned; legacy rows and tails are annex-preserved without invented field meanings. |
 
 ## Providence Editor Implications
 
 - Keep editing scenario `Data ED` / `Data ED2`, not runtime `CE` / `CE2`.
+- Fresh simple encounters compile complete 426-byte records from canonical actions, results, controls, prompt, and text without `rawBytes`.
+- Byte 103 is deterministic compiler padding, while unchanged imported record bytes and historical tails are compatibility-annex concerns only.
 - Simple Encounter editor should expose four choices, four result action rows, four 80-byte display buffers, prompt message picker, back-out, max times, and caste success.
 - Complex Encounter editor should expose action result, word result, group flags, spell tests, item tests, thief hook, prompt picker, nine 40-byte buffers, and four result action rows.
 - Existing "Encounter Text" punctuation should remain authored display text unless a Divinity binary pass proves editor annotation semantics.
@@ -140,7 +144,7 @@ After any path returns a result, `newland` branches to one of the four result ac
 ## Validation Rules
 
 - `Data ED2` length should be divisible by 520.
-- `Data ED` should parse source-backed 426-byte records but preserve and warn on trailing bytes.
+- `Data ED` should parse source-backed 426-byte records, reject malformed embedded compatibility storage, and preserve imported trailing bytes only through the compatibility annex.
 - Prompt IDs should resolve to `Data SD2` messages when nonzero.
 - Simple choice results should map to available result rows or zero/eliminated state; only Option 1 may use the source-backed `-4` auto-run Result #4 sentinel.
 - Complex spell IDs should resolve through the spell picker or known class IDs below 7.
@@ -154,11 +158,10 @@ After any path returns a result, `newland` branches to one of the four result ac
 
 - Simple/complex encounter editor labels, defaults, and field ordering.
 - Whether Divinity exposes the hardcoded word commands or treats them as hidden runtime behavior.
-- Explanation for corpus `Data ED` trailing/packing cases.
+- Explanation for historical `Data ED` tail variants. This is legacy-compatibility archaeology, not a blocker for authoritative fresh authoring.
 
 ## Providence Follow-Up
 
-- Follow-up: `parser-writer`, `editor-ui`, `validation`.
+- Follow-up: complete the `Data ED2` semantic compiler boundary, then continue encounter UI and validation refinement.
 - Correct/rename complex encounter model fields to match source-backed `encount2` semantics.
-- Preserve `Data ED` tail bytes before adding aggressive simple encounter rewrite behavior.
 - Build Encounter editors after message, item, spell, and thief pickers are available.

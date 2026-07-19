@@ -952,7 +952,13 @@ export function validateBrowserProject(project: Project): ValidationReport {
   for (const monster of project.monsters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "monster", monster.id), errors, warnings);
   for (const treasure of project.treasures ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "treasure", treasure.id), errors, warnings);
   for (const shop of project.shops ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "shop", shop.id), errors, warnings);
-  for (const encounter of project.simpleEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "simpleEncounter", encounter.id), errors, warnings);
+  for (const encounter of project.simpleEncounters ?? []) {
+    const rawBytes = encounter.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 426) {
+      errors.push(`Simple encounter ${encounter.id} has invalid 426-byte compatibility storage.`);
+    }
+    appendTargetDiagnostics(validateRealmzTargetRecord(project, "simpleEncounter", encounter.id), errors, warnings);
+  }
   for (const encounter of project.complexEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
   for (const encounter of project.thiefEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "thiefEncounter", encounter.id), errors, warnings);
   for (const encounter of project.timedEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "timedEncounter", encounter.id), errors, warnings);

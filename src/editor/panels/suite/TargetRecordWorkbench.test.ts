@@ -74,7 +74,14 @@ function encounterProject(): Project {
     maxTimes: 0,
     casteSuccess: 0,
     prompt: 0,
-    texts: ["", "", "", ""]
+    texts: ["", "", "", ""],
+    provenance: {
+      sourceFile: "Data ED",
+      recordIndex: 1,
+      byteOffset: 426,
+      byteLength: 426,
+      confidence: "fixture-backed"
+    }
   }];
   project.complexEncounters = [{
     id: 2,

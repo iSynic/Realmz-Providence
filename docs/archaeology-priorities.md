@@ -216,7 +216,8 @@ The tenth follow-up archaeology pass tightened `Core records` around simple and 
 - runtime opcodes can eliminate choices or replace result rows in the caches;
 - simple encounters have four choice results and four 80-byte display buffers;
 - complex encounters have one action result, one word result, eight action-picker group flags, ten spell tests, five item tests, thief hooks, and nine 40-byte display buffers;
-- corpus `Data ED` files include tail/packing confidence debt, so Providence should preserve tails before aggressive simple encounter rewrites.
+- the authoritative `Data ED` writer now compiles every byte of a fresh 426-byte row from semantic data and emits byte 103 as deterministic alignment padding;
+- a broader audit found 37 distinct data payloads, including 23 with historical tails and 42 of 194 aligned rows with nonzero padding, so unchanged imported rows and tails remain bounded compatibility-annex material rather than canonical project state.
 
 Detailed evidence lives in `docs/format-evidence-cards/encounter-record-runtime-anchors.md` and `docs/generated/encounter-record-evidence.json`.
 

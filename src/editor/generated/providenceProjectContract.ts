@@ -235,6 +235,20 @@ export const PROVIDENCE_BATTLE_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = [
+  "id",
+  "actions",
+  "choiceResults",
+  "canBackOut",
+  "maxTimes",
+  "casteSuccess",
+  "prompt",
+  "texts",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -439,6 +453,26 @@ export type ProvidenceBattleRecord = {
   messageBefore: number;
   messageAfter: number;
   battleMacro: number;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceEncounterActionRow = {
+  slot: number;
+  rawCode: number;
+  id: number;
+};
+
+export type ProvidenceSimpleEncounterRecord = {
+  id: number;
+  actions: ProvidenceEncounterActionRow[];
+  choiceResults: number[];
+  canBackOut: boolean;
+  maxTimes: number;
+  casteSuccess: number;
+  prompt: number;
+  texts: string[];
   rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;

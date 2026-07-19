@@ -5,7 +5,7 @@
     "scenarioRoots": 87,
     "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
-    "editableContainers": 22,
+    "editableContainers": 24,
     "preservedContainers": 8,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
@@ -36,14 +36,14 @@
     "strictCompleteness": {
       "containerCount": 57,
       "semanticOwnershipCounts": {
-        "mixed": 13,
-        "complete": 42,
+        "mixed": 10,
+        "complete": 45,
         "runtime-only": 1,
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "partially-proven": 13,
-        "fixture-proven": 22,
+        "partially-proven": 12,
+        "fixture-proven": 23,
         "preserve-only": 8,
         "not-applicable": 14
       },
@@ -58,10 +58,10 @@
       "scenarioSemantics": {
         "label": "Scenario Semantics",
         "status": "complete",
-        "completeContainers": 42,
-        "mixedContainers": 13,
+        "completeContainers": 45,
+        "mixedContainers": 10,
         "needsFormatWorkContainers": 0,
-        "percentContainers": 73.68
+        "percentContainers": 78.95
       },
       "writerProvenData": {
         "label": "Writer-Proven Data",
@@ -81,7 +81,7 @@
       "codecInternals": {
         "label": "Codec Internals",
         "status": "stage-two-optional",
-        "preservedOrCustomPayloadBytes": 82843797,
+        "preservedOrCustomPayloadBytes": 82793990,
         "decodedResourcePayloadBytes": 841240
       },
       "strictOutstanding": {
@@ -109,7 +109,7 @@
       },
       "mediaCodecInternals": {
         "status": "stage-two-optional",
-        "preservedOrCustomPayloadBytes": 82843797,
+        "preservedOrCustomPayloadBytes": 82793990,
         "decodedResourcePayloadBytes": 841240,
         "note": "Full PICT/cicn/snd/custom-music internals are not required for scenario semantic completion."
       }
@@ -259,11 +259,11 @@
     {
       "container": "Data ED",
       "label": "Simple encounter records",
-      "status": "Partially Editable",
-      "coverageStatus": "mixed-writable-preserved",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
       "truth": {
-        "semanticOwnership": "mixed",
-        "writerReadiness": "partially-proven",
+        "semanticOwnership": "complete",
+        "writerReadiness": "fixture-proven",
         "evidenceQuality": "fixture-backed",
         "riskFlags": []
       },
@@ -297,7 +297,7 @@
         61440,
         64320
       ],
-      "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Data ED2",

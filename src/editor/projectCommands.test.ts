@@ -53,6 +53,21 @@ describe("project command facade", () => {
     expect(next.battles[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh simple encounters from semantic fields without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Simple Encounter");
+
+    const next = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create simple encounter",
+      recordType: "simpleEncounter",
+      id: 4
+    });
+
+    expect(next.simpleEncounters).toHaveLength(1);
+    expect(next.simpleEncounters[0].texts).toEqual(["", "", "", ""]);
+    expect(next.simpleEncounters[0].rawBytes).toBeUndefined();
+  });
+
   it("creates fresh map records from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Player Map");
 

@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    BattleRecord, Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker,
-    MapRecord, MapRecordRect, MapRender, MessageRecord, OptionLabelRecord, Provenance, RandomLevel,
-    RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioItemRecord,
-    ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile, ShopRecord,
-    TreasureRecord,
+    BattleRecord, Confidence, EncounterActionRow, GlobalMacroHook, LandLayout, LevelType,
+    MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender, MessageRecord, OptionLabelRecord,
+    Provenance, RandomLevel, RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks,
+    ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
+    ShopRecord, SimpleEncounterRecord, TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -873,32 +873,6 @@ pub struct ItemTextRecord {
     pub authored: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provenance: Option<Provenance>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EncounterActionRow {
-    pub slot: usize,
-    pub raw_code: i16,
-    pub id: i16,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SimpleEncounterRecord {
-    pub id: usize,
-    pub actions: Vec<EncounterActionRow>,
-    pub choice_results: Vec<u8>,
-    pub can_back_out: bool,
-    pub max_times: i8,
-    pub caste_success: i8,
-    pub prompt: i16,
-    pub texts: Vec<String>,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

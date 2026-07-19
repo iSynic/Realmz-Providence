@@ -9,6 +9,7 @@ import type {
   ProvidenceMapRecordRect,
   ProvidenceMapRender,
   ProvidenceBattleRecord,
+  ProvidenceEncounterActionRow,
   ProvidenceMessageRecord,
   ProvidenceOptionLabelRecord,
   ProvidenceProjectOrigin,
@@ -24,6 +25,7 @@ import type {
   ProvidenceScenarioRestrictions,
   ProvidenceScenarioShell,
   ProvidenceShopRecord,
+  ProvidenceSimpleEncounterRecord,
   ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
   ProvidenceSourceFileRole,
@@ -48,6 +50,8 @@ export type ShopRecord = ProvidenceShopRecord;
 export type MessageRecord = ProvidenceMessageRecord;
 export type OptionLabelRecord = ProvidenceOptionLabelRecord;
 export type BattleRecord = ProvidenceBattleRecord;
+export type EncounterActionRow = ProvidenceEncounterActionRow;
+export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -762,26 +766,6 @@ export type MonsterSet = {
 export type MonsterDescriptionRecord = {
   id: number;
   text: string;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type EncounterActionRow = {
-  slot: number;
-  rawCode: number;
-  id: number;
-};
-
-export type SimpleEncounterRecord = {
-  id: number;
-  actions: EncounterActionRow[];
-  choiceResults: number[];
-  canBackOut: boolean;
-  maxTimes: number;
-  casteSuccess: number;
-  prompt: number;
-  texts: string[];
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;

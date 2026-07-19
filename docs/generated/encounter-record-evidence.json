@@ -37,7 +37,7 @@
         { "offset": 100, "size": 1, "field": "canbackout", "kind": "bool", "editorMeaning": "back-out/cancel affordance" },
         { "offset": 101, "size": 1, "field": "maxtimes", "kind": "i8", "editorMeaning": "attempt count" },
         { "offset": 102, "size": 1, "field": "castesuccess", "kind": "i8", "editorMeaning": "caste success/result evidence" },
-        { "offset": 103, "size": 1, "field": "padding", "kind": "raw", "editorMeaning": "preserve" },
+        { "offset": 103, "size": 1, "field": "padding", "kind": "deterministic-zero", "editorMeaning": "canonical compiler emits zero; imported byte identity belongs to the compatibility annex" },
         { "offset": 104, "size": 2, "field": "prompt", "kind": "be_i16", "editorMeaning": "Data SD2 prompt message id" },
         { "offset": 106, "size": 320, "field": "textBuffers", "kind": "pascal-ish-bytes[4][80]", "editorMeaning": "simple choice display buffers" }
       ]
@@ -79,7 +79,15 @@
     "Data ED": {
       "presence": "44/44",
       "recordSizeBytes": 426,
-      "confidenceDebt": "several corpus files have trailing bytes when divided by 426; preserve and investigate before aggressive rewrites"
+      "physicalFilesAudited": 166,
+      "finderMetadataCompanions": 4,
+      "distinctDataPayloads": 37,
+      "exactAlignedPayloads": 14,
+      "tailBearingPayloads": 23,
+      "alignedRowsAudited": 194,
+      "nonzeroPaddingRows": 42,
+      "ownershipConclusion": "Byte 103 is compiler-owned ABI padding and is deterministic zero for authored rows. Unchanged imported rows and historical tails remain compatibility-annex data.",
+      "confidenceDebt": "Twenty-three distinct payloads have historical bytes after the last complete 426-byte row. Their meaning remains unknown and bounded to legacy-import preservation."
     },
     "Data ED2": {
       "presence": "44/44",
@@ -88,11 +96,12 @@
     }
   },
   "editorReadiness": {
-    "simpleEncounter": "shell-ready-with-tail-preservation-warning",
+    "simpleEncounter": "authoritative-semantic-writer-with-annex-only-legacy-preservation",
     "complexEncounter": "ready-for-corrected-typed-model-and-ui",
     "validation": [
       "Data ED2 length divisible by 520",
-      "Data ED parse uses 426-byte runtime stride and preserves trailing bytes",
+      "Data ED parse uses the 426-byte runtime stride; export restores unchanged imported rows and trailing bytes only from the compatibility annex",
+      "fresh and authored Data ED rows compile byte 103 as deterministic zero",
       "prompt ids resolve to Data SD2",
       "simple choice results map to available result rows or zero eliminated state",
       "complex spell ids resolve to spells or class ids below 7",

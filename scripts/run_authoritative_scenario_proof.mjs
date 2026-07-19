@@ -45,6 +45,8 @@ assertOwnershipMessage(project.messages, "Canonical project");
 expect((project.messages[0].rawBytes?.length ?? 0) === 0, "Fresh canonical message must not carry compatibility bytes");
 assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
 expect(project.optionLabels.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical option labels must not carry compatibility bytes");
+assertOwnershipSimpleEncounter(project.simpleEncounters, "Canonical project");
+expect(project.simpleEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical simple encounters must not carry compatibility bytes");
 assertOwnershipBattle(project.battles, "Canonical project");
 expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical battles must not carry compatibility bytes");
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
@@ -167,6 +169,7 @@ expect(
 );
 assertOwnershipMessage(reimported.messages, "Reimport");
 assertOwnershipOptionLabels(reimported.optionLabels, "Reimport");
+assertOwnershipSimpleEncounter(reimported.simpleEncounters, "Reimport");
 assertOwnershipBattle(reimported.battles, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
@@ -186,6 +189,7 @@ const summary = {
     maps: project.maps.length,
     actionPoints: project.triggers.length,
     messages: project.messages.length,
+    simpleEncounters: project.simpleEncounters.length,
     battles: project.battles.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
@@ -223,6 +227,7 @@ const summary = {
     compatibilityAnnexPresent: true,
     activeActionPointRecovered: true,
     messageRecovered: true,
+    simpleEncounterRecovered: true,
     battleRecovered: true,
     itemTextRecovered: true,
     treasureRecovered: true,
@@ -289,6 +294,8 @@ async function assertNoRawSources(stage) {
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
   expect(savedProject.optionLabels?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} option labels contain compatibility bytes`);
+  assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
+  expect(savedProject.simpleEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} simple encounters contain compatibility bytes`);
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
   expect(savedProject.battles?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} battles contain compatibility bytes`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
@@ -311,6 +318,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data DD", 100 * 40],
     ["Data SD2", 256],
     ["Data OD", 50],
+    ["Data ED", 426],
     ["Data BD", 346],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
@@ -324,7 +332,7 @@ function assertCompleteNativeFolder(files, label) {
     expect(files.has(name), `${label} output is missing ${name}`);
     expect(files.get(name).byteLength === bytes, `${label} ${name} should be ${bytes} bytes, found ${files.get(name).byteLength}`);
   }
-  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD"]) {
+  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD2", "Data TD3", "Data ED2", "Data MD"]) {
     expect(files.has(name), `${label} output is missing required empty table ${name}`);
     expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
@@ -344,6 +352,14 @@ function assertCompleteNativeFolder(files, label) {
   expect(battle[84 * 2] === 0 && battle[84 * 2 + 1] === 1, `${label} Data BD does not contain the authored monster placement`);
   expect(battle[338] === 3, `${label} Data BD has the wrong authored distance`);
   expect(battle[339] === 0, `${label} Data BD alignment padding is not deterministic zero`);
+  const simpleEncounter = files.get("Data ED");
+  expect(simpleEncounter[0] === 1, `${label} Data ED does not contain the authored message action`);
+  expect(readI16(simpleEncounter, 32) === 0, `${label} Data ED message action has the wrong authored ID`);
+  expect(simpleEncounter[96] === 1, `${label} Data ED has the wrong first choice result`);
+  expect(simpleEncounter[100] === 1 && simpleEncounter[101] === 1 && simpleEncounter[102] === 0, `${label} Data ED has the wrong authored encounter controls`);
+  expect(simpleEncounter[103] === 0, `${label} Data ED alignment padding is not deterministic zero`);
+  expect(readI16(simpleEncounter, 104) === 0, `${label} Data ED has the wrong prompt message ID`);
+  expect(Buffer.from(simpleEncounter.slice(106, 115)).equals(Buffer.from([8, 67, 111, 110, 116, 105, 110, 117, 101])), `${label} Data ED has the wrong authored option text`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
 }
 
@@ -366,6 +382,16 @@ function assertOwnershipOptionLabels(records, label) {
   const withdraw = records?.find((record) => record.id === 1);
   expect(proceed?.text === "Proceed", `${label} has the wrong option label 0`);
   expect(withdraw?.text === "Withdraw", `${label} has the wrong option label 1`);
+}
+
+function assertOwnershipSimpleEncounter(records, label) {
+  const encounter = records?.find((record) => record.id === 0);
+  expect(encounter, `${label} is missing simple encounter 0`);
+  expect(encounter.actions?.some((action) => action.slot === 0 && action.rawCode === 1 && action.id === 0), `${label} simple encounter has the wrong message action`);
+  expect(encounter.choiceResults?.join(",") === "1,0,0,0", `${label} simple encounter has the wrong choice results`);
+  expect(encounter.canBackOut === true && encounter.maxTimes === 1 && encounter.casteSuccess === 0, `${label} simple encounter has the wrong control fields`);
+  expect(encounter.prompt === 0, `${label} simple encounter has the wrong prompt`);
+  expect(encounter.texts?.join("\n") === "Continue\n\n\n", `${label} simple encounter has the wrong option text`);
 }
 
 function assertOwnershipBattle(records, label) {
@@ -453,6 +479,11 @@ function assertManifestNamesEqual(expectedNames, files, label) {
   const expected = [...expectedNames].sort((left, right) => left.localeCompare(right));
   const actual = [...files.keys()].sort((left, right) => left.localeCompare(right));
   expect(expected.join("\n") === actual.join("\n"), `${label} does not match the compiler output file set`);
+}
+
+function readI16(bytes, offset) {
+  const value = ((bytes[offset] ?? 0) << 8) | (bytes[offset + 1] ?? 0);
+  return value >= 0x8000 ? value - 0x10000 : value;
 }
 
 function fileManifest(files) {

@@ -37,9 +37,11 @@ pub fn parse_simple_encounter_records(buffer: &[u8]) -> Vec<SimpleEncounterRecor
 
 pub fn write_simple_encounters(records: &[SimpleEncounterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, SIMPLE_ENCOUNTER_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, SIMPLE_ENCOUNTER_BYTES) {
-            return Ok(());
+        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != SIMPLE_ENCOUNTER_BYTES {
+            return Err(ProvidenceError::message(format!(
+                "Simple encounter {} has invalid compatibility byte storage",
+                record.id
+            )));
         }
         write_encounter_actions(buffer, &record.actions)?;
         for slot in 0..4 {
@@ -52,6 +54,7 @@ pub fn write_simple_encounters(records: &[SimpleEncounterRecord]) -> Result<Vec<
         buffer[100] = u8::from(record.can_back_out);
         buffer[101] = record.max_times as u8;
         buffer[102] = record.caste_success as u8;
+        buffer[103] = 0;
         write_i16_be(buffer, 104, record.prompt);
         Ok(())
     })
@@ -292,10 +295,7 @@ mod tests {
 
     #[test]
     fn encounter_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 4] = [
-            (SIMPLE_ENCOUNTER_BYTES, |bytes| {
-                write_simple_encounters(&parse_simple_encounter_records(bytes)).unwrap()
-            }),
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 3] = [
             (COMPLEX_ENCOUNTER_BYTES, |bytes| {
                 write_complex_encounters(&parse_complex_encounter_records(bytes)).unwrap()
             }),
@@ -332,45 +332,44 @@ mod tests {
     }
 
     #[test]
-    fn encounter_storage_simple_mutates_only_owned_fields_and_preserves_gap() {
-        let mut input = vec![0u8; SIMPLE_ENCOUNTER_BYTES * 2];
-        let encounter_start = SIMPLE_ENCOUNTER_BYTES;
-        input[encounter_start + 103] = 0xA5;
-
-        let mut encounters = parse_simple_encounter_records(&input);
-        encounters[1].authored = true;
-        encounters[1].actions.push(EncounterActionRow {
+    fn fresh_simple_encounter_compiles_complete_semantic_row() {
+        let mut encounter =
+            parse_simple_encounter_records(&vec![0; SIMPLE_ENCOUNTER_BYTES]).remove(0);
+        encounter.raw_bytes.clear();
+        encounter.authored = true;
+        encounter.actions = vec![EncounterActionRow {
             slot: 3,
             raw_code: -2,
             id: 0x0304,
-        });
-        encounters[1].choice_results[2] = 7;
-        encounters[1].can_back_out = true;
-        encounters[1].max_times = -3;
-        encounters[1].caste_success = 4;
-        encounters[1].prompt = 0x0506;
-        encounters[1].texts[0] = "Go".to_string();
+        }];
+        encounter.choice_results[2] = 7;
+        encounter.can_back_out = true;
+        encounter.max_times = -3;
+        encounter.caste_success = 4;
+        encounter.prompt = 0x0506;
+        encounter.texts[0] = "Go".into();
+        let output = write_simple_encounters(&[encounter]).unwrap();
+        assert_eq!(output.len(), SIMPLE_ENCOUNTER_BYTES);
+        assert_eq!(output[3] as i8, -2);
+        assert_eq!(i16_be(&output, 38), 0x0304);
+        assert_eq!(&output[98..104], &[7, 0, 1, 0xfd, 4, 0]);
+        assert_eq!(i16_be(&output, 104), 0x0506);
+        assert_eq!(&output[106..109], &[2, b'G', b'o']);
+    }
 
-        let output = write_simple_encounters(&encounters).unwrap();
-        assert_eq!(output.len(), input.len());
-        assert_eq!(output[encounter_start + 103], 0xA5);
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![
-                encounter_start + 3,
-                encounter_start + 38,
-                encounter_start + 39,
-                encounter_start + 98,
-                encounter_start + 100,
-                encounter_start + 101,
-                encounter_start + 102,
-                encounter_start + 104,
-                encounter_start + 105,
-                encounter_start + 106,
-                encounter_start + 107,
-                encounter_start + 108,
-            ]
-        );
+    #[test]
+    fn imported_simple_encounter_compiles_without_record_byte_identity() {
+        let mut input = vec![0u8; SIMPLE_ENCOUNTER_BYTES];
+        input[103] = 0xa5;
+        input[106..110].copy_from_slice(&[2, b'G', b'o', 0xcc]);
+        let mut records = parse_simple_encounter_records(&input);
+        records[0].raw_bytes.fill(0x5a);
+        let output = write_simple_encounters(&records).unwrap();
+        assert_ne!(output, input);
+        assert_eq!(output[103], 0);
+        assert_eq!(&output[106..110], &[2, b'G', b'o', 0]);
+        records[0].raw_bytes = vec![1];
+        assert!(write_simple_encounters(&records).is_err());
     }
 
     #[test]

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyBattle, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
+import { emptyBattle, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -289,6 +289,61 @@ describe("browser option-label writer", () => {
 
   it("rejects malformed compatibility storage", () => {
     expect(() => writeOptionLabels([{ ...emptyOptionLabel(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+  });
+});
+
+describe("browser simple-encounter writer", () => {
+  it("compiles a fresh record entirely from semantic fields", () => {
+    const record = {
+      ...emptySimpleEncounter(0),
+      actions: [{ slot: 3, rawCode: -7, id: 321 }],
+      choiceResults: [1, 2, 3, 4],
+      canBackOut: true,
+      maxTimes: -2,
+      casteSuccess: 5,
+      prompt: 17,
+      texts: ["Continue", "Search", "Leave", "Wait"]
+    };
+
+    expect(record.rawBytes).toBeUndefined();
+    const output = writeSimpleEncounters([record]);
+
+    expect(output).toHaveLength(426);
+    expect(output[3]).toBe(0xf9);
+    expect(i16(output, 32 + 3 * 2)).toBe(321);
+    expect(Array.from(output.slice(96, 103))).toEqual([1, 2, 3, 4, 1, 0xfe, 5]);
+    expect(output[103]).toBe(0);
+    expect(i16(output, 104)).toBe(17);
+    expect(Array.from(output.slice(106, 115))).toEqual([8, 67, 111, 110, 116, 105, 110, 117, 101]);
+    expect(Array.from(output.slice(115, 186))).toEqual(new Array(71).fill(0));
+  });
+
+  it("recompiles imported semantics without record byte identity", () => {
+    const input = new Uint8Array(426).fill(0xa5);
+    input[0] = 9;
+    setI16(input, 32, -12);
+    input.set([4, 3, 2, 1, 1, 7, 8], 96);
+    input[103] = 0xb6;
+    setI16(input, 104, 19);
+    input.fill(0, 106, 426);
+    input.set([2, 79, 107], 106);
+    const imported = parseScenarioBuffers(new Map([["Data ED", input]])).simpleEncounters[0];
+
+    const output = writeSimpleEncounters([{ ...imported, rawBytes: new Array(426).fill(0x5a) }]);
+
+    expect(output[0]).toBe(9);
+    expect(i16(output, 32)).toBe(-12);
+    expect(Array.from(output.slice(96, 103))).toEqual([4, 3, 2, 1, 1, 7, 8]);
+    expect(output[103]).toBe(0);
+    expect(i16(output, 104)).toBe(19);
+    expect(Array.from(output.slice(106, 109))).toEqual([2, 79, 107]);
+    expect(Array.from(output.slice(109, 186))).toEqual(new Array(77).fill(0));
+    expect(output).not.toEqual(input);
+  });
+
+  it("rejects malformed compatibility storage", () => {
+    expect(() => writeSimpleEncounters([{ ...emptySimpleEncounter(0), rawBytes: [1] }]))
       .toThrow("invalid compatibility byte storage");
   });
 });
