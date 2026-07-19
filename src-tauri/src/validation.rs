@@ -268,6 +268,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     validate_map_records(project, &mut errors, &mut warnings);
+    validate_custom_landlooks(project, &mut errors);
     validate_tile_attributes(project, authored_manifest_files.as_deref(), &mut warnings);
     for message in &project.messages {
         if !message.raw_bytes.is_empty() && message.raw_bytes.len() != crate::realmz::MESSAGE_BYTES
@@ -1360,6 +1361,71 @@ fn custom_landlook_metadata_file(landlook: i8) -> Option<&'static str> {
         7 => Some("Data Custom 2 BD"),
         8 => Some("Data Custom 3 BD"),
         _ => None,
+    }
+}
+
+fn validate_custom_landlooks(project: &ProvidenceProject, errors: &mut Vec<String>) {
+    let mut seen = BTreeSet::new();
+    for metadata in &project.custom_landlooks {
+        if !seen.insert(metadata.landlook) {
+            errors.push(format!(
+                "Custom landlook {} is defined more than once.",
+                metadata.landlook
+            ));
+        }
+        let Some(expected_source) = custom_landlook_metadata_file(metadata.landlook) else {
+            errors.push(format!(
+                "Custom landlook {} is outside the authored 6..8 range.",
+                metadata.landlook
+            ));
+            continue;
+        };
+        if metadata.source_file != expected_source {
+            errors.push(format!(
+                "Custom landlook {} must compile to {expected_source}; found {}.",
+                metadata.landlook, metadata.source_file
+            ));
+        }
+        if metadata.records.len() != crate::realmz::MAPSTATS_RECORDS {
+            errors.push(format!(
+                "Custom landlook {} must define {} mapstats rows; found {}.",
+                metadata.landlook,
+                crate::realmz::MAPSTATS_RECORDS,
+                metadata.records.len()
+            ));
+        }
+        for (index, record) in metadata.records.iter().enumerate() {
+            if usize::try_from(record.tile).ok() != Some(index) {
+                errors.push(format!(
+                    "Custom landlook {} mapstats row {index} has tile ID {}.",
+                    metadata.landlook, record.tile
+                ));
+            }
+            if record.combat_build.len() != 3
+                || record.combat_build.iter().any(|row| row.len() != 3)
+            {
+                errors.push(format!(
+                    "Custom landlook {} tile {} must define a 3 x 3 combat-build grid.",
+                    metadata.landlook, record.tile
+                ));
+            }
+        }
+        if metadata.range_slots.len() != crate::realmz::LANDLOOK_RANGE_SLOTS {
+            errors.push(format!(
+                "Custom landlook {} must define {} range slots; found {}.",
+                metadata.landlook,
+                crate::realmz::LANDLOOK_RANGE_SLOTS,
+                metadata.range_slots.len()
+            ));
+        }
+        for (index, slot) in metadata.range_slots.iter().enumerate() {
+            if slot.slot != index {
+                errors.push(format!(
+                    "Custom landlook {} range row {index} has slot ID {}.",
+                    metadata.landlook, slot.slot
+                ));
+            }
+        }
     }
 }
 

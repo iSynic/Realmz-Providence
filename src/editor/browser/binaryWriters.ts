@@ -409,15 +409,7 @@ export function writeLandLayout(layout: LandLayout) {
 }
 
 export function writeCustomLandlookMetadata(metadata: CustomLandlookMetadata) {
-  const rawBytes = metadata.rawBytes ?? [];
-  let output = rawBytes.length >= CUSTOM_LANDLOOK_METADATA_BYTES
-    ? new Uint8Array(rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES);
-  if (output.byteLength < CUSTOM_LANDLOOK_METADATA_BYTES) {
-    const resized = new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES);
-    resized.set(output);
-    output = resized;
-  }
+  const output = new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES);
   for (const [tile, record] of metadata.records.slice(0, MAPSTATS_RECORDS).entries()) {
     writeMapstatsRecord(output, tile, record);
   }
@@ -429,16 +421,6 @@ export function writeCustomLandlookMetadata(metadata: CustomLandlookMetadata) {
     const start = baseOffset + 4 + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
     writeI16(output, start, slot.firstTile);
     writeI16(output, start + 2, slot.lastTile);
-    writeI16(output, start + 4, slot.reserved);
-  }
-  const trailingBytes = metadata.trailingBytes ?? [];
-  if (rawBytes.length <= CUSTOM_LANDLOOK_METADATA_BYTES && trailingBytes.length > 0) {
-    const extended = new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES + trailingBytes.length);
-    extended.set(output.subarray(0, CUSTOM_LANDLOOK_METADATA_BYTES));
-    for (let index = 0; index < trailingBytes.length; index += 1) {
-      extended[CUSTOM_LANDLOOK_METADATA_BYTES + index] = trailingBytes[index] & 0xff;
-    }
-    output = extended;
   }
   return output;
 }
@@ -990,7 +972,9 @@ function writeMapstatsRecord(output: Uint8Array, tile: number, record: CustomLan
   writeI16(output, start + 12, record.los);
   writeI16(output, start + 14, record.flyFloat);
   writeI16(output, start + 16, record.forest);
-  writeI16(output, start + 18, record.spare);
+  // Preserve-only words are restored by the compatibility-annex overlay for
+  // edited imports. Fresh compilation always emits a neutral value here.
+  writeI16(output, start + 18, 0);
   for (let row = 0; row < 3; row += 1) {
     for (let col = 0; col < 3; col += 1) {
       writeI16(output, start + 20 + (row * 3 + col) * 2, record.combatBuild?.[row]?.[col] ?? 0);

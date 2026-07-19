@@ -2,6 +2,7 @@ import {
   BATTLE_RECORD_BYTES,
   CASTE_RECORD_BYTES,
   COMPLEX_ENCOUNTER_RECORD_BYTES,
+  CUSTOM_LANDLOOK_METADATA_BYTES,
   DOOR_LEVEL_RECORD_BYTES,
   DOOR_RECORD_BYTES,
   EXTRACODE_RECORD_BYTES,
@@ -9,6 +10,10 @@ import {
   GLOBAL_MACRO_HOOK_BYTES,
   LAND_LAYOUT_RECORD_BYTES,
   ITEM_RECORD_BYTES,
+  LANDLOOK_RANGE_SLOT_BYTES,
+  LANDLOOK_RANGE_SLOTS,
+  MAPSTATS_RECORD_BYTES,
+  MAPSTATS_RECORDS,
   MAP_RECORD_BYTES,
   MESSAGE_RECORD_BYTES,
   MONSTER_DESCRIPTION_RECORD_BYTES,
@@ -421,7 +426,11 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
     if (!landlook.authored) continue;
     writes.push({
       path: landlook.sourceFile,
-      bytes: writeCustomLandlookMetadata(landlook)
+      bytes: preserveImportedCustomLandlookCompatibility(
+        writeCustomLandlookMetadata(landlook),
+        landlook.sourceFile,
+        annex
+      )
     });
   }
   if (project.scenario.contactInfo) {
@@ -939,6 +948,30 @@ function preserveImportedLandLayoutTail(bytes: Uint8Array, annex: BrowserCompati
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
   output.set(raw.slice(LAND_LAYOUT_RECORD_BYTES), LAND_LAYOUT_RECORD_BYTES);
+  return output;
+}
+
+function preserveImportedCustomLandlookCompatibility(
+  bytes: Uint8Array,
+  sourceFile: string,
+  annex: BrowserCompatibilityAnnex | null
+) {
+  const raw = rawSourceBytes(sourceFile, annex);
+  if (!raw) return bytes;
+  const output = new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES + Math.max(0, raw.byteLength - CUSTOM_LANDLOOK_METADATA_BYTES));
+  output.set(bytes);
+  for (let tile = 0; tile < MAPSTATS_RECORDS; tile += 1) {
+    const offset = tile * MAPSTATS_RECORD_BYTES + 18;
+    if (raw.byteLength >= offset + 2) output.set(raw.slice(offset, offset + 2), offset);
+  }
+  const rangeOffset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+  for (let slot = 0; slot < LANDLOOK_RANGE_SLOTS; slot += 1) {
+    const offset = rangeOffset + slot * LANDLOOK_RANGE_SLOT_BYTES + 4;
+    if (raw.byteLength >= offset + 2) output.set(raw.slice(offset, offset + 2), offset);
+  }
+  if (raw.byteLength > CUSTOM_LANDLOOK_METADATA_BYTES) {
+    output.set(raw.slice(CUSTOM_LANDLOOK_METADATA_BYTES), CUSTOM_LANDLOOK_METADATA_BYTES);
+  }
   return output;
 }
 

@@ -8,7 +8,10 @@ use crate::project::{
     ScenarioSpellOverride, ScenarioTarget, SimpleEncounterRecord, TargetCompatibilityBuckets,
     TargetCompatibilityIssue, ThiefEncounterRecord, TimedEncounterRecord,
 };
-use crate::realmz::landlooks::TILE_SOLIDS_BYTES;
+use crate::realmz::landlooks::{
+    CUSTOM_LANDLOOK_METADATA_BYTES, LANDLOOK_RANGE_SLOTS, LANDLOOK_RANGE_SLOT_BYTES,
+    MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES, TILE_SOLIDS_BYTES,
+};
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
     write_door_file_for_levels, write_extracodes, write_fields, write_global_macro_hooks,
@@ -224,7 +227,11 @@ fn compile_realmz_scenario(
             write_if_nonempty(
                 &mut manifest,
                 &landlook.source_file,
-                write_custom_landlook_metadata(landlook)?,
+                preserve_imported_custom_landlook_compatibility(
+                    write_custom_landlook_metadata(landlook)?,
+                    &landlook.source_file,
+                    compatibility_annex,
+                )?,
             )?;
         }
     }
@@ -978,6 +985,37 @@ fn preserve_imported_land_layout_tail(
     };
     if raw.len() > LAND_LAYOUT_BYTES {
         bytes.extend_from_slice(&raw[LAND_LAYOUT_BYTES..]);
+    }
+    Ok(bytes)
+}
+
+fn preserve_imported_custom_landlook_compatibility(
+    mut bytes: Vec<u8>,
+    source_file: &str,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read(source_file)?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+
+    for tile in 0..MAPSTATS_RECORDS {
+        let offset = tile * MAPSTATS_RECORD_BYTES + 18;
+        if raw.len() >= offset + 2 {
+            bytes[offset..offset + 2].copy_from_slice(&raw[offset..offset + 2]);
+        }
+    }
+    let range_offset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+    for slot in 0..LANDLOOK_RANGE_SLOTS {
+        let offset = range_offset + slot * LANDLOOK_RANGE_SLOT_BYTES + 4;
+        if raw.len() >= offset + 2 {
+            bytes[offset..offset + 2].copy_from_slice(&raw[offset..offset + 2]);
+        }
+    }
+    if raw.len() > CUSTOM_LANDLOOK_METADATA_BYTES {
+        bytes.extend_from_slice(&raw[CUSTOM_LANDLOOK_METADATA_BYTES..]);
     }
     Ok(bytes)
 }
@@ -1903,14 +1941,15 @@ mod tests {
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
-        preserve_imported_global_macro_hooks, preserve_imported_land_layout_tail,
-        preserve_imported_message_rows, preserve_imported_monster_description_rows,
-        preserve_imported_monster_rows, preserve_imported_option_label_rows,
-        preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
-        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
-        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
-        write_caste_overrides_for_export, write_race_overrides_for_export,
-        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_custom_landlook_compatibility, preserve_imported_global_macro_hooks,
+        preserve_imported_land_layout_tail, preserve_imported_message_rows,
+        preserve_imported_monster_description_rows, preserve_imported_monster_rows,
+        preserve_imported_option_label_rows, preserve_imported_scenario_support_file,
+        preserve_imported_simple_encounter_rows, preserve_imported_singleton,
+        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1974,6 +2013,62 @@ mod tests {
         assert_eq!(
             preserve_imported_land_layout_tail(semantic.clone(), None).unwrap(),
             semantic
+        );
+    }
+
+    #[test]
+    fn custom_landlook_preserve_only_words_and_tail_come_only_from_annex() {
+        use crate::realmz::landlooks::{
+            CUSTOM_LANDLOOK_METADATA_BYTES, LANDLOOK_RANGE_SLOT_BYTES, MAPSTATS_RECORDS,
+            MAPSTATS_RECORD_BYTES,
+        };
+
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+        let mut source = vec![0xa5; CUSTOM_LANDLOOK_METADATA_BYTES];
+        let spare_offset = 5 * MAPSTATS_RECORD_BYTES + 18;
+        source[spare_offset..spare_offset + 2].copy_from_slice(&0x1234i16.to_be_bytes());
+        let range_reserved_offset =
+            MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_SLOT_BYTES + 4;
+        source[range_reserved_offset..range_reserved_offset + 2]
+            .copy_from_slice(&0x2345i16.to_be_bytes());
+        source.extend_from_slice(&[0xca, 0xfe, 0x01]);
+        fs::write(raw_dir.join("Data Custom 1 BD"), &source).unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+        let mut semantic = vec![0; CUSTOM_LANDLOOK_METADATA_BYTES];
+        semantic[5 * MAPSTATS_RECORD_BYTES..5 * MAPSTATS_RECORD_BYTES + 2]
+            .copy_from_slice(&321i16.to_be_bytes());
+
+        let without_annex = preserve_imported_custom_landlook_compatibility(
+            semantic.clone(),
+            "Data Custom 1 BD",
+            None,
+        )
+        .unwrap();
+        let with_annex = preserve_imported_custom_landlook_compatibility(
+            semantic.clone(),
+            "Data Custom 1 BD",
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(without_annex, semantic);
+        assert_eq!(
+            &with_annex[spare_offset..spare_offset + 2],
+            &source[spare_offset..spare_offset + 2]
+        );
+        assert_eq!(
+            &with_annex[range_reserved_offset..range_reserved_offset + 2],
+            &source[range_reserved_offset..range_reserved_offset + 2]
+        );
+        assert_eq!(
+            &with_annex[CUSTOM_LANDLOOK_METADATA_BYTES..],
+            &[0xca, 0xfe, 0x01]
+        );
+        assert_eq!(
+            &with_annex[5 * MAPSTATS_RECORD_BYTES..5 * MAPSTATS_RECORD_BYTES + 2],
+            &321i16.to_be_bytes()
         );
     }
 

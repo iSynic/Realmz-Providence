@@ -62,12 +62,55 @@ project.landLayout = {
   authored: true,
   provenance: null
 };
-project.validation.exportableFiles = [...new Set([...project.validation.exportableFiles, "Layout"])];
+const customLandlookRecords = Array.from({ length: 201 }, (_, tile) => ({
+  tile,
+  sound: 0,
+  time: 0,
+  solid: 0,
+  shore: 0,
+  needBoat: 0,
+  isPath: 0,
+  los: 0,
+  flyFloat: 0,
+  forest: 0,
+  combatBuild: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+  clearLandId: 0
+}));
+customLandlookRecords[5] = {
+  ...customLandlookRecords[5],
+  sound: 321,
+  time: 2,
+  isPath: 1,
+  clearLandId: 156
+};
+project.customLandlooks = [{
+  landlook: 6,
+  sourceFile: "Data Custom 1 BD",
+  records: customLandlookRecords,
+  baseTile: 156,
+  baseScale: 1,
+  rangeSlots: Array.from({ length: 10 }, (_, slot) => ({
+    slot,
+    label: ["Mountain range", "Open range", "Rubble range", "House range"][slot] ?? "Reserved range",
+    firstTile: slot === 0 ? 62 : 0,
+    lastTile: slot === 0 ? 85 : 0
+  })),
+  writerGate: {
+    metadataWriterStatus: "writer-safe-fixture-gated",
+    atlasWriterStatus: "writable-by-generated-pict-replacement",
+    writableFields: ["sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "clearLandId", "combatBuild", "baseTile", "baseScale", "rangeSlot.firstTile", "rangeSlot.lastTile"],
+    preserveOnlyFields: ["spare", "rangeSlot.reserved"],
+    evidence: ["docs/format-evidence-cards/custom-landlook-writers.md", "docs/generated/custom-landlook-coverage.json"]
+  },
+  authored: true
+}];
+project.validation.exportableFiles = [...new Set([...project.validation.exportableFiles, "Layout", "Data Custom 1 BD"])];
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
 assertOwnershipScenarioMetadata(project, "Canonical project", true);
 assertOwnershipGlobalMacros(project, "Canonical project", true);
 assertOwnershipTileSolids(project, "Canonical project", false);
 assertOwnershipLandLayout(project, "Canonical project", true);
+assertOwnershipCustomLandlook(project, "Canonical project", true);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.triggers.every((record) => !("rawBytes" in record)), "Fresh canonical Action Points must not carry compatibility bytes");
@@ -121,12 +164,21 @@ expect(questAction?.id === 1, `First authored quest flag must be runtime-valid I
 project.scenario.projectPath = projectDir;
 project.source.rawSourcesDir = "";
 await fs.mkdir(path.join(projectDir, "assets"), { recursive: true });
-await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(project, null, 2)}\n`);
+const canonicalProjectJson = `${JSON.stringify(project, null, 2)}\n`;
+await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
 await assertNoRawSources("after canonical project creation");
 
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputA, "windows-realmz-folder"]);
 await assertNoRawSources("after first Windows export");
+const poisonedProject = JSON.parse(canonicalProjectJson);
+const poisonedLandlook = poisonedProject.customLandlooks[0];
+poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
+poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
+poisonedLandlook.records[5].spare = 0x1234;
+poisonedLandlook.rangeSlots[0].reserved = 0x2345;
+await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(poisonedProject, null, 2)}\n`);
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputB, "windows-realmz-folder"]);
+await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
 await assertNoRawSources("after repeated Windows export");
 await runCargoExample("export_project_fixture", [projectDir, classicOutputA, "mac-classic-folder"]);
 await assertNoRawSources("after first Classic-Mac export");
@@ -139,6 +191,13 @@ const classicFilesA = await readFlatDirectory(classicOutputA);
 const classicFilesB = await readFlatDirectory(classicOutputB);
 const browserWindowsPackage = createBrowserScenarioPackageZip(project, null, "windows-realmz-folder");
 const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "mac-classic-folder");
+const browserPoisonedProject = JSON.parse(JSON.stringify(project));
+const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
+browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
+browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
+browserPoisonedLandlook.records[5].spare = 0x1234;
+browserPoisonedLandlook.rangeSlots[0].reserved = 0x2345;
+const browserEmbeddedCompatibilityTrapPackage = createBrowserScenarioPackageZip(browserPoisonedProject, null, "windows-realmz-folder");
 const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
   rootName: "ANNEX READ TRAP",
   sourceKind: "browser-scenario-import",
@@ -173,6 +232,7 @@ const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
 }, "windows-realmz-folder");
 const browserWindowsFiles = browserPackageFiles(browserWindowsPackage.zip, readStoredZip);
 const browserClassicFiles = browserPackageFiles(browserClassicPackage.zip, readStoredZip);
+const browserEmbeddedCompatibilityTrapFiles = browserPackageFiles(browserEmbeddedCompatibilityTrapPackage.zip, readStoredZip);
 const browserAnnexTrapFiles = browserPackageFiles(browserAnnexTrapPackage.zip, readStoredZip);
 assertCompleteNativeFolder(windowsFilesA, "Windows");
 assertCompleteNativeFolder(classicFilesA, "Classic Mac");
@@ -186,14 +246,20 @@ assertCompiledLandLayout(windowsFilesA, "Windows");
 assertCompiledLandLayout(classicFilesA, "Classic Mac");
 assertCompiledLandLayout(browserWindowsFiles, "browser Windows");
 assertCompiledLandLayout(browserClassicFiles, "browser Classic Mac");
+assertCompiledCustomLandlook(windowsFilesA, "Windows");
+assertCompiledCustomLandlook(classicFilesA, "Classic Mac");
+assertCompiledCustomLandlook(browserWindowsFiles, "browser Windows");
+assertCompiledCustomLandlook(browserClassicFiles, "browser Classic Mac");
 assertManifestNamesEqual(project.validation.exportableFiles, browserWindowsFiles, "Browser validation manifest");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
 assertFileMapsEqual(windowsFilesA, browserWindowsFiles, "Rust/browser Windows compile");
 assertFileMapsEqual(classicFilesA, browserClassicFiles, "Rust/browser Classic-Mac compile");
+assertFileMapsEqual(browserWindowsFiles, browserEmbeddedCompatibilityTrapFiles, "authored browser embedded-compatibility access guard");
 assertFileMapsEqual(browserWindowsFiles, browserAnnexTrapFiles, "authored browser annex access guard");
 expect(browserWindowsPackage.report.passThroughFiles.length === 0, "Browser Windows authored compile must not pass through compatibility files");
 expect(browserClassicPackage.report.passThroughFiles.length === 0, "Browser Classic-Mac authored compile must not pass through compatibility files");
+expect(browserEmbeddedCompatibilityTrapPackage.report.passThroughFiles.length === 0, "Authored browser compile must ignore embedded custom-landlook compatibility bytes");
 expect(browserAnnexTrapPackage.report.passThroughFiles.length === 0, "Authored browser compile must ignore a supplied compatibility snapshot");
 await writeFlatDirectory(browserWindowsOutput, browserWindowsFiles);
 await writeFlatDirectory(browserClassicOutput, browserClassicFiles);
@@ -235,6 +301,7 @@ assertOwnershipScenarioMetadata(reimported, "Reimport", false);
 assertOwnershipGlobalMacros(reimported, "Reimport", false);
 assertOwnershipTileSolids(reimported, "Reimport", true);
 assertOwnershipLandLayout(reimported, "Reimport", false);
+assertOwnershipCustomLandlook(reimported, "Reimport", false);
 
 const summary = {
   proofVersion: 1,
@@ -263,6 +330,7 @@ const summary = {
     casteOverrides: project.casteOverrides.length,
     authoredSpecialTileSolidityRows: project.tileAttributes.filter((profile) => profile.sourceKind === "data-solids").length,
     authoredLandLayoutCells: project.landLayout?.cells.length ?? 0,
+    authoredCustomLandlooks: project.customLandlooks?.length ?? 0,
     globalMacroHooks: project.scenario.globalMacroHooks?.slots.filter((slot) => slot.door !== 0).length ?? 0,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
@@ -311,7 +379,8 @@ const summary = {
     raceOverrideRecovered: true,
     casteOverrideRecovered: true,
     specialTileSolidityRecovered: true,
-    landLayoutRecovered: true
+    landLayoutRecovered: true,
+    customLandlookMetadataRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -372,6 +441,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipGlobalMacros(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipTileSolids(savedProject, `Rust-saved project ${stage}`, false);
   assertOwnershipLandLayout(savedProject, `Rust-saved project ${stage}`, true);
+  assertOwnershipCustomLandlook(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
@@ -427,7 +497,8 @@ function assertCompleteNativeFolder(files, label) {
     ["Data Race", 30 * 408],
     ["Data Caste", 30 * 576],
     ["Data Solids", 1024],
-    ["Layout", 256]
+    ["Layout", 256],
+    ["Data Custom 1 BD", 8104]
   ]);
   for (const [name, bytes] of exactSizes) {
     expect(files.has(name), `${label} output is missing ${name}`);
@@ -711,6 +782,36 @@ function assertOwnershipLandLayout(project, label, requireNoCompatibilityBytes) 
   if (requireNoCompatibilityBytes) {
     expect((layout.trailingBytes?.length ?? 0) === 0, `${label} land layout depends on embedded compatibility-tail bytes`);
   }
+}
+
+function assertOwnershipCustomLandlook(project, label, requireNoCompatibilityBytes) {
+  const landlook = project.customLandlooks?.find((candidate) => candidate.landlook === 6);
+  expect(landlook, `${label} is missing Custom 1 metadata`);
+  expect(landlook.sourceFile === "Data Custom 1 BD", `${label} has the wrong Custom 1 metadata file`);
+  expect(landlook.records?.length === 201, `${label} custom landlook does not own all 201 mapstats rows`);
+  expect(landlook.rangeSlots?.length === 10, `${label} custom landlook does not own all ten range slots`);
+  expect(landlook.baseTile === 156 && landlook.baseScale === 1, `${label} has the wrong custom-landlook base metadata`);
+  expect(landlook.records[5].sound === 321 && landlook.records[5].time === 2 && landlook.records[5].isPath === 1 && landlook.records[5].clearLandId === 156, `${label} has the wrong custom-landlook tile semantics`);
+  expect(landlook.rangeSlots[0].firstTile === 62 && landlook.rangeSlots[0].lastTile === 85, `${label} has the wrong custom-landlook range semantics`);
+  if (requireNoCompatibilityBytes) {
+    expect((landlook.rawBytes?.length ?? 0) === 0, `${label} custom landlook depends on embedded raw bytes`);
+    expect((landlook.trailingBytes?.length ?? 0) === 0, `${label} custom landlook depends on embedded trailing bytes`);
+    expect(landlook.records.every((record) => record.spare == null), `${label} custom landlook contains imported spare words`);
+    expect(landlook.rangeSlots.every((slot) => slot.reserved == null), `${label} custom landlook contains imported reserved range words`);
+  }
+}
+
+function assertCompiledCustomLandlook(files, label) {
+  const bytes = files.get("Data Custom 1 BD");
+  expect(bytes?.byteLength === 8104, `${label} custom-landlook metadata should be exactly 8104 bytes`);
+  expect(readI16(bytes, 5 * 40) === 321, `${label} custom-landlook tile has the wrong movement sound`);
+  expect(readI16(bytes, 5 * 40 + 2) === 2, `${label} custom-landlook tile has the wrong movement cost`);
+  expect(readI16(bytes, 5 * 40 + 10) === 1, `${label} custom-landlook tile has the wrong path flag`);
+  expect(readI16(bytes, 5 * 40 + 18) === 0, `${label} custom-landlook spare word is not deterministic zero`);
+  expect(readI16(bytes, 5 * 40 + 38) === 156, `${label} custom-landlook tile has the wrong clear land ID`);
+  expect(readI16(bytes, 201 * 40) === 156 && readI16(bytes, 201 * 40 + 2) === 1, `${label} custom-landlook base metadata is wrong`);
+  expect(readI16(bytes, 201 * 40 + 4) === 62 && readI16(bytes, 201 * 40 + 6) === 85, `${label} custom-landlook first range is wrong`);
+  expect(readI16(bytes, 201 * 40 + 8) === 0, `${label} custom-landlook reserved range word is not deterministic zero`);
 }
 
 function assertOwnershipSpell(records, label) {

@@ -57,6 +57,7 @@ export function createBrowserProject(projectName: string): Project {
     landLayout: null,
     mapRecords: [],
     tileAttributes: [],
+    customLandlooks: [],
     triggers: [],
     randomLevels: [],
     extracodes: [],
@@ -165,6 +166,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     landLayout: parsed.landLayout,
     mapRecords: parsed.mapRecords,
     tileAttributes: parsed.tileAttributes,
+    customLandlooks: parsed.customLandlooks,
     triggers: parsed.triggers,
     randomLevels: parsed.randomLevels,
     extracodes: parsed.extracodes,
@@ -572,6 +574,7 @@ export function normalizeBrowserProject(project: Project): Project {
     markers: normalizedMapRecordMarkers(record)
   }));
   project.tileAttributes ??= [];
+  project.customLandlooks ??= [];
   project.messages ??= [];
   project.optionLabels ??= [];
   project.battles ??= [];
@@ -1138,6 +1141,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
   }
   const sourceNames = new Set(project.source.files.map((file) => file.name));
   validateTileAttributes(project, new Set(authoredManifestFiles ?? sourceNames), warnings);
+  validateCustomLandlooks(project, errors);
   validateMapRecords(project, errors, warnings);
   validateScenarioItems(project, errors, warnings);
   validateTreasures(project, errors);
@@ -1429,6 +1433,38 @@ function validateMapRecords(project: Project, errors: string[], warnings: string
     }
     if (record.pictId !== 0 && pictures.size > 0 && !pictures.has(record.pictId)) {
       warnings.push(`Map record ${record.id} references picture ${record.pictId}, which is not decoded in the scenario resource catalog.`);
+    }
+  }
+}
+
+function validateCustomLandlooks(project: Project, errors: string[]) {
+  const sourceFiles = new Map([[6, "Data Custom 1 BD"], [7, "Data Custom 2 BD"], [8, "Data Custom 3 BD"]]);
+  const seen = new Set<number>();
+  for (const metadata of project.customLandlooks ?? []) {
+    if (seen.has(metadata.landlook)) errors.push(`Custom landlook ${metadata.landlook} is defined more than once.`);
+    seen.add(metadata.landlook);
+    const expectedSource = sourceFiles.get(metadata.landlook);
+    if (!expectedSource) {
+      errors.push(`Custom landlook ${metadata.landlook} is outside the authored 6..8 range.`);
+      continue;
+    }
+    if (metadata.sourceFile !== expectedSource) {
+      errors.push(`Custom landlook ${metadata.landlook} must compile to ${expectedSource}; found ${metadata.sourceFile}.`);
+    }
+    if (metadata.records.length !== 201) {
+      errors.push(`Custom landlook ${metadata.landlook} must define 201 mapstats rows; found ${metadata.records.length}.`);
+    }
+    for (const [index, record] of metadata.records.entries()) {
+      if (record.tile !== index) errors.push(`Custom landlook ${metadata.landlook} mapstats row ${index} has tile ID ${record.tile}.`);
+      if (record.combatBuild.length !== 3 || record.combatBuild.some((row) => row.length !== 3)) {
+        errors.push(`Custom landlook ${metadata.landlook} tile ${record.tile} must define a 3 x 3 combat-build grid.`);
+      }
+    }
+    if (metadata.rangeSlots.length !== 10) {
+      errors.push(`Custom landlook ${metadata.landlook} must define 10 range slots; found ${metadata.rangeSlots.length}.`);
+    }
+    for (const [index, slot] of metadata.rangeSlots.entries()) {
+      if (slot.slot !== index) errors.push(`Custom landlook ${metadata.landlook} range row ${index} has slot ID ${slot.slot}.`);
     }
   }
 }

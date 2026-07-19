@@ -448,10 +448,23 @@ for both files and both native targets. The fresh ownership seed now also emits 
 action, requires exact 120-byte ED3 and 10-byte EDCD output, and checks their semantic words without
 `raw-sources`.
 
-Branch validation through the forty-fourth slice completed on 2026-07-19:
+The forty-fifth slice makes `Data Custom 1/2/3 BD` metadata authoritative. Tile-attribute,
+mapstats, range-slot, writer-gate, and custom-landlook DTOs now come from the shared generated
+TypeScript/Rust contract. Both low-level writers allocate a fresh exact 8,104-byte buffer and
+compile all semantic mapstats, base, and range fields without reading embedded `rawBytes`, tails,
+spare words, or reserved words. Fresh custom-landlook creation omits that compatibility state.
+For edited imports, the compiler restores only the 201 unnamed mapstats spare words, ten unnamed
+range reserved words, and bytes after offset 8,104 from the optional annex; untouched imported
+files remain pass-through. Browser import now creates the same editable `customLandlooks` records
+as desktop import instead of only deriving preview tile profiles. The ownership proof authors a
+complete Custom 1 table without `raw-sources`, poison-tests both compilers, proves byte parity on
+both native targets, and recovers all 201 rows and ten ranges on native reimport. Custom atlas
+resource packaging remains the separate next milestone and is not claimed by this metadata slice.
 
-- full Rust suite: 248 passed, 2 ignored;
-- full TypeScript suite: 603 passed, plus typecheck;
+Branch validation through the forty-fifth slice completed on 2026-07-19:
+
+- full Rust suite: 250 passed, 2 ignored;
+- full TypeScript suite: 604 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -460,7 +473,7 @@ Branch validation through the forty-fourth slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 603 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
@@ -472,7 +485,9 @@ its 1,024-byte codec and tests into a focused module, returns `landlooks.rs` bel
 does not add a new ISY-320 violation. The `Layout` slice likewise moves its codec and tests into a
 focused module and reduces `maps.rs`; the remaining size failures are the pre-existing ISY-319 map
 UI files, ISY-320 `assembly.rs`, and ISY-321 stylesheets. The ED3/EDCD slice changes only the
-exporter/package boundary and adds no new module-size violation. Architecture, lint, unit,
+exporter/package boundary and adds no new module-size violation. The custom-landlook metadata
+slice adds a focused browser parser test and changes only existing contract/compiler owners, so it
+also adds no ISY-319/320/321 violation. Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
 
@@ -820,7 +835,7 @@ Legend:
 | `Data Caste` | Fully generated + legacy row/tail annex | Emit exactly 30 x 576 bytes | Both compilers use the same baseline policy and replace each authored row with all canonical `struct caste` fields including `spare1[2]`, `spare2[2]`, and `spacer[63]`. Fresh rows contain no compatibility bytes; imported preservation is annex-only. |
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
-| `Data Custom 1/2/3 BD` | Generated + compatibility when authored; pass-through otherwise | Generate metadata and zero reserved words for fresh custom landlooks | Mapstats/base/ranges are modeled; reserved range words remain legacy annex data. Resource atlas packaging must be tested with the runtime. |
+| `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Both compilers generate 201 mapstats rows, base metadata, and ten ranges without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Resource atlas packaging remains a separate runtime gate. |
 | Main-fork `PICT`, `cicn`, `snd `, `TEXT`, `styl`, map-name `STR#` | Generated/merged | Generate deterministically from managed assets and map records | Existing resource-fork writer is reusable. Unsupported imported resources stay in the annex. |
 | `RLMZ`, `vers`, arbitrary/malformed resources | Pass-through | Omit unless proven required; annex imported entries | Their container format is understood, but payload ownership is not needed for the minimum proof. |
 

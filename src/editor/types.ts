@@ -38,6 +38,15 @@ import type {
   ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
   ProvidenceSourceFileRole,
+  ProvidenceTileAttributeConfidence,
+  ProvidenceTileAttributeFlag,
+  ProvidenceTileAttributeProfile,
+  ProvidenceTileAttributeSourceKind,
+  ProvidenceTileEditableScope,
+  ProvidenceMapstatsRecord,
+  ProvidenceLandlookRangeSlot,
+  ProvidenceLandlookWriterGate,
+  ProvidenceCustomLandlookMetadata,
   ProvidenceTreasureRecord
 } from "./generated/providenceProjectContract";
 
@@ -70,6 +79,15 @@ export type ComplexEncounterRecord = ProvidenceComplexEncounterRecord;
 export type ThiefEncounterRecord = ProvidenceThiefEncounterRecord;
 export type TimedEncounterLocationKind = ProvidenceTimedEncounterLocationKind;
 export type TimedEncounterRecord = ProvidenceTimedEncounterRecord;
+export type TileAttributeConfidence = ProvidenceTileAttributeConfidence;
+export type TileAttributeSourceKind = ProvidenceTileAttributeSourceKind;
+export type TileAttributeFlag = ProvidenceTileAttributeFlag;
+export type TileEditableScope = ProvidenceTileEditableScope;
+export type TileAttributeProfile = ProvidenceTileAttributeProfile;
+export type MapstatsRecord = ProvidenceMapstatsRecord;
+export type LandlookRangeSlot = ProvidenceLandlookRangeSlot;
+export type LandlookWriterGate = ProvidenceLandlookWriterGate;
+export type CustomLandlookMetadata = ProvidenceCustomLandlookMetadata;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -380,92 +398,6 @@ export type StampPaletteItem = {
   source: "project" | "library" | "used-map" | "raw";
   previewPath: string | null;
   compatibility: string;
-};
-
-export type TileAttributeConfidence = "source-backed" | "inferred" | "unknown" | "preserved";
-export type TileAttributeSourceKind = "mapstats" | "data-solids" | "inferred" | "preserved" | "unknown";
-export type TileAttributeFlag =
-  | "walkable"
-  | "solid"
-  | "path"
-  | "visual-path"
-  | "shore"
-  | "boat-required"
-  | "fly-float-required"
-  | "blocks-los"
-  | "forest"
-  | "combat-build"
-  | "special-icon"
-  | "unknown-metadata";
-
-export type TileAttributeProfile = {
-  tile: number;
-  landlook: number | null;
-  solidType: number | null;
-  movementSoundId: number | null;
-  movementCost: number | null;
-  shore?: boolean | null;
-  boatRequirement?: number | null;
-  pathFlag?: boolean | null;
-  blocksLos?: boolean | null;
-  flyFloatRequired?: boolean | null;
-  forestType?: number | null;
-  spare?: number | null;
-  combatBuild?: number[][];
-  clearLandId?: number | null;
-  baseTile?: number | null;
-  baseScale?: number | null;
-  editableScope?: "built-in-reference" | "scenario-custom" | "special-tile" | "unknown";
-  flags: TileAttributeFlag[];
-  confidence: TileAttributeConfidence;
-  sourceKind?: TileAttributeSourceKind;
-  source: string;
-  rawByte: number | null;
-};
-
-export type MapstatsRecord = {
-  tile: number;
-  sound: number;
-  time: number;
-  solid: number;
-  shore: number;
-  needBoat: number;
-  isPath: number;
-  los: number;
-  flyFloat: number;
-  forest: number;
-  spare: number;
-  combatBuild: number[][];
-  clearLandId: number;
-};
-
-export type LandlookRangeSlot = {
-  slot: number;
-  label: string;
-  firstTile: number;
-  lastTile: number;
-  reserved: number;
-};
-
-export type LandlookWriterGate = {
-  metadataWriterStatus: string;
-  atlasWriterStatus: string;
-  writableFields: string[];
-  preserveOnlyFields: string[];
-  evidence: string[];
-};
-
-export type CustomLandlookMetadata = {
-  landlook: number;
-  sourceFile: string;
-  records: MapstatsRecord[];
-  baseTile: number;
-  baseScale: number;
-  rangeSlots: LandlookRangeSlot[];
-  trailingBytes: number[];
-  rawBytes: number[];
-  writerGate: LandlookWriterGate;
-  authored: boolean;
 };
 
 export type CustomLandlookAtlasArtifact = {

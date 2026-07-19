@@ -2,6 +2,7 @@ use crate::error::Result;
 use crate::project::{
     CustomLandlookMetadata, LandlookRangeSlot, LandlookWriterGate, MapstatsRecord,
     TileAttributeConfidence, TileAttributeFlag, TileAttributeProfile, TileAttributeSourceKind,
+    TileEditableScope,
 };
 
 use super::record_bytes::{i16_be, write_i16_be};
@@ -34,9 +35,9 @@ pub fn parse_landlook_mapstats_data(
         None
     };
     let editable_scope = if source.to_ascii_lowercase().contains("custom") {
-        "scenario-custom"
+        TileEditableScope::ScenarioCustom
     } else {
-        "built-in-reference"
+        TileEditableScope::BuiltInReference
     };
     (0..count)
         .map(|tile| {
@@ -113,7 +114,7 @@ pub fn parse_landlook_mapstats_data(
                 clear_land_id: Some(clear_land_id),
                 base_tile,
                 base_scale,
-                editable_scope: editable_scope.to_string(),
+                editable_scope: editable_scope.clone(),
                 flags,
                 confidence: TileAttributeConfidence::SourceBacked,
                 source_kind: TileAttributeSourceKind::Mapstats,
@@ -150,13 +151,23 @@ pub fn parse_custom_landlook_metadata(
         0
     };
     let expected_len = base_offset + 4 + LANDLOOK_RANGE_TAIL_BYTES;
+    let mut range_slots = parse_landlook_range_tail(buffer);
+    for slot in range_slots.len()..LANDLOOK_RANGE_SLOTS {
+        range_slots.push(LandlookRangeSlot {
+            slot,
+            label: landlook_range_label(slot).to_string(),
+            first_tile: 0,
+            last_tile: 0,
+            reserved: None,
+        });
+    }
     CustomLandlookMetadata {
         landlook,
         source_file: source_file.to_string(),
         records,
         base_tile,
         base_scale,
-        range_slots: parse_landlook_range_tail(buffer),
+        range_slots,
         trailing_bytes: if buffer.len() > expected_len {
             buffer[expected_len..].to_vec()
         } else {
@@ -181,7 +192,7 @@ fn parse_mapstats_record(buffer: &[u8], tile: usize) -> MapstatsRecord {
         los: i16_be(buffer, start + 12),
         fly_float: i16_be(buffer, start + 14),
         forest: i16_be(buffer, start + 16),
-        spare: i16_be(buffer, start + 18),
+        spare: Some(i16_be(buffer, start + 18)),
         combat_build: vec![
             vec![
                 i16_be(buffer, start + 20),
@@ -215,7 +226,7 @@ fn empty_mapstats_record(tile: usize) -> MapstatsRecord {
         los: 0,
         fly_float: 0,
         forest: 0,
-        spare: 0,
+        spare: None,
         combat_build: vec![vec![0; 3], vec![0; 3], vec![0; 3]],
         clear_land_id: 0,
     }
@@ -256,16 +267,11 @@ fn custom_landlook_writer_gate() -> LandlookWriterGate {
     }
 }
 
+pub const CUSTOM_LANDLOOK_METADATA_BYTES: usize =
+    MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES;
+
 pub fn write_custom_landlook_metadata(metadata: &CustomLandlookMetadata) -> Result<Vec<u8>> {
-    let expected_len = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES;
-    let mut output = if metadata.raw_bytes.len() >= expected_len {
-        metadata.raw_bytes.clone()
-    } else {
-        vec![0u8; expected_len]
-    };
-    if output.len() < expected_len {
-        output.resize(expected_len, 0);
-    }
+    let mut output = vec![0u8; CUSTOM_LANDLOOK_METADATA_BYTES];
     for (tile, record) in metadata.records.iter().take(MAPSTATS_RECORDS).enumerate() {
         write_mapstats_record(&mut output, tile, record);
     }
@@ -279,11 +285,6 @@ pub fn write_custom_landlook_metadata(metadata: &CustomLandlookMetadata) -> Resu
         let start = base_offset + 4 + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
         write_i16_be(&mut output, start, slot.first_tile);
         write_i16_be(&mut output, start + 2, slot.last_tile);
-        write_i16_be(&mut output, start + 4, slot.reserved);
-    }
-    if metadata.raw_bytes.len() <= expected_len && !metadata.trailing_bytes.is_empty() {
-        output.truncate(expected_len);
-        output.extend(&metadata.trailing_bytes);
     }
     Ok(output)
 }
@@ -299,7 +300,10 @@ fn write_mapstats_record(output: &mut [u8], tile: usize, record: &MapstatsRecord
     write_i16_be(output, start + 12, record.los);
     write_i16_be(output, start + 14, record.fly_float);
     write_i16_be(output, start + 16, record.forest);
-    write_i16_be(output, start + 18, record.spare);
+    // The spare word is imported compatibility state. Fresh compilation owns the
+    // surrounding semantic fields and leaves this word neutral; the exporter may
+    // restore it from the compatibility annex for an edited legacy scenario.
+    write_i16_be(output, start + 18, 0);
     for row in 0..3 {
         for col in 0..3 {
             let value = record
@@ -443,7 +447,7 @@ pub fn parse_landlook_range_tail(buffer: &[u8]) -> Vec<LandlookRangeSlot> {
                 label: landlook_range_label(slot).to_string(),
                 first_tile: i16_be(buffer, start),
                 last_tile: i16_be(buffer, start + 2),
-                reserved: i16_be(buffer, start + 4),
+                reserved: Some(i16_be(buffer, start + 4)),
             }
         })
         .collect()
@@ -508,7 +512,7 @@ mod tests {
         assert_eq!(tile.clear_land_id, Some(12));
         assert_eq!(tile.base_tile, Some(1));
         assert_eq!(tile.base_scale, Some(4));
-        assert_eq!(tile.editable_scope, "built-in-reference");
+        assert_eq!(tile.editable_scope, TileEditableScope::BuiltInReference);
         assert!(tile.flags.contains(&TileAttributeFlag::Solid));
         assert!(tile.flags.contains(&TileAttributeFlag::Shore));
         assert!(tile.flags.contains(&TileAttributeFlag::BoatRequired));
@@ -545,7 +549,7 @@ mod tests {
                 ranges[0].last_tile,
                 ranges[0].reserved
             ),
-            (62, 85, 0)
+            (62, 85, Some(0))
         );
         assert_eq!(ranges[1].label, "Open range");
         assert_eq!(
@@ -554,7 +558,7 @@ mod tests {
                 ranges[1].last_tile,
                 ranges[1].reserved
             ),
-            (155, 158, 0)
+            (155, 158, Some(0))
         );
         assert_eq!(ranges[2].label, "Rubble range");
         assert_eq!(
@@ -563,7 +567,7 @@ mod tests {
                 ranges[2].last_tile,
                 ranges[2].reserved
             ),
-            (159, 167, 0)
+            (159, 167, Some(0))
         );
         assert_eq!(ranges[3].label, "House range");
         assert_eq!(
@@ -572,11 +576,11 @@ mod tests {
                 ranges[3].last_tile,
                 ranges[3].reserved
             ),
-            (190, 200, 0)
+            (190, 200, Some(0))
         );
         assert!(ranges[4..]
             .iter()
-            .all(|slot| slot.first_tile == 0 && slot.last_tile == 0 && slot.reserved == 0));
+            .all(|slot| slot.first_tile == 0 && slot.last_tile == 0 && slot.reserved == Some(0)));
     }
 
     #[test]
@@ -594,7 +598,7 @@ mod tests {
             (12, 1),
             (14, 0),
             (16, 3),
-            (18, 99),
+            (18, 0),
             (20, 155),
             (22, 156),
             (24, 157),
@@ -730,7 +734,7 @@ mod tests {
     }
 
     #[test]
-    fn custom_landlook_range_update_preserves_reserved_word() {
+    fn custom_landlook_range_writer_leaves_reserved_word_neutral() {
         let mut input =
             vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES];
         let tail_start = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
@@ -743,6 +747,30 @@ mod tests {
 
         assert_eq!(i16_be(&output, tail_start), 70);
         assert_eq!(i16_be(&output, tail_start + 2), 80);
-        assert_eq!(i16_be(&output, tail_start + 4), 1234);
+        assert_eq!(i16_be(&output, tail_start + 4), 0);
+    }
+
+    #[test]
+    fn custom_landlook_writer_ignores_embedded_compatibility_bytes() {
+        let input =
+            vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES];
+        let mut metadata = parse_custom_landlook_metadata(&input, 6, "Data Custom 1 BD");
+        metadata.records[5].sound = 321;
+        metadata.records[5].spare = Some(0x1234);
+        metadata.range_slots[0].first_tile = 62;
+        metadata.range_slots[0].last_tile = 85;
+        metadata.range_slots[0].reserved = Some(0x2345);
+        metadata.raw_bytes = vec![0xa5; CUSTOM_LANDLOOK_METADATA_BYTES + 7];
+        metadata.trailing_bytes = vec![0xca, 0xfe, 0x01];
+
+        let output = write_custom_landlook_metadata(&metadata).unwrap();
+
+        assert_eq!(output.len(), CUSTOM_LANDLOOK_METADATA_BYTES);
+        assert_eq!(i16_be(&output, 5 * MAPSTATS_RECORD_BYTES), 321);
+        assert_eq!(i16_be(&output, 5 * MAPSTATS_RECORD_BYTES + 18), 0);
+        let range_start = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+        assert_eq!(i16_be(&output, range_start), 62);
+        assert_eq!(i16_be(&output, range_start + 2), 85);
+        assert_eq!(i16_be(&output, range_start + 4), 0);
     }
 }

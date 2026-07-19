@@ -4,6 +4,7 @@ import {
   BattleRecord,
   ComplexEncounterRecord,
   Confidence,
+  CustomLandlookMetadata,
   Diagnostic,
   EncounterActionRow,
   ExtraCodeRow,
@@ -154,6 +155,7 @@ export type ParsedBrowserScenario = {
   landLayout: LandLayout | null;
   mapRecords: MapRecord[];
   tileAttributes: TileAttributeProfile[];
+  customLandlooks: CustomLandlookMetadata[];
   triggers: TriggerRecord[];
   randomLevels: RandomLevel[];
   extracodes: ExtraCodeRow[];
@@ -214,6 +216,11 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
     ...parseLandlookMapstats(buffers.get("Data Custom 2 BD"), 7, "Data Custom 2 BD"),
     ...parseLandlookMapstats(buffers.get("Data Custom 3 BD"), 8, "Data Custom 3 BD")
   ];
+  const customLandlooks = [
+    parseCustomLandlookMetadata(buffers.get("Data Custom 1 BD"), 6, "Data Custom 1 BD"),
+    parseCustomLandlookMetadata(buffers.get("Data Custom 2 BD"), 7, "Data Custom 2 BD"),
+    parseCustomLandlookMetadata(buffers.get("Data Custom 3 BD"), 8, "Data Custom 3 BD")
+  ].filter((landlook): landlook is CustomLandlookMetadata => landlook != null);
 
   const triggers = [
     ...parseDoorFile(buffers.get("Data DD"), "land", "Data DD"),
@@ -255,7 +262,7 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
   const assetCatalog = buildAssetCatalog(maps, randomLevels, monsters, monsterSets, buffers, diagnostics);
   const monsterIconOverrides = parseScenarioMonsterIconOverrides(monsters, monsterSets, buffers, diagnostics);
-  return { maps, landLayout, mapRecords, tileAttributes, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, monsterIconOverrides, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
+  return { maps, landLayout, mapRecords, tileAttributes, customLandlooks, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, monsterIconOverrides, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
 }
 
 function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
@@ -694,6 +701,95 @@ function parseShops(buffer: Uint8Array | undefined): ShopRecord[] {
     authored: false,
     provenance: provenance("Data SD", id, start, SHOP_RECORD_BYTES, "source-backed")
   }));
+}
+
+const CUSTOM_LANDLOOK_METADATA_BYTES = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + 60;
+const LANDLOOK_RANGE_SLOTS = 10;
+const LANDLOOK_RANGE_SLOT_BYTES = 6;
+
+export function parseCustomLandlookMetadata(
+  buffer: Uint8Array | undefined,
+  landlook: number,
+  sourceFile: string
+): CustomLandlookMetadata | null {
+  if (!buffer) return null;
+  const records = Array.from({ length: MAPSTATS_RECORDS }, (_, tile) => {
+    const start = tile * MAPSTATS_RECORD_BYTES;
+    if (buffer.byteLength < start + MAPSTATS_RECORD_BYTES) return emptyMapstatsRecord(tile);
+    return {
+      tile,
+      sound: i16(buffer, start),
+      time: i16(buffer, start + 2),
+      solid: i16(buffer, start + 4),
+      shore: i16(buffer, start + 6),
+      needBoat: i16(buffer, start + 8),
+      isPath: i16(buffer, start + 10),
+      los: i16(buffer, start + 12),
+      flyFloat: i16(buffer, start + 14),
+      forest: i16(buffer, start + 16),
+      spare: i16(buffer, start + 18),
+      combatBuild: [
+        [i16(buffer, start + 20), i16(buffer, start + 22), i16(buffer, start + 24)],
+        [i16(buffer, start + 26), i16(buffer, start + 28), i16(buffer, start + 30)],
+        [i16(buffer, start + 32), i16(buffer, start + 34), i16(buffer, start + 36)]
+      ],
+      clearLandId: i16(buffer, start + 38)
+    };
+  });
+  const baseOffset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS;
+  const rangeOffset = baseOffset + 4;
+  return {
+    landlook,
+    sourceFile,
+    records,
+    baseTile: buffer.byteLength >= baseOffset + 2 ? i16(buffer, baseOffset) : 0,
+    baseScale: buffer.byteLength >= baseOffset + 4 ? i16(buffer, baseOffset + 2) : 0,
+    rangeSlots: Array.from({ length: LANDLOOK_RANGE_SLOTS }, (_, slot) => {
+      const start = rangeOffset + slot * LANDLOOK_RANGE_SLOT_BYTES;
+      return {
+        slot,
+        label: landlookRangeLabel(slot),
+        firstTile: buffer.byteLength >= start + 2 ? i16(buffer, start) : 0,
+        lastTile: buffer.byteLength >= start + 4 ? i16(buffer, start + 2) : 0,
+        ...(buffer.byteLength >= start + 6 ? { reserved: i16(buffer, start + 4) } : {})
+      };
+    }),
+    trailingBytes: Array.from(buffer.slice(CUSTOM_LANDLOOK_METADATA_BYTES)),
+    rawBytes: Array.from(buffer),
+    writerGate: customLandlookWriterGate(),
+    authored: false
+  };
+}
+
+function emptyMapstatsRecord(tile: number): CustomLandlookMetadata["records"][number] {
+  return {
+    tile,
+    sound: 0,
+    time: 0,
+    solid: 0,
+    shore: 0,
+    needBoat: 0,
+    isPath: 0,
+    los: 0,
+    flyFloat: 0,
+    forest: 0,
+    combatBuild: [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+    clearLandId: 0
+  };
+}
+
+function landlookRangeLabel(slot: number) {
+  return ["Mountain range", "Open range", "Rubble range", "House range"][slot] ?? "Reserved range";
+}
+
+function customLandlookWriterGate(): CustomLandlookMetadata["writerGate"] {
+  return {
+    metadataWriterStatus: "writer-safe-fixture-gated",
+    atlasWriterStatus: "writable-by-generated-pict-replacement",
+    writableFields: ["sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "clearLandId", "combatBuild", "baseTile", "baseScale", "rangeSlot.firstTile", "rangeSlot.lastTile"],
+    preserveOnlyFields: ["spare", "rangeSlot.reserved"],
+    evidence: ["docs/format-evidence-cards/custom-landlook-writers.md", "docs/generated/custom-landlook-coverage.json"]
+  };
 }
 
 function parseScenarioItems(buffer: Uint8Array | undefined): ScenarioItemRecord[] {

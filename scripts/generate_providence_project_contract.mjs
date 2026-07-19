@@ -65,6 +65,13 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
+const landlookDefinitionNames = ["tileAttributeConfidence", "tileAttributeSourceKind", "tileAttributeFlag", "tileEditableScope", "tileAttributeProfile", "mapstatsRecord", "landlookRangeSlot", "landlookWriterGate", "customLandlookMetadata"];
+const landlookDefinitions = landlookDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
+const tileAttributeProfileSchema = schema.$defs?.tileAttributeProfile ?? {};
+const mapstatsRecordSchema = schema.$defs?.mapstatsRecord ?? {};
+const landlookRangeSlotSchema = schema.$defs?.landlookRangeSlot ?? {};
+const landlookWriterGateSchema = schema.$defs?.landlookWriterGate ?? {};
+const customLandlookMetadataSchema = schema.$defs?.customLandlookMetadata ?? {};
 const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "scenarioSpellOverride", "scenarioRaceOverride", "scenarioCasteOverride", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
@@ -111,6 +118,8 @@ expect(provenanceSchema.properties?.confidence?.$ref === "#/$defs/confidence", "
 expect(schema.properties?.maps?.items?.$ref === "#/$defs/mapEntity", "project maps must contain canonical map DTOs");
 expect(schema.properties?.landLayout?.oneOf?.[0]?.$ref === "#/$defs/landLayout", "project landLayout must reference the canonical layout DTO");
 expect(schema.properties?.mapRecords?.items?.$ref === "#/$defs/mapRecord", "project mapRecords must contain canonical map-record DTOs");
+expect(schema.properties?.tileAttributes?.items?.$ref === "#/$defs/tileAttributeProfile", "project tileAttributes must contain canonical tile-attribute DTOs");
+expect(schema.properties?.customLandlooks?.items?.$ref === "#/$defs/customLandlookMetadata", "project customLandlooks must contain canonical custom-landlook DTOs");
 expect(schema.properties?.randomLevels?.items?.$ref === "#/$defs/randomLevel", "project randomLevels must contain canonical random-level DTOs");
 expect(schema.properties?.scenarioItems?.items?.$ref === "#/$defs/scenarioItemRecord", "project scenarioItems must contain canonical scenario-item DTOs");
 expect(schema.properties?.treasures?.items?.$ref === "#/$defs/treasureRecord", "project treasures must contain canonical treasure DTOs");
@@ -169,6 +178,39 @@ const mapCompatibilityFields = mapDefinitions.flatMap((definition) =>
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
 expectSameSet(mapCompatibilityFields, ["LandLayout.trailingBytes", "MapRecord.rawBytes", "RandomLevel.rawValues"], "Map compatibility-only field inventory");
+for (const [index, definition] of landlookDefinitions.entries()) {
+  const definitionName = landlookDefinitionNames[index];
+  expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);
+  if (definition.type === "object") expect(definition.additionalProperties === false, `${definitionName} must reject unknown fields`);
+  expect(typeof definition["x-providence-typescript-name"] === "string", `${definitionName} must declare its TypeScript name`);
+  expect(typeof definition["x-providence-rust-name"] === "string", `${definitionName} must declare its Rust name`);
+}
+expectSameArray(Object.keys(tileAttributeProfileSchema.properties ?? {}), ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "shore", "boatRequirement", "pathFlag", "blocksLos", "flyFloatRequired", "forestType", "spare", "combatBuild", "clearLandId", "baseTile", "baseScale", "editableScope", "flags", "confidence", "sourceKind", "source", "rawByte"], "Tile-attribute field inventory");
+expectSameArray(tileAttributeProfileSchema.required ?? [], ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "flags", "confidence", "source", "rawByte"], "Tile-attribute authored field inventory");
+expect(tileAttributeProfileSchema.properties?.combatBuild?.minItems === 3 && tileAttributeProfileSchema.properties?.combatBuild?.maxItems === 3, "tile-attribute combatBuild must retain three rows");
+expect(tileAttributeProfileSchema.properties?.combatBuild?.items?.minItems === 3 && tileAttributeProfileSchema.properties?.combatBuild?.items?.maxItems === 3, "tile-attribute combatBuild rows must retain three columns");
+expectSameArray(Object.keys(mapstatsRecordSchema.properties ?? {}), ["tile", "sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "spare", "combatBuild", "clearLandId"], "Mapstats field inventory");
+expectSameArray(mapstatsRecordSchema.required ?? [], ["tile", "sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "combatBuild", "clearLandId"], "Mapstats authored field inventory");
+expect(mapstatsRecordSchema.properties?.combatBuild?.minItems === 3 && mapstatsRecordSchema.properties?.combatBuild?.maxItems === 3, "mapstats combatBuild must retain three rows");
+expect(mapstatsRecordSchema.properties?.combatBuild?.items?.minItems === 3 && mapstatsRecordSchema.properties?.combatBuild?.items?.maxItems === 3, "mapstats combatBuild rows must retain three columns");
+expectSameArray(Object.keys(landlookRangeSlotSchema.properties ?? {}), ["slot", "label", "firstTile", "lastTile", "reserved"], "Landlook range-slot field inventory");
+expectSameArray(landlookRangeSlotSchema.required ?? [], ["slot", "label", "firstTile", "lastTile"], "Landlook range-slot authored field inventory");
+expectSameArray(Object.keys(landlookWriterGateSchema.properties ?? {}), ["metadataWriterStatus", "atlasWriterStatus", "writableFields", "preserveOnlyFields", "evidence"], "Landlook writer-gate field inventory");
+expectSameArray(landlookWriterGateSchema.required ?? [], Object.keys(landlookWriterGateSchema.properties ?? {}), "Landlook writer-gate required field inventory");
+expectSameArray(Object.keys(customLandlookMetadataSchema.properties ?? {}), ["landlook", "sourceFile", "records", "baseTile", "baseScale", "rangeSlots", "trailingBytes", "rawBytes", "writerGate", "authored"], "Custom-landlook field inventory");
+expectSameArray(customLandlookMetadataSchema.required ?? [], ["landlook", "sourceFile", "records", "baseTile", "baseScale", "rangeSlots", "writerGate"], "Custom-landlook authored field inventory");
+expect(customLandlookMetadataSchema.properties?.records?.minItems === 201 && customLandlookMetadataSchema.properties?.records?.maxItems === 201, "custom landlooks must retain 201 mapstats rows");
+expect(customLandlookMetadataSchema.properties?.rangeSlots?.minItems === 10 && customLandlookMetadataSchema.properties?.rangeSlots?.maxItems === 10, "custom landlooks must retain ten range slots");
+expect(customLandlookMetadataSchema.properties?.records?.items?.$ref === "#/$defs/mapstatsRecord", "custom landlooks must contain canonical mapstats DTOs");
+expect(customLandlookMetadataSchema.properties?.rangeSlots?.items?.$ref === "#/$defs/landlookRangeSlot", "custom landlooks must contain canonical range-slot DTOs");
+expect(customLandlookMetadataSchema.properties?.writerGate?.$ref === "#/$defs/landlookWriterGate", "custom landlooks must reference the canonical writer gate");
+expectSameArray(customLandlookMetadataSchema["x-providence-rust-skip-empty"] ?? [], ["trailingBytes", "rawBytes"], "Custom-landlook omitted compatibility inventory");
+const landlookCompatibilityFields = landlookDefinitions.flatMap((definition) =>
+  Object.entries(definition.properties ?? {})
+    .filter(([, property]) => property["x-providence-compatibility-only"] === true)
+    .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
+);
+expectSameSet(landlookCompatibilityFields, ["TileAttributeProfile.spare", "TileAttributeProfile.rawByte", "MapstatsRecord.spare", "LandlookRangeSlot.reserved", "CustomLandlookMetadata.trailingBytes", "CustomLandlookMetadata.rawBytes"], "Landlook compatibility-only field inventory");
 for (const [index, definition] of recordDefinitions.entries()) {
   const definitionName = recordDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -359,6 +401,15 @@ for (const alias of [
   "export type MapRecord = ProvidenceMapRecord;",
   "export type RandomRect = ProvidenceRandomRect;",
   "export type RandomLevel = ProvidenceRandomLevel;",
+  "export type TileAttributeConfidence = ProvidenceTileAttributeConfidence;",
+  "export type TileAttributeSourceKind = ProvidenceTileAttributeSourceKind;",
+  "export type TileAttributeFlag = ProvidenceTileAttributeFlag;",
+  "export type TileEditableScope = ProvidenceTileEditableScope;",
+  "export type TileAttributeProfile = ProvidenceTileAttributeProfile;",
+  "export type MapstatsRecord = ProvidenceMapstatsRecord;",
+  "export type LandlookRangeSlot = ProvidenceLandlookRangeSlot;",
+  "export type LandlookWriterGate = ProvidenceLandlookWriterGate;",
+  "export type CustomLandlookMetadata = ProvidenceCustomLandlookMetadata;",
   "export type ScenarioItemRecord = ProvidenceScenarioItemRecord;",
   "export type TreasureRecord = ProvidenceTreasureRecord;",
   "export type ShopRecord = ProvidenceShopRecord;",
@@ -393,6 +444,9 @@ expect(!typesSource.includes("export type SourceFile = {"), "types.ts must not h
 expect(!typesSource.includes("export type Provenance = {"), "types.ts must not handwrite Provenance");
 for (const mapType of ["MapRender", "MapEntity", "LandLayout", "MapMarker", "MapRecordRect", "MapRecord", "RandomRect", "RandomLevel"]) {
   expect(!typesSource.includes(`export type ${mapType} = {`), `types.ts must not handwrite ${mapType}`);
+}
+for (const landlookType of ["TileAttributeProfile", "MapstatsRecord", "LandlookRangeSlot", "LandlookWriterGate", "CustomLandlookMetadata"]) {
+  expect(!typesSource.includes(`export type ${landlookType} = {`), `types.ts must not handwrite ${landlookType}`);
 }
 expect(!typesSource.includes("export type ScenarioItemRecord = {"), "types.ts must not handwrite ScenarioItemRecord");
 expect(!typesSource.includes("export type TreasureRecord = {"), "types.ts must not handwrite TreasureRecord");
@@ -432,6 +486,15 @@ expectSameSet(rustGeneratedReExports, [
   "RandomLevel",
   "RandomRect",
   "RenderMode",
+  "TileAttributeConfidence",
+  "TileAttributeSourceKind",
+  "TileAttributeFlag",
+  "TileEditableScope",
+  "TileAttributeProfile",
+  "MapstatsRecord",
+  "LandlookRangeSlot",
+  "LandlookWriterGate",
+  "CustomLandlookMetadata",
   "ScenarioContactInfo",
   "ScenarioGlobalMacroHooks",
   "ScenarioMeta",
@@ -473,6 +536,14 @@ expect(!rustProjectSource.includes("pub struct MapRecordRect {"), "project.rs mu
 expect(!rustProjectSource.includes("pub struct MapRecord {"), "project.rs must not handwrite MapRecord");
 expect(!rustProjectSource.includes("pub struct RandomRect {"), "project.rs must not handwrite RandomRect");
 expect(!rustProjectSource.includes("pub struct RandomLevel {"), "project.rs must not handwrite RandomLevel");
+expect(!rustProjectSource.includes("pub struct TileAttributeProfile {"), "project.rs must not handwrite TileAttributeProfile");
+expect(!rustProjectSource.includes("pub struct MapstatsRecord {"), "project.rs must not handwrite MapstatsRecord");
+expect(!rustProjectSource.includes("pub struct LandlookRangeSlot {"), "project.rs must not handwrite LandlookRangeSlot");
+expect(!rustProjectSource.includes("pub struct LandlookWriterGate {"), "project.rs must not handwrite LandlookWriterGate");
+expect(!rustProjectSource.includes("pub struct CustomLandlookMetadata {"), "project.rs must not handwrite CustomLandlookMetadata");
+expect(!rustProjectSource.includes("pub enum TileAttributeConfidence {"), "project.rs must not handwrite TileAttributeConfidence");
+expect(!rustProjectSource.includes("pub enum TileAttributeSourceKind {"), "project.rs must not handwrite TileAttributeSourceKind");
+expect(!rustProjectSource.includes("pub enum TileAttributeFlag {"), "project.rs must not handwrite TileAttributeFlag");
 expect(!rustProjectSource.includes("pub struct ScenarioItemRecord {"), "project.rs must not handwrite ScenarioItemRecord");
 expect(!rustProjectSource.includes("pub struct TreasureRecord {"), "project.rs must not handwrite TreasureRecord");
 expect(!rustProjectSource.includes("pub struct ShopRecord {"), "project.rs must not handwrite ShopRecord");
@@ -596,6 +667,8 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_LAND_LAYOUT_FIELDS = ${JSON.stringify(Object.keys(landLayoutSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MAP_RECORD_FIELDS = ${JSON.stringify(Object.keys(mapRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_RANDOM_LEVEL_FIELDS = ${JSON.stringify(Object.keys(randomLevelSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_TILE_ATTRIBUTE_FIELDS = ${JSON.stringify(Object.keys(tileAttributeProfileSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS = ${JSON.stringify(Object.keys(customLandlookMetadataSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SCENARIO_ITEM_FIELDS = ${JSON.stringify(Object.keys(scenarioItemRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_TREASURE_FIELDS = ${JSON.stringify(Object.keys(treasureRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SHOP_FIELDS = ${JSON.stringify(Object.keys(shopRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
@@ -616,6 +689,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     renderTypeScriptEnum(confidence) + `\n` +
     renderTypeScriptObject(provenance["x-providence-typescript-name"], provenance, new Set()) + `\n` +
     mapDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
+    landlookDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     renderTypeScriptEnum(timedEncounterLocationKindSchema) + `\n` +
     recordDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     renderTypeScriptObject(sourceFileName, sourceFile, new Set()) + `\n` +
@@ -657,6 +731,10 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[\n${renderArray(Object.keys(randomLevelSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_TILE_ATTRIBUTE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(tileAttributeProfileSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS: &[&str] = &[\n${renderArray(Object.keys(customLandlookMetadataSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioItemRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_TREASURE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(treasureRecordSchema.properties ?? {}))}\n];\n\n` +
@@ -691,6 +769,7 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     renderRustEnum(confidence) + `\n` +
     renderRustStruct(provenance) + `\n` +
     mapDefinitions.map(renderRustDefinition).join("\n") + `\n` +
+    landlookDefinitions.map(renderRustDefinition).join("\n") + `\n` +
     renderRustEnum(timedEncounterLocationKindSchema) + `\n` +
     recordDefinitions.map(renderRustDefinition).join("\n") + `\n` +
     renderRustStruct(sourceFile) + `\n` +
@@ -737,7 +816,8 @@ function typeScriptType(property) {
 function renderRustEnum(definition) {
   const name = definition["x-providence-rust-name"];
   const derives = definition["x-providence-rust-derives"] ?? ["Debug", "Clone", "Serialize", "Deserialize"];
-  const variants = (definition.enum ?? []).map((value) => `    ${kebabToPascal(value)},`).join("\n");
+  const defaultVariant = definition["x-providence-rust-default-variant"];
+  const variants = (definition.enum ?? []).map((value) => `${value === defaultVariant ? "    #[default]\n" : ""}    ${kebabToPascal(value)},`).join("\n");
   return `#[derive(${derives.join(", ")})]\n#[serde(rename_all = "kebab-case")]\npub enum ${name} {\n${variants}\n}\n`;
 }
 

@@ -2,13 +2,15 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    BattleRecord, ComplexEncounterRecord, Confidence, EncounterActionRow, GlobalMacroHook,
-    LandLayout, LevelType, MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender,
-    MessageRecord, MonsterDescriptionRecord, MonsterRecord, OptionLabelRecord, Provenance,
-    RandomLevel, RandomRect, RenderMode, ScenarioCasteOverride, ScenarioContactInfo,
-    ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRaceOverride,
-    ScenarioRestrictions, ScenarioShell, ScenarioSpellOverride, ScenarioSupportFile, ShopRecord,
-    SimpleEncounterRecord, ThiefEncounterRecord, TimedEncounterLocationKind, TimedEncounterRecord,
+    BattleRecord, ComplexEncounterRecord, Confidence, CustomLandlookMetadata, EncounterActionRow,
+    GlobalMacroHook, LandLayout, LandlookRangeSlot, LandlookWriterGate, LevelType, MapEntity,
+    MapMarker, MapRecord, MapRecordRect, MapRender, MapstatsRecord, MessageRecord,
+    MonsterDescriptionRecord, MonsterRecord, OptionLabelRecord, Provenance, RandomLevel,
+    RandomRect, RenderMode, ScenarioCasteOverride, ScenarioContactInfo, ScenarioGlobalMacroHooks,
+    ScenarioItemRecord, ScenarioMeta, ScenarioRaceOverride, ScenarioRestrictions, ScenarioShell,
+    ScenarioSpellOverride, ScenarioSupportFile, ShopRecord, SimpleEncounterRecord,
+    ThiefEncounterRecord, TileAttributeConfidence, TileAttributeFlag, TileAttributeProfile,
+    TileAttributeSourceKind, TileEditableScope, TimedEncounterLocationKind, TimedEncounterRecord,
     TreasureRecord,
 };
 pub use crate::generated::project_contract::{
@@ -922,90 +924,6 @@ pub struct ResourceAsset {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum TileAttributeConfidence {
-    SourceBacked,
-    Inferred,
-    Unknown,
-    Preserved,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum TileAttributeFlag {
-    Walkable,
-    Solid,
-    Path,
-    VisualPath,
-    Shore,
-    BoatRequired,
-    FlyFloatRequired,
-    BlocksLos,
-    Forest,
-    CombatBuild,
-    SpecialIcon,
-    UnknownMetadata,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TileAttributeProfile {
-    pub tile: i16,
-    pub landlook: Option<i8>,
-    pub solid_type: Option<i16>,
-    pub movement_sound_id: Option<i16>,
-    pub movement_cost: Option<i16>,
-    #[serde(default)]
-    pub shore: Option<bool>,
-    #[serde(default)]
-    pub boat_requirement: Option<i16>,
-    #[serde(default)]
-    pub path_flag: Option<bool>,
-    #[serde(default)]
-    pub blocks_los: Option<bool>,
-    #[serde(default)]
-    pub fly_float_required: Option<bool>,
-    #[serde(default)]
-    pub forest_type: Option<i16>,
-    #[serde(default)]
-    pub spare: Option<i16>,
-    #[serde(default)]
-    pub combat_build: Vec<Vec<i16>>,
-    #[serde(default)]
-    pub clear_land_id: Option<i16>,
-    #[serde(default)]
-    pub base_tile: Option<i16>,
-    #[serde(default)]
-    pub base_scale: Option<i16>,
-    #[serde(default = "default_tile_editable_scope")]
-    pub editable_scope: String,
-    pub flags: Vec<TileAttributeFlag>,
-    pub confidence: TileAttributeConfidence,
-    #[serde(default = "default_tile_attribute_source_kind")]
-    pub source_kind: TileAttributeSourceKind,
-    pub source: String,
-    pub raw_byte: Option<u8>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CustomLandlookMetadata {
-    pub landlook: i8,
-    pub source_file: String,
-    pub records: Vec<MapstatsRecord>,
-    pub base_tile: i16,
-    pub base_scale: i16,
-    pub range_slots: Vec<LandlookRangeSlot>,
-    #[serde(default)]
-    pub trailing_bytes: Vec<u8>,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    pub writer_gate: LandlookWriterGate,
-    #[serde(default)]
-    pub authored: bool,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CustomLandlookAtlasArtifact {
     pub landlook: i8,
@@ -1042,68 +960,12 @@ pub struct CustomLandlookUsage {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MapstatsRecord {
-    pub tile: i16,
-    pub sound: i16,
-    pub time: i16,
-    pub solid: i16,
-    pub shore: i16,
-    pub need_boat: i16,
-    pub is_path: i16,
-    pub los: i16,
-    pub fly_float: i16,
-    pub forest: i16,
-    pub spare: i16,
-    pub combat_build: Vec<Vec<i16>>,
-    pub clear_land_id: i16,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LandlookRangeSlot {
-    pub slot: usize,
-    pub label: String,
-    pub first_tile: i16,
-    pub last_tile: i16,
-    pub reserved: i16,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LandlookWriterGate {
-    pub metadata_writer_status: String,
-    pub atlas_writer_status: String,
-    pub writable_fields: Vec<String>,
-    pub preserve_only_fields: Vec<String>,
-    pub evidence: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct CustomLandlookArtifact {
     pub landlook: i8,
     pub metadata_file: String,
     pub pict_id: Option<i32>,
     pub custom_file: Option<String>,
     pub role: String,
-}
-
-fn default_tile_editable_scope() -> String {
-    "unknown".to_string()
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum TileAttributeSourceKind {
-    Mapstats,
-    DataSolids,
-    Inferred,
-    Preserved,
-    Unknown,
-}
-
-fn default_tile_attribute_source_kind() -> TileAttributeSourceKind {
-    TileAttributeSourceKind::Unknown
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

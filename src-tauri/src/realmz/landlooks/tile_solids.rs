@@ -1,6 +1,7 @@
 use crate::error::{ProvidenceError, Result};
 use crate::project::{
     TileAttributeConfidence, TileAttributeFlag, TileAttributeProfile, TileAttributeSourceKind,
+    TileEditableScope,
 };
 
 pub const TILE_SOLIDS_BYTES: usize = 1024;
@@ -27,7 +28,7 @@ pub(in crate::realmz) fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttribu
             clear_land_id: None,
             base_tile: None,
             base_scale: None,
-            editable_scope: "special-tile".to_string(),
+            editable_scope: TileEditableScope::SpecialTile,
             flags: if *solid_type == 0 {
                 vec![TileAttributeFlag::Walkable]
             } else {

@@ -347,14 +347,13 @@ export function createCustomLandlookFromSource(
 }
 
 function cloneCustomLandlookMetadata(source: CustomLandlookMetadata, targetLandlook: number, sourceFile: string): CustomLandlookMetadata {
+  const { trailingBytes: _trailingBytes, rawBytes: _rawBytes, ...semanticSource } = source;
   return {
-    ...source,
+    ...semanticSource,
     landlook: targetLandlook,
     sourceFile,
     records: source.records.map((record) => cloneMapstatsRecord(record)),
-    rangeSlots: source.rangeSlots.map((slot) => ({ ...slot })),
-    trailingBytes: [...(source.trailingBytes ?? [])],
-    rawBytes: [...(source.rawBytes ?? [])],
+    rangeSlots: source.rangeSlots.map(({ reserved: _reserved, ...slot }) => slot),
     writerGate: {
       ...source.writerGate,
       evidence: [...(source.writerGate?.evidence ?? [])]
@@ -386,8 +385,6 @@ function createCustomLandlookMetadataFromProfiles(
     baseTile,
     baseScale,
     rangeSlots: defaultCustomLandlookRangeSlots(),
-    trailingBytes: [],
-    rawBytes: [],
     writerGate: defaultCustomLandlookWriterGate(),
     authored: true
   };
@@ -405,15 +402,15 @@ function mapstatsRecordFromProfile(tile: number, profile: TileAttributeProfile |
     los: profile?.blocksLos ? 1 : 0,
     flyFloat: profile?.flyFloatRequired ? 1 : 0,
     forest: profile?.forestType ?? 0,
-    spare: profile?.spare ?? 0,
     combatBuild: normalizeCombatBuild(profile?.combatBuild),
     clearLandId: profile?.clearLandId ?? 0
   };
 }
 
 function cloneMapstatsRecord(record: MapstatsRecord): MapstatsRecord {
+  const { spare: _spare, ...semanticRecord } = record;
   return {
-    ...record,
+    ...semanticRecord,
     combatBuild: normalizeCombatBuild(record.combatBuild)
   };
 }
@@ -442,7 +439,6 @@ function defaultCustomLandlookRangeSlots(): LandlookRangeSlot[] {
     label: `Range ${slot + 1}`,
     firstTile: 0,
     lastTile: 0,
-    reserved: 0
   }));
 }
 
@@ -679,7 +675,7 @@ function customMapstatsAttributeProfile(landlook: CustomLandlookMetadata, record
     blocksLos: record.los !== 0,
     flyFloatRequired: flyFloat !== 0,
     forestType: record.forest,
-    spare: record.spare,
+    spare: record.spare ?? null,
     combatBuild: (record.combatBuild ?? []).map((row) => [...row]),
     clearLandId: record.clearLandId,
     baseTile: landlook.baseTile,

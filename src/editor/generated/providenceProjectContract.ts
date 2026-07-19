@@ -136,6 +136,44 @@ export const PROVIDENCE_RANDOM_LEVEL_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_TILE_ATTRIBUTE_FIELDS = [
+  "tile",
+  "landlook",
+  "solidType",
+  "movementSoundId",
+  "movementCost",
+  "shore",
+  "boatRequirement",
+  "pathFlag",
+  "blocksLos",
+  "flyFloatRequired",
+  "forestType",
+  "spare",
+  "combatBuild",
+  "clearLandId",
+  "baseTile",
+  "baseScale",
+  "editableScope",
+  "flags",
+  "confidence",
+  "sourceKind",
+  "source",
+  "rawByte"
+] as const;
+
+export const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS = [
+  "landlook",
+  "sourceFile",
+  "records",
+  "baseTile",
+  "baseScale",
+  "rangeSlots",
+  "trailingBytes",
+  "rawBytes",
+  "writerGate",
+  "authored"
+] as const;
+
 export const PROVIDENCE_SCENARIO_ITEM_FIELDS = [
   "id",
   "itemId",
@@ -593,6 +631,84 @@ export type ProvidenceRandomLevel = {
   rects: ProvidenceRandomRect[];
   rawValues?: number[];
   provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceTileAttributeConfidence = "source-backed" | "inferred" | "unknown" | "preserved";
+
+export type ProvidenceTileAttributeSourceKind = "mapstats" | "data-solids" | "inferred" | "preserved" | "unknown";
+
+export type ProvidenceTileAttributeFlag = "walkable" | "solid" | "path" | "visual-path" | "shore" | "boat-required" | "fly-float-required" | "blocks-los" | "forest" | "combat-build" | "special-icon" | "unknown-metadata";
+
+export type ProvidenceTileEditableScope = "built-in-reference" | "scenario-custom" | "special-tile" | "unknown";
+
+export type ProvidenceTileAttributeProfile = {
+  tile: number;
+  landlook: number | null;
+  solidType: number | null;
+  movementSoundId: number | null;
+  movementCost: number | null;
+  shore?: boolean | null;
+  boatRequirement?: number | null;
+  pathFlag?: boolean | null;
+  blocksLos?: boolean | null;
+  flyFloatRequired?: boolean | null;
+  forestType?: number | null;
+  spare?: number | null;
+  combatBuild?: number[][];
+  clearLandId?: number | null;
+  baseTile?: number | null;
+  baseScale?: number | null;
+  editableScope?: ProvidenceTileEditableScope;
+  flags: ProvidenceTileAttributeFlag[];
+  confidence: ProvidenceTileAttributeConfidence;
+  sourceKind?: ProvidenceTileAttributeSourceKind;
+  source: string;
+  rawByte: number | null;
+};
+
+export type ProvidenceMapstatsRecord = {
+  tile: number;
+  sound: number;
+  time: number;
+  solid: number;
+  shore: number;
+  needBoat: number;
+  isPath: number;
+  los: number;
+  flyFloat: number;
+  forest: number;
+  spare?: number;
+  combatBuild: number[][];
+  clearLandId: number;
+};
+
+export type ProvidenceLandlookRangeSlot = {
+  slot: number;
+  label: string;
+  firstTile: number;
+  lastTile: number;
+  reserved?: number;
+};
+
+export type ProvidenceLandlookWriterGate = {
+  metadataWriterStatus: string;
+  atlasWriterStatus: string;
+  writableFields: string[];
+  preserveOnlyFields: string[];
+  evidence: string[];
+};
+
+export type ProvidenceCustomLandlookMetadata = {
+  landlook: number;
+  sourceFile: string;
+  records: ProvidenceMapstatsRecord[];
+  baseTile: number;
+  baseScale: number;
+  rangeSlots: ProvidenceLandlookRangeSlot[];
+  trailingBytes?: number[];
+  rawBytes?: number[];
+  writerGate: ProvidenceLandlookWriterGate;
+  authored?: boolean;
 };
 
 export type ProvidenceTimedEncounterLocationKind = "any" | "land" | "dungeon";
