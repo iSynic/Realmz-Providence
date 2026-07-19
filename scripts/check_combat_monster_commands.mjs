@@ -90,6 +90,7 @@ function checkCopyCurrentMonsterToAllSets({ copyCurrentMonsterToAllSets }) {
   assert(monsterSemanticEqual(findNormal(next, 3), source), "copyCurrentMonsterToAllSets did not copy source into Normal");
   assert(monsterSemanticEqual(findSet(next, 1, 3), source), "copyCurrentMonsterToAllSets changed source set data");
   assert(monsterSemanticEqual(findSet(next, -1, 3), source), "copyCurrentMonsterToAllSets did not copy source into Mega");
+  assert([findNormal(next, 3), findSet(next, 1, 3), findSet(next, -1, 3)].every((record) => record.rawBytes === undefined), "copyCurrentMonsterToAllSets carried compatibility bytes into authored variants");
 }
 
 function checkClearMonsterRecord({ clearMonsterRecord }) {
@@ -200,7 +201,9 @@ function checkGenerateMonsterVariants({ generateMonsterVariants }) {
 
   assert(findNormal(next, 9).armor === 120, "generateMonsterVariants changed Normal set");
   assert(monsterVariant.hitDice === 255 && megaVariant.hitDice === 255, "generateMonsterVariants did not clamp hit dice");
-  assert(monsterVariant.staminaBonus === 126 && megaVariant.staminaBonus === 127, "generateMonsterVariants did not clamp stamina bonus");
+  assert(monsterVariant.staminaBonus === 126 && megaVariant.staminaBonus === 135, "generateMonsterVariants did not preserve unsigned stamina bonus range");
+  assert(monsterVariant.agility === 127 && megaVariant.agility === 129, "generateMonsterVariants did not preserve unsigned agility range");
+  assert(monsterVariant.movementMax === 128 && megaVariant.movementMax === 130, "generateMonsterVariants did not preserve unsigned movement range");
   assert(monsterVariant.spellPoints === 999 && megaVariant.spellPoints === 999, "generateMonsterVariants did not clamp spell points");
   assert(monsterVariant.maxSpellPoints === 999 && megaVariant.maxSpellPoints === 999, "generateMonsterVariants did not clamp max spell points");
   assert(monsterVariant.exp === 32767 && megaVariant.exp === 32767, "generateMonsterVariants did not clamp experience");
@@ -209,6 +212,7 @@ function checkGenerateMonsterVariants({ generateMonsterVariants }) {
   assert(JSON.stringify(megaVariant.items) === JSON.stringify(source.items), "generateMonsterVariants changed item ids");
   assert(JSON.stringify(megaVariant.money) === JSON.stringify(source.money), "generateMonsterVariants changed money rewards");
   assert(megaVariant.iconId === source.iconId && megaVariant.weapon === source.weapon && megaVariant.deathMacro === source.deathMacro, "generateMonsterVariants changed semantic references");
+  assert(monsterVariant.rawBytes === undefined && megaVariant.rawBytes === undefined, "generateMonsterVariants synthesized compatibility bytes");
 }
 
 function checkGenerateMonsterVariantsForAll({ generateMonsterVariantsForAll }) {
@@ -358,7 +362,7 @@ function checkBattleRuntimeMonsterLimit({ BATTLE_RUNTIME_MONSTER_LIMIT, countBat
   const validationSource = fs.readFileSync("src/editor/targetValidation.ts", "utf8");
   assert(validationSource.includes("countBattleRuntimeMonsterSlots(record.grid)"), "battle validation does not use the shared runtime monster slot counter");
   assert(validationSource.includes('recordIssue("error", recordType, recordId, "battle-monster-cap"'), "battle validation does not hard-error above the 100 placed monster cap");
-  const rustWriterSource = fs.readFileSync("src-tauri/src/realmz/combat.rs", "utf8");
+  const rustWriterSource = fs.readFileSync("src-tauri/src/realmz/battles.rs", "utf8");
   assert(rustWriterSource.includes("BATTLE_RUNTIME_MONSTER_LIMIT: usize = 100"), "Rust Realmz writer does not keep the runtime battle monster cap source-backed");
   assert(rustWriterSource.includes("placed_monsters > BATTLE_RUNTIME_MONSTER_LIMIT"), "Rust battle writer does not reject authored over-cap battles");
   assert(rustWriterSource.includes("at most {} loaded monsters"), "Rust battle writer error does not describe the loaded-monster cap");
@@ -1017,7 +1021,6 @@ function monster(id, overrides = {}) {
     deathMacro: 0,
     maxSpellPoints: 0,
     displayName: `Monster ${id}`,
-    rawBytes: Array(210).fill(0),
     authored: true,
     ...overrides
   };
@@ -1036,8 +1039,7 @@ function blankMonster(id) {
     spellPoints: 0,
     maxSpellPoints: 0,
     exp: 0,
-    displayName: "",
-    rawBytes: Array(210).fill(0)
+    displayName: ""
   });
 }
 
@@ -1060,10 +1062,7 @@ function isBlankMonster(record) {
     && record.movementMax === 0
     && record.size === 0
     && record.attackCount === 0
-    && record.displayName === ""
-    && Array.isArray(record.rawBytes)
-    && record.rawBytes.length === 210
-    && record.rawBytes.every((value) => value === 0);
+    && record.displayName === "";
 }
 
 function monsterSemanticEqual(actual, expected) {

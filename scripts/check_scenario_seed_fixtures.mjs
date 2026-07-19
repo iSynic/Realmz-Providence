@@ -467,10 +467,12 @@ function checkMonsters(createProjectFromScenarioSeed) {
   expect(allocationId(result, "monsters", "bell-wight") === 7, "bell-wight should preserve explicit monster ID 7");
   const monster = result.project.monsters[0];
   expect(monster?.id === 7 && monster?.displayName === "Bell Wight", "monster row should preserve ID and display name");
+  expect(monster?.rawBytes === undefined, "fresh Scenario JSON monsters should not carry compatibility bytes");
   expect(monster?.hitDice === 4 && monster?.staminaMax === 18 && monster?.armor === 3, "monster combat stats should be preserved");
   expect(monster?.items?.[0] === 902 && monster?.weapon === 902, "monster item references should resolve item keys");
   expect(monster?.attacks?.[0]?.join(",") === "1,8,0,0", "monster attack row should be preserved");
   expect(result.project.monsterDescriptions[0]?.id === 7 && result.project.monsterDescriptions[0]?.text.includes("temple guardian"), "monster description should be generated");
+  expect(result.project.monsterDescriptions[0]?.rawBytes === undefined, "fresh Scenario JSON monster descriptions should not carry compatibility bytes");
   const libraryMonster = result.project.monsters.find((entry) => entry.id === 8);
   expect(libraryMonster?.displayName === "Library Guardian" && libraryMonster?.hitDice === 6, "Monster Library templates should provide reusable defaults while seed names override the library label");
   expect(libraryMonster?.armor === 9 && libraryMonster?.iconId === 130 && libraryMonster?.attacks?.[0]?.join(",") === "2,6,0,0", "seed fields should override selected Monster Library defaults without losing inherited art or attacks");

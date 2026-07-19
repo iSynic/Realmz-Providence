@@ -287,7 +287,6 @@ function buildMonster(seed: ScenarioSeedMonster, context: ScenarioSeedCompilerCo
     deathMacro: seed.deathMacro === undefined ? template?.deathMacro ?? 0 : resolveRef(seed.deathMacro, context.actionPoints, "action point", context),
     maxSpellPoints: seed.maxSpellPoints ?? template?.maxSpellPoints ?? 0,
     displayName: seed.displayName ?? seed.name ?? template?.displayName ?? `Monster ${id}`,
-    rawBytes: new Array(MONSTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data MD", id, id * MONSTER_BYTES, MONSTER_BYTES)
   };
@@ -300,7 +299,6 @@ function buildMonsterDescription(seed: ScenarioSeedMonster, templateDescription?
   return {
     id,
     text: description,
-    rawBytes: new Array(MONSTER_DESCRIPTION_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data DES", id, id * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
   };

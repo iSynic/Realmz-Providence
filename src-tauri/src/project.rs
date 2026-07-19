@@ -4,10 +4,11 @@ use std::collections::BTreeMap;
 pub use crate::generated::project_contract::{
     BattleRecord, ComplexEncounterRecord, Confidence, EncounterActionRow, GlobalMacroHook,
     LandLayout, LevelType, MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender,
-    MessageRecord, OptionLabelRecord, Provenance, RandomLevel, RandomRect, RenderMode,
-    ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta,
-    ScenarioRestrictions, ScenarioShell, ScenarioSupportFile, ShopRecord, SimpleEncounterRecord,
-    ThiefEncounterRecord, TimedEncounterLocationKind, TimedEncounterRecord, TreasureRecord,
+    MessageRecord, MonsterDescriptionRecord, MonsterRecord, OptionLabelRecord, Provenance,
+    RandomLevel, RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks,
+    ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
+    ShopRecord, SimpleEncounterRecord, ThiefEncounterRecord, TimedEncounterLocationKind,
+    TimedEncounterRecord, TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -787,79 +788,10 @@ pub struct ExtraCodeRow {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MonsterRecord {
-    pub id: usize,
-    pub hit_dice: u8,
-    pub stamina_bonus: u8,
-    pub agility: u8,
-    pub name_id: u8,
-    pub movement_max: u8,
-    pub armor: i8,
-    pub magic_resistance: i8,
-    pub distance: i8,
-    pub traitor: i8,
-    pub size: i8,
-    pub type_flags: Vec<i8>,
-    pub attack_count: i8,
-    pub magic_attack_count: i8,
-    pub attacks: Vec<Vec<i8>>,
-    pub damage_bonus: i8,
-    pub cast_percent: i8,
-    pub run_percent: i8,
-    pub surrender_percent: i8,
-    pub missile_percent: i8,
-    pub can_summon: i8,
-    pub saves: Vec<i8>,
-    pub spell_immunities: Vec<i8>,
-    pub money: Vec<i16>,
-    pub spells: Vec<i16>,
-    pub items: Vec<i16>,
-    pub weapon: i16,
-    pub icon_id: i16,
-    pub spell_points: i16,
-    pub exp: i16,
-    pub stamina: i16,
-    pub stamina_max: i16,
-    pub underneath: Vec<i16>,
-    pub target: i8,
-    pub guarding: i8,
-    pub not_on_menu: bool,
-    pub been_attacked: i8,
-    pub movement: i8,
-    pub magic_to_hit: i8,
-    pub conditions: Vec<i8>,
-    pub lr: i8,
-    pub up: i8,
-    pub attack_num: i8,
-    pub bonus_attack: i8,
-    pub death_macro: i16,
-    pub max_spell_points: i16,
-    pub display_name: String,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct MonsterSet {
     pub source_file: String,
     pub set_id: i16,
     pub monsters: Vec<MonsterRecord>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MonsterDescriptionRecord {
-    pub id: usize,
-    pub text: String,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1401,6 +1333,14 @@ impl ProvidenceProject {
         for record in &mut self.shops {
             normalize_shop_slots(record);
         }
+        for record in &mut self.monsters {
+            normalize_monster(record);
+        }
+        for set in &mut self.monster_sets {
+            for record in &mut set.monsters {
+                normalize_monster(record);
+            }
+        }
         for record in &mut self.complex_encounters {
             normalize_complex_encounter(record);
         }
@@ -1465,6 +1405,21 @@ fn normalize_timed_encounter(record: &mut TimedEncounterRecord) {
     if !record.reserved_words.is_empty() {
         resize_vec(&mut record.reserved_words, 9, 0);
     }
+}
+
+fn normalize_monster(record: &mut MonsterRecord) {
+    resize_vec(&mut record.type_flags, 8, 0);
+    resize_vec(&mut record.attacks, 5, Vec::new());
+    for attack in &mut record.attacks {
+        resize_vec(attack, 4, 0);
+    }
+    resize_vec(&mut record.saves, 6, 0);
+    resize_vec(&mut record.spell_immunities, 6, 0);
+    resize_vec(&mut record.money, 3, 0);
+    resize_vec(&mut record.spells, 10, 0);
+    resize_vec(&mut record.items, 6, 0);
+    resize_vec(&mut record.underneath, 4, 0);
+    resize_vec(&mut record.conditions, 40, 0);
 }
 
 fn resize_vec<T: Clone>(values: &mut Vec<T>, length: usize, default: T) {
@@ -1565,9 +1520,9 @@ fn normalize_shop_slots(record: &mut ShopRecord) {
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_map_record_markers, normalize_scenario_item_spare_words, normalize_shop_slots,
-        normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord, MapRecordRect,
-        ProjectOrigin, Provenance, SourceSnapshot,
+        normalize_map_record_markers, normalize_monster, normalize_scenario_item_spare_words,
+        normalize_shop_slots, normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord,
+        MapRecordRect, ProjectOrigin, Provenance, SourceSnapshot,
     };
 
     #[test]
@@ -1635,6 +1590,35 @@ mod tests {
         assert_eq!(record.spare2.len(), 7);
         assert_eq!(record.spare2[0], -321);
         assert!(record.spare2[1..].iter().all(|value| *value == 0));
+    }
+
+    #[test]
+    fn monster_normalization_backfills_canonical_fixed_arrays() {
+        let mut record =
+            crate::realmz::parse_monsters(&vec![0; crate::realmz::MONSTER_BYTES]).remove(0);
+        record.type_flags = vec![1];
+        record.attacks = vec![vec![2, 3]];
+        record.saves = vec![4];
+        record.spell_immunities.clear();
+        record.money = vec![5];
+        record.spells = vec![6];
+        record.items = vec![7];
+        record.underneath = vec![8];
+        record.conditions = vec![9];
+
+        normalize_monster(&mut record);
+
+        assert_eq!(record.type_flags, [1, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(record.attacks.len(), 5);
+        assert_eq!(record.attacks[0], [2, 3, 0, 0]);
+        assert_eq!(record.attacks[4], [0, 0, 0, 0]);
+        assert_eq!(record.saves.len(), 6);
+        assert_eq!(record.spell_immunities.len(), 6);
+        assert_eq!(record.money, [5, 0, 0]);
+        assert_eq!(record.spells.len(), 10);
+        assert_eq!(record.items.len(), 6);
+        assert_eq!(record.underneath.len(), 4);
+        assert_eq!(record.conditions.len(), 40);
     }
 
     #[test]

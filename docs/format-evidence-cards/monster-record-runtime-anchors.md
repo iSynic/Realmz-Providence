@@ -2,7 +2,7 @@
 
 ## User-Facing Unlock
 
-This note makes `Data MD` a ready target for the next core-record editor slice. A Monster workbench can expose Realmz-native monster templates with typed fields, icon/item/spell/macro pickers, menu visibility badges, validation, and source-preserving export.
+`Data MD` is now canonical compiler output for fresh and authored Providence monsters. The Monster workbench exposes Realmz-native templates with typed fields, icon/item/spell/macro pickers, menu visibility badges, validation, and annex-bounded legacy preservation.
 
 This is also a dependency unlock: battles place monsters, scripts can spawn monsters or add allies, bestiary menus are generated from monster records, and monster death hooks call macros.
 
@@ -121,7 +121,7 @@ If `todoondeath` is nonzero, monster death queues or immediately runs a macro/do
 
 ## Providence Editor Implications
 
-- Add a `Monster` project collection decoded from `Data MD`, preserving the 210-byte raw record.
+- The canonical `Monster` project collection owns every field in the 210-byte record. Fresh records carry no raw identity; imported compatibility bytes remain optional evidence until export consults the bounded annex.
 - Treat stamina, max stamina, movement, target, guard, direction, attack number, and similar runtime state fields as advanced/template evidence unless Divinity proves authoring semantics.
 - Show `Data MENU` as generated menu evidence and omit it from export so Realmz rebuilds the cache from `Data MD`.
 - Monster pickers should be available to battle grids, spawn/add-ally script opcodes, encounter forms, and bestiary inspection.
@@ -150,7 +150,7 @@ If `todoondeath` is nonzero, monster death queues or immediately runs a macro/do
 
 ## Providence Follow-Up
 
-- Follow-up: `parser-writer`, `editor-ui`, `validation`.
-- Build `Data MD` parse/write fixtures before exposing writes.
-- Add a Monster editor after item/spell/icon pickers are usable enough to avoid raw-ID-only authoring.
-- Add Battle-grid monster placement UI using the same monster picker and signed-side toggle.
+- Implemented: TypeScript and Rust compile all 210 bytes from canonical semantics, including deterministic fixed-name padding, without consulting embedded `rawBytes`.
+- Implemented: unchanged imported rows and malformed tails are restored only from the compatibility annex; authored imported rows compile from semantics.
+- Implemented: fresh UI, library-copy, and Scenario JSON paths omit compatibility bytes, and older short arrays normalize to exact canonical capacities on open.
+- Proof: `scripts/run_authoritative_scenario_proof.mjs` authors monster 1 and its description without `raw-sources`, requires browser/Rust byte parity, and semantically reimports both.

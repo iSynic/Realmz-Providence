@@ -117,7 +117,7 @@ mod tests {
         let monster_description = MonsterDescriptionRecord {
             id: 0,
             text: "A rather dramatic monster.".to_string(),
-            raw_bytes: vec![0; MONSTER_DESCRIPTION_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data DES", 0, 0, MONSTER_DESCRIPTION_BYTES),
         };
@@ -176,7 +176,13 @@ mod tests {
             type_flags: vec![1, 0, 1, 0, 0, 0, 0, 0],
             attack_count: 2,
             magic_attack_count: 1,
-            attacks: vec![vec![4, 8, 0, 0], vec![5, 12, 1, 0]],
+            attacks: vec![
+                vec![4, 8, 0, 0],
+                vec![5, 12, 1, 0],
+                vec![0; 4],
+                vec![0; 4],
+                vec![0; 4],
+            ],
             damage_bonus: 7,
             cast_percent: 20,
             run_percent: 5,
@@ -186,8 +192,8 @@ mod tests {
             saves: vec![-5, 0, 5, 0, 0, 0],
             spell_immunities: vec![0, 1, 0, 1, 0, 0],
             money: vec![10, 20, 30],
-            spells: vec![1101, 1102],
-            items: vec![501, 502],
+            spells: vec![1101, 1102, 0, 0, 0, 0, 0, 0, 0, 0],
+            items: vec![501, 502, 0, 0, 0, 0],
             weapon: 601,
             icon_id: -222,
             spell_points: 40,
@@ -209,7 +215,7 @@ mod tests {
             death_macro: 77,
             max_spell_points: 60,
             display_name: "Test Monster".to_string(),
-            raw_bytes: vec![0; MONSTER_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data MD", 0, 0, MONSTER_BYTES),
         };

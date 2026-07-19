@@ -65,6 +65,10 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (!record) return [];
     if (isImportedPostTerminatorMonsterTail(project, recordId)) return [];
     const issues = validateRecordId(recordType, recordId);
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 210) {
+      issues.push(recordIssue("error", recordType, recordId, "monster-compatibility-storage", "Monster has invalid compatibility storage.", "Data MD compatibility storage must be empty or exactly 210 bytes."));
+    }
     for (const field of ["weapon", "iconId", "spellPoints", "exp", "stamina", "staminaMax", "deathMacro", "maxSpellPoints"] as const) {
       issues.push(...validateI16Field(recordType, recordId, field, record[field]));
     }
@@ -87,7 +91,13 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       ["Hit dice", record.hitDice],
       ["Stamina bonus", record.staminaBonus],
       ["Agility", record.agility],
-      ["Movement", record.movementMax],
+      ["Movement", record.movementMax]
+    ] as const) {
+      if (!Number.isInteger(value) || value < 0 || value > 255) {
+        issues.push(recordIssue("error", recordType, recordId, `${slot}:byte-range`, `${slot} is outside unsigned-byte range.`, `${value} cannot be represented by this Data MD field; use 0..255.`));
+      }
+    }
+    for (const [slot, value] of [
       ["Armor", record.armor],
       ["Magic resistance", record.magicResistance],
       ["Attack count", record.attackCount],
@@ -97,8 +107,8 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       ["Surrender percent", record.surrenderPercent],
       ["Missile percent", record.missilePercent]
     ] as const) {
-      if (!Number.isInteger(value) || value < -128 || value > 255) {
-        issues.push(recordIssue("warning", recordType, recordId, `${slot}:byte-range`, `${slot} is outside the usual byte range.`, `${value} will be preserved or written as a Realmz byte-style field; keep values small unless this is intentional.`));
+      if (!Number.isInteger(value) || value < -128 || value > 127) {
+        issues.push(recordIssue("error", recordType, recordId, `${slot}:byte-range`, `${slot} is outside signed-byte range.`, `${value} cannot be represented by this Data MD field; use -128..127.`));
       }
     }
     for (const [label, value] of [
@@ -114,10 +124,19 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if ((record.displayName ?? "").length > 39) {
       issues.push(recordIssue("warning", recordType, recordId, "monster-name-length", "Monster name may be too long.", "Realmz stores monster names in a fixed 40-byte field."));
     }
-    if (record.typeFlags.length > 8) issues.push(recordIssue("error", recordType, recordId, "monster-trait-count", "Monster has too many trait flags.", "Realmz stores eight physical trait bytes."));
-    if (record.attacks.length > 5) issues.push(recordIssue("error", recordType, recordId, "monster-attack-count", "Monster has too many attack rows.", "Realmz stores five attack rows."));
-    if (record.items.length > 6) issues.push(recordIssue("error", recordType, recordId, "monster-item-count", "Monster has too many item slots.", "Realmz stores six item references."));
-    if (record.spells.length > 10) issues.push(recordIssue("error", recordType, recordId, "monster-spell-count", "Monster has too many spell slots.", "Realmz stores ten spell references."));
+    for (const [field, actual, expected] of [
+      ["trait flags", record.typeFlags.length, 8],
+      ["attack rows", record.attacks.length, 5],
+      ["saves", record.saves.length, 6],
+      ["spell immunities", record.spellImmunities.length, 6],
+      ["treasure slots", record.money.length, 3],
+      ["spell slots", record.spells.length, 10],
+      ["item slots", record.items.length, 6],
+      ["underneath slots", record.underneath.length, 4],
+      ["condition fields", record.conditions.length, 40]
+    ] as const) {
+      if (actual !== expected) issues.push(recordIssue("error", recordType, recordId, `monster-${field.replace(/\W+/g, "-")}-count`, `Monster has the wrong number of ${field}.`, `Realmz stores exactly ${expected}; this record has ${actual}.`));
+    }
     for (const [slot, item] of record.items.entries()) {
       issues.push(...validateI16Field(recordType, recordId, `Item ${slot + 1}`, item));
     }
@@ -128,7 +147,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       issues.push(...validateI16Field(recordType, recordId, `Treasure ${slot + 1}`, money));
     }
     for (const [slot, row] of record.attacks.entries()) {
-      if (row.length > 4) issues.push(recordIssue("error", recordType, recordId, `monster-attack-row-${slot}`, "Monster attack row has too many fields.", "Realmz stores four values per attack row."));
+      if (row.length !== 4) issues.push(recordIssue("error", recordType, recordId, `monster-attack-row-${slot}`, "Monster attack row has the wrong number of fields.", `Realmz stores exactly four values per attack row; row ${slot + 1} has ${row.length}.`));
     }
     if (record.deathMacro !== 0) issues.push(...validateReference(project, recordType, recordId, "Monster macro", 8, record.deathMacro, undefined, catalog));
     return issues;

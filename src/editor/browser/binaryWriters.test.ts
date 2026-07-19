@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeComplexEncounters, writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -507,6 +507,73 @@ describe("browser timed-encounter writer", () => {
 
   it("rejects malformed compatibility storage", () => {
     expect(() => writeTimedEncounters([{ ...emptyTimedEncounter(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+  });
+});
+
+describe("browser monster writers", () => {
+  it("compiles every monster field from semantics without raw identity", () => {
+    const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];
+    const record = {
+      ...parsed,
+      rawBytes: undefined,
+      authored: true,
+      hitDice: 9,
+      staminaBonus: 200,
+      agility: 201,
+      nameId: 6,
+      movementMax: 202,
+      armor: -4,
+      typeFlags: [1, -1, 2, -2, 3, -3, 4, -4],
+      attacks: [[1, 2, 3, 4], [-1, -2, -3, -4], [5, 6, 7, 8], [0, 0, 0, 0], [9, 10, 11, 12]],
+      money: [100, 200, 300],
+      spells: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      items: [20, 21, 22, 23, 24, 25],
+      iconId: -27,
+      underneath: [32, 33, 34, 35],
+      notOnMenu: true,
+      deathMacro: -16,
+      maxSpellPoints: 37,
+      displayName: "Semantic Beast"
+    };
+
+    const expected = writeMonsters([record]);
+    const output = writeMonsters([{ ...record, rawBytes: new Array(210).fill(0xa5) }]);
+
+    expect(output).toEqual(expected);
+    expect(Array.from(output.slice(0, 10))).toEqual([9, 200, 201, 6, 202, 252, 0, 0, 0, 0]);
+    expect(Array.from(output.slice(10, 18))).toEqual([1, 255, 2, 254, 3, 253, 4, 252]);
+    expect(i16(output, 58)).toBe(100);
+    expect(i16(output, 62)).toBe(300);
+    expect(i16(output, 98)).toBe(-27);
+    expect(i16(output, 108)).toBe(32);
+    expect(output[118]).toBe(1);
+    expect(i16(output, 166)).toBe(-16);
+    expect(i16(output, 168)).toBe(37);
+    expect(new TextDecoder().decode(output.slice(170, 184))).toBe("Semantic Beast");
+    expect(Array.from(output.slice(184))).toEqual(new Array(26).fill(0));
+  });
+
+  it("compiles description Pascal text and deterministic padding", () => {
+    const output = writeMonsterDescriptions([{
+      id: 0,
+      text: "Canonical description",
+      rawBytes: new Array(256).fill(0xa5),
+      authored: true
+    }]);
+
+    expect(output[0]).toBe(21);
+    expect(new TextDecoder().decode(output.slice(1, 22))).toBe("Canonical description");
+    expect(Array.from(output.slice(22))).toEqual(new Array(234).fill(0));
+  });
+
+  it("rejects malformed compatibility storage and fixed arrays", () => {
+    const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];
+    expect(() => writeMonsters([{ ...parsed, rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+    expect(() => writeMonsters([{ ...parsed, attacks: [[0, 0, 0]] }]))
+      .toThrow("exactly 5 attack rows");
+    expect(() => writeMonsterDescriptions([{ id: 0, text: "", rawBytes: [1], authored: true }]))
       .toThrow("invalid compatibility byte storage");
   });
 });

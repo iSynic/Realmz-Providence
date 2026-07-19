@@ -55,6 +55,9 @@ assertOwnershipTimedEncounter(project.timedEncounters, "Canonical project");
 expect(project.timedEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0 && (record.reservedWords?.length ?? 0) === 0), "Fresh canonical timed encounters must not carry compatibility bytes");
 assertOwnershipBattle(project.battles, "Canonical project");
 expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical battles must not carry compatibility bytes");
+assertOwnershipMonster(project.monsters, project.monsterDescriptions, "Canonical project");
+expect(project.monsters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical monsters must not carry compatibility bytes");
+expect(project.monsterDescriptions.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical monster descriptions must not carry compatibility bytes");
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
 expect((project.scenarioItems[0].rawBytes?.length ?? 0) === 0, "Fresh canonical scenario item must not carry compatibility bytes");
 expect(project.scenarioItems[0].spare2?.length === 7, "Fresh canonical scenario item must own all seven spare words");
@@ -180,6 +183,7 @@ assertOwnershipComplexEncounter(reimported.complexEncounters, "Reimport");
 assertOwnershipThiefEncounter(reimported.thiefEncounters, "Reimport");
 assertOwnershipTimedEncounter(reimported.timedEncounters, "Reimport");
 assertOwnershipBattle(reimported.battles, "Reimport");
+assertOwnershipMonster(reimported.monsters, reimported.monsterDescriptions, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
 assertOwnershipShop(reimported.shops, "Reimport");
@@ -203,6 +207,8 @@ const summary = {
     thiefEncounters: project.thiefEncounters.length,
     timedEncounters: project.timedEncounters.length,
     battles: project.battles.length,
+    monsters: project.monsters.length,
+    monsterDescriptions: project.monsterDescriptions.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
     shops: project.shops.length,
@@ -242,6 +248,8 @@ const summary = {
     timedEncounterRecovered: true,
     simpleEncounterRecovered: true,
     battleRecovered: true,
+    monsterRecovered: true,
+    monsterDescriptionRecovered: true,
     itemTextRecovered: true,
     treasureRecovered: true,
     shopRecovered: true,
@@ -317,6 +325,9 @@ async function assertNoRawSources(stage) {
   expect(savedProject.timedEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0 && (record.reservedWords?.length ?? 0) === 0), `Rust-saved project ${stage} timed encounters contain compatibility bytes`);
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
   expect(savedProject.battles?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} battles contain compatibility bytes`);
+  assertOwnershipMonster(savedProject.monsters, savedProject.monsterDescriptions, `Rust-saved project ${stage}`);
+  expect(savedProject.monsters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} monsters contain compatibility bytes`);
+  expect(savedProject.monsterDescriptions?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} monster descriptions contain compatibility bytes`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
   expect(savedProject.treasures?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} treasures contain compatibility bytes`);
@@ -343,6 +354,8 @@ function assertCompleteNativeFolder(files, label) {
     ["Data TD3", 40],
     ["Data ED3", 3 * 40],
     ["Data BD", 346],
+    ["Data MD", 2 * 210],
+    ["Data DES", 2 * 256],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
     ["Data SD", 3002],
@@ -355,7 +368,7 @@ function assertCompleteNativeFolder(files, label) {
     expect(files.has(name), `${label} output is missing ${name}`);
     expect(files.get(name).byteLength === bytes, `${label} ${name} should be ${bytes} bytes, found ${files.get(name).byteLength}`);
   }
-  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data MD"]) {
+  for (const name of ["Data DDD", "Data DL", "Data RDD"]) {
     expect(files.has(name), `${label} output is missing required empty table ${name}`);
     expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
@@ -376,6 +389,21 @@ function assertCompleteNativeFolder(files, label) {
   expect(battle[84 * 2] === 0 && battle[84 * 2 + 1] === 1, `${label} Data BD does not contain the authored monster placement`);
   expect(battle[338] === 3, `${label} Data BD has the wrong authored distance`);
   expect(battle[339] === 0, `${label} Data BD alignment padding is not deterministic zero`);
+  const monster = files.get("Data MD");
+  expect(monster.slice(0, 210).every((byte) => byte === 0), `${label} Data MD unused record 0 is not deterministic zero`);
+  const authoredMonster = monster.slice(210);
+  expect(Buffer.from(authoredMonster.slice(0, 10)).equals(Buffer.from([9, 200, 201, 1, 202, 252, 0, 0, 0, 1])), `${label} Data MD has the wrong authored scalar bytes`);
+  expect(Buffer.from(authoredMonster.slice(10, 18)).equals(Buffer.from([1, 255, 2, 254, 3, 253, 4, 252])), `${label} Data MD has the wrong authored trait flags`);
+  expect(Buffer.from(authoredMonster.slice(20, 24)).equals(Buffer.from([1, 8, 0, 0])), `${label} Data MD has the wrong authored attack row`);
+  expect(Buffer.from(authoredMonster.slice(170, 189)).equals(Buffer.from("Providence Sentinel")), `${label} Data MD has the wrong authored display name`);
+  expect(authoredMonster.slice(189).every((byte) => byte === 0), `${label} Data MD name padding is not deterministic zero`);
+  const monsterDescription = files.get("Data DES");
+  const expectedMonsterDescription = Buffer.from("Compiled entirely from canonical Providence monster data.");
+  expect(monsterDescription.slice(0, 256).every((byte) => byte === 0), `${label} Data DES unused record 0 is not deterministic zero`);
+  const authoredMonsterDescription = monsterDescription.slice(256);
+  expect(authoredMonsterDescription[0] === expectedMonsterDescription.length, `${label} Data DES has the wrong authored Pascal length`);
+  expect(Buffer.from(authoredMonsterDescription.slice(1, 1 + expectedMonsterDescription.length)).equals(expectedMonsterDescription), `${label} Data DES has the wrong authored description`);
+  expect(authoredMonsterDescription.slice(1 + expectedMonsterDescription.length).every((byte) => byte === 0), `${label} Data DES padding is not deterministic zero`);
   const simpleEncounter = files.get("Data ED");
   expect(simpleEncounter[0] === 1, `${label} Data ED does not contain the authored message action`);
   expect(readI16(simpleEncounter, 32) === 0, `${label} Data ED message action has the wrong authored ID`);
@@ -490,6 +518,17 @@ function assertOwnershipBattle(records, label) {
   expect(battle.grid[84] === 1, `${label} battle has the wrong authored monster placement`);
   expect(battle.dist === 3, `${label} battle has the wrong authored distance`);
   expect(battle.messageBefore === 0 && battle.messageAfter === 0 && battle.battleMacro === 0, `${label} battle has the wrong message or macro fields`);
+}
+
+function assertOwnershipMonster(records, descriptions, label) {
+  const monster = records?.find((record) => record.id === 1);
+  expect(monster, `${label} is missing monster 1`);
+  expect(monster.hitDice === 9 && monster.staminaBonus === 200 && monster.agility === 201 && monster.movementMax === 202, `${label} monster has the wrong unsigned-byte fields`);
+  expect(monster.armor === -4 && monster.typeFlags?.join(",") === "1,-1,2,-2,3,-3,4,-4", `${label} monster has the wrong signed-byte fields`);
+  expect(monster.attacks?.length === 5 && monster.attacks[0]?.join(",") === "1,8,0,0", `${label} monster has the wrong fixed attack inventory`);
+  expect(monster.displayName === "Providence Sentinel", `${label} monster has the wrong display name`);
+  const description = descriptions?.find((record) => record.id === 1);
+  expect(description?.text === "Compiled entirely from canonical Providence monster data.", `${label} has the wrong monster description`);
 }
 
 function assertOwnershipTreasure(records, label) {

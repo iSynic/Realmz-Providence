@@ -3,17 +3,17 @@ use crate::error::{IoPath, ProvidenceError, Result};
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
     BattleRecord, ComplexEncounterRecord, ItemTextRecord, LevelType, MessageRecord,
-    MonsterIconOverride, MonsterIconOverrideSource, OptionLabelRecord, ProvidenceProject,
-    ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget,
-    SimpleEncounterRecord, TargetCompatibilityBuckets, TargetCompatibilityIssue,
-    ThiefEncounterRecord, TimedEncounterRecord,
+    MonsterDescriptionRecord, MonsterIconOverride, MonsterIconOverrideSource, MonsterRecord,
+    OptionLabelRecord, ProvidenceProject, ScenarioCasteOverride, ScenarioRaceOverride,
+    ScenarioSpellOverride, ScenarioTarget, SimpleEncounterRecord, TargetCompatibilityBuckets,
+    TargetCompatibilityIssue, ThiefEncounterRecord, TimedEncounterRecord,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
     write_door_file_for_levels, write_extracodes, write_fields, write_global_macro_hooks,
     write_land_layout, write_macro_file, write_map_records, write_messages,
-    write_monster_descriptions, write_monster_set, write_monsters, write_option_labels,
-    write_race_overrides, write_random_levels, write_scenario_contact_info, write_scenario_items,
+    write_monster_descriptions, write_monsters, write_option_labels, write_race_overrides,
+    write_random_levels, write_scenario_contact_info, write_scenario_items,
     write_scenario_restrictions, write_scenario_shell, write_scenario_support_file, write_shops,
     write_simple_encounters, write_spell_overrides, write_thief_encounters, write_tile_solids,
     write_timed_encounters, write_treasures, DOOR_BYTES, EXTRACODE_BYTES,
@@ -267,27 +267,23 @@ fn compile_realmz_scenario(
         compatibility_annex,
     )?;
     write_battles_for_export(&mut manifest, &project.battles, compatibility_annex)?;
-    write_fixed_if_nonempty(
+    write_monsters_for_export(
         &mut manifest,
         "Data MD",
-        write_monsters(&project.monsters)?,
-        crate::realmz::MONSTER_BYTES,
+        &project.monsters,
         compatibility_annex,
     )?;
     for monster_set in &project.monster_sets {
-        write_fixed_if_nonempty(
+        write_monsters_for_export(
             &mut manifest,
             &monster_set.source_file,
-            write_monster_set(monster_set)?,
-            crate::realmz::MONSTER_BYTES,
+            &monster_set.monsters,
             compatibility_annex,
         )?;
     }
-    write_fixed_if_nonempty(
+    write_monster_descriptions_for_export(
         &mut manifest,
-        "Data DES",
-        write_monster_descriptions(&project.monster_descriptions)?,
-        crate::realmz::MONSTER_DESCRIPTION_BYTES,
+        &project.monster_descriptions,
         compatibility_annex,
     )?;
     let mut scenario_item_bytes = overlay_zero_filled_fixed_capacity(
@@ -522,6 +518,29 @@ fn write_battles_for_export(
     write_if_nonempty(manifest, "Data BD", bytes)
 }
 
+fn write_monsters_for_export(
+    manifest: &mut NativeScenarioManifest,
+    name: &str,
+    records: &[MonsterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_monster_rows(write_monsters(records)?, name, records, annex)?;
+    write_if_nonempty(manifest, name, bytes)
+}
+
+fn write_monster_descriptions_for_export(
+    manifest: &mut NativeScenarioManifest,
+    records: &[MonsterDescriptionRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_monster_description_rows(
+        write_monster_descriptions(records)?,
+        records,
+        annex,
+    )?;
+    write_if_nonempty(manifest, "Data DES", bytes)
+}
+
 fn write_simple_encounters_for_export(
     manifest: &mut NativeScenarioManifest,
     records: &[SimpleEncounterRecord],
@@ -602,6 +621,35 @@ fn preserve_imported_battle_rows(
         bytes,
         "Data BD",
         crate::realmz::BATTLE_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )
+}
+
+fn preserve_imported_monster_rows(
+    modeled: Vec<u8>,
+    name: &str,
+    records: &[MonsterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    preserve_imported_fixed_rows(
+        modeled,
+        name,
+        crate::realmz::MONSTER_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )
+}
+
+fn preserve_imported_monster_description_rows(
+    modeled: Vec<u8>,
+    records: &[MonsterDescriptionRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    preserve_imported_fixed_rows(
+        modeled,
+        "Data DES",
+        crate::realmz::MONSTER_DESCRIPTION_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
     )
@@ -1682,6 +1730,7 @@ mod tests {
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
         preserve_imported_fixed_length, preserve_imported_message_rows,
+        preserve_imported_monster_description_rows, preserve_imported_monster_rows,
         preserve_imported_option_label_rows, preserve_imported_simple_encounter_rows,
         preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
         scenario_icon_resource_updates, write_caste_overrides_for_export,
@@ -2093,6 +2142,93 @@ mod tests {
         assert_eq!(crate::realmz::i16_be(authored, 344), -6);
         assert_eq!(
             &output[2 * crate::realmz::BATTLE_BYTES..],
+            &[0xde, 0xad, 0xbe]
+        );
+    }
+
+    #[test]
+    fn imported_monster_export_bounds_legacy_rows_and_tails_to_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let mut source = vec![0xa5; 2 * crate::realmz::MONSTER_BYTES];
+        source[0] = 1;
+        source[170..174].copy_from_slice(b"Raw!");
+        let authored_start = crate::realmz::MONSTER_BYTES;
+        source[authored_start] = 2;
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data MD1"), &source).unwrap();
+
+        let mut records = crate::realmz::parse_monster_set(&source, "Data MD1", 1).monsters;
+        records[0].raw_bytes.fill(0x11);
+        records[1].raw_bytes.fill(0x22);
+        records[1].hit_dice = 9;
+        records[1].stamina_bonus = 200;
+        records[1].display_name = "Authored Beast".to_string();
+        records[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_monster_rows(
+            crate::realmz::write_monsters(&records).unwrap(),
+            "Data MD1",
+            &records,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(
+            &output[..crate::realmz::MONSTER_BYTES],
+            &source[..crate::realmz::MONSTER_BYTES]
+        );
+        let authored = &output[authored_start..2 * crate::realmz::MONSTER_BYTES];
+        assert_eq!(authored[0], 9);
+        assert_eq!(authored[1], 200);
+        assert_eq!(&authored[170..184], b"Authored Beast");
+        assert!(authored[184..].iter().all(|byte| *byte == 0));
+        assert_eq!(
+            &output[2 * crate::realmz::MONSTER_BYTES..],
+            &[0xde, 0xad, 0xbe]
+        );
+    }
+
+    #[test]
+    fn imported_monster_description_export_bounds_legacy_rows_and_tails_to_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let mut source = vec![0xa5; 2 * crate::realmz::MONSTER_DESCRIPTION_BYTES];
+        source[0] = 3;
+        source[1..4].copy_from_slice(b"Raw");
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data DES"), &source).unwrap();
+
+        let mut records = crate::realmz::parse_monster_descriptions(&source);
+        records[0].raw_bytes.fill(0x11);
+        records[1].raw_bytes.fill(0x22);
+        records[1].text = "Authored description".to_string();
+        records[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_monster_description_rows(
+            crate::realmz::write_monster_descriptions(&records).unwrap(),
+            &records,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(
+            &output[..crate::realmz::MONSTER_DESCRIPTION_BYTES],
+            &source[..crate::realmz::MONSTER_DESCRIPTION_BYTES]
+        );
+        let authored = &output[crate::realmz::MONSTER_DESCRIPTION_BYTES
+            ..2 * crate::realmz::MONSTER_DESCRIPTION_BYTES];
+        assert_eq!(authored[0], 20);
+        assert_eq!(&authored[1..21], b"Authored description");
+        assert!(authored[21..].iter().all(|byte| *byte == 0));
+        assert_eq!(
+            &output[2 * crate::realmz::MONSTER_DESCRIPTION_BYTES..],
             &[0xde, 0xad, 0xbe]
         );
     }

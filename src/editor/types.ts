@@ -12,6 +12,8 @@ import type {
   ProvidenceBattleRecord,
   ProvidenceEncounterActionRow,
   ProvidenceMessageRecord,
+  ProvidenceMonsterDescriptionRecord,
+  ProvidenceMonsterRecord,
   ProvidenceOptionLabelRecord,
   ProvidenceProjectOrigin,
   ProvidenceProjectSource,
@@ -52,6 +54,8 @@ export type ScenarioItemRecord = ProvidenceScenarioItemRecord;
 export type TreasureRecord = ProvidenceTreasureRecord;
 export type ShopRecord = ProvidenceShopRecord;
 export type MessageRecord = ProvidenceMessageRecord;
+export type MonsterRecord = ProvidenceMonsterRecord;
+export type MonsterDescriptionRecord = ProvidenceMonsterDescriptionRecord;
 export type OptionLabelRecord = ProvidenceOptionLabelRecord;
 export type BattleRecord = ProvidenceBattleRecord;
 export type EncounterActionRow = ProvidenceEncounterActionRow;
@@ -710,73 +714,12 @@ export type ScenarioMeta = ProvidenceScenarioMeta;
 export type ScenarioStartupFields = Partial<ScenarioMeta>;
 export type RealmzTargetRecordKind = "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter" | "questLabel";
 
-export type MonsterRecord = {
-  id: number;
-  hitDice: number;
-  staminaBonus: number;
-  agility: number;
-  nameId: number;
-  movementMax: number;
-  armor: number;
-  magicResistance: number;
-  distance: number;
-  traitor: number;
-  size: number;
-  typeFlags: number[];
-  attackCount: number;
-  magicAttackCount: number;
-  attacks: number[][];
-  damageBonus: number;
-  castPercent: number;
-  runPercent: number;
-  surrenderPercent: number;
-  missilePercent: number;
-  canSummon: number;
-  saves: number[];
-  spellImmunities: number[];
-  money: number[];
-  spells: number[];
-  items: number[];
-  weapon: number;
-  iconId: number;
-  spellPoints: number;
-  exp: number;
-  stamina: number;
-  staminaMax: number;
-  underneath: number[];
-  target: number;
-  guarding: number;
-  notOnMenu: boolean;
-  beenAttacked: number;
-  movement: number;
-  magicToHit: number;
-  conditions: number[];
-  lr: number;
-  up: number;
-  attackNum: number;
-  bonusAttack: number;
-  deathMacro: number;
-  maxSpellPoints: number;
-  displayName: string;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
 export type MonsterSetId = 0 | 1 | -1;
 
 export type MonsterSet = {
   sourceFile: string;
   setId: MonsterSetId;
   monsters: MonsterRecord[];
-};
-
-export type MonsterDescriptionRecord = {
-  id: number;
-  text: string;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
 };
 
 export type QuestLabel = {

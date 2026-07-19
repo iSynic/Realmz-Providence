@@ -235,6 +235,67 @@ export const PROVIDENCE_BATTLE_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_MONSTER_FIELDS = [
+  "id",
+  "hitDice",
+  "staminaBonus",
+  "agility",
+  "nameId",
+  "movementMax",
+  "armor",
+  "magicResistance",
+  "distance",
+  "traitor",
+  "size",
+  "typeFlags",
+  "attackCount",
+  "magicAttackCount",
+  "attacks",
+  "damageBonus",
+  "castPercent",
+  "runPercent",
+  "surrenderPercent",
+  "missilePercent",
+  "canSummon",
+  "saves",
+  "spellImmunities",
+  "money",
+  "spells",
+  "items",
+  "weapon",
+  "iconId",
+  "spellPoints",
+  "exp",
+  "stamina",
+  "staminaMax",
+  "underneath",
+  "target",
+  "guarding",
+  "notOnMenu",
+  "beenAttacked",
+  "movement",
+  "magicToHit",
+  "conditions",
+  "lr",
+  "up",
+  "attackNum",
+  "bonusAttack",
+  "deathMacro",
+  "maxSpellPoints",
+  "displayName",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
+export const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS = [
+  "id",
+  "text",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = [
   "id",
   "actions",
@@ -523,6 +584,67 @@ export type ProvidenceBattleRecord = {
   rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceMonsterRecord = {
+  id: number;
+  hitDice: number;
+  staminaBonus: number;
+  agility: number;
+  nameId: number;
+  movementMax: number;
+  armor: number;
+  magicResistance: number;
+  distance: number;
+  traitor: number;
+  size: number;
+  typeFlags: number[];
+  attackCount: number;
+  magicAttackCount: number;
+  attacks: number[][];
+  damageBonus: number;
+  castPercent: number;
+  runPercent: number;
+  surrenderPercent: number;
+  missilePercent: number;
+  canSummon: number;
+  saves: number[];
+  spellImmunities: number[];
+  money: number[];
+  spells: number[];
+  items: number[];
+  weapon: number;
+  iconId: number;
+  spellPoints: number;
+  exp: number;
+  stamina: number;
+  staminaMax: number;
+  underneath: number[];
+  target: number;
+  guarding: number;
+  notOnMenu: boolean;
+  beenAttacked: number;
+  movement: number;
+  magicToHit: number;
+  conditions: number[];
+  lr: number;
+  up: number;
+  attackNum: number;
+  bonusAttack: number;
+  deathMacro: number;
+  maxSpellPoints: number;
+  displayName: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance;
+};
+
+export type ProvidenceMonsterDescriptionRecord = {
+  id: number;
+  text: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance;
 };
 
 export type ProvidenceEncounterActionRow = {

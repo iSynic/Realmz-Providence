@@ -325,10 +325,21 @@ while edited imported rows recover only that range from the compatibility annex.
 proof now authors a timed schedule with macro, item, quest, and exact land-position gates, requires
 exact 40-byte output with zero reserved words, and semantically reimports it.
 
-Branch validation through the thirty-fourth slice completed on 2026-07-19:
+The thirty-fifth slice closes complete byte ownership for the 210-byte `Data MD`, `Data MD1`, and
+`Data MD-1` monster rows plus the 256-byte `Data DES` description row. `MonsterRecord` and
+`MonsterDescriptionRecord` now come from the generated TypeScript/Rust contract with exact byte
+domains and fixed array capacities. Fresh UI/project-command, Monster Library copy, and Scenario
+JSON paths omit `rawBytes`; both native writers compile every scalar, array, Boolean, fixed-name,
+and Pascal-description byte from canonical semantics even when embedded bytes are poisoned.
+Project-open normalization expands older short arrays. Unchanged imported rows and malformed file
+tails are restored only from the compatibility annex, including both alternate native set names.
+The ownership proof now authors monster 1 and its description without `raw-sources`, checks exact
+native bytes and deterministic padding in both targets/compilers, and semantically reimports both.
 
-- full Rust suite: 236 passed, 2 ignored;
-- full TypeScript suite: 584 passed, plus typecheck;
+Branch validation through the thirty-fifth slice completed on 2026-07-19:
+
+- full Rust suite: 238 passed, 2 ignored;
+- full TypeScript suite: 588 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -337,7 +348,7 @@ Branch validation through the thirty-fourth slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 584 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 588 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
@@ -526,8 +537,9 @@ source inventory.
 Direct editor/component uses of record bytes are narrow:
 
 - text panels display the number of preserved bytes as import provenance;
-- rule and monster helpers use all-zero raw records to recognize blank imported rows;
-- Monster Library conversion can decode a library record from raw bytes;
+- rule helpers use all-zero raw records to recognize blank imported rows;
+- Monster Library ingestion can decode legacy library evidence from raw bytes, but copied scenario
+  records now contain semantics only;
 - writers copy raw bytes before overlaying owned fields;
 - parser/semantic code uses raw bytes to describe imported material.
 
@@ -539,11 +551,11 @@ architecture.
 | --- | --- | --- |
 | `components/maps/MapRecordsWorkbench.tsx` and `app/appUtils.ts` | **Resolved:** consume ten structured marker slots only. | Browser import and project-open migration backfill legacy markers at the compatibility boundary. |
 | `panels/TextPanel.tsx` | **Resolved for messages and option labels:** authored records no longer create or consult `rawBytes`; imported byte counts remain legacy evidence. | Move imported text-record byte counts to compatibility-annex provenance when the evidence UI is next revised. |
-| `panels/rules/ruleUtils.ts`, `projectCommands/scenarioRulesCommands.ts`, and `monsterRecords.ts` | Use all-zero raw records to recognize blank imported slots. | Add explicit allocation/blank state or use semantic zero checks. |
-| `panels/combat/monsterLibraryWorkflow.ts` and `monsterLibrary.ts` | Decode/copy raw Monster Library records when a normalized summary is unavailable. | Normalize at library ingestion; raw library evidence may remain in the library annex. |
-| `projectCommands/mapCommands.ts` and target/rules record constructors | Map-record, scenario-item, treasure, shop, message, option-label, and battle dependencies are **resolved**; remaining target/rules constructors may maintain or initialize record-shaped `rawBytes`. | Continue the semantic-record/compiler-buffer pattern family by family. |
+| `panels/rules/ruleUtils.ts` and `projectCommands/scenarioRulesCommands.ts` | Use all-zero raw records to recognize blank imported rule slots. | Add explicit allocation/blank state or use semantic zero checks. |
+| `panels/combat/monsterLibraryWorkflow.ts` and `monsterLibrary.ts` | **Resolved at scenario-copy boundary:** legacy library bytes may be decoded as input evidence, but copied `MonsterRecord` values omit them. | Raw library evidence may remain in the library annex; normalize it earlier only if library persistence needs a shared contract. |
+| `projectCommands/mapCommands.ts` and target/rules record constructors | Map-record, scenario-item, treasure, shop, message, option-label, battle, monster, and monster-description dependencies are **resolved**; remaining rule constructors may maintain or initialize record-shaped `rawBytes`. | Continue the semantic-record/compiler-buffer pattern for rule families. |
 | `browser/realmzParser.ts`, `browser/project.ts`, and `browser/semantic.ts` | Parse imported files, build evidence, and sometimes backfill semantic fields from raw buffers. | Retain in the legacy import/evidence pipeline; fresh semantic graphs should build from canonical data. |
-| `browser/binaryWriters.ts` and Rust `realmz/*` writers | Copy record `rawBytes` before overlaying owned fields. | Accept an optional compatibility record from the annex; start authored buffers from zero/defaults. |
+| `browser/binaryWriters.ts` and Rust `realmz/*` writers | Family-specific migration remains. Monster/description and the completed authoritative families start from deterministic semantic buffers; some other codecs still overlay compatibility storage. | Continue moving preservation to the optional annex family by family. |
 | Browser preview/source caches | Retain raw files for imported previews and browser package export. | Keep only for imported projects; managed authored assets provide fresh previews/resources. |
 
 ### The TypeScript/Rust duplication can be consolidated incrementally
@@ -558,13 +570,14 @@ The branch now also defines the persisted contract in language-neutral JSON Sche
 supplies the schema-version constant to both runtimes, emits one ordered top-level field inventory,
 and owns the complete source/origin/source-file, scenario identity/startup, map identity/layout,
 random-level/rectangle, map-record/marker/rectangle, scenario-item, treasure, shop, message,
-option-label, and battle DTO families plus their shared provenance/confidence primitives. A
+option-label, battle, monster, and monster-description DTO families plus their shared
+provenance/confidence primitives. A
 conformance gate compares the inventory to both project models and the Rust serializer, rejects
 handwritten duplicates, fixes the compatibility-only startup/layout/random-level payload
 inventories, and checks the evidence/render vocabularies. This removes silent top-level,
 source-boundary, startup-metadata, provenance, core-map, item-record, treasure-record, shop-record,
-message-record, option-label-record, and battle-record drift while leaving the other record, rule,
-and asset DTO families as bounded, incremental work.
+message-record, option-label-record, battle-record, monster-record, and monster-description drift
+while leaving the other record, rule, and asset DTO families as bounded, incremental work.
 
 This is evidence for a canonical contract, not for a new repository. Introduce a versioned
 language-neutral project schema and generate DTOs for both languages, with handwritten domain
@@ -665,8 +678,8 @@ Legend:
 | `Data SD2` | Generated + legacy row/tail annex | Generate complete deterministic message records | Fresh/authored rows compile the Str255 length, payload, and zero fill without `rawBytes`. Unchanged imported rows and malformed tails are preserved only from the compatibility annex because post-length bytes are common in the legacy corpus. |
 | `Data OD` | Generated + legacy row/tail annex | Generate complete deterministic option labels | Fresh/authored rows compile the Str24 length, payload, and zero fill without `rawBytes`. Unchanged imported padding, noncanonical capacity rows, and malformed tails are preserved only from the compatibility annex. |
 | `Data BD` | Generated + legacy row/tail annex | Generate complete deterministic battle records | Fresh/authored rows compile all 346 bytes from canonical data, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are preserved only from the compatibility annex. |
-| `Data MD`, `Data MD1`, `Data MD-1` | Generated | Generate monster records/sets | Complete 210-byte record writer for fresh records. |
-| `Data DES` | Generated | Generate monster descriptions | Complete fixed-record writer. |
+| `Data MD`, `Data MD1`, `Data MD-1` | Generated + legacy row/tail annex | Generate complete deterministic monster records/sets | Fresh/authored rows compile all 210 bytes from canonical scalars, fixed arrays, Boolean state, and fixed display name without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
+| `Data DES` | Generated + legacy row/tail annex | Generate complete deterministic monster descriptions | Fresh/authored rows compile the complete Str255 record with deterministic zero fill and no `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data MD2` | Generated + bounded compatibility | Generate structured map records | Fresh records compile all 338 modeled bytes from canonical data and omit `rawBytes`. Imported records may retain the unknown bytes 74-75, equivalent noncanonical true words, unchanged Pascal-note tails, and malformed file tails. Marker UI uses semantic slots only. |
 | `Data NI` | Generated + bounded compatibility encoding | Always generate exactly 200 x 100 bytes | All 100 bytes are canonical semantic fields, including `spare2[7]`; fresh records omit `rawBytes`. Imported bytes may retain only an unchanged zero stored item-ID alias until its semantic ID changes. |
 | `Data TD` | Generated + malformed-tail annex | Generate all 48 record bytes from canonical semantics | Twenty item IDs and four reward words cover the full record. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Only malformed file tails remain annex data. |
@@ -781,13 +794,14 @@ must not be called fresh-authoritative merely because imported round trips are f
 3. **Remaining nested generated DTOs:** the language-neutral schema now owns and checks the
    persisted top-level inventory, complete source-origin/source-file, scenario startup, map
    identity/layout, random-level/rectangle, map-record, scenario-item, treasure, shop, message,
-   option-label, and battle DTO families, shared provenance/confidence primitives, and the
-   schema-version constant.
+   option-label, battle, monster, and monster-description DTO families, shared
+   provenance/confidence primitives, and the schema-version constant.
    Other record, rule, and asset DTOs are still maintained manually and should migrate in bounded
    families.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
-   imported project records still embed unowned bytes. They must become annex slices rather than
-   normal canonical fields.
+   imported project records still embed unowned bytes. Monster and monster-description export no
+   longer consults those fields, but remaining families must become annex slices rather than normal
+   canonical fields.
 5. **Canonical semantic coverage:** all currently modeled supporting, fixed-text, combat, and rule
    override families now map directly from canonical compiler bytes in both runtimes. Remaining
    semantic work concerns optional resource/media families and deeper field/link enrichment, not a

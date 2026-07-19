@@ -313,20 +313,20 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.monsters.length > 0) {
     writes.push({
       path: "Data MD",
-      bytes: preserveMalformedRawTail("Data MD", writeMonsters(project.monsters), MONSTER_RECORD_BYTES, annex)
+      bytes: writeMonstersForExport("Data MD", project.monsters, annex)
     });
   }
   for (const monsterSet of project.monsterSets) {
     if (monsterSet.monsters.length === 0) continue;
     writes.push({
       path: monsterSet.sourceFile,
-      bytes: preserveMalformedRawTail(monsterSet.sourceFile, writeMonsters(monsterSet.monsters), MONSTER_RECORD_BYTES, annex)
+      bytes: writeMonstersForExport(monsterSet.sourceFile, monsterSet.monsters, annex)
     });
   }
   if (project.monsterDescriptions.length > 0) {
     writes.push({
       path: "Data DES",
-      bytes: preserveMalformedRawTail("Data DES", writeMonsterDescriptions(project.monsterDescriptions), MONSTER_DESCRIPTION_RECORD_BYTES, annex)
+      bytes: writeMonsterDescriptionsForExport(project.monsterDescriptions, annex)
     });
   }
   if (project.maps.some((map) => map.levelType === "land")) {
@@ -907,6 +907,14 @@ function writeOptionLabelsForExport(options: Project["optionLabels"], annex: Bro
 
 function writeBattlesForExport(battles: Project["battles"], annex: BrowserCompatibilityAnnex | null) {
   return preserveImportedFixedRows("Data BD", writeBattles(battles), battles, BATTLE_RECORD_BYTES, annex);
+}
+
+function writeMonstersForExport(fileName: string, monsters: Project["monsters"], annex: BrowserCompatibilityAnnex | null) {
+  return preserveImportedFixedRows(fileName, writeMonsters(monsters), monsters, MONSTER_RECORD_BYTES, annex);
+}
+
+function writeMonsterDescriptionsForExport(descriptions: Project["monsterDescriptions"], annex: BrowserCompatibilityAnnex | null) {
+  return preserveImportedFixedRows("Data DES", writeMonsterDescriptions(descriptions), descriptions, MONSTER_DESCRIPTION_RECORD_BYTES, annex);
 }
 
 function writeSimpleEncountersForExport(encounters: Project["simpleEncounters"], annex: BrowserCompatibilityAnnex | null) {

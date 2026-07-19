@@ -86,7 +86,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/combat.rs:monster_writer_compiles_every_semantic_field_without_raw_identity",
         "src-tauri/src/realmz/combat.rs:write_monsters",
         "src-tauri/src/realmz/combat.rs:parse_monsters",
         "docs/generated/monster-record-evidence.json",
@@ -94,9 +94,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+          "reference": "src-tauri/src/realmz/combat.rs:monster_writer_compiles_every_semantic_field_without_raw_identity",
           "file": "src-tauri/src/realmz/combat.rs",
-          "anchor": "monster_storage_mutates_only_owned_fields",
+          "anchor": "monster_writer_compiles_every_semantic_field_without_raw_identity",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -145,7 +145,7 @@
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Main monster templates are fully modeled as 210-byte records. Imported rows remain raw-preserved until authored."
+      "preservationPolicy": "Fresh and authored main monster templates compile all 210 bytes from canonical semantic fields without rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
     },
     {
       "container": "Data MD1",
@@ -195,7 +195,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
         "src-tauri/src/realmz/combat.rs:write_monster_set",
         "src-tauri/src/realmz/combat.rs:parse_monster_set",
         "docs/generated/monster-record-evidence.json",
@@ -203,9 +203,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "reference": "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
           "file": "src-tauri/src/realmz/combat.rs",
-          "anchor": "alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "anchor": "alternate_monster_sets_keep_source_provenance_and_compile_semantics",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -254,7 +254,7 @@
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+      "preservationPolicy": "Native alternate monster templates reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
     },
     {
       "container": "Data MD-1",
@@ -304,7 +304,7 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
         "src-tauri/src/realmz/combat.rs:write_monster_set",
         "src-tauri/src/realmz/combat.rs:parse_monster_set",
         "docs/generated/monster-record-evidence.json",
@@ -312,9 +312,9 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "reference": "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
           "file": "src-tauri/src/realmz/combat.rs",
-          "anchor": "alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+          "anchor": "alternate_monster_sets_keep_source_provenance_and_compile_semantics",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -363,7 +363,7 @@
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+      "preservationPolicy": "Native alternate monster templates reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
     },
     {
       "container": "Data MD2",

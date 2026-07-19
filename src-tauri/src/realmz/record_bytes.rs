@@ -95,10 +95,6 @@ pub(super) fn copy_raw(buffer: &mut [u8], raw: &[u8]) {
     buffer[..length].copy_from_slice(&raw[..length]);
 }
 
-pub(super) fn preserve_raw(authored: bool, raw: &[u8], record_bytes: usize) -> bool {
-    !authored && raw.len() == record_bytes
-}
-
 pub(super) fn provenance(
     source_file: &str,
     record_index: usize,

@@ -79,16 +79,18 @@ sourceBattles[339] = 0xa5;
 sourceBattles[346] = 0xcc;
 sourceBattles[347] = 0xdd;
 sourceBattles[346 + 339] = 0xb6;
-const sourceMonsters = new Uint8Array(420);
+const sourceMonsters = new Uint8Array(423);
 sourceMonsters[0] = 0x11;
 sourceMonsters[1] = 0x22;
 sourceMonsters[210] = 0x33;
 sourceMonsters[211] = 0x44;
-const sourceMonsterDescriptions = new Uint8Array(512);
+sourceMonsters.set([0xde, 0xad, 0xbe], 420);
+const sourceMonsterDescriptions = new Uint8Array(515);
 sourceMonsterDescriptions[0] = 0x12;
 sourceMonsterDescriptions[1] = 0x34;
 sourceMonsterDescriptions[256] = 0x56;
 sourceMonsterDescriptions[257] = 0x78;
+sourceMonsterDescriptions.set([0xca, 0xfe, 0x01], 512);
 const sourceScenarioItems = new Uint8Array(200);
 sourceScenarioItems[0] = 0x45;
 sourceScenarioItems[1] = 0x46;
@@ -411,7 +413,7 @@ const monsterUpdateProject = {
   ...project,
   monsters: [
     monsterRecord(0, { rawBytes: Array.from(sourceMonsters.slice(0, 210)), authored: false }),
-    { ...authoredMonster, rawBytes: Array.from(sourceMonsters.slice(210, 420)), authored: true }
+    { ...authoredMonster, rawBytes: new Array(210).fill(0xa5), authored: true }
   ]
 };
 const monsterUpdate = createBrowserScenarioPackageZip(monsterUpdateProject, rawSources, "mac-classic-folder");
@@ -419,15 +421,16 @@ const monsterUpdatedFiles = unzipScenarioPackage(monsterUpdate.zip);
 expect(monsterUpdate.report.writtenFiles.includes("Data MD"), "Authored monsters should write Data MD");
 expect(!monsterUpdate.report.passThroughFiles.includes("Data MD"), "Written Data MD should not be reported as pass-through");
 const writtenMonsters = monsterUpdatedFiles.get("Data MD");
-expect(writtenMonsters?.byteLength === 420, "Written Data MD should retain source row count");
-expect(bytesEqual(writtenMonsters?.slice(0, 210), sourceMonsters.slice(0, 210)), "Unauthored monster row should remain byte-identical");
-expect(bytesEqual(writtenMonsters?.slice(210, 420), monsterRow(authoredMonster)), "Authored monster row should encode monster fields");
+expect(writtenMonsters?.byteLength === 423, "Written Data MD should retain source row count and annex tail");
+expect(bytesEqual(writtenMonsters?.slice(0, 210), sourceMonsters.slice(0, 210)), "Unauthored monster row should remain byte-identical from the annex");
+expect(bytesEqual(writtenMonsters?.slice(210, 420), monsterRow(authoredMonster)), "Authored monster row should compile every semantic field without embedded raw-byte identity");
+expect(bytesEqual(writtenMonsters?.slice(420), sourceMonsters.slice(420)), "Data MD malformed tail should remain bounded to the compatibility annex");
 
 const monsterDescriptionProject = {
   ...project,
   monsterDescriptions: [
     { id: 0, text: "Raw", rawBytes: Array.from(sourceMonsterDescriptions.slice(0, 256)), authored: false },
-    { id: 1, text: "Browser description", rawBytes: Array.from(sourceMonsterDescriptions.slice(256, 512)), authored: true }
+    { id: 1, text: "Browser description", rawBytes: new Array(256).fill(0xa5), authored: true }
   ]
 };
 const monsterDescriptionUpdate = createBrowserScenarioPackageZip(monsterDescriptionProject, rawSources, "mac-classic-folder");
@@ -435,9 +438,10 @@ const monsterDescriptionFiles = unzipScenarioPackage(monsterDescriptionUpdate.zi
 expect(monsterDescriptionUpdate.report.writtenFiles.includes("Data DES"), "Authored monster descriptions should write Data DES");
 expect(!monsterDescriptionUpdate.report.passThroughFiles.includes("Data DES"), "Written Data DES should not be reported as pass-through");
 const writtenMonsterDescriptions = monsterDescriptionFiles.get("Data DES");
-expect(writtenMonsterDescriptions?.byteLength === 512, "Written Data DES should retain source row count");
-expect(bytesEqual(writtenMonsterDescriptions?.slice(0, 256), sourceMonsterDescriptions.slice(0, 256)), "Unauthored monster description row should remain byte-identical");
-expect(bytesEqual(writtenMonsterDescriptions?.slice(256, 512), pascalRow(256, "Browser description")), "Authored monster description row should encode Pascal text");
+expect(writtenMonsterDescriptions?.byteLength === 515, "Written Data DES should retain source row count and annex tail");
+expect(bytesEqual(writtenMonsterDescriptions?.slice(0, 256), sourceMonsterDescriptions.slice(0, 256)), "Unauthored monster description row should remain byte-identical from the annex");
+expect(bytesEqual(writtenMonsterDescriptions?.slice(256, 512), pascalRow(256, "Browser description")), "Authored monster description row should compile Pascal text without embedded raw-byte identity");
+expect(bytesEqual(writtenMonsterDescriptions?.slice(512), sourceMonsterDescriptions.slice(512)), "Data DES malformed tail should remain bounded to the compatibility annex");
 
 const mapRawFiles = [
   ...rawFiles.filter((file) => !["Data LD"].includes(file.name)),
@@ -1302,7 +1306,6 @@ function monsterRecord(id, overrides = {}) {
     deathMacro: 0,
     maxSpellPoints: 0,
     displayName: "",
-    rawBytes: new Array(210).fill(0),
     authored: true,
     ...overrides
   };

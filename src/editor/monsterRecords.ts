@@ -43,10 +43,7 @@ export function isZeroBlankMonsterSlot(record: MonsterRecord) {
     && record.agility === 0
     && record.movementMax === 0
     && record.attackCount === 0
-    && (record.displayName ?? "").trim() === ""
-    && Array.isArray(record.rawBytes)
-    && record.rawBytes.length === 210
-    && record.rawBytes.every((value) => value === 0);
+    && (record.displayName ?? "").trim() === "";
 }
 
 function monsterRecordsForSet(project: Project, setId: MonsterSetId) {

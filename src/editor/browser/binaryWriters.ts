@@ -127,8 +127,7 @@ export function writeBattles(records: BattleRecord[]) {
 
 export function writeMonsters(records: MonsterRecord[]) {
   return writeFixedRecords(records, MONSTER_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === MONSTER_RECORD_BYTES) return;
+    validateMonsterStorage(record);
     target[0] = record.hitDice & 0xff;
     target[1] = record.staminaBonus & 0xff;
     target[2] = record.agility & 0xff;
@@ -181,7 +180,36 @@ export function writeMonsters(records: MonsterRecord[]) {
 }
 
 export function writeMonsterDescriptions(records: MonsterDescriptionRecord[]) {
-  return writePascalTextRecords(records, MONSTER_DESCRIPTION_RECORD_BYTES);
+  return writeFixedRecords(records, MONSTER_DESCRIPTION_RECORD_BYTES, (record, target) => {
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== MONSTER_DESCRIPTION_RECORD_BYTES) {
+      throw new Error(`Monster description ${record.id} has invalid compatibility byte storage`);
+    }
+    encodePascalText(target, record.text);
+  });
+}
+
+function validateMonsterStorage(record: MonsterRecord) {
+  const rawBytes = record.rawBytes ?? [];
+  if (rawBytes.length !== 0 && rawBytes.length !== MONSTER_RECORD_BYTES) {
+    throw new Error(`Monster ${record.id} has invalid compatibility byte storage`);
+  }
+  for (const [name, values, expected] of [
+    ["trait flags", record.typeFlags, 8],
+    ["attack rows", record.attacks, 5],
+    ["saves", record.saves, 6],
+    ["spell immunities", record.spellImmunities, 6],
+    ["money slots", record.money, 3],
+    ["spell slots", record.spells, 10],
+    ["item slots", record.items, 6],
+    ["underneath slots", record.underneath, 4],
+    ["condition fields", record.conditions, 40]
+  ] as const) {
+    if (values.length !== expected) throw new Error(`Monster ${record.id} must have exactly ${expected} ${name}`);
+  }
+  if (record.attacks.some((row) => row.length !== 4)) {
+    throw new Error(`Monster ${record.id} attack rows must have exactly 4 fields`);
+  }
 }
 
 export function writeMapFields(maps: MapEntity[], levelType: LevelType) {

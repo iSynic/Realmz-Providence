@@ -270,7 +270,7 @@
       "evidence": [
         "docs/generated/fixed-record-writer-gates.json",
         "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md",
-        "src-tauri/src/realmz/combat.rs:monster_description_storage_mutates_only_owned_pascal_bytes",
+        "src-tauri/src/realmz/combat.rs:monster_description_writer_compiles_pascal_text_without_raw_identity",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -668,7 +668,7 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md",
-        "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/combat.rs:monster_writer_compiles_every_semantic_field_without_raw_identity",
         "src-tauri/src/realmz/combat.rs:write_monsters",
         "src-tauri/src/realmz/combat.rs:parse_monsters"
       ],
@@ -729,7 +729,7 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md",
-        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
         "src-tauri/src/realmz/combat.rs:write_monster_set",
         "src-tauri/src/realmz/combat.rs:parse_monster_set"
       ],
@@ -790,7 +790,7 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/monster-record-evidence.json",
         "docs/format-evidence-cards/monster-record-runtime-anchors.md",
-        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+        "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
         "src-tauri/src/realmz/combat.rs:write_monster_set",
         "src-tauri/src/realmz/combat.rs:parse_monster_set"
       ],

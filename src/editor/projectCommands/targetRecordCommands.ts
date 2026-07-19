@@ -369,9 +369,10 @@ function monsterRecordIsActive(record: MonsterRecord) {
 function monsterForSet(id: number, template: Partial<MonsterRecord>, setId: MonsterSetId): MonsterRecord {
   const base = emptyMonsterForSet(id, setId);
   const sourceFile = monsterSetSourceFile(setId);
+  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template;
   return {
     ...base,
-    ...template,
+    ...semanticTemplate,
     id,
     typeFlags: fixedArray(template.typeFlags, 8),
     attacks: Array.from({ length: 5 }, (_, row) => fixedArray(template.attacks?.[row] ?? [], 4)),
@@ -382,7 +383,6 @@ function monsterForSet(id: number, template: Partial<MonsterRecord>, setId: Mons
     items: fixedArray(template.items, 6),
     underneath: fixedArray(template.underneath, 4),
     conditions: fixedArray(template.conditions, 40),
-    rawBytes: fixedArray(template.rawBytes ?? [], MONSTER_BYTES),
     authored: true,
     provenance: authoredProvenance(sourceFile, id, id * MONSTER_BYTES, MONSTER_BYTES)
   };
@@ -403,8 +403,7 @@ function blankMonsterForSet(id: number, setId: MonsterSetId): MonsterRecord {
     movementMax: 0,
     size: 0,
     attackCount: 0,
-    displayName: "",
-    rawBytes: new Array(MONSTER_BYTES).fill(0)
+    displayName: ""
   };
 }
 
@@ -441,9 +440,9 @@ function generateMonsterVariant(source: MonsterRecord, setId: Exclude<MonsterSet
   return monsterForSet(source.id, {
     ...source,
     hitDice: clampInteger(source.hitDice + scale.hitDice, 0, 255),
-    staminaBonus: clampInteger(source.staminaBonus + scale.staminaBonus, -128, 127),
-    agility: clampInteger(source.agility + scale.agility, -128, 127),
-    movementMax: clampInteger(source.movementMax + scale.movementMax, -128, 127),
+    staminaBonus: clampInteger(source.staminaBonus + scale.staminaBonus, 0, 255),
+    agility: clampInteger(source.agility + scale.agility, 0, 255),
+    movementMax: clampInteger(source.movementMax + scale.movementMax, 0, 255),
     armor: clampInteger(source.armor + scale.armor, -128, 127),
     magicResistance: clampInteger(source.magicResistance + scale.magicResistance, -128, 127),
     damageBonus: clampInteger(source.damageBonus + scale.damageBonus, -128, 127),
@@ -653,7 +652,6 @@ function emptyMonster(id: number): MonsterRecord {
     deathMacro: 0,
     maxSpellPoints: 0,
     displayName: `Monster ${id}`,
-    rawBytes: new Array(MONSTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data MD", id, id * MONSTER_BYTES, MONSTER_BYTES)
   };
@@ -663,7 +661,6 @@ function emptyMonsterDescription(id: number): MonsterDescriptionRecord {
   return {
     id,
     text: "",
-    rawBytes: new Array(MONSTER_DESCRIPTION_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data DES", id, id * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
   };

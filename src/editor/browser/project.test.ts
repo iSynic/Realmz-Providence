@@ -105,6 +105,40 @@ describe("browser project native manifest validation", () => {
     expect("stuff" in normalized).toBe(false);
   });
 
+  it("normalizes legacy monster slot arrays into the canonical fixed contract", () => {
+    const project = createBrowserProject("Legacy monster arrays");
+    const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];
+    const legacy = {
+      ...parsed,
+      typeFlags: [1],
+      attacks: [[2, 3]],
+      saves: [4],
+      spellImmunities: [],
+      money: [5],
+      spells: [6],
+      items: [7],
+      underneath: [8],
+      conditions: [9]
+    };
+    project.monsters = [legacy];
+    project.monsterSets = [{ sourceFile: "Data MD1", setId: 1, monsters: [legacy] }];
+
+    const normalized = normalizeBrowserProject(project);
+    for (const record of [normalized.monsters[0], normalized.monsterSets[0].monsters[0]]) {
+      expect(record.typeFlags).toEqual([1, 0, 0, 0, 0, 0, 0, 0]);
+      expect(record.attacks).toHaveLength(5);
+      expect(record.attacks[0]).toEqual([2, 3, 0, 0]);
+      expect(record.attacks[4]).toEqual([0, 0, 0, 0]);
+      expect(record.saves).toHaveLength(6);
+      expect(record.spellImmunities).toHaveLength(6);
+      expect(record.money).toEqual([5, 0, 0]);
+      expect(record.spells).toHaveLength(10);
+      expect(record.items).toHaveLength(6);
+      expect(record.underneath).toHaveLength(4);
+      expect(record.conditions).toHaveLength(40);
+    }
+  });
+
   it("parses player-map markers into canonical semantic slots", () => {
     const bytes = new Uint8Array(340);
     bytes.set([0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d], 0);

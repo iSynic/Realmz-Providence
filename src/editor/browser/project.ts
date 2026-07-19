@@ -575,8 +575,11 @@ export function normalizeBrowserProject(project: Project): Project {
   project.messages ??= [];
   project.optionLabels ??= [];
   project.battles ??= [];
-  project.monsters ??= [];
-  project.monsterSets ??= [];
+  project.monsters = (project.monsters ?? []).map(normalizedMonsterRecord);
+  project.monsterSets = (project.monsterSets ?? []).map((set) => ({
+    ...set,
+    monsters: (set.monsters ?? []).map(normalizedMonsterRecord)
+  }));
   project.monsterDescriptions ??= [];
   project.monsterIconOverrides ??= [];
   project.scenarioIconResources ??= [];
@@ -663,6 +666,21 @@ function normalizedTimedEncounter(record: Project["timedEncounters"][number]): P
   return {
     ...canonical,
     ...(reservedWords ? { reservedWords: normalizedFixedArray(reservedWords, 9, 0) } : {})
+  };
+}
+
+function normalizedMonsterRecord(record: Project["monsters"][number]): Project["monsters"][number] {
+  return {
+    ...record,
+    typeFlags: normalizedFixedArray(record.typeFlags, 8, 0),
+    attacks: Array.from({ length: 5 }, (_, row) => normalizedFixedArray(record.attacks?.[row], 4, 0)),
+    saves: normalizedFixedArray(record.saves, 6, 0),
+    spellImmunities: normalizedFixedArray(record.spellImmunities, 6, 0),
+    money: normalizedFixedArray(record.money, 3, 0),
+    spells: normalizedFixedArray(record.spells, 10, 0),
+    items: normalizedFixedArray(record.items, 6, 0),
+    underneath: normalizedFixedArray(record.underneath, 4, 0),
+    conditions: normalizedFixedArray(record.conditions, 40, 0)
   };
 }
 
@@ -1002,6 +1020,10 @@ export function validateBrowserProject(project: Project): ValidationReport {
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
   }
   for (const description of project.monsterDescriptions ?? []) {
+    const rawBytes = description.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 256) {
+      errors.push(`Monster description ${description.id} has invalid 256-byte compatibility storage.`);
+    }
     if (description.text.length > 255) errors.push(`Monster description ${description.id} is too long for Realmz's 255-character description slot.`);
     if (!/^[\x00-\x7F]*$/.test(description.text)) warnings.push(`Monster description ${description.id} contains non-ASCII text and may not render as intended.`);
   }

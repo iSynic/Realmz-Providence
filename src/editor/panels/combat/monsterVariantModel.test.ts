@@ -50,6 +50,9 @@ describe("monster variant model", () => {
     })).map((row) => [row.label, row]));
 
     expect(rows.get("Hit Dice")).toMatchObject({ monster: "255", mega: "255" });
+    expect(rows.get("Bonus Stamina")).toMatchObject({ monster: "131", mega: "140" });
+    expect(rows.get("Agility")).toMatchObject({ monster: "127", mega: "129" });
+    expect(rows.get("Movement")).toMatchObject({ monster: "128", mega: "130" });
     expect(rows.get("Armor")).toMatchObject({ monster: "127", mega: "127" });
     expect(rows.get("Spell Points")).toMatchObject({ monster: "999", mega: "999" });
     expect(rows.get("Max Spell Points")).toMatchObject({ monster: "999", mega: "999" });
@@ -67,8 +70,7 @@ describe("monster variant model", () => {
       agility: 0,
       movementMax: 0,
       attackCount: 0,
-      displayName: "",
-      rawBytes: new Array(210).fill(0)
+      displayName: ""
     }))).toBe("Data MD-1 blank");
     expect(monsterSetToolbarStatus(0, monster())).toBe("");
   });

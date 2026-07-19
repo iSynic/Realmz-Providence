@@ -36,14 +36,14 @@ This unlocks a safer Monster workbench plan: parse all monster sets, show descri
 - Runtime use: Pascal-style text is read directly into a dialog item.
 - Indexing: same menu/specific monster index used for `Data MD`, but corpus files can contain more description slots than active monster records.
 - Endian behavior: none; this is text/byte data.
-- Writer status: parser/writer-backed with raw preservation. Default UI editing remains gated until Divinity Monster editor behavior is confirmed.
+- Writer status: complete semantic Str255 writer for fresh/authored rows with deterministic zero fill. Unchanged imported rows and malformed tails are restored only from the compatibility annex.
 
 ### `Data MD1` / `Data MD-1`
 
 - Fixed record size: 210 bytes, same as `Data MD`.
 - Runtime use: selected when `monsterset` is nonzero.
 - Filename construction: `getfilename("Data MD")` followed by appending `monsterset`.
-- Writer status: parser/writer-backed through the normal `Data MD` monster record codec. Providence preserves raw bytes by default and writes the original source filename (`Data MD1` or `Data MD-1`). Direct selected-set editing, selected-set `Switch With`, and full-record `Copy Current To All Sets` are fixture-supported. Divinity's generated `Create Sets` command remains gated.
+- Writer status: complete semantic 210-byte writer shared with `Data MD`. Providence writes the original native source filename (`Data MD1` or `Data MD-1`); fresh/authored rows do not require raw identity, while unchanged imported rows and malformed tails are annex-restored. Direct selected-set editing, selected-set `Switch With`, and full-record `Copy Current To All Sets` are fixture-supported. Divinity's generated `Create Sets` command remains gated.
 
 ## Divinity Fixture Update: Monster Set Authoring
 
@@ -164,7 +164,7 @@ Representative observed sizes:
 
 ## Writer Gate
 
-`Data DES`, `Data MD1`, and `Data MD-1` can be round-tripped through Providence's fixed-record writers with raw preservation. Direct selected-set editing now uses the same MonsterRecord command surface selected by active set. Before implementing the full Divinity `Create Sets` command, Providence still needs:
+`Data DES`, `Data MD1`, and `Data MD-1` now compile fresh/authored rows from canonical semantic data. Imported no-edit fidelity is a separate annex overlay rather than normal writer dependence on record bytes. Direct selected-set editing uses the same `MonsterRecord` command surface selected by active set. Before implementing the full Divinity `Create Sets` command, Providence still needs:
 
 - exact Mega spell-point rounding proof or a stronger Ghidra segmentation pass that recovers the formula;
 - high-value clamp/overflow policy for spell points and experience;

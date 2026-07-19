@@ -76,5 +76,6 @@ describe("monster library workflow", () => {
     expect(monster.weapon).toBe(0x1234);
     expect(monster.iconId).toBe(-2);
     expect(monster.notOnMenu).toBe(true);
+    expect(monster.rawBytes).toBeUndefined();
   });
 });

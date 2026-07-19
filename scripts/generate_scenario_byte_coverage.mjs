@@ -595,13 +595,16 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
     ],
     evidence: [
-      "src-tauri/src/realmz/combat.rs:monster_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz/combat.rs:monster_writer_compiles_every_semantic_field_without_raw_identity",
+      "src-tauri/src/exporter.rs:imported_monster_export_bounds_legacy_rows_and_tails_to_annex",
       "src-tauri/src/realmz/combat.rs:write_monsters",
       "src-tauri/src/realmz/combat.rs:parse_monsters",
+      "src/editor/browser/binaryWriters.test.ts:browser monster writers",
+      "scripts/run_authoritative_scenario_proof.mjs",
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Main monster templates are fully modeled as 210-byte records. Imported rows remain raw-preserved until authored."
+    preservationPolicy: "Fresh and authored main monster templates compile all 210 bytes from canonical semantic fields without rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data MD1",
@@ -612,13 +615,15 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Alternate monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
     ],
     evidence: [
-      "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+      "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
+      "src-tauri/src/exporter.rs:imported_monster_export_bounds_legacy_rows_and_tails_to_annex",
       "src-tauri/src/realmz/combat.rs:write_monster_set",
       "src-tauri/src/realmz/combat.rs:parse_monster_set",
+      "src/editor/browser/binaryWriters.test.ts:browser monster writers",
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+    preservationPolicy: "Native alternate monster templates reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data MD-1",
@@ -629,13 +634,15 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Alternate monster template fields", internal: "struct monster", offset: 0, bytes: 210, type: "mixed fixed record" }
     ],
     evidence: [
-      "src-tauri/src/realmz/combat.rs:alternate_monster_sets_mutate_only_owned_fields_and_preserve_source",
+      "src-tauri/src/realmz/combat.rs:alternate_monster_sets_keep_source_provenance_and_compile_semantics",
+      "src-tauri/src/exporter.rs:imported_monster_export_bounds_legacy_rows_and_tails_to_annex",
       "src-tauri/src/realmz/combat.rs:write_monster_set",
       "src-tauri/src/realmz/combat.rs:parse_monster_set",
+      "src/editor/browser/binaryWriters.test.ts:browser monster writers",
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Alternate monster templates reuse the monster record writer while preserving source filename and set identity."
+    preservationPolicy: "Native alternate monster templates reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data MD2",
@@ -729,15 +736,18 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
     rowKind: "Str255 monster description record",
     semanticExposure: "description-text-records",
     ownedFields: [
-      { field: "Monster description text", internal: "text", offset: 0, bytes: 256, type: "Str255/raw tail" }
+      { field: "Monster description text", internal: "text", offset: 0, bytes: 256, type: "Str255 + deterministic zero fill" }
     ],
     evidence: [
-      "src-tauri/src/realmz/combat.rs:monster_description_storage_mutates_only_owned_pascal_bytes",
+      "src-tauri/src/realmz/combat.rs:monster_description_writer_compiles_pascal_text_without_raw_identity",
+      "src-tauri/src/exporter.rs:imported_monster_description_export_bounds_legacy_rows_and_tails_to_annex",
+      "src/editor/browser/binaryWriters.test.ts:browser monster writers",
+      "scripts/run_authoritative_scenario_proof.mjs",
       ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
     ],
-    preservationPolicy: "This gate covers Data DES description text only; monster templates and alternate monster sets stay outside this fixed-record batch."
+    preservationPolicy: "Fresh and authored Data DES rows compile complete Str255 records with deterministic zero fill and no rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data TD",

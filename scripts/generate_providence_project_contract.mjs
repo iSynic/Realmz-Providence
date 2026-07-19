@@ -65,7 +65,7 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
@@ -73,6 +73,8 @@ const shopRecordSchema = schema.$defs?.shopRecord ?? {};
 const messageRecordSchema = schema.$defs?.messageRecord ?? {};
 const optionLabelRecordSchema = schema.$defs?.optionLabelRecord ?? {};
 const battleRecordSchema = schema.$defs?.battleRecord ?? {};
+const monsterRecordSchema = schema.$defs?.monsterRecord ?? {};
+const monsterDescriptionRecordSchema = schema.$defs?.monsterDescriptionRecord ?? {};
 const encounterActionRowSchema = schema.$defs?.encounterActionRow ?? {};
 const simpleEncounterRecordSchema = schema.$defs?.simpleEncounterRecord ?? {};
 const complexEncounterRecordSchema = schema.$defs?.complexEncounterRecord ?? {};
@@ -113,6 +115,8 @@ expect(schema.properties?.shops?.items?.$ref === "#/$defs/shopRecord", "project 
 expect(schema.properties?.messages?.items?.$ref === "#/$defs/messageRecord", "project messages must contain canonical message DTOs");
 expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabelRecord", "project optionLabels must contain canonical option-label DTOs");
 expect(schema.properties?.battles?.items?.$ref === "#/$defs/battleRecord", "project battles must contain canonical battle DTOs");
+expect(schema.properties?.monsters?.items?.$ref === "#/$defs/monsterRecord", "project monsters must contain canonical monster DTOs");
+expect(schema.properties?.monsterDescriptions?.items?.$ref === "#/$defs/monsterDescriptionRecord", "project monsterDescriptions must contain canonical monster-description DTOs");
 expect(schema.properties?.simpleEncounters?.items?.$ref === "#/$defs/simpleEncounterRecord", "project simpleEncounters must contain canonical simple-encounter DTOs");
 expect(schema.properties?.timedEncounters?.items?.$ref === "#/$defs/timedEncounterRecord", "project timedEncounters must contain canonical timed-encounter DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
@@ -208,6 +212,20 @@ expect(battleRecordSchema.properties?.grid?.minItems === 169 && battleRecordSche
 expect(battleRecordSchema.properties?.rawBytes?.minItems === 346 && battleRecordSchema.properties?.rawBytes?.maxItems === 346, "battle rawBytes must retain one complete Realmz battle row when compatibility bytes are present");
 expect(battleRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "battle provenance must reference canonical provenance");
 expectSameArray(battleRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Battle omitted empty compatibility inventory");
+const monsterFields = ["id", "hitDice", "staminaBonus", "agility", "nameId", "movementMax", "armor", "magicResistance", "distance", "traitor", "size", "typeFlags", "attackCount", "magicAttackCount", "attacks", "damageBonus", "castPercent", "runPercent", "surrenderPercent", "missilePercent", "canSummon", "saves", "spellImmunities", "money", "spells", "items", "weapon", "iconId", "spellPoints", "exp", "stamina", "staminaMax", "underneath", "target", "guarding", "notOnMenu", "beenAttacked", "movement", "magicToHit", "conditions", "lr", "up", "attackNum", "bonusAttack", "deathMacro", "maxSpellPoints", "displayName", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(monsterRecordSchema.properties ?? {}), monsterFields, "Monster field inventory");
+expectSameArray(monsterRecordSchema.required ?? [], monsterFields.filter((field) => !["rawBytes", "authored", "provenance"].includes(field)), "Monster authored field inventory");
+for (const [field, length] of [["typeFlags", 8], ["attacks", 5], ["saves", 6], ["spellImmunities", 6], ["money", 3], ["spells", 10], ["items", 6], ["underneath", 4], ["conditions", 40]]) {
+  expect(monsterRecordSchema.properties?.[field]?.minItems === length && monsterRecordSchema.properties?.[field]?.maxItems === length, `monster records must retain ${length} ${field} slots`);
+}
+expect(monsterRecordSchema.properties?.attacks?.items?.minItems === 4 && monsterRecordSchema.properties?.attacks?.items?.maxItems === 4, "monster attack rows must retain four signed-byte slots");
+expect(monsterRecordSchema.properties?.rawBytes?.minItems === 210 && monsterRecordSchema.properties?.rawBytes?.maxItems === 210, "monster rawBytes must retain one complete Realmz row when compatibility bytes are present");
+expectSameArray(monsterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Monster omitted empty compatibility inventory");
+const monsterDescriptionFields = ["id", "text", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(monsterDescriptionRecordSchema.properties ?? {}), monsterDescriptionFields, "Monster-description field inventory");
+expectSameArray(monsterDescriptionRecordSchema.required ?? [], ["id", "text"], "Monster-description authored field inventory");
+expect(monsterDescriptionRecordSchema.properties?.rawBytes?.minItems === 256 && monsterDescriptionRecordSchema.properties?.rawBytes?.maxItems === 256, "monster-description rawBytes must retain one complete Realmz Str255 row when compatibility bytes are present");
+expectSameArray(monsterDescriptionRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Monster-description omitted empty compatibility inventory");
 const encounterActionFields = ["slot", "rawCode", "id"];
 expectSameArray(Object.keys(encounterActionRowSchema.properties ?? {}), encounterActionFields, "Encounter action field inventory");
 expectSameArray(encounterActionRowSchema.required ?? [], encounterActionFields, "Encounter action required field inventory");
@@ -252,7 +270,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes", "TimedEncounterRecord.reservedWords", "TimedEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes", "TimedEncounterRecord.reservedWords", "TimedEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -313,6 +331,8 @@ for (const alias of [
   "export type MessageRecord = ProvidenceMessageRecord;",
   "export type OptionLabelRecord = ProvidenceOptionLabelRecord;",
   "export type BattleRecord = ProvidenceBattleRecord;",
+  "export type MonsterRecord = ProvidenceMonsterRecord;",
+  "export type MonsterDescriptionRecord = ProvidenceMonsterDescriptionRecord;",
   "export type EncounterActionRow = ProvidenceEncounterActionRow;",
   "export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;",
   "export type ComplexEncounterRecord = ProvidenceComplexEncounterRecord;",
@@ -343,6 +363,8 @@ expect(!typesSource.includes("export type ShopRecord = {"), "types.ts must not h
 expect(!typesSource.includes("export type MessageRecord = {"), "types.ts must not handwrite MessageRecord");
 expect(!typesSource.includes("export type OptionLabelRecord = {"), "types.ts must not handwrite OptionLabelRecord");
 expect(!typesSource.includes("export type BattleRecord = {"), "types.ts must not handwrite BattleRecord");
+expect(!typesSource.includes("export type MonsterRecord = {"), "types.ts must not handwrite MonsterRecord");
+expect(!typesSource.includes("export type MonsterDescriptionRecord = {"), "types.ts must not handwrite MonsterDescriptionRecord");
 expect(!typesSource.includes("export type EncounterActionRow = {"), "types.ts must not handwrite EncounterActionRow");
 expect(!typesSource.includes("export type SimpleEncounterRecord = {"), "types.ts must not handwrite SimpleEncounterRecord");
 expect(!typesSource.includes("export type ComplexEncounterRecord = {"), "types.ts must not handwrite ComplexEncounterRecord");
@@ -381,6 +403,8 @@ expectSameSet(rustGeneratedReExports, [
   "MessageRecord",
   "OptionLabelRecord",
   "BattleRecord",
+  "MonsterRecord",
+  "MonsterDescriptionRecord",
   "EncounterActionRow",
   "SimpleEncounterRecord",
   "ComplexEncounterRecord",
@@ -412,6 +436,8 @@ expect(!rustProjectSource.includes("pub struct ShopRecord {"), "project.rs must 
 expect(!rustProjectSource.includes("pub struct MessageRecord {"), "project.rs must not handwrite MessageRecord");
 expect(!rustProjectSource.includes("pub struct OptionLabelRecord {"), "project.rs must not handwrite OptionLabelRecord");
 expect(!rustProjectSource.includes("pub struct BattleRecord {"), "project.rs must not handwrite BattleRecord");
+expect(!rustProjectSource.includes("pub struct MonsterRecord {"), "project.rs must not handwrite MonsterRecord");
+expect(!rustProjectSource.includes("pub struct MonsterDescriptionRecord {"), "project.rs must not handwrite MonsterDescriptionRecord");
 expect(!rustProjectSource.includes("pub struct EncounterActionRow {"), "project.rs must not handwrite EncounterActionRow");
 expect(!rustProjectSource.includes("pub struct SimpleEncounterRecord {"), "project.rs must not handwrite SimpleEncounterRecord");
 expect(!rustProjectSource.includes("pub struct ComplexEncounterRecord {"), "project.rs must not handwrite ComplexEncounterRecord");
@@ -530,6 +556,8 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_MESSAGE_FIELDS = ${JSON.stringify(Object.keys(messageRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_OPTION_LABEL_FIELDS = ${JSON.stringify(Object.keys(optionLabelRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_BATTLE_FIELDS = ${JSON.stringify(Object.keys(battleRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_MONSTER_FIELDS = ${JSON.stringify(Object.keys(monsterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS = ${JSON.stringify(Object.keys(monsterDescriptionRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(simpleEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(complexEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_THIEF_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(thiefEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
@@ -591,6 +619,10 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[\n${renderArray(Object.keys(optionLabelRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_BATTLE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(battleRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_MONSTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterDescriptionRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(simpleEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +

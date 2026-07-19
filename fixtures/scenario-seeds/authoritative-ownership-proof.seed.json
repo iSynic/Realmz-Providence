@@ -116,11 +116,29 @@
       "location": { "kind": "land", "level": 0, "x": 10, "y": 12 }
     }
   ],
+  "monsters": [
+    {
+      "key": "ownership-sentinel",
+      "id": 1,
+      "name": "Providence Sentinel",
+      "description": "Compiled entirely from canonical Providence monster data.",
+      "hitDice": 9,
+      "staminaBonus": 200,
+      "agility": 201,
+      "movementMax": 202,
+      "armor": -4,
+      "typeFlags": [1, -1, 2, -2, 3, -3, 4, -4],
+      "attacks": [[1, 8, 0, 0]],
+      "stamina": 30,
+      "staminaMax": 31,
+      "exp": 29
+    }
+  ],
   "battles": [
     {
       "key": "ownership-battle",
       "id": 0,
-      "placements": [{ "x": 6, "y": 6, "monster": 1 }],
+      "placements": [{ "x": 6, "y": 6, "monster": "ownership-sentinel" }],
       "dist": 3
     }
   ],

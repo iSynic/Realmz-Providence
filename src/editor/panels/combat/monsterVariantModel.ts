@@ -78,9 +78,9 @@ function previewGeneratedMonsterVariant(source: MonsterRecord, setId: Exclude<Mo
   const scaledSpellPoints = clampInteger(Math.floor(source.spellPoints * scale.spellPointsNumerator / scale.spellPointsDenominator), 0, 999);
   return {
     hitDice: clampInteger(source.hitDice + scale.hitDice, 0, 255),
-    staminaBonus: clampInteger(source.staminaBonus + scale.staminaBonus, -128, 127),
-    agility: clampInteger(source.agility + scale.agility, -128, 127),
-    movementMax: clampInteger(source.movementMax + scale.movementMax, -128, 127),
+    staminaBonus: clampInteger(source.staminaBonus + scale.staminaBonus, 0, 255),
+    agility: clampInteger(source.agility + scale.agility, 0, 255),
+    movementMax: clampInteger(source.movementMax + scale.movementMax, 0, 255),
     armor: clampInteger(source.armor + scale.armor, -128, 127),
     magicResistance: clampInteger(source.magicResistance + scale.magicResistance, -128, 127),
     damageBonus: clampInteger(source.damageBonus + scale.damageBonus, -128, 127),

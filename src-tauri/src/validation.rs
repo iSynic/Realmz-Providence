@@ -6,6 +6,44 @@ fn managed_resource_type_supported(resource_type: &str) -> bool {
     matches!(resource_type, "PICT" | "cicn" | "snd " | "TEXT" | "styl")
 }
 
+fn validate_monster_record_storage(monster: &MonsterRecord, label: &str, errors: &mut Vec<String>) {
+    if !monster.raw_bytes.is_empty() && monster.raw_bytes.len() != crate::realmz::MONSTER_BYTES {
+        errors.push(format!(
+            "{label} {} has invalid {}-byte compatibility storage.",
+            monster.id,
+            crate::realmz::MONSTER_BYTES
+        ));
+    }
+    for (field, actual, expected) in [
+        ("trait flags", monster.type_flags.len(), 8),
+        ("attack rows", monster.attacks.len(), 5),
+        ("saves", monster.saves.len(), 6),
+        ("spell immunities", monster.spell_immunities.len(), 6),
+        ("treasure slots", monster.money.len(), 3),
+        ("spell slots", monster.spells.len(), 10),
+        ("item slots", monster.items.len(), 6),
+        ("underneath slots", monster.underneath.len(), 4),
+        ("condition fields", monster.conditions.len(), 40),
+    ] {
+        if actual != expected {
+            errors.push(format!(
+                "{label} {} has {actual} {field}; Data MD requires {expected}.",
+                monster.id
+            ));
+        }
+    }
+    for (row, attack) in monster.attacks.iter().enumerate() {
+        if attack.len() != 4 {
+            errors.push(format!(
+                "{label} {} attack row {} has {} fields; Data MD requires 4.",
+                monster.id,
+                row + 1,
+                attack.len()
+            ));
+        }
+    }
+}
+
 pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
@@ -279,6 +317,15 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for description in &project.monster_descriptions {
+        if !description.raw_bytes.is_empty()
+            && description.raw_bytes.len() != crate::realmz::MONSTER_DESCRIPTION_BYTES
+        {
+            errors.push(format!(
+                "Monster description {} has invalid {}-byte compatibility storage.",
+                description.id,
+                crate::realmz::MONSTER_DESCRIPTION_BYTES
+            ));
+        }
         let description_bytes = classic_text_len(&description.text);
         if description_bytes > crate::realmz::MONSTER_DESCRIPTION_BYTES - 1 {
             errors.push(format!(
@@ -368,47 +415,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for monster in &project.monsters {
-        if monster.type_flags.len() > 8 {
-            errors.push(format!(
-                "Monster {} has {} trait flags; Data MD supports 8.",
-                monster.id,
-                monster.type_flags.len()
-            ));
-        }
-        if monster.attacks.len() > 5 {
-            errors.push(format!(
-                "Monster {} has {} attack rows; Data MD supports 5.",
-                monster.id,
-                monster.attacks.len()
-            ));
-        }
-        if monster.items.len() > 6 {
-            errors.push(format!(
-                "Monster {} has {} item slots; Data MD supports 6.",
-                monster.id,
-                monster.items.len()
-            ));
-        }
-        if monster.spells.len() > 10 {
-            errors.push(format!(
-                "Monster {} has {} spell slots; Data MD supports 10.",
-                monster.id,
-                monster.spells.len()
-            ));
-        }
-        if monster.saves.len() > 6 || monster.spell_immunities.len() > 6 {
-            errors.push(format!(
-                "Monster {} has malformed save or immunity fields; Data MD supports 6 each.",
-                monster.id
-            ));
-        }
-        if monster.conditions.len() > 40 {
-            errors.push(format!(
-                "Monster {} has {} condition fields; Data MD supports 40.",
-                monster.id,
-                monster.conditions.len()
-            ));
-        }
+        validate_monster_record_storage(monster, "Monster", &mut errors);
         if monster.hit_dice == 255 {
             warnings.push(format!(
                 "Monster {} has Stamina Level 255; Realmz uses this as a Bestiary list terminator.",
@@ -475,6 +482,13 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 "{} is an unusual alternate monster-set filename; Realmz normally uses Data MD1 or Data MD-1.",
                 monster_set.source_file
             ));
+        }
+        for monster in &monster_set.monsters {
+            validate_monster_record_storage(
+                monster,
+                &format!("{} monster", monster_set.source_file),
+                &mut errors,
+            );
         }
     }
     for treasure in &project.treasures {
@@ -3072,7 +3086,7 @@ mod tests {
             } else {
                 format!("Monster {id}")
             },
-            raw_bytes: vec![0; crate::realmz::MONSTER_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: test_provenance(
                 "Data MD",
