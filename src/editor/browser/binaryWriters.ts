@@ -61,8 +61,7 @@ export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLUMNS = 16;
 export const LAND_LAYOUT_RECORD_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLUMNS * 2;
 export const SCENARIO_SHELL_BYTES = 316;
-export const SCENARIO_SUPPORT_FILE_DEFAULT_BYTES = 600;
-export const SCENARIO_SUPPORT_FILE_MIN_BYTES = 40;
+export const SCENARIO_SUPPORT_FILE_BYTES = 600;
 export const SCENARIO_CONTACT_INFO_BYTES = 4608;
 export const SCENARIO_RESTRICTIONS_BYTES = 320;
 export const MAPSTATS_RECORD_BYTES = 40;
@@ -435,16 +434,7 @@ export function writeScenarioShell(shell: ScenarioShell) {
 }
 
 export function writeScenarioSupportFile(support: ScenarioSupportFile) {
-  const rawBytes = support.rawBytes ?? [];
-  let output = rawBytes.length > 0
-    ? new Uint8Array(rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(SCENARIO_SUPPORT_FILE_DEFAULT_BYTES);
-  if (output.byteLength < SCENARIO_SUPPORT_FILE_MIN_BYTES) {
-    const resized = new Uint8Array(SCENARIO_SUPPORT_FILE_MIN_BYTES);
-    resized.set(output);
-    output = resized;
-  }
-  if (!support.authored) return output;
+  const output = new Uint8Array(SCENARIO_SUPPORT_FILE_BYTES);
 
   if (support.divinityStringEditorSlot != null) {
     const slot = support.divinityStringEditorSlot;

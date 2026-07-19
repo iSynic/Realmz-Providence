@@ -116,8 +116,8 @@ export async function readScenarioDirectory(handle: BrowserDirectoryHandle, trac
     const { name, relativePath, handle: fileHandle } = candidate;
     if (isIgnoredOsMetadataFile(name)) continue;
     const file = await fileHandle.getFile();
-    const role = roleForFile(name, tracked);
     const bytes = new Uint8Array(await file.arrayBuffer());
+    const role = roleForFile(name, tracked, bytes);
     const sha256 = await sha256Hex(bytes);
     const sourceFile = {
       name,
@@ -218,8 +218,8 @@ async function readScenarioFileSelection(selection: BrowserFileSelection, tracke
     const relativePath = relativeSelectionPath(file, markerName);
     if (!name) continue;
     if (isIgnoredOsMetadataFile(name)) continue;
-    const role = roleForFile(name, tracked);
     const bytes = new Uint8Array(await file.arrayBuffer());
+    const role = roleForFile(name, tracked, bytes);
     const sha256 = await sha256Hex(bytes);
     const sourceFile = {
       name,
@@ -382,7 +382,7 @@ async function readPackageRawSourceSnapshot(
       originalRelativePath: relativePath,
       bytes: file.bytes.byteLength,
       sha256,
-      role: roleForFile(name, new Set()),
+      role: roleForFile(name, new Set(), file.bytes),
       editable: false,
       bytesData: file.bytes,
       targetPlatform: "unknown",
@@ -426,7 +426,7 @@ async function rawSourcesFromManifest(
       originalRelativePath: manifestFile.originalRelativePath || relativePath,
       bytes: file.bytes.byteLength,
       sha256,
-      role: normalizeSourceFileRole(manifestFile.role, roleForFile(name, new Set())),
+      role: normalizeSourceFileRole(manifestFile.role, roleForFile(name, new Set(), file.bytes)),
       editable: manifestFile.editable ?? false,
       bytesData: file.bytes,
       targetPlatform: manifestFile.targetPlatform || manifest.targetPlatform || "unknown",
@@ -466,8 +466,9 @@ export async function sha256Hex(bytes: Uint8Array) {
   return `fnv1a-${(hash >>> 0).toString(16).padStart(8, "0")}`;
 }
 
-function roleForFile(name: string, tracked: Set<string>): SourceFile["role"] {
+function roleForFile(name: string, tracked: Set<string>, bytes?: Uint8Array): SourceFile["role"] {
   if (SUPPORTED_WRITE_FILES.has(name)) return "supported-binary";
+  if (name === "Scenario" && bytes?.byteLength === 600) return "supported-binary";
   if (isResourceFileName(name)) return "resource-fork";
   if (tracked.has(name)) return "pass-through";
   return "unknown";

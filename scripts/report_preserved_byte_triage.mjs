@@ -175,7 +175,7 @@ function buildEntries(sourceState) {
     id: "scenario-nearby-editor-state",
     target: "Scenario support-file nearby string/map state",
     container: "Scenario support file",
-    byteRange: "offsets 23, 30, 34, 35, 445, 449, 455",
+    byteRange: "offsets 23, 30, 34, 35, 38..39, 445, 449, 455",
     classification: "Divinity editor UI state",
     evidenceLabel: "correlated",
     conclusion: "Nearby bytes recur as string selector, land/special selection, dungeon tool, and editor context state.",
@@ -186,9 +186,10 @@ function buildEntries(sourceState) {
     ],
     notes: [
       "Offsets 35, 445, and 449 are directly represented in no-op controls.",
-      "Offsets 23, 30, 34, and 455 appear as sidecar state in focused string, land, and dungeon fixture campaigns."
+      "Offsets 23, 30, 34, and 455 appear as sidecar state in focused string, land, and dungeon fixture campaigns.",
+      "Offsets 23 and 38..39 are the existing bounded Providence string-editor slot/sound fields; they remain editor support state rather than Realmz gameplay semantics."
     ],
-    promotionPolicy: "Use these bytes only as preserve-only editor-state evidence unless future controls isolate a content meaning."
+    promotionPolicy: "Compile only the bounded slot/sound fields for editor portability. Keep the other offsets preserve-only unless future controls isolate a content meaning."
   });
 
   add({
@@ -491,12 +492,12 @@ function buildEntries(sourceState) {
     byteRange: "unlisted offsets outside current fixture/source ownership",
     classification: "still unknown",
     evidenceLabel: "unknown",
-    conclusion: "Unclaimed Scenario support-file bytes remain unknown or preserve-only; no promotion occurred in this pass.",
+    conclusion: "Fresh compilation deterministically zero-fills unclaimed Scenario support bytes. Imported values remain unknown or preserve-only and are recovered only from the compatibility annex.",
     evidence: [
       "docs/generated/scenario-byte-ownership.json",
       "Divinity fixture-diff inventory"
     ],
-    promotionPolicy: "Keep unclaimed offsets in the preserved/unknown bucket until isolated fixtures or source/decompiler anchors classify them."
+    promotionPolicy: "Use the neutral zero baseline for fresh projects. Keep imported unclaimed offsets in the compatibility annex until isolated fixtures or source/decompiler anchors classify them."
   });
 
   return entries;

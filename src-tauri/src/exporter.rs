@@ -143,10 +143,12 @@ fn compile_realmz_scenario(
         )?;
     }
     if let Some(support_file) = &project.scenario.support_file {
-        write_if_nonempty(
+        write_scenario_support_file_for_export(
             &mut manifest,
             &support_file.source_file,
+            support_file.authored,
             write_scenario_support_file(support_file)?,
+            compatibility_annex,
         )?;
     }
     if let Some(contact_info) = &project.scenario.contact_info {
@@ -394,7 +396,6 @@ fn write_authored_runtime_baseline(
     project: &ProvidenceProject,
     target: ScenarioTarget,
 ) -> Result<()> {
-    const SCENARIO_SUPPORT_BYTES: usize = 600;
     const SCENARIO_ITEM_TABLE_BYTES: usize = 200 * crate::realmz::ITEM_BYTES;
     const TILE_SOLIDS_BYTES: usize = 1024;
     const EMPTY_RUNTIME_TABLES: &[&str] = &[
@@ -405,7 +406,10 @@ fn write_authored_runtime_baseline(
         ProvidenceError::message("Authored scenarios require scenario shell metadata.")
     })?;
     let entries = [
-        ("Scenario".to_string(), vec![0; SCENARIO_SUPPORT_BYTES]),
+        (
+            "Scenario".to_string(),
+            vec![0; crate::realmz::SCENARIO_SUPPORT_FILE_BYTES],
+        ),
         (
             resource_file_name(project, target),
             crate::resource_fork::write_resource_fork(&[])?,
@@ -517,6 +521,42 @@ fn write_scenario_singleton_for_export(
 ) -> Result<()> {
     let bytes = preserve_imported_singleton(bytes, name, record_bytes, authored, annex)?;
     write_if_nonempty(manifest, name, bytes)
+}
+
+fn write_scenario_support_file_for_export(
+    manifest: &mut NativeScenarioManifest,
+    name: &str,
+    authored: bool,
+    bytes: Vec<u8>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_scenario_support_file(bytes, name, authored, annex)?;
+    write_if_nonempty(manifest, name, bytes)
+}
+
+fn preserve_imported_scenario_support_file(
+    bytes: Vec<u8>,
+    name: &str,
+    authored: bool,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read(name)?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    if !authored && raw.len() >= 40 {
+        return Ok(raw);
+    }
+    if raw.len() < 40 {
+        return Ok(bytes);
+    }
+    let mut output = vec![0; bytes.len().max(raw.len())];
+    output[..raw.len()].copy_from_slice(&raw);
+    output[23] = bytes[23];
+    output[38..40].copy_from_slice(&bytes[38..40]);
+    Ok(output)
 }
 
 fn preserve_imported_singleton(
@@ -1828,11 +1868,11 @@ mod tests {
         preserve_imported_fixed_length, preserve_imported_global_macro_hooks,
         preserve_imported_message_rows, preserve_imported_monster_description_rows,
         preserve_imported_monster_rows, preserve_imported_option_label_rows,
-        preserve_imported_simple_encounter_rows, preserve_imported_singleton,
-        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
-        scenario_icon_resource_updates, write_caste_overrides_for_export,
-        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
-        NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
+        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
+        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
+        write_caste_overrides_for_export, write_race_overrides_for_export,
+        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1889,11 +1929,16 @@ mod tests {
         shell_source.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
         let mut security_source = vec![0xe9; 316];
         security_source.extend_from_slice(&[0xba, 0xdc]);
+        let mut support_source = vec![0x5a; crate::realmz::SCENARIO_SUPPORT_FILE_BYTES];
+        support_source[23] = 11;
+        support_source[38..40].copy_from_slice(&[0, 222]);
+        support_source.extend_from_slice(&[0xca, 0xfe]);
         fs::write(raw_dir.join("Data CI"), &contact_source).unwrap();
         fs::write(raw_dir.join("Data RI"), &restrictions_source).unwrap();
         fs::write(raw_dir.join("Global"), &global_source).unwrap();
         fs::write(raw_dir.join("Legacy Scenario"), &shell_source).unwrap();
         fs::write(raw_dir.join("Data CS"), &security_source).unwrap();
+        fs::write(raw_dir.join("Scenario"), &support_source).unwrap();
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
 
         let contact_semantic = vec![0; crate::realmz::SCENARIO_CONTACT_INFO_BYTES];
@@ -1902,6 +1947,19 @@ mod tests {
         shell_semantic[0..4].copy_from_slice(&[0, 0, 0, 7]);
         let mut security_semantic = vec![0; 316];
         security_semantic[20..23].copy_from_slice(&[1, 2, 3]);
+        let mut support_semantic = vec![0; crate::realmz::SCENARIO_SUPPORT_FILE_BYTES];
+        support_semantic[23] = 202;
+        support_semantic[38..40].copy_from_slice(&[0xfe, 0xd1]);
+        assert_eq!(
+            preserve_imported_scenario_support_file(
+                support_semantic.clone(),
+                "Scenario",
+                false,
+                Some(&annex),
+            )
+            .unwrap(),
+            support_source
+        );
         assert_eq!(
             preserve_imported_singleton(
                 shell_semantic.clone(),
@@ -2001,6 +2059,19 @@ mod tests {
         .unwrap();
         assert_eq!(&authored_security[..316], security_semantic.as_slice());
         assert_eq!(&authored_security[316..], &[0xba, 0xdc]);
+        let authored_support = preserve_imported_scenario_support_file(
+            support_semantic.clone(),
+            "Scenario",
+            true,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(authored_support.len(), support_source.len());
+        assert_eq!(authored_support[0], 0x5a);
+        assert_eq!(authored_support[23], 202);
+        assert_eq!(&authored_support[38..40], &[0xfe, 0xd1]);
+        assert_eq!(authored_support[63], 0x5a);
+        assert_eq!(&authored_support[600..], &[0xca, 0xfe]);
         let authored_global =
             preserve_imported_global_macro_hooks(global_semantic.clone(), true, Some(&annex))
                 .unwrap();

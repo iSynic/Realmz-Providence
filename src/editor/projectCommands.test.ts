@@ -47,8 +47,21 @@ describe("project command facade", () => {
       trailingBytes: [0xba, 0xdc],
       authored: false
     };
+    project.scenario.supportFile = {
+      sourceFile: "Scenario",
+      divinityStringEditorSlot: 4,
+      divinityStringSoundId: 10,
+      rawBytes: new Array(600).fill(0xc7),
+      authored: false
+    };
 
-    const shell = applyProjectCommand(project, {
+    const support = applyProjectCommand(project, {
+      kind: "updateStringSound",
+      label: "Set string sound",
+      messageId: 12,
+      soundId: -303
+    });
+    const shell = applyProjectCommand(support, {
       kind: "updateScenarioShell",
       label: "Author scenario shell",
       changes: { lookX: 12 }
@@ -76,6 +89,8 @@ describe("project command facade", () => {
       door: 9
     });
 
+    expect(globalHooks.scenario.supportFile).toMatchObject({ divinityStringEditorSlot: 12, divinityStringSoundId: -303, authored: true });
+    expect(globalHooks.scenario.supportFile?.rawBytes).toBeUndefined();
     expect(globalHooks.scenario.shell).toMatchObject({ lookX: 12, codeseg1: [1, 2, 3], authored: true });
     expect(globalHooks.scenario.shell?.rawBytes).toBeUndefined();
     expect(globalHooks.scenario.shell?.trailingBytes).toEqual([]);

@@ -29,7 +29,7 @@
     "scenarioRoots": 87,
     "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
-    "resourceForkFiles": 13,
+    "resourceForkFiles": 12,
     "unknownFileFamilies": 0
   },
   "fileFamilies": [
@@ -867,7 +867,7 @@
       "name": "Scenario",
       "scenarioCount": 35,
       "roles": [
-        "resource-fork"
+        "supported-binary"
       ],
       "classifications": [
         "byte-identical",
@@ -877,7 +877,7 @@
         600
       ],
       "resourceTypes": [],
-      "coverageStatus": "preserved-known",
+      "coverageStatus": "mixed-writable-preserved",
       "editable": false
     },
     {
@@ -2040,7 +2040,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -2299,7 +2299,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -2576,7 +2576,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -2800,7 +2800,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -3038,7 +3038,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -3316,7 +3316,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -3572,7 +3572,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -3796,7 +3796,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -4066,7 +4066,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -4305,7 +4305,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -4588,7 +4588,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -4879,7 +4879,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -5157,7 +5157,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -5433,7 +5433,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -5711,7 +5711,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -6021,7 +6021,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -6286,7 +6286,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -6545,7 +6545,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -6889,7 +6889,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -7141,7 +7141,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -7417,7 +7417,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -7714,7 +7714,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -7945,7 +7945,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -8221,7 +8221,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -8504,7 +8504,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -8807,7 +8807,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -9066,7 +9066,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -9396,7 +9396,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -9675,7 +9675,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -9920,7 +9920,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -10158,7 +10158,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -10410,7 +10410,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -10656,7 +10656,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -10939,7 +10939,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -11218,7 +11218,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -11491,7 +11491,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -11722,7 +11722,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -11967,7 +11967,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -12257,7 +12257,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -12540,7 +12540,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -12817,7 +12817,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -13120,7 +13120,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -13379,7 +13379,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -13709,7 +13709,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -13999,7 +13999,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -14269,7 +14269,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -14519,7 +14519,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -14775,7 +14775,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -15017,7 +15017,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -15294,7 +15294,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -15572,7 +15572,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -15848,7 +15848,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -16126,7 +16126,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -16436,7 +16436,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -16681,7 +16681,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -16957,7 +16957,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -17254,7 +17254,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -17485,7 +17485,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -17761,7 +17761,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -18031,7 +18031,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -18281,7 +18281,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -18537,7 +18537,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -18779,7 +18779,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -19056,7 +19056,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -19334,7 +19334,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -19610,7 +19610,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -19888,7 +19888,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -20198,7 +20198,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -20443,7 +20443,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -20719,7 +20719,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -21016,7 +21016,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -21247,7 +21247,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -21555,7 +21555,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -21849,7 +21849,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -22115,7 +22115,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -22410,7 +22410,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -22705,7 +22705,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -23037,7 +23037,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -23365,7 +23365,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -23693,7 +23693,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -23967,7 +23967,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -24271,7 +24271,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -24566,7 +24566,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -24899,7 +24899,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -25277,7 +25277,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -25585,7 +25585,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {
@@ -25942,7 +25942,7 @@
         {
           "name": "Scenario",
           "bytes": 600,
-          "role": "resource-fork",
+          "role": "supported-binary",
           "resourceTypes": []
         },
         {

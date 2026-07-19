@@ -399,6 +399,7 @@ function assertCompleteNativeFolder(files, label) {
   expect(readI32(shell, 8) === 0 && readI32(shell, 12) === 10 && readI32(shell, 16) === 12, `${label} scenario shell has the wrong authored startup position`);
   expect(shell.slice(20).every((byte) => byte === 0), `${label} scenario shell security, creator, and padding bytes are not deterministic zero`);
   expect(Buffer.from(files.get("Data CS")).equals(Buffer.from(shell)), `${label} Data CS should be the deterministic fresh shell security backup`);
+  expect(files.get("Scenario").every((byte) => byte === 0), `${label} Scenario support data should be the deterministic neutral 600-byte baseline`);
   const globalHooks = files.get("Global");
   expect(readI16(globalHooks, 0) === 2, `${label} Global has the wrong authored start hook`);
   expect(globalHooks.slice(2).every((byte) => byte === 0), `${label} Global reserved and inactive hooks are not deterministic zero`);

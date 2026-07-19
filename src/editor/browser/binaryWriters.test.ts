@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import { emptyCasteOverride, emptyRaceOverride, emptySpellOverride } from "../projectCommands/scenarioRulesCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeScenarioSupportFile, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -99,6 +99,23 @@ describe("browser scenario metadata writers", () => {
     expect(Array.from(output.slice(40, 60))).toEqual([21, 22, 23, ...new Array(17).fill(0)]);
     expect(Array.from(output.slice(60, 72))).toEqual([10, ...Array.from(new TextEncoder().encode("Providence")), 0]);
     expect(output.slice(71).every((byte) => byte === 0)).toBe(true);
+  });
+
+  it("compiles a neutral 600-byte support file plus bounded Divinity editor state", () => {
+    const output = writeScenarioSupportFile({
+      sourceFile: "Scenario",
+      divinityStringEditorSlot: 202,
+      divinityStringSoundId: -303,
+      rawBytes: new Array(602).fill(0xa5),
+      authored: false
+    });
+
+    expect(output).toHaveLength(600);
+    expect(output[23]).toBe(202);
+    expect(i16(output, 38)).toBe(-303);
+    expect(output.slice(0, 23).every((byte) => byte === 0)).toBe(true);
+    expect(output.slice(24, 38).every((byte) => byte === 0)).toBe(true);
+    expect(output.slice(40).every((byte) => byte === 0)).toBe(true);
   });
 
   it("compile contact and restriction semantics without embedded raw identity", () => {

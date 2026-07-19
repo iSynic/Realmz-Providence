@@ -125,6 +125,7 @@ export function updateStringSound(project: Project, messageId: number, soundId: 
       supportFile: {
         ...supportFile,
         sourceFile: supportFile.sourceFile || "Scenario",
+        rawBytes: undefined,
         authored: true,
         divinityStringEditorSlot: messageId,
         divinityStringSoundId: Math.trunc(soundId)

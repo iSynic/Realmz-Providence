@@ -6,7 +6,7 @@
     "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
     "editableContainers": 25,
-    "preservedContainers": 7,
+    "preservedContainers": 6,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
       "resourceForkFiles": 207,
@@ -36,40 +36,40 @@
     "strictCompleteness": {
       "containerCount": 57,
       "semanticOwnershipCounts": {
-        "mixed": 9,
-        "complete": 46,
+        "mixed": 10,
+        "complete": 45,
         "runtime-only": 1,
         "ignored": 1
       },
       "writerReadinessCounts": {
-        "partially-proven": 11,
+        "partially-proven": 12,
         "fixture-proven": 25,
-        "preserve-only": 7,
+        "preserve-only": 6,
         "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "fixture-backed": 36,
-        "target-warning": 13,
+        "fixture-backed": 37,
+        "target-warning": 12,
         "cited": 8
       },
       "riskFlagCounts": {
-        "target-package-warning": 13
+        "target-package-warning": 12
       },
       "scenarioSemantics": {
         "label": "Scenario Semantics",
         "status": "complete",
-        "completeContainers": 46,
-        "mixedContainers": 9,
+        "completeContainers": 45,
+        "mixedContainers": 10,
         "needsFormatWorkContainers": 0,
-        "percentContainers": 80.7
+        "percentContainers": 78.95
       },
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "complete",
-        "fixtureProvenContainers": 24,
+        "fixtureProvenContainers": 25,
         "partiallyProvenContainers": 12,
         "writerGatedContainers": 0,
-        "percentContainers": 63.2
+        "percentContainers": 64.91
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -525,22 +525,20 @@
     },
     {
       "container": "Scenario",
-      "label": "Resource fork",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "label": "Divinity editor support data",
+      "status": "Partially Editable",
+      "coverageStatus": "mixed-writable-preserved",
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "preserve-only",
-        "evidenceQuality": "target-warning",
-        "riskFlags": [
-          "target-package-warning"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       },
       "count": 35,
       "sizes": [
         600
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Data CS",

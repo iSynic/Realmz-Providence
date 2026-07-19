@@ -29,40 +29,40 @@
   "summary": {
     "containerCount": 57,
     "semanticOwnershipCounts": {
-      "mixed": 9,
-      "complete": 46,
+      "mixed": 10,
+      "complete": 45,
       "runtime-only": 1,
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "partially-proven": 11,
+      "partially-proven": 12,
       "fixture-proven": 25,
-      "preserve-only": 7,
+      "preserve-only": 6,
       "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "fixture-backed": 36,
-      "target-warning": 13,
+      "fixture-backed": 37,
+      "target-warning": 12,
       "cited": 8
     },
     "riskFlagCounts": {
-      "target-package-warning": 13
+      "target-package-warning": 12
     },
     "scenarioSemantics": {
       "label": "Scenario Semantics",
       "status": "complete",
-      "completeContainers": 46,
-      "mixedContainers": 9,
+      "completeContainers": 45,
+      "mixedContainers": 10,
       "needsFormatWorkContainers": 0,
-      "percentContainers": 80.7
+      "percentContainers": 78.95
     },
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "complete",
-      "fixtureProvenContainers": 24,
+      "fixtureProvenContainers": 25,
       "partiallyProvenContainers": 12,
       "writerGatedContainers": 0,
-      "percentContainers": 63.2
+      "percentContainers": 64.91
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -1355,27 +1355,34 @@
     },
     {
       "container": "Scenario",
-      "authorFacingName": "Resource fork",
-      "coverageStatus": "preserved-known",
+      "authorFacingName": "Divinity editor support data",
+      "coverageStatus": "mixed-writable-preserved",
       "observedScenarioCount": 35,
       "observedByteSizes": [
         600
       ],
       "effectiveStatuses": [
+        "decoded-writable",
         "preserved-known"
       ],
       "evidence": [
-        "docs/generated/resource-byte-ownership.json",
-        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+        "docs/generated/preserved-byte-triage.json",
+        "src-tauri/src/realmz/scenario.rs:scenario_support_file_compiles_bounded_editor_state_without_raw_identity",
+        "src-tauri/src/exporter.rs:scenario_metadata_legacy_identity_comes_only_from_annex",
+        "scripts/check_browser_scenario_package.mjs",
+        "scripts/run_authoritative_scenario_proof.mjs",
+        "src/editor/browser/binaryWriters.test.ts:compiles a neutral 600-byte support file plus bounded Divinity editor state"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "scenario-support-file-bounded-writer",
+        "available": true,
+        "partialOnly": true
+      },
       "truth": {
-        "semanticOwnership": "complete",
-        "writerReadiness": "preserve-only",
-        "evidenceQuality": "target-warning",
-        "riskFlags": [
-          "target-package-warning"
-        ]
+        "semanticOwnership": "mixed",
+        "writerReadiness": "partially-proven",
+        "evidenceQuality": "fixture-backed",
+        "riskFlags": []
       }
     },
     {

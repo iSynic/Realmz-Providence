@@ -220,6 +220,7 @@ fn import_scenario_with_name(
     let scenario_shell = read_scenario_shell(&source_path, &scenario_name)?;
     let support_file = buffers
         .get("Scenario")
+        .filter(|buffer| is_scenario_support_data_file("Scenario", buffer))
         .and_then(|buffer| crate::realmz::parse_scenario_support_file("Scenario", buffer).ok());
     let contact_info = buffers
         .get("Data CI")
@@ -670,8 +671,10 @@ fn hydrate_scenario_metadata(project_dir: &Path, project: &mut ProvidenceProject
         let path = raw_dir.join("Scenario");
         if path.is_file() {
             let bytes = fs::read(&path).with_path(&path)?;
-            project.scenario.support_file =
-                crate::realmz::parse_scenario_support_file("Scenario", &bytes).ok();
+            if is_scenario_support_data_file("Scenario", &bytes) {
+                project.scenario.support_file =
+                    crate::realmz::parse_scenario_support_file("Scenario", &bytes).ok();
+            }
         }
     }
     if project.scenario.contact_info.is_none() {
@@ -1017,16 +1020,18 @@ fn snapshot_sources(source_path: &Path, raw_dir: &Path) -> Result<Vec<SourceFile
         let dest = raw_dir.join(name);
         fs::copy(path, &dest).with_path(&dest)?;
         let bytes = fs::read(path).with_path(path)?;
-        let role =
-            if supported.contains(name) || is_scenario_marker_source(source_path, name, &bytes) {
-                SourceFileRole::SupportedBinary
-            } else if is_resource_file_name(name) {
-                SourceFileRole::ResourceFork
-            } else if tracked.contains(name) {
-                SourceFileRole::PassThrough
-            } else {
-                SourceFileRole::Unknown
-            };
+        let role = if supported.contains(name)
+            || is_scenario_marker_source(source_path, name, &bytes)
+            || is_scenario_support_data_file(name, &bytes)
+        {
+            SourceFileRole::SupportedBinary
+        } else if is_resource_file_name(name) {
+            SourceFileRole::ResourceFork
+        } else if tracked.contains(name) {
+            SourceFileRole::PassThrough
+        } else {
+            SourceFileRole::Unknown
+        };
         let editable = matches!(role, SourceFileRole::SupportedBinary);
         files.push(SourceFile {
             name: name.to_string(),
@@ -1112,6 +1117,10 @@ fn is_resource_file_name(name: &str) -> bool {
         || name.ends_with(".rsrc")
         || name.ends_with(".rsf")
         || name.starts_with("._")
+}
+
+fn is_scenario_support_data_file(name: &str, bytes: &[u8]) -> bool {
+    name == "Scenario" && bytes.len() == crate::realmz::SCENARIO_SUPPORT_FILE_BYTES
 }
 
 fn is_ignored_os_metadata_file(name: &str) -> bool {
@@ -2247,6 +2256,14 @@ mod tests {
         assert_eq!(monster_icon_target_id(-385), Some(385));
         assert_eq!(monster_icon_target_id(i16::MIN), None);
         assert_eq!(absolute_i16_as_i32(i16::MIN), 32768);
+    }
+
+    #[test]
+    fn exact_scenario_support_data_is_distinct_from_the_resource_fork() {
+        assert!(is_resource_file_name("Scenario"));
+        assert!(is_scenario_support_data_file("Scenario", &[0; 600]));
+        assert!(!is_scenario_support_data_file("Scenario", &[0; 599]));
+        assert!(!is_scenario_support_data_file("Scenario.rsrc", &[0; 600]));
     }
 
     #[test]

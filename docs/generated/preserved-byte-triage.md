@@ -38,7 +38,7 @@ Targets: 7
 
 | Source | Status | Summary |
 | --- | --- | --- |
-| providence.scenarioByteOwnership | available | containerCount=57; statusCounts={"decoded-writable":28,"mixed-writable-preserved":8,"preserved-known":4,"understood-resource-container":12,"runtime-cache":1,"custom-media-payload":3,"ignored-non-scenario":1}; sources={"fileInventory":"docs/generated/scenario-file-inventory.json","unknownBacklog":"docs/generated/unknown-data-backlog.json","runtimeCaches":"docs/generated/runtime-cache-classification.json","resourceCoverage":"docs/generated/resource-byte-ownership.json","customLandlookCoverage":"docs/generated/custom-landlook-coverage.json","rulesCoverage":"docs/generated/rules-resource-coverage.json","dungeonCoverage":"docs/generated/dungeon-byte-ownership.json","dungeonHighBitAudit":"docs/generated/dungeon-high-bit-audit.json","fixedRecordWriterGates":"docs/generated/fixed-record-writer-gates.json","scenarioStartupShellGate":"docs/generated/scenario-startup-shell-gate.json","mapsStorageWriterGates":"docs/generated/maps-storage-writer-gates.json","encounterShopWriterGates":"docs/generated/encounter-shop-writer-gates.json","coreRecordWriterGates":"docs/generated/core-record-writer-gates.json","completenessTruth":"docs/generated/scenario-completeness-truth.json","ed3Reachability":"docs/generated/extra-ap-reachability-source-map.json","edcdCrosswalk":"docs/generated/opcode-edcd-crosswalk.json"} |
+| providence.scenarioByteOwnership | available | containerCount=57; statusCounts={"decoded-writable":28,"mixed-writable-preserved":9,"preserved-known":3,"understood-resource-container":12,"runtime-cache":1,"custom-media-payload":3,"ignored-non-scenario":1}; sources={"fileInventory":"docs/generated/scenario-file-inventory.json","unknownBacklog":"docs/generated/unknown-data-backlog.json","runtimeCaches":"docs/generated/runtime-cache-classification.json","resourceCoverage":"docs/generated/resource-byte-ownership.json","customLandlookCoverage":"docs/generated/custom-landlook-coverage.json","rulesCoverage":"docs/generated/rules-resource-coverage.json","dungeonCoverage":"docs/generated/dungeon-byte-ownership.json","dungeonHighBitAudit":"docs/generated/dungeon-high-bit-audit.json","fixedRecordWriterGates":"docs/generated/fixed-record-writer-gates.json","scenarioStartupShellGate":"docs/generated/scenario-startup-shell-gate.json","mapsStorageWriterGates":"docs/generated/maps-storage-writer-gates.json","encounterShopWriterGates":"docs/generated/encounter-shop-writer-gates.json","coreRecordWriterGates":"docs/generated/core-record-writer-gates.json","completenessTruth":"docs/generated/scenario-completeness-truth.json","ed3Reachability":"docs/generated/extra-ap-reachability-source-map.json","edcdCrosswalk":"docs/generated/opcode-edcd-crosswalk.json"} |
 | providence.scenarioStartupShellGate | available | writerReadiness=fixture-proven-authoritative-startup-shell-core; observedByteSizes=316, 320; ownedFields=0:reclevel, 4:maxlevel, 8:landlevel, 12:lookx, 16:looky, 20:codeseg1, 40:codeseg2, 60:creatorUser |
 | providence.opcodeEdcdCrosswalk | available | totalOpcodes=130; edcdBacked=70; directExtraActionPoint=1; missingProvidenceShape=[]; fieldComparisonGaps=[] |
 | providence.timedEncounterReservedFields | available | recordCount=16; findingCount=16; reservedUsagePresent=true; commonPatterns={"pattern":"11005,9994,11308,10800,12079,11568,11046,9980,10001","recordCount":14}, {"pattern":"15927,13874,14391,13365,14905,13364,12850,13357,10279","recordCount":2} |
@@ -62,7 +62,7 @@ Targets: 7
 | --- | --- | --- | --- | --- |
 | Scenario support-file editor-state bytes | Scenario support file: offsets 429, 433 | Divinity editor UI state | fixture-proven | Recurring Divinity no-op and content fixtures change these bytes as view/map context, not scenario-authored content. |
 | Scenario support-file editor-state bytes | Scenario support file: offsets 437, 441 | Divinity editor UI state | correlated | String-editor controls identify these as visible Go H/V field state; no current clean payload model needs them. |
-| Scenario support-file nearby string/map state | Scenario support file: offsets 23, 30, 34, 35, 445, 449, 455 | Divinity editor UI state | correlated | Nearby bytes recur as string selector, land/special selection, dungeon tool, and editor context state. |
+| Scenario support-file nearby string/map state | Scenario support file: offsets 23, 30, 34, 35, 38..39, 445, 449, 455 | Divinity editor UI state | correlated | Nearby bytes recur as string selector, land/special selection, dungeon tool, and editor context state. |
 | Scenario support-file nearby string/map state | Data SD2: String 4 payload bytes in the controlled fixture | authored game data | fixture-proven | The isolated String 4 edit mutated Data SD2 after editor selector and map state were normalized. |
 | Scenario publish/security/editability gate | Scenario Startup Shell: core 0..316 plus optional tail 316..320 | release/security/editability metadata | source/decompiler-supported | Providence compiles the complete 316-byte startup core from canonical level, position, security-segment, and creator semantics; only an imported optional tail remains compatibility data. |
 | Scenario publish/security/editability gate | Data CS: 316-byte security backup container | release/security/editability metadata | source/decompiler-supported | Providence compiles the complete 316-byte Data CS core with the scenario-shell codec; its exact Divinity publish/refusal behavior remains source/decompiler-supported rather than fixture-proven. |
@@ -80,7 +80,7 @@ Targets: 7
 | Data TD3 stuff[1..9] | Data TD3: 40-byte timed encounter rows; day..recquest plus stuff[0] | authored game data | source/decompiler-supported | Timed encounter schedule, gate fields, door/Extra AP target, and stuff[0] location kind are source-backed authored fields. |
 | Data TD3 stuff[1..9] | Data TD3: stuff[1]..stuff[9], offsets 22..40 within each 40-byte row | preserved compatibility bytes | correlated | The corpus shows repeatable nonzero values in active records, but source/runtime evidence only reads stuff[0] meaningfully; Providence should preserve and display these as compatibility data. |
 | Data TD3 stuff[1..9] | CTD3: runtime copy of Data TD3 | runtime/cache/generated data | source/decompiler-supported | CTD3 is generated from Data TD3 at runtime/new game/load and mutated by gameplay actions. |
-| Still unknown preserved bytes | Scenario support file: unlisted offsets outside current fixture/source ownership | still unknown | unknown | Unclaimed Scenario support-file bytes remain unknown or preserve-only; no promotion occurred in this pass. |
+| Still unknown preserved bytes | Scenario support file: unlisted offsets outside current fixture/source ownership | still unknown | unknown | Fresh compilation deterministically zero-fills unclaimed Scenario support bytes. Imported values remain unknown or preserve-only and are recovered only from the compatibility annex. |
 
 ## Details
 
@@ -118,14 +118,15 @@ Targets: 7
 
 - target: Scenario support-file nearby string/map state
 - container: Scenario support file
-- byte range: offsets 23, 30, 34, 35, 445, 449, 455
+- byte range: offsets 23, 30, 34, 35, 38..39, 445, 449, 455
 - classification: Divinity editor UI state
 - evidence label: correlated
 - conclusion: Nearby bytes recur as string selector, land/special selection, dungeon tool, and editor context state.
-- promotion policy: Use these bytes only as preserve-only editor-state evidence unless future controls isolate a content meaning.
+- promotion policy: Compile only the bounded slot/sound fields for editor portability. Keep the other offsets preserve-only unless future controls isolate a content meaning.
 - notes:
   - Offsets 35, 445, and 449 are directly represented in no-op controls.
   - Offsets 23, 30, 34, and 455 appear as sidecar state in focused string, land, and dungeon fixture campaigns.
+  - Offsets 23 and 38..39 are the existing bounded Providence string-editor slot/sound fields; they remain editor support state rather than Realmz gameplay semantics.
 - evidence:
   - Divinity evidence card: fixture-editor-no-op-control-set
   - Divinity land/special/dungeon fixture cards
@@ -389,8 +390,8 @@ Targets: 7
 - byte range: unlisted offsets outside current fixture/source ownership
 - classification: still unknown
 - evidence label: unknown
-- conclusion: Unclaimed Scenario support-file bytes remain unknown or preserve-only; no promotion occurred in this pass.
-- promotion policy: Keep unclaimed offsets in the preserved/unknown bucket until isolated fixtures or source/decompiler anchors classify them.
+- conclusion: Fresh compilation deterministically zero-fills unclaimed Scenario support bytes. Imported values remain unknown or preserve-only and are recovered only from the compatibility annex.
+- promotion policy: Use the neutral zero baseline for fresh projects. Keep imported unclaimed offsets in the compatibility annex until isolated fixtures or source/decompiler anchors classify them.
 - evidence:
   - docs/generated/scenario-byte-ownership.json
   - Divinity fixture-diff inventory

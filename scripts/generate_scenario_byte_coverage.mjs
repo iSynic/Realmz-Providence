@@ -34,6 +34,7 @@ const SCENARIO_STARTUP_SHELL_CORE_BYTES = 316;
 const SCENARIO_STARTUP_SHELL_MAX_BYTES = 320;
 
 const RECORD_LAYOUTS = {
+  Scenario: { recordBytes: 600, label: "Divinity editor support data", status: "mixed-writable-preserved" },
   "Data LD": { recordBytes: 16200, label: "Outdoor land tile fields", status: "decoded-writable" },
   "Data DL": { recordBytes: 16200, label: "Dungeon tile fields", status: "decoded-writable" },
   "Data DD": { recordBytes: 4000, label: "Land Action Point records", status: "decoded-writable" },
@@ -127,6 +128,18 @@ const STATUS_LABELS = {
 };
 
 const FIXTURE_GATES = {
+  Scenario: {
+    gate: "scenario-support-file-bounded-writer",
+    fixturePaths: [],
+    evidence: [
+      "src-tauri/src/realmz/scenario.rs:scenario_support_file_compiles_bounded_editor_state_without_raw_identity",
+      "src-tauri/src/exporter.rs:scenario_metadata_legacy_identity_comes_only_from_annex",
+      "src/editor/browser/binaryWriters.test.ts:compiles a neutral 600-byte support file plus bounded Divinity editor state",
+      "scripts/check_browser_scenario_package.mjs",
+      "scripts/run_authoritative_scenario_proof.mjs"
+    ],
+    partialOnly: true
+  },
   "Data ED3": {
     gate: "extra-action-point-fixed-row-storage",
     fixturePaths: [
@@ -2299,7 +2312,7 @@ function scanScenarioRoots(scenarios) {
         files.push({
           name,
           bytes: stat.size,
-          role: roleForScannedFile(name),
+          role: roleForScannedFile(name, stat.size),
           resourceTypes
         });
       }
@@ -2308,7 +2321,7 @@ function scanScenarioRoots(scenarios) {
         files.push({
           name: file.name,
           bytes: file.sourceBytes,
-          role: file.role,
+          role: roleForScannedFile(file.name, file.sourceBytes, file.role),
           resourceTypes: []
         });
       }
@@ -2332,7 +2345,7 @@ function aggregateFiles(scenarios, scanned) {
       if (NON_SCENARIO_IGNORES.has(file.name)) continue;
       addFileAggregate(byName, file.name, {
         bytes: file.sourceBytes,
-        role: file.role,
+        role: roleForScannedFile(file.name, file.sourceBytes, file.role),
         classification: file.classification,
         scenario: scenario.name
       });
@@ -2420,6 +2433,7 @@ function coverageStatusForFile(file) {
   const { name, roles } = file;
   if (NON_SCENARIO_IGNORES.has(name)) return "ignored-non-scenario";
   if (name === SCENARIO_STARTUP_SHELL_CONTAINER) return "mixed-writable-preserved";
+  if (name === "Scenario" && file.byteSizes?.size > 0 && [...file.byteSizes].every((size) => size === 600)) return "mixed-writable-preserved";
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
   if (name === "Data MD2") return "mixed-writable-preserved";
@@ -2430,7 +2444,7 @@ function coverageStatusForFile(file) {
   if (PASS_THROUGH_POLICIES[name]) return PASS_THROUGH_POLICIES[name].status;
   if (roles.has("supported-binary") && file.byteSizes.size > 0 && [...file.byteSizes].every((size) => size === 316 || size === 320)) return "decoded-writable";
   if (rustRegistry.supportedWriteFiles.has(name)) return "decoded-writable";
-  if (roles.has("resource-fork") || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._") || name === "Scenario") {
+  if (roles.has("resource-fork") || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) {
     return parsedResourceForkNames.has(name) ? "understood-resource-container" : "preserved-known";
   }
   if (rustRegistry.trackedFiles.has(name)) return "preserved-known";
@@ -2438,6 +2452,15 @@ function coverageStatusForFile(file) {
 }
 
 function byteRangesForFile(file, layout) {
+  if (file.name === "Scenario") {
+    return [
+      { start: 0, length: 23, endExclusive: 23, status: "preserved-known", field: "Divinity editor state", internal: null },
+      { start: 23, length: 1, endExclusive: 24, status: "decoded-writable", field: "String editor slot", internal: "divinityStringEditorSlot" },
+      { start: 24, length: 14, endExclusive: 38, status: "preserved-known", field: "Divinity editor state", internal: null },
+      { start: 38, length: 2, endExclusive: 40, status: "decoded-writable", field: "String editor sound", internal: "divinityStringSoundId" },
+      { start: 40, length: 560, endExclusive: 600, status: "preserved-known", field: "Divinity editor/view state", internal: null }
+    ];
+  }
   if (file.name === SCENARIO_STARTUP_SHELL_CONTAINER) {
     return [
       {
@@ -2843,7 +2866,13 @@ function evidenceForFile(name, status) {
     evidence.push("docs/format-evidence-cards/map-tile-runtime-anchors.md");
   } else if (name === "Data CS") {
     evidence.push("docs/format-evidence-cards/scenario-shell-startup-release.md");
-  } else if (name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) {
+  } else if (name === "Scenario") {
+    evidence.push("docs/generated/preserved-byte-triage.json");
+    evidence.push("src-tauri/src/realmz/scenario.rs:scenario_support_file_compiles_bounded_editor_state_without_raw_identity");
+    evidence.push("src-tauri/src/exporter.rs:scenario_metadata_legacy_identity_comes_only_from_annex");
+    evidence.push("scripts/check_browser_scenario_package.mjs");
+    evidence.push("scripts/run_authoritative_scenario_proof.mjs");
+  } else if (name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) {
     evidence.push("docs/generated/resource-byte-ownership.json");
     evidence.push("docs/format-evidence-cards/resource-fork-taxonomy-authoring.md");
   } else if (name === "Format" || name === "Icon_" || /^Custom [1-9]( Music)?$/.test(name)) {
@@ -2893,7 +2922,9 @@ function editorPolicyFor(status) {
   }
 }
 
-function roleForScannedFile(name) {
+function roleForScannedFile(name, bytes, fallbackRole) {
+  if (name === "Scenario" && bytes === 600) return "supported-binary";
+  if (fallbackRole) return fallbackRole;
   if (rustRegistry.supportedWriteFiles.has(name)) return "supported-binary";
   if (name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) return "resource-fork";
   if (rustRegistry.trackedFiles.has(name)) return "pass-through";
@@ -2902,6 +2933,7 @@ function roleForScannedFile(name) {
 
 function resourceForkTypesFor(filePath) {
   const name = path.basename(filePath);
+  if (name === "Scenario" && fs.statSync(filePath).size === 600) return [];
   if (!(name === "Scenario" || name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._"))) return [];
   try {
     const size = fs.statSync(filePath).size;

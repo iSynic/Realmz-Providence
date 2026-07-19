@@ -806,7 +806,7 @@ const scenarioShellProject = {
       sourceFile: "Scenario Support",
       divinityStringEditorSlot: 202,
       divinityStringSoundId: -303,
-      rawBytes: Array.from(sourceSupportFile),
+      rawBytes: new Array(64).fill(0xb7),
       authored: true
     },
     securityBackup: {
@@ -833,10 +833,11 @@ for (const fileName of ["Fixture Scenario", "Scenario Support", "Data CS"]) {
 }
 expect(bytesEqual(scenarioShellFiles.get("Fixture Scenario")?.slice(0, 316), scenarioShellRow(scenarioShellProject.scenario.shell)), "Authored scenario shell should compile its 316-byte core without embedded identity");
 expect(bytesEqual(scenarioShellFiles.get("Fixture Scenario")?.slice(316), sourceScenarioShell.slice(316)), "Authored scenario shell should recover its malformed tail only from the compatibility annex");
-expect(bytesEqual(scenarioShellFiles.get("Scenario Support"), scenarioSupportRow(scenarioShellProject.scenario.supportFile)), "Authored support file should preserve raw bytes and update Divinity string fields");
+expect(bytesEqual(scenarioShellFiles.get("Scenario Support"), scenarioSupportRow(scenarioShellProject.scenario.supportFile, sourceSupportFile)), "Authored support file should compile its bounded fields and recover unowned editor state only from the compatibility annex");
 expect(bytesEqual(scenarioShellFiles.get("Data CS")?.slice(0, 316), scenarioShellRow(scenarioShellProject.scenario.securityBackup)), "Authored Data CS should compile its semantic 316-byte security backup core");
 expect(bytesEqual(scenarioShellFiles.get("Data CS")?.slice(316), sourceSecurityBackup.slice(316)), "Authored Data CS should recover its malformed tail only from the compatibility annex");
-expect(scenarioShellFiles.get("Scenario Support")?.[0] === 0xa1 && scenarioShellFiles.get("Scenario Support")?.[63] === 0xa2, "Scenario support writer should preserve unrelated raw bytes");
+expect(scenarioShellFiles.get("Scenario Support")?.[0] === 0xa1 && scenarioShellFiles.get("Scenario Support")?.[63] === 0xa2, "Scenario support writer should preserve unrelated annex bytes");
+expect(scenarioShellFiles.get("Scenario Support")?.byteLength === 600, "Scenario support writer should normalize authored output to 600 bytes");
 
 const authoredItem = scenarioItemRecord(1, {
   st: 1,
@@ -1723,15 +1724,9 @@ function scenarioShellRow(shell) {
   return output;
 }
 
-function scenarioSupportRow(support) {
-  let output = support.rawBytes?.length > 0
-    ? new Uint8Array(support.rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(600);
-  if (output.byteLength < 40) {
-    const resized = new Uint8Array(40);
-    resized.set(output);
-    output = resized;
-  }
+function scenarioSupportRow(support, preservedRaw = new Uint8Array()) {
+  const output = new Uint8Array(Math.max(600, preservedRaw.byteLength));
+  output.set(preservedRaw);
   if (support.divinityStringEditorSlot != null) output[23] = support.divinityStringEditorSlot & 0xff;
   if (support.divinityStringSoundId != null) setI16(output, 38, support.divinityStringSoundId);
   return output;

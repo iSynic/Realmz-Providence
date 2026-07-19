@@ -1,8 +1,7 @@
 import type { Project } from "../types";
-import { DOOR_LEVEL_RECORD_BYTES, writeDoorFile, writeScenarioShell } from "./binaryWriters";
+import { DOOR_LEVEL_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, writeDoorFile, writeScenarioShell } from "./binaryWriters";
 import { writeResourceFork } from "./resourceFork";
 
-const SCENARIO_SUPPORT_BYTES = 600;
 const SCENARIO_ITEM_TABLE_BYTES = 200 * 100;
 const TILE_SOLIDS_BYTES = 1024;
 
@@ -31,7 +30,7 @@ export function createAuthoredScenarioCompilerBaseline(project: Project): Scenar
   const shellBytes = writeScenarioShell(shell);
   return [
     { path: shell.sourceFile.trim() || project.scenario.name, bytes: shellBytes },
-    { path: "Scenario", bytes: new Uint8Array(SCENARIO_SUPPORT_BYTES) },
+    { path: "Scenario", bytes: new Uint8Array(SCENARIO_SUPPORT_FILE_BYTES) },
     { path: "Scenario.rsrc", bytes: writeResourceFork([]) },
     { path: "Data CS", bytes: shellBytes },
     { path: "Data DD", bytes: writeDoorFile(project.triggers, "land", Math.max(1, landLevelCount)) },
@@ -44,7 +43,7 @@ export function createAuthoredScenarioCompilerBaseline(project: Project): Scenar
 
 export const AUTHORED_SCENARIO_BASELINE_SIZES = {
   doorLevel: DOOR_LEVEL_RECORD_BYTES,
-  scenarioSupport: SCENARIO_SUPPORT_BYTES,
+  scenarioSupport: SCENARIO_SUPPORT_FILE_BYTES,
   scenarioItems: SCENARIO_ITEM_TABLE_BYTES,
   tileSolids: TILE_SOLIDS_BYTES
 } as const;

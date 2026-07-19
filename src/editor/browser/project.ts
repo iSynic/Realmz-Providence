@@ -447,7 +447,7 @@ function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioSh
 }
 
 function parseScenarioSupportFile(sourceFile: string, buffer?: Uint8Array): Project["scenario"]["supportFile"] {
-  if (!buffer || buffer.byteLength < 40) return null;
+  if (!buffer || buffer.byteLength !== 600) return null;
   return {
     sourceFile,
     divinityStringEditorSlot: buffer[23],

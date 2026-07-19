@@ -1196,7 +1196,7 @@ pub struct ScenarioSupportFile {
     pub divinity_string_editor_slot: Option<i32>,
     #[serde(default)]
     pub divinity_string_sound_id: Option<i32>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,

@@ -19,6 +19,7 @@ import {
   SCENARIO_CONTACT_INFO_BYTES,
   SCENARIO_RESTRICTIONS_BYTES,
   SCENARIO_SHELL_BYTES,
+  SCENARIO_SUPPORT_FILE_BYTES,
   SHOP_RECORD_BYTES,
   SIMPLE_ENCOUNTER_RECORD_BYTES,
   SPELL_RECORD_BYTES,
@@ -284,7 +285,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
     const supportFileName = project.scenario.supportFile.sourceFile?.trim() || "Scenario";
     writes.push({
       path: supportFileName,
-      bytes: preserveRawOverlay(supportFileName, writeScenarioSupportFile(project.scenario.supportFile), annex)
+      bytes: preserveImportedScenarioSupportFile(supportFileName, writeScenarioSupportFile(project.scenario.supportFile), annex)
     });
   }
   if (project.scenario.securityBackup?.authored) {
@@ -1012,11 +1013,13 @@ function preserveZeroFilledRawCapacity(fileName: string, bytes: Uint8Array, reco
   return output;
 }
 
-function preserveRawOverlay(fileName: string, bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {
+function preserveImportedScenarioSupportFile(fileName: string, bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {
   const raw = rawSourceBytes(fileName, annex);
-  if (!raw || raw.byteLength <= bytes.byteLength) return bytes;
-  const output = new Uint8Array(raw);
-  output.set(bytes);
+  if (!raw || raw.byteLength < 40 || bytes.byteLength !== SCENARIO_SUPPORT_FILE_BYTES) return bytes;
+  const output = new Uint8Array(Math.max(raw.byteLength, bytes.byteLength));
+  output.set(raw);
+  output[23] = bytes[23];
+  output.set(bytes.slice(38, 40), 38);
   return output;
 }
 

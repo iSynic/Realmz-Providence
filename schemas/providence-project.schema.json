@@ -899,6 +899,7 @@
       "x-providence-rust-name": "ScenarioSupportFile",
       "x-providence-rust-optional": ["divinityStringEditorSlot", "divinityStringSoundId", "provenance"],
       "x-providence-rust-default": ["divinityStringEditorSlot", "divinityStringSoundId", "rawBytes", "authored", "provenance"],
+      "x-providence-rust-skip-empty": ["rawBytes"],
       "required": ["sourceFile"],
       "properties": {
         "sourceFile": { "type": "string" },

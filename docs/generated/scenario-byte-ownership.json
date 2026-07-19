@@ -39,8 +39,8 @@
     "containerCount": 57,
     "statusCounts": {
       "decoded-writable": 28,
-      "mixed-writable-preserved": 8,
-      "preserved-known": 4,
+      "mixed-writable-preserved": 9,
+      "preserved-known": 3,
       "understood-resource-container": 12,
       "runtime-cache": 1,
       "custom-media-payload": 3,
@@ -48,8 +48,8 @@
     },
     "statusObservedBytes": {
       "decoded-writable": 934350121,
-      "mixed-writable-preserved": 10600780,
-      "preserved-known": 87982,
+      "mixed-writable-preserved": 10621780,
+      "preserved-known": 66982,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
       "custom-media-payload": 4733608,
@@ -1559,30 +1559,65 @@
     },
     {
       "container": "Scenario",
-      "authorFacingName": "Resource fork",
-      "coverageStatus": "preserved-known",
-      "role": "resource-fork",
+      "authorFacingName": "Divinity editor support data",
+      "coverageStatus": "mixed-writable-preserved",
+      "role": "supported-binary",
       "observedScenarioCount": 35,
       "observedByteSizes": [
         600
       ],
-      "recordBytes": null,
+      "recordBytes": 600,
       "byteRanges": [
         {
           "start": 0,
-          "length": null,
-          "endExclusive": null,
+          "length": 23,
+          "endExclusive": 23,
           "status": "preserved-known",
-          "field": "Resource fork",
+          "field": "Divinity editor state",
+          "internal": null
+        },
+        {
+          "start": 23,
+          "length": 1,
+          "endExclusive": 24,
+          "status": "decoded-writable",
+          "field": "String editor slot",
+          "internal": "divinityStringEditorSlot"
+        },
+        {
+          "start": 24,
+          "length": 14,
+          "endExclusive": 38,
+          "status": "preserved-known",
+          "field": "Divinity editor state",
+          "internal": null
+        },
+        {
+          "start": 38,
+          "length": 2,
+          "endExclusive": 40,
+          "status": "decoded-writable",
+          "field": "String editor sound",
+          "internal": "divinityStringSoundId"
+        },
+        {
+          "start": 40,
+          "length": 560,
+          "endExclusive": 600,
+          "status": "preserved-known",
+          "field": "Divinity editor/view state",
           "internal": null
         }
       ],
       "resourceTypes": [],
       "evidence": [
-        "docs/generated/resource-byte-ownership.json",
-        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+        "docs/generated/preserved-byte-triage.json",
+        "src-tauri/src/realmz/scenario.rs:scenario_support_file_compiles_bounded_editor_state_without_raw_identity",
+        "src-tauri/src/exporter.rs:scenario_metadata_legacy_identity_comes_only_from_annex",
+        "scripts/check_browser_scenario_package.mjs",
+        "scripts/run_authoritative_scenario_proof.mjs"
       ],
-      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
     },
     {
       "container": "Scenario Startup Shell",

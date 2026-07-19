@@ -12,6 +12,7 @@ use super::record_bytes::{
 pub const SCENARIO_CONTACT_INFO_BYTES: usize = 4608;
 pub const SCENARIO_RESTRICTIONS_BYTES: usize = 320;
 pub const GLOBAL_MACRO_HOOK_BYTES: usize = 60;
+pub const SCENARIO_SUPPORT_FILE_BYTES: usize = 600;
 
 pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<ScenarioShell> {
     if buffer.len() < 316 {
@@ -73,41 +74,22 @@ pub fn parse_scenario_support_file(
 }
 
 pub fn write_scenario_support_file(support: &ScenarioSupportFile) -> Result<Vec<u8>> {
-    if !support.authored && !support.raw_bytes.is_empty() {
-        return Ok(support.raw_bytes.clone());
-    }
-    let mut output = if !support.raw_bytes.is_empty() {
-        support.raw_bytes.clone()
-    } else {
-        vec![0u8; 600]
-    };
-    if output.len() < 40 {
-        output.resize(40, 0);
-    }
-    if support.authored {
-        if let Some(slot) = support.divinity_string_editor_slot {
-            if !(0..=255).contains(&slot) {
-                return Err(ProvidenceError::message(format!(
-                    "Divinity string editor slot {slot} is outside the 0..255 byte range"
-                )));
-            }
-            let raw_slot = support.raw_bytes.get(23).map(|value| *value as i32);
-            if raw_slot != Some(slot) {
-                output[23] = slot as u8;
-            }
+    let mut output = vec![0u8; SCENARIO_SUPPORT_FILE_BYTES];
+    if let Some(slot) = support.divinity_string_editor_slot {
+        if !(0..=255).contains(&slot) {
+            return Err(ProvidenceError::message(format!(
+                "Divinity string editor slot {slot} is outside the 0..255 byte range"
+            )));
         }
-        if let Some(sound_id) = support.divinity_string_sound_id {
-            if !(i16::MIN as i32..=i16::MAX as i32).contains(&sound_id) {
-                return Err(ProvidenceError::message(format!(
-                    "Divinity string sound id {sound_id} is outside the signed 16-bit range"
-                )));
-            }
-            let raw_sound =
-                (support.raw_bytes.len() >= 40).then(|| i16_be(&support.raw_bytes, 38) as i32);
-            if raw_sound != Some(sound_id) {
-                write_i16_be(&mut output, 38, sound_id as i16);
-            }
+        output[23] = slot as u8;
+    }
+    if let Some(sound_id) = support.divinity_string_sound_id {
+        if !(i16::MIN as i32..=i16::MAX as i32).contains(&sound_id) {
+            return Err(ProvidenceError::message(format!(
+                "Divinity string sound id {sound_id} is outside the signed 16-bit range"
+            )));
         }
+        write_i16_be(&mut output, 38, sound_id as i16);
     }
     Ok(output)
 }
@@ -317,10 +299,10 @@ mod tests {
         support_input[23] = 2;
         support_input[599] = 0x5a;
         let support = parse_scenario_support_file("Scenario", &support_input).unwrap();
-        assert_eq!(
-            write_scenario_support_file(&support).unwrap(),
-            support_input
-        );
+        let support_output = write_scenario_support_file(&support).unwrap();
+        assert_eq!(support_output.len(), SCENARIO_SUPPORT_FILE_BYTES);
+        assert_eq!(support_output[23], 2);
+        assert!(support_output[24..].iter().all(|byte| *byte == 0));
 
         let mut global_input = vec![0u8; 60];
         global_input[1] = 7;
@@ -450,21 +432,26 @@ mod tests {
     }
 
     #[test]
-    fn scenario_support_file_writes_divinity_string_sound_without_touching_unrelated_bytes() {
+    fn scenario_support_file_compiles_bounded_editor_state_without_raw_identity() {
         let mut input = vec![0u8; 600];
         input[23] = 2;
         write_i16_be(&mut input, 38, 143);
+        input[429] = 0x44;
 
         let mut support = parse_scenario_support_file("Scenario", &input).unwrap();
         support.authored = true;
         support.divinity_string_editor_slot = Some(3);
         support.divinity_string_sound_id = Some(145);
+        support.raw_bytes.fill(0xa5);
 
         let output = write_scenario_support_file(&support).unwrap();
 
+        assert_eq!(output.len(), SCENARIO_SUPPORT_FILE_BYTES);
         assert_eq!(output[23], 3);
         assert_eq!(i16_be(&output, 38), 145);
-        assert_eq!(changed_offsets(&input, &output), vec![23, 39]);
+        assert!(output[..23].iter().all(|byte| *byte == 0));
+        assert!(output[24..38].iter().all(|byte| *byte == 0));
+        assert!(output[40..].iter().all(|byte| *byte == 0));
     }
 
     #[test]
