@@ -38,8 +38,8 @@ Targets: 7
 
 | Source | Status | Summary |
 | --- | --- | --- |
-| providence.scenarioByteOwnership | available | containerCount=57; statusCounts={"decoded-writable":22,"mixed-writable-preserved":13,"preserved-known":5,"understood-resource-container":12,"runtime-cache":1,"custom-media-payload":3,"ignored-non-scenario":1}; sources={"fileInventory":"docs/generated/scenario-file-inventory.json","unknownBacklog":"docs/generated/unknown-data-backlog.json","runtimeCaches":"docs/generated/runtime-cache-classification.json","resourceCoverage":"docs/generated/resource-byte-ownership.json","customLandlookCoverage":"docs/generated/custom-landlook-coverage.json","rulesCoverage":"docs/generated/rules-resource-coverage.json","dungeonCoverage":"docs/generated/dungeon-byte-ownership.json","dungeonHighBitAudit":"docs/generated/dungeon-high-bit-audit.json","fixedRecordWriterGates":"docs/generated/fixed-record-writer-gates.json","scenarioStartupShellGate":"docs/generated/scenario-startup-shell-gate.json","mapsStorageWriterGates":"docs/generated/maps-storage-writer-gates.json","encounterShopWriterGates":"docs/generated/encounter-shop-writer-gates.json","coreRecordWriterGates":"docs/generated/core-record-writer-gates.json","completenessTruth":"docs/generated/scenario-completeness-truth.json","ed3Reachability":"docs/generated/extra-ap-reachability-source-map.json","edcdCrosswalk":"docs/generated/opcode-edcd-crosswalk.json"} |
-| providence.scenarioStartupShellGate | available | writerReadiness=fixture-proven-startup-shell-core-preserve-tail; observedByteSizes=316, 320; ownedFields=0:reclevel, 4:maxlevel, 8:landlevel, 12:lookx, 16:looky, 20:codeseg1, 40:codeseg2, 60:creatorUser |
+| providence.scenarioByteOwnership | available | containerCount=57; statusCounts={"decoded-writable":28,"mixed-writable-preserved":8,"preserved-known":4,"understood-resource-container":12,"runtime-cache":1,"custom-media-payload":3,"ignored-non-scenario":1}; sources={"fileInventory":"docs/generated/scenario-file-inventory.json","unknownBacklog":"docs/generated/unknown-data-backlog.json","runtimeCaches":"docs/generated/runtime-cache-classification.json","resourceCoverage":"docs/generated/resource-byte-ownership.json","customLandlookCoverage":"docs/generated/custom-landlook-coverage.json","rulesCoverage":"docs/generated/rules-resource-coverage.json","dungeonCoverage":"docs/generated/dungeon-byte-ownership.json","dungeonHighBitAudit":"docs/generated/dungeon-high-bit-audit.json","fixedRecordWriterGates":"docs/generated/fixed-record-writer-gates.json","scenarioStartupShellGate":"docs/generated/scenario-startup-shell-gate.json","mapsStorageWriterGates":"docs/generated/maps-storage-writer-gates.json","encounterShopWriterGates":"docs/generated/encounter-shop-writer-gates.json","coreRecordWriterGates":"docs/generated/core-record-writer-gates.json","completenessTruth":"docs/generated/scenario-completeness-truth.json","ed3Reachability":"docs/generated/extra-ap-reachability-source-map.json","edcdCrosswalk":"docs/generated/opcode-edcd-crosswalk.json"} |
+| providence.scenarioStartupShellGate | available | writerReadiness=fixture-proven-authoritative-startup-shell-core; observedByteSizes=316, 320; ownedFields=0:reclevel, 4:maxlevel, 8:landlevel, 12:lookx, 16:looky, 20:codeseg1, 40:codeseg2, 60:creatorUser |
 | providence.opcodeEdcdCrosswalk | available | totalOpcodes=130; edcdBacked=70; directExtraActionPoint=1; missingProvidenceShape=[]; fieldComparisonGaps=[] |
 | providence.timedEncounterReservedFields | available | recordCount=16; findingCount=16; reservedUsagePresent=true; commonPatterns={"pattern":"11005,9994,11308,10800,12079,11568,11046,9980,10001","recordCount":14}, {"pattern":"15927,13874,14391,13365,14905,13364,12850,13357,10279","recordCount":2} |
 | providence.dungeonByteOwnership | available | cells=1579500; bitStatuses={"preserved-known":1,"decoded-writable":13,"runtime-state":2}; writerStatuses={"preserve-only":1,"writer-safe-primitive":11,"read-only-preserve":2,"route-through-action-point-workflow":1,"route-through-note-workflow":1} |
@@ -64,8 +64,8 @@ Targets: 7
 | Scenario support-file editor-state bytes | Scenario support file: offsets 437, 441 | Divinity editor UI state | correlated | String-editor controls identify these as visible Go H/V field state; no current clean payload model needs them. |
 | Scenario support-file nearby string/map state | Scenario support file: offsets 23, 30, 34, 35, 445, 449, 455 | Divinity editor UI state | correlated | Nearby bytes recur as string selector, land/special selection, dungeon tool, and editor context state. |
 | Scenario support-file nearby string/map state | Data SD2: String 4 payload bytes in the controlled fixture | authored game data | fixture-proven | The isolated String 4 edit mutated Data SD2 after editor selector and map state were normalized. |
-| Scenario publish/security/editability gate | Scenario Startup Shell: core 0..316 plus optional tail 316..320 | release/security/editability metadata | source/decompiler-supported | Providence owns startup fields and preserves raw security/contact segments; the optional tail is preserved compatibility data. |
-| Scenario publish/security/editability gate | Data CS: 316-byte security backup container | release/security/editability metadata | source/decompiler-supported | Data CS is security/editability metadata and remains preserve-only in Providence. |
+| Scenario publish/security/editability gate | Scenario Startup Shell: core 0..316 plus optional tail 316..320 | release/security/editability metadata | source/decompiler-supported | Providence compiles the complete 316-byte startup core from canonical level, position, security-segment, and creator semantics; only an imported optional tail remains compatibility data. |
+| Scenario publish/security/editability gate | Data CS: 316-byte security backup container | release/security/editability metadata | source/decompiler-supported | Providence compiles the complete 316-byte Data CS core with the scenario-shell codec; its exact Divinity publish/refusal behavior remains source/decompiler-supported rather than fixture-proven. |
 | Scenario publish/security/editability gate | Format: zero-byte marker file | preserved compatibility bytes | correlated | Format is a compatibility marker observed in scenario inventory, not an authored payload. |
 | Scenario publish/security/editability gate | Scenario/Data CS/Format candidate area: exact publish/refusal byte deltas not isolated | still unknown | unknown | Divinity has binary text for published/security/edit refusal, but this pass did not find a clean fixture showing exactly what bytes change when publishing or refusing edit. |
 | Data ED3/Data EDCD Extra AP rows | Data ED3: 40-byte rows: 0..4 ID, 4..8 level/x/y/chance, 8..24 code[8], 24..40 id[8] | authored game data | source/decompiler-supported | ED3 is the Extra AP authored script row store; Divinity fixture evidence separately proves at least the visible code-row mutation path. |
@@ -150,10 +150,10 @@ Targets: 7
 - byte range: core 0..316 plus optional tail 316..320
 - classification: release/security/editability metadata
 - evidence label: source/decompiler-supported
-- conclusion: Providence owns startup fields and preserves raw security/contact segments; the optional tail is preserved compatibility data.
-- promotion policy: Mutate only the decoded startup core through the existing writer; preserve security segments and optional tail unless a gate-specific fixture owns them.
+- conclusion: Providence compiles the complete 316-byte startup core from canonical level, position, security-segment, and creator semantics; only an imported optional tail remains compatibility data.
+- promotion policy: Compile the 316-byte core from canonical semantics. Recover untouched imported identity and any optional tail only from the compatibility annex.
 - notes:
-  - Observed writer readiness: fixture-proven-startup-shell-core-preserve-tail
+  - Observed writer readiness: fixture-proven-authoritative-startup-shell-core
 - evidence:
   - docs/generated/scenario-startup-shell-gate.json
   - docs/format-evidence-cards/scenario-shell-startup-release.md
@@ -166,8 +166,8 @@ Targets: 7
 - byte range: 316-byte security backup container
 - classification: release/security/editability metadata
 - evidence label: source/decompiler-supported
-- conclusion: Data CS is security/editability metadata and remains preserve-only in Providence.
-- promotion policy: Do not expose as authored game data; preserve until a Divinity security editor fixture proves write semantics.
+- conclusion: Providence compiles the complete 316-byte Data CS core with the scenario-shell codec; its exact Divinity publish/refusal behavior remains source/decompiler-supported rather than fixture-proven.
+- promotion policy: Expose the canonical shell fields needed to compile Data CS, while keeping untouched imported identity and any future non-core bytes in the compatibility annex. Do not claim exact publish/refusal behavior without a dedicated fixture.
 - evidence:
   - docs/generated/scenario-byte-ownership.json
   - Divinity Capstone index security/Data CS strings

@@ -40,6 +40,8 @@ export function updateScenarioShell(project: Project, changes: Extract<ProjectCo
     ...defaultScenarioShell(project),
     ...(project.scenario.shell ?? {}),
     ...changes,
+    trailingBytes: [],
+    rawBytes: undefined,
     authored: true
   };
   return { ...project, scenario: { ...project.scenario, shell } };
@@ -50,6 +52,8 @@ export function updateScenarioSecurityCodes(project: Project, command: Extract<P
     ...defaultScenarioShell(project),
     ...(project.scenario.shell ?? {}),
     ...command.shellChanges,
+    trailingBytes: [],
+    rawBytes: undefined,
     authored: true
   };
   const securityBackup = command.backupChanges
@@ -58,6 +62,8 @@ export function updateScenarioSecurityCodes(project: Project, command: Extract<P
         sourceFile: "Data CS",
         ...(project.scenario.securityBackup ?? {}),
         ...command.backupChanges,
+        trailingBytes: [],
+        rawBytes: undefined,
         authored: true
       }
     : project.scenario.securityBackup;

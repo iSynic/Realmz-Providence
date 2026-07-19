@@ -38,18 +38,18 @@
   "summary": {
     "containerCount": 57,
     "statusCounts": {
-      "decoded-writable": 27,
+      "decoded-writable": 28,
       "mixed-writable-preserved": 8,
-      "preserved-known": 5,
+      "preserved-known": 4,
       "understood-resource-container": 12,
       "runtime-cache": 1,
       "custom-media-payload": 3,
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 934339693,
+      "decoded-writable": 934350121,
       "mixed-writable-preserved": 10600780,
-      "preserved-known": 98410,
+      "preserved-known": 87982,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
       "custom-media-payload": 4733608,
@@ -1644,7 +1644,7 @@
           "length": 4,
           "endExclusive": 320,
           "status": "preserved-known",
-          "field": "Optional 320-byte tail",
+          "field": "Optional imported compatibility tail",
           "internal": "trailingBytes",
           "writerGate": "docs/generated/scenario-startup-shell-gate.json"
         }
@@ -1661,7 +1661,7 @@
     {
       "container": "Data CS",
       "authorFacingName": "Scenario security backup",
-      "coverageStatus": "preserved-known",
+      "coverageStatus": "decoded-writable",
       "role": "pass-through",
       "observedScenarioCount": 33,
       "observedByteSizes": [
@@ -1673,16 +1673,20 @@
           "start": 0,
           "length": 316,
           "endExclusive": 316,
-          "status": "preserved-known",
-          "field": "Scenario security backup",
-          "internal": "fixed record"
+          "status": "decoded-writable",
+          "field": "Scenario security backup core",
+          "internal": "reclevel/maxlevel/landlevel/lookx/looky/codeseg1/codeseg2/creatorUser",
+          "writerGate": "docs/generated/scenario-startup-shell-gate.json"
         }
       ],
       "resourceTypes": [],
       "evidence": [
+        "docs/generated/scenario-startup-shell-gate.json",
+        "docs/generated/scenario-shell-evidence.json",
+        "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
         "docs/format-evidence-cards/scenario-shell-startup-release.md"
       ],
-      "editorPolicy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Data CI",

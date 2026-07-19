@@ -798,7 +798,8 @@ const scenarioShellProject = {
       creatorUser: "Browser Creator",
       codeseg1: [11, 12, 13, 14],
       codeseg2: [21, 22, 23],
-      trailingBytes: Array.from(sourceScenarioShell.slice(316)),
+      trailingBytes: [0x11, 0x22, 0x33],
+      rawBytes: new Array(320).fill(0xa5),
       authored: true
     },
     supportFile: {
@@ -818,7 +819,8 @@ const scenarioShellProject = {
       creatorUser: "Security Backup",
       codeseg1: [31, 32, 33],
       codeseg2: [41, 42, 43],
-      trailingBytes: Array.from(sourceSecurityBackup.slice(316)),
+      trailingBytes: [0x44, 0x55, 0x66],
+      rawBytes: new Array(318).fill(0xb6),
       authored: true
     }
   }
@@ -829,9 +831,11 @@ for (const fileName of ["Fixture Scenario", "Scenario Support", "Data CS"]) {
   expect(scenarioShellUpdate.report.writtenFiles.includes(fileName), `Authored scenario shell/support should write ${fileName}`);
   expect(!scenarioShellUpdate.report.passThroughFiles.includes(fileName), `Written ${fileName} should not be reported as pass-through`);
 }
-expect(bytesEqual(scenarioShellFiles.get("Fixture Scenario"), scenarioShellRow(scenarioShellProject.scenario.shell)), "Authored scenario shell should encode startup fields and preserve tail bytes");
+expect(bytesEqual(scenarioShellFiles.get("Fixture Scenario")?.slice(0, 316), scenarioShellRow(scenarioShellProject.scenario.shell)), "Authored scenario shell should compile its 316-byte core without embedded identity");
+expect(bytesEqual(scenarioShellFiles.get("Fixture Scenario")?.slice(316), sourceScenarioShell.slice(316)), "Authored scenario shell should recover its malformed tail only from the compatibility annex");
 expect(bytesEqual(scenarioShellFiles.get("Scenario Support"), scenarioSupportRow(scenarioShellProject.scenario.supportFile)), "Authored support file should preserve raw bytes and update Divinity string fields");
-expect(bytesEqual(scenarioShellFiles.get("Data CS"), scenarioShellRow(scenarioShellProject.scenario.securityBackup)), "Authored Data CS should encode security backup as a scenario shell file");
+expect(bytesEqual(scenarioShellFiles.get("Data CS")?.slice(0, 316), scenarioShellRow(scenarioShellProject.scenario.securityBackup)), "Authored Data CS should compile its semantic 316-byte security backup core");
+expect(bytesEqual(scenarioShellFiles.get("Data CS")?.slice(316), sourceSecurityBackup.slice(316)), "Authored Data CS should recover its malformed tail only from the compatibility annex");
 expect(scenarioShellFiles.get("Scenario Support")?.[0] === 0xa1 && scenarioShellFiles.get("Scenario Support")?.[63] === 0xa2, "Scenario support writer should preserve unrelated raw bytes");
 
 const authoredItem = scenarioItemRecord(1, {
@@ -1707,8 +1711,7 @@ function setMapstatsRecord(output, tile, record) {
 }
 
 function scenarioShellRow(shell) {
-  const trailingBytes = shell.trailingBytes ?? [];
-  const output = new Uint8Array(316 + trailingBytes.length);
+  const output = new Uint8Array(316);
   setI32(output, 0, shell.recLevel);
   setI32(output, 4, shell.maxLevel);
   setI32(output, 8, shell.landLevel);
@@ -1717,7 +1720,6 @@ function scenarioShellRow(shell) {
   setFixedBytes(output, 20, 20, shell.codeseg1 ?? []);
   setFixedBytes(output, 40, 20, shell.codeseg2 ?? []);
   setPascalText(output.subarray(60, 316), shell.creatorUser ?? "");
-  output.set(trailingBytes.map((value) => value & 0xff), 316);
   return output;
 }
 

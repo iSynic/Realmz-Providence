@@ -19,7 +19,7 @@ pub fn build_semantic_schema(
         ..SemanticSchema::default()
     };
     add_sources(&mut schema, buffers, source_files);
-    metadata::add_scenario_entity(&mut schema, scenario);
+    metadata::add_scenario_entity(&mut schema, scenario, canonical_records);
     add_maps(&mut schema, &parsed.maps);
     add_random_levels(&mut schema, &parsed.random_levels);
     triggers::add_triggers(&mut schema, &parsed.triggers, &parsed.extracodes, buffers);

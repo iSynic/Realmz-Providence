@@ -212,7 +212,7 @@ function buildEntries(sourceState) {
     byteRange: "core 0..316 plus optional tail 316..320",
     classification: "release/security/editability metadata",
     evidenceLabel: "source/decompiler-supported",
-    conclusion: "Providence owns startup fields and preserves raw security/contact segments; the optional tail is preserved compatibility data.",
+    conclusion: "Providence compiles the complete 316-byte startup core from canonical level, position, security-segment, and creator semantics; only an imported optional tail remains compatibility data.",
     evidence: [
       "docs/generated/scenario-startup-shell-gate.json",
       "docs/format-evidence-cards/scenario-shell-startup-release.md",
@@ -221,7 +221,7 @@ function buildEntries(sourceState) {
     notes: [
       `Observed writer readiness: ${sourceState.providence.scenarioStartupShellGate.summary?.writerReadiness ?? "unavailable"}`
     ],
-    promotionPolicy: "Mutate only the decoded startup core through the existing writer; preserve security segments and optional tail unless a gate-specific fixture owns them."
+    promotionPolicy: "Compile the 316-byte core from canonical semantics. Recover untouched imported identity and any optional tail only from the compatibility annex."
   });
 
   add({
@@ -231,13 +231,13 @@ function buildEntries(sourceState) {
     byteRange: "316-byte security backup container",
     classification: "release/security/editability metadata",
     evidenceLabel: "source/decompiler-supported",
-    conclusion: "Data CS is security/editability metadata and remains preserve-only in Providence.",
+    conclusion: "Providence compiles the complete 316-byte Data CS core with the scenario-shell codec; its exact Divinity publish/refusal behavior remains source/decompiler-supported rather than fixture-proven.",
     evidence: [
       "docs/generated/scenario-byte-ownership.json",
       "Divinity Capstone index security/Data CS strings",
       "Realmz source/security-shell evidence"
     ],
-    promotionPolicy: "Do not expose as authored game data; preserve until a Divinity security editor fixture proves write semantics."
+    promotionPolicy: "Expose the canonical shell fields needed to compile Data CS, while keeping untouched imported identity and any future non-core bytes in the compatibility annex. Do not claim exact publish/refusal behavior without a dedicated fixture."
   });
 
   add({

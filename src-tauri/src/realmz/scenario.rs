@@ -39,17 +39,7 @@ pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<Scenario
 }
 
 pub fn write_scenario_shell(shell: &ScenarioShell) -> Result<Vec<u8>> {
-    if !shell.authored && !shell.raw_bytes.is_empty() {
-        return Ok(shell.raw_bytes.clone());
-    }
-    let mut output = if !shell.raw_bytes.is_empty() {
-        shell.raw_bytes.clone()
-    } else {
-        vec![0u8; 316 + shell.trailing_bytes.len()]
-    };
-    if output.len() < 316 + shell.trailing_bytes.len() {
-        output.resize(316 + shell.trailing_bytes.len(), 0);
-    }
+    let mut output = vec![0u8; 316];
     write_i32_be(&mut output, 0, shell.rec_level);
     write_i32_be(&mut output, 4, shell.max_level);
     write_i32_be(&mut output, 8, shell.land_level);
@@ -58,9 +48,6 @@ pub fn write_scenario_shell(shell: &ScenarioShell) -> Result<Vec<u8>> {
     copy_fixed_bytes(&mut output[20..40], &shell.codeseg1);
     copy_fixed_bytes(&mut output[40..60], &shell.codeseg2);
     encode_pascal_text(&mut output[60..316], &shell.creator_user)?;
-    if !shell.trailing_bytes.is_empty() {
-        output[316..].copy_from_slice(&shell.trailing_bytes);
-    }
     Ok(output)
 }
 
@@ -321,7 +308,10 @@ mod tests {
         shell_input[20] = 0x41;
         shell_input[319] = 0x5a;
         let shell = parse_scenario_shell("Scenario", &shell_input).unwrap();
-        assert_eq!(write_scenario_shell(&shell).unwrap(), shell_input);
+        let shell_output = write_scenario_shell(&shell).unwrap();
+        assert_eq!(shell_output.len(), 316);
+        assert_eq!(shell_output[20], 0x41);
+        assert!(shell_output[21..40].iter().all(|byte| *byte == 0));
 
         let mut support_input = vec![0u8; 600];
         support_input[23] = 2;
@@ -368,7 +358,7 @@ mod tests {
         assert_eq!(parsed_shell.creator_user, "Eric");
         assert_eq!(parsed_shell.codeseg1[19], 19);
         assert_eq!(parsed_shell.codeseg2[0], 20);
-        assert_eq!(parsed_shell.trailing_bytes, vec![9, 8, 7, 6]);
+        assert!(parsed_shell.trailing_bytes.is_empty());
 
         let contact = ScenarioContactInfo {
             scenario_name: "New Scenario".to_string(),
@@ -424,7 +414,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_startup_shell_writer_mutates_only_core_and_preserves_tail() {
+    fn scenario_startup_shell_writer_compiles_only_the_semantic_core() {
         let mut input = vec![0u8; 320];
         input[60] = 1;
         input[61] = b'A';
@@ -434,15 +424,17 @@ mod tests {
         shell.authored = true;
         shell.rec_level = 0x01020304;
         shell.creator_user = "Go".to_string();
+        shell.raw_bytes.fill(0xa5);
+        shell.trailing_bytes = vec![0x66, 0x77, 0x88, 0x99];
 
         let output = write_scenario_shell(&shell).unwrap();
 
-        assert_eq!(output.len(), input.len());
-        assert_eq!(&output[316..320], &input[316..320]);
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![0, 1, 2, 3, 60, 61, 62]
-        );
+        assert_eq!(output.len(), 316);
+        assert_eq!(&output[0..4], &[1, 2, 3, 4]);
+        assert_eq!(&output[20..40], &input[20..40]);
+        assert_eq!(&output[40..60], &input[40..60]);
+        assert_eq!(&output[60..63], &[2, b'G', b'o']);
+        assert!(output[63..].iter().all(|byte| *byte == 0));
     }
 
     #[test]

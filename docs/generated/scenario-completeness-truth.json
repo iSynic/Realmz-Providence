@@ -36,14 +36,14 @@
     },
     "writerReadinessCounts": {
       "partially-proven": 11,
-      "fixture-proven": 24,
-      "preserve-only": 8,
+      "fixture-proven": 25,
+      "preserve-only": 7,
       "not-applicable": 14
     },
     "evidenceQualityCounts": {
-      "fixture-backed": 35,
+      "fixture-backed": 36,
       "target-warning": 13,
-      "cited": 9
+      "cited": 8
     },
     "riskFlagCounts": {
       "target-package-warning": 13
@@ -59,10 +59,10 @@
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "complete",
-      "fixtureProvenContainers": 23,
+      "fixtureProvenContainers": 24,
       "partiallyProvenContainers": 12,
       "writerGatedContainers": 0,
-      "percentContainers": 61.4
+      "percentContainers": 63.2
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -1396,13 +1396,13 @@
         "docs/generated/scenario-shell-evidence.json",
         "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
         "docs/format-evidence-cards/scenario-shell-startup-release.md",
-        "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+        "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_compiles_only_the_semantic_core",
         "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip"
       ],
       "fixtureGate": {
-        "name": "scenario-startup-shell-core-preserve-tail",
+        "name": "scenario-startup-shell-authoritative-core",
         "available": true,
-        "partialOnly": true,
+        "partialOnly": false,
         "evidencePresent": true,
         "missingEvidence": [],
         "source": "scenario-startup-shell-gate"
@@ -1417,22 +1417,34 @@
     {
       "container": "Data CS",
       "authorFacingName": "Scenario security backup",
-      "coverageStatus": "preserved-known",
+      "coverageStatus": "decoded-writable",
       "observedScenarioCount": 33,
       "observedByteSizes": [
         316
       ],
       "effectiveStatuses": [
-        "preserved-known"
+        "decoded-writable"
       ],
       "evidence": [
-        "docs/format-evidence-cards/scenario-shell-startup-release.md"
+        "docs/generated/scenario-startup-shell-gate.json",
+        "docs/generated/scenario-shell-evidence.json",
+        "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
+        "docs/format-evidence-cards/scenario-shell-startup-release.md",
+        "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_compiles_only_the_semantic_core",
+        "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "scenario-startup-shell-authoritative-core",
+        "available": true,
+        "partialOnly": false,
+        "evidencePresent": true,
+        "missingEvidence": [],
+        "source": "scenario-startup-shell-gate"
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "preserve-only",
-        "evidenceQuality": "cited",
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
         "riskFlags": []
       }
     },

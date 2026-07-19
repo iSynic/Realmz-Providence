@@ -5,9 +5,9 @@ use crate::realmz::{
     shop_prefix_record_count, write_battles, write_complex_encounters, write_global_macro_hooks,
     write_messages, write_monster_descriptions, write_monster_set, write_monsters,
     write_option_labels, write_scenario_contact_info, write_scenario_items,
-    write_scenario_restrictions, write_shops, write_simple_encounters, write_thief_encounters,
-    write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES,
-    RACE_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
+    write_scenario_restrictions, write_scenario_shell, write_shops, write_simple_encounters,
+    write_thief_encounters, write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES,
+    COMPLEX_ENCOUNTER_BYTES, RACE_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
 };
 use crate::rule_compiler::{
     write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
@@ -61,6 +61,37 @@ pub(super) fn add_canonical_record_collections(
     let race_overrides = canonical_records!(parsed.race_overrides);
     let caste_overrides = canonical_records!(parsed.caste_overrides);
     let mut buffers = BTreeMap::new();
+    if let Some(shell) = &scenario.shell {
+        let mut shell = shell.clone();
+        shell.authored = true;
+        shell.raw_bytes.clear();
+        shell.trailing_bytes.clear();
+        let shell_source = shell.source_file.clone();
+        insert_canonical_buffer(
+            schema,
+            &mut buffers,
+            &shell_source,
+            "project.json#scenario/shell",
+            true,
+            write_scenario_shell(&shell),
+        );
+        let mut security_backup = scenario.security_backup.clone().unwrap_or(shell);
+        security_backup.authored = true;
+        security_backup.raw_bytes.clear();
+        security_backup.trailing_bytes.clear();
+        insert_canonical_buffer(
+            schema,
+            &mut buffers,
+            "Data CS",
+            if scenario.security_backup.is_some() {
+                "project.json#scenario/securityBackup"
+            } else {
+                "project.json#scenario/shell"
+            },
+            true,
+            write_scenario_shell(&security_backup),
+        );
+    }
     insert_canonical_buffer(
         schema,
         &mut buffers,

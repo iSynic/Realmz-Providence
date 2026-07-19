@@ -393,6 +393,12 @@ function assertCompleteNativeFolder(files, label) {
   expect(contact[0] === scenarioNameBytes.length, `${label} Data CI has the wrong scenario-name length`);
   expect(Buffer.from(contact.slice(1, 1 + scenarioNameBytes.length)).equals(scenarioNameBytes), `${label} Data CI has the wrong scenario name`);
   expect(contact.slice(1 + scenarioNameBytes.length, 256).every((byte) => byte === 0), `${label} Data CI scenario-name padding is not deterministic zero`);
+  const shell = files.get(scenarioName);
+  expect(readI32(shell, 0) === 1, `${label} scenario shell has the wrong recommended level`);
+  expect(readI32(shell, 4) === 999, `${label} scenario shell has the wrong maximum level`);
+  expect(readI32(shell, 8) === 0 && readI32(shell, 12) === 10 && readI32(shell, 16) === 12, `${label} scenario shell has the wrong authored startup position`);
+  expect(shell.slice(20).every((byte) => byte === 0), `${label} scenario shell security, creator, and padding bytes are not deterministic zero`);
+  expect(Buffer.from(files.get("Data CS")).equals(Buffer.from(shell)), `${label} Data CS should be the deterministic fresh shell security backup`);
   const globalHooks = files.get("Global");
   expect(readI16(globalHooks, 0) === 2, `${label} Global has the wrong authored start hook`);
   expect(globalHooks.slice(2).every((byte) => byte === 0), `${label} Global reserved and inactive hooks are not deterministic zero`);
@@ -574,11 +580,21 @@ function assertOwnershipShop(records, label) {
 }
 
 function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityBytes) {
+  const shell = project.scenario?.shell;
+  expect(shell, `${label} is missing scenario shell metadata`);
+  expect(shell.sourceFile === scenarioName, `${label} has the wrong scenario marker filename`);
+  expect(shell.recLevel === 1 && shell.maxLevel === 999, `${label} has the wrong scenario level bounds`);
+  expect(shell.landLevel === 0 && shell.lookX === 10 && shell.lookY === 12, `${label} has the wrong scenario startup position`);
+  expect(shell.codeseg1?.length === 20 && shell.codeseg2?.length === 20, `${label} has malformed scenario security segments`);
   const contact = project.scenario?.contactInfo;
   expect(contact, `${label} is missing scenario contact info`);
   expect(contact.scenarioName === scenarioName, `${label} has the wrong scenario contact name`);
   expect(contact.author === "Providence", `${label} has the wrong scenario contact author`);
   if (requireNoCompatibilityBytes) {
+    expect((shell.rawBytes?.length ?? 0) === 0, `${label} scenario shell contains raw compatibility bytes`);
+    expect((shell.trailingBytes?.length ?? 0) === 0, `${label} scenario shell contains a compatibility tail`);
+    expect((project.scenario?.securityBackup?.rawBytes?.length ?? 0) === 0, `${label} scenario security backup contains raw compatibility bytes`);
+    expect((project.scenario?.securityBackup?.trailingBytes?.length ?? 0) === 0, `${label} scenario security backup contains a compatibility tail`);
     expect((contact.rawBytes?.length ?? 0) === 0, `${label} scenario contact contains compatibility bytes`);
     expect((project.scenario?.restrictions?.rawBytes?.length ?? 0) === 0, `${label} scenario restrictions contain compatibility bytes`);
   }
@@ -661,6 +677,10 @@ function assertManifestNamesEqual(expectedNames, files, label) {
 function readI16(bytes, offset) {
   const value = ((bytes[offset] ?? 0) << 8) | (bytes[offset + 1] ?? 0);
   return value >= 0x8000 ? value - 0x10000 : value;
+}
+
+function readI32(bytes, offset) {
+  return (((bytes[offset] ?? 0) << 24) | ((bytes[offset + 1] ?? 0) << 16) | ((bytes[offset + 2] ?? 0) << 8) | (bytes[offset + 3] ?? 0)) | 0;
 }
 
 function fileManifest(files) {

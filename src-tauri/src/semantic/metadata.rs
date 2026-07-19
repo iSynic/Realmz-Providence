@@ -3,7 +3,11 @@ use crate::project::*;
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub(super) fn add_scenario_entity(schema: &mut SemanticSchema, scenario: &ScenarioMeta) {
+pub(super) fn add_scenario_entity(
+    schema: &mut SemanticSchema,
+    scenario: &ScenarioMeta,
+    canonical_records: bool,
+) {
     schema.entities.push(SemanticEntity {
         id: scenario.id.clone(),
         entity_type: "scenario".to_string(),
@@ -26,7 +30,7 @@ pub(super) fn add_scenario_entity(schema: &mut SemanticSchema, scenario: &Scenar
             "startup",
             "scenario-startup",
             "Scenario Startup Information",
-            "Starting level/position and recommended level metadata; exact field mapping remains legacy-source backed pending writer support.",
+            "The 316-byte marker core compiles from startup, level, security-segment, and creator semantics; imported identity and optional tails remain compatibility data.",
         ),
         (
             "restrictions",
@@ -38,7 +42,7 @@ pub(super) fn add_scenario_entity(schema: &mut SemanticSchema, scenario: &Scenar
             "registration",
             "registration-security",
             "Scenario Security / Registration Codes",
-            "Legacy registration-code workflow is preserved for inspection; export writing requires fixture-proven codec support.",
+            "Security code segments compile into the marker and Data CS cores; unchanged imported identity and optional tails remain compatibility data.",
         ),
         (
             "global-macros",
@@ -63,6 +67,53 @@ pub(super) fn add_scenario_entity(schema: &mut SemanticSchema, scenario: &Scenar
                 ("note", json!(note)),
             ]),
         });
+    }
+    if canonical_records {
+        if let Some(shell) = &scenario.shell {
+            let startup_id = format!("{}:startup", scenario.id);
+            if let Some(startup) = schema
+                .entities
+                .iter_mut()
+                .find(|entity| entity.id == startup_id)
+            {
+                startup.edit_state = SemanticEditState::Editable;
+                startup.confidence = Confidence::Confirmed;
+                startup.source = "project.json#scenario/shell".to_string();
+                startup.editable = true;
+                startup.summary = summary([
+                    ("scenarioId", json!(scenario.id)),
+                    ("sourceFile", json!(shell.source_file)),
+                    ("recLevel", json!(shell.rec_level)),
+                    ("maxLevel", json!(shell.max_level)),
+                    ("landLevel", json!(shell.land_level)),
+                    ("lookX", json!(shell.look_x)),
+                    ("lookY", json!(shell.look_y)),
+                    ("creatorUser", json!(shell.creator_user)),
+                    ("canonical", json!(true)),
+                ]);
+            }
+            let registration_id = format!("{}:registration", scenario.id);
+            if let Some(registration) = schema
+                .entities
+                .iter_mut()
+                .find(|entity| entity.id == registration_id)
+            {
+                registration.edit_state = SemanticEditState::Editable;
+                registration.confidence = Confidence::Confirmed;
+                registration.source = "project.json#scenario/shell".to_string();
+                registration.editable = true;
+                registration.summary = summary([
+                    ("scenarioId", json!(scenario.id)),
+                    ("codeseg1", json!(shell.codeseg1)),
+                    ("codeseg2", json!(shell.codeseg2)),
+                    (
+                        "securityBackupPresent",
+                        json!(scenario.security_backup.is_some()),
+                    ),
+                    ("canonical", json!(true)),
+                ]);
+            }
+        }
     }
 }
 

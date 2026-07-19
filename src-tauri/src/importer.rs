@@ -2669,6 +2669,15 @@ mod tests {
         let project_dir = temp.path().join("Canonical Supporting Records.providence");
         let mut project = create_project("Canonical Supporting Records".to_string(), &project_dir)
             .expect("project");
+        let shell = project
+            .scenario
+            .shell
+            .as_mut()
+            .expect("fresh scenario shell");
+        shell.look_x = 12;
+        shell.raw_bytes = vec![0xa5; 320];
+        shell.trailing_bytes = vec![0xde, 0xad, 0xbe, 0xef];
+        shell.authored = false;
 
         let contact = project
             .scenario
@@ -3101,6 +3110,11 @@ mod tests {
             ("Data Spell", "project.json#spellOverrides"),
             ("Data Race", "project.json#raceOverrides"),
             ("Data Caste", "project.json#casteOverrides"),
+            (
+                "Canonical Supporting Records",
+                "project.json#scenario/shell",
+            ),
+            ("Data CS", "project.json#scenario/shell"),
             ("Data CI", "project.json#scenario/contactInfo"),
             ("Data RI", "project.json#scenario/restrictions"),
             ("Global", "project.json#scenario/globalMacroHooks"),
@@ -3114,6 +3128,28 @@ mod tests {
             assert!(matches!(source.confidence, Confidence::Confirmed));
             assert_eq!(source.origin, SemanticSourceOrigin::AuthoredSource);
         }
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.entity_type == "scenario-startup")
+                .and_then(|entity| entity.summary.get("lookX")),
+            Some(&serde_json::json!(12))
+        );
+        assert!(schema.entities.iter().any(|entity| {
+            entity.entity_type == "scenario-startup"
+                && entity.editable
+                && entity.edit_state == SemanticEditState::Editable
+                && matches!(entity.confidence, Confidence::Confirmed)
+                && entity.summary.get("canonical") == Some(&serde_json::json!(true))
+        }));
+        assert!(schema.entities.iter().any(|entity| {
+            entity.entity_type == "registration-security"
+                && entity.editable
+                && entity.edit_state == SemanticEditState::Editable
+                && matches!(entity.confidence, Confidence::Confirmed)
+                && entity.summary.get("canonical") == Some(&serde_json::json!(true))
+        }));
         assert_eq!(
             schema
                 .entities

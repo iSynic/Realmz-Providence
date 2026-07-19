@@ -869,6 +869,7 @@
       "x-providence-rust-name": "ScenarioShell",
       "x-providence-rust-optional": ["provenance"],
       "x-providence-rust-default": ["codeseg1", "codeseg2", "trailingBytes", "rawBytes", "authored", "provenance"],
+      "x-providence-rust-skip-empty": ["trailingBytes", "rawBytes"],
       "required": ["sourceFile", "recLevel", "maxLevel", "landLevel", "lookX", "lookY", "creatorUser", "codeseg1", "codeseg2", "trailingBytes"],
       "properties": {
         "sourceFile": { "type": "string" },

@@ -133,10 +133,13 @@ fn compile_realmz_scenario(
         write_authored_runtime_baseline(&mut manifest, project, target)?;
     }
     if let Some(shell) = &project.scenario.shell {
-        write_if_nonempty(
+        write_scenario_singleton_for_export(
             &mut manifest,
             scenario_shell_file_name(project),
+            316,
+            shell.authored,
             write_scenario_shell(shell)?,
+            compatibility_annex,
         )?;
     }
     if let Some(support_file) = &project.scenario.support_file {
@@ -178,10 +181,13 @@ fn compile_realmz_scenario(
         )?;
     }
     if let Some(security_backup) = &project.scenario.security_backup {
-        write_if_nonempty(
+        write_scenario_singleton_for_export(
             &mut manifest,
             "Data CS",
+            316,
+            security_backup.authored,
             write_scenario_shell(security_backup)?,
+            compatibility_annex,
         )?;
     }
     write_if_nonempty(
@@ -1879,13 +1885,45 @@ mod tests {
         restrictions_source.push(0xef);
         let mut global_source = vec![0xc7; crate::realmz::GLOBAL_MACRO_HOOK_BYTES];
         global_source.push(0xfa);
+        let mut shell_source = vec![0xd8; 316];
+        shell_source.extend_from_slice(&[0xde, 0xad, 0xbe, 0xef]);
+        let mut security_source = vec![0xe9; 316];
+        security_source.extend_from_slice(&[0xba, 0xdc]);
         fs::write(raw_dir.join("Data CI"), &contact_source).unwrap();
         fs::write(raw_dir.join("Data RI"), &restrictions_source).unwrap();
         fs::write(raw_dir.join("Global"), &global_source).unwrap();
+        fs::write(raw_dir.join("Legacy Scenario"), &shell_source).unwrap();
+        fs::write(raw_dir.join("Data CS"), &security_source).unwrap();
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
 
         let contact_semantic = vec![0; crate::realmz::SCENARIO_CONTACT_INFO_BYTES];
         let restrictions_semantic = vec![0; crate::realmz::SCENARIO_RESTRICTIONS_BYTES];
+        let mut shell_semantic = vec![0; 316];
+        shell_semantic[0..4].copy_from_slice(&[0, 0, 0, 7]);
+        let mut security_semantic = vec![0; 316];
+        security_semantic[20..23].copy_from_slice(&[1, 2, 3]);
+        assert_eq!(
+            preserve_imported_singleton(
+                shell_semantic.clone(),
+                "Legacy Scenario",
+                316,
+                false,
+                Some(&annex),
+            )
+            .unwrap(),
+            shell_source
+        );
+        assert_eq!(
+            preserve_imported_singleton(
+                security_semantic.clone(),
+                "Data CS",
+                316,
+                false,
+                Some(&annex),
+            )
+            .unwrap(),
+            security_source
+        );
         assert_eq!(
             preserve_imported_singleton(
                 contact_semantic.clone(),
@@ -1943,6 +1981,26 @@ mod tests {
             restrictions_semantic.as_slice()
         );
         assert_eq!(authored_restrictions.last(), Some(&0xef));
+        let authored_shell = preserve_imported_singleton(
+            shell_semantic.clone(),
+            "Legacy Scenario",
+            316,
+            true,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(&authored_shell[..316], shell_semantic.as_slice());
+        assert_eq!(&authored_shell[316..], &[0xde, 0xad, 0xbe, 0xef]);
+        let authored_security = preserve_imported_singleton(
+            security_semantic.clone(),
+            "Data CS",
+            316,
+            true,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(&authored_security[..316], security_semantic.as_slice());
+        assert_eq!(&authored_security[316..], &[0xba, 0xdc]);
         let authored_global =
             preserve_imported_global_macro_hooks(global_semantic.clone(), true, Some(&annex))
                 .unwrap();

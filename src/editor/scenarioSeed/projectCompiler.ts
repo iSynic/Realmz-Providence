@@ -127,6 +127,8 @@ function initializeScenarioSeedProject(
                 }
               : {}),
             sourceFile: seed.scenario.name,
+            trailingBytes: [],
+            rawBytes: undefined,
             authored: true
           }
         : null,

@@ -5,8 +5,8 @@
     "scenarioRoots": 87,
     "fileFamilies": 57,
     "ignoredNonScenarioFiles": 1,
-    "editableContainers": 24,
-    "preservedContainers": 8,
+    "editableContainers": 25,
+    "preservedContainers": 7,
     "understoodResourceContainers": 12,
     "resourceCoverage": {
       "resourceForkFiles": 207,
@@ -43,14 +43,14 @@
       },
       "writerReadinessCounts": {
         "partially-proven": 11,
-        "fixture-proven": 24,
-        "preserve-only": 8,
+        "fixture-proven": 25,
+        "preserve-only": 7,
         "not-applicable": 14
       },
       "evidenceQualityCounts": {
-        "fixture-backed": 35,
+        "fixture-backed": 36,
         "target-warning": 13,
-        "cited": 9
+        "cited": 8
       },
       "riskFlagCounts": {
         "target-package-warning": 13
@@ -66,10 +66,10 @@
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "complete",
-        "fixtureProvenContainers": 23,
+        "fixtureProvenContainers": 24,
         "partiallyProvenContainers": 12,
         "writerGatedContainers": 0,
-        "percentContainers": 61.4
+        "percentContainers": 63.2
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -545,19 +545,19 @@
     {
       "container": "Data CS",
       "label": "Scenario security backup",
-      "status": "Preserved",
-      "coverageStatus": "preserved-known",
+      "status": "Editable",
+      "coverageStatus": "decoded-writable",
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "preserve-only",
-        "evidenceQuality": "cited",
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
         "riskFlags": []
       },
       "count": 33,
       "sizes": [
         316
       ],
-      "policy": "Known scenario payload preserved byte-for-byte unless explicitly imported into a supported editor workflow."
+      "policy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Format",

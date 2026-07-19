@@ -58,7 +58,7 @@ const RECORD_LAYOUTS = {
   "Data TD3": { recordBytes: 40, label: "Timed encounter records", status: "decoded-writable" },
   "Data CI": { recordBytes: 4608, label: "Contact information", status: "decoded-writable" },
   "Data RI": { recordBytes: 320, label: "Party restrictions", status: "decoded-writable" },
-  "Data CS": { recordBytes: 316, label: "Scenario security backup", status: "preserved-known" },
+  "Data CS": { recordBytes: 316, label: "Scenario security backup", status: "decoded-writable" },
   Global: { recordBytes: 60, label: "Global macro hooks", status: "decoded-writable" },
   "Data MENU": { recordBytes: 502, label: "Generated monster menu cache", status: "runtime-cache" },
   "Data Solids": { recordBytes: 1024, label: "Special tile solidity table", status: "decoded-writable" },
@@ -1076,7 +1076,7 @@ function buildScenarioStartupShellGate(aggregate) {
   const aggregateByName = new Map((aggregate.files ?? []).map((file) => [file.name, file]));
   const file = aggregateByName.get(SCENARIO_STARTUP_SHELL_CONTAINER);
   const evidence = [
-    "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_mutates_only_core_and_preserves_tail",
+    "src-tauri/src/realmz/scenario.rs:scenario_startup_shell_writer_compiles_only_the_semantic_core",
     "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
     "docs/generated/scenario-shell-evidence.json",
     "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
@@ -1090,8 +1090,8 @@ function buildScenarioStartupShellGate(aggregate) {
   const observedScenarioCount = file?.scenarioCount ?? 0;
   const available = evidencePresent && observedScenarioCount > 0;
   const writerStatus = available
-    ? "fixture-proven-startup-shell-core-preserve-tail"
-    : "evidence-pending-startup-shell-core-preserve-tail";
+    ? "fixture-proven-authoritative-startup-shell-core"
+    : "evidence-pending-authoritative-startup-shell-core";
   const sourceFileNames = file?.sourceFileNames ?? [];
   return {
     schemaVersion: 1,
@@ -1104,10 +1104,10 @@ function buildScenarioStartupShellGate(aggregate) {
       shellCodec: "src-tauri/src/realmz/scenario.rs"
     },
     policy: {
-      note: "Scenario-named 316/320 byte supported-binary files are reported as one logical startup shell container. Data CS remains its own preserved security-backup container.",
+      note: "Scenario-named 316/320 byte supported-binary files are reported as one logical startup shell container. The marker and Data CS share the deterministic 316-byte semantic codec; imported identity and optional tails remain annex-only.",
       fixtureProvenRequires: [
         "observed normalized startup shell coverage",
-        "local writer-tail test anchor present",
+        "local semantic-core writer test anchor present",
         "local shell roundtrip test anchor present"
       ],
       coreRange: `0..${SCENARIO_STARTUP_SHELL_CORE_BYTES}`,
@@ -1126,9 +1126,9 @@ function buildScenarioStartupShellGate(aggregate) {
     gate: {
       container: SCENARIO_STARTUP_SHELL_CONTAINER,
       authorFacingName: SCENARIO_STARTUP_SHELL_CONTAINER,
-      gate: "scenario-startup-shell-core-preserve-tail",
+      gate: "scenario-startup-shell-authoritative-core",
       recordBytes: SCENARIO_STARTUP_SHELL_MAX_BYTES,
-      rowKind: "316-byte startup shell core plus optional 4-byte preserved tail",
+      rowKind: "316-byte semantic startup shell core plus optional compatibility-annex tail",
       semanticExposure: "scenario-startup-shell",
       writerStatus,
       available,
@@ -1147,15 +1147,15 @@ function buildScenarioStartupShellGate(aggregate) {
         { field: "Startup land level", internal: "landlevel", offset: 8, bytes: 4, type: "i32be" },
         { field: "Startup X/view coordinate", internal: "lookx", offset: 12, bytes: 4, type: "i32be" },
         { field: "Startup Y/view coordinate", internal: "looky", offset: 16, bytes: 4, type: "i32be" },
-        { field: "Security code segment 1", internal: "codeseg1", offset: 20, bytes: 20, type: "raw-preserved-on-write" },
-        { field: "Security code segment 2", internal: "codeseg2", offset: 40, bytes: 20, type: "raw-preserved-on-write" },
-        { field: "Creator/user string", internal: "creatorUser", offset: 60, bytes: 256, type: "Str255/raw tail" }
+        { field: "Security code segment 1", internal: "codeseg1", offset: 20, bytes: 20, type: "canonical fixed bytes" },
+        { field: "Security code segment 2", internal: "codeseg2", offset: 40, bytes: 20, type: "canonical fixed bytes" },
+        { field: "Creator/user string", internal: "creatorUser", offset: 60, bytes: 256, type: "canonical Str255 with zero padding" }
       ],
       preservedRanges: [
-        { field: "Optional 320-byte tail", internal: "trailingBytes", offset: 316, bytes: 4, type: "raw-preserved" }
+        { field: "Optional imported tail", internal: "trailingBytes", offset: 316, bytes: 4, type: "compatibility-annex-only" }
       ],
-      partialOnly: true,
-      preservationPolicy: "Writers may mutate only the decoded 0..316 startup core. Imported bytes 316..320 are preserved when present and omitted for 316-byte shells."
+      partialOnly: false,
+      preservationPolicy: "Both writers compile exactly 316 bytes from canonical startup, code-segment, and creator semantics without consulting rawBytes or trailingBytes. Untouched imported identity and any optional tail are restored only from the compatibility annex."
     }
   };
 }
@@ -2033,7 +2033,7 @@ function fixtureGateForContainer(containerName) {
     const available = (gate.fixturePaths ?? []).every((fixturePath) => fs.existsSync(fixturePath));
     return { ...gate, available, source: "static" };
   }
-  if (containerName === SCENARIO_STARTUP_SHELL_CONTAINER) {
+  if (containerName === SCENARIO_STARTUP_SHELL_CONTAINER || containerName === "Data CS") {
     const generatedGate = scenarioStartupShellGate.gate;
     return {
       gate: generatedGate.gate,
@@ -2454,11 +2454,22 @@ function byteRangesForFile(file, layout) {
         length: SCENARIO_STARTUP_SHELL_MAX_BYTES - SCENARIO_STARTUP_SHELL_CORE_BYTES,
         endExclusive: SCENARIO_STARTUP_SHELL_MAX_BYTES,
         status: "preserved-known",
-        field: "Optional 320-byte tail",
+        field: "Optional imported compatibility tail",
         internal: "trailingBytes",
         writerGate: "docs/generated/scenario-startup-shell-gate.json"
       }
     ];
+  }
+  if (file.name === "Data CS") {
+    return [{
+      start: 0,
+      length: SCENARIO_STARTUP_SHELL_CORE_BYTES,
+      endExclusive: SCENARIO_STARTUP_SHELL_CORE_BYTES,
+      status: "decoded-writable",
+      field: "Scenario security backup core",
+      internal: "reclevel/maxlevel/landlevel/lookx/looky/codeseg1/codeseg2/creatorUser",
+      writerGate: "docs/generated/scenario-startup-shell-gate.json"
+    }];
   }
   if (file.name === "Layout") {
     const layoutBytes = RECORD_LAYOUTS.Layout.recordBytes;
@@ -2773,7 +2784,7 @@ function evidenceForFile(name, status) {
     evidence.push("docs/generated/dungeon-cell-bit-taxonomy.json");
     evidence.push("docs/generated/dungeon-high-bit-audit.json");
     evidence.push("docs/format-evidence-cards/dungeon-runtime-anchors.md");
-  } else if (name === SCENARIO_STARTUP_SHELL_CONTAINER) {
+  } else if (name === SCENARIO_STARTUP_SHELL_CONTAINER || name === "Data CS") {
     evidence.push("docs/generated/scenario-startup-shell-gate.json");
     evidence.push("docs/generated/scenario-shell-evidence.json");
     evidence.push("docs/format-evidence-cards/scenario-startup-runtime-anchors.md");

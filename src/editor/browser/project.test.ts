@@ -517,6 +517,13 @@ describe("browser project native manifest validation", () => {
 
   it("indexes canonical record collections without exposing sparse compiler slots", async () => {
     const project = createBrowserProject("Canonical Supporting Records");
+    project.scenario.shell = {
+      ...project.scenario.shell!,
+      lookX: 12,
+      rawBytes: new Array(320).fill(0xa5),
+      trailingBytes: [0xde, 0xad, 0xbe, 0xef],
+      authored: false
+    };
     const parsed = parseScenarioBuffers(new Map([
       ["Data NI", new Uint8Array(100)],
       ["Data TD", new Uint8Array(48)],
@@ -814,6 +821,8 @@ describe("browser project native manifest validation", () => {
       ["Data Spell", "project.json#spellOverrides"],
       ["Data Race", "project.json#raceOverrides"],
       ["Data Caste", "project.json#casteOverrides"],
+      ["Canonical Supporting Records", "project.json#scenario/shell"],
+      ["Data CS", "project.json#scenario/shell"],
       ["Data CI", "project.json#scenario/contactInfo"],
       ["Data RI", "project.json#scenario/restrictions"],
       ["Global", "project.json#scenario/globalMacroHooks"]
@@ -827,6 +836,21 @@ describe("browser project native manifest validation", () => {
     expect(semanticSchema.sources.find((source) => source.name === "Data Spell")?.bytes).toBe(105 * 30);
     expect(semanticSchema.sources.find((source) => source.name === "Data Race")?.bytes).toBe(30 * 408);
     expect(semanticSchema.sources.find((source) => source.name === "Data Caste")?.bytes).toBe(30 * 576);
+    expect(semanticSchema.sources.find((source) => source.name === "Canonical Supporting Records")?.bytes).toBe(316);
+    expect(semanticSchema.sources.find((source) => source.name === "Data CS")?.bytes).toBe(316);
+    expect(semanticSchema.entities.find((entity) => entity.type === "scenario-startup")).toMatchObject({
+      editState: "editable",
+      confidence: "confirmed",
+      editable: true,
+      source: "project.json#scenario/shell",
+      summary: { lookX: 12, canonical: true }
+    });
+    expect(semanticSchema.entities.find((entity) => entity.type === "registration-security")).toMatchObject({
+      editState: "editable",
+      confidence: "confirmed",
+      editable: true,
+      summary: { canonical: true }
+    });
     expect(semanticSchema.entities.find((entity) => entity.id === "contact:0")?.summary.scenarioName).toBe("Canonical contact");
     expect(semanticSchema.entities.find((entity) => entity.id === "restriction:0")?.summary.bannedRaces).toEqual([1, 30]);
     expect(semanticSchema.entities.find((entity) => entity.id === "global:0")?.summary.activeSlots).toEqual([

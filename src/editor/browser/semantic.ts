@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
 import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
@@ -86,7 +86,7 @@ export function buildBrowserSemanticSchema(projectParts: {
       detail: `${projectParts.sourceFiles.length.toLocaleString()} source file(s), ${projectParts.buffers.size.toLocaleString()} raw buffer(s)`,
       run: () => {
         addSources(schema, projectParts.buffers, projectParts.sourceFiles);
-        addScenarioEntity(schema, projectParts.scenario);
+        addScenarioEntity(schema, projectParts.scenario, projectParts.canonicalRecords);
       }
     },
     {
@@ -232,7 +232,7 @@ function addRecordAlignments(schema: SemanticSchema, alignments: Project["record
   }
 }
 
-function addScenarioEntity(schema: SemanticSchema, scenario: Project["scenario"]) {
+function addScenarioEntity(schema: SemanticSchema, scenario: Project["scenario"], canonicalRecords: boolean) {
   const id = `scenario:${scenario.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "untitled"}`;
   schema.entities.push({
     id,
@@ -254,7 +254,7 @@ function addScenarioEntity(schema: SemanticSchema, scenario: Project["scenario"]
       suffix: "startup",
       type: "scenario-startup",
       label: "Scenario Startup Information",
-      note: "Starting level/position and recommended level metadata; exact field mapping remains inspect-only until writer support is fixture-backed."
+      note: "The 316-byte marker core compiles from startup, level, security-segment, and creator semantics; imported identity and optional tails remain compatibility data."
     },
     {
       suffix: "restrictions",
@@ -266,7 +266,7 @@ function addScenarioEntity(schema: SemanticSchema, scenario: Project["scenario"]
       suffix: "registration",
       type: "registration-security",
       label: "Scenario Security / Registration Codes",
-      note: "Legacy registration-code workflow is preserved for inspection; export writing requires fixture-proven codec support."
+      note: "Security code segments compile into the marker and Data CS cores; unchanged imported identity and optional tails remain compatibility data."
     },
     {
       suffix: "global-macros",
@@ -291,6 +291,40 @@ function addScenarioEntity(schema: SemanticSchema, scenario: Project["scenario"]
         note: section.note
       }
     });
+  }
+  if (canonicalRecords && scenario.shell) {
+    const startup = schema.entities.find((entity) => entity.id === `${id}:startup`);
+    if (startup) {
+      startup.editState = "editable";
+      startup.confidence = "confirmed";
+      startup.source = "project.json#scenario/shell";
+      startup.editable = true;
+      startup.summary = {
+        scenarioId: id,
+        sourceFile: scenario.shell.sourceFile,
+        recLevel: scenario.shell.recLevel,
+        maxLevel: scenario.shell.maxLevel,
+        landLevel: scenario.shell.landLevel,
+        lookX: scenario.shell.lookX,
+        lookY: scenario.shell.lookY,
+        creatorUser: scenario.shell.creatorUser,
+        canonical: true
+      };
+    }
+    const registration = schema.entities.find((entity) => entity.id === `${id}:registration`);
+    if (registration) {
+      registration.editState = "editable";
+      registration.confidence = "confirmed";
+      registration.source = "project.json#scenario/shell";
+      registration.editable = true;
+      registration.summary = {
+        scenarioId: id,
+        codeseg1: scenario.shell.codeseg1,
+        codeseg2: scenario.shell.codeseg2,
+        securityBackupPresent: Boolean(scenario.securityBackup),
+        canonical: true
+      };
+    }
   }
 }
 
@@ -328,6 +362,19 @@ function addCanonicalRecordCollections(
 ) {
   const buffers = new Map<string, Uint8Array>();
   const sources: Array<{ name: string; path: string; ids: Set<number> }> = [];
+  const shell = projectParts.scenario.shell;
+  if (shell) {
+    addCanonicalSingletonBuffer(schema, buffers, sources, shell.sourceFile.trim() || projectParts.scenario.name, "project.json#scenario/shell", shell, writeScenarioShell);
+    addCanonicalSingletonBuffer(
+      schema,
+      buffers,
+      sources,
+      "Data CS",
+      projectParts.scenario.securityBackup ? "project.json#scenario/securityBackup" : "project.json#scenario/shell",
+      projectParts.scenario.securityBackup ?? shell,
+      writeScenarioShell
+    );
+  }
   addCanonicalRecordBuffer(schema, buffers, sources, "Data SD2", "project.json#messages", projectParts.messages, writeMessages);
   addCanonicalRecordBuffer(schema, buffers, sources, "Data OD", "project.json#optionLabels", projectParts.optionLabels, writeOptionLabels);
   addCanonicalRecordBuffer(schema, buffers, sources, "Data DES", "project.json#monsterDescriptions", projectParts.monsterDescriptions, writeMonsterDescriptions);

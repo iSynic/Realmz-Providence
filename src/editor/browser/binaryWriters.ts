@@ -422,8 +422,7 @@ export function writeCustomLandlookMetadata(metadata: CustomLandlookMetadata) {
 }
 
 export function writeScenarioShell(shell: ScenarioShell) {
-  const trailingBytes = shell.trailingBytes ?? [];
-  const output = new Uint8Array(SCENARIO_SHELL_BYTES + trailingBytes.length);
+  const output = new Uint8Array(SCENARIO_SHELL_BYTES);
   writeI32(output, 0, shell.recLevel);
   writeI32(output, 4, shell.maxLevel);
   writeI32(output, 8, shell.landLevel);
@@ -432,9 +431,6 @@ export function writeScenarioShell(shell: ScenarioShell) {
   copyFixedBytes(output.subarray(20, 40), shell.codeseg1 ?? []);
   copyFixedBytes(output.subarray(40, 60), shell.codeseg2 ?? []);
   encodePascalText(output.subarray(60, SCENARIO_SHELL_BYTES), shell.creatorUser ?? "");
-  for (let index = 0; index < trailingBytes.length; index += 1) {
-    output[SCENARIO_SHELL_BYTES + index] = trailingBytes[index] & 0xff;
-  }
   return output;
 }
 

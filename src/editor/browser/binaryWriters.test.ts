@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import { emptyCasteOverride, emptyRaceOverride, emptySpellOverride } from "../projectCommands/scenarioRulesCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -71,6 +71,36 @@ describe("browser rule-override writers", () => {
 });
 
 describe("browser scenario metadata writers", () => {
+  it("compiles the 316-byte scenario shell from semantics only", () => {
+    const shell = {
+      sourceFile: "Canonical Shell",
+      recLevel: 7,
+      maxLevel: 40,
+      landLevel: 3,
+      lookX: -12,
+      lookY: 91,
+      creatorUser: "Providence",
+      codeseg1: [11, 12, 13],
+      codeseg2: [21, 22, 23],
+      trailingBytes: [0xde, 0xad, 0xbe, 0xef],
+      rawBytes: new Array(320).fill(0xa5),
+      authored: false
+    };
+
+    const output = writeScenarioShell(shell);
+
+    expect(output).toHaveLength(316);
+    expect(i32(output, 0)).toBe(7);
+    expect(i32(output, 4)).toBe(40);
+    expect(i32(output, 8)).toBe(3);
+    expect(i32(output, 12)).toBe(-12);
+    expect(i32(output, 16)).toBe(91);
+    expect(Array.from(output.slice(20, 40))).toEqual([11, 12, 13, ...new Array(17).fill(0)]);
+    expect(Array.from(output.slice(40, 60))).toEqual([21, 22, 23, ...new Array(17).fill(0)]);
+    expect(Array.from(output.slice(60, 72))).toEqual([10, ...Array.from(new TextEncoder().encode("Providence")), 0]);
+    expect(output.slice(71).every((byte) => byte === 0)).toBe(true);
+  });
+
   it("compile contact and restriction semantics without embedded raw identity", () => {
     const contact = {
       scenarioName: "Canonical contact",

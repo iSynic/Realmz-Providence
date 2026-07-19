@@ -10,6 +10,12 @@ import type { ProjectCommand } from "./types";
 describe("project command facade", () => {
   it("drops imported scenario metadata bytes when semantics are authored", () => {
     const project = createBrowserProject("Semantic scenario metadata");
+    project.scenario.shell = {
+      ...project.scenario.shell!,
+      rawBytes: new Array(320).fill(0xa5),
+      trailingBytes: [0xde, 0xad, 0xbe, 0xef],
+      authored: false
+    };
     project.scenario.contactInfo = {
       ...project.scenario.contactInfo!,
       rawBytes: new Array(4608).fill(0xa5),
@@ -34,8 +40,26 @@ describe("project command facade", () => {
       rawBytes: new Array(60).fill(0xa5),
       authored: false
     };
+    project.scenario.securityBackup = {
+      ...project.scenario.shell,
+      sourceFile: "Data CS",
+      rawBytes: new Array(318).fill(0xb6),
+      trailingBytes: [0xba, 0xdc],
+      authored: false
+    };
 
-    const contact = applyProjectCommand(project, {
+    const shell = applyProjectCommand(project, {
+      kind: "updateScenarioShell",
+      label: "Author scenario shell",
+      changes: { lookX: 12 }
+    });
+    const security = applyProjectCommand(shell, {
+      kind: "updateScenarioSecurityCodes",
+      label: "Author scenario security",
+      shellChanges: { codeseg1: [1, 2, 3] },
+      backupChanges: { codeseg1: [4, 5, 6] }
+    });
+    const contact = applyProjectCommand(security, {
       kind: "updateScenarioContactInfo",
       label: "Author contact info",
       changes: { author: "Providence" }
@@ -52,6 +76,12 @@ describe("project command facade", () => {
       door: 9
     });
 
+    expect(globalHooks.scenario.shell).toMatchObject({ lookX: 12, codeseg1: [1, 2, 3], authored: true });
+    expect(globalHooks.scenario.shell?.rawBytes).toBeUndefined();
+    expect(globalHooks.scenario.shell?.trailingBytes).toEqual([]);
+    expect(globalHooks.scenario.securityBackup).toMatchObject({ codeseg1: [4, 5, 6], authored: true });
+    expect(globalHooks.scenario.securityBackup?.rawBytes).toBeUndefined();
+    expect(globalHooks.scenario.securityBackup?.trailingBytes).toEqual([]);
     expect(globalHooks.scenario.contactInfo).toMatchObject({ author: "Providence", authored: true });
     expect(globalHooks.scenario.contactInfo?.rawBytes).toBeUndefined();
     expect(globalHooks.scenario.restrictions).toMatchObject({ maxPartyCharacters: 4, authored: true });
