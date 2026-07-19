@@ -53,13 +53,15 @@ const scenarioDefinitions = scenarioDefinitionNames.map((name) => schema.$defs?.
 const scenarioMetaSchema = schema.$defs?.scenarioMeta ?? {};
 const confidenceSchema = schema.$defs?.confidence ?? {};
 const provenanceSchema = schema.$defs?.provenance ?? {};
-const mapDefinitionNames = ["levelType", "renderMode", "mapRender", "mapEntity", "landLayout"];
+const mapDefinitionNames = ["levelType", "renderMode", "mapRender", "mapEntity", "landLayout", "randomRect", "randomLevel"];
 const mapDefinitions = mapDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const levelTypeSchema = schema.$defs?.levelType ?? {};
 const renderModeSchema = schema.$defs?.renderMode ?? {};
 const mapRenderSchema = schema.$defs?.mapRender ?? {};
 const mapEntitySchema = schema.$defs?.mapEntity ?? {};
 const landLayoutSchema = schema.$defs?.landLayout ?? {};
+const randomRectSchema = schema.$defs?.randomRect ?? {};
+const randomLevelSchema = schema.$defs?.randomLevel ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -86,6 +88,7 @@ expectSameArray(provenanceSchema.required ?? [], Object.keys(provenanceSchema.pr
 expect(provenanceSchema.properties?.confidence?.$ref === "#/$defs/confidence", "provenance confidence must reference the canonical confidence enum");
 expect(schema.properties?.maps?.items?.$ref === "#/$defs/mapEntity", "project maps must contain canonical map DTOs");
 expect(schema.properties?.landLayout?.oneOf?.[0]?.$ref === "#/$defs/landLayout", "project landLayout must reference the canonical layout DTO");
+expect(schema.properties?.randomLevels?.items?.$ref === "#/$defs/randomLevel", "project randomLevels must contain canonical random-level DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
 expectSameArray(renderModeSchema.enum ?? [], ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"], "Map render-mode vocabulary");
 for (const [index, definition] of mapDefinitions.entries()) {
@@ -101,9 +104,23 @@ expect(mapEntitySchema.properties?.levelType?.$ref === "#/$defs/levelType", "map
 expect(mapEntitySchema.properties?.render?.$ref === "#/$defs/mapRender", "map render must reference canonical render metadata");
 expect(mapEntitySchema.properties?.provenance?.$ref === "#/$defs/provenance", "map provenance must reference canonical provenance");
 expect(mapRenderSchema.properties?.mode?.$ref === "#/$defs/renderMode", "map render mode must reference the canonical mode enum");
-expectSameSet(Object.entries(landLayoutSchema.properties ?? {})
-  .filter(([, property]) => property["x-providence-compatibility-only"] === true)
-  .map(([field]) => `LandLayout.${field}`), ["LandLayout.trailingBytes"], "Map compatibility-only field inventory");
+expectSameArray(Object.keys(randomRectSchema.properties ?? {}), ["rectIndex", "top", "left", "bottom", "right", "percent", "battleRange", "randomDoors", "randomDoorPercent", "only", "option", "sound", "text"], "Random rectangle field inventory");
+expectSameArray(randomRectSchema.required ?? [], Object.keys(randomRectSchema.properties ?? {}), "Random rectangle required field inventory");
+expectSameArray(Object.keys(randomLevelSchema.properties ?? {}), ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "rawValues", "provenance"], "Random-level field inventory");
+expectSameArray(randomLevelSchema.required ?? [], ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "provenance"], "Random-level authored field inventory");
+expectSameArray(randomLevelSchema["x-providence-rust-skip-empty"] ?? [], ["rawValues"], "Random-level omitted empty compatibility inventory");
+expect(randomLevelSchema.properties?.levelType?.$ref === "#/$defs/levelType", "random-level levelType must reference the canonical level enum");
+expect(randomLevelSchema.properties?.rects?.items?.$ref === "#/$defs/randomRect", "random-level rects must contain canonical rectangle DTOs");
+expect(randomLevelSchema.properties?.provenance?.$ref === "#/$defs/provenance", "random-level provenance must reference canonical provenance");
+for (const [field, length] of [["battleRange", 2], ["randomDoors", 3], ["randomDoorPercent", 3]]) {
+  expect(randomRectSchema.properties?.[field]?.minItems === length && randomRectSchema.properties?.[field]?.maxItems === length, `${field} must retain its fixed Realmz slot count`);
+}
+const mapCompatibilityFields = mapDefinitions.flatMap((definition) =>
+  Object.entries(definition.properties ?? {})
+    .filter(([, property]) => property["x-providence-compatibility-only"] === true)
+    .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
+);
+expectSameSet(mapCompatibilityFields, ["LandLayout.trailingBytes", "RandomLevel.rawValues"], "Map compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -153,6 +170,8 @@ for (const alias of [
   "export type MapRender = ProvidenceMapRender;",
   "export type MapEntity = ProvidenceMapEntity;",
   "export type LandLayout = ProvidenceLandLayout;",
+  "export type RandomRect = ProvidenceRandomRect;",
+  "export type RandomLevel = ProvidenceRandomLevel;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -168,7 +187,7 @@ expect(!typesSource.includes('export type ProjectOrigin = "authored"'), "types.t
 expect(!typesSource.includes("export type ProjectSource = {"), "types.ts must not handwrite ProjectSource");
 expect(!typesSource.includes("export type SourceFile = {"), "types.ts must not handwrite SourceFile");
 expect(!typesSource.includes("export type Provenance = {"), "types.ts must not handwrite Provenance");
-for (const mapType of ["MapRender", "MapEntity", "LandLayout"]) {
+for (const mapType of ["MapRender", "MapEntity", "LandLayout", "RandomRect", "RandomLevel"]) {
   expect(!typesSource.includes(`export type ${mapType} = {`), `types.ts must not handwrite ${mapType}`);
 }
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
@@ -187,6 +206,8 @@ expectSameSet(rustGeneratedReExports, [
   "MapRender",
   "ProjectOrigin",
   "Provenance",
+  "RandomLevel",
+  "RandomRect",
   "RenderMode",
   "ScenarioContactInfo",
   "ScenarioGlobalMacroHooks",
@@ -207,6 +228,8 @@ expect(!rustProjectSource.includes("pub enum Confidence {"), "project.rs must no
 expect(!rustProjectSource.includes("pub struct MapEntity {"), "project.rs must not handwrite MapEntity");
 expect(!rustProjectSource.includes("pub struct MapRender {"), "project.rs must not handwrite MapRender");
 expect(!rustProjectSource.includes("pub struct LandLayout {"), "project.rs must not handwrite LandLayout");
+expect(!rustProjectSource.includes("pub struct RandomRect {"), "project.rs must not handwrite RandomRect");
+expect(!rustProjectSource.includes("pub struct RandomLevel {"), "project.rs must not handwrite RandomLevel");
 expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
 expect(!rustProjectSource.includes("pub enum RenderMode {"), "project.rs must not handwrite RenderMode");
 expect(rustProjectSource.includes("impl LevelType {"), "project.rs must retain handwritten LevelType behavior methods");
@@ -312,6 +335,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_SCENARIO_FIELDS = ${JSON.stringify(Object.keys(scenarioMetaSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MAP_FIELDS = ${JSON.stringify(Object.keys(mapEntitySchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_LAND_LAYOUT_FIELDS = ${JSON.stringify(Object.keys(landLayoutSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_RANDOM_LEVEL_FIELDS = ${JSON.stringify(Object.keys(randomLevelSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
     renderTypeScriptEnum(confidence) + `\n` +
@@ -351,6 +375,8 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_MAP_FIELDS: &[&str] = &[\n${renderArray(Object.keys(mapEntitySchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[\n${renderArray(Object.keys(landLayoutSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[\n${renderArray(Object.keys(randomLevelSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
     renderRustEnum(confidence) + `\n` +
@@ -416,6 +442,7 @@ function renderRustStruct(definition) {
   ]);
   const defaultFields = new Set(definition["x-providence-rust-default"] ?? []);
   const skipNoneFields = new Set(definition["x-providence-rust-skip-none"] ?? []);
+  const skipEmptyFields = new Set(definition["x-providence-rust-skip-empty"] ?? []);
   const fields = Object.entries(definition.properties ?? {}).flatMap(([field, property]) => {
     const rustType = rustPropertyType(property);
     const lines = [];
@@ -424,7 +451,9 @@ function renderRustStruct(definition) {
         ? '    #[serde(default, skip_serializing_if = "Option::is_none")]'
         : "    #[serde(default)]");
     } else if (defaultFields.has(field)) {
-      lines.push("    #[serde(default)]");
+      lines.push(skipEmptyFields.has(field)
+        ? '    #[serde(default, skip_serializing_if = "Vec::is_empty")]'
+        : "    #[serde(default)]");
     }
     lines.push(`    pub ${camelToSnake(field)}: ${optionalFields.has(field) ? `Option<${rustType}>` : rustType},`);
     return lines;

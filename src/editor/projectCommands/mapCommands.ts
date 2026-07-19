@@ -105,7 +105,7 @@ export function updateDungeonCellFlags(project: Project, command: Extract<Projec
 export function createMap(project: Project, command: Extract<ProjectCommand, { kind: "createMap" }>) {
   const index = nextMapIndex(project, command.levelType);
   const map = authoredMap(command.levelType, index, null);
-  const randomLevel = syncMapRenderForRandomLevel(authoredRandomLevel(command.levelType, index, map.render.landlook ?? -1));
+  const randomLevel = authoredRandomLevel(command.levelType, index, map.render.landlook ?? -1);
   return {
     ...project,
     maps: [...project.maps, map],
@@ -119,7 +119,7 @@ export function duplicateMap(project: Project, command: Extract<ProjectCommand, 
   if (!source) return project;
   const index = nextMapIndex(project, source.levelType);
   const map = authoredMap(source.levelType, index, source);
-  const randomLevel = syncMapRenderForRandomLevel(authoredRandomLevel(source.levelType, index, source.render.landlook ?? defaultLandlook(source.levelType)));
+  const randomLevel = authoredRandomLevel(source.levelType, index, source.render.landlook ?? defaultLandlook(source.levelType));
   return {
     ...project,
     maps: [...project.maps, map],
@@ -149,7 +149,7 @@ export function updateRandomLevelSettings(
     ...nextLevel,
     ...command.fields
   };
-  return replaceRandomLevel(project, syncMapRenderForRandomLevel(level));
+  return replaceRandomLevel(project, level);
 }
 
 export function updateMapRecord(project: Project, id: number, changes: Extract<ProjectCommand, { kind: "updateMapRecord" }>["changes"]) {
@@ -528,7 +528,7 @@ function assignMapToCustomLandlook(project: Project, mapId: string, previousLand
   if (!matchedMap) return project;
   const randomLevels = (project.randomLevels ?? []).map((level) => {
     if (level.levelType !== matchedMap?.levelType || level.levelIndex !== matchedMap.index) return level;
-    return syncMapRenderForRandomLevel({ ...level, landlook: targetLandlook });
+    return { ...level, landlook: targetLandlook };
   });
   return { ...project, maps, randomLevels };
 }
@@ -691,10 +691,10 @@ export function createRandomRect(project: Project, command: Extract<ProjectComma
   const rectIndex = command.rect.rectIndex ?? nextRandomRectIndex(level);
   if (rectIndex == null || !randomRectIndexInRange(rectIndex)) return project;
   const rect = normalizeRandomRect({ ...command.rect, rectIndex });
-  const nextLevel = writeRandomRectToRaw({
+  const nextLevel = {
     ...level,
     rects: upsertRandomRect(level.rects, rect)
-  }, rect);
+  };
   return replaceRandomLevel(project, nextLevel);
 }
 
@@ -703,10 +703,10 @@ export function updateRandomRect(project: Project, command: Extract<ProjectComma
   const level = ensureRandomLevel(project, command.levelType, command.levelIndex);
   const existing = level.rects.find((rect) => rect.rectIndex === command.rectIndex) ?? defaultRandomRect(command.rectIndex);
   const rect = normalizeRandomRect({ ...existing, ...command.fields, rectIndex: command.rectIndex });
-  const nextLevel = writeRandomRectToRaw({
+  const nextLevel = {
     ...level,
     rects: upsertRandomRect(level.rects, rect)
-  }, rect);
+  };
   return replaceRandomLevel(project, nextLevel);
 }
 
@@ -714,7 +714,7 @@ export function clearRandomRect(project: Project, command: Extract<ProjectComman
   if (!randomRectIndexInRange(command.rectIndex)) return project;
   const level = ensureRandomLevel(project, command.levelType, command.levelIndex);
   const cleared = defaultRandomRect(command.rectIndex);
-  const nextLevel = writeRandomRectToRaw({
+  const nextLevel = clearRandomRectCompatibilityBytes({
     ...level,
     rects: level.rects.filter((rect) => rect.rectIndex !== command.rectIndex)
   }, cleared);
@@ -733,7 +733,6 @@ function ensureRandomLevel(project: Project, levelType: RandomLevel["levelType"]
     isDark: false,
     useLos: false,
     rects: [],
-    rawValues: new Array(RANDOM_LEVEL_WORDS).fill(0),
     provenance: authoredProvenance(levelType === "land" ? "Data RD" : "Data RDD", levelIndex, levelIndex * RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES)
   };
 }
@@ -839,7 +838,6 @@ function authoredRandomLevel(levelType: LevelType, levelIndex: number, landlook:
     isDark: false,
     useLos: false,
     rects: [],
-    rawValues: new Array(RANDOM_LEVEL_WORDS).fill(0),
     provenance: authoredProvenance(levelType === "land" ? "Data RD" : "Data RDD", levelIndex, levelIndex * RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES)
   };
 }
@@ -934,14 +932,6 @@ function landlookBaseTile(landlook: number) {
   return ({ 0: 156, 3: 155, 4: 111, 5: 191, 6: 156, 7: 156, 8: 156, 9: 155, 10: 155 } as Record<number, number | null>)[landlook] ?? null;
 }
 
-function syncMapRenderForRandomLevel(level: RandomLevel) {
-  const bytes = randomLevelRawBytes(level);
-  bytes[520] = level.landlook & 0xff;
-  bytes[521] = level.isDark ? 1 : 0;
-  bytes[522] = level.useLos ? 1 : 0;
-  return { ...level, rawValues: rawBytesToWords(bytes) };
-}
-
 function upsertRandomRect(rects: RandomRect[], rect: RandomRect) {
   const next = rects.filter((candidate) => candidate.rectIndex !== rect.rectIndex);
   next.push(rect);
@@ -997,7 +987,8 @@ function normalizeRandomRect(rect: RandomRect): RandomRect {
   };
 }
 
-function writeRandomRectToRaw(level: RandomLevel, rect: RandomRect) {
+function clearRandomRectCompatibilityBytes(level: RandomLevel, rect: RandomRect) {
+  if (level.rawValues?.length !== RANDOM_LEVEL_WORDS) return level;
   const bytes = randomLevelRawBytes(level);
   const r = rect.rectIndex;
   writeI16(bytes, r * 8, rect.top);

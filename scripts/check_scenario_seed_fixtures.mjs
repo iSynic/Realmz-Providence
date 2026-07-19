@@ -178,7 +178,7 @@ function checkMapOperations(createProjectFromScenarioSeed) {
   expect(tileAt(castleTiles, 30, 30) === 187 && tileAt(castleTiles, 31, 30) === 188 && tileAt(castleTiles, 30, 31) === 190 && tileAt(castleTiles, 31, 31) === 191, "named stamps should place the audited north-wall open door composition");
   const castleRandomLevel = result.project.randomLevels.find((level) => level.levelType === "land" && level.levelIndex === 1);
   expect(castleRandomLevel?.landlook === 4 && castleRandomLevel.isDark && castleRandomLevel.useLos, "Castle seed settings should populate decoded random-level metadata");
-  expect(castleRandomLevel?.rawValues[260] === 0x0401 && castleRandomLevel.rawValues[261] === 0x0100, "Castle seed settings should encode Realmz Data RD landlook, darkness, and LOS bytes");
+  expect(castleRandomLevel?.rawValues == null, "Castle seed settings should remain semantic until the native Data RD compiler runs");
   const dungeonRandomLevel = result.project.randomLevels.find((level) => level.levelType === "dungeon" && level.levelIndex === 0);
   expect(dungeonRandomLevel?.source === "Data RDD" && dungeonRandomLevel.provenance.sourceFile === "Data RDD", "Dungeon seed metadata should use the Data RDD runtime source");
   const semanticLandlooks = [

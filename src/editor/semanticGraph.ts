@@ -14,6 +14,7 @@ import { mapEntityId, triggerEntityId } from "./utils";
 import { semanticEntityById, semanticLinkById, semanticLinksForId, semanticRecordById } from "./semanticIndex";
 import { ed3DiagnosticForTrigger, ed3ReachabilityFor as effectiveEd3ReachabilityFor } from "./scriptDiagnostics";
 
+const RANDOM_LEVEL_BYTES = 644;
 const MAP_LINK_KINDS = new Set(["located_on", "contains_region", "describes_map", "configures_map", "names_map_level"]);
 const TEXT_LINK_KINDS = new Set(["shows_message", "uses_resource", "has_text_resource", "has_style_resource", "has_name_evidence"]);
 const BATTLE_LINK_KINDS = new Set(["starts_battle", "spawns_battle", "uses_monster", "mutates_encounter_state"]);
@@ -187,17 +188,23 @@ export function semanticRandomLevelForMap(project: Project | null, map: MapEntit
     .map((link) => recordById(project, link.from))
     .find(Boolean);
   if (regions.length === 0 && !configRecord) return fallback;
+  const source = map.levelType === "land" ? "Data RD" : "Data RDD";
   return {
     id: `${map.levelType}-${map.index}`,
-    source: map.levelType === "land" ? "Data RD" : "Data RDD",
+    source,
     levelType: map.levelType,
     levelIndex: map.index,
     landlook: numberRecordSummary(configRecord, "landlook") ?? map.render.landlook ?? -1,
     isDark: booleanRecordSummary(configRecord, "isDark") ?? false,
     useLos: booleanRecordSummary(configRecord, "useLos") ?? false,
     rects: regions.length > 0 ? regions.map(randomRectFromEntity) : [],
-    rawValues: undefined,
-    provenance: undefined
+    provenance: {
+      sourceFile: source,
+      recordIndex: map.index,
+      byteOffset: map.index * RANDOM_LEVEL_BYTES,
+      byteLength: RANDOM_LEVEL_BYTES,
+      confidence: "inferred"
+    }
   };
 }
 

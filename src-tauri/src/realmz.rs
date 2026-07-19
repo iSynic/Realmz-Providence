@@ -6,11 +6,11 @@ mod economy;
 mod encounters;
 mod landlooks;
 mod maps;
+mod random_levels;
 mod record_bytes;
 mod rules;
 mod scenario;
 mod text_records;
-
 pub use action_points::{
     parse_door_file, parse_extracodes, parse_macro_file, write_door_file,
     write_door_file_for_levels, write_extracodes, write_macro_file, DOORS_PER_LEVEL, DOOR_BYTES,
@@ -40,11 +40,11 @@ pub use landlooks::{
     LANDLOOK_RANGE_SLOT_BYTES, LANDLOOK_RANGE_TAIL_BYTES, MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES,
 };
 pub use maps::{
-    parse_fields, parse_land_layout, parse_map_records, parse_random_levels, write_fields,
-    write_land_layout, write_map_records, write_random_levels, FIELD_BYTES, LAND_LAYOUT_BYTES,
-    LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS, MAP_RECORD_BYTES, MAP_RECORD_MARKERS,
-    MAP_RECORD_MARKER_BYTES, RANDLEVEL_BYTES,
+    parse_fields, parse_land_layout, parse_map_records, write_fields, write_land_layout,
+    write_map_records, FIELD_BYTES, LAND_LAYOUT_BYTES, LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
+    MAP_RECORD_BYTES, MAP_RECORD_MARKERS, MAP_RECORD_MARKER_BYTES,
 };
+pub use random_levels::{parse_random_levels, write_random_levels, RANDLEVEL_BYTES};
 pub use rules::{
     parse_caste_overrides, parse_race_overrides, parse_spell_overrides, write_caste_overrides,
     write_race_overrides, write_spell_overrides, CASTE_BYTES, CASTE_OVERRIDE_RECORDS, RACE_BYTES,

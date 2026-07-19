@@ -141,8 +141,10 @@ function hasOnlyStarterLandRandomLevel(project: Project) {
     level.isDark === false &&
     level.useLos === false &&
     level.rects.length === 0 &&
-    (level.rawValues?.length ?? 0) === 644 / 2 &&
-    (level.rawValues ?? []).every((value) => value === 0);
+    ((level.rawValues?.length ?? 0) === 0 || (
+      level.rawValues?.length === 644 / 2 &&
+      level.rawValues.every((value) => value === 0)
+    ));
 }
 
 export function isSemanticMappingPending(project: Project | null) {

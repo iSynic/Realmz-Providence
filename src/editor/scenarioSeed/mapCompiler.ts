@@ -139,9 +139,6 @@ function buildRandomLevel(seed: ScenarioSeedMap, fallbackIndex: number): RandomL
   const landlook = seed.landlook ?? 0;
   const isDark = seed.isDark ?? false;
   const useLos = seed.useLos ?? false;
-  const rawValues = new Array(RANDOM_LEVEL_BYTES / 2).fill(0);
-  rawValues[260] = signedWord(((landlook & 0xff) << 8) | (isDark ? 1 : 0));
-  rawValues[261] = useLos ? 0x0100 : 0;
   const source = levelType === "land" ? "Data RD" : "Data RDD";
   return {
     id: `${levelType}:${index}:randlevel`,
@@ -152,7 +149,6 @@ function buildRandomLevel(seed: ScenarioSeedMap, fallbackIndex: number): RandomL
     isDark,
     useLos,
     rects: [],
-    rawValues,
     provenance: authoredProvenance(source, index, index * RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES)
   };
 }
@@ -178,10 +174,6 @@ function buildTilesets(maps: MapEntity[]): TilesetAsset[] {
       custom: landlook >= 6 && landlook <= 8
     };
   });
-}
-
-function signedWord(value: number) {
-  return value >= 0x8000 ? value - 0x10000 : value;
 }
 
 function authoredProvenance(sourceFile: string, recordIndex: number, byteOffset: number, byteLength: number): Provenance {

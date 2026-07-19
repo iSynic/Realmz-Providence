@@ -52,7 +52,6 @@ try {
     ...firstRandomLevel,
     id: "land:1:randlevel",
     levelIndex: 1,
-    rawValues: [...firstRandomLevel.rawValues],
     rects: [],
     provenance: { ...firstRandomLevel.provenance, recordIndex: 1, byteOffset: firstRandomLevel.provenance.byteLength }
   });

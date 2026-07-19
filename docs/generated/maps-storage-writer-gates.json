@@ -10,6 +10,7 @@
     "corpusUsage": "docs/generated/corpus-field-usage.json",
     "mapStorageWriters": [
       "src-tauri/src/realmz/maps.rs",
+      "src-tauri/src/realmz/random_levels.rs",
       "src-tauri/src/realmz/action_points.rs"
     ]
   },
@@ -438,7 +439,7 @@
     {
       "container": "Data RD",
       "authorFacingName": "Land random encounter settings",
-      "gate": "land-random-level-raw-stream-writer",
+      "gate": "land-random-level-semantic-writer",
       "recordBytes": 644,
       "rowKind": "644-byte land random encounter level",
       "semanticExposure": "land-random-encounter-storage",
@@ -472,32 +473,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-        "src-tauri/src/realmz/maps.rs:write_random_levels",
-        "src-tauri/src/realmz/maps.rs:parse_random_levels",
+        "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+        "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+        "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-          "file": "src-tauri/src/realmz/maps.rs",
-          "anchor": "map_storage_random_levels_mutate_only_owned_raw_words",
+          "reference": "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+          "file": "src-tauri/src/realmz/random_levels.rs",
+          "anchor": "compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/maps.rs:write_random_levels",
-          "file": "src-tauri/src/realmz/maps.rs",
+          "reference": "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+          "file": "src-tauri/src/realmz/random_levels.rs",
           "anchor": "write_random_levels",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/maps.rs:parse_random_levels",
-          "file": "src-tauri/src/realmz/maps.rs",
+          "reference": "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
+          "file": "src-tauri/src/realmz/random_levels.rs",
           "anchor": "parse_random_levels",
           "fileExists": true,
           "anchorPresent": true,
@@ -522,21 +523,29 @@
       ],
       "ownedFields": [
         {
-          "field": "Random encounter raw signed-short stream",
-          "internal": "raw_values[322]",
+          "field": "Random encounter settings and rectangles",
+          "internal": "RandomLevel + RandomRect[20]",
           "offset": 0,
-          "bytes": 644,
-          "type": "i16be[322]"
+          "bytes": 643,
+          "type": "structured"
         }
       ],
-      "preservedRanges": [],
-      "partialOnly": false,
-      "preservationPolicy": "Current random-level export authority is the raw signed-short stream. Decoded rect fields are not independently writer-proven in this pass."
+      "preservedRanges": [
+        {
+          "field": "Final compatibility byte",
+          "internal": "raw_values[321] low byte",
+          "offset": 643,
+          "bytes": 1,
+          "type": "raw-preserved-when-present"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "Fresh random levels compile bytes 0..642 from semantic settings and rectangles. Imported rawValues may preserve byte 643 and noncanonical boolean encodings when their decoded semantics are unchanged."
     },
     {
       "container": "Data RDD",
       "authorFacingName": "Dungeon random encounter settings",
-      "gate": "dungeon-random-level-raw-stream-writer",
+      "gate": "dungeon-random-level-semantic-writer",
       "recordBytes": 644,
       "rowKind": "644-byte dungeon random encounter level",
       "semanticExposure": "dungeon-random-encounter-storage",
@@ -558,32 +567,32 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-        "src-tauri/src/realmz/maps.rs:write_random_levels",
-        "src-tauri/src/realmz/maps.rs:parse_random_levels",
+        "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+        "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+        "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-          "file": "src-tauri/src/realmz/maps.rs",
-          "anchor": "map_storage_random_levels_mutate_only_owned_raw_words",
+          "reference": "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+          "file": "src-tauri/src/realmz/random_levels.rs",
+          "anchor": "compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/maps.rs:write_random_levels",
-          "file": "src-tauri/src/realmz/maps.rs",
+          "reference": "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+          "file": "src-tauri/src/realmz/random_levels.rs",
           "anchor": "write_random_levels",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/maps.rs:parse_random_levels",
-          "file": "src-tauri/src/realmz/maps.rs",
+          "reference": "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
+          "file": "src-tauri/src/realmz/random_levels.rs",
           "anchor": "parse_random_levels",
           "fileExists": true,
           "anchorPresent": true,
@@ -608,16 +617,24 @@
       ],
       "ownedFields": [
         {
-          "field": "Random encounter raw signed-short stream",
-          "internal": "raw_values[322]",
+          "field": "Random encounter settings and rectangles",
+          "internal": "RandomLevel + RandomRect[20]",
           "offset": 0,
-          "bytes": 644,
-          "type": "i16be[322]"
+          "bytes": 643,
+          "type": "structured"
         }
       ],
-      "preservedRanges": [],
-      "partialOnly": false,
-      "preservationPolicy": "Current dungeon random-level export authority is the raw signed-short stream. Decoded rect fields are not independently writer-proven in this pass."
+      "preservedRanges": [
+        {
+          "field": "Final compatibility byte",
+          "internal": "raw_values[321] low byte",
+          "offset": 643,
+          "bytes": 1,
+          "type": "raw-preserved-when-present"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "Fresh dungeon random levels compile bytes 0..642 from semantic settings and rectangles. Imported rawValues may preserve byte 643 and noncanonical boolean encodings when their decoded semantics are unchanged."
     }
   ]
 }

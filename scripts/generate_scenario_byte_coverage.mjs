@@ -415,37 +415,43 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
   },
   {
     container: "Data RD",
-    gate: "land-random-level-raw-stream-writer",
+    gate: "land-random-level-semantic-writer",
     rowKind: "644-byte land random encounter level",
     semanticExposure: "land-random-encounter-storage",
     ownedFields: [
-      { field: "Random encounter raw signed-short stream", internal: "raw_values[322]", offset: 0, bytes: 644, type: "i16be[322]" }
+      { field: "Random encounter settings and rectangles", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 643, type: "structured" }
+    ],
+    preservedRanges: [
+      { field: "Final compatibility byte", internal: "raw_values[321] low byte", offset: 643, bytes: 1, type: "raw-preserved-when-present" }
     ],
     evidence: [
-      "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-      "src-tauri/src/realmz/maps.rs:write_random_levels",
-      "src-tauri/src/realmz/maps.rs:parse_random_levels",
+      "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+      "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+      "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Current random-level export authority is the raw signed-short stream. Decoded rect fields are not independently writer-proven in this pass."
+    preservationPolicy: "Fresh random levels compile bytes 0..642 from semantic settings and rectangles. Imported rawValues may preserve byte 643 and noncanonical boolean encodings when their decoded semantics are unchanged."
   },
   {
     container: "Data RDD",
-    gate: "dungeon-random-level-raw-stream-writer",
+    gate: "dungeon-random-level-semantic-writer",
     rowKind: "644-byte dungeon random encounter level",
     semanticExposure: "dungeon-random-encounter-storage",
     ownedFields: [
-      { field: "Random encounter raw signed-short stream", internal: "raw_values[322]", offset: 0, bytes: 644, type: "i16be[322]" }
+      { field: "Random encounter settings and rectangles", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 643, type: "structured" }
+    ],
+    preservedRanges: [
+      { field: "Final compatibility byte", internal: "raw_values[321] low byte", offset: 643, bytes: 1, type: "raw-preserved-when-present" }
     ],
     evidence: [
-      "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-      "src-tauri/src/realmz/maps.rs:write_random_levels",
-      "src-tauri/src/realmz/maps.rs:parse_random_levels",
+      "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+      "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+      "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Current dungeon random-level export authority is the raw signed-short stream. Decoded rect fields are not independently writer-proven in this pass."
+    preservationPolicy: "Fresh dungeon random levels compile bytes 0..642 from semantic settings and rectangles. Imported rawValues may preserve byte 643 and noncanonical boolean encodings when their decoded semantics are unchanged."
   }
 ];
 
@@ -1140,6 +1146,7 @@ function buildMapsStorageWriterGates(aggregate) {
       corpusUsage: "docs/generated/corpus-field-usage.json",
       mapStorageWriters: [
         "src-tauri/src/realmz/maps.rs",
+        "src-tauri/src/realmz/random_levels.rs",
         "src-tauri/src/realmz/action_points.rs"
       ]
     },

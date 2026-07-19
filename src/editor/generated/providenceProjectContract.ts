@@ -101,6 +101,19 @@ export const PROVIDENCE_LAND_LAYOUT_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_RANDOM_LEVEL_FIELDS = [
+  "id",
+  "source",
+  "levelType",
+  "levelIndex",
+  "landlook",
+  "isDark",
+  "useLos",
+  "rects",
+  "rawValues",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -145,6 +158,35 @@ export type ProvidenceLandLayout = {
   trailingBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
+};
+
+export type ProvidenceRandomRect = {
+  rectIndex: number;
+  top: number;
+  left: number;
+  bottom: number;
+  right: number;
+  percent: number;
+  battleRange: number[];
+  randomDoors: number[];
+  randomDoorPercent: number[];
+  only: boolean;
+  option: number;
+  sound: number;
+  text: number;
+};
+
+export type ProvidenceRandomLevel = {
+  id: string;
+  source: string;
+  levelType: ProvidenceLevelType;
+  levelIndex: number;
+  landlook: number;
+  isDark: boolean;
+  useLos: boolean;
+  rects: ProvidenceRandomRect[];
+  rawValues?: number[];
+  provenance: ProvidenceProvenance;
 };
 
 export type ProvidenceSourceFile = {

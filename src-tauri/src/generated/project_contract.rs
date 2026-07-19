@@ -108,6 +108,20 @@ pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[
+    "id",
+    "source",
+    "levelType",
+    "levelIndex",
+    "landlook",
+    "isDark",
+    "useLos",
+    "rects",
+    "rawValues",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -195,6 +209,40 @@ pub struct LandLayout {
     pub authored: bool,
     #[serde(default)]
     pub provenance: Option<Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RandomRect {
+    pub rect_index: usize,
+    pub top: i16,
+    pub left: i16,
+    pub bottom: i16,
+    pub right: i16,
+    pub percent: i16,
+    pub battle_range: [i16; 2],
+    pub random_doors: [i16; 3],
+    pub random_door_percent: [i16; 3],
+    pub only: bool,
+    pub option: i8,
+    pub sound: i16,
+    pub text: i16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RandomLevel {
+    pub id: String,
+    pub source: String,
+    pub level_type: LevelType,
+    pub level_index: usize,
+    pub landlook: i8,
+    pub is_dark: bool,
+    pub use_los: bool,
+    pub rects: Vec<RandomRect>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_values: Vec<i16>,
+    pub provenance: Provenance,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -840,7 +840,7 @@ fn default_land_random_level() -> RandomLevel {
         is_dark: false,
         use_los: false,
         rects: Vec::new(),
-        raw_values: vec![0; RANDLEVEL_BYTES / 2],
+        raw_values: Vec::new(),
         provenance: Provenance {
             source_file: "Data RD".to_string(),
             record_index: 0,
@@ -2386,7 +2386,7 @@ mod tests {
             level.level_type == LevelType::Land
                 && level.level_index == 0
                 && level.landlook == 0
-                && level.raw_values.len() == RANDLEVEL_BYTES / 2
+                && level.raw_values.is_empty()
         }));
         assert!(project
             .asset_catalog

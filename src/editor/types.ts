@@ -8,6 +8,8 @@ import type {
   ProvidenceProjectOrigin,
   ProvidenceProjectSource,
   ProvidenceProvenance,
+  ProvidenceRandomLevel,
+  ProvidenceRandomRect,
   ProvidenceRenderMode,
   ProvidenceScenarioContactInfo,
   ProvidenceScenarioGlobalMacroHooks,
@@ -26,6 +28,8 @@ export type RenderMode = ProvidenceRenderMode;
 export type MapRender = ProvidenceMapRender;
 export type MapEntity = ProvidenceMapEntity;
 export type LandLayout = ProvidenceLandLayout;
+export type RandomRect = ProvidenceRandomRect;
+export type RandomLevel = ProvidenceRandomLevel;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -1575,35 +1579,6 @@ export type Action = {
   label: string;
   category: string;
   gosub?: boolean;
-};
-
-export type RandomRect = {
-  rectIndex: number;
-  top: number;
-  left: number;
-  bottom: number;
-  right: number;
-  percent: number;
-  battleRange: number[];
-  randomDoors: number[];
-  randomDoorPercent: number[];
-  only: boolean;
-  option: number;
-  sound: number;
-  text: number;
-};
-
-export type RandomLevel = {
-  id: string;
-  source?: string;
-  levelType: LevelType;
-  levelIndex: number;
-  landlook: number;
-  isDark: boolean;
-  useLos: boolean;
-  rects: RandomRect[];
-  rawValues?: number[];
-  provenance?: Provenance;
 };
 
 export type ExtraCodeRow = { id: number; values: number[]; provenance?: Provenance };

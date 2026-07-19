@@ -219,17 +219,45 @@ export function writeRandomLevels(levels: RandomLevel[], levelType: LevelType) {
   ensureDenseLevelIndices(selected, `${levelType} random levels`);
   const output = new Uint8Array(selected.length * RANDOM_LEVEL_RECORD_BYTES);
   for (const level of selected) {
-    if (level.rawValues?.length !== RANDOM_LEVEL_RECORD_BYTES / 2) {
+    const rawValues = level.rawValues ?? [];
+    if (rawValues.length !== 0 && rawValues.length !== RANDOM_LEVEL_RECORD_BYTES / 2) {
       throw new Error(`${level.id} has invalid random-level raw value count`);
     }
     const start = level.levelIndex * RANDOM_LEVEL_RECORD_BYTES;
-    for (let index = 0; index < level.rawValues.length; index += 1) {
-      writeI16(output, start + index * 2, level.rawValues[index] ?? 0);
+    for (let index = 0; index < rawValues.length; index += 1) {
+      writeI16(output, start + index * 2, rawValues[index] ?? 0);
+    }
+    const hasCompatibilityBase = rawValues.length === RANDOM_LEVEL_RECORD_BYTES / 2;
+    output[start + 520] = level.landlook & 0xff;
+    if (!hasCompatibilityBase || (output[start + 521] !== 0) !== level.isDark) {
+      output[start + 521] = level.isDark ? 1 : 0;
+    }
+    if (!hasCompatibilityBase || (output[start + 522] !== 0) !== level.useLos) {
+      output[start + 522] = level.useLos ? 1 : 0;
     }
     for (const rect of level.rects) {
       if (rect.rectIndex < 0 || rect.rectIndex >= 20) {
         throw new Error(`${level.id} random rect index ${rect.rectIndex} is out of range`);
       }
+      const rectStart = start + rect.rectIndex * 8;
+      writeI16(output, rectStart, rect.top);
+      writeI16(output, rectStart + 2, rect.left);
+      writeI16(output, rectStart + 4, rect.bottom);
+      writeI16(output, rectStart + 6, rect.right);
+      writeI16(output, start + 160 + rect.rectIndex * 2, rect.percent);
+      writeI16(output, start + 200 + rect.rectIndex * 4, rect.battleRange[0] ?? 0);
+      writeI16(output, start + 202 + rect.rectIndex * 4, rect.battleRange[1] ?? 0);
+      for (let slot = 0; slot < 3; slot += 1) {
+        writeI16(output, start + 280 + rect.rectIndex * 6 + slot * 2, rect.randomDoors[slot] ?? 0);
+        writeI16(output, start + 400 + rect.rectIndex * 6 + slot * 2, rect.randomDoorPercent[slot] ?? 0);
+      }
+      const onlyOffset = start + 523 + rect.rectIndex;
+      if (!hasCompatibilityBase || (output[onlyOffset] !== 0) !== rect.only) {
+        output[onlyOffset] = rect.only ? 1 : 0;
+      }
+      output[start + 543 + rect.rectIndex] = rect.option & 0xff;
+      writeI16(output, start + 563 + rect.rectIndex * 2, rect.sound);
+      writeI16(output, start + 603 + rect.rectIndex * 2, rect.text);
     }
   }
   return output;

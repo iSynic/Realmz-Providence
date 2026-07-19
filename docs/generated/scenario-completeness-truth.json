@@ -35,8 +35,8 @@
       "ignored": 1
     },
     "writerReadinessCounts": {
-      "partially-proven": 13,
-      "fixture-proven": 22,
+      "partially-proven": 15,
+      "fixture-proven": 20,
       "preserve-only": 8,
       "not-applicable": 14
     },
@@ -59,8 +59,8 @@
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "complete",
-      "fixtureProvenContainers": 22,
-      "partiallyProvenContainers": 13,
+      "fixtureProvenContainers": 20,
+      "partiallyProvenContainers": 15,
       "writerGatedContainers": 0,
       "percentContainers": 61.4
     },
@@ -916,21 +916,21 @@
         "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
-        "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-        "src-tauri/src/realmz/maps.rs:write_random_levels",
-        "src-tauri/src/realmz/maps.rs:parse_random_levels"
+        "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+        "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+        "src-tauri/src/realmz/random_levels.rs:parse_random_levels"
       ],
       "fixtureGate": {
-        "name": "land-random-level-raw-stream-writer",
+        "name": "land-random-level-semantic-writer",
         "available": true,
-        "partialOnly": false,
+        "partialOnly": true,
         "evidencePresent": true,
         "missingEvidence": [],
         "source": "maps-storage-writer-gates"
       },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "fixture-proven",
+        "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
         "riskFlags": []
       }
@@ -954,21 +954,21 @@
         "docs/generated/maps-storage-writer-gates.json",
         "docs/generated/corpus-field-usage.json",
         "docs/format-evidence-cards/encounter-record-runtime-anchors.md",
-        "src-tauri/src/realmz/maps.rs:map_storage_random_levels_mutate_only_owned_raw_words",
-        "src-tauri/src/realmz/maps.rs:write_random_levels",
-        "src-tauri/src/realmz/maps.rs:parse_random_levels"
+        "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+        "src-tauri/src/realmz/random_levels.rs:write_random_levels",
+        "src-tauri/src/realmz/random_levels.rs:parse_random_levels"
       ],
       "fixtureGate": {
-        "name": "dungeon-random-level-raw-stream-writer",
+        "name": "dungeon-random-level-semantic-writer",
         "available": true,
-        "partialOnly": false,
+        "partialOnly": true,
         "evidencePresent": true,
         "missingEvidence": [],
         "source": "maps-storage-writer-gates"
       },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "fixture-proven",
+        "writerReadiness": "partially-proven",
         "evidenceQuality": "fixture-backed",
         "riskFlags": []
       }

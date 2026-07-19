@@ -3,8 +3,8 @@ use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
     Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapRender, Provenance,
-    RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioMeta, ScenarioRestrictions,
-    ScenarioShell, ScenarioSupportFile,
+    RandomLevel, RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks,
+    ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -821,39 +821,6 @@ pub enum ActionCategory {
     UiText,
     #[serde(alias = "Unknown")]
     Unknown,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RandomLevel {
-    pub id: String,
-    pub source: String,
-    pub level_type: LevelType,
-    pub level_index: usize,
-    pub landlook: i8,
-    pub is_dark: bool,
-    pub use_los: bool,
-    pub rects: Vec<RandomRect>,
-    pub raw_values: Vec<i16>,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RandomRect {
-    pub rect_index: usize,
-    pub top: i16,
-    pub left: i16,
-    pub bottom: i16,
-    pub right: i16,
-    pub percent: i16,
-    pub battle_range: [i16; 2],
-    pub random_doors: [i16; 3],
-    pub random_door_percent: [i16; 3],
-    pub only: bool,
-    pub option: i8,
-    pub sound: i16,
-    pub text: i16,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

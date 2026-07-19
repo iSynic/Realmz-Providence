@@ -531,8 +531,8 @@ expect(bytesEqual(mapFiles.get("Data MD2")?.slice(0, MAP_RECORD_BYTES), sourceMa
 expect(bytesEqual(mapFiles.get("Data MD2")?.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2), mapRecordRow(authoredMapRecord, sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2))), "Authored map record should encode fields and preserve gaps");
 expect(mapFiles.get("Data MD2")?.[MAP_RECORD_BYTES + 74] === 0xbe && mapFiles.get("Data MD2")?.[MAP_RECORD_BYTES + 75] === 0xef, "Authored map record should preserve raw map-record gap bytes");
 expect(bytesEqual(mapFiles.get("Data RD")?.slice(0, RANDOM_LEVEL_BYTES), sourceLandRandomLevels.slice(0, RANDOM_LEVEL_BYTES)), "Unauthored land random level should remain byte-identical");
-expect(bytesEqual(mapFiles.get("Data RD")?.slice(RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES * 2), randomLevelRow(authoredLandRandomValues)), "Authored land random level should encode raw word stream");
-expect(bytesEqual(mapFiles.get("Data RDD")?.slice(0, RANDOM_LEVEL_BYTES), randomLevelRow(authoredDungeonRandomValues)), "Authored dungeon random level should encode raw word stream");
+expect(bytesEqual(mapFiles.get("Data RD")?.slice(RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES * 2), randomLevelRow(authoredLandRandomValues)), "Authored land random level should compile semantic settings over compatible storage");
+expect(bytesEqual(mapFiles.get("Data RDD")?.slice(0, RANDOM_LEVEL_BYTES), randomLevelRow(authoredDungeonRandomValues)), "Authored dungeon random level should compile semantic settings over compatible storage");
 expect(bytesEqual(mapFiles.get("Data DD")?.slice(0, DOOR_BYTES), sourceLandDoors.slice(0, DOOR_BYTES)), "Unauthored land action point should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data DD")?.slice(DOOR_LEVEL_BYTES + 2 * DOOR_BYTES, DOOR_LEVEL_BYTES + 3 * DOOR_BYTES), doorRow(authoredLandTrigger)), "Authored land action point should encode trigger row");
 expect(bytesEqual(mapFiles.get("Data DDD")?.slice(0, DOOR_BYTES), sourceDungeonDoors.slice(0, DOOR_BYTES)), "Unauthored dungeon action point should remain byte-identical");
@@ -1423,16 +1423,20 @@ function mapMarkerFromRaw(rawBytes, slot) {
 }
 
 function randomLevel(levelType, levelIndex, rawValues) {
+  const source = levelType === "land" ? "Data RD" : "Data RDD";
+  const landlookDarkWord = (rawValues[260] ?? 0) & 0xffff;
+  const losWord = (rawValues[261] ?? 0) & 0xffff;
   return {
     id: `${levelType}:${levelIndex}:randlevel`,
-    source: levelType === "land" ? "Data RD" : "Data RDD",
+    source,
     levelType,
     levelIndex,
-    landlook: rawValues[260] ?? 0,
-    isDark: false,
-    useLos: false,
+    landlook: signedByte((landlookDarkWord >>> 8) & 0xff),
+    isDark: (landlookDarkWord & 0xff) !== 0,
+    useLos: ((losWord >>> 8) & 0xff) !== 0,
     rects: [],
-    rawValues
+    rawValues,
+    provenance: { sourceFile: source, recordIndex: levelIndex, byteOffset: levelIndex * RANDOM_LEVEL_BYTES, byteLength: RANDOM_LEVEL_BYTES, confidence: "fixture-backed" }
   };
 }
 
