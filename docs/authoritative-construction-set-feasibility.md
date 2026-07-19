@@ -312,10 +312,23 @@ imported rows retain those exact encodings through the compatibility annex, whil
 normalizes flags to deterministic `0` or `1`. The ownership proof now covers all eight rogue
 actions plus message, sound, trap, spell, damage, lock, and Complex Encounter result routing.
 
-Branch validation through the thirty-third slice completed on 2026-07-19:
+The thirty-fourth slice makes fresh `Data TD3` timed encounters authoritative without claiming
+unknown legacy semantics. `TimedEncounterRecord` and its location-kind enum now come from the
+generated TypeScript/Rust contract. Day, increment, chance, Extra Action Point target, level,
+random rectangle, coordinates, required item, required quest, and location kind are canonical;
+fresh UI/project-command and Scenario JSON records omit `rawBytes` and compatibility words. Both
+writers compile those 22 bytes from semantics and emit deterministic zero for offsets 22..39. A
+focused current-corpus audit found 30 physical payloads, 301 aligned rows, no malformed tails, and
+10 distinct patterns in the nine unnamed words; 192 rows had at least one nonzero unnamed word.
+Those 18 bytes therefore remain explicitly unowned: unchanged imported rows remain byte-exact,
+while edited imported rows recover only that range from the compatibility annex. The ownership
+proof now authors a timed schedule with macro, item, quest, and exact land-position gates, requires
+exact 40-byte output with zero reserved words, and semantically reimports it.
 
-- full Rust suite: 235 passed, 2 ignored;
-- full TypeScript suite: 577 passed, plus typecheck;
+Branch validation through the thirty-fourth slice completed on 2026-07-19:
+
+- full Rust suite: 236 passed, 2 ignored;
+- full TypeScript suite: 584 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -324,7 +337,7 @@ Branch validation through the thirty-third slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 577 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 584 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
@@ -661,7 +674,7 @@ Legend:
 | `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Fresh/authored rows compile all 426 bytes from canonical actions, results, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and historical tails are restored only from the compatibility annex. |
 | `Data ED2` | Generated + legacy row/tail annex | Generate complete deterministic complex encounters | Fresh/authored rows compile all 520 bytes from canonical actions, physical/word/group/spell/item routes, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data TD2` | Generated + legacy row/tail annex | Generate complete deterministic rogue/thief encounters | Fresh/authored rows compile all 118 bytes from canonical action, result, message, sound, trap, lock, and prompt fields without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
-| `Data TD3` | Generated with explicit compatibility slots | Generate timed encounters and zero reserved `stuff[1..9]` | The model carries the ten-word array; only `stuff[0]` has confirmed runtime meaning. Authored compilation emits the required empty file directly. |
+| `Data TD3` | Generated semantic prefix + bounded legacy annex | Generate timed encounters and zero reserved `stuff[1..9]` | Fresh rows compile offsets 0..21 from canonical schedule, macro, gate, and location fields and deterministically zero offsets 22..39 without `rawBytes`. Unchanged imported rows are annex-restored; edited imported rows compile semantics while recovering only the nine unnamed words from the annex. Their meanings remain unknown. |
 
 ### Rules and resource-bearing optional families
 

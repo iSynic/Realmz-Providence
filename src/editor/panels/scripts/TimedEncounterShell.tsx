@@ -8,7 +8,6 @@ import type {
 import { CollapsibleSection } from "../../ui";
 import { EncounterRecordPicker } from "./EncounterRecordPicker";
 import { ItemIdField } from "./ItemIdField";
-import { updateArraySlot } from "./arraySlots";
 
 const TIMED_SCHEDULE_HELP =
   "The midnight schedule controls when this record is considered. Day and Increment define timing, Percent gates execution, and Extra AP To Activate is the macro Realmz runs.";
@@ -36,10 +35,10 @@ export function TimedEncounterShell({
     onApplyCommand?.({ kind: "updateTimedEncounterRecord", label: "Update time encounter", id, changes });
   };
   const setLocationKind = (locationKind: Project["timedEncounters"][number]["locationKind"]) => {
-    update({ locationKind, stuff: updateArraySlot(record.stuff ?? [], 0, locationKindValue(locationKind), 10) });
+    update({ locationKind });
   };
   const eligibilitySummary = timedEncounterEligibilitySummary(record);
-  const reservedTimedValues = Array.from({ length: 9 }, (_, index) => record.stuff?.[index + 1] ?? 0);
+  const reservedTimedValues = Array.from({ length: 9 }, (_, index) => record.reservedWords?.[index] ?? 0);
   const reservedNonZeroCount = reservedTimedValues.filter((value) => value !== 0).length;
   return (
     <div className="timed-encounter-editor">
@@ -93,7 +92,7 @@ export function TimedEncounterShell({
             const slot = index + 1;
             return (
               <div key={slot} className={`timed-compatibility-chip${value !== 0 ? " is-preserved" : ""}`}>
-                <span>stuff[{slot}]</span>
+                <span>Reserved word {slot}</span>
                 <strong>{value}</strong>
               </div>
             );

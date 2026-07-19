@@ -105,7 +105,8 @@ Trap behavior is stateful:
 | 14 | 2 | `recy` | Required Y coordinate; `-1` means none. |
 | 16 | 2 | `recitem` | Required item; positive values must be present. |
 | 18 | 2 | `recquest` | Required quest flag; `-1` means none. |
-| 20 | 20 | `stuff[10]` | Extra fields. `stuff[0]` is location kind: `1` land, `2` dungeon, otherwise any. Remaining fields need Divinity/source follow-up. |
+| 20 | 2 | `stuff[0]` | Location kind: `1` land, `2` dungeon, otherwise any. Providence models this as `locationKind`. |
+| 22 | 18 | `stuff[1..9]` | Unnamed compatibility words. Fresh Providence output is deterministic zero; imported values remain annex-owned pending stronger evidence. |
 
 ### Timed Runtime Semantics
 
@@ -136,6 +137,12 @@ noncanonical nonzero Boolean bytes in record 2 (`type[5..7] = 72, 191, 128`); Re
 as true. Providence normalizes authored Boolean output to `0` or `1`, while unchanged imported rows
 retain exact legacy encodings through the compatibility annex.
 
+The focused `Data TD3` audit found 30 physical payloads and 301 complete rows. Every payload was
+exactly divisible by 40. The nine unnamed words had 10 distinct patterns: 109 rows were all zero,
+while 192 rows had at least one nonzero value (1,465 nonzero cells total). This is evidence that the
+range must be preserved for legacy imports, not evidence that Providence should assign it invented
+authoring meanings.
+
 ## Timed Reserved Field Report
 
 `scripts/report_timed_encounter_reserved_fields.mjs` scans `Data TD3` `stuff[1..9]` so Providence can decide whether the remaining nine signed fields deserve deeper archaeology before giving them normal UI labels.
@@ -147,7 +154,7 @@ The generated report lives at:
 
 The current benchmark scan found nonzero reserved values in the Wrath timed encounter benchmark records, with two repeated nine-field patterns. Optional raw scenario-root scans also show repeated patterns across local scenario folders. That proves the bytes are not simply always zero, but the repeated pattern shape is not enough to name user-facing behavior.
 
-The cheap source pass found the classic runtime location gate reading `dotime.stuff[0]` in `textbox-time.c`; no named main-loop use of `stuff[1..9]` was found in that path. For now `stuff[1..9]` remain read-only compatibility fields in Providence. Follow-up should test named scenarios/records in Divinity or Realmz before promoting any slot into authoring UI.
+The cheap source pass found the classic runtime location gate reading `dotime.stuff[0]` in `textbox-time.c`; no named main-loop use of `stuff[1..9]` was found in that path. `stuff[1..9]` therefore remain read-only compatibility evidence in Providence. Fresh compilation does not consult them and emits zero; imported edits recover the exact 18-byte range only from the compatibility annex. Follow-up should test named scenarios/records in Divinity or Realmz before promoting any slot into authoring UI.
 
 ## Providence Editor Implications
 
@@ -157,6 +164,7 @@ The cheap source pass found the classic runtime location gate reading `dotime.st
 - Thief Encounter editor should expose all eight source-backed action rows plus guided trap, lock, Pick Lock, and Disarm Trap spell paths.
 - Runtime mutation opcodes should be labeled as effects that alter runtime caches, not source records.
 - `Data TD2` now has complete canonical writer coverage. Imported row identity belongs to the compatibility annex, not the authored record model.
+- `Data TD3` now has canonical writer coverage for every source-backed field. Fresh output zeroes the unnamed range; imported preservation is isolated to the annex.
 
 ## Validation Rules
 
@@ -178,11 +186,11 @@ The cheap source pass found the classic runtime location gate reading `dotime.st
 - Exact labels for prompt/sound support fields.
 - Whether Divinity treats `day` as absolute day-of-year, relative days, or a UI abstraction.
 - Timed encounter `stuff[1..9]` meanings.
-- Timed encounter schedule writer fixtures.
+- Exact Divinity labels and writer behavior for timed schedules.
 
 ## Providence Follow-Up
 
-- Follow-up: `editor-ui`, `validation`, and the separate `Data TD3` ownership slice.
+- Follow-up: name `stuff[1..9]` only if source, Divinity fixtures, or controlled runtime behavior provides evidence.
 - Add a Timed Encounter editor before a full Thief editor; its fields are cleaner and directly source-backed.
 - Keep Rogue Encounter fixtures covering all eight action slots and the two runtime-mutated state flags.
 - Update Complex Encounter target pickers to link `thiefsuccess` to `Data TD2`.

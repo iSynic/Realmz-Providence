@@ -485,7 +485,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.timedEncounters.length > 0) {
     writes.push({
       path: "Data TD3",
-      bytes: preserveMalformedRawTail("Data TD3", writeTimedEncounters(project.timedEncounters), TIMED_ENCOUNTER_RECORD_BYTES, annex)
+      bytes: writeTimedEncountersForExport(project.timedEncounters, annex)
     });
   }
   return writes.filter((write) => write.bytes.byteLength > 0);
@@ -919,6 +919,22 @@ function writeComplexEncountersForExport(encounters: Project["complexEncounters"
 
 function writeThiefEncountersForExport(encounters: Project["thiefEncounters"], annex: BrowserCompatibilityAnnex | null) {
   return preserveImportedFixedRows("Data TD2", writeThiefEncounters(encounters), encounters, THIEF_ENCOUNTER_RECORD_BYTES, annex);
+}
+
+function writeTimedEncountersForExport(encounters: Project["timedEncounters"], annex: BrowserCompatibilityAnnex | null) {
+  const bytes = preserveImportedFixedRows("Data TD3", writeTimedEncounters(encounters), encounters, TIMED_ENCOUNTER_RECORD_BYTES, annex);
+  const raw = rawSourceBytes("Data TD3", annex);
+  if (!raw) return bytes;
+  const completeSourceBytes = Math.floor(raw.byteLength / TIMED_ENCOUNTER_RECORD_BYTES) * TIMED_ENCOUNTER_RECORD_BYTES;
+  for (const record of encounters) {
+    if (!record.authored) continue;
+    const start = record.id * TIMED_ENCOUNTER_RECORD_BYTES + 22;
+    const end = (record.id + 1) * TIMED_ENCOUNTER_RECORD_BYTES;
+    if (end <= bytes.byteLength && end <= completeSourceBytes) {
+      bytes.set(raw.slice(start, end), start);
+    }
+  }
+  return bytes;
 }
 
 function preserveImportedFixedRows(

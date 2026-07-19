@@ -28,6 +28,8 @@ import type {
   ProvidenceShopRecord,
   ProvidenceSimpleEncounterRecord,
   ProvidenceThiefEncounterRecord,
+  ProvidenceTimedEncounterLocationKind,
+  ProvidenceTimedEncounterRecord,
   ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
   ProvidenceSourceFileRole,
@@ -56,6 +58,8 @@ export type EncounterActionRow = ProvidenceEncounterActionRow;
 export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;
 export type ComplexEncounterRecord = ProvidenceComplexEncounterRecord;
 export type ThiefEncounterRecord = ProvidenceThiefEncounterRecord;
+export type TimedEncounterLocationKind = ProvidenceTimedEncounterLocationKind;
+export type TimedEncounterRecord = ProvidenceTimedEncounterRecord;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -775,27 +779,6 @@ export type MonsterDescriptionRecord = {
   provenance?: Provenance;
 };
 
-export type TimedEncounterLocationKind = "any" | "land" | "dungeon";
-
-export type TimedEncounterRecord = {
-  id: number;
-  day: number;
-  increment: number;
-  percent: number;
-  door: number;
-  requiredLevel: number;
-  requiredRandomRect: number;
-  requiredX: number;
-  requiredY: number;
-  requiredItem: number;
-  requiredQuest: number;
-  locationKind: TimedEncounterLocationKind;
-  stuff: number[];
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
 export type QuestLabel = {
   id: number;
   label: string;
@@ -1139,7 +1122,7 @@ export type ProjectCommand =
   | { kind: "updateSimpleEncounterRecord"; label: string; id: number; changes: Partial<Pick<SimpleEncounterRecord, "actions" | "choiceResults" | "canBackOut" | "maxTimes" | "casteSuccess" | "prompt" | "texts">> }
   | { kind: "updateComplexEncounterRecord"; label: string; id: number; changes: Partial<Pick<ComplexEncounterRecord, "actions" | "actionResult" | "wordResult" | "groups" | "spellIds" | "spellResults" | "itemIds" | "itemResults" | "canBackOut" | "thief" | "maxTimes" | "casteSuccess" | "thiefSuccess" | "thiefFail" | "prompt" | "texts">> }
   | { kind: "updateThiefEncounterRecord"; label: string; id: number; changes: Partial<Pick<ThiefEncounterRecord, "typeFlags" | "modifiers" | "successCodes" | "failureCodes" | "successText" | "failureText" | "successSounds" | "failureSounds" | "spell" | "lowDamage" | "highDamage" | "tumblers" | "prompts" | "promptSounds">> }
-  | { kind: "updateTimedEncounterRecord"; label: string; id: number; changes: Partial<Pick<TimedEncounterRecord, "day" | "increment" | "percent" | "door" | "requiredLevel" | "requiredRandomRect" | "requiredX" | "requiredY" | "requiredItem" | "requiredQuest" | "locationKind" | "stuff">> }
+  | { kind: "updateTimedEncounterRecord"; label: string; id: number; changes: Partial<Pick<TimedEncounterRecord, "day" | "increment" | "percent" | "door" | "requiredLevel" | "requiredRandomRect" | "requiredX" | "requiredY" | "requiredItem" | "requiredQuest" | "locationKind">> }
   | { kind: "upsertQuestLabel"; label: string; quest: QuestLabel }
   | { kind: "deleteQuestLabel"; label: string; id: number }
   | { kind: "createQuestThread"; label: string; id?: string; name: string; description?: string; questIds?: number[]; contextRefs?: QuestContextRef[] }

@@ -119,6 +119,42 @@ describe("scenario seed script compiler", () => {
     expect(encounter.rawBytes).toBeUndefined();
   });
 
+  it("compiles timed encounters from semantic fields without compatibility bytes", () => {
+    const context = createScenarioSeedCompilerContext();
+    context.extraActionPoints.set("clock-macro", 2);
+    context.items.set("clock-key", 901);
+    context.quests.set("clock-ready", 1);
+
+    const result = compileScenarioSeedScripts(seed({
+      timedEncounters: [{
+        id: 0,
+        day: 35,
+        increment: 5,
+        percent: 50,
+        macro: "clock-macro",
+        requiredItem: "clock-key",
+        requiredQuest: "clock-ready",
+        location: { kind: "land", level: 0, x: 10, y: 12 }
+      }]
+    }), context);
+
+    expect(result.timedEncounters[0]).toMatchObject({
+      day: 35,
+      increment: 5,
+      percent: 50,
+      door: 2,
+      requiredLevel: 0,
+      requiredRandomRect: -1,
+      requiredX: 10,
+      requiredY: 12,
+      requiredItem: 901,
+      requiredQuest: 1,
+      locationKind: "land"
+    });
+    expect(result.timedEncounters[0].reservedWords).toBeUndefined();
+    expect(result.timedEncounters[0].rawBytes).toBeUndefined();
+  });
+
   it("resolves semantic map regions into trigger location and identity", () => {
     const context = createScenarioSeedCompilerContext();
     context.maps.set("island", { levelType: "land", index: 2 });

@@ -295,6 +295,25 @@ export const PROVIDENCE_THIEF_ENCOUNTER_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_TIMED_ENCOUNTER_FIELDS = [
+  "id",
+  "day",
+  "increment",
+  "percent",
+  "door",
+  "requiredLevel",
+  "requiredRandomRect",
+  "requiredX",
+  "requiredY",
+  "requiredItem",
+  "requiredQuest",
+  "locationKind",
+  "reservedWords",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -404,6 +423,8 @@ export type ProvidenceRandomLevel = {
   rawValues?: number[];
   provenance: ProvidenceProvenance;
 };
+
+export type ProvidenceTimedEncounterLocationKind = "any" | "land" | "dungeon";
 
 export type ProvidenceScenarioItemRecord = {
   id: number;
@@ -565,6 +586,25 @@ export type ProvidenceThiefEncounterRecord = {
   tumblers: number;
   prompts: number[];
   promptSounds: number[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceTimedEncounterRecord = {
+  id: number;
+  day: number;
+  increment: number;
+  percent: number;
+  door: number;
+  requiredLevel: number;
+  requiredRandomRect: number;
+  requiredX: number;
+  requiredY: number;
+  requiredItem: number;
+  requiredQuest: number;
+  locationKind: ProvidenceTimedEncounterLocationKind;
+  reservedWords?: number[];
   rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;

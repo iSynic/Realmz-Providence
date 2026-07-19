@@ -442,9 +442,9 @@ mod tests {
             required_y: -1,
             required_item: 901,
             required_quest: 7,
-            location_kind: "dungeon".to_string(),
-            stuff: vec![2, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            raw_bytes: vec![0; TIMED_ENCOUNTER_BYTES],
+            location_kind: crate::project::TimedEncounterLocationKind::Dungeon,
+            reserved_words: Vec::new(),
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data TD3", 0, 0, TIMED_ENCOUNTER_BYTES),
         };

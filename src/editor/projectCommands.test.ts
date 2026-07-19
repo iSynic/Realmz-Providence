@@ -103,6 +103,22 @@ describe("project command facade", () => {
     expect(next.thiefEncounters[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh timed encounters from semantic fields without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Timed Encounter");
+
+    const next = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create timed encounter",
+      recordType: "timedEncounter",
+      id: 4
+    });
+
+    expect(next.timedEncounters).toHaveLength(1);
+    expect(next.timedEncounters[0]).toMatchObject({ day: -1, increment: -1, percent: 100, locationKind: "any" });
+    expect(next.timedEncounters[0].reservedWords).toBeUndefined();
+    expect(next.timedEncounters[0].rawBytes).toBeUndefined();
+  });
+
   it("creates fresh map records from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Player Map");
 

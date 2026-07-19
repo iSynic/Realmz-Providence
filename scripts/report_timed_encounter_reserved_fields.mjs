@@ -136,8 +136,14 @@ function sourceReport({ scenario, sourceKind, sourcePath, records, warnings }) {
 }
 
 function normalizeTimedRecord(record, sourceKind) {
-  const stuff = Array.isArray(record.stuff) ? record.stuff.slice(0, 10).map(numberValue) : [];
-  while (stuff.length < 10) stuff.push(0);
+  const legacyStuff = Array.isArray(record.stuff) ? record.stuff.slice(0, 10).map(numberValue) : [];
+  while (legacyStuff.length < 10) legacyStuff.push(0);
+  const reservedWords = Array.isArray(record.reservedWords)
+    ? record.reservedWords.slice(0, 9).map(numberValue)
+    : legacyStuff.slice(1);
+  while (reservedWords.length < 9) reservedWords.push(0);
+  const locationKind = record.locationKind ?? locationKindFromValue(legacyStuff[0]);
+  const stuff = [locationKind === "land" ? 1 : locationKind === "dungeon" ? 2 : -1, ...reservedWords];
   return {
     id: numberValue(record.id),
     day: numberValue(record.day),
@@ -150,7 +156,7 @@ function normalizeTimedRecord(record, sourceKind) {
     requiredY: numberValue(record.requiredY),
     requiredItem: numberValue(record.requiredItem),
     requiredQuest: numberValue(record.requiredQuest),
-    locationKind: record.locationKind ?? locationKindFromValue(stuff[0]),
+    locationKind,
     stuff,
     sourceKind
   };

@@ -408,8 +408,7 @@ function mutateCityOfBywaterForEditedParity(project) {
     timed.day = 12;
     timed.percent = 34;
     timed.door = 92;
-    timed.stuff ??= new Array(10).fill(0);
-    timed.stuff[0] = 93;
+    timed.locationKind = "land";
   }
 
   const race = edited.raceOverrides?.[0];

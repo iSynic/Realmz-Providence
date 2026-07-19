@@ -633,7 +633,7 @@ function checkTimedEncounters(createProjectFromScenarioSeed) {
   expect(timed?.id === 3 && timed.day === 10 && timed.increment === 7 && timed.percent === 50, "timed encounter should preserve its schedule");
   expect(timed?.door === 5 && timed.requiredItem === 901 && timed.requiredQuest === 2, "timed encounter should resolve its macro, item, and quest keys");
   expect(timed?.locationKind === "land" && timed.requiredLevel === 0 && timed.requiredRandomRect === 2 && timed.requiredX === 10 && timed.requiredY === 11, "timed encounter should encode its location gates");
-  expect(timed?.stuff.join(",") === "1,0,0,0,0,0,0,0,0,0", "timed encounter should encode land location and zero unknown compatibility fields");
+  expect(timed?.locationKind === "land" && !timed.reservedWords, "timed encounter should use semantic location data without fresh compatibility fields");
   expect(allocationId(result, "timedEncounters", "bell-clock") === 3, "bell-clock should preserve explicit timed encounter ID 3");
   const trigger = result.project.triggers.find((entry) => entry.id.includes("ap:0"));
   expect(actionCodes(trigger).join(",") === "54", "timed encounter mutation AP should emit opcode 54");

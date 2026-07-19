@@ -755,8 +755,10 @@ export function writeThiefEncounters(records: ThiefEncounterRecord[]) {
 
 export function writeTimedEncounters(records: TimedEncounterRecord[]) {
   return writeFixedRecords(records, TIMED_ENCOUNTER_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === TIMED_ENCOUNTER_RECORD_BYTES) return;
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== TIMED_ENCOUNTER_RECORD_BYTES) {
+      throw new Error(`Timed encounter ${record.id} has invalid compatibility byte storage`);
+    }
     writeI16(target, 0, record.day);
     writeI16(target, 2, record.increment);
     writeI16(target, 4, record.percent);
@@ -767,8 +769,14 @@ export function writeTimedEncounters(records: TimedEncounterRecord[]) {
     writeI16(target, 14, record.requiredY);
     writeI16(target, 16, record.requiredItem);
     writeI16(target, 18, record.requiredQuest);
-    writeI16Array(target, 20, record.stuff, 10);
+    writeI16(target, 20, timedLocationKindValue(record.locationKind));
   });
+}
+
+function timedLocationKindValue(locationKind: TimedEncounterRecord["locationKind"]) {
+  if (locationKind === "land") return 1;
+  if (locationKind === "dungeon") return 2;
+  return -1;
 }
 
 function writePascalTextRecords(records: PascalTextRecord[], recordBytes: number) {

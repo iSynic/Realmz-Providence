@@ -807,7 +807,7 @@ function parseTimedEncounters(buffer: Uint8Array | undefined): TimedEncounterRec
       requiredItem: i16(record, 16),
       requiredQuest: i16(record, 18),
       locationKind: timedLocationKind(stuff[0]),
-      stuff,
+      reservedWords: stuff.slice(1),
       rawBytes: Array.from(record),
       authored: false,
       provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES, "source-backed")

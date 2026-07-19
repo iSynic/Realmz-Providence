@@ -675,7 +675,7 @@ function addTimedRecords(schema: SemanticSchema, buffer?: Uint8Array) {
       requiredY: i16At(buffer, start + 14),
       requiredItem: i16At(buffer, start + 16),
       requiredQuest: i16At(buffer, start + 18),
-      stuff,
+      reservedWords: stuff.slice(1),
       locationKind
     };
     upsertRecord(schema, browserRecord("Data TD3", index, 40, "timed-encounter", `Timed Encounter ${index}`, summary));

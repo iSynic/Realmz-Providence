@@ -777,7 +777,7 @@ export function emptyThiefEncounter(id: number): ThiefEncounterRecord {
   };
 }
 
-function emptyTimedEncounter(id: number): TimedEncounterRecord {
+export function emptyTimedEncounter(id: number): TimedEncounterRecord {
   return {
     id,
     day: -1,
@@ -791,8 +791,6 @@ function emptyTimedEncounter(id: number): TimedEncounterRecord {
     requiredItem: -1,
     requiredQuest: -1,
     locationKind: "any",
-    stuff: [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    rawBytes: new Array(TIMED_ENCOUNTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data TD3", id, id * TIMED_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES)
   };

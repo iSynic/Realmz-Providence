@@ -313,6 +313,26 @@ pub const PROVIDENCE_THIEF_ENCOUNTER_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_TIMED_ENCOUNTER_FIELDS: &[&str] = &[
+    "id",
+    "day",
+    "increment",
+    "percent",
+    "door",
+    "requiredLevel",
+    "requiredRandomRect",
+    "requiredX",
+    "requiredY",
+    "requiredItem",
+    "requiredQuest",
+    "locationKind",
+    "reservedWords",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -483,6 +503,14 @@ pub struct RandomLevel {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_values: Vec<i16>,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum TimedEncounterLocationKind {
+    Any,
+    Land,
+    Dungeon,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -707,6 +735,30 @@ pub struct ThiefEncounterRecord {
     pub prompts: Vec<i16>,
     #[serde(default)]
     pub prompt_sounds: Vec<i16>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimedEncounterRecord {
+    pub id: usize,
+    pub day: i16,
+    pub increment: i16,
+    pub percent: i16,
+    pub door: i16,
+    pub required_level: i16,
+    pub required_random_rect: i16,
+    pub required_x: i16,
+    pub required_y: i16,
+    pub required_item: i16,
+    pub required_quest: i16,
+    pub location_kind: TimedEncounterLocationKind,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub reserved_words: Vec<i16>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

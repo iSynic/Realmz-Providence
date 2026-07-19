@@ -597,7 +597,7 @@ export function normalizeBrowserProject(project: Project): Project {
   project.simpleEncounters ??= [];
   project.complexEncounters = (project.complexEncounters ?? []).map(normalizedComplexEncounter);
   project.thiefEncounters = (project.thiefEncounters ?? []).map(normalizedThiefEncounter);
-  project.timedEncounters ??= [];
+  project.timedEncounters = (project.timedEncounters ?? []).map(normalizedTimedEncounter);
   project.questLabels ??= [];
   project.spellOverrides ??= [];
   project.raceOverrides ??= [];
@@ -653,6 +653,16 @@ function normalizedThiefEncounter(record: Project["thiefEncounters"][number]): P
     failureSounds: normalizedFixedArray(record.failureSounds, 8, 0),
     prompts: normalizedFixedArray(record.prompts, 3, 0),
     promptSounds: normalizedFixedArray(record.promptSounds, 3, 0)
+  };
+}
+
+function normalizedTimedEncounter(record: Project["timedEncounters"][number]): Project["timedEncounters"][number] {
+  const legacyRecord = record as Project["timedEncounters"][number] & { stuff?: number[] };
+  const { stuff: _obsoleteStuff, ...canonical } = legacyRecord;
+  const reservedWords = record.reservedWords ?? legacyRecord.stuff?.slice(1);
+  return {
+    ...canonical,
+    ...(reservedWords ? { reservedWords: normalizedFixedArray(reservedWords, 9, 0) } : {})
   };
 }
 

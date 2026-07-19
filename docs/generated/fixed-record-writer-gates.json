@@ -881,7 +881,10 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/encounters.rs:timed_encounter_writer_mutates_only_owned_fields",
+        "src-tauri/src/realmz/encounters.rs:fresh_timed_encounter_compiles_semantic_fields_and_zero_reserved_words",
+        "src-tauri/src/realmz/encounters.rs:imported_timed_encounter_compiles_without_record_byte_identity",
+        "src-tauri/src/exporter.rs:imported_timed_encounter_export_bounds_reserved_words_to_the_annex",
+        "scripts/run_authoritative_scenario_proof.mjs:assertOwnershipTimedEncounter",
         "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
@@ -890,9 +893,33 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/encounters.rs:timed_encounter_writer_mutates_only_owned_fields",
+          "reference": "src-tauri/src/realmz/encounters.rs:fresh_timed_encounter_compiles_semantic_fields_and_zero_reserved_words",
           "file": "src-tauri/src/realmz/encounters.rs",
-          "anchor": "timed_encounter_writer_mutates_only_owned_fields",
+          "anchor": "fresh_timed_encounter_compiles_semantic_fields_and_zero_reserved_words",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/encounters.rs:imported_timed_encounter_compiles_without_record_byte_identity",
+          "file": "src-tauri/src/realmz/encounters.rs",
+          "anchor": "imported_timed_encounter_compiles_without_record_byte_identity",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/exporter.rs:imported_timed_encounter_export_bounds_reserved_words_to_the_annex",
+          "file": "src-tauri/src/exporter.rs",
+          "anchor": "imported_timed_encounter_export_bounds_reserved_words_to_the_annex",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "scripts/run_authoritative_scenario_proof.mjs:assertOwnershipTimedEncounter",
+          "file": "scripts/run_authoritative_scenario_proof.mjs",
+          "anchor": "assertOwnershipTimedEncounter",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -1010,16 +1037,24 @@
           "type": "i16be"
         },
         {
-          "field": "Timed encounter qualifiers",
-          "internal": "stuff[10]",
+          "field": "Location kind",
+          "internal": "location_kind",
           "offset": 20,
-          "bytes": 20,
-          "type": "i16be[10]"
+          "bytes": 2,
+          "type": "i16be enum"
         }
       ],
-      "preservedRanges": [],
-      "partialOnly": false,
-      "preservationPolicy": "This gate covers timed encounters only; thief encounter records remain outside this batch."
+      "preservedRanges": [
+        {
+          "field": "Unnamed timed compatibility words",
+          "internal": "stuff[1..9]",
+          "offset": 22,
+          "bytes": 18,
+          "type": "annex-preserved for imported rows; deterministic zero for fresh rows"
+        }
+      ],
+      "partialOnly": true,
+      "preservationPolicy": "Fresh timed encounters compile schedule, macro, item, quest, and location fields from canonical semantics and emit deterministic zero for the nine unnamed words. Unchanged imported rows remain byte-exact; edited imported rows recompile semantic fields while recovering only offsets 22..39 from the compatibility annex."
     },
     {
       "container": "Data CI",

@@ -153,6 +153,8 @@ sourceTimedEncounters[0] = 0x6d;
 sourceTimedEncounters[1] = 0x6e;
 sourceTimedEncounters[40] = 0x6f;
 sourceTimedEncounters[41] = 0x70;
+setI16(sourceTimedEncounters, 40 + 22, 0x1234);
+setI16(sourceTimedEncounters, 40 + 38, -321);
 const FIELD_BYTES = 90 * 90 * 2;
 const MAP_RECORD_BYTES = 340;
 const RANDOM_LEVEL_BYTES = 644;
@@ -1088,7 +1090,7 @@ const authoredTimedEncounter = timedEncounterRecord(1, {
   requiredItem: 901,
   requiredQuest: 7,
   locationKind: "dungeon",
-  stuff: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  reservedWords: new Array(9).fill(0x2222)
 });
 const encounterProject = {
   ...project,
@@ -1135,7 +1137,11 @@ expect(bytesEqual(writtenThiefEncounters?.slice(0, 118), sourceThiefEncounters.s
 expect(bytesEqual(writtenThiefEncounters?.slice(118, 236), thiefEncounterRow(authoredThiefEncounter)), "Authored thief encounter row should compile every byte without embedded raw identity");
 expect(bytesEqual(writtenThiefEncounters?.slice(236), new Uint8Array([0xde, 0xad, 0xbe])), "Malformed Data TD2 tail should remain annex-owned");
 expect(bytesEqual(writtenTimedEncounters?.slice(0, 40), sourceTimedEncounters.slice(0, 40)), "Unauthored timed encounter row should remain byte-identical");
-expect(bytesEqual(writtenTimedEncounters?.slice(40, 80), timedEncounterRow(authoredTimedEncounter)), "Authored timed encounter row should encode fields");
+const expectedAuthoredTimedEncounter = timedEncounterRow(authoredTimedEncounter);
+expectedAuthoredTimedEncounter.set(sourceTimedEncounters.slice(40 + 22, 80), 22);
+expect(bytesEqual(writtenTimedEncounters?.slice(40, 80), expectedAuthoredTimedEncounter), "Authored timed encounter row should compile semantic fields and preserve only annex-owned reserved words");
+expect(readI16(writtenTimedEncounters, 40 + 20) === 2, "Authored timed encounter should compile semantic location kind");
+expect(readI16(writtenTimedEncounters, 40 + 22) === 0x1234 && readI16(writtenTimedEncounters, 40 + 38) === -321, "Authored timed encounter should recover unnamed words from the compatibility annex");
 
 const noOpResourceAssetProject = {
   ...project,
@@ -2287,8 +2293,6 @@ function timedEncounterRecord(id, overrides = {}) {
     requiredItem: 0,
     requiredQuest: 0,
     locationKind: "any",
-    stuff: new Array(10).fill(0),
-    rawBytes: new Array(40).fill(0),
     authored: true,
     ...overrides
   };
@@ -2306,7 +2310,7 @@ function timedEncounterRow(record) {
   setI16(output, 14, record.requiredY);
   setI16(output, 16, record.requiredItem);
   setI16(output, 18, record.requiredQuest);
-  setI16Array(output, 20, record.stuff, 10);
+  setI16(output, 20, record.locationKind === "land" ? 1 : record.locationKind === "dungeon" ? 2 : -1);
   return output;
 }
 

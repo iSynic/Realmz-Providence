@@ -146,7 +146,14 @@ function encounterProject(): Project {
     requiredItem: 0,
     requiredQuest: 0,
     locationKind: "any",
-    stuff: new Array(10).fill(0)
+    reservedWords: new Array(9).fill(0),
+    provenance: {
+      sourceFile: "Data TD3",
+      recordIndex: 4,
+      byteOffset: 160,
+      byteLength: 40,
+      confidence: "fixture-backed"
+    }
   }];
   return project;
 }

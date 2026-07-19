@@ -6,7 +6,7 @@ use crate::project::{
     MonsterIconOverride, MonsterIconOverrideSource, OptionLabelRecord, ProvidenceProject,
     ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride, ScenarioTarget,
     SimpleEncounterRecord, TargetCompatibilityBuckets, TargetCompatibilityIssue,
-    ThiefEncounterRecord,
+    ThiefEncounterRecord, TimedEncounterRecord,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -334,11 +334,9 @@ fn compile_realmz_scenario(
         &project.thief_encounters,
         compatibility_annex,
     )?;
-    write_fixed_if_nonempty(
+    write_timed_encounters_for_export(
         &mut manifest,
-        "Data TD3",
-        write_timed_encounters(&project.timed_encounters)?,
-        crate::realmz::TIMED_ENCOUNTER_BYTES,
+        &project.timed_encounters,
         compatibility_annex,
     )?;
     write_spell_overrides_preserving_tail(
@@ -557,6 +555,16 @@ fn write_thief_encounters_for_export(
     write_if_nonempty(manifest, "Data TD2", bytes)
 }
 
+fn write_timed_encounters_for_export(
+    manifest: &mut NativeScenarioManifest,
+    records: &[TimedEncounterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes =
+        preserve_imported_timed_encounter_rows(write_timed_encounters(records)?, records, annex)?;
+    write_if_nonempty(manifest, "Data TD3", bytes)
+}
+
 fn preserve_imported_message_rows(
     bytes: Vec<u8>,
     records: &[MessageRecord],
@@ -639,6 +647,36 @@ fn preserve_imported_thief_encounter_rows(
         records.iter().map(|record| (record.id, record.authored)),
         annex,
     )
+}
+
+fn preserve_imported_timed_encounter_rows(
+    bytes: Vec<u8>,
+    records: &[TimedEncounterRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    let mut output = preserve_imported_fixed_rows(
+        bytes,
+        "Data TD3",
+        crate::realmz::TIMED_ENCOUNTER_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )?;
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read("Data TD3")?,
+        None => None,
+    }) else {
+        return Ok(output);
+    };
+    let complete_source_bytes =
+        raw.len() / crate::realmz::TIMED_ENCOUNTER_BYTES * crate::realmz::TIMED_ENCOUNTER_BYTES;
+    for record in records.iter().filter(|record| record.authored) {
+        let start = record.id * crate::realmz::TIMED_ENCOUNTER_BYTES + 22;
+        let end = (record.id + 1) * crate::realmz::TIMED_ENCOUNTER_BYTES;
+        if end <= output.len() && end <= complete_source_bytes {
+            output[start..end].copy_from_slice(&raw[start..end]);
+        }
+    }
+    Ok(output)
 }
 
 fn preserve_imported_fixed_rows(
@@ -1645,9 +1683,10 @@ mod tests {
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
         preserve_imported_fixed_length, preserve_imported_message_rows,
         preserve_imported_option_label_rows, preserve_imported_simple_encounter_rows,
-        preserve_imported_thief_encounter_rows, scenario_icon_resource_updates,
-        write_caste_overrides_for_export, write_race_overrides_for_export,
-        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -2211,6 +2250,56 @@ mod tests {
         assert_eq!(crate::realmz::i16_be(authored, 98), 0x090a);
         assert_eq!(crate::realmz::i16_be(authored, 108), 0x1112);
         assert_eq!(crate::realmz::i16_be(authored, 116), 0x1314);
+        assert_eq!(&output[2 * record_bytes..], &[0xde, 0xad, 0xbe]);
+    }
+
+    #[test]
+    fn imported_timed_encounter_export_bounds_reserved_words_to_the_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let record_bytes = crate::realmz::TIMED_ENCOUNTER_BYTES;
+        let mut source = vec![0; 2 * record_bytes];
+        source[0..2].copy_from_slice(&12i16.to_be_bytes());
+        source[20..22].copy_from_slice(&1i16.to_be_bytes());
+        source[22..24].copy_from_slice(&0x1234i16.to_be_bytes());
+        let authored_start = record_bytes;
+        source[authored_start..authored_start + 2].copy_from_slice(&15i16.to_be_bytes());
+        source[authored_start + 20..authored_start + 22].copy_from_slice(&1i16.to_be_bytes());
+        source[authored_start + 22..authored_start + 24].copy_from_slice(&0x2345i16.to_be_bytes());
+        source[authored_start + 38..authored_start + 40].copy_from_slice(&(-321i16).to_be_bytes());
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data TD3"), &source).unwrap();
+
+        let mut encounters = crate::realmz::parse_timed_encounters(&source);
+        encounters[0].raw_bytes.fill(0x11);
+        encounters[1].raw_bytes.fill(0x22);
+        encounters[1].day = 35;
+        encounters[1].increment = 5;
+        encounters[1].percent = 50;
+        encounters[1].door = 24;
+        encounters[1].location_kind = crate::project::TimedEncounterLocationKind::Dungeon;
+        encounters[1].reserved_words.fill(0x3456);
+        encounters[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_timed_encounter_rows(
+            crate::realmz::write_timed_encounters(&encounters).unwrap(),
+            &encounters,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(&output[..record_bytes], &source[..record_bytes]);
+        let authored = &output[authored_start..2 * record_bytes];
+        assert_eq!(crate::realmz::i16_be(authored, 0), 35);
+        assert_eq!(crate::realmz::i16_be(authored, 2), 5);
+        assert_eq!(crate::realmz::i16_be(authored, 4), 50);
+        assert_eq!(crate::realmz::i16_be(authored, 6), 24);
+        assert_eq!(crate::realmz::i16_be(authored, 20), 2);
+        assert_eq!(crate::realmz::i16_be(authored, 22), 0x2345);
+        assert_eq!(crate::realmz::i16_be(authored, 38), -321);
         assert_eq!(&output[2 * record_bytes..], &[0xde, 0xad, 0xbe]);
     }
 

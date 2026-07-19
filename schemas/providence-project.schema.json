@@ -121,7 +121,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/thiefEncounterRecord" }
     },
-    "timedEncounters": { "$ref": "#/$defs/canonicalRecordArray" },
+    "timedEncounters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/timedEncounterRecord" }
+    },
     "questLabels": { "$ref": "#/$defs/canonicalRecordArray" },
     "spellOverrides": { "$ref": "#/$defs/canonicalRecordArray" },
     "raceOverrides": { "$ref": "#/$defs/canonicalRecordArray" },
@@ -549,6 +552,40 @@
         "prompts": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "promptSounds": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "rawBytes": { "type": "array", "minItems": 118, "maxItems": 118, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "timedEncounterLocationKind": {
+      "type": "string",
+      "enum": ["any", "land", "dungeon"],
+      "x-providence-typescript-name": "ProvidenceTimedEncounterLocationKind",
+      "x-providence-rust-name": "TimedEncounterLocationKind",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq"]
+    },
+    "timedEncounterRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceTimedEncounterRecord",
+      "x-providence-rust-name": "TimedEncounterRecord",
+      "x-providence-rust-default": ["reservedWords", "rawBytes", "authored"],
+      "x-providence-rust-skip-empty": ["reservedWords", "rawBytes"],
+      "required": ["id", "day", "increment", "percent", "door", "requiredLevel", "requiredRandomRect", "requiredX", "requiredY", "requiredItem", "requiredQuest", "locationKind", "provenance"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "day": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "increment": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "percent": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "door": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "requiredLevel": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "requiredRandomRect": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "requiredX": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "requiredY": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "requiredItem": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "requiredQuest": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "locationKind": { "$ref": "#/$defs/timedEncounterLocationKind" },
+        "reservedWords": { "type": "array", "minItems": 9, "maxItems": 9, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
+        "rawBytes": { "type": "array", "minItems": 40, "maxItems": 40, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

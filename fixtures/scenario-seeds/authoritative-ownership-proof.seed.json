@@ -103,6 +103,19 @@
       "lock": { "tumblers": 5, "openChancePerLevel": 7 }
     }
   ],
+  "timedEncounters": [
+    {
+      "key": "ownership-clock",
+      "id": 0,
+      "day": 35,
+      "increment": 5,
+      "percent": 50,
+      "macro": "ownership-timed-macro",
+      "requiredItem": "ownership-token",
+      "requiredQuest": "ownership-proven",
+      "location": { "kind": "land", "level": 0, "x": 10, "y": 12 }
+    }
+  ],
   "battles": [
     {
       "key": "ownership-battle",
@@ -185,6 +198,15 @@
       "steps": [
         { "kind": "message", "message": "ownership-message" },
         { "kind": "setQuestFlag", "quest": "ownership-proven" }
+      ]
+    }
+  ],
+  "extraActionPoints": [
+    {
+      "key": "ownership-timed-macro",
+      "id": 2,
+      "steps": [
+        { "kind": "message", "message": "ownership-message" }
       ]
     }
   ]

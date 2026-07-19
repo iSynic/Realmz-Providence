@@ -761,6 +761,30 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             ));
         }
     }
+    for encounter in &project.timed_encounters {
+        if !encounter.raw_bytes.is_empty()
+            && encounter.raw_bytes.len() != crate::realmz::TIMED_ENCOUNTER_BYTES
+        {
+            errors.push(format!(
+                "Timed encounter {} has invalid {}-byte compatibility storage.",
+                encounter.id,
+                crate::realmz::TIMED_ENCOUNTER_BYTES
+            ));
+        }
+        if !encounter.reserved_words.is_empty() && encounter.reserved_words.len() != 9 {
+            errors.push(format!(
+                "Timed encounter {} has {} reserved compatibility words; Data TD3 retains exactly 9 when present.",
+                encounter.id,
+                encounter.reserved_words.len()
+            ));
+        }
+        if !encounter.authored && encounter.raw_bytes.is_empty() {
+            warnings.push(format!(
+                "Timed encounter {} has incomplete preserved source bytes and should be re-imported before editing.",
+                encounter.id
+            ));
+        }
+    }
     let scenario_assets = project
         .assets
         .iter()

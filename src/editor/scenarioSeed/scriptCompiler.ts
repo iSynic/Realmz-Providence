@@ -368,8 +368,6 @@ function buildTimedEncounter(seed: ScenarioSeedTimedEncounter, context: BuildCon
     requiredItem: seed.requiredItem === undefined ? -1 : resolveItemRef(seed.requiredItem, context),
     requiredQuest: seed.requiredQuest === undefined ? -1 : resolveRef(seed.requiredQuest, context.quests, "quest", context),
     locationKind: location.kind,
-    stuff: [location.kind === "land" ? 1 : location.kind === "dungeon" ? 2 : 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-    rawBytes: new Array(TIMED_ENCOUNTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data TD3", id, id * TIMED_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES)
   };

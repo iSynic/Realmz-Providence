@@ -239,8 +239,8 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (!["any", "land", "dungeon"].includes(record.locationKind)) {
       issues.push(recordIssue("error", recordType, recordId, "timed-location-kind", "Timed encounter location requirement is invalid.", "Choose Any, Land, or Dungeon."));
     }
-    if (record.stuff.length > 10) {
-      issues.push(recordIssue("error", recordType, recordId, "timed-extra-field-count", "Timed encounter has too many extra fields.", "Timed encounters store exactly ten extra signed-short fields."));
+    if (record.reservedWords && record.reservedWords.length !== 9) {
+      issues.push(recordIssue("error", recordType, recordId, "timed-reserved-field-count", "Timed encounter has the wrong number of compatibility words.", "Imported timed encounters retain exactly nine reserved signed-short fields."));
     }
     issues.push(...validateReference(project, recordType, recordId, "Extra Action Point", 8, record.door, undefined, catalog));
     if (record.requiredQuest >= 0 && record.requiredQuest > 9999) {

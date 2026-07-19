@@ -800,15 +800,21 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Required Y", internal: "required_y", offset: 14, bytes: 2, type: "i16be" },
       { field: "Required item", internal: "required_item", offset: 16, bytes: 2, type: "i16be" },
       { field: "Required quest", internal: "required_quest", offset: 18, bytes: 2, type: "i16be" },
-      { field: "Timed encounter qualifiers", internal: "stuff[10]", offset: 20, bytes: 20, type: "i16be[10]" }
+      { field: "Location kind", internal: "location_kind", offset: 20, bytes: 2, type: "i16be enum" }
+    ],
+    preservedRanges: [
+      { field: "Unnamed timed compatibility words", internal: "stuff[1..9]", offset: 22, bytes: 18, type: "annex-preserved for imported rows; deterministic zero for fresh rows" }
     ],
     evidence: [
-      "src-tauri/src/realmz/encounters.rs:timed_encounter_writer_mutates_only_owned_fields",
+      "src-tauri/src/realmz/encounters.rs:fresh_timed_encounter_compiles_semantic_fields_and_zero_reserved_words",
+      "src-tauri/src/realmz/encounters.rs:imported_timed_encounter_compiles_without_record_byte_identity",
+      "src-tauri/src/exporter.rs:imported_timed_encounter_export_bounds_reserved_words_to_the_annex",
+      "scripts/run_authoritative_scenario_proof.mjs:assertOwnershipTimedEncounter",
       ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
     ],
-    preservationPolicy: "This gate covers timed encounters only; thief encounter records remain outside this batch."
+    preservationPolicy: "Fresh timed encounters compile schedule, macro, item, quest, and location fields from canonical semantics and emit deterministic zero for the nine unnamed words. Unchanged imported rows remain byte-exact; edited imported rows recompile semantic fields while recovering only offsets 22..39 from the compatibility annex."
   },
   {
     container: "Data CI",

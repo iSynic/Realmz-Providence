@@ -2830,8 +2830,7 @@ mod tests {
         timed.day = 5;
         timed.required_item = 901;
         timed.required_quest = 6;
-        timed.location_kind = "land".to_string();
-        timed.stuff[0] = 1;
+        timed.location_kind = crate::project::TimedEncounterLocationKind::Land;
         timed.authored = false;
         timed.raw_bytes.fill(0xA5);
         project.timed_encounters = vec![timed];

@@ -80,6 +80,31 @@ describe("browser project native manifest validation", () => {
     expect(normalized.promptSounds).toEqual([0, 0, 0]);
   });
 
+  it("migrates legacy timed stuff words into bounded compatibility storage", () => {
+    const project = createBrowserProject("Legacy timed encounter words");
+    project.timedEncounters = [{
+      id: 0,
+      day: 1,
+      increment: 2,
+      percent: 50,
+      door: 3,
+      requiredLevel: 0,
+      requiredRandomRect: -1,
+      requiredX: 10,
+      requiredY: 12,
+      requiredItem: -1,
+      requiredQuest: -1,
+      locationKind: "land",
+      stuff: [1, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      provenance: { sourceFile: "Data TD3", recordIndex: 0, byteOffset: 0, byteLength: 40, confidence: "fixture-backed" }
+    } as unknown as Project["timedEncounters"][number]];
+
+    const normalized = normalizeBrowserProject(project).timedEncounters[0];
+
+    expect(normalized.reservedWords).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19]);
+    expect("stuff" in normalized).toBe(false);
+  });
+
   it("parses player-map markers into canonical semantic slots", () => {
     const bytes = new Uint8Array(340);
     bytes.set([0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d], 0);
@@ -459,7 +484,7 @@ describe("browser project native manifest validation", () => {
       requiredItem: 901,
       requiredQuest: 6,
       locationKind: "land",
-      stuff: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      reservedWords: [0, 0, 0, 0, 0, 0, 0, 0, 0],
       authored: false,
       rawBytes: new Array(40).fill(0xa5)
     }];

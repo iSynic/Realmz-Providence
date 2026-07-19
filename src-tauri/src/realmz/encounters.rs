@@ -1,12 +1,12 @@
 use crate::error::{ProvidenceError, Result};
 use crate::project::{
     ComplexEncounterRecord, EncounterActionRow, SimpleEncounterRecord, ThiefEncounterRecord,
-    TimedEncounterRecord,
+    TimedEncounterLocationKind, TimedEncounterRecord,
 };
 
 use super::record_bytes::{
-    copy_raw, decode_pascal_text, encode_pascal_text, i16_be, parse_fixed_records, preserve_raw,
-    provenance, read_i16_array, signed_bytes, write_fixed_records, write_i16_array, write_i16_be,
+    decode_pascal_text, encode_pascal_text, i16_be, parse_fixed_records, provenance,
+    read_i16_array, signed_bytes, write_fixed_records, write_i16_array, write_i16_be,
     write_i8_array,
 };
 
@@ -140,7 +140,7 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
 pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
     parse_fixed_records(buffer, TIMED_ENCOUNTER_BYTES)
         .map(|(id, start, record)| {
-            let stuff: Vec<i16> = (0..10).map(|slot| i16_be(record, 20 + slot * 2)).collect();
+            let words: Vec<i16> = (0..10).map(|slot| i16_be(record, 20 + slot * 2)).collect();
             TimedEncounterRecord {
                 id,
                 day: i16_be(record, 0),
@@ -153,9 +153,8 @@ pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
                 required_y: i16_be(record, 14),
                 required_item: i16_be(record, 16),
                 required_quest: i16_be(record, 18),
-                location_kind: timed_location_kind(stuff.first().copied().unwrap_or_default())
-                    .to_string(),
-                stuff,
+                location_kind: timed_location_kind(words.first().copied().unwrap_or_default()),
+                reserved_words: words[1..].to_vec(),
                 raw_bytes: record.to_vec(),
                 authored: false,
                 provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES),
@@ -166,9 +165,11 @@ pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
 
 pub fn write_timed_encounters(records: &[TimedEncounterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, TIMED_ENCOUNTER_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, TIMED_ENCOUNTER_BYTES) {
-            return Ok(());
+        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != TIMED_ENCOUNTER_BYTES {
+            return Err(ProvidenceError::message(format!(
+                "Timed encounter {} has invalid compatibility byte storage",
+                record.id
+            )));
         }
         write_i16_be(buffer, 0, record.day);
         write_i16_be(buffer, 2, record.increment);
@@ -180,11 +181,7 @@ pub fn write_timed_encounters(records: &[TimedEncounterRecord]) -> Result<Vec<u8
         write_i16_be(buffer, 14, record.required_y);
         write_i16_be(buffer, 16, record.required_item);
         write_i16_be(buffer, 18, record.required_quest);
-        let mut stuff = record.stuff.clone();
-        stuff.resize(10, 0);
-        for slot in 0..10 {
-            write_i16_be(buffer, 20 + slot * 2, stuff[slot]);
-        }
+        write_i16_be(buffer, 20, timed_location_kind_value(record.location_kind));
         Ok(())
     })
 }
@@ -242,11 +239,19 @@ pub fn write_thief_encounters(records: &[ThiefEncounterRecord]) -> Result<Vec<u8
     })
 }
 
-fn timed_location_kind(value: i16) -> &'static str {
+fn timed_location_kind(value: i16) -> TimedEncounterLocationKind {
     match value {
-        1 => "land",
-        2 => "dungeon",
-        _ => "any",
+        1 => TimedEncounterLocationKind::Land,
+        2 => TimedEncounterLocationKind::Dungeon,
+        _ => TimedEncounterLocationKind::Any,
+    }
+}
+
+fn timed_location_kind_value(value: TimedEncounterLocationKind) -> i16 {
+    match value {
+        TimedEncounterLocationKind::Any => -1,
+        TimedEncounterLocationKind::Land => 1,
+        TimedEncounterLocationKind::Dungeon => 2,
     }
 }
 
@@ -289,43 +294,50 @@ fn write_encounter_actions(buffer: &mut [u8], actions: &[EncounterActionRow]) ->
 mod tests {
     use super::*;
 
-    fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {
-        before
-            .iter()
-            .zip(after)
-            .enumerate()
-            .filter_map(|(offset, (before, after))| (before != after).then_some(offset))
-            .collect()
-    }
-
     #[test]
-    fn encounter_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 1] = [(TIMED_ENCOUNTER_BYTES, |bytes| {
-            write_timed_encounters(&parse_timed_encounters(bytes)).unwrap()
-        })];
-        for (record_bytes, parse_write) in cases {
-            let mut input = vec![0u8; record_bytes * 2];
-            input[0] = 1;
-            input[record_bytes + 3] = 42;
-            input[record_bytes * 2 - 1] = 99;
-            assert_eq!(input, parse_write(&input));
-        }
-    }
+    fn fresh_timed_encounter_compiles_semantic_fields_and_zero_reserved_words() {
+        let mut encounter = parse_timed_encounters(&vec![0; TIMED_ENCOUNTER_BYTES]).remove(0);
+        encounter.raw_bytes.clear();
+        encounter.authored = true;
+        encounter.day = 35;
+        encounter.increment = 5;
+        encounter.percent = 50;
+        encounter.door = 24;
+        encounter.required_level = 8;
+        encounter.required_random_rect = 17;
+        encounter.required_x = 10;
+        encounter.required_y = 11;
+        encounter.required_item = 901;
+        encounter.required_quest = 7;
+        encounter.location_kind = TimedEncounterLocationKind::Dungeon;
+        encounter.reserved_words.fill(0x1234);
 
-    #[test]
-    fn timed_encounter_writer_mutates_only_owned_fields() {
-        let mut input = vec![0u8; TIMED_ENCOUNTER_BYTES * 2];
-        let timed_start = TIMED_ENCOUNTER_BYTES;
-        write_i16_be(&mut input, timed_start + 16, 0x0102);
-        let mut encounters = parse_timed_encounters(&input);
-        encounters[1].authored = true;
-        encounters[1].required_item = 0x0304;
-        let output = write_timed_encounters(&encounters).unwrap();
-        assert_eq!(output.len(), input.len());
+        let output = write_timed_encounters(&[encounter]).unwrap();
+        assert_eq!(output.len(), TIMED_ENCOUNTER_BYTES);
         assert_eq!(
-            changed_offsets(&input, &output),
-            vec![timed_start + 16, timed_start + 17]
+            (0..11)
+                .map(|slot| i16_be(&output, slot * 2))
+                .collect::<Vec<_>>(),
+            vec![35, 5, 50, 24, 8, 17, 10, 11, 901, 7, 2]
         );
+        assert!(output[22..].iter().all(|byte| *byte == 0));
+    }
+
+    #[test]
+    fn imported_timed_encounter_compiles_without_record_byte_identity() {
+        let mut input = vec![0u8; TIMED_ENCOUNTER_BYTES];
+        write_i16_be(&mut input, 0, 12);
+        write_i16_be(&mut input, 20, 1);
+        write_i16_be(&mut input, 22, 0x1234);
+        let mut records = parse_timed_encounters(&input);
+        records[0].raw_bytes.fill(0xa5);
+        let output = write_timed_encounters(&records).unwrap();
+        assert_ne!(output, input);
+        assert_eq!(i16_be(&output, 0), 12);
+        assert_eq!(i16_be(&output, 20), 1);
+        assert_eq!(i16_be(&output, 22), 0);
+        records[0].raw_bytes = vec![1];
+        assert!(write_timed_encounters(&records).is_err());
     }
 
     #[test]

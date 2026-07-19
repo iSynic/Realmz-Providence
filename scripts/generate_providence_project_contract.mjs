@@ -65,7 +65,7 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
@@ -77,6 +77,8 @@ const encounterActionRowSchema = schema.$defs?.encounterActionRow ?? {};
 const simpleEncounterRecordSchema = schema.$defs?.simpleEncounterRecord ?? {};
 const complexEncounterRecordSchema = schema.$defs?.complexEncounterRecord ?? {};
 const thiefEncounterRecordSchema = schema.$defs?.thiefEncounterRecord ?? {};
+const timedEncounterLocationKindSchema = schema.$defs?.timedEncounterLocationKind ?? {};
+const timedEncounterRecordSchema = schema.$defs?.timedEncounterRecord ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -112,6 +114,7 @@ expect(schema.properties?.messages?.items?.$ref === "#/$defs/messageRecord", "pr
 expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabelRecord", "project optionLabels must contain canonical option-label DTOs");
 expect(schema.properties?.battles?.items?.$ref === "#/$defs/battleRecord", "project battles must contain canonical battle DTOs");
 expect(schema.properties?.simpleEncounters?.items?.$ref === "#/$defs/simpleEncounterRecord", "project simpleEncounters must contain canonical simple-encounter DTOs");
+expect(schema.properties?.timedEncounters?.items?.$ref === "#/$defs/timedEncounterRecord", "project timedEncounters must contain canonical timed-encounter DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
 expectSameArray(renderModeSchema.enum ?? [], ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"], "Map render-mode vocabulary");
 for (const [index, definition] of mapDefinitions.entries()) {
@@ -236,12 +239,20 @@ for (const [field, length] of [["typeFlags", 10], ["modifiers", 8], ["successCod
 }
 expect(thiefEncounterRecordSchema.properties?.rawBytes?.minItems === 118 && thiefEncounterRecordSchema.properties?.rawBytes?.maxItems === 118, "thief-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
 expectSameArray(thiefEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Thief-encounter omitted compatibility inventory");
+const timedEncounterFields = ["id", "day", "increment", "percent", "door", "requiredLevel", "requiredRandomRect", "requiredX", "requiredY", "requiredItem", "requiredQuest", "locationKind", "reservedWords", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(timedEncounterRecordSchema.properties ?? {}), timedEncounterFields, "Timed-encounter field inventory");
+expectSameArray(timedEncounterRecordSchema.required ?? [], timedEncounterFields.filter((field) => !["reservedWords", "rawBytes", "authored"].includes(field)), "Timed-encounter authored field inventory");
+expectSameArray(timedEncounterLocationKindSchema.enum ?? [], ["any", "land", "dungeon"], "Timed-encounter location-kind vocabulary");
+expect(timedEncounterRecordSchema.properties?.locationKind?.$ref === "#/$defs/timedEncounterLocationKind", "timed encounters must reference the canonical location-kind enum");
+expect(timedEncounterRecordSchema.properties?.reservedWords?.minItems === 9 && timedEncounterRecordSchema.properties?.reservedWords?.maxItems === 9, "timed-encounter compatibility storage must retain nine reserved Realmz words");
+expect(timedEncounterRecordSchema.properties?.rawBytes?.minItems === 40 && timedEncounterRecordSchema.properties?.rawBytes?.maxItems === 40, "timed-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
+expectSameArray(timedEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["reservedWords", "rawBytes"], "Timed-encounter omitted compatibility inventory");
 const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes", "TimedEncounterRecord.reservedWords", "TimedEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -306,6 +317,8 @@ for (const alias of [
   "export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;",
   "export type ComplexEncounterRecord = ProvidenceComplexEncounterRecord;",
   "export type ThiefEncounterRecord = ProvidenceThiefEncounterRecord;",
+  "export type TimedEncounterLocationKind = ProvidenceTimedEncounterLocationKind;",
+  "export type TimedEncounterRecord = ProvidenceTimedEncounterRecord;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -334,6 +347,7 @@ expect(!typesSource.includes("export type EncounterActionRow = {"), "types.ts mu
 expect(!typesSource.includes("export type SimpleEncounterRecord = {"), "types.ts must not handwrite SimpleEncounterRecord");
 expect(!typesSource.includes("export type ComplexEncounterRecord = {"), "types.ts must not handwrite ComplexEncounterRecord");
 expect(!typesSource.includes("export type ThiefEncounterRecord = {"), "types.ts must not handwrite ThiefEncounterRecord");
+expect(!typesSource.includes("export type TimedEncounterRecord = {"), "types.ts must not handwrite TimedEncounterRecord");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!typesSource.includes(`export type ${scenarioType} = {`), `types.ts must not handwrite ${scenarioType}`);
 }
@@ -371,6 +385,8 @@ expectSameSet(rustGeneratedReExports, [
   "SimpleEncounterRecord",
   "ComplexEncounterRecord",
   "ThiefEncounterRecord",
+  "TimedEncounterLocationKind",
+  "TimedEncounterRecord",
   "TreasureRecord",
   "SourceFile",
   "SourceFileRole",
@@ -400,6 +416,7 @@ expect(!rustProjectSource.includes("pub struct EncounterActionRow {"), "project.
 expect(!rustProjectSource.includes("pub struct SimpleEncounterRecord {"), "project.rs must not handwrite SimpleEncounterRecord");
 expect(!rustProjectSource.includes("pub struct ComplexEncounterRecord {"), "project.rs must not handwrite ComplexEncounterRecord");
 expect(!rustProjectSource.includes("pub struct ThiefEncounterRecord {"), "project.rs must not handwrite ThiefEncounterRecord");
+expect(!rustProjectSource.includes("pub struct TimedEncounterRecord {"), "project.rs must not handwrite TimedEncounterRecord");
 expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
 expect(!rustProjectSource.includes("pub enum RenderMode {"), "project.rs must not handwrite RenderMode");
 expect(rustProjectSource.includes("impl LevelType {"), "project.rs must retain handwritten LevelType behavior methods");
@@ -516,11 +533,13 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(simpleEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(complexEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_THIEF_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(thiefEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_TIMED_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(timedEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
     renderTypeScriptEnum(confidence) + `\n` +
     renderTypeScriptObject(provenance["x-providence-typescript-name"], provenance, new Set()) + `\n` +
     mapDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
+    renderTypeScriptEnum(timedEncounterLocationKindSchema) + `\n` +
     recordDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     renderTypeScriptObject(sourceFileName, sourceFile, new Set()) + `\n` +
     renderTypeScriptObject(persistedSourceName, source, new Set()) + `\n` +
@@ -578,11 +597,14 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(complexEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_THIEF_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(thiefEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_TIMED_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(timedEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
     renderRustEnum(confidence) + `\n` +
     renderRustStruct(provenance) + `\n` +
     mapDefinitions.map(renderRustDefinition).join("\n") + `\n` +
+    renderRustEnum(timedEncounterLocationKindSchema) + `\n` +
     recordDefinitions.map(renderRustDefinition).join("\n") + `\n` +
     renderRustStruct(sourceFile) + `\n` +
     renderRustStruct(source) + `\n` +

@@ -1954,7 +1954,7 @@ fn parse_timed_encounter(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
         ("requiredY", json!(i16_be(buffer, 14))),
         ("requiredItem", json!(i16_be(buffer, 16))),
         ("requiredQuest", json!(i16_be(buffer, 18))),
-        ("stuff", json!(stuff)),
+        ("reservedWords", json!(&stuff[1..])),
         ("locationKind", json!(location_kind)),
         (
             "preview",

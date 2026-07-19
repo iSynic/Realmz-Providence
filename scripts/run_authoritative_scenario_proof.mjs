@@ -39,7 +39,7 @@ expect(result.ok, `Scenario JSON compilation failed: ${result.ok ? "" : result.e
 const project = result.project;
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
-expect(project.triggers.length === 1, `Expected one Action Point, found ${project.triggers.length}`);
+expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
 assertOwnershipMessage(project.messages, "Canonical project");
 expect(project.messages.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical messages must not carry compatibility bytes");
@@ -51,6 +51,8 @@ assertOwnershipComplexEncounter(project.complexEncounters, "Canonical project");
 expect(project.complexEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical complex encounters must not carry compatibility bytes");
 assertOwnershipThiefEncounter(project.thiefEncounters, "Canonical project");
 expect(project.thiefEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical thief encounters must not carry compatibility bytes");
+assertOwnershipTimedEncounter(project.timedEncounters, "Canonical project");
+expect(project.timedEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0 && (record.reservedWords?.length ?? 0) === 0), "Fresh canonical timed encounters must not carry compatibility bytes");
 assertOwnershipBattle(project.battles, "Canonical project");
 expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical battles must not carry compatibility bytes");
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
@@ -76,7 +78,7 @@ expect(project.schemaVersion === 5, `Canonical project must use schema v5, found
 expect(project.source.origin === "authored", `Fresh canonical project must declare authored origin, found ${project.source.origin}`);
 expect(project.source.files.length === 0, "Fresh canonical project must not inventory source files");
 expect(project.source.immutable === false, "Fresh canonical project must not be immutable");
-const questAction = project.triggers[0].actions.find((action) => action.rawCode === 47);
+const questAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 47);
 expect(questAction?.id === 1, `First authored quest flag must be runtime-valid ID 1, found ${questAction?.id}`);
 
 project.scenario.projectPath = projectDir;
@@ -176,6 +178,7 @@ assertOwnershipOptionLabels(reimported.optionLabels, "Reimport");
 assertOwnershipSimpleEncounter(reimported.simpleEncounters, "Reimport");
 assertOwnershipComplexEncounter(reimported.complexEncounters, "Reimport");
 assertOwnershipThiefEncounter(reimported.thiefEncounters, "Reimport");
+assertOwnershipTimedEncounter(reimported.timedEncounters, "Reimport");
 assertOwnershipBattle(reimported.battles, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
@@ -198,6 +201,7 @@ const summary = {
     simpleEncounters: project.simpleEncounters.length,
     complexEncounters: project.complexEncounters.length,
     thiefEncounters: project.thiefEncounters.length,
+    timedEncounters: project.timedEncounters.length,
     battles: project.battles.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
@@ -235,6 +239,7 @@ const summary = {
     compatibilityAnnexPresent: true,
     activeActionPointRecovered: true,
     messageRecovered: true,
+    timedEncounterRecovered: true,
     simpleEncounterRecovered: true,
     battleRecovered: true,
     itemTextRecovered: true,
@@ -308,6 +313,8 @@ async function assertNoRawSources(stage) {
   expect(savedProject.complexEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} complex encounters contain compatibility bytes`);
   assertOwnershipThiefEncounter(savedProject.thiefEncounters, `Rust-saved project ${stage}`);
   expect(savedProject.thiefEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} thief encounters contain compatibility bytes`);
+  assertOwnershipTimedEncounter(savedProject.timedEncounters, `Rust-saved project ${stage}`);
+  expect(savedProject.timedEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0 && (record.reservedWords?.length ?? 0) === 0), `Rust-saved project ${stage} timed encounters contain compatibility bytes`);
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
   expect(savedProject.battles?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} battles contain compatibility bytes`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
@@ -333,6 +340,8 @@ function assertCompleteNativeFolder(files, label) {
     ["Data ED", 426],
     ["Data ED2", 520],
     ["Data TD2", 2 * 118],
+    ["Data TD3", 40],
+    ["Data ED3", 3 * 40],
     ["Data BD", 346],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
@@ -346,7 +355,7 @@ function assertCompleteNativeFolder(files, label) {
     expect(files.has(name), `${label} output is missing ${name}`);
     expect(files.get(name).byteLength === bytes, `${label} ${name} should be ${bytes} bytes, found ${files.get(name).byteLength}`);
   }
-  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD3", "Data MD"]) {
+  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data MD"]) {
     expect(files.has(name), `${label} output is missing required empty table ${name}`);
     expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
@@ -399,6 +408,9 @@ function assertCompleteNativeFolder(files, label) {
   expect(readI16(thiefEncounter, 98) === 17 && readI16(thiefEncounter, 100) === 3 && readI16(thiefEncounter, 102) === 9 && readI16(thiefEncounter, 104) === 5, `${label} Data TD2 has the wrong authored trap, damage, or lock fields`);
   expect(readI16(thiefEncounter, 106) === 1 && readI16(thiefEncounter, 108) === 137 && readI16(thiefEncounter, 110) === 5, `${label} Data TD2 has the wrong authored prompt support fields`);
   expect(readI16(thiefEncounter, 112) === 0 && readI16(thiefEncounter, 114) === 7 && readI16(thiefEncounter, 116) === 6, `${label} Data TD2 has the wrong authored sound and spell-chance fields`);
+  const timedEncounter = files.get("Data TD3");
+  expect([35, 5, 50, 2, 0, -1, 10, 12, 901, 1, 1].every((value, slot) => readI16(timedEncounter, slot * 2) === value), `${label} Data TD3 has the wrong authored schedule, target, gates, or location`);
+  expect(timedEncounter.slice(22).every((byte) => byte === 0), `${label} Data TD3 fresh reserved words are not deterministic zero`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
 }
 
@@ -460,6 +472,15 @@ function assertOwnershipThiefEncounter(records, label) {
   expect(encounter.successSounds?.every((value) => value === 137) && encounter.failureSounds?.every((value) => value === 137), `${label} thief encounter has the wrong sound routes`);
   expect(encounter.spell === 17 && encounter.lowDamage === 3 && encounter.highDamage === 9 && encounter.tumblers === 5, `${label} thief encounter has the wrong trap or lock fields`);
   expect(encounter.prompts?.join(",") === "1,137,5" && encounter.promptSounds?.join(",") === "0,7,6", `${label} thief encounter has the wrong prompt support fields`);
+}
+
+function assertOwnershipTimedEncounter(records, label) {
+  const encounter = records?.find((record) => record.id === 0);
+  expect(encounter, `${label} is missing timed encounter 0`);
+  expect(encounter.day === 35 && encounter.increment === 5 && encounter.percent === 50, `${label} timed encounter has the wrong schedule`);
+  expect(encounter.door === 2, `${label} timed encounter has the wrong Extra Action Point target`);
+  expect(encounter.requiredLevel === 0 && encounter.requiredRandomRect === -1 && encounter.requiredX === 10 && encounter.requiredY === 12, `${label} timed encounter has the wrong location gates`);
+  expect(encounter.requiredItem === 901 && encounter.requiredQuest === 1 && encounter.locationKind === "land", `${label} timed encounter has the wrong item, quest, or location kind`);
 }
 
 function assertOwnershipBattle(records, label) {
