@@ -1873,9 +1873,14 @@
       ],
       "evidence": [
         "docs/generated/resource-byte-ownership.json",
-        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md",
+        "docs/format-evidence-cards/scenario-resource-fork-minimum.md",
+        "src-tauri/src/resource_fork.rs:minimum_scenario_resource_fork_is_canonical_empty_container",
+        "src/editor/browser/resourceFork.test.ts:builds the canonical empty scenario resource container",
+        "scripts/check_generated_scenario_baseline.mjs",
+        "scripts/run_authoritative_scenario_proof.mjs"
       ],
-      "editorPolicy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
+      "editorPolicy": "Fresh projects compile the canonical zero-entry resource container; project-owned resource payloads are added by their supported semantic workflows, while imported extras remain compatibility data."
     },
     {
       "container": "Data RI",

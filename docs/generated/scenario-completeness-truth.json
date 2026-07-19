@@ -36,13 +36,13 @@
     },
     "writerReadinessCounts": {
       "partially-proven": 12,
-      "fixture-proven": 25,
+      "fixture-proven": 26,
       "preserve-only": 6,
-      "not-applicable": 14
+      "not-applicable": 13
     },
     "evidenceQualityCounts": {
-      "fixture-backed": 37,
-      "target-warning": 12,
+      "fixture-backed": 38,
+      "target-warning": 11,
       "cited": 8
     },
     "riskFlagCounts": {
@@ -59,10 +59,10 @@
     "writerProvenData": {
       "label": "Writer-Proven Data",
       "status": "complete",
-      "fixtureProvenContainers": 25,
+      "fixtureProvenContainers": 26,
       "partiallyProvenContainers": 12,
       "writerGatedContainers": 0,
-      "percentContainers": 64.91
+      "percentContainers": 66.67
     },
     "packageCompatibility": {
       "label": "Package Compatibility",
@@ -1548,13 +1548,22 @@
       ],
       "evidence": [
         "docs/generated/resource-byte-ownership.json",
-        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md"
+        "docs/format-evidence-cards/resource-fork-taxonomy-authoring.md",
+        "docs/format-evidence-cards/scenario-resource-fork-minimum.md",
+        "src-tauri/src/resource_fork.rs:minimum_scenario_resource_fork_is_canonical_empty_container",
+        "src/editor/browser/resourceFork.test.ts:builds the canonical empty scenario resource container",
+        "scripts/check_generated_scenario_baseline.mjs",
+        "scripts/run_authoritative_scenario_proof.mjs"
       ],
-      "fixtureGate": null,
+      "fixtureGate": {
+        "name": "minimum-scenario-resource-container",
+        "available": true,
+        "partialOnly": false
+      },
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "not-applicable",
-        "evidenceQuality": "target-warning",
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
         "riskFlags": [
           "target-package-warning"
         ]

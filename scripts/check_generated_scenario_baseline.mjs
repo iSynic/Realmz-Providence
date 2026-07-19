@@ -93,7 +93,11 @@ try {
   expect(files.get("Data DDD")?.byteLength === 0, "a scenario without dungeon maps should retain an empty Data DDD startup file");
   expect(files.get("Data NI")?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems, "authored items should overlay Realmz's fixed 200-item table without truncating it");
   expect(files.get("Data Solids")?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.tileSolids, "Data Solids should contain the neutral 1024-byte table");
-  expect((files.get("Scenario.rsrc")?.byteLength ?? 0) >= 46, "Scenario.rsrc should be a structurally valid empty resource fork");
+  const minimumResourceFork = files.get("Scenario.rsrc");
+  expect(minimumResourceFork?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioResourceFork, "Scenario.rsrc should be the exact canonical empty resource container");
+  expect(readU32(minimumResourceFork, 0) === 16 && readU32(minimumResourceFork, 4) === 16, "Scenario.rsrc should use the canonical empty data/map offsets");
+  expect(readU32(minimumResourceFork, 8) === 0 && readU32(minimumResourceFork, 12) === 30, "Scenario.rsrc should contain an empty data section and 30-byte resource map");
+  expect(readU16(minimumResourceFork, 44) === 0xffff, "Scenario.rsrc should contain the standard empty type-list marker");
   expect(result.report.writtenFiles.includes("Data DD"), "browser export should report the generated door table as authored output");
   expect(result.report.passThroughFiles.length === 0, "authored browser export should not report compatibility pass-through files");
   expect(macResult.report.passThroughFiles.length === 0, "authored Mac browser export should not report compatibility pass-through files");
@@ -106,6 +110,19 @@ console.log("Generated scenario runtime baseline check passed.");
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function readU16(bytes, offset) {
+  return ((bytes?.[offset] ?? 0) << 8) | (bytes?.[offset + 1] ?? 0);
+}
+
+function readU32(bytes, offset) {
+  return (
+    ((bytes?.[offset] ?? 0) * 0x1000000) +
+    ((bytes?.[offset + 1] ?? 0) << 16) +
+    ((bytes?.[offset + 2] ?? 0) << 8) +
+    (bytes?.[offset + 3] ?? 0)
+  ) >>> 0;
 }
 
 function expectFileMapsEqual(left, right, label) {

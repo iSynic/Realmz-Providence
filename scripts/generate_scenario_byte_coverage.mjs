@@ -140,6 +140,17 @@ const FIXTURE_GATES = {
     ],
     partialOnly: true
   },
+  "Scenario.rsrc": {
+    gate: "minimum-scenario-resource-container",
+    fixturePaths: [],
+    evidence: [
+      "docs/format-evidence-cards/scenario-resource-fork-minimum.md",
+      "src-tauri/src/resource_fork.rs:minimum_scenario_resource_fork_is_canonical_empty_container",
+      "src/editor/browser/resourceFork.test.ts:builds the canonical empty scenario resource container",
+      "scripts/check_generated_scenario_baseline.mjs",
+      "scripts/run_authoritative_scenario_proof.mjs"
+    ]
+  },
   "Data ED3": {
     gate: "extra-action-point-fixed-row-storage",
     fixturePaths: [
@@ -1623,7 +1634,7 @@ function buildOwnership(aggregate) {
       byteRanges,
       resourceTypes: file.resourceTypes,
       evidence: evidenceForFile(file.name, file.coverageStatus),
-      editorPolicy: editorPolicyFor(file.coverageStatus),
+      editorPolicy: editorPolicyFor(file.coverageStatus, file.name),
       ...dungeonDetails
     };
   });
@@ -2138,6 +2149,7 @@ function semanticOwnershipFor(container, statuses) {
 
 function writerReadinessFor(container, statuses, fixtureGate) {
   if (statuses.has("ignored-non-scenario") || statuses.has("runtime-cache")) return "not-applicable";
+  if (container.container === "Scenario.rsrc" && fixtureGate?.available) return "fixture-proven";
   if (statuses.has("understood-resource-container")) return "not-applicable";
   if (statuses.has("decoded-readonly") && statuses.size === 1) return "read-only";
   if (statuses.has("custom-media-payload") || statuses.has("preserved-standard-media-payload")) return "preserve-only";
@@ -2872,6 +2884,14 @@ function evidenceForFile(name, status) {
     evidence.push("src-tauri/src/exporter.rs:scenario_metadata_legacy_identity_comes_only_from_annex");
     evidence.push("scripts/check_browser_scenario_package.mjs");
     evidence.push("scripts/run_authoritative_scenario_proof.mjs");
+  } else if (name === "Scenario.rsrc") {
+    evidence.push("docs/generated/resource-byte-ownership.json");
+    evidence.push("docs/format-evidence-cards/resource-fork-taxonomy-authoring.md");
+    evidence.push("docs/format-evidence-cards/scenario-resource-fork-minimum.md");
+    evidence.push("src-tauri/src/resource_fork.rs:minimum_scenario_resource_fork_is_canonical_empty_container");
+    evidence.push("src/editor/browser/resourceFork.test.ts:builds the canonical empty scenario resource container");
+    evidence.push("scripts/check_generated_scenario_baseline.mjs");
+    evidence.push("scripts/run_authoritative_scenario_proof.mjs");
   } else if (name.endsWith(".rsrc") || name.endsWith(".rsf") || name.startsWith("._")) {
     evidence.push("docs/generated/resource-byte-ownership.json");
     evidence.push("docs/format-evidence-cards/resource-fork-taxonomy-authoring.md");
@@ -2889,7 +2909,10 @@ function evidenceForFile(name, status) {
   return evidence;
 }
 
-function editorPolicyFor(status) {
+function editorPolicyFor(status, name) {
+  if (name === "Scenario.rsrc") {
+    return "Fresh projects compile the canonical zero-entry resource container; project-owned resource payloads are added by their supported semantic workflows, while imported extras remain compatibility data.";
+  }
   switch (status) {
     case "decoded-writable":
       return "Editable fields may be written when the record-specific writer owns the byte range.";

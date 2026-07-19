@@ -28,6 +28,7 @@ await bundleScenarioCompiler();
 const requireFromBuild = createRequire(path.join(buildRoot, "proof.cjs"));
 const { createProjectFromScenarioSeed } = requireFromBuild("./scenarioSeed.cjs");
 const { createBrowserScenarioPackageZip } = requireFromBuild("./scenarioPackage.cjs");
+const { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, parseResourceFork, writeMinimumScenarioResourceFork } = requireFromBuild("./resourceFork.cjs");
 const { readStoredZip } = requireFromBuild("./zip.cjs");
 const seed = JSON.parse(await fs.readFile(fixturePath, "utf8"));
 const result = createProjectFromScenarioSeed(seed, {
@@ -225,6 +226,11 @@ const summary = {
   nativeOutputs: {
     deterministic: true,
     browserDesktopByteParity: true,
+    minimumScenarioResourceFork: {
+      bytes: MINIMUM_SCENARIO_RESOURCE_FORK_BYTES,
+      resources: 0,
+      builtInRlmzResources: 0
+    },
     windows: {
       path: relative(windowsOutputA),
       manifest: fileManifest(windowsFilesA)
@@ -285,6 +291,7 @@ async function bundleScenarioCompiler() {
     entryPoints: {
       scenarioSeed: path.join(repoRoot, "src", "editor", "scenarioSeed.ts"),
       scenarioPackage: path.join(repoRoot, "src", "editor", "browser", "scenarioPackage.ts"),
+      resourceFork: path.join(repoRoot, "src", "editor", "browser", "resourceFork.ts"),
       zip: path.join(repoRoot, "src", "editor", "browser", "zip.ts")
     },
     outdir: buildRoot,
@@ -382,7 +389,10 @@ function assertCompleteNativeFolder(files, label) {
     expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
   expect(files.has("Scenario.rsrc"), `${label} output is missing Scenario.rsrc`);
-  expect(files.get("Scenario.rsrc").byteLength >= 46, `${label} Scenario.rsrc is not structurally plausible`);
+  const scenarioResourceFork = files.get("Scenario.rsrc");
+  expect(scenarioResourceFork.byteLength === MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, `${label} Scenario.rsrc should be the exact canonical ${MINIMUM_SCENARIO_RESOURCE_FORK_BYTES}-byte container`);
+  expect(Buffer.from(scenarioResourceFork).equals(Buffer.from(writeMinimumScenarioResourceFork())), `${label} Scenario.rsrc differs from the canonical minimum container`);
+  expect(parseResourceFork(scenarioResourceFork).length === 0, `${label} Scenario.rsrc should not synthesize built-in RLMZ metadata or other resources`);
   expect(files.has("Data ID.rsrc"), `${label} output is missing canonical item text resources`);
   expect(files.get("Data ID.rsrc").byteLength >= 46, `${label} Data ID.rsrc is not structurally plausible`);
   expect(files.has("Data Spell.rsrc"), `${label} output is missing canonical custom-spell names`);

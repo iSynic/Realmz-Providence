@@ -22,6 +22,7 @@ export type ResourceForkUpdate = {
 const APPLE_SINGLE_MAGIC = 0x00051600;
 const APPLE_DOUBLE_MAGIC = 0x00051607;
 const RESOURCE_FORK_ENTRY_ID = 2;
+export const MINIMUM_SCENARIO_RESOURCE_FORK_BYTES = 46;
 
 export function parseResourceFork(original: Uint8Array): ResourceEntry[] {
   const buffer = extractResourceFork(original);
@@ -184,6 +185,20 @@ export function writeResourceFork(entries: ResourceForkUpdate[]) {
   pushBytes(map, names);
   pushBytes(output, map);
   return new Uint8Array(output);
+}
+
+/**
+ * Builds the content-neutral Resource Manager container required for a fresh
+ * scenario. Third-party scenarios do not require built-in RLMZ index entries.
+ */
+export function writeMinimumScenarioResourceFork() {
+  const output = writeResourceFork([]);
+  if (output.byteLength !== MINIMUM_SCENARIO_RESOURCE_FORK_BYTES) {
+    throw new Error(
+      `Minimum scenario resource fork should be ${MINIMUM_SCENARIO_RESOURCE_FORK_BYTES} bytes, found ${output.byteLength}.`
+    );
+  }
+  return output;
 }
 
 export function encodeStringListResource(strings: string[]) {

@@ -20,7 +20,8 @@ use crate::realmz::{
 };
 use crate::resource_fork::{
     decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
-    merge_resource_entries_with_removals, parse_resource_fork_entries, ResourceForkEntry,
+    merge_resource_entries_with_removals, parse_resource_fork_entries,
+    write_minimum_scenario_resource_fork, ResourceForkEntry,
 };
 use crate::rule_compiler::{
     write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
@@ -412,7 +413,7 @@ fn write_authored_runtime_baseline(
         ),
         (
             resource_file_name(project, target),
-            crate::resource_fork::write_resource_fork(&[])?,
+            write_minimum_scenario_resource_fork()?,
         ),
         ("Data CS".to_string(), write_scenario_shell(shell)?),
         ("Data NI".to_string(), vec![0; SCENARIO_ITEM_TABLE_BYTES]),
@@ -1437,7 +1438,7 @@ fn write_managed_resources(
             }
         }
     } else {
-        crate::resource_fork::write_resource_fork(&[])?
+        write_minimum_scenario_resource_fork()?
     };
     let original_entries = parse_resource_fork_entries(&original);
     result.preserved_resources = original_entries.len();

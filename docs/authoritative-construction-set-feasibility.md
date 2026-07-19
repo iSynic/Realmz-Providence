@@ -13,7 +13,8 @@ The first bounded compiler slice now:
 - creates fresh desktop projects with no `raw-sources` directory or source-file inventory;
 - allows annex-free authored projects to export while still rejecting an imported project whose
   preservation annex is missing;
-- emits the startup `Scenario` file, empty resource fork, `Data CS`, fixed `Data NI` capacity,
+- emits the startup `Scenario` file, canonical 46-byte zero-entry resource fork, `Data CS`, fixed
+  `Data NI` capacity,
   blank `Data Solids`, and required zero-length runtime tables directly as compiler defaults;
 - passes `None` to preservation-aware record/resource writers for fresh projects, preventing raw
   file probes as well as raw-byte reads;
@@ -398,10 +399,21 @@ The report deliberately classifies the file as mixed/partially editable: its rem
 fixture-proven or correlated Divinity editor state, preserved for legacy imports and zero-filled for
 fresh compilation.
 
-Branch validation through the fortieth slice completed on 2026-07-19:
+The forty-first slice establishes the minimum main resource-fork contract instead of treating an
+empty fork as a placeholder. Realmz source requires scenario selection to open the resource fork,
+but applies `RLMZ` count/index checks only to the built-in scenario range. Forty-nine of 87 main
+scenario-fork captures in the current corpus contain no `RLMZ` entries, including third-party and
+Divinity-authored roots. Both compilers now call a named minimum-fork writer that emits the exact
+46-byte Resource Manager container with zero data bytes, a 30-byte map, the standard empty type
+list, and no synthetic `RLMZ` metadata. Baseline and ownership proofs reject any byte or resource
+entry drift. Canonical resource workflows still add map names, media, text/style, and icons as
+needed; legacy extras remain annex-owned. This closes the payload/default question while keeping
+stock Classic-Mac HFS/AppleDouble transport as a separate packaging acceptance gate.
+
+Branch validation through the forty-first slice completed on 2026-07-19:
 
 - full Rust suite: 243 passed, 2 ignored;
-- full TypeScript suite: 597 passed, plus typecheck;
+- full TypeScript suite: 598 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -410,7 +422,7 @@ Branch validation through the fortieth slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 597 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 598 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
@@ -473,7 +485,7 @@ them from the emitted scenario source files.
 | 1. Can the current model become authoritative without a disruptive rewrite? | **Yes.** It already represents the minimum proof and most construction-set families. Add explicit authored/imported origin, remove preservation data from the normal fresh path, and migrate model drift. |
 | 2. Can fresh projects export with no `raw-sources`? | **Yes on the investigation branch.** Fresh desktop projects now omit the directory and source inventory, and annex-free export emits compiler defaults directly. Imported projects still require their compatibility material. |
 | 3. Which native files are completely generated? | The 316-byte scenario marker and `Data CS` cores, neutral 600-byte support-file baseline, maps, trigger tables, random levels, ED3/EDCD, messages, options, monsters/descriptions, treasures, shops, thief/timed encounters, custom spell records/names, contact/restrictions, and most record cores have writers. The detailed matrix separates semantic generation from neutral compiler defaults and compatibility ranges. |
-| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, main resource-fork default, blank `Data Solids`, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, and arbitrary legacy resources. Fresh support output, the marker, and `Data CS` no longer require preserved bytes; exact legacy security/publish behavior remains an acceptance unknown. |
+| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, neutral `Data Solids`, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, arbitrary legacy resources, and Classic-Mac resource-fork transport metadata. The fresh main resource container, support output, marker, and `Data CS` no longer require preserved bytes; exact legacy security/publish and stock Classic-Mac behavior remain acceptance unknowns. |
 | 5. Can legacy preservation be isolated? | **Yes, and the boundary is explicit on the investigation branch.** Schema v5 records authored/imported origin; native export requires the annex only for imported projects. Remaining work is moving embedded record tails and browser-native preservation behind the same contract. |
 | 6. Can TypeScript and Rust derive from one schema? | **Yes, incrementally.** The investigation branch generates the shared schema version, persisted top-level inventory, source/origin/source-file DTOs, scenario identity/startup DTOs, shared provenance/confidence primitives, map identity/layout and map-record DTOs, random-level/rectangle DTOs, and complete scenario-item, treasure, shop, message, option-label, battle, monster, monster-description, spell, race, and caste DTOs from JSON Schema. It checks both project models plus the Rust serializer; remaining DTO families can migrate incrementally. |
 | 7. Can export become a deterministic compiler without a UI rewrite? | **Yes.** The UI already calls thin desktop/browser export boundaries with a `Project`; extract a pure file/resource manifest compiler behind them. |
@@ -585,7 +597,7 @@ the same content-neutral package directly as authored compiler output:
 
 - authored startup marker;
 - 600-byte zero-filled `Scenario` data fork;
-- structurally valid empty `Scenario.rsrc`;
+- exact canonical 46-byte zero-entry `Scenario.rsrc`;
 - `Data CS` seeded from the startup shell;
 - per-level `Data DD`/`Data DDD` tables;
 - 200-row zero-filled `Data NI`;
@@ -716,7 +728,7 @@ Legend:
 | --- | --- | --- | --- |
 | `<ScenarioName>` marker/main file | Generated semantic core + legacy singleton/tail annex | Generate exactly 316 bytes from canonical shell data | Both writers compile all five startup integers, both fixed code segments, and deterministic Str255 creator padding without consulting embedded compatibility storage. Untouched imported identity and an optional 316-320 tail are restored only from the annex. |
 | `Scenario` 600-byte data fork | Deterministic neutral baseline + bounded editor fields + legacy annex | Generate exactly 600 bytes without imported identity | Both writers zero-initialize the file and compile only offset 23 and offsets 38-39. Untouched imported identity remains annex-owned; edited imports recover other editor/view-state bytes only from the annex. The modern runtime proof accepts the neutral default. |
-| `Scenario.rsrc` / native `Scenario` resource fork | Compiler baseline plus generated overlays | Always construct a valid target resource fork | Both compilers emit a structurally valid empty fork and can build/merge map names, icons, pictures, sounds, text, and styles. |
+| `Scenario.rsrc` / native `Scenario` resource fork | Canonical 46-byte minimum container plus generated overlays and legacy annex | Always construct an openable target resource fork without invented built-in metadata | Both compilers emit the exact zero-entry Resource Manager container and can build/merge map names, icons, pictures, sounds, text, and styles. Source and corpus evidence show that third-party scenarios do not require synthetic `RLMZ` entries. Stock Classic-Mac transport remains an acceptance gate. |
 | `Data CS` | Generated semantic core + legacy singleton/tail annex | Generate canonical fresh security backup; annex imported identity only | The same 316-byte semantic codec is used. Fresh output duplicates the shell unless an explicit canonical backup exists; imported identity/tails remain annex-owned. Exact Divinity publish/refusal behavior is still not fixture-proven. |
 | `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | Both writers compile all eighteen Str255 slots and deterministic padding without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
 | `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | Both writers compile all 320 bytes and normalize ban flags from canonical semantics without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
@@ -821,7 +833,7 @@ must not be called fresh-authoritative merely because imported round trips are f
 4. Make compiler defaults explicit:
    - **implemented:** exact 600-byte `Scenario` support file with a neutral fresh baseline and
      compatibility-annex preservation for unowned imported editor state;
-   - valid main resource fork even with no authored resources;
+   - **implemented:** exact 46-byte zero-entry main resource fork even with no authored resources;
    - fixed `Data NI` capacity when that family is emitted;
    - **implemented:** fixed 30-record `Data Race`/`Data Caste` output from one compiler baseline,
      including all structurally reserved words;
@@ -855,9 +867,10 @@ must not be called fresh-authoritative merely because imported round trips are f
    annex and the minimum ownership fixture enforces byte parity, but they still implement the native
    manifest in Rust and TypeScript. Broader golden fixtures or a shared Rust/Wasm compiler should
    prevent policy drift across optional families.
-2. **Optional resource families:** the minimum main fork, item strings, and custom-spell strings
-   are generated in both compilers, but custom media and some extracted sidecar families remain
-   incomplete.
+2. **Optional resource families:** the source-backed 46-byte minimum main fork, item strings, and
+   custom-spell strings are generated in both compilers, but custom media and some extracted
+   sidecar families remain incomplete. Built-in `RLMZ` index metadata is intentionally not
+   synthesized for fresh third-party scenarios.
 3. **Remaining nested generated DTOs:** the language-neutral schema now owns and checks the
    persisted top-level inventory, complete source-origin/source-file, scenario startup, map
    identity/layout, random-level/rectangle, map-record, scenario-item, treasure, shop, message,
@@ -899,7 +912,7 @@ Proof scenario requirements:
    annex is created or read.
 3. Compile a native scenario folder containing:
    - startup marker and 600-byte support file;
-   - structurally valid main resource fork;
+   - exact canonical 46-byte zero-entry main resource fork;
    - `Data CS`, `Data CI`, `Data Solids`;
    - one `Data LD`, `Data RD`, and `Data DD` level;
    - empty required dungeon/shop/encounter startup files;

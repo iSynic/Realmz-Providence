@@ -43,13 +43,13 @@
       },
       "writerReadinessCounts": {
         "partially-proven": 12,
-        "fixture-proven": 25,
+        "fixture-proven": 26,
         "preserve-only": 6,
-        "not-applicable": 14
+        "not-applicable": 13
       },
       "evidenceQualityCounts": {
-        "fixture-backed": 37,
-        "target-warning": 12,
+        "fixture-backed": 38,
+        "target-warning": 11,
         "cited": 8
       },
       "riskFlagCounts": {
@@ -66,10 +66,10 @@
       "writerProvenData": {
         "label": "Writer-Proven Data",
         "status": "complete",
-        "fixtureProvenContainers": 25,
+        "fixtureProvenContainers": 26,
         "partiallyProvenContainers": 12,
         "writerGatedContainers": 0,
-        "percentContainers": 64.91
+        "percentContainers": 66.67
       },
       "packageCompatibility": {
         "label": "Package Compatibility",
@@ -672,8 +672,8 @@
       "coverageStatus": "understood-resource-container",
       "truth": {
         "semanticOwnership": "complete",
-        "writerReadiness": "not-applicable",
-        "evidenceQuality": "target-warning",
+        "writerReadiness": "fixture-proven",
+        "evidenceQuality": "fixture-backed",
         "riskFlags": [
           "target-package-warning"
         ]
@@ -723,7 +723,7 @@
         5168595,
         5174545
       ],
-      "policy": "Resource fork container, map, type, reference, name, and data-entry bytes are inventoried. Payload codec ownership is tracked separately."
+      "policy": "Fresh projects compile the canonical zero-entry resource container; project-owned resource payloads are added by their supported semantic workflows, while imported extras remain compatibility data."
     },
     {
       "container": "Icon_.rsrc",

@@ -57,7 +57,7 @@ import {
 } from "./binaryWriters";
 import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
 import { BrowserCompatibilityAnnex } from "./compatibilityAnnex";
-import { encodeStringListResource, mergeResourceEntries, parseResourceFork, parseStringListResource, type ResourceForkUpdate } from "./resourceFork";
+import { encodeStringListResource, mergeResourceEntries, parseResourceFork, parseStringListResource, writeMinimumScenarioResourceFork, type ResourceForkUpdate } from "./resourceFork";
 import { createStoredZip } from "./zip";
 import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioSpellOverride, ScenarioTarget } from "../types";
 import { appendPreservedShopSourceSuffix } from "./shopRecords";
@@ -231,7 +231,7 @@ function writeManagedResources(
   const resourceFilePath = target === "windows-realmz-folder" && resourceFileName === "Scenario"
     ? "Scenario.rsrc"
     : resourceFileName;
-  const original = selected?.bytesData ?? new Uint8Array();
+  const original = selected?.bytesData ?? writeMinimumScenarioResourceFork();
   const result: ResourceExportResult = {
     resourceFileWritten: false,
     resourceFileName,

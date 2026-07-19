@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 const APPLE_SINGLE_MAGIC: usize = 0x0005_1600;
 const APPLE_DOUBLE_MAGIC: usize = 0x0005_1607;
 const RESOURCE_FORK_ENTRY_ID: usize = 2;
+pub const MINIMUM_SCENARIO_RESOURCE_FORK_BYTES: usize = 46;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResourceForkEntry {
@@ -253,6 +254,23 @@ pub fn write_resource_fork(entries: &[ResourceForkEntry]) -> Result<Vec<u8>> {
     map.extend_from_slice(&ref_lists);
     map.extend_from_slice(&names);
     output.extend_from_slice(&map);
+    Ok(output)
+}
+
+/// Builds the content-neutral resource container required for a fresh scenario.
+///
+/// Realmz must be able to open the scenario resource fork before selecting the
+/// scenario. Third-party scenarios do not require built-in `RLMZ` index
+/// resources, so the authoritative baseline is a standard empty Resource
+/// Manager container rather than imported or synthetic metadata.
+pub fn write_minimum_scenario_resource_fork() -> Result<Vec<u8>> {
+    let output = write_resource_fork(&[])?;
+    if output.len() != MINIMUM_SCENARIO_RESOURCE_FORK_BYTES {
+        return Err(ProvidenceError::message(format!(
+            "Minimum scenario resource fork should be {MINIMUM_SCENARIO_RESOURCE_FORK_BYTES} bytes, found {}",
+            output.len()
+        )));
+    }
     Ok(output)
 }
 
@@ -1440,10 +1458,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn empty_resource_fork_uses_standard_empty_type_list() {
-        let bytes = write_resource_fork(&[]).expect("write empty resource fork");
-        assert!(bytes.len() >= 46);
+    fn minimum_scenario_resource_fork_is_canonical_empty_container() {
+        let bytes =
+            write_minimum_scenario_resource_fork().expect("write minimum scenario resource fork");
+        assert_eq!(bytes.len(), MINIMUM_SCENARIO_RESOURCE_FORK_BYTES);
         assert!(parse_resource_fork_entries(&bytes).is_empty());
+        assert_eq!(u32_safe(&bytes, 0), Some(16));
+        assert_eq!(u32_safe(&bytes, 4), Some(16));
+        assert_eq!(u32_safe(&bytes, 8), Some(0));
+        assert_eq!(u32_safe(&bytes, 12), Some(30));
         let map_offset = u32_safe(&bytes, 4).expect("map offset");
         let type_list_offset = map_offset + u16_safe(&bytes, map_offset + 24).expect("type list");
         assert_eq!(u16_safe(&bytes, type_list_offset), Some(u16::MAX as usize));
