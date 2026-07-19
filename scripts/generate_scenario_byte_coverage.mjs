@@ -412,23 +412,25 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
   {
     container: "Layout",
     gate: "land-layout-grid-writer",
-    rowKind: "8x16 outdoor adjacency grid plus optional preserved tail",
+    rowKind: "8x16 outdoor adjacency grid plus optional annex-owned tail",
     semanticExposure: "land-layout-workbench",
     partialOnly: true,
     ownedFields: [
       { field: "Land adjacency cells", internal: "layout[8][16]", offset: 0, bytes: 256, type: "i16be[128]" }
     ],
     preservedRanges: [
-      { field: "Optional compatibility tail", internal: "trailingBytes", offset: 256, bytes: 256, type: "raw-preserved-when-present" }
+      { field: "Optional compatibility tail", internal: "compatibility annex", offset: 256, bytes: 256, type: "annex-preserved-when-present" }
     ],
     evidence: [
-      "src-tauri/src/realmz/maps.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
-      "src-tauri/src/realmz/maps.rs:write_land_layout",
-      "src-tauri/src/realmz/maps.rs:parse_land_layout",
+      "src-tauri/src/realmz/maps/land_layout.rs:compiles_exact_semantic_grid_without_embedded_compatibility_bytes",
+      "src-tauri/src/realmz/maps/land_layout.rs:write_land_layout",
+      "src-tauri/src/realmz/maps/land_layout.rs:parse_land_layout",
+      "src-tauri/src/exporter.rs:land_layout_compatibility_tail_comes_only_from_annex",
+      "scripts/check_browser_desktop_scenario_parity.mjs",
       "docs/generated/map-field-value-evidence.json",
       "docs/format-evidence-cards/map-tile-runtime-anchors.md"
     ],
-    preservationPolicy: "The first 256 bytes are the Realmz 8x16 layout grid. Any bytes after 256 are compatibility tail bytes and remain preserve-only."
+    preservationPolicy: "Both writers compile the first 256 bytes as the complete Realmz 8x16 layout grid without consulting embedded trailingBytes. Imported bytes after offset 255 remain preserve-only and are restored exclusively from the compatibility annex."
   },
   {
     container: "Data DD",
@@ -1242,6 +1244,7 @@ function buildMapsStorageWriterGates(aggregate) {
       corpusUsage: "docs/generated/corpus-field-usage.json",
       mapStorageWriters: [
         "src-tauri/src/realmz/maps.rs",
+        "src-tauri/src/realmz/maps/land_layout.rs",
         "src-tauri/src/realmz/random_levels.rs",
         "src-tauri/src/realmz/action_points.rs"
       ]

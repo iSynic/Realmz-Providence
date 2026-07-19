@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import { emptyCasteOverride, emptyRaceOverride, emptySpellOverride } from "../projectCommands/scenarioRulesCommands";
-import type { MapRecord, RandomLevel, RandomRect, TileAttributeProfile } from "../types";
-import { TILE_SOLIDS_BYTES, writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeScenarioSupportFile, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTileSolids, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import type { LandLayout, MapRecord, RandomLevel, RandomRect, TileAttributeProfile } from "../types";
+import { LAND_LAYOUT_RECORD_BYTES, TILE_SOLIDS_BYTES, writeBattles, writeCasteOverrides, writeComplexEncounters, writeLandLayout, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeScenarioSupportFile, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTileSolids, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -59,6 +59,39 @@ describe("browser Data Solids writer", () => {
       .toThrow("defined more than once");
     expect(() => writeTileSolids([specialTileProfile(4, 256)]))
       .toThrow("unsigned-byte range");
+  });
+});
+
+describe("browser Layout writer", () => {
+  it("compiles the exact semantic 8 x 16 grid without embedded compatibility bytes", () => {
+    const layout: LandLayout = {
+      rows: 8,
+      cols: 16,
+      cells: new Array(128).fill(0),
+      trailingBytes: [0xde, 0xad, 0xbe, 0xef],
+      authored: true,
+      provenance: null
+    };
+    layout.cells[0] = -1;
+    layout.cells[127] = 202;
+
+    const output = writeLandLayout(layout);
+
+    expect(output).toHaveLength(LAND_LAYOUT_RECORD_BYTES);
+    expect(i16(output, 0)).toBe(-1);
+    expect(i16(output, LAND_LAYOUT_RECORD_BYTES - 2)).toBe(202);
+  });
+
+  it("rejects noncanonical grid shapes", () => {
+    const layout: LandLayout = {
+      rows: 8,
+      cols: 16,
+      cells: new Array(127).fill(0),
+      trailingBytes: [],
+      authored: true,
+      provenance: null
+    };
+    expect(() => writeLandLayout(layout)).toThrow("exactly 128 cells");
   });
 });
 

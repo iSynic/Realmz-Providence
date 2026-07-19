@@ -79,6 +79,7 @@ const rawFiles = [
   rawFile("Data SD2", pascalRecords(["A", "B"], 256), "supported-binary"),
   rawFile("Data OD", pascalRecords(["Yes", "No"], 25), "supported-binary"),
   rawFile("Data BD", fixedBytes(346, [0xaa, 0xbb]), "supported-binary"),
+  rawFile("Layout", layoutWithCompatibilityTail(), "supported-binary"),
   rawFile("Data Solids", dataSolidsWithCompatibilityTail(), "supported-binary"),
   rawFile("Data MENU", [5, 6, 7], "unknown"),
   rawFile("Custom Names.rsrc", [8, 9], "resource-fork"),
@@ -90,6 +91,10 @@ for (const file of rawFiles) {
 }
 
 await runCargoExample("import_scenario_project", [sourceDir, projectDir, scenarioName]);
+const importedProjectPath = path.join(projectDir, "project.json");
+const importedProject = JSON.parse(await fs.readFile(importedProjectPath, "utf8"));
+importedProject.landLayout = authoredLandLayout();
+await fs.writeFile(importedProjectPath, `${JSON.stringify(importedProject, null, 2)}\n`);
 
 const rawSources = {
   schemaVersion: 1,
@@ -104,9 +109,9 @@ const browserProject = fixtureProject(rawFiles);
 
 await compareScenarioCase("synthetic-fixture", projectDir, browserProject, rawSources, {
   expectedMissingFiles: ["Data MENU", "Custom Names.rsrc"],
-  requiredFiles: ["Data Solids"],
-  requiredWrittenFiles: ["Data Solids"],
-  preservedSourceSuffixes: [{ name: "Data Solids", offset: 1024 }]
+  requiredFiles: ["Layout", "Data Solids"],
+  requiredWrittenFiles: ["Layout", "Data Solids"],
+  preservedSourceSuffixes: [{ name: "Layout", offset: 256 }, { name: "Data Solids", offset: 1024 }]
 });
 await compareOptionalCorpusScenarios();
 
@@ -603,7 +608,7 @@ function fixtureProject(files) {
       files: files.map(({ bytesData, originalRelativePath, targetPlatform, captureConfidence, ...file }) => file)
     },
     maps: [],
-    landLayout: null,
+    landLayout: authoredLandLayout(),
     customLandlooks: [],
     mapRecords: [],
     tileAttributes: [],
@@ -701,6 +706,29 @@ function dataSolidsWithCompatibilityTail() {
   const output = new Uint8Array(1027);
   output.set([0xde, 0xad, 0xbe], 1024);
   return output;
+}
+
+function layoutWithCompatibilityTail() {
+  const output = new Uint8Array(512);
+  output.fill(0xa5, 0, 256);
+  for (let index = 256; index < output.byteLength; index += 1) {
+    output[index] = (index - 256) & 0xff;
+  }
+  return output;
+}
+
+function authoredLandLayout() {
+  const cells = new Array(128).fill(0);
+  cells[0] = -1;
+  cells[127] = 202;
+  return {
+    rows: 8,
+    cols: 16,
+    cells,
+    trailingBytes: [0xde, 0xad, 0xbe, 0xef],
+    authored: true,
+    provenance: null
+  };
 }
 
 function setPascalText(target, text) {

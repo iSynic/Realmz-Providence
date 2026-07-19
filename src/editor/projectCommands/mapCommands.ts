@@ -207,7 +207,13 @@ export function updateLandLayoutCell(project: Project, row: number, col: number,
   const cells = [...layout.cells];
   const index = row * LAND_LAYOUT_COLS + col;
   const nextValue = clampSignedShort(Math.trunc(value));
-  if (cells[index] === nextValue && layout.rows === LAND_LAYOUT_ROWS && layout.cols === LAND_LAYOUT_COLS && layout.authored) return withLayout;
+  if (
+    cells[index] === nextValue &&
+    layout.rows === LAND_LAYOUT_ROWS &&
+    layout.cols === LAND_LAYOUT_COLS &&
+    layout.authored &&
+    (layout.trailingBytes?.length ?? 0) === 0
+  ) return withLayout;
   cells[index] = nextValue;
   return {
     ...withLayout,
@@ -216,6 +222,7 @@ export function updateLandLayoutCell(project: Project, row: number, col: number,
       rows: LAND_LAYOUT_ROWS,
       cols: LAND_LAYOUT_COLS,
       cells: normalizeLandLayoutCells(cells),
+      trailingBytes: [],
       authored: true
     }
   };
@@ -232,6 +239,7 @@ export function clearLandLayout(project: Project) {
       rows: LAND_LAYOUT_ROWS,
       cols: LAND_LAYOUT_COLS,
       cells: new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0),
+      trailingBytes: [],
       authored: true
     }
   };

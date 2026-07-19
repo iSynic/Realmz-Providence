@@ -51,10 +51,23 @@ project.tileAttributes.push({
   source: "Data Solids",
   rawByte: null
 });
+const landLayoutCells = new Array(8 * 16).fill(0);
+landLayoutCells[0] = -1;
+landLayoutCells[127] = 202;
+project.landLayout = {
+  rows: 8,
+  cols: 16,
+  cells: landLayoutCells,
+  trailingBytes: [],
+  authored: true,
+  provenance: null
+};
+project.validation.exportableFiles = [...new Set([...project.validation.exportableFiles, "Layout"])];
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
 assertOwnershipScenarioMetadata(project, "Canonical project", true);
 assertOwnershipGlobalMacros(project, "Canonical project", true);
 assertOwnershipTileSolids(project, "Canonical project", false);
+assertOwnershipLandLayout(project, "Canonical project", true);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
@@ -165,6 +178,10 @@ assertCompiledTileSolids(windowsFilesA, "Windows");
 assertCompiledTileSolids(classicFilesA, "Classic Mac");
 assertCompiledTileSolids(browserWindowsFiles, "browser Windows");
 assertCompiledTileSolids(browserClassicFiles, "browser Classic Mac");
+assertCompiledLandLayout(windowsFilesA, "Windows");
+assertCompiledLandLayout(classicFilesA, "Classic Mac");
+assertCompiledLandLayout(browserWindowsFiles, "browser Windows");
+assertCompiledLandLayout(browserClassicFiles, "browser Classic Mac");
 assertManifestNamesEqual(project.validation.exportableFiles, browserWindowsFiles, "Browser validation manifest");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
@@ -213,6 +230,7 @@ assertOwnershipRules(reimported, "Reimport", false);
 assertOwnershipScenarioMetadata(reimported, "Reimport", false);
 assertOwnershipGlobalMacros(reimported, "Reimport", false);
 assertOwnershipTileSolids(reimported, "Reimport", true);
+assertOwnershipLandLayout(reimported, "Reimport", false);
 
 const summary = {
   proofVersion: 1,
@@ -240,6 +258,7 @@ const summary = {
     raceOverrides: project.raceOverrides.length,
     casteOverrides: project.casteOverrides.length,
     authoredSpecialTileSolidityRows: project.tileAttributes.filter((profile) => profile.sourceKind === "data-solids").length,
+    authoredLandLayoutCells: project.landLayout?.cells.length ?? 0,
     globalMacroHooks: project.scenario.globalMacroHooks?.slots.filter((slot) => slot.door !== 0).length ?? 0,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
@@ -287,7 +306,8 @@ const summary = {
     customSpellRecovered: true,
     raceOverrideRecovered: true,
     casteOverrideRecovered: true,
-    specialTileSolidityRecovered: true
+    specialTileSolidityRecovered: true,
+    landLayoutRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -347,6 +367,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipScenarioMetadata(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipGlobalMacros(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipTileSolids(savedProject, `Rust-saved project ${stage}`, false);
+  assertOwnershipLandLayout(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
@@ -400,7 +421,8 @@ function assertCompleteNativeFolder(files, label) {
     ["Data Spell", 105 * 30],
     ["Data Race", 30 * 408],
     ["Data Caste", 30 * 576],
-    ["Data Solids", 1024]
+    ["Data Solids", 1024],
+    ["Layout", 256]
   ]);
   for (const [name, bytes] of exactSizes) {
     expect(files.has(name), `${label} output is missing ${name}`);
@@ -522,6 +544,14 @@ function assertCompiledTileSolids(files, label) {
   expect(bytes?.byteLength === 1024, `${label} Data Solids does not have the exact native table size`);
   expect(bytes[190] === 2, `${label} Data Solids has the wrong canonical solidity for special tile 190`);
   expect(bytes.filter((byte) => byte !== 0).length === 1, `${label} Data Solids has non-neutral unspecified rows`);
+}
+
+function assertCompiledLandLayout(files, label) {
+  const bytes = files.get("Layout");
+  expect(bytes?.byteLength === 256, `${label} Layout does not have the exact native grid size`);
+  expect(readI16(bytes, 0) === -1, `${label} Layout has the wrong canonical first cell`);
+  expect(readI16(bytes, 254) === 202, `${label} Layout has the wrong canonical final cell`);
+  expect(bytes.slice(2, 254).every((byte) => byte === 0), `${label} Layout has non-neutral unspecified cells`);
 }
 
 function assertOwnershipMessage(records, label) {
@@ -659,6 +689,17 @@ function assertOwnershipTileSolids(project, label, expectImportedRawByte) {
   } else {
     expect(profile.rawByte == null, `${label} fresh special-tile solidity depends on imported raw-byte provenance`);
     expect(profiles.length === 1, `${label} fresh project should carry only explicitly authored Data Solids rows`);
+  }
+}
+
+function assertOwnershipLandLayout(project, label, requireNoCompatibilityBytes) {
+  const layout = project.landLayout;
+  expect(layout, `${label} is missing the canonical land layout`);
+  expect(layout.rows === 8 && layout.cols === 16, `${label} has the wrong land-layout dimensions`);
+  expect(layout.cells?.length === 128, `${label} land layout does not own all 128 cells`);
+  expect(layout.cells[0] === -1 && layout.cells[127] === 202, `${label} has the wrong canonical land-layout cells`);
+  if (requireNoCompatibilityBytes) {
+    expect((layout.trailingBytes?.length ?? 0) === 0, `${label} land layout depends on embedded compatibility-tail bytes`);
   }
 }
 

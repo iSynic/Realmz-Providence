@@ -46,6 +46,7 @@ try {
   checkCreateCustomLandlookFromSource(commands);
   checkBuiltInLandlookStaysReadOnly(commands);
   checkSpecialTileSolidity(commands, metadata);
+  checkLandLayoutCompatibilityBoundary(commands);
   checkPositiveIconBackedTileValues(renderValues, metadata);
   checkMapsMenuRecordEvidence();
 
@@ -77,6 +78,29 @@ function checkNewDungeonDefaultsToWall({ createMap }) {
   const random = next.randomLevels.find((level) => level.levelType === "dungeon" && level.levelIndex === 0);
   assert(Boolean(random), "Creating a dungeon map should add the matching dungeon random-level row.");
   assert(next.assetCatalog?.tilesets?.some((tileset) => tileset.id === "dungeon-top-down-302"), "Creating a dungeon map should register the dungeon top-down tileset.");
+}
+
+function checkLandLayoutCompatibilityBoundary({ updateLandLayoutCell, clearLandLayout }) {
+  const project = {
+    landLayout: {
+      rows: 8,
+      cols: 16,
+      cells: new Array(128).fill(0),
+      trailingBytes: [0xde, 0xad, 0xbe, 0xef],
+      authored: false
+    }
+  };
+  const updated = updateLandLayoutCell(project, 0, 0, -1);
+  assert(updated.landLayout?.cells[0] === -1, "Land-layout edits should update the canonical cell.");
+  assert(updated.landLayout?.authored === true, "Land-layout edits should mark the canonical grid authored.");
+  assert(updated.landLayout?.trailingBytes?.length === 0, "Land-layout edits should not retain embedded compatibility-tail identity.");
+
+  const cleared = clearLandLayout({
+    ...updated,
+    landLayout: { ...updated.landLayout, trailingBytes: [0xa5] }
+  });
+  assert(cleared.landLayout?.cells.every((cell) => cell === 0), "Clearing the land layout should zero every canonical cell.");
+  assert(cleared.landLayout?.trailingBytes?.length === 0, "Clearing the land layout should discard embedded compatibility-tail identity.");
 }
 
 function checkDungeonCellFlagCommand({ updateDungeonCellFlags }) {

@@ -1,7 +1,7 @@
 use crate::error::{ProvidenceError, Result};
 use crate::project::{
-    Confidence, LandLayout, LevelType, MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender,
-    Provenance, RandomLevel, RenderMode, MAP_SIZE,
+    Confidence, LevelType, MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender, Provenance,
+    RandomLevel, RenderMode, MAP_SIZE,
 };
 use std::collections::BTreeMap;
 
@@ -9,10 +9,12 @@ use super::record_bytes::{
     decode_pascal_text, encode_pascal_text, i16_be, provenance, write_i16_be,
 };
 
+mod land_layout;
+pub use land_layout::{
+    parse_land_layout, write_land_layout, LAND_LAYOUT_BYTES, LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
+};
+
 pub const FIELD_BYTES: usize = MAP_SIZE * MAP_SIZE * 2;
-pub const LAND_LAYOUT_ROWS: usize = 8;
-pub const LAND_LAYOUT_COLS: usize = 16;
-pub const LAND_LAYOUT_BYTES: usize = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
 pub const MAP_RECORD_BYTES: usize = 340;
 pub const MAP_RECORD_MARKERS: usize = 10;
 pub const MAP_RECORD_MARKER_BYTES: usize = 6;
@@ -73,46 +75,6 @@ pub fn write_fields(maps: &[MapEntity], level_type: LevelType) -> Result<Vec<u8>
         for (index, value) in map.tiles.iter().enumerate() {
             write_i16_be(&mut output, start + index * 2, *value);
         }
-    }
-    Ok(output)
-}
-
-pub fn parse_land_layout(buffer: &[u8]) -> Result<LandLayout> {
-    if buffer.len() < LAND_LAYOUT_BYTES {
-        return Err(ProvidenceError::message(format!(
-            "Layout is {} byte(s); expected at least {} bytes",
-            buffer.len(),
-            LAND_LAYOUT_BYTES
-        )));
-    }
-    let mut cells = Vec::with_capacity(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS);
-    for index in 0..LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS {
-        cells.push(i16_be(buffer, index * 2));
-    }
-    Ok(LandLayout {
-        rows: LAND_LAYOUT_ROWS,
-        cols: LAND_LAYOUT_COLS,
-        cells,
-        trailing_bytes: buffer.get(LAND_LAYOUT_BYTES..).unwrap_or(&[]).to_vec(),
-        authored: false,
-        provenance: Some(provenance("Layout", 0, 0, LAND_LAYOUT_BYTES)),
-    })
-}
-
-pub fn write_land_layout(layout: &LandLayout) -> Result<Vec<u8>> {
-    if layout.rows != LAND_LAYOUT_ROWS || layout.cols != LAND_LAYOUT_COLS {
-        return Err(ProvidenceError::message(format!(
-            "Layout must be {} rows by {} columns",
-            LAND_LAYOUT_ROWS, LAND_LAYOUT_COLS
-        )));
-    }
-    let mut output = vec![0u8; LAND_LAYOUT_BYTES + layout.trailing_bytes.len()];
-    for index in 0..LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS {
-        let value = layout.cells.get(index).copied().unwrap_or(0);
-        write_i16_be(&mut output, index * 2, value);
-    }
-    if !layout.trailing_bytes.is_empty() {
-        output[LAND_LAYOUT_BYTES..].copy_from_slice(&layout.trailing_bytes);
     }
     Ok(output)
 }
@@ -316,50 +278,6 @@ mod tests {
         assert_eq!(
             changed_offsets(&input, &output),
             vec![tile_offset, tile_offset + 1]
-        );
-    }
-
-    #[test]
-    fn land_layout_round_trip() {
-        let mut input = vec![0u8; LAND_LAYOUT_BYTES + 4];
-        write_i16_be(&mut input, 0, -1);
-        write_i16_be(&mut input, 2, 1);
-        write_i16_be(
-            &mut input,
-            (LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS - 1) * 2,
-            19,
-        );
-        input[LAND_LAYOUT_BYTES..].copy_from_slice(&[9, 8, 7, 6]);
-        let layout = parse_land_layout(&input).unwrap();
-        assert_eq!(layout.rows, LAND_LAYOUT_ROWS);
-        assert_eq!(layout.cols, LAND_LAYOUT_COLS);
-        assert_eq!(layout.cells[0], -1);
-        assert_eq!(layout.cells[1], 1);
-        assert_eq!(layout.cells[LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS - 1], 19);
-        assert_eq!(layout.trailing_bytes, vec![9, 8, 7, 6]);
-        let output = write_land_layout(&layout).unwrap();
-        assert_eq!(input, output);
-    }
-
-    #[test]
-    fn map_storage_layout_mutates_only_owned_cell_and_preserves_tail() {
-        let mut input = vec![0xA5; LAND_LAYOUT_BYTES + 6];
-        input[LAND_LAYOUT_BYTES..].copy_from_slice(&[0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE]);
-        let cell_index = LAND_LAYOUT_COLS + 4;
-        let cell_offset = cell_index * 2;
-        write_i16_be(&mut input, cell_offset, 0x0102);
-
-        let mut layout = parse_land_layout(&input).unwrap();
-        layout.cells[cell_index] = 0x0304;
-
-        let output = write_land_layout(&layout).unwrap();
-
-        assert_eq!(output.len(), input.len());
-        assert_eq!(&output[LAND_LAYOUT_BYTES..], &input[LAND_LAYOUT_BYTES..]);
-        assert_eq!(i16_be(&output, cell_offset), 0x0304);
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![cell_offset, cell_offset + 1]
         );
     }
 

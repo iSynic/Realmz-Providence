@@ -410,7 +410,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.landLayout) {
     writes.push({
       path: "Layout",
-      bytes: preserveMalformedRawTail("Layout", writeLandLayout(project.landLayout), LAND_LAYOUT_RECORD_BYTES, annex)
+      bytes: preserveImportedLandLayoutTail(writeLandLayout(project.landLayout), annex)
     });
   }
   writes.push({
@@ -913,6 +913,15 @@ function preserveImportedDataSolidsTail(bytes: Uint8Array, annex: BrowserCompati
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
   output.set(raw.slice(TILE_SOLIDS_BYTES), TILE_SOLIDS_BYTES);
+  return output;
+}
+
+function preserveImportedLandLayoutTail(bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {
+  const raw = rawSourceBytes("Layout", annex);
+  if (!raw || raw.byteLength <= LAND_LAYOUT_RECORD_BYTES) return bytes;
+  const output = new Uint8Array(raw.byteLength);
+  output.set(bytes);
+  output.set(raw.slice(LAND_LAYOUT_RECORD_BYTES), LAND_LAYOUT_RECORD_BYTES);
   return output;
 }
 

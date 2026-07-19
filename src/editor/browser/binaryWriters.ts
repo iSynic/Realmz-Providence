@@ -397,13 +397,13 @@ export function writeLandLayout(layout: LandLayout) {
   if (layout.rows !== LAND_LAYOUT_ROWS || layout.cols !== LAND_LAYOUT_COLUMNS) {
     throw new Error(`Layout must be ${LAND_LAYOUT_ROWS} rows by ${LAND_LAYOUT_COLUMNS} columns`);
   }
-  const trailingBytes = layout.trailingBytes ?? [];
-  const output = new Uint8Array(LAND_LAYOUT_RECORD_BYTES + trailingBytes.length);
-  for (let index = 0; index < LAND_LAYOUT_ROWS * LAND_LAYOUT_COLUMNS; index += 1) {
-    writeI16(output, index * 2, layout.cells[index] ?? 0);
+  const expectedCells = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLUMNS;
+  if (layout.cells.length !== expectedCells) {
+    throw new Error(`Layout must contain exactly ${expectedCells} cells; found ${layout.cells.length}`);
   }
-  for (let index = 0; index < trailingBytes.length; index += 1) {
-    output[LAND_LAYOUT_RECORD_BYTES + index] = trailingBytes[index] & 0xff;
+  const output = new Uint8Array(LAND_LAYOUT_RECORD_BYTES);
+  for (let index = 0; index < LAND_LAYOUT_ROWS * LAND_LAYOUT_COLUMNS; index += 1) {
+    writeI16(output, index * 2, layout.cells[index]);
   }
   return output;
 }

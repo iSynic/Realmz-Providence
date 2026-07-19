@@ -140,6 +140,7 @@ expect(mapEntitySchema.properties?.levelType?.$ref === "#/$defs/levelType", "map
 expect(mapEntitySchema.properties?.render?.$ref === "#/$defs/mapRender", "map render must reference canonical render metadata");
 expect(mapEntitySchema.properties?.provenance?.$ref === "#/$defs/provenance", "map provenance must reference canonical provenance");
 expect(mapRenderSchema.properties?.mode?.$ref === "#/$defs/renderMode", "map render mode must reference the canonical mode enum");
+expect(landLayoutSchema.properties?.cells?.minItems === 128 && landLayoutSchema.properties?.cells?.maxItems === 128, "land layout must retain the complete 8 x 16 cell grid");
 expectSameArray(Object.keys(mapMarkerSchema.properties ?? {}), ["iconId", "x", "y"], "Map marker field inventory");
 expectSameArray(mapMarkerSchema.required ?? [], Object.keys(mapMarkerSchema.properties ?? {}), "Map marker required field inventory");
 expectSameArray(Object.keys(mapRecordRectSchema.properties ?? {}), ["top", "left", "bottom", "right"], "Map-record rectangle field inventory");

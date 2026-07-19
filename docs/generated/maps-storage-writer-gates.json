@@ -10,6 +10,7 @@
     "corpusUsage": "docs/generated/corpus-field-usage.json",
     "mapStorageWriters": [
       "src-tauri/src/realmz/maps.rs",
+      "src-tauri/src/realmz/maps/land_layout.rs",
       "src-tauri/src/realmz/random_levels.rs",
       "src-tauri/src/realmz/action_points.rs"
     ]
@@ -138,7 +139,7 @@
       "authorFacingName": "Land layout grid",
       "gate": "land-layout-grid-writer",
       "recordBytes": 256,
-      "rowKind": "8x16 outdoor adjacency grid plus optional preserved tail",
+      "rowKind": "8x16 outdoor adjacency grid plus optional annex-owned tail",
       "semanticExposure": "land-layout-workbench",
       "writerStatus": "fixture-proven-map-storage",
       "available": true,
@@ -155,35 +156,53 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/maps.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
-        "src-tauri/src/realmz/maps.rs:write_land_layout",
-        "src-tauri/src/realmz/maps.rs:parse_land_layout",
+        "src-tauri/src/realmz/maps/land_layout.rs:compiles_exact_semantic_grid_without_embedded_compatibility_bytes",
+        "src-tauri/src/realmz/maps/land_layout.rs:write_land_layout",
+        "src-tauri/src/realmz/maps/land_layout.rs:parse_land_layout",
+        "src-tauri/src/exporter.rs:land_layout_compatibility_tail_comes_only_from_annex",
+        "scripts/check_browser_desktop_scenario_parity.mjs",
         "docs/generated/map-field-value-evidence.json",
         "docs/format-evidence-cards/map-tile-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/maps.rs:map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
-          "file": "src-tauri/src/realmz/maps.rs",
-          "anchor": "map_storage_layout_mutates_only_owned_cell_and_preserves_tail",
+          "reference": "src-tauri/src/realmz/maps/land_layout.rs:compiles_exact_semantic_grid_without_embedded_compatibility_bytes",
+          "file": "src-tauri/src/realmz/maps/land_layout.rs",
+          "anchor": "compiles_exact_semantic_grid_without_embedded_compatibility_bytes",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/maps.rs:write_land_layout",
-          "file": "src-tauri/src/realmz/maps.rs",
+          "reference": "src-tauri/src/realmz/maps/land_layout.rs:write_land_layout",
+          "file": "src-tauri/src/realmz/maps/land_layout.rs",
           "anchor": "write_land_layout",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/maps.rs:parse_land_layout",
-          "file": "src-tauri/src/realmz/maps.rs",
+          "reference": "src-tauri/src/realmz/maps/land_layout.rs:parse_land_layout",
+          "file": "src-tauri/src/realmz/maps/land_layout.rs",
           "anchor": "parse_land_layout",
           "fileExists": true,
           "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/exporter.rs:land_layout_compatibility_tail_comes_only_from_annex",
+          "file": "src-tauri/src/exporter.rs",
+          "anchor": "land_layout_compatibility_tail_comes_only_from_annex",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "scripts/check_browser_desktop_scenario_parity.mjs",
+          "file": "scripts/check_browser_desktop_scenario_parity.mjs",
+          "anchor": null,
+          "fileExists": true,
+          "anchorPresent": null,
           "present": true
         },
         {
@@ -215,14 +234,14 @@
       "preservedRanges": [
         {
           "field": "Optional compatibility tail",
-          "internal": "trailingBytes",
+          "internal": "compatibility annex",
           "offset": 256,
           "bytes": 256,
-          "type": "raw-preserved-when-present"
+          "type": "annex-preserved-when-present"
         }
       ],
       "partialOnly": true,
-      "preservationPolicy": "The first 256 bytes are the Realmz 8x16 layout grid. Any bytes after 256 are compatibility tail bytes and remain preserve-only."
+      "preservationPolicy": "Both writers compile the first 256 bytes as the complete Realmz 8x16 layout grid without consulting embedded trailingBytes. Imported bytes after offset 255 remain preserve-only and are restored exclusively from the compatibility annex."
     },
     {
       "container": "Data DD",

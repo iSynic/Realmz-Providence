@@ -660,7 +660,7 @@ const layoutProject = {
     rows: 8,
     cols: 16,
     cells: authoredLayoutCells,
-    trailingBytes: Array.from(sourceLayout.slice(LAND_LAYOUT_BYTES)),
+    trailingBytes: [0xa5],
     authored: true
   }
 };
@@ -668,8 +668,8 @@ const layoutUpdate = createBrowserScenarioPackageZip(layoutProject, rawSources, 
 const layoutFiles = unzipScenarioPackage(layoutUpdate.zip);
 expect(layoutUpdate.report.writtenFiles.includes("Layout"), "Authored land layout should write Layout");
 expect(!layoutUpdate.report.passThroughFiles.includes("Layout"), "Written Layout should not be reported as pass-through");
-expect(bytesEqual(layoutFiles.get("Layout"), landLayoutRow(layoutProject.landLayout)), "Authored Layout should encode cells and preserve trailing bytes");
-expect(bytesEqual(layoutFiles.get("Layout")?.slice(LAND_LAYOUT_BYTES), sourceLayout.slice(LAND_LAYOUT_BYTES)), "Authored Layout should preserve compatibility tail bytes");
+expect(bytesEqual(layoutFiles.get("Layout"), landLayoutRow(layoutProject.landLayout, sourceLayout)), "Authored Layout should encode cells and restore annex-owned trailing bytes");
+expect(bytesEqual(layoutFiles.get("Layout")?.slice(LAND_LAYOUT_BYTES), sourceLayout.slice(LAND_LAYOUT_BYTES)), "Authored Layout should ignore embedded compatibility bytes and preserve the annex tail");
 
 const authoredCustomLandlook = customLandlookMetadataFromRaw(6, "Data Custom 1 BD", sourceCustomLandlook);
 authoredCustomLandlook.records[5] = {
@@ -1583,11 +1583,12 @@ function globalHookRow(hooks, compatibilityBytes) {
   return output;
 }
 
-function landLayoutRow(layout) {
-  const trailingBytes = layout.trailingBytes ?? [];
-  const output = new Uint8Array(LAND_LAYOUT_BYTES + trailingBytes.length);
+function landLayoutRow(layout, compatibilityBytes) {
+  const output = new Uint8Array(Math.max(LAND_LAYOUT_BYTES, compatibilityBytes?.byteLength ?? 0));
   setI16Array(output, 0, layout.cells, 8 * 16);
-  output.set(trailingBytes.map((value) => value & 0xff), LAND_LAYOUT_BYTES);
+  if (compatibilityBytes?.byteLength > LAND_LAYOUT_BYTES) {
+    output.set(compatibilityBytes.slice(LAND_LAYOUT_BYTES), LAND_LAYOUT_BYTES);
+  }
   return output;
 }
 
@@ -2433,6 +2434,7 @@ function fixtureProject(files) {
     landLayout: null,
     customLandlooks: [],
     mapRecords: [],
+    tileAttributes: [],
     triggers: [],
     randomLevels: [],
     extracodes: [],
@@ -2471,6 +2473,7 @@ function desktopPassThroughModel(rootName, files) {
     if (file.name === "Custom Names.rsrc" || file.name === "Custom Names.rsf" || file.name === "._Custom Names") continue;
     output.set(file.name, file.bytesData);
   }
+  output.set("Data Solids", new Uint8Array(1024));
   return output;
 }
 

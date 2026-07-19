@@ -422,10 +422,23 @@ appended unchanged by both compilers. The ownership proof authors row 190 withou
 requires byte `2` in Windows and Classic-Mac browser/desktop output, and recovers it semantically
 on native-folder reimport.
 
-Branch validation through the forty-second slice completed on 2026-07-19:
+The forty-third slice closes runtime byte ownership for the optional `Layout` file. Both native
+writers now require the canonical 8 x 16 shape and deterministically compile exactly 256 bytes
+from all 128 signed-short cells; `LandLayout.trailingBytes` remains migration-readable but cannot
+influence compiler output. Imported bytes after offset 255 are restored only from the bounded
+compatibility annex, including the observed 512-byte form whose suffix was previously missed by
+the browser exporter's generic malformed-tail rule. Land-layout editor commands clear embedded
+tail identity when authoring begins. The browser/desktop parity fixture poisons the model tail,
+authors both edge cells, and proves that an exact 256-byte annex suffix survives unchanged. The
+fresh ownership proof now authors a layout without compatibility bytes, emits the same exact grid
+for Windows and Classic Mac in both compilers, and recovers all 128 cells on native reimport. The
+focused Rust codec also moves out of `maps.rs`, reducing rather than extending the deferred
+ISY-320 refactor surface.
 
-- full Rust suite: 245 passed, 2 ignored;
-- full TypeScript suite: 601 passed, plus typecheck;
+Branch validation through the forty-third slice completed on 2026-07-19:
+
+- full Rust suite: 247 passed, 2 ignored;
+- full TypeScript suite: 603 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -434,7 +447,7 @@ Branch validation through the forty-second slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 598 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 603 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
@@ -443,7 +456,9 @@ within the existing `encounters.rs` ceiling; the complex- and thief-encounter ch
 module-size violation. The authoritative rules slice likewise keeps `rules.rs` within its ceiling
 by separating exact-shape validation from the native codec. The `Data Solids` slice likewise moves
 its 1,024-byte codec and tests into a focused module, returns `landlooks.rs` below its baseline, and
-does not add a new ISY-320 violation. Architecture, lint, unit, typecheck, UI audit, production
+does not add a new ISY-320 violation. The `Layout` slice likewise moves its codec and tests into a
+focused module and reduces `maps.rs`; the remaining size failures are the pre-existing ISY-319 map
+UI files, ISY-320 `assembly.rs`, and ISY-321 stylesheets. Architecture, lint, unit, typecheck, UI audit, production
 build, scenario proof, package parity, and the full Rust suite were run independently.
 
 ## Verdict
@@ -760,7 +775,7 @@ Legend:
 | `Data RDD` | Generated + bounded compatibility | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; populated dungeon levels use the same semantic writer and optional imported compatibility base. |
 | `Data ED3` | Generated | Generate fixed Extra Action Point rows | Current export only uses raw input to preserve a longer imported allocation. Fresh allocation is deterministic. |
 | `Data EDCD` | Generated | Generate EDCD settings rows | Complete fixed-row writer and deterministic Scenario JSON allocation. |
-| `Layout` | Generated + compatibility, optional | Generate 256-byte layout core | Imported optional bytes 256-511 remain annex data. |
+| `Layout` | Fully generated semantic grid + legacy annex tail, optional | Generate exactly 256 bytes from all 128 canonical cells | Both compilers require the 8 x 16 shape and ignore embedded `trailingBytes`. Imported optional bytes 256-511 remain preserve-only annex data, including exact 512-byte files. |
 
 ### Core records and encounters
 

@@ -205,7 +205,7 @@
       "properties": {
         "rows": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
         "cols": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
-        "cells": { "type": "array", "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
+        "cells": { "type": "array", "minItems": 128, "maxItems": 128, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "trailingBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": {

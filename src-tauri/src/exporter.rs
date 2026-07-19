@@ -17,7 +17,7 @@ use crate::realmz::{
     write_random_levels, write_scenario_contact_info, write_scenario_items,
     write_scenario_restrictions, write_scenario_shell, write_scenario_support_file, write_shops,
     write_simple_encounters, write_spell_overrides, write_thief_encounters, write_tile_solids,
-    write_timed_encounters, write_treasures, DOOR_BYTES, EXTRACODE_BYTES,
+    write_timed_encounters, write_treasures, DOOR_BYTES, EXTRACODE_BYTES, LAND_LAYOUT_BYTES,
 };
 use crate::resource_fork::{
     decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
@@ -205,7 +205,11 @@ fn compile_realmz_scenario(
         write_fields(&project.maps, LevelType::Dungeon)?,
     )?;
     if let Some(layout) = &project.land_layout {
-        write_if_nonempty(&mut manifest, "Layout", write_land_layout(layout)?)?;
+        write_if_nonempty(
+            &mut manifest,
+            "Layout",
+            preserve_imported_land_layout_tail(write_land_layout(layout)?, compatibility_annex)?,
+        )?;
     }
     write_if_nonempty(
         &mut manifest,
@@ -963,6 +967,22 @@ fn preserve_imported_data_solids_tail(
     };
     if raw.len() > TILE_SOLIDS_BYTES {
         bytes.extend_from_slice(&raw[TILE_SOLIDS_BYTES..]);
+    }
+    Ok(bytes)
+}
+
+fn preserve_imported_land_layout_tail(
+    mut bytes: Vec<u8>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read("Layout")?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    if raw.len() > LAND_LAYOUT_BYTES {
+        bytes.extend_from_slice(&raw[LAND_LAYOUT_BYTES..]);
     }
     Ok(bytes)
 }
@@ -1889,13 +1909,14 @@ mod tests {
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
         preserve_imported_fixed_length, preserve_imported_global_macro_hooks,
-        preserve_imported_message_rows, preserve_imported_monster_description_rows,
-        preserve_imported_monster_rows, preserve_imported_option_label_rows,
-        preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
-        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
-        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
-        write_caste_overrides_for_export, write_race_overrides_for_export,
-        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_land_layout_tail, preserve_imported_message_rows,
+        preserve_imported_monster_description_rows, preserve_imported_monster_rows,
+        preserve_imported_option_label_rows, preserve_imported_scenario_support_file,
+        preserve_imported_simple_encounter_rows, preserve_imported_singleton,
+        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1935,6 +1956,31 @@ mod tests {
         assert_eq!(first.manifest.files()["Scenario"].len(), 600);
         assert!(first.manifest.files().contains_key("Scenario.rsrc"));
         assert!(first.manifest.pass_through_files().is_empty());
+    }
+
+    #[test]
+    fn land_layout_compatibility_tail_comes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+        let mut source = vec![0xa5; crate::realmz::LAND_LAYOUT_BYTES];
+        source.extend((0..256).map(|value| value as u8));
+        fs::write(raw_dir.join("Layout"), &source).unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+        let mut semantic = vec![0; crate::realmz::LAND_LAYOUT_BYTES];
+        semantic[0..2].copy_from_slice(&[0xff, 0xff]);
+
+        let output = preserve_imported_land_layout_tail(semantic.clone(), Some(&annex)).unwrap();
+
+        assert_eq!(&output[..crate::realmz::LAND_LAYOUT_BYTES], semantic);
+        assert_eq!(
+            &output[crate::realmz::LAND_LAYOUT_BYTES..],
+            &source[crate::realmz::LAND_LAYOUT_BYTES..]
+        );
+        assert_eq!(
+            preserve_imported_land_layout_tail(semantic.clone(), None).unwrap(),
+            semantic
+        );
     }
 
     #[test]

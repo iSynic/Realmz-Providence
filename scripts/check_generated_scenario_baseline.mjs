@@ -68,6 +68,17 @@ try {
     source: "Data Solids",
     rawByte: null
   });
+  const landLayoutCells = new Array(8 * 16).fill(0);
+  landLayoutCells[0] = -1;
+  landLayoutCells[127] = 202;
+  compiled.project.landLayout = {
+    rows: 8,
+    cols: 16,
+    cells: landLayoutCells,
+    trailingBytes: [],
+    authored: true,
+    provenance: null
+  };
 
   const sourceBeforeExport = JSON.stringify(compiled.project.source);
   const result = createBrowserScenarioPackageZip(compiled.project, null, "windows-realmz-folder");
@@ -98,6 +109,7 @@ try {
     "Data ED2",
     "Data MD",
     "Data NI",
+    "Layout",
     "Data Solids"
   ]) {
     expect(files.has(name), `generated scenario ZIP should contain ${name}`);
@@ -109,6 +121,10 @@ try {
   expect(tileSolids?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.tileSolids, "Data Solids should contain the exact 1024-byte compiler table");
   expect(tileSolids?.[190] === 2, "Data Solids should compile canonical special-tile solidity");
   expect(tileSolids?.filter((byte) => byte !== 0).length === 1, "Data Solids should keep unspecified special-tile rows neutral");
+  const layout = files.get("Layout");
+  expect(layout?.byteLength === 256, "Layout should contain the exact 8 x 16 signed-short compiler grid");
+  expect(readI16(layout, 0) === -1 && readI16(layout, 254) === 202, "Layout should compile canonical cells");
+  expect(layout?.slice(2, 254).every((byte) => byte === 0), "Layout should keep unspecified cells neutral");
   const minimumResourceFork = files.get("Scenario.rsrc");
   expect(minimumResourceFork?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioResourceFork, "Scenario.rsrc should be the exact canonical empty resource container");
   expect(readU32(minimumResourceFork, 0) === 16 && readU32(minimumResourceFork, 4) === 16, "Scenario.rsrc should use the canonical empty data/map offsets");
@@ -130,6 +146,11 @@ function expect(condition, message) {
 
 function readU16(bytes, offset) {
   return ((bytes?.[offset] ?? 0) << 8) | (bytes?.[offset + 1] ?? 0);
+}
+
+function readI16(bytes, offset) {
+  const value = readU16(bytes, offset);
+  return value >= 0x8000 ? value - 0x10000 : value;
 }
 
 function readU32(bytes, offset) {
