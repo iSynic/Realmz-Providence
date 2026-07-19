@@ -314,7 +314,7 @@ The twentieth follow-up archaeology pass reclassified several byte-preserved fil
 
 - `Data DES` is a 256-byte monster-description pool read by the bestiary/monster inspection path; Providence now parses/writes it with raw-byte preservation.
 - `Data MD1` and `Data MD-1` are alternate monster template sets produced by appending the selected `monsterset` value to `Data MD`; Providence now parses/writes them through the same raw-preserving 210-byte `struct monster` codec as `Data MD`.
-- `Data OD` is a 25-byte option-label table used by two-choice prompts and negative string indexes; Providence now parses/writes it with raw-byte preservation. The Divinity Strings `Sound` field remains unproven and blocked.
+- `Data OD` is a 25-byte option-label table used by two-choice prompts and negative string indexes; Providence now compiles fresh/authored rows semantically and preserves unchanged legacy padding or noncanonical capacity only through the compatibility annex. The Divinity Strings `Sound` field remains unproven and blocked.
 - scenario-file `Data CS` is a 316-byte registration/security code-segment backup; it is distinct from runtime `:Data Files:CS`, which is the shop cache generated from `Data SD`. Providence now reads/writes it through the raw-preserving scenario-shell codec while keeping security editing hidden.
 
 Detailed evidence lives in `docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md`, `docs/format-evidence-cards/strings-data-od-string-sound.md`, and `docs/format-evidence-cards/runtime-caches-vs-authored-source.md`.
@@ -333,7 +333,7 @@ The twenty-second follow-up archaeology pass tightened the byte-roundtrip ledger
 
 - scenario marker/main files named after the scenario are now classified as supported scenario shell data when they parse through the existing source-backed shell parser, including case-only folder/file name differences from classic Mac scenario folders;
 - the no-edit audit still reports 87/87 scenarios and 3,072/3,072 files exported byte-identically;
-- custom music, `Format`, empty resource-fork data companions such as `Icon_`, and distribution readme files are now tracked as known preserve-only/pass-through families rather than unknown files; `Data OD`, `Data DES`, `Data MD1`, `Data MD-1`, and scenario `Data CS` have since moved into typed raw-preserving parser/writer support;
+- custom music, `Format`, empty resource-fork data companions such as `Icon_`, and distribution readme files are now tracked as known preserve-only/pass-through families rather than unknown files; `Data DES`, `Data MD1`, `Data MD-1`, and scenario `Data CS` have typed raw-preserving parser/writer support, while `Data OD` now has semantic authored writers plus annex-only legacy preservation;
 - `.DS_Store` is Finder metadata, not Realmz scenario data; Providence ignores it during import instead of preserving or classifying it.
 
 The generated ledger lives in `docs/generated/scenario-byte-roundtrip-ledger.json`. Re-run it with `npm run archaeology:roundtrip-audit` whenever writer behavior changes.

@@ -9,7 +9,7 @@ import {
 import { parseAsset } from "./assetParser";
 import { parseActionPoint, parseExtraActionPoint } from "./actionPointParser";
 import { parseComplexEncounter, parseSimpleEncounter, parseThiefEncounter } from "./encounterParser";
-import { parseBattle, parseItem, parseMessage, parseMonster, parseQuest, parseShop, parseTreasure } from "./coreRecordParser";
+import { parseBattle, parseItem, parseMessage, parseMonster, parseOptionLabel, parseQuest, parseShop, parseTreasure } from "./coreRecordParser";
 import { parseMap } from "./mapParser";
 import { parseCaste, parseRace, parseSpell } from "./rulesParser";
 import { parseScenario } from "./scenarioParser";
@@ -25,7 +25,7 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   const ctx: ParseContext = { errors: [], warnings: [] };
   const root = requireObject(input, "$", ctx);
   if (!root) return { ok: false, errors: ctx.errors, warnings: ctx.warnings };
-  allowKeys(root, "$", ["schemaVersion", "baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "spells", "races", "castes", "actionPoints", "extraActionPoints"], ctx);
+  allowKeys(root, "$", ["schemaVersion", "baseTemplate", "scenario", "maps", "messages", "optionLabels", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "spells", "races", "castes", "actionPoints", "extraActionPoints"], ctx);
 
   const schemaVersion = requireInteger(root.schemaVersion, "$.schemaVersion", ctx);
   if (schemaVersion !== null && schemaVersion !== SCENARIO_SEED_SCHEMA_VERSION) {
@@ -43,6 +43,8 @@ export function parseScenarioSeed(input: unknown): ScenarioSeedParseResult {
   if (maps) seed.maps = maps;
   const messages = parseArray(root.messages, "$.messages", ctx, parseMessage);
   if (messages) seed.messages = messages;
+  const optionLabels = parseArray(root.optionLabels, "$.optionLabels", ctx, parseOptionLabel);
+  if (optionLabels) seed.optionLabels = optionLabels;
   const quests = parseArray(root.quests, "$.quests", ctx, parseQuest);
   if (quests) seed.quests = quests;
   const battles = parseArray(root.battles, "$.battles", ctx, parseBattle);

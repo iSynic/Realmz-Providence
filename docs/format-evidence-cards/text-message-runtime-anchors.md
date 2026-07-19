@@ -97,6 +97,8 @@ identity.
 - Keep `Data OD` as an optional two-choice prompt source backed by 25-byte option-label records; if missing, show `Data SD2` fallback explicitly.
 - Treat canonical message compilation as implemented: fresh/authored rows are deterministic, while
   unchanged imported rows and malformed tails are annex-preserved at the export boundary.
+- Treat canonical option-label compilation the same way: fresh/authored Str24 rows are deterministic,
+  while noncanonical legacy capacity and padding remain annex-owned until the label is authored.
 - Runtime `CE`/`CE2` mutation should remain generated state evidence. Edits should write source `Data ED`/`Data ED2`.
 
 ## Validation Rules

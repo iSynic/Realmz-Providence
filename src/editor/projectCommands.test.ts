@@ -23,6 +23,21 @@ describe("project command facade", () => {
     expect(next.messages[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh option labels from semantic text without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Option Label");
+
+    const next = applyProjectCommand(project, {
+      kind: "updateOptionLabel",
+      label: "Create option label",
+      id: 4,
+      changes: { text: "Proceed" }
+    });
+
+    expect(next.optionLabels).toHaveLength(1);
+    expect(next.optionLabels[0].text).toBe("Proceed");
+    expect(next.optionLabels[0].rawBytes).toBeUndefined();
+  });
+
   it("creates fresh map records from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Player Map");
 

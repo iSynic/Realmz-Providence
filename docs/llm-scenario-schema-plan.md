@@ -11,7 +11,7 @@ Next implementation plan: [`docs/llm-scenario-schema-next-plan.md`](llm-scenario
 - New Project exposes the seed compiler through a Scenario JSON mode in both browser and desktop runtimes, with inline validation failures before persistence.
 - Scenario JSON can use the current project as its base template while preserving browser raw snapshots or desktop package payload directories.
 - Blank and prompt-created projects now include a generated, content-neutral Realmz runtime baseline. Browser and desktop exports contain the required startup files, fixed item capacity, scenario shell/support files, and one door table per authored map without borrowing another scenario's data.
-- Supported content: scenario metadata, keyed maps, map regions, map drawing operations, messages, quests, battles, Normal scenario monsters and descriptions, treasures, shops, scenario items and item text, stock and Custom Library asset references, simple and timed encounters, Extra Action Points, and semantic AP seed aliases.
+- Supported content: scenario metadata, keyed maps, map regions, map drawing operations, messages, option labels, quests, battles, Normal scenario monsters and descriptions, treasures, shops, scenario items and item text, stock and Custom Library asset references, simple and timed encounters, Extra Action Points, and semantic AP seed aliases.
 - Supported map operations include organic `landmass` and `blob` terrain, terrain-aware `semanticRoute` region connections, semantic `castleRoom` interiors, and the lower-level fill, shape, road, stamp, terrain, secret, and dungeon-passage operations.
 - Supported AP seed aliases: `message`, `battle`, `simpleEncounter`, `complexEncounter`, `shop`, `treasure`, `sound`, `picture`, `scrollingText`, `victoryPoints`, `temple`, `banking`, `displayMap`, `pickCharacters`, `returnGosub`, `popStack`, `addSpecialCharacter`, `dropSpecialCharacter`, `teleport`, `randomMessage`, `selectiveBattle`, `battleOutcome`, `improvedBattleOutcome`, `causeRout`, `battleMacroCriteria`, `spawnMonsters`, `destroyRelatedMonsters`, `continueIfMonsterPresent`, `alterTimedEncounter`, `branchOnQuest`, `setQuestFlag`, `questValue`, `branchOnQuestValue`, `branchOnRandom`, `branchOnPercent`, `changeTile`, `healHurtParty`, `takeGold`, `giveCondition`, `awardRandomItems`, `branchOnItem`, `branchOnItemCharges`, `dropItems`, `changeItemCharges`, `replaceItems`, `branchOnPartyCondition`, `branchOnCharacterCondition`, `branchOnTileParameter`, `copyActionPointSteps`, `enableActionPoint`, `disableActionPoint`, `patchActionPoint`, `setDarkLevel`, `alterGameTime`, `branchOnGameTime`, `boatCampStatus`, `alterFatigue`, `changeSpellPoints`, `branchOnSpellPoints`, `alterRandomEncounterRectangle`, `alterRandomRectangle`, `enterExitDungeon`, `edcd`, and `raw`.
 - Full AP editor coverage is broader than the seed layer. The seed layer now includes common spell, party-state, dungeon-view, battle-control, and picked-character aliases; remaining additions should stay driven by authoring value rather than duplicate opcode archaeology.
@@ -27,11 +27,12 @@ Next implementation plan: [`docs/llm-scenario-schema-next-plan.md`](llm-scenario
 
 ## Phase 1: References And Allocation
 
-Status: implemented for maps, messages, quests, battles, Normal scenario monsters, treasures, shops, scenario items, simple encounters, and action points.
+Status: implemented for maps, messages, option labels, quests, battles, Normal scenario monsters, treasures, shops, scenario items, simple encounters, and action points.
 
 Add stable author-facing IDs for seed records:
 
 - `messages[].key`
+- `optionLabels[].id` (explicit native row ID)
 - `maps[].key`
 - `quests[].key`
 - `battles[].key`

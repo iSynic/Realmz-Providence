@@ -7,13 +7,13 @@ mod encounters;
 mod landlooks;
 mod maps;
 mod messages;
+mod option_labels;
 mod random_levels;
 mod record_bytes;
 mod rules;
 mod scenario;
 mod scenario_items;
 mod shops;
-mod text_records;
 pub use action_points::{
     parse_door_file, parse_extracodes, parse_macro_file, write_door_file,
     write_door_file_for_levels, write_extracodes, write_macro_file, DOORS_PER_LEVEL, DOOR_BYTES,
@@ -44,6 +44,8 @@ pub use maps::{
     write_map_records, FIELD_BYTES, LAND_LAYOUT_BYTES, LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
     MAP_RECORD_BYTES, MAP_RECORD_MARKERS, MAP_RECORD_MARKER_BYTES,
 };
+pub use messages::{parse_messages, write_messages, MESSAGE_BYTES};
+pub use option_labels::{parse_option_labels, write_option_labels, OPTION_LABEL_BYTES};
 pub use random_levels::{parse_random_levels, write_random_levels, RANDLEVEL_BYTES};
 pub use record_bytes::{i16_be, write_i16_be};
 pub use rules::{
@@ -58,10 +60,6 @@ pub use scenario::{
     write_scenario_support_file,
 };
 pub use scenario_items::*;
-pub use text_records::{
-    parse_messages, parse_option_labels, write_messages, write_option_labels, MESSAGE_BYTES,
-    OPTION_LABEL_BYTES,
-};
 
 #[cfg(test)]
 mod tests {
@@ -71,10 +69,7 @@ mod tests {
 
     #[test]
     fn target_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 4] = [
-            (OPTION_LABEL_BYTES, |bytes| {
-                write_option_labels(&parse_option_labels(bytes)).unwrap()
-            }),
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 3] = [
             (ITEM_BYTES, |bytes| {
                 write_scenario_items(&parse_scenario_items(bytes)).unwrap()
             }),
@@ -110,9 +105,9 @@ mod tests {
         let option_label = OptionLabelRecord {
             id: 0,
             text: "Attack".to_string(),
-            raw_bytes: vec![0; OPTION_LABEL_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
-            provenance: provenance("Data OD", 0, 0, OPTION_LABEL_BYTES),
+            provenance: Some(provenance("Data OD", 0, 0, OPTION_LABEL_BYTES)),
         };
         let option_bytes = write_option_labels(&[option_label]).unwrap();
         assert_eq!(option_bytes.len(), OPTION_LABEL_BYTES);

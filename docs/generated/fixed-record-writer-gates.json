@@ -8,7 +8,7 @@
     "fixtureRoundtrip": "src-tauri/tests/fixture_roundtrip.rs",
     "fixedRecordWriters": [
       "src-tauri/src/realmz/messages.rs",
-      "src-tauri/src/realmz/text_records.rs",
+      "src-tauri/src/realmz/option_labels.rs",
       "src-tauri/src/realmz/combat.rs",
       "src-tauri/src/realmz/economy.rs",
       "src-tauri/src/realmz/encounters.rs",
@@ -246,8 +246,11 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/text_records.rs:option_label_writer_mutates_only_owned_pascal_bytes",
-        "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
+        "src-tauri/src/realmz/option_labels.rs:fresh_option_label_compiles_complete_semantic_row",
+        "src-tauri/src/realmz/option_labels.rs:imported_option_label_compiles_without_record_byte_identity",
+        "src-tauri/src/exporter.rs:imported_option_label_export_reads_legacy_bytes_only_from_annex",
+        "src-tauri/src/realmz/option_labels.rs:write_option_labels",
+        "src-tauri/src/realmz/option_labels.rs:parse_option_labels",
         "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",
         "src-tauri/tests/fixture_roundtrip.rs:exports_hardened_fixtures_byte_identically_without_edits",
@@ -256,17 +259,41 @@
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/text_records.rs:option_label_writer_mutates_only_owned_pascal_bytes",
-          "file": "src-tauri/src/realmz/text_records.rs",
-          "anchor": "option_label_writer_mutates_only_owned_pascal_bytes",
+          "reference": "src-tauri/src/realmz/option_labels.rs:fresh_option_label_compiles_complete_semantic_row",
+          "file": "src-tauri/src/realmz/option_labels.rs",
+          "anchor": "fresh_option_label_compiles_complete_semantic_row",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz.rs:target_records_round_trip_full_records",
-          "file": "src-tauri/src/realmz.rs",
-          "anchor": "target_records_round_trip_full_records",
+          "reference": "src-tauri/src/realmz/option_labels.rs:imported_option_label_compiles_without_record_byte_identity",
+          "file": "src-tauri/src/realmz/option_labels.rs",
+          "anchor": "imported_option_label_compiles_without_record_byte_identity",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/exporter.rs:imported_option_label_export_reads_legacy_bytes_only_from_annex",
+          "file": "src-tauri/src/exporter.rs",
+          "anchor": "imported_option_label_export_reads_legacy_bytes_only_from_annex",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/option_labels.rs:write_option_labels",
+          "file": "src-tauri/src/realmz/option_labels.rs",
+          "anchor": "write_option_labels",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/option_labels.rs:parse_option_labels",
+          "file": "src-tauri/src/realmz/option_labels.rs",
+          "anchor": "parse_option_labels",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -314,16 +341,16 @@
       ],
       "ownedFields": [
         {
-          "field": "Option label",
+          "field": "Option-label row",
           "internal": "text",
           "offset": 0,
           "bytes": 25,
-          "type": "Str24/raw tail"
+          "type": "Str24 + deterministic zero fill"
         }
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Imported option-label bytes remain raw-preserved until the label is authored; the blocked Strings Sound affordance is not part of this writer gate."
+      "preservationPolicy": "Fresh and authored option labels compile the complete 25-byte row from canonical text without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export. The blocked Strings Sound affordance is not part of this writer gate."
     },
     {
       "container": "Data DES",

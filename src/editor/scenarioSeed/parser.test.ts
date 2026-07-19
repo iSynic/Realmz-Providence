@@ -6,6 +6,7 @@ describe("scenario seed parser stage", () => {
     const collections = {
       maps: [],
       messages: [],
+      optionLabels: [],
       quests: [],
       battles: [],
       monsters: [],
@@ -51,5 +52,16 @@ describe("scenario seed parser stage", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors).toContain("$.schemaVersion must be 1.");
+  });
+
+  it("rejects duplicate option-label row IDs", () => {
+    const result = parseScenarioSeed({
+      schemaVersion: 1,
+      scenario: { name: "Duplicate Option Labels" },
+      optionLabels: [{ id: 2, text: "Proceed" }, { id: 2, text: "Withdraw" }]
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors).toContain("$.optionLabels contains duplicate id 2.");
   });
 });

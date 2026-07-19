@@ -40,6 +40,7 @@ describe("scenario seed core record compiler", () => {
         { key: "wight-icon", source: "custom-library", assetId: customIcon.id, resourceId: 30126 }
       ],
       messages: [{ id: 4, text: "The bell answers." }],
+      optionLabels: [{ id: 2, text: "Proceed" }],
       quests: [{ id: 5, label: "Wake the Bell", note: "Optional" }],
       items: [{ id: 5, itemId: 805, icon: "stock-item-icon", identifiedName: "Bell Clapper", description: "Cold bronze." }],
       monsters: [{ id: 3, name: "Bell Wight", icon: "wight-icon", hitDice: 4, variants: "copyAll" }],
@@ -62,6 +63,8 @@ describe("scenario seed core record compiler", () => {
     const compiled = compileScenarioSeedCoreRecords({ ...base, assets }, seed, context);
 
     expect(compiled.messages).toEqual([expect.objectContaining({ id: 4, text: "The bell answers." })]);
+    expect(compiled.optionLabels).toEqual([expect.objectContaining({ id: 2, text: "Proceed", authored: true })]);
+    expect(compiled.optionLabels[0].rawBytes).toBeUndefined();
     expect(compiled.questLabels).toEqual([{ id: 5, label: "Wake the Bell", note: "Optional" }]);
     expect(compiled.scenarioItems[0]).toMatchObject({ id: 5, itemId: 805, iconId: 300 });
     expect(compiled.itemTexts[0]).toMatchObject({ itemId: 805, identifiedName: "Bell Clapper" });

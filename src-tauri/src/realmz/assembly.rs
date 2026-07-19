@@ -26,7 +26,7 @@ use super::rules::{
     SPELL_BYTES,
 };
 use super::scenario_items::{parse_scenario_items, ITEM_BYTES};
-use super::text_records::{parse_messages, parse_option_labels, MESSAGE_BYTES, OPTION_LABEL_BYTES};
+use super::{parse_messages, parse_option_labels, MESSAGE_BYTES, OPTION_LABEL_BYTES};
 use crate::project::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

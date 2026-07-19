@@ -43,6 +43,8 @@ expect(project.triggers.length === 1, `Expected one Action Point, found ${projec
 expect(project.messages.length === 1, `Expected one message, found ${project.messages.length}`);
 assertOwnershipMessage(project.messages, "Canonical project");
 expect((project.messages[0].rawBytes?.length ?? 0) === 0, "Fresh canonical message must not carry compatibility bytes");
+assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
+expect(project.optionLabels.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical option labels must not carry compatibility bytes");
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
 expect((project.scenarioItems[0].rawBytes?.length ?? 0) === 0, "Fresh canonical scenario item must not carry compatibility bytes");
 expect(project.scenarioItems[0].spare2?.length === 7, "Fresh canonical scenario item must own all seven spare words");
@@ -162,6 +164,7 @@ expect(
   "Reimport should recover the authored message"
 );
 assertOwnershipMessage(reimported.messages, "Reimport");
+assertOwnershipOptionLabels(reimported.optionLabels, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
 assertOwnershipShop(reimported.shops, "Reimport");
@@ -279,6 +282,8 @@ async function assertNoRawSources(stage) {
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
+  assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
+  expect(savedProject.optionLabels?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} option labels contain compatibility bytes`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
   expect(savedProject.treasures?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} treasures contain compatibility bytes`);
@@ -298,6 +303,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data RD", 644],
     ["Data DD", 100 * 40],
     ["Data SD2", 256],
+    ["Data OD", 50],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
     ["Data SD", 3002],
@@ -341,6 +347,13 @@ function assertOwnershipMessage(records, label) {
   const message = records?.find((record) => record.id === 0);
   expect(message, `${label} is missing message 0`);
   expect(message.text === "Providence owns this scenario.", `${label} has the wrong canonical message text`);
+}
+
+function assertOwnershipOptionLabels(records, label) {
+  const proceed = records?.find((record) => record.id === 0);
+  const withdraw = records?.find((record) => record.id === 1);
+  expect(proceed?.text === "Proceed", `${label} has the wrong option label 0`);
+  expect(withdraw?.text === "Withdraw", `${label} has the wrong option label 1`);
 }
 
 function assertOwnershipTreasure(records, label) {

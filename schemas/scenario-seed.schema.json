@@ -11,6 +11,7 @@
     "scenario": { "$ref": "#/$defs/scenario" },
     "maps": { "type": "array", "items": { "$ref": "#/$defs/map" } },
     "messages": { "type": "array", "items": { "$ref": "#/$defs/message" } },
+    "optionLabels": { "type": "array", "items": { "$ref": "#/$defs/optionLabel" } },
     "quests": { "type": "array", "items": { "$ref": "#/$defs/quest" } },
     "battles": { "type": "array", "items": { "$ref": "#/$defs/battle" } },
     "monsters": { "type": "array", "items": { "$ref": "#/$defs/monster" } },
@@ -741,6 +742,15 @@
       "additionalProperties": false,
       "required": ["text"],
       "properties": { "key": { "$ref": "#/$defs/key" }, "id": { "type": "integer", "minimum": 0 }, "text": { "type": "string", "maxLength": 4096 } }
+    },
+    "optionLabel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "text"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0 },
+        "text": { "type": "string", "maxLength": 24 }
+      }
     },
     "quest": {
       "type": "object",

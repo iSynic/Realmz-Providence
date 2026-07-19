@@ -21,6 +21,7 @@ export type ScenarioSeed = {
   scenario: ScenarioSeedScenario;
   maps?: ScenarioSeedMap[];
   messages?: ScenarioSeedMessage[];
+  optionLabels?: ScenarioSeedOptionLabel[];
   quests?: ScenarioSeedQuest[];
   battles?: ScenarioSeedBattle[];
   monsters?: ScenarioSeedMonster[];
@@ -124,6 +125,11 @@ export type ScenarioSeedMap = {
 export type ScenarioSeedMessage = {
   key?: string;
   id?: number;
+  text: string;
+};
+
+export type ScenarioSeedOptionLabel = {
+  id: number;
   text: string;
 };
 

@@ -23,6 +23,10 @@
   "messages": [
     { "key": "ownership-message", "text": "Providence owns this scenario." }
   ],
+  "optionLabels": [
+    { "id": 0, "text": "Proceed" },
+    { "id": 1, "text": "Withdraw" }
+  ],
   "quests": [
     { "key": "ownership-proven", "label": "Providence ownership proof triggered" }
   ],

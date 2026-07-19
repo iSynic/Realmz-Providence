@@ -65,12 +65,13 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
 const shopRecordSchema = schema.$defs?.shopRecord ?? {};
 const messageRecordSchema = schema.$defs?.messageRecord ?? {};
+const optionLabelRecordSchema = schema.$defs?.optionLabelRecord ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -103,6 +104,7 @@ expect(schema.properties?.scenarioItems?.items?.$ref === "#/$defs/scenarioItemRe
 expect(schema.properties?.treasures?.items?.$ref === "#/$defs/treasureRecord", "project treasures must contain canonical treasure DTOs");
 expect(schema.properties?.shops?.items?.$ref === "#/$defs/shopRecord", "project shops must contain canonical shop DTOs");
 expect(schema.properties?.messages?.items?.$ref === "#/$defs/messageRecord", "project messages must contain canonical message DTOs");
+expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabelRecord", "project optionLabels must contain canonical option-label DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
 expectSameArray(renderModeSchema.enum ?? [], ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"], "Map render-mode vocabulary");
 for (const [index, definition] of mapDefinitions.entries()) {
@@ -181,12 +183,20 @@ expect(messageRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance"
 expectSameArray(messageRecordSchema["x-providence-rust-optional"] ?? [], ["provenance"], "Message migration-optional Rust inventory");
 expectSameArray(messageRecordSchema["x-providence-rust-skip-none"] ?? [], ["provenance"], "Message omitted empty provenance inventory");
 expectSameArray(messageRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Message omitted empty compatibility inventory");
+const optionLabelFields = ["id", "text", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(optionLabelRecordSchema.properties ?? {}), optionLabelFields, "Option-label field inventory");
+expectSameArray(optionLabelRecordSchema.required ?? [], ["id", "text"], "Option-label authored field inventory");
+expect(optionLabelRecordSchema.properties?.rawBytes?.minItems === 25 && optionLabelRecordSchema.properties?.rawBytes?.maxItems === 25, "option-label rawBytes must retain one complete Realmz Str24 slot when compatibility bytes are present");
+expect(optionLabelRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "option-label provenance must reference canonical provenance");
+expectSameArray(optionLabelRecordSchema["x-providence-rust-optional"] ?? [], ["provenance"], "Option-label migration-optional Rust inventory");
+expectSameArray(optionLabelRecordSchema["x-providence-rust-skip-none"] ?? [], ["provenance"], "Option-label omitted empty provenance inventory");
+expectSameArray(optionLabelRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Option-label omitted empty compatibility inventory");
 const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -245,6 +255,7 @@ for (const alias of [
   "export type TreasureRecord = ProvidenceTreasureRecord;",
   "export type ShopRecord = ProvidenceShopRecord;",
   "export type MessageRecord = ProvidenceMessageRecord;",
+  "export type OptionLabelRecord = ProvidenceOptionLabelRecord;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -267,6 +278,7 @@ expect(!typesSource.includes("export type ScenarioItemRecord = {"), "types.ts mu
 expect(!typesSource.includes("export type TreasureRecord = {"), "types.ts must not handwrite TreasureRecord");
 expect(!typesSource.includes("export type ShopRecord = {"), "types.ts must not handwrite ShopRecord");
 expect(!typesSource.includes("export type MessageRecord = {"), "types.ts must not handwrite MessageRecord");
+expect(!typesSource.includes("export type OptionLabelRecord = {"), "types.ts must not handwrite OptionLabelRecord");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!typesSource.includes(`export type ${scenarioType} = {`), `types.ts must not handwrite ${scenarioType}`);
 }
@@ -298,6 +310,7 @@ expectSameSet(rustGeneratedReExports, [
   "ScenarioSupportFile",
   "ShopRecord",
   "MessageRecord",
+  "OptionLabelRecord",
   "TreasureRecord",
   "SourceFile",
   "SourceFileRole",
@@ -321,6 +334,7 @@ expect(!rustProjectSource.includes("pub struct ScenarioItemRecord {"), "project.
 expect(!rustProjectSource.includes("pub struct TreasureRecord {"), "project.rs must not handwrite TreasureRecord");
 expect(!rustProjectSource.includes("pub struct ShopRecord {"), "project.rs must not handwrite ShopRecord");
 expect(!rustProjectSource.includes("pub struct MessageRecord {"), "project.rs must not handwrite MessageRecord");
+expect(!rustProjectSource.includes("pub struct OptionLabelRecord {"), "project.rs must not handwrite OptionLabelRecord");
 expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
 expect(!rustProjectSource.includes("pub enum RenderMode {"), "project.rs must not handwrite RenderMode");
 expect(rustProjectSource.includes("impl LevelType {"), "project.rs must retain handwritten LevelType behavior methods");
@@ -432,6 +446,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_TREASURE_FIELDS = ${JSON.stringify(Object.keys(treasureRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SHOP_FIELDS = ${JSON.stringify(Object.keys(shopRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MESSAGE_FIELDS = ${JSON.stringify(Object.keys(messageRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_OPTION_LABEL_FIELDS = ${JSON.stringify(Object.keys(optionLabelRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
     renderTypeScriptEnum(confidence) + `\n` +
@@ -484,6 +499,8 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_SHOP_FIELDS: &[&str] = &[\n${renderArray(Object.keys(shopRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_MESSAGE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(messageRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[\n${renderArray(Object.keys(optionLabelRecordSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
     renderRustEnum(confidence) + `\n` +

@@ -596,8 +596,8 @@ export function emptyMessage(id: number): MessageRecord {
   return { id, text: "", authored: true, provenance: authoredProvenance("Data SD2", id, id * 256, 256) };
 }
 
-function emptyOptionLabel(id: number): OptionLabelRecord {
-  return { id, text: "", rawBytes: new Array(OPTION_LABEL_BYTES).fill(0), authored: true, provenance: authoredProvenance("Data OD", id, id * OPTION_LABEL_BYTES, OPTION_LABEL_BYTES) };
+export function emptyOptionLabel(id: number): OptionLabelRecord {
+  return { id, text: "", authored: true, provenance: authoredProvenance("Data OD", id, id * OPTION_LABEL_BYTES, OPTION_LABEL_BYTES) };
 }
 
 function emptyBattle(id: number): BattleRecord {

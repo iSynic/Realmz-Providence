@@ -26,12 +26,15 @@ const failures = [];
 
 expect(schema.properties?.schemaVersion?.const === 1, "schemaVersion must be const 1");
 expect(schema.additionalProperties === false, "root schema must reject additional properties");
+expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabel", "optionLabels must use the semantic option-label schema");
+expect(schema.$defs?.optionLabel?.required?.includes("id"), "option labels must require an explicit native row ID");
+expect(schema.$defs?.optionLabel?.properties?.text?.maxLength === 24, "option-label text must respect the Data OD Str24 capacity");
 expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the scenario seed schema");
 expect(source.includes("export { parseScenarioSeed }"), "scenarioSeed.ts must re-export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");
 expect(parserSource.includes("export function parseScenarioSeed"), "parser.ts must implement parseScenarioSeed");
 
-const requiredRootProperties = ["baseTemplate", "scenario", "maps", "messages", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "spells", "races", "castes", "actionPoints", "extraActionPoints"];
+const requiredRootProperties = ["baseTemplate", "scenario", "maps", "messages", "optionLabels", "quests", "battles", "monsters", "treasures", "shops", "items", "assets", "simpleEncounters", "complexEncounters", "thiefEncounters", "timedEncounters", "spells", "races", "castes", "actionPoints", "extraActionPoints"];
 for (const key of requiredRootProperties) {
   expect(Object.hasOwn(schema.properties ?? {}, key), `root schema is missing ${key}`);
 }
@@ -134,6 +137,7 @@ const sampleSeed = {
     operations: [{ kind: "dungeonPassage", x: 4, y: 4, directions: ["north", "south"] }]
   }],
   messages: [{ key: "hello", text: "Hello" }, { key: "bye", text: "Bye" }],
+  optionLabels: [{ id: 0, text: "Proceed" }, { id: 1, text: "Withdraw" }],
   quests: [{ key: "started", label: "Started" }],
   monsters: [{ key: "bell-wight", name: "Bell Wight", description: "A bell-bound guardian.", hitDice: 3, stamina: 12, staminaMax: 12, iconId: 126, exp: 200, attacks: [[1, 6, 0, 0]], items: ["bell-clapper"] }],
   battles: [{ key: "first-battle", placements: [{ x: 6, y: 6, monster: "bell-wight" }] }],

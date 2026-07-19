@@ -46,6 +46,10 @@ Providence can make the Text tool match Divinity's **Strings** workflow without 
 - `Data SD2` is present in all known scenarios in the generated corpus summaries.
 - The byte-roundtrip audit found `Data OD` in 22/87 visible known-valid scenario roots.
 - Observed `Data OD` sizes are divisible by 25, with 23, 51, 53, and 61 option slots represented in the visible roots.
+- A focused scan deduplicated 66 local copies into seven distinct `Data OD` payloads containing 343
+  complete rows. All 270 rows with valid Str24 lengths had nonzero post-length bytes, overwhelmingly
+  space padding; the remaining 73 rows had noncanonical length bytes, including 19 `0xFF` sentinels.
+  None of the distinct payloads had a malformed file tail.
 - Text resource types `TEXT`, `STR#`, and `styl` are resource-fork data and should remain separate from the authored `Data SD2` message pool.
 - A focused local scan found nonzero post-length bytes in 22,862 of 24,442 complete `Data SD2` rows
   and malformed tails in eight of 25 files. These bytes are not runtime message text; conservative
@@ -54,7 +58,8 @@ Providence can make the Text tool match Divinity's **Strings** workflow without 
 ## Providence Follow-Up
 
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
-- `Data OD` parser/writer support is implemented as `optionLabels` with 25-byte raw preservation.
+- `Data OD` parser/writer support is implemented as canonical `optionLabels`; fresh/authored rows
+  require no raw storage, while unchanged legacy rows remain annex-preserved.
 - Text/Strings now has an `Option Labels` editor for two-choice labels, including navigation, search, duplicate, clear, byte-limit validation, and usage links from player-option script parameter rows.
 - Readable `TEXT`, `STR#`, and `styl` resources should display decoded text in reference previews, or an explicit no-readable-text state when no decoded text exists.
 - Keep the Strings `Sound` field out of the default editor; use caller-specific sound controls where Realmz source proves them.
@@ -66,6 +71,8 @@ Providence can make the Text tool match Divinity's **Strings** workflow without 
 `Data SD2` writing is authoritative when byte-length and Classic encoding are validated: fresh and
 authored rows compile all 256 bytes from semantic text, and embedded `rawBytes` cannot affect output.
 For imported scenarios, unchanged rows and malformed tails come only from the compatibility annex.
-`Data OD` writing is source-backed and fixture-covered for 25-byte Pascal option labels; imported raw
-bytes are preserved until a label is authored. String Sound is not a Strings writer target; supported
-sound bytes are edited on their owning caller records.
+`Data OD` writing is authoritative and fixture-covered for 25-byte Pascal option labels. Fresh and
+authored rows compile the complete Str24 row with deterministic zero fill, and embedded `rawBytes`
+cannot affect output. Unchanged imported rows and malformed tails come only from the compatibility
+annex. String Sound is not a Strings writer target; supported sound bytes are edited on their owning
+caller records.

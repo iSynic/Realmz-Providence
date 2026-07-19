@@ -7,6 +7,7 @@ import type {
   ScenarioSeedMessage,
   ScenarioSeedMonster,
   ScenarioSeedMonsterNumberField,
+  ScenarioSeedOptionLabel,
   ScenarioSeedQuest,
   ScenarioSeedRef,
   ScenarioSeedShop,
@@ -121,6 +122,16 @@ export function parseMessage(input: unknown, path: string, ctx: ParseContext): S
   const text = requireString(value.text, `${path}.text`, ctx);
   checkIntegerRange(id, `${path}.id`, 0, null, ctx);
   return { ...(key !== undefined ? { key } : {}), ...(id !== undefined ? { id } : {}), text: text ?? "" };
+}
+
+export function parseOptionLabel(input: unknown, path: string, ctx: ParseContext): ScenarioSeedOptionLabel | null {
+  const value = requireObject(input, path, ctx);
+  if (!value) return null;
+  allowKeys(value, path, ["id", "text"], ctx);
+  const id = requireInteger(value.id, `${path}.id`, ctx);
+  const text = requireString(value.text, `${path}.text`, ctx);
+  checkIntegerRange(id, `${path}.id`, 0, null, ctx);
+  return { id: id ?? 0, text: text ?? "" };
 }
 
 export function parseQuest(input: unknown, path: string, ctx: ParseContext): ScenarioSeedQuest | null {

@@ -228,6 +228,15 @@ pub const PROVIDENCE_MESSAGE_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[
+    "id",
+    "text",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -491,6 +500,19 @@ pub struct ShopRecord {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MessageRecord {
+    pub id: usize,
+    pub text: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OptionLabelRecord {
     pub id: usize,
     pub text: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]

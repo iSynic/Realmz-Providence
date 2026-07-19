@@ -92,7 +92,13 @@ export function writeMessages(records: MessageRecord[]) {
 }
 
 export function writeOptionLabels(records: OptionLabelRecord[]) {
-  return writePascalTextRecords(records, OPTION_LABEL_RECORD_BYTES);
+  return writeFixedRecords(records, OPTION_LABEL_RECORD_BYTES, (record, target) => {
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== OPTION_LABEL_RECORD_BYTES) {
+      throw new Error(`Option label ${record.id} has invalid compatibility byte storage`);
+    }
+    encodePascalText(target, record.text);
+  });
 }
 
 export function writeBattles(records: BattleRecord[]) {

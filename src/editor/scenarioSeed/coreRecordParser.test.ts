@@ -5,6 +5,7 @@ import {
   parseItem,
   parseMessage,
   parseMonster,
+  parseOptionLabel,
   parseQuest,
   parseShop,
   parseTreasure
@@ -15,12 +16,16 @@ function context(): ParseContext {
 }
 
 describe("scenario seed core record parsers", () => {
-  it("normalizes messages, quests, and battle placements", () => {
+  it("normalizes messages, option labels, quests, and battle placements", () => {
     const ctx = context();
 
     expect(parseMessage({ key: "arrival", text: "The bell tolls." }, "$.messages[0]", ctx)).toEqual({
       key: "arrival",
       text: "The bell tolls."
+    });
+    expect(parseOptionLabel({ id: 3, text: "Proceed" }, "$.optionLabels[0]", ctx)).toEqual({
+      id: 3,
+      text: "Proceed"
     });
     expect(parseQuest({ key: "lens", label: "Find the lens", note: "In the flooded tower" }, "$.quests[0]", ctx)).toEqual({
       key: "lens",

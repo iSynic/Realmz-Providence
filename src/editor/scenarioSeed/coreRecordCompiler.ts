@@ -31,6 +31,7 @@ import { authoredProvenance, padArray, padNestedNumberArrays } from "./recordEnc
 import { resolveItemRef, resolveMonsterRef, resolveSeedAssetRef } from "./referenceResolver";
 
 const MESSAGE_BYTES = 256;
+const OPTION_LABEL_BYTES = 25;
 const BATTLE_BYTES = 346;
 const MONSTER_BYTES = 210;
 const MONSTER_DESCRIPTION_BYTES = 256;
@@ -103,6 +104,17 @@ export function compileScenarioSeedCoreRecords(
         text: message.text,
         authored: true,
         provenance: authoredProvenance("Data SD2", message.id ?? 0, (message.id ?? 0) * MESSAGE_BYTES, MESSAGE_BYTES)
+      }))
+    };
+  }
+  if (seed.optionLabels !== undefined) {
+    compiled = {
+      ...compiled,
+      optionLabels: seed.optionLabels.map((option) => ({
+        id: option.id,
+        text: option.text,
+        authored: true,
+        provenance: authoredProvenance("Data OD", option.id, option.id * OPTION_LABEL_BYTES, OPTION_LABEL_BYTES)
       }))
     };
   }

@@ -341,8 +341,12 @@ const MESSAGE_FIXED_RECORD_WRITER_EVIDENCE = [
 ];
 
 const OPTION_LABEL_FIXED_RECORD_WRITER_EVIDENCE = [
-  "src-tauri/src/realmz/text_records.rs:option_label_writer_mutates_only_owned_pascal_bytes",
-  ...TARGET_RECORD_WRITER_EVIDENCE
+  "src-tauri/src/realmz/option_labels.rs:fresh_option_label_compiles_complete_semantic_row",
+  "src-tauri/src/realmz/option_labels.rs:imported_option_label_compiles_without_record_byte_identity",
+  "src-tauri/src/exporter.rs:imported_option_label_export_reads_legacy_bytes_only_from_annex",
+  "src-tauri/src/realmz/option_labels.rs:write_option_labels",
+  "src-tauri/src/realmz/option_labels.rs:parse_option_labels",
+  "src-tauri/src/realmz.rs:authored_target_records_write_realmz_offsets"
 ];
 
 const MAPS_STORAGE_WRITER_GATE_SPECS = [
@@ -691,7 +695,7 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
     rowKind: "25-byte Pascal option label record",
     semanticExposure: "strings-workbench-option-labels",
     ownedFields: [
-      { field: "Option label", internal: "text", offset: 0, bytes: 25, type: "Str24/raw tail" }
+      { field: "Option-label row", internal: "text", offset: 0, bytes: 25, type: "Str24 + deterministic zero fill" }
     ],
     evidence: [
       ...OPTION_LABEL_FIXED_RECORD_WRITER_EVIDENCE,
@@ -699,7 +703,7 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       "docs/generated/string-sound-audit.json",
       "docs/format-evidence-cards/strings-data-od-string-sound.md"
     ],
-    preservationPolicy: "Imported option-label bytes remain raw-preserved until the label is authored; the blocked Strings Sound affordance is not part of this writer gate."
+    preservationPolicy: "Fresh and authored option labels compile the complete 25-byte row from canonical text without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export. The blocked Strings Sound affordance is not part of this writer gate."
   },
   {
     container: "Data DES",
@@ -988,7 +992,7 @@ function buildFixedRecordWriterGates(aggregate) {
       fixtureRoundtrip: "src-tauri/tests/fixture_roundtrip.rs",
       fixedRecordWriters: [
         "src-tauri/src/realmz/messages.rs",
-        "src-tauri/src/realmz/text_records.rs",
+        "src-tauri/src/realmz/option_labels.rs",
         "src-tauri/src/realmz/combat.rs",
         "src-tauri/src/realmz/economy.rs",
         "src-tauri/src/realmz/encounters.rs",

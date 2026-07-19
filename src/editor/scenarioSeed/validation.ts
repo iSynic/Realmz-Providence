@@ -9,6 +9,7 @@ import type { ParseContext } from "./parsePrimitives";
 
 export function validateScenarioSeed(seed: ScenarioSeed, context: ParseContext) {
   validateUniqueIds(seed.messages, "messages", context);
+  validateUniqueIds(seed.optionLabels, "optionLabels", context);
   validateUniqueIds(seed.quests, "quests", context);
   validateUniqueIds(seed.battles, "battles", context);
   validateUniqueIds(seed.monsters, "monsters", context);

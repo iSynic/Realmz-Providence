@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyMessage, emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
+import { emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeMapRecords, writeMessages, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
+import { writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -260,6 +260,35 @@ describe("browser message writer", () => {
 
   it("rejects malformed compatibility storage", () => {
     expect(() => writeMessages([{ ...emptyMessage(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+  });
+});
+
+describe("browser option-label writer", () => {
+  it("compiles a fresh record entirely from semantic text", () => {
+    const record = { ...emptyOptionLabel(0), text: "Proceed" };
+
+    expect(record.rawBytes).toBeUndefined();
+    const output = writeOptionLabels([record]);
+
+    expect(output).toHaveLength(25);
+    expect(Array.from(output.slice(0, 8))).toEqual(Array.from(new TextEncoder().encode("\x07Proceed")));
+    expect(Array.from(output.slice(8))).toEqual(new Array(17).fill(0));
+  });
+
+  it("recompiles imported text without record byte identity", () => {
+    const input = new Uint8Array(25).fill(0x20);
+    input.set([2, "G".charCodeAt(0), "o".charCodeAt(0)]);
+    const imported = parseScenarioBuffers(new Map([["Data OD", input]])).optionLabels[0];
+
+    const output = writeOptionLabels([{ ...imported, rawBytes: new Array(25).fill(0x5a) }]);
+
+    expect(Array.from(output.slice(0, 3))).toEqual([2, 71, 111]);
+    expect(Array.from(output.slice(3))).toEqual(new Array(22).fill(0));
+  });
+
+  it("rejects malformed compatibility storage", () => {
+    expect(() => writeOptionLabels([{ ...emptyOptionLabel(0), rawBytes: [1] }]))
       .toThrow("invalid compatibility byte storage");
   });
 });

@@ -13,7 +13,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 - Fixed-size Realmz maps, either filled by one tile or supplied as 8,100 tile IDs.
 - Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `castleRoom`, `road`, `river`, `semanticRoad`, `semanticRoute`, `stamp`, `namedStamp`, `namedTile`, `terrainGroup`, `naturalScatter`, `landmass`, `landSecret`, `hiddenWalkable`, `combatClearing`, and `dungeonPassage`.
 - Named map regions that action points can reference with `at`.
-- Messages and quest labels.
+- Messages, option labels, and quest labels.
 - Battle, treasure, and shop records.
 - Scenario item records in the custom item range `800..999`, with generated item text records when names/descriptions are supplied and semantic `typeName` values for Realmz item types.
 - Stock Realmz resource references and Providence Custom Library asset references through keyed `assets` declarations.

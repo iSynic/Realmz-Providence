@@ -176,7 +176,7 @@
       "family": "Data OD / Strings Sound",
       "priority": 3,
       "classification": "understood-runtime-writer-gated",
-      "summary": "Realmz source proves Data SD2 and Data OD text storage, and Providence parses/writes both with raw-byte preservation. The Divinity Strings Sound field has no central Realmz message-storage consumer; sounds belong to caller records unless binary evidence proves a separate Divinity-only write path.",
+      "summary": "Realmz source proves Data SD2 and Data OD text storage. Providence compiles fresh/authored rows semantically and preserves unchanged legacy padding or noncanonical capacity only through the compatibility annex. The Divinity Strings Sound field has no central Realmz message-storage consumer; sounds belong to caller records unless binary evidence proves a separate Divinity-only write path.",
       "followUp": [
         "editor-ui",
         "validation",

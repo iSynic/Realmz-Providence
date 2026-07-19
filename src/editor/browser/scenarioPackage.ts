@@ -301,7 +301,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.optionLabels.length > 0) {
     writes.push({
       path: "Data OD",
-      bytes: preserveMalformedRawTail("Data OD", writeOptionLabels(project.optionLabels), OPTION_LABEL_RECORD_BYTES, annex)
+      bytes: writeOptionLabelsForExport(project.optionLabels, annex)
     });
   }
   if (project.battles.length > 0) {
@@ -898,17 +898,30 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
 }
 
 function writeMessagesForExport(messages: Project["messages"], annex: BrowserCompatibilityAnnex | null) {
-  const bytes = writeMessages(messages);
-  const raw = rawSourceBytes("Data SD2", annex);
+  return preserveImportedTextRows("Data SD2", writeMessages(messages), messages, MESSAGE_RECORD_BYTES, annex);
+}
+
+function writeOptionLabelsForExport(options: Project["optionLabels"], annex: BrowserCompatibilityAnnex | null) {
+  return preserveImportedTextRows("Data OD", writeOptionLabels(options), options, OPTION_LABEL_RECORD_BYTES, annex);
+}
+
+function preserveImportedTextRows(
+  fileName: string,
+  bytes: Uint8Array,
+  records: Array<{ id: number; authored?: boolean }>,
+  recordBytes: number,
+  annex: BrowserCompatibilityAnnex | null
+) {
+  const raw = rawSourceBytes(fileName, annex);
   if (!raw || bytes.byteLength === 0) return bytes;
-  const completeSourceBytes = Math.floor(raw.byteLength / MESSAGE_RECORD_BYTES) * MESSAGE_RECORD_BYTES;
+  const completeSourceBytes = Math.floor(raw.byteLength / recordBytes) * recordBytes;
   const tail = raw.slice(completeSourceBytes);
   const output = new Uint8Array(bytes.byteLength + tail.byteLength);
   output.set(bytes);
-  for (const message of messages) {
-    if (message.authored) continue;
-    const start = message.id * MESSAGE_RECORD_BYTES;
-    const end = start + MESSAGE_RECORD_BYTES;
+  for (const record of records) {
+    if (record.authored) continue;
+    const start = record.id * recordBytes;
+    const end = start + recordBytes;
     if (end <= bytes.byteLength && end <= completeSourceBytes) {
       output.set(raw.slice(start, end), start);
     }

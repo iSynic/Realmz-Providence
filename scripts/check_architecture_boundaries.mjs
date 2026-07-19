@@ -390,9 +390,10 @@ async function checkStableFacades() {
     "mod encounters;",
     "mod landlooks;",
     "mod maps;",
+    "mod messages;",
+    "mod option_labels;",
     "mod rules;",
     "mod scenario;",
-    "mod text_records;",
     "pub use action_points::",
     "pub use assembly::",
     "pub use combat::",
@@ -400,9 +401,10 @@ async function checkStableFacades() {
     "pub use encounters::",
     "pub use landlooks::",
     "pub use maps::",
+    "pub use messages::",
+    "pub use option_labels::",
     "pub use rules::",
-    "pub use scenario::",
-    "pub use text_records::"
+    "pub use scenario::"
   ]));
   failures.push(...await requireTokens("src-tauri/src/commands.rs", [
     "export_project as export_project_impl",

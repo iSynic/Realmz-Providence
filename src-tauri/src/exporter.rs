@@ -3,8 +3,8 @@ use crate::error::{IoPath, ProvidenceError, Result};
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
     ItemTextRecord, LevelType, MessageRecord, MonsterIconOverride, MonsterIconOverrideSource,
-    ProvidenceProject, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride,
-    ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
+    OptionLabelRecord, ProvidenceProject, ScenarioCasteOverride, ScenarioRaceOverride,
+    ScenarioSpellOverride, ScenarioTarget, TargetCompatibilityBuckets, TargetCompatibilityIssue,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -256,13 +256,7 @@ fn compile_realmz_scenario(
         )?,
     )?;
     write_messages_for_export(&mut manifest, &project.messages, compatibility_annex)?;
-    write_fixed_if_nonempty(
-        &mut manifest,
-        "Data OD",
-        write_option_labels(&project.option_labels)?,
-        crate::realmz::OPTION_LABEL_BYTES,
-        compatibility_annex,
-    )?;
+    write_option_labels_for_export(&mut manifest, &project.option_labels, compatibility_annex)?;
     write_fixed_if_nonempty(
         &mut manifest,
         "Data MD2",
@@ -522,25 +516,63 @@ fn write_messages_for_export(
     write_if_nonempty(manifest, "Data SD2", bytes)
 }
 
+fn write_option_labels_for_export(
+    manifest: &mut NativeScenarioManifest,
+    records: &[OptionLabelRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_option_label_rows(write_option_labels(records)?, records, annex)?;
+    write_if_nonempty(manifest, "Data OD", bytes)
+}
+
 fn preserve_imported_message_rows(
-    mut bytes: Vec<u8>,
+    bytes: Vec<u8>,
     records: &[MessageRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    preserve_imported_text_rows(
+        bytes,
+        "Data SD2",
+        crate::realmz::MESSAGE_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )
+}
+
+fn preserve_imported_option_label_rows(
+    bytes: Vec<u8>,
+    records: &[OptionLabelRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    preserve_imported_text_rows(
+        bytes,
+        "Data OD",
+        crate::realmz::OPTION_LABEL_BYTES,
+        records.iter().map(|record| (record.id, record.authored)),
+        annex,
+    )
+}
+
+fn preserve_imported_text_rows(
+    mut bytes: Vec<u8>,
+    name: &str,
+    record_bytes: usize,
+    records: impl Iterator<Item = (usize, bool)>,
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
     if bytes.is_empty() {
         return Ok(bytes);
     }
     let Some(raw) = (match annex {
-        Some(annex) => annex.read("Data SD2")?,
+        Some(annex) => annex.read(name)?,
         None => None,
     }) else {
         return Ok(bytes);
     };
-    let complete_source_bytes =
-        raw.len() / crate::realmz::MESSAGE_BYTES * crate::realmz::MESSAGE_BYTES;
-    for record in records.iter().filter(|record| !record.authored) {
-        let start = record.id * crate::realmz::MESSAGE_BYTES;
-        let end = start + crate::realmz::MESSAGE_BYTES;
+    let complete_source_bytes = raw.len() / record_bytes * record_bytes;
+    for (id, _) in records.filter(|(_, authored)| !authored) {
+        let start = id * record_bytes;
+        let end = start + record_bytes;
         if end <= bytes.len() && end <= complete_source_bytes {
             bytes[start..end].copy_from_slice(&raw[start..end]);
         }
@@ -1523,9 +1555,9 @@ mod tests {
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_fixed_length, preserve_imported_message_rows,
-        scenario_icon_resource_updates, write_caste_overrides_for_export,
-        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
-        NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_option_label_rows, scenario_icon_resource_updates,
+        write_caste_overrides_for_export, write_race_overrides_for_export,
+        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1840,6 +1872,48 @@ mod tests {
         assert!(authored[3..].iter().all(|byte| *byte == 0));
         assert_eq!(
             &output[2 * crate::realmz::MESSAGE_BYTES..],
+            &[0xde, 0xad, 0xbe]
+        );
+    }
+
+    #[test]
+    fn imported_option_label_export_reads_legacy_bytes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let mut source = vec![b' '; 2 * crate::realmz::OPTION_LABEL_BYTES];
+        source[0] = 1;
+        source[1] = b'A';
+        source[crate::realmz::OPTION_LABEL_BYTES] = 1;
+        source[crate::realmz::OPTION_LABEL_BYTES + 1] = b'X';
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data OD"), &source).unwrap();
+
+        let mut options = crate::realmz::parse_option_labels(&source);
+        options[0].raw_bytes.fill(0x11);
+        options[1].raw_bytes.fill(0x22);
+        options[1].text = "On".to_string();
+        options[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let output = preserve_imported_option_label_rows(
+            crate::realmz::write_option_labels(&options).unwrap(),
+            &options,
+            Some(&annex),
+        )
+        .unwrap();
+
+        assert_eq!(
+            &output[..crate::realmz::OPTION_LABEL_BYTES],
+            &source[..crate::realmz::OPTION_LABEL_BYTES]
+        );
+        let authored =
+            &output[crate::realmz::OPTION_LABEL_BYTES..2 * crate::realmz::OPTION_LABEL_BYTES];
+        assert_eq!(&authored[..3], b"\x02On");
+        assert!(authored[3..].iter().all(|byte| *byte == 0));
+        assert_eq!(
+            &output[2 * crate::realmz::OPTION_LABEL_BYTES..],
             &[0xde, 0xad, 0xbe]
         );
     }
