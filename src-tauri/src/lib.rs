@@ -12,6 +12,7 @@ mod native_manifest;
 pub mod project;
 pub mod project_package;
 pub mod realmz;
+pub mod remake_exporter;
 pub mod resource_fork;
 pub mod resource_preview;
 pub(crate) mod rule_compiler;

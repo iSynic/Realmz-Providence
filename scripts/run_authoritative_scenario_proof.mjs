@@ -16,6 +16,8 @@ const windowsOutputA = path.join(proofRoot, "native-windows-a", "Providence Owne
 const windowsOutputB = path.join(proofRoot, "native-windows-b", "Providence Ownership Proof");
 const classicOutputA = path.join(proofRoot, "native-classic-a", "Providence Ownership Proof");
 const classicOutputB = path.join(proofRoot, "native-classic-b", "Providence Ownership Proof");
+const remakeOutputA = path.join(proofRoot, "remake-classic-a");
+const remakeOutputB = path.join(proofRoot, "remake-classic-b");
 const browserWindowsOutput = path.join(proofRoot, "browser-native-windows", "Providence Ownership Proof");
 const browserClassicOutput = path.join(proofRoot, "browser-native-classic", "Providence Ownership Proof");
 const reimportDir = path.join(proofRoot, "reimported.providence");
@@ -305,11 +307,15 @@ await runCargoExample("export_project_fixture", [projectDir, classicOutputA, "ma
 await assertNoRawSources("after first Classic-Mac export");
 await runCargoExample("export_project_fixture", [projectDir, classicOutputB, "mac-classic-folder"]);
 await assertNoRawSources("after repeated Classic-Mac export");
+await runCargoBinary("realmz-remake-converter", ["--project", projectDir, remakeOutputA]);
+await runCargoBinary("realmz-remake-converter", ["--project", projectDir, remakeOutputB]);
 
 const windowsFilesA = await readFlatDirectory(windowsOutputA);
 const windowsFilesB = await readFlatDirectory(windowsOutputB);
 const classicFilesA = await readFlatDirectory(classicOutputA);
 const classicFilesB = await readFlatDirectory(classicOutputB);
+const remakeFilesA = await readDirectoryTree(remakeOutputA);
+const remakeFilesB = await readDirectoryTree(remakeOutputB);
 const browserWindowsPackage = createBrowserScenarioPackageZip(project, null, "windows-realmz-folder");
 const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "mac-classic-folder");
 const browserPoisonedProject = JSON.parse(JSON.stringify(project));
@@ -382,6 +388,8 @@ assertCompiledManagedResources(browserClassicFiles, "browser Classic Mac");
 assertManifestNamesEqual(project.validation.exportableFiles, browserWindowsFiles, "Browser validation manifest");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
+assertFileMapsEqual(remakeFilesA, remakeFilesB, "repeated Remake compatibility export");
+assertRemakeCompatibilityBundle(remakeFilesA, project);
 assertFileMapsEqual(windowsFilesA, browserWindowsFiles, "Rust/browser Windows compile");
 assertFileMapsEqual(classicFilesA, browserClassicFiles, "Rust/browser Classic-Mac compile");
 assertFileMapsEqual(browserWindowsFiles, browserEmbeddedCompatibilityTrapFiles, "authored browser embedded-compatibility access guard");
@@ -437,7 +445,7 @@ await assertReimportedCustomLandlookAtlas(reimported, "Reimport");
 await assertReimportedManagedResources(reimported, reimportedSemanticSchema, "Reimport");
 
 const summary = {
-  proofVersion: 2,
+  proofVersion: 3,
   scenarioName,
   canonicalProject: {
     path: relative(projectDir),
@@ -498,6 +506,13 @@ const summary = {
       manifest: fileManifest(browserClassicFiles)
     }
   },
+  remakeCompatibility: {
+    path: relative(remakeOutputA),
+    deterministic: true,
+    formatVersion: 1,
+    packagedManagedResources: project.assets.length,
+    manifest: fileManifest(remakeFilesA)
+  },
   conservativeReimport: {
     path: relative(reimportDir),
     immutable: reimported.source.immutable,
@@ -535,6 +550,7 @@ console.log(`- Canonical project: ${relative(projectDir)} (no raw-sources)`);
 console.log(`- Native Windows folder: ${relative(windowsOutputA)}`);
 console.log(`- Native Classic-Mac folder: ${relative(classicOutputA)}`);
 console.log(`- Browser/native byte parity: Windows and Classic-Mac (no raw sources)`);
+console.log(`- Deterministic Remake Classic bundle: ${relative(remakeOutputA)}`);
 console.log(`- Proof summary: ${relative(summaryPath)}`);
 
 async function bundleScenarioCompiler() {
@@ -573,6 +589,21 @@ async function runCargoExample(example, args) {
     const stdout = error.stdout ? `\n${error.stdout}` : "";
     const stderr = error.stderr ? `\n${error.stderr}` : "";
     throw new Error(`Cargo example ${example} failed.${stdout}${stderr}`);
+  }
+}
+
+async function runCargoBinary(binary, args) {
+  const cargo = process.platform === "win32" ? "cargo.exe" : "cargo";
+  try {
+    await execFileAsync(
+      cargo,
+      ["run", "--quiet", "--manifest-path", "src-tauri/Cargo.toml", "--bin", binary, "--", ...args],
+      { cwd: repoRoot, maxBuffer: 1024 * 1024 * 16 }
+    );
+  } catch (error) {
+    const stdout = error.stdout ? `\n${error.stdout}` : "";
+    const stderr = error.stderr ? `\n${error.stderr}` : "";
+    throw new Error(`Cargo binary ${binary} failed.${stdout}${stderr}`);
   }
 }
 
@@ -1087,6 +1118,20 @@ async function readFlatDirectory(root) {
   return new Map([...files].sort(([left], [right]) => left.localeCompare(right)));
 }
 
+async function readDirectoryTree(root, relativeRoot = "") {
+  const files = new Map();
+  const directory = path.join(root, relativeRoot);
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    const relativePath = path.posix.join(relativeRoot.replaceAll("\\", "/"), entry.name);
+    if (entry.isDirectory()) {
+      for (const [name, bytes] of await readDirectoryTree(root, relativePath)) files.set(name, bytes);
+    } else if (entry.isFile()) {
+      files.set(relativePath, new Uint8Array(await fs.readFile(path.join(root, relativePath))));
+    }
+  }
+  return new Map([...files].sort(([left], [right]) => left.localeCompare(right)));
+}
+
 function browserPackageFiles(zipBytes, readZip) {
   const files = new Map();
   for (const entry of readZip(zipBytes)) {
@@ -1107,6 +1152,104 @@ function assertFileMapsEqual(left, right, label) {
   expect([...left.keys()].join("\n") === [...right.keys()].join("\n"), `${label} produced a different file set`);
   for (const [name, bytes] of left) {
     expect(Buffer.from(bytes).equals(Buffer.from(right.get(name))), `${label} produced different bytes for ${name}`);
+  }
+}
+
+function assertRemakeCompatibilityBundle(files, canonicalProject) {
+  const requiredDocuments = [
+    "campaign.json",
+    "classic/assets.json",
+    "classic/content.json",
+    "classic/encounters.json",
+    "classic/evidence.json",
+    "classic/maps.json",
+    "classic/rules.json",
+    "classic/scenario.json",
+    "classic/scripts.json"
+  ];
+  for (const name of requiredDocuments) expect(files.has(name), `Remake export is missing ${name}`);
+
+  const documents = new Map(requiredDocuments.map((name) => [name, JSON.parse(Buffer.from(files.get(name)).toString("utf8"))]));
+  const manifest = documents.get("campaign.json");
+  expect(manifest.format === "realmz-remake-classic-campaign", "Remake export has the wrong format identity");
+  expect(manifest.formatVersion === 1, `Remake export has unsupported format version ${manifest.formatVersion}`);
+  expect(manifest.campaignKind === "classic-compiled" && manifest.compatibilityProfile === "realmz-7.1", "Remake export has the wrong compatibility profile");
+  expect(manifest.producer.projectSchemaVersion === 5 && manifest.producer.projectOrigin === "authored", "Remake export lost its canonical producer identity");
+  expect(manifest.start.levelType === "land" && manifest.start.levelIndex === 0 && manifest.start.x === 10 && manifest.start.y === 12, "Remake export has the wrong canonical start");
+
+  const scenario = documents.get("classic/scenario.json");
+  expect(scenario.identity.id === manifest.id && scenario.identity.name === manifest.name, "Remake scenario identity differs from its manifest");
+  const maps = documents.get("classic/maps.json");
+  expect(maps.maps.some((map) => map.id === "land:0" && map.tiles.at(-1) === -100), "Remake export lost the canonical map identity or special tile");
+  const scripts = documents.get("classic/scripts.json");
+  const trigger = scripts.triggers.find((candidate) => candidate.id === "land:0:ap:0");
+  expect(trigger, "Remake export lost the stable Action Point identity");
+  expect(trigger.actions.some((action) => action.rawCode === 1 && action.code === 1), "Remake export lost the normalized message action");
+  expect(trigger.actions.some((action) => action.rawCode === 47 && action.code === 47), "Remake export lost the normalized quest action");
+  const encounters = documents.get("classic/encounters.json");
+  expect(encounters.simpleEncounters.some((record) => record.id === 0), "Remake export lost the stable simple-encounter identity");
+  expect(encounters.complexEncounters.some((record) => record.id === 0), "Remake export lost the stable complex-encounter identity");
+  const content = documents.get("classic/content.json");
+  expect(content.monsters.some((record) => record.id === 1 && record.nameId === 1), "Remake export conflated monster record and name identities");
+  expect(content.scenarioItems.some((record) => record.id === 101 && record.itemId === 901), "Remake export lost scenario-item record or item identity");
+
+  const assets = documents.get("classic/assets.json");
+  expect(assets.managedAssets.length === canonicalProject.assets.length, "Remake export did not package every scenario-managed asset");
+  for (const exported of assets.managedAssets) {
+    const source = canonicalProject.assets.find((asset) => asset.id === exported.id);
+    expect(source, `Remake export added unknown managed asset ${exported.id}`);
+    expect(exported.payloadEncoding === "classic-resource-data", `${exported.id} has an undefined payload encoding`);
+    expect(typeof exported.payloadPath === "string" && exported.payloadPath.startsWith("assets/managed/"), `${exported.id} has a non-portable payload path`);
+    expect(files.has(exported.payloadPath), `${exported.id} payload file is missing`);
+    const expectedBytes = Buffer.from(source.resourcePath.split(",", 2)[1], "base64");
+    expect(Buffer.from(files.get(exported.payloadPath)).equals(expectedBytes), `${exported.id} payload differs from canonical project bytes`);
+    expect(exported.payloadBytes === expectedBytes.length, `${exported.id} payload byte count is wrong`);
+    expect(exported.payloadSha256 === createHash("sha256").update(expectedBytes).digest("hex"), `${exported.id} payload hash is wrong`);
+  }
+  for (const [collection, resourceType, resourceId] of [
+    ["pictures", "PICT", 306],
+    ["specialLandTiles", "cicn", -100],
+    ["sounds", "snd ", 321]
+  ]) {
+    const resource = assets.catalog[collection].find((entry) => entry.resourceType === resourceType && entry.resourceId === resourceId);
+    expect(resource?.payloadPath && files.has(resource.payloadPath), `Remake ${collection} catalog lost ${resourceType} ${resourceId}`);
+  }
+
+  for (const [name, document] of documents) assertPortableRemakeDocument(document, name);
+  expect([...files.keys()].filter((name) => !requiredDocuments.includes(name)).length === canonicalProject.assets.length, "Remake export produced an unexpected payload file set");
+}
+
+function assertPortableRemakeDocument(value, context) {
+  if (Array.isArray(value)) {
+    for (const child of value) assertPortableRemakeDocument(child, context);
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const forbidden of [
+      "rawBytes",
+      "rawValues",
+      "rawByte",
+      "resourcePath",
+      "previewPath",
+      "originalPath",
+      "projectPath",
+      "rawSourcesDir",
+      "editorMetadata",
+      "sourceBaseResourceBase64",
+      "sourcePairedResourceBase64",
+      "resourceBase64"
+    ]) {
+      expect(!(forbidden in value), `${context} contains forbidden project field ${forbidden}`);
+    }
+    for (const child of Object.values(value)) assertPortableRemakeDocument(child, context);
+    return;
+  }
+  if (typeof value === "string") {
+    const normalized = value.replaceAll("\\", "/").toLowerCase();
+    expect(!normalized.includes("data:"), `${context} contains an embedded data URI`);
+    expect(!normalized.includes(relative(projectDir).toLowerCase()), `${context} contains the local project path`);
+    expect(!normalized.includes("raw-sources"), `${context} names the compatibility annex`);
+    expect(!/^[a-z]:\//i.test(normalized) && !normalized.startsWith("//") && !normalized.startsWith("/"), `${context} contains an absolute path`);
   }
 }
 

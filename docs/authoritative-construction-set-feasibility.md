@@ -489,6 +489,22 @@ custom-library assets remain outside that scenario ownership check. Imported unr
 entries remain compatibility-annex data. Arbitrary PICT editing and stock Classic execution remain
 separate gates.
 
+The forty-eighth slice adds Realmz Remake as an independent compiler target without routing
+through the native Realmz folder. A Providence-owned exporter projects the same schema-v5
+canonical project into all nine Classic bundle v1 documents, packages scenario-managed resource
+payloads at deterministic bundle-relative paths, and omits editor state, absolute paths, embedded
+data URIs, and compatibility-annex bytes. The ownership proof emits the bundle twice and compares
+every document and payload byte. Realmz Remake's generic Godot validator accepts the result from
+its unchanged checkout. One real contract edge is recorded instead of reinterpreted: negative
+`cicn` IDs are Realmz special-land-tile identities, while v1 validates ordinary icon IDs as
+non-negative. Providence therefore preserves them in the additive optional v1
+`assets.catalog.specialLandTiles` collection. Runtime-native decoding/adapter behavior for the
+packaged immutable Classic resource payloads remains a consumer contract question.
+
+Compatibility-target validation for this slice completed on 2026-07-19: six focused Rust tests,
+the full Rust suite (260 passed, 2 ignored), deterministic repeated ownership-proof bundles, and
+the unchanged Remake checkout's generic Godot bundle validator all passed.
+
 Branch validation through the forty-seventh slice completed on 2026-07-19:
 
 - full Rust suite: 254 passed, 2 ignored;
