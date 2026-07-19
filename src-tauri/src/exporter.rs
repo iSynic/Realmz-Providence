@@ -170,7 +170,11 @@ fn compile_realmz_scenario(
         write_if_nonempty(
             &mut manifest,
             "Global",
-            write_global_macro_hooks(global_hooks)?,
+            preserve_imported_global_macro_hooks(
+                write_global_macro_hooks(global_hooks)?,
+                global_hooks.authored,
+                compatibility_annex,
+            )?,
         )?;
     }
     if let Some(security_backup) = &project.scenario.security_backup {
@@ -527,6 +531,31 @@ fn preserve_imported_singleton(
     }
     if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
         bytes.extend_from_slice(&raw[bytes.len()..]);
+    }
+    Ok(bytes)
+}
+
+fn preserve_imported_global_macro_hooks(
+    mut bytes: Vec<u8>,
+    authored: bool,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read("Global")?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    if !authored {
+        return Ok(raw);
+    }
+    let record_bytes = crate::realmz::GLOBAL_MACRO_HOOK_BYTES;
+    if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
+        bytes.extend_from_slice(&raw[bytes.len()..]);
+    }
+    if raw.len() >= record_bytes {
+        bytes[6..8].copy_from_slice(&raw[6..8]);
+        bytes[12..record_bytes].copy_from_slice(&raw[12..record_bytes]);
     }
     Ok(bytes)
 }
@@ -1790,13 +1819,14 @@ mod tests {
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
-        preserve_imported_fixed_length, preserve_imported_message_rows,
-        preserve_imported_monster_description_rows, preserve_imported_monster_rows,
-        preserve_imported_option_label_rows, preserve_imported_simple_encounter_rows,
-        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
-        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
-        write_caste_overrides_for_export, write_race_overrides_for_export,
-        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_fixed_length, preserve_imported_global_macro_hooks,
+        preserve_imported_message_rows, preserve_imported_monster_description_rows,
+        preserve_imported_monster_rows, preserve_imported_option_label_rows,
+        preserve_imported_simple_encounter_rows, preserve_imported_singleton,
+        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1847,8 +1877,11 @@ mod tests {
         contact_source.push(0xde);
         let mut restrictions_source = vec![0xb6; crate::realmz::SCENARIO_RESTRICTIONS_BYTES];
         restrictions_source.push(0xef);
+        let mut global_source = vec![0xc7; crate::realmz::GLOBAL_MACRO_HOOK_BYTES];
+        global_source.push(0xfa);
         fs::write(raw_dir.join("Data CI"), &contact_source).unwrap();
         fs::write(raw_dir.join("Data RI"), &restrictions_source).unwrap();
+        fs::write(raw_dir.join("Global"), &global_source).unwrap();
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
 
         let contact_semantic = vec![0; crate::realmz::SCENARIO_CONTACT_INFO_BYTES];
@@ -1874,6 +1907,14 @@ mod tests {
             )
             .unwrap(),
             restrictions_source
+        );
+        let mut global_semantic = vec![0; crate::realmz::GLOBAL_MACRO_HOOK_BYTES];
+        global_semantic[0..2].copy_from_slice(&[1, 2]);
+        global_semantic[8..10].copy_from_slice(&[3, 4]);
+        assert_eq!(
+            preserve_imported_global_macro_hooks(global_semantic.clone(), false, Some(&annex))
+                .unwrap(),
+            global_source
         );
 
         let authored_contact = preserve_imported_singleton(
@@ -1902,6 +1943,14 @@ mod tests {
             restrictions_semantic.as_slice()
         );
         assert_eq!(authored_restrictions.last(), Some(&0xef));
+        let authored_global =
+            preserve_imported_global_macro_hooks(global_semantic.clone(), true, Some(&annex))
+                .unwrap();
+        assert_eq!(&authored_global[0..6], &global_semantic[0..6]);
+        assert_eq!(&authored_global[6..8], &[0xc7; 2]);
+        assert_eq!(&authored_global[8..12], &global_semantic[8..12]);
+        assert_eq!(&authored_global[12..60], &[0xc7; 48]);
+        assert_eq!(authored_global.last(), Some(&0xfa));
         assert_eq!(
             preserve_imported_singleton(
                 contact_semantic.clone(),
@@ -1912,6 +1961,10 @@ mod tests {
             )
             .unwrap(),
             contact_semantic
+        );
+        assert_eq!(
+            preserve_imported_global_macro_hooks(global_semantic.clone(), true, None).unwrap(),
+            global_semantic
         );
     }
 

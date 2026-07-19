@@ -1259,7 +1259,7 @@ pub struct GlobalMacroHook {
 #[serde(rename_all = "camelCase")]
 pub struct ScenarioGlobalMacroHooks {
     pub slots: Vec<GlobalMacroHook>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,

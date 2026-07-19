@@ -39,6 +39,7 @@ expect(result.ok, `Scenario JSON compilation failed: ${result.ok ? "" : result.e
 const project = result.project;
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
 assertOwnershipScenarioMetadata(project, "Canonical project", true);
+assertOwnershipGlobalMacros(project, "Canonical project", true);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
@@ -191,6 +192,7 @@ assertOwnershipShop(reimported.shops, "Reimport");
 assertOwnershipSpell(reimported.spellOverrides, "Reimport");
 assertOwnershipRules(reimported, "Reimport", false);
 assertOwnershipScenarioMetadata(reimported, "Reimport", false);
+assertOwnershipGlobalMacros(reimported, "Reimport", false);
 
 const summary = {
   proofVersion: 1,
@@ -217,6 +219,7 @@ const summary = {
     customSpells: project.spellOverrides.length,
     raceOverrides: project.raceOverrides.length,
     casteOverrides: project.casteOverrides.length,
+    globalMacroHooks: project.scenario.globalMacroHooks?.slots.filter((slot) => slot.door !== 0).length ?? 0,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
   nativeOutputs: {
@@ -314,6 +317,7 @@ async function assertNoRawSources(stage) {
   const savedProject = JSON.parse(await fs.readFile(path.join(projectDir, "project.json"), "utf8"));
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
   assertOwnershipScenarioMetadata(savedProject, `Rust-saved project ${stage}`, true);
+  assertOwnershipGlobalMacros(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
@@ -347,6 +351,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Scenario", 600],
     ["Data CS", 316],
     ["Data CI", 4608],
+    ["Global", 60],
     ["Data LD", 90 * 90 * 2],
     ["Data RD", 644],
     ["Data DD", 100 * 40],
@@ -388,6 +393,9 @@ function assertCompleteNativeFolder(files, label) {
   expect(contact[0] === scenarioNameBytes.length, `${label} Data CI has the wrong scenario-name length`);
   expect(Buffer.from(contact.slice(1, 1 + scenarioNameBytes.length)).equals(scenarioNameBytes), `${label} Data CI has the wrong scenario name`);
   expect(contact.slice(1 + scenarioNameBytes.length, 256).every((byte) => byte === 0), `${label} Data CI scenario-name padding is not deterministic zero`);
+  const globalHooks = files.get("Global");
+  expect(readI16(globalHooks, 0) === 2, `${label} Global has the wrong authored start hook`);
+  expect(globalHooks.slice(2).every((byte) => byte === 0), `${label} Global reserved and inactive hooks are not deterministic zero`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this rogue encounter.")), `${label} Data SD2 is missing the authored rogue message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
@@ -573,6 +581,15 @@ function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityB
   if (requireNoCompatibilityBytes) {
     expect((contact.rawBytes?.length ?? 0) === 0, `${label} scenario contact contains compatibility bytes`);
     expect((project.scenario?.restrictions?.rawBytes?.length ?? 0) === 0, `${label} scenario restrictions contain compatibility bytes`);
+  }
+}
+
+function assertOwnershipGlobalMacros(project, label, requireNoCompatibilityBytes) {
+  const hooks = project.scenario?.globalMacroHooks;
+  expect(hooks, `${label} is missing global macro hooks`);
+  expect(hooks.slots.find((slot) => slot.slot === 0)?.door === 2, `${label} has the wrong global start macro`);
+  if (requireNoCompatibilityBytes) {
+    expect((hooks.rawBytes?.length ?? 0) === 0, `${label} global macros contain compatibility bytes`);
   }
 }
 

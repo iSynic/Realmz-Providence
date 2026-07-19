@@ -37,6 +37,7 @@ import {
   createCasteOverride,
   createRaceOverride,
   createSpellOverride,
+  defaultGlobalMacroHooks,
   renameEditorEntity,
   updateCasteName,
   updateGlobalMacroHook,
@@ -115,6 +116,8 @@ import {
   deleteQuestThread,
   updateQuestThread
 } from "./projectCommands/questThreadCommands";
+
+export { defaultGlobalMacroHooks };
 
 export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "paintTiles") return paintTiles(project, command.mapId, command.cells);

@@ -94,6 +94,7 @@ export type ScenarioSeedScenario = {
   id?: string;
   name: string;
   start?: ScenarioSeedStart;
+  globalMacros?: ScenarioSeedGlobalMacros;
   author?: string;
   version?: string;
   date?: string;
@@ -101,6 +102,8 @@ export type ScenarioSeedScenario = {
   web?: string;
   description?: string;
 };
+
+export type ScenarioSeedGlobalMacros = Partial<Record<"start" | "death" | "quit" | "shop" | "temple", ScenarioSeedRef>>;
 
 export type ScenarioSeedStart = {
   landLevel: number;

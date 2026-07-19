@@ -96,6 +96,7 @@ export function createStartupTestMacro(project: Project, complexEncounterId?: nu
       globalMacroHooks: {
         ...hooks,
         slots: [...slots, ...extraSlots],
+        rawBytes: undefined,
         authored: true
       }
     },

@@ -397,7 +397,11 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.scenario.globalMacroHooks) {
     writes.push({
       path: "Global",
-      bytes: preserveMalformedRawTail("Global", writeGlobalMacroHooks(project.scenario.globalMacroHooks), GLOBAL_MACRO_HOOK_BYTES, annex)
+      bytes: preserveImportedGlobalMacroHooks(
+        writeGlobalMacroHooks(project.scenario.globalMacroHooks),
+        project.scenario.globalMacroHooks.authored,
+        annex
+      )
     });
   }
   if (project.landLayout) {
@@ -907,6 +911,22 @@ function preserveImportedSingleton(
   if (!raw) return bytes;
   if (!authored && raw.byteLength >= recordBytes) return raw;
   return preserveMalformedRawTail(fileName, bytes, recordBytes, annex);
+}
+
+function preserveImportedGlobalMacroHooks(
+  bytes: Uint8Array,
+  authored: boolean | undefined,
+  annex: BrowserCompatibilityAnnex | null
+) {
+  const raw = rawSourceBytes("Global", annex);
+  if (!raw) return bytes;
+  if (!authored) return raw;
+  const output = preserveMalformedRawTail("Global", bytes, GLOBAL_MACRO_HOOK_BYTES, annex);
+  if (raw.byteLength >= GLOBAL_MACRO_HOOK_BYTES) {
+    output.set(raw.slice(6, 8), 6);
+    output.set(raw.slice(12, GLOBAL_MACRO_HOOK_BYTES), 12);
+  }
+  return output;
 }
 
 function writeMessagesForExport(messages: Project["messages"], annex: BrowserCompatibilityAnnex | null) {

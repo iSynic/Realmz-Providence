@@ -631,7 +631,7 @@ const globalHookProject = {
   scenario: {
     ...project.scenario,
     globalMacroHooks: globalMacroHooks({
-      rawBytes: Array.from(sourceGlobalHooks),
+      rawBytes: new Array(60).fill(0xa5),
       slots: [
         { slot: 0, door: 101 },
         { slot: 4, door: -102 },
@@ -647,8 +647,9 @@ expect(globalHookUpdate.report.writtenFiles.includes("Global"), "Authored global
 expect(!globalHookUpdate.report.passThroughFiles.includes("Global"), "Written Global should not be reported as pass-through");
 const writtenGlobalHooks = globalHookFiles.get("Global");
 expect(writtenGlobalHooks?.byteLength === 60, "Written Global should remain 60 bytes");
-expect(bytesEqual(writtenGlobalHooks, globalHookRow(globalHookProject.scenario.globalMacroHooks)), "Authored Global should encode hook slots and preserve raw unknown slots");
-expect(readI16(writtenGlobalHooks ?? new Uint8Array(), 16) === 777, "Authored Global should preserve raw undocumented hook slot bytes");
+expect(bytesEqual(writtenGlobalHooks, globalHookRow(globalHookProject.scenario.globalMacroHooks, sourceGlobalHooks)), "Authored Global should compile semantic hooks and restore reserved slots only from the annex");
+expect(readI16(writtenGlobalHooks ?? new Uint8Array(), 12) === 0, "Authored Global should ignore reserved hook values in canonical data");
+expect(readI16(writtenGlobalHooks ?? new Uint8Array(), 16) === 777, "Authored Global should preserve annex-owned undocumented hook slot bytes");
 
 const authoredLayoutCells = new Array(8 * 16).fill(0);
 authoredLayoutCells[0] = 201;
@@ -1565,12 +1566,14 @@ function globalMacroHooks({ rawBytes, slots, authored }) {
   };
 }
 
-function globalHookRow(hooks) {
-  const output = hooks.rawBytes?.length === 60
-    ? new Uint8Array(hooks.rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(60);
+function globalHookRow(hooks, compatibilityBytes) {
+  const output = new Uint8Array(60);
   for (const hook of hooks.slots) {
-    if (hook.slot >= 0 && hook.slot < 30) setI16(output, hook.slot * 2, hook.door);
+    if ([0, 1, 2, 4, 5].includes(hook.slot)) setI16(output, hook.slot * 2, hook.door);
+  }
+  if (compatibilityBytes?.byteLength >= 60) {
+    output.set(compatibilityBytes.slice(6, 8), 6);
+    output.set(compatibilityBytes.slice(12, 60), 12);
   }
   return output;
 }

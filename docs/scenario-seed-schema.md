@@ -8,7 +8,7 @@ Expanded roadmap: [`docs/llm-scenario-schema-plan.md`](llm-scenario-schema-plan.
 
 ## Supported Seed Content
 
-- Scenario identity, contact metadata, and an optional validated land-map startup location.
+- Scenario identity, contact metadata, an optional validated land-map startup location, and five source-backed lifecycle macro hooks.
 - Optional caller-provided base template selection without embedding full Providence project JSON in prompt output.
 - Fixed-size Realmz maps, either filled by one tile or supplied as 8,100 tile IDs.
 - Map operations: `fill`, `rect`, `line`, `path`, `border`, `room`, `castleRoom`, `road`, `river`, `semanticRoad`, `semanticRoute`, `stamp`, `namedStamp`, `namedTile`, `terrainGroup`, `naturalScatter`, `landmass`, `landSecret`, `hiddenWalkable`, `combatClearing`, and `dungeonPassage`.
@@ -46,6 +46,8 @@ Teleport steps may use `map` plus `{x, y}`, or `at` to target a named region dir
 `createProjectFromScenarioSeed()` returns an `allocations` report that identifies the selected base template and maps every keyed record to its final Realmz ID or map coordinate target. Callers should use that report for LLM repair loops and UI summaries instead of trying to infer allocated IDs from the generated project.
 
 `scenario.start` sets the Realmz startup land level and visual `{x, y}` coordinate. Coordinates must be inside `0..89`; when the seed declares maps, the startup level must resolve to one of its land maps. Omitting `start` preserves the selected base template's Startup Info, or the blank template defaults for a new scenario.
+
+`scenario.globalMacros` can assign keyed or numeric Extra Action Points to `start`, `death`, `quit`, `shop`, and `temple`. Providence resolves those five source-backed hooks into the native `Global` record. Omitted hooks compile to zero when `globalMacros` is present; reserved native slots are not part of the authoring contract.
 
 `baseTemplate` defaults to `blank`. Any other value must match a caller-provided project in `createProjectFromScenarioSeed(..., { baseTemplates })`; Providence clones that project before applying the seed. Omitted seed families inherit the template family, while an explicitly present family, including an empty array, replaces it. Map Action Points and Extra Action Points inherit or replace independently. Existing template EDCD rows are preserved and newly compiled settings append after the highest inherited ID. Inherited records and assets do not carry seed keys, so new seed content references them by numeric Realmz ID; key references apply to records declared in the current seed. Imported scenarios can serve as caller-provided templates after import, but the host remains responsible for retaining any external raw-source payloads associated with that project.
 

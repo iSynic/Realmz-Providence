@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
 import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
@@ -349,6 +349,7 @@ function addCanonicalRecordCollections(
   addCanonicalRecordBuffer(schema, buffers, sources, "Data Caste", "project.json#casteOverrides", projectParts.casteOverrides, writeFreshCasteOverrides);
   addCanonicalSingletonBuffer(schema, buffers, sources, "Data CI", "project.json#scenario/contactInfo", projectParts.scenario.contactInfo, writeScenarioContactInfo);
   addCanonicalSingletonBuffer(schema, buffers, sources, "Data RI", "project.json#scenario/restrictions", projectParts.scenario.restrictions, writeScenarioRestrictions);
+  addCanonicalSingletonBuffer(schema, buffers, sources, "Global", "project.json#scenario/globalMacroHooks", projectParts.scenario.globalMacroHooks, writeGlobalMacroHooks);
   if (buffers.size === 0) return;
 
   addSupportingRecords(schema, buffers);

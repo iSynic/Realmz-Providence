@@ -359,10 +359,22 @@ inputs at `project.json#scenario/contactInfo` and `project.json#scenario/restric
 buffers remain source-backed and inspect-only. The ownership proof now requires raw-free contact
 metadata, exact `Data CI` output, deterministic Pascal padding, and semantic reimport.
 
-Branch validation through the thirty-seventh slice completed on 2026-07-19:
+The thirty-eighth slice closes the authoritative boundary for the 60-byte `Global` hook record
+without inventing semantics for reserved words. Scenario JSON can now bind keyed Extra Action
+Points to the source-backed start, death, quit, shop, and temple hooks. Fresh editor commands and
+Scenario JSON values omit `rawBytes`; both low-level writers zero-initialize the record and compile
+only those five slots from canonical semantics, ignoring embedded compatibility bytes and values
+placed in reserved slots. Untouched imported `Global` identity remains annex-owned. After an
+imported hook is edited, the compiler restores only reserved slot 3, slots 6-29, and any malformed
+tail from the annex. The canonical semantic index exposes the authored record as an editable,
+confirmed compiler input at `project.json#scenario/globalMacroHooks`. The ownership proof now
+requires a nonzero authored start hook, exact 60-byte output, deterministic zero reserved slots,
+cross-compiler parity, and semantic reimport.
+
+Branch validation through the thirty-eighth slice completed on 2026-07-19:
 
 - full Rust suite: 242 passed, 2 ignored;
-- full TypeScript suite: 594 passed, plus typecheck;
+- full TypeScript suite: 595 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -371,7 +383,7 @@ Branch validation through the thirty-seventh slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 594 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 595 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
@@ -681,7 +693,7 @@ Legend:
 | `Data CS` | Generated + imported compatibility | Generate neutral fresh security backup; annex imported bytes | Authored compilation duplicates shell bytes. Imported security/editability behavior remains preserve-only. |
 | `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | Both writers compile all eighteen Str255 slots and deterministic padding without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
 | `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | Both writers compile all 320 bytes and normalize ban flags from canonical semantics without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
-| `Global` | Generated + compatibility | Generate 60 bytes with zero defaults for reserved slots | Runtime-backed slots are modeled; imported reserved slots 3 and 6-29 remain annex data. |
+| `Global` | Generated semantic hooks + bounded legacy annex | Generate 60 bytes with zero defaults for reserved slots | Both writers compile the five runtime-backed slots from canonical data without embedded bytes. Untouched imported identity is annex-owned; edited imports restore only reserved slots 3 and 6-29 plus a malformed tail. |
 | `Data Solids` | Compiler baseline plus generated writer | Generate exactly 1,024 bytes | Both authored compilers emit the neutral 1,024-byte table directly. |
 
 ### Maps, Action Points, and scripts
@@ -825,12 +837,13 @@ must not be called fresh-authoritative merely because imported round trips are f
    Other record and asset DTOs are still maintained manually and should migrate in bounded families.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. Monster, monster-description, spell, race,
-   caste, contact, and restriction export no longer consults those fields, but remaining families
-   must become annex slices rather than normal canonical fields.
+   caste, contact, restriction, and global-hook export no longer consults those fields; `Global`
+   reserved slots are recovered only as bounded annex ranges. Remaining families must follow the
+   same pattern rather than treating compatibility bytes as normal canonical fields.
 5. **Canonical semantic coverage:** all currently modeled supporting, fixed-text, combat, rule
-   override, contact, and party-restriction families now map directly from canonical compiler bytes
-   in both runtimes. Remaining semantic work concerns optional resource/media families and deeper
-   field/link enrichment, not a fixed native-family ownership gap.
+   override, contact, party-restriction, and global-hook families now map directly from canonical
+   compiler bytes in both runtimes. Remaining semantic work concerns optional resource/media
+   families and deeper field/link enrichment, not a fixed native-family ownership gap.
 6. **Ownership-reporting distinction:** generated coverage now classifies complete Race/Caste rows
    as decoded-writable and keeps only the imported `Data Spell` tail mixed/preserved, but future
    reports should retain an explicit fresh-authoring dimension alongside conservative import proof.

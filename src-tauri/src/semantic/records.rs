@@ -2,12 +2,12 @@ use super::common::*;
 use super::map_names::{map_record_name, ResourceMapName};
 use crate::project::*;
 use crate::realmz::{
-    shop_prefix_record_count, write_battles, write_complex_encounters, write_messages,
-    write_monster_descriptions, write_monster_set, write_monsters, write_option_labels,
-    write_scenario_contact_info, write_scenario_items, write_scenario_restrictions, write_shops,
-    write_simple_encounters, write_thief_encounters, write_timed_encounters, write_treasures,
-    ParsedScenario, CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES, RACE_BYTES, SIMPLE_ENCOUNTER_BYTES,
-    SPELL_BYTES,
+    shop_prefix_record_count, write_battles, write_complex_encounters, write_global_macro_hooks,
+    write_messages, write_monster_descriptions, write_monster_set, write_monsters,
+    write_option_labels, write_scenario_contact_info, write_scenario_items,
+    write_scenario_restrictions, write_shops, write_simple_encounters, write_thief_encounters,
+    write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES,
+    RACE_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
 };
 use crate::rule_compiler::{
     write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
@@ -220,6 +220,19 @@ pub(super) fn add_canonical_record_collections(
             write_scenario_restrictions(&restrictions),
         );
     }
+    if let Some(global_hooks) = &scenario.global_macro_hooks {
+        let mut global_hooks = global_hooks.clone();
+        global_hooks.authored = true;
+        global_hooks.raw_bytes.clear();
+        insert_canonical_buffer(
+            schema,
+            &mut buffers,
+            "Global",
+            "project.json#scenario/globalMacroHooks",
+            true,
+            write_global_macro_hooks(&global_hooks),
+        );
+    }
     if buffers.is_empty() {
         return;
     }
@@ -346,6 +359,9 @@ pub(super) fn add_canonical_record_collections(
     }
     if scenario.restrictions.is_some() {
         canonical_sources.push(("Data RI", [0usize].into_iter().collect()));
+    }
+    if scenario.global_macro_hooks.is_some() {
+        canonical_sources.push(("Global", [0usize].into_iter().collect()));
     }
     retain_canonical_records(schema, canonical_sources);
 }

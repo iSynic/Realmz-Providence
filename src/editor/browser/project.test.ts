@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "../types";
+import { defaultGlobalMacroHooks } from "../projectCommands/scenarioRulesCommands";
 import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
@@ -551,6 +552,12 @@ describe("browser project native manifest validation", () => {
       authored: false,
       rawBytes: new Array(320).fill(0xa5)
     };
+    project.scenario.globalMacroHooks = {
+      ...defaultGlobalMacroHooks(),
+      slots: defaultGlobalMacroHooks().slots.map((slot) => slot.slot === 0 ? { ...slot, door: 11 } : slot),
+      authored: false,
+      rawBytes: new Array(60).fill(0xa5)
+    };
     project.scenarioItems = [{
       ...parsed.scenarioItems[0],
       id: 4,
@@ -723,7 +730,8 @@ describe("browser project native manifest validation", () => {
       "race-override:2",
       "caste-override:3",
       "contact:0",
-      "restriction:0"
+      "restriction:0",
+      "global:0"
     ]) {
       const entity = semanticSchema.entities.find((candidate) => candidate.id === entityId);
       expect(entity).toMatchObject({
@@ -783,7 +791,8 @@ describe("browser project native manifest validation", () => {
       ["monster-set:1:1", "resource:cicn:322", "uses_resource"],
       ["monster-set:-1:2", "resource:cicn:323", "uses_resource"],
       ["monster-set:1:1", "macro:11", "calls_macro"],
-      ["monster-set:-1:2", "macro:12", "calls_macro"]
+      ["monster-set:-1:2", "macro:12", "calls_macro"],
+      ["global:0", "macro:11", "calls_macro"]
     ]) {
       expect(semanticSchema.links).toContainEqual(expect.objectContaining({ from, to, kind }));
     }
@@ -806,7 +815,8 @@ describe("browser project native manifest validation", () => {
       ["Data Race", "project.json#raceOverrides"],
       ["Data Caste", "project.json#casteOverrides"],
       ["Data CI", "project.json#scenario/contactInfo"],
-      ["Data RI", "project.json#scenario/restrictions"]
+      ["Data RI", "project.json#scenario/restrictions"],
+      ["Global", "project.json#scenario/globalMacroHooks"]
     ]) {
       expect(semanticSchema.sources.find((source) => source.name === name)).toMatchObject({
         path,
@@ -819,5 +829,8 @@ describe("browser project native manifest validation", () => {
     expect(semanticSchema.sources.find((source) => source.name === "Data Caste")?.bytes).toBe(30 * 576);
     expect(semanticSchema.entities.find((entity) => entity.id === "contact:0")?.summary.scenarioName).toBe("Canonical contact");
     expect(semanticSchema.entities.find((entity) => entity.id === "restriction:0")?.summary.bannedRaces).toEqual([1, 30]);
+    expect(semanticSchema.entities.find((entity) => entity.id === "global:0")?.summary.activeSlots).toEqual([
+      expect.objectContaining({ slot: 0, door: 11, sourceBacked: true })
+    ]);
   });
 });

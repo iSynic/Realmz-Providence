@@ -359,11 +359,13 @@ export function writeExtraCodes(rows: ExtraCodeRow[]) {
 }
 
 export function writeGlobalMacroHooks(hooks: ScenarioGlobalMacroHooks) {
-  const output = hooks.rawBytes?.length === GLOBAL_MACRO_HOOK_BYTES
-    ? new Uint8Array(hooks.rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(GLOBAL_MACRO_HOOK_BYTES);
+  const rawBytes = hooks.rawBytes ?? [];
+  if (rawBytes.length !== 0 && rawBytes.length !== GLOBAL_MACRO_HOOK_BYTES) {
+    throw new Error("Global macro hooks have invalid compatibility byte storage");
+  }
+  const output = new Uint8Array(GLOBAL_MACRO_HOOK_BYTES);
   for (const hook of hooks.slots) {
-    if (hook.slot < 0 || hook.slot >= GLOBAL_MACRO_HOOK_BYTES / 2) continue;
+    if (![0, 1, 2, 4, 5].includes(hook.slot)) continue;
     writeI16(output, hook.slot * 2, hook.door);
   }
   return output;

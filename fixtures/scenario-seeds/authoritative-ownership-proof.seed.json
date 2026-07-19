@@ -5,7 +5,8 @@
     "version": "0.1",
     "author": "Providence",
     "description": "A minimal scenario compiled entirely from canonical Providence data.",
-    "start": { "landLevel": 0, "x": 10, "y": 12 }
+    "start": { "landLevel": 0, "x": 10, "y": 12 },
+    "globalMacros": { "start": "ownership-timed-macro" }
   },
   "maps": [
     {

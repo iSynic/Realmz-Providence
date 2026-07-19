@@ -1330,7 +1330,7 @@
         "docs/generated/fixed-record-writer-gates.json",
         "docs/generated/extra-ap-reachability-source-map.json",
         "docs/format-evidence-cards/action-point-extra-ap-storage-reachability.md",
-        "src-tauri/src/realmz/scenario.rs:global_macro_hooks_mutate_only_source_backed_slots",
+        "src-tauri/src/realmz/scenario.rs:global_macro_hooks_compile_only_source_backed_slots",
         "src-tauri/src/realmz/scenario.rs:write_global_macro_hooks",
         "src-tauri/src/realmz/scenario.rs:parse_global_macro_hooks",
         "src-tauri/tests/fixture_roundtrip.rs:imports_core_fixture_scenarios",

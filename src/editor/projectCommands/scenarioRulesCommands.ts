@@ -103,6 +103,7 @@ export function updateGlobalMacroHook(project: Project, slot: number, door: numb
       globalMacroHooks: {
         ...hooks,
         slots,
+        rawBytes: undefined,
         authored: true
       }
     }
@@ -385,8 +386,7 @@ export function defaultGlobalMacroHooks() {
       { slot: 4, label: "Shop", door: 0, sourceBacked: true, runtimeConsumer: "shop button when a shop is available" },
       { slot: 5, label: "Temple", door: 0, sourceBacked: true, runtimeConsumer: "shop/temple button when a temple is available" },
       { slot: 6, label: "Reserved", door: 0, sourceBacked: false, runtimeConsumer: "reserved" }
-    ],
-    rawBytes: new Array(60).fill(0)
+    ]
   };
 }
 

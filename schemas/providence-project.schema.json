@@ -999,6 +999,7 @@
       "x-providence-rust-name": "ScenarioGlobalMacroHooks",
       "x-providence-rust-optional": ["provenance"],
       "x-providence-rust-default": ["rawBytes", "authored", "provenance"],
+      "x-providence-rust-skip-empty": ["rawBytes"],
       "required": ["slots"],
       "properties": {
         "slots": { "type": "array", "items": { "$ref": "#/$defs/globalMacroHook" } },

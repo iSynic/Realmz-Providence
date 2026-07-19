@@ -24,6 +24,16 @@ describe("project command facade", () => {
       rawBytes: new Array(320).fill(0xa5),
       authored: false
     };
+    project.scenario.globalMacroHooks = {
+      ...applyProjectCommand(project, {
+        kind: "updateGlobalMacroHook",
+        label: "Seed global hooks",
+        slot: 0,
+        door: 1
+      }).scenario.globalMacroHooks!,
+      rawBytes: new Array(60).fill(0xa5),
+      authored: false
+    };
 
     const contact = applyProjectCommand(project, {
       kind: "updateScenarioContactInfo",
@@ -35,11 +45,20 @@ describe("project command facade", () => {
       label: "Author restrictions",
       changes: { maxPartyCharacters: 4 }
     });
+    const globalHooks = applyProjectCommand(restrictions, {
+      kind: "updateGlobalMacroHook",
+      label: "Author start hook",
+      slot: 0,
+      door: 9
+    });
 
-    expect(restrictions.scenario.contactInfo).toMatchObject({ author: "Providence", authored: true });
-    expect(restrictions.scenario.contactInfo?.rawBytes).toBeUndefined();
-    expect(restrictions.scenario.restrictions).toMatchObject({ maxPartyCharacters: 4, authored: true });
-    expect(restrictions.scenario.restrictions?.rawBytes).toBeUndefined();
+    expect(globalHooks.scenario.contactInfo).toMatchObject({ author: "Providence", authored: true });
+    expect(globalHooks.scenario.contactInfo?.rawBytes).toBeUndefined();
+    expect(globalHooks.scenario.restrictions).toMatchObject({ maxPartyCharacters: 4, authored: true });
+    expect(globalHooks.scenario.restrictions?.rawBytes).toBeUndefined();
+    expect(globalHooks.scenario.globalMacroHooks).toMatchObject({ authored: true });
+    expect(globalHooks.scenario.globalMacroHooks?.slots.find((slot) => slot.slot === 0)?.door).toBe(9);
+    expect(globalHooks.scenario.globalMacroHooks?.rawBytes).toBeUndefined();
   });
 
   it("creates fresh messages from semantic text without compatibility bytes", () => {

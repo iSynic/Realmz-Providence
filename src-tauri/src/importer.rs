@@ -2692,6 +2692,13 @@ mod tests {
         restrictions.authored = false;
         restrictions.raw_bytes.fill(0xa5);
         project.scenario.restrictions = Some(restrictions);
+        let mut global_hooks =
+            crate::realmz::parse_global_macro_hooks(&vec![
+                0xa5;
+                crate::realmz::GLOBAL_MACRO_HOOK_BYTES
+            ]);
+        global_hooks.slots[0].door = 11;
+        project.scenario.global_macro_hooks = Some(global_hooks);
 
         let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
             .into_iter()
@@ -2918,6 +2925,7 @@ mod tests {
             "caste-override:3",
             "contact:0",
             "restriction:0",
+            "global:0",
         ] {
             let entity = schema
                 .entities
@@ -3068,6 +3076,7 @@ mod tests {
             ("monster-set:-1:2", "resource:cicn:323", "uses_resource"),
             ("monster-set:1:1", "macro:11", "calls_macro"),
             ("monster-set:-1:2", "macro:12", "calls_macro"),
+            ("global:0", "macro:11", "calls_macro"),
         ] {
             assert!(schema
                 .links
@@ -3094,6 +3103,7 @@ mod tests {
             ("Data Caste", "project.json#casteOverrides"),
             ("Data CI", "project.json#scenario/contactInfo"),
             ("Data RI", "project.json#scenario/restrictions"),
+            ("Global", "project.json#scenario/globalMacroHooks"),
         ] {
             let source = schema
                 .sources
@@ -3119,6 +3129,17 @@ mod tests {
                 .find(|entity| entity.id == "restriction:0")
                 .and_then(|entity| entity.summary.get("bannedRaceCount")),
             Some(&serde_json::json!(2))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "global:0")
+                .and_then(|entity| entity.summary.get("activeSlots"))
+                .and_then(serde_json::Value::as_array)
+                .and_then(|slots| slots.first())
+                .and_then(|slot| slot.get("door")),
+            Some(&serde_json::json!(11))
         );
         for (source, bytes) in [
             (

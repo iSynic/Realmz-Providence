@@ -11,6 +11,7 @@ use super::record_bytes::{
 
 pub const SCENARIO_CONTACT_INFO_BYTES: usize = 4608;
 pub const SCENARIO_RESTRICTIONS_BYTES: usize = 320;
+pub const GLOBAL_MACRO_HOOK_BYTES: usize = 60;
 
 pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<ScenarioShell> {
     if buffer.len() < 316 {
@@ -265,13 +266,14 @@ pub fn parse_global_macro_hooks(buffer: &[u8]) -> ScenarioGlobalMacroHooks {
 }
 
 pub fn write_global_macro_hooks(hooks: &ScenarioGlobalMacroHooks) -> Result<Vec<u8>> {
-    let mut output = if hooks.raw_bytes.len() == 60 {
-        hooks.raw_bytes.clone()
-    } else {
-        vec![0u8; 60]
-    };
+    if !hooks.raw_bytes.is_empty() && hooks.raw_bytes.len() != GLOBAL_MACRO_HOOK_BYTES {
+        return Err(ProvidenceError::message(
+            "Global macro hooks have invalid compatibility byte storage",
+        ));
+    }
+    let mut output = vec![0u8; GLOBAL_MACRO_HOOK_BYTES];
     for hook in &hooks.slots {
-        if hook.slot < 30 {
+        if matches!(hook.slot, 0 | 1 | 2 | 4 | 5) {
             write_i16_be(&mut output, hook.slot * 2, hook.door);
         }
     }
@@ -314,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_records_round_trip_source_bytes() {
+    fn scenario_records_follow_authoritative_ownership_boundaries() {
         let mut shell_input = vec![0u8; 320];
         shell_input[20] = 0x41;
         shell_input[319] = 0x5a;
@@ -334,7 +336,9 @@ mod tests {
         global_input[1] = 7;
         global_input[59] = 0x5a;
         let hooks = parse_global_macro_hooks(&global_input);
-        assert_eq!(write_global_macro_hooks(&hooks).unwrap(), global_input);
+        let global_output = write_global_macro_hooks(&hooks).unwrap();
+        assert_eq!(&global_output[..2], &global_input[..2]);
+        assert!(global_output[2..].iter().all(|byte| *byte == 0));
     }
 
     #[test]
@@ -507,7 +511,7 @@ mod tests {
     }
 
     #[test]
-    fn global_macro_hooks_mutate_only_source_backed_slots() {
+    fn global_macro_hooks_compile_only_source_backed_slots() {
         let mut input = vec![0u8; 60];
         write_i16_be(&mut input, 6, 0x1111);
 
@@ -520,7 +524,9 @@ mod tests {
 
         let output = write_global_macro_hooks(&hooks).unwrap();
         assert_eq!(output.len(), input.len());
-        assert_eq!(i16_be(&output, 6), 0x1111);
-        assert_eq!(changed_offsets(&input, &output), vec![0, 1, 8, 9]);
+        assert_eq!(i16_be(&output, 6), 0);
+        assert_eq!(changed_offsets(&input, &output), vec![0, 1, 6, 7, 8, 9]);
+        hooks.raw_bytes = vec![1];
+        assert!(write_global_macro_hooks(&hooks).is_err());
     }
 }

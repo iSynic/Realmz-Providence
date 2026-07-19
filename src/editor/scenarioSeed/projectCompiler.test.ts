@@ -73,7 +73,8 @@ describe("scenario seed project compiler", () => {
   it("creates a schema-v5 authored project without a compatibility annex", () => {
     const result = compileScenarioSeedProject({
       schemaVersion: 1,
-      scenario: { name: "Authored From Zero" }
+      scenario: { name: "Authored From Zero", globalMacros: { start: "opening" } },
+      extraActionPoints: [{ key: "opening", id: 9, steps: [] }]
     });
 
     expect(result.ok).toBe(true);
@@ -86,6 +87,9 @@ describe("scenario seed project compiler", () => {
       immutable: false,
       files: []
     });
+    expect(result.project.scenario.globalMacroHooks).toMatchObject({ authored: true });
+    expect(result.project.scenario.globalMacroHooks?.slots.find((slot) => slot.slot === 0)?.door).toBe(9);
+    expect(result.project.scenario.globalMacroHooks?.rawBytes).toBeUndefined();
   });
 
   it("replaces only trigger domains explicitly supplied by the seed", () => {

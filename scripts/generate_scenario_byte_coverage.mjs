@@ -900,14 +900,14 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       { field: "Reserved global hook slots", internal: "globalmacro[6..29]", offset: 12, bytes: 48, type: "raw-preserved" }
     ],
     evidence: [
-      "src-tauri/src/realmz/scenario.rs:global_macro_hooks_mutate_only_source_backed_slots",
+      "src-tauri/src/realmz/scenario.rs:global_macro_hooks_compile_only_source_backed_slots",
       "src-tauri/src/realmz/scenario.rs:write_global_macro_hooks",
       "src-tauri/src/realmz/scenario.rs:parse_global_macro_hooks",
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/global-macro-evidence.json",
       "docs/format-evidence-cards/global-macro-runtime-anchors.md"
     ],
-    preservationPolicy: "This gate proves fixed-row Global storage and source-backed hook slots. Reserved slots stay preserve-only until broader Divinity labels are proven."
+    preservationPolicy: "Both native writers zero-initialize Global and compile only the five source-backed hooks from canonical semantics without consulting embedded raw bytes. An untouched imported singleton is recovered from the compatibility annex; after an imported record is edited, only reserved slot 3, slots 6..29, and any malformed tail are restored from that annex."
   }
 ];
 

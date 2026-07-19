@@ -1,7 +1,8 @@
-import type { ScenarioSeedScenario, ScenarioSeedStart } from "./contracts";
+import type { ScenarioSeedGlobalMacros, ScenarioSeedScenario, ScenarioSeedStart } from "./contracts";
 import {
   allowKeys,
   checkIntegerRange,
+  optionalRef,
   optionalString,
   requireInteger,
   requireObject,
@@ -19,11 +20,12 @@ export function parseScenario(
   allowKeys(
     value,
     path,
-    ["id", "name", "start", "author", "version", "date", "email", "web", "description"],
+    ["id", "name", "start", "globalMacros", "author", "version", "date", "email", "web", "description"],
     context
   );
   const name = requireString(value.name, `${path}.name`, context);
   const start = parseScenarioStart(value.start, `${path}.start`, context);
+  const globalMacros = parseScenarioGlobalMacros(value.globalMacros, `${path}.globalMacros`, context);
   const id = optionalString(value.id, `${path}.id`, context);
   const author = optionalString(value.author, `${path}.author`, context);
   const version = optionalString(value.version, `${path}.version`, context);
@@ -35,6 +37,7 @@ export function parseScenario(
     ...(id !== undefined ? { id } : {}),
     name: name ?? "Untitled Scenario",
     ...(start ? { start } : {}),
+    ...(globalMacros ? { globalMacros } : {}),
     ...(author !== undefined ? { author } : {}),
     ...(version !== undefined ? { version } : {}),
     ...(date !== undefined ? { date } : {}),
@@ -42,6 +45,22 @@ export function parseScenario(
     ...(web !== undefined ? { web } : {}),
     ...(description !== undefined ? { description } : {})
   };
+}
+
+export function parseScenarioGlobalMacros(
+  input: unknown,
+  path: string,
+  context: ParseContext
+): ScenarioSeedGlobalMacros | undefined {
+  if (input === undefined) return undefined;
+  const value = requireObject(input, path, context);
+  if (!value) return undefined;
+  const fields = ["start", "death", "quit", "shop", "temple"] as const;
+  allowKeys(value, path, [...fields], context);
+  return Object.fromEntries(fields.flatMap((field) => {
+    const ref = optionalRef(value[field], `${path}.${field}`, context);
+    return ref === undefined ? [] : [[field, ref]];
+  }));
 }
 
 export function parseScenarioStart(

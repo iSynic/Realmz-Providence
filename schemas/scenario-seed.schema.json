@@ -122,12 +122,24 @@
         "id": { "type": "string", "minLength": 1, "maxLength": 128 },
         "name": { "type": "string", "minLength": 1, "maxLength": 64 },
         "start": { "$ref": "#/$defs/scenarioStart" },
+        "globalMacros": { "$ref": "#/$defs/scenarioGlobalMacros" },
         "author": { "type": "string", "maxLength": 64 },
         "version": { "type": "string", "maxLength": 32 },
         "date": { "type": "string", "maxLength": 32 },
         "email": { "type": "string", "maxLength": 128 },
         "web": { "type": "string", "maxLength": 128 },
         "description": { "type": "string", "maxLength": 4096 }
+      }
+    },
+    "scenarioGlobalMacros": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "start": { "$ref": "#/$defs/idRef" },
+        "death": { "$ref": "#/$defs/idRef" },
+        "quit": { "$ref": "#/$defs/idRef" },
+        "shop": { "$ref": "#/$defs/idRef" },
+        "temple": { "$ref": "#/$defs/idRef" }
       }
     },
     "scenarioStart": {

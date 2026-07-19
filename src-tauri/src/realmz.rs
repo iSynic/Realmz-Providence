@@ -58,7 +58,8 @@ pub use scenario::{
     parse_global_macro_hooks, parse_scenario_contact_info, parse_scenario_restrictions,
     parse_scenario_shell, parse_scenario_support_file, write_global_macro_hooks,
     write_scenario_contact_info, write_scenario_restrictions, write_scenario_shell,
-    write_scenario_support_file, SCENARIO_CONTACT_INFO_BYTES, SCENARIO_RESTRICTIONS_BYTES,
+    write_scenario_support_file, GLOBAL_MACRO_HOOK_BYTES, SCENARIO_CONTACT_INFO_BYTES,
+    SCENARIO_RESTRICTIONS_BYTES,
 };
 pub use scenario_items::*;
 

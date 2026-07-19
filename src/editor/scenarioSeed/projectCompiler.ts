@@ -1,7 +1,8 @@
 import { createBrowserProject, validateBrowserProject } from "../browser/project";
 import { PROJECT_SCHEMA_VERSION, resolvedProjectOrigin } from "../projectOrigin";
+import { defaultGlobalMacroHooks } from "../projectCommands";
 import type { LibraryCatalog, Project } from "../types";
-import { allocateScenarioSeed } from "./allocation";
+import { allocateScenarioSeed, resolveRef } from "./allocation";
 import {
   addScenarioSeedDiagnostic as addDiagnostic,
   createScenarioSeedCompilerContext,
@@ -29,7 +30,7 @@ export function compileScenarioSeedProject(
   addScenarioSeedTopologyDiagnostics(seed, context);
   if (context.errors.length > 0) return failedProjectResult(context, parseWarnings);
 
-  let project = initializeScenarioSeedProject(baseProject, seed, baseTemplate, options.appVersion ?? "scenario-seed", now);
+  let project = initializeScenarioSeedProject(baseProject, seed, baseTemplate, options.appVersion ?? "scenario-seed", now, context);
 
   const compiledAssets = compileScenarioSeedAssets(seed.assets, options.customAssets ?? [], context);
   if (compiledAssets !== undefined) project = { ...project, assets: compiledAssets };
@@ -85,12 +86,25 @@ function initializeScenarioSeedProject(
   seed: ScenarioSeed,
   baseTemplate: string,
   appVersion: string,
-  now: string
+  now: string,
+  context: ScenarioSeedCompilerContext
 ): Project {
   const scenarioDefaults = createBrowserProject(seed.scenario.name).scenario;
   const scenarioShell = project.scenario.shell ?? scenarioDefaults.shell;
   const contactInfo = project.scenario.contactInfo ?? scenarioDefaults.contactInfo;
   const origin = baseTemplate === "blank" ? "authored" : resolvedProjectOrigin(project.source);
+  const globalMacroFields = ["start", "death", "quit", null, "shop", "temple", null] as const;
+  const globalMacroHooks = seed.scenario.globalMacros === undefined
+    ? project.scenario.globalMacroHooks
+    : {
+        ...defaultGlobalMacroHooks(),
+        slots: defaultGlobalMacroHooks().slots.map((slot) => {
+          const field = globalMacroFields[slot.slot];
+          const ref = field ? seed.scenario.globalMacros?.[field] : undefined;
+          return { ...slot, door: ref === undefined ? 0 : resolveRef(ref, context.extraActionPoints, "extra action point", context) };
+        }),
+        authored: true
+      };
   return {
     ...project,
     schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -101,6 +115,7 @@ function initializeScenarioSeedProject(
       name: seed.scenario.name,
       projectPath: `seed://${slugify(seed.scenario.name)}.providence`,
       importedAt: now,
+      globalMacroHooks,
       shell: scenarioShell
         ? {
             ...scenarioShell,
