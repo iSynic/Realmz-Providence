@@ -600,8 +600,7 @@ export function writeShops(records: ShopRecord[]) {
 
 export function writeSpellOverrides(records: ScenarioSpellOverride[]) {
   return writeFixedRecords(records, SPELL_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === SPELL_RECORD_BYTES) return;
+    validateCompatibilityStorage("Custom spell", record.id, record.rawBytes, SPELL_RECORD_BYTES);
     target[0] = record.range1 & 0xff;
     target[1] = record.range2 & 0xff;
     target[2] = record.queueIcon & 0xff;
@@ -637,8 +636,7 @@ export function writeSpellOverrides(records: ScenarioSpellOverride[]) {
 
 export function writeRaceOverrides(records: ScenarioRaceOverride[]) {
   return writeFixedRecords(records, RACE_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === RACE_RECORD_BYTES) return;
+    validateRaceStorage(record);
     writeI16Array(target, 0, record.plusMinusToHit, 8);
     writeI16Array(target, 16, record.specialAbility, 14);
     writeI16Array(target, 44, record.drvBonus, 8);
@@ -669,8 +667,7 @@ export function writeRaceOverrides(records: ScenarioRaceOverride[]) {
 
 export function writeCasteOverrides(records: ScenarioCasteOverride[]) {
   return writeFixedRecords(records, CASTE_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === CASTE_RECORD_BYTES) return;
+    validateCasteStorage(record);
     writeI16Array(target, 0, record.specialAbility[0] ?? [], 14);
     writeI16Array(target, 28, record.specialAbility[1] ?? [], 14);
     writeI16Array(target, 56, record.drvBonus, 8);
@@ -709,6 +706,69 @@ export function writeCasteOverrides(records: ScenarioCasteOverride[]) {
     writeI16(target, 448, record.spellsSoFar);
     if (record.spacer) writeI16Array(target, 450, record.spacer, 63);
   });
+}
+
+function validateCompatibilityStorage(label: string, id: number, rawBytes: number[] | undefined, recordBytes: number) {
+  const length = rawBytes?.length ?? 0;
+  if (length !== 0 && length !== recordBytes) {
+    throw new Error(`${label} ${id} has invalid compatibility byte storage`);
+  }
+}
+
+function validateExactLength(label: string, id: number, field: string, actual: number, expected: number) {
+  if (actual !== expected) throw new Error(`${label} ${id} must have exactly ${expected} ${field}`);
+}
+
+function validateRaceStorage(record: ScenarioRaceOverride) {
+  validateCompatibilityStorage("Race override", record.id, record.rawBytes, RACE_RECORD_BYTES);
+  for (const [field, values, expected] of [
+    ["to-hit adjustments", record.plusMinusToHit, 8],
+    ["special abilities", record.specialAbility, 14],
+    ["defense bonuses", record.drvBonus, 8],
+    ["attack bonuses", record.attBonus, 6],
+    ["attribute bounds", record.minMax, 12],
+    ["conditions", record.conditions, 40],
+    ["attack-count bounds", record.numOfAttacks, 2],
+    ["caste permissions", record.canCaste, 30],
+    ["age ranges", record.ageRange, 5],
+    ["age changes", record.ageChange, 5],
+    ["item-type words", record.itemTypes, 2]
+  ] as const) {
+    validateExactLength("Race override", record.id, field, values.length, expected);
+  }
+  if (record.ageRange.some((row) => row.length !== 2)) throw new Error(`Race override ${record.id} age ranges must have exactly 2 values`);
+  if (record.ageChange.some((row) => row.length !== 15)) throw new Error(`Race override ${record.id} age changes must have exactly 15 values`);
+  if (record.spare) validateExactLength("Race override", record.id, "spare words", record.spare.length, 8);
+  if (record.spacer) validateExactLength("Race override", record.id, "spacer words", record.spacer.length, 31);
+}
+
+function validateCasteStorage(record: ScenarioCasteOverride) {
+  validateCompatibilityStorage("Caste override", record.id, record.rawBytes, CASTE_RECORD_BYTES);
+  for (const [field, values, expected] of [
+    ["special-ability rows", record.specialAbility, 2],
+    ["defense bonuses", record.drvBonus, 8],
+    ["attack bonuses", record.attBonus, 6],
+    ["spellcaster rows", record.spellcasters, 4],
+    ["attribute bounds", record.minMax, 12],
+    ["conditions", record.conditions, 40],
+    ["stamina bounds", record.stamina, 2],
+    ["strength bounds", record.strength, 2],
+    ["dodge bounds", record.dodge, 2],
+    ["to-hit bounds", record.toHit, 2],
+    ["missile bounds", record.missile, 2],
+    ["hand-to-hand bounds", record.hand2Hand, 2],
+    ["victory values", record.victory, 30],
+    ["starting items", record.startItems, 20],
+    ["bonus attack rounds", record.attacks, 10],
+    ["item-type words", record.itemTypes, 2]
+  ] as const) {
+    validateExactLength("Caste override", record.id, field, values.length, expected);
+  }
+  if (record.specialAbility.some((row) => row.length !== 14)) throw new Error(`Caste override ${record.id} special-ability rows must have exactly 14 values`);
+  if (record.spellcasters.some((row) => row.length !== 3)) throw new Error(`Caste override ${record.id} spellcaster rows must have exactly 3 values`);
+  if (record.spare1) validateExactLength("Caste override", record.id, "spare1 words", record.spare1.length, 2);
+  if (record.spare2) validateExactLength("Caste override", record.id, "spare2 words", record.spare2.length, 2);
+  if (record.spacer) validateExactLength("Caste override", record.id, "spacer words", record.spacer.length, 63);
 }
 
 export function writeSimpleEncounters(records: SimpleEncounterRecord[]) {

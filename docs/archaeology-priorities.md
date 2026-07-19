@@ -120,7 +120,7 @@ The fifth follow-up archaeology pass tightened `Core records for full scenario c
 
 - make Text/messages the central editable target record surface;
 - add item/spell/race/caste pickers with shared-vs-scenario override badges before pretending those are all scenario-local editors;
-- promote `Data MD` monsters next, because battles, encounters, treasure, shops, and scripts all benefit from stable monster/item/spell/icon pickers;
+- use the now-authoritative monster and rule records to finish stable monster/item/spell/race/caste pickers and cross-record validation;
 - treat `Data MENU` and runtime caches as generated state evidence, not authored source.
 
 Detailed evidence lives in `docs/format-evidence-cards/core-rules-record-runtime-anchors.md` and `docs/generated/core-rules-record-evidence.json`.
@@ -235,14 +235,14 @@ The eleventh follow-up archaeology pass tightened `Core records` around thief/ro
 
 Detailed evidence lives in `docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md` and `docs/generated/thief-timed-encounter-evidence.json`.
 
-The twelfth follow-up archaeology pass tightened `Core records` around Rules data: spells, races, and castes. Realmz source proves these should be presented as shared/override rules libraries before they become full editable scenario records:
+The twelfth follow-up archaeology pass tightened `Core records` around Rules data: spells, races, and castes. Realmz source proves these should be presented as shared/override rules libraries rather than one uniform scenario-local catalog:
 
 - spells are 30-byte byte-only records; shared `Data S` is 525 spells, while scenario `Data Spell` fills the fifth 105-spell class and carries resource/tail evidence;
 - packed spell IDs resolve to class, level, and slot through `loadspell2`;
 - third-party scenarios can override races and castes with scenario-local `Data Race` and `Data Caste`, falling back to shared files when absent;
 - scenario `Data Race` overrides are 30 x 408-byte records;
 - `Data Caste` records are 30 x 576-byte records;
-- existing rough Providence library record summaries for these families are parser confidence debt and should be corrected before Rules editing.
+- the authoritative compiler now emits authored override rows entirely from canonical semantic fields; unchanged imported rows and malformed tails are compatibility-annex data, not authoring inputs.
 
 Detailed evidence lives in `docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md` and `docs/generated/rules-spell-race-caste-evidence.json`.
 

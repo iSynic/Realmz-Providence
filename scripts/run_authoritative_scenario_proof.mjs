@@ -404,6 +404,17 @@ function assertCompleteNativeFolder(files, label) {
   expect(authoredMonsterDescription[0] === expectedMonsterDescription.length, `${label} Data DES has the wrong authored Pascal length`);
   expect(Buffer.from(authoredMonsterDescription.slice(1, 1 + expectedMonsterDescription.length)).equals(expectedMonsterDescription), `${label} Data DES has the wrong authored description`);
   expect(authoredMonsterDescription.slice(1 + expectedMonsterDescription.length).every((byte) => byte === 0), `${label} Data DES padding is not deterministic zero`);
+  const spell = files.get("Data Spell");
+  const authoredSpell = spell.slice(16 * 30, 17 * 30);
+  expect(spell.slice(0, 16 * 30).every((byte) => byte === 0), `${label} Data Spell unused records before slot 16 are not deterministic zero`);
+  expect(authoredSpell[10] === 4 && authoredSpell[15] === 3 && authoredSpell[23] === 1 && authoredSpell[27] === 4, `${label} Data Spell has the wrong authored semantic fields`);
+  expect(authoredSpell[28] === 1 && authoredSpell[29] === 0, `${label} Data Spell has the wrong authored availability flags`);
+  const race = files.get("Data Race").slice(19 * 408, 20 * 408);
+  expect(readI16(race, 192) === 120 && readI16(race, 196) === 11 && readI16(race, 198) === 7 && race[333] === 1, `${label} Data Race has the wrong authored semantic fields`);
+  expect(race.slice(96, 112).every((byte) => byte === 0) && race.slice(346).every((byte) => byte === 0), `${label} Data Race compatibility words are not deterministic zero`);
+  const caste = files.get("Data Caste").slice(20 * 576, 21 * 576);
+  expect(readI16(caste, 248) === 2 && readI16(caste, 252) === 1 && readI16(caste, 254) === 5 && readI16(caste, 384) === 25, `${label} Data Caste has the wrong authored semantic fields`);
+  expect(caste.slice(240, 248).every((byte) => byte === 0) && caste.slice(450).every((byte) => byte === 0), `${label} Data Caste compatibility words are not deterministic zero`);
   const simpleEncounter = files.get("Data ED");
   expect(simpleEncounter[0] === 1, `${label} Data ED does not contain the authored message action`);
   expect(readI16(simpleEncounter, 32) === 0, `${label} Data ED message action has the wrong authored ID`);
@@ -567,6 +578,7 @@ function assertOwnershipRules(project, label, expectCanonicalNames) {
 }
 
 function assertNoFreshRuleCompatibilityBytes(project, label) {
+  expect(project.spellOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} spell overrides contain compatibility bytes`);
   expect(project.raceOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} race overrides contain compatibility bytes`);
   expect(project.casteOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} caste overrides contain compatibility bytes`);
 }

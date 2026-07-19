@@ -139,6 +139,46 @@ describe("browser project native manifest validation", () => {
     }
   });
 
+  it("normalizes legacy rule override arrays into canonical fixed contracts", () => {
+    const project = createBrowserProject("Legacy rule arrays");
+    const parsed = parseScenarioBuffers(new Map([
+      ["Data Race", new Uint8Array(408)],
+      ["Data Caste", new Uint8Array(576)]
+    ]));
+    project.raceOverrides = [{
+      ...parsed.raceOverrides[0],
+      plusMinusToHit: [1],
+      ageRange: [[2]],
+      ageChange: [[3]],
+      spacer: [4]
+    }];
+    project.casteOverrides = [{
+      ...parsed.casteOverrides[0],
+      specialAbility: [[5]],
+      spellcasters: [[6]],
+      victory: [7],
+      startItems: [8],
+      spacer: [9]
+    }];
+
+    const normalized = normalizeBrowserProject(project);
+    const race = normalized.raceOverrides[0];
+    const caste = normalized.casteOverrides[0];
+
+    expect(race.plusMinusToHit).toEqual([1, 0, 0, 0, 0, 0, 0, 0]);
+    expect(race.ageRange).toHaveLength(5);
+    expect(race.ageRange[0]).toEqual([2, 0]);
+    expect(race.ageChange[0]).toHaveLength(15);
+    expect(race.spacer).toHaveLength(31);
+    expect(caste.specialAbility).toHaveLength(2);
+    expect(caste.specialAbility[0]).toHaveLength(14);
+    expect(caste.spellcasters).toHaveLength(4);
+    expect(caste.spellcasters[0]).toEqual([6, 0, 0]);
+    expect(caste.victory).toHaveLength(30);
+    expect(caste.startItems).toHaveLength(20);
+    expect(caste.spacer).toHaveLength(63);
+  });
+
   it("parses player-map markers into canonical semantic slots", () => {
     const bytes = new Uint8Array(340);
     bytes.set([0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d], 0);

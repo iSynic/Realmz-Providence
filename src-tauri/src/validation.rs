@@ -1878,6 +1878,13 @@ fn validate_rules_overrides(
     let mut missing_race_icons = BTreeSet::new();
     let mut missing_caste_icons = BTreeSet::new();
     for spell in &project.spell_overrides {
+        if !spell.raw_bytes.is_empty() && spell.raw_bytes.len() != crate::realmz::SPELL_BYTES {
+            errors.push(format!(
+                "Spell override {} has invalid {}-byte compatibility storage.",
+                spell.id,
+                crate::realmz::SPELL_BYTES
+            ));
+        }
         if spell.id >= crate::realmz::SPELL_OVERRIDE_RECORDS {
             errors.push(format!(
                 "Custom spell slot {} is outside the scenario custom spell range 5101..5715.",
@@ -1924,6 +1931,13 @@ fn validate_rules_overrides(
 
     let mut race_ids = BTreeSet::new();
     for race in &project.race_overrides {
+        if !race.raw_bytes.is_empty() && race.raw_bytes.len() != crate::realmz::RACE_BYTES {
+            errors.push(format!(
+                "Race override {} has invalid {}-byte compatibility storage.",
+                race.id,
+                crate::realmz::RACE_BYTES
+            ));
+        }
         if race.id >= 30 {
             errors.push(format!(
                 "Race override {} is outside the 0..29 race table.",
@@ -1932,6 +1946,46 @@ fn validate_rules_overrides(
         }
         if !race_ids.insert(race.id) {
             errors.push(format!("Race override {} is duplicated.", race.id));
+        }
+        for (label, actual, expected) in [
+            ("to-hit adjustments", race.plus_minus_to_hit.len(), 8),
+            ("special abilities", race.special_ability.len(), 14),
+            ("defense bonuses", race.drv_bonus.len(), 8),
+            ("attack bonuses", race.att_bonus.len(), 6),
+            ("attribute bounds", race.min_max.len(), 12),
+            ("conditions", race.conditions.len(), 40),
+            ("attack-count bounds", race.num_of_attacks.len(), 2),
+            ("caste permissions", race.can_caste.len(), 30),
+            ("age ranges", race.age_range.len(), 5),
+            ("age changes", race.age_change.len(), 5),
+            ("item-type words", race.item_types.len(), 2),
+        ] {
+            if actual != expected {
+                errors.push(format!(
+                    "Race override {} has {actual} {label}; Data Race requires {expected}.",
+                    race.id
+                ));
+            }
+        }
+        for (row, values) in race.age_range.iter().enumerate() {
+            if values.len() != 2 {
+                errors.push(format!(
+                    "Race override {} age range row {} has {} values; Data Race requires 2.",
+                    race.id,
+                    row + 1,
+                    values.len()
+                ));
+            }
+        }
+        for (row, values) in race.age_change.iter().enumerate() {
+            if values.len() != 15 {
+                errors.push(format!(
+                    "Race override {} age change row {} has {} values; Data Race requires 15.",
+                    race.id,
+                    row + 1,
+                    values.len()
+                ));
+            }
         }
         for (label, actual, expected) in [
             ("spare", race.spare.as_ref().map(Vec::len), 8),
@@ -1970,6 +2024,13 @@ fn validate_rules_overrides(
 
     let mut caste_ids = BTreeSet::new();
     for caste in &project.caste_overrides {
+        if !caste.raw_bytes.is_empty() && caste.raw_bytes.len() != crate::realmz::CASTE_BYTES {
+            errors.push(format!(
+                "Caste override {} has invalid {}-byte compatibility storage.",
+                caste.id,
+                crate::realmz::CASTE_BYTES
+            ));
+        }
         if caste.id >= 30 {
             errors.push(format!(
                 "Caste override {} is outside the 0..29 caste table.",
@@ -1978,6 +2039,46 @@ fn validate_rules_overrides(
         }
         if !caste_ids.insert(caste.id) {
             errors.push(format!("Caste override {} is duplicated.", caste.id));
+        }
+        for (label, actual, expected) in [
+            ("special-ability rows", caste.special_ability.len(), 2),
+            ("defense bonuses", caste.drv_bonus.len(), 8),
+            ("attack bonuses", caste.att_bonus.len(), 6),
+            ("spellcaster rows", caste.spellcasters.len(), 4),
+            ("attribute bounds", caste.min_max.len(), 12),
+            ("conditions", caste.conditions.len(), 40),
+            ("stamina bounds", caste.stamina.len(), 2),
+            ("strength bounds", caste.strength.len(), 2),
+            ("dodge bounds", caste.dodge.len(), 2),
+            ("to-hit bounds", caste.to_hit.len(), 2),
+            ("missile bounds", caste.missile.len(), 2),
+            ("hand-to-hand bounds", caste.hand2_hand.len(), 2),
+            ("victory values", caste.victory.len(), 30),
+            ("starting items", caste.start_items.len(), 20),
+            ("bonus attack rounds", caste.attacks.len(), 10),
+            ("item-type words", caste.item_types.len(), 2),
+        ] {
+            if actual != expected {
+                errors.push(format!(
+                    "Caste override {} has {actual} {label}; Data Caste requires {expected}.",
+                    caste.id
+                ));
+            }
+        }
+        for (label, rows, expected) in [
+            ("special-ability", &caste.special_ability, 14),
+            ("spellcaster", &caste.spellcasters, 3),
+        ] {
+            for (row, values) in rows.iter().enumerate() {
+                if values.len() != expected {
+                    errors.push(format!(
+                        "Caste override {} {label} row {} has {} values; Data Caste requires {expected}.",
+                        caste.id,
+                        row + 1,
+                        values.len()
+                    ));
+                }
+            }
         }
         for (label, actual, expected) in [
             ("spare1", caste.spare1.as_ref().map(Vec::len), 2),

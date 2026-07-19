@@ -142,7 +142,6 @@ export function isBlankCustomSpellRecord(record: ScenarioSpellOverride | null | 
   const name = record.displayName?.trim() ?? "";
   const genericName = !name || name === `Custom Spell ${record.id}` || /^Level \d+ Spell \d+$/.test(name);
   if (!genericName) return false;
-  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
   return (
     record.range1 === 0 &&
     record.range2 === 0 &&
@@ -346,7 +345,6 @@ export function isBlankImportedCasteRecord(record: ScenarioCasteOverride | null 
   const name = record.displayName?.trim() ?? "";
   const genericName = !name || name === `Caste ${record.id}` || name === `Caste ${record.id + 1}` || REALMZ_CASTES[record.id] === name;
   if (!genericName) return false;
-  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
   return (
     allZeroMatrix(record.specialAbility) &&
     allZero(record.drvBonus) &&

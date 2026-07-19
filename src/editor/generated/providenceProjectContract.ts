@@ -296,6 +296,116 @@ export const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_SPELL_OVERRIDE_FIELDS = [
+  "id",
+  "range1",
+  "range2",
+  "queueIcon",
+  "toHitBonus",
+  "saveBonus",
+  "fixedTargetNum",
+  "canRotate",
+  "saveAdjust",
+  "cannot",
+  "resistAdjust",
+  "cost",
+  "damage1",
+  "damage2",
+  "powerDamage1",
+  "powerDamage2",
+  "duration1",
+  "duration2",
+  "powerDuration1",
+  "powerDuration2",
+  "spellLook1",
+  "spellLook2",
+  "sound1",
+  "sound2",
+  "targetType",
+  "size",
+  "special",
+  "damageType",
+  "spellClass",
+  "inCombat",
+  "inCamp",
+  "displayName",
+  "description",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
+export const PROVIDENCE_RACE_OVERRIDE_FIELDS = [
+  "id",
+  "displayName",
+  "plusMinusToHit",
+  "specialAbility",
+  "drvBonus",
+  "attBonus",
+  "minMax",
+  "spare",
+  "conditions",
+  "maxAge",
+  "doesNotDie",
+  "baseMove",
+  "magRes",
+  "twoHand",
+  "missile",
+  "numOfAttacks",
+  "canCaste",
+  "ageRange",
+  "ageChange",
+  "canRegenerate",
+  "defaultIconSet",
+  "itemTypes",
+  "descriptors",
+  "spacer",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
+export const PROVIDENCE_CASTE_OVERRIDE_FIELDS = [
+  "id",
+  "displayName",
+  "specialAbility",
+  "drvBonus",
+  "attBonus",
+  "spellcasters",
+  "minMax",
+  "conditions",
+  "canUseMissile",
+  "getsMissileBonus",
+  "stamina",
+  "strength",
+  "dodge",
+  "toHit",
+  "missile",
+  "hand2Hand",
+  "spare1",
+  "spare2",
+  "casteClass",
+  "minimumAgeGroup",
+  "moveBonus",
+  "magRes",
+  "twoHand",
+  "maxStaminaBonus",
+  "bonusAttacks",
+  "maxAttacks",
+  "victory",
+  "startMoney",
+  "startItems",
+  "attacks",
+  "itemTypes",
+  "defaultIcon",
+  "maxSpellsAttacks",
+  "spellsSoFar",
+  "spacer",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = [
   "id",
   "actions",
@@ -642,6 +752,116 @@ export type ProvidenceMonsterRecord = {
 export type ProvidenceMonsterDescriptionRecord = {
   id: number;
   text: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance;
+};
+
+export type ProvidenceScenarioSpellOverride = {
+  id: number;
+  range1: number;
+  range2: number;
+  queueIcon: number;
+  toHitBonus: number;
+  saveBonus: number;
+  fixedTargetNum: number;
+  canRotate: number;
+  saveAdjust: number;
+  cannot: number;
+  resistAdjust: number;
+  cost: number;
+  damage1: number;
+  damage2: number;
+  powerDamage1: number;
+  powerDamage2: number;
+  duration1: number;
+  duration2: number;
+  powerDuration1: number;
+  powerDuration2: number;
+  spellLook1: number;
+  spellLook2: number;
+  sound1: number;
+  sound2: number;
+  targetType: number;
+  size: number;
+  special: number;
+  damageType: number;
+  spellClass: number;
+  inCombat: boolean;
+  inCamp: boolean;
+  displayName?: string;
+  description?: string;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance;
+};
+
+export type ProvidenceScenarioRaceOverride = {
+  id: number;
+  displayName?: string;
+  plusMinusToHit: number[];
+  specialAbility: number[];
+  drvBonus: number[];
+  attBonus: number[];
+  minMax: number[];
+  spare?: number[];
+  conditions: number[];
+  maxAge: number;
+  doesNotDie: number;
+  baseMove: number;
+  magRes: number;
+  twoHand: number;
+  missile: number;
+  numOfAttacks: number[];
+  canCaste: number[];
+  ageRange: number[][];
+  ageChange: number[][];
+  canRegenerate: number;
+  defaultIconSet: number;
+  itemTypes: number[];
+  descriptors: number;
+  spacer?: number[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance;
+};
+
+export type ProvidenceScenarioCasteOverride = {
+  id: number;
+  displayName?: string;
+  specialAbility: number[][];
+  drvBonus: number[];
+  attBonus: number[];
+  spellcasters: number[][];
+  minMax: number[];
+  conditions: number[];
+  canUseMissile: number;
+  getsMissileBonus: number;
+  stamina: number[];
+  strength: number[];
+  dodge: number[];
+  toHit: number[];
+  missile: number[];
+  hand2Hand: number[];
+  spare1?: number[];
+  spare2?: number[];
+  casteClass: number;
+  minimumAgeGroup: number;
+  moveBonus: number;
+  magRes: number;
+  twoHand: number;
+  maxStaminaBonus: number;
+  bonusAttacks: number;
+  maxAttacks: number;
+  victory: number[];
+  startMoney: number;
+  startItems: number[];
+  attacks: number[];
+  itemTypes: number[];
+  defaultIcon: number;
+  maxSpellsAttacks: number;
+  spellsSoFar: number;
+  spacer?: number[];
   rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;

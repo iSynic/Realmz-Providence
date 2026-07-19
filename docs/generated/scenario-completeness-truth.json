@@ -1685,7 +1685,10 @@
         "docs/generated/rules-name-resource-packaging.json",
         "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md",
         "src-tauri/tests/fixture_roundtrip.rs:rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail",
-        "src-tauri/tests/fixture_roundtrip.rs:rules_custom_spell_name_export_updates_only_spell_str_resource"
+        "src-tauri/tests/fixture_roundtrip.rs:rules_custom_spell_name_export_updates_only_spell_str_resource",
+        "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
+        "src-tauri/src/exporter.rs:imported_spell_export_bounds_legacy_rows_and_tail_to_annex",
+        "scripts/run_authoritative_scenario_proof.mjs"
       ],
       "fixtureGate": {
         "name": "custom-spell-records-and-names",
@@ -1825,7 +1828,7 @@
     {
       "container": "Data Race",
       "authorFacingName": "Race override records",
-      "coverageStatus": "mixed-writable-preserved",
+      "coverageStatus": "decoded-writable",
       "observedScenarioCount": 8,
       "observedByteSizes": [
         12240
@@ -1837,7 +1840,10 @@
         "docs/generated/rules-resource-coverage.json",
         "docs/generated/rules-name-resource-packaging.json",
         "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md",
-        "src-tauri/tests/fixture_roundtrip.rs:rules_race_export_mutates_only_owned_record_fields"
+        "src-tauri/tests/fixture_roundtrip.rs:rules_race_export_mutates_only_owned_record_fields",
+        "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
+        "src-tauri/src/exporter.rs:imported_rule_exports_preserve_aligned_rows_and_malformed_tails",
+        "scripts/run_authoritative_scenario_proof.mjs"
       ],
       "fixtureGate": {
         "name": "race-override-records",
@@ -1880,7 +1886,7 @@
     {
       "container": "Data Caste",
       "authorFacingName": "Caste override records",
-      "coverageStatus": "mixed-writable-preserved",
+      "coverageStatus": "decoded-writable",
       "observedScenarioCount": 5,
       "observedByteSizes": [
         17280
@@ -1892,7 +1898,10 @@
         "docs/generated/rules-resource-coverage.json",
         "docs/generated/rules-name-resource-packaging.json",
         "docs/format-evidence-cards/rules-spell-race-caste-runtime-anchors.md",
-        "src-tauri/tests/fixture_roundtrip.rs:rules_caste_export_mutates_only_owned_record_fields"
+        "src-tauri/tests/fixture_roundtrip.rs:rules_caste_export_mutates_only_owned_record_fields",
+        "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
+        "src-tauri/src/exporter.rs:imported_rule_exports_preserve_aligned_rows_and_malformed_tails",
+        "scripts/run_authoritative_scenario_proof.mjs"
       ],
       "fixtureGate": {
         "name": "caste-override-records",

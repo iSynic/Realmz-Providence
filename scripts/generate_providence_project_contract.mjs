@@ -65,7 +65,7 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "scenarioSpellOverride", "scenarioRaceOverride", "scenarioCasteOverride", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
@@ -75,6 +75,9 @@ const optionLabelRecordSchema = schema.$defs?.optionLabelRecord ?? {};
 const battleRecordSchema = schema.$defs?.battleRecord ?? {};
 const monsterRecordSchema = schema.$defs?.monsterRecord ?? {};
 const monsterDescriptionRecordSchema = schema.$defs?.monsterDescriptionRecord ?? {};
+const scenarioSpellOverrideSchema = schema.$defs?.scenarioSpellOverride ?? {};
+const scenarioRaceOverrideSchema = schema.$defs?.scenarioRaceOverride ?? {};
+const scenarioCasteOverrideSchema = schema.$defs?.scenarioCasteOverride ?? {};
 const encounterActionRowSchema = schema.$defs?.encounterActionRow ?? {};
 const simpleEncounterRecordSchema = schema.$defs?.simpleEncounterRecord ?? {};
 const complexEncounterRecordSchema = schema.$defs?.complexEncounterRecord ?? {};
@@ -117,6 +120,9 @@ expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabelReco
 expect(schema.properties?.battles?.items?.$ref === "#/$defs/battleRecord", "project battles must contain canonical battle DTOs");
 expect(schema.properties?.monsters?.items?.$ref === "#/$defs/monsterRecord", "project monsters must contain canonical monster DTOs");
 expect(schema.properties?.monsterDescriptions?.items?.$ref === "#/$defs/monsterDescriptionRecord", "project monsterDescriptions must contain canonical monster-description DTOs");
+expect(schema.properties?.spellOverrides?.items?.$ref === "#/$defs/scenarioSpellOverride", "project spellOverrides must contain canonical spell-override DTOs");
+expect(schema.properties?.raceOverrides?.items?.$ref === "#/$defs/scenarioRaceOverride", "project raceOverrides must contain canonical race-override DTOs");
+expect(schema.properties?.casteOverrides?.items?.$ref === "#/$defs/scenarioCasteOverride", "project casteOverrides must contain canonical caste-override DTOs");
 expect(schema.properties?.simpleEncounters?.items?.$ref === "#/$defs/simpleEncounterRecord", "project simpleEncounters must contain canonical simple-encounter DTOs");
 expect(schema.properties?.timedEncounters?.items?.$ref === "#/$defs/timedEncounterRecord", "project timedEncounters must contain canonical timed-encounter DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
@@ -226,6 +232,33 @@ expectSameArray(Object.keys(monsterDescriptionRecordSchema.properties ?? {}), mo
 expectSameArray(monsterDescriptionRecordSchema.required ?? [], ["id", "text"], "Monster-description authored field inventory");
 expect(monsterDescriptionRecordSchema.properties?.rawBytes?.minItems === 256 && monsterDescriptionRecordSchema.properties?.rawBytes?.maxItems === 256, "monster-description rawBytes must retain one complete Realmz Str255 row when compatibility bytes are present");
 expectSameArray(monsterDescriptionRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Monster-description omitted empty compatibility inventory");
+const spellOverrideFields = ["id", "range1", "range2", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetNum", "canRotate", "saveAdjust", "cannot", "resistAdjust", "cost", "damage1", "damage2", "powerDamage1", "powerDamage2", "duration1", "duration2", "powerDuration1", "powerDuration2", "spellLook1", "spellLook2", "sound1", "sound2", "targetType", "size", "special", "damageType", "spellClass", "inCombat", "inCamp", "displayName", "description", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(scenarioSpellOverrideSchema.properties ?? {}), spellOverrideFields, "Spell-override field inventory");
+expectSameArray(scenarioSpellOverrideSchema.required ?? [], spellOverrideFields.filter((field) => !["displayName", "description", "rawBytes", "authored", "provenance"].includes(field)), "Spell-override authored field inventory");
+expect(scenarioSpellOverrideSchema.properties?.rawBytes?.minItems === 30 && scenarioSpellOverrideSchema.properties?.rawBytes?.maxItems === 30, "spell-override rawBytes must retain one complete Data Spell row when compatibility bytes are present");
+expectSameArray(scenarioSpellOverrideSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Spell-override omitted empty compatibility inventory");
+const raceOverrideFields = ["id", "displayName", "plusMinusToHit", "specialAbility", "drvBonus", "attBonus", "minMax", "spare", "conditions", "maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "numOfAttacks", "canCaste", "ageRange", "ageChange", "canRegenerate", "defaultIconSet", "itemTypes", "descriptors", "spacer", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(scenarioRaceOverrideSchema.properties ?? {}), raceOverrideFields, "Race-override field inventory");
+expectSameArray(scenarioRaceOverrideSchema.required ?? [], raceOverrideFields.filter((field) => !["displayName", "spare", "spacer", "rawBytes", "authored", "provenance"].includes(field)), "Race-override authored field inventory");
+for (const [field, length] of [["plusMinusToHit", 8], ["specialAbility", 14], ["drvBonus", 8], ["attBonus", 6], ["minMax", 12], ["spare", 8], ["conditions", 40], ["numOfAttacks", 2], ["canCaste", 30], ["ageRange", 5], ["ageChange", 5], ["itemTypes", 2], ["spacer", 31]]) {
+  expect(scenarioRaceOverrideSchema.properties?.[field]?.minItems === length && scenarioRaceOverrideSchema.properties?.[field]?.maxItems === length, `race overrides must retain ${length} ${field} slots`);
+}
+expect(scenarioRaceOverrideSchema.properties?.ageRange?.items?.minItems === 2 && scenarioRaceOverrideSchema.properties?.ageRange?.items?.maxItems === 2, "race age ranges must retain two bounds per band");
+expect(scenarioRaceOverrideSchema.properties?.ageChange?.items?.minItems === 15 && scenarioRaceOverrideSchema.properties?.ageChange?.items?.maxItems === 15, "race age changes must retain fifteen values per band");
+expect(scenarioRaceOverrideSchema.properties?.rawBytes?.minItems === 408 && scenarioRaceOverrideSchema.properties?.rawBytes?.maxItems === 408, "race-override rawBytes must retain one complete Data Race row when compatibility bytes are present");
+expectSameArray(scenarioRaceOverrideSchema["x-providence-rust-optional"] ?? [], ["spare", "spacer"], "Race-override optional compatibility inventory");
+expectSameArray(scenarioRaceOverrideSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Race-override omitted empty compatibility inventory");
+const casteOverrideFields = ["id", "displayName", "specialAbility", "drvBonus", "attBonus", "spellcasters", "minMax", "conditions", "canUseMissile", "getsMissileBonus", "stamina", "strength", "dodge", "toHit", "missile", "hand2Hand", "spare1", "spare2", "casteClass", "minimumAgeGroup", "moveBonus", "magRes", "twoHand", "maxStaminaBonus", "bonusAttacks", "maxAttacks", "victory", "startMoney", "startItems", "attacks", "itemTypes", "defaultIcon", "maxSpellsAttacks", "spellsSoFar", "spacer", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(scenarioCasteOverrideSchema.properties ?? {}), casteOverrideFields, "Caste-override field inventory");
+expectSameArray(scenarioCasteOverrideSchema.required ?? [], casteOverrideFields.filter((field) => !["displayName", "spare1", "spare2", "spacer", "rawBytes", "authored", "provenance"].includes(field)), "Caste-override authored field inventory");
+for (const [field, length] of [["specialAbility", 2], ["drvBonus", 8], ["attBonus", 6], ["spellcasters", 4], ["minMax", 12], ["conditions", 40], ["stamina", 2], ["strength", 2], ["dodge", 2], ["toHit", 2], ["missile", 2], ["hand2Hand", 2], ["spare1", 2], ["spare2", 2], ["victory", 30], ["startItems", 20], ["attacks", 10], ["itemTypes", 2], ["spacer", 63]]) {
+  expect(scenarioCasteOverrideSchema.properties?.[field]?.minItems === length && scenarioCasteOverrideSchema.properties?.[field]?.maxItems === length, `caste overrides must retain ${length} ${field} slots`);
+}
+expect(scenarioCasteOverrideSchema.properties?.specialAbility?.items?.minItems === 14 && scenarioCasteOverrideSchema.properties?.specialAbility?.items?.maxItems === 14, "caste special-ability rows must retain fourteen values");
+expect(scenarioCasteOverrideSchema.properties?.spellcasters?.items?.minItems === 3 && scenarioCasteOverrideSchema.properties?.spellcasters?.items?.maxItems === 3, "caste spellcaster rows must retain three values");
+expect(scenarioCasteOverrideSchema.properties?.rawBytes?.minItems === 576 && scenarioCasteOverrideSchema.properties?.rawBytes?.maxItems === 576, "caste-override rawBytes must retain one complete Data Caste row when compatibility bytes are present");
+expectSameArray(scenarioCasteOverrideSchema["x-providence-rust-optional"] ?? [], ["spare1", "spare2", "spacer"], "Caste-override optional compatibility inventory");
+expectSameArray(scenarioCasteOverrideSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Caste-override omitted empty compatibility inventory");
 const encounterActionFields = ["slot", "rawCode", "id"];
 expectSameArray(Object.keys(encounterActionRowSchema.properties ?? {}), encounterActionFields, "Encounter action field inventory");
 expectSameArray(encounterActionRowSchema.required ?? [], encounterActionFields, "Encounter action required field inventory");
@@ -270,7 +303,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes", "TimedEncounterRecord.reservedWords", "TimedEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes", "TimedEncounterRecord.reservedWords", "TimedEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -333,6 +366,9 @@ for (const alias of [
   "export type BattleRecord = ProvidenceBattleRecord;",
   "export type MonsterRecord = ProvidenceMonsterRecord;",
   "export type MonsterDescriptionRecord = ProvidenceMonsterDescriptionRecord;",
+  "export type ScenarioSpellOverride = ProvidenceScenarioSpellOverride;",
+  "export type ScenarioRaceOverride = ProvidenceScenarioRaceOverride;",
+  "export type ScenarioCasteOverride = ProvidenceScenarioCasteOverride;",
   "export type EncounterActionRow = ProvidenceEncounterActionRow;",
   "export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;",
   "export type ComplexEncounterRecord = ProvidenceComplexEncounterRecord;",
@@ -365,6 +401,9 @@ expect(!typesSource.includes("export type OptionLabelRecord = {"), "types.ts mus
 expect(!typesSource.includes("export type BattleRecord = {"), "types.ts must not handwrite BattleRecord");
 expect(!typesSource.includes("export type MonsterRecord = {"), "types.ts must not handwrite MonsterRecord");
 expect(!typesSource.includes("export type MonsterDescriptionRecord = {"), "types.ts must not handwrite MonsterDescriptionRecord");
+expect(!typesSource.includes("export type ScenarioSpellOverride = {"), "types.ts must not handwrite ScenarioSpellOverride");
+expect(!typesSource.includes("export type ScenarioRaceOverride = {"), "types.ts must not handwrite ScenarioRaceOverride");
+expect(!typesSource.includes("export type ScenarioCasteOverride = {"), "types.ts must not handwrite ScenarioCasteOverride");
 expect(!typesSource.includes("export type EncounterActionRow = {"), "types.ts must not handwrite EncounterActionRow");
 expect(!typesSource.includes("export type SimpleEncounterRecord = {"), "types.ts must not handwrite SimpleEncounterRecord");
 expect(!typesSource.includes("export type ComplexEncounterRecord = {"), "types.ts must not handwrite ComplexEncounterRecord");
@@ -405,6 +444,9 @@ expectSameSet(rustGeneratedReExports, [
   "BattleRecord",
   "MonsterRecord",
   "MonsterDescriptionRecord",
+  "ScenarioSpellOverride",
+  "ScenarioRaceOverride",
+  "ScenarioCasteOverride",
   "EncounterActionRow",
   "SimpleEncounterRecord",
   "ComplexEncounterRecord",
@@ -438,6 +480,9 @@ expect(!rustProjectSource.includes("pub struct OptionLabelRecord {"), "project.r
 expect(!rustProjectSource.includes("pub struct BattleRecord {"), "project.rs must not handwrite BattleRecord");
 expect(!rustProjectSource.includes("pub struct MonsterRecord {"), "project.rs must not handwrite MonsterRecord");
 expect(!rustProjectSource.includes("pub struct MonsterDescriptionRecord {"), "project.rs must not handwrite MonsterDescriptionRecord");
+expect(!rustProjectSource.includes("pub struct ScenarioSpellOverride {"), "project.rs must not handwrite ScenarioSpellOverride");
+expect(!rustProjectSource.includes("pub struct ScenarioRaceOverride {"), "project.rs must not handwrite ScenarioRaceOverride");
+expect(!rustProjectSource.includes("pub struct ScenarioCasteOverride {"), "project.rs must not handwrite ScenarioCasteOverride");
 expect(!rustProjectSource.includes("pub struct EncounterActionRow {"), "project.rs must not handwrite EncounterActionRow");
 expect(!rustProjectSource.includes("pub struct SimpleEncounterRecord {"), "project.rs must not handwrite SimpleEncounterRecord");
 expect(!rustProjectSource.includes("pub struct ComplexEncounterRecord {"), "project.rs must not handwrite ComplexEncounterRecord");
@@ -558,6 +603,9 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_BATTLE_FIELDS = ${JSON.stringify(Object.keys(battleRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MONSTER_FIELDS = ${JSON.stringify(Object.keys(monsterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS = ${JSON.stringify(Object.keys(monsterDescriptionRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_SPELL_OVERRIDE_FIELDS = ${JSON.stringify(Object.keys(scenarioSpellOverrideSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_RACE_OVERRIDE_FIELDS = ${JSON.stringify(Object.keys(scenarioRaceOverrideSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_CASTE_OVERRIDE_FIELDS = ${JSON.stringify(Object.keys(scenarioCasteOverrideSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(simpleEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(complexEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_THIEF_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(thiefEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
@@ -623,6 +671,12 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_MONSTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterDescriptionRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_SPELL_OVERRIDE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioSpellOverrideSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_RACE_OVERRIDE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioRaceOverrideSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_CASTE_OVERRIDE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioCasteOverrideSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(simpleEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +

@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
+import { emptyCasteOverride, emptyRaceOverride, emptySpellOverride } from "../projectCommands/scenarioRulesCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -19,6 +20,55 @@ const rect: RandomRect = {
   sound: 17,
   text: 23
 };
+
+describe("browser rule-override writers", () => {
+  it("compile semantic records without embedded raw identity", () => {
+    const spell = {
+      ...emptySpellOverride(0),
+      range1: 200,
+      toHitBonus: -7,
+      inCombat: true,
+      rawBytes: new Array(30).fill(0xa5)
+    };
+    const race = {
+      ...emptyRaceOverride(0),
+      baseMove: 13,
+      spare: undefined,
+      spacer: undefined,
+      rawBytes: new Array(408).fill(0xa5)
+    };
+    const caste = {
+      ...emptyCasteOverride(0),
+      startMoney: 222,
+      spare1: undefined,
+      spare2: undefined,
+      spacer: undefined,
+      rawBytes: new Array(576).fill(0xa5)
+    };
+
+    const spellBytes = writeSpellOverrides([spell]);
+    const raceBytes = writeRaceOverrides([race]);
+    const casteBytes = writeCasteOverrides([caste]);
+
+    expect(Array.from(spellBytes.slice(0, 5))).toEqual([200, 0, 0, 249, 0]);
+    expect(spellBytes[28]).toBe(1);
+    expect(i16(raceBytes, 196)).toBe(13);
+    expect(raceBytes[96]).toBe(0);
+    expect(raceBytes[346]).toBe(0);
+    expect(i16(casteBytes, 384)).toBe(222);
+    expect(casteBytes[240]).toBe(0);
+    expect(casteBytes[450]).toBe(0);
+  });
+
+  it("reject malformed compatibility storage and fixed arrays", () => {
+    expect(() => writeSpellOverrides([{ ...emptySpellOverride(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+    expect(() => writeRaceOverrides([{ ...emptyRaceOverride(0), plusMinusToHit: [1] }]))
+      .toThrow("exactly 8 to-hit adjustments");
+    expect(() => writeCasteOverrides([{ ...emptyCasteOverride(0), spellcasters: [[1, 2, 3]] }]))
+      .toThrow("exactly 4 spellcaster rows");
+  });
+});
 
 describe("browser random-level writer", () => {
   it("compiles a fresh level entirely from semantic fields", () => {

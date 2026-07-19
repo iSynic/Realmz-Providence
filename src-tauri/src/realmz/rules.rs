@@ -1,10 +1,12 @@
-use crate::error::Result;
-use crate::project::{ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride};
-
 use super::record_bytes::{
     copy_fixed_bytes, i16_be, i32_be, provenance, read_i16_vec, read_i32_vec, write_i16_be,
     write_i16_vec, write_i32_be, write_i32_vec,
 };
+use crate::error::Result;
+use crate::project::{ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride};
+#[path = "rules_validation.rs"]
+mod validation;
+use validation::{validate_caste_storage, validate_compatibility_storage, validate_race_storage};
 
 pub const SPELL_BYTES: usize = 30;
 pub const SPELL_OVERRIDE_RECORDS: usize = 105;
@@ -68,10 +70,8 @@ pub fn write_spell_overrides(records: &[ScenarioSpellOverride]) -> Result<Vec<u8
     let max_id = records.iter().map(|record| record.id).max().unwrap_or(0);
     let mut output = vec![0u8; (max_id + 1) * SPELL_BYTES];
     for record in records {
+        validate_compatibility_storage("Custom spell", record.id, &record.raw_bytes, SPELL_BYTES)?;
         let start = record.id * SPELL_BYTES;
-        if record.raw_bytes.len() == SPELL_BYTES {
-            output[start..start + SPELL_BYTES].copy_from_slice(&record.raw_bytes);
-        }
         output[start] = record.range1;
         output[start + 1] = record.range2;
         output[start + 2] = record.queue_icon;
@@ -161,11 +161,9 @@ pub fn write_race_overrides(records: &[ScenarioRaceOverride]) -> Result<Vec<u8>>
     let max_id = records.iter().map(|record| record.id).max().unwrap_or(0);
     let mut output = vec![0u8; (max_id + 1) * RACE_BYTES];
     for record in records {
+        validate_race_storage(record)?;
         let start = record.id * RACE_BYTES;
         let target = &mut output[start..start + RACE_BYTES];
-        if record.raw_bytes.len() == RACE_BYTES {
-            target.copy_from_slice(&record.raw_bytes);
-        }
         write_i16_vec(target, 0, &record.plus_minus_to_hit, 8);
         write_i16_vec(target, 16, &record.special_ability, 14);
         write_i16_vec(target, 44, &record.drv_bonus, 8);
@@ -270,11 +268,9 @@ pub fn write_caste_overrides(records: &[ScenarioCasteOverride]) -> Result<Vec<u8
     let max_id = records.iter().map(|record| record.id).max().unwrap_or(0);
     let mut output = vec![0u8; (max_id + 1) * CASTE_BYTES];
     for record in records {
+        validate_caste_storage(record)?;
         let start = record.id * CASTE_BYTES;
         let target = &mut output[start..start + CASTE_BYTES];
-        if record.raw_bytes.len() == CASTE_BYTES {
-            target.copy_from_slice(&record.raw_bytes);
-        }
         write_i16_vec(
             target,
             0,
@@ -394,6 +390,7 @@ mod tests {
         assert_eq!(spells.len(), 2);
         assert_eq!(spells[0].range1, 3);
         assert!(spells[0].in_camp);
+        spells[0].raw_bytes.fill(0xa5);
         spells[0].authored = true;
         spells[0].cost = 11;
         let spell_output = write_spell_overrides(&spells).unwrap();
@@ -412,6 +409,7 @@ mod tests {
         assert_eq!(races[0].max_age, 88);
         assert_eq!(races[0].base_move, 14);
         assert_eq!(races[0].can_caste[0], 1);
+        races[0].raw_bytes.fill(0xa5);
         races[0].authored = true;
         races[0].base_move = 16;
         races[0].can_caste[1] = 1;
@@ -430,6 +428,7 @@ mod tests {
         assert_eq!(castes[0].victory[0], 3000);
         assert_eq!(castes[0].victory[1], 999999);
         assert_eq!(castes[0].start_money, 500);
+        castes[0].raw_bytes.fill(0xa5);
         castes[0].authored = true;
         castes[0].victory[2] = 125000;
         castes[0].start_money = 750;

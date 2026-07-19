@@ -603,8 +603,8 @@ export function normalizeBrowserProject(project: Project): Project {
   project.timedEncounters = (project.timedEncounters ?? []).map(normalizedTimedEncounter);
   project.questLabels ??= [];
   project.spellOverrides ??= [];
-  project.raceOverrides ??= [];
-  project.casteOverrides ??= [];
+  project.raceOverrides = (project.raceOverrides ?? []).map(normalizedRaceOverride);
+  project.casteOverrides = (project.casteOverrides ?? []).map(normalizedCasteOverride);
   project.maps = (project.maps ?? []).map((map) => ({
     ...map,
     name: canonicalMapLevelName(map.levelType, map.index)
@@ -681,6 +681,50 @@ function normalizedMonsterRecord(record: Project["monsters"][number]): Project["
     items: normalizedFixedArray(record.items, 6, 0),
     underneath: normalizedFixedArray(record.underneath, 4, 0),
     conditions: normalizedFixedArray(record.conditions, 40, 0)
+  };
+}
+
+function normalizedRaceOverride(record: Project["raceOverrides"][number]): Project["raceOverrides"][number] {
+  return {
+    ...record,
+    plusMinusToHit: normalizedFixedArray(record.plusMinusToHit, 8, 0),
+    specialAbility: normalizedFixedArray(record.specialAbility, 14, 0),
+    drvBonus: normalizedFixedArray(record.drvBonus, 8, 0),
+    attBonus: normalizedFixedArray(record.attBonus, 6, 0),
+    minMax: normalizedFixedArray(record.minMax, 12, 0),
+    spare: record.spare === undefined ? undefined : normalizedFixedArray(record.spare, 8, 0),
+    conditions: normalizedFixedArray(record.conditions, 40, 0),
+    numOfAttacks: normalizedFixedArray(record.numOfAttacks, 2, 0),
+    canCaste: normalizedFixedArray(record.canCaste, 30, 0),
+    ageRange: Array.from({ length: 5 }, (_, row) => normalizedFixedArray(record.ageRange?.[row], 2, 0)),
+    ageChange: Array.from({ length: 5 }, (_, row) => normalizedFixedArray(record.ageChange?.[row], 15, 0)),
+    itemTypes: normalizedFixedArray(record.itemTypes, 2, 0),
+    spacer: record.spacer === undefined ? undefined : normalizedFixedArray(record.spacer, 31, 0)
+  };
+}
+
+function normalizedCasteOverride(record: Project["casteOverrides"][number]): Project["casteOverrides"][number] {
+  return {
+    ...record,
+    specialAbility: Array.from({ length: 2 }, (_, row) => normalizedFixedArray(record.specialAbility?.[row], 14, 0)),
+    drvBonus: normalizedFixedArray(record.drvBonus, 8, 0),
+    attBonus: normalizedFixedArray(record.attBonus, 6, 0),
+    spellcasters: Array.from({ length: 4 }, (_, row) => normalizedFixedArray(record.spellcasters?.[row], 3, 0)),
+    minMax: normalizedFixedArray(record.minMax, 12, 0),
+    conditions: normalizedFixedArray(record.conditions, 40, 0),
+    stamina: normalizedFixedArray(record.stamina, 2, 0),
+    strength: normalizedFixedArray(record.strength, 2, 0),
+    dodge: normalizedFixedArray(record.dodge, 2, 0),
+    toHit: normalizedFixedArray(record.toHit, 2, 0),
+    missile: normalizedFixedArray(record.missile, 2, 0),
+    hand2Hand: normalizedFixedArray(record.hand2Hand, 2, 0),
+    spare1: record.spare1 === undefined ? undefined : normalizedFixedArray(record.spare1, 2, 0),
+    spare2: record.spare2 === undefined ? undefined : normalizedFixedArray(record.spare2, 2, 0),
+    victory: normalizedFixedArray(record.victory, 30, 0),
+    startItems: normalizedFixedArray(record.startItems, 20, 0),
+    attacks: normalizedFixedArray(record.attacks, 10, 0),
+    itemTypes: normalizedFixedArray(record.itemTypes, 2, 0),
+    spacer: record.spacer === undefined ? undefined : normalizedFixedArray(record.spacer, 63, 0)
   };
 }
 
@@ -1135,6 +1179,8 @@ function isGeneratedRuntimeCacheFile(name: string) {
 function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {
   project.ruleNames = defaultRuleNames(project.ruleNames);
   for (const spell of project.spellOverrides ?? []) {
+    const rawBytes = spell.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 30) errors.push(`Custom spell ${spell.id} has invalid 30-byte compatibility storage.`);
     if (spell.id < 0 || spell.id > 104) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..104 custom slot range.`);
     for (const [field, value] of [
       ["Fixed Range", spell.range1],
@@ -1177,6 +1223,8 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
   }
 
   for (const race of project.raceOverrides ?? []) {
+    const rawBytes = race.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 408) errors.push(`Race override ${race.id} has invalid 408-byte compatibility storage.`);
     if (race.id < 0 || race.id > 29) errors.push(`Race override ${race.id} is outside Data Race's 0..29 record range.`);
     validateLength(errors, `Race ${race.id} +/- To Hit`, race.plusMinusToHit, 8);
     validateLength(errors, `Race ${race.id} Special Ability`, race.specialAbility, 14);
@@ -1216,6 +1264,8 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
   }
 
   for (const caste of project.casteOverrides ?? []) {
+    const rawBytes = caste.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 576) errors.push(`Caste override ${caste.id} has invalid 576-byte compatibility storage.`);
     if (caste.id < 0 || caste.id > 29) errors.push(`Caste override ${caste.id} is outside Data Caste's 0..29 record range.`);
     validateMatrix(errors, `Caste ${caste.id} Special Ability`, caste.specialAbility, 2, 14, -32768, 32767, "signed 16-bit");
     validateMatrix(errors, `Caste ${caste.id} Spellcasters`, caste.spellcasters, 4, 3, -32768, 32767, "signed 16-bit");

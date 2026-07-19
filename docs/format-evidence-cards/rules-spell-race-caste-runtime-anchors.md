@@ -2,7 +2,7 @@
 
 ## User-Facing Unlock
 
-This note turns the current Rules tool from an inspect-only catalog into a clear authoring roadmap. Providence can safely expose spell, race, and caste pickers now, with shared-vs-scenario override badges, while holding back full write controls until Divinity writer evidence and fixtures prove the override file defaults.
+This note establishes the shared-vs-scenario override model for the Rules tool. Providence can author spell, race, and caste overrides now; pickers and badges should still make clear when a reference resolves to shared Realmz data versus a scenario-local definition.
 
 The most important editor correction is that Rules data is not one uniform scenario-local record family:
 
@@ -21,7 +21,7 @@ Realmz loads shared rule data at startup and resolves scenario overrides during 
 | Races | `:Data Files:Data Race` | Scenario `Data Race` for third-party scenarios | `struct race`; character creation, aging, movement, item usability, default icons. |
 | Castes | `:Data Files:Data Caste` | Scenario `Data Caste` for third-party scenarios | `struct caste`; class stats, level-up behavior, spellcasting, starting items, item usability. |
 
-Providence should label these records as library/override rules data. Scenario records that reference spells, races, or castes can use pickers immediately, but editing the rule definitions themselves needs a separate Rules authoring slice.
+Providence labels these records as library/override rules data. The canonical project owns authored scenario definitions, while shared Realmz rules remain selectable library defaults rather than copied scenario records.
 
 ## Realmz Source Anchors
 
@@ -188,7 +188,7 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 - Race IDs and caste IDs should resolve through scenario overrides first, then shared data.
 - `Data Race` scenario override length should be divisible by 408.
 - `Data Caste` scenario override length should be divisible by 576.
-- Scenario `Data Spell` should preserve resource/tail evidence and expose only the 105 source-backed spell records until packaging is decoded.
+- Fresh scenario `Data Spell` should contain exactly the 105 source-backed spell records; imported bytes beyond that table remain compatibility-annex evidence.
 - Caste starting item IDs should resolve through the item picker.
 - Race `cancaste` and caste/race restrictions should warn when a scenario setup requires an impossible race/caste pair.
 
@@ -196,12 +196,12 @@ Scenario `Data Spell` is 9,016 bytes in all 17 local scenarios that include it. 
 
 `docs/generated/rules-resource-coverage.json` now separates source-backed records from packaging evidence:
 
-- `Data Spell` owns the first `105 x 30` bytes as custom spell records for packed IDs `5101..5715`; the remaining bytes are preserved as packaging/tail evidence.
+- `Data Spell` owns the first `105 x 30` bytes as custom spell records for packed IDs `5101..5715`. Fresh output ends there; additional imported bytes are preserved only as compatibility-annex tail evidence.
 - `Data Spell.rsrc` / `Data Spell.rsf` contains seven `STR#` resources, IDs `5000..5006`, named for the Custom 1st through Custom 7th spell levels. Realmz source proves these are custom spell name lists, and fixture tests prove Providence can update one custom spell name by replacing only the intended `STR#` resource payload while preserving `Data Spell` record/tail bytes.
 - Scenario `Data Race` and `Data Caste` override files are complete fixed-row tables: `30 x 408` and `30 x 576` respectively. Divinity non-name creation fixtures wrote the sampled custom race/caste edits to scenario-local files while leaving global `Data Files:Data Race` and `Data Files:Data Caste` unchanged. No scenario `Data Race.rsrc` or `Data Caste.rsrc` packaging has been observed in the corpus.
 - Race names and caste names are not stored in the scenario override records. The `custom-race-caste-name-first-edit` Divinity fixture wrote custom names to `World of Realmz:Data Files:Custom Names.rsrc`: `STR# 129` named `Race` and `STR# 131` named `Caste`, while the scenario folder diff remained empty. Modern Realmz source opens `:Data Files:Custom Names` at startup and displayed race/caste labels come from `GetIndString(129, ...)` / `GetIndString(131, ...)`; because Divinity Format does not package that global support file into the scenario, Providence treats imported or edited names as project labels and does not export `Custom Names.rsrc`.
 
-Fixture tests now prove that current record writers mutate only owned spell, race, and caste byte ranges, preserve the `Data Spell` tail during export, and roundtrip custom spell names through `STR# 5000..5006`.
+Compiler tests now prove that an authored spell, race, or caste row is rebuilt completely from canonical semantics even when embedded compatibility bytes are poisoned. Export tests separately prove that unchanged imported rows and malformed tails are recovered only from the compatibility annex, while custom spell names roundtrip through `STR# 5000..5006`.
 
 ## Divinity Evidence Still Needed
 
@@ -238,4 +238,4 @@ The May 2026 Scenario screenshots show Divinity's Scenario area as a hub for sta
 1. Add shared-vs-override badges to Rules library records.
 2. Add spell/race/caste pickers used by Scripts, Encounters, Monsters, Items, and Scenario restrictions.
 3. Add Rules validation using source-backed resolver behavior.
-4. Add full Rules editors only after Divinity binary write evidence and writer fixtures are ready.
+4. Continue improving Rules field labels and grouping as Divinity UI evidence becomes available; native byte ownership is no longer blocked on that UI archaeology.

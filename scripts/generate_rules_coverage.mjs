@@ -150,7 +150,7 @@ const output = {
       customRecords: SPELL_RECORDS,
       customRecordBytes: SPELL_RECORD_BYTES,
       packedIdRange: "5101..5715",
-      tailPolicy: "preserved-known until Divinity resource/name packaging is mapped"
+      tailPolicy: "omitted from fresh output; preserved only from an imported compatibility annex"
     },
     race: { file: "Data Race", recordBytes: RACE_BYTES, records: RACE_RECORDS, expectedBytes: RACE_BYTES * RACE_RECORDS },
     caste: { file: "Data Caste", recordBytes: CASTE_BYTES, records: CASTE_RECORDS, expectedBytes: CASTE_BYTES * CASTE_RECORDS }
@@ -208,12 +208,25 @@ const output = {
     }
   },
   writerGates: {
-    spellRecords: "writer-safe-fields-fixture-proven",
-    spellTail: "preserve-only",
+    spellRecords: "complete-semantic-writer-fixture-proven",
+    spellTail: "imported-annex-only",
     spellResources: "spell-name-str-writer-safe-existing-resource",
-    raceRecords: "writer-safe-fields-fixture-proven",
-    casteRecords: "writer-safe-fields-fixture-proven",
+    raceRecords: "complete-semantic-writer-fixture-proven",
+    casteRecords: "complete-semantic-writer-fixture-proven",
     raceCasteNames: "project-label-no-export"
+  },
+  authoritativeCompiler: {
+    fresh: "Spell, race, and caste rows compile every native byte from canonical semantic fields; rawBytes is omitted and never consulted.",
+    imported: "Authored rows replace their complete native row. Unchanged imported rows and malformed file tails are restored only from the compatibility annex.",
+    evidence: [
+      "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
+      "src-tauri/src/realmz/rules_validation.rs:rule_writers_reject_malformed_compatibility_and_fixed_arrays",
+      "src-tauri/src/exporter.rs:imported_rule_exports_preserve_aligned_rows_and_malformed_tails",
+      "src-tauri/src/exporter.rs:imported_spell_export_bounds_legacy_rows_and_tail_to_annex",
+      "src/editor/browser/binaryWriters.test.ts",
+      "scripts/check_browser_scenario_package.mjs",
+      "scripts/run_authoritative_scenario_proof.mjs"
+    ]
   },
   summary: {
     scenariosWithRulesData: scenarios.length,
@@ -250,7 +263,7 @@ function classifyRuleFile(fileName, config, bytes) {
     records,
     trailingBytes,
     status: malformed ? "malformed-preserve-only" : config.status,
-    writerStatus: malformed ? "preserve-only" : "writer-safe-fields-fixture-proven"
+    writerStatus: malformed ? "preserve-only" : "complete-semantic-writer-fixture-proven"
   };
 }
 

@@ -846,7 +846,10 @@ fn write_race_overrides_for_export(
         annex,
         "Data Race",
         crate::realmz::RACE_BYTES,
-        records.iter().map(|record| record.id).collect(),
+        records
+            .iter()
+            .map(|record| (record.id, record.authored))
+            .collect(),
         write_race_overrides(records)?,
     )
 }
@@ -872,7 +875,10 @@ fn write_caste_overrides_for_export(
         annex,
         "Data Caste",
         crate::realmz::CASTE_BYTES,
-        records.iter().map(|record| record.id).collect(),
+        records
+            .iter()
+            .map(|record| (record.id, record.authored))
+            .collect(),
         write_caste_overrides(records)?,
     )
 }
@@ -883,10 +889,10 @@ fn write_rule_overrides_for_export(
     annex: Option<&CompatibilityAnnexSnapshot>,
     name: &str,
     record_bytes: usize,
-    record_ids: Vec<usize>,
+    records: Vec<(usize, bool)>,
     encoded: Vec<u8>,
 ) -> Result<()> {
-    if record_ids.is_empty() {
+    if records.is_empty() {
         return Ok(());
     }
     let raw = match annex {
@@ -899,15 +905,18 @@ fn write_rule_overrides_for_export(
     let mut body = raw;
     let body_bytes = body.len() / record_bytes * record_bytes;
     let tail = body.split_off(body_bytes);
-    let required_body_bytes = record_ids
+    let required_body_bytes = records
         .iter()
-        .map(|id| (id + 1) * record_bytes)
+        .map(|(id, _)| (id + 1) * record_bytes)
         .max()
         .unwrap_or(0);
     if body.len() < required_body_bytes {
         body.resize(required_body_bytes, 0);
     }
-    for id in record_ids {
+    for (id, authored) in records {
+        if !authored {
+            continue;
+        }
         let start = id * record_bytes;
         let end = start + record_bytes;
         let record = encoded.get(start..end).ok_or_else(|| {
@@ -933,8 +942,8 @@ fn write_spell_overrides_preserving_tail(
             record.id
         )));
     }
-    let overlay = write_spell_overrides(records)?;
-    if overlay.is_empty() {
+    let encoded = write_spell_overrides(records)?;
+    if encoded.is_empty() {
         return Ok(());
     }
     let Some(mut bytes) = (match annex {
@@ -947,10 +956,22 @@ fn write_spell_overrides_preserving_tail(
             write_fresh_spell_overrides(records)?,
         );
     };
-    if bytes.len() < overlay.len() {
-        bytes.resize(overlay.len(), 0);
+    let body_bytes = bytes.len() / crate::realmz::SPELL_BYTES * crate::realmz::SPELL_BYTES;
+    let tail = bytes.split_off(body_bytes);
+    let required_body_bytes = records
+        .iter()
+        .map(|record| (record.id + 1) * crate::realmz::SPELL_BYTES)
+        .max()
+        .unwrap_or(0);
+    if bytes.len() < required_body_bytes {
+        bytes.resize(required_body_bytes, 0);
     }
-    bytes[..overlay.len()].copy_from_slice(&overlay);
+    for record in records.iter().filter(|record| record.authored) {
+        let start = record.id * crate::realmz::SPELL_BYTES;
+        let end = start + crate::realmz::SPELL_BYTES;
+        bytes[start..end].copy_from_slice(&encoded[start..end]);
+    }
+    bytes.extend_from_slice(&tail);
     write_if_nonempty(manifest, "Data Spell", bytes)
 }
 
@@ -2449,6 +2470,7 @@ mod tests {
         race_source.extend_from_slice(&[0xde, 0xad]);
         fs::write(raw_dir.join("Data Race"), &race_source).unwrap();
         let mut race = crate::realmz::parse_race_overrides(&race_source)[1].clone();
+        race.raw_bytes.fill(0x11);
         race.authored = true;
         race.base_move = 12;
 
@@ -2456,6 +2478,7 @@ mod tests {
         caste_source.extend_from_slice(&[0xbe, 0xef, 0x01]);
         fs::write(raw_dir.join("Data Caste"), &caste_source).unwrap();
         let mut caste = crate::realmz::parse_caste_overrides(&caste_source)[1].clone();
+        caste.raw_bytes.fill(0x22);
         caste.authored = true;
         caste.start_money = 42;
 
@@ -2473,11 +2496,55 @@ mod tests {
             &race_source[..crate::realmz::RACE_BYTES]
         );
         assert_eq!(&race_output[race_output.len() - 2..], &[0xde, 0xad]);
+        let race_authored = &race_output[crate::realmz::RACE_BYTES..2 * crate::realmz::RACE_BYTES];
+        assert_eq!(crate::realmz::i16_be(race_authored, 196), 12);
+        assert_eq!(race_authored[350], 0x5a);
         assert_eq!(
             &caste_output[..crate::realmz::CASTE_BYTES],
             &caste_source[..crate::realmz::CASTE_BYTES]
         );
         assert_eq!(&caste_output[caste_output.len() - 3..], &[0xbe, 0xef, 0x01]);
+        let caste_authored =
+            &caste_output[crate::realmz::CASTE_BYTES..2 * crate::realmz::CASTE_BYTES];
+        assert_eq!(crate::realmz::i16_be(caste_authored, 384), 42);
+        assert_eq!(caste_authored[500], 0x6b);
+    }
+
+    #[test]
+    fn imported_spell_export_bounds_legacy_rows_and_tail_to_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+
+        let mut source = vec![0xa5; 2 * crate::realmz::SPELL_BYTES];
+        source[28] = 1;
+        source[29] = 1;
+        source[crate::realmz::SPELL_BYTES + 28] = 1;
+        source[crate::realmz::SPELL_BYTES + 29] = 0;
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data Spell"), &source).unwrap();
+
+        let mut spells = crate::realmz::parse_spell_overrides(&source);
+        spells[0].raw_bytes.fill(0x11);
+        spells[1].raw_bytes.fill(0x22);
+        spells[1].cost = 42;
+        spells[1].authored = true;
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let mut manifest = NativeScenarioManifest::default();
+        write_spell_overrides_preserving_tail(&mut manifest, Some(&annex), &spells).unwrap();
+        let output = &manifest.files()["Data Spell"];
+
+        assert_eq!(
+            &output[..crate::realmz::SPELL_BYTES],
+            &source[..crate::realmz::SPELL_BYTES]
+        );
+        assert_eq!(output[crate::realmz::SPELL_BYTES + 10], 42);
+        assert_eq!(output[crate::realmz::SPELL_BYTES], 0xa5);
+        assert_eq!(
+            &output[2 * crate::realmz::SPELL_BYTES..],
+            &[0xde, 0xad, 0xbe]
+        );
     }
 
     #[test]

@@ -16,7 +16,7 @@ export function writeFreshSpellOverrides(records: ScenarioSpellOverride[]) {
   const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= CUSTOM_SPELL_RECORDS);
   if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..104 custom slot range.`);
   if (records.length === 0) return new Uint8Array();
-  const overlay = writeSpellOverrides(records.map((record) => ({ ...record, rawBytes: [] })));
+  const overlay = writeSpellOverrides(records);
   const output = new Uint8Array(CUSTOM_SPELL_RECORDS * SPELL_RECORD_BYTES);
   output.set(overlay);
   return output;
@@ -40,7 +40,7 @@ function writeFreshRuleOverrides<T extends { id: number; rawBytes?: number[] }>(
   const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= RULE_OVERRIDE_RECORDS);
   if (invalid) throw new Error(`${fileName} record ${invalid.id} is outside the fresh 0..29 scenario slot range.`);
   if (records.length === 0) return new Uint8Array();
-  const encoded = writer(records.map((record) => ({ ...record, rawBytes: [] })));
+  const encoded = writer(records);
   const output = ruleCompilerBaselineBytes(family, recordBytes, RULE_OVERRIDE_RECORDS);
   for (const record of records) {
     const start = record.id * recordBytes;

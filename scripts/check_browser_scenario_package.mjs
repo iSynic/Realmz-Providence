@@ -956,7 +956,7 @@ const authoredRace = raceRecord(1, {
   twoHand: 18,
   missile: -19,
   numOfAttacks: [2, 3],
-  canCaste: [1, 0, 1],
+  canCaste: Array.from({ length: 30 }, (_, index) => index < 3 ? [1, 0, 1][index] : 0),
   ageRange: [[1, 10], [11, 20], [21, 30], [31, 40], [41, 50]],
   ageChange: Array.from({ length: 5 }, (_, band) => Array.from({ length: 15 }, (_, index) => band * 15 + index - 20)),
   canRegenerate: 1,
@@ -992,8 +992,8 @@ const authoredCaste = casteRecord(1, {
   maxAttacks: 22,
   victory: Array.from({ length: 30 }, (_, index) => index === 2 ? 125000 : index * 1000),
   startMoney: 750,
-  startItems: [42, 43, 44],
-  attacks: [1, 2, 3, 4, 5],
+  startItems: Array.from({ length: 20 }, (_, index) => [42, 43, 44][index] ?? 0),
+  attacks: Array.from({ length: 10 }, (_, index) => [1, 2, 3, 4, 5][index] ?? 0),
   itemTypes: [0x05060708, -3],
   defaultIcon: -401,
   maxSpellsAttacks: 23,
@@ -1033,11 +1033,11 @@ expect(spellNames[1] === "Browser Bolt", "Custom spell display name should updat
 expect(writtenRaces?.byteLength === 816, "Written Data Race should retain source row count");
 expect(writtenCastes?.byteLength === 1152, "Written Data Caste should retain source row count");
 expect(bytesEqual(writtenRaces?.slice(0, 408), sourceRaces.slice(0, 408)), "Unauthored race row should remain byte-identical");
-expect(bytesEqual(writtenRaces?.slice(408, 816), raceRow(authoredRace, sourceRaces.slice(408, 816))), "Authored race row should encode race fields and preserve gaps");
-expect(writtenRaces?.[408 + 346] === 0xab, "Authored race row should preserve raw bytes outside known fields");
+expect(bytesEqual(writtenRaces?.slice(408, 816), raceRow(authoredRace)), "Authored race row should compile entirely from semantic fields");
+expect(writtenRaces?.[408 + 346] === 0, "Authored race row should ignore poisoned embedded compatibility bytes");
 expect(bytesEqual(writtenCastes?.slice(0, 576), sourceCastes.slice(0, 576)), "Unauthored caste row should remain byte-identical");
-expect(bytesEqual(writtenCastes?.slice(576, 1152), casteRow(authoredCaste, sourceCastes.slice(576, 1152))), "Authored caste row should encode caste fields and preserve gaps");
-expect(writtenCastes?.[576 + 450] === 0xcd, "Authored caste row should preserve raw bytes outside known fields");
+expect(bytesEqual(writtenCastes?.slice(576, 1152), casteRow(authoredCaste)), "Authored caste row should compile entirely from semantic fields");
+expect(writtenCastes?.[576 + 450] === 0, "Authored caste row should ignore poisoned embedded compatibility bytes");
 
 const authoredSimpleEncounter = simpleEncounterRecord(1, {
   actions: [{ slot: 3, rawCode: -2, id: 0x0304 }],
@@ -2058,14 +2058,14 @@ function raceRecord(id, overrides = {}) {
   };
 }
 
-function raceRow(record, rawBytes = new Uint8Array(408)) {
+function raceRow(record) {
   const output = new Uint8Array(408);
-  output.set(rawBytes.slice(0, 408));
   setI16Array(output, 0, record.plusMinusToHit, 8);
   setI16Array(output, 16, record.specialAbility, 14);
   setI16Array(output, 44, record.drvBonus, 8);
   setI16Array(output, 60, record.attBonus, 6);
   setI16Array(output, 72, record.minMax, 12);
+  if (record.spare) setI16Array(output, 96, record.spare, 8);
   setI16Array(output, 112, record.conditions, 40);
   setI16(output, 192, record.maxAge);
   setI16(output, 194, record.doesNotDie);
@@ -2084,6 +2084,7 @@ function raceRow(record, rawBytes = new Uint8Array(408)) {
   setI32(output, 336, record.itemTypes[0] ?? 0);
   setI32(output, 340, record.itemTypes[1] ?? 0);
   setI16(output, 344, record.descriptors);
+  if (record.spacer) setI16Array(output, 346, record.spacer, 31);
   return output;
 }
 
@@ -2126,9 +2127,8 @@ function casteRecord(id, overrides = {}) {
   };
 }
 
-function casteRow(record, rawBytes = new Uint8Array(576)) {
+function casteRow(record) {
   const output = new Uint8Array(576);
-  output.set(rawBytes.slice(0, 576));
   setI16Array(output, 0, record.specialAbility[0] ?? [], 14);
   setI16Array(output, 28, record.specialAbility[1] ?? [], 14);
   setI16Array(output, 56, record.drvBonus, 8);
@@ -2144,6 +2144,8 @@ function casteRow(record, rawBytes = new Uint8Array(576)) {
   setI16Array(output, 228, record.toHit, 2);
   setI16Array(output, 232, record.missile, 2);
   setI16Array(output, 236, record.hand2Hand, 2);
+  if (record.spare1) setI16Array(output, 240, record.spare1, 2);
+  if (record.spare2) setI16Array(output, 244, record.spare2, 2);
   setI16(output, 248, record.casteClass);
   setI16(output, 250, record.minimumAgeGroup);
   setI16(output, 252, record.moveBonus);
@@ -2161,6 +2163,7 @@ function casteRow(record, rawBytes = new Uint8Array(576)) {
   setI16(output, 444, record.defaultIcon);
   setI16(output, 446, record.maxSpellsAttacks);
   setI16(output, 448, record.spellsSoFar);
+  if (record.spacer) setI16Array(output, 450, record.spacer, 63);
   return output;
 }
 

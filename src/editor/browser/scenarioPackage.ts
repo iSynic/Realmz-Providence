@@ -21,6 +21,7 @@ import {
   SCENARIO_SHELL_BYTES,
   SHOP_RECORD_BYTES,
   SIMPLE_ENCOUNTER_RECORD_BYTES,
+  SPELL_RECORD_BYTES,
   TREASURE_RECORD_BYTES,
   THIEF_ENCOUNTER_RECORD_BYTES,
   TIMED_ENCOUNTER_RECORD_BYTES,
@@ -538,14 +539,11 @@ function writeCustomSpellNameResources(project: Project, annex: BrowserCompatibi
 function writeSpellOverridesForExport(records: ScenarioSpellOverride[], annex: BrowserCompatibilityAnnex | null) {
   const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= CUSTOM_SPELL_RECORDS);
   if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..104 custom slot range.`);
-  const overlay = writeSpellOverrides(records);
-  const raw = rawSourceBytes("Data Spell", annex);
-  if (raw) return preserveRawOverlay("Data Spell", overlay, annex);
-  return writeFreshSpellOverrides(records);
+  return writeRuleOverridesForExport("Data Spell", records, SPELL_RECORD_BYTES, annex, writeSpellOverrides, writeFreshSpellOverrides);
 }
 
-function writeRuleOverridesForExport<T extends { id: number; rawBytes?: number[] }>(
-  fileName: "Data Race" | "Data Caste",
+function writeRuleOverridesForExport<T extends { id: number; authored?: boolean }>(
+  fileName: "Data Spell" | "Data Race" | "Data Caste",
   records: T[],
   recordBytes: number,
   annex: BrowserCompatibilityAnnex | null,
@@ -563,6 +561,7 @@ function writeRuleOverridesForExport<T extends { id: number; rawBytes?: number[]
   const body = new Uint8Array(requiredBodyBytes);
   body.set(raw.slice(0, sourceBodyBytes));
   for (const record of records) {
+    if (!record.authored) continue;
     const start = record.id * recordBytes;
     body.set(encoded.slice(start, start + recordBytes), start);
   }

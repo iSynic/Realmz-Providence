@@ -839,6 +839,7 @@ fn rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail() {
     let original = fs::read(source.join("Data Spell")).unwrap();
     let old_cost = project.spell_overrides[0].cost;
     project.spell_overrides[0].cost = old_cost.wrapping_add(1);
+    project.spell_overrides[0].authored = true;
     export_project(
         &project_dir,
         &project,
@@ -1073,6 +1074,7 @@ fn rules_race_export_mutates_only_owned_record_fields() {
     );
     let original = fs::read(source.join("Data Race")).unwrap();
     project.race_overrides[0].base_move = project.race_overrides[0].base_move.wrapping_add(1);
+    project.race_overrides[0].authored = true;
     if project.race_overrides[0].can_caste.len() > 1 {
         project.race_overrides[0].can_caste[1] ^= 1;
     }
@@ -1118,6 +1120,7 @@ fn rules_caste_export_mutates_only_owned_record_fields() {
     );
     let original = fs::read(source.join("Data Caste")).unwrap();
     project.caste_overrides[0].victory[0] = project.caste_overrides[0].victory[0].wrapping_add(1);
+    project.caste_overrides[0].authored = true;
     project.caste_overrides[0].start_items[0] =
         project.caste_overrides[0].start_items[0].wrapping_add(1);
     project.caste_overrides[0].attacks[0] ^= 1;

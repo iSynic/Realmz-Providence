@@ -5,10 +5,11 @@ pub use crate::generated::project_contract::{
     BattleRecord, ComplexEncounterRecord, Confidence, EncounterActionRow, GlobalMacroHook,
     LandLayout, LevelType, MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender,
     MessageRecord, MonsterDescriptionRecord, MonsterRecord, OptionLabelRecord, Provenance,
-    RandomLevel, RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks,
-    ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
-    ShopRecord, SimpleEncounterRecord, ThiefEncounterRecord, TimedEncounterLocationKind,
-    TimedEncounterRecord, TreasureRecord,
+    RandomLevel, RandomRect, RenderMode, ScenarioCasteOverride, ScenarioContactInfo,
+    ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRaceOverride,
+    ScenarioRestrictions, ScenarioShell, ScenarioSpellOverride, ScenarioSupportFile, ShopRecord,
+    SimpleEncounterRecord, ThiefEncounterRecord, TimedEncounterLocationKind, TimedEncounterRecord,
+    TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -819,137 +820,6 @@ pub struct QuestLabel {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ScenarioSpellOverride {
-    pub id: usize,
-    pub range1: u8,
-    pub range2: u8,
-    pub queue_icon: u8,
-    pub to_hit_bonus: i8,
-    pub save_bonus: i8,
-    pub fixed_target_num: u8,
-    pub can_rotate: u8,
-    pub save_adjust: i8,
-    pub cannot: u8,
-    pub resist_adjust: i8,
-    pub cost: u8,
-    pub damage1: u8,
-    pub damage2: u8,
-    pub power_damage1: u8,
-    pub power_damage2: u8,
-    pub duration1: u8,
-    pub duration2: u8,
-    pub power_duration1: u8,
-    pub power_duration2: u8,
-    pub spell_look1: u8,
-    pub spell_look2: u8,
-    pub sound1: u8,
-    pub sound2: u8,
-    pub target_type: u8,
-    pub size: u8,
-    pub special: u8,
-    pub damage_type: u8,
-    pub spell_class: u8,
-    pub in_combat: bool,
-    pub in_camp: bool,
-    #[serde(default)]
-    pub display_name: String,
-    #[serde(default)]
-    pub description: String,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ScenarioRaceOverride {
-    pub id: usize,
-    #[serde(default)]
-    pub display_name: String,
-    pub plus_minus_to_hit: Vec<i16>,
-    pub special_ability: Vec<i16>,
-    pub drv_bonus: Vec<i16>,
-    pub att_bonus: Vec<i16>,
-    pub min_max: Vec<i16>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub spare: Option<Vec<i16>>,
-    pub conditions: Vec<i16>,
-    pub max_age: i16,
-    pub does_not_die: i16,
-    pub base_move: i16,
-    pub mag_res: i16,
-    pub two_hand: i16,
-    pub missile: i16,
-    pub num_of_attacks: Vec<i16>,
-    pub can_caste: Vec<u8>,
-    pub age_range: Vec<Vec<i16>>,
-    pub age_change: Vec<Vec<i8>>,
-    pub can_regenerate: u8,
-    pub default_icon_set: i16,
-    pub item_types: Vec<i32>,
-    pub descriptors: i16,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub spacer: Option<Vec<i16>>,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ScenarioCasteOverride {
-    pub id: usize,
-    #[serde(default)]
-    pub display_name: String,
-    pub special_ability: Vec<Vec<i16>>,
-    pub drv_bonus: Vec<i16>,
-    pub att_bonus: Vec<i16>,
-    pub spellcasters: Vec<Vec<i16>>,
-    pub min_max: Vec<i16>,
-    pub conditions: Vec<i16>,
-    pub can_use_missile: i16,
-    pub gets_missile_bonus: i16,
-    pub stamina: Vec<i16>,
-    pub strength: Vec<i16>,
-    pub dodge: Vec<i16>,
-    pub to_hit: Vec<i16>,
-    pub missile: Vec<i16>,
-    pub hand2_hand: Vec<i16>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub spare1: Option<Vec<i16>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub spare2: Option<Vec<i16>>,
-    pub caste_class: i16,
-    pub minimum_age_group: i16,
-    pub move_bonus: i16,
-    pub mag_res: i16,
-    pub two_hand: i16,
-    pub max_stamina_bonus: i16,
-    pub bonus_attacks: i16,
-    pub max_attacks: i16,
-    pub victory: Vec<i32>,
-    pub start_money: i16,
-    pub start_items: Vec<i16>,
-    pub attacks: Vec<u8>,
-    pub item_types: Vec<i32>,
-    pub default_icon: i16,
-    pub max_spells_attacks: i16,
-    pub spells_so_far: i16,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub spacer: Option<Vec<i16>>,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct RuleNames {
     #[serde(default = "default_custom_names_source_file")]
     pub source_file: String,
@@ -1341,6 +1211,12 @@ impl ProvidenceProject {
                 normalize_monster(record);
             }
         }
+        for record in &mut self.race_overrides {
+            normalize_race_override(record);
+        }
+        for record in &mut self.caste_overrides {
+            normalize_caste_override(record);
+        }
         for record in &mut self.complex_encounters {
             normalize_complex_encounter(record);
         }
@@ -1420,6 +1296,66 @@ fn normalize_monster(record: &mut MonsterRecord) {
     resize_vec(&mut record.items, 6, 0);
     resize_vec(&mut record.underneath, 4, 0);
     resize_vec(&mut record.conditions, 40, 0);
+}
+
+fn normalize_race_override(record: &mut ScenarioRaceOverride) {
+    resize_vec(&mut record.plus_minus_to_hit, 8, 0);
+    resize_vec(&mut record.special_ability, 14, 0);
+    resize_vec(&mut record.drv_bonus, 8, 0);
+    resize_vec(&mut record.att_bonus, 6, 0);
+    resize_vec(&mut record.min_max, 12, 0);
+    if let Some(spare) = &mut record.spare {
+        resize_vec(spare, 8, 0);
+    }
+    resize_vec(&mut record.conditions, 40, 0);
+    resize_vec(&mut record.num_of_attacks, 2, 0);
+    resize_vec(&mut record.can_caste, 30, 0);
+    resize_vec(&mut record.age_range, 5, Vec::new());
+    for row in &mut record.age_range {
+        resize_vec(row, 2, 0);
+    }
+    resize_vec(&mut record.age_change, 5, Vec::new());
+    for row in &mut record.age_change {
+        resize_vec(row, 15, 0);
+    }
+    resize_vec(&mut record.item_types, 2, 0);
+    if let Some(spacer) = &mut record.spacer {
+        resize_vec(spacer, 31, 0);
+    }
+}
+
+fn normalize_caste_override(record: &mut ScenarioCasteOverride) {
+    resize_vec(&mut record.special_ability, 2, Vec::new());
+    for row in &mut record.special_ability {
+        resize_vec(row, 14, 0);
+    }
+    resize_vec(&mut record.drv_bonus, 8, 0);
+    resize_vec(&mut record.att_bonus, 6, 0);
+    resize_vec(&mut record.spellcasters, 4, Vec::new());
+    for row in &mut record.spellcasters {
+        resize_vec(row, 3, 0);
+    }
+    resize_vec(&mut record.min_max, 12, 0);
+    resize_vec(&mut record.conditions, 40, 0);
+    resize_vec(&mut record.stamina, 2, 0);
+    resize_vec(&mut record.strength, 2, 0);
+    resize_vec(&mut record.dodge, 2, 0);
+    resize_vec(&mut record.to_hit, 2, 0);
+    resize_vec(&mut record.missile, 2, 0);
+    resize_vec(&mut record.hand2_hand, 2, 0);
+    if let Some(spare1) = &mut record.spare1 {
+        resize_vec(spare1, 2, 0);
+    }
+    if let Some(spare2) = &mut record.spare2 {
+        resize_vec(spare2, 2, 0);
+    }
+    resize_vec(&mut record.victory, 30, 0);
+    resize_vec(&mut record.start_items, 20, 0);
+    resize_vec(&mut record.attacks, 10, 0);
+    resize_vec(&mut record.item_types, 2, 0);
+    if let Some(spacer) = &mut record.spacer {
+        resize_vec(spacer, 63, 0);
+    }
 }
 
 fn resize_vec<T: Clone>(values: &mut Vec<T>, length: usize, default: T) {
@@ -1520,9 +1456,10 @@ fn normalize_shop_slots(record: &mut ShopRecord) {
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_map_record_markers, normalize_monster, normalize_scenario_item_spare_words,
-        normalize_shop_slots, normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord,
-        MapRecordRect, ProjectOrigin, Provenance, SourceSnapshot,
+        normalize_caste_override, normalize_map_record_markers, normalize_monster,
+        normalize_race_override, normalize_scenario_item_spare_words, normalize_shop_slots,
+        normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord, MapRecordRect,
+        ProjectOrigin, Provenance, SourceSnapshot,
     };
 
     #[test]
@@ -1619,6 +1556,38 @@ mod tests {
         assert_eq!(record.items.len(), 6);
         assert_eq!(record.underneath.len(), 4);
         assert_eq!(record.conditions.len(), 40);
+    }
+
+    #[test]
+    fn rule_normalization_backfills_canonical_fixed_arrays() {
+        let mut race =
+            crate::realmz::parse_race_overrides(&vec![0; crate::realmz::RACE_BYTES]).remove(0);
+        race.plus_minus_to_hit = vec![1];
+        race.age_range = vec![vec![2]];
+        race.age_change = vec![vec![3]];
+        race.spacer = Some(vec![4]);
+        normalize_race_override(&mut race);
+        assert_eq!(race.plus_minus_to_hit, [1, 0, 0, 0, 0, 0, 0, 0]);
+        assert_eq!(race.age_range.len(), 5);
+        assert_eq!(race.age_range[0], [2, 0]);
+        assert_eq!(race.age_change[0].len(), 15);
+        assert_eq!(race.spacer.as_ref().unwrap().len(), 31);
+
+        let mut caste =
+            crate::realmz::parse_caste_overrides(&vec![0; crate::realmz::CASTE_BYTES]).remove(0);
+        caste.special_ability = vec![vec![5]];
+        caste.spellcasters = vec![vec![6]];
+        caste.victory = vec![7];
+        caste.start_items = vec![8];
+        caste.spacer = Some(vec![9]);
+        normalize_caste_override(&mut caste);
+        assert_eq!(caste.special_ability.len(), 2);
+        assert_eq!(caste.special_ability[0].len(), 14);
+        assert_eq!(caste.spellcasters.len(), 4);
+        assert_eq!(caste.spellcasters[0], [6, 0, 0]);
+        assert_eq!(caste.victory.len(), 30);
+        assert_eq!(caste.start_items.len(), 20);
+        assert_eq!(caste.spacer.as_ref().unwrap().len(), 63);
     }
 
     #[test]

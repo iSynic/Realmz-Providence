@@ -15,6 +15,9 @@ import type {
   ProvidenceMonsterDescriptionRecord,
   ProvidenceMonsterRecord,
   ProvidenceOptionLabelRecord,
+  ProvidenceScenarioCasteOverride,
+  ProvidenceScenarioRaceOverride,
+  ProvidenceScenarioSpellOverride,
   ProvidenceProjectOrigin,
   ProvidenceProjectSource,
   ProvidenceProvenance,
@@ -56,6 +59,9 @@ export type ShopRecord = ProvidenceShopRecord;
 export type MessageRecord = ProvidenceMessageRecord;
 export type MonsterRecord = ProvidenceMonsterRecord;
 export type MonsterDescriptionRecord = ProvidenceMonsterDescriptionRecord;
+export type ScenarioSpellOverride = ProvidenceScenarioSpellOverride;
+export type ScenarioRaceOverride = ProvidenceScenarioRaceOverride;
+export type ScenarioCasteOverride = ProvidenceScenarioCasteOverride;
 export type OptionLabelRecord = ProvidenceOptionLabelRecord;
 export type BattleRecord = ProvidenceBattleRecord;
 export type EncounterActionRow = ProvidenceEncounterActionRow;
@@ -726,116 +732,6 @@ export type QuestLabel = {
   id: number;
   label: string;
   note?: string;
-};
-
-export type ScenarioSpellOverride = {
-  id: number;
-  range1: number;
-  range2: number;
-  queueIcon: number;
-  toHitBonus: number;
-  saveBonus: number;
-  fixedTargetNum: number;
-  canRotate: number;
-  saveAdjust: number;
-  cannot: number;
-  resistAdjust: number;
-  cost: number;
-  damage1: number;
-  damage2: number;
-  powerDamage1: number;
-  powerDamage2: number;
-  duration1: number;
-  duration2: number;
-  powerDuration1: number;
-  powerDuration2: number;
-  spellLook1: number;
-  spellLook2: number;
-  sound1: number;
-  sound2: number;
-  targetType: number;
-  size: number;
-  special: number;
-  damageType: number;
-  spellClass: number;
-  inCombat: boolean;
-  inCamp: boolean;
-  displayName?: string;
-  description?: string;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ScenarioRaceOverride = {
-  id: number;
-  displayName?: string;
-  plusMinusToHit: number[];
-  specialAbility: number[];
-  drvBonus: number[];
-  attBonus: number[];
-  minMax: number[];
-  spare?: number[];
-  conditions: number[];
-  maxAge: number;
-  doesNotDie: number;
-  baseMove: number;
-  magRes: number;
-  twoHand: number;
-  missile: number;
-  numOfAttacks: number[];
-  canCaste: number[];
-  ageRange: number[][];
-  ageChange: number[][];
-  canRegenerate: number;
-  defaultIconSet: number;
-  itemTypes: number[];
-  descriptors: number;
-  spacer?: number[];
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ScenarioCasteOverride = {
-  id: number;
-  displayName?: string;
-  specialAbility: number[][];
-  drvBonus: number[];
-  attBonus: number[];
-  spellcasters: number[][];
-  minMax: number[];
-  conditions: number[];
-  canUseMissile: number;
-  getsMissileBonus: number;
-  stamina: number[];
-  strength: number[];
-  dodge: number[];
-  toHit: number[];
-  missile: number[];
-  hand2Hand: number[];
-  spare1?: number[];
-  spare2?: number[];
-  casteClass: number;
-  minimumAgeGroup: number;
-  moveBonus: number;
-  magRes: number;
-  twoHand: number;
-  maxStaminaBonus: number;
-  bonusAttacks: number;
-  maxAttacks: number;
-  victory: number[];
-  startMoney: number;
-  startItems: number[];
-  attacks: number[];
-  itemTypes: number[];
-  defaultIcon: number;
-  maxSpellsAttacks: number;
-  spellsSoFar: number;
-  spacer?: number[];
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
 };
 
 export type RuleNames = {

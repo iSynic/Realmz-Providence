@@ -201,7 +201,10 @@ const FIXTURE_GATES = {
     ],
     evidence: [
       "src-tauri/tests/fixture_roundtrip.rs:rules_spell_export_mutates_only_owned_record_byte_and_preserves_tail",
-      "src-tauri/tests/fixture_roundtrip.rs:rules_custom_spell_name_export_updates_only_spell_str_resource"
+      "src-tauri/tests/fixture_roundtrip.rs:rules_custom_spell_name_export_updates_only_spell_str_resource",
+      "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
+      "src-tauri/src/exporter.rs:imported_spell_export_bounds_legacy_rows_and_tail_to_annex",
+      "scripts/run_authoritative_scenario_proof.mjs"
     ]
   },
   "Data Race": {
@@ -210,7 +213,10 @@ const FIXTURE_GATES = {
       "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
     ],
     evidence: [
-      "src-tauri/tests/fixture_roundtrip.rs:rules_race_export_mutates_only_owned_record_fields"
+      "src-tauri/tests/fixture_roundtrip.rs:rules_race_export_mutates_only_owned_record_fields",
+      "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
+      "src-tauri/src/exporter.rs:imported_rule_exports_preserve_aligned_rows_and_malformed_tails",
+      "scripts/run_authoritative_scenario_proof.mjs"
     ]
   },
   "Data Caste": {
@@ -219,7 +225,10 @@ const FIXTURE_GATES = {
       "F:/Realmz/out_win_clang/Scenarios/Araman's Ring"
     ],
     evidence: [
-      "src-tauri/tests/fixture_roundtrip.rs:rules_caste_export_mutates_only_owned_record_fields"
+      "src-tauri/tests/fixture_roundtrip.rs:rules_caste_export_mutates_only_owned_record_fields",
+      "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
+      "src-tauri/src/exporter.rs:imported_rule_exports_preserve_aligned_rows_and_malformed_tails",
+      "scripts/run_authoritative_scenario_proof.mjs"
     ]
   },
   "Data DL": {
@@ -2410,7 +2419,7 @@ function coverageStatusForFile(file) {
   if (name === "Data MD2") return "mixed-writable-preserved";
   if (name === "Layout" && file.byteSizes?.size > 0 && [...file.byteSizes].some((size) => size > (RECORD_LAYOUTS.Layout?.recordBytes ?? 256))) return "mixed-writable-preserved";
   if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
-  if (rulesCoverage && (name === "Data Spell" || name === "Data Race" || name === "Data Caste")) return "mixed-writable-preserved";
+  if (rulesCoverage && name === "Data Spell") return "mixed-writable-preserved";
   if (RECORD_LAYOUTS[name]) return RECORD_LAYOUTS[name].status;
   if (PASS_THROUGH_POLICIES[name]) return PASS_THROUGH_POLICIES[name].status;
   if (roles.has("supported-binary") && file.byteSizes.size > 0 && [...file.byteSizes].every((size) => size === 316 || size === 320)) return "decoded-writable";

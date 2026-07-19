@@ -110,7 +110,8 @@ export function updateGlobalMacroHook(project: Project, slot: number, door: numb
 export function createSpellOverride(project: Project, id?: number, template?: Partial<ScenarioSpellOverride>) {
   const records = project.spellOverrides ?? [];
   const nextId = id ?? nextSpellOverrideId(records);
-  const record = { ...emptySpellOverride(nextId), ...template, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * 30, 30) };
+  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template ?? {};
+  const record = { ...emptySpellOverride(nextId), ...semanticTemplate, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * 30, 30) };
   const existing = records.find((candidate) => candidate.id === nextId);
   if (existing) {
     if (!isBlankSpellOverride(existing)) return project;
@@ -138,7 +139,8 @@ export function createRaceOverride(project: Project, id?: number, template?: Par
   const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 30);
   if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
   const displayName = template?.displayName?.trim() || defaultRaceName(nextId);
-  const record = { ...emptyRaceOverride(nextId), ...template, displayName, id: nextId, rawBytes: [], authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
+  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template ?? {};
+  const record = { ...emptyRaceOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
   const withName = setRuleName(project, "race", nextId, displayName, true);
   return {
     ...withName,
@@ -152,7 +154,8 @@ export function createCasteOverride(project: Project, id?: number, template?: Pa
   const existing = records.find((record) => record.id === nextId);
   if (existing && !isBlankCasteOverride(existing)) return project;
   const displayName = template?.displayName?.trim() || defaultCasteName(nextId);
-  const record = { ...emptyCasteOverride(nextId), ...template, displayName, id: nextId, rawBytes: [], authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
+  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template ?? {};
+  const record = { ...emptyCasteOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
   const withName = setRuleName(project, "caste", nextId, displayName, true);
   return {
     ...withName,
@@ -252,7 +255,6 @@ function isBlankSpellOverride(record: ScenarioSpellOverride) {
   const name = record.displayName?.trim() ?? "";
   const genericName = !name || name === `Custom Spell ${record.id}` || /^Level \d+ Spell \d+$/.test(name);
   if (!genericName) return false;
-  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
   return (
     record.range1 === 0 &&
     record.range2 === 0 &&
@@ -289,7 +291,6 @@ function isBlankSpellOverride(record: ScenarioSpellOverride) {
 
 function isBlankCasteOverride(record: ScenarioCasteOverride) {
   if (record.authored) return false;
-  if (record.rawBytes?.length && record.rawBytes.every((value) => value === 0)) return true;
   return (
     allZeroMatrix(record.specialAbility) &&
     allZero(record.drvBonus) &&
@@ -422,7 +423,6 @@ export function emptySpellOverride(id: number): ScenarioSpellOverride {
     inCamp: false,
     displayName: `Custom Spell ${id}`,
     description: "",
-    rawBytes: new Array(30).fill(0),
     authored: true,
     provenance: authoredProvenance("Data Spell", id, id * 30, 30)
   };
@@ -454,7 +454,6 @@ export function emptyRaceOverride(id: number): ScenarioRaceOverride {
     itemTypes: [0, 0],
     descriptors: 0,
     spacer: new Array(31).fill(0),
-    rawBytes: [],
     authored: true,
     provenance: authoredProvenance("Data Race", id, id * 408, 408)
   };
@@ -497,7 +496,6 @@ export function emptyCasteOverride(id: number): ScenarioCasteOverride {
     maxSpellsAttacks: 0,
     spellsSoFar: 0,
     spacer: new Array(63).fill(0),
-    rawBytes: [],
     authored: true,
     provenance: authoredProvenance("Data Caste", id, id * 576, 576)
   };

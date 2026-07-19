@@ -74,7 +74,7 @@
         "observedBytes": 9016,
         "runtimeReadRecords": 105,
         "runtimeTarget": "spelldata[4]",
-        "packaging": "data plus resource/tail evidence; preserve until Divinity write evidence"
+        "packaging": "fresh output is the 105-record table; additional imported bytes are compatibility-annex tail evidence"
       },
       "fields": [
         { "offset": 0, "field": "range1", "kind": "i8" },
@@ -119,6 +119,7 @@
         { "offset": 44, "size": 16, "field": "drvbonus", "kind": "be_i16[8]" },
         { "offset": 60, "size": 12, "field": "attbonus", "kind": "be_i16[6]" },
         { "offset": 72, "size": 24, "field": "minmax", "kind": "be_i16[12]" },
+        { "offset": 96, "size": 16, "field": "spare", "kind": "be_i16[8]" },
         { "offset": 112, "size": 80, "field": "conditions", "kind": "be_i16[40]" },
         { "offset": 192, "size": 16, "field": "coreMovementAndCombat", "kind": "be_i16[8]" },
         { "offset": 208, "size": 30, "field": "cancaste", "kind": "u8[30]" },
@@ -128,7 +129,7 @@
         { "offset": 334, "size": 2, "field": "defaulticonset", "kind": "be_i16" },
         { "offset": 336, "size": 8, "field": "itemtypes", "kind": "be_i32[2]" },
         { "offset": 344, "size": 2, "field": "descriptors", "kind": "be_i16" },
-        { "offset": 346, "size": 62, "field": "spacer", "kind": "preserve" }
+        { "offset": 346, "size": 62, "field": "spacer", "kind": "be_i16[31]" }
       ]
     },
     "caste": {
@@ -142,7 +143,9 @@
         { "offset": 84, "size": 24, "field": "spellcasters", "kind": "be_i16[4][3]" },
         { "offset": 108, "size": 24, "field": "minmax", "kind": "be_i16[12]" },
         { "offset": 132, "size": 80, "field": "conditions", "kind": "be_i16[40]" },
-        { "offset": 212, "size": 36, "field": "combatAndLeveling", "kind": "be_i16[18]" },
+        { "offset": 212, "size": 28, "field": "combatAndLeveling", "kind": "be_i16[14]" },
+        { "offset": 240, "size": 4, "field": "spare1", "kind": "be_i16[2]" },
+        { "offset": 244, "size": 4, "field": "spare2", "kind": "be_i16[2]" },
         { "offset": 248, "size": 16, "field": "classAndMovement", "kind": "be_i16[8]" },
         { "offset": 264, "size": 120, "field": "victory", "kind": "be_i32[30]" },
         { "offset": 384, "size": 2, "field": "startmoney", "kind": "be_i16" },
@@ -152,7 +155,7 @@
         { "offset": 444, "size": 2, "field": "defaulticon", "kind": "be_i16" },
         { "offset": 446, "size": 2, "field": "maxspellsattacks", "kind": "be_i16" },
         { "offset": 448, "size": 2, "field": "spellssofar", "kind": "be_i16" },
-        { "offset": 450, "size": 126, "field": "spacer", "kind": "preserve" }
+        { "offset": 450, "size": 126, "field": "spacer", "kind": "be_i16[63]" }
       ]
     }
   },
@@ -165,12 +168,12 @@
     "Rules tool should expose spell/race/caste pickers with shared-vs-override badges.",
     "Rules library layout values for Data Race, Data Caste, Data Spell, and Data S should follow source-backed record sizes.",
     "Spell references should decode packed ids and support complex-encounter spell class ids where the consuming field permits them.",
-    "Full Rules editing should wait for Divinity binary/manual field labels and writer fixtures."
+    "Authored spell, race, and caste rows compile completely from canonical semantic fields; imported unchanged rows and malformed tails are compatibility-annex data."
   ],
   "validationReady": [
     "Data Race scenario override length divisible by 408",
     "Data Caste scenario override length divisible by 576",
-    "scenario Data Spell preserves resource/tail evidence",
+    "fresh scenario Data Spell emits exactly 105 semantic records; imported tail evidence remains annex-only",
     "exact spell ids resolve to class, level, and slot",
     "race and caste ids resolve through scenario override before shared fallback",
     "caste starting items resolve through item picker",
@@ -180,7 +183,7 @@
     "Spell editor labels, grouping, defaults, and resource/name save behavior",
     "Race editor descriptor, age, caste permission, and item-type labels",
     "Caste editor spellcaster, victory, starting item, attack, and item-type labels",
-    "Whether race/caste overrides are always complete 30-record files",
-    "Exact scenario Data Spell packaging and name mapping"
+    "Whether Divinity supports partial race/caste override variants",
+    "Meaning of the imported Data Spell tail and any custom spell description storage"
   ]
 }

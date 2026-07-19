@@ -48,7 +48,6 @@ pub fn write_fresh_race_overrides(records: &[ScenarioRaceOverride]) -> Result<Ve
         RACE_OVERRIDE_RECORDS,
         records,
         |record| record.id,
-        |record| record.raw_bytes.clear(),
         write_race_overrides,
     )
 }
@@ -60,18 +59,16 @@ pub fn write_fresh_caste_overrides(records: &[ScenarioCasteOverride]) -> Result<
         CASTE_OVERRIDE_RECORDS,
         records,
         |record| record.id,
-        |record| record.raw_bytes.clear(),
         write_caste_overrides,
     )
 }
 
-fn write_fresh_rule_overrides<T: Clone>(
+fn write_fresh_rule_overrides<T>(
     name: &str,
     record_bytes: usize,
     records: usize,
     values: &[T],
     id: impl Fn(&T) -> usize,
-    clear_raw_bytes: impl Fn(&mut T),
     writer: impl Fn(&[T]) -> Result<Vec<u8>>,
 ) -> Result<Vec<u8>> {
     if values.is_empty() {
@@ -84,15 +81,7 @@ fn write_fresh_rule_overrides<T: Clone>(
             records - 1
         )));
     }
-    let sanitized = values
-        .iter()
-        .cloned()
-        .map(|mut value| {
-            clear_raw_bytes(&mut value);
-            value
-        })
-        .collect::<Vec<_>>();
-    let encoded = writer(&sanitized)?;
+    let encoded = writer(values)?;
     let mut output = rule_compiler_baseline_bytes(name, record_bytes, records)?;
     for value in values {
         let start = id(value) * record_bytes;
