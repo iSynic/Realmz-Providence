@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { Project } from "../types";
 import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
+  normalizeBrowserProject,
   registerBrowserSourceSnapshot,
   validateBrowserProject
 } from "./project";
@@ -9,6 +11,44 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
+  it("parses player-map markers into canonical semantic slots", () => {
+    const bytes = new Uint8Array(340);
+    bytes.set([0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d], 0);
+
+    const parsed = parseScenarioBuffers(new Map([["Data MD2", bytes]])).mapRecords[0];
+
+    expect(parsed.markers).toHaveLength(10);
+    expect(parsed.markers[0]).toEqual({ iconId: 400, x: 12, y: 13 });
+    expect(parsed.rawBytes).toEqual(Array.from(bytes));
+  });
+
+  it("backfills marker slots when opening legacy browser projects", () => {
+    const rawBytes = new Array(340).fill(0);
+    rawBytes.splice(0, 6, 0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d);
+    const project = createBrowserProject("Legacy Player Map");
+    project.mapRecords = [{
+      id: 0,
+      markers: undefined,
+      startX: 0,
+      startY: 0,
+      level: 0,
+      pictId: 0,
+      iconSize: 16,
+      show: 1,
+      isDungeon: false,
+      rect: { top: 0, left: 0, bottom: 0, right: 0 },
+      note: "",
+      rawBytes,
+      provenance: { sourceFile: "Data MD2", recordIndex: 0, byteOffset: 0, byteLength: 340, confidence: "source-backed" }
+    } as unknown as Project["mapRecords"][number]];
+
+    const markers = normalizeBrowserProject(project).mapRecords[0].markers;
+
+    expect(markers).toHaveLength(10);
+    expect(markers[0]).toEqual({ iconId: 400, x: 12, y: 13 });
+    expect(markers[1]).toEqual({ iconId: 0, x: 0, y: 0 });
+  });
+
   it("uses the authored compiler manifest instead of source inventory", () => {
     const project = createBrowserProject("Authored Validation");
     project.source.origin = "authored";

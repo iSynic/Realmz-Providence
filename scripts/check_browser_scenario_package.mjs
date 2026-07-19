@@ -1365,12 +1365,11 @@ function fieldRow(tiles) {
 }
 
 function mapRecord(id, overrides = {}) {
-  return {
+  const record = {
     id,
     name: `Map ${id}`,
     primaryName: `Map ${id}`,
     secondaryName: "",
-    markers: [],
     startX: 0,
     startY: 0,
     level: 0,
@@ -1380,10 +1379,14 @@ function mapRecord(id, overrides = {}) {
     isDungeon: false,
     rect: { top: 0, left: 0, bottom: 0, right: 0 },
     note: "",
-    rawBytes: new Array(MAP_RECORD_BYTES).fill(0),
     authored: true,
     mapNameAuthored: false,
+    provenance: { sourceFile: "Data MD2", recordIndex: id, byteOffset: id * MAP_RECORD_BYTES, byteLength: MAP_RECORD_BYTES, confidence: "fixture-backed" },
     ...overrides
+  };
+  return {
+    ...record,
+    markers: Array.from({ length: 10 }, (_, slot) => overrides.markers?.[slot] ?? mapMarkerFromRaw(overrides.rawBytes, slot))
   };
 }
 
@@ -1391,7 +1394,7 @@ function mapRecordRow(record, rawBytes = new Uint8Array(MAP_RECORD_BYTES)) {
   const output = new Uint8Array(MAP_RECORD_BYTES);
   output.set(rawBytes.slice(0, MAP_RECORD_BYTES));
   for (let slot = 0; slot < 10; slot += 1) {
-    const marker = record.markers?.[slot] ?? mapMarkerFromRaw(rawBytes, slot);
+    const marker = record.markers[slot] ?? { iconId: 0, x: 0, y: 0 };
     const offset = slot * 6;
     setI16(output, offset, marker.iconId);
     setI16(output, offset + 2, marker.x);
@@ -1414,7 +1417,7 @@ function mapRecordRow(record, rawBytes = new Uint8Array(MAP_RECORD_BYTES)) {
 
 function mapMarkerFromRaw(rawBytes, slot) {
   const offset = slot * 6;
-  if (!rawBytes || rawBytes.byteLength < offset + 6) return { iconId: 0, x: 0, y: 0 };
+  if (!rawBytes || (rawBytes.length ?? rawBytes.byteLength) < offset + 6) return { iconId: 0, x: 0, y: 0 };
   return {
     iconId: readI16(rawBytes, offset),
     x: readI16(rawBytes, offset + 2),

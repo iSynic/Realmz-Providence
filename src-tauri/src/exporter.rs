@@ -1500,8 +1500,9 @@ mod tests {
     use crate::native_manifest::NativeScenarioManifest;
     use crate::project::{
         Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
-        MapRecord, MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource, Provenance,
-        ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord, ScenarioTarget,
+        MapMarker, MapRecord, MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource,
+        Provenance, ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
+        ScenarioTarget,
     };
     use crate::resource_fork::{
         decode_string_list_resource, encode_string_list_resource, write_resource_fork,
@@ -2114,7 +2115,14 @@ mod tests {
     ) -> MapRecord {
         MapRecord {
             id,
-            markers: Vec::new(),
+            markers: vec![
+                MapMarker {
+                    icon_id: 0,
+                    x: 0,
+                    y: 0,
+                };
+                crate::realmz::MAP_RECORD_MARKERS
+            ],
             start_x: 0,
             start_y: 0,
             level: 0,

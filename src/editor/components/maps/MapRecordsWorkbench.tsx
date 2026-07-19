@@ -809,17 +809,7 @@ function drawFallbackPlayerMapMarker(ctx: CanvasRenderingContext2D, iconId: numb
 }
 
 function mapRecordMarkers(record: MapRecord): MapMarker[] {
-  return Array.from({ length: 10 }, (_, slot) => {
-    const marker = record.markers?.[slot];
-    if (marker) return marker;
-    const offset = slot * 6;
-    if (!record.rawBytes || record.rawBytes.length < offset + 6) return { iconId: 0, x: 0, y: 0 };
-    return {
-      iconId: readI16(record.rawBytes, offset),
-      x: readI16(record.rawBytes, offset + 2),
-      y: readI16(record.rawBytes, offset + 4)
-    };
-  });
+  return Array.from({ length: 10 }, (_, slot) => record.markers[slot] ?? { iconId: 0, x: 0, y: 0 });
 }
 
 function activeMarkerCount(record: MapRecord) {
@@ -862,11 +852,6 @@ function playerMapRecordBadge(record: MapRecord) {
   if (playerMapRecordDisplayKind(record) === "scrolling-text") return `TEXT ${record.show}`;
   if (record.pictId !== 0) return `PICT ${record.pictId}`;
   return "Map view";
-}
-
-function readI16(bytes: number[], offset: number) {
-  const unsigned = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
-  return unsigned >= 0x8000 ? unsigned - 0x10000 : unsigned;
 }
 
 function mapRecordForSemantic(project: Project | null, record: SemanticEntity) {

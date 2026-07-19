@@ -53,13 +53,16 @@ const scenarioDefinitions = scenarioDefinitionNames.map((name) => schema.$defs?.
 const scenarioMetaSchema = schema.$defs?.scenarioMeta ?? {};
 const confidenceSchema = schema.$defs?.confidence ?? {};
 const provenanceSchema = schema.$defs?.provenance ?? {};
-const mapDefinitionNames = ["levelType", "renderMode", "mapRender", "mapEntity", "landLayout", "randomRect", "randomLevel"];
+const mapDefinitionNames = ["levelType", "renderMode", "mapRender", "mapEntity", "landLayout", "mapMarker", "mapRecordRect", "mapRecord", "randomRect", "randomLevel"];
 const mapDefinitions = mapDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const levelTypeSchema = schema.$defs?.levelType ?? {};
 const renderModeSchema = schema.$defs?.renderMode ?? {};
 const mapRenderSchema = schema.$defs?.mapRender ?? {};
 const mapEntitySchema = schema.$defs?.mapEntity ?? {};
 const landLayoutSchema = schema.$defs?.landLayout ?? {};
+const mapMarkerSchema = schema.$defs?.mapMarker ?? {};
+const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
+const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
 
@@ -88,6 +91,7 @@ expectSameArray(provenanceSchema.required ?? [], Object.keys(provenanceSchema.pr
 expect(provenanceSchema.properties?.confidence?.$ref === "#/$defs/confidence", "provenance confidence must reference the canonical confidence enum");
 expect(schema.properties?.maps?.items?.$ref === "#/$defs/mapEntity", "project maps must contain canonical map DTOs");
 expect(schema.properties?.landLayout?.oneOf?.[0]?.$ref === "#/$defs/landLayout", "project landLayout must reference the canonical layout DTO");
+expect(schema.properties?.mapRecords?.items?.$ref === "#/$defs/mapRecord", "project mapRecords must contain canonical map-record DTOs");
 expect(schema.properties?.randomLevels?.items?.$ref === "#/$defs/randomLevel", "project randomLevels must contain canonical random-level DTOs");
 expectSameArray(levelTypeSchema.enum ?? [], ["land", "dungeon"], "Map level-type vocabulary");
 expectSameArray(renderModeSchema.enum ?? [], ["outdoor-landlook", "dungeon-top-down", "abstract-fallback"], "Map render-mode vocabulary");
@@ -104,6 +108,17 @@ expect(mapEntitySchema.properties?.levelType?.$ref === "#/$defs/levelType", "map
 expect(mapEntitySchema.properties?.render?.$ref === "#/$defs/mapRender", "map render must reference canonical render metadata");
 expect(mapEntitySchema.properties?.provenance?.$ref === "#/$defs/provenance", "map provenance must reference canonical provenance");
 expect(mapRenderSchema.properties?.mode?.$ref === "#/$defs/renderMode", "map render mode must reference the canonical mode enum");
+expectSameArray(Object.keys(mapMarkerSchema.properties ?? {}), ["iconId", "x", "y"], "Map marker field inventory");
+expectSameArray(mapMarkerSchema.required ?? [], Object.keys(mapMarkerSchema.properties ?? {}), "Map marker required field inventory");
+expectSameArray(Object.keys(mapRecordRectSchema.properties ?? {}), ["top", "left", "bottom", "right"], "Map-record rectangle field inventory");
+expectSameArray(mapRecordRectSchema.required ?? [], Object.keys(mapRecordRectSchema.properties ?? {}), "Map-record rectangle required field inventory");
+expectSameArray(Object.keys(mapRecordSchema.properties ?? {}), ["id", "markers", "startX", "startY", "level", "pictId", "iconSize", "show", "isDungeon", "rect", "note", "name", "primaryName", "secondaryName", "nameSource", "mapNameAuthored", "rawBytes", "authored", "provenance"], "Map-record field inventory");
+expectSameArray(mapRecordSchema.required ?? [], ["id", "markers", "startX", "startY", "level", "pictId", "iconSize", "show", "isDungeon", "rect", "note", "provenance"], "Map-record authored field inventory");
+expect(mapRecordSchema.properties?.markers?.items?.$ref === "#/$defs/mapMarker", "map-record markers must contain canonical marker DTOs");
+expect(mapRecordSchema.properties?.markers?.minItems === 10 && mapRecordSchema.properties?.markers?.maxItems === 10, "map-record markers must retain ten Realmz slots");
+expect(mapRecordSchema.properties?.rect?.$ref === "#/$defs/mapRecordRect", "map-record rect must reference the canonical rectangle DTO");
+expect(mapRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "map-record provenance must reference canonical provenance");
+expectSameArray(mapRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Map-record omitted empty compatibility inventory");
 expectSameArray(Object.keys(randomRectSchema.properties ?? {}), ["rectIndex", "top", "left", "bottom", "right", "percent", "battleRange", "randomDoors", "randomDoorPercent", "only", "option", "sound", "text"], "Random rectangle field inventory");
 expectSameArray(randomRectSchema.required ?? [], Object.keys(randomRectSchema.properties ?? {}), "Random rectangle required field inventory");
 expectSameArray(Object.keys(randomLevelSchema.properties ?? {}), ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "rawValues", "provenance"], "Random-level field inventory");
@@ -120,7 +135,7 @@ const mapCompatibilityFields = mapDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(mapCompatibilityFields, ["LandLayout.trailingBytes", "RandomLevel.rawValues"], "Map compatibility-only field inventory");
+expectSameSet(mapCompatibilityFields, ["LandLayout.trailingBytes", "MapRecord.rawBytes", "RandomLevel.rawValues"], "Map compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -170,6 +185,9 @@ for (const alias of [
   "export type MapRender = ProvidenceMapRender;",
   "export type MapEntity = ProvidenceMapEntity;",
   "export type LandLayout = ProvidenceLandLayout;",
+  "export type MapMarker = ProvidenceMapMarker;",
+  "export type MapRecordRect = ProvidenceMapRecordRect;",
+  "export type MapRecord = ProvidenceMapRecord;",
   "export type RandomRect = ProvidenceRandomRect;",
   "export type RandomLevel = ProvidenceRandomLevel;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
@@ -187,7 +205,7 @@ expect(!typesSource.includes('export type ProjectOrigin = "authored"'), "types.t
 expect(!typesSource.includes("export type ProjectSource = {"), "types.ts must not handwrite ProjectSource");
 expect(!typesSource.includes("export type SourceFile = {"), "types.ts must not handwrite SourceFile");
 expect(!typesSource.includes("export type Provenance = {"), "types.ts must not handwrite Provenance");
-for (const mapType of ["MapRender", "MapEntity", "LandLayout", "RandomRect", "RandomLevel"]) {
+for (const mapType of ["MapRender", "MapEntity", "LandLayout", "MapMarker", "MapRecordRect", "MapRecord", "RandomRect", "RandomLevel"]) {
   expect(!typesSource.includes(`export type ${mapType} = {`), `types.ts must not handwrite ${mapType}`);
 }
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
@@ -203,6 +221,9 @@ expectSameSet(rustGeneratedReExports, [
   "LandLayout",
   "LevelType",
   "MapEntity",
+  "MapMarker",
+  "MapRecord",
+  "MapRecordRect",
   "MapRender",
   "ProjectOrigin",
   "Provenance",
@@ -228,6 +249,9 @@ expect(!rustProjectSource.includes("pub enum Confidence {"), "project.rs must no
 expect(!rustProjectSource.includes("pub struct MapEntity {"), "project.rs must not handwrite MapEntity");
 expect(!rustProjectSource.includes("pub struct MapRender {"), "project.rs must not handwrite MapRender");
 expect(!rustProjectSource.includes("pub struct LandLayout {"), "project.rs must not handwrite LandLayout");
+expect(!rustProjectSource.includes("pub struct MapMarker {"), "project.rs must not handwrite MapMarker");
+expect(!rustProjectSource.includes("pub struct MapRecordRect {"), "project.rs must not handwrite MapRecordRect");
+expect(!rustProjectSource.includes("pub struct MapRecord {"), "project.rs must not handwrite MapRecord");
 expect(!rustProjectSource.includes("pub struct RandomRect {"), "project.rs must not handwrite RandomRect");
 expect(!rustProjectSource.includes("pub struct RandomLevel {"), "project.rs must not handwrite RandomLevel");
 expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
@@ -335,6 +359,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_SCENARIO_FIELDS = ${JSON.stringify(Object.keys(scenarioMetaSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MAP_FIELDS = ${JSON.stringify(Object.keys(mapEntitySchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_LAND_LAYOUT_FIELDS = ${JSON.stringify(Object.keys(landLayoutSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_MAP_RECORD_FIELDS = ${JSON.stringify(Object.keys(mapRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_RANDOM_LEVEL_FIELDS = ${JSON.stringify(Object.keys(randomLevelSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
@@ -375,6 +400,8 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_MAP_FIELDS: &[&str] = &[\n${renderArray(Object.keys(mapEntitySchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[\n${renderArray(Object.keys(landLayoutSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_MAP_RECORD_FIELDS: &[&str] = &[\n${renderArray(Object.keys(mapRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[\n${renderArray(Object.keys(randomLevelSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +

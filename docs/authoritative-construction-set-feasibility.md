@@ -202,10 +202,20 @@ therefore remains bounded without forcing fresh projects to synthesize preserved
 codec now has its own Rust module rather than adding more responsibility to the deferred ISY-320
 `maps.rs` refactor.
 
-Branch validation through the twenty-third slice completed on 2026-07-18:
+The twenty-fourth slice moves map markers, rectangles, and complete map-record metadata under the
+generated contract. Fresh map records now contain exactly ten semantic marker slots and omit
+`rawBytes`; both native writers zero-initialize a record and compile all 338 modeled bytes from
+canonical fields. Browser import decodes marker triples immediately, and project-open migration
+backfills them for older imported packages, so map UI and project commands no longer inspect raw
+record identity. An optional 340-byte imported compatibility base is confined to the parser,
+migration, and compiler boundaries: it preserves only the unknown bytes 74-75, unchanged Pascal
+note tails, and equivalent noncanonical true encodings until the corresponding semantic value is
+edited.
 
-- full Rust suite: 204 passed, 2 ignored;
-- full TypeScript suite: 527 passed, plus typecheck;
+Branch validation through the twenty-fourth slice completed on 2026-07-18:
+
+- full Rust suite: 207 passed, 2 ignored;
+- full TypeScript suite: 533 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -214,7 +224,7 @@ Branch validation through the twenty-third slice completed on 2026-07-18:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 527 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 533 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly/economy,
 and CSS files. The random-level codec extraction adds no new module-size violation; its line-neutral
 assembly import change leaves the existing ISY-320 count unchanged. Architecture, lint, unit,
@@ -348,9 +358,9 @@ EDCD rows, messages, options, battles, monsters, items, shops, encounters, rules
 assets, diagnostics, and editor metadata. Scenario JSON compiles directly into these families.
 
 No foundational scenario domain was found that requires an imported scenario merely to exist in
-the editor. Some record types still carry `rawBytes`, but new records already initialize those
-bytes deterministically. The compiler can instead zero-initialize unowned bytes for authored
-projects and consult preserved bytes only for imported projects.
+the editor. Some record types still carry `rawBytes`, but map records and random levels now
+demonstrate the preferred pattern: omit compatibility storage from authored records,
+zero-initialize compiler output, and consult preserved bytes only for imported projects.
 
 ### `raw-sources` is concentrated at imported compatibility and hydration boundaries
 
@@ -392,8 +402,6 @@ source inventory.
 
 Direct editor/component uses of record bytes are narrow:
 
-- map record markers fall back to reading the first 60 raw bytes when structured markers are
-  absent;
 - text panels display the number of preserved bytes as import provenance;
 - rule and monster helpers use all-zero raw records to recognize blank imported rows;
 - Monster Library conversion can decode a library record from raw bytes;
@@ -406,11 +414,11 @@ architecture.
 
 | Editor area | Direct byte dependency | Refactor disposition |
 | --- | --- | --- |
-| `components/maps/MapRecordsWorkbench.tsx` and `app/appUtils.ts` | Decode map marker triples from `rawBytes` when structured markers are absent. | Backfill structured markers during legacy import; remove UI fallback after migration. |
+| `components/maps/MapRecordsWorkbench.tsx` and `app/appUtils.ts` | **Resolved:** consume ten structured marker slots only. | Browser import and project-open migration backfill legacy markers at the compatibility boundary. |
 | `panels/TextPanel.tsx` | Displays preserved byte counts for messages/options. | Keep as compatibility-annex provenance, not authored state. |
 | `panels/rules/ruleUtils.ts`, `projectCommands/scenarioRulesCommands.ts`, and `monsterRecords.ts` | Use all-zero raw records to recognize blank imported slots. | Add explicit allocation/blank state or use semantic zero checks. |
 | `panels/combat/monsterLibraryWorkflow.ts` and `monsterLibrary.ts` | Decode/copy raw Monster Library records when a normalized summary is unavailable. | Normalize at library ingestion; raw library evidence may remain in the library annex. |
-| `projectCommands/mapCommands.ts` and target/rules record constructors | Maintain or initialize record-shaped `rawBytes`. | Constructors should create semantic records; the compiler should zero-initialize native buffers. |
+| `projectCommands/mapCommands.ts` and target/rules record constructors | Map-record dependency is **resolved**; remaining target/rules constructors may maintain or initialize record-shaped `rawBytes`. | Continue the semantic-record/compiler-buffer pattern family by family. |
 | `browser/realmzParser.ts`, `browser/project.ts`, and `browser/semantic.ts` | Parse imported files, build evidence, and sometimes backfill semantic fields from raw buffers. | Retain in the legacy import/evidence pipeline; fresh semantic graphs should build from canonical data. |
 | `browser/binaryWriters.ts` and Rust `realmz/*` writers | Copy record `rawBytes` before overlaying owned fields. | Accept an optional compatibility record from the annex; start authored buffers from zero/defaults. |
 | Browser preview/source caches | Retain raw files for imported previews and browser package export. | Keep only for imported projects; managed authored assets provide fresh previews/resources. |
@@ -426,12 +434,13 @@ legacy reimport.
 The branch now also defines the persisted contract in language-neutral JSON Schema. Its generator
 supplies the schema-version constant to both runtimes, emits one ordered top-level field inventory,
 and owns the complete source/origin/source-file, scenario identity/startup, map identity/layout,
-and random-level/rectangle DTO families plus their shared provenance/confidence primitives. A
+random-level/rectangle, and map-record/marker/rectangle DTO families plus their shared
+provenance/confidence primitives. A
 conformance gate compares the inventory to both project models and the Rust serializer, rejects
 handwritten duplicates, fixes the compatibility-only startup/layout/random-level payload
 inventories, and checks the evidence/render vocabularies. This removes silent top-level,
-source-boundary, startup-metadata, provenance, and core-map drift while leaving map-record, record,
-rule, and asset DTO generation as bounded, incremental work.
+source-boundary, startup-metadata, provenance, and core-map drift while leaving the other record,
+rule, and asset DTO families as bounded, incremental work.
 
 This is evidence for a canonical contract, not for a new repository. Introduce a versioned
 language-neutral project schema and generate DTOs for both languages, with handwritten domain
@@ -444,8 +453,8 @@ A pragmatic sequence is:
    conformance checks.
 2. **Implemented for source, scenario startup, and shared provenance metadata:** generate nested
    TypeScript and Rust DTO groups from that contract.
-3. **Implemented for map identity/layout:** generate the stable map/render/layout DTO group; move
-   map-record and other record families in later bounded groups.
+3. **Implemented for map identity/layout and map records:** generate the stable map/render/layout
+   DTO group and complete semantic map-record family.
 4. **Implemented for random levels:** generate semantic level/rectangle DTOs and keep imported raw
    storage optional and compatibility-only.
 5. Keep parser, compiler, validator, and UI behavior in handwritten modules.
@@ -521,7 +530,7 @@ Legend:
 | `Data BD` | Generated + compatibility | Generate battle records with zero padding | Byte 339 is preserved alignment padding on legacy imports. |
 | `Data MD`, `Data MD1`, `Data MD-1` | Generated | Generate monster records/sets | Complete 210-byte record writer for fresh records. |
 | `Data DES` | Generated | Generate monster descriptions | Complete fixed-record writer. |
-| `Data MD2` | Generated + compatibility | Generate structured map records | Bytes 74-75 and malformed file tails are preserved for legacy imports. Marker UI has a raw-byte fallback that should migrate to structured markers. |
+| `Data MD2` | Generated + bounded compatibility | Generate structured map records | Fresh records compile all 338 modeled bytes from canonical data and omit `rawBytes`. Imported records may retain the unknown bytes 74-75, equivalent noncanonical true words, unchanged Pascal-note tails, and malformed file tails. Marker UI uses semantic slots only. |
 | `Data NI` | Generated + compatibility | Always generate exactly 200 x 100 bytes | Core/effect fields are overlaid on a compiler-owned fixed-capacity table; bytes 56-69 remain compatibility words for legacy imports. |
 | `Data TD` | Generated | Generate treasure records | Complete fixed-record writer. |
 | `Data SD` | Generated + legacy suffix | Generate only authored shop records for fresh projects | Complete 3,002-byte shop records. Imported foreign/trailing blocks are appended from the annex; authored compilation emits the required empty file directly. |
@@ -634,9 +643,9 @@ must not be called fresh-authoritative merely because imported round trips are f
    incomplete.
 3. **Remaining nested generated DTOs:** the language-neutral schema now owns and checks the
    persisted top-level inventory, complete source-origin/source-file, scenario startup, map
-   identity/layout, and random-level/rectangle DTO families, shared provenance/confidence
-   primitives, and schema-version constant. Map-record, record, rule, and asset DTOs are still
-   maintained manually and should migrate in bounded families.
+   identity/layout, random-level/rectangle, and map-record DTO families, shared
+   provenance/confidence primitives, and schema-version constant. Other record, rule, and asset
+   DTOs are still maintained manually and should migrate in bounded families.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. They must become annex slices rather than
    normal canonical fields.
@@ -703,8 +712,8 @@ Realmz scenario.
   conformance coverage.
 - **Implemented at the top level:** establish the versioned canonical project schema, generated
   runtime constants, model/serializer conformance tests, and generated source, scenario-startup,
-  provenance, map identity/layout, and random-level/rectangle DTOs; continue with later record
-  families.
+  provenance, map identity/layout, random-level/rectangle, and map-record DTOs; continue with later
+  record families.
 
 Exit: an authored project can be saved/opened without raw material, and both runtimes agree on its
 serialized contract.

@@ -8,6 +8,22 @@ import {
 import type { ProjectCommand } from "./types";
 
 describe("project command facade", () => {
+  it("creates fresh map records from semantic data without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Player Map");
+
+    const next = applyProjectCommand(project, {
+      kind: "createMapRecord",
+      label: "Create player map",
+      id: 3,
+      template: { note: "Canonical map" }
+    });
+
+    expect(next.mapRecords).toHaveLength(1);
+    expect(next.mapRecords[0].markers).toHaveLength(10);
+    expect(next.mapRecords[0].note).toBe("Canonical map");
+    expect(next.mapRecords[0].rawBytes).toBeUndefined();
+  });
+
   it("applies an immutable command and exposes history metadata", () => {
     const project = createBrowserProject("Command Facade");
     const originalTile = project.maps[0].tiles[0];

@@ -10,7 +10,6 @@ const RANDOM_LEVEL_WORDS = RANDOM_LEVEL_BYTES / 2;
 const RANDOM_RECTS_PER_LEVEL = 20;
 const MAP_RECORD_BYTES = 340;
 const MAP_RECORD_MARKERS = 10;
-const MAP_RECORD_MARKER_BYTES = 6;
 const LAND_LAYOUT_ROWS = 8;
 const LAND_LAYOUT_COLS = 16;
 const DUNGEON_WALL_TILE = 1;
@@ -163,7 +162,7 @@ export function updateMapRecord(project: Project, id: number, changes: Extract<P
       rect: changes.rect ? { ...record.rect, ...changes.rect } : record.rect,
       authored: true
     };
-    return { ...next, rawBytes: mapRecordRawBytes(next) };
+    return next;
   });
   return changed ? { ...project, mapRecords } : project;
 }
@@ -1019,32 +1018,6 @@ function randomLevelRawBytes(level: RandomLevel) {
   return bytes;
 }
 
-function mapRecordRawBytes(record: MapRecord) {
-  const bytes = new Uint8Array(MAP_RECORD_BYTES);
-  if (record.rawBytes?.length === MAP_RECORD_BYTES) {
-    bytes.set(record.rawBytes.map((value) => value & 0xff));
-  }
-  mapRecordMarkers(record).forEach((marker, slot) => {
-    const offset = slot * MAP_RECORD_MARKER_BYTES;
-    writeI16(bytes, offset, marker.iconId);
-    writeI16(bytes, offset + 2, marker.x);
-    writeI16(bytes, offset + 4, marker.y);
-  });
-  writeI16(bytes, 60, record.startX);
-  writeI16(bytes, 62, record.startY);
-  writeI16(bytes, 64, record.level);
-  writeI16(bytes, 66, record.pictId);
-  writeI16(bytes, 68, record.iconSize);
-  writeI16(bytes, 70, record.show);
-  writeI16(bytes, 72, record.isDungeon ? 1 : 0);
-  writeI16(bytes, 76, record.rect.top);
-  writeI16(bytes, 78, record.rect.left);
-  writeI16(bytes, 80, record.rect.bottom);
-  writeI16(bytes, 82, record.rect.right);
-  writePascalText(bytes, 84, MAP_RECORD_BYTES - 84, record.note);
-  return Array.from(bytes);
-}
-
 function nextMapRecordId(project: Project) {
   const used = new Set((project.mapRecords ?? []).map((record) => record.id));
   for (let id = 0; id < 1000; id += 1) {
@@ -1083,12 +1056,12 @@ function authoredMapRecord(id: number, template: Partial<MapRecord> = {}): MapRe
     authored: true,
     provenance: authoredProvenance("Data MD2", id, id * MAP_RECORD_BYTES, MAP_RECORD_BYTES)
   };
-  return { ...record, rawBytes: mapRecordRawBytes(record) };
+  return record;
 }
 
 function mapRecordMarkers(record: MapRecord): MapMarker[] {
   return Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => {
-    const marker = record.markers?.[slot];
+    const marker = record.markers[slot];
     if (marker) {
       return {
         iconId: clampSignedShort(Math.trunc(marker.iconId ?? 0)),
@@ -1096,23 +1069,8 @@ function mapRecordMarkers(record: MapRecord): MapMarker[] {
         y: clampSignedShort(Math.trunc(marker.y ?? 0))
       };
     }
-    return mapRecordMarkerFromRaw(record.rawBytes, slot);
+    return { iconId: 0, x: 0, y: 0 };
   });
-}
-
-function mapRecordMarkerFromRaw(rawBytes: number[] | undefined, slot: number): MapMarker {
-  const offset = slot * MAP_RECORD_MARKER_BYTES;
-  if (!rawBytes || rawBytes.length < offset + MAP_RECORD_MARKER_BYTES) return { iconId: 0, x: 0, y: 0 };
-  return {
-    iconId: readI16(rawBytes, offset),
-    x: readI16(rawBytes, offset + 2),
-    y: readI16(rawBytes, offset + 4)
-  };
-}
-
-function readI16(bytes: number[], offset: number) {
-  const unsigned = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
-  return unsigned >= 0x8000 ? unsigned - 0x10000 : unsigned;
 }
 
 function rawBytesToWords(bytes: Uint8Array) {
@@ -1128,18 +1086,6 @@ function writeI16(bytes: Uint8Array, offset: number, value: number) {
   const normalized = clampInt(value, -32768, 32767) & 0xffff;
   bytes[offset] = (normalized >> 8) & 0xff;
   bytes[offset + 1] = normalized & 0xff;
-}
-
-function writePascalText(bytes: Uint8Array, offset: number, length: number, text: string) {
-  const end = Math.min(bytes.length, offset + length);
-  for (let index = offset; index < end; index += 1) bytes[index] = 0;
-  const encoded = Array.from(text ?? "").map((char) => {
-    const code = char.charCodeAt(0);
-    return code >= 0 && code <= 0x7f ? code : 63;
-  });
-  const count = Math.min(encoded.length, Math.max(0, length - 1), 255);
-  bytes[offset] = count;
-  for (let index = 0; index < count; index += 1) bytes[offset + 1 + index] = encoded[index];
 }
 
 function normalizePair(values: number[]) {

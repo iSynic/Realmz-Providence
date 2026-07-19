@@ -109,6 +109,29 @@ pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
+pub const PROVIDENCE_MAP_RECORD_FIELDS: &[&str] = &[
+    "id",
+    "markers",
+    "startX",
+    "startY",
+    "level",
+    "pictId",
+    "iconSize",
+    "show",
+    "isDungeon",
+    "rect",
+    "note",
+    "name",
+    "primaryName",
+    "secondaryName",
+    "nameSource",
+    "mapNameAuthored",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
+#[allow(dead_code)]
 pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[
     "id",
     "source",
@@ -209,6 +232,55 @@ pub struct LandLayout {
     pub authored: bool,
     #[serde(default)]
     pub provenance: Option<Provenance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapMarker {
+    pub icon_id: i16,
+    pub x: i16,
+    pub y: i16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapRecordRect {
+    pub top: i16,
+    pub left: i16,
+    pub bottom: i16,
+    pub right: i16,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapRecord {
+    pub id: usize,
+    #[serde(default)]
+    pub markers: Vec<MapMarker>,
+    pub start_x: i16,
+    pub start_y: i16,
+    pub level: i16,
+    pub pict_id: i16,
+    pub icon_size: i16,
+    pub show: i16,
+    pub is_dungeon: bool,
+    pub rect: MapRecordRect,
+    pub note: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub primary_name: Option<String>,
+    #[serde(default)]
+    pub secondary_name: Option<String>,
+    #[serde(default)]
+    pub name_source: Option<String>,
+    #[serde(default)]
+    pub map_name_authored: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

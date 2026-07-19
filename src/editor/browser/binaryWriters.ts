@@ -189,8 +189,12 @@ export function writeMapFields(maps: MapEntity[], levelType: LevelType) {
 
 export function writeMapRecords(records: MapRecord[]) {
   return writeFixedRecords(records, MAP_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === MAP_RECORD_BYTES) return;
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== MAP_RECORD_BYTES) {
+      throw new Error(`Map record ${record.id} has invalid compatibility byte storage`);
+    }
+    copyRaw(target, rawBytes);
+    const hasCompatibilityBase = rawBytes.length === MAP_RECORD_BYTES;
     for (const [slot, marker] of normalizedMapRecordMarkers(record).entries()) {
       const offset = slot * MAP_RECORD_MARKER_BYTES;
       writeI16(target, offset, marker.iconId);
@@ -203,12 +207,16 @@ export function writeMapRecords(records: MapRecord[]) {
     writeI16(target, 66, record.pictId);
     writeI16(target, 68, record.iconSize);
     writeI16(target, 70, record.show);
-    writeI16(target, 72, record.isDungeon ? 1 : 0);
+    if (!hasCompatibilityBase || (readI16(target, 72) !== 0) !== record.isDungeon) {
+      writeI16(target, 72, record.isDungeon ? 1 : 0);
+    }
     writeI16(target, 76, record.rect.top);
     writeI16(target, 78, record.rect.left);
     writeI16(target, 80, record.rect.bottom);
     writeI16(target, 82, record.rect.right);
-    encodePascalText(target.subarray(84, MAP_RECORD_BYTES), record.note);
+    if (!hasCompatibilityBase || decodedPascalText(target.subarray(84, MAP_RECORD_BYTES)) !== record.note) {
+      encodePascalText(target.subarray(84, MAP_RECORD_BYTES), record.note);
+    }
   });
 }
 
@@ -817,19 +825,7 @@ function writeFixedBytes(target: Uint8Array, offset: number, count: number, valu
 }
 
 function normalizedMapRecordMarkers(record: MapRecord): MapMarker[] {
-  return Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => {
-    const marker = record.markers?.[slot];
-    if (marker) return marker;
-    const offset = slot * MAP_RECORD_MARKER_BYTES;
-    if (!record.rawBytes || record.rawBytes.length < offset + MAP_RECORD_MARKER_BYTES) {
-      return { iconId: 0, x: 0, y: 0 };
-    }
-    return {
-      iconId: readI16(record.rawBytes, offset),
-      x: readI16(record.rawBytes, offset + 2),
-      y: readI16(record.rawBytes, offset + 4)
-    };
-  });
+  return Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => record.markers[slot] ?? { iconId: 0, x: 0, y: 0 });
 }
 
 function writeEncounterActions(target: Uint8Array, actions: EncounterActionRow[]) {
@@ -904,9 +900,19 @@ function ensureDenseLevelIndices(records: Array<{ id?: string; levelIndex: numbe
   });
 }
 
-function readI16(bytes: number[], offset: number) {
+function readI16(bytes: ArrayLike<number>, offset: number) {
   const unsigned = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
   return unsigned >= 0x8000 ? unsigned - 0x10000 : unsigned;
+}
+
+function decodedPascalText(bytes: Uint8Array) {
+  const length = Math.min(bytes[0] ?? 0, Math.max(0, bytes.byteLength - 1));
+  const body = bytes.subarray(1, 1 + length);
+  const terminator = body.findIndex((byte) => byte === 0);
+  return Array.from(body.subarray(0, terminator < 0 ? body.byteLength : terminator))
+    .map((byte) => byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : " ")
+    .join("")
+    .trimEnd();
 }
 
 function writeI16(target: Uint8Array, offset: number, value: number) {

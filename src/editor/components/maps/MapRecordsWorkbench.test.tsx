@@ -6,6 +6,7 @@ import { filterPlayerMapRecords, MapRecordsWorkbench } from "./MapRecordsWorkben
 function playerMap(overrides: Partial<MapRecord>): MapRecord {
   return {
     id: 0,
+    markers: Array.from({ length: 10 }, () => ({ iconId: 0, x: 0, y: 0 })),
     startX: 12,
     startY: 18,
     level: 0,
@@ -15,6 +16,7 @@ function playerMap(overrides: Partial<MapRecord>): MapRecord {
     isDungeon: false,
     rect: { top: 0, left: 0, bottom: 0, right: 0 },
     note: "",
+    provenance: { sourceFile: "Data MD2", recordIndex: 0, byteOffset: 0, byteLength: 340, confidence: "fixture-backed" },
     ...overrides
   };
 }

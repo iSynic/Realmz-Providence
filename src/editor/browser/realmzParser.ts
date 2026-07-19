@@ -55,6 +55,8 @@ export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLS = 16;
 export const LAND_LAYOUT_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
 export const MAP_RECORD_BYTES = 340;
+const MAP_RECORD_MARKERS = 10;
+const MAP_RECORD_MARKER_BYTES = 6;
 export const ITEM_BYTES = 100;
 export const SPELL_BYTES = 30;
 export const SPELL_OVERRIDE_RECORDS = 105;
@@ -460,6 +462,14 @@ function parseMapRecords(buffer: Uint8Array | undefined) {
     const rawBytes = Array.from(buffer.slice(start, start + MAP_RECORD_BYTES));
     records.push({
       id,
+      markers: Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => {
+        const offset = start + slot * MAP_RECORD_MARKER_BYTES;
+        return {
+          iconId: i16(buffer, offset),
+          x: i16(buffer, offset + 2),
+          y: i16(buffer, offset + 4)
+        };
+      }),
       startX: i16(buffer, start + 60),
       startY: i16(buffer, start + 62),
       level: i16(buffer, start + 64),

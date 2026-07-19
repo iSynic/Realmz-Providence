@@ -161,12 +161,16 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
     let mut output = vec![0u8; (max_id + 1) * MAP_RECORD_BYTES];
     for record in records {
         let start = record.id * MAP_RECORD_BYTES;
+        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != MAP_RECORD_BYTES {
+            return Err(ProvidenceError::message(format!(
+                "Map record {} has invalid compatibility byte storage",
+                record.id
+            )));
+        }
         if record.raw_bytes.len() == MAP_RECORD_BYTES {
             output[start..start + MAP_RECORD_BYTES].copy_from_slice(&record.raw_bytes);
         }
-        if !record.authored && record.raw_bytes.len() == MAP_RECORD_BYTES {
-            continue;
-        }
+        let has_compatibility_base = record.raw_bytes.len() == MAP_RECORD_BYTES;
         for (slot, marker) in normalized_map_record_markers(record).iter().enumerate() {
             let offset = start + slot * MAP_RECORD_MARKER_BYTES;
             write_i16_be(&mut output, offset, marker.icon_id);
@@ -179,19 +183,25 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
         write_i16_be(&mut output, start + 66, record.pict_id);
         write_i16_be(&mut output, start + 68, record.icon_size);
         write_i16_be(&mut output, start + 70, record.show);
-        write_i16_be(
-            &mut output,
-            start + 72,
-            if record.is_dungeon { 1 } else { 0 },
-        );
+        if !has_compatibility_base || (i16_be(&output, start + 72) != 0) != record.is_dungeon {
+            write_i16_be(
+                &mut output,
+                start + 72,
+                if record.is_dungeon { 1 } else { 0 },
+            );
+        }
         write_i16_be(&mut output, start + 76, record.rect.top);
         write_i16_be(&mut output, start + 78, record.rect.left);
         write_i16_be(&mut output, start + 80, record.rect.bottom);
         write_i16_be(&mut output, start + 82, record.rect.right);
-        encode_pascal_text(
-            &mut output[start + 84..start + MAP_RECORD_BYTES],
-            &record.note,
-        )?;
+        if !has_compatibility_base
+            || decode_pascal_text(&output[start + 84..start + MAP_RECORD_BYTES]) != record.note
+        {
+            encode_pascal_text(
+                &mut output[start + 84..start + MAP_RECORD_BYTES],
+                &record.note,
+            )?;
+        }
     }
     Ok(output)
 }
@@ -212,25 +222,11 @@ fn parse_map_record_markers(record: &[u8]) -> Vec<MapMarker> {
 fn normalized_map_record_markers(record: &MapRecord) -> Vec<MapMarker> {
     (0..MAP_RECORD_MARKERS)
         .map(|slot| {
-            record
-                .markers
-                .get(slot)
-                .cloned()
-                .or_else(|| {
-                    let offset = slot * MAP_RECORD_MARKER_BYTES;
-                    (record.raw_bytes.len() >= offset + MAP_RECORD_MARKER_BYTES).then(|| {
-                        MapMarker {
-                            icon_id: i16_be(&record.raw_bytes, offset),
-                            x: i16_be(&record.raw_bytes, offset + 2),
-                            y: i16_be(&record.raw_bytes, offset + 4),
-                        }
-                    })
-                })
-                .unwrap_or(MapMarker {
-                    icon_id: 0,
-                    x: 0,
-                    y: 0,
-                })
+            record.markers.get(slot).cloned().unwrap_or(MapMarker {
+                icon_id: 0,
+                x: 0,
+                y: 0,
+            })
         })
         .collect()
 }
@@ -368,6 +364,78 @@ mod tests {
     }
 
     #[test]
+    fn fresh_map_record_compiles_from_semantic_fields() {
+        let record = MapRecord {
+            id: 0,
+            markers: vec![
+                MapMarker {
+                    icon_id: 400,
+                    x: 12,
+                    y: 13,
+                };
+                MAP_RECORD_MARKERS
+            ],
+            start_x: 4,
+            start_y: 5,
+            level: 2,
+            pict_id: 30128,
+            icon_size: 32,
+            show: -808,
+            is_dungeon: true,
+            rect: MapRecordRect {
+                top: 1,
+                left: 2,
+                bottom: 20,
+                right: 30,
+            },
+            note: "Go".to_string(),
+            name: None,
+            primary_name: None,
+            secondary_name: None,
+            name_source: None,
+            map_name_authored: false,
+            raw_bytes: Vec::new(),
+            authored: true,
+            provenance: provenance("Data MD2", 0, 0, MAP_RECORD_BYTES),
+        };
+
+        let output = write_map_records(&[record]).unwrap();
+
+        assert_eq!(output.len(), MAP_RECORD_BYTES);
+        assert_eq!(i16_be(&output, 0), 400);
+        assert_eq!(i16_be(&output, 2), 12);
+        assert_eq!(i16_be(&output, 4), 13);
+        assert_eq!(i16_be(&output, 60), 4);
+        assert_eq!(i16_be(&output, 64), 2);
+        assert_eq!(i16_be(&output, 66), 30128);
+        assert_eq!(i16_be(&output, 70), -808);
+        assert_eq!(i16_be(&output, 72), 1);
+        assert_eq!(&output[74..76], &[0, 0]);
+        assert_eq!(i16_be(&output, 76), 1);
+        assert_eq!(&output[84..87], &[2, b'G', b'o']);
+    }
+
+    #[test]
+    fn imported_map_record_preserves_compatible_encodings_until_semantics_change() {
+        let mut input = vec![0xA5; MAP_RECORD_BYTES];
+        input[84] = 2;
+        input[85] = b'G';
+        input[86] = b'o';
+        let mut records = parse_map_records(&input);
+
+        assert_eq!(write_map_records(&records).unwrap(), input);
+
+        records[0].start_x = 0x1234;
+        records[0].is_dungeon = false;
+        let output = write_map_records(&records).unwrap();
+        assert_eq!(i16_be(&output, 60), 0x1234);
+        assert_eq!(i16_be(&output, 72), 0);
+        assert_eq!(&output[74..76], &[0xA5, 0xA5]);
+        assert_eq!(&output[84..87], &[2, b'G', b'o']);
+        assert_eq!(output[MAP_RECORD_BYTES - 1], 0xA5);
+    }
+
+    #[test]
     fn map_record_storage_mutates_only_modeled_fields_and_preserves_prefix() {
         let mut input = vec![0u8; MAP_RECORD_BYTES * 2];
         let record_start = MAP_RECORD_BYTES;
@@ -378,7 +446,6 @@ mod tests {
         input[record_start + 75] = 0xFE;
 
         let mut records = parse_map_records(&input);
-        records[1].authored = true;
         records[1].start_x = 0x0304;
         records[1].level = -2;
         records[1].is_dungeon = true;
@@ -431,7 +498,6 @@ mod tests {
         let marker_slot = 4;
         let marker_start = record_start + marker_slot * MAP_RECORD_MARKER_BYTES;
         let mut records = parse_map_records(&input);
-        records[1].authored = true;
         records[1].markers[marker_slot].icon_id = 0x1234;
         records[1].markers[marker_slot].x = 0x5678;
         records[1].markers[marker_slot].y = -0x1234;

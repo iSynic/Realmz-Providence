@@ -4,6 +4,9 @@ import type {
   ProvidenceLandLayout,
   ProvidenceLevelType,
   ProvidenceMapEntity,
+  ProvidenceMapMarker,
+  ProvidenceMapRecord,
+  ProvidenceMapRecordRect,
   ProvidenceMapRender,
   ProvidenceProjectOrigin,
   ProvidenceProjectSource,
@@ -28,6 +31,9 @@ export type RenderMode = ProvidenceRenderMode;
 export type MapRender = ProvidenceMapRender;
 export type MapEntity = ProvidenceMapEntity;
 export type LandLayout = ProvidenceLandLayout;
+export type MapMarker = ProvidenceMapMarker;
+export type MapRecordRect = ProvidenceMapRecordRect;
+export type MapRecord = ProvidenceMapRecord;
 export type RandomRect = ProvidenceRandomRect;
 export type RandomLevel = ProvidenceRandomLevel;
 export type EditorTab =
@@ -1056,34 +1062,6 @@ export type RuleNames = {
   raceNames: string[];
   casteNames: string[];
   authored: boolean;
-  provenance?: Provenance;
-};
-
-export type MapMarker = {
-  iconId: number;
-  x: number;
-  y: number;
-};
-
-export type MapRecord = {
-  id: number;
-  markers?: MapMarker[];
-  startX: number;
-  startY: number;
-  level: number;
-  pictId: number;
-  iconSize: number;
-  show: number;
-  isDungeon: boolean;
-  rect: { top: number; left: number; bottom: number; right: number };
-  note: string;
-  name?: string;
-  primaryName?: string;
-  secondaryName?: string;
-  nameSource?: string;
-  mapNameAuthored?: boolean;
-  rawBytes?: number[];
-  authored?: boolean;
   provenance?: Provenance;
 };
 

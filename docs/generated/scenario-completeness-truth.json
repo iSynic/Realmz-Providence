@@ -830,8 +830,11 @@
         "docs/generated/core-record-writer-gates.json",
         "docs/generated/map-record-evidence.json",
         "docs/format-evidence-cards/map-record-runtime-anchors.md",
+        "src-tauri/src/realmz/maps.rs:fresh_map_record_compiles_from_semantic_fields",
+        "src-tauri/src/realmz/maps.rs:imported_map_record_preserves_compatible_encodings_until_semantics_change",
         "src-tauri/src/realmz/maps.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
         "src-tauri/src/realmz/maps.rs:map_record_marker_storage_mutates_only_selected_marker_words",
+        "src-tauri/src/project.rs:map_record_normalization_backfills_legacy_raw_markers",
         "src-tauri/src/realmz/maps.rs:write_map_records",
         "src-tauri/src/realmz/maps.rs:parse_map_records"
       ],

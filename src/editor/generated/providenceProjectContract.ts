@@ -101,6 +101,28 @@ export const PROVIDENCE_LAND_LAYOUT_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_MAP_RECORD_FIELDS = [
+  "id",
+  "markers",
+  "startX",
+  "startY",
+  "level",
+  "pictId",
+  "iconSize",
+  "show",
+  "isDungeon",
+  "rect",
+  "note",
+  "name",
+  "primaryName",
+  "secondaryName",
+  "nameSource",
+  "mapNameAuthored",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export const PROVIDENCE_RANDOM_LEVEL_FIELDS = [
   "id",
   "source",
@@ -158,6 +180,41 @@ export type ProvidenceLandLayout = {
   trailingBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
+};
+
+export type ProvidenceMapMarker = {
+  iconId: number;
+  x: number;
+  y: number;
+};
+
+export type ProvidenceMapRecordRect = {
+  top: number;
+  left: number;
+  bottom: number;
+  right: number;
+};
+
+export type ProvidenceMapRecord = {
+  id: number;
+  markers: ProvidenceMapMarker[];
+  startX: number;
+  startY: number;
+  level: number;
+  pictId: number;
+  iconSize: number;
+  show: number;
+  isDungeon: boolean;
+  rect: ProvidenceMapRecordRect;
+  note: string;
+  name?: string | null;
+  primaryName?: string | null;
+  secondaryName?: string | null;
+  nameSource?: string | null;
+  mapNameAuthored?: boolean;
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
 };
 
 export type ProvidenceRandomRect = {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { RandomLevel, RandomRect } from "../types";
-import { writeRandomLevels } from "./binaryWriters";
+import type { MapRecord, RandomLevel, RandomRect } from "../types";
+import { writeMapRecords, writeRandomLevels } from "./binaryWriters";
 
 const rect: RandomRect = {
   rectIndex: 2,
@@ -82,6 +82,76 @@ describe("browser random-level writer", () => {
   });
 });
 
+describe("browser map-record writer", () => {
+  it("compiles a fresh record entirely from semantic fields", () => {
+    const record = mapRecord({
+      markers: [
+        { iconId: 400, x: 12, y: 13 },
+        ...Array.from({ length: 9 }, () => ({ iconId: 0, x: 0, y: 0 }))
+      ],
+      startX: 4,
+      startY: 5,
+      level: 2,
+      pictId: 30128,
+      iconSize: 32,
+      show: -808,
+      isDungeon: true,
+      rect: { top: 1, left: 2, bottom: 20, right: 30 },
+      note: "Go"
+    });
+
+    const output = writeMapRecords([record]);
+
+    expect(output).toHaveLength(340);
+    expect(i16(output, 0)).toBe(400);
+    expect(i16(output, 2)).toBe(12);
+    expect(i16(output, 4)).toBe(13);
+    expect(i16(output, 60)).toBe(4);
+    expect(i16(output, 64)).toBe(2);
+    expect(i16(output, 66)).toBe(30128);
+    expect(i16(output, 70)).toBe(-808);
+    expect(i16(output, 72)).toBe(1);
+    expect(output.slice(74, 76)).toEqual(new Uint8Array([0, 0]));
+    expect(i16(output, 76)).toBe(1);
+    expect(Array.from(output.slice(84, 87))).toEqual([2, 71, 111]);
+  });
+
+  it("preserves only compatible encodings until semantics change", () => {
+    const rawBytes = new Array(340).fill(0xa5);
+    rawBytes[84] = 2;
+    rawBytes[85] = 71;
+    rawBytes[86] = 111;
+    const imported = mapRecord({
+      markers: Array.from({ length: 10 }, () => ({ iconId: -23131, x: -23131, y: -23131 })),
+      startX: -23131,
+      startY: -23131,
+      level: -23131,
+      pictId: -23131,
+      iconSize: -23131,
+      show: -23131,
+      isDungeon: true,
+      rect: { top: -23131, left: -23131, bottom: -23131, right: -23131 },
+      note: "Go",
+      rawBytes,
+      authored: false
+    });
+
+    expect(writeMapRecords([imported])).toEqual(new Uint8Array(rawBytes));
+
+    const changed = writeMapRecords([{ ...imported, startX: 0x1234, isDungeon: false }]);
+    expect(i16(changed, 60)).toBe(0x1234);
+    expect(i16(changed, 72)).toBe(0);
+    expect(Array.from(changed.slice(74, 76))).toEqual([0xa5, 0xa5]);
+    expect(Array.from(changed.slice(84, 87))).toEqual([2, 71, 111]);
+    expect(changed[339]).toBe(0xa5);
+  });
+
+  it("rejects malformed map-record compatibility storage", () => {
+    expect(() => writeMapRecords([mapRecord({ rawBytes: [1] })]))
+      .toThrow("invalid compatibility byte storage");
+  });
+});
+
 function randomLevel(overrides: Partial<RandomLevel> = {}): RandomLevel {
   const levelType = overrides.levelType ?? "land";
   const source = levelType === "land" ? "Data RD" : "Data RDD";
@@ -99,6 +169,30 @@ function randomLevel(overrides: Partial<RandomLevel> = {}): RandomLevel {
       recordIndex: 0,
       byteOffset: 0,
       byteLength: 644,
+      confidence: "fixture-backed"
+    },
+    ...overrides
+  };
+}
+
+function mapRecord(overrides: Partial<MapRecord> = {}): MapRecord {
+  return {
+    id: 0,
+    markers: Array.from({ length: 10 }, () => ({ iconId: 0, x: 0, y: 0 })),
+    startX: 0,
+    startY: 0,
+    level: 0,
+    pictId: 0,
+    iconSize: 16,
+    show: 1,
+    isDungeon: false,
+    rect: { top: 0, left: 0, bottom: 0, right: 0 },
+    note: "",
+    provenance: {
+      sourceFile: "Data MD2",
+      recordIndex: 0,
+      byteOffset: 0,
+      byteLength: 340,
       confidence: "fixture-backed"
     },
     ...overrides

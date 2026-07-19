@@ -567,7 +567,10 @@ export function normalizeBrowserProject(project: Project): Project {
   project.scenario.restrictions ??= null;
   project.scenario.globalMacroHooks ??= null;
   project.scenario.securityBackup ??= null;
-  project.mapRecords ??= [];
+  project.mapRecords = (project.mapRecords ?? []).map((record) => ({
+    ...record,
+    markers: normalizedMapRecordMarkers(record)
+  }));
   project.tileAttributes ??= [];
   project.messages ??= [];
   project.optionLabels ??= [];
@@ -610,6 +613,23 @@ export function normalizeBrowserProject(project: Project): Project {
 
 function canonicalMapLevelName(levelType: Project["maps"][number]["levelType"], index: number) {
   return `${levelType === "dungeon" ? "Dungeon" : "Land"} level ${index}`;
+}
+
+function normalizedMapRecordMarkers(record: Project["mapRecords"][number]) {
+  return Array.from({ length: 10 }, (_, slot) => {
+    const marker = record.markers?.[slot];
+    if (marker) return marker;
+    const offset = slot * 6;
+    const raw = record.rawBytes ?? [];
+    return raw.length >= offset + 6
+      ? { iconId: readSignedI16(raw, offset), x: readSignedI16(raw, offset + 2), y: readSignedI16(raw, offset + 4) }
+      : { iconId: 0, x: 0, y: 0 };
+  });
+}
+
+function readSignedI16(bytes: number[], offset: number) {
+  const value = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
+  return value >= 0x8000 ? value - 0x10000 : value;
 }
 
 export async function ensureBrowserReferenceTileAttributes(project: Project) {
@@ -1179,6 +1199,13 @@ function validateMapRecords(project: Project, errors: string[], warnings: string
   const mapIds = new Set(project.maps.map((map) => `${map.levelType}:${map.index}`));
   const pictures = new Set(project.assetCatalog.pictures?.map((picture) => picture.resourceId) ?? []);
   for (const record of project.mapRecords ?? []) {
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 340) {
+      errors.push(`Map record ${record.id} has invalid 340-byte compatibility storage.`);
+    }
+    if (record.markers.length !== 10) {
+      errors.push(`Map record ${record.id} must define 10 semantic marker slots.`);
+    }
     if (record.startX < 0 || record.startX >= 90 || record.startY < 0 || record.startY >= 90) {
       warnings.push(`Map record ${record.id} starts outside the 90x90 map at ${record.startX},${record.startY}.`);
     }

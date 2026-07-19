@@ -2,9 +2,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapRender, Provenance,
-    RandomLevel, RandomRect, RenderMode, ScenarioContactInfo, ScenarioGlobalMacroHooks,
-    ScenarioMeta, ScenarioRestrictions, ScenarioShell, ScenarioSupportFile,
+    Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker, MapRecord,
+    MapRecordRect, MapRender, Provenance, RandomLevel, RandomRect, RenderMode, ScenarioContactInfo,
+    ScenarioGlobalMacroHooks, ScenarioMeta, ScenarioRestrictions, ScenarioShell,
+    ScenarioSupportFile,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -674,55 +675,6 @@ pub struct ByteRange {
     pub start: usize,
     pub length: usize,
     pub end_exclusive: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MapRecord {
-    pub id: usize,
-    #[serde(default)]
-    pub markers: Vec<MapMarker>,
-    pub start_x: i16,
-    pub start_y: i16,
-    pub level: i16,
-    pub pict_id: i16,
-    pub icon_size: i16,
-    pub show: i16,
-    pub is_dungeon: bool,
-    pub rect: MapRecordRect,
-    pub note: String,
-    #[serde(default)]
-    pub name: Option<String>,
-    #[serde(default)]
-    pub primary_name: Option<String>,
-    #[serde(default)]
-    pub secondary_name: Option<String>,
-    #[serde(default)]
-    pub name_source: Option<String>,
-    #[serde(default)]
-    pub map_name_authored: bool,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MapMarker {
-    pub icon_id: i16,
-    pub x: i16,
-    pub y: i16,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MapRecordRect {
-    pub top: i16,
-    pub left: i16,
-    pub bottom: i16,
-    pub right: i16,
 }
 
 impl LevelType {
@@ -1670,6 +1622,9 @@ pub enum ScenarioTarget {
 impl ProvidenceProject {
     pub fn normalize_project_contract(&mut self) {
         self.source.ensure_origin();
+        for record in &mut self.map_records {
+            normalize_map_record_markers(record);
+        }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;
         }
@@ -1680,9 +1635,91 @@ impl ProvidenceProject {
     }
 }
 
+fn normalize_map_record_markers(record: &mut MapRecord) {
+    let existing = record.markers.clone();
+    let raw_bytes = record.raw_bytes.clone();
+    record.markers = (0..10)
+        .map(|slot| {
+            existing.get(slot).cloned().unwrap_or_else(|| {
+                let offset = slot * 6;
+                if raw_bytes.len() >= offset + 6 {
+                    MapMarker {
+                        icon_id: map_record_i16(&raw_bytes, offset),
+                        x: map_record_i16(&raw_bytes, offset + 2),
+                        y: map_record_i16(&raw_bytes, offset + 4),
+                    }
+                } else {
+                    MapMarker {
+                        icon_id: 0,
+                        x: 0,
+                        y: 0,
+                    }
+                }
+            })
+        })
+        .collect();
+}
+
+fn map_record_i16(bytes: &[u8], offset: usize) -> i16 {
+    i16::from_be_bytes([bytes[offset], bytes[offset + 1]])
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{ActionCategory, ProjectOrigin, SourceSnapshot};
+    use super::{
+        normalize_map_record_markers, ActionCategory, Confidence, MapRecord, MapRecordRect,
+        ProjectOrigin, Provenance, SourceSnapshot,
+    };
+
+    #[test]
+    fn map_record_normalization_backfills_legacy_raw_markers() {
+        let mut raw_bytes = vec![0; 340];
+        raw_bytes[0..2].copy_from_slice(&400i16.to_be_bytes());
+        raw_bytes[2..4].copy_from_slice(&12i16.to_be_bytes());
+        raw_bytes[4..6].copy_from_slice(&13i16.to_be_bytes());
+        let mut record = MapRecord {
+            id: 0,
+            markers: Vec::new(),
+            start_x: 0,
+            start_y: 0,
+            level: 0,
+            pict_id: 0,
+            icon_size: 0,
+            show: 0,
+            is_dungeon: false,
+            rect: MapRecordRect {
+                top: 0,
+                left: 0,
+                bottom: 0,
+                right: 0,
+            },
+            note: String::new(),
+            name: None,
+            primary_name: None,
+            secondary_name: None,
+            name_source: None,
+            map_name_authored: false,
+            raw_bytes,
+            authored: false,
+            provenance: Provenance {
+                source_file: "Data MD2".to_string(),
+                record_index: 0,
+                byte_offset: 0,
+                byte_length: 340,
+                confidence: Confidence::SourceBacked,
+            },
+        };
+
+        normalize_map_record_markers(&mut record);
+
+        assert_eq!(record.markers.len(), 10);
+        assert_eq!(record.markers[0].icon_id, 400);
+        assert_eq!(record.markers[0].x, 12);
+        assert_eq!(record.markers[0].y, 13);
+        assert!(record.markers[1..]
+            .iter()
+            .all(|marker| marker.icon_id == 0 && marker.x == 0 && marker.y == 0));
+    }
 
     #[test]
     fn source_origin_migrates_legacy_snapshot_signals() {

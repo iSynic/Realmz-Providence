@@ -618,14 +618,17 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Compatibility bytes", internal: "raw[74..76]", offset: 74, bytes: 2, type: "raw-preserved" }
     ],
     evidence: [
+      "src-tauri/src/realmz/maps.rs:fresh_map_record_compiles_from_semantic_fields",
+      "src-tauri/src/realmz/maps.rs:imported_map_record_preserves_compatible_encodings_until_semantics_change",
       "src-tauri/src/realmz/maps.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
       "src-tauri/src/realmz/maps.rs:map_record_marker_storage_mutates_only_selected_marker_words",
+      "src-tauri/src/project.rs:map_record_normalization_backfills_legacy_raw_markers",
       "src-tauri/src/realmz/maps.rs:write_map_records",
       "src-tauri/src/realmz/maps.rs:parse_map_records",
       "docs/generated/map-record-evidence.json",
       "docs/format-evidence-cards/map-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Map records rewrite marker triples, display/start/rectangle fields, and note text. Bytes 74..76 remain preserve-only until source or Divinity evidence proves a real field."
+    preservationPolicy: "Fresh map records compile all modeled marker, display/start/rectangle, and note fields from semantic data without rawBytes. Imported rawBytes may retain bytes 74..76, a compatible noncanonical true word, and unchanged Pascal-note tail bytes; semantic edits take precedence."
   },
   {
     container: "Data NI",
