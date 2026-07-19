@@ -104,6 +104,20 @@ try {
   if (-not $messageActionVerified -or -not $questActionVerified) {
     throw "Runtime result did not contain both authored Action Point markers."
   }
+  $customAtlasLoaded = @(
+    Select-String -LiteralPath $runtimeSummary.RuntimeLog -SimpleMatch "type=PICT id=306"
+  ).Count -gt 0
+  $renderMarkerCount = @($runtimeSummary.RenderMarkers).Count
+  $fatalResourceMarkerCount = @($runtimeSummary.FoundBadMarkers).Count
+  if (-not $customAtlasLoaded) {
+    throw "Runtime result did not load the authored Custom 1 PICT 306 atlas."
+  }
+  if ($renderMarkerCount -eq 0) {
+    throw "Runtime result did not contain completed map-render markers."
+  }
+  if ($fatalResourceMarkerCount -ne 0) {
+    throw "Runtime result contained $fatalResourceMarkerCount fatal/bad marker(s)."
+  }
 
   $proofSummary = Get-Content -Raw -LiteralPath $proofSummaryPath | ConvertFrom-Json
   $proofSummary.runtime = [ordered]@{
@@ -113,6 +127,10 @@ try {
     ok = $true
     stage = $runtimeSummary.GameplayResult.Stage
     scenarioSelected = $true
+    customLandlook = 6
+    customLandlookPict306Loaded = $customAtlasLoaded
+    renderMarkerCount = $renderMarkerCount
+    fatalResourceMarkerCount = $fatalResourceMarkerCount
     movementVerified = $true
     messageActionVerified = $messageActionVerified
     questActionVerified = $questActionVerified
@@ -123,7 +141,7 @@ try {
     runtimeSummary = $runtimeSummaryFile.FullName
     gameplayResult = $runtimeSummary.GameplayResultPath
     runtimeLog = $runtimeSummary.RuntimeLog
-    note = "Automated ownership proof passed without Realmz changes on this branch; stock Classic-Mac execution remains a separate compatibility check."
+    note = "Automated ownership proof loaded and rendered canonical Custom 1 metadata plus PICT 306 without Realmz changes or fatal resource markers; stock Classic-Mac execution remains a separate compatibility check."
   }
   $proofSummary | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $proofSummaryPath -Encoding UTF8
 

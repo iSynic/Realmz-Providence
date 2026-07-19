@@ -14,6 +14,7 @@ const sourceFiles = [
   "src/editor/browser/shopRecords.ts",
   "src/editor/browser/scenarioCompilerBaseline.ts",
   "src/editor/browser/ruleCompiler.ts",
+  "src/editor/pictWriter.ts",
   "src/editor/browser/compatibilityAnnex.ts",
   "src/editor/browser/scenarioPackage.ts",
   "src/editor/generated/providenceProjectContract.ts",
@@ -49,7 +50,10 @@ await fs.copyFile(
 const requireFromBuild = createRequire(path.join(buildRoot, "check.cjs"));
 const { createBrowserScenarioPackageZip } = requireFromBuild("./src/editor/browser/scenarioPackage.js");
 const { encodeStringListResource, parseResourceFork, parseStringListResource, writeResourceFork } = requireFromBuild("./src/editor/browser/resourceFork.js");
+const { binaryDataUrl, encodePictResource } = requireFromBuild("./src/editor/pictWriter.js");
 const { readStoredZip } = requireFromBuild("./src/editor/browser/zip.js");
+
+const customLandlookPict = encodePictResource(new Uint8Array(640 * 320 * 4), 640, 320);
 
 const sourceResourceFork = writeResourceFork([
   resource("PICT", 1, "Picture", 3, [1, 2, 3]),
@@ -1202,7 +1206,7 @@ expect(noOpResourceExport.report.passThroughFiles.includes("Scenario"), "Unchang
 const resourceUpdateProject = {
   ...project,
   assets: [
-    managedAsset("asset-custom-landlook-atlas-6", "Custom 1 Landlook Atlas", "picture", "PICT", 306, "data:image/png;base64,AAECAw=="),
+    managedAsset("asset-custom-landlook-atlas-6", "Custom 1 Landlook Atlas", "picture", "PICT", 306, binaryDataUrl(customLandlookPict), "custom-landlook-atlas"),
     managedAsset("asset-text-202", "Text 202", "text", "TEXT", 202, "data:text/plain;base64,SGVsbG8="),
     managedAsset("asset-styl-202", "Style 202", "text", "styl", 202, "data:application/octet-stream;base64,AQID")
   ]
@@ -1216,7 +1220,7 @@ expect(macWithResourceUpdate.report.resourceWarnings.some((warning) => warning.i
 expect(macWithResourceUpdate.report.resourceWarnings.some((warning) => warning.includes("2 existing resource(s) were replaced")), "TEXT/styl replacement should be reported");
 const macResources = resourceMap(parseResourceFork(macUpdatedFiles.get("Scenario")));
 expect(bytesEqual(macResources.get("PICT:1")?.data, Uint8Array.from([1, 2, 3])), "Mac resource export should preserve PICT data");
-expect(bytesEqual(macResources.get("PICT:306")?.data, Uint8Array.from([0, 1, 2, 3])), "Mac resource export should write generated Custom 1 PICT 306 atlas data");
+expect(bytesEqual(macResources.get("PICT:306")?.data, customLandlookPict), "Mac resource export should write generated Custom 1 PICT 306 atlas data");
 expect(bytesEqual(macResources.get("cicn:2")?.data, Uint8Array.from([4, 5, 6])), "Mac resource export should preserve cicn data");
 expect(bytesEqual(macResources.get("snd :3")?.data, Uint8Array.from([7, 8, 9])), "Mac resource export should preserve snd data");
 expect(bytesEqual(macResources.get("STR#:-101")?.data, Uint8Array.from([0, 1, 4, 77, 97, 112, 49])), "Mac resource export should preserve STR# data");
@@ -1231,9 +1235,17 @@ expect(bytesEqual(windowsUpdatedFiles.get("Scenario"), sourceResourceFork), "Win
 expect(windowsWithResourceUpdate.report.writtenFiles.includes("Scenario.rsrc"), "Windows resource sidecar should be reported as written");
 const windowsSidecarResources = resourceMap(parseResourceFork(windowsUpdatedFiles.get("Scenario.rsrc")));
 expect(!windowsSidecarResources.has("PICT:1"), "Windows Scenario.rsrc sidecar should not merge raw Scenario-only PICT resources");
-expect(bytesEqual(windowsSidecarResources.get("PICT:306")?.data, Uint8Array.from([0, 1, 2, 3])), "Windows Scenario.rsrc sidecar should contain generated Custom 1 PICT 306 atlas data");
+expect(bytesEqual(windowsSidecarResources.get("PICT:306")?.data, customLandlookPict), "Windows Scenario.rsrc sidecar should contain generated Custom 1 PICT 306 atlas data");
 expect(bytesEqual(windowsSidecarResources.get("TEXT:202")?.data, Uint8Array.from([72, 101, 108, 108, 111])), "Windows Scenario.rsrc sidecar should contain TEXT 202 update");
 expect(bytesEqual(windowsSidecarResources.get("styl:202")?.data, Uint8Array.from([1, 2, 3])), "Windows Scenario.rsrc sidecar should contain styl 202 update");
+
+const invalidAtlasExport = createBrowserScenarioPackageZip({
+  ...project,
+  assets: [
+    managedAsset("asset-invalid-custom-landlook-atlas-6", "Invalid Custom 1 Landlook Atlas", "picture", "PICT", 306, "data:image/png;base64,iVBORw0KGgo=", "custom-landlook-atlas")
+  ]
+}, rawSources, "windows-realmz-folder");
+expect(invalidAtlasExport.report.blockedAssets.some((label) => label.includes("not a normalized 640 x 320 indexed PICT atlas")), "Browser export should block a PNG payload masquerading as a ready custom-landlook PICT atlas");
 
 try {
   createBrowserScenarioPackageZip(
@@ -1260,7 +1272,7 @@ function resource(resourceType, id, name, attributes, data) {
   return { resourceType, id, name, attributes, data: new Uint8Array(data) };
 }
 
-function managedAsset(id, label, kind, resourceType, resourceId, resourcePath) {
+function managedAsset(id, label, kind, resourceType, resourceId, resourcePath, conversionTarget = null) {
   return {
     id,
     label,
@@ -1271,7 +1283,18 @@ function managedAsset(id, label, kind, resourceType, resourceId, resourcePath) {
     resourcePath,
     originalPath: "",
     previewPath: "",
-    exportState: "ready"
+    exportState: "ready",
+    conversion: conversionTarget ? {
+      target: conversionTarget,
+      fitMode: "stretch",
+      scaleMode: "crisp",
+      matte: "black",
+      paletteMode: "adaptive-256",
+      ditherMode: "none",
+      finalWidth: 640,
+      finalHeight: 320,
+      warnings: []
+    } : null
   };
 }
 

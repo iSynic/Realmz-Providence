@@ -71,7 +71,7 @@ export function removeScenarioResource(project: Project, command: Extract<Projec
 export function replaceCustomLandlookAtlas(project: Project, command: Extract<ProjectCommand, { kind: "replaceCustomLandlookAtlas" }>) {
   const pictId = 300 + command.landlook;
   const linkedEntity = `landlook:${command.landlook}`;
-  const atlasPath = command.asset.resourcePath || command.asset.previewPath || command.asset.originalPath;
+  const atlasPath = command.asset.previewPath || command.asset.originalPath || command.asset.resourcePath;
   const nextAsset = {
     ...command.asset,
     kind: "picture" as const,

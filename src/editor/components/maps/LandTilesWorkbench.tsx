@@ -8,6 +8,7 @@ import { TileSwatch } from "../TileSwatch";
 import { loadImage, tileColor } from "../TileSprite";
 import { MapNumberField } from "./MapFormControls";
 import { normalizedCombatBuild, tileAttributeLabel } from "./mapTileUiUtils";
+import { binaryDataUrl, encodePictResource } from "../../pictWriter";
 
 type LandTileFilterId = TileAttributeFlag | "all" | `visual:${LandlookTileVisualCategory}`;
 type CustomAtlasImportMode = "full" | "block" | "tile";
@@ -143,7 +144,7 @@ export function LandTileAtlasEditor({
         kind: "replaceCustomLandlookAtlas",
         label: `Copy atlas to ${target.label}`,
         landlook: target.landlook,
-        asset: customLandlookAtlasAsset(target.landlook, dataUrl, `Copied from ${sourceTileset?.name ?? selectedTileset.name}`, sourceImage.width, sourceImage.height)
+        asset: await customLandlookAtlasAsset(target.landlook, dataUrl, `Copied from ${sourceTileset?.name ?? selectedTileset.name}`, sourceImage.width, sourceImage.height)
       });
       setImportStatus(`${target.label} created and ${sourceTileset?.name ?? "source"} atlas copied.`);
     } else {
@@ -172,7 +173,7 @@ export function LandTileAtlasEditor({
         kind: "replaceCustomLandlookAtlas",
         label: `Import ${importMode === "full" ? "tile set" : importMode === "block" ? "picture block" : "tile"} into ${target?.label ?? selectedTileset.name}`,
         landlook: selectedTileset.landlook,
-        asset: customLandlookAtlasAsset(selectedTileset.landlook, dataUrl, sourceLabel, 640, 320)
+        asset: await customLandlookAtlasAsset(selectedTileset.landlook, dataUrl, sourceLabel, 640, 320)
       });
       setImportStatus(`Imported ${sourceLabel} into ${target?.label ?? selectedTileset.name}.`);
     } catch (error) {
@@ -512,9 +513,16 @@ function required2dContext(canvas: HTMLCanvasElement) {
   return ctx;
 }
 
-function customLandlookAtlasAsset(landlook: number, dataUrl: string, sourceLabel: string, sourceWidth: number, sourceHeight: number): ManagedAsset {
+async function customLandlookAtlasAsset(landlook: number, dataUrl: string, sourceLabel: string, sourceWidth: number, sourceHeight: number): Promise<ManagedAsset> {
   const target = CUSTOM_LANDLOOKS.find((entry) => entry.landlook === landlook);
   const label = `${target?.label ?? `Custom ${landlook}`} Landlook Atlas`;
+  const image = await loadImage(dataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 320;
+  const context = required2dContext(canvas);
+  context.drawImage(image, 0, 0, 640, 320);
+  const resourcePath = binaryDataUrl(encodePictResource(context.getImageData(0, 0, 640, 320).data, 640, 320));
   return {
     id: `asset:custom-landlook-atlas:${landlook}:${Date.now()}`,
     label,
@@ -524,7 +532,7 @@ function customLandlookAtlasAsset(landlook: number, dataUrl: string, sourceLabel
     fileName: `${label}.png`,
     originalPath: dataUrl,
     previewPath: dataUrl,
-    resourcePath: dataUrl,
+    resourcePath,
     mimeType: "image/png",
     bytes: Math.round(dataUrl.length * 0.75),
     sha256: `browser-generated-${landlook}-${Date.now()}`,

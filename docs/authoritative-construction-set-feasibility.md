@@ -461,10 +461,25 @@ complete Custom 1 table without `raw-sources`, poison-tests both compilers, prov
 both native targets, and recovers all 201 rows and ten ranges on native reimport. Custom atlas
 resource packaging remains the separate next milestone and is not claimed by this metadata slice.
 
-Branch validation through the forty-fifth slice completed on 2026-07-19:
+The forty-sixth slice closes that custom-atlas milestone. Providence now converts canonical RGBA
+atlas pixels into a deterministic indexed PackBits `PICT`, including the resource frame rectangle
+that Realmz expects, and the Land Tiles workbench stores those converted bytes rather than
+mislabeling its PNG preview as a ready resource. Both compiler boundaries reject a managed
+custom-landlook asset unless its converted payload is the normalized 640 x 320 form. The fresh
+ownership project selects Custom 1 in `Data RD`, owns both its 8,104-byte metadata file and `PICT
+306`, and contains no compatibility annex. Rust and browser packages are byte-identical for both
+native targets, repeat compilation is byte-identical, and native reimport recovers both the
+canonical metadata and decoded atlas preview. The existing modern Realmz runtime gate loads `PICT
+306`, renders the map, moves, executes both authored Action Points, saves, and reloads with ten
+completed render markers and no fatal resource markers. A separate ordinary, non-instrumented
+Realmz build also accepted and selected the generated folder from its Adventure menu without any
+Realmz source changes. Stock Classic execution remains the next target-specific compatibility
+gate; arbitrary PICT editing and `Custom 1/2/3` companion-file authoring remain out of scope.
 
-- full Rust suite: 250 passed, 2 ignored;
-- full TypeScript suite: 604 passed, plus typecheck;
+Branch validation through the forty-sixth slice completed on 2026-07-19:
+
+- full Rust suite: 252 passed, 2 ignored;
+- full TypeScript suite: 606 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -486,8 +501,9 @@ does not add a new ISY-320 violation. The `Layout` slice likewise moves its code
 focused module and reduces `maps.rs`; the remaining size failures are the pre-existing ISY-319 map
 UI files, ISY-320 `assembly.rs`, and ISY-321 stylesheets. The ED3/EDCD slice changes only the
 exporter/package boundary and adds no new module-size violation. The custom-landlook metadata
-slice adds a focused browser parser test and changes only existing contract/compiler owners, so it
-also adds no ISY-319/320/321 violation. Architecture, lint, unit,
+slice adds a focused browser parser test and changes only existing contract/compiler owners. The
+atlas slice adds one focused shared PICT writer and only small workbench/compiler-boundary wiring,
+so neither slice adds an ISY-319/320/321 violation. Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
 
@@ -655,7 +671,8 @@ the same content-neutral package directly as authored compiler output:
 
 - authored startup marker;
 - 600-byte zero-filled `Scenario` data fork;
-- exact canonical 46-byte zero-entry `Scenario.rsrc`;
+- exact canonical 46-byte zero-entry `Scenario.rsrc` baseline, extended only by canonical managed
+  resources used by the project (`PICT 306` in the current ownership proof);
 - `Data CS` seeded from the startup shell;
 - per-level `Data DD`/`Data DDD` tables;
 - 200-row zero-filled `Data NI`;
@@ -835,8 +852,8 @@ Legend:
 | `Data Caste` | Fully generated + legacy row/tail annex | Emit exactly 30 x 576 bytes | Both compilers use the same baseline policy and replace each authored row with all canonical `struct caste` fields including `spare1[2]`, `spare2[2]`, and `spacer[63]`. Fresh rows contain no compatibility bytes; imported preservation is annex-only. |
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
-| `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Both compilers generate 201 mapstats rows, base metadata, and ten ranges without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Resource atlas packaging remains a separate runtime gate. |
-| Main-fork `PICT`, `cicn`, `snd `, `TEXT`, `styl`, map-name `STR#` | Generated/merged | Generate deterministically from managed assets and map records | Existing resource-fork writer is reusable. Unsupported imported resources stay in the annex. |
+| `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Both compilers generate 201 mapstats rows, base metadata, and ten ranges without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
+| Main-fork `PICT`, `cicn`, `snd `, `TEXT`, `styl`, map-name `STR#` | Generated/merged | Generate deterministically from managed assets and map records | Existing resource-fork writer is reusable. The ownership proof generates normalized `PICT 306`, proves Rust/browser byte parity on both targets, recovers it on reimport, and loads/renders it in modern Realmz. Unsupported imported resources stay in the annex. |
 | `RLMZ`, `vers`, arbitrary/malformed resources | Pass-through | Omit unless proven required; annex imported entries | Their container format is understood, but payload ownership is not needed for the minimum proof. |
 
 ### Legacy-only, custom media, and distribution families
@@ -1024,9 +1041,9 @@ Exit: fresh compile succeeds with an access guard proving no raw/annex reads.
 
 ### Phase 2: Minimum gameplay proof
 
-- Add the minimal map, Action Point, and message proof fixture.
-- Add double-compile byte determinism and reimport tests.
-- Run the existing Oracle gameplay path for start, movement, AP, save, and reload.
+- **Implemented:** add the minimal map, Action Point, and message proof fixture.
+- **Implemented:** add double-compile byte determinism and reimport tests.
+- **Implemented:** run the existing Oracle gameplay path for start, movement, AP, save, and reload.
 
 Exit: the smallest decisive proof passes through the existing automated modern Realmz Oracle;
 stock Classic execution remains a target-specific compatibility gate.
@@ -1046,7 +1063,8 @@ Exit: legacy round-trip fixtures remain green and fresh projects stay annex-free
 - **Implemented:** fixed-capacity `Data Race` and `Data Caste` policies; keep them with the
   completed `Data NI` and `Data Spell` paths in the cross-runtime parity gate.
 - **Implemented:** generate custom spell and item-string resources in both runtimes.
-- Validate custom landlook resource packaging.
+- **Implemented:** validate deterministic custom-landlook metadata and normalized `PICT 306..308`
+  resource packaging across both compilers; prove Custom 1 lookup and rendering in modern Realmz.
 - Add custom music only if it is prioritized as a construction-set requirement.
 
 Exit: the practical Divinity-style authored surface no longer depends on imported templates.

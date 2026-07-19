@@ -431,6 +431,7 @@ pub enum ImageMatte {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "kebab-case")]
 pub enum PaletteMode {
+    #[serde(rename = "adaptive-256", alias = "adaptive256")]
     Adaptive256,
 }
 
@@ -1321,8 +1322,17 @@ mod tests {
         normalize_caste_override, normalize_map_record_markers, normalize_monster,
         normalize_race_override, normalize_scenario_item_spare_words, normalize_shop_slots,
         normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord, MapRecordRect,
-        ProjectOrigin, Provenance, SourceSnapshot,
+        PaletteMode, ProjectOrigin, Provenance, SourceSnapshot,
     };
+
+    #[test]
+    fn palette_mode_uses_the_canonical_typescript_spelling() {
+        let parsed: PaletteMode = serde_json::from_str("\"adaptive-256\"").expect("palette mode");
+        assert_eq!(parsed, PaletteMode::Adaptive256);
+        assert_eq!(serde_json::to_string(&parsed).unwrap(), "\"adaptive-256\"");
+        let legacy: PaletteMode = serde_json::from_str("\"adaptive256\"").expect("legacy alias");
+        assert_eq!(legacy, PaletteMode::Adaptive256);
+    }
 
     #[test]
     fn map_record_normalization_backfills_legacy_raw_markers() {

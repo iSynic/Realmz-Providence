@@ -324,6 +324,14 @@ pub fn encode_pict_resource_with_dither(
     let row_bytes = payload.width as usize;
 
     let mut pict = vec![0; 10];
+    write_rect(
+        &mut pict,
+        2,
+        0,
+        0,
+        payload.height as i16,
+        payload.width as i16,
+    );
     push_u16(&mut pict, 0x0098);
     push_u16(&mut pict, 0x8000 | row_bytes);
     push_rect(&mut pict, 0, 0, payload.height as i16, payload.width as i16);
@@ -1588,6 +1596,10 @@ mod tests {
         };
         let pict = encode_pict_resource(&payload).expect("pict");
         let cicn = encode_cicn_resource(&payload).expect("cicn");
+        assert_eq!(i16_be(&pict, 2), 0);
+        assert_eq!(i16_be(&pict, 4), 0);
+        assert_eq!(i16_be(&pict, 6), 32);
+        assert_eq!(i16_be(&pict, 8), 32);
         assert!(preview_data_url_for_resource("PICT", &pict)
             .expect("pict preview")
             .expect("pict data url")

@@ -1420,6 +1420,17 @@ fn managed_resource_type_supported(resource_type: &str) -> bool {
     matches!(resource_type, "PICT" | "cicn" | "snd " | "TEXT" | "styl")
 }
 
+fn is_normalized_landlook_atlas_pict(data: &[u8]) -> bool {
+    let read_u16 = |offset: usize| u16::from_be_bytes([data[offset], data[offset + 1]]);
+    data.len() >= 14
+        && read_u16(2) == 0
+        && read_u16(4) == 0
+        && read_u16(6) == 320
+        && read_u16(8) == 640
+        && read_u16(10) == 0x0098
+        && read_u16(12) == (0x8000 | 640)
+}
+
 fn managed_asset_resource_bytes(
     project_dir: &Path,
     asset: &crate::project::ManagedAsset,
@@ -1570,6 +1581,20 @@ fn write_managed_resources(
                 continue;
             }
         };
+        if matches!(
+            asset
+                .conversion
+                .as_ref()
+                .map(|conversion| &conversion.target),
+            Some(crate::project::AssetImportTarget::CustomLandlookAtlas)
+        ) && !is_normalized_landlook_atlas_pict(&data)
+        {
+            result.blocked_assets.push(format!(
+                "{} is not a normalized 640 x 320 indexed PICT atlas",
+                asset.label
+            ));
+            continue;
+        }
         if !scrolling_text_runtime_warning_emitted
             && matches!(asset.kind, crate::project::ManagedAssetKind::Text)
             && (asset.resource_type == "TEXT" || asset.resource_type.trim() == "styl")
@@ -1937,7 +1962,8 @@ fn scenario_shell_file_name(project: &ProvidenceProject) -> &str {
 mod tests {
     use super::{
         append_preserved_shop_source_suffix, compile_fixed_rows_with_compatibility_annex,
-        compile_realmz_scenario, custom_spell_name_resource_updates, item_text_resource_updates,
+        compile_realmz_scenario, custom_spell_name_resource_updates,
+        is_normalized_landlook_atlas_pict, item_text_resource_updates,
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
@@ -2291,6 +2317,18 @@ mod tests {
             managed_asset_resource_bytes(std::path::Path::new("."), &asset).unwrap(),
             b"scrolling text".to_vec()
         );
+    }
+
+    #[test]
+    fn normalized_landlook_atlas_pict_rejects_non_pict_payloads() {
+        let mut pict = vec![0; 14];
+        pict[6..8].copy_from_slice(&320_u16.to_be_bytes());
+        pict[8..10].copy_from_slice(&640_u16.to_be_bytes());
+        pict[10..12].copy_from_slice(&0x0098_u16.to_be_bytes());
+        pict[12..14].copy_from_slice(&(0x8000_u16 | 640).to_be_bytes());
+
+        assert!(is_normalized_landlook_atlas_pict(&pict));
+        assert!(!is_normalized_landlook_atlas_pict(b"\x89PNG\r\n\x1a\n"));
     }
 
     #[test]

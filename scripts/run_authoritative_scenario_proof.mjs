@@ -28,7 +28,10 @@ await bundleScenarioCompiler();
 const requireFromBuild = createRequire(path.join(buildRoot, "proof.cjs"));
 const { createProjectFromScenarioSeed } = requireFromBuild("./scenarioSeed.cjs");
 const { createBrowserScenarioPackageZip } = requireFromBuild("./scenarioPackage.cjs");
-const { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, parseResourceFork, writeMinimumScenarioResourceFork } = requireFromBuild("./resourceFork.cjs");
+const { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, parseResourceFork } = requireFromBuild("./resourceFork.cjs");
+const { encodePictResource } = requireFromBuild("./pictWriter.cjs");
+const { decodePictPreviewImageForTest } = requireFromBuild("./resourcePreview.cjs");
+const { replaceCustomLandlookAtlas } = requireFromBuild("./assetCommands.cjs");
 const { readStoredZip } = requireFromBuild("./zip.cjs");
 const seed = JSON.parse(await fs.readFile(fixturePath, "utf8"));
 const result = createProjectFromScenarioSeed(seed, {
@@ -38,6 +41,12 @@ const result = createProjectFromScenarioSeed(seed, {
 
 expect(result.ok, `Scenario JSON compilation failed: ${result.ok ? "" : result.errors.join("; ")}`);
 const project = result.project;
+project.maps[0].render = {
+  ...project.maps[0].render,
+  tilesetId: "landlook-6",
+  landlook: 6
+};
+project.randomLevels[0].landlook = 6;
 project.tileAttributes.push({
   tile: 190,
   landlook: null,
@@ -104,6 +113,54 @@ project.customLandlooks = [{
   },
   authored: true
 }];
+const customLandlookRgba = createCustomLandlookAtlasPixels();
+const customLandlookPict = encodePictResource(customLandlookRgba, 640, 320);
+const customLandlookBmp = encodeBmp(customLandlookRgba, 640, 320);
+const customLandlookSourceDataUrl = `data:image/bmp;base64,${Buffer.from(customLandlookBmp).toString("base64")}`;
+const customLandlookResourceDataUrl = `data:application/octet-stream;base64,${Buffer.from(customLandlookPict).toString("base64")}`;
+const atlasProject = replaceCustomLandlookAtlas(project, {
+  kind: "replaceCustomLandlookAtlas",
+  label: "Author Custom 1 atlas",
+  landlook: 6,
+  asset: {
+    id: "asset:custom-landlook-atlas:6:ownership-proof",
+    label: "Custom 1 Landlook Atlas",
+    kind: "picture",
+    resourceType: "PICT",
+    resourceId: 306,
+    fileName: "custom-landlook-6-atlas.bmp",
+    originalPath: customLandlookSourceDataUrl,
+    previewPath: "",
+    resourcePath: customLandlookResourceDataUrl,
+    mimeType: "image/bmp",
+    bytes: customLandlookBmp.byteLength,
+    sha256: createHash("sha256").update(customLandlookBmp).digest("hex"),
+    width: 640,
+    height: 320,
+    durationMs: null,
+    sampleRate: null,
+    channels: null,
+    exportState: "ready",
+    libraryScope: "scenario",
+    provenance: "Providence ownership proof normalized atlas pixels",
+    linkedEntity: "landlook:6",
+    conversion: {
+      target: "custom-landlook-atlas",
+      fitMode: "stretch",
+      scaleMode: "crisp",
+      matte: "white",
+      paletteMode: "adaptive-256",
+      ditherMode: "none",
+      sourceWidth: 640,
+      sourceHeight: 320,
+      finalWidth: 640,
+      finalHeight: 320,
+      warnings: []
+    }
+  }
+});
+project.assets = atlasProject.assets;
+project.assetCatalog = atlasProject.assetCatalog;
 project.validation.exportableFiles = [...new Set([...project.validation.exportableFiles, "Layout", "Data Custom 1 BD"])];
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
 assertOwnershipScenarioMetadata(project, "Canonical project", true);
@@ -111,6 +168,9 @@ assertOwnershipGlobalMacros(project, "Canonical project", true);
 assertOwnershipTileSolids(project, "Canonical project", false);
 assertOwnershipLandLayout(project, "Canonical project", true);
 assertOwnershipCustomLandlook(project, "Canonical project", true);
+assertOwnershipCustomLandlookAtlas(project, "Canonical project");
+expect(project.maps[0].render.landlook === 6 && project.maps[0].render.tilesetId === "landlook-6", "Canonical map must select Custom 1");
+expect(project.randomLevels[0].landlook === 6, "Canonical random-level record must select Custom 1");
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.triggers.every((record) => !("rawBytes" in record)), "Fresh canonical Action Points must not carry compatibility bytes");
@@ -250,6 +310,10 @@ assertCompiledCustomLandlook(windowsFilesA, "Windows");
 assertCompiledCustomLandlook(classicFilesA, "Classic Mac");
 assertCompiledCustomLandlook(browserWindowsFiles, "browser Windows");
 assertCompiledCustomLandlook(browserClassicFiles, "browser Classic Mac");
+assertCompiledCustomLandlookAtlas(windowsFilesA, "Windows");
+assertCompiledCustomLandlookAtlas(classicFilesA, "Classic Mac");
+assertCompiledCustomLandlookAtlas(browserWindowsFiles, "browser Windows");
+assertCompiledCustomLandlookAtlas(browserClassicFiles, "browser Classic Mac");
 assertManifestNamesEqual(project.validation.exportableFiles, browserWindowsFiles, "Browser validation manifest");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
@@ -302,6 +366,7 @@ assertOwnershipGlobalMacros(reimported, "Reimport", false);
 assertOwnershipTileSolids(reimported, "Reimport", true);
 assertOwnershipLandLayout(reimported, "Reimport", false);
 assertOwnershipCustomLandlook(reimported, "Reimport", false);
+await assertReimportedCustomLandlookAtlas(reimported, "Reimport");
 
 const summary = {
   proofVersion: 1,
@@ -331,15 +396,17 @@ const summary = {
     authoredSpecialTileSolidityRows: project.tileAttributes.filter((profile) => profile.sourceKind === "data-solids").length,
     authoredLandLayoutCells: project.landLayout?.cells.length ?? 0,
     authoredCustomLandlooks: project.customLandlooks?.length ?? 0,
+    authoredCustomLandlookAtlases: project.assets.filter((asset) => asset.conversion?.target === "custom-landlook-atlas").length,
     globalMacroHooks: project.scenario.globalMacroHooks?.slots.filter((slot) => slot.door !== 0).length ?? 0,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
   nativeOutputs: {
     deterministic: true,
     browserDesktopByteParity: true,
-    minimumScenarioResourceFork: {
-      bytes: MINIMUM_SCENARIO_RESOURCE_FORK_BYTES,
-      resources: 0,
+    scenarioResourceFork: {
+      emptyBaselineBytes: MINIMUM_SCENARIO_RESOURCE_FORK_BYTES,
+      resources: 1,
+      customLandlookAtlas: { resourceType: "PICT", id: 306, width: 640, height: 320 },
       builtInRlmzResources: 0
     },
     windows: {
@@ -380,7 +447,8 @@ const summary = {
     casteOverrideRecovered: true,
     specialTileSolidityRecovered: true,
     landLayoutRecovered: true,
-    customLandlookMetadataRecovered: true
+    customLandlookMetadataRecovered: true,
+    customLandlookAtlasRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -406,6 +474,9 @@ async function bundleScenarioCompiler() {
       scenarioSeed: path.join(repoRoot, "src", "editor", "scenarioSeed.ts"),
       scenarioPackage: path.join(repoRoot, "src", "editor", "browser", "scenarioPackage.ts"),
       resourceFork: path.join(repoRoot, "src", "editor", "browser", "resourceFork.ts"),
+      pictWriter: path.join(repoRoot, "src", "editor", "pictWriter.ts"),
+      resourcePreview: path.join(repoRoot, "src", "editor", "browser", "resourcePreview.ts"),
+      assetCommands: path.join(repoRoot, "src", "editor", "projectCommands", "assetCommands.ts"),
       zip: path.join(repoRoot, "src", "editor", "browser", "zip.ts")
     },
     outdir: buildRoot,
@@ -442,6 +513,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipTileSolids(savedProject, `Rust-saved project ${stage}`, false);
   assertOwnershipLandLayout(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipCustomLandlook(savedProject, `Rust-saved project ${stage}`, true);
+  assertOwnershipCustomLandlookAtlas(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
@@ -510,9 +582,10 @@ function assertCompleteNativeFolder(files, label) {
   }
   expect(files.has("Scenario.rsrc"), `${label} output is missing Scenario.rsrc`);
   const scenarioResourceFork = files.get("Scenario.rsrc");
-  expect(scenarioResourceFork.byteLength === MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, `${label} Scenario.rsrc should be the exact canonical ${MINIMUM_SCENARIO_RESOURCE_FORK_BYTES}-byte container`);
-  expect(Buffer.from(scenarioResourceFork).equals(Buffer.from(writeMinimumScenarioResourceFork())), `${label} Scenario.rsrc differs from the canonical minimum container`);
-  expect(parseResourceFork(scenarioResourceFork).length === 0, `${label} Scenario.rsrc should not synthesize built-in RLMZ metadata or other resources`);
+  expect(scenarioResourceFork.byteLength > MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, `${label} Scenario.rsrc should extend the canonical empty container with PICT 306`);
+  const scenarioResources = parseResourceFork(scenarioResourceFork);
+  expect(scenarioResources.length === 1, `${label} Scenario.rsrc should contain only the authored custom-landlook atlas`);
+  expect(scenarioResources[0].resourceType === "PICT" && scenarioResources[0].id === 306, `${label} Scenario.rsrc contains a resource other than PICT 306`);
   expect(files.has("Data ID.rsrc"), `${label} output is missing canonical item text resources`);
   expect(files.get("Data ID.rsrc").byteLength >= 46, `${label} Data ID.rsrc is not structurally plausible`);
   expect(files.has("Data Spell.rsrc"), `${label} output is missing canonical custom-spell names`);
@@ -801,6 +874,19 @@ function assertOwnershipCustomLandlook(project, label, requireNoCompatibilityByt
   }
 }
 
+function assertOwnershipCustomLandlookAtlas(project, label) {
+  const asset = project.assets?.find((candidate) => candidate.resourceType === "PICT" && candidate.resourceId === 306);
+  expect(asset, `${label} is missing canonical PICT 306 atlas art`);
+  expect(asset.kind === "picture" && asset.exportState === "ready", `${label} custom atlas is not export-ready picture art`);
+  expect(asset.linkedEntity === "landlook:6", `${label} custom atlas is not linked to Custom 1`);
+  expect(asset.width === 640 && asset.height === 320, `${label} custom atlas does not own normalized 640 x 320 dimensions`);
+  expect(asset.conversion?.target === "custom-landlook-atlas", `${label} custom atlas has the wrong conversion target`);
+  expect(asset.resourcePath.startsWith("data:application/octet-stream;base64,"), `${label} custom atlas does not embed deterministic PICT resource bytes`);
+  expect(!asset.resourcePath.toLowerCase().includes("raw-sources"), `${label} custom atlas depends on raw-sources`);
+  const tileset = project.assetCatalog?.tilesets?.find((candidate) => candidate.landlook === 6);
+  expect(tileset?.available && tileset.pictId === 306, `${label} custom atlas is not registered as the available Custom 1 tileset`);
+}
+
 function assertCompiledCustomLandlook(files, label) {
   const bytes = files.get("Data Custom 1 BD");
   expect(bytes?.byteLength === 8104, `${label} custom-landlook metadata should be exactly 8104 bytes`);
@@ -812,6 +898,26 @@ function assertCompiledCustomLandlook(files, label) {
   expect(readI16(bytes, 201 * 40) === 156 && readI16(bytes, 201 * 40 + 2) === 1, `${label} custom-landlook base metadata is wrong`);
   expect(readI16(bytes, 201 * 40 + 4) === 62 && readI16(bytes, 201 * 40 + 6) === 85, `${label} custom-landlook first range is wrong`);
   expect(readI16(bytes, 201 * 40 + 8) === 0, `${label} custom-landlook reserved range word is not deterministic zero`);
+}
+
+function assertCompiledCustomLandlookAtlas(files, label) {
+  const fork = files.get("Scenario.rsrc");
+  expect(fork, `${label} output is missing Scenario.rsrc`);
+  const entry = parseResourceFork(fork).find((resource) => resource.resourceType === "PICT" && resource.id === 306);
+  expect(entry, `${label} resource fork is missing PICT 306`);
+  expect(entry.name === "Custom 1 Landlook Atlas", `${label} PICT 306 has the wrong resource name`);
+  expect(Buffer.from(entry.data).equals(Buffer.from(customLandlookPict)), `${label} PICT 306 differs from canonical atlas bytes`);
+  const decoded = decodePictPreviewImageForTest(entry.data);
+  expect(decoded.width === 640 && decoded.height === 320, `${label} PICT 306 does not decode to 640 x 320`);
+  expect(decoded.summary.frameBottom === "320" && decoded.summary.frameRight === "640", `${label} PICT 306 has an invalid picture frame`);
+}
+
+async function assertReimportedCustomLandlookAtlas(project, label) {
+  const tileset = project.assetCatalog?.tilesets?.find((candidate) => candidate.landlook === 6);
+  expect(tileset, `${label} is missing the Custom 1 tileset association`);
+  expect(tileset.available === true && tileset.pictId === 306, `${label} did not recover available PICT 306 atlas art`);
+  expect(typeof tileset.imagePath === "string" && tileset.imagePath.includes("assets/tile-atlases/"), `${label} did not recover a decoded custom-atlas preview`);
+  expect(await pathExists(path.join(reimportDir, tileset.imagePath)), `${label} custom-atlas preview file is missing`);
 }
 
 function assertOwnershipSpell(records, label) {
@@ -886,6 +992,51 @@ function readI16(bytes, offset) {
 
 function readI32(bytes, offset) {
   return (((bytes[offset] ?? 0) << 24) | ((bytes[offset + 1] ?? 0) << 16) | ((bytes[offset + 2] ?? 0) << 8) | (bytes[offset + 3] ?? 0)) | 0;
+}
+
+function createCustomLandlookAtlasPixels() {
+  const rgba = new Uint8Array(640 * 320 * 4);
+  for (let y = 0; y < 320; y += 1) {
+    for (let x = 0; x < 640; x += 1) {
+      const tile = Math.floor(y / 32) * 20 + Math.floor(x / 32);
+      const offset = (y * 640 + x) * 4;
+      rgba[offset] = (tile * 40) & 0xf8;
+      rgba[offset + 1] = (tile * 72) & 0xf8;
+      rgba[offset + 2] = (tile * 104) & 0xf8;
+      rgba[offset + 3] = 255;
+    }
+  }
+  return rgba;
+}
+
+function encodeBmp(rgba, width, height) {
+  const rowBytes = Math.ceil((width * 3) / 4) * 4;
+  const pixelBytes = rowBytes * height;
+  const bmp = new Uint8Array(54 + pixelBytes);
+  const view = new DataView(bmp.buffer);
+  bmp[0] = 0x42;
+  bmp[1] = 0x4d;
+  view.setUint32(2, bmp.byteLength, true);
+  view.setUint32(10, 54, true);
+  view.setUint32(14, 40, true);
+  view.setInt32(18, width, true);
+  view.setInt32(22, height, true);
+  view.setUint16(26, 1, true);
+  view.setUint16(28, 24, true);
+  view.setUint32(34, pixelBytes, true);
+  view.setInt32(38, 2835, true);
+  view.setInt32(42, 2835, true);
+  for (let y = 0; y < height; y += 1) {
+    const targetRow = 54 + (height - 1 - y) * rowBytes;
+    for (let x = 0; x < width; x += 1) {
+      const source = (y * width + x) * 4;
+      const target = targetRow + x * 3;
+      bmp[target] = rgba[source + 2];
+      bmp[target + 1] = rgba[source + 1];
+      bmp[target + 2] = rgba[source];
+    }
+  }
+  return bmp;
 }
 
 function fileManifest(files) {

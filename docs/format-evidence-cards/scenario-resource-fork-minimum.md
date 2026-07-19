@@ -44,19 +44,25 @@ The minimum fresh container is exactly 46 bytes:
 - parsed resource entry count: 0.
 
 Both the Rust and browser compilers call a named minimum-resource-fork writer. The generated
-baseline and authoritative ownership proof require the exact 46-byte representation, zero parsed
-entries, repeated byte identity, and browser/desktop parity. Imported resource payloads remain in
-the compatibility annex unless replaced or removed through supported canonical resource models.
+baseline requires the exact 46-byte representation and zero parsed entries. A clean authored
+project that uses no managed resources retains that exact minimum. The authoritative ownership
+proof now deterministically extends the minimum with the canonical resources it actually uses:
+currently one normalized 640 x 320 indexed `PICT 306` Custom 1 atlas and no unrelated entries.
+Repeated byte identity and browser/desktop parity are required in both cases. Imported resource
+payloads remain in the compatibility annex unless replaced or removed through supported canonical
+resource models.
 
 ## Runtime Evidence And Remaining Acceptance Boundary
 
 The existing authoritative Realmz runtime gate has selected and started the fresh scenario with
-this zero-entry fork, then exercised movement, an Action Point and message, save, displacement, and
-reload in the existing Oracle-instrumented modern runtime binary. This Providence branch made no
-Realmz source or binary changes, but the Oracle executable itself is a diagnostic build rather than
-an unmodified release binary. The Oracle's separate `scenario-not-appearing` fixture proves that
-removing the resource sidecar prevents selection; that fixture proves file/container presence, not
-a required payload entry.
+the deterministic minimum-plus-`PICT 306` fork, observed the exact custom-atlas resource lookup,
+completed map rendering, and exercised movement, two Action Points, save, displacement, and reload
+with no fatal resource markers. This Providence branch made no Realmz source or binary changes,
+but the Oracle executable itself is a diagnostic build rather than an unmodified release binary.
+An ordinary non-instrumented modern Realmz build separately accepted and selected the generated
+folder through its normal third-party scenario import. The Oracle's separate
+`scenario-not-appearing` fixture proves that removing the resource sidecar prevents selection;
+that fixture proves file/container presence, not a required payload entry.
 
 Stock Classic Realmz acceptance remains a separate manual gate. The current `mac-classic-folder`
 transport emits `Scenario.rsrc`; it does not create an HFS resource fork or AppleDouble wrapper.

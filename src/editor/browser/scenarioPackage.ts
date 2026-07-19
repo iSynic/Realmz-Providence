@@ -71,6 +71,7 @@ import { appendPreservedShopSourceSuffix } from "./shopRecords";
 import { requiresCompatibilityAnnex } from "../projectOrigin";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
 import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
+import { isNormalizedLandlookAtlasPict } from "../pictWriter";
 
 type ZipEntry = {
   path: string;
@@ -703,6 +704,10 @@ function managedAssetResourceUpdates(assets: ManagedAsset[], originalResourceFor
     const data = managedAssetResourceBytes(asset);
     if (!data) {
       result.blockedAssets.push(`${asset.label} is missing browser-embedded converted resource bytes.`);
+      continue;
+    }
+    if (asset.conversion?.target === "custom-landlook-atlas" && !isNormalizedLandlookAtlasPict(data)) {
+      result.blockedAssets.push(`${asset.label} is not a normalized 640 x 320 indexed PICT atlas.`);
       continue;
     }
     if (originalEntries.some((entry) => entry.resourceType === asset.resourceType && entry.id === asset.resourceId && bytesEqual(entry.data, data))) {
