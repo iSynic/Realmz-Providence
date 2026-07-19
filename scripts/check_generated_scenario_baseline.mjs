@@ -55,6 +55,19 @@ try {
     rects: [],
     provenance: { ...firstRandomLevel.provenance, recordIndex: 1, byteOffset: firstRandomLevel.provenance.byteLength }
   });
+  compiled.project.tileAttributes.push({
+    tile: 190,
+    landlook: null,
+    solidType: 2,
+    movementSoundId: null,
+    movementCost: null,
+    editableScope: "special-tile",
+    flags: ["solid"],
+    confidence: "source-backed",
+    sourceKind: "data-solids",
+    source: "Data Solids",
+    rawByte: null
+  });
 
   const sourceBeforeExport = JSON.stringify(compiled.project.source);
   const result = createBrowserScenarioPackageZip(compiled.project, null, "windows-realmz-folder");
@@ -92,7 +105,10 @@ try {
   expect(files.get("Data DD")?.byteLength === 2 * AUTHORED_SCENARIO_BASELINE_SIZES.doorLevel, "Data DD should contain one door table per land map");
   expect(files.get("Data DDD")?.byteLength === 0, "a scenario without dungeon maps should retain an empty Data DDD startup file");
   expect(files.get("Data NI")?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems, "authored items should overlay Realmz's fixed 200-item table without truncating it");
-  expect(files.get("Data Solids")?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.tileSolids, "Data Solids should contain the neutral 1024-byte table");
+  const tileSolids = files.get("Data Solids");
+  expect(tileSolids?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.tileSolids, "Data Solids should contain the exact 1024-byte compiler table");
+  expect(tileSolids?.[190] === 2, "Data Solids should compile canonical special-tile solidity");
+  expect(tileSolids?.filter((byte) => byte !== 0).length === 1, "Data Solids should keep unspecified special-tile rows neutral");
   const minimumResourceFork = files.get("Scenario.rsrc");
   expect(minimumResourceFork?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioResourceFork, "Scenario.rsrc should be the exact canonical empty resource container");
   expect(readU32(minimumResourceFork, 0) === 16 && readU32(minimumResourceFork, 4) === 16, "Scenario.rsrc should use the canonical empty data/map offsets");

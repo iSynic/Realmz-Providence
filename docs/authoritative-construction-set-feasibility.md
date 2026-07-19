@@ -410,10 +410,22 @@ entry drift. Canonical resource workflows still add map names, media, text/style
 needed; legacy extras remain annex-owned. This closes the payload/default question while keeping
 stock Classic-Mac HFS/AppleDouble transport as a separate packaging acceptance gate.
 
-Branch validation through the forty-first slice completed on 2026-07-19:
+The forty-second slice closes complete byte ownership for the 1,024-byte `Data Solids` table.
+Both native compilers now use equivalent deterministic writers: an empty canonical collection
+produces the neutral table, while each `data-solids` profile writes its canonical `solidType` to
+the indexed special-tile byte. Embedded `rawByte` provenance cannot influence authored output;
+duplicate rows, out-of-range tile indices, and values outside `0..255` are rejected instead of
+silently depending on array order or truncation. This fixes a concrete browser/desktop asymmetry:
+browser ZIP export previously emitted only the neutral baseline and ignored authored special-tile
+solidity. Imported bytes beyond the runtime-owned 1,024-byte table now remain annex-owned and are
+appended unchanged by both compilers. The ownership proof authors row 190 without raw bytes,
+requires byte `2` in Windows and Classic-Mac browser/desktop output, and recovers it semantically
+on native-folder reimport.
 
-- full Rust suite: 243 passed, 2 ignored;
-- full TypeScript suite: 598 passed, plus typecheck;
+Branch validation through the forty-second slice completed on 2026-07-19:
+
+- full Rust suite: 245 passed, 2 ignored;
+- full TypeScript suite: 601 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -429,9 +441,10 @@ extractions add no new module-size violation; moving `Data NI` and `Data SD` out
 also removes that file from the current violation list, and the simple-encounter changes remain
 within the existing `encounters.rs` ceiling; the complex- and thief-encounter changes add no new
 module-size violation. The authoritative rules slice likewise keeps `rules.rs` within its ceiling
-by separating exact-shape validation from the native codec. Architecture, lint, unit, typecheck, UI
-audit, production build, scenario proof, package parity, and the full Rust suite were run
-independently.
+by separating exact-shape validation from the native codec. The `Data Solids` slice likewise moves
+its 1,024-byte codec and tests into a focused module, returns `landlooks.rs` below its baseline, and
+does not add a new ISY-320 violation. Architecture, lint, unit, typecheck, UI audit, production
+build, scenario proof, package parity, and the full Rust suite were run independently.
 
 ## Verdict
 
@@ -485,7 +498,7 @@ them from the emitted scenario source files.
 | 1. Can the current model become authoritative without a disruptive rewrite? | **Yes.** It already represents the minimum proof and most construction-set families. Add explicit authored/imported origin, remove preservation data from the normal fresh path, and migrate model drift. |
 | 2. Can fresh projects export with no `raw-sources`? | **Yes on the investigation branch.** Fresh desktop projects now omit the directory and source inventory, and annex-free export emits compiler defaults directly. Imported projects still require their compatibility material. |
 | 3. Which native files are completely generated? | The 316-byte scenario marker and `Data CS` cores, neutral 600-byte support-file baseline, maps, trigger tables, random levels, ED3/EDCD, messages, options, monsters/descriptions, treasures, shops, thief/timed encounters, custom spell records/names, contact/restrictions, and most record cores have writers. The detailed matrix separates semantic generation from neutral compiler defaults and compatibility ranges. |
-| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, neutral `Data Solids`, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, arbitrary legacy resources, and Classic-Mac resource-fork transport metadata. The fresh main resource container, support output, marker, and `Data CS` no longer require preserved bytes; exact legacy security/publish and stock Classic-Mac behavior remain acceptance unknowns. |
+| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, arbitrary legacy resources, and Classic-Mac resource-fork transport metadata. The fresh main resource container, support output, marker, `Data CS`, and complete `Data Solids` table no longer require preserved bytes; exact legacy security/publish and stock Classic-Mac behavior remain acceptance unknowns. |
 | 5. Can legacy preservation be isolated? | **Yes, and the boundary is explicit on the investigation branch.** Schema v5 records authored/imported origin; native export requires the annex only for imported projects. Remaining work is moving embedded record tails and browser-native preservation behind the same contract. |
 | 6. Can TypeScript and Rust derive from one schema? | **Yes, incrementally.** The investigation branch generates the shared schema version, persisted top-level inventory, source/origin/source-file DTOs, scenario identity/startup DTOs, shared provenance/confidence primitives, map identity/layout and map-record DTOs, random-level/rectangle DTOs, and complete scenario-item, treasure, shop, message, option-label, battle, monster, monster-description, spell, race, and caste DTOs from JSON Schema. It checks both project models plus the Rust serializer; remaining DTO families can migrate incrementally. |
 | 7. Can export become a deterministic compiler without a UI rewrite? | **Yes.** The UI already calls thin desktop/browser export boundaries with a `Project`; extract a pure file/resource manifest compiler behind them. |
@@ -733,7 +746,7 @@ Legend:
 | `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | Both writers compile all eighteen Str255 slots and deterministic padding without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
 | `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | Both writers compile all 320 bytes and normalize ban flags from canonical semantics without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
 | `Global` | Generated semantic hooks + bounded legacy annex | Generate 60 bytes with zero defaults for reserved slots | Both writers compile the five runtime-backed slots from canonical data without embedded bytes. Untouched imported identity is annex-owned; edited imports restore only reserved slots 3 and 6-29 plus a malformed tail. |
-| `Data Solids` | Compiler baseline plus generated writer | Generate exactly 1,024 bytes | Both authored compilers emit the neutral 1,024-byte table directly. |
+| `Data Solids` | Fully generated semantic table + legacy annex tail | Generate exactly 1,024 bytes from canonical special-tile profiles | Both compilers write every runtime-owned byte from `solidType`, use zero for unspecified rows, ignore embedded `rawByte` provenance, and reject ambiguous/out-of-domain profiles. Imported bytes beyond offset 1,023 remain annex-owned compatibility data. |
 
 ### Maps, Action Points, and scripts
 
@@ -840,7 +853,8 @@ must not be called fresh-authoritative merely because imported round trips are f
    - **implemented:** fixed 105-record `Data Spell` output and fresh custom-spell name resources;
    - required zero-length startup files;
    - **implemented:** deterministic semantic `Data CS` from the canonical shell or explicit backup;
-   - neutral `Data Solids` policy.
+   - **implemented:** exact 1,024-byte semantic `Data Solids` compilation with zero defaults and
+     imported extra bytes isolated in the compatibility annex.
 5. **Implemented at the export boundary:** move preservation helpers behind an optional,
    path-bounded compatibility-annex interface. Fresh compilation has poison-annex tests that fail
    if it enumerates or reads supplied legacy material. Completed authoritative families ignore

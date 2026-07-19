@@ -300,7 +300,7 @@ export function updateSpecialTileSolidity(
       confidence: "source-backed",
       sourceKind: "data-solids",
       source: "Data Solids",
-      rawByte: command.solid ? 1 : 0
+      rawByte: null
     }, command.solid));
   }
   return changed ? { ...project, tileAttributes } : project;
@@ -533,11 +533,11 @@ function assignMapToCustomLandlook(project: Project, mapId: string, previousLand
 }
 
 function specialTileSolidityProfile(profile: TileAttributeProfile, solid: boolean): TileAttributeProfile {
-  const rawByte = solid ? 1 : 0;
+  const solidType = solid ? 1 : 0;
   const flags: TileAttributeFlag[] = solid ? ["solid"] : ["walkable"];
   if (
-    profile.rawByte === rawByte &&
-    profile.solidType === rawByte &&
+    profile.rawByte == null &&
+    profile.solidType === solidType &&
     profile.flags.length === 1 &&
     profile.flags[0] === flags[0]
   ) {
@@ -545,8 +545,8 @@ function specialTileSolidityProfile(profile: TileAttributeProfile, solid: boolea
   }
   return {
     ...profile,
-    solidType: rawByte,
-    rawByte,
+    solidType,
+    rawByte: null,
     flags,
     editableScope: "special-tile",
     confidence: "source-backed",

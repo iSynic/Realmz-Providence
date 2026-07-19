@@ -8,6 +8,7 @@ use crate::project::{
     ScenarioSpellOverride, ScenarioTarget, SimpleEncounterRecord, TargetCompatibilityBuckets,
     TargetCompatibilityIssue, ThiefEncounterRecord, TimedEncounterRecord,
 };
+use crate::realmz::landlooks::TILE_SOLIDS_BYTES;
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
     write_door_file_for_levels, write_extracodes, write_fields, write_global_macro_hooks,
@@ -209,7 +210,10 @@ fn compile_realmz_scenario(
     write_if_nonempty(
         &mut manifest,
         "Data Solids",
-        write_tile_solids(&project.tile_attributes)?,
+        preserve_imported_data_solids_tail(
+            write_tile_solids(&project.tile_attributes)?,
+            compatibility_annex,
+        )?,
     )?;
     for landlook in &project.custom_landlooks {
         if landlook.authored {
@@ -398,7 +402,6 @@ fn write_authored_runtime_baseline(
     target: ScenarioTarget,
 ) -> Result<()> {
     const SCENARIO_ITEM_TABLE_BYTES: usize = 200 * crate::realmz::ITEM_BYTES;
-    const TILE_SOLIDS_BYTES: usize = 1024;
     const EMPTY_RUNTIME_TABLES: &[&str] = &[
         "Data DL", "Data RDD", "Data SD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD",
     ];
@@ -417,7 +420,10 @@ fn write_authored_runtime_baseline(
         ),
         ("Data CS".to_string(), write_scenario_shell(shell)?),
         ("Data NI".to_string(), vec![0; SCENARIO_ITEM_TABLE_BYTES]),
-        ("Data Solids".to_string(), vec![0; TILE_SOLIDS_BYTES]),
+        (
+            "Data Solids".to_string(),
+            write_tile_solids(&project.tile_attributes)?,
+        ),
     ];
     for (name, bytes) in entries {
         manifest.insert_generated(name, bytes);
@@ -941,6 +947,22 @@ fn preserve_imported_fixed_length(
         bytes.resize(raw.len(), 0);
     } else {
         bytes.extend_from_slice(&raw[bytes.len()..]);
+    }
+    Ok(bytes)
+}
+
+fn preserve_imported_data_solids_tail(
+    mut bytes: Vec<u8>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read("Data Solids")?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    if raw.len() > TILE_SOLIDS_BYTES {
+        bytes.extend_from_slice(&raw[TILE_SOLIDS_BYTES..]);
     }
     Ok(bytes)
 }

@@ -27,6 +27,7 @@ import type {
   SimpleEncounterRecord,
   ThiefEncounterRecord,
   TimedEncounterRecord,
+  TileAttributeProfile,
   TriggerRecord,
   TreasureRecord
 } from "../types";
@@ -64,6 +65,7 @@ export const SCENARIO_SHELL_BYTES = 316;
 export const SCENARIO_SUPPORT_FILE_BYTES = 600;
 export const SCENARIO_CONTACT_INFO_BYTES = 4608;
 export const SCENARIO_RESTRICTIONS_BYTES = 320;
+export const TILE_SOLIDS_BYTES = 1024;
 export const MAPSTATS_RECORD_BYTES = 40;
 export const MAPSTATS_RECORDS = 201;
 export const LANDLOOK_RANGE_TAIL_BYTES = 60;
@@ -98,6 +100,27 @@ export function writeOptionLabels(records: OptionLabelRecord[]) {
     }
     encodePascalText(target, record.text);
   });
+}
+
+export function writeTileSolids(attributes: TileAttributeProfile[]) {
+  const output = new Uint8Array(TILE_SOLIDS_BYTES);
+  const seen = new Set<number>();
+  for (const attribute of attributes) {
+    if (attribute.sourceKind !== "data-solids") continue;
+    if (!Number.isInteger(attribute.tile) || attribute.tile < 0 || attribute.tile >= TILE_SOLIDS_BYTES) {
+      throw new Error(`Data Solids tile ${attribute.tile} is outside the 0..${TILE_SOLIDS_BYTES - 1} table range.`);
+    }
+    if (seen.has(attribute.tile)) {
+      throw new Error(`Data Solids tile ${attribute.tile} is defined more than once.`);
+    }
+    seen.add(attribute.tile);
+    const value = attribute.solidType ?? 0;
+    if (!Number.isInteger(value) || value < 0 || value > 255) {
+      throw new Error(`Data Solids tile ${attribute.tile} solidity ${value} is outside the unsigned-byte range 0..255.`);
+    }
+    output[attribute.tile] = value;
+  }
+  return output;
 }
 
 export function writeBattles(records: BattleRecord[]) {

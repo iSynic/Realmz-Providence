@@ -12,69 +12,9 @@ pub const LANDLOOK_RANGE_TAIL_BYTES: usize = 60;
 pub const LANDLOOK_RANGE_SLOT_BYTES: usize = 6;
 pub const LANDLOOK_RANGE_SLOTS: usize = LANDLOOK_RANGE_TAIL_BYTES / LANDLOOK_RANGE_SLOT_BYTES;
 
-pub(super) fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttributeProfile> {
-    buffer
-        .iter()
-        .take(1024)
-        .enumerate()
-        .map(|(tile, solid_type)| TileAttributeProfile {
-            tile: tile as i16,
-            landlook: None,
-            solid_type: Some(*solid_type as i16),
-            movement_sound_id: None,
-            movement_cost: None,
-            shore: None,
-            boat_requirement: None,
-            path_flag: None,
-            blocks_los: None,
-            fly_float_required: None,
-            forest_type: None,
-            spare: None,
-            combat_build: Vec::new(),
-            clear_land_id: None,
-            base_tile: None,
-            base_scale: None,
-            editable_scope: "special-tile".to_string(),
-            flags: if *solid_type == 0 {
-                vec![TileAttributeFlag::Walkable]
-            } else {
-                vec![TileAttributeFlag::Solid]
-            },
-            confidence: TileAttributeConfidence::SourceBacked,
-            source_kind: TileAttributeSourceKind::DataSolids,
-            source: "Data Solids".to_string(),
-            raw_byte: Some(*solid_type),
-        })
-        .collect()
-}
-
-pub fn write_tile_solids(attributes: &[TileAttributeProfile]) -> Result<Vec<u8>> {
-    let mut output = vec![0u8; 1024];
-    let mut saw_solids = false;
-    for attribute in attributes
-        .iter()
-        .filter(|attribute| matches!(attribute.source_kind, TileAttributeSourceKind::DataSolids))
-    {
-        if !(0..1024).contains(&i32::from(attribute.tile)) {
-            continue;
-        }
-        saw_solids = true;
-        let value = attribute
-            .raw_byte
-            .or_else(|| {
-                attribute
-                    .solid_type
-                    .and_then(|value| u8::try_from(value).ok())
-            })
-            .unwrap_or(0);
-        output[attribute.tile as usize] = value;
-    }
-    if saw_solids {
-        Ok(output)
-    } else {
-        Ok(Vec::new())
-    }
-}
+mod tile_solids;
+pub(super) use tile_solids::parse_tile_attributes;
+pub use tile_solids::{write_tile_solids, TILE_SOLIDS_BYTES};
 
 pub fn parse_landlook_mapstats_data(
     buffer: &[u8],
@@ -523,15 +463,6 @@ fn landlook_range_label(slot: usize) -> &'static str {
 mod tests {
     use super::*;
 
-    fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {
-        before
-            .iter()
-            .zip(after.iter())
-            .enumerate()
-            .filter_map(|(offset, (left, right))| (left != right).then_some(offset))
-            .collect()
-    }
-
     #[test]
     fn mapstats_parse_source_backed_tile_attributes() {
         let mut input = vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 64];
@@ -813,30 +744,5 @@ mod tests {
         assert_eq!(i16_be(&output, tail_start), 70);
         assert_eq!(i16_be(&output, tail_start + 2), 80);
         assert_eq!(i16_be(&output, tail_start + 4), 1234);
-    }
-
-    #[test]
-    fn data_solids_round_trip_from_tile_attributes() {
-        let mut input = vec![0u8; 1024];
-        input[35] = 1;
-        input[190] = 2;
-        input[998] = 1;
-        let profiles = parse_tile_attributes(&input);
-        let output = write_tile_solids(&profiles).unwrap();
-        assert_eq!(output, input);
-    }
-
-    #[test]
-    fn data_solids_mutates_only_selected_special_tile_solidity() {
-        let input = vec![0u8; 1024];
-        let mut profiles = parse_tile_attributes(&input);
-        profiles[190].raw_byte = Some(1);
-        profiles[190].solid_type = Some(1);
-        profiles[190].flags = vec![TileAttributeFlag::Solid];
-
-        let output = write_tile_solids(&profiles).unwrap();
-
-        assert_eq!(changed_offsets(&input, &output), vec![190]);
-        assert_eq!(output[190], 1);
     }
 }

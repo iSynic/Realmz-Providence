@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import { emptyCasteOverride, emptyRaceOverride, emptySpellOverride } from "../projectCommands/scenarioRulesCommands";
-import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeScenarioSupportFile, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import type { MapRecord, RandomLevel, RandomRect, TileAttributeProfile } from "../types";
+import { TILE_SOLIDS_BYTES, writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeScenarioSupportFile, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTileSolids, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -20,6 +20,47 @@ const rect: RandomRect = {
   sound: 17,
   text: 23
 };
+
+function specialTileProfile(tile: number, solidType: number | null, rawByte: number | null = null): TileAttributeProfile {
+  return {
+    tile,
+    landlook: null,
+    solidType,
+    movementSoundId: null,
+    movementCost: null,
+    editableScope: "special-tile",
+    flags: solidType === 0 ? ["walkable"] : ["solid"],
+    confidence: "source-backed",
+    sourceKind: "data-solids",
+    source: "Data Solids",
+    rawByte
+  };
+}
+
+describe("browser Data Solids writer", () => {
+  it("compiles an exact neutral table without imported source bytes", () => {
+    const output = writeTileSolids([]);
+    expect(output).toHaveLength(TILE_SOLIDS_BYTES);
+    expect(output.every((byte) => byte === 0)).toBe(true);
+  });
+
+  it("prefers canonical solidity over imported raw-byte provenance", () => {
+    const output = writeTileSolids([
+      specialTileProfile(190, 2, 0xa5),
+      specialTileProfile(191, null, 0xa5)
+    ]);
+    expect(output).toHaveLength(TILE_SOLIDS_BYTES);
+    expect(output[190]).toBe(2);
+    expect(output.filter((byte) => byte !== 0)).toEqual(new Uint8Array([2]));
+  });
+
+  it("rejects duplicate rows and values outside the native byte domain", () => {
+    expect(() => writeTileSolids([specialTileProfile(4, 1), specialTileProfile(4, 0)]))
+      .toThrow("defined more than once");
+    expect(() => writeTileSolids([specialTileProfile(4, 256)]))
+      .toThrow("unsigned-byte range");
+  });
+});
 
 describe("browser rule-override writers", () => {
   it("compile semantic records without embedded raw identity", () => {

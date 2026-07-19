@@ -839,6 +839,7 @@ function checkSpecialTileSolidity({ updateSpecialTileSolidity }, { classifyTileV
   const special = next.tileAttributes.find((profile) => profile.sourceKind === "data-solids" && profile.tile === 384);
   assert(special?.editableScope === "special-tile", "Data Solids edit lost special-tile editable scope");
   assert(special?.flags.includes("solid"), "Data Solids edit did not set solid flag");
+  assert(special?.rawByte == null, "Data Solids edit retained imported raw-byte provenance");
   assert(findProfile(next, 6, 12)?.solidType === 0, "Data Solids edit changed unrelated mapstats metadata");
   const meaning = classifyTileValue(-384, customTileset(), next.tileAttributes, {});
   assert(meaning.attributeFlags.includes("special-icon"), "negative special tile did not keep special-icon grouping");

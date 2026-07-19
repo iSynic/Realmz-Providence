@@ -26,6 +26,7 @@ import {
   TREASURE_RECORD_BYTES,
   THIEF_ENCOUNTER_RECORD_BYTES,
   TIMED_ENCOUNTER_RECORD_BYTES,
+  TILE_SOLIDS_BYTES,
   writeBattles,
   writeCasteOverrides,
   writeComplexEncounters,
@@ -53,6 +54,7 @@ import {
   writeSpellOverrides,
   writeThiefEncounters,
   writeTimedEncounters,
+  writeTileSolids,
   writeTreasures
 } from "./binaryWriters";
 import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
@@ -411,6 +413,10 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
       bytes: preserveMalformedRawTail("Layout", writeLandLayout(project.landLayout), LAND_LAYOUT_RECORD_BYTES, annex)
     });
   }
+  writes.push({
+    path: "Data Solids",
+    bytes: preserveImportedDataSolidsTail(writeTileSolids(project.tileAttributes), annex)
+  });
   for (const landlook of project.customLandlooks ?? []) {
     if (!landlook.authored) continue;
     writes.push({
@@ -898,6 +904,15 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
   output.set(raw.slice(bytes.byteLength), bytes.byteLength);
+  return output;
+}
+
+function preserveImportedDataSolidsTail(bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {
+  const raw = rawSourceBytes("Data Solids", annex);
+  if (!raw || raw.byteLength <= TILE_SOLIDS_BYTES) return bytes;
+  const output = new Uint8Array(raw.byteLength);
+  output.set(bytes);
+  output.set(raw.slice(TILE_SOLIDS_BYTES), TILE_SOLIDS_BYTES);
   return output;
 }
 

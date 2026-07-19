@@ -5,7 +5,7 @@ mod battles;
 mod combat;
 mod economy;
 mod encounters;
-mod landlooks;
+pub(crate) mod landlooks;
 mod maps;
 mod messages;
 mod option_labels;

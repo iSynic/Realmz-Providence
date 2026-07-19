@@ -38,9 +38,23 @@ const result = createProjectFromScenarioSeed(seed, {
 
 expect(result.ok, `Scenario JSON compilation failed: ${result.ok ? "" : result.errors.join("; ")}`);
 const project = result.project;
+project.tileAttributes.push({
+  tile: 190,
+  landlook: null,
+  solidType: 2,
+  movementSoundId: null,
+  movementCost: null,
+  editableScope: "special-tile",
+  flags: ["solid"],
+  confidence: "source-backed",
+  sourceKind: "data-solids",
+  source: "Data Solids",
+  rawByte: null
+});
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
 assertOwnershipScenarioMetadata(project, "Canonical project", true);
 assertOwnershipGlobalMacros(project, "Canonical project", true);
+assertOwnershipTileSolids(project, "Canonical project", false);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
@@ -147,6 +161,10 @@ assertCompleteNativeFolder(windowsFilesA, "Windows");
 assertCompleteNativeFolder(classicFilesA, "Classic Mac");
 assertCompleteNativeFolder(browserWindowsFiles, "browser Windows");
 assertCompleteNativeFolder(browserClassicFiles, "browser Classic Mac");
+assertCompiledTileSolids(windowsFilesA, "Windows");
+assertCompiledTileSolids(classicFilesA, "Classic Mac");
+assertCompiledTileSolids(browserWindowsFiles, "browser Windows");
+assertCompiledTileSolids(browserClassicFiles, "browser Classic Mac");
 assertManifestNamesEqual(project.validation.exportableFiles, browserWindowsFiles, "Browser validation manifest");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
@@ -194,6 +212,7 @@ assertOwnershipSpell(reimported.spellOverrides, "Reimport");
 assertOwnershipRules(reimported, "Reimport", false);
 assertOwnershipScenarioMetadata(reimported, "Reimport", false);
 assertOwnershipGlobalMacros(reimported, "Reimport", false);
+assertOwnershipTileSolids(reimported, "Reimport", true);
 
 const summary = {
   proofVersion: 1,
@@ -220,6 +239,7 @@ const summary = {
     customSpells: project.spellOverrides.length,
     raceOverrides: project.raceOverrides.length,
     casteOverrides: project.casteOverrides.length,
+    authoredSpecialTileSolidityRows: project.tileAttributes.filter((profile) => profile.sourceKind === "data-solids").length,
     globalMacroHooks: project.scenario.globalMacroHooks?.slots.filter((slot) => slot.door !== 0).length ?? 0,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
@@ -266,7 +286,8 @@ const summary = {
     shopRecovered: true,
     customSpellRecovered: true,
     raceOverrideRecovered: true,
-    casteOverrideRecovered: true
+    casteOverrideRecovered: true,
+    specialTileSolidityRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -325,6 +346,7 @@ async function assertNoRawSources(stage) {
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
   assertOwnershipScenarioMetadata(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipGlobalMacros(savedProject, `Rust-saved project ${stage}`, true);
+  assertOwnershipTileSolids(savedProject, `Rust-saved project ${stage}`, false);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
@@ -495,6 +517,13 @@ function assertOwnershipItemText(records, label) {
   expect(itemText.description === "This item text was compiled from canonical Providence data.", `${label} has the wrong item description`);
 }
 
+function assertCompiledTileSolids(files, label) {
+  const bytes = files.get("Data Solids");
+  expect(bytes?.byteLength === 1024, `${label} Data Solids does not have the exact native table size`);
+  expect(bytes[190] === 2, `${label} Data Solids has the wrong canonical solidity for special tile 190`);
+  expect(bytes.filter((byte) => byte !== 0).length === 1, `${label} Data Solids has non-neutral unspecified rows`);
+}
+
 function assertOwnershipMessage(records, label) {
   const message = records?.find((record) => record.id === 0);
   const rogueMessage = records?.find((record) => record.id === 1);
@@ -617,6 +646,19 @@ function assertOwnershipGlobalMacros(project, label, requireNoCompatibilityBytes
   expect(hooks.slots.find((slot) => slot.slot === 0)?.door === 2, `${label} has the wrong global start macro`);
   if (requireNoCompatibilityBytes) {
     expect((hooks.rawBytes?.length ?? 0) === 0, `${label} global macros contain compatibility bytes`);
+  }
+}
+
+function assertOwnershipTileSolids(project, label, expectImportedRawByte) {
+  const profiles = project.tileAttributes?.filter((profile) => profile.sourceKind === "data-solids") ?? [];
+  const profile = profiles.find((candidate) => candidate.tile === 190);
+  expect(profile, `${label} is missing special-tile solidity row 190`);
+  expect(profile.solidType === 2 && profile.flags?.includes("solid"), `${label} has the wrong canonical special-tile solidity`);
+  if (expectImportedRawByte) {
+    expect(profile.rawByte === 2, `${label} did not retain the decoded source byte as import provenance`);
+  } else {
+    expect(profile.rawByte == null, `${label} fresh special-tile solidity depends on imported raw-byte provenance`);
+    expect(profiles.length === 1, `${label} fresh project should carry only explicitly authored Data Solids rows`);
   }
 }
 

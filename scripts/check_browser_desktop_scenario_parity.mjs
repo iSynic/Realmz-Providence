@@ -79,6 +79,7 @@ const rawFiles = [
   rawFile("Data SD2", pascalRecords(["A", "B"], 256), "supported-binary"),
   rawFile("Data OD", pascalRecords(["Yes", "No"], 25), "supported-binary"),
   rawFile("Data BD", fixedBytes(346, [0xaa, 0xbb]), "supported-binary"),
+  rawFile("Data Solids", dataSolidsWithCompatibilityTail(), "supported-binary"),
   rawFile("Data MENU", [5, 6, 7], "unknown"),
   rawFile("Custom Names.rsrc", [8, 9], "resource-fork"),
   rawFile("Read Me.txt", [10, 11, 12], "unknown")
@@ -102,7 +103,10 @@ const rawSources = {
 const browserProject = fixtureProject(rawFiles);
 
 await compareScenarioCase("synthetic-fixture", projectDir, browserProject, rawSources, {
-  expectedMissingFiles: ["Data MENU", "Custom Names.rsrc"]
+  expectedMissingFiles: ["Data MENU", "Custom Names.rsrc"],
+  requiredFiles: ["Data Solids"],
+  requiredWrittenFiles: ["Data Solids"],
+  preservedSourceSuffixes: [{ name: "Data Solids", offset: 1024 }]
 });
 await compareOptionalCorpusScenarios();
 
@@ -690,6 +694,12 @@ function pascalRecords(values, recordBytes) {
 function fixedBytes(length, prefix) {
   const output = new Uint8Array(length);
   output.set(prefix);
+  return output;
+}
+
+function dataSolidsWithCompatibilityTail() {
+  const output = new Uint8Array(1027);
+  output.set([0xde, 0xad, 0xbe], 1024);
   return output;
 }
 

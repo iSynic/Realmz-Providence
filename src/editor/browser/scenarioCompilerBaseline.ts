@@ -1,9 +1,8 @@
 import type { Project } from "../types";
-import { DOOR_LEVEL_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, writeDoorFile, writeScenarioShell } from "./binaryWriters";
+import { DOOR_LEVEL_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, TILE_SOLIDS_BYTES, writeDoorFile, writeScenarioShell, writeTileSolids } from "./binaryWriters";
 import { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, writeMinimumScenarioResourceFork } from "./resourceFork";
 
 const SCENARIO_ITEM_TABLE_BYTES = 200 * 100;
-const TILE_SOLIDS_BYTES = 1024;
 
 const EMPTY_RUNTIME_TABLES = [
   "Data DL",
@@ -36,7 +35,7 @@ export function createAuthoredScenarioCompilerBaseline(project: Project): Scenar
     { path: "Data DD", bytes: writeDoorFile(project.triggers, "land", Math.max(1, landLevelCount)) },
     { path: "Data DDD", bytes: writeDoorFile(project.triggers, "dungeon", dungeonLevelCount) },
     { path: "Data NI", bytes: new Uint8Array(SCENARIO_ITEM_TABLE_BYTES) },
-    { path: "Data Solids", bytes: new Uint8Array(TILE_SOLIDS_BYTES) },
+    { path: "Data Solids", bytes: writeTileSolids(project.tileAttributes) },
     ...EMPTY_RUNTIME_TABLES.map((path) => ({ path, bytes: new Uint8Array() }))
   ];
 }
