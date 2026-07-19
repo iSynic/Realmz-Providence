@@ -606,17 +606,35 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/encounters.rs:thief_encounter_storage_mutates_only_owned_fields",
+        "src-tauri/src/realmz/encounters.rs:fresh_thief_encounter_compiles_complete_semantic_row",
+        "src-tauri/src/realmz/encounters.rs:imported_thief_encounter_compiles_without_record_byte_identity",
+        "src-tauri/src/exporter.rs:imported_thief_encounter_export_reads_legacy_bytes_only_from_annex",
         "src-tauri/src/realmz/encounters.rs:write_thief_encounters",
         "src-tauri/src/realmz/encounters.rs:parse_thief_encounters",
-        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "scripts/run_authoritative_scenario_proof.mjs",
         "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/encounters.rs:thief_encounter_storage_mutates_only_owned_fields",
+          "reference": "src-tauri/src/realmz/encounters.rs:fresh_thief_encounter_compiles_complete_semantic_row",
           "file": "src-tauri/src/realmz/encounters.rs",
-          "anchor": "thief_encounter_storage_mutates_only_owned_fields",
+          "anchor": "fresh_thief_encounter_compiles_complete_semantic_row",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/encounters.rs:imported_thief_encounter_compiles_without_record_byte_identity",
+          "file": "src-tauri/src/realmz/encounters.rs",
+          "anchor": "imported_thief_encounter_compiles_without_record_byte_identity",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/exporter.rs:imported_thief_encounter_export_reads_legacy_bytes_only_from_annex",
+          "file": "src-tauri/src/exporter.rs",
+          "anchor": "imported_thief_encounter_export_reads_legacy_bytes_only_from_annex",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -638,8 +656,8 @@
           "present": true
         },
         {
-          "reference": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
-          "file": "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+          "reference": "scripts/run_authoritative_scenario_proof.mjs",
+          "file": "scripts/run_authoritative_scenario_proof.mjs",
           "anchor": null,
           "fileExists": true,
           "anchorPresent": null,
@@ -693,7 +711,7 @@
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Thief encounter records are fully modeled by the current parser and writer."
+      "preservationPolicy": "Fresh thief encounter records compile all 118 bytes from canonical flags, modifiers, result codes, message and sound links, trap fields, lock fields, and prompt support fields without rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
     }
   ]
 }

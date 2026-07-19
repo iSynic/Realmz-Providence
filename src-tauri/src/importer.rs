@@ -2313,6 +2313,23 @@ mod tests {
                 "confidence": "fixture-backed"
             }
         }]);
+        saved["thiefEncounters"] = serde_json::json!([{
+            "id": 1,
+            "typeFlags": [true],
+            "modifiers": [-2],
+            "spell": 17,
+            "lowDamage": 3,
+            "highDamage": 9,
+            "tumblers": 5,
+            "prompts": [4],
+            "provenance": {
+                "sourceFile": "Data TD2",
+                "recordIndex": 1,
+                "byteOffset": 118,
+                "byteLength": 118,
+                "confidence": "fixture-backed"
+            }
+        }]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2329,6 +2346,13 @@ mod tests {
         assert!(opened.complex_encounters[0].word_results.is_empty());
         assert_eq!(opened.complex_encounters[0].groups.len(), 8);
         assert_eq!(opened.complex_encounters[0].texts.len(), 9);
+        assert_eq!(opened.thief_encounters[0].type_flags.len(), 10);
+        assert!(opened.thief_encounters[0].type_flags[0]);
+        assert_eq!(opened.thief_encounters[0].modifiers.len(), 8);
+        assert_eq!(opened.thief_encounters[0].modifiers[0], -2);
+        assert_eq!(opened.thief_encounters[0].success_codes.len(), 8);
+        assert_eq!(opened.thief_encounters[0].prompts.len(), 3);
+        assert_eq!(opened.thief_encounters[0].prompt_sounds.len(), 3);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2341,6 +2365,21 @@ mod tests {
         assert!(upgraded["complexEncounters"][0]
             .get("wordResults")
             .is_none());
+        assert_eq!(
+            upgraded["thiefEncounters"][0]["typeFlags"]
+                .as_array()
+                .unwrap()
+                .len(),
+            10
+        );
+        assert_eq!(
+            upgraded["thiefEncounters"][0]["successCodes"]
+                .as_array()
+                .unwrap()
+                .len(),
+            8
+        );
+        assert!(upgraded["thiefEncounters"][0].get("rawBytes").is_none());
     }
 
     #[test]

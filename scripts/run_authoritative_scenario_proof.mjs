@@ -40,15 +40,17 @@ const project = result.project;
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 1, `Expected one Action Point, found ${project.triggers.length}`);
-expect(project.messages.length === 1, `Expected one message, found ${project.messages.length}`);
+expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
 assertOwnershipMessage(project.messages, "Canonical project");
-expect((project.messages[0].rawBytes?.length ?? 0) === 0, "Fresh canonical message must not carry compatibility bytes");
+expect(project.messages.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical messages must not carry compatibility bytes");
 assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
 expect(project.optionLabels.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical option labels must not carry compatibility bytes");
 assertOwnershipSimpleEncounter(project.simpleEncounters, "Canonical project");
 expect(project.simpleEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical simple encounters must not carry compatibility bytes");
 assertOwnershipComplexEncounter(project.complexEncounters, "Canonical project");
 expect(project.complexEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical complex encounters must not carry compatibility bytes");
+assertOwnershipThiefEncounter(project.thiefEncounters, "Canonical project");
+expect(project.thiefEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical thief encounters must not carry compatibility bytes");
 assertOwnershipBattle(project.battles, "Canonical project");
 expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical battles must not carry compatibility bytes");
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
@@ -173,6 +175,7 @@ assertOwnershipMessage(reimported.messages, "Reimport");
 assertOwnershipOptionLabels(reimported.optionLabels, "Reimport");
 assertOwnershipSimpleEncounter(reimported.simpleEncounters, "Reimport");
 assertOwnershipComplexEncounter(reimported.complexEncounters, "Reimport");
+assertOwnershipThiefEncounter(reimported.thiefEncounters, "Reimport");
 assertOwnershipBattle(reimported.battles, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
@@ -194,6 +197,7 @@ const summary = {
     messages: project.messages.length,
     simpleEncounters: project.simpleEncounters.length,
     complexEncounters: project.complexEncounters.length,
+    thiefEncounters: project.thiefEncounters.length,
     battles: project.battles.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
@@ -302,6 +306,8 @@ async function assertNoRawSources(stage) {
   expect(savedProject.simpleEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} simple encounters contain compatibility bytes`);
   assertOwnershipComplexEncounter(savedProject.complexEncounters, `Rust-saved project ${stage}`);
   expect(savedProject.complexEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} complex encounters contain compatibility bytes`);
+  assertOwnershipThiefEncounter(savedProject.thiefEncounters, `Rust-saved project ${stage}`);
+  expect(savedProject.thiefEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} thief encounters contain compatibility bytes`);
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
   expect(savedProject.battles?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} battles contain compatibility bytes`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
@@ -322,10 +328,11 @@ function assertCompleteNativeFolder(files, label) {
     ["Data LD", 90 * 90 * 2],
     ["Data RD", 644],
     ["Data DD", 100 * 40],
-    ["Data SD2", 256],
+    ["Data SD2", 2 * 256],
     ["Data OD", 50],
     ["Data ED", 426],
     ["Data ED2", 520],
+    ["Data TD2", 2 * 118],
     ["Data BD", 346],
     ["Data NI", 200 * 100],
     ["Data TD", 48],
@@ -339,7 +346,7 @@ function assertCompleteNativeFolder(files, label) {
     expect(files.has(name), `${label} output is missing ${name}`);
     expect(files.get(name).byteLength === bytes, `${label} ${name} should be ${bytes} bytes, found ${files.get(name).byteLength}`);
   }
-  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD2", "Data TD3", "Data MD"]) {
+  for (const name of ["Data DDD", "Data DL", "Data RDD", "Data TD3", "Data MD"]) {
     expect(files.has(name), `${label} output is missing required empty table ${name}`);
     expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
@@ -351,6 +358,7 @@ function assertCompleteNativeFolder(files, label) {
   expect(files.get("Data Spell.rsrc").byteLength >= 46, `${label} Data Spell.rsrc is not structurally plausible`);
   expect(files.has("Data SD2"), `${label} output is missing authored messages`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
+  expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this rogue encounter.")), `${label} Data SD2 is missing the authored rogue message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
   expect(files.get("Data NI").some((byte) => byte !== 0), `${label} Data NI does not contain the authored scenario item`);
   expect(files.get("Data TD").some((byte) => byte !== 0), `${label} Data TD does not contain the authored treasure`);
@@ -374,11 +382,23 @@ function assertCompleteNativeFolder(files, label) {
   expect(complexEncounter[98] === 1 && complexEncounter.slice(99, 106).every((byte) => byte === 0), `${label} Data ED2 has the wrong required-action flags`);
   expect(readI16(complexEncounter, 106) === 16 && readI16(complexEncounter, 108) === 1100 && complexEncounter[126] === 3, `${label} Data ED2 has the wrong authored spell response`);
   expect(readI16(complexEncounter, 136) === 901 && complexEncounter[146] === 4, `${label} Data ED2 has the wrong authored item response`);
-  expect(complexEncounter[151] === 1 && complexEncounter[152] === 0 && complexEncounter[153] === 1 && complexEncounter[154] === 0, `${label} Data ED2 has the wrong authored encounter controls`);
+  expect(complexEncounter[151] === 1 && complexEncounter[152] === 1 && complexEncounter[153] === 1 && complexEncounter[154] === 0 && complexEncounter[155] === 1, `${label} Data ED2 has the wrong authored encounter controls`);
   expect(complexEncounter[157] === 0, `${label} Data ED2 alignment padding is not deterministic zero`);
   expect(readI16(complexEncounter, 158) === 0, `${label} Data ED2 has the wrong prompt message ID`);
   expect(Buffer.from(complexEncounter.slice(160, 168)).equals(Buffer.from([7, 73, 110, 115, 112, 101, 99, 116])), `${label} Data ED2 has the wrong authored action text`);
   expect(Buffer.from(complexEncounter.slice(480, 491)).equals(Buffer.from([10, 112, 114, 111, 118, 105, 100, 101, 110, 99, 101])), `${label} Data ED2 has the wrong authored typed reply`);
+  const thiefEncounter = files.get("Data TD2").slice(118);
+  expect(thiefEncounter.slice(0, 10).every((byte) => byte === 1), `${label} Data TD2 has the wrong authored action and trap flags`);
+  expect(Buffer.from(thiefEncounter.slice(10, 18)).equals(Buffer.from([1, 2, 3, 4, 5, 6, 7, 8])), `${label} Data TD2 has the wrong authored modifiers`);
+  expect(Buffer.from(thiefEncounter.slice(18, 26)).equals(Buffer.from([1, 2, 3, 4, 1, 2, 3, 4])), `${label} Data TD2 has the wrong authored success results`);
+  expect(Buffer.from(thiefEncounter.slice(26, 34)).equals(Buffer.from([4, 3, 2, 1, 4, 3, 2, 1])), `${label} Data TD2 has the wrong authored failure results`);
+  for (let slot = 0; slot < 8; slot += 1) {
+    expect(readI16(thiefEncounter, 34 + slot * 2) === 1 && readI16(thiefEncounter, 50 + slot * 2) === 1, `${label} Data TD2 has the wrong authored message routes in slot ${slot}`);
+    expect(readI16(thiefEncounter, 66 + slot * 2) === 137 && readI16(thiefEncounter, 82 + slot * 2) === 137, `${label} Data TD2 has the wrong authored sound routes in slot ${slot}`);
+  }
+  expect(readI16(thiefEncounter, 98) === 17 && readI16(thiefEncounter, 100) === 3 && readI16(thiefEncounter, 102) === 9 && readI16(thiefEncounter, 104) === 5, `${label} Data TD2 has the wrong authored trap, damage, or lock fields`);
+  expect(readI16(thiefEncounter, 106) === 1 && readI16(thiefEncounter, 108) === 137 && readI16(thiefEncounter, 110) === 5, `${label} Data TD2 has the wrong authored prompt support fields`);
+  expect(readI16(thiefEncounter, 112) === 0 && readI16(thiefEncounter, 114) === 7 && readI16(thiefEncounter, 116) === 6, `${label} Data TD2 has the wrong authored sound and spell-chance fields`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
 }
 
@@ -392,8 +412,10 @@ function assertOwnershipItemText(records, label) {
 
 function assertOwnershipMessage(records, label) {
   const message = records?.find((record) => record.id === 0);
+  const rogueMessage = records?.find((record) => record.id === 1);
   expect(message, `${label} is missing message 0`);
   expect(message.text === "Providence owns this scenario.", `${label} has the wrong canonical message text`);
+  expect(rogueMessage?.text === "Providence owns this rogue encounter.", `${label} has the wrong canonical rogue message text`);
 }
 
 function assertOwnershipOptionLabels(records, label) {
@@ -421,10 +443,23 @@ function assertOwnershipComplexEncounter(records, label) {
   expect(encounter.groups?.join(",") === "1,0,0,0,0,0,0,0", `${label} complex encounter has the wrong required-action flags`);
   expect(encounter.spellIds?.length === 10 && encounter.spellIds[0] === 16 && encounter.spellIds[1] === 1100 && encounter.spellResults[0] === 3, `${label} complex encounter has the wrong spell response`);
   expect(encounter.itemIds?.length === 5 && encounter.itemIds[0] === 901 && encounter.itemResults[0] === 4, `${label} complex encounter has the wrong item response`);
-  expect(encounter.canBackOut === true && encounter.thief === false && encounter.maxTimes === 1 && encounter.casteSuccess === 0, `${label} complex encounter has the wrong control fields`);
+  expect(encounter.canBackOut === true && encounter.thief === true && encounter.thiefSuccess === 1 && encounter.maxTimes === 1 && encounter.casteSuccess === 0, `${label} complex encounter has the wrong control fields`);
   expect(encounter.prompt === 0, `${label} complex encounter has the wrong prompt`);
   expect(encounter.texts?.length === 9 && encounter.texts[0] === "Inspect" && encounter.texts[8] === "providence", `${label} complex encounter has the wrong inline text`);
   expect(encounter.choiceResults === undefined && encounter.wordResults === undefined, `${label} complex encounter still carries obsolete result aliases`);
+}
+
+function assertOwnershipThiefEncounter(records, label) {
+  const encounter = records?.find((record) => record.id === 1);
+  expect(encounter, `${label} is missing thief encounter 1`);
+  expect(encounter.typeFlags?.length === 10 && encounter.typeFlags.every(Boolean), `${label} thief encounter has the wrong action or trap flags`);
+  expect(encounter.modifiers?.join(",") === "1,2,3,4,5,6,7,8", `${label} thief encounter has the wrong modifiers`);
+  expect(encounter.successCodes?.join(",") === "1,2,3,4,1,2,3,4", `${label} thief encounter has the wrong success results`);
+  expect(encounter.failureCodes?.join(",") === "4,3,2,1,4,3,2,1", `${label} thief encounter has the wrong failure results`);
+  expect(encounter.successText?.every((value) => value === 1) && encounter.failureText?.every((value) => value === 1), `${label} thief encounter has the wrong message routes`);
+  expect(encounter.successSounds?.every((value) => value === 137) && encounter.failureSounds?.every((value) => value === 137), `${label} thief encounter has the wrong sound routes`);
+  expect(encounter.spell === 17 && encounter.lowDamage === 3 && encounter.highDamage === 9 && encounter.tumblers === 5, `${label} thief encounter has the wrong trap or lock fields`);
+  expect(encounter.prompts?.join(",") === "1,137,5" && encounter.promptSounds?.join(",") === "0,7,6", `${label} thief encounter has the wrong prompt support fields`);
 }
 
 function assertOwnershipBattle(records, label) {

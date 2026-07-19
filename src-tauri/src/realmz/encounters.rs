@@ -216,9 +216,11 @@ pub fn parse_thief_encounters(buffer: &[u8]) -> Vec<ThiefEncounterRecord> {
 
 pub fn write_thief_encounters(records: &[ThiefEncounterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, THIEF_ENCOUNTER_BYTES, |record, buffer| {
-        copy_raw(buffer, &record.raw_bytes);
-        if preserve_raw(record.authored, &record.raw_bytes, THIEF_ENCOUNTER_BYTES) {
-            return Ok(());
+        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != THIEF_ENCOUNTER_BYTES {
+            return Err(ProvidenceError::message(format!(
+                "Rogue encounter {} has invalid compatibility byte storage",
+                record.id
+            )));
         }
         for slot in 0..10 {
             buffer[slot] = u8::from(*record.type_flags.get(slot).unwrap_or(&false));
@@ -298,14 +300,9 @@ mod tests {
 
     #[test]
     fn encounter_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 2] = [
-            (THIEF_ENCOUNTER_BYTES, |bytes| {
-                write_thief_encounters(&parse_thief_encounters(bytes)).unwrap()
-            }),
-            (TIMED_ENCOUNTER_BYTES, |bytes| {
-                write_timed_encounters(&parse_timed_encounters(bytes)).unwrap()
-            }),
-        ];
+        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 1] = [(TIMED_ENCOUNTER_BYTES, |bytes| {
+            write_timed_encounters(&parse_timed_encounters(bytes)).unwrap()
+        })];
         for (record_bytes, parse_write) in cases {
             let mut input = vec![0u8; record_bytes * 2];
             input[0] = 1;
@@ -431,57 +428,55 @@ mod tests {
     }
 
     #[test]
-    fn thief_encounter_storage_mutates_only_owned_fields() {
-        let input = vec![0u8; THIEF_ENCOUNTER_BYTES * 2];
-        let encounter_start = THIEF_ENCOUNTER_BYTES;
+    fn fresh_thief_encounter_compiles_complete_semantic_row() {
+        let mut encounter = parse_thief_encounters(&vec![0; THIEF_ENCOUNTER_BYTES]).remove(0);
+        encounter.raw_bytes.clear();
+        encounter.authored = true;
+        encounter.type_flags = vec![
+            true, false, true, false, true, false, true, false, true, true,
+        ];
+        encounter.modifiers = vec![-1, 2, -3, 4, -5, 6, -7, 8];
+        encounter.success_codes = vec![1, 2, 3, 4, -1, -2, -3, -4];
+        encounter.failure_codes = vec![4, 3, 2, 1, -4, -3, -2, -1];
+        encounter.success_text = (0x0101..=0x0108).collect();
+        encounter.failure_text = (0x0201..=0x0208).collect();
+        encounter.success_sounds = (0x0301..=0x0308).collect();
+        encounter.failure_sounds = (0x0401..=0x0408).collect();
+        encounter.spell = 0x0501;
+        encounter.low_damage = 0x0502;
+        encounter.high_damage = 0x0503;
+        encounter.tumblers = 0x0504;
+        encounter.prompts = vec![0x0601, 0x0602, 0x0603];
+        encounter.prompt_sounds = vec![0x0701, 0x0702, 0x0703];
 
-        let mut encounters = parse_thief_encounters(&input);
-        encounters[1].authored = true;
-        encounters[1].type_flags[3] = true;
-        encounters[1].modifiers[4] = -8;
-        encounters[1].success_codes[5] = 9;
-        encounters[1].failure_codes[6] = -7;
-        encounters[1].success_text[2] = 0x0102;
-        encounters[1].failure_text[3] = 0x0304;
-        encounters[1].success_sounds[4] = 0x0506;
-        encounters[1].failure_sounds[5] = 0x0708;
-        encounters[1].spell = 0x090A;
-        encounters[1].low_damage = 0x0B0C;
-        encounters[1].high_damage = 0x0D0E;
-        encounters[1].tumblers = 0x0F10;
-        encounters[1].prompts[1] = 0x1112;
-        encounters[1].prompt_sounds[2] = 0x1314;
+        let output = write_thief_encounters(&[encounter]).unwrap();
+        assert_eq!(output.len(), THIEF_ENCOUNTER_BYTES);
+        assert_eq!(&output[0..10], &[1, 0, 1, 0, 1, 0, 1, 0, 1, 1]);
+        assert_eq!(&output[10..18], &[0xff, 2, 0xfd, 4, 0xfb, 6, 0xf9, 8]);
+        assert_eq!(&output[18..26], &[1, 2, 3, 4, 0xff, 0xfe, 0xfd, 0xfc]);
+        assert_eq!(&output[26..34], &[4, 3, 2, 1, 0xfc, 0xfd, 0xfe, 0xff]);
+        assert_eq!(i16_be(&output, 34), 0x0101);
+        assert_eq!(i16_be(&output, 64), 0x0208);
+        assert_eq!(i16_be(&output, 66), 0x0301);
+        assert_eq!(i16_be(&output, 96), 0x0408);
+        assert_eq!(&output[98..106], &[5, 1, 5, 2, 5, 3, 5, 4]);
+        assert_eq!(&output[106..118], &[6, 1, 6, 2, 6, 3, 7, 1, 7, 2, 7, 3]);
+    }
 
-        let output = write_thief_encounters(&encounters).unwrap();
-        assert_eq!(output.len(), input.len());
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![
-                encounter_start + 3,
-                encounter_start + 14,
-                encounter_start + 23,
-                encounter_start + 32,
-                encounter_start + 38,
-                encounter_start + 39,
-                encounter_start + 56,
-                encounter_start + 57,
-                encounter_start + 74,
-                encounter_start + 75,
-                encounter_start + 92,
-                encounter_start + 93,
-                encounter_start + 98,
-                encounter_start + 99,
-                encounter_start + 100,
-                encounter_start + 101,
-                encounter_start + 102,
-                encounter_start + 103,
-                encounter_start + 104,
-                encounter_start + 105,
-                encounter_start + 108,
-                encounter_start + 109,
-                encounter_start + 116,
-                encounter_start + 117,
-            ]
-        );
+    #[test]
+    fn imported_thief_encounter_compiles_without_record_byte_identity() {
+        let mut input = vec![0u8; THIEF_ENCOUNTER_BYTES];
+        input[0] = 0x48;
+        input[10] = 0xff;
+        input[34..36].copy_from_slice(&[1, 2]);
+        let mut records = parse_thief_encounters(&input);
+        records[0].raw_bytes.fill(0xa5);
+        let output = write_thief_encounters(&records).unwrap();
+        assert_ne!(output, input);
+        assert_eq!(output[0], 1);
+        assert_eq!(output[10], 0xff);
+        assert_eq!(i16_be(&output, 34), 0x0102);
+        records[0].raw_bytes = vec![1];
+        assert!(write_thief_encounters(&records).is_err());
     }
 }

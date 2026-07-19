@@ -252,7 +252,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     const record = project.thiefEncounters?.find((candidate) => candidate.id === recordId);
     if (!record) return [];
     const issues = validateRecordId(recordType, recordId);
-    if (record.typeFlags.length > 10) issues.push(recordIssue("error", recordType, recordId, "rogue-flag-count", "Rogue encounter has too many state flags.", "Rogue encounters store ten state flags."));
+    if (record.typeFlags.length !== 10) issues.push(recordIssue("error", recordType, recordId, "rogue-flag-count", "Rogue encounter has the wrong number of state flags.", "Rogue encounters store exactly ten state flags."));
     for (const [label, values, max] of [
       ["modifiers", record.modifiers, 8],
       ["success result codes", record.successCodes, 8],
@@ -264,7 +264,7 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
       ["prompt/support fields", record.prompts, 3],
       ["prompt sounds", record.promptSounds, 3]
     ] as const) {
-      if (values.length > max) issues.push(recordIssue("error", recordType, recordId, `rogue-${label.replace(/\W+/g, "-")}`, `Rogue encounter has too many ${label}.`, `Rogue encounters store ${max} ${label}.`));
+      if (values.length !== max) issues.push(recordIssue("error", recordType, recordId, `rogue-${label.replace(/\W+/g, "-")}`, `Rogue encounter has the wrong number of ${label}.`, `Rogue encounters store exactly ${max} ${label}.`));
       for (const [slot, value] of values.entries()) {
         if (!isI16(value)) issues.push(recordIssue("error", recordType, recordId, `rogue-${label}-${slot}`, "Rogue encounter value is outside Realmz integer range.", `${label} slot ${slot} has ${value}.`));
       }

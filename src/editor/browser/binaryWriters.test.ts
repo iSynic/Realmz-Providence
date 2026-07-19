@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
+import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeComplexEncounters, writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeComplexEncounters, writeMapRecords, writeMessages, writeOptionLabels, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -403,6 +403,63 @@ describe("browser complex-encounter writer", () => {
 
   it("rejects malformed compatibility storage", () => {
     expect(() => writeComplexEncounters([{ ...emptyComplexEncounter(0), rawBytes: [1] }]))
+      .toThrow("invalid compatibility byte storage");
+  });
+});
+
+describe("browser thief-encounter writer", () => {
+  it("compiles a fresh record entirely from semantic fields", () => {
+    const record = {
+      ...emptyThiefEncounter(0),
+      typeFlags: [true, false, true, false, true, false, true, false, true, true],
+      modifiers: [-1, 2, -3, 4, -5, 6, -7, 8],
+      successCodes: [1, 2, 3, 4, -1, -2, -3, -4],
+      failureCodes: [4, 3, 2, 1, -4, -3, -2, -1],
+      successText: [0x0101, 0x0102, 0x0103, 0x0104, 0x0105, 0x0106, 0x0107, 0x0108],
+      failureText: [0x0201, 0x0202, 0x0203, 0x0204, 0x0205, 0x0206, 0x0207, 0x0208],
+      successSounds: [0x0301, 0x0302, 0x0303, 0x0304, 0x0305, 0x0306, 0x0307, 0x0308],
+      failureSounds: [0x0401, 0x0402, 0x0403, 0x0404, 0x0405, 0x0406, 0x0407, 0x0408],
+      spell: 0x0501,
+      lowDamage: 0x0502,
+      highDamage: 0x0503,
+      tumblers: 0x0504,
+      prompts: [0x0601, 0x0602, 0x0603],
+      promptSounds: [0x0701, 0x0702, 0x0703]
+    };
+
+    expect(record.rawBytes).toBeUndefined();
+    const output = writeThiefEncounters([record]);
+
+    expect(output).toHaveLength(118);
+    expect(Array.from(output.slice(0, 10))).toEqual([1, 0, 1, 0, 1, 0, 1, 0, 1, 1]);
+    expect(Array.from(output.slice(10, 18))).toEqual([0xff, 2, 0xfd, 4, 0xfb, 6, 0xf9, 8]);
+    expect(Array.from(output.slice(18, 26))).toEqual([1, 2, 3, 4, 0xff, 0xfe, 0xfd, 0xfc]);
+    expect(Array.from(output.slice(26, 34))).toEqual([4, 3, 2, 1, 0xfc, 0xfd, 0xfe, 0xff]);
+    expect(i16(output, 34)).toBe(0x0101);
+    expect(i16(output, 64)).toBe(0x0208);
+    expect(i16(output, 66)).toBe(0x0301);
+    expect(i16(output, 96)).toBe(0x0408);
+    expect(Array.from(output.slice(98, 106))).toEqual([5, 1, 5, 2, 5, 3, 5, 4]);
+    expect(Array.from(output.slice(106, 118))).toEqual([6, 1, 6, 2, 6, 3, 7, 1, 7, 2, 7, 3]);
+  });
+
+  it("recompiles imported semantics without record byte identity", () => {
+    const input = new Uint8Array(118);
+    input[0] = 0x48;
+    input[10] = 0xff;
+    input.set([1, 2], 34);
+    const imported = parseScenarioBuffers(new Map([["Data TD2", input]])).thiefEncounters[0];
+
+    const output = writeThiefEncounters([{ ...imported, rawBytes: new Array(118).fill(0xa5) }]);
+
+    expect(output).not.toEqual(input);
+    expect(output[0]).toBe(1);
+    expect(output[10]).toBe(0xff);
+    expect(i16(output, 34)).toBe(0x0102);
+  });
+
+  it("rejects malformed compatibility storage", () => {
+    expect(() => writeThiefEncounters([{ ...emptyThiefEncounter(0), rawBytes: [1] }]))
       .toThrow("invalid compatibility byte storage");
   });
 });

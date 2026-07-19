@@ -300,10 +300,22 @@ ownership proof now authors physical, typed-word, spell, item, and all four resu
 requires exact 520-byte `Data ED2` output in both native targets and compilers, and semantically
 reimports the record.
 
-Branch validation through the thirty-second slice completed on 2026-07-19:
+The thirty-third slice closes complete byte ownership for each 118-byte `Data TD2` thief/rogue
+encounter row. `ThiefEncounterRecord` now comes from the generated TypeScript/Rust contract, with
+fixed canonical capacities for ten flags, the eight action routes, and the three prompt/support
+slots. Fresh UI/project-command and Scenario JSON records omit `rawBytes`; desktop and browser
+writers compile every byte from canonical flags, modifiers, result codes, message and sound links,
+trap spell/damage state, lock tumblers, and prompt support fields. A focused current-corpus audit
+found 30 physical payloads, 27 distinct payloads, and 1,414 complete aligned rows. Three related
+legacy scenarios contain noncanonical nonzero Boolean encodings in the same record; unchanged
+imported rows retain those exact encodings through the compatibility annex, while authored output
+normalizes flags to deterministic `0` or `1`. The ownership proof now covers all eight rogue
+actions plus message, sound, trap, spell, damage, lock, and Complex Encounter result routing.
 
-- full Rust suite: 233 passed, 2 ignored;
-- full TypeScript suite: 571 passed, plus typecheck;
+Branch validation through the thirty-third slice completed on 2026-07-19:
+
+- full Rust suite: 235 passed, 2 ignored;
+- full TypeScript suite: 577 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -312,12 +324,13 @@ Branch validation through the thirty-second slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 567 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 577 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
 also removes that file from the current violation list, and the simple-encounter changes remain
-within the existing `encounters.rs` ceiling. Architecture, lint, unit, typecheck, UI
+within the existing `encounters.rs` ceiling; the complex- and thief-encounter changes add no new
+module-size violation. Architecture, lint, unit, typecheck, UI
 audit, production build, scenario proof, package parity, and the full Rust suite were run
 independently.
 
@@ -647,7 +660,7 @@ Legend:
 | `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Classified foreign suffix records and malformed tails are appended from the annex. |
 | `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Fresh/authored rows compile all 426 bytes from canonical actions, results, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and historical tails are restored only from the compatibility annex. |
 | `Data ED2` | Generated + legacy row/tail annex | Generate complete deterministic complex encounters | Fresh/authored rows compile all 520 bytes from canonical actions, physical/word/group/spell/item routes, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
-| `Data TD2` | Generated | Generate rogue/thief encounters | Complete writer; authored compilation emits the required empty file directly. |
+| `Data TD2` | Generated + legacy row/tail annex | Generate complete deterministic rogue/thief encounters | Fresh/authored rows compile all 118 bytes from canonical action, result, message, sound, trap, lock, and prompt fields without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data TD3` | Generated with explicit compatibility slots | Generate timed encounters and zero reserved `stuff[1..9]` | The model carries the ten-word array; only `stuff[0]` has confirmed runtime meaning. Authored compilation emits the required empty file directly. |
 
 ### Rules and resource-bearing optional families

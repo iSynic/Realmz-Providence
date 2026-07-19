@@ -677,10 +677,19 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for encounter in &project.thief_encounters {
+        if !encounter.raw_bytes.is_empty()
+            && encounter.raw_bytes.len() != crate::realmz::THIEF_ENCOUNTER_BYTES
+        {
+            errors.push(format!(
+                "Rogue encounter {} has invalid {}-byte compatibility storage.",
+                encounter.id,
+                crate::realmz::THIEF_ENCOUNTER_BYTES
+            ));
+        }
         if encounter.authored {
-            if encounter.type_flags.len() > 10 {
+            if encounter.type_flags.len() != 10 {
                 errors.push(format!(
-                    "Rogue encounter {} has {} state flags; Data TD2 supports 10.",
+                    "Rogue encounter {} has {} state flags; Data TD2 requires exactly 10.",
                     encounter.id,
                     encounter.type_flags.len()
                 ));
@@ -690,9 +699,9 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 ("success result codes", &encounter.success_codes),
                 ("failure result codes", &encounter.failure_codes),
             ] {
-                if values.len() > 8 {
+                if values.len() != 8 {
                     errors.push(format!(
-                        "Rogue encounter {} has {} {}; Data TD2 supports 8.",
+                        "Rogue encounter {} has {} {}; Data TD2 requires exactly 8.",
                         encounter.id,
                         values.len(),
                         label
@@ -703,9 +712,9 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 ("success messages", &encounter.success_text),
                 ("failure messages", &encounter.failure_text),
             ] {
-                if values.len() > 8 {
+                if values.len() != 8 {
                     errors.push(format!(
-                        "Rogue encounter {} has {} {}; Data TD2 supports 8.",
+                        "Rogue encounter {} has {} {}; Data TD2 requires exactly 8.",
                         encounter.id,
                         values.len(),
                         label
@@ -723,6 +732,19 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     );
                 }
             }
+            for (label, actual, expected) in [
+                ("success sounds", encounter.success_sounds.len(), 8),
+                ("failure sounds", encounter.failure_sounds.len(), 8),
+                ("prompt fields", encounter.prompts.len(), 3),
+                ("prompt sound fields", encounter.prompt_sounds.len(), 3),
+            ] {
+                if actual != expected {
+                    errors.push(format!(
+                        "Rogue encounter {} has {} {}; Data TD2 requires exactly {}.",
+                        encounter.id, actual, label, expected
+                    ));
+                }
+            }
             if encounter.low_damage != 0
                 && encounter.high_damage != 0
                 && encounter.low_damage > encounter.high_damage
@@ -732,7 +754,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     encounter.id
                 ));
             }
-        } else if encounter.raw_bytes.len() != crate::realmz::THIEF_ENCOUNTER_BYTES {
+        } else if encounter.raw_bytes.is_empty() {
             warnings.push(format!(
                 "Rogue encounter {} has incomplete preserved source bytes and should be re-imported before editing.",
                 encounter.id

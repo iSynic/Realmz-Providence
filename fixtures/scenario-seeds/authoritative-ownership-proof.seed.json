@@ -21,7 +21,11 @@
     }
   ],
   "messages": [
-    { "key": "ownership-message", "text": "Providence owns this scenario." }
+    { "key": "ownership-message", "text": "Providence owns this scenario." },
+    { "key": "ownership-rogue-message", "text": "Providence owns this rogue encounter." }
+  ],
+  "assets": [
+    { "key": "ownership-click", "source": "stock", "resourceType": "snd ", "resourceId": 137 }
   ],
   "optionLabels": [
     { "id": 0, "text": "Proceed" },
@@ -60,6 +64,7 @@
       "items": [
         { "item": "ownership-token", "result": 4 }
       ],
+      "thief": { "encounter": "ownership-rogue" },
       "results": [
         { "result": 1, "steps": [{ "kind": "message", "message": "ownership-message" }] },
         { "result": 2, "steps": [{ "kind": "message", "message": "ownership-message" }] },
@@ -69,6 +74,33 @@
       "canBackOut": true,
       "maxTimes": 1,
       "casteSuccess": 0
+    }
+  ],
+  "thiefEncounters": [
+    {
+      "key": "ownership-rogue",
+      "id": 1,
+      "prompt": "ownership-rogue-message",
+      "actions": [
+        { "kind": "acrobaticAct", "modifier": 1, "success": { "result": 1, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 4, "message": "ownership-rogue-message", "sound": "ownership-click" } },
+        { "kind": "detectTrap", "modifier": 2, "success": { "result": 2, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 3, "message": "ownership-rogue-message", "sound": "ownership-click" } },
+        { "kind": "disarmTrap", "modifier": 3, "success": { "result": 3, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 2, "message": "ownership-rogue-message", "sound": "ownership-click" } },
+        { "kind": "hearNoise", "modifier": 4, "success": { "result": 4, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 1, "message": "ownership-rogue-message", "sound": "ownership-click" } },
+        { "kind": "forceLock", "modifier": 5, "success": { "result": 1, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 4, "message": "ownership-rogue-message", "sound": "ownership-click" } },
+        { "kind": "moveSilently", "modifier": 6, "success": { "result": 2, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 3, "message": "ownership-rogue-message", "sound": "ownership-click" } },
+        { "kind": "pickLock", "modifier": 7, "success": { "result": 3, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 2, "message": "ownership-rogue-message", "sound": "ownership-click" } },
+        { "kind": "pickPocket", "modifier": 8, "success": { "result": 4, "message": "ownership-rogue-message", "sound": "ownership-click" }, "failure": { "result": 1, "message": "ownership-rogue-message", "sound": "ownership-click" } }
+      ],
+      "trap": {
+        "armed": true,
+        "rogueOnly": true,
+        "damage": { "low": 3, "high": 9 },
+        "sound": "ownership-click",
+        "spell": 17,
+        "spellPower": 5,
+        "disarmChancePerLevel": 6
+      },
+      "lock": { "tumblers": 5, "openChancePerLevel": 7 }
     }
   ],
   "battles": [

@@ -142,11 +142,12 @@ sourceComplexEncounters[520] = 0x67;
 sourceComplexEncounters[521] = 0x68;
 sourceComplexEncounters[520 + 157] = 0x5a;
 sourceComplexEncounters.set([0xde, 0xad, 0xbe], 1040);
-const sourceThiefEncounters = new Uint8Array(236);
+const sourceThiefEncounters = new Uint8Array(239);
 sourceThiefEncounters[0] = 0x69;
 sourceThiefEncounters[1] = 0x6a;
 sourceThiefEncounters[118] = 0x6b;
 sourceThiefEncounters[119] = 0x6c;
+sourceThiefEncounters.set([0xde, 0xad, 0xbe], 236);
 const sourceTimedEncounters = new Uint8Array(80);
 sourceTimedEncounters[0] = 0x6d;
 sourceTimedEncounters[1] = 0x6e;
@@ -1060,14 +1061,14 @@ const authoredComplexEncounter = complexEncounterRecord(1, {
   texts: ["Hi", "Word", "Spell", "Item", "", "", "", "", ""]
 });
 const authoredThiefEncounter = thiefEncounterRecord(1, {
-  typeFlags: [true, false, true, true],
-  modifiers: [0, 1, 2, 3, -8],
-  successCodes: [0, 2, 3, 4, 5, 9],
-  failureCodes: [0, -1, -2, -3, -4, -5, -7],
-  successText: [101, 102, 0x0102],
-  failureText: [201, 202, 203, 0x0304],
-  successSounds: [301, 302, 303, 304, 0x0506],
-  failureSounds: [401, 402, 403, 404, 405, 0x0708],
+  typeFlags: [true, false, true, true, false, false, false, false, true, true],
+  modifiers: [0, 1, 2, 3, -8, 0, 0, 0],
+  successCodes: [0, 2, 3, 4, 5, 9, 0, 0],
+  failureCodes: [0, -1, -2, -3, -4, -5, -7, 0],
+  successText: [101, 102, 0x0102, 0, 0, 0, 0, 0],
+  failureText: [201, 202, 203, 0x0304, 0, 0, 0, 0],
+  successSounds: [301, 302, 303, 304, 0x0506, 0, 0, 0],
+  failureSounds: [401, 402, 403, 404, 405, 0x0708, 0, 0],
   spell: 0x090a,
   lowDamage: 0x0b0c,
   highDamage: 0x0d0e,
@@ -1100,8 +1101,8 @@ const encounterProject = {
     { ...authoredComplexEncounter, rawBytes: new Array(520).fill(0x22), authored: true }
   ],
   thiefEncounters: [
-    thiefEncounterRecord(0, { rawBytes: Array.from(sourceThiefEncounters.slice(0, 118)), authored: false }),
-    { ...authoredThiefEncounter, rawBytes: Array.from(sourceThiefEncounters.slice(118, 236)), authored: true }
+    thiefEncounterRecord(0, { rawBytes: new Array(118).fill(0x11), authored: false }),
+    { ...authoredThiefEncounter, rawBytes: new Array(118).fill(0x22), authored: true }
   ],
   timedEncounters: [
     timedEncounterRecord(0, { rawBytes: Array.from(sourceTimedEncounters.slice(0, 40)), authored: false }),
@@ -1120,7 +1121,7 @@ const writtenThiefEncounters = encounterFiles.get("Data TD2");
 const writtenTimedEncounters = encounterFiles.get("Data TD3");
 expect(writtenSimpleEncounters?.byteLength === 855, "Written Data ED should retain source rows and malformed tail");
 expect(writtenComplexEncounters?.byteLength === 1043, "Written Data ED2 should retain source rows and malformed tail");
-expect(writtenThiefEncounters?.byteLength === 236, "Written Data TD2 should retain source row count");
+expect(writtenThiefEncounters?.byteLength === 239, "Written Data TD2 should retain source rows and malformed tail");
 expect(writtenTimedEncounters?.byteLength === 80, "Written Data TD3 should retain source row count");
 expect(bytesEqual(writtenSimpleEncounters?.slice(0, 426), sourceSimpleEncounters.slice(0, 426)), "Unauthored simple encounter row should preserve legacy bytes from the annex");
 expect(bytesEqual(writtenSimpleEncounters?.slice(426, 852), simpleEncounterRow(authoredSimpleEncounter)), "Authored simple encounter row should compile every byte without embedded raw identity");
@@ -1130,8 +1131,9 @@ expect(bytesEqual(writtenComplexEncounters?.slice(0, 520), sourceComplexEncounte
 expect(bytesEqual(writtenComplexEncounters?.slice(520, 1040), complexEncounterRow(authoredComplexEncounter)), "Authored complex encounter row should compile every byte without embedded raw identity");
 expect(writtenComplexEncounters?.[520 + 157] === 0, "Authored complex encounter alignment padding should be deterministic zero");
 expect(bytesEqual(writtenComplexEncounters?.slice(1040), new Uint8Array([0xde, 0xad, 0xbe])), "Malformed Data ED2 tail should remain annex-owned");
-expect(bytesEqual(writtenThiefEncounters?.slice(0, 118), sourceThiefEncounters.slice(0, 118)), "Unauthored thief encounter row should remain byte-identical");
-expect(bytesEqual(writtenThiefEncounters?.slice(118, 236), thiefEncounterRow(authoredThiefEncounter)), "Authored thief encounter row should encode fields");
+expect(bytesEqual(writtenThiefEncounters?.slice(0, 118), sourceThiefEncounters.slice(0, 118)), "Unauthored thief encounter row should preserve legacy bytes from the annex");
+expect(bytesEqual(writtenThiefEncounters?.slice(118, 236), thiefEncounterRow(authoredThiefEncounter)), "Authored thief encounter row should compile every byte without embedded raw identity");
+expect(bytesEqual(writtenThiefEncounters?.slice(236), new Uint8Array([0xde, 0xad, 0xbe])), "Malformed Data TD2 tail should remain annex-owned");
 expect(bytesEqual(writtenTimedEncounters?.slice(0, 40), sourceTimedEncounters.slice(0, 40)), "Unauthored timed encounter row should remain byte-identical");
 expect(bytesEqual(writtenTimedEncounters?.slice(40, 80), timedEncounterRow(authoredTimedEncounter)), "Authored timed encounter row should encode fields");
 
@@ -2247,7 +2249,6 @@ function thiefEncounterRecord(id, overrides = {}) {
     tumblers: 0,
     prompts: new Array(3).fill(0),
     promptSounds: new Array(3).fill(0),
-    rawBytes: new Array(118).fill(0),
     authored: true,
     ...overrides
   };

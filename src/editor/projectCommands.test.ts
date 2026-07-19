@@ -86,6 +86,23 @@ describe("project command facade", () => {
     expect(next.complexEncounters[0].wordResults).toBeUndefined();
   });
 
+  it("creates fresh thief encounters from semantic fields without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Thief Encounter");
+
+    const next = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create thief encounter",
+      recordType: "thiefEncounter",
+      id: 4
+    });
+
+    expect(next.thiefEncounters).toHaveLength(1);
+    expect(next.thiefEncounters[0].typeFlags).toHaveLength(10);
+    expect(next.thiefEncounters[0].successCodes).toHaveLength(8);
+    expect(next.thiefEncounters[0].prompts).toHaveLength(3);
+    expect(next.thiefEncounters[0].rawBytes).toBeUndefined();
+  });
+
   it("creates fresh map records from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Player Map");
 

@@ -27,6 +27,7 @@ import type {
   ProvidenceScenarioShell,
   ProvidenceShopRecord,
   ProvidenceSimpleEncounterRecord,
+  ProvidenceThiefEncounterRecord,
   ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
   ProvidenceSourceFileRole,
@@ -54,6 +55,7 @@ export type BattleRecord = ProvidenceBattleRecord;
 export type EncounterActionRow = ProvidenceEncounterActionRow;
 export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;
 export type ComplexEncounterRecord = ProvidenceComplexEncounterRecord;
+export type ThiefEncounterRecord = ProvidenceThiefEncounterRecord;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -789,27 +791,6 @@ export type TimedEncounterRecord = {
   requiredQuest: number;
   locationKind: TimedEncounterLocationKind;
   stuff: number[];
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ThiefEncounterRecord = {
-  id: number;
-  typeFlags: boolean[];
-  modifiers: number[];
-  successCodes: number[];
-  failureCodes: number[];
-  successText: number[];
-  failureText: number[];
-  successSounds: number[];
-  failureSounds: number[];
-  spell: number;
-  lowDamage: number;
-  highDamage: number;
-  tumblers: number;
-  prompts: number[];
-  promptSounds: number[];
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;

@@ -7,7 +7,7 @@ pub use crate::generated::project_contract::{
     MessageRecord, OptionLabelRecord, Provenance, RandomLevel, RandomRect, RenderMode,
     ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta,
     ScenarioRestrictions, ScenarioShell, ScenarioSupportFile, ShopRecord, SimpleEncounterRecord,
-    TreasureRecord,
+    ThiefEncounterRecord, TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -901,31 +901,6 @@ pub struct TimedEncounterRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ThiefEncounterRecord {
-    pub id: usize,
-    pub type_flags: Vec<bool>,
-    pub modifiers: Vec<i8>,
-    pub success_codes: Vec<i8>,
-    pub failure_codes: Vec<i8>,
-    pub success_text: Vec<i16>,
-    pub failure_text: Vec<i16>,
-    pub success_sounds: Vec<i16>,
-    pub failure_sounds: Vec<i16>,
-    pub spell: i16,
-    pub low_damage: i16,
-    pub high_damage: i16,
-    pub tumblers: i16,
-    pub prompts: Vec<i16>,
-    pub prompt_sounds: Vec<i16>,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct QuestLabel {
     pub id: i16,
     pub label: String,
@@ -1452,6 +1427,9 @@ impl ProvidenceProject {
         for record in &mut self.complex_encounters {
             normalize_complex_encounter(record);
         }
+        for record in &mut self.thief_encounters {
+            normalize_thief_encounter(record);
+        }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;
         }
@@ -1481,6 +1459,19 @@ fn normalize_complex_encounter(record: &mut ComplexEncounterRecord) {
     resize_vec(&mut record.item_ids, 5, 0);
     resize_vec(&mut record.item_results, 5, 0);
     resize_vec(&mut record.texts, 9, String::new());
+}
+
+fn normalize_thief_encounter(record: &mut ThiefEncounterRecord) {
+    resize_vec(&mut record.type_flags, 10, false);
+    resize_vec(&mut record.modifiers, 8, 0);
+    resize_vec(&mut record.success_codes, 8, 0);
+    resize_vec(&mut record.failure_codes, 8, 0);
+    resize_vec(&mut record.success_text, 8, 0);
+    resize_vec(&mut record.failure_text, 8, 0);
+    resize_vec(&mut record.success_sounds, 8, 0);
+    resize_vec(&mut record.failure_sounds, 8, 0);
+    resize_vec(&mut record.prompts, 3, 0);
+    resize_vec(&mut record.prompt_sounds, 3, 0);
 }
 
 fn resize_vec<T: Clone>(values: &mut Vec<T>, length: usize, default: T) {

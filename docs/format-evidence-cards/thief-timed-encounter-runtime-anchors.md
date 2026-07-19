@@ -122,12 +122,19 @@ Opcode `54` mutates runtime timed encounters by record ID, changing percent, inc
 
 ## Corpus Evidence
 
-Both files appear in all 44 analyzed scenarios.
+Both files appeared in the prior 44-scenario inventory. A focused authoritative-writer audit on
+2026-07-19 scanned the current `F:\Scenarios` payloads while excluding `.finf` Finder metadata.
 
 | File | Unit | Evidence |
 | --- | ---: | --- |
 | `Data TD2` | 118 bytes | Local corpus sizes divide cleanly by 118; Hax has 117,410 bytes = 995 records. |
 | `Data TD3` | 40 bytes | Local corpus sizes divide cleanly by 40; White Dragon has 2,080 bytes = 52 records. |
+
+The focused `Data TD2` audit found 30 physical payloads, 27 distinct payloads, and 1,414 complete
+records. Every data payload was exactly divisible by 118. Three related scenarios contain the same
+noncanonical nonzero Boolean bytes in record 2 (`type[5..7] = 72, 191, 128`); Realmz treats these
+as true. Providence normalizes authored Boolean output to `0` or `1`, while unchanged imported rows
+retain exact legacy encodings through the compatibility annex.
 
 ## Timed Reserved Field Report
 
@@ -149,7 +156,7 @@ The cheap source pass found the classic runtime location gate reading `dotime.st
 - Timed Encounter editor should show schedule, chance, macro target, item/quest requirements, and location gates.
 - Thief Encounter editor should expose all eight source-backed action rows plus guided trap, lock, Pick Lock, and Disarm Trap spell paths.
 - Runtime mutation opcodes should be labeled as effects that alter runtime caches, not source records.
-- `Data TD2` writer should be fixture-gated because the legacy converter touches byte arrays in broad endian-conversion calls.
+- `Data TD2` now has complete canonical writer coverage. Imported row identity belongs to the compatibility annex, not the authored record model.
 
 ## Validation Rules
 
@@ -171,11 +178,11 @@ The cheap source pass found the classic runtime location gate reading `dotime.st
 - Exact labels for prompt/sound support fields.
 - Whether Divinity treats `day` as absolute day-of-year, relative days, or a UI abstraction.
 - Timed encounter `stuff[1..9]` meanings.
-- Writer fixtures for thief encounter state and timed encounter schedule edits.
+- Timed encounter schedule writer fixtures.
 
 ## Providence Follow-Up
 
-- Follow-up: `parser-writer`, `editor-ui`, `validation`.
+- Follow-up: `editor-ui`, `validation`, and the separate `Data TD3` ownership slice.
 - Add a Timed Encounter editor before a full Thief editor; its fields are cleaner and directly source-backed.
 - Keep Rogue Encounter fixtures covering all eight action slots and the two runtime-mutated state flags.
 - Update Complex Encounter target pickers to link `thiefsuccess` to `Data TD2`.

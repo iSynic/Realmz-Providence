@@ -1428,7 +1428,7 @@
       "resourceTypes": [],
       "evidence": [
         "docs/generated/encounter-shop-writer-gates.json",
-        "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+        "scripts/run_authoritative_scenario_proof.mjs",
         "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
       ],
       "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."

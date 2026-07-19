@@ -755,7 +755,7 @@ export function emptyComplexEncounter(id: number): ComplexEncounterRecord {
   };
 }
 
-function emptyThiefEncounter(id: number): ThiefEncounterRecord {
+export function emptyThiefEncounter(id: number): ThiefEncounterRecord {
   return {
     id,
     typeFlags: new Array(10).fill(false),
@@ -772,7 +772,6 @@ function emptyThiefEncounter(id: number): ThiefEncounterRecord {
     tumblers: 0,
     prompts: new Array(3).fill(0),
     promptSounds: new Array(3).fill(0),
-    rawBytes: new Array(THIEF_ENCOUNTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data TD2", id, id * THIEF_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES)
   };

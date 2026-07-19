@@ -48,6 +48,38 @@ describe("browser project native manifest validation", () => {
     expect(normalized.texts).toHaveLength(9);
   });
 
+  it("backfills canonical thief encounter slot arrays", () => {
+    const project = createBrowserProject("Legacy thief encounter arrays");
+    project.thiefEncounters = [{
+      id: 1,
+      typeFlags: [true],
+      modifiers: [-2],
+      successCodes: [],
+      failureCodes: [],
+      successText: [],
+      failureText: [],
+      successSounds: [],
+      failureSounds: [],
+      spell: 17,
+      lowDamage: 3,
+      highDamage: 9,
+      tumblers: 5,
+      prompts: [4],
+      promptSounds: [],
+      provenance: { sourceFile: "Data TD2", recordIndex: 1, byteOffset: 118, byteLength: 118, confidence: "fixture-backed" }
+    }];
+
+    const normalized = normalizeBrowserProject(project).thiefEncounters[0];
+
+    expect(normalized.typeFlags).toEqual([true, false, false, false, false, false, false, false, false, false]);
+    expect(normalized.modifiers).toEqual([-2, 0, 0, 0, 0, 0, 0, 0]);
+    expect(normalized.successCodes).toHaveLength(8);
+    expect(normalized.successText).toHaveLength(8);
+    expect(normalized.successSounds).toHaveLength(8);
+    expect(normalized.prompts).toEqual([4, 0, 0]);
+    expect(normalized.promptSounds).toEqual([0, 0, 0]);
+  });
+
   it("parses player-map markers into canonical semantic slots", () => {
     const bytes = new Uint8Array(340);
     bytes.set([0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d], 0);

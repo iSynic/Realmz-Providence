@@ -124,7 +124,14 @@ function encounterProject(): Project {
     highDamage: 0,
     tumblers: 0,
     prompts: [0, 0, 0],
-    promptSounds: [0, 0, 0]
+    promptSounds: [0, 0, 0],
+    provenance: {
+      sourceFile: "Data TD2",
+      recordIndex: 3,
+      byteOffset: 354,
+      byteLength: 118,
+      confidence: "fixture-backed"
+    }
   }];
   project.timedEncounters = [{
     id: 4,

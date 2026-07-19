@@ -596,7 +596,7 @@ export function normalizeBrowserProject(project: Project): Project {
   }));
   project.simpleEncounters ??= [];
   project.complexEncounters = (project.complexEncounters ?? []).map(normalizedComplexEncounter);
-  project.thiefEncounters ??= [];
+  project.thiefEncounters = (project.thiefEncounters ?? []).map(normalizedThiefEncounter);
   project.timedEncounters ??= [];
   project.questLabels ??= [];
   project.spellOverrides ??= [];
@@ -637,6 +637,22 @@ function normalizedComplexEncounter(record: Project["complexEncounters"][number]
     itemIds: normalizedFixedArray(record.itemIds, 5, 0),
     itemResults: normalizedFixedArray(record.itemResults, 5, 0),
     texts: normalizedFixedArray(record.texts, 9, "")
+  };
+}
+
+function normalizedThiefEncounter(record: Project["thiefEncounters"][number]): Project["thiefEncounters"][number] {
+  return {
+    ...record,
+    typeFlags: normalizedFixedArray(record.typeFlags, 10, false),
+    modifiers: normalizedFixedArray(record.modifiers, 8, 0),
+    successCodes: normalizedFixedArray(record.successCodes, 8, 0),
+    failureCodes: normalizedFixedArray(record.failureCodes, 8, 0),
+    successText: normalizedFixedArray(record.successText, 8, 0),
+    failureText: normalizedFixedArray(record.failureText, 8, 0),
+    successSounds: normalizedFixedArray(record.successSounds, 8, 0),
+    failureSounds: normalizedFixedArray(record.failureSounds, 8, 0),
+    prompts: normalizedFixedArray(record.prompts, 3, 0),
+    promptSounds: normalizedFixedArray(record.promptSounds, 3, 0)
   };
 }
 
@@ -996,7 +1012,13 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
   }
-  for (const encounter of project.thiefEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "thiefEncounter", encounter.id), errors, warnings);
+  for (const encounter of project.thiefEncounters ?? []) {
+    const rawBytes = encounter.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 118) {
+      errors.push(`Rogue encounter ${encounter.id} has invalid 118-byte compatibility storage.`);
+    }
+    appendTargetDiagnostics(validateRealmzTargetRecord(project, "thiefEncounter", encounter.id), errors, warnings);
+  }
   for (const encounter of project.timedEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "timedEncounter", encounter.id), errors, warnings);
   if (scenarioAssets.length > 0) {
     warnings.push(`${scenarioAssets.length.toLocaleString()} managed media asset(s) are present; desktop export writes them to the Scenario resource fork.`);

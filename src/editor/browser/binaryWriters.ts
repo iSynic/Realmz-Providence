@@ -732,8 +732,10 @@ export function writeComplexEncounters(records: ComplexEncounterRecord[]) {
 
 export function writeThiefEncounters(records: ThiefEncounterRecord[]) {
   return writeFixedRecords(records, THIEF_ENCOUNTER_RECORD_BYTES, (record, target) => {
-    copyRaw(target, record.rawBytes ?? []);
-    if (!record.authored && record.rawBytes?.length === THIEF_ENCOUNTER_RECORD_BYTES) return;
+    const rawBytes = record.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== THIEF_ENCOUNTER_RECORD_BYTES) {
+      throw new Error(`Rogue encounter ${record.id} has invalid compatibility byte storage`);
+    }
     for (let slot = 0; slot < 10; slot += 1) target[slot] = record.typeFlags[slot] ? 1 : 0;
     writeI8Array(target, 10, record.modifiers, 8);
     writeI8Array(target, 18, record.successCodes, 8);

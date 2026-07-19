@@ -65,7 +65,7 @@ const mapRecordRectSchema = schema.$defs?.mapRecordRect ?? {};
 const mapRecordSchema = schema.$defs?.mapRecord ?? {};
 const randomRectSchema = schema.$defs?.randomRect ?? {};
 const randomLevelSchema = schema.$defs?.randomLevel ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
@@ -76,6 +76,7 @@ const battleRecordSchema = schema.$defs?.battleRecord ?? {};
 const encounterActionRowSchema = schema.$defs?.encounterActionRow ?? {};
 const simpleEncounterRecordSchema = schema.$defs?.simpleEncounterRecord ?? {};
 const complexEncounterRecordSchema = schema.$defs?.complexEncounterRecord ?? {};
+const thiefEncounterRecordSchema = schema.$defs?.thiefEncounterRecord ?? {};
 
 expect(Number.isInteger(schemaVersion) && schemaVersion > 0, "schemaVersion must be a positive integer const");
 expect(projectFields.length >= 35, "project schema field inventory is unexpectedly small");
@@ -227,12 +228,20 @@ for (const [field, length] of [["groups", 8], ["spellIds", 10], ["spellResults",
 expect(complexEncounterRecordSchema.properties?.choiceResults?.["x-providence-migration-only"] === true && complexEncounterRecordSchema.properties?.wordResults?.["x-providence-migration-only"] === true, "complex encounter aliases must remain migration-only");
 expect(complexEncounterRecordSchema.properties?.rawBytes?.minItems === 520 && complexEncounterRecordSchema.properties?.rawBytes?.maxItems === 520, "complex-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
 expectSameArray(complexEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["choiceResults", "wordResults", "rawBytes"], "Complex-encounter omitted migration and compatibility inventory");
+const thiefEncounterFields = ["id", "typeFlags", "modifiers", "successCodes", "failureCodes", "successText", "failureText", "successSounds", "failureSounds", "spell", "lowDamage", "highDamage", "tumblers", "prompts", "promptSounds", "rawBytes", "authored", "provenance"];
+expectSameArray(Object.keys(thiefEncounterRecordSchema.properties ?? {}), thiefEncounterFields, "Thief-encounter field inventory");
+expectSameArray(thiefEncounterRecordSchema.required ?? [], thiefEncounterFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Thief-encounter authored field inventory");
+for (const [field, length] of [["typeFlags", 10], ["modifiers", 8], ["successCodes", 8], ["failureCodes", 8], ["successText", 8], ["failureText", 8], ["successSounds", 8], ["failureSounds", 8], ["prompts", 3], ["promptSounds", 3]]) {
+  expect(thiefEncounterRecordSchema.properties?.[field]?.minItems === length && thiefEncounterRecordSchema.properties?.[field]?.maxItems === length, `thief encounters must retain ${length} ${field} slots`);
+}
+expect(thiefEncounterRecordSchema.properties?.rawBytes?.minItems === 118 && thiefEncounterRecordSchema.properties?.rawBytes?.maxItems === 118, "thief-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
+expectSameArray(thiefEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Thief-encounter omitted compatibility inventory");
 const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
@@ -296,6 +305,7 @@ for (const alias of [
   "export type EncounterActionRow = ProvidenceEncounterActionRow;",
   "export type SimpleEncounterRecord = ProvidenceSimpleEncounterRecord;",
   "export type ComplexEncounterRecord = ProvidenceComplexEncounterRecord;",
+  "export type ThiefEncounterRecord = ProvidenceThiefEncounterRecord;",
   "export type ScenarioMeta = ProvidenceScenarioMeta;",
   "export type ScenarioShell = ProvidenceScenarioShell;",
   "export type ScenarioSupportFile = ProvidenceScenarioSupportFile;",
@@ -323,6 +333,7 @@ expect(!typesSource.includes("export type BattleRecord = {"), "types.ts must not
 expect(!typesSource.includes("export type EncounterActionRow = {"), "types.ts must not handwrite EncounterActionRow");
 expect(!typesSource.includes("export type SimpleEncounterRecord = {"), "types.ts must not handwrite SimpleEncounterRecord");
 expect(!typesSource.includes("export type ComplexEncounterRecord = {"), "types.ts must not handwrite ComplexEncounterRecord");
+expect(!typesSource.includes("export type ThiefEncounterRecord = {"), "types.ts must not handwrite ThiefEncounterRecord");
 for (const scenarioType of ["ScenarioMeta", "ScenarioShell", "ScenarioSupportFile", "ScenarioContactInfo", "ScenarioRestrictions", "GlobalMacroHook", "ScenarioGlobalMacroHooks"]) {
   expect(!typesSource.includes(`export type ${scenarioType} = {`), `types.ts must not handwrite ${scenarioType}`);
 }
@@ -359,6 +370,7 @@ expectSameSet(rustGeneratedReExports, [
   "EncounterActionRow",
   "SimpleEncounterRecord",
   "ComplexEncounterRecord",
+  "ThiefEncounterRecord",
   "TreasureRecord",
   "SourceFile",
   "SourceFileRole",
@@ -387,6 +399,7 @@ expect(!rustProjectSource.includes("pub struct BattleRecord {"), "project.rs mus
 expect(!rustProjectSource.includes("pub struct EncounterActionRow {"), "project.rs must not handwrite EncounterActionRow");
 expect(!rustProjectSource.includes("pub struct SimpleEncounterRecord {"), "project.rs must not handwrite SimpleEncounterRecord");
 expect(!rustProjectSource.includes("pub struct ComplexEncounterRecord {"), "project.rs must not handwrite ComplexEncounterRecord");
+expect(!rustProjectSource.includes("pub struct ThiefEncounterRecord {"), "project.rs must not handwrite ThiefEncounterRecord");
 expect(!rustProjectSource.includes("pub enum LevelType {"), "project.rs must not handwrite LevelType");
 expect(!rustProjectSource.includes("pub enum RenderMode {"), "project.rs must not handwrite RenderMode");
 expect(rustProjectSource.includes("impl LevelType {"), "project.rs must retain handwritten LevelType behavior methods");
@@ -502,6 +515,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_BATTLE_FIELDS = ${JSON.stringify(Object.keys(battleRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(simpleEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(complexEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_THIEF_ENCOUNTER_FIELDS = ${JSON.stringify(Object.keys(thiefEncounterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     renderTypeScriptEnum(projectOrigin) + `\n` +
     renderTypeScriptEnum(sourceFileRole) + `\n` +
     renderTypeScriptEnum(confidence) + `\n` +
@@ -562,6 +576,8 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(simpleEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(complexEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_THIEF_ENCOUNTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(thiefEncounterRecordSchema.properties ?? {}))}\n];\n\n` +
     renderRustEnum(projectOrigin) + `\n` +
     renderRustEnum(sourceFileRole) + `\n` +
     renderRustEnum(confidence) + `\n` +

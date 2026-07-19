@@ -93,6 +93,32 @@ describe("scenario seed script compiler", () => {
     expect(result.complexEncounters[0].wordResults).toBeUndefined();
   });
 
+  it("compiles thief encounters from semantic fields without compatibility bytes", () => {
+    const context = createScenarioSeedCompilerContext();
+    context.messages.set("prompt", 7);
+
+    const result = compileScenarioSeedScripts(seed({
+      thiefEncounters: [{
+        id: 1,
+        prompt: "prompt",
+        actions: [{
+          kind: "pickLock",
+          modifier: -2,
+          success: { result: 1, message: "prompt" },
+          failure: { result: 4 }
+        }],
+        lock: { tumblers: 5, openChancePerLevel: 7 }
+      }]
+    }), context);
+
+    const encounter = result.thiefEncounters[0];
+    expect(encounter.typeFlags).toHaveLength(10);
+    expect(encounter.modifiers).toHaveLength(8);
+    expect(encounter.successCodes).toHaveLength(8);
+    expect(encounter.prompts).toEqual([7, 0, 0]);
+    expect(encounter.rawBytes).toBeUndefined();
+  });
+
   it("resolves semantic map regions into trigger location and identity", () => {
     const context = createScenarioSeedCompilerContext();
     context.maps.set("island", { levelType: "land", index: 2 });

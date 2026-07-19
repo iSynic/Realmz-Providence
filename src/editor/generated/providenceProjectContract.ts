@@ -274,6 +274,27 @@ export const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_THIEF_ENCOUNTER_FIELDS = [
+  "id",
+  "typeFlags",
+  "modifiers",
+  "successCodes",
+  "failureCodes",
+  "successText",
+  "failureText",
+  "successSounds",
+  "failureSounds",
+  "spell",
+  "lowDamage",
+  "highDamage",
+  "tumblers",
+  "prompts",
+  "promptSounds",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -523,6 +544,27 @@ export type ProvidenceComplexEncounterRecord = {
   thiefFail: number;
   prompt: number;
   texts: string[];
+  rawBytes?: number[];
+  authored?: boolean;
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceThiefEncounterRecord = {
+  id: number;
+  typeFlags: boolean[];
+  modifiers: number[];
+  successCodes: number[];
+  failureCodes: number[];
+  successText: number[];
+  failureText: number[];
+  successSounds: number[];
+  failureSounds: number[];
+  spell: number;
+  lowDamage: number;
+  highDamage: number;
+  tumblers: number;
+  prompts: number[];
+  promptSounds: number[];
   rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;

@@ -573,13 +573,15 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       { field: "Prompt strings and sounds", internal: "prompts/promptSounds", offset: 106, bytes: 12, type: "i16be[6]" }
     ],
     evidence: [
-      "src-tauri/src/realmz/encounters.rs:thief_encounter_storage_mutates_only_owned_fields",
+      "src-tauri/src/realmz/encounters.rs:fresh_thief_encounter_compiles_complete_semantic_row",
+      "src-tauri/src/realmz/encounters.rs:imported_thief_encounter_compiles_without_record_byte_identity",
+      "src-tauri/src/exporter.rs:imported_thief_encounter_export_reads_legacy_bytes_only_from_annex",
       "src-tauri/src/realmz/encounters.rs:write_thief_encounters",
       "src-tauri/src/realmz/encounters.rs:parse_thief_encounters",
-      "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md",
+      "scripts/run_authoritative_scenario_proof.mjs",
       "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
     ],
-    preservationPolicy: "Thief encounter records are fully modeled by the current parser and writer."
+    preservationPolicy: "Fresh thief encounter records compile all 118 bytes from canonical flags, modifiers, result codes, message and sound links, trap fields, lock fields, and prompt support fields without rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   }
 ];
 

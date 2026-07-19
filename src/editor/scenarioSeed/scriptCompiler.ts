@@ -293,7 +293,6 @@ function buildThiefEncounter(seed: ScenarioSeedThiefEncounter, context: BuildCon
       seed.trap?.spellPower ?? 0
     ],
     promptSounds: [0, seed.lock?.openChancePerLevel ?? 0, seed.trap?.disarmChancePerLevel ?? 0],
-    rawBytes: new Array(THIEF_ENCOUNTER_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data TD2", id, id * THIEF_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES)
   };

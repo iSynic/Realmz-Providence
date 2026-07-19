@@ -291,6 +291,28 @@ pub const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_THIEF_ENCOUNTER_FIELDS: &[&str] = &[
+    "id",
+    "typeFlags",
+    "modifiers",
+    "successCodes",
+    "failureCodes",
+    "successText",
+    "failureText",
+    "successSounds",
+    "failureSounds",
+    "spell",
+    "lowDamage",
+    "highDamage",
+    "tumblers",
+    "prompts",
+    "promptSounds",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -650,6 +672,41 @@ pub struct ComplexEncounterRecord {
     pub thief_fail: i8,
     pub prompt: i16,
     pub texts: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ThiefEncounterRecord {
+    pub id: usize,
+    #[serde(default)]
+    pub type_flags: Vec<bool>,
+    #[serde(default)]
+    pub modifiers: Vec<i8>,
+    #[serde(default)]
+    pub success_codes: Vec<i8>,
+    #[serde(default)]
+    pub failure_codes: Vec<i8>,
+    #[serde(default)]
+    pub success_text: Vec<i16>,
+    #[serde(default)]
+    pub failure_text: Vec<i16>,
+    #[serde(default)]
+    pub success_sounds: Vec<i16>,
+    #[serde(default)]
+    pub failure_sounds: Vec<i16>,
+    pub spell: i16,
+    pub low_damage: i16,
+    pub high_damage: i16,
+    pub tumblers: i16,
+    #[serde(default)]
+    pub prompts: Vec<i16>,
+    #[serde(default)]
+    pub prompt_sounds: Vec<i16>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]

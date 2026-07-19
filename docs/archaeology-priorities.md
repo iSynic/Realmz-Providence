@@ -225,7 +225,7 @@ Detailed evidence lives in `docs/format-evidence-cards/encounter-record-runtime-
 
 The eleventh follow-up archaeology pass tightened `Core records` around thief/rogue and timed encounters. Realmz source proves the source/runtime/save-state split:
 
-- `Data TD2` is a 118-byte thief/rogue encounter source file copied to runtime `CT`;
+- `Data TD2` is a 118-byte thief/rogue encounter source file copied to runtime `CT`; all source bytes now compile from the canonical model, while unchanged imported rows retain noncanonical Boolean encodings only through the compatibility annex;
 - thief actions mutate runtime flags such as trap detected/disarmed/sprung state and save as `Data H1`;
 - `Data TD3` is a 40-byte timed encounter source file copied to runtime `CTD3`;
 - timed encounters gate macro execution by day, percent, item, quest, land/dungeon location, random rectangle, and coordinate;
