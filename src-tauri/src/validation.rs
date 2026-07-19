@@ -810,10 +810,19 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             )
         })
         .collect::<Vec<_>>();
+    let mut managed_resource_owners = BTreeMap::new();
     for asset in &scenario_assets {
         if matches!(asset.export_state, ManagedAssetExportState::Blocked) {
             errors.push(format!(
                 "{} is blocked from export: converted Realmz resource data is not available.",
+                asset.label
+            ));
+        }
+        if matches!(asset.export_state, ManagedAssetExportState::Ready)
+            && asset.resource_path.trim().is_empty()
+        {
+            errors.push(format!(
+                "{} is marked ready but has no converted resourcePath.",
                 asset.label
             ));
         }
@@ -822,6 +831,15 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 "{} targets unsupported resource type {}.",
                 asset.label, asset.resource_type
             ));
+        }
+        let resource_key = (asset.resource_type.clone(), asset.resource_id);
+        if let Some(existing_owner) = managed_resource_owners.get(&resource_key) {
+            errors.push(format!(
+                "{} conflicts with {} at {} {}; scenario-managed resource keys must be unique.",
+                asset.label, existing_owner, asset.resource_type, asset.resource_id
+            ));
+        } else {
+            managed_resource_owners.insert(resource_key, asset.label.clone());
         }
         if matches!(asset.export_state, ManagedAssetExportState::PreviewOnly) {
             warnings.push(format!(
@@ -2971,6 +2989,59 @@ mod tests {
     }
 
     #[test]
+    fn rejects_ready_managed_assets_without_converted_resource_bytes() {
+        let mut project = empty_project();
+        project
+            .assets
+            .push(test_managed_asset("missing", "PICT", 30128, String::new()));
+
+        let report = validate_project(&project);
+
+        assert!(report.errors.iter().any(|error| {
+            error == "Managed missing is marked ready but has no converted resourcePath."
+        }));
+    }
+
+    #[test]
+    fn rejects_conflicting_scenario_managed_resource_keys_but_ignores_library_keys() {
+        let mut project = empty_project();
+        project.assets.push(test_managed_asset(
+            "first",
+            "TEXT",
+            -200,
+            "data:text/plain;base64,Zmlyc3Q=".to_string(),
+        ));
+        project.assets.push(test_managed_asset(
+            "second",
+            "TEXT",
+            -200,
+            "data:text/plain;base64,c2Vjb25k".to_string(),
+        ));
+        let mut library = test_managed_asset(
+            "library",
+            "TEXT",
+            -200,
+            "data:text/plain;base64,bGlicmFyeQ==".to_string(),
+        );
+        library.library_scope = Some(ManagedAssetLibraryScope::CustomLibrary);
+        project.assets.push(library);
+
+        let report = validate_project(&project);
+
+        assert!(report.errors.iter().any(|error| {
+            error == "Managed second conflicts with Managed first at TEXT -200; scenario-managed resource keys must be unique."
+        }));
+        assert_eq!(
+            report
+                .errors
+                .iter()
+                .filter(|error| error.contains("scenario-managed resource keys"))
+                .count(),
+            1
+        );
+    }
+
+    #[test]
     fn validates_map_indices_must_be_dense() {
         let mut project = empty_project();
         project.maps.push(test_map(LevelType::Land, 1, 1));
@@ -3119,6 +3190,42 @@ mod tests {
             sha256: "fixture".to_string(),
             role,
             editable,
+        }
+    }
+
+    fn test_managed_asset(
+        id: &str,
+        resource_type: &str,
+        resource_id: i16,
+        resource_path: String,
+    ) -> ManagedAsset {
+        ManagedAsset {
+            id: format!("managed:{id}"),
+            label: format!("Managed {id}"),
+            kind: if matches!(resource_type, "TEXT" | "styl") {
+                ManagedAssetKind::Text
+            } else {
+                ManagedAssetKind::Picture
+            },
+            resource_type: resource_type.to_string(),
+            resource_id,
+            file_name: format!("{id}.bin"),
+            original_path: String::new(),
+            preview_path: String::new(),
+            resource_path,
+            mime_type: "application/octet-stream".to_string(),
+            bytes: 1,
+            sha256: id.to_string(),
+            width: (resource_type == "PICT").then_some(32),
+            height: (resource_type == "PICT").then_some(32),
+            duration_ms: None,
+            sample_rate: None,
+            channels: None,
+            export_state: ManagedAssetExportState::Ready,
+            library_scope: Some(ManagedAssetLibraryScope::Scenario),
+            provenance: "validation fixture".to_string(),
+            linked_entity: None,
+            conversion: None,
         }
     }
 

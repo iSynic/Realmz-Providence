@@ -341,6 +341,33 @@ describe("browser project native manifest validation", () => {
     expect(validation.exportableFiles).not.toContain("Scenario.rsrc");
   });
 
+  it("rejects ready managed assets without converted resource bytes", () => {
+    const project = createBrowserProject("Missing managed resource bytes");
+    project.assets.push(testManagedAsset("missing", "PICT", 30128, ""));
+
+    const validation = validateBrowserProject(project);
+
+    expect(validation.errors).toContain("Managed missing is marked ready but has no converted resourcePath.");
+    expect(validation.ok).toBe(false);
+  });
+
+  it("rejects conflicting scenario-managed resource keys but ignores custom-library keys", () => {
+    const project = createBrowserProject("Managed resource conflicts");
+    const first = testManagedAsset("first", "TEXT", -200, "data:text/plain;base64,Zmlyc3Q=");
+    const second = testManagedAsset("second", "TEXT", -200, "data:text/plain;base64,c2Vjb25k");
+    const library = {
+      ...testManagedAsset("library", "TEXT", -200, "data:text/plain;base64,bGlicmFyeQ=="),
+      libraryScope: "custom-library" as const
+    };
+    project.assets.push(first, second, library);
+
+    const validation = validateBrowserProject(project);
+
+    expect(validation.errors).toContain("Managed second conflicts with Managed first at TEXT -200; scenario-managed resource keys must be unique.");
+    expect(validation.errors.filter((error) => error.includes("scenario-managed resource keys")).length).toBe(1);
+    expect(validation.ok).toBe(false);
+  });
+
   it("ignores authored raw snapshots while indexing canonical maps and managed resources", async () => {
     const project = createBrowserProject("Authored Semantic Boundary");
     project.assets.push({
@@ -858,3 +885,29 @@ describe("browser project native manifest validation", () => {
     ]);
   });
 });
+
+function testManagedAsset(id: string, resourceType: string, resourceId: number, resourcePath: string): Project["assets"][number] {
+  return {
+    id: `managed:${id}`,
+    label: `Managed ${id}`,
+    kind: resourceType === "TEXT" || resourceType === "styl" ? "text" : "picture",
+    resourceType,
+    resourceId,
+    fileName: `${id}.bin`,
+    originalPath: "",
+    previewPath: "",
+    resourcePath,
+    mimeType: "application/octet-stream",
+    bytes: 1,
+    sha256: id,
+    width: resourceType === "PICT" ? 32 : null,
+    height: resourceType === "PICT" ? 32 : null,
+    durationMs: null,
+    sampleRate: null,
+    channels: null,
+    exportState: "ready",
+    libraryScope: "scenario",
+    provenance: "validation fixture",
+    linkedEntity: null
+  };
+}

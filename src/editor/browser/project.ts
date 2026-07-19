@@ -1027,10 +1027,21 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
   }
   const scenarioAssets = (project.assets ?? []).filter((asset) => asset.libraryScope !== "custom-library");
+  const managedResourceOwners = new Map<string, string>();
   for (const asset of scenarioAssets) {
     if (asset.exportState === "blocked") errors.push(`${asset.label} needs adjustment before Realmz export.`);
     if (asset.exportState === "preview-only") warnings.push(`${asset.label} is preview-only in the browser; desktop export needs converted resource bytes.`);
+    if (asset.exportState === "ready" && !asset.resourcePath.trim()) {
+      errors.push(`${asset.label} is marked ready but has no converted resourcePath.`);
+    }
     if (!["PICT", "cicn", "snd ", "TEXT", "styl"].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported resource type ${asset.resourceType}.`);
+    const resourceKey = `${asset.resourceType}\u0000${asset.resourceId}`;
+    const existingOwner = managedResourceOwners.get(resourceKey);
+    if (existingOwner !== undefined) {
+      errors.push(`${asset.label} conflicts with ${existingOwner} at ${asset.resourceType} ${asset.resourceId}; scenario-managed resource keys must be unique.`);
+    } else {
+      managedResourceOwners.set(resourceKey, asset.label);
+    }
     if (asset.kind === "picture" && asset.resourceType !== "PICT") errors.push(`${asset.label} must export as a PICT resource.`);
     if (asset.kind === "sound" && asset.resourceType !== "snd ") errors.push(`${asset.label} must export as an snd resource.`);
     if ((asset.kind === "icon" || asset.kind === "special-land-tile") && asset.resourceType !== "cicn") {

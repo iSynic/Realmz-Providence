@@ -476,10 +476,23 @@ Realmz build also accepted and selected the generated folder from its Adventure 
 Realmz source changes. Stock Classic execution remains the next target-specific compatibility
 gate; arbitrary PICT editing and `Custom 1/2/3` companion-file authoring remain out of scope.
 
-Branch validation through the forty-sixth slice completed on 2026-07-19:
+The forty-seventh slice closes representative main-fork resource ownership. The fresh project now
+owns deterministic payloads for `PICT 306`, referenced special-land `cicn -100`, `snd  321`, and a
+paired `TEXT`/`styl -200` resource without an imported fork or `raw-sources`. Both compilers emit
+the same five-entry `Scenario.rsrc` for Windows and Classic-Mac targets, repeat compilation is
+byte-identical, and the proof compares every resource name and payload against canonical project
+bytes. Rust save/open retains the embedded resource payloads. Native-folder reimport decodes the
+icon and sound previews, and the on-demand semantic builder recovers the TEXT body, valid 20-byte
+style run, and `styled_by` relationship. Browser and Rust validation now reject ready assets with
+no converted `resourcePath` and duplicate scenario-managed resource type/ID keys before export;
+custom-library assets remain outside that scenario ownership check. Imported unrelated resource
+entries remain compatibility-annex data. Arbitrary PICT editing and stock Classic execution remain
+separate gates.
 
-- full Rust suite: 252 passed, 2 ignored;
-- full TypeScript suite: 606 passed, plus typecheck;
+Branch validation through the forty-seventh slice completed on 2026-07-19:
+
+- full Rust suite: 254 passed, 2 ignored;
+- full TypeScript suite: 608 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -672,7 +685,8 @@ the same content-neutral package directly as authored compiler output:
 - authored startup marker;
 - 600-byte zero-filled `Scenario` data fork;
 - exact canonical 46-byte zero-entry `Scenario.rsrc` baseline, extended only by canonical managed
-  resources used by the project (`PICT 306` in the current ownership proof);
+  resources used by the project (`PICT 306`, `cicn -100`, `snd  321`, `TEXT -200`, and `styl -200`
+  in the current ownership proof);
 - `Data CS` seeded from the startup shell;
 - per-level `Data DD`/`Data DDD` tables;
 - 200-row zero-filled `Data NI`;
@@ -853,7 +867,7 @@ Legend:
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
 | `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Both compilers generate 201 mapstats rows, base metadata, and ten ranges without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
-| Main-fork `PICT`, `cicn`, `snd `, `TEXT`, `styl`, map-name `STR#` | Generated/merged | Generate deterministically from managed assets and map records | Existing resource-fork writer is reusable. The ownership proof generates normalized `PICT 306`, proves Rust/browser byte parity on both targets, recovers it on reimport, and loads/renders it in modern Realmz. Unsupported imported resources stay in the annex. |
+| Main-fork `PICT`, `cicn`, `snd `, `TEXT`, `styl`, map-name `STR#` | Generated/merged | Generate deterministically from managed assets and map records | Existing resource-fork writer is reusable. The ownership proof owns five representative resources (`PICT 306`, `cicn -100`, `snd  321`, and paired `TEXT`/`styl -200`), proves Rust/browser byte parity on both targets, and recovers image/audio previews plus TEXT/styl semantics on reimport. Modern Realmz loads and renders the custom PICT. Unsupported imported resources stay in the annex. |
 | `RLMZ`, `vers`, arbitrary/malformed resources | Pass-through | Omit unless proven required; annex imported entries | Their container format is understood, but payload ownership is not needed for the minimum proof. |
 
 ### Legacy-only, custom media, and distribution families
@@ -943,10 +957,11 @@ must not be called fresh-authoritative merely because imported round trips are f
    annex and the minimum ownership fixture enforces byte parity, but they still implement the native
    manifest in Rust and TypeScript. Broader golden fixtures or a shared Rust/Wasm compiler should
    prevent policy drift across optional families.
-2. **Optional resource families:** the source-backed 46-byte minimum main fork, item strings, and
-   custom-spell strings are generated in both compilers, but custom media and some extracted
-   sidecar families remain incomplete. Built-in `RLMZ` index metadata is intentionally not
-   synthesized for fresh third-party scenarios.
+2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
+   `PICT`/`cicn`/`snd `/`TEXT`/`styl` resources, item strings, and custom-spell strings are generated
+   in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families
+   remain incomplete. Built-in `RLMZ` index metadata is intentionally not synthesized for fresh
+   third-party scenarios.
 3. **Remaining nested generated DTOs:** the language-neutral schema now owns and checks the
    persisted top-level inventory, complete source-origin/source-file, scenario startup, map
    identity/layout, random-level/rectangle, map-record, scenario-item, treasure, shop, message,
@@ -988,7 +1003,8 @@ Proof scenario requirements:
    annex is created or read.
 3. Compile a native scenario folder containing:
    - startup marker and 600-byte support file;
-   - exact canonical 46-byte zero-entry main resource fork;
+   - exact canonical 46-byte zero-entry main resource-fork baseline, extended deterministically by
+     project-owned managed resources;
    - `Data CS`, `Data CI`, `Data Solids`;
    - one `Data LD`, `Data RD`, and `Data DD` level;
    - empty required dungeon/shop/encounter startup files;

@@ -35,10 +35,24 @@ Providence can manage scenario pictures, icons, sounds, styled/external text, ma
 - Follow-up: `parser-writer`, `editor-ui`, `validation`.
 - Build a resource table that distinguishes scenario-supplied bytes, bundled/shared fallback bytes, and unresolved references.
 - Use source-backed negative icon normalization for Maps palette/canvas previews before adding custom icon authoring.
-- Add resource writer fixtures before enabling ID reassignment or custom asset creation.
+- Keep arbitrary PICT editing and custom music behind their own writer/runtime gates.
+
+## Writer Gate
+
+- The authoritative ownership proof constructs a fresh five-entry `Scenario.rsrc` from canonical
+  managed assets: `PICT 306`, `cicn -100`, `snd  321`, `TEXT -200`, and `styl -200`.
+- Browser and Rust compilers produce byte-identical resource forks for Windows and Classic-Mac
+  targets and do not consult an imported fork or compatibility annex.
+- Native reimport decodes the icon and sound and rebuilds paired TEXT/styl semantics through the
+  derived semantic-schema path.
+- Ready scenario assets must have converted `resourcePath` data, and scenario-managed resource
+  type/ID keys must be unique. Custom-library entries are reference/authoring-library data and do
+  not claim scenario resource keys until copied into the scenario.
+- Unrelated imported entries remain compatibility-annex data rather than fresh-project input.
 
 ## Acceptance Evidence
 
 - Script/media/map/icon target pickers show resource source and conflict status.
 - New or edited resources write into the scenario resource fork without changing Realmz lookup rules.
 - Missing or fallback-only assets are diagnostic, not silently treated as authored scenario bytes.
+- Conflicting scenario-owned type/ID keys are validation errors before export.

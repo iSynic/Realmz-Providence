@@ -19,6 +19,7 @@ const classicOutputB = path.join(proofRoot, "native-classic-b", "Providence Owne
 const browserWindowsOutput = path.join(proofRoot, "browser-native-windows", "Providence Ownership Proof");
 const browserClassicOutput = path.join(proofRoot, "browser-native-classic", "Providence Ownership Proof");
 const reimportDir = path.join(proofRoot, "reimported.providence");
+const reimportSemanticSchemaPath = path.join(proofRoot, "reimported-semantic-schema.json");
 const scenarioName = "Providence Ownership Proof";
 
 await fs.rm(proofRoot, { recursive: true, force: true });
@@ -28,6 +29,7 @@ await bundleScenarioCompiler();
 const requireFromBuild = createRequire(path.join(buildRoot, "proof.cjs"));
 const { createProjectFromScenarioSeed } = requireFromBuild("./scenarioSeed.cjs");
 const { createBrowserScenarioPackageZip } = requireFromBuild("./scenarioPackage.cjs");
+const { validateBrowserProject } = requireFromBuild("./browserProject.cjs");
 const { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, parseResourceFork } = requireFromBuild("./resourceFork.cjs");
 const { encodePictResource } = requireFromBuild("./pictWriter.cjs");
 const { decodePictPreviewImageForTest } = requireFromBuild("./resourcePreview.cjs");
@@ -47,6 +49,7 @@ project.maps[0].render = {
   landlook: 6
 };
 project.randomLevels[0].landlook = 6;
+project.maps[0].tiles[project.maps[0].tiles.length - 1] = -100;
 project.tileAttributes.push({
   tile: 190,
   landlook: null,
@@ -161,14 +164,72 @@ const atlasProject = replaceCustomLandlookAtlas(project, {
 });
 project.assets = atlasProject.assets;
 project.assetCatalog = atlasProject.assetCatalog;
+const customIconCicn = encodeCicnResource();
+const customSoundSnd = encodeSndResource();
+const scrollingText = Buffer.from("Providence owns this scrolling TEXT resource.\r", "ascii");
+const scrollingTextStyl = encodeStylResource();
+project.assets.push(
+  createManagedResourceAsset({
+    id: "asset:special-land-tile:-100:ownership-proof",
+    label: "Providence Special Land Tile",
+    kind: "special-land-tile",
+    resourceType: "cicn",
+    resourceId: -100,
+    fileName: "special-land-tile--100.cicn",
+    resourceBytes: customIconCicn,
+    mimeType: "image/cicn",
+    width: 32,
+    height: 32,
+    linkedEntity: "resource:cicn:-100"
+  }),
+  createManagedResourceAsset({
+    id: "asset:sound:321:ownership-proof",
+    label: "Providence Movement Sound",
+    kind: "sound",
+    resourceType: "snd ",
+    resourceId: 321,
+    fileName: "movement-sound-321.snd",
+    resourceBytes: customSoundSnd,
+    mimeType: "audio/x-mac-snd",
+    durationMs: 23,
+    sampleRate: 11025,
+    channels: 1,
+    linkedEntity: "resource:snd:321"
+  }),
+  createManagedResourceAsset({
+    id: "asset:text:-200:ownership-proof",
+    label: "Providence Scrolling Text",
+    kind: "text",
+    resourceType: "TEXT",
+    resourceId: -200,
+    fileName: "scrolling-text--200.txt",
+    resourceBytes: scrollingText,
+    mimeType: "text/plain",
+    linkedEntity: "resource:TEXT:-200"
+  }),
+  createManagedResourceAsset({
+    id: "asset:styl:-200:ownership-proof",
+    label: "Providence Scrolling Text Style",
+    kind: "text",
+    resourceType: "styl",
+    resourceId: -200,
+    fileName: "scrolling-text--200.styl",
+    resourceBytes: scrollingTextStyl,
+    mimeType: "application/octet-stream",
+    linkedEntity: "resource:styl:-200"
+  })
+);
 project.validation.exportableFiles = [...new Set([...project.validation.exportableFiles, "Layout", "Data Custom 1 BD"])];
+project.validation = validateBrowserProject(project);
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
+assertManagedResourceValidation(project);
 assertOwnershipScenarioMetadata(project, "Canonical project", true);
 assertOwnershipGlobalMacros(project, "Canonical project", true);
 assertOwnershipTileSolids(project, "Canonical project", false);
 assertOwnershipLandLayout(project, "Canonical project", true);
 assertOwnershipCustomLandlook(project, "Canonical project", true);
 assertOwnershipCustomLandlookAtlas(project, "Canonical project");
+assertOwnershipManagedResources(project, "Canonical project");
 expect(project.maps[0].render.landlook === 6 && project.maps[0].render.tilesetId === "landlook-6", "Canonical map must select Custom 1");
 expect(project.randomLevels[0].landlook === 6, "Canonical random-level record must select Custom 1");
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
@@ -314,6 +375,10 @@ assertCompiledCustomLandlookAtlas(windowsFilesA, "Windows");
 assertCompiledCustomLandlookAtlas(classicFilesA, "Classic Mac");
 assertCompiledCustomLandlookAtlas(browserWindowsFiles, "browser Windows");
 assertCompiledCustomLandlookAtlas(browserClassicFiles, "browser Classic Mac");
+assertCompiledManagedResources(windowsFilesA, "Windows");
+assertCompiledManagedResources(classicFilesA, "Classic Mac");
+assertCompiledManagedResources(browserWindowsFiles, "browser Windows");
+assertCompiledManagedResources(browserClassicFiles, "browser Classic Mac");
 assertManifestNamesEqual(project.validation.exportableFiles, browserWindowsFiles, "Browser validation manifest");
 assertFileMapsEqual(windowsFilesA, windowsFilesB, "repeated Windows compile");
 assertFileMapsEqual(classicFilesA, classicFilesB, "repeated Classic-Mac compile");
@@ -329,7 +394,9 @@ await writeFlatDirectory(browserWindowsOutput, browserWindowsFiles);
 await writeFlatDirectory(browserClassicOutput, browserClassicFiles);
 
 await runCargoExample("import_scenario_project", [windowsOutputA, reimportDir, `${scenarioName} Reimported`]);
+await runCargoExample("project_semantic_schema", [reimportDir, reimportSemanticSchemaPath]);
 const reimported = JSON.parse(await fs.readFile(path.join(reimportDir, "project.json"), "utf8"));
+const reimportedSemanticSchema = JSON.parse(await fs.readFile(reimportSemanticSchemaPath, "utf8"));
 expect(reimported.source.immutable === true, "Reimported native output should be a preserved legacy snapshot");
 expect(reimported.source.files.length > 0, "Reimported native output should inventory compatibility files");
 expect(await isDirectory(path.join(reimportDir, "raw-sources")), "Reimport should create a bounded compatibility annex");
@@ -367,9 +434,10 @@ assertOwnershipTileSolids(reimported, "Reimport", true);
 assertOwnershipLandLayout(reimported, "Reimport", false);
 assertOwnershipCustomLandlook(reimported, "Reimport", false);
 await assertReimportedCustomLandlookAtlas(reimported, "Reimport");
+await assertReimportedManagedResources(reimported, reimportedSemanticSchema, "Reimport");
 
 const summary = {
-  proofVersion: 1,
+  proofVersion: 2,
   scenarioName,
   canonicalProject: {
     path: relative(projectDir),
@@ -397,6 +465,7 @@ const summary = {
     authoredLandLayoutCells: project.landLayout?.cells.length ?? 0,
     authoredCustomLandlooks: project.customLandlooks?.length ?? 0,
     authoredCustomLandlookAtlases: project.assets.filter((asset) => asset.conversion?.target === "custom-landlook-atlas").length,
+    authoredManagedResources: project.assets.length,
     globalMacroHooks: project.scenario.globalMacroHooks?.slots.filter((slot) => slot.door !== 0).length ?? 0,
     questFlags: project.questLabels.map((quest) => quest.id)
   },
@@ -405,8 +474,9 @@ const summary = {
     browserDesktopByteParity: true,
     scenarioResourceFork: {
       emptyBaselineBytes: MINIMUM_SCENARIO_RESOURCE_FORK_BYTES,
-      resources: 1,
+      resources: 5,
       customLandlookAtlas: { resourceType: "PICT", id: 306, width: 640, height: 320 },
+      representativeManagedResources: ["cicn -100", "snd  321", "TEXT -200", "styl -200"],
       builtInRlmzResources: 0
     },
     windows: {
@@ -448,7 +518,8 @@ const summary = {
     specialTileSolidityRecovered: true,
     landLayoutRecovered: true,
     customLandlookMetadataRecovered: true,
-    customLandlookAtlasRecovered: true
+    customLandlookAtlasRecovered: true,
+    representativeManagedResourcesRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -473,6 +544,7 @@ async function bundleScenarioCompiler() {
     entryPoints: {
       scenarioSeed: path.join(repoRoot, "src", "editor", "scenarioSeed.ts"),
       scenarioPackage: path.join(repoRoot, "src", "editor", "browser", "scenarioPackage.ts"),
+      browserProject: path.join(repoRoot, "src", "editor", "browser", "project.ts"),
       resourceFork: path.join(repoRoot, "src", "editor", "browser", "resourceFork.ts"),
       pictWriter: path.join(repoRoot, "src", "editor", "pictWriter.ts"),
       resourcePreview: path.join(repoRoot, "src", "editor", "browser", "resourcePreview.ts"),
@@ -514,6 +586,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipLandLayout(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipCustomLandlook(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipCustomLandlookAtlas(savedProject, `Rust-saved project ${stage}`);
+  assertOwnershipManagedResources(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
@@ -582,10 +655,10 @@ function assertCompleteNativeFolder(files, label) {
   }
   expect(files.has("Scenario.rsrc"), `${label} output is missing Scenario.rsrc`);
   const scenarioResourceFork = files.get("Scenario.rsrc");
-  expect(scenarioResourceFork.byteLength > MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, `${label} Scenario.rsrc should extend the canonical empty container with PICT 306`);
+  expect(scenarioResourceFork.byteLength > MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, `${label} Scenario.rsrc should extend the canonical empty container with authored managed resources`);
   const scenarioResources = parseResourceFork(scenarioResourceFork);
-  expect(scenarioResources.length === 1, `${label} Scenario.rsrc should contain only the authored custom-landlook atlas`);
-  expect(scenarioResources[0].resourceType === "PICT" && scenarioResources[0].id === 306, `${label} Scenario.rsrc contains a resource other than PICT 306`);
+  expect(scenarioResources.length === 5, `${label} Scenario.rsrc should contain the five authored representative resources`);
+  expect(new Set(scenarioResources.map((resource) => `${resource.resourceType}:${resource.id}`)).size === 5, `${label} Scenario.rsrc contains duplicate resource keys`);
   expect(files.has("Data ID.rsrc"), `${label} output is missing canonical item text resources`);
   expect(files.get("Data ID.rsrc").byteLength >= 46, `${label} Data ID.rsrc is not structurally plausible`);
   expect(files.has("Data Spell.rsrc"), `${label} output is missing canonical custom-spell names`);
@@ -887,6 +960,34 @@ function assertOwnershipCustomLandlookAtlas(project, label) {
   expect(tileset?.available && tileset.pictId === 306, `${label} custom atlas is not registered as the available Custom 1 tileset`);
 }
 
+function assertOwnershipManagedResources(project, label) {
+  for (const [resourceType, resourceId, expectedBytes] of [
+    ["cicn", -100, customIconCicn],
+    ["snd ", 321, customSoundSnd],
+    ["TEXT", -200, scrollingText],
+    ["styl", -200, scrollingTextStyl]
+  ]) {
+    const asset = project.assets?.find((candidate) => candidate.resourceType === resourceType && candidate.resourceId === resourceId);
+    expect(asset, `${label} is missing canonical ${resourceType} ${resourceId}`);
+    expect(asset.exportState === "ready" && asset.libraryScope === "scenario", `${label} ${resourceType} ${resourceId} is not scenario-owned and export-ready`);
+    expect(asset.resourcePath.startsWith("data:application/octet-stream;base64,"), `${label} ${resourceType} ${resourceId} does not embed deterministic resource bytes`);
+    expect(Buffer.from(asset.resourcePath.split(",", 2)[1], "base64").equals(Buffer.from(expectedBytes)), `${label} ${resourceType} ${resourceId} differs from canonical bytes`);
+    expect(!asset.resourcePath.toLowerCase().includes("raw-sources"), `${label} ${resourceType} ${resourceId} depends on raw-sources`);
+  }
+}
+
+function assertManagedResourceValidation(project) {
+  const missing = JSON.parse(JSON.stringify(project));
+  missing.assets.find((asset) => asset.resourceType === "snd " && asset.resourceId === 321).resourcePath = "";
+  const missingReport = validateBrowserProject(missing);
+  expect(missingReport.errors.some((error) => error.includes("marked ready but has no converted resourcePath")), "Browser validation did not report missing managed resource bytes");
+
+  const conflicting = JSON.parse(JSON.stringify(project));
+  conflicting.assets.push({ ...conflicting.assets.find((asset) => asset.resourceType === "TEXT" && asset.resourceId === -200), id: "asset:text:-200:conflict", label: "Conflicting Scrolling Text" });
+  const conflictReport = validateBrowserProject(conflicting);
+  expect(conflictReport.errors.some((error) => error.includes("scenario-managed resource keys must be unique")), "Browser validation did not report conflicting managed resource ownership");
+}
+
 function assertCompiledCustomLandlook(files, label) {
   const bytes = files.get("Data Custom 1 BD");
   expect(bytes?.byteLength === 8104, `${label} custom-landlook metadata should be exactly 8104 bytes`);
@@ -912,12 +1013,42 @@ function assertCompiledCustomLandlookAtlas(files, label) {
   expect(decoded.summary.frameBottom === "320" && decoded.summary.frameRight === "640", `${label} PICT 306 has an invalid picture frame`);
 }
 
+function assertCompiledManagedResources(files, label) {
+  const entries = parseResourceFork(files.get("Scenario.rsrc"));
+  for (const [resourceType, resourceId, expectedName, expectedBytes] of [
+    ["cicn", -100, "Providence Special Land Tile", customIconCicn],
+    ["snd ", 321, "Providence Movement Sound", customSoundSnd],
+    ["TEXT", -200, "Providence Scrolling Text", scrollingText],
+    ["styl", -200, "Providence Scrolling Text Style", scrollingTextStyl]
+  ]) {
+    const entry = entries.find((candidate) => candidate.resourceType === resourceType && candidate.id === resourceId);
+    expect(entry, `${label} resource fork is missing ${resourceType} ${resourceId}`);
+    expect(entry.name === expectedName, `${label} ${resourceType} ${resourceId} has the wrong resource name`);
+    expect(Buffer.from(entry.data).equals(Buffer.from(expectedBytes)), `${label} ${resourceType} ${resourceId} differs from canonical bytes`);
+  }
+}
+
 async function assertReimportedCustomLandlookAtlas(project, label) {
   const tileset = project.assetCatalog?.tilesets?.find((candidate) => candidate.landlook === 6);
   expect(tileset, `${label} is missing the Custom 1 tileset association`);
   expect(tileset.available === true && tileset.pictId === 306, `${label} did not recover available PICT 306 atlas art`);
   expect(typeof tileset.imagePath === "string" && tileset.imagePath.includes("assets/tile-atlases/"), `${label} did not recover a decoded custom-atlas preview`);
   expect(await pathExists(path.join(reimportDir, tileset.imagePath)), `${label} custom-atlas preview file is missing`);
+}
+
+async function assertReimportedManagedResources(project, semanticSchema, label) {
+  const icon = project.assetCatalog?.icons?.find((candidate) => candidate.resourceType === "cicn" && candidate.resourceId === -100);
+  expect(icon?.previewPath, `${label} did not recover a decoded cicn -100 preview`);
+  expect(await pathExists(path.join(reimportDir, icon.previewPath)), `${label} cicn -100 preview file is missing`);
+  const sound = project.assetCatalog?.sounds?.find((candidate) => candidate.resourceType === "snd " && candidate.resourceId === 321);
+  expect(sound?.previewPath, `${label} did not recover a decoded snd 321 preview`);
+  expect(await pathExists(path.join(reimportDir, sound.previewPath)), `${label} snd 321 preview file is missing`);
+  const text = semanticSchema.entities?.find((entity) => entity.id === "resource:TEXT:-200");
+  const style = semanticSchema.entities?.find((entity) => entity.id === "resource:styl:-200");
+  expect(text?.summary?.text === scrollingText.toString("ascii").trim(), `${label} did not recover TEXT -200 semantics`);
+  expect(style?.summary?.styleRunTableStatus === "classic-style-run-table", `${label} did not recover styl -200 semantics`);
+  expect(style?.summary?.styleRunCountCandidate === 1, `${label} did not recover the styl -200 run count`);
+  expect(semanticSchema.links?.some((link) => link.from === "resource:TEXT:-200" && link.to === "resource:styl:-200" && link.kind === "styled_by"), `${label} did not recover the TEXT/styl semantic relationship`);
 }
 
 function assertOwnershipSpell(records, label) {
@@ -1007,6 +1138,132 @@ function createCustomLandlookAtlasPixels() {
     }
   }
   return rgba;
+}
+
+function createManagedResourceAsset({
+  id,
+  label,
+  kind,
+  resourceType,
+  resourceId,
+  fileName,
+  resourceBytes,
+  mimeType,
+  width = null,
+  height = null,
+  durationMs = null,
+  sampleRate = null,
+  channels = null,
+  linkedEntity
+}) {
+  return {
+    id,
+    label,
+    kind,
+    resourceType,
+    resourceId,
+    fileName,
+    originalPath: "",
+    previewPath: "",
+    resourcePath: `data:application/octet-stream;base64,${Buffer.from(resourceBytes).toString("base64")}`,
+    mimeType,
+    bytes: resourceBytes.byteLength,
+    sha256: createHash("sha256").update(resourceBytes).digest("hex"),
+    width,
+    height,
+    durationMs,
+    sampleRate,
+    channels,
+    exportState: "ready",
+    libraryScope: "scenario",
+    provenance: "Providence ownership proof canonical resource bytes",
+    linkedEntity,
+    conversion: null
+  };
+}
+
+function encodeCicnResource() {
+  const width = 32;
+  const height = 32;
+  const rowBytes = width;
+  const maskRowBytes = width / 8;
+  const maskOffset = 82;
+  const bitmapOffset = maskOffset + maskRowBytes * height;
+  const colorTableOffset = bitmapOffset + maskRowBytes * height;
+  const pixelDataOffset = colorTableOffset + 8 + 2 * 8;
+  const bytes = new Uint8Array(pixelDataOffset + rowBytes * height);
+  const view = new DataView(bytes.buffer);
+  view.setUint16(4, 0x8000 | rowBytes);
+  writeRect(view, 6, height, width);
+  view.setUint16(32, 8);
+  view.setUint16(54, 0x8000 | maskRowBytes);
+  writeRect(view, 56, height, width);
+  view.setUint16(68, 0x8000 | maskRowBytes);
+  writeRect(view, 70, height, width);
+  bytes.fill(0xff, maskOffset, bitmapOffset);
+  view.setUint16(colorTableOffset + 6, 1);
+  for (const [index, red, green, blue] of [[0, 0x1818, 0x2020, 0x3838], [1, 0xe8e8, 0xa0a0, 0x3030]]) {
+    const offset = colorTableOffset + 8 + index * 8;
+    view.setUint16(offset, index);
+    view.setUint16(offset + 2, red);
+    view.setUint16(offset + 4, green);
+    view.setUint16(offset + 6, blue);
+  }
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const border = x < 3 || x > 28 || y < 3 || y > 28;
+      const diamond = Math.abs(x - 16) + Math.abs(y - 16) < 11;
+      bytes[pixelDataOffset + y * rowBytes + x] = border || diamond ? 1 : 0;
+    }
+  }
+  return bytes;
+}
+
+function encodeSndResource() {
+  const samples = Uint8Array.from({ length: 256 }, (_, index) => 128 + Math.round(Math.sin(index * Math.PI / 8) * 48));
+  const bytes = new Uint8Array(42 + samples.length);
+  const view = new DataView(bytes.buffer);
+  view.setUint16(0, 1);
+  view.setUint16(2, 1);
+  view.setUint16(4, 5);
+  view.setUint32(6, 0x80);
+  view.setUint16(10, 1);
+  view.setUint16(12, 0x8051);
+  view.setUint16(14, 0);
+  view.setUint32(16, 20);
+  view.setUint32(20, 0);
+  view.setUint32(24, samples.length);
+  view.setUint32(28, 11025 << 16);
+  view.setUint32(32, 0);
+  view.setUint32(36, samples.length);
+  bytes[40] = 0;
+  bytes[41] = 60;
+  bytes.set(samples, 42);
+  return bytes;
+}
+
+function encodeStylResource() {
+  const bytes = new Uint8Array(22);
+  const view = new DataView(bytes.buffer);
+  view.setUint16(0, 1);
+  view.setInt32(2, 0);
+  view.setInt16(6, 12);
+  view.setInt16(8, 9);
+  view.setInt16(10, 0);
+  bytes[12] = 1;
+  bytes[13] = 0;
+  view.setInt16(14, 12);
+  view.setUint16(16, 0x1818);
+  view.setUint16(18, 0x2020);
+  view.setUint16(20, 0x3838);
+  return bytes;
+}
+
+function writeRect(view, offset, bottom, right) {
+  view.setInt16(offset, 0);
+  view.setInt16(offset + 2, 0);
+  view.setInt16(offset + 4, bottom);
+  view.setInt16(offset + 6, right);
 }
 
 function encodeBmp(rgba, width, height) {
