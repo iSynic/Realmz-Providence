@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { closeBrowserProfile } from "./browser_profile_cleanup.mjs";
 
 export const root = process.cwd();
 
@@ -146,21 +147,31 @@ export async function launchBrowser(processes, windowSize = "1500,1050") {
     `--user-data-dir=${userDataDir}`,
     "--headless=new",
     "--disable-gpu",
+    "--disable-background-mode",
     "--no-first-run",
     "--no-default-browser-check",
     `--window-size=${windowSize}`
   ], { stdio: "ignore", windowsHide: true });
   processes.push(browserProcess);
-  const targets = await waitFor(async () => {
-    try {
-      return await getJson(`http://127.0.0.1:${port}/json/list`);
-    } catch {
-      return null;
-    }
-  }, 20_000, "Timed out waiting for Edge debugging port.");
-  const pageTarget = targets.find((target) => target.type === "page");
-  if (!pageTarget) throw new Error("No Edge page target found.");
-  return connectCdp(pageTarget.webSocketDebuggerUrl);
+  try {
+    const targets = await waitFor(async () => {
+      try {
+        return await getJson(`http://127.0.0.1:${port}/json/list`);
+      } catch {
+        return null;
+      }
+    }, 20_000, "Timed out waiting for Edge debugging port.");
+    const pageTarget = targets.find((target) => target.type === "page");
+    if (!pageTarget) throw new Error("No Edge page target found.");
+    return {
+      client: await connectCdp(pageTarget.webSocketDebuggerUrl),
+      processHandle: browserProcess,
+      profileDir: userDataDir
+    };
+  } catch (error) {
+    await closeBrowserProfile({ processHandle: browserProcess, profileDir: userDataDir });
+    throw error;
+  }
 }
 
 export async function preparePage(client, url) {

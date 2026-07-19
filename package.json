@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "desktop": "tauri dev",
+    "audit:storage": "powershell -ExecutionPolicy Bypass -File scripts/manage_workspace_storage.ps1",
+    "clean:storage": "powershell -ExecutionPolicy Bypass -File scripts/manage_workspace_storage.ps1 -CleanEphemeral",
+    "clean:storage:deep": "powershell -ExecutionPolicy Bypass -File scripts/manage_workspace_storage.ps1 -CleanEphemeral -CleanCargo",
     "lint": "node scripts/check_eslint_baseline.mjs",
     "lint:report": "eslint \"src/**/*.{ts,tsx}\"",
     "test:unit": "vitest run",

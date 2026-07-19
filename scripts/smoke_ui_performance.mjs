@@ -2,6 +2,7 @@ import os from "node:os";
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
+import { closeBrowserProfile } from "./browser_profile_cleanup.mjs";
 import {
   createRunRoot,
   defaultProjectSpecs,
@@ -127,17 +128,18 @@ function splitProjects(value) {
 }
 
 async function runScenario({ baseUrl, budgets, spec, projectServers }) {
-  const client = await launchBrowser(processes);
-  const benchmarkProjectUrl = await servedBenchmarkProjectUrl(spec.file, projectServers);
+  const browser = await launchBrowser(processes);
+  const client = browser.client;
   const scenario = {
     name: spec.name,
     project: spec.file,
-    projectUrl: benchmarkProjectUrl,
+    projectUrl: null,
     probes: []
   };
-  const url = `${baseUrl}/?benchmarkProject=${encodeURIComponent(scenario.projectUrl)}&benchmarkScripts=1&benchmarkCombat=1&_perf=${Date.now()}`;
   const openedAt = Date.now();
   try {
+    scenario.projectUrl = await servedBenchmarkProjectUrl(spec.file, projectServers);
+    const url = `${baseUrl}/?benchmarkProject=${encodeURIComponent(scenario.projectUrl)}&benchmarkScripts=1&benchmarkCombat=1&_perf=${Date.now()}`;
     await assertProjectUrlServesJson(scenario.projectUrl);
     await preparePage(client, url);
     const shellAt = Date.now();
@@ -190,13 +192,7 @@ async function runScenario({ baseUrl, budgets, spec, projectServers }) {
       longTaskStatus: "pass"
     });
   } finally {
-    if (!keepBrowser) {
-      await Promise.race([
-        client.send("Browser.close").catch(() => null),
-        new Promise((resolve) => setTimeout(resolve, 2_000))
-      ]);
-      client.close();
-    }
+    await closeBrowserProfile({ ...browser, keepBrowser });
   }
   return scenario;
 }

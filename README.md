@@ -208,6 +208,12 @@ npm run test:rust
 
 The committed manual gallery can be refreshed against a selected project with `npm run docs:capture-gallery -- --project <path>`.
 
+### Workspace storage
+
+Rust/Tauri builds, browser smoke profiles, and redirected GUI development-server logs are ignored, reproducible local artifacts, but they can grow substantially during sustained development. Audit them with `npm run audit:storage`, remove inactive browser profiles and stale GUI-server logs with `npm run clean:storage`, or also discard the full Rust/Tauri build cache with `npm run clean:storage:deep`. Recently written or still-open logs are left in place. The deep cleanup makes the next Rust build slower because dependencies must be rebuilt.
+
+The cleanup commands deliberately do not remove `tmp/oracle-runs` or `tmp/editor-smoke-runs`. Those directories contain compatibility evidence, and some archaeology scripts refer to named runs; apply a separate reviewed retention policy before pruning them.
+
 ## Repository Layout
 
 | Path | Purpose |

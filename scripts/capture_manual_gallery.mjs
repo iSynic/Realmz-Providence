@@ -3,6 +3,7 @@ import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
+import { closeBrowserProfile } from "./browser_profile_cleanup.mjs";
 
 const root = process.cwd();
 const args = parseArgs(process.argv.slice(2));
@@ -54,6 +55,7 @@ if (captures.length === 0) throw new Error("No matching capture presets were req
 const projectPath = resolveProjectPath(args.get("project") ?? process.env.PROVIDENCE_MANUAL_PROJECT);
 let server;
 let browser;
+let client;
 let profileDir;
 
 try {
@@ -67,7 +69,7 @@ try {
   const launched = await launchBrowser();
   browser = launched.process;
   profileDir = launched.profileDir;
-  const client = launched.client;
+  client = launched.client;
   await client.send("Page.enable");
   await client.send("Runtime.enable");
   await client.send("Emulation.setDeviceMetricsOverride", {
@@ -133,18 +135,10 @@ try {
     written.push(path.relative(root, outputPath).replace(/\\/g, "/"));
     process.stdout.write(`${written.at(-1)}\n`);
   }
-  client.close();
   console.log(JSON.stringify({ project: workspacePath(projectPath), mode: auditMode ? "ui-audit" : "manual-gallery", viewport: auditViewport?.id ?? "desktop", state: auditStateId ?? "base", captures: written }, null, 2));
 } finally {
-  if (browser) browser.kill();
+  await closeBrowserProfile({ client, processHandle: browser, profileDir });
   if (server) await new Promise((resolve) => server.close(resolve));
-  if (profileDir) {
-    try {
-      fs.rmSync(profileDir, { recursive: true, force: true });
-    } catch {
-      // Edge can hold profile locks briefly after exit.
-    }
-  }
 }
 
 function parseArgs(values) {
@@ -338,20 +332,26 @@ async function launchBrowser() {
     `--user-data-dir=${profile}`,
     "--headless=new",
     "--disable-gpu",
+    "--disable-background-mode",
     "--no-first-run",
     "--no-default-browser-check",
     "about:blank"
   ], { stdio: "ignore", windowsHide: true });
-  const targets = await waitFor(async () => {
-    try {
-      return await getJson(`http://127.0.0.1:${port}/json/list`);
-    } catch {
-      return null;
-    }
-  }, 20_000, "Timed out waiting for Edge debugging port.");
-  const page = targets.find((target) => target.type === "page");
-  if (!page) throw new Error("No Edge page target found.");
-  return { process: processHandle, profileDir: profile, client: await connectCdp(page.webSocketDebuggerUrl) };
+  try {
+    const targets = await waitFor(async () => {
+      try {
+        return await getJson(`http://127.0.0.1:${port}/json/list`);
+      } catch {
+        return null;
+      }
+    }, 20_000, "Timed out waiting for Edge debugging port.");
+    const page = targets.find((target) => target.type === "page");
+    if (!page) throw new Error("No Edge page target found.");
+    return { process: processHandle, profileDir: profile, client: await connectCdp(page.webSocketDebuggerUrl) };
+  } catch (error) {
+    await closeBrowserProfile({ processHandle, profileDir: profile });
+    throw error;
+  }
 }
 
 function getJson(url) {
