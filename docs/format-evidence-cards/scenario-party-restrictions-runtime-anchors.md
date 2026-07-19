@@ -70,7 +70,7 @@ The broader 44-scenario format inventory should add `Data RI` to the next regene
 - Scenario tool should show a real restriction section when `Data RI` is present.
 - Race/caste flag labels should resolve through bundled/shared `STR# 129` and `STR# 131` evidence when available.
 - Race/caste pickers from the Rules evidence pass should power the restriction editor.
-- `Data RI` can be parsed now and written later once Scenario editor command/write fixtures are added.
+- `Data RI` is parsed, edited, and compiled now; both writers rebuild the complete record from semantics, while untouched imported identity is annex-owned.
 
 ## Validation Candidates
 

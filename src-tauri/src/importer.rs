@@ -2536,6 +2536,8 @@ mod tests {
             .entities
             .iter()
             .any(|entity| entity.id == "map:land:0"));
+        assert!(schema.entities.iter().any(|entity| entity.id == "contact:0"
+            && entity.summary.get("canonical") == Some(&serde_json::json!(true))));
         assert!(schema
             .entities
             .iter()
@@ -2547,6 +2549,12 @@ mod tests {
             .iter()
             .any(|entity| entity.id == "treasure:0"));
         assert!(!schema.sources.iter().any(|source| source.name == "Data TD"));
+        assert!(schema.sources.iter().any(|source| {
+            source.name == "Data CI"
+                && source.path.as_deref() == Some("project.json#scenario/contactInfo")
+                && source.origin == SemanticSourceOrigin::AuthoredSource
+        }));
+        assert!(!schema.sources.iter().any(|source| source.name == "Data RI"));
     }
 
     #[test]
@@ -2661,6 +2669,29 @@ mod tests {
         let project_dir = temp.path().join("Canonical Supporting Records.providence");
         let mut project = create_project("Canonical Supporting Records".to_string(), &project_dir)
             .expect("project");
+
+        let contact = project
+            .scenario
+            .contact_info
+            .as_mut()
+            .expect("fresh contact info");
+        contact.scenario_name = "Canonical contact".to_string();
+        contact.description = "Canonical contact description".to_string();
+        contact.authored = false;
+        contact.raw_bytes = vec![0xa5; crate::realmz::SCENARIO_CONTACT_INFO_BYTES];
+        let mut restrictions = crate::realmz::parse_scenario_restrictions(&vec![
+            0;
+            crate::realmz::SCENARIO_RESTRICTIONS_BYTES
+        ])
+        .expect("restriction template");
+        restrictions.description = "No giants".to_string();
+        restrictions.max_party_characters = 4;
+        restrictions.max_party_level = 20;
+        restrictions.banned_races = vec![1, 30];
+        restrictions.banned_castes = vec![2, 29];
+        restrictions.authored = false;
+        restrictions.raw_bytes.fill(0xa5);
+        project.scenario.restrictions = Some(restrictions);
 
         let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
             .into_iter()
@@ -2885,6 +2916,8 @@ mod tests {
             "spell-override:16",
             "race-override:2",
             "caste-override:3",
+            "contact:0",
+            "restriction:0",
         ] {
             let entity = schema
                 .entities
@@ -3059,6 +3092,8 @@ mod tests {
             ("Data Spell", "project.json#spellOverrides"),
             ("Data Race", "project.json#raceOverrides"),
             ("Data Caste", "project.json#casteOverrides"),
+            ("Data CI", "project.json#scenario/contactInfo"),
+            ("Data RI", "project.json#scenario/restrictions"),
         ] {
             let source = schema
                 .sources
@@ -3069,6 +3104,22 @@ mod tests {
             assert!(matches!(source.confidence, Confidence::Confirmed));
             assert_eq!(source.origin, SemanticSourceOrigin::AuthoredSource);
         }
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "contact:0")
+                .and_then(|entity| entity.summary.get("scenarioName")),
+            Some(&serde_json::json!("Canonical contact"))
+        );
+        assert_eq!(
+            schema
+                .entities
+                .iter()
+                .find(|entity| entity.id == "restriction:0")
+                .and_then(|entity| entity.summary.get("bannedRaceCount")),
+            Some(&serde_json::json!(2))
+        );
         for (source, bytes) in [
             (
                 "Data Spell",

@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioItems, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
 import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
@@ -312,6 +312,7 @@ function addSupportingRecords(schema: SemanticSchema, buffers: Map<string, Uint8
   addRaceOverrideRecords(schema, buffers.get("Data Race"));
   addCasteOverrideRecords(schema, buffers.get("Data Caste"));
   addContactRecords(schema, buffers.get("Data CI"));
+  addRestrictionRecords(schema, buffers.get("Data RI"));
   addGlobalMacroRecords(schema, buffers.get("Global"));
   addMenuRecords(schema, buffers.get("Data MENU"));
   addSolidsRecords(schema, buffers.get("Data Solids"));
@@ -322,7 +323,7 @@ function addCanonicalRecordCollections(
   schema: SemanticSchema,
   projectParts: Pick<
     Parameters<typeof buildBrowserSemanticSchema>[0],
-    "battles" | "monsters" | "monsterSets" | "messages" | "optionLabels" | "monsterDescriptions" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters" | "spellOverrides" | "raceOverrides" | "casteOverrides"
+    "scenario" | "battles" | "monsters" | "monsterSets" | "messages" | "optionLabels" | "monsterDescriptions" | "shops" | "simpleEncounters" | "complexEncounters" | "scenarioItems" | "treasures" | "thiefEncounters" | "timedEncounters" | "spellOverrides" | "raceOverrides" | "casteOverrides"
   >
 ) {
   const buffers = new Map<string, Uint8Array>();
@@ -346,6 +347,8 @@ function addCanonicalRecordCollections(
   addCanonicalRecordBuffer(schema, buffers, sources, "Data Spell", "project.json#spellOverrides", projectParts.spellOverrides, writeFreshSpellOverrides);
   addCanonicalRecordBuffer(schema, buffers, sources, "Data Race", "project.json#raceOverrides", projectParts.raceOverrides, writeFreshRaceOverrides);
   addCanonicalRecordBuffer(schema, buffers, sources, "Data Caste", "project.json#casteOverrides", projectParts.casteOverrides, writeFreshCasteOverrides);
+  addCanonicalSingletonBuffer(schema, buffers, sources, "Data CI", "project.json#scenario/contactInfo", projectParts.scenario.contactInfo, writeScenarioContactInfo);
+  addCanonicalSingletonBuffer(schema, buffers, sources, "Data RI", "project.json#scenario/restrictions", projectParts.scenario.restrictions, writeScenarioRestrictions);
   if (buffers.size === 0) return;
 
   addSupportingRecords(schema, buffers);
@@ -420,6 +423,45 @@ function retainCanonicalRecords(
     entity.confidence = "confirmed";
     entity.editable = true;
     entity.summary.canonical = true;
+  }
+}
+
+function addCanonicalSingletonBuffer<T extends { rawBytes?: number[]; authored?: boolean }>(
+  schema: SemanticSchema,
+  buffers: Map<string, Uint8Array>,
+  sources: Array<{ name: string; path: string; ids: Set<number> }>,
+  name: string,
+  path: string,
+  record: T | null | undefined,
+  encode: (record: T) => Uint8Array
+) {
+  if (!record) return;
+  try {
+    const bytes = encode({ ...record, authored: true, rawBytes: [] });
+    buffers.set(name, bytes);
+    sources.push({ name, path, ids: new Set([0]) });
+    schema.sources.push({
+      id: sourceId(name),
+      type: "canonical compiler input",
+      origin: "authored-source",
+      name,
+      path,
+      exists: true,
+      bytes: bytes.byteLength,
+      sha256: null,
+      layout: layoutFor(name),
+      confidence: "confirmed"
+    });
+  } catch (error) {
+    schema.diagnostics.push({
+      id: `diagnostic:canonical-record-encoding:${name.replace(/\s+/g, "-").toLowerCase()}`,
+      type: "canonical-record-encoding",
+      severity: "error",
+      confidence: "confirmed",
+      source: name,
+      message: `Could not map canonical ${name} record: ${error instanceof Error ? error.message : String(error)}`,
+      data: {}
+    });
   }
 }
 
@@ -2371,6 +2413,28 @@ function i16At(buffer: Uint8Array, offset: number) {
   if (offset + 2 > buffer.byteLength) return 0;
   const value = (buffer[offset] << 8) | buffer[offset + 1];
   return value & 0x8000 ? value - 0x10000 : value;
+}
+
+function addRestrictionRecords(schema: SemanticSchema, buffer?: Uint8Array) {
+  if (!buffer) return;
+  for (let index = 0; index + 320 <= buffer.byteLength; index += 1) {
+    const start = index * 320;
+    const summary = {
+      id: index,
+      description: pascalTextAt(buffer, start, 256),
+      maxPartyCharacters: i16At(buffer, start + 256),
+      maxPartyLevel: i16At(buffer, start + 258),
+      bannedRaces: Array.from(buffer.slice(start + 260, start + 290)).flatMap((value, race) => value ? [race + 1] : []),
+      bannedCastes: Array.from(buffer.slice(start + 290, start + 320)).flatMap((value, caste) => value ? [caste + 1] : [])
+    };
+    const label = summary.description || `Restrictions ${index}`;
+    upsertRecord(schema, browserRecord("Data RI", index, 320, "scenario-restriction", label, summary));
+    schema.entities.push(browserEntity(`restriction:${index}`, "scenario-restriction", label, "Data RI", `record:Data RI:${index}`, start, 320, summary));
+    if (index === 0) {
+      const scenario = schema.entities.find((entity) => entity.type === "scenario");
+      if (scenario) pushLink(schema, scenario.id, "restriction:0", "has_party_restrictions", "source-backed");
+    }
+  }
 }
 
 function signedByteAt(buffer: Uint8Array, offset: number) {

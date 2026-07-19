@@ -846,13 +846,16 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
     evidence: [
       "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
       "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+      "src-tauri/src/exporter.rs:scenario_metadata_legacy_identity_comes_only_from_annex",
+      "src/editor/browser/binaryWriters.test.ts:browser scenario metadata writers",
+      "scripts/run_authoritative_scenario_proof.mjs:assertOwnershipScenarioMetadata",
       "src-tauri/src/realmz/scenario.rs:write_scenario_contact_info",
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/scenario-shell-evidence.json",
       "docs/format-evidence-cards/scenario-startup-runtime-anchors.md",
       "docs/format-evidence-cards/scenario-shell-startup-release.md"
     ],
-    preservationPolicy: "This gate covers Data CI contact/release text only; marker/main startup shell files stay outside this batch."
+    preservationPolicy: "Both native writers compile all eighteen Str255 slots from canonical semantics and deterministic zero padding without consulting embedded raw bytes. An untouched imported singleton and any malformed tail are recovered only from the compatibility annex; marker/main startup shell files stay outside this batch."
   },
   {
     container: "Data RI",
@@ -869,12 +872,15 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
     evidence: [
       "src-tauri/src/realmz/scenario.rs:fixed_record_scenario_shell_writers_mutate_only_owned_fields",
       "src-tauri/src/realmz/scenario.rs:scenario_shell_contact_and_restrictions_round_trip",
+      "src-tauri/src/exporter.rs:scenario_metadata_legacy_identity_comes_only_from_annex",
+      "src/editor/browser/binaryWriters.test.ts:browser scenario metadata writers",
+      "scripts/check_browser_scenario_package.mjs",
       "src-tauri/src/realmz/scenario.rs:write_scenario_restrictions",
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/scenario-party-restrictions-evidence.json",
       "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"
     ],
-    preservationPolicy: "This gate covers the optional Data RI restriction record only; marker/main party level fields stay outside this batch."
+    preservationPolicy: "Both native writers compile the complete optional restriction record from canonical semantics and deterministic Boolean flags without consulting embedded raw bytes. An untouched imported singleton and any malformed tail are recovered only from the compatibility annex; marker/main party-level fields stay outside this batch."
   },
   {
     container: "Global",

@@ -8,6 +8,40 @@ import {
 import type { ProjectCommand } from "./types";
 
 describe("project command facade", () => {
+  it("drops imported scenario metadata bytes when semantics are authored", () => {
+    const project = createBrowserProject("Semantic scenario metadata");
+    project.scenario.contactInfo = {
+      ...project.scenario.contactInfo!,
+      rawBytes: new Array(4608).fill(0xa5),
+      authored: false
+    };
+    project.scenario.restrictions = {
+      description: "Imported restrictions",
+      maxPartyCharacters: 0,
+      maxPartyLevel: 0,
+      bannedRaces: [],
+      bannedCastes: [],
+      rawBytes: new Array(320).fill(0xa5),
+      authored: false
+    };
+
+    const contact = applyProjectCommand(project, {
+      kind: "updateScenarioContactInfo",
+      label: "Author contact info",
+      changes: { author: "Providence" }
+    });
+    const restrictions = applyProjectCommand(contact, {
+      kind: "updateScenarioRestrictions",
+      label: "Author restrictions",
+      changes: { maxPartyCharacters: 4 }
+    });
+
+    expect(restrictions.scenario.contactInfo).toMatchObject({ author: "Providence", authored: true });
+    expect(restrictions.scenario.contactInfo?.rawBytes).toBeUndefined();
+    expect(restrictions.scenario.restrictions).toMatchObject({ maxPartyCharacters: 4, authored: true });
+    expect(restrictions.scenario.restrictions?.rawBytes).toBeUndefined();
+  });
+
   it("creates fresh messages from semantic text without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Message");
 

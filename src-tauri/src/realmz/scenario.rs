@@ -9,6 +9,9 @@ use super::record_bytes::{
     provenance, write_i16_be, write_i32_be,
 };
 
+pub const SCENARIO_CONTACT_INFO_BYTES: usize = 4608;
+pub const SCENARIO_RESTRICTIONS_BYTES: usize = 320;
+
 pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<ScenarioShell> {
     if buffer.len() < 316 {
         return Err(ProvidenceError::message(format!(
@@ -150,14 +153,12 @@ pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo>
 }
 
 pub fn write_scenario_contact_info(contact: &ScenarioContactInfo) -> Result<Vec<u8>> {
-    if !contact.authored && contact.raw_bytes.len() == 4608 {
-        return Ok(contact.raw_bytes.clone());
+    if !contact.raw_bytes.is_empty() && contact.raw_bytes.len() != 4608 {
+        return Err(ProvidenceError::message(
+            "Scenario contact info has invalid compatibility byte storage",
+        ));
     }
-    let mut output = if contact.raw_bytes.len() == 4608 {
-        contact.raw_bytes.clone()
-    } else {
-        vec![0u8; 4608]
-    };
+    let mut output = vec![0u8; 4608];
     let fields = [
         contact.scenario_name.as_str(),
         contact.version.as_str(),
@@ -216,14 +217,12 @@ pub fn parse_scenario_restrictions(buffer: &[u8]) -> Result<ScenarioRestrictions
 }
 
 pub fn write_scenario_restrictions(restrictions: &ScenarioRestrictions) -> Result<Vec<u8>> {
-    if !restrictions.authored && restrictions.raw_bytes.len() == 320 {
-        return Ok(restrictions.raw_bytes.clone());
+    if !restrictions.raw_bytes.is_empty() && restrictions.raw_bytes.len() != 320 {
+        return Err(ProvidenceError::message(
+            "Scenario restrictions have invalid compatibility byte storage",
+        ));
     }
-    let mut output = if restrictions.raw_bytes.len() == 320 {
-        restrictions.raw_bytes.clone()
-    } else {
-        vec![0u8; 320]
-    };
+    let mut output = vec![0u8; 320];
     encode_pascal_text(&mut output[0..256], &restrictions.description)?;
     write_i16_be(&mut output, 256, restrictions.max_party_characters);
     write_i16_be(&mut output, 258, restrictions.max_party_level);
@@ -329,22 +328,6 @@ mod tests {
         assert_eq!(
             write_scenario_support_file(&support).unwrap(),
             support_input
-        );
-
-        let mut contact_input = vec![0u8; 4608];
-        contact_input[4607] = 0x5a;
-        let contact = parse_scenario_contact_info(&contact_input).unwrap();
-        assert_eq!(
-            write_scenario_contact_info(&contact).unwrap(),
-            contact_input
-        );
-
-        let mut restrictions_input = vec![0u8; 320];
-        restrictions_input[319] = 1;
-        let restrictions = parse_scenario_restrictions(&restrictions_input).unwrap();
-        assert_eq!(
-            write_scenario_restrictions(&restrictions).unwrap(),
-            restrictions_input
         );
 
         let mut global_input = vec![0u8; 60];
@@ -494,6 +477,7 @@ mod tests {
         let mut contact = parse_scenario_contact_info(&contact_input).unwrap();
         contact.authored = true;
         contact.scenario_name = "Go".to_string();
+        contact.raw_bytes.fill(0xa5);
         let contact_output = write_scenario_contact_info(&contact).unwrap();
         assert_eq!(contact_output.len(), contact_input.len());
         assert_eq!(
@@ -509,12 +493,17 @@ mod tests {
         restrictions.max_party_level = 0x0304;
         restrictions.banned_races = vec![1, 30];
         restrictions.banned_castes = vec![2];
+        restrictions.raw_bytes.fill(0xa5);
         let restrictions_output = write_scenario_restrictions(&restrictions).unwrap();
         assert_eq!(restrictions_output.len(), restrictions_input.len());
         assert_eq!(
             changed_offsets(&restrictions_input, &restrictions_output),
             vec![0, 1, 2, 256, 257, 258, 259, 260, 289, 291]
         );
+        contact.raw_bytes = vec![1];
+        assert!(write_scenario_contact_info(&contact).is_err());
+        restrictions.raw_bytes = vec![1];
+        assert!(write_scenario_restrictions(&restrictions).is_err());
     }
 
     #[test]

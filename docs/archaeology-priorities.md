@@ -252,7 +252,7 @@ The thirteenth follow-up archaeology pass tightened `Scenario shell, startup, an
 - it contains a `Str255` description, `maxpc`, `maxlevel`, 30 race flags, and 30 caste flags;
 - despite source field names `canrace` and `cancaste`, nonzero flags ban that race/caste during party selection;
 - the local output corpus has `Data RI` in 24 of 28 scenarios, always 320 bytes;
-- Providence now tracks and parses `Data RI` as source-backed semantic restriction evidence, but write support remains fixture-gated.
+- Providence tracks, edits, and compiles `Data RI` from canonical restriction semantics in both native compilers. Untouched imported byte identity and malformed tails are recovered only from the compatibility annex.
 
 Detailed evidence lives in `docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md` and `docs/generated/scenario-party-restrictions-evidence.json`.
 

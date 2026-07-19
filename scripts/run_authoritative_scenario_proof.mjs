@@ -38,6 +38,7 @@ const result = createProjectFromScenarioSeed(seed, {
 expect(result.ok, `Scenario JSON compilation failed: ${result.ok ? "" : result.errors.join("; ")}`);
 const project = result.project;
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
+assertOwnershipScenarioMetadata(project, "Canonical project", true);
 expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
 expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
@@ -189,6 +190,7 @@ assertOwnershipTreasure(reimported.treasures, "Reimport");
 assertOwnershipShop(reimported.shops, "Reimport");
 assertOwnershipSpell(reimported.spellOverrides, "Reimport");
 assertOwnershipRules(reimported, "Reimport", false);
+assertOwnershipScenarioMetadata(reimported, "Reimport", false);
 
 const summary = {
   proofVersion: 1,
@@ -311,6 +313,7 @@ async function assertNoRawSources(stage) {
   expect(!await pathExists(path.join(projectDir, "raw-sources")), `Fresh project created raw-sources ${stage}`);
   const savedProject = JSON.parse(await fs.readFile(path.join(projectDir, "project.json"), "utf8"));
   expect(savedProject.source.files.length === 0, `Fresh project gained a source inventory ${stage}`);
+  assertOwnershipScenarioMetadata(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
@@ -343,6 +346,7 @@ function assertCompleteNativeFolder(files, label) {
     [scenarioName, 316],
     ["Scenario", 600],
     ["Data CS", 316],
+    ["Data CI", 4608],
     ["Data LD", 90 * 90 * 2],
     ["Data RD", 644],
     ["Data DD", 100 * 40],
@@ -379,6 +383,11 @@ function assertCompleteNativeFolder(files, label) {
   expect(files.has("Data Spell.rsrc"), `${label} output is missing canonical custom-spell names`);
   expect(files.get("Data Spell.rsrc").byteLength >= 46, `${label} Data Spell.rsrc is not structurally plausible`);
   expect(files.has("Data SD2"), `${label} output is missing authored messages`);
+  const contact = files.get("Data CI");
+  const scenarioNameBytes = Buffer.from(scenarioName);
+  expect(contact[0] === scenarioNameBytes.length, `${label} Data CI has the wrong scenario-name length`);
+  expect(Buffer.from(contact.slice(1, 1 + scenarioNameBytes.length)).equals(scenarioNameBytes), `${label} Data CI has the wrong scenario name`);
+  expect(contact.slice(1 + scenarioNameBytes.length, 256).every((byte) => byte === 0), `${label} Data CI scenario-name padding is not deterministic zero`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this rogue encounter.")), `${label} Data SD2 is missing the authored rogue message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
@@ -554,6 +563,17 @@ function assertOwnershipShop(records, label) {
   expect(shop, `${label} is missing shop 0`);
   expect(shop.itemIds?.length === 1000 && shop.quantities?.length === 1000, `${label} shop has the wrong stock-slot inventory`);
   expect(shop.itemIds[0] === 901 && shop.quantities[0] === 1 && shop.inflation === 105, `${label} shop has the wrong semantic stock`);
+}
+
+function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityBytes) {
+  const contact = project.scenario?.contactInfo;
+  expect(contact, `${label} is missing scenario contact info`);
+  expect(contact.scenarioName === scenarioName, `${label} has the wrong scenario contact name`);
+  expect(contact.author === "Providence", `${label} has the wrong scenario contact author`);
+  if (requireNoCompatibilityBytes) {
+    expect((contact.rawBytes?.length ?? 0) === 0, `${label} scenario contact contains compatibility bytes`);
+    expect((project.scenario?.restrictions?.rawBytes?.length ?? 0) === 0, `${label} scenario restrictions contain compatibility bytes`);
+  }
 }
 
 function assertOwnershipSpell(records, label) {

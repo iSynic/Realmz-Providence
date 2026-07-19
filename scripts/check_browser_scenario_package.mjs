@@ -758,6 +758,7 @@ const scenarioMetadataProject = {
       payInfo: ["A", "B", "C", "D", "E"],
       titles: ["One", "Two", "Three", "Four", "Five"],
       description: "Browser-authored contact info",
+      rawBytes: new Array(4608).fill(0xa5),
       authored: true
     },
     restrictions: {
@@ -766,6 +767,7 @@ const scenarioMetadataProject = {
       maxPartyLevel: 20,
       bannedRaces: [1, 30, 31],
       bannedCastes: [2, 29, 0],
+      rawBytes: new Array(320).fill(0xa5),
       authored: true
     }
   }

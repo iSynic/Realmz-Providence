@@ -4,9 +4,10 @@ use crate::project::*;
 use crate::realmz::{
     shop_prefix_record_count, write_battles, write_complex_encounters, write_messages,
     write_monster_descriptions, write_monster_set, write_monsters, write_option_labels,
-    write_scenario_items, write_shops, write_simple_encounters, write_thief_encounters,
-    write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES,
-    RACE_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
+    write_scenario_contact_info, write_scenario_items, write_scenario_restrictions, write_shops,
+    write_simple_encounters, write_thief_encounters, write_timed_encounters, write_treasures,
+    ParsedScenario, CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES, RACE_BYTES, SIMPLE_ENCOUNTER_BYTES,
+    SPELL_BYTES,
 };
 use crate::rule_compiler::{
     write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
@@ -16,6 +17,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) fn add_canonical_record_collections(
     schema: &mut SemanticSchema,
+    scenario: &ScenarioMeta,
     parsed: &ParsedScenario,
 ) {
     macro_rules! canonical_records {
@@ -192,6 +194,32 @@ pub(super) fn add_canonical_record_collections(
         !caste_overrides.is_empty(),
         write_fresh_caste_overrides(&caste_overrides),
     );
+    if let Some(contact) = &scenario.contact_info {
+        let mut contact = contact.clone();
+        contact.authored = true;
+        contact.raw_bytes.clear();
+        insert_canonical_buffer(
+            schema,
+            &mut buffers,
+            "Data CI",
+            "project.json#scenario/contactInfo",
+            true,
+            write_scenario_contact_info(&contact),
+        );
+    }
+    if let Some(restrictions) = &scenario.restrictions {
+        let mut restrictions = restrictions.clone();
+        restrictions.authored = true;
+        restrictions.raw_bytes.clear();
+        insert_canonical_buffer(
+            schema,
+            &mut buffers,
+            "Data RI",
+            "project.json#scenario/restrictions",
+            true,
+            write_scenario_restrictions(&restrictions),
+        );
+    }
     if buffers.is_empty() {
         return;
     }
@@ -312,6 +340,12 @@ pub(super) fn add_canonical_record_collections(
                 .map(|record| record.id)
                 .collect(),
         ));
+    }
+    if scenario.contact_info.is_some() {
+        canonical_sources.push(("Data CI", [0usize].into_iter().collect()));
+    }
+    if scenario.restrictions.is_some() {
+        canonical_sources.push(("Data RI", [0usize].into_iter().collect()));
     }
     retain_canonical_records(schema, canonical_sources);
 }

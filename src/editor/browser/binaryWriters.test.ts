@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import { emptyCasteOverride, emptyRaceOverride, emptySpellOverride } from "../projectCommands/scenarioRulesCommands";
 import type { MapRecord, RandomLevel, RandomRect } from "../types";
-import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioItems, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { writeBattles, writeCasteOverrides, writeComplexEncounters, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -67,6 +67,61 @@ describe("browser rule-override writers", () => {
       .toThrow("exactly 8 to-hit adjustments");
     expect(() => writeCasteOverrides([{ ...emptyCasteOverride(0), spellcasters: [[1, 2, 3]] }]))
       .toThrow("exactly 4 spellcaster rows");
+  });
+});
+
+describe("browser scenario metadata writers", () => {
+  it("compile contact and restriction semantics without embedded raw identity", () => {
+    const contact = {
+      scenarioName: "Canonical contact",
+      version: "1.0",
+      date: "2026-07-19",
+      author: "Providence",
+      email: "author@example.test",
+      web: "https://example.test",
+      fee: "Free",
+      payInfo: ["A", "B", "C", "D", "E"],
+      titles: ["One", "Two", "Three", "Four", "Five"],
+      description: "Canonical description",
+      authored: false
+    };
+    const restrictions = {
+      description: "No giants",
+      maxPartyCharacters: 4,
+      maxPartyLevel: 20,
+      bannedRaces: [1, 30],
+      bannedCastes: [2, 29],
+      authored: false
+    };
+
+    expect(writeScenarioContactInfo({ ...contact, rawBytes: new Array(4608).fill(0xa5) }))
+      .toEqual(writeScenarioContactInfo(contact));
+    expect(writeScenarioRestrictions({ ...restrictions, rawBytes: new Array(320).fill(0xa5) }))
+      .toEqual(writeScenarioRestrictions(restrictions));
+  });
+
+  it("rejects malformed compatibility storage", () => {
+    expect(() => writeScenarioContactInfo({
+      scenarioName: "",
+      version: "",
+      date: "",
+      author: "",
+      email: "",
+      web: "",
+      fee: "",
+      payInfo: [],
+      titles: [],
+      description: "",
+      rawBytes: [1]
+    })).toThrow("invalid compatibility byte storage");
+    expect(() => writeScenarioRestrictions({
+      description: "",
+      maxPartyCharacters: 0,
+      maxPartyLevel: 0,
+      bannedRaces: [],
+      bannedCastes: [],
+      rawBytes: [1]
+    })).toThrow("invalid compatibility byte storage");
   });
 });
 

@@ -416,13 +416,13 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.scenario.contactInfo) {
     writes.push({
       path: "Data CI",
-      bytes: preserveMalformedRawTail("Data CI", writeScenarioContactInfo(project.scenario.contactInfo), SCENARIO_CONTACT_INFO_BYTES, annex)
+      bytes: preserveImportedSingleton("Data CI", writeScenarioContactInfo(project.scenario.contactInfo), SCENARIO_CONTACT_INFO_BYTES, project.scenario.contactInfo.authored, annex)
     });
   }
   if (project.scenario.restrictions) {
     writes.push({
       path: "Data RI",
-      bytes: preserveMalformedRawTail("Data RI", writeScenarioRestrictions(project.scenario.restrictions), SCENARIO_RESTRICTIONS_BYTES, annex)
+      bytes: preserveImportedSingleton("Data RI", writeScenarioRestrictions(project.scenario.restrictions), SCENARIO_RESTRICTIONS_BYTES, project.scenario.restrictions.authored, annex)
     });
   }
   if (project.scenarioItems.length > 0) {
@@ -894,6 +894,19 @@ function preserveMalformedRawTail(fileName: string, bytes: Uint8Array, recordByt
   output.set(bytes);
   output.set(raw.slice(bytes.byteLength), bytes.byteLength);
   return output;
+}
+
+function preserveImportedSingleton(
+  fileName: string,
+  bytes: Uint8Array,
+  recordBytes: number,
+  authored: boolean | undefined,
+  annex: BrowserCompatibilityAnnex | null
+) {
+  const raw = rawSourceBytes(fileName, annex);
+  if (!raw) return bytes;
+  if (!authored && raw.byteLength >= recordBytes) return raw;
+  return preserveMalformedRawTail(fileName, bytes, recordBytes, annex);
 }
 
 function writeMessagesForExport(messages: Project["messages"], annex: BrowserCompatibilityAnnex | null) {

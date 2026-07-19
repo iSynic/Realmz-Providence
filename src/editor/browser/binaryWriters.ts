@@ -466,10 +466,8 @@ export function writeScenarioSupportFile(support: ScenarioSupportFile) {
 }
 
 export function writeScenarioContactInfo(contact: ScenarioContactInfo) {
-  const output = contact.rawBytes?.length === SCENARIO_CONTACT_INFO_BYTES
-    ? new Uint8Array(contact.rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(SCENARIO_CONTACT_INFO_BYTES);
-  if (!contact.authored && contact.rawBytes?.length === SCENARIO_CONTACT_INFO_BYTES) return output;
+  validateCompatibilityStorage("Scenario contact info", 0, contact.rawBytes, SCENARIO_CONTACT_INFO_BYTES);
+  const output = new Uint8Array(SCENARIO_CONTACT_INFO_BYTES);
   const fields = [
     contact.scenarioName,
     contact.version,
@@ -491,10 +489,8 @@ export function writeScenarioContactInfo(contact: ScenarioContactInfo) {
 }
 
 export function writeScenarioRestrictions(restrictions: ScenarioRestrictions) {
-  const output = restrictions.rawBytes?.length === SCENARIO_RESTRICTIONS_BYTES
-    ? new Uint8Array(restrictions.rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(SCENARIO_RESTRICTIONS_BYTES);
-  if (!restrictions.authored && restrictions.rawBytes?.length === SCENARIO_RESTRICTIONS_BYTES) return output;
+  validateCompatibilityStorage("Scenario restrictions", 0, restrictions.rawBytes, SCENARIO_RESTRICTIONS_BYTES);
+  const output = new Uint8Array(SCENARIO_RESTRICTIONS_BYTES);
   encodePascalText(output.subarray(0, MESSAGE_RECORD_BYTES), restrictions.description ?? "");
   writeI16(output, 256, restrictions.maxPartyCharacters);
   writeI16(output, 258, restrictions.maxPartyLevel);

@@ -347,10 +347,22 @@ Unchanged imported rows and malformed tails are restored only from the compatibi
 ownership proof now asserts exact semantic bytes for one spell, race, and caste in both compilers
 without `raw-sources`, including deterministic zero compatibility words.
 
-Branch validation through the thirty-sixth slice completed on 2026-07-19:
+The thirty-seventh slice closes the same authoritative boundary for scenario contact metadata and
+optional party restrictions. The generated schema now omits empty compatibility storage when Rust
+saves fresh `ScenarioContactInfo` and `ScenarioRestrictions` values. Browser project commands drop
+imported `rawBytes` as soon as either record is authored, and both low-level writers always
+zero-initialize and compile the complete 4,608-byte `Data CI` or 320-byte `Data RI` singleton from
+semantic fields, regardless of embedded byte identity or the `authored` flag. Untouched imported
+singletons and malformed tails are restored only by the compatibility-annex layer in both native
+compilers. The canonical semantic index now exposes these records as editable, confirmed compiler
+inputs at `project.json#scenario/contactInfo` and `project.json#scenario/restrictions`; imported
+buffers remain source-backed and inspect-only. The ownership proof now requires raw-free contact
+metadata, exact `Data CI` output, deterministic Pascal padding, and semantic reimport.
 
-- full Rust suite: 241 passed, 2 ignored;
-- full TypeScript suite: 591 passed, plus typecheck;
+Branch validation through the thirty-seventh slice completed on 2026-07-19:
+
+- full Rust suite: 242 passed, 2 ignored;
+- full TypeScript suite: 594 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -359,7 +371,7 @@ Branch validation through the thirty-sixth slice completed on 2026-07-19:
 - browser/desktop imported-scenario parity check;
 - production browser build, UI audit, and a live fresh-project native-export smoke.
 
-The aggregate `npm run check` currently stops after the 588 passing TypeScript tests because the
+The aggregate `npm run check` currently stops after the 594 passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
 and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
@@ -667,8 +679,8 @@ Legend:
 | `Scenario` 600-byte data fork | Compiler baseline | Generate neutral 600-byte file or a typed support record | Both compilers emit 600 bytes directly; only offsets 23 and 38 are modeled. The modern runtime proof accepts the neutral default. |
 | `Scenario.rsrc` / native `Scenario` resource fork | Compiler baseline plus generated overlays | Always construct a valid target resource fork | Both compilers emit a structurally valid empty fork and can build/merge map names, icons, pictures, sounds, text, and styles. |
 | `Data CS` | Generated + imported compatibility | Generate neutral fresh security backup; annex imported bytes | Authored compilation duplicates shell bytes. Imported security/editability behavior remains preserve-only. |
-| `Data CI` | Generated | Generate from contact metadata | Complete 4,608-byte writer. |
-| `Data RI` | Generated, optional | Generate when restrictions exist | Complete 320-byte writer. |
+| `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | Both writers compile all eighteen Str255 slots and deterministic padding without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
+| `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | Both writers compile all 320 bytes and normalize ban flags from canonical semantics without consulting `rawBytes`. An untouched imported singleton and malformed tail are restored only from the annex. |
 | `Global` | Generated + compatibility | Generate 60 bytes with zero defaults for reserved slots | Runtime-backed slots are modeled; imported reserved slots 3 and 6-29 remain annex data. |
 | `Data Solids` | Compiler baseline plus generated writer | Generate exactly 1,024 bytes | Both authored compilers emit the neutral 1,024-byte table directly. |
 
@@ -813,12 +825,12 @@ must not be called fresh-authoritative merely because imported round trips are f
    Other record and asset DTOs are still maintained manually and should migrate in bounded families.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. Monster, monster-description, spell, race,
-   and caste export no longer consults those fields, but remaining families must become annex
-   slices rather than normal canonical fields.
-5. **Canonical semantic coverage:** all currently modeled supporting, fixed-text, combat, and rule
-   override families now map directly from canonical compiler bytes in both runtimes. Remaining
-   semantic work concerns optional resource/media families and deeper field/link enrichment, not a
-   fixed native-family ownership gap.
+   caste, contact, and restriction export no longer consults those fields, but remaining families
+   must become annex slices rather than normal canonical fields.
+5. **Canonical semantic coverage:** all currently modeled supporting, fixed-text, combat, rule
+   override, contact, and party-restriction families now map directly from canonical compiler bytes
+   in both runtimes. Remaining semantic work concerns optional resource/media families and deeper
+   field/link enrichment, not a fixed native-family ownership gap.
 6. **Ownership-reporting distinction:** generated coverage now classifies complete Race/Caste rows
    as decoded-writable and keeps only the imported `Data Spell` tail mixed/preserved, but future
    reports should retain an explicit fresh-authoring dimension alongside conservative import proof.

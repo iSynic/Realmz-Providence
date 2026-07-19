@@ -112,9 +112,9 @@ The broader 44-scenario format inventory still records `Scenario`/core files in 
 ## Providence Follow-Up
 
 - Add a `ScenarioShell` parser/writer for the marker/main scenario file with raw trailing-byte preservation.
-- Add a `ContactInfo` parser/writer for `Data CI` Pascal string slots.
-- Add a `ScenarioRestrictions` parser/writer for `Data RI` after command/write fixtures exist.
-- Add Scenario tool fields for party level target, max total party level, startup land coordinate, contact/release text, and security code preservation.
+- `Data CI` and optional `Data RI` now have complete semantic parsers/writers in both native compilers; fresh/authored output is independent of embedded compatibility bytes.
+- The Scenario tool exposes startup, contact/release, and party-restriction fields. Imported singleton identity remains annex-owned until authored.
+- Security-code preservation remains a separate marker/main-shell compatibility concern.
 - Add blank-scenario export validation for required first-start source files and resource shell availability.
 - Keep `RLMZ`/resource-fork defaults preserve-only until Divinity binary/resource fixtures prove minimum writer behavior.
 

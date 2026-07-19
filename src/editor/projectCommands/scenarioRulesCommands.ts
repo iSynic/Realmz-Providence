@@ -71,6 +71,7 @@ export function updateScenarioContactInfo(project: Project, changes: Extract<Pro
     ...changes,
     payInfo: changes.payInfo ?? project.scenario.contactInfo?.payInfo ?? defaultScenarioContactInfo(project).payInfo,
     titles: changes.titles ?? project.scenario.contactInfo?.titles ?? defaultScenarioContactInfo(project).titles,
+    rawBytes: undefined,
     authored: true
   };
   return { ...project, scenario: { ...project.scenario, contactInfo } };
@@ -83,6 +84,7 @@ export function updateScenarioRestrictions(project: Project, changes: Extract<Pr
     ...changes,
     bannedRaces: changes.bannedRaces ?? project.scenario.restrictions?.bannedRaces ?? [],
     bannedCastes: changes.bannedCastes ?? project.scenario.restrictions?.bannedCastes ?? [],
+    rawBytes: undefined,
     authored: true
   };
   return { ...project, scenario: { ...project.scenario, restrictions } };

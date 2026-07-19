@@ -1219,7 +1219,7 @@ pub struct ScenarioContactInfo {
     #[serde(default)]
     pub titles: Vec<String>,
     pub description: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
@@ -1237,7 +1237,7 @@ pub struct ScenarioRestrictions {
     pub banned_races: Vec<u8>,
     #[serde(default)]
     pub banned_castes: Vec<u8>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,

@@ -438,6 +438,11 @@ describe("browser project native manifest validation", () => {
     importedRace.set([0x00, 0x0d], 196);
     const importedCaste = new Uint8Array(576);
     importedCaste.set([0x00, 0xde], 384);
+    const importedContact = new Uint8Array(4608);
+    importedContact.set([16, ...new TextEncoder().encode("Imported contact")], 0);
+    const importedRestrictions = new Uint8Array(320);
+    importedRestrictions.set([11, ...new TextEncoder().encode("No imported")], 0);
+    importedRestrictions[260] = 1;
     const importedBuffers = new Map([
       ["Data TD", importedTreasure],
       ["Data SD2", importedMessage],
@@ -452,7 +457,9 @@ describe("browser project native manifest validation", () => {
       ["Data ED2", importedComplexEncounter],
       ["Data Spell", importedSpell],
       ["Data Race", importedRace],
-      ["Data Caste", importedCaste]
+      ["Data Caste", importedCaste],
+      ["Data CI", importedContact],
+      ["Data RI", importedRestrictions]
     ]);
     project.source.files = Array.from(importedBuffers, ([name, bytes]) => ({
       name,
@@ -493,7 +500,9 @@ describe("browser project native manifest validation", () => {
       "encounter:complex:0",
       "spell-override:0",
       "race-override:0",
-      "caste-override:0"
+      "caste-override:0",
+      "contact:0",
+      "restriction:0"
     ]) {
       expect(semanticSchema.entities.find((entity) => entity.id === entityId)).toMatchObject({
         editState: "inspect-only",
@@ -526,6 +535,22 @@ describe("browser project native manifest validation", () => {
       ["Data Race", new Uint8Array(408)],
       ["Data Caste", new Uint8Array(576)]
     ]));
+    project.scenario.contactInfo = {
+      ...project.scenario.contactInfo!,
+      scenarioName: "Canonical contact",
+      description: "Canonical contact description",
+      authored: false,
+      rawBytes: new Array(4608).fill(0xa5)
+    };
+    project.scenario.restrictions = {
+      description: "No giants",
+      maxPartyCharacters: 4,
+      maxPartyLevel: 20,
+      bannedRaces: [1, 30],
+      bannedCastes: [2, 29],
+      authored: false,
+      rawBytes: new Array(320).fill(0xa5)
+    };
     project.scenarioItems = [{
       ...parsed.scenarioItems[0],
       id: 4,
@@ -696,7 +721,9 @@ describe("browser project native manifest validation", () => {
       "encounter:complex:4",
       "spell-override:16",
       "race-override:2",
-      "caste-override:3"
+      "caste-override:3",
+      "contact:0",
+      "restriction:0"
     ]) {
       const entity = semanticSchema.entities.find((candidate) => candidate.id === entityId);
       expect(entity).toMatchObject({
@@ -777,7 +804,9 @@ describe("browser project native manifest validation", () => {
       ["Data ED2", "project.json#complexEncounters"],
       ["Data Spell", "project.json#spellOverrides"],
       ["Data Race", "project.json#raceOverrides"],
-      ["Data Caste", "project.json#casteOverrides"]
+      ["Data Caste", "project.json#casteOverrides"],
+      ["Data CI", "project.json#scenario/contactInfo"],
+      ["Data RI", "project.json#scenario/restrictions"]
     ]) {
       expect(semanticSchema.sources.find((source) => source.name === name)).toMatchObject({
         path,
@@ -788,5 +817,7 @@ describe("browser project native manifest validation", () => {
     expect(semanticSchema.sources.find((source) => source.name === "Data Spell")?.bytes).toBe(105 * 30);
     expect(semanticSchema.sources.find((source) => source.name === "Data Race")?.bytes).toBe(30 * 408);
     expect(semanticSchema.sources.find((source) => source.name === "Data Caste")?.bytes).toBe(30 * 576);
+    expect(semanticSchema.entities.find((entity) => entity.id === "contact:0")?.summary.scenarioName).toBe("Canonical contact");
+    expect(semanticSchema.entities.find((entity) => entity.id === "restriction:0")?.summary.bannedRaces).toEqual([1, 30]);
   });
 });

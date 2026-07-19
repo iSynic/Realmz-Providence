@@ -930,6 +930,7 @@
       "x-providence-rust-name": "ScenarioContactInfo",
       "x-providence-rust-optional": ["provenance"],
       "x-providence-rust-default": ["payInfo", "titles", "rawBytes", "authored", "provenance"],
+      "x-providence-rust-skip-empty": ["rawBytes"],
       "required": ["scenarioName", "version", "date", "author", "email", "web", "fee", "payInfo", "titles", "description"],
       "properties": {
         "scenarioName": { "type": "string" },
@@ -959,6 +960,7 @@
       "x-providence-rust-name": "ScenarioRestrictions",
       "x-providence-rust-optional": ["provenance"],
       "x-providence-rust-default": ["bannedRaces", "bannedCastes", "rawBytes", "authored", "provenance"],
+      "x-providence-rust-skip-empty": ["rawBytes"],
       "required": ["description", "maxPartyCharacters", "maxPartyLevel", "bannedRaces", "bannedCastes"],
       "properties": {
         "description": { "type": "string" },

@@ -147,17 +147,23 @@ fn compile_realmz_scenario(
         )?;
     }
     if let Some(contact_info) = &project.scenario.contact_info {
-        write_if_nonempty(
+        write_scenario_singleton_for_export(
             &mut manifest,
             "Data CI",
+            crate::realmz::SCENARIO_CONTACT_INFO_BYTES,
+            contact_info.authored,
             write_scenario_contact_info(contact_info)?,
+            compatibility_annex,
         )?;
     }
     if let Some(restrictions) = &project.scenario.restrictions {
-        write_if_nonempty(
+        write_scenario_singleton_for_export(
             &mut manifest,
             "Data RI",
+            crate::realmz::SCENARIO_RESTRICTIONS_BYTES,
+            restrictions.authored,
             write_scenario_restrictions(restrictions)?,
+            compatibility_annex,
         )?;
     }
     if let Some(global_hooks) = &project.scenario.global_macro_hooks {
@@ -489,6 +495,40 @@ fn write_fixed_if_nonempty(
         }
     }
     write_if_nonempty(manifest, name, bytes)
+}
+
+fn write_scenario_singleton_for_export(
+    manifest: &mut NativeScenarioManifest,
+    name: &str,
+    record_bytes: usize,
+    authored: bool,
+    bytes: Vec<u8>,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<()> {
+    let bytes = preserve_imported_singleton(bytes, name, record_bytes, authored, annex)?;
+    write_if_nonempty(manifest, name, bytes)
+}
+
+fn preserve_imported_singleton(
+    mut bytes: Vec<u8>,
+    name: &str,
+    record_bytes: usize,
+    authored: bool,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read(name)?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    if !authored && raw.len() >= record_bytes {
+        return Ok(raw);
+    }
+    if raw.len() > bytes.len() && raw.len() % record_bytes != 0 {
+        bytes.extend_from_slice(&raw[bytes.len()..]);
+    }
+    Ok(bytes)
 }
 
 fn write_messages_for_export(
@@ -1753,10 +1793,10 @@ mod tests {
         preserve_imported_fixed_length, preserve_imported_message_rows,
         preserve_imported_monster_description_rows, preserve_imported_monster_rows,
         preserve_imported_option_label_rows, preserve_imported_simple_encounter_rows,
-        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
-        scenario_icon_resource_updates, write_caste_overrides_for_export,
-        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
-        NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
+        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
+        write_caste_overrides_for_export, write_race_overrides_for_export,
+        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -1796,6 +1836,83 @@ mod tests {
         assert_eq!(first.manifest.files()["Scenario"].len(), 600);
         assert!(first.manifest.files().contains_key("Scenario.rsrc"));
         assert!(first.manifest.pass_through_files().is_empty());
+    }
+
+    #[test]
+    fn scenario_metadata_legacy_identity_comes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+        let mut contact_source = vec![0xa5; crate::realmz::SCENARIO_CONTACT_INFO_BYTES];
+        contact_source.push(0xde);
+        let mut restrictions_source = vec![0xb6; crate::realmz::SCENARIO_RESTRICTIONS_BYTES];
+        restrictions_source.push(0xef);
+        fs::write(raw_dir.join("Data CI"), &contact_source).unwrap();
+        fs::write(raw_dir.join("Data RI"), &restrictions_source).unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+
+        let contact_semantic = vec![0; crate::realmz::SCENARIO_CONTACT_INFO_BYTES];
+        let restrictions_semantic = vec![0; crate::realmz::SCENARIO_RESTRICTIONS_BYTES];
+        assert_eq!(
+            preserve_imported_singleton(
+                contact_semantic.clone(),
+                "Data CI",
+                crate::realmz::SCENARIO_CONTACT_INFO_BYTES,
+                false,
+                Some(&annex),
+            )
+            .unwrap(),
+            contact_source
+        );
+        assert_eq!(
+            preserve_imported_singleton(
+                restrictions_semantic.clone(),
+                "Data RI",
+                crate::realmz::SCENARIO_RESTRICTIONS_BYTES,
+                false,
+                Some(&annex),
+            )
+            .unwrap(),
+            restrictions_source
+        );
+
+        let authored_contact = preserve_imported_singleton(
+            contact_semantic.clone(),
+            "Data CI",
+            crate::realmz::SCENARIO_CONTACT_INFO_BYTES,
+            true,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(
+            &authored_contact[..crate::realmz::SCENARIO_CONTACT_INFO_BYTES],
+            contact_semantic.as_slice()
+        );
+        assert_eq!(authored_contact.last(), Some(&0xde));
+        let authored_restrictions = preserve_imported_singleton(
+            restrictions_semantic.clone(),
+            "Data RI",
+            crate::realmz::SCENARIO_RESTRICTIONS_BYTES,
+            true,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(
+            &authored_restrictions[..crate::realmz::SCENARIO_RESTRICTIONS_BYTES],
+            restrictions_semantic.as_slice()
+        );
+        assert_eq!(authored_restrictions.last(), Some(&0xef));
+        assert_eq!(
+            preserve_imported_singleton(
+                contact_semantic.clone(),
+                "Data CI",
+                crate::realmz::SCENARIO_CONTACT_INFO_BYTES,
+                false,
+                None,
+            )
+            .unwrap(),
+            contact_semantic
+        );
     }
 
     #[test]
