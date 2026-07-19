@@ -635,22 +635,23 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
     gate: "scenario-item-record-writer",
     rowKind: "100-byte scenario item record",
     semanticExposure: "scenario-item-storage",
-    partialOnly: true,
     ownedFields: [
       { field: "Scenario item core fields", internal: "stats/itemId/icon/type/restrictions/categories", offset: 0, bytes: 56, type: "i16be/i32be" },
+      { field: "Scenario item spare words", internal: "spare2[7]", offset: 56, bytes: 14, type: "i16be[7]" },
       { field: "Scenario item effects and specials", internal: "damage/elements/specials/weightPerCharge/dropOnEmpty", offset: 70, bytes: 30, type: "i16be[15]" }
     ],
-    preservedRanges: [
-      { field: "Item spare compatibility words", internal: "spare2[7]", offset: 56, bytes: 14, type: "i16be[7]-preserved" }
-    ],
+    preservedRanges: [],
     evidence: [
-      "src-tauri/src/realmz/economy.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
-      "src-tauri/src/realmz/economy.rs:write_scenario_items",
-      "src-tauri/src/realmz/economy.rs:parse_scenario_items",
+      "src-tauri/src/realmz/scenario_items.rs:fresh_scenario_item_compiles_all_semantic_fields",
+      "src-tauri/src/realmz/scenario_items.rs:imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+      "src-tauri/src/realmz/scenario_items.rs:scenario_item_storage_mutates_only_semantic_fields",
+      "src-tauri/src/project.rs:scenario_item_normalization_backfills_legacy_spare_words",
+      "src-tauri/src/realmz/scenario_items.rs:write_scenario_items",
+      "src-tauri/src/realmz/scenario_items.rs:parse_scenario_items",
       "docs/generated/core-rules-record-evidence.json",
       "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Scenario item records rewrite modeled functional fields and preserve itemattr.spare2[7]. Realmz source defines these seven words as spare compatibility storage, so new authored records default them to zero and normal UI hides them."
+    preservationPolicy: "Fresh scenario items compile all 100 bytes from semantic fields, including itemattr.spare2[7], without rawBytes. Imported rawBytes can preserve only an unchanged zero stored item ID that semantically aliases row ID 800+id; semantic edits take precedence."
   }
 ];
 
@@ -1317,7 +1318,8 @@ function buildCoreRecordWriterGates(aggregate) {
       coreRecordWriters: [
         "src-tauri/src/realmz/combat.rs",
         "src-tauri/src/realmz/maps.rs",
-        "src-tauri/src/realmz/economy.rs"
+        "src-tauri/src/realmz/economy.rs",
+        "src-tauri/src/realmz/scenario_items.rs"
       ]
     },
     policy: {
@@ -1330,7 +1332,7 @@ function buildCoreRecordWriterGates(aggregate) {
       semanticCaution: [
         "alternate monster-set editing remains UI-gated",
         "map record prefix bytes remain preserve-only",
-        "scenario item compatibility bytes remain preserve-only"
+        "imported scenario items may preserve an unchanged zero stored item-ID alias"
       ]
     },
     summary: {
@@ -1646,8 +1648,8 @@ function buildFunctionalAuthoringReadiness(ownership, truth) {
       id: "scenario-items",
       label: "Scenario Items",
       containers: ["Data NI"],
-      authoringStatus: "ready-with-preserved-compatibility",
-      rationale: "Functional item fields for IDs 800..999 are writer-proven. Bytes 56..70 are source-backed itemattr.spare2[7] compatibility words, preserved on import and zero by default for new records.",
+      authoringStatus: "ready",
+      rationale: "All 100 Data NI bytes are writer-proven semantic storage, including source-backed itemattr.spare2[7]. Fresh records omit rawBytes; imported zero item-ID aliases remain a bounded no-edit compatibility encoding.",
       evidence: [
         "docs/generated/core-rules-record-evidence.json",
         "docs/generated/core-record-writer-gates.json",
@@ -2353,7 +2355,7 @@ function coverageStatusForFile(file) {
   if (runtimeCaches.entries?.some((entry) => entry.cache === name)) return "runtime-cache";
   if (name === "Data DL" && dungeonByteOwnership) return "mixed-writable-preserved";
   if (name === "Data ED" || name === "Data ED2") return "mixed-writable-preserved";
-  if (name === "Data MD2" || name === "Data NI") return "mixed-writable-preserved";
+  if (name === "Data MD2") return "mixed-writable-preserved";
   if (name === "Layout" && file.byteSizes?.size > 0 && [...file.byteSizes].some((size) => size > (RECORD_LAYOUTS.Layout?.recordBytes ?? 256))) return "mixed-writable-preserved";
   if (customLandlookCoverage && /^Data Custom [123] BD$/.test(name)) return "mixed-writable-preserved";
   if (rulesCoverage && (name === "Data Spell" || name === "Data Race" || name === "Data Caste")) return "mixed-writable-preserved";
@@ -2524,7 +2526,7 @@ function byteRangesForFile(file, layout) {
   if (file.name === "Data NI") {
     return [
       { start: 0, length: 56, endExclusive: 56, status: "decoded-writable", field: "Scenario item core fields", internal: "stats/itemId/icon/type/restrictions/categories", writerGate: "docs/generated/core-record-writer-gates.json" },
-      { start: 56, length: 14, endExclusive: 70, status: "preserved-known", field: "Item spare compatibility words", internal: "spare2[7]", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 56, length: 14, endExclusive: 70, status: "decoded-writable", field: "Scenario item spare words", internal: "spare2[7]", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 70, length: 30, endExclusive: 100, status: "decoded-writable", field: "Scenario item effects and specials", internal: "damage/elements/specials/weightPerCharge/dropOnEmpty", writerGate: "docs/generated/core-record-writer-gates.json" }
     ];
   }

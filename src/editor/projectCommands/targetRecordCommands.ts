@@ -718,7 +718,6 @@ export function emptyScenarioItem(id: number): ScenarioItemRecord {
     special5: 0,
     weightPerCharge: 0,
     dropOnEmpty: 0,
-    rawBytes: new Array(ITEM_BYTES).fill(0),
     authored: true,
     provenance: authoredProvenance("Data NI", id, id * ITEM_BYTES, ITEM_BYTES)
   };

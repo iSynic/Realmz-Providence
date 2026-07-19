@@ -16,6 +16,7 @@ import type {
   ProvidenceRenderMode,
   ProvidenceScenarioContactInfo,
   ProvidenceScenarioGlobalMacroHooks,
+  ProvidenceScenarioItemRecord,
   ProvidenceScenarioMeta,
   ProvidenceScenarioRestrictions,
   ProvidenceScenarioShell,
@@ -36,6 +37,7 @@ export type MapRecordRect = ProvidenceMapRecordRect;
 export type MapRecord = ProvidenceMapRecord;
 export type RandomRect = ProvidenceRandomRect;
 export type RandomLevel = ProvidenceRandomLevel;
+export type ScenarioItemRecord = ProvidenceScenarioItemRecord;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -800,55 +802,6 @@ export type ShopRecord = {
 export type MonsterDescriptionRecord = {
   id: number;
   text: string;
-  rawBytes?: number[];
-  authored?: boolean;
-  provenance?: Provenance;
-};
-
-export type ScenarioItemRecord = {
-  id: number;
-  itemId: number;
-  iconId: number;
-  type: number;
-  st: number;
-  blunt: number;
-  hands: number;
-  lu: number;
-  movement: number;
-  ac: number;
-  magicResistance: number;
-  damage: number;
-  spellPoints: number;
-  sound: number;
-  weight: number;
-  cost: number;
-  charge: number;
-  cursedItemId: number;
-  magical: number;
-  itemCat0: number;
-  itemCat1: number;
-  raceRestrictions: number;
-  casteRestrictions: number;
-  specificRace: number;
-  specificCaste: number;
-  raceClassOnly: number;
-  casteClassOnly: number;
-  spare2?: number[];
-  vSmall: number;
-  vLarge: number;
-  heat: number;
-  cold: number;
-  electric: number;
-  vsUndead: number;
-  vsDemonDevil: number;
-  vsEvil: number;
-  special1: number;
-  special2: number;
-  special3: number;
-  special4: number;
-  special5: number;
-  weightPerCharge: number;
-  dropOnEmpty: number;
   rawBytes?: number[];
   authored?: boolean;
   provenance?: Provenance;

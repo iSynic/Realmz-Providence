@@ -42,6 +42,8 @@ expect(project.maps.length === 1, `Expected one map, found ${project.maps.length
 expect(project.triggers.length === 1, `Expected one Action Point, found ${project.triggers.length}`);
 expect(project.messages.length === 1, `Expected one message, found ${project.messages.length}`);
 expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
+expect((project.scenarioItems[0].rawBytes?.length ?? 0) === 0, "Fresh canonical scenario item must not carry compatibility bytes");
+expect(project.scenarioItems[0].spare2?.length === 7, "Fresh canonical scenario item must own all seven spare words");
 expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
 assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);

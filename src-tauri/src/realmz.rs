@@ -10,6 +10,7 @@ mod random_levels;
 mod record_bytes;
 mod rules;
 mod scenario;
+mod scenario_items;
 mod text_records;
 pub use action_points::{
     parse_door_file, parse_extracodes, parse_macro_file, write_door_file,
@@ -22,10 +23,7 @@ pub use combat::{
     write_monster_descriptions, write_monster_set, write_monsters, BATTLE_BYTES, MONSTER_BYTES,
     MONSTER_DESCRIPTION_BYTES,
 };
-pub use economy::{
-    parse_scenario_items, parse_shops, parse_treasures, shop_prefix_record_count,
-    write_scenario_items, write_shops, write_treasures, ITEM_BYTES, SHOP_BYTES, TREASURE_BYTES,
-};
+pub use economy::*;
 pub use encounters::{
     parse_complex_encounter_records, parse_simple_encounter_records, parse_thief_encounters,
     parse_timed_encounters, write_complex_encounters, write_simple_encounters,
@@ -56,6 +54,7 @@ pub use scenario::{
     write_scenario_contact_info, write_scenario_restrictions, write_scenario_shell,
     write_scenario_support_file,
 };
+pub use scenario_items::*;
 pub use text_records::{
     parse_messages, parse_option_labels, write_messages, write_option_labels, MESSAGE_BYTES,
     OPTION_LABEL_BYTES,
@@ -277,7 +276,7 @@ mod tests {
             special5: 26,
             weight_per_charge: 27,
             drop_on_empty: 1,
-            raw_bytes: vec![0; ITEM_BYTES],
+            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data NI", 100, 100 * ITEM_BYTES, ITEM_BYTES),
         };

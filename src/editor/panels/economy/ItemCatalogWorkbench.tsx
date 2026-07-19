@@ -890,8 +890,8 @@ function emptyScenarioItemForUi(id: number): ScenarioItemRecord {
     special5: 0,
     weightPerCharge: 0,
     dropOnEmpty: 0,
-    rawBytes: new Array(100).fill(0),
-    authored: true
+    authored: true,
+    provenance: { sourceFile: "Data NI", recordIndex: id, byteOffset: id * 100, byteLength: 100, confidence: "confirmed" }
   };
 }
 

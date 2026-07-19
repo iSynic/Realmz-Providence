@@ -145,6 +145,56 @@ pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[
     "provenance",
 ];
 
+#[allow(dead_code)]
+pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[
+    "id",
+    "itemId",
+    "iconId",
+    "type",
+    "st",
+    "blunt",
+    "hands",
+    "lu",
+    "movement",
+    "ac",
+    "magicResistance",
+    "damage",
+    "spellPoints",
+    "sound",
+    "weight",
+    "cost",
+    "charge",
+    "cursedItemId",
+    "magical",
+    "itemCat0",
+    "itemCat1",
+    "raceRestrictions",
+    "casteRestrictions",
+    "specificRace",
+    "specificCaste",
+    "raceClassOnly",
+    "casteClassOnly",
+    "spare2",
+    "vSmall",
+    "vLarge",
+    "heat",
+    "cold",
+    "electric",
+    "vsUndead",
+    "vsDemonDevil",
+    "vsEvil",
+    "special1",
+    "special2",
+    "special3",
+    "special4",
+    "special5",
+    "weightPerCharge",
+    "dropOnEmpty",
+    "rawBytes",
+    "authored",
+    "provenance",
+];
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProjectOrigin {
@@ -314,6 +364,61 @@ pub struct RandomLevel {
     pub rects: Vec<RandomRect>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub raw_values: Vec<i16>,
+    pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioItemRecord {
+    pub id: usize,
+    pub item_id: i16,
+    pub icon_id: i16,
+    #[serde(rename = "type")]
+    pub item_type: i16,
+    pub st: i16,
+    pub blunt: i16,
+    pub hands: i16,
+    pub lu: i16,
+    pub movement: i16,
+    pub ac: i16,
+    pub magic_resistance: i16,
+    pub damage: i16,
+    pub spell_points: i16,
+    pub sound: i16,
+    pub weight: i16,
+    pub cost: i16,
+    pub charge: i16,
+    pub cursed_item_id: i16,
+    pub magical: i16,
+    pub item_cat0: i32,
+    pub item_cat1: i32,
+    pub race_restrictions: i16,
+    pub caste_restrictions: i16,
+    pub specific_race: i16,
+    pub specific_caste: i16,
+    pub race_class_only: i16,
+    pub caste_class_only: i16,
+    #[serde(default)]
+    pub spare2: Vec<i16>,
+    pub v_small: i16,
+    pub v_large: i16,
+    pub heat: i16,
+    pub cold: i16,
+    pub electric: i16,
+    pub vs_undead: i16,
+    pub vs_demon_devil: i16,
+    pub vs_evil: i16,
+    pub special1: i16,
+    pub special2: i16,
+    pub special3: i16,
+    pub special4: i16,
+    pub special5: i16,
+    pub weight_per_charge: i16,
+    pub drop_on_empty: i16,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub raw_bytes: Vec<u8>,
+    #[serde(default)]
+    pub authored: bool,
     pub provenance: Provenance,
 }
 

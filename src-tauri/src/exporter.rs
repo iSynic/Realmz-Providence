@@ -2053,7 +2053,7 @@ mod tests {
             specific_caste: 0,
             race_class_only: 0,
             caste_class_only: 0,
-            spare2: Vec::new(),
+            spare2: vec![0; 7],
             v_small: 0,
             v_large: 0,
             heat: 0,

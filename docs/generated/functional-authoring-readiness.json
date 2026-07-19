@@ -43,20 +43,19 @@
     {
       "id": "scenario-items",
       "label": "Scenario Items",
-      "status": "ready-with-preserved-compatibility",
+      "status": "ready",
       "functionalBlocker": false,
-      "rationale": "Functional item fields for IDs 800..999 are writer-proven. Bytes 56..70 are source-backed itemattr.spare2[7] compatibility words, preserved on import and zero by default for new records.",
+      "rationale": "All 100 Data NI bytes are writer-proven semantic storage, including source-backed itemattr.spare2[7]. Fresh records omit rawBytes; imported zero item-ID aliases remain a bounded no-edit compatibility encoding.",
       "containers": [
         {
           "container": "Data NI",
           "observed": true,
-          "coverageStatus": "mixed-writable-preserved",
+          "coverageStatus": "decoded-writable",
           "effectiveStatuses": [
-            "decoded-writable",
-            "preserved-known"
+            "decoded-writable"
           ],
-          "writerReadiness": "partially-proven",
-          "semanticOwnership": "mixed"
+          "writerReadiness": "fixture-proven",
+          "semanticOwnership": "complete"
         }
       ],
       "evidence": [

@@ -136,6 +136,55 @@ export const PROVIDENCE_RANDOM_LEVEL_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_SCENARIO_ITEM_FIELDS = [
+  "id",
+  "itemId",
+  "iconId",
+  "type",
+  "st",
+  "blunt",
+  "hands",
+  "lu",
+  "movement",
+  "ac",
+  "magicResistance",
+  "damage",
+  "spellPoints",
+  "sound",
+  "weight",
+  "cost",
+  "charge",
+  "cursedItemId",
+  "magical",
+  "itemCat0",
+  "itemCat1",
+  "raceRestrictions",
+  "casteRestrictions",
+  "specificRace",
+  "specificCaste",
+  "raceClassOnly",
+  "casteClassOnly",
+  "spare2",
+  "vSmall",
+  "vLarge",
+  "heat",
+  "cold",
+  "electric",
+  "vsUndead",
+  "vsDemonDevil",
+  "vsEvil",
+  "special1",
+  "special2",
+  "special3",
+  "special4",
+  "special5",
+  "weightPerCharge",
+  "dropOnEmpty",
+  "rawBytes",
+  "authored",
+  "provenance"
+] as const;
+
 export type ProvidenceProjectOrigin = "authored" | "imported";
 
 export type ProvidenceSourceFileRole = "supported-binary" | "pass-through" | "resource-fork" | "unknown";
@@ -243,6 +292,55 @@ export type ProvidenceRandomLevel = {
   useLos: boolean;
   rects: ProvidenceRandomRect[];
   rawValues?: number[];
+  provenance: ProvidenceProvenance;
+};
+
+export type ProvidenceScenarioItemRecord = {
+  id: number;
+  itemId: number;
+  iconId: number;
+  type: number;
+  st: number;
+  blunt: number;
+  hands: number;
+  lu: number;
+  movement: number;
+  ac: number;
+  magicResistance: number;
+  damage: number;
+  spellPoints: number;
+  sound: number;
+  weight: number;
+  cost: number;
+  charge: number;
+  cursedItemId: number;
+  magical: number;
+  itemCat0: number;
+  itemCat1: number;
+  raceRestrictions: number;
+  casteRestrictions: number;
+  specificRace: number;
+  specificCaste: number;
+  raceClassOnly: number;
+  casteClassOnly: number;
+  spare2: number[];
+  vSmall: number;
+  vLarge: number;
+  heat: number;
+  cold: number;
+  electric: number;
+  vsUndead: number;
+  vsDemonDevil: number;
+  vsEvil: number;
+  special1: number;
+  special2: number;
+  special3: number;
+  special4: number;
+  special5: number;
+  weightPerCharge: number;
+  dropOnEmpty: number;
+  rawBytes?: number[];
+  authored?: boolean;
   provenance: ProvidenceProvenance;
 };
 

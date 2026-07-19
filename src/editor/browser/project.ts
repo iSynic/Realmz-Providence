@@ -580,7 +580,10 @@ export function normalizeBrowserProject(project: Project): Project {
   project.monsterDescriptions ??= [];
   project.monsterIconOverrides ??= [];
   project.scenarioIconResources ??= [];
-  project.scenarioItems ??= [];
+  project.scenarioItems = (project.scenarioItems ?? []).map((record) => ({
+    ...record,
+    spare2: normalizedScenarioItemSpareWords(record)
+  }));
   project.itemTexts ??= [];
   project.treasures ??= [];
   project.shops ??= [];
@@ -630,6 +633,16 @@ function normalizedMapRecordMarkers(record: Project["mapRecords"][number]) {
 function readSignedI16(bytes: number[], offset: number) {
   const value = ((bytes[offset] & 0xff) << 8) | (bytes[offset + 1] & 0xff);
   return value >= 0x8000 ? value - 0x10000 : value;
+}
+
+function normalizedScenarioItemSpareWords(record: Project["scenarioItems"][number]) {
+  return Array.from({ length: 7 }, (_, slot) => {
+    const existing = record.spare2?.[slot];
+    if (existing != null) return existing;
+    const offset = 56 + slot * 2;
+    const raw = record.rawBytes ?? [];
+    return raw.length >= offset + 2 ? readSignedI16(raw, offset) : 0;
+  });
 }
 
 export async function ensureBrowserReferenceTileAttributes(project: Project) {
@@ -935,6 +948,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
   const sourceNames = new Set(project.source.files.map((file) => file.name));
   validateTileAttributes(project, new Set(authoredManifestFiles ?? sourceNames), warnings);
   validateMapRecords(project, errors, warnings);
+  validateScenarioItems(project, errors, warnings);
   const exportableFiles = authoredManifestFiles ?? [
       ...SUPPORTED_WRITE_FILES,
       project.scenario.shell?.sourceFile?.trim() ?? "",
@@ -1217,8 +1231,23 @@ function validateMapRecords(project: Project, errors: string[], warnings: string
     if (record.pictId !== 0 && pictures.size > 0 && !pictures.has(record.pictId)) {
       warnings.push(`Map record ${record.id} references picture ${record.pictId}, which is not decoded in the scenario resource catalog.`);
     }
-    if ((record.rawBytes?.length ?? 0) !== 340) {
-      errors.push(`Map record ${record.id} does not preserve a 340-byte raw record.`);
+  }
+}
+
+function validateScenarioItems(project: Project, errors: string[], warnings: string[]) {
+  for (const item of project.scenarioItems ?? []) {
+    const rawBytes = item.rawBytes ?? [];
+    if (rawBytes.length !== 0 && rawBytes.length !== 100) {
+      errors.push(`Scenario item ${item.id} has invalid 100-byte compatibility storage.`);
+    }
+    if ((item.spare2?.length ?? 0) !== 7) {
+      errors.push(`Scenario item ${item.id} must define 7 semantic spare words.`);
+    }
+    if (item.id < 0 || item.id > 199) {
+      errors.push(`Scenario item ${item.id} is outside Data NI's 0..199 record range.`);
+    }
+    if (item.itemId < 800 || item.itemId > 999) {
+      warnings.push(`Scenario item ${item.id} uses item ID ${item.itemId}; Realmz scenario item IDs are normally 800..999.`);
     }
   }
 }

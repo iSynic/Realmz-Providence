@@ -20,7 +20,7 @@ Realmz splits this area into three data roles:
 - **Treasure source records** live in scenario `Data TD` and are loaded directly when a treasure action fires.
 - **Shop source records** live in scenario `Data SD`, but first-start copies them into runtime `CS`. Active shop changes mutate `CS`, not the scenario source file.
 
-Providence should therefore prioritize Treasure and Shop editors plus a strong item picker/library. Scenario `Data NI` can now be imported and preserved as the local supply/special item table; full item editing should start with the Divinity-supported 900-999 custom item range.
+Providence exposes Treasure and Shop editors plus a strong item picker/library. Scenario `Data NI` is now a fully semantic 200-row local supply/special item table; fresh records compile without imported bytes, while legacy imports retain only bounded compatibility encodings.
 
 ## Realmz Source Anchors
 

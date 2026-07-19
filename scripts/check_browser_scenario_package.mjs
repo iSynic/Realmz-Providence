@@ -861,7 +861,7 @@ const authoredItem = scenarioItemRecord(1, {
 const itemEconomyProject = {
   ...project,
   scenarioItems: [
-    scenarioItemRecord(0, { rawBytes: Array.from(sourceScenarioItems.slice(0, 100)), authored: false }),
+    scenarioItemRecordFromRaw(0, sourceScenarioItems.slice(0, 100)),
     { ...authoredItem, rawBytes: Array.from(sourceScenarioItems.slice(100, 200)), authored: true }
   ],
   treasures: [
@@ -1788,10 +1788,34 @@ function scenarioItemRecord(id, overrides = {}) {
     special5: 0,
     weightPerCharge: 0,
     dropOnEmpty: 0,
-    rawBytes: new Array(100).fill(0),
     authored: true,
+    provenance: { sourceFile: "Data NI", recordIndex: id, byteOffset: id * 100, byteLength: 100, confidence: "fixture-backed" },
     ...overrides
   };
+}
+
+function scenarioItemRecordFromRaw(id, bytes) {
+  const record = scenarioItemRecord(id, {
+    rawBytes: Array.from(bytes),
+    authored: false
+  });
+  const storedItemId = readI16(bytes, 2);
+  record.itemId = storedItemId !== 0 ? storedItemId : 800 + id;
+  for (const [field, offset] of [
+    ["st", 0], ["iconId", 4], ["type", 6], ["blunt", 8], ["hands", 10], ["lu", 12],
+    ["movement", 14], ["ac", 16], ["magicResistance", 18], ["damage", 20],
+    ["spellPoints", 22], ["sound", 24], ["weight", 26], ["cost", 28], ["charge", 30],
+    ["cursedItemId", 32], ["magical", 34], ["raceRestrictions", 44], ["casteRestrictions", 46],
+    ["specificRace", 48], ["specificCaste", 50], ["raceClassOnly", 52], ["casteClassOnly", 54],
+    ["vSmall", 70], ["vLarge", 72], ["heat", 74], ["cold", 76], ["electric", 78],
+    ["vsUndead", 80], ["vsDemonDevil", 82], ["vsEvil", 84], ["special1", 86],
+    ["special2", 88], ["special3", 90], ["special4", 92], ["special5", 94],
+    ["weightPerCharge", 96], ["dropOnEmpty", 98]
+  ]) record[field] = readI16(bytes, offset);
+  record.itemCat0 = readI32(bytes, 36);
+  record.itemCat1 = readI32(bytes, 40);
+  record.spare2 = Array.from({ length: 7 }, (_, index) => readI16(bytes, 56 + index * 2));
+  return record;
 }
 
 function scenarioItemRow(record) {
@@ -1822,7 +1846,7 @@ function scenarioItemRow(record) {
   setI16(output, 50, record.specificCaste);
   setI16(output, 52, record.raceClassOnly);
   setI16(output, 54, record.casteClassOnly);
-  setI16Array(output, 56, record.spare2 ?? [], 7);
+  setI16Array(output, 56, record.spare2, 7);
   setI16(output, 70, record.vSmall);
   setI16(output, 72, record.vLarge);
   setI16(output, 74, record.heat);

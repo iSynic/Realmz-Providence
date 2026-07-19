@@ -24,6 +24,23 @@ describe("project command facade", () => {
     expect(next.mapRecords[0].rawBytes).toBeUndefined();
   });
 
+  it("creates fresh scenario items from semantic data without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Scenario Item");
+
+    const next = applyProjectCommand(project, {
+      kind: "updateScenarioItemRecord",
+      label: "Create scenario item",
+      id: 4,
+      changes: { itemId: 904, cost: 25 }
+    });
+
+    expect(next.scenarioItems).toHaveLength(1);
+    expect(next.scenarioItems[0].itemId).toBe(904);
+    expect(next.scenarioItems[0].cost).toBe(25);
+    expect(next.scenarioItems[0].spare2).toHaveLength(7);
+    expect(next.scenarioItems[0].rawBytes).toBeUndefined();
+  });
+
   it("applies an immutable command and exposes history metadata", () => {
     const project = createBrowserProject("Command Facade");
     const originalTile = project.maps[0].tiles[0];

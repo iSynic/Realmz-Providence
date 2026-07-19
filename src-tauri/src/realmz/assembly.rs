@@ -7,9 +7,7 @@ use super::combat::{
     parse_battles, parse_monster_descriptions, parse_monster_set, parse_monsters, BATTLE_BYTES,
     MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES,
 };
-use super::economy::{
-    parse_scenario_items, parse_shops, parse_treasures, ITEM_BYTES, SHOP_BYTES, TREASURE_BYTES,
-};
+use super::economy::{parse_shops, parse_treasures, SHOP_BYTES, TREASURE_BYTES};
 use super::encounters::{
     parse_complex_encounter_records, parse_simple_encounter_records, parse_thief_encounters,
     parse_timed_encounters, COMPLEX_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES,
@@ -27,6 +25,7 @@ use super::rules::{
     parse_caste_overrides, parse_race_overrides, parse_spell_overrides, CASTE_BYTES, RACE_BYTES,
     SPELL_BYTES,
 };
+use super::scenario_items::{parse_scenario_items, ITEM_BYTES};
 use super::text_records::{parse_messages, parse_option_labels, MESSAGE_BYTES, OPTION_LABEL_BYTES};
 use crate::project::*;
 use serde::{Deserialize, Serialize};

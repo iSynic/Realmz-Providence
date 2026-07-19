@@ -38,8 +38,8 @@
   "summary": {
     "containerCount": 57,
     "statusCounts": {
-      "decoded-writable": 22,
-      "mixed-writable-preserved": 13,
+      "decoded-writable": 23,
+      "mixed-writable-preserved": 12,
       "preserved-known": 5,
       "understood-resource-container": 12,
       "runtime-cache": 1,
@@ -47,8 +47,8 @@
       "ignored-non-scenario": 1
     },
     "statusObservedBytes": {
-      "decoded-writable": 903846631,
-      "mixed-writable-preserved": 41075500,
+      "decoded-writable": 904546631,
+      "mixed-writable-preserved": 40375500,
       "preserved-known": 116752,
       "understood-resource-container": 1369599572,
       "runtime-cache": 11546,
@@ -1173,7 +1173,7 @@
     {
       "container": "Data NI",
       "authorFacingName": "Scenario item records",
-      "coverageStatus": "mixed-writable-preserved",
+      "coverageStatus": "decoded-writable",
       "role": "supported-binary",
       "observedScenarioCount": 35,
       "observedByteSizes": [
@@ -1194,8 +1194,8 @@
           "start": 56,
           "length": 14,
           "endExclusive": 70,
-          "status": "preserved-known",
-          "field": "Item spare compatibility words",
+          "status": "decoded-writable",
+          "field": "Scenario item spare words",
           "internal": "spare2[7]",
           "writerGate": "docs/generated/core-record-writer-gates.json"
         },
@@ -1215,7 +1215,7 @@
         "docs/generated/core-rules-record-evidence.json",
         "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
       ],
-      "editorPolicy": "Some byte ranges are writer-proven or structurally decoded, while preserved/runtime ranges remain read-only."
+      "editorPolicy": "Editable fields may be written when the record-specific writer owns the byte range."
     },
     {
       "container": "Data RD",

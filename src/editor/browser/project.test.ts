@@ -49,6 +49,43 @@ describe("browser project native manifest validation", () => {
     expect(markers[1]).toEqual({ iconId: 0, x: 0, y: 0 });
   });
 
+  it("accepts fresh semantic map records without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Player Map Validation");
+    project.mapRecords = [{
+      id: 0,
+      markers: Array.from({ length: 10 }, () => ({ iconId: 0, x: 0, y: 0 })),
+      startX: 0,
+      startY: 0,
+      level: 0,
+      pictId: 0,
+      iconSize: 16,
+      show: 1,
+      isDungeon: false,
+      rect: { top: 0, left: 0, bottom: 0, right: 0 },
+      note: "",
+      provenance: { sourceFile: "Data MD2", recordIndex: 0, byteOffset: 0, byteLength: 340, confidence: "confirmed" }
+    }];
+
+    const validation = validateBrowserProject(project);
+
+    expect(validation.errors).not.toContain("Map record 0 does not preserve a 340-byte raw record.");
+    expect(validation.ok).toBe(true);
+  });
+
+  it("backfills scenario-item spare words when opening legacy browser projects", () => {
+    const bytes = new Uint8Array(100);
+    bytes.set([0xfe, 0xbf], 56);
+    const record = parseScenarioBuffers(new Map([["Data NI", bytes]])).scenarioItems[0];
+    const project = createBrowserProject("Legacy Scenario Item");
+    project.scenarioItems = [{ ...record, spare2: undefined } as unknown as Project["scenarioItems"][number]];
+
+    const spare2 = normalizeBrowserProject(project).scenarioItems[0].spare2;
+
+    expect(spare2).toHaveLength(7);
+    expect(spare2[0]).toBe(-321);
+    expect(spare2.slice(1)).toEqual(new Array(6).fill(0));
+  });
+
   it("uses the authored compiler manifest instead of source inventory", () => {
     const project = createBrowserProject("Authored Validation");
     project.source.origin = "authored";

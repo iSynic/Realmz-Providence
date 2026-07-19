@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 pub use crate::generated::project_contract::{
     Confidence, GlobalMacroHook, LandLayout, LevelType, MapEntity, MapMarker, MapRecord,
     MapRecordRect, MapRender, Provenance, RandomLevel, RandomRect, RenderMode, ScenarioContactInfo,
-    ScenarioGlobalMacroHooks, ScenarioMeta, ScenarioRestrictions, ScenarioShell,
-    ScenarioSupportFile,
+    ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRestrictions,
+    ScenarioShell, ScenarioSupportFile,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -932,61 +932,6 @@ pub struct MonsterDescriptionRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ScenarioItemRecord {
-    pub id: usize,
-    pub item_id: i16,
-    pub icon_id: i16,
-    #[serde(rename = "type")]
-    pub item_type: i16,
-    pub st: i16,
-    pub blunt: i16,
-    pub hands: i16,
-    pub lu: i16,
-    pub movement: i16,
-    pub ac: i16,
-    pub magic_resistance: i16,
-    pub damage: i16,
-    pub spell_points: i16,
-    pub sound: i16,
-    pub weight: i16,
-    pub cost: i16,
-    pub charge: i16,
-    pub cursed_item_id: i16,
-    pub magical: i16,
-    pub item_cat0: i32,
-    pub item_cat1: i32,
-    pub race_restrictions: i16,
-    pub caste_restrictions: i16,
-    pub specific_race: i16,
-    pub specific_caste: i16,
-    pub race_class_only: i16,
-    pub caste_class_only: i16,
-    #[serde(default)]
-    pub spare2: Vec<i16>,
-    pub v_small: i16,
-    pub v_large: i16,
-    pub heat: i16,
-    pub cold: i16,
-    pub electric: i16,
-    pub vs_undead: i16,
-    pub vs_demon_devil: i16,
-    pub vs_evil: i16,
-    pub special1: i16,
-    pub special2: i16,
-    pub special3: i16,
-    pub special4: i16,
-    pub special5: i16,
-    pub weight_per_charge: i16,
-    pub drop_on_empty: i16,
-    #[serde(default)]
-    pub raw_bytes: Vec<u8>,
-    #[serde(default)]
-    pub authored: bool,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ItemTextRecord {
     pub id: usize,
     pub item_id: i16,
@@ -1625,6 +1570,9 @@ impl ProvidenceProject {
         for record in &mut self.map_records {
             normalize_map_record_markers(record);
         }
+        for record in &mut self.scenario_items {
+            normalize_scenario_item_spare_words(record);
+        }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;
         }
@@ -1644,9 +1592,9 @@ fn normalize_map_record_markers(record: &mut MapRecord) {
                 let offset = slot * 6;
                 if raw_bytes.len() >= offset + 6 {
                     MapMarker {
-                        icon_id: map_record_i16(&raw_bytes, offset),
-                        x: map_record_i16(&raw_bytes, offset + 2),
-                        y: map_record_i16(&raw_bytes, offset + 4),
+                        icon_id: project_i16(&raw_bytes, offset),
+                        x: project_i16(&raw_bytes, offset + 2),
+                        y: project_i16(&raw_bytes, offset + 4),
                     }
                 } else {
                     MapMarker {
@@ -1660,15 +1608,32 @@ fn normalize_map_record_markers(record: &mut MapRecord) {
         .collect();
 }
 
-fn map_record_i16(bytes: &[u8], offset: usize) -> i16 {
+fn project_i16(bytes: &[u8], offset: usize) -> i16 {
     i16::from_be_bytes([bytes[offset], bytes[offset + 1]])
+}
+
+fn normalize_scenario_item_spare_words(record: &mut ScenarioItemRecord) {
+    let existing = record.spare2.clone();
+    let raw_bytes = record.raw_bytes.clone();
+    record.spare2 = (0..7)
+        .map(|slot| {
+            existing.get(slot).copied().unwrap_or_else(|| {
+                let offset = 56 + slot * 2;
+                if raw_bytes.len() >= offset + 2 {
+                    project_i16(&raw_bytes, offset)
+                } else {
+                    0
+                }
+            })
+        })
+        .collect();
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_map_record_markers, ActionCategory, Confidence, MapRecord, MapRecordRect,
-        ProjectOrigin, Provenance, SourceSnapshot,
+        normalize_map_record_markers, normalize_scenario_item_spare_words, ActionCategory,
+        Confidence, MapRecord, MapRecordRect, ProjectOrigin, Provenance, SourceSnapshot,
     };
 
     #[test]
@@ -1719,6 +1684,23 @@ mod tests {
         assert!(record.markers[1..]
             .iter()
             .all(|marker| marker.icon_id == 0 && marker.x == 0 && marker.y == 0));
+    }
+
+    #[test]
+    fn scenario_item_normalization_backfills_legacy_spare_words() {
+        let mut raw_bytes = vec![0; crate::realmz::ITEM_BYTES];
+        raw_bytes[56..58].copy_from_slice(&(-321i16).to_be_bytes());
+        let mut record = crate::realmz::parse_scenario_items(&raw_bytes)
+            .into_iter()
+            .next()
+            .expect("scenario item");
+        record.spare2.clear();
+
+        normalize_scenario_item_spare_words(&mut record);
+
+        assert_eq!(record.spare2.len(), 7);
+        assert_eq!(record.spare2[0], -321);
+        assert!(record.spare2[1..].iter().all(|value| *value == 0));
     }
 
     #[test]

@@ -11,7 +11,8 @@
     "coreRecordWriters": [
       "src-tauri/src/realmz/combat.rs",
       "src-tauri/src/realmz/maps.rs",
-      "src-tauri/src/realmz/economy.rs"
+      "src-tauri/src/realmz/economy.rs",
+      "src-tauri/src/realmz/scenario_items.rs"
     ]
   },
   "policy": {
@@ -24,7 +25,7 @@
     "semanticCaution": [
       "alternate monster-set editing remains UI-gated",
       "map record prefix bytes remain preserve-only",
-      "scenario item compatibility bytes remain preserve-only"
+      "imported scenario items may preserve an unchanged zero stored item-ID alias"
     ]
   },
   "summary": {
@@ -543,32 +544,59 @@
       ],
       "missingEvidence": [],
       "evidence": [
-        "src-tauri/src/realmz/economy.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
-        "src-tauri/src/realmz/economy.rs:write_scenario_items",
-        "src-tauri/src/realmz/economy.rs:parse_scenario_items",
+        "src-tauri/src/realmz/scenario_items.rs:fresh_scenario_item_compiles_all_semantic_fields",
+        "src-tauri/src/realmz/scenario_items.rs:imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+        "src-tauri/src/realmz/scenario_items.rs:scenario_item_storage_mutates_only_semantic_fields",
+        "src-tauri/src/project.rs:scenario_item_normalization_backfills_legacy_spare_words",
+        "src-tauri/src/realmz/scenario_items.rs:write_scenario_items",
+        "src-tauri/src/realmz/scenario_items.rs:parse_scenario_items",
         "docs/generated/core-rules-record-evidence.json",
         "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
       ],
       "evidenceChecks": [
         {
-          "reference": "src-tauri/src/realmz/economy.rs:scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
-          "file": "src-tauri/src/realmz/economy.rs",
-          "anchor": "scenario_item_storage_mutates_only_modeled_fields_and_preserves_gap",
+          "reference": "src-tauri/src/realmz/scenario_items.rs:fresh_scenario_item_compiles_all_semantic_fields",
+          "file": "src-tauri/src/realmz/scenario_items.rs",
+          "anchor": "fresh_scenario_item_compiles_all_semantic_fields",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/economy.rs:write_scenario_items",
-          "file": "src-tauri/src/realmz/economy.rs",
+          "reference": "src-tauri/src/realmz/scenario_items.rs:imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+          "file": "src-tauri/src/realmz/scenario_items.rs",
+          "anchor": "imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/scenario_items.rs:scenario_item_storage_mutates_only_semantic_fields",
+          "file": "src-tauri/src/realmz/scenario_items.rs",
+          "anchor": "scenario_item_storage_mutates_only_semantic_fields",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/project.rs:scenario_item_normalization_backfills_legacy_spare_words",
+          "file": "src-tauri/src/project.rs",
+          "anchor": "scenario_item_normalization_backfills_legacy_spare_words",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/realmz/scenario_items.rs:write_scenario_items",
+          "file": "src-tauri/src/realmz/scenario_items.rs",
           "anchor": "write_scenario_items",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/economy.rs:parse_scenario_items",
-          "file": "src-tauri/src/realmz/economy.rs",
+          "reference": "src-tauri/src/realmz/scenario_items.rs:parse_scenario_items",
+          "file": "src-tauri/src/realmz/scenario_items.rs",
           "anchor": "parse_scenario_items",
           "fileExists": true,
           "anchorPresent": true,
@@ -600,6 +628,13 @@
           "type": "i16be/i32be"
         },
         {
+          "field": "Scenario item spare words",
+          "internal": "spare2[7]",
+          "offset": 56,
+          "bytes": 14,
+          "type": "i16be[7]"
+        },
+        {
           "field": "Scenario item effects and specials",
           "internal": "damage/elements/specials/weightPerCharge/dropOnEmpty",
           "offset": 70,
@@ -607,17 +642,9 @@
           "type": "i16be[15]"
         }
       ],
-      "preservedRanges": [
-        {
-          "field": "Item spare compatibility words",
-          "internal": "spare2[7]",
-          "offset": 56,
-          "bytes": 14,
-          "type": "i16be[7]-preserved"
-        }
-      ],
-      "partialOnly": true,
-      "preservationPolicy": "Scenario item records rewrite modeled functional fields and preserve itemattr.spare2[7]. Realmz source defines these seven words as spare compatibility storage, so new authored records default them to zero and normal UI hides them."
+      "preservedRanges": [],
+      "partialOnly": false,
+      "preservationPolicy": "Fresh scenario items compile all 100 bytes from semantic fields, including itemattr.spare2[7], without rawBytes. Imported rawBytes can preserve only an unchanged zero stored item ID that semantically aliases row ID 800+id; semantic edits take precedence."
     }
   ]
 }
