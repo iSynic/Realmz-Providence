@@ -124,6 +124,7 @@
       "id": 1,
       "name": "Providence Sentinel",
       "description": "Compiled entirely from canonical Providence monster data.",
+      "variants": "copyAll",
       "hitDice": 9,
       "staminaBonus": 200,
       "agility": 201,

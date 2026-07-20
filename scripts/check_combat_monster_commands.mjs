@@ -61,7 +61,7 @@ function checkUpdateMonsterRecord({ updateMonsterRecord }) {
   const project = projectWith({
     monsters: [monster(4, { displayName: "Normal", armor: 10 })],
     monsterSets: [
-      monsterSet(1, [monster(4, { displayName: "Monster", armor: 20 })]),
+      monsterSet(1, [monster(4, { displayName: "Monster", armor: 20, rawBytes: new Array(210).fill(0xa5) })]),
       monsterSet(-1, [monster(4, { displayName: "Mega", armor: 30 })])
     ]
   });
@@ -69,6 +69,7 @@ function checkUpdateMonsterRecord({ updateMonsterRecord }) {
   assert(findNormal(next, 4).armor === 10, "updateMonsterRecord changed Normal while editing Monster set");
   assert(findSet(next, 1, 4).armor === 77, "updateMonsterRecord did not update Monster set");
   assert(findSet(next, 1, 4).displayName === "Changed Monster", "updateMonsterRecord did not update Monster set name");
+  assert(!Object.hasOwn(findSet(next, 1, 4), "rawBytes"), "updateMonsterRecord retained obsolete Data MD1 compatibility bytes");
   assert(findSet(next, -1, 4).armor === 30, "updateMonsterRecord changed Mega while editing Monster set");
 }
 

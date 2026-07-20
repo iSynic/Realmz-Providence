@@ -708,8 +708,9 @@ function normalizedTimedEncounter(record: Project["timedEncounters"][number]): P
 }
 
 function normalizedMonsterRecord(record: Project["monsters"][number]): Project["monsters"][number] {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
   return {
-    ...record,
+    ...canonical,
     typeFlags: normalizedFixedArray(record.typeFlags, 8, 0),
     attacks: Array.from({ length: 5 }, (_, row) => normalizedFixedArray(record.attacks?.[row], 4, 0)),
     saves: normalizedFixedArray(record.saves, 6, 0),

@@ -728,7 +728,6 @@ describe("browser monster writers", () => {
     const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];
     const record = {
       ...parsed,
-      rawBytes: undefined,
       authored: true,
       hitDice: 9,
       staminaBonus: 200,
@@ -749,10 +748,9 @@ describe("browser monster writers", () => {
       displayName: "Semantic Beast"
     };
 
-    const expected = writeMonsters([record]);
-    const output = writeMonsters([{ ...record, rawBytes: new Array(210).fill(0xa5) }]);
+    const output = writeMonsters([record]);
 
-    expect(output).toEqual(expected);
+    expect("rawBytes" in parsed).toBe(false);
     expect(Array.from(output.slice(0, 10))).toEqual([9, 200, 201, 6, 202, 252, 0, 0, 0, 0]);
     expect(Array.from(output.slice(10, 18))).toEqual([1, 255, 2, 254, 3, 253, 4, 252]);
     expect(i16(output, 58)).toBe(100);
@@ -778,10 +776,8 @@ describe("browser monster writers", () => {
     expect(Array.from(output.slice(22))).toEqual(new Array(234).fill(0));
   });
 
-  it("rejects malformed compatibility storage and fixed arrays", () => {
+  it("rejects malformed fixed arrays", () => {
     const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];
-    expect(() => writeMonsters([{ ...parsed, rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
     expect(() => writeMonsters([{ ...parsed, attacks: [[0, 0, 0]] }]))
       .toThrow("exactly 5 attack rows");
   });

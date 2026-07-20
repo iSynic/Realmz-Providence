@@ -467,7 +467,7 @@ function checkMonsters(createProjectFromScenarioSeed) {
   expect(allocationId(result, "monsters", "bell-wight") === 7, "bell-wight should preserve explicit monster ID 7");
   const monster = result.project.monsters[0];
   expect(monster?.id === 7 && monster?.displayName === "Bell Wight", "monster row should preserve ID and display name");
-  expect(monster?.rawBytes === undefined, "fresh Scenario JSON monsters should not carry compatibility bytes");
+  expect(monster != null && !Object.hasOwn(monster, "rawBytes"), "fresh Scenario JSON monsters should not carry compatibility bytes");
   expect(monster?.hitDice === 4 && monster?.staminaMax === 18 && monster?.armor === 3, "monster combat stats should be preserved");
   expect(monster?.items?.[0] === 902 && monster?.weapon === 902, "monster item references should resolve item keys");
   expect(monster?.attacks?.[0]?.join(",") === "1,8,0,0", "monster attack row should be preserved");

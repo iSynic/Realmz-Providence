@@ -396,7 +396,6 @@ export const PROVIDENCE_MONSTER_FIELDS = [
   "deathMacro",
   "maxSpellPoints",
   "displayName",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1096,7 +1095,6 @@ export type ProvidenceMonsterRecord = {
   deathMacro: number;
   maxSpellPoints: number;
   displayName: string;
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };

@@ -1079,8 +1079,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceMonsterRecord",
       "x-providence-rust-name": "MonsterRecord",
-      "x-providence-rust-default": ["rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["authored"],
       "required": ["id", "hitDice", "staminaBonus", "agility", "nameId", "movementMax", "armor", "magicResistance", "distance", "traitor", "size", "typeFlags", "attackCount", "magicAttackCount", "attacks", "damageBonus", "castPercent", "runPercent", "surrenderPercent", "missilePercent", "canSummon", "saves", "spellImmunities", "money", "spells", "items", "weapon", "iconId", "spellPoints", "exp", "stamina", "staminaMax", "underneath", "target", "guarding", "notOnMenu", "beenAttacked", "movement", "magicToHit", "conditions", "lr", "up", "attackNum", "bonusAttack", "deathMacro", "maxSpellPoints", "displayName"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
@@ -1130,7 +1129,6 @@
         "deathMacro": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "maxSpellPoints": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "displayName": { "type": "string", "maxLength": 40 },
-        "rawBytes": { "type": "array", "minItems": 210, "maxItems": 210, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

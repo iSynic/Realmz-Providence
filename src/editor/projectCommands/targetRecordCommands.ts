@@ -348,8 +348,10 @@ function upsertMonsterRecord(project: Project, record: MonsterRecord, setId: Mon
   const baseSet = setIndex >= 0 ? monsterSets[setIndex] : { sourceFile, setId, monsters: [] };
   const monsters = [...baseSet.monsters];
   const index = monsters.findIndex((candidate) => candidate.id === record.id);
-  if (index >= 0) monsters[index] = { ...monsters[index], ...record };
-  else monsters.push(record);
+  const merged = index >= 0 ? { ...monsters[index], ...record } : record;
+  const { rawBytes: _legacyRawBytes, ...canonicalRecord } = merged as MonsterRecord & { rawBytes?: number[] };
+  if (index >= 0) monsters[index] = canonicalRecord;
+  else monsters.push(canonicalRecord);
   monsters.sort((a, b) => a.id - b.id);
   const nextSet = { ...baseSet, sourceFile, setId, monsters };
   if (setIndex >= 0) monsterSets[setIndex] = nextSet;
@@ -370,7 +372,7 @@ function monsterRecordIsActive(record: MonsterRecord) {
 function monsterForSet(id: number, template: Partial<MonsterRecord>, setId: MonsterSetId): MonsterRecord {
   const base = emptyMonsterForSet(id, setId);
   const sourceFile = monsterSetSourceFile(setId);
-  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template;
+  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template as Partial<MonsterRecord> & { rawBytes?: number[] };
   return {
     ...base,
     ...semanticTemplate,
@@ -520,7 +522,7 @@ function upsertRecord<K extends TargetCollectionName>(project: Project, collecti
 }
 
 function canonicalTargetRecord<K extends TargetCollectionName>(collection: K, record: Project[K][number]) {
-  if (collection !== "messages" && collection !== "battles" && collection !== "scenarioItems" && collection !== "treasures" && collection !== "shops") return record;
+  if (collection !== "messages" && collection !== "battles" && collection !== "monsters" && collection !== "scenarioItems" && collection !== "treasures" && collection !== "shops") return record;
   const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as Project[K][number] & { rawBytes?: number[] };
   return canonicalRecord as Project[K][number];
 }

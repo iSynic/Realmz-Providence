@@ -155,6 +155,29 @@ describe("project command facade", () => {
     expect("rawBytes" in next.battles[0]).toBe(false);
   });
 
+  it("creates fresh monsters from semantic fields without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Monster");
+    const created = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create monster",
+      recordType: "monster",
+      id: 4
+    });
+    created.monsters = [{ ...created.monsters[0], rawBytes: new Array(210).fill(0xa5) } as unknown as Project["monsters"][number]];
+
+    const next = applyProjectCommand(created, {
+      kind: "createTargetRecord",
+      label: "Create monster",
+      recordType: "monster",
+      id: 4
+    });
+
+    expect(next.monsters).toHaveLength(1);
+    expect(next.monsters[0].typeFlags).toHaveLength(8);
+    expect(next.monsters[0].attacks).toHaveLength(5);
+    expect("rawBytes" in next.monsters[0]).toBe(false);
+  });
+
   it("authors monster descriptions without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Monster Description");
     project.monsterDescriptions = [{

@@ -421,7 +421,6 @@ pub const PROVIDENCE_MONSTER_FIELDS: &[&str] = &[
     "deathMacro",
     "maxSpellPoints",
     "displayName",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1425,8 +1424,6 @@ pub struct MonsterRecord {
     pub death_macro: i16,
     pub max_spell_points: i16,
     pub display_name: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

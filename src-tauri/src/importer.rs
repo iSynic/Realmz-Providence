@@ -375,6 +375,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_message_raw_bytes(&mut value);
     migrate_legacy_option_label_raw_bytes(&mut value);
     migrate_legacy_battle_raw_bytes(&mut value);
+    migrate_legacy_monster_raw_bytes(&mut value);
     migrate_legacy_monster_description_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
@@ -524,6 +525,29 @@ fn migrate_legacy_option_label_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_battle_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "battles");
+}
+
+fn migrate_legacy_monster_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "monsters");
+    let Some(sets) = project
+        .get_mut("monsterSets")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for set in sets {
+        let Some(monsters) = set
+            .get_mut("monsters")
+            .and_then(serde_json::Value::as_array_mut)
+        else {
+            continue;
+        };
+        for monster in monsters {
+            if let Some(monster) = monster.as_object_mut() {
+                monster.remove("rawBytes");
+            }
+        }
+    }
 }
 
 fn migrate_legacy_monster_description_raw_bytes(project: &mut serde_json::Value) {
@@ -2625,6 +2649,32 @@ mod tests {
         legacy_battle_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::BATTLE_BYTES]);
         saved["battles"] = serde_json::json!([legacy_battle_value]);
+        let mut legacy_monster =
+            crate::realmz::parse_monsters(&vec![0; crate::realmz::MONSTER_BYTES])
+                .into_iter()
+                .next()
+                .expect("legacy monster");
+        legacy_monster.id = 2;
+        legacy_monster.hit_dice = 7;
+        legacy_monster.icon_id = 321;
+        legacy_monster.display_name = "Semantic legacy monster".to_string();
+        let mut legacy_monster_value =
+            serde_json::to_value(&legacy_monster).expect("serialize legacy monster");
+        legacy_monster_value["rawBytes"] =
+            serde_json::json!(vec![0xa5u8; crate::realmz::MONSTER_BYTES]);
+        saved["monsters"] = serde_json::json!([legacy_monster_value]);
+        legacy_monster.id = 3;
+        legacy_monster.icon_id = 322;
+        legacy_monster.display_name = "Semantic legacy normal monster".to_string();
+        let mut legacy_set_monster_value =
+            serde_json::to_value(&legacy_monster).expect("serialize legacy set monster");
+        legacy_set_monster_value["rawBytes"] =
+            serde_json::json!(vec![0xb6u8; crate::realmz::MONSTER_BYTES]);
+        saved["monsterSets"] = serde_json::json!([{
+            "sourceFile": "Data MD1",
+            "setId": 1,
+            "monsters": [legacy_set_monster_value]
+        }]);
         saved["monsterDescriptions"] = serde_json::json!([{
             "id": 7,
             "text": "Semantic monster description",
@@ -2681,6 +2731,16 @@ mod tests {
         assert_eq!(opened.battles[0].message_before, 12);
         assert_eq!(opened.battles[0].message_after, 13);
         assert_eq!(opened.battles[0].battle_macro, 14);
+        assert_eq!(opened.monsters[0].id, 2);
+        assert_eq!(opened.monsters[0].hit_dice, 7);
+        assert_eq!(opened.monsters[0].icon_id, 321);
+        assert_eq!(opened.monsters[0].display_name, "Semantic legacy monster");
+        assert_eq!(opened.monster_sets[0].monsters[0].id, 3);
+        assert_eq!(opened.monster_sets[0].monsters[0].icon_id, 322);
+        assert_eq!(
+            opened.monster_sets[0].monsters[0].display_name,
+            "Semantic legacy normal monster"
+        );
         assert_eq!(
             opened.monster_descriptions[0].text,
             "Semantic monster description"
@@ -2719,6 +2779,10 @@ mod tests {
         assert!(upgraded["messages"][0].get("rawBytes").is_none());
         assert!(upgraded["optionLabels"][0].get("rawBytes").is_none());
         assert!(upgraded["battles"][0].get("rawBytes").is_none());
+        assert!(upgraded["monsters"][0].get("rawBytes").is_none());
+        assert!(upgraded["monsterSets"][0]["monsters"][0]
+            .get("rawBytes")
+            .is_none());
         assert!(upgraded["monsterDescriptions"][0].get("rawBytes").is_none());
     }
 
@@ -3108,7 +3172,6 @@ mod tests {
         monster.exp = 88;
         monster.display_name = "Canonical monster".to_string();
         monster.authored = false;
-        monster.raw_bytes.fill(0xA5);
         project.monsters = vec![monster];
 
         let mut normal_set =
@@ -3118,7 +3181,6 @@ mod tests {
         normal_set.monsters[0].death_macro = 11;
         normal_set.monsters[0].display_name = "Canonical normal monster".to_string();
         normal_set.monsters[0].authored = false;
-        normal_set.monsters[0].raw_bytes.fill(0xA5);
         let mut mega_set = crate::realmz::parse_monster_set(
             &vec![0; crate::realmz::MONSTER_BYTES],
             "Data MD-1",
@@ -3129,7 +3191,6 @@ mod tests {
         mega_set.monsters[0].death_macro = 12;
         mega_set.monsters[0].display_name = "Canonical mega monster".to_string();
         mega_set.monsters[0].authored = false;
-        mega_set.monsters[0].raw_bytes.fill(0xA5);
         project.monster_sets = vec![normal_set, mega_set];
 
         let mut shop = crate::realmz::parse_shops(&vec![0; crate::realmz::SHOP_BYTES])

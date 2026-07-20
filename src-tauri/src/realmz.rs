@@ -214,7 +214,6 @@ mod tests {
             death_macro: 77,
             max_spell_points: 60,
             display_name: "Test Monster".to_string(),
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data MD", 0, 0, MONSTER_BYTES),
         };

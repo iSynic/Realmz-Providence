@@ -69,11 +69,11 @@ describe("scenario seed core record compiler", () => {
     expect(compiled.scenarioItems[0]).toMatchObject({ id: 5, itemId: 805, iconId: 300 });
     expect(compiled.itemTexts[0]).toMatchObject({ itemId: 805, identifiedName: "Bell Clapper" });
     expect(compiled.monsters[0]).toMatchObject({ id: 3, iconId: 30126, hitDice: 4 });
-    expect(compiled.monsters[0]?.rawBytes).toBeUndefined();
+    expect("rawBytes" in compiled.monsters[0]).toBe(false);
     expect(compiled.monsterDescriptions.every((record) => !("rawBytes" in record))).toBe(true);
     expect(compiled.monsterSets.find((set) => set.setId === -1)?.monsters[0]).toMatchObject({ id: 3, hitDice: 4 });
     expect(compiled.monsterSets.find((set) => set.setId === 1)?.monsters[0]).toMatchObject({ id: 3, hitDice: 4 });
-    expect(compiled.monsterSets.flatMap((set) => set.monsters).every((record) => record.rawBytes === undefined)).toBe(true);
+    expect(compiled.monsterSets.flatMap((set) => set.monsters).every((record) => !("rawBytes" in record))).toBe(true);
     expect(compiled.battles[0]?.grid[2 * 13 + 1]).toBe(3);
     expect("rawBytes" in compiled.battles[0]).toBe(false);
     expect(compiled.treasures[0]).toMatchObject({ id: 2, gold: 12, itemIds: expect.arrayContaining([805]) });

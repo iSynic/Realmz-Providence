@@ -6,14 +6,7 @@ fn managed_resource_type_supported(resource_type: &str) -> bool {
     matches!(resource_type, "PICT" | "cicn" | "snd " | "TEXT" | "styl")
 }
 
-fn validate_monster_record_storage(monster: &MonsterRecord, label: &str, errors: &mut Vec<String>) {
-    if !monster.raw_bytes.is_empty() && monster.raw_bytes.len() != crate::realmz::MONSTER_BYTES {
-        errors.push(format!(
-            "{label} {} has invalid {}-byte compatibility storage.",
-            monster.id,
-            crate::realmz::MONSTER_BYTES
-        ));
-    }
+fn validate_monster_record_shape(monster: &MonsterRecord, label: &str, errors: &mut Vec<String>) {
     for (field, actual, expected) in [
         ("trait flags", monster.type_flags.len(), 8),
         ("attack rows", monster.attacks.len(), 5),
@@ -375,7 +368,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for monster in &project.monsters {
-        validate_monster_record_storage(monster, "Monster", &mut errors);
+        validate_monster_record_shape(monster, "Monster", &mut errors);
         if monster.hit_dice == 255 {
             warnings.push(format!(
                 "Monster {} has Stamina Level 255; Realmz uses this as a Bestiary list terminator.",
@@ -444,7 +437,7 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
             ));
         }
         for monster in &monster_set.monsters {
-            validate_monster_record_storage(
+            validate_monster_record_shape(
                 monster,
                 &format!("{} monster", monster_set.source_file),
                 &mut errors,
@@ -3244,7 +3237,6 @@ mod tests {
             } else {
                 format!("Monster {id}")
             },
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: test_provenance(
                 "Data MD",

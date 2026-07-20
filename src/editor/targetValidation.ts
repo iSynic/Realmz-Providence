@@ -65,10 +65,6 @@ export function validateRealmzTargetRecord(project: Project, recordType: RealmzT
     if (!record) return [];
     if (isImportedPostTerminatorMonsterTail(project, recordId)) return [];
     const issues = validateRecordId(recordType, recordId);
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 210) {
-      issues.push(recordIssue("error", recordType, recordId, "monster-compatibility-storage", "Monster has invalid compatibility storage.", "Data MD compatibility storage must be empty or exactly 210 bytes."));
-    }
     for (const field of ["weapon", "iconId", "spellPoints", "exp", "stamina", "staminaMax", "deathMacro", "maxSpellPoints"] as const) {
       issues.push(...validateI16Field(recordType, recordId, field, record[field]));
     }

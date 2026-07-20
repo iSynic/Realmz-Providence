@@ -81,7 +81,6 @@ fn parse_monsters_from_source(buffer: &[u8], source_file: &str) -> Vec<MonsterRe
                     decoded
                 }
             },
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: provenance(source_file, id, start, MONSTER_BYTES),
         })
@@ -90,7 +89,7 @@ fn parse_monsters_from_source(buffer: &[u8], source_file: &str) -> Vec<MonsterRe
 
 pub fn write_monsters(records: &[MonsterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, MONSTER_BYTES, |record, buffer| {
-        validate_monster_storage(record)?;
+        validate_monster_shape(record)?;
         buffer[0] = record.hit_dice;
         buffer[1] = record.stamina_bonus;
         buffer[2] = record.agility;
@@ -170,13 +169,7 @@ pub fn write_monster_descriptions(records: &[MonsterDescriptionRecord]) -> Resul
     })
 }
 
-fn validate_monster_storage(record: &MonsterRecord) -> Result<()> {
-    if !record.raw_bytes.is_empty() && record.raw_bytes.len() != MONSTER_BYTES {
-        return Err(ProvidenceError::message(format!(
-            "Monster {} has invalid compatibility byte storage",
-            record.id
-        )));
-    }
+fn validate_monster_shape(record: &MonsterRecord) -> Result<()> {
     for (name, actual, expected) in [
         ("trait flags", record.type_flags.len(), 8),
         ("attack rows", record.attacks.len(), 5),
@@ -210,7 +203,6 @@ mod tests {
 
     fn semantic_monster() -> MonsterRecord {
         let mut record = parse_monsters(&vec![0; MONSTER_BYTES]).remove(0);
-        record.raw_bytes.clear();
         record.authored = true;
         record.hit_dice = 9;
         record.stamina_bonus = 200;
@@ -277,13 +269,7 @@ mod tests {
 
     #[test]
     fn monster_writer_compiles_every_semantic_field_without_raw_identity() {
-        let record = semantic_monster();
-        let expected = write_monsters(&[record.clone()]).unwrap();
-        let mut poisoned = record;
-        poisoned.raw_bytes = vec![0xa5; MONSTER_BYTES];
-        let output = write_monsters(&[poisoned]).unwrap();
-
-        assert_eq!(output, expected);
+        let output = write_monsters(&[semantic_monster()]).unwrap();
         assert_eq!(output.len(), MONSTER_BYTES);
         assert_eq!(
             &output[0..10],
@@ -333,11 +319,7 @@ mod tests {
     }
 
     #[test]
-    fn monster_writer_rejects_malformed_compatibility_and_fixed_arrays() {
-        let mut monster = semantic_monster();
-        monster.raw_bytes = vec![1];
-        assert!(write_monsters(&[monster]).is_err());
-
+    fn monster_writer_rejects_malformed_fixed_arrays() {
         let mut monster = semantic_monster();
         monster.attacks[0].pop();
         assert!(write_monsters(&[monster]).is_err());

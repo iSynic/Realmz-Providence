@@ -639,7 +639,7 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh and authored main monster templates compile all 210 bytes from canonical semantic fields without rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
+    preservationPolicy: "Canonical main monster records expose no rawBytes and compile all 210 bytes from semantic fields. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data MD1",
@@ -658,7 +658,7 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Native alternate monster templates reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
+    preservationPolicy: "Canonical alternate-set monster records expose no rawBytes and reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data MD-1",
@@ -677,7 +677,7 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       "docs/generated/monster-record-evidence.json",
       "docs/format-evidence-cards/monster-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Native alternate monster templates reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
+    preservationPolicy: "Canonical alternate-set monster records expose no rawBytes and reuse the complete semantic 210-byte writer while preserving source filename and set identity. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data MD2",

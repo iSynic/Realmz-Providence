@@ -235,8 +235,7 @@ function monsterLibrarySummary(
     exp: monsterRecord.exp,
     saves: monsterRecord.saves,
     spellImmunities: monsterRecord.spellImmunities,
-    conditions: monsterRecord.conditions,
-    rawBytes: monsterRecord.rawBytes ?? []
+    conditions: monsterRecord.conditions
   };
 }
 
@@ -300,7 +299,6 @@ function normalizeMonsterRecord(value: Partial<MonsterRecord>): MonsterRecord {
     deathMacro: numberValue(value.deathMacro),
     maxSpellPoints: numberValue(value.maxSpellPoints),
     displayName: typeof value.displayName === "string" ? value.displayName : "",
-    rawBytes: fixedNumberArray(value.rawBytes, 210),
     authored: value.authored ?? true,
     provenance: value.provenance
   };

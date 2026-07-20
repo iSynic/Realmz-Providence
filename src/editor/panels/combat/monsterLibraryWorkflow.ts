@@ -209,9 +209,8 @@ export async function monsterIconOverrideForLibraryCopy(
 export function monsterRecordFromLibraryEntry(entry: LibraryCatalog["entities"][number], id: number): MonsterRecord {
   const template = monsterLibraryEntryTemplate(entry);
   if (template) {
-    const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template;
     return {
-      ...semanticTemplate,
+      ...template,
       id,
       displayName: template.displayName || scrapbookName(entry),
       authored: true

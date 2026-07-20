@@ -161,6 +161,7 @@ describe("browser project native manifest validation", () => {
     const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];
     const legacy = {
       ...parsed,
+      rawBytes: new Array(210).fill(0xa5),
       typeFlags: [1],
       attacks: [[2, 3]],
       saves: [4],
@@ -176,6 +177,7 @@ describe("browser project native manifest validation", () => {
 
     const normalized = normalizeBrowserProject(project);
     for (const record of [normalized.monsters[0], normalized.monsterSets[0].monsters[0]]) {
+      expect("rawBytes" in record).toBe(false);
       expect(record.typeFlags).toEqual([1, 0, 0, 0, 0, 0, 0, 0]);
       expect(record.attacks).toHaveLength(5);
       expect(record.attacks[0]).toEqual([2, 3, 0, 0]);
@@ -782,8 +784,7 @@ describe("browser project native manifest validation", () => {
       iconId: 321,
       exp: 88,
       displayName: "Canonical monster",
-      authored: false,
-      rawBytes: new Array(210).fill(0xa5)
+      authored: false
     }];
     const normalMonsterSet = parsed.monsterSets.find((set) => set.setId === 1)!;
     const megaMonsterSet = parsed.monsterSets.find((set) => set.setId === -1)!;
@@ -795,8 +796,7 @@ describe("browser project native manifest validation", () => {
         iconId: 322,
         deathMacro: 11,
         displayName: "Canonical normal monster",
-        authored: false,
-        rawBytes: new Array(210).fill(0xa5)
+        authored: false
       }]
     }, {
       ...megaMonsterSet,
@@ -806,8 +806,7 @@ describe("browser project native manifest validation", () => {
         iconId: 323,
         deathMacro: 12,
         displayName: "Canonical mega monster",
-        authored: false,
-        rawBytes: new Array(210).fill(0xa5)
+        authored: false
       }]
     }];
     project.shops = [{

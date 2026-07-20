@@ -3013,8 +3013,6 @@ mod tests {
         fs::write(raw_dir.join("Data MD1"), &source).unwrap();
 
         let mut records = crate::realmz::parse_monster_set(&source, "Data MD1", 1).monsters;
-        records[0].raw_bytes.fill(0x11);
-        records[1].raw_bytes.fill(0x22);
         records[1].hit_dice = 9;
         records[1].stamina_bonus = 200;
         records[1].display_name = "Authored Beast".to_string();

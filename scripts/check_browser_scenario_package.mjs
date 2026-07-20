@@ -436,8 +436,8 @@ const authoredMonster = monsterRecord(1, {
 const monsterUpdateProject = {
   ...project,
   monsters: [
-    monsterRecord(0, { rawBytes: Array.from(sourceMonsters.slice(0, 210)), authored: false }),
-    { ...authoredMonster, rawBytes: new Array(210).fill(0xa5), authored: true }
+    monsterRecord(0, { authored: false }),
+    { ...authoredMonster, authored: true }
   ]
 };
 const monsterUpdate = createBrowserScenarioPackageZip(monsterUpdateProject, rawSources, "mac-classic-folder");

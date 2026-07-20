@@ -69,7 +69,15 @@ pub(super) fn add_canonical_record_collections(
             record
         })
         .collect::<Vec<_>>();
-    let monsters = canonical_records!(parsed.monsters);
+    let monsters = parsed
+        .monsters
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let monster_sets: Vec<_> = parsed
         .monster_sets
         .iter()
@@ -77,7 +85,6 @@ pub(super) fn add_canonical_record_collections(
         .map(|mut set| {
             for monster in &mut set.monsters {
                 monster.authored = true;
-                monster.raw_bytes.clear();
             }
             set
         })

@@ -137,7 +137,7 @@ export function writeBattles(records: BattleRecord[]) {
 
 export function writeMonsters(records: MonsterRecord[]) {
   return writeFixedRecords(records, MONSTER_RECORD_BYTES, (record, target) => {
-    validateMonsterStorage(record);
+    validateMonsterShape(record);
     target[0] = record.hitDice & 0xff;
     target[1] = record.staminaBonus & 0xff;
     target[2] = record.agility & 0xff;
@@ -195,11 +195,7 @@ export function writeMonsterDescriptions(records: MonsterDescriptionRecord[]) {
   });
 }
 
-function validateMonsterStorage(record: MonsterRecord) {
-  const rawBytes = record.rawBytes ?? [];
-  if (rawBytes.length !== 0 && rawBytes.length !== MONSTER_RECORD_BYTES) {
-    throw new Error(`Monster ${record.id} has invalid compatibility byte storage`);
-  }
+function validateMonsterShape(record: MonsterRecord) {
   for (const [name, values, expected] of [
     ["trait flags", record.typeFlags, 8],
     ["attack rows", record.attacks, 5],

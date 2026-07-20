@@ -662,7 +662,6 @@ function parseMonsters(buffer: Uint8Array | undefined, source = "Data MD"): Mons
     deathMacro: i16(record, 166),
     maxSpellPoints: i16(record, 168),
     displayName: decodeFixedText(record.slice(170, 210)) || `Monster ${id}`,
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance(source, id, start, MONSTER_BYTES, "source-backed")
   }));
