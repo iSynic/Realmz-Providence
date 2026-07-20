@@ -310,7 +310,6 @@ export const PROVIDENCE_TREASURE_FIELDS = [
   "gold",
   "gems",
   "jewelry",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1016,7 +1015,6 @@ export type ProvidenceTreasureRecord = {
   gold: number;
   gems: number;
   jewelry: number;
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

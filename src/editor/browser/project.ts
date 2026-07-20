@@ -603,10 +603,13 @@ export function normalizeBrowserProject(project: Project): Project {
     };
   });
   project.itemTexts ??= [];
-  project.treasures = (project.treasures ?? []).map((record) => ({
-    ...record,
-    itemIds: normalizedTreasureItemIds(record)
-  }));
+  project.treasures = (project.treasures ?? []).map((record) => {
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
+    return {
+      ...canonicalRecord,
+      itemIds: normalizedTreasureItemIds(record)
+    };
+  });
   project.shops = (project.shops ?? []).map((record) => ({
     ...record,
     itemIds: normalizedShopItemIds(record),
@@ -791,11 +794,11 @@ function normalizedScenarioItemSpareWords(record: Project["scenarioItems"][numbe
 }
 
 function normalizedTreasureItemIds(record: Project["treasures"][number]) {
+  const raw = (record as typeof record & { rawBytes?: number[] }).rawBytes ?? [];
   return Array.from({ length: 20 }, (_, slot) => {
     const existing = record.itemIds?.[slot];
     if (existing != null) return existing;
     const offset = slot * 2;
-    const raw = record.rawBytes ?? [];
     return raw.length >= offset + 2 ? readSignedI16(raw, offset) : 0;
   });
 }
@@ -1503,10 +1506,6 @@ function validateScenarioItems(project: Project, errors: string[], warnings: str
 
 function validateTreasures(project: Project, errors: string[]) {
   for (const treasure of project.treasures ?? []) {
-    const rawBytes = treasure.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 48) {
-      errors.push(`Treasure ${treasure.id} has invalid 48-byte compatibility storage.`);
-    }
     if ((treasure.itemIds?.length ?? 0) !== 20) {
       errors.push(`Treasure ${treasure.id} must define 20 semantic item slots.`);
     }

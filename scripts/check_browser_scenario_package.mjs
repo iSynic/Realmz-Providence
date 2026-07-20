@@ -101,9 +101,10 @@ sourceScenarioItems[1] = 0x46;
 sourceScenarioItems[100] = 0x47;
 sourceScenarioItems[101] = 0x48;
 sourceScenarioItems.set([0xde, 0xad, 0xbe], 200);
-const sourceTreasures = new Uint8Array(96);
+const sourceTreasures = new Uint8Array(99);
 sourceTreasures[0] = 0x49;
 sourceTreasures[1] = 0x4a;
+sourceTreasures.set([0xca, 0xfe, 0x02], 96);
 sourceTreasures[48] = 0x4b;
 sourceTreasures[49] = 0x4c;
 const sourceShops = new Uint8Array(6004);
@@ -948,7 +949,7 @@ const itemEconomyProject = {
   ],
   treasures: [
     treasureRecordFromRaw(0, sourceTreasures.slice(0, 48)),
-    { ...treasureRecord(1, { itemIds: [901, 902, -903, ...new Array(17).fill(0)], exp: 50, gold: 60, gems: 70, jewelry: 80 }), rawBytes: Array.from(sourceTreasures.slice(48, 96)), authored: true }
+    treasureRecord(1, { itemIds: [901, 902, -903, ...new Array(17).fill(0)], exp: 50, gold: 60, gems: 70, jewelry: 80 })
   ],
   shops: [
     shopRecordFromRaw(0, sourceShops.slice(0, 3002)),
@@ -965,13 +966,14 @@ const writtenScenarioItems = itemEconomyFiles.get("Data NI");
 const writtenTreasures = itemEconomyFiles.get("Data TD");
 const writtenShops = itemEconomyFiles.get("Data SD");
 expect(writtenScenarioItems?.byteLength === 203, "Written Data NI should retain source row capacity and malformed tail");
-expect(writtenTreasures?.byteLength === 96, "Written Data TD should retain source row count");
+expect(writtenTreasures?.byteLength === 99, "Written Data TD should retain its annex-only malformed tail");
 expect(writtenShops?.byteLength === 6004, "Written Data SD should retain source row count");
 expect(bytesEqual(writtenScenarioItems?.slice(0, 100), sourceScenarioItems.slice(0, 100)), "Unauthored item row should remain byte-identical");
 expect(bytesEqual(writtenScenarioItems?.slice(100, 200), scenarioItemRow(authoredItem)), "Authored item row should encode item fields");
 expect(bytesEqual(writtenScenarioItems?.slice(200), new Uint8Array([0xde, 0xad, 0xbe])), "Written Data NI should retain its annex-only malformed tail");
 expect(bytesEqual(writtenTreasures?.slice(0, 48), sourceTreasures.slice(0, 48)), "Unauthored treasure row should remain byte-identical");
 expect(bytesEqual(writtenTreasures?.slice(48, 96), treasureRow({ itemIds: [901, 902, -903], exp: 50, gold: 60, gems: 70, jewelry: 80 })), "Authored treasure row should encode treasure fields");
+expect(bytesEqual(writtenTreasures?.slice(96), new Uint8Array([0xca, 0xfe, 0x02])), "Written Data TD should retain its annex-only malformed tail bytes");
 expect(bytesEqual(writtenShops?.slice(0, 3002), sourceShops.slice(0, 3002)), "Imported shop row should semantically recompile byte-identically");
 expect(bytesEqual(writtenShops?.slice(3002, 6004), shopRow({ itemIds: [901, 902, -903], quantities: [1, 2, 255], inflation: -12 })), "Authored shop row should encode shop fields");
 
@@ -2023,7 +2025,6 @@ function treasureRecordFromRaw(id, bytes) {
     gold: readI16(bytes, 42),
     gems: readI16(bytes, 44),
     jewelry: readI16(bytes, 46),
-    rawBytes: Array.from(bytes),
     authored: false
   });
 }

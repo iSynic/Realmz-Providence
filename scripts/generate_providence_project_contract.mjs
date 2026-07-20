@@ -355,12 +355,12 @@ expect(scenarioItemRecordSchema.properties?.spare2?.minItems === 7 && scenarioIt
 expect(scenarioItemRecordSchema.properties?.type?.["x-providence-rust-field-name"] === "item_type", "scenario-item type must use the non-keyword Rust field name item_type");
 expect(scenarioItemRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "scenario-item provenance must reference canonical provenance");
 expectSameArray(scenarioItemRecordSchema["x-providence-rust-default"] ?? [], ["spare2", "authored"], "Scenario-item Rust default inventory");
-const treasureFields = ["id", "itemIds", "exp", "gold", "gems", "jewelry", "rawBytes", "authored", "provenance"];
+const treasureFields = ["id", "itemIds", "exp", "gold", "gems", "jewelry", "authored", "provenance"];
 expectSameArray(Object.keys(treasureRecordSchema.properties ?? {}), treasureFields, "Treasure field inventory");
-expectSameArray(treasureRecordSchema.required ?? [], treasureFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Treasure authored field inventory");
+expectSameArray(treasureRecordSchema.required ?? [], treasureFields.filter((field) => field !== "authored"), "Treasure authored field inventory");
 expect(treasureRecordSchema.properties?.itemIds?.minItems === 20 && treasureRecordSchema.properties?.itemIds?.maxItems === 20, "treasure itemIds must retain twenty Realmz slots");
 expect(treasureRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "treasure provenance must reference canonical provenance");
-expectSameArray(treasureRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Treasure omitted empty compatibility inventory");
+expectSameArray(treasureRecordSchema["x-providence-rust-default"] ?? [], ["itemIds", "authored"], "Treasure Rust default inventory");
 const shopFields = ["id", "itemIds", "quantities", "inflation", "rawBytes", "authored", "provenance"];
 expectSameArray(Object.keys(shopRecordSchema.properties ?? {}), shopFields, "Shop field inventory");
 expectSameArray(shopRecordSchema.required ?? [], shopFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Shop authored field inventory");
@@ -486,7 +486,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

@@ -17,7 +17,6 @@ pub fn parse_treasures(buffer: &[u8]) -> Vec<TreasureRecord> {
             gold: i16_be(record, 42),
             gems: i16_be(record, 44),
             jewelry: i16_be(record, 46),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: provenance("Data TD", id, start, TREASURE_BYTES),
         })
@@ -26,12 +25,6 @@ pub fn parse_treasures(buffer: &[u8]) -> Vec<TreasureRecord> {
 
 pub fn write_treasures(records: &[TreasureRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, TREASURE_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != TREASURE_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Treasure {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         if record.item_ids.len() != 20 {
             return Err(ProvidenceError::message(format!(
                 "Treasure {} must define 20 item slots",
@@ -86,7 +79,6 @@ mod tests {
             .into_iter()
             .next()
             .expect("treasure");
-        treasure.raw_bytes.clear();
         treasure.item_ids = (0..20).map(|slot| 900 + slot).collect();
         treasure.exp = -10;
         treasure.gold = 20;
@@ -109,25 +101,17 @@ mod tests {
         let input: Vec<u8> = (0..TREASURE_BYTES)
             .map(|offset| (offset * 5) as u8)
             .collect();
-        let mut treasures = parse_treasures(&input);
-        treasures[0].raw_bytes = vec![0xA5; TREASURE_BYTES];
+        let treasures = parse_treasures(&input);
 
         assert_eq!(write_treasures(&treasures).unwrap(), input);
     }
 
     #[test]
-    fn treasure_writer_rejects_malformed_canonical_storage() {
+    fn treasure_writer_rejects_malformed_item_slots() {
         let mut treasure = parse_treasures(&vec![0; TREASURE_BYTES])
             .into_iter()
             .next()
             .expect("treasure");
-        treasure.raw_bytes = vec![1];
-        assert!(write_treasures(&[treasure.clone()])
-            .unwrap_err()
-            .to_string()
-            .contains("invalid compatibility byte storage"));
-
-        treasure.raw_bytes.clear();
         treasure.item_ids.clear();
         assert!(write_treasures(&[treasure])
             .unwrap_err()

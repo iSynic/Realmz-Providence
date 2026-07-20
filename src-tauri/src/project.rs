@@ -927,18 +927,8 @@ fn normalize_scenario_item_spare_words(record: &mut ScenarioItemRecord) {
 
 fn normalize_treasure_item_ids(record: &mut TreasureRecord) {
     let existing = record.item_ids.clone();
-    let raw_bytes = record.raw_bytes.clone();
     record.item_ids = (0..20)
-        .map(|slot| {
-            existing.get(slot).copied().unwrap_or_else(|| {
-                let offset = slot * 2;
-                if raw_bytes.len() >= offset + 2 {
-                    project_i16(&raw_bytes, offset)
-                } else {
-                    0
-                }
-            })
-        })
+        .map(|slot| existing.get(slot).copied().unwrap_or(0))
         .collect();
 }
 
@@ -1113,14 +1103,12 @@ mod tests {
     }
 
     #[test]
-    fn treasure_normalization_backfills_legacy_item_slots() {
-        let mut raw_bytes = vec![0; crate::realmz::TREASURE_BYTES];
-        raw_bytes[2..4].copy_from_slice(&(-321i16).to_be_bytes());
-        let mut record = crate::realmz::parse_treasures(&raw_bytes)
+    fn treasure_normalization_fills_missing_semantic_item_slots() {
+        let mut record = crate::realmz::parse_treasures(&vec![0; crate::realmz::TREASURE_BYTES])
             .into_iter()
             .next()
             .expect("treasure");
-        record.item_ids = vec![901];
+        record.item_ids = vec![901, -321];
 
         normalize_treasure_item_ids(&mut record);
 

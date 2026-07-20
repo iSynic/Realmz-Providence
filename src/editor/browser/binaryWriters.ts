@@ -524,10 +524,6 @@ export function writeScenarioItems(records: ScenarioItemRecord[]) {
 
 export function writeTreasures(records: TreasureRecord[]) {
   return writeFixedRecords(records, TREASURE_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== TREASURE_RECORD_BYTES) {
-      throw new Error(`Treasure ${record.id} has invalid compatibility byte storage`);
-    }
     if (record.itemIds.length !== 20) {
       throw new Error(`Treasure ${record.id} must define 20 item slots`);
     }

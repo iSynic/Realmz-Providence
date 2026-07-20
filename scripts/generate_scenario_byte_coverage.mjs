@@ -802,13 +802,13 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       "src-tauri/src/realmz/economy.rs:fresh_treasure_compiles_all_semantic_fields",
       "src-tauri/src/realmz/economy.rs:imported_treasure_recompiles_without_record_byte_identity",
       "src-tauri/src/realmz/economy.rs:treasure_storage_mutates_only_owned_fields",
-      "src-tauri/src/project.rs:treasure_normalization_backfills_legacy_item_slots",
+      "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
       ...TARGET_RECORD_WRITER_EVIDENCE,
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/generated/item-treasure-shop-evidence.json",
       "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh treasure records compile all 48 bytes from twenty item IDs and four reward words without rawBytes. Imported records recompile from decoded semantics; only malformed file tails remain compatibility-annex data."
+    preservationPolicy: "Canonical treasure records expose no rawBytes and compile all 48 bytes from twenty item IDs and four reward words. Imported records recompile from decoded semantics; only malformed file tails remain compatibility-annex data."
   },
   {
     container: "Data BD",

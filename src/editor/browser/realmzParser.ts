@@ -680,7 +680,6 @@ function parseTreasures(buffer: Uint8Array | undefined): TreasureRecord[] {
     gold: i16(record, 42),
     gems: i16(record, 44),
     jewelry: i16(record, 46),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data TD", id, start, 48, "source-backed")
   }));

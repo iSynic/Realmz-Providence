@@ -370,6 +370,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
         serde_json::from_str(&text).with_json_path(&project_path)?;
     migrate_legacy_map_record_raw_bytes(&mut value);
     migrate_legacy_scenario_item_raw_bytes(&mut value);
+    migrate_legacy_treasure_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -432,6 +433,36 @@ fn migrate_legacy_scenario_item_raw_bytes(project: &mut serde_json::Value) {
         while spare2.len() < 7 {
             let offset = 56 + spare2.len() * 2;
             spare2.push(serde_json::json!(legacy_project_i16(&raw, offset)));
+        }
+    }
+}
+
+fn migrate_legacy_treasure_raw_bytes(project: &mut serde_json::Value) {
+    let Some(records) = project
+        .get_mut("treasures")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for record in records {
+        let Some(record) = record.as_object_mut() else {
+            continue;
+        };
+        let Some(raw) = record
+            .remove("rawBytes")
+            .and_then(|value| value.as_array().cloned())
+        else {
+            continue;
+        };
+        let item_ids = record
+            .entry("itemIds")
+            .or_insert_with(|| serde_json::Value::Array(Vec::new()));
+        let Some(item_ids) = item_ids.as_array_mut() else {
+            continue;
+        };
+        while item_ids.len() < 20 {
+            let offset = item_ids.len() * 2;
+            item_ids.push(serde_json::json!(legacy_project_i16(&raw, offset)));
         }
     }
 }
@@ -2460,6 +2491,18 @@ mod tests {
         legacy_item_raw[56..58].copy_from_slice(&(-321i16).to_be_bytes());
         legacy_item_value["rawBytes"] = serde_json::json!(legacy_item_raw);
         saved["scenarioItems"] = serde_json::json!([legacy_item_value]);
+        let mut legacy_treasure =
+            crate::realmz::parse_treasures(&vec![0; crate::realmz::TREASURE_BYTES])
+                .into_iter()
+                .next()
+                .expect("legacy treasure");
+        legacy_treasure.item_ids = vec![901];
+        let mut legacy_treasure_value =
+            serde_json::to_value(legacy_treasure).expect("serialize treasure");
+        let mut legacy_treasure_raw = vec![0u8; crate::realmz::TREASURE_BYTES];
+        legacy_treasure_raw[2..4].copy_from_slice(&(-321i16).to_be_bytes());
+        legacy_treasure_value["rawBytes"] = serde_json::json!(legacy_treasure_raw);
+        saved["treasures"] = serde_json::json!([legacy_treasure_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2489,6 +2532,9 @@ mod tests {
         assert_eq!(opened.map_records[0].markers[0].y, 13);
         assert_eq!(opened.scenario_items[0].spare2.len(), 7);
         assert_eq!(opened.scenario_items[0].spare2[0], -321);
+        assert_eq!(opened.treasures[0].item_ids.len(), 20);
+        assert_eq!(opened.treasures[0].item_ids[0], 901);
+        assert_eq!(opened.treasures[0].item_ids[1], -321);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2518,6 +2564,7 @@ mod tests {
         assert!(upgraded["thiefEncounters"][0].get("rawBytes").is_none());
         assert!(upgraded["mapRecords"][0].get("rawBytes").is_none());
         assert!(upgraded["scenarioItems"][0].get("rawBytes").is_none());
+        assert!(upgraded["treasures"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -2986,7 +3033,6 @@ mod tests {
         treasure.item_ids[0] = 901;
         treasure.gold = 77;
         treasure.authored = false;
-        treasure.raw_bytes.fill(0xA5);
         project.treasures = vec![treasure];
 
         let mut thief =

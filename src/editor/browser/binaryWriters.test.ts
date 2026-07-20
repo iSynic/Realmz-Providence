@@ -427,7 +427,7 @@ describe("browser treasure writer", () => {
       jewelry: 40
     };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeTreasures([record]);
 
     expect(output).toHaveLength(48);
@@ -437,16 +437,15 @@ describe("browser treasure writer", () => {
     expect(i16(output, 46)).toBe(40);
   });
 
-  it("recompiles imported rows without record byte identity", () => {
+  it("recompiles imported rows from semantic data", () => {
     const input = Uint8Array.from({ length: 48 }, (_, offset) => offset * 5);
     const imported = parseScenarioBuffers(new Map([["Data TD", input]])).treasures[0];
 
-    expect(writeTreasures([{ ...imported, rawBytes: new Array(48).fill(0xa5) }])).toEqual(input);
+    expect("rawBytes" in imported).toBe(false);
+    expect(writeTreasures([imported])).toEqual(input);
   });
 
-  it("rejects malformed compatibility bytes and item-slot inventories", () => {
-    expect(() => writeTreasures([{ ...emptyTreasure(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
+  it("rejects malformed item-slot inventories", () => {
     expect(() => writeTreasures([{ ...emptyTreasure(0), itemIds: [] }]))
       .toThrow("must define 20 item slots");
   });

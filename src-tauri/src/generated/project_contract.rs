@@ -330,7 +330,6 @@ pub const PROVIDENCE_TREASURE_FIELDS: &[&str] = &[
     "gold",
     "gems",
     "jewelry",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1326,8 +1325,6 @@ pub struct TreasureRecord {
     pub gold: i16,
     pub gems: i16,
     pub jewelry: i16,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

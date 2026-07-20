@@ -5,7 +5,7 @@ import {
   projectCommandChangeCount,
   projectCommandLabel
 } from "./projectCommands";
-import { emptyScenarioItem } from "./projectCommands/targetRecordCommands";
+import { emptyScenarioItem, emptyTreasure } from "./projectCommands/targetRecordCommands";
 import type { Project, ProjectCommand } from "./types";
 
 describe("project command facade", () => {
@@ -254,6 +254,7 @@ describe("project command facade", () => {
 
   it("creates fresh treasures from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Treasure");
+    project.treasures = [{ ...emptyTreasure(4), rawBytes: new Array(48).fill(0xa5) } as unknown as Project["treasures"][number]];
 
     const next = applyProjectCommand(project, {
       kind: "updateTreasureRecord",
@@ -265,7 +266,7 @@ describe("project command facade", () => {
     expect(next.treasures).toHaveLength(1);
     expect(next.treasures[0].gold).toBe(25);
     expect(next.treasures[0].itemIds).toHaveLength(20);
-    expect(next.treasures[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in next.treasures[0]).toBe(false);
   });
 
   it("creates fresh shops from semantic data without compatibility bytes", () => {

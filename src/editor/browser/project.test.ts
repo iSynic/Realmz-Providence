@@ -311,14 +311,16 @@ describe("browser project native manifest validation", () => {
     bytes.set([0xfe, 0xbf], 2);
     const record = parseScenarioBuffers(new Map([["Data TD", bytes]])).treasures[0];
     const project = createBrowserProject("Legacy Treasure");
-    project.treasures = [{ ...record, itemIds: [901] }];
+    project.treasures = [{ ...record, itemIds: [901], rawBytes: Array.from(bytes) } as unknown as Project["treasures"][number]];
 
-    const itemIds = normalizeBrowserProject(project).treasures[0].itemIds;
+    const normalized = normalizeBrowserProject(project).treasures[0];
+    const itemIds = normalized.itemIds;
 
     expect(itemIds).toHaveLength(20);
     expect(itemIds[0]).toBe(901);
     expect(itemIds[1]).toBe(-321);
     expect(itemIds.slice(2)).toEqual(new Array(18).fill(0));
+    expect("rawBytes" in normalized).toBe(false);
   });
 
   it("backfills shop inventories when opening legacy browser projects", () => {
@@ -663,8 +665,7 @@ describe("browser project native manifest validation", () => {
       id: 3,
       itemIds: [901, ...new Array(19).fill(0)],
       gold: 77,
-      authored: false,
-      rawBytes: new Array(48).fill(0xa5)
+      authored: false
     }];
     project.thiefEncounters = [{
       ...parsed.thiefEncounters[0],
