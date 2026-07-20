@@ -181,6 +181,9 @@ expect(mapEntitySchema.properties?.levelType?.$ref === "#/$defs/levelType", "map
 expect(mapEntitySchema.properties?.render?.$ref === "#/$defs/mapRender", "map render must reference canonical render metadata");
 expect(mapEntitySchema.properties?.provenance?.$ref === "#/$defs/provenance", "map provenance must reference canonical provenance");
 expect(mapRenderSchema.properties?.mode?.$ref === "#/$defs/renderMode", "map render mode must reference the canonical mode enum");
+expectSameArray(Object.keys(landLayoutSchema.properties ?? {}), ["rows", "cols", "cells", "authored", "provenance"], "Land-layout field inventory");
+expectSameArray(landLayoutSchema.required ?? [], ["rows", "cols", "cells"], "Land-layout authored field inventory");
+expectSameArray(landLayoutSchema["x-providence-rust-default"] ?? [], ["authored", "provenance"], "Land-layout defaulted field inventory");
 expect(landLayoutSchema.properties?.cells?.minItems === 128 && landLayoutSchema.properties?.cells?.maxItems === 128, "land layout must retain the complete 8 x 16 cell grid");
 expectSameArray(Object.keys(mapMarkerSchema.properties ?? {}), ["iconId", "x", "y"], "Map marker field inventory");
 expectSameArray(mapMarkerSchema.required ?? [], Object.keys(mapMarkerSchema.properties ?? {}), "Map marker required field inventory");
@@ -209,7 +212,7 @@ const mapCompatibilityFields = mapDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(mapCompatibilityFields, ["LandLayout.trailingBytes", "MapRecord.rawBytes"], "Map compatibility-only field inventory");
+expectSameSet(mapCompatibilityFields, ["MapRecord.rawBytes"], "Map compatibility-only field inventory");
 for (const [index, definition] of landlookDefinitions.entries()) {
   const definitionName = landlookDefinitionNames[index];
   expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);

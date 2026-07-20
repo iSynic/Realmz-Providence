@@ -191,7 +191,6 @@ export function ensureLandLayout(project: Project) {
       rows: LAND_LAYOUT_ROWS,
       cols: LAND_LAYOUT_COLS,
       cells: new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0),
-      trailingBytes: [],
       authored: true,
       provenance: authoredProvenance("Layout", 0, 0, LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2)
     }
@@ -204,6 +203,8 @@ export function updateLandLayoutCell(project: Project, row: number, col: number,
   const layout = withLayout.landLayout;
   if (!layout) return withLayout;
   const cells = [...layout.cells];
+  const hadLegacyTrailingBytes = "trailingBytes" in layout;
+  const { trailingBytes: _legacyTrailingBytes, ...canonicalLayout } = layout as typeof layout & { trailingBytes?: number[] };
   const index = row * LAND_LAYOUT_COLS + col;
   const nextValue = clampSignedShort(Math.trunc(value));
   if (
@@ -211,17 +212,16 @@ export function updateLandLayoutCell(project: Project, row: number, col: number,
     layout.rows === LAND_LAYOUT_ROWS &&
     layout.cols === LAND_LAYOUT_COLS &&
     layout.authored &&
-    (layout.trailingBytes?.length ?? 0) === 0
+    !hadLegacyTrailingBytes
   ) return withLayout;
   cells[index] = nextValue;
   return {
     ...withLayout,
     landLayout: {
-      ...layout,
+      ...canonicalLayout,
       rows: LAND_LAYOUT_ROWS,
       cols: LAND_LAYOUT_COLS,
       cells: normalizeLandLayoutCells(cells),
-      trailingBytes: [],
       authored: true
     }
   };
@@ -231,14 +231,14 @@ export function clearLandLayout(project: Project) {
   const withLayout = ensureLandLayout(project);
   const layout = withLayout.landLayout;
   if (!layout) return withLayout;
+  const { trailingBytes: _legacyTrailingBytes, ...canonicalLayout } = layout as typeof layout & { trailingBytes?: number[] };
   return {
     ...withLayout,
     landLayout: {
-      ...layout,
+      ...canonicalLayout,
       rows: LAND_LAYOUT_ROWS,
       cols: LAND_LAYOUT_COLS,
       cells: new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0),
-      trailingBytes: [],
       authored: true
     }
   };

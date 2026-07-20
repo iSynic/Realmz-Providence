@@ -783,7 +783,6 @@ function authoredLandLayout() {
     rows: 8,
     cols: 16,
     cells,
-    trailingBytes: [0xde, 0xad, 0xbe, 0xef],
     authored: true,
     provenance: null
   };

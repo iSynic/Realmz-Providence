@@ -430,7 +430,7 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       "docs/generated/map-field-value-evidence.json",
       "docs/format-evidence-cards/map-tile-runtime-anchors.md"
     ],
-    preservationPolicy: "Both writers compile the first 256 bytes as the complete Realmz 8x16 layout grid without consulting embedded trailingBytes. Imported bytes after offset 255 remain preserve-only and are restored exclusively from the compatibility annex."
+    preservationPolicy: "Both writers compile the first 256 bytes as the complete Realmz 8x16 layout grid from canonical cells. Canonical projects expose no tail field; imported bytes after offset 255 remain preserve-only and are restored exclusively from the compatibility annex."
   },
   {
     container: "Data DD",
@@ -2530,7 +2530,7 @@ function byteRangesForFile(file, layout) {
         endExclusive: maxObserved,
         status: "preserved-known",
         field: "Optional layout compatibility tail",
-        internal: "trailingBytes",
+        internal: "compatibility annex",
         writerGate: "docs/generated/maps-storage-writer-gates.json"
       });
     }

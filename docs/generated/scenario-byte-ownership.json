@@ -2030,7 +2030,7 @@
           "endExclusive": 512,
           "status": "preserved-known",
           "field": "Optional layout compatibility tail",
-          "internal": "trailingBytes",
+          "internal": "compatibility annex",
           "writerGate": "docs/generated/maps-storage-writer-gates.json"
         }
       ],

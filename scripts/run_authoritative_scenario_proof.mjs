@@ -72,7 +72,6 @@ project.landLayout = {
   rows: 8,
   cols: 16,
   cells: landLayoutCells,
-  trailingBytes: [],
   authored: true,
   provenance: null
 };
@@ -228,7 +227,7 @@ assertManagedResourceValidation(project);
 assertOwnershipScenarioMetadata(project, "Canonical project", true);
 assertOwnershipGlobalMacros(project, "Canonical project", true);
 assertOwnershipTileSolids(project, "Canonical project", false);
-assertOwnershipLandLayout(project, "Canonical project", true);
+assertOwnershipLandLayout(project, "Canonical project");
 assertOwnershipCustomLandlook(project, "Canonical project", true);
 assertOwnershipCustomLandlookAtlas(project, "Canonical project");
 assertOwnershipManagedResources(project, "Canonical project");
@@ -294,6 +293,7 @@ await assertNoRawSources("after canonical project creation");
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputA, "windows-realmz-folder"]);
 await assertNoRawSources("after first Windows export");
 const poisonedProject = JSON.parse(canonicalProjectJson);
+poisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -321,6 +321,7 @@ const remakeFilesB = await readDirectoryTree(remakeOutputB);
 const browserWindowsPackage = createBrowserScenarioPackageZip(project, null, "windows-realmz-folder");
 const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "mac-classic-folder");
 const browserPoisonedProject = JSON.parse(JSON.stringify(project));
+browserPoisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -444,7 +445,7 @@ assertOwnershipRules(reimported, "Reimport", false);
 assertOwnershipScenarioMetadata(reimported, "Reimport", false);
 assertOwnershipGlobalMacros(reimported, "Reimport", false);
 assertOwnershipTileSolids(reimported, "Reimport", true);
-assertOwnershipLandLayout(reimported, "Reimport", false);
+assertOwnershipLandLayout(reimported, "Reimport");
 assertOwnershipCustomLandlook(reimported, "Reimport", false);
 await assertReimportedCustomLandlookAtlas(reimported, "Reimport");
 await assertReimportedManagedResources(reimported, reimportedSemanticSchema, "Reimport");
@@ -619,7 +620,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipScenarioMetadata(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipGlobalMacros(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipTileSolids(savedProject, `Rust-saved project ${stage}`, false);
-  assertOwnershipLandLayout(savedProject, `Rust-saved project ${stage}`, true);
+  assertOwnershipLandLayout(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipCustomLandlook(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipCustomLandlookAtlas(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipManagedResources(savedProject, `Rust-saved project ${stage}`);
@@ -956,15 +957,13 @@ function assertOwnershipTileSolids(project, label, expectImportedRawByte) {
   }
 }
 
-function assertOwnershipLandLayout(project, label, requireNoCompatibilityBytes) {
+function assertOwnershipLandLayout(project, label) {
   const layout = project.landLayout;
   expect(layout, `${label} is missing the canonical land layout`);
   expect(layout.rows === 8 && layout.cols === 16, `${label} has the wrong land-layout dimensions`);
   expect(layout.cells?.length === 128, `${label} land layout does not own all 128 cells`);
   expect(layout.cells[0] === -1 && layout.cells[127] === 202, `${label} has the wrong canonical land-layout cells`);
-  if (requireNoCompatibilityBytes) {
-    expect((layout.trailingBytes?.length ?? 0) === 0, `${label} land layout depends on embedded compatibility-tail bytes`);
-  }
+  expect(!("trailingBytes" in layout), `${label} land layout exposes embedded compatibility-tail bytes`);
 }
 
 function assertOwnershipCustomLandlook(project, label, requireNoCompatibilityBytes) {

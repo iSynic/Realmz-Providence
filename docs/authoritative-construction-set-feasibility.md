@@ -422,11 +422,12 @@ on native-folder reimport.
 
 The forty-third slice closes runtime byte ownership for the optional `Layout` file. Both native
 writers now require the canonical 8 x 16 shape and deterministically compile exactly 256 bytes
-from all 128 signed-short cells; `LandLayout.trailingBytes` remains migration-readable but cannot
-influence compiler output. Imported bytes after offset 255 are restored only from the bounded
+from all 128 signed-short cells. At that checkpoint, `LandLayout.trailingBytes` remained
+migration-readable but could not influence compiler output. Imported bytes after offset 255 are
+restored only from the bounded
 compatibility annex, including the observed 512-byte form whose suffix was previously missed by
-the browser exporter's generic malformed-tail rule. Land-layout editor commands clear embedded
-tail identity when authoring begins. The browser/desktop parity fixture poisons the model tail,
+the browser exporter's generic malformed-tail rule. Land-layout editor commands dropped embedded
+tail identity when authoring began. The browser/desktop parity fixture poisoned the model tail,
 authors both edge cells, and proves that an exact 256-byte annex suffix survives unchanged. The
 fresh ownership proof now authors a layout without compatibility bytes, emits the same exact grid
 for Windows and Classic Mac in both compilers, and recovers all 128 cells on native reimport. The
@@ -565,10 +566,19 @@ with `rawValues` remains load-tolerant but drops the field during normalization.
 obsolete unknown property during migration. No edit flag, compatibility mask, or byte array enters
 the canonical model.
 
-Branch validation through the fifty-third slice completed on 2026-07-19:
+The fifty-fourth slice removes `LandLayout.trailingBytes` from schema-v5 canonical projects.
+Browser and desktop import now expose only the semantic 8 x 16 grid; old project JSON carrying the
+obsolete property remains load-tolerant but drops it during browser normalization and Rust
+serialization. Both pure writers still compile exactly 256 bytes from canonical cells. Any
+imported suffix remains exclusively in the compatibility annex, and browser/desktop parity proves
+that annex bytes survive unchanged without entering the canonical model. The authoritative proof
+also poisons the obsolete property on an in-memory legacy-shaped object and proves that neither
+compiler consults it.
 
-- full Rust suite: 261 passed, 2 ignored;
-- full TypeScript suite: 607 passed, plus typecheck;
+Branch validation through the fifty-fourth slice completed on 2026-07-19:
+
+- full Rust suite: 262 passed, 2 ignored;
+- full TypeScript suite: 609 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -688,8 +698,8 @@ them from the emitted scenario source files.
   and `unknown` confidence vocabulary are generated in both languages; generated DTOs no longer
   refer back to a handwritten project-model type.
 - Level kind, render mode/metadata, map identity/tile cells, and land layout are generated in both
-  languages. The schema requires canonical map provenance and identifies layout trailing bytes as
-  compatibility-only data.
+  languages. The schema requires canonical map provenance and exposes only semantic layout cells;
+  imported layout suffix bytes remain exclusively in the compatibility annex.
 - Random-level settings and random-rectangle records are generated in both languages. Canonical
   projects carry semantic settings only. Imported legacy encodings, inactive-slot storage, the
   final unmodeled byte, and malformed tails remain accessible only through the compatibility annex
@@ -814,8 +824,8 @@ random-level/rectangle, map-record/marker/rectangle, scenario-item, treasure, sh
 option-label, battle, monster, monster-description, spell, race, and caste DTO families plus their shared
 provenance/confidence primitives. A
 conformance gate compares the inventory to both project models and the Rust serializer, rejects
-handwritten duplicates, fixes the compatibility-only startup/layout/random-level payload
-inventories, and checks the evidence/render vocabularies. This removes silent top-level,
+handwritten duplicates, fixes the compatibility-only startup payload and semantic layout/random
+level inventories, and checks the evidence/render vocabularies. This removes silent top-level,
 source-boundary, startup-metadata, provenance, core-map, item-record, treasure-record, shop-record,
 message-record, option-label-record, battle-record, monster-record, monster-description-record, and
 rule-override drift while leaving other record and asset DTO families as bounded, incremental work.
@@ -913,7 +923,7 @@ Legend:
 | `Data RDD` | Fully generated semantic records + legacy annex ranges/tail | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file. Populated dungeon records use the same canonical writer and bounded annex policy as `Data RD`; no imported record words are exposed in the project model. |
 | `Data ED3` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every 40-byte Extra Action Point row | Both compilers write the complete `struct door` shape from canonical fields. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
 | `Data EDCD` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every five-word settings row | Both compilers write all five signed shorts from canonical values. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
-| `Layout` | Fully generated semantic grid + legacy annex tail, optional | Generate exactly 256 bytes from all 128 canonical cells | Both compilers require the 8 x 16 shape and ignore embedded `trailingBytes`. Imported optional bytes 256-511 remain preserve-only annex data, including exact 512-byte files. |
+| `Layout` | Fully generated semantic grid + legacy annex tail, optional | Generate exactly 256 bytes from all 128 canonical cells | Canonical projects expose only the 8 x 16 semantic grid. Imported optional bytes 256-511 remain preserve-only annex data, including exact 512-byte files. |
 
 ### Core records and encounters
 

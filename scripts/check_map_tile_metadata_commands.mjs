@@ -93,14 +93,14 @@ function checkLandLayoutCompatibilityBoundary({ updateLandLayoutCell, clearLandL
   const updated = updateLandLayoutCell(project, 0, 0, -1);
   assert(updated.landLayout?.cells[0] === -1, "Land-layout edits should update the canonical cell.");
   assert(updated.landLayout?.authored === true, "Land-layout edits should mark the canonical grid authored.");
-  assert(updated.landLayout?.trailingBytes?.length === 0, "Land-layout edits should not retain embedded compatibility-tail identity.");
+  assert(!("trailingBytes" in updated.landLayout), "Land-layout edits should drop legacy embedded compatibility-tail identity.");
 
   const cleared = clearLandLayout({
     ...updated,
     landLayout: { ...updated.landLayout, trailingBytes: [0xa5] }
   });
   assert(cleared.landLayout?.cells.every((cell) => cell === 0), "Clearing the land layout should zero every canonical cell.");
-  assert(cleared.landLayout?.trailingBytes?.length === 0, "Clearing the land layout should discard embedded compatibility-tail identity.");
+  assert(!("trailingBytes" in cleared.landLayout), "Clearing the land layout should discard legacy embedded compatibility-tail identity.");
 }
 
 function checkDungeonCellFlagCommand({ updateDungeonCellFlags }) {
@@ -807,7 +807,7 @@ function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource })
   assert(custom?.sourceFile === "Data Custom 1 BD", "Custom 1 creation should target Data Custom 1 BD.");
   assert(custom?.authored === true, "Custom landlook creation should mark metadata authored.");
   assert(custom?.records?.[5]?.solid === 1, "Custom landlook creation did not copy built-in tile metadata.");
-  assert(custom?.records?.[5]?.spare === 77, "Custom landlook creation should preserve mapped spare words from the source profile.");
+  assert(custom?.records?.[5]?.spare == null, "Custom landlook creation should drop preserve-only spare words from the source profile.");
   assert(custom?.records?.[5]?.combatBuild?.[2]?.[2] === 13, "Custom landlook creation did not copy built-in combat expansion metadata.");
   assert(findProfile(next, 6, 5)?.editableScope === "scenario-custom", "Custom landlook creation did not sync writable tileAttributes.");
   assert(findProfile(next, 6, 5)?.combatBuild?.[0]?.[1] === 6, "Custom landlook creation did not sync combat expansion into writable tileAttributes.");
@@ -831,10 +831,10 @@ function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource })
   });
   const custom2 = cloned.customLandlooks.find((landlook) => landlook.landlook === 7);
   assert(custom2?.sourceFile === "Data Custom 2 BD", "Custom duplication should retarget Data Custom 2 BD.");
-  assert(custom2?.records?.[8]?.spare === 222, "Custom duplication should preserve spare mapstats words.");
-  assert(custom2?.rangeSlots?.[0]?.reserved === 333, "Custom duplication should preserve range reserved words.");
-  assert(custom2?.trailingBytes?.join(",") === "4,5,6", "Custom duplication should preserve trailing bytes.");
-  assert(custom2?.rawBytes?.join(",") === "7,8,9", "Custom duplication should preserve raw bytes.");
+  assert(custom2?.records?.[8]?.spare == null, "Custom duplication should drop preserve-only spare mapstats words.");
+  assert(custom2?.rangeSlots?.[0]?.reserved == null, "Custom duplication should drop preserve-only range reserved words.");
+  assert(custom2?.trailingBytes == null, "Custom duplication should drop preserve-only trailing bytes.");
+  assert(custom2?.rawBytes == null, "Custom duplication should drop preserve-only raw bytes.");
 }
 
 function checkBuiltInLandlookStaysReadOnly({ updateCustomLandTileAttributes }) {

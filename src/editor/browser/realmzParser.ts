@@ -271,7 +271,6 @@ function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
     rows: LAND_LAYOUT_ROWS,
     cols: LAND_LAYOUT_COLS,
     cells: Array.from({ length: LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS }, (_, index) => i16(buffer, index * 2)),
-    trailingBytes: Array.from(buffer.slice(LAND_LAYOUT_BYTES)),
     authored: false,
     provenance: {
       sourceFile: "Layout",

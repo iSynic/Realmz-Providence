@@ -121,6 +121,22 @@ describe("browser project native manifest validation", () => {
     expect("rawValues" in normalized).toBe(false);
   });
 
+  it("drops legacy land-layout tail bytes from the canonical record", () => {
+    const project = createBrowserProject("Legacy land-layout tail");
+    project.landLayout = {
+      rows: 8,
+      cols: 16,
+      cells: new Array(128).fill(0),
+      trailingBytes: [0xde, 0xad, 0xbe, 0xef],
+      authored: false,
+      provenance: null
+    } as unknown as Project["landLayout"];
+
+    const normalized = normalizeBrowserProject(project).landLayout!;
+
+    expect("trailingBytes" in normalized).toBe(false);
+  });
+
   it("normalizes legacy monster slot arrays into the canonical fixed contract", () => {
     const project = createBrowserProject("Legacy monster arrays");
     const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];

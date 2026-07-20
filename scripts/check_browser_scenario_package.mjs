@@ -708,7 +708,6 @@ const layoutProject = {
     rows: 8,
     cols: 16,
     cells: authoredLayoutCells,
-    trailingBytes: [0xa5],
     authored: true
   }
 };

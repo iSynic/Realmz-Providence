@@ -103,7 +103,6 @@ pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[
     "rows",
     "cols",
     "cells",
-    "trailingBytes",
     "authored",
     "provenance",
 ];
@@ -736,8 +735,6 @@ pub struct LandLayout {
     pub rows: usize,
     pub cols: usize,
     pub cells: Vec<i16>,
-    #[serde(default)]
-    pub trailing_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]

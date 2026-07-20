@@ -573,6 +573,10 @@ export function normalizeBrowserProject(project: Project): Project {
     ...record,
     markers: normalizedMapRecordMarkers(record)
   }));
+  if (project.landLayout) {
+    const { trailingBytes: _legacyTrailingBytes, ...canonical } = project.landLayout as typeof project.landLayout & { trailingBytes?: number[] };
+    project.landLayout = canonical;
+  }
   project.randomLevels = (project.randomLevels ?? []).map((level) => {
     const { rawValues: _legacyRawValues, ...canonical } = level as typeof level & { rawValues?: number[] };
     return canonical;

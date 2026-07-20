@@ -75,7 +75,6 @@ try {
     rows: 8,
     cols: 16,
     cells: landLayoutCells,
-    trailingBytes: [],
     authored: true,
     provenance: null
   };

@@ -96,7 +96,6 @@ export const PROVIDENCE_LAND_LAYOUT_FIELDS = [
   "rows",
   "cols",
   "cells",
-  "trailingBytes",
   "authored",
   "provenance"
 ] as const;
@@ -661,7 +660,6 @@ export type ProvidenceLandLayout = {
   rows: number;
   cols: number;
   cells: number[];
-  trailingBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
 };

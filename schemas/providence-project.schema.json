@@ -227,13 +227,12 @@
       "x-providence-typescript-name": "ProvidenceLandLayout",
       "x-providence-rust-name": "LandLayout",
       "x-providence-rust-optional": ["provenance"],
-      "x-providence-rust-default": ["trailingBytes", "authored", "provenance"],
+      "x-providence-rust-default": ["authored", "provenance"],
       "required": ["rows", "cols", "cells"],
       "properties": {
         "rows": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
         "cols": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
         "cells": { "type": "array", "minItems": 128, "maxItems": 128, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
-        "trailingBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [

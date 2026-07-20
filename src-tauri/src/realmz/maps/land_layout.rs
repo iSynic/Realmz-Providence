@@ -21,7 +21,6 @@ pub fn parse_land_layout(buffer: &[u8]) -> Result<LandLayout> {
         rows: LAND_LAYOUT_ROWS,
         cols: LAND_LAYOUT_COLS,
         cells,
-        trailing_bytes: buffer.get(LAND_LAYOUT_BYTES..).unwrap_or(&[]).to_vec(),
         authored: false,
         provenance: Some(provenance("Layout", 0, 0, LAND_LAYOUT_BYTES)),
     })
@@ -53,7 +52,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parses_semantic_grid_and_reports_imported_tail_separately() {
+    fn parses_only_the_semantic_grid() {
         let mut input = vec![0u8; LAND_LAYOUT_BYTES + 4];
         write_i16_be(&mut input, 0, -1);
         write_i16_be(&mut input, 2, 1);
@@ -67,7 +66,6 @@ mod tests {
         assert_eq!(layout.cells[0], -1);
         assert_eq!(layout.cells[1], 1);
         assert_eq!(layout.cells[LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS - 1], 19);
-        assert_eq!(layout.trailing_bytes, vec![9, 8, 7, 6]);
     }
 
     #[test]
@@ -75,13 +73,29 @@ mod tests {
         let mut layout = parse_land_layout(&vec![0xa5; LAND_LAYOUT_BYTES + 256]).unwrap();
         layout.cells[0] = -1;
         layout.cells[LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS - 1] = 202;
-        layout.trailing_bytes = vec![0xde, 0xad, 0xbe, 0xef];
 
         let output = write_land_layout(&layout).unwrap();
 
         assert_eq!(output.len(), LAND_LAYOUT_BYTES);
         assert_eq!(i16_be(&output, 0), -1);
         assert_eq!(i16_be(&output, LAND_LAYOUT_BYTES - 2), 202);
+    }
+
+    #[test]
+    fn legacy_project_json_drops_embedded_tail_bytes() {
+        let layout: LandLayout = serde_json::from_value(serde_json::json!({
+            "rows": LAND_LAYOUT_ROWS,
+            "cols": LAND_LAYOUT_COLS,
+            "cells": vec![0; LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS],
+            "trailingBytes": [222, 173, 190, 239],
+            "authored": false,
+            "provenance": null
+        }))
+        .unwrap();
+
+        let serialized = serde_json::to_value(layout).unwrap();
+
+        assert!(serialized.get("trailingBytes").is_none());
     }
 
     #[test]

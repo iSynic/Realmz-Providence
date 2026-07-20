@@ -64,14 +64,14 @@ describe("browser Data Solids writer", () => {
 
 describe("browser Layout writer", () => {
   it("compiles the exact semantic 8 x 16 grid without embedded compatibility bytes", () => {
-    const layout: LandLayout = {
+    const layout = {
       rows: 8,
       cols: 16,
       cells: new Array(128).fill(0),
       trailingBytes: [0xde, 0xad, 0xbe, 0xef],
       authored: true,
       provenance: null
-    };
+    } as unknown as LandLayout;
     layout.cells[0] = -1;
     layout.cells[127] = 202;
 
@@ -82,12 +82,26 @@ describe("browser Layout writer", () => {
     expect(i16(output, LAND_LAYOUT_RECORD_BYTES - 2)).toBe(202);
   });
 
+  it("imports only canonical cells while the annex owns any source tail", () => {
+    const input = new Uint8Array(LAND_LAYOUT_RECORD_BYTES + 4);
+    setI16(input, 0, -1);
+    setI16(input, LAND_LAYOUT_RECORD_BYTES - 2, 202);
+    input.set([0xde, 0xad, 0xbe, 0xef], LAND_LAYOUT_RECORD_BYTES);
+
+    const layout = parseScenarioBuffers(new Map([["Layout", input]])).landLayout;
+
+    expect(layout).not.toBeNull();
+    expect(layout?.cells[0]).toBe(-1);
+    expect(layout?.cells[127]).toBe(202);
+    expect("trailingBytes" in layout!).toBe(false);
+    expect(writeLandLayout(layout!)).toHaveLength(LAND_LAYOUT_RECORD_BYTES);
+  });
+
   it("rejects noncanonical grid shapes", () => {
     const layout: LandLayout = {
       rows: 8,
       cols: 16,
       cells: new Array(127).fill(0),
-      trailingBytes: [],
       authored: true,
       provenance: null
     };

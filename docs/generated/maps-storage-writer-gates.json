@@ -241,7 +241,7 @@
         }
       ],
       "partialOnly": true,
-      "preservationPolicy": "Both writers compile the first 256 bytes as the complete Realmz 8x16 layout grid without consulting embedded trailingBytes. Imported bytes after offset 255 remain preserve-only and are restored exclusively from the compatibility annex."
+      "preservationPolicy": "Both writers compile the first 256 bytes as the complete Realmz 8x16 layout grid from canonical cells. Canonical projects expose no tail field; imported bytes after offset 255 remain preserve-only and are restored exclusively from the compatibility annex."
     },
     {
       "container": "Data DD",
