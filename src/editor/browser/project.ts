@@ -665,7 +665,7 @@ function canonicalMapLevelName(levelType: Project["maps"][number]["levelType"], 
 }
 
 function normalizedComplexEncounter(record: Project["complexEncounters"][number]): Project["complexEncounters"][number] {
-  const { choiceResults, wordResults, ...canonical } = record;
+  const { choiceResults, wordResults, rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
   return {
     ...canonical,
     actionResult: normalizedComplexResult(record.actionResult, choiceResults),
@@ -1110,10 +1110,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "simpleEncounter", encounter.id), errors, warnings);
   }
   for (const encounter of project.complexEncounters ?? []) {
-    const rawBytes = encounter.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 520) {
-      errors.push(`Complex encounter ${encounter.id} has invalid 520-byte compatibility storage.`);
-    }
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
   }
   for (const encounter of project.thiefEncounters ?? []) {

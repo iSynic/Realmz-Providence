@@ -566,7 +566,6 @@ export const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS = [
   "thiefFail",
   "prompt",
   "texts",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1270,7 +1269,6 @@ export type ProvidenceComplexEncounterRecord = {
   thiefFail: number;
   prompt: number;
   texts: string[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

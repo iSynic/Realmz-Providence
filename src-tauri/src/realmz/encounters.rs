@@ -77,7 +77,6 @@ pub fn parse_complex_encounter_records(buffer: &[u8]) -> Vec<ComplexEncounterRec
             texts: (0..9)
                 .map(|slot| decode_pascal_text(&record[160 + slot * 40..160 + slot * 40 + 40]))
                 .collect(),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: provenance("Data ED2", id, start, COMPLEX_ENCOUNTER_BYTES),
         })
@@ -86,12 +85,6 @@ pub fn parse_complex_encounter_records(buffer: &[u8]) -> Vec<ComplexEncounterRec
 
 pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, COMPLEX_ENCOUNTER_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != COMPLEX_ENCOUNTER_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Complex encounter {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         write_encounter_actions(buffer, &record.actions)?;
         buffer[96] = record.action_result as u8;
         buffer[97] = record.word_result as u8;
@@ -359,7 +352,6 @@ mod tests {
     fn fresh_complex_encounter_compiles_complete_semantic_row() {
         let mut encounter =
             parse_complex_encounter_records(&vec![0; COMPLEX_ENCOUNTER_BYTES]).remove(0);
-        encounter.raw_bytes.clear();
         encounter.authored = true;
         encounter.actions.push(EncounterActionRow {
             slot: 4,
@@ -402,15 +394,12 @@ mod tests {
         input[96] = 6;
         input[157] = 0x5a;
         input[160..164].copy_from_slice(&[2, b'H', b'i', 0xcc]);
-        let mut records = parse_complex_encounter_records(&input);
-        records[0].raw_bytes.fill(0xa5);
+        let records = parse_complex_encounter_records(&input);
         let output = write_complex_encounters(&records).unwrap();
         assert_ne!(output, input);
         assert_eq!(output[96], 6);
         assert_eq!(output[157], 0);
         assert_eq!(&output[160..164], &[2, b'H', b'i', 0]);
-        records[0].raw_bytes = vec![1];
-        assert!(write_complex_encounters(&records).is_err());
     }
 
     #[test]

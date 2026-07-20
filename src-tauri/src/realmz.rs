@@ -368,7 +368,6 @@ mod tests {
             thief_fail: 5,
             prompt: 66,
             texts: vec!["Nine".to_string(); 9],
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data ED2", 0, 0, COMPLEX_ENCOUNTER_BYTES),
         };

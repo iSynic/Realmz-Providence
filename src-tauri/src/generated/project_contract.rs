@@ -599,7 +599,6 @@ pub const PROVIDENCE_COMPLEX_ENCOUNTER_FIELDS: &[&str] = &[
     "thiefFail",
     "prompt",
     "texts",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1646,8 +1645,6 @@ pub struct ComplexEncounterRecord {
     pub thief_fail: i8,
     pub prompt: i16,
     pub texts: Vec<String>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

@@ -868,7 +868,6 @@ function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounte
     thiefFail: signedByte(record[156]),
     prompt: i16(record, 158),
     texts: Array.from({ length: 9 }, (_, slot) => decodePascalText(record.subarray(160 + slot * 40, 160 + slot * 40 + 40))),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data ED2", id, start, 520, "source-backed")
   }));

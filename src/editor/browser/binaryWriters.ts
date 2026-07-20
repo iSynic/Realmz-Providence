@@ -718,10 +718,6 @@ export function writeSimpleEncounters(records: SimpleEncounterRecord[]) {
 
 export function writeComplexEncounters(records: ComplexEncounterRecord[]) {
   return writeFixedRecords(records, COMPLEX_ENCOUNTER_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== COMPLEX_ENCOUNTER_RECORD_BYTES) {
-      throw new Error(`Complex encounter ${record.id} has invalid compatibility byte storage`);
-    }
     writeEncounterActions(target, record.actions);
     target[96] = record.actionResult & 0xff;
     target[97] = record.wordResult & 0xff;

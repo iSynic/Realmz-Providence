@@ -378,6 +378,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_monster_raw_bytes(&mut value);
     migrate_legacy_monster_description_raw_bytes(&mut value);
     migrate_legacy_simple_encounter_raw_bytes(&mut value);
+    migrate_legacy_complex_encounter_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -557,6 +558,10 @@ fn migrate_legacy_monster_description_raw_bytes(project: &mut serde_json::Value)
 
 fn migrate_legacy_simple_encounter_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "simpleEncounters");
+}
+
+fn migrate_legacy_complex_encounter_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "complexEncounters");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2531,6 +2536,7 @@ mod tests {
             "thiefFail": 0,
             "prompt": 0,
             "texts": [],
+            "rawBytes": vec![0xa5u8; crate::realmz::COMPLEX_ENCOUNTER_BYTES],
             "provenance": {
                 "sourceFile": "Data ED2",
                 "recordIndex": 0,
@@ -2792,6 +2798,7 @@ mod tests {
         assert!(upgraded["complexEncounters"][0]
             .get("wordResults")
             .is_none());
+        assert!(upgraded["complexEncounters"][0].get("rawBytes").is_none());
         assert_eq!(
             upgraded["thiefEncounters"][0]["typeFlags"]
                 .as_array()
@@ -3267,7 +3274,6 @@ mod tests {
         complex.prompt = 18;
         complex.texts[0] = "A complex choice".to_string();
         complex.authored = false;
-        complex.raw_bytes.fill(0xA5);
         project.complex_encounters = vec![complex];
 
         let mut treasure = crate::realmz::parse_treasures(&vec![0; crate::realmz::TREASURE_BYTES])

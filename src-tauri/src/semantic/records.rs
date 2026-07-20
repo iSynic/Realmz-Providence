@@ -107,7 +107,15 @@ pub(super) fn add_canonical_record_collections(
             record
         })
         .collect::<Vec<_>>();
-    let complex_encounters = canonical_records!(parsed.complex_encounters);
+    let complex_encounters = parsed
+        .complex_encounters
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let scenario_items = parsed
         .scenario_items
         .iter()

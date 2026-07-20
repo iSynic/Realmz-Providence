@@ -35,6 +35,7 @@ describe("browser project native manifest validation", () => {
       thiefFail: 0,
       prompt: 0,
       texts: [],
+      rawBytes: new Array(520).fill(0xa5),
       provenance: { sourceFile: "Data ED2", recordIndex: 0, byteOffset: 0, byteLength: 520, confidence: "fixture-backed" }
     } as unknown as Project["complexEncounters"][number]];
 
@@ -44,6 +45,7 @@ describe("browser project native manifest validation", () => {
     expect(normalized.wordResult).toBe(7);
     expect(normalized.choiceResults).toBeUndefined();
     expect(normalized.wordResults).toBeUndefined();
+    expect("rawBytes" in normalized).toBe(false);
     expect(normalized.groups).toHaveLength(8);
     expect(normalized.spellIds).toHaveLength(10);
     expect(normalized.itemIds).toHaveLength(5);
@@ -848,8 +850,7 @@ describe("browser project native manifest validation", () => {
       thiefSuccess: 2,
       prompt: 18,
       texts: ["Canonical complex encounter", "", "", "", "", "", "", "", ""],
-      authored: false,
-      rawBytes: new Array(520).fill(0xa5)
+      authored: false
     }];
     project.spellOverrides = [{
       ...parsed.spellOverrides[0],

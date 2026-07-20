@@ -585,7 +585,7 @@ describe("browser complex-encounter writer", () => {
       texts: ["Hi", "", "", "", "", "", "", "", ""]
     };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeComplexEncounters([record]);
 
     expect(output).toHaveLength(520);
@@ -607,8 +607,9 @@ describe("browser complex-encounter writer", () => {
     input[157] = 0x5a;
     input.set([2, 72, 105, 0xcc], 160);
     const imported = parseScenarioBuffers(new Map([["Data ED2", input]])).complexEncounters[0];
+    expect("rawBytes" in imported).toBe(false);
 
-    const output = writeComplexEncounters([{ ...imported, rawBytes: new Array(520).fill(0xa5) }]);
+    const output = writeComplexEncounters([imported]);
 
     expect(output).not.toEqual(input);
     expect(output[96]).toBe(6);
@@ -616,10 +617,6 @@ describe("browser complex-encounter writer", () => {
     expect(Array.from(output.slice(160, 164))).toEqual([2, 72, 105, 0]);
   });
 
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeComplexEncounters([{ ...emptyComplexEncounter(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
-  });
 });
 
 describe("browser thief-encounter writer", () => {

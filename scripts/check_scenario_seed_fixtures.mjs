@@ -394,6 +394,7 @@ function checkComplexEncounters(createProjectFromScenarioSeed) {
   expect(allocationId(result, "complexEncounters", "shrine-puzzle") === 2, "shrine-puzzle should preserve explicit complex encounter ID 2");
   expect(allocationId(result, "complexEncounters", "raw-complex-fallback") === 0, "raw complex fallback should allocate the first open ID");
   const encounter = result.project.complexEncounters.find((entry) => entry.id === 2);
+  expect(encounter != null && !Object.hasOwn(encounter, "rawBytes"), "fresh Scenario JSON complex encounters should not carry compatibility bytes");
   expect(encounter?.prompt === 0, "complex encounter prompt should resolve its message key");
   expect(encounter?.texts?.[0] === "Turn the wheel" && encounter?.texts?.[1] === "Pull the lever" && encounter?.texts?.[8] === "awaken", "complex encounter physical and word text should occupy their authored slots");
   expect(encounter?.groups?.join(",") === "0,1,0,0,0,0,0,0", "complex encounter required physical choices should use one-based author indexes");

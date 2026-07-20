@@ -228,17 +228,29 @@ describe("project command facade", () => {
   it("creates fresh complex encounters from semantic fields without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Complex Encounter");
 
-    const next = applyProjectCommand(project, {
+    const created = applyProjectCommand(project, {
       kind: "createTargetRecord",
       label: "Create complex encounter",
       recordType: "complexEncounter",
       id: 4
     });
+    created.complexEncounters = [{
+      ...created.complexEncounters[0],
+      rawBytes: new Array(520).fill(0xa5)
+    } as unknown as Project["complexEncounters"][number]];
+
+    const next = applyProjectCommand(created, {
+      kind: "updateComplexEncounterRecord",
+      label: "Update complex encounter",
+      id: 4,
+      changes: { prompt: 17 }
+    });
 
     expect(next.complexEncounters).toHaveLength(1);
     expect(next.complexEncounters[0].texts).toHaveLength(9);
     expect(next.complexEncounters[0].spellIds).toHaveLength(10);
-    expect(next.complexEncounters[0].rawBytes).toBeUndefined();
+    expect(next.complexEncounters[0].prompt).toBe(17);
+    expect("rawBytes" in next.complexEncounters[0]).toBe(false);
     expect(next.complexEncounters[0].choiceResults).toBeUndefined();
     expect(next.complexEncounters[0].wordResults).toBeUndefined();
   });

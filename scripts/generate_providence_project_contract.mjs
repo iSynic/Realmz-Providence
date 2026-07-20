@@ -451,16 +451,15 @@ expect(simpleEncounterRecordSchema.properties?.actions?.items?.$ref === "#/$defs
 expect(simpleEncounterRecordSchema.properties?.choiceResults?.minItems === 4 && simpleEncounterRecordSchema.properties?.choiceResults?.maxItems === 4, "simple encounters must retain four choice-result slots");
 expect(simpleEncounterRecordSchema.properties?.texts?.minItems === 4 && simpleEncounterRecordSchema.properties?.texts?.maxItems === 4, "simple encounters must retain four inline text slots");
 expectSameArray(simpleEncounterRecordSchema["x-providence-rust-default"] ?? [], ["authored"], "Simple-encounter Rust default inventory");
-const complexEncounterFields = ["id", "actions", "actionResult", "wordResult", "groups", "spellIds", "spellResults", "itemIds", "itemResults", "choiceResults", "wordResults", "canBackOut", "thief", "maxTimes", "casteSuccess", "thiefSuccess", "thiefFail", "prompt", "texts", "rawBytes", "authored", "provenance"];
+const complexEncounterFields = ["id", "actions", "actionResult", "wordResult", "groups", "spellIds", "spellResults", "itemIds", "itemResults", "choiceResults", "wordResults", "canBackOut", "thief", "maxTimes", "casteSuccess", "thiefSuccess", "thiefFail", "prompt", "texts", "authored", "provenance"];
 expectSameArray(Object.keys(complexEncounterRecordSchema.properties ?? {}), complexEncounterFields, "Complex-encounter field inventory");
-expectSameArray(complexEncounterRecordSchema.required ?? [], complexEncounterFields.filter((field) => !["choiceResults", "wordResults", "rawBytes", "authored"].includes(field)), "Complex-encounter authored field inventory");
+expectSameArray(complexEncounterRecordSchema.required ?? [], complexEncounterFields.filter((field) => !["choiceResults", "wordResults", "authored"].includes(field)), "Complex-encounter authored field inventory");
 expect(complexEncounterRecordSchema.properties?.actions?.items?.$ref === "#/$defs/encounterActionRow", "complex encounters must contain canonical encounter action rows");
 for (const [field, length] of [["groups", 8], ["spellIds", 10], ["spellResults", 10], ["itemIds", 5], ["itemResults", 5], ["texts", 9]]) {
   expect(complexEncounterRecordSchema.properties?.[field]?.minItems === length && complexEncounterRecordSchema.properties?.[field]?.maxItems === length, `complex encounters must retain ${length} ${field} slots`);
 }
 expect(complexEncounterRecordSchema.properties?.choiceResults?.["x-providence-migration-only"] === true && complexEncounterRecordSchema.properties?.wordResults?.["x-providence-migration-only"] === true, "complex encounter aliases must remain migration-only");
-expect(complexEncounterRecordSchema.properties?.rawBytes?.minItems === 520 && complexEncounterRecordSchema.properties?.rawBytes?.maxItems === 520, "complex-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
-expectSameArray(complexEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["choiceResults", "wordResults", "rawBytes"], "Complex-encounter omitted migration and compatibility inventory");
+expectSameArray(complexEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["choiceResults", "wordResults"], "Complex-encounter omitted migration inventory");
 const thiefEncounterFields = ["id", "typeFlags", "modifiers", "successCodes", "failureCodes", "successText", "failureText", "successSounds", "failureSounds", "spell", "lowDamage", "highDamage", "tumblers", "prompts", "promptSounds", "rawBytes", "authored", "provenance"];
 expectSameArray(Object.keys(thiefEncounterRecordSchema.properties ?? {}), thiefEncounterFields, "Thief-encounter field inventory");
 expectSameArray(thiefEncounterRecordSchema.required ?? [], thiefEncounterFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Thief-encounter authored field inventory");
@@ -480,7 +479,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);
