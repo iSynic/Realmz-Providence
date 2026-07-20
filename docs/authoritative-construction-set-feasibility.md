@@ -505,9 +505,18 @@ Compatibility-target validation for this slice completed on 2026-07-19: six focu
 the full Rust suite (260 passed, 2 ignored), deterministic repeated ownership-proof bundles, and
 the unchanged Remake checkout's generic Godot bundle validator all passed.
 
-Branch validation through the forty-seventh slice completed on 2026-07-19:
+The forty-ninth slice begins the remaining compiler-facing DTO convergence without changing either
+compiler's output. The language-neutral schema now owns the complete monster-set wrapper, its
+closed `-1`/`0`/`1` identity vocabulary, and item-text records including their authored and
+provenance labels. Generated TypeScript and Rust definitions replace the former handwritten
+duplicates while preserving the existing TypeScript union, Rust `i16` wire shape, optional-field
+serde behavior, and schema-v4/v5 compatibility path. The native and Remake compilers continue to
+consume the same canonical values. Action Point/EDCD and managed/resource asset DTOs remain the
+bounded follow-on families under ISY-392.
 
-- full Rust suite: 254 passed, 2 ignored;
+Branch validation through the forty-ninth slice completed on 2026-07-19:
+
+- full Rust suite: 260 passed, 2 ignored;
 - full TypeScript suite: 608 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
@@ -981,9 +990,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 3. **Remaining nested generated DTOs:** the language-neutral schema now owns and checks the
    persisted top-level inventory, complete source-origin/source-file, scenario startup, map
    identity/layout, random-level/rectangle, map-record, scenario-item, treasure, shop, message,
-   option-label, battle, monster, monster-description, spell, race, and caste DTO families, shared
-   provenance/confidence primitives, and the schema-version constant.
-   Other record and asset DTOs are still maintained manually and should migrate in bounded families.
+   option-label, battle, monster, monster-description, monster-set, item-text, spell, race, and caste
+   DTO families, shared provenance/confidence primitives, and the schema-version constant. Action
+   Point/EDCD and managed/resource asset DTOs are still maintained manually and should migrate in
+   bounded families.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. Scenario shell/support, monster, monster-description, spell, race,
    caste, contact, restriction, and global-hook export no longer consults those fields; marker and

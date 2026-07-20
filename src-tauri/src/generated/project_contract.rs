@@ -354,6 +354,24 @@ pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
+pub const PROVIDENCE_MONSTER_SET_FIELDS: &[&str] = &[
+    "sourceFile",
+    "setId",
+    "monsters",
+];
+
+#[allow(dead_code)]
+pub const PROVIDENCE_ITEM_TEXT_FIELDS: &[&str] = &[
+    "id",
+    "itemId",
+    "unidentifiedName",
+    "identifiedName",
+    "description",
+    "authored",
+    "provenance",
+];
+
+#[allow(dead_code)]
 pub const PROVIDENCE_SPELL_OVERRIDE_FIELDS: &[&str] = &[
     "id",
     "range1",
@@ -1076,6 +1094,28 @@ pub struct MonsterDescriptionRecord {
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonsterSet {
+    pub source_file: String,
+    pub set_id: i16,
+    pub monsters: Vec<MonsterRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemTextRecord {
+    pub id: usize,
+    pub item_id: i16,
+    pub unidentified_name: String,
+    pub identified_name: String,
+    pub description: String,
+    #[serde(default)]
+    pub authored: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

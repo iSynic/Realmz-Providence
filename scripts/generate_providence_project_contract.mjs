@@ -72,7 +72,7 @@ const mapstatsRecordSchema = schema.$defs?.mapstatsRecord ?? {};
 const landlookRangeSlotSchema = schema.$defs?.landlookRangeSlot ?? {};
 const landlookWriterGateSchema = schema.$defs?.landlookWriterGate ?? {};
 const customLandlookMetadataSchema = schema.$defs?.customLandlookMetadata ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "scenarioSpellOverride", "scenarioRaceOverride", "scenarioCasteOverride", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
+const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "monsterSet", "itemTextRecord", "scenarioSpellOverride", "scenarioRaceOverride", "scenarioCasteOverride", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
@@ -82,6 +82,9 @@ const optionLabelRecordSchema = schema.$defs?.optionLabelRecord ?? {};
 const battleRecordSchema = schema.$defs?.battleRecord ?? {};
 const monsterRecordSchema = schema.$defs?.monsterRecord ?? {};
 const monsterDescriptionRecordSchema = schema.$defs?.monsterDescriptionRecord ?? {};
+const monsterSetIdSchema = schema.$defs?.monsterSetId ?? {};
+const monsterSetSchema = schema.$defs?.monsterSet ?? {};
+const itemTextRecordSchema = schema.$defs?.itemTextRecord ?? {};
 const scenarioSpellOverrideSchema = schema.$defs?.scenarioSpellOverride ?? {};
 const scenarioRaceOverrideSchema = schema.$defs?.scenarioRaceOverride ?? {};
 const scenarioCasteOverrideSchema = schema.$defs?.scenarioCasteOverride ?? {};
@@ -128,7 +131,9 @@ expect(schema.properties?.messages?.items?.$ref === "#/$defs/messageRecord", "pr
 expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabelRecord", "project optionLabels must contain canonical option-label DTOs");
 expect(schema.properties?.battles?.items?.$ref === "#/$defs/battleRecord", "project battles must contain canonical battle DTOs");
 expect(schema.properties?.monsters?.items?.$ref === "#/$defs/monsterRecord", "project monsters must contain canonical monster DTOs");
+expect(schema.properties?.monsterSets?.items?.$ref === "#/$defs/monsterSet", "project monsterSets must contain canonical monster-set DTOs");
 expect(schema.properties?.monsterDescriptions?.items?.$ref === "#/$defs/monsterDescriptionRecord", "project monsterDescriptions must contain canonical monster-description DTOs");
+expect(schema.properties?.itemTexts?.items?.$ref === "#/$defs/itemTextRecord", "project itemTexts must contain canonical item-text DTOs");
 expect(schema.properties?.spellOverrides?.items?.$ref === "#/$defs/scenarioSpellOverride", "project spellOverrides must contain canonical spell-override DTOs");
 expect(schema.properties?.raceOverrides?.items?.$ref === "#/$defs/scenarioRaceOverride", "project raceOverrides must contain canonical race-override DTOs");
 expect(schema.properties?.casteOverrides?.items?.$ref === "#/$defs/scenarioCasteOverride", "project casteOverrides must contain canonical caste-override DTOs");
@@ -275,6 +280,18 @@ expectSameArray(Object.keys(monsterDescriptionRecordSchema.properties ?? {}), mo
 expectSameArray(monsterDescriptionRecordSchema.required ?? [], ["id", "text"], "Monster-description authored field inventory");
 expect(monsterDescriptionRecordSchema.properties?.rawBytes?.minItems === 256 && monsterDescriptionRecordSchema.properties?.rawBytes?.maxItems === 256, "monster-description rawBytes must retain one complete Realmz Str255 row when compatibility bytes are present");
 expectSameArray(monsterDescriptionRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Monster-description omitted empty compatibility inventory");
+expectSameArray(monsterSetIdSchema.enum ?? [], [-1, 0, 1], "Monster-set identity vocabulary");
+const monsterSetFields = ["sourceFile", "setId", "monsters"];
+expectSameArray(Object.keys(monsterSetSchema.properties ?? {}), monsterSetFields, "Monster-set field inventory");
+expectSameArray(monsterSetSchema.required ?? [], monsterSetFields, "Monster-set required field inventory");
+expect(monsterSetSchema.properties?.setId?.$ref === "#/$defs/monsterSetId", "monster sets must reference the canonical set identity");
+expect(monsterSetSchema.properties?.monsters?.items?.$ref === "#/$defs/monsterRecord", "monster sets must contain canonical monster records");
+const itemTextFields = ["id", "itemId", "unidentifiedName", "identifiedName", "description", "authored", "provenance"];
+expectSameArray(Object.keys(itemTextRecordSchema.properties ?? {}), itemTextFields, "Item-text field inventory");
+expectSameArray(itemTextRecordSchema.required ?? [], itemTextFields.filter((field) => !["authored", "provenance"].includes(field)), "Item-text authored field inventory");
+expect(itemTextRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "item text provenance must reference canonical provenance");
+expectSameArray(itemTextRecordSchema["x-providence-rust-optional"] ?? [], ["provenance"], "Item-text migration-optional Rust inventory");
+expectSameArray(itemTextRecordSchema["x-providence-rust-skip-none"] ?? [], ["provenance"], "Item-text omitted empty provenance inventory");
 const spellOverrideFields = ["id", "range1", "range2", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetNum", "canRotate", "saveAdjust", "cannot", "resistAdjust", "cost", "damage1", "damage2", "powerDamage1", "powerDamage2", "duration1", "duration2", "powerDuration1", "powerDuration2", "spellLook1", "spellLook2", "sound1", "sound2", "targetType", "size", "special", "damageType", "spellClass", "inCombat", "inCamp", "displayName", "description", "rawBytes", "authored", "provenance"];
 expectSameArray(Object.keys(scenarioSpellOverrideSchema.properties ?? {}), spellOverrideFields, "Spell-override field inventory");
 expectSameArray(scenarioSpellOverrideSchema.required ?? [], spellOverrideFields.filter((field) => !["displayName", "description", "rawBytes", "authored", "provenance"].includes(field)), "Spell-override authored field inventory");
@@ -418,6 +435,9 @@ for (const alias of [
   "export type BattleRecord = ProvidenceBattleRecord;",
   "export type MonsterRecord = ProvidenceMonsterRecord;",
   "export type MonsterDescriptionRecord = ProvidenceMonsterDescriptionRecord;",
+  "export type MonsterSetId = ProvidenceMonsterSetId;",
+  "export type MonsterSet = ProvidenceMonsterSet;",
+  "export type ItemTextRecord = ProvidenceItemTextRecord;",
   "export type ScenarioSpellOverride = ProvidenceScenarioSpellOverride;",
   "export type ScenarioRaceOverride = ProvidenceScenarioRaceOverride;",
   "export type ScenarioCasteOverride = ProvidenceScenarioCasteOverride;",
@@ -456,6 +476,8 @@ expect(!typesSource.includes("export type OptionLabelRecord = {"), "types.ts mus
 expect(!typesSource.includes("export type BattleRecord = {"), "types.ts must not handwrite BattleRecord");
 expect(!typesSource.includes("export type MonsterRecord = {"), "types.ts must not handwrite MonsterRecord");
 expect(!typesSource.includes("export type MonsterDescriptionRecord = {"), "types.ts must not handwrite MonsterDescriptionRecord");
+expect(!typesSource.includes("export type MonsterSet = {"), "types.ts must not handwrite MonsterSet");
+expect(!typesSource.includes("export type ItemTextRecord = {"), "types.ts must not handwrite ItemTextRecord");
 expect(!typesSource.includes("export type ScenarioSpellOverride = {"), "types.ts must not handwrite ScenarioSpellOverride");
 expect(!typesSource.includes("export type ScenarioRaceOverride = {"), "types.ts must not handwrite ScenarioRaceOverride");
 expect(!typesSource.includes("export type ScenarioCasteOverride = {"), "types.ts must not handwrite ScenarioCasteOverride");
@@ -508,6 +530,8 @@ expectSameSet(rustGeneratedReExports, [
   "BattleRecord",
   "MonsterRecord",
   "MonsterDescriptionRecord",
+  "MonsterSet",
+  "ItemTextRecord",
   "ScenarioSpellOverride",
   "ScenarioRaceOverride",
   "ScenarioCasteOverride",
@@ -552,6 +576,8 @@ expect(!rustProjectSource.includes("pub struct OptionLabelRecord {"), "project.r
 expect(!rustProjectSource.includes("pub struct BattleRecord {"), "project.rs must not handwrite BattleRecord");
 expect(!rustProjectSource.includes("pub struct MonsterRecord {"), "project.rs must not handwrite MonsterRecord");
 expect(!rustProjectSource.includes("pub struct MonsterDescriptionRecord {"), "project.rs must not handwrite MonsterDescriptionRecord");
+expect(!rustProjectSource.includes("pub struct MonsterSet {"), "project.rs must not handwrite MonsterSet");
+expect(!rustProjectSource.includes("pub struct ItemTextRecord {"), "project.rs must not handwrite ItemTextRecord");
 expect(!rustProjectSource.includes("pub struct ScenarioSpellOverride {"), "project.rs must not handwrite ScenarioSpellOverride");
 expect(!rustProjectSource.includes("pub struct ScenarioRaceOverride {"), "project.rs must not handwrite ScenarioRaceOverride");
 expect(!rustProjectSource.includes("pub struct ScenarioCasteOverride {"), "project.rs must not handwrite ScenarioCasteOverride");
@@ -677,6 +703,8 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_BATTLE_FIELDS = ${JSON.stringify(Object.keys(battleRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MONSTER_FIELDS = ${JSON.stringify(Object.keys(monsterRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS = ${JSON.stringify(Object.keys(monsterDescriptionRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_MONSTER_SET_FIELDS = ${JSON.stringify(Object.keys(monsterSetSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_ITEM_TEXT_FIELDS = ${JSON.stringify(Object.keys(itemTextRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SPELL_OVERRIDE_FIELDS = ${JSON.stringify(Object.keys(scenarioSpellOverrideSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_RACE_OVERRIDE_FIELDS = ${JSON.stringify(Object.keys(scenarioRaceOverrideSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_CASTE_OVERRIDE_FIELDS = ${JSON.stringify(Object.keys(scenarioCasteOverrideSchema.properties ?? {}), null, 2)} as const;\n\n` +
@@ -691,6 +719,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     mapDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     landlookDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     renderTypeScriptEnum(timedEncounterLocationKindSchema) + `\n` +
+    renderTypeScriptEnum(monsterSetIdSchema) + `\n` +
     recordDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     renderTypeScriptObject(sourceFileName, sourceFile, new Set()) + `\n` +
     renderTypeScriptObject(persistedSourceName, source, new Set()) + `\n` +
@@ -750,6 +779,10 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_MONSTER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterDescriptionRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_MONSTER_SET_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterSetSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_ITEM_TEXT_FIELDS: &[&str] = &[\n${renderArray(Object.keys(itemTextRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SPELL_OVERRIDE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioSpellOverrideSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +

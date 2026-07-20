@@ -101,7 +101,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/monsterRecord" }
     },
-    "monsterSets": { "$ref": "#/$defs/canonicalRecordArray" },
+    "monsterSets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/monsterSet" }
+    },
     "monsterDescriptions": {
       "type": "array",
       "items": { "$ref": "#/$defs/monsterDescriptionRecord" }
@@ -112,7 +115,10 @@
       "type": "array",
       "items": { "$ref": "#/$defs/scenarioItemRecord" }
     },
-    "itemTexts": { "$ref": "#/$defs/canonicalRecordArray" },
+    "itemTexts": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/itemTextRecord" }
+    },
     "treasures": {
       "type": "array",
       "items": { "$ref": "#/$defs/treasureRecord" }
@@ -812,6 +818,46 @@
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
         "text": { "type": "string", "maxLength": 255 },
         "rawBytes": { "type": "array", "minItems": 256, "maxItems": 256, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
+        "authored": { "type": "boolean" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "monsterSetId": {
+      "type": "integer",
+      "enum": [-1, 0, 1],
+      "x-providence-typescript-name": "ProvidenceMonsterSetId",
+      "x-providence-rust-name": "i16"
+    },
+    "monsterSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceMonsterSet",
+      "x-providence-rust-name": "MonsterSet",
+      "required": ["sourceFile", "setId", "monsters"],
+      "properties": {
+        "sourceFile": { "type": "string" },
+        "setId": { "$ref": "#/$defs/monsterSetId" },
+        "monsters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/monsterRecord" }
+        }
+      }
+    },
+    "itemTextRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceItemTextRecord",
+      "x-providence-rust-name": "ItemTextRecord",
+      "x-providence-rust-optional": ["provenance"],
+      "x-providence-rust-default": ["authored"],
+      "x-providence-rust-skip-none": ["provenance"],
+      "required": ["id", "itemId", "unidentifiedName", "identifiedName", "description"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "itemId": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "unidentifiedName": { "type": "string", "maxLength": 255 },
+        "identifiedName": { "type": "string", "maxLength": 255 },
+        "description": { "type": "string", "maxLength": 255 },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

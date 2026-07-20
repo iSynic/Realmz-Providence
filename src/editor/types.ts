@@ -11,9 +11,12 @@ import type {
   ProvidenceMapRender,
   ProvidenceBattleRecord,
   ProvidenceEncounterActionRow,
+  ProvidenceItemTextRecord,
   ProvidenceMessageRecord,
   ProvidenceMonsterDescriptionRecord,
   ProvidenceMonsterRecord,
+  ProvidenceMonsterSet,
+  ProvidenceMonsterSetId,
   ProvidenceOptionLabelRecord,
   ProvidenceScenarioCasteOverride,
   ProvidenceScenarioRaceOverride,
@@ -68,6 +71,9 @@ export type ShopRecord = ProvidenceShopRecord;
 export type MessageRecord = ProvidenceMessageRecord;
 export type MonsterRecord = ProvidenceMonsterRecord;
 export type MonsterDescriptionRecord = ProvidenceMonsterDescriptionRecord;
+export type MonsterSetId = ProvidenceMonsterSetId;
+export type MonsterSet = ProvidenceMonsterSet;
+export type ItemTextRecord = ProvidenceItemTextRecord;
 export type ScenarioSpellOverride = ProvidenceScenarioSpellOverride;
 export type ScenarioRaceOverride = ProvidenceScenarioRaceOverride;
 export type ScenarioCasteOverride = ProvidenceScenarioCasteOverride;
@@ -652,14 +658,6 @@ export type ScenarioMeta = ProvidenceScenarioMeta;
 export type ScenarioStartupFields = Partial<ScenarioMeta>;
 export type RealmzTargetRecordKind = "message" | "battle" | "monster" | "treasure" | "shop" | "simpleEncounter" | "complexEncounter" | "thiefEncounter" | "timedEncounter" | "questLabel";
 
-export type MonsterSetId = 0 | 1 | -1;
-
-export type MonsterSet = {
-  sourceFile: string;
-  setId: MonsterSetId;
-  monsters: MonsterRecord[];
-};
-
 export type QuestLabel = {
   id: number;
   label: string;
@@ -671,16 +669,6 @@ export type RuleNames = {
   raceNames: string[];
   casteNames: string[];
   authored: boolean;
-  provenance?: Provenance;
-};
-
-export type ItemTextRecord = {
-  id: number;
-  itemId: number;
-  unidentifiedName: string;
-  identifiedName: string;
-  description: string;
-  authored?: boolean;
   provenance?: Provenance;
 };
 

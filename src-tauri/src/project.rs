@@ -3,15 +3,15 @@ use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
     BattleRecord, ComplexEncounterRecord, Confidence, CustomLandlookMetadata, EncounterActionRow,
-    GlobalMacroHook, LandLayout, LandlookRangeSlot, LandlookWriterGate, LevelType, MapEntity,
-    MapMarker, MapRecord, MapRecordRect, MapRender, MapstatsRecord, MessageRecord,
-    MonsterDescriptionRecord, MonsterRecord, OptionLabelRecord, Provenance, RandomLevel,
-    RandomRect, RenderMode, ScenarioCasteOverride, ScenarioContactInfo, ScenarioGlobalMacroHooks,
-    ScenarioItemRecord, ScenarioMeta, ScenarioRaceOverride, ScenarioRestrictions, ScenarioShell,
-    ScenarioSpellOverride, ScenarioSupportFile, ShopRecord, SimpleEncounterRecord,
-    ThiefEncounterRecord, TileAttributeConfidence, TileAttributeFlag, TileAttributeProfile,
-    TileAttributeSourceKind, TileEditableScope, TimedEncounterLocationKind, TimedEncounterRecord,
-    TreasureRecord,
+    GlobalMacroHook, ItemTextRecord, LandLayout, LandlookRangeSlot, LandlookWriterGate, LevelType,
+    MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender, MapstatsRecord, MessageRecord,
+    MonsterDescriptionRecord, MonsterRecord, MonsterSet, OptionLabelRecord, Provenance,
+    RandomLevel, RandomRect, RenderMode, ScenarioCasteOverride, ScenarioContactInfo,
+    ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRaceOverride,
+    ScenarioRestrictions, ScenarioShell, ScenarioSpellOverride, ScenarioSupportFile, ShopRecord,
+    SimpleEncounterRecord, ThiefEncounterRecord, TileAttributeConfidence, TileAttributeFlag,
+    TileAttributeProfile, TileAttributeSourceKind, TileEditableScope, TimedEncounterLocationKind,
+    TimedEncounterRecord, TreasureRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -788,28 +788,6 @@ pub struct ExtraCodeRow {
     pub id: usize,
     pub values: [i16; 5],
     pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MonsterSet {
-    pub source_file: String,
-    pub set_id: i16,
-    pub monsters: Vec<MonsterRecord>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ItemTextRecord {
-    pub id: usize,
-    pub item_id: i16,
-    pub unidentified_name: String,
-    pub identified_name: String,
-    pub description: String,
-    #[serde(default)]
-    pub authored: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub provenance: Option<Provenance>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -334,6 +334,22 @@ export const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_MONSTER_SET_FIELDS = [
+  "sourceFile",
+  "setId",
+  "monsters"
+] as const;
+
+export const PROVIDENCE_ITEM_TEXT_FIELDS = [
+  "id",
+  "itemId",
+  "unidentifiedName",
+  "identifiedName",
+  "description",
+  "authored",
+  "provenance"
+] as const;
+
 export const PROVIDENCE_SPELL_OVERRIDE_FIELDS = [
   "id",
   "range1",
@@ -713,6 +729,8 @@ export type ProvidenceCustomLandlookMetadata = {
 
 export type ProvidenceTimedEncounterLocationKind = "any" | "land" | "dungeon";
 
+export type ProvidenceMonsterSetId = -1 | 0 | 1;
+
 export type ProvidenceScenarioItemRecord = {
   id: number;
   itemId: number;
@@ -869,6 +887,22 @@ export type ProvidenceMonsterDescriptionRecord = {
   id: number;
   text: string;
   rawBytes?: number[];
+  authored?: boolean;
+  provenance?: ProvidenceProvenance;
+};
+
+export type ProvidenceMonsterSet = {
+  sourceFile: string;
+  setId: ProvidenceMonsterSetId;
+  monsters: ProvidenceMonsterRecord[];
+};
+
+export type ProvidenceItemTextRecord = {
+  id: number;
+  itemId: number;
+  unidentifiedName: string;
+  identifiedName: string;
+  description: string;
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };
