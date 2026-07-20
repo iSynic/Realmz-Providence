@@ -19,7 +19,9 @@ export const REALMZ_NATIVE_LAYOUT = {
   "monsterDescriptionRecordBytes": 256,
   "scenarioItemRecordBytes": 100,
   "treasureRecordBytes": 48,
-  "shopRecordBytes": 3002
+  "shopRecordBytes": 3002,
+  "messageRecordBytes": 256,
+  "optionLabelRecordBytes": 25
 } as const;
 
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;

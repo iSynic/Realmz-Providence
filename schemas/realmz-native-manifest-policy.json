@@ -1,5 +1,5 @@
 {
-  "contractVersion": 6,
+  "contractVersion": 7,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -30,6 +30,10 @@
       "scenarioItemRecordBytes": 100,
       "treasureRecordBytes": 48,
       "shopRecordBytes": 3002
+    },
+    "text": {
+      "messageRecordBytes": 256,
+      "optionLabelRecordBytes": 25
     }
   },
   "authoredBaseline": {

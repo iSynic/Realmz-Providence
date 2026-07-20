@@ -33,8 +33,8 @@ import type {
 } from "../types";
 import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
-export const MESSAGE_RECORD_BYTES = 256;
-export const OPTION_LABEL_RECORD_BYTES = 25;
+export const MESSAGE_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.messageRecordBytes;
+export const OPTION_LABEL_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.optionLabelRecordBytes;
 export const BATTLE_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
 export const MONSTER_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
 export const MONSTER_DESCRIPTION_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;

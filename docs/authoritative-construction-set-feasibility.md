@@ -900,7 +900,14 @@ and Rust imported-shop suffix classifiers now use the same shop-row width as aut
 while their legacy-annex preservation behavior remains unchanged. Exact-size codec tests and the
 independent ownership proof continue to provide fixed Realmz-format checks.
 
-Branch validation through the eighty-fifth slice completed on 2026-07-20:
+The eighty-sixth slice extends compiler-owned geometry to the authored text-record family. Native-
+manifest contract v7 now owns the 256-byte `Data SD2` message row and 25-byte `Data OD` option-label
+row. Generated TypeScript and Rust definitions drive browser writers/parsers, both semantic indexes,
+the Scenario JSON core-record compiler, and the Rust message/option-label codecs. Fixed-size codec
+tests and the independent ownership proof retain literal Realmz-format expectations rather than
+deriving their expected lengths from the policy.
+
+Branch validation through the eighty-sixth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -966,6 +973,8 @@ The shared combat-layout slice replaces battle and monster literals without addi
 ISY-319/320/321 module-size violation.
 The shared economy/content-layout slice replaces item, treasure, and shop literals without adding
 a new ISY-319/320/321 module-size violation.
+The shared text-record-layout slice replaces message and option-label literals without adding a new
+ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1638,7 +1647,7 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 ### Phase 5: One compiler contract across desktop and browser
 
 - **Implemented for baseline and native paths:** generate native map/random-level/Action Point/EDCD,
-  encounter-row, combat-row, and economy/content-row layout geometry, scenario-item capacity,
+  encounter-row, combat-row, economy/content-row, and text-row layout geometry, scenario-item capacity,
   startup roles,
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
   project-derived semantic paths, and default resource sidecars from one native-manifest policy

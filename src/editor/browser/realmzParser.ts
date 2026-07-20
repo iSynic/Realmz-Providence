@@ -53,7 +53,8 @@ export const EXTRACODE_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
 export const BATTLE_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
 export const MONSTER_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
 export const MONSTER_DESCRIPTION_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;
-export const OPTION_LABEL_BYTES = 25;
+export const MESSAGE_BYTES = REALMZ_NATIVE_LAYOUT.messageRecordBytes;
+export const OPTION_LABEL_BYTES = REALMZ_NATIVE_LAYOUT.optionLabelRecordBytes;
 export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLS = 16;
 export const LAND_LAYOUT_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
@@ -136,7 +137,7 @@ const RECORD_BYTES: Record<string, number> = {
   "Data DES": MONSTER_DESCRIPTION_BYTES,
   "Data BD": BATTLE_BYTES,
   "Data SD": SHOP_RECORD_BYTES,
-  "Data SD2": 256,
+  "Data SD2": MESSAGE_BYTES,
   "Data OD": OPTION_LABEL_BYTES,
   "Data MD2": 340,
   "Data TD": TREASURE_BYTES,
@@ -574,11 +575,11 @@ function parseExtracodes(buffer: Uint8Array | undefined) {
 }
 
 function parseMessages(buffer: Uint8Array | undefined): MessageRecord[] {
-  return fixedRecords(buffer, 256, "Data SD2", (id, start, record) => ({
+  return fixedRecords(buffer, MESSAGE_BYTES, "Data SD2", (id, start, record) => ({
     id,
     text: decodePascalText(record),
     authored: false,
-    provenance: provenance("Data SD2", id, start, 256, "source-backed")
+    provenance: provenance("Data SD2", id, start, MESSAGE_BYTES, "source-backed")
   }));
 }
 

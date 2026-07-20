@@ -1,11 +1,12 @@
 use crate::error::Result;
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::OptionLabelRecord;
 
 use super::record_bytes::{
     decode_pascal_text, encode_pascal_text, parse_fixed_records, provenance, write_fixed_records,
 };
 
-pub const OPTION_LABEL_BYTES: usize = 25;
+pub const OPTION_LABEL_BYTES: usize = REALMZ_NATIVE_LAYOUT.option_label_record_bytes;
 
 pub fn parse_option_labels(buffer: &[u8]) -> Vec<OptionLabelRecord> {
     parse_fixed_records(buffer, OPTION_LABEL_BYTES)

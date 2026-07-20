@@ -31,8 +31,8 @@ import { authoredProvenance, padArray, padNestedNumberArrays } from "./recordEnc
 import { resolveItemRef, resolveMonsterRef, resolveSeedAssetRef } from "./referenceResolver";
 import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
-const MESSAGE_BYTES = 256;
-const OPTION_LABEL_BYTES = 25;
+const MESSAGE_BYTES = REALMZ_NATIVE_LAYOUT.messageRecordBytes;
+const OPTION_LABEL_BYTES = REALMZ_NATIVE_LAYOUT.optionLabelRecordBytes;
 const BATTLE_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
 const MONSTER_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
 const MONSTER_DESCRIPTION_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;

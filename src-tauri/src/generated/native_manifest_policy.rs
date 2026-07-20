@@ -18,6 +18,8 @@ pub struct RealmzNativeLayout {
     pub scenario_item_record_bytes: usize,
     pub treasure_record_bytes: usize,
     pub shop_record_bytes: usize,
+    pub message_record_bytes: usize,
+    pub option_label_record_bytes: usize,
 }
 
 pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
@@ -38,6 +40,8 @@ pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
     scenario_item_record_bytes: 100,
     treasure_record_bytes: 48,
     shop_record_bytes: 3002,
+    message_record_bytes: 256,
+    option_label_record_bytes: 25,
 };
 
 pub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = 200;

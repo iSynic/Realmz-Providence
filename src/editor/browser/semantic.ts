@@ -15,7 +15,7 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
+import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MESSAGE_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
@@ -516,7 +516,7 @@ function addCanonicalSingletonBuffer<T extends { rawBytes?: number[]; authored?:
 }
 
 function addMessageRecords(schema: SemanticSchema, buffer?: Uint8Array) {
-  addPascalTextRecords(schema, buffer, "Data SD2", 256, "message", "message", "Message");
+  addPascalTextRecords(schema, buffer, "Data SD2", MESSAGE_BYTES, "message", "message", "Message");
 }
 
 function addOptionLabelRecords(schema: SemanticSchema, buffer?: Uint8Array) {
@@ -2653,7 +2653,7 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data MD-1": ["alternate monster set", MONSTER_BYTES],
   "Data DES": ["monster description", MONSTER_DESCRIPTION_BYTES],
   "Data SD": ["shop record", SHOP_RECORD_BYTES],
-  "Data SD2": ["message record", 256],
+  "Data SD2": ["message record", MESSAGE_BYTES],
   "Data OD": ["option label", OPTION_LABEL_BYTES],
   "Data MD2": ["map record", 340],
   "Data TD": ["treasure", TREASURE_BYTES],

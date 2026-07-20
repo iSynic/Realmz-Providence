@@ -1,11 +1,12 @@
 use crate::error::Result;
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::MessageRecord;
 
 use super::record_bytes::{
     decode_pascal_text, encode_pascal_text, parse_fixed_records, provenance, write_fixed_records,
 };
 
-pub const MESSAGE_BYTES: usize = 256;
+pub const MESSAGE_BYTES: usize = REALMZ_NATIVE_LAYOUT.message_record_bytes;
 
 pub fn parse_messages(buffer: &[u8]) -> Vec<MessageRecord> {
     parse_fixed_records(buffer, MESSAGE_BYTES)
