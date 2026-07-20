@@ -3983,6 +3983,59 @@ mod tests {
         );
         assert!(classic_output_dir.join("Scenario.rsrc").is_file());
 
+        let mut dungeon_project = project.clone();
+        dungeon_project.land_layout = None;
+        let dungeon_map = dungeon_project
+            .maps
+            .first_mut()
+            .expect("fresh project dungeon map candidate");
+        dungeon_map.id = "dungeon:0".to_string();
+        dungeon_map.level_type = LevelType::Dungeon;
+        dungeon_map.source = "Data DL".to_string();
+        dungeon_map.name = "Dungeon Level 1".to_string();
+        dungeon_map.render.mode = RenderMode::DungeonTopDown;
+        dungeon_map.render.landlook = None;
+        dungeon_map.provenance.source_file = "Data DL".to_string();
+        let dungeon_random_level = dungeon_project
+            .random_levels
+            .first_mut()
+            .expect("fresh project dungeon random-level candidate");
+        dungeon_random_level.id = "dungeon:0:randlevel".to_string();
+        dungeon_random_level.source = "Data RDD".to_string();
+        dungeon_random_level.level_type = LevelType::Dungeon;
+        dungeon_random_level.provenance.source_file = "Data RDD".to_string();
+        let dungeon_output_dir = temp.path().join("Starter Dungeon");
+        crate::exporter::export_project(
+            &project_dir,
+            &dungeon_project,
+            &dungeon_output_dir,
+            ScenarioTarget::WindowsRealmzFolder,
+        )
+        .expect("export dungeon-only generated project");
+        assert_eq!(
+            fs::metadata(dungeon_output_dir.join("Data DD"))
+                .expect("dungeon-only land trigger baseline")
+                .len() as usize,
+            crate::realmz::DOOR_LEVEL_BYTES,
+            "dungeon-only authored output must retain the required neutral land trigger table"
+        );
+        assert_eq!(
+            fs::metadata(dungeon_output_dir.join("Data DDD"))
+                .expect("dungeon trigger table")
+                .len() as usize,
+            crate::realmz::DOOR_LEVEL_BYTES,
+            "dungeon-only authored output must compile one dungeon trigger table"
+        );
+        for name in ["Data DD", "Data DDD"] {
+            assert!(
+                fs::read(dungeon_output_dir.join(name))
+                    .unwrap_or_else(|_| panic!("read dungeon-only trigger table {name}"))
+                    .iter()
+                    .all(|byte| *byte == 0),
+                "dungeon-only {name} baseline must remain neutral without Action Points"
+            );
+        }
+
         let reimport_dir = temp.path().join("Reimported.providence");
         let mut reimported =
             import_scenario(&output_dir, &reimport_dir).expect("reimport generated export");

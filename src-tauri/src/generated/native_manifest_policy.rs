@@ -2,6 +2,26 @@
 
 pub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = 200;
 
+pub struct AuthoredTriggerTablePolicy {
+    pub path: &'static str,
+    pub level_type: &'static str,
+    pub minimum_levels: usize,
+}
+
+#[rustfmt::skip]
+pub const AUTHORED_TRIGGER_TABLES: &[AuthoredTriggerTablePolicy] = &[
+    AuthoredTriggerTablePolicy {
+        path: "Data DD",
+        level_type: "land",
+        minimum_levels: 1,
+    },
+    AuthoredTriggerTablePolicy {
+        path: "Data DDD",
+        level_type: "dungeon",
+        minimum_levels: 0,
+    },
+];
+
 #[rustfmt::skip]
 pub const AUTHORED_EMPTY_RUNTIME_FILES: &[&str] = &[
     "Data DL",

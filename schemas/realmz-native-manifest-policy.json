@@ -2,6 +2,18 @@
   "contractVersion": 1,
   "authoredBaseline": {
     "scenarioItemRecords": 200,
+    "triggerTables": [
+      {
+        "path": "Data DD",
+        "levelType": "land",
+        "minimumLevels": 1
+      },
+      {
+        "path": "Data DDD",
+        "levelType": "dungeon",
+        "minimumLevels": 0
+      }
+    ],
     "emptyRuntimeFiles": [
       "Data DL",
       "Data RDD",

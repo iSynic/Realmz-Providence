@@ -85,6 +85,31 @@ try {
   const files = new Map(readStoredZip(result.zip).map((entry) => [entry.path.split("/").slice(1).join("/"), entry.bytes]));
   const macResult = createBrowserScenarioPackageZip(compiled.project, null, "mac-classic-folder");
   const macFiles = new Map(readStoredZip(macResult.zip).map((entry) => [entry.path.split("/").slice(1).join("/"), entry.bytes]));
+  const dungeonProject = structuredClone(compiled.project);
+  const firstDungeonMap = dungeonProject.maps[0];
+  dungeonProject.maps = [{
+    ...firstDungeonMap,
+    id: "dungeon:0",
+    levelType: "dungeon",
+    source: "Data DL",
+    index: 0,
+    name: "Dungeon Level 1",
+    render: { ...firstDungeonMap.render, landlook: null, mode: "dungeon-top-down" },
+    provenance: { ...firstDungeonMap.provenance, sourceFile: "Data DL", recordIndex: 0, byteOffset: 0 }
+  }];
+  const firstDungeonRandomLevel = dungeonProject.randomLevels[0];
+  dungeonProject.randomLevels = [{
+    ...firstDungeonRandomLevel,
+    id: "dungeon:0:randlevel",
+    source: "Data RDD",
+    levelType: "dungeon",
+    levelIndex: 0,
+    provenance: { ...firstDungeonRandomLevel.provenance, sourceFile: "Data RDD", recordIndex: 0, byteOffset: 0 }
+  }];
+  dungeonProject.triggers = [];
+  dungeonProject.landLayout = null;
+  const dungeonResult = createBrowserScenarioPackageZip(dungeonProject, null, "windows-realmz-folder");
+  const dungeonFiles = new Map(readStoredZip(dungeonResult.zip).map((entry) => [entry.path.split("/").slice(1).join("/"), entry.bytes]));
 
   expect(compiled.project.source.origin === "authored", "generated scenario should remain explicitly authored");
   expect(compiled.project.source.files.length === 0, "generated scenario should not acquire a source-file inventory");
@@ -114,8 +139,16 @@ try {
   ]) {
     expect(files.has(name), `generated scenario ZIP should contain ${name}`);
   }
-  expect(files.get("Data DD")?.byteLength === 2 * AUTHORED_SCENARIO_BASELINE_SIZES.doorLevel, "Data DD should contain one door table per land map");
-  expect(files.get("Data DDD")?.byteLength === 0, "a scenario without dungeon maps should retain an empty Data DDD startup file");
+  for (const table of manifestPolicy.authoredBaseline.triggerTables) {
+    const levelCount = compiled.project.maps.filter((map) => map.levelType === table.levelType).length;
+    const expectedBytes = Math.max(table.minimumLevels, levelCount) * AUTHORED_SCENARIO_BASELINE_SIZES.doorLevel;
+    expect(files.get(table.path)?.byteLength === expectedBytes, `${table.path} should follow the shared ${table.levelType} trigger-table policy`);
+    const dungeonLevelCount = dungeonProject.maps.filter((map) => map.levelType === table.levelType).length;
+    const expectedDungeonBytes = Math.max(table.minimumLevels, dungeonLevelCount) * AUTHORED_SCENARIO_BASELINE_SIZES.doorLevel;
+    expect(dungeonFiles.get(table.path)?.byteLength === expectedDungeonBytes, `dungeon-only ${table.path} should follow the shared ${table.levelType} trigger-table policy`);
+    expect(dungeonFiles.get(table.path)?.every((byte) => byte === 0), `dungeon-only ${table.path} baseline should remain neutral without Action Points`);
+    expect(dungeonResult.report.writtenFiles.includes(table.path), `dungeon-only export should report ${table.path} as authored output`);
+  }
   for (const name of manifestPolicy.authoredBaseline.emptyRuntimeFiles) {
     expect(files.get(name)?.byteLength === 0, `${name} should follow the shared authored empty-runtime policy`);
   }

@@ -9,6 +9,13 @@
       ]
     },
     {
+      "name": "Realmz native manifest policy",
+      "command": "generate:realmz-native-manifest-policy",
+      "outputs": [
+        "src/editor/generated/realmzNativeManifestPolicy.ts"
+      ]
+    },
+    {
       "name": "Scenario no-edit round-trip ledger",
       "command": "archaeology:roundtrip-audit",
       "outputs": [

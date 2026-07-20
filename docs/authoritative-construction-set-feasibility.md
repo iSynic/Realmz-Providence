@@ -798,7 +798,16 @@ execution order remain local implementation details. The generated-scenario base
 proves that emitted output follows the neutral policy rather than merely generating unused
 constants.
 
-Branch validation through the seventy-fourth slice completed on 2026-07-20:
+The seventy-fifth slice extends that policy to the authored trigger-table baselines without moving
+the 40-byte Action Point codec or semantic writer behavior. Version 1 now declares the native path,
+level type, and minimum level-table count for land and dungeon tables. Both compilers consequently
+seed one neutral land `Data DD` table even for a dungeon-only project, retain an empty `Data DDD`
+when there are no dungeon levels, and size populated tables from canonical maps. Paired browser and
+Rust dungeon-only golden checks cover the previously implicit land-table fallback, while the
+existing ownership proof and browser/desktop parity gate cover the ordinary authored and imported
+paths.
+
+Branch validation through the seventy-fifth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 616 passed, plus typecheck;
@@ -841,6 +850,8 @@ slice adds a focused browser parser test and changes only existing contract/comp
 atlas slice adds one focused shared PICT writer and only small workbench/compiler-boundary wiring,
 so neither slice adds an ISY-319/320/321 violation. The native-manifest policy slice replaces
 duplicated local baseline constants with generated definitions and adds no module-size violation.
+The trigger-table policy extension changes only those generated definitions, both focused baseline
+functions, and their existing golden coverage, so it likewise adds no module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1025,9 +1036,10 @@ the same content-neutral package directly as authored compiler output:
 - required zero-length startup tables.
 
 The versioned `schemas/realmz-native-manifest-policy.json` contract is now the neutral owner of the
-shared 200-row scenario-item capacity and always-empty runtime-file inventory. Its generated
-TypeScript and Rust constants feed both baseline implementations. Native codec sizes, conditional
-file rules, and semantic compilation order intentionally remain beside the corresponding writers.
+shared 200-row scenario-item capacity, always-empty runtime-file inventory, and land/dungeon
+trigger-table minimums. Its generated TypeScript and Rust constants feed both baseline
+implementations. Native codec sizes, record encoding, and semantic compilation order intentionally
+remain beside the corresponding writers.
 
 Neither path materializes these files as preserved input or adds them to the canonical project's
 source inventory.
@@ -1159,7 +1171,10 @@ A pragmatic sequence is:
     capacity and always-empty runtime-file inventory once in a versioned neutral contract, generate
     TypeScript and Rust constants, require both compiler baselines to consume them, and verify the
     generated package against the source policy.
-23. Keep parser, compiler, validator, and UI behavior in handwritten modules.
+23. **Implemented for authored trigger-table baselines:** define the land and dungeon paths, level
+    types, and minimum level counts in the neutral policy; consume them in both compilers; and prove
+    the one-land-table fallback plus populated dungeon sizing with paired dungeon-only golden tests.
+24. Keep parser, compiler, validator, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1215,7 +1230,7 @@ Legend:
 | --- | --- | --- | --- |
 | `Data LD` | Generated | Generate all 16,200-byte land levels | Complete field writer and fixture coverage. |
 | `Data DL` | Generated + compatibility | Generate authored dungeon bitfields; zero runtime/preserved bits | High/sign bit and revealed/runtime-state bits are preserved on legacy import. They are not needed as imported identity for fresh authoring. |
-| `Data DD` | Generated | Generate one table per land level | Complete trigger-table writer. |
+| `Data DD` | Generated | Generate one table per land level, with one neutral startup table when no land level exists | Complete trigger-table writer; the generated native-manifest policy and paired dungeon-only golden checks own the fallback. |
 | `Data DDD` | Generated | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; the semantic writer overlays populated dungeon tables. |
 | `Data RD` | Fully generated semantic records + legacy annex ranges/tail | Generate one random-level record per land level | Canonical records contain settings and active rectangles only. Fresh output owns bytes 0..643, including normalized Boolean encodings and zero at byte 643. Imported export may restore equivalent noncanonical Boolean bytes, data in still-inactive rectangle slots, byte 643, and a malformed tail only from the annex; deleting an active rectangle zeroes its complete slot. |
 | `Data RDD` | Fully generated semantic records + legacy annex ranges/tail | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file. Populated dungeon records use the same canonical writer and bounded annex policy as `Data RD`; no imported record words are exposed in the project model. |
@@ -1342,10 +1357,11 @@ must not be called fresh-authoritative merely because imported round trips are f
 
 1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
    annex and the minimum ownership fixture enforces byte parity. A versioned neutral policy now
-   owns the first shared baseline seam: scenario-item capacity and always-empty runtime files. Rust
-   and TypeScript still implement codec sizes, conditional families, and semantic writer execution
-   independently. Broader golden fixtures or a shared Rust/Wasm compiler should prevent policy
-   drift across optional families without forcing those implementation details into the policy.
+   owns scenario-item capacity, always-empty runtime files, and the land/dungeon trigger-table
+   minimums. Rust and TypeScript still implement codec sizes, optional record/resource families,
+   and semantic writer execution independently. Broader golden fixtures or a shared Rust/Wasm
+   compiler should prevent policy drift across optional families without forcing those
+   implementation details into the policy.
 2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
    `PICT`/`cicn`/`snd `/`TEXT`/`styl` resources, item strings, and custom-spell strings are generated
    in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families

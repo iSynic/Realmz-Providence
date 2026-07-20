@@ -1,7 +1,7 @@
 use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot};
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::generated::native_manifest_policy::{
-    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS,
+    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_TRIGGER_TABLES,
 };
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
@@ -448,7 +448,27 @@ fn write_authored_runtime_baseline(
     for (name, bytes) in entries {
         manifest.insert_generated(name, bytes);
     }
-    manifest.insert_generated("Data DDD", Vec::new());
+    for table in AUTHORED_TRIGGER_TABLES {
+        let level_type = match table.level_type {
+            "land" => LevelType::Land,
+            "dungeon" => LevelType::Dungeon,
+            other => {
+                return Err(ProvidenceError::message(format!(
+                    "Unsupported authored trigger-table level type '{other}'."
+                )))
+            }
+        };
+        let level_count = project
+            .maps
+            .iter()
+            .filter(|map| map.level_type == level_type)
+            .count()
+            .max(table.minimum_levels);
+        manifest.insert_generated(
+            table.path,
+            vec![0; level_count * crate::realmz::DOOR_LEVEL_BYTES],
+        );
+    }
     for name in AUTHORED_EMPTY_RUNTIME_FILES {
         manifest.insert_generated(*name, Vec::new());
     }

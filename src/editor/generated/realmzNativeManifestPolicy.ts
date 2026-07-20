@@ -2,6 +2,19 @@
 
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;
 
+export const AUTHORED_TRIGGER_TABLES = [
+  {
+    "path": "Data DD",
+    "levelType": "land",
+    "minimumLevels": 1
+  },
+  {
+    "path": "Data DDD",
+    "levelType": "dungeon",
+    "minimumLevels": 0
+  }
+] as const;
+
 export const AUTHORED_EMPTY_RUNTIME_FILES = [
   "Data DL",
   "Data RDD",
