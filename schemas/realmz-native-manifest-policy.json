@@ -2,6 +2,17 @@
   "contractVersion": 1,
   "authoredBaseline": {
     "scenarioItemRecords": 200,
+    "startupFiles": {
+      "scenarioSupport": "Scenario",
+      "securityBackup": "Data CS",
+      "scenarioItems": "Data NI",
+      "tileSolids": "Data Solids",
+      "resourceForkByTarget": {
+        "windows-realmz-folder": "Scenario.rsrc",
+        "mac-classic-folder": "Scenario.rsrc",
+        "providence-portable-folder": "Scenario.rsrc"
+      }
+    },
     "triggerTables": [
       {
         "path": "Data DD",

@@ -807,7 +807,17 @@ Rust dungeon-only golden checks cover the previously implicit land-table fallbac
 existing ownership proof and browser/desktop parity gate cover the ordinary authored and imported
 paths.
 
-Branch validation through the seventy-fifth slice completed on 2026-07-20:
+The seventy-sixth slice gives the remaining stable authored startup paths explicit roles in that
+same contract: scenario support data, security backup, scenario items, tile solidity, and the
+resource-fork path for every export target. Generated Rust and TypeScript policy now drives both
+baselines, the corresponding semantic overlay paths, and authored resource-file selection. The
+Rust scenario-item overlay also reuses the shared 200-record capacity instead of repeating it.
+Browser golden checks prove neutral support bytes, shell-derived security output, item capacity,
+semantic solidity, and both native target resource paths; Rust manifest checks cover Windows,
+Classic Mac, and portable targets. Imported resource-fork preference and compatibility remapping
+remain unchanged.
+
+Branch validation through the seventy-sixth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 616 passed, plus typecheck;
@@ -852,6 +862,8 @@ so neither slice adds an ISY-319/320/321 violation. The native-manifest policy s
 duplicated local baseline constants with generated definitions and adds no module-size violation.
 The trigger-table policy extension changes only those generated definitions, both focused baseline
 functions, and their existing golden coverage, so it likewise adds no module-size violation.
+The startup-role extension replaces path and capacity literals inside the same compiler owners and
+adds no module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1037,9 +1049,10 @@ the same content-neutral package directly as authored compiler output:
 
 The versioned `schemas/realmz-native-manifest-policy.json` contract is now the neutral owner of the
 shared 200-row scenario-item capacity, always-empty runtime-file inventory, and land/dungeon
-trigger-table minimums. Its generated TypeScript and Rust constants feed both baseline
-implementations. Native codec sizes, record encoding, and semantic compilation order intentionally
-remain beside the corresponding writers.
+trigger-table minimums. It also names the stable support, security, item, solidity, and
+target-specific resource-fork roles. Its generated TypeScript and Rust constants feed both
+baseline implementations and the corresponding semantic overlays. Native codec sizes, record
+encoding, and semantic compilation order intentionally remain beside the corresponding writers.
 
 Neither path materializes these files as preserved input or adds them to the canonical project's
 source inventory.
@@ -1174,7 +1187,10 @@ A pragmatic sequence is:
 23. **Implemented for authored trigger-table baselines:** define the land and dungeon paths, level
     types, and minimum level counts in the neutral policy; consume them in both compilers; and prove
     the one-land-table fallback plus populated dungeon sizing with paired dungeon-only golden tests.
-24. Keep parser, compiler, validator, and UI behavior in handwritten modules.
+24. **Implemented for authored startup roles:** define support, security, item, solidity, and
+    per-target resource-fork paths in the neutral policy; use them for baseline and semantic
+    overlays; remove the duplicate Rust item-capacity literal; and check every target manifest.
+25. Keep parser, compiler, validator, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1358,10 +1374,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
    annex and the minimum ownership fixture enforces byte parity. A versioned neutral policy now
    owns scenario-item capacity, always-empty runtime files, and the land/dungeon trigger-table
-   minimums. Rust and TypeScript still implement codec sizes, optional record/resource families,
-   and semantic writer execution independently. Broader golden fixtures or a shared Rust/Wasm
-   compiler should prevent policy drift across optional families without forcing those
-   implementation details into the policy.
+   minimums, plus stable startup roles and target resource-fork paths. Rust and TypeScript still
+   implement codec sizes, optional record/resource families, and semantic writer execution
+   independently. Broader golden fixtures or a shared Rust/Wasm compiler should prevent policy
+   drift across optional families without forcing those implementation details into the policy.
 2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
    `PICT`/`cicn`/`snd `/`TEXT`/`styl` resources, item strings, and custom-spell strings are generated
    in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families

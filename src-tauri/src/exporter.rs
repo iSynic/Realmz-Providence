@@ -1,7 +1,8 @@
 use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot};
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::generated::native_manifest_policy::{
-    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_TRIGGER_TABLES,
+    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES,
+    AUTHORED_TRIGGER_TABLES,
 };
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
@@ -193,7 +194,7 @@ fn compile_realmz_scenario(
     if let Some(security_backup) = &project.scenario.security_backup {
         write_scenario_singleton_for_export(
             &mut manifest,
-            "Data CS",
+            AUTHORED_STARTUP_FILES.security_backup,
             316,
             security_backup.authored,
             write_scenario_shell(security_backup)?,
@@ -219,7 +220,7 @@ fn compile_realmz_scenario(
     }
     write_if_nonempty(
         &mut manifest,
-        "Data Solids",
+        AUTHORED_STARTUP_FILES.tile_solids,
         preserve_imported_data_solids_tail(
             write_tile_solids(&project.tile_attributes)?,
             compatibility_annex,
@@ -343,9 +344,16 @@ fn compile_realmz_scenario(
         compatibility_annex,
     )?;
     if !preserves_source_snapshot {
-        scenario_item_bytes.resize(200 * crate::realmz::ITEM_BYTES, 0);
+        scenario_item_bytes.resize(
+            AUTHORED_SCENARIO_ITEM_RECORDS * crate::realmz::ITEM_BYTES,
+            0,
+        );
     }
-    write_if_nonempty(&mut manifest, "Data NI", scenario_item_bytes)?;
+    write_if_nonempty(
+        &mut manifest,
+        AUTHORED_STARTUP_FILES.scenario_items,
+        scenario_item_bytes,
+    )?;
     write_fixed_if_nonempty(
         &mut manifest,
         "Data TD",
@@ -431,17 +439,23 @@ fn write_authored_runtime_baseline(
     })?;
     let entries = [
         (
-            "Scenario".to_string(),
+            AUTHORED_STARTUP_FILES.scenario_support.to_string(),
             vec![0; crate::realmz::SCENARIO_SUPPORT_FILE_BYTES],
         ),
         (
-            resource_file_name(project, target),
+            authored_resource_file_name(target).to_string(),
             write_minimum_scenario_resource_fork()?,
         ),
-        ("Data CS".to_string(), write_scenario_shell(shell)?),
-        ("Data NI".to_string(), vec![0; SCENARIO_ITEM_TABLE_BYTES]),
         (
-            "Data Solids".to_string(),
+            AUTHORED_STARTUP_FILES.security_backup.to_string(),
+            write_scenario_shell(shell)?,
+        ),
+        (
+            AUTHORED_STARTUP_FILES.scenario_items.to_string(),
+            vec![0; SCENARIO_ITEM_TABLE_BYTES],
+        ),
+        (
+            AUTHORED_STARTUP_FILES.tile_solids.to_string(),
             write_tile_solids(&project.tile_attributes)?,
         ),
     ];
@@ -926,7 +940,7 @@ fn preserve_imported_scenario_item_compatibility(
         return Ok(bytes);
     }
     let Some(raw) = (match annex {
-        Some(annex) => annex.read("Data NI")?,
+        Some(annex) => annex.read(AUTHORED_STARTUP_FILES.scenario_items)?,
         None => None,
     }) else {
         return Ok(bytes);
@@ -1133,7 +1147,7 @@ fn preserve_imported_data_solids_tail(
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
     let Some(raw) = (match annex {
-        Some(annex) => annex.read("Data Solids")?,
+        Some(annex) => annex.read(AUTHORED_STARTUP_FILES.tile_solids)?,
         None => None,
     }) else {
         return Ok(bytes);
@@ -1993,7 +2007,9 @@ fn source_resource_bytes(
         .iter()
         .filter(|file| matches!(file.role, crate::project::SourceFileRole::ResourceFork))
     {
-        if target == ScenarioTarget::WindowsRealmzFolder && file.name == "Scenario" {
+        if target == ScenarioTarget::WindowsRealmzFolder
+            && file.name == AUTHORED_STARTUP_FILES.scenario_support
+        {
             continue;
         }
         if let Some(bytes) = annex.read(&file.relative_path)? {
@@ -2004,13 +2020,18 @@ fn source_resource_bytes(
 }
 
 fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> String {
+    if !project.source.requires_compatibility_annex() {
+        return authored_resource_file_name(target).to_string();
+    }
     let shell_name = scenario_shell_file_name(project);
     let mut preferred = vec![
-        "Scenario.rsrc".to_string(),
+        AUTHORED_STARTUP_FILES.windows_resource_fork.to_string(),
+        AUTHORED_STARTUP_FILES.mac_classic_resource_fork.to_string(),
+        AUTHORED_STARTUP_FILES.providence_portable_resource_fork.to_string(),
         "Scenario.rsf".to_string(),
         format!("{shell_name}.rsrc"),
         format!("{shell_name}.rsf"),
-        "Scenario".to_string(),
+        AUTHORED_STARTUP_FILES.scenario_support.to_string(),
     ];
     preferred.dedup();
     for candidate in preferred {
@@ -2018,8 +2039,10 @@ fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> St
             matches!(file.role, crate::project::SourceFileRole::ResourceFork)
                 && file.name.eq_ignore_ascii_case(&candidate)
         }) {
-            if target == ScenarioTarget::WindowsRealmzFolder && file.name == "Scenario" {
-                return "Scenario.rsrc".to_string();
+            if target == ScenarioTarget::WindowsRealmzFolder
+                && file.name == AUTHORED_STARTUP_FILES.scenario_support
+            {
+                return AUTHORED_STARTUP_FILES.windows_resource_fork.to_string();
             }
             return file.name.clone();
         }
@@ -2030,21 +2053,31 @@ fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> St
         .iter()
         .find(|file| matches!(file.role, crate::project::SourceFileRole::ResourceFork))
         .map(|file| {
-            if target == ScenarioTarget::WindowsRealmzFolder && file.name == "Scenario" {
-                "Scenario.rsrc".to_string()
+            if target == ScenarioTarget::WindowsRealmzFolder
+                && file.name == AUTHORED_STARTUP_FILES.scenario_support
+            {
+                AUTHORED_STARTUP_FILES.windows_resource_fork.to_string()
             } else {
                 file.name.clone()
             }
         })
         .unwrap_or_else(|| {
-            if target == ScenarioTarget::WindowsRealmzFolder
-                || !project.source.requires_compatibility_annex()
-            {
-                "Scenario.rsrc".to_string()
+            if target == ScenarioTarget::WindowsRealmzFolder {
+                AUTHORED_STARTUP_FILES.windows_resource_fork.to_string()
             } else {
-                "Scenario".to_string()
+                AUTHORED_STARTUP_FILES.scenario_support.to_string()
             }
         })
+}
+
+fn authored_resource_file_name(target: ScenarioTarget) -> &'static str {
+    match target {
+        ScenarioTarget::WindowsRealmzFolder => AUTHORED_STARTUP_FILES.windows_resource_fork,
+        ScenarioTarget::MacClassicFolder => AUTHORED_STARTUP_FILES.mac_classic_resource_fork,
+        ScenarioTarget::ProvidencePortableFolder => {
+            AUTHORED_STARTUP_FILES.providence_portable_resource_fork
+        }
+    }
 }
 
 fn map_name_resource_updates(

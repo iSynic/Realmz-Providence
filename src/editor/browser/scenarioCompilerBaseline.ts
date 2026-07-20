@@ -1,5 +1,5 @@
-import type { Project } from "../types";
-import { AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_TRIGGER_TABLES } from "../generated/realmzNativeManifestPolicy";
+import type { Project, ScenarioTarget } from "../types";
+import { AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES } from "../generated/realmzNativeManifestPolicy";
 import { DOOR_LEVEL_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, TILE_SOLIDS_BYTES, writeScenarioShell, writeTileSolids } from "./binaryWriters";
 import { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, writeMinimumScenarioResourceFork } from "./resourceFork";
 
@@ -10,7 +10,7 @@ export type ScenarioCompilerBaselineFile = {
   bytes: Uint8Array;
 };
 
-export function createAuthoredScenarioCompilerBaseline(project: Project): ScenarioCompilerBaselineFile[] {
+export function createAuthoredScenarioCompilerBaseline(project: Project, target: ScenarioTarget): ScenarioCompilerBaselineFile[] {
   const shell = project.scenario.shell;
   if (!shell) throw new Error("Authored scenarios require scenario shell metadata.");
 
@@ -24,12 +24,12 @@ export function createAuthoredScenarioCompilerBaseline(project: Project): Scenar
   });
   return [
     { path: shell.sourceFile.trim() || project.scenario.name, bytes: shellBytes },
-    { path: "Scenario", bytes: new Uint8Array(SCENARIO_SUPPORT_FILE_BYTES) },
-    { path: "Scenario.rsrc", bytes: writeMinimumScenarioResourceFork() },
-    { path: "Data CS", bytes: shellBytes },
+    { path: AUTHORED_STARTUP_FILES.scenarioSupport, bytes: new Uint8Array(SCENARIO_SUPPORT_FILE_BYTES) },
+    { path: AUTHORED_STARTUP_FILES.resourceForkByTarget[target], bytes: writeMinimumScenarioResourceFork() },
+    { path: AUTHORED_STARTUP_FILES.securityBackup, bytes: shellBytes },
     ...triggerTables,
-    { path: "Data NI", bytes: new Uint8Array(SCENARIO_ITEM_TABLE_BYTES) },
-    { path: "Data Solids", bytes: writeTileSolids(project.tileAttributes) },
+    { path: AUTHORED_STARTUP_FILES.scenarioItems, bytes: new Uint8Array(SCENARIO_ITEM_TABLE_BYTES) },
+    { path: AUTHORED_STARTUP_FILES.tileSolids, bytes: writeTileSolids(project.tileAttributes) },
     ...AUTHORED_EMPTY_RUNTIME_FILES.map((path) => ({ path, bytes: new Uint8Array() }))
   ];
 }

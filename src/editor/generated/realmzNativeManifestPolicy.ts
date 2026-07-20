@@ -2,6 +2,18 @@
 
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;
 
+export const AUTHORED_STARTUP_FILES = {
+  "scenarioSupport": "Scenario",
+  "securityBackup": "Data CS",
+  "scenarioItems": "Data NI",
+  "tileSolids": "Data Solids",
+  "resourceForkByTarget": {
+    "windows-realmz-folder": "Scenario.rsrc",
+    "mac-classic-folder": "Scenario.rsrc",
+    "providence-portable-folder": "Scenario.rsrc"
+  }
+} as const;
+
 export const AUTHORED_TRIGGER_TABLES = [
   {
     "path": "Data DD",

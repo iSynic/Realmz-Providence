@@ -110,6 +110,9 @@ try {
   dungeonProject.landLayout = null;
   const dungeonResult = createBrowserScenarioPackageZip(dungeonProject, null, "windows-realmz-folder");
   const dungeonFiles = new Map(readStoredZip(dungeonResult.zip).map((entry) => [entry.path.split("/").slice(1).join("/"), entry.bytes]));
+  const startupFiles = manifestPolicy.authoredBaseline.startupFiles;
+  const windowsResourceForkPath = startupFiles.resourceForkByTarget["windows-realmz-folder"];
+  const macResourceForkPath = startupFiles.resourceForkByTarget["mac-classic-folder"];
 
   expect(compiled.project.source.origin === "authored", "generated scenario should remain explicitly authored");
   expect(compiled.project.source.files.length === 0, "generated scenario should not acquire a source-file inventory");
@@ -117,9 +120,9 @@ try {
 
   for (const name of [
     "Generated Baseline",
-    "Scenario",
-    "Scenario.rsrc",
-    "Data CS",
+    startupFiles.scenarioSupport,
+    windowsResourceForkPath,
+    startupFiles.securityBackup,
     "Data CI",
     "Data LD",
     "Data DD",
@@ -133,9 +136,9 @@ try {
     "Data ED",
     "Data ED2",
     "Data MD",
-    "Data NI",
+    startupFiles.scenarioItems,
     "Layout",
-    "Data Solids"
+    startupFiles.tileSolids
   ]) {
     expect(files.has(name), `generated scenario ZIP should contain ${name}`);
   }
@@ -153,8 +156,12 @@ try {
     expect(files.get(name)?.byteLength === 0, `${name} should follow the shared authored empty-runtime policy`);
   }
   expect(AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems === manifestPolicy.authoredBaseline.scenarioItemRecords * 100, "browser item-table size should follow the shared authored capacity policy");
-  expect(files.get("Data NI")?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems, "authored items should overlay Realmz's fixed 200-item table without truncating it");
-  const tileSolids = files.get("Data Solids");
+  const supportFile = files.get(startupFiles.scenarioSupport);
+  expect(supportFile?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioSupport, "scenario support role should use the exact neutral compiler size");
+  expect(supportFile?.every((byte) => byte === 0), "scenario support role should remain neutral without authored editor fields");
+  expect(Buffer.from(files.get(startupFiles.securityBackup) ?? []).equals(Buffer.from(files.get("Generated Baseline") ?? [])), "security-backup role should seed from the canonical scenario shell");
+  expect(files.get(startupFiles.scenarioItems)?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems, "authored items should overlay Realmz's fixed 200-item table without truncating it");
+  const tileSolids = files.get(startupFiles.tileSolids);
   expect(tileSolids?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.tileSolids, "Data Solids should contain the exact 1024-byte compiler table");
   expect(tileSolids?.[190] === 2, "Data Solids should compile canonical special-tile solidity");
   expect(tileSolids?.filter((byte) => byte !== 0).length === 1, "Data Solids should keep unspecified special-tile rows neutral");
@@ -162,11 +169,12 @@ try {
   expect(layout?.byteLength === 256, "Layout should contain the exact 8 x 16 signed-short compiler grid");
   expect(readI16(layout, 0) === -1 && readI16(layout, 254) === 202, "Layout should compile canonical cells");
   expect(layout?.slice(2, 254).every((byte) => byte === 0), "Layout should keep unspecified cells neutral");
-  const minimumResourceFork = files.get("Scenario.rsrc");
-  expect(minimumResourceFork?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioResourceFork, "Scenario.rsrc should be the exact canonical empty resource container");
-  expect(readU32(minimumResourceFork, 0) === 16 && readU32(minimumResourceFork, 4) === 16, "Scenario.rsrc should use the canonical empty data/map offsets");
-  expect(readU32(minimumResourceFork, 8) === 0 && readU32(minimumResourceFork, 12) === 30, "Scenario.rsrc should contain an empty data section and 30-byte resource map");
-  expect(readU16(minimumResourceFork, 44) === 0xffff, "Scenario.rsrc should contain the standard empty type-list marker");
+  const minimumResourceFork = files.get(windowsResourceForkPath);
+  expect(minimumResourceFork?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioResourceFork, `${windowsResourceForkPath} should be the exact canonical empty resource container`);
+  expect(readU32(minimumResourceFork, 0) === 16 && readU32(minimumResourceFork, 4) === 16, `${windowsResourceForkPath} should use the canonical empty data/map offsets`);
+  expect(readU32(minimumResourceFork, 8) === 0 && readU32(minimumResourceFork, 12) === 30, `${windowsResourceForkPath} should contain an empty data section and 30-byte resource map`);
+  expect(readU16(minimumResourceFork, 44) === 0xffff, `${windowsResourceForkPath} should contain the standard empty type-list marker`);
+  expect(macFiles.has(macResourceForkPath), `Mac authored output should follow resource-fork target path ${macResourceForkPath}`);
   expect(result.report.writtenFiles.includes("Data DD"), "browser export should report the generated door table as authored output");
   expect(result.report.passThroughFiles.length === 0, "authored browser export should not report compatibility pass-through files");
   expect(macResult.report.passThroughFiles.length === 0, "authored Mac browser export should not report compatibility pass-through files");

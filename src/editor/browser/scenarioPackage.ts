@@ -69,6 +69,7 @@ import { createStoredZip } from "./zip";
 import type { ExportReport, ManagedAsset, MapRecord, Project, RandomLevel, ScenarioIconResource, ScenarioItemRecord, ScenarioSpellOverride, ScenarioTarget } from "../types";
 import { appendPreservedShopSourceSuffix } from "./shopRecords";
 import { requiresCompatibilityAnnex } from "../projectOrigin";
+import { AUTHORED_STARTUP_FILES } from "../generated/realmzNativeManifestPolicy";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
 import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 import { isNormalizedLandlookAtlasPict } from "../pictWriter";
@@ -193,7 +194,7 @@ function compileBrowserScenarioManifest(
 ): BrowserScenarioCompilation {
   const outputFiles = new Map<string, Uint8Array>();
   const passThroughFiles: string[] = [];
-  const compilerBaseline = requiresCompatibilityAnnex(project) ? [] : createAuthoredScenarioCompilerBaseline(project);
+  const compilerBaseline = requiresCompatibilityAnnex(project) ? [] : createAuthoredScenarioCompilerBaseline(project, target);
   const compilerBaselineByPath = new Map(compilerBaseline.map((file) => [file.path, file.bytes]));
 
   for (const file of compilerBaseline) {
@@ -236,8 +237,8 @@ function writeManagedResources(
 ): ResourceExportResult & { resourceBytes: Uint8Array } {
   const selected = sourceResourceFile(project, annex, target);
   const resourceFileName = resourceFileNameForProject(project, annex, target);
-  const resourceFilePath = target === "windows-realmz-folder" && resourceFileName === "Scenario"
-    ? "Scenario.rsrc"
+  const resourceFilePath = target === "windows-realmz-folder" && resourceFileName === AUTHORED_STARTUP_FILES.scenarioSupport
+    ? AUTHORED_STARTUP_FILES.resourceForkByTarget[target]
     : resourceFileName;
   const original = selected?.bytesData ?? writeMinimumScenarioResourceFork();
   const result: ResourceExportResult = {
@@ -290,7 +291,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
     });
   }
   if (project.scenario.supportFile?.authored) {
-    const supportFileName = project.scenario.supportFile.sourceFile?.trim() || "Scenario";
+    const supportFileName = project.scenario.supportFile.sourceFile?.trim() || AUTHORED_STARTUP_FILES.scenarioSupport;
     writes.push({
       path: supportFileName,
       bytes: preserveImportedScenarioSupportFile(supportFileName, writeScenarioSupportFile(project.scenario.supportFile), annex)
@@ -298,8 +299,8 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.scenario.securityBackup?.authored) {
     writes.push({
-      path: "Data CS",
-      bytes: preserveMalformedRawTail("Data CS", writeScenarioShell(project.scenario.securityBackup), SCENARIO_SHELL_BYTES, annex)
+      path: AUTHORED_STARTUP_FILES.securityBackup,
+      bytes: preserveMalformedRawTail(AUTHORED_STARTUP_FILES.securityBackup, writeScenarioShell(project.scenario.securityBackup), SCENARIO_SHELL_BYTES, annex)
     });
   }
   if (project.messages.length > 0) {
@@ -432,7 +433,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
     });
   }
   writes.push({
-    path: "Data Solids",
+    path: AUTHORED_STARTUP_FILES.tileSolids,
     bytes: preserveImportedDataSolidsTail(writeTileSolids(project.tileAttributes), annex)
   });
   for (const landlook of project.customLandlooks ?? []) {
@@ -460,7 +461,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.scenarioItems.length > 0) {
     writes.push({
-      path: "Data NI",
+      path: AUTHORED_STARTUP_FILES.scenarioItems,
       bytes: preserveImportedScenarioItemCompatibility(
         writeScenarioItems(project.scenarioItems),
         project.scenarioItems,
@@ -889,21 +890,21 @@ function sourceResourceFile(project: Project, annex: BrowserCompatibilityAnnex |
 
 function resourceFileNameForProject(project: Project, annex: BrowserCompatibilityAnnex | null, target: ScenarioTarget) {
   const shellName = scenarioShellFileName(project);
-  const preferred = uniqueStrings(["Scenario.rsrc", "Scenario.rsf", `${shellName}.rsrc`, `${shellName}.rsf`, "Scenario"]);
+  const preferred = uniqueStrings([...Object.values(AUTHORED_STARTUP_FILES.resourceForkByTarget), "Scenario.rsf", `${shellName}.rsrc`, `${shellName}.rsf`, AUTHORED_STARTUP_FILES.scenarioSupport]);
   for (const candidate of preferred) {
     const file = annex?.find((source) => source.role === "resource-fork" && source.name.toLowerCase() === candidate.toLowerCase());
     if (!file) continue;
     if (isWindowsRawScenarioResourceFork(file, target)) {
-      return "Scenario.rsrc";
+      return AUTHORED_STARTUP_FILES.resourceForkByTarget["windows-realmz-folder"];
     }
     return file.name;
   }
   const resourceFile = annex?.find((source) => source.role === "resource-fork");
   if (resourceFile) {
-    if (isWindowsRawScenarioResourceFork(resourceFile, target)) return "Scenario.rsrc";
+    if (isWindowsRawScenarioResourceFork(resourceFile, target)) return AUTHORED_STARTUP_FILES.resourceForkByTarget["windows-realmz-folder"];
     return resourceFile.name;
   }
-  if (!requiresCompatibilityAnnex(project)) return "Scenario.rsrc";
+  if (!requiresCompatibilityAnnex(project)) return AUTHORED_STARTUP_FILES.resourceForkByTarget[target];
   return target === "windows-realmz-folder" ? "Scenario.rsrc" : "Scenario";
 }
 
@@ -1061,7 +1062,7 @@ function randomLevelI16(bytes: Uint8Array, offset: number) {
 }
 
 function preserveImportedDataSolidsTail(bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {
-  const raw = rawSourceBytes("Data Solids", annex);
+  const raw = rawSourceBytes(AUTHORED_STARTUP_FILES.tileSolids, annex);
   if (!raw || raw.byteLength <= TILE_SOLIDS_BYTES) return bytes;
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
@@ -1209,7 +1210,7 @@ function preserveImportedScenarioItemCompatibility(
   records: ScenarioItemRecord[],
   annex: BrowserCompatibilityAnnex | null
 ) {
-  const raw = rawSourceBytes("Data NI", annex);
+  const raw = rawSourceBytes(AUTHORED_STARTUP_FILES.scenarioItems, annex);
   if (!raw || bytes.byteLength === 0) return bytes;
   const completeSourceBytes = Math.floor(raw.byteLength / ITEM_RECORD_BYTES) * ITEM_RECORD_BYTES;
   const coreBytes = Math.max(bytes.byteLength, completeSourceBytes);

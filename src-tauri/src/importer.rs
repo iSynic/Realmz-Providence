@@ -3899,6 +3899,39 @@ mod tests {
         item.item_id = 901;
         project.scenario_items.push(item);
 
+        let startup_files = &crate::generated::native_manifest_policy::AUTHORED_STARTUP_FILES;
+        for (target, resource_fork) in [
+            (
+                ScenarioTarget::WindowsRealmzFolder,
+                startup_files.windows_resource_fork,
+            ),
+            (
+                ScenarioTarget::MacClassicFolder,
+                startup_files.mac_classic_resource_fork,
+            ),
+            (
+                ScenarioTarget::ProvidencePortableFolder,
+                startup_files.providence_portable_resource_fork,
+            ),
+        ] {
+            let expected = crate::exporter::expected_authored_scenario_manifest_files(
+                &project, target,
+            )
+            .expect("compile authored startup manifest");
+            for path in [
+                startup_files.scenario_support,
+                startup_files.security_backup,
+                startup_files.scenario_items,
+                startup_files.tile_solids,
+                resource_fork,
+            ] {
+                assert!(
+                    expected.iter().any(|candidate| candidate == path),
+                    "authored {target:?} manifest must contain startup role {path}"
+                );
+            }
+        }
+
         let output_dir = temp.path().join("Starter");
         let report = crate::exporter::export_project(
             &project_dir,

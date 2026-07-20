@@ -2,6 +2,26 @@
 
 pub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = 200;
 
+pub struct AuthoredStartupFilePolicy {
+    pub scenario_support: &'static str,
+    pub security_backup: &'static str,
+    pub scenario_items: &'static str,
+    pub tile_solids: &'static str,
+    pub windows_resource_fork: &'static str,
+    pub mac_classic_resource_fork: &'static str,
+    pub providence_portable_resource_fork: &'static str,
+}
+
+pub const AUTHORED_STARTUP_FILES: AuthoredStartupFilePolicy = AuthoredStartupFilePolicy {
+    scenario_support: "Scenario",
+    security_backup: "Data CS",
+    scenario_items: "Data NI",
+    tile_solids: "Data Solids",
+    windows_resource_fork: "Scenario.rsrc",
+    mac_classic_resource_fork: "Scenario.rsrc",
+    providence_portable_resource_fork: "Scenario.rsrc",
+};
+
 pub struct AuthoredTriggerTablePolicy {
     pub path: &'static str,
     pub level_type: &'static str,
