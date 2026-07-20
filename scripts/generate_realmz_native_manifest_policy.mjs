@@ -18,6 +18,12 @@ const browserFsAccessPath = path.join(root, "src", "editor", "browser", "fsAcces
 const browserShopRecordsPath = path.join(root, "src", "editor", "browser", "shopRecords.ts");
 const browserRuleCompilerPath = path.join(root, "src", "editor", "browser", "ruleCompiler.ts");
 const browserMapCommandsPath = path.join(root, "src", "editor", "projectCommands", "mapCommands.ts");
+const browserTargetRecordCommandsPath = path.join(root, "src", "editor", "projectCommands", "targetRecordCommands.ts");
+const browserScriptCommandsPath = path.join(root, "src", "editor", "projectCommands", "scriptCommands.ts");
+const browserSemanticGraphPath = path.join(root, "src", "editor", "semanticGraph.ts");
+const browserMonsterLibraryWorkflowPath = path.join(root, "src", "editor", "panels", "combat", "monsterLibraryWorkflow.ts");
+const browserActionPointCapacityPath = path.join(root, "src", "editor", "actionPointCapacity.ts");
+const browserItemCatalogWorkbenchPath = path.join(root, "src", "editor", "panels", "economy", "ItemCatalogWorkbench.tsx");
 const browserMapRecordsWorkbenchPath = path.join(root, "src", "editor", "components", "maps", "MapRecordsWorkbench.tsx");
 const browserLandLayoutWorkbenchPath = path.join(root, "src", "editor", "components", "maps", "LandLayoutWorkbench.tsx");
 const scenarioRulesCommandsPath = path.join(root, "src", "editor", "projectCommands", "scenarioRulesCommands.ts");
@@ -426,12 +432,18 @@ const nativeLayoutConsumers = [
   [browserSemanticPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "SIMPLE_ENCOUNTER_BYTES", "COMPLEX_ENCOUNTER_BYTES", "THIEF_ENCOUNTER_BYTES", "TIMED_ENCOUNTER_BYTES", "BATTLE_BYTES", "MONSTER_BYTES", "MONSTER_DESCRIPTION_BYTES", "ITEM_BYTES", "TREASURE_BYTES", "SHOP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES", "TILE_SOLIDS_BYTES"]],
   [browserProjectPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "CUSTOM_LANDLOOK_RECORDS", "LANDLOOK_RANGE_SLOTS", "SPELL_OVERRIDE_RECORDS", "RACE_OVERRIDE_RECORDS", "CASTE_OVERRIDE_RECORDS"]],
   [browserFsAccessPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [browserBaselinePath, ["SCENARIO_SUPPORT_FILE_BYTES", "TILE_SOLIDS_BYTES"]],
+  [browserBaselinePath, ["SCENARIO_SUPPORT_FILE_BYTES", "TILE_SOLIDS_BYTES", "ITEM_RECORD_BYTES"]],
   [browserScenarioPackagePath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "LAND_LAYOUT_RECORD_BYTES", "TILE_SOLIDS_BYTES", "CUSTOM_LANDLOOK_METADATA_BYTES", "MAPSTATS_RECORD_BYTES", "MAPSTATS_RECORDS", "LANDLOOK_RANGE_HEADER_BYTES", "LANDLOOK_RANGE_SLOT_BYTES", "LANDLOOK_RANGE_SLOTS", "CUSTOM_SPELL_RECORDS"]],
   [browserShopRecordsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserRuleCompilerPath, ["SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES", "REALMZ_NATIVE_LAYOUT"]],
   [scenarioRulesCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserMapCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserTargetRecordCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserScriptCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserSemanticGraphPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserMonsterLibraryWorkflowPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserActionPointCapacityPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserItemCatalogWorkbenchPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserMapRecordsWorkbenchPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserLandLayoutWorkbenchPath, ["REALMZ_NATIVE_LAYOUT"]],
   [scenarioSeedMapCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],

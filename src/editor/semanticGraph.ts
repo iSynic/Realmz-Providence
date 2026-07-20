@@ -13,8 +13,9 @@ import {
 import { mapEntityId, triggerEntityId } from "./utils";
 import { semanticEntityById, semanticLinkById, semanticLinksForId, semanticRecordById } from "./semanticIndex";
 import { ed3DiagnosticForTrigger, ed3ReachabilityFor as effectiveEd3ReachabilityFor } from "./scriptDiagnostics";
+import { REALMZ_NATIVE_LAYOUT } from "./generated/realmzNativeManifestPolicy";
 
-const RANDOM_LEVEL_BYTES = 644;
+const RANDOM_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
 const MAP_LINK_KINDS = new Set(["located_on", "contains_region", "describes_map", "configures_map", "names_map_level"]);
 const TEXT_LINK_KINDS = new Set(["shows_message", "uses_resource", "has_text_resource", "has_style_resource", "has_name_evidence"]);
 const BATTLE_LINK_KINDS = new Set(["starts_battle", "spawns_battle", "uses_monster", "mutates_encounter_state"]);

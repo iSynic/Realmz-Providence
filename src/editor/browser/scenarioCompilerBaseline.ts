@@ -1,9 +1,9 @@
 import type { Project, ScenarioTarget } from "../types";
 import { AUTHORED_RUNTIME_BASELINE_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES } from "../generated/realmzNativeManifestPolicy";
-import { DOOR_LEVEL_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, TILE_SOLIDS_BYTES, writeScenarioShell, writeTileSolids } from "./binaryWriters";
+import { DOOR_LEVEL_RECORD_BYTES, ITEM_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, TILE_SOLIDS_BYTES, writeScenarioShell, writeTileSolids } from "./binaryWriters";
 import { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, writeMinimumScenarioResourceFork } from "./resourceFork";
 
-const SCENARIO_ITEM_TABLE_BYTES = AUTHORED_SCENARIO_ITEM_RECORDS * 100;
+const SCENARIO_ITEM_TABLE_BYTES = AUTHORED_SCENARIO_ITEM_RECORDS * ITEM_RECORD_BYTES;
 
 export type ScenarioCompilerBaselineFile = {
   path: string;

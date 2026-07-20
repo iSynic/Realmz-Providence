@@ -1024,6 +1024,12 @@ slice adds no new ISY-319/320/321 module-size violation.
 The shared rule-table-capacity slice replaces fresh spell/race/caste slot-limit literals across
 compiler, parser, validation, package-overlay, and project-command consumers and adds no new
 ISY-319/320/321 module-size violation.
+The native authoring-consumer closure replaces the remaining duplicated contract-v12 record, map-
+field, random-level, Action Point, EDCD, and scenario-item geometry in project commands, the
+Action Point capacity guard, semantic fallback reconstruction, fresh browser baseline sizing,
+Monster Library decoding, and Item Catalog copy provenance. The policy generator now requires
+those paths to consume the shared contract; internal fixed-array semantics remain beside their
+editors, and the closure adds no new ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1704,7 +1710,8 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
   startup roles,
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
   project-derived semantic paths, and default resource sidecars from one native-manifest policy
-  and enforce the applicable projections in both compilers.
+  and enforce the applicable projections in both compilers and their native authoring/semantic
+  consumers.
 - **Implemented for the canonical ownership fixture:** exercise every fixed-path optional semantic
   family, including authored `Data RI`, through both compilers and both native targets with exact
   byte parity and semantic reimport.

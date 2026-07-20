@@ -17,8 +17,9 @@ import {
 } from "./iconSetModel";
 import { loadLibraryResourceBase64 } from "./IconPairResources";
 import type { CombatLookups } from "./combatLookups";
+import { REALMZ_NATIVE_LAYOUT } from "../../generated/realmzNativeManifestPolicy";
 
-const MONSTER_RECORD_BYTES = 210;
+const MONSTER_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
 
 export type MonsterLibraryCopyEntry = {
   entry: LibraryCatalog["entities"][number];

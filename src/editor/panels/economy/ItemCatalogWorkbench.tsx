@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
+import { REALMZ_NATIVE_LAYOUT } from "../../generated/realmzNativeManifestPolicy";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../../itemReferences";
 import type { PreviewRuntimeContext } from "../../previewUrls";
 import type { LibraryCatalog, LibraryEntity, Project, ProjectCommand, ScenarioItemRecord, SelectedEntity, SemanticEntity } from "../../types";
@@ -891,7 +892,13 @@ function emptyScenarioItemForUi(id: number): ScenarioItemRecord {
     weightPerCharge: 0,
     dropOnEmpty: 0,
     authored: true,
-    provenance: { sourceFile: "Data NI", recordIndex: id, byteOffset: id * 100, byteLength: 100, confidence: "confirmed" }
+    provenance: {
+      sourceFile: "Data NI",
+      recordIndex: id,
+      byteOffset: id * REALMZ_NATIVE_LAYOUT.scenarioItemRecordBytes,
+      byteLength: REALMZ_NATIVE_LAYOUT.scenarioItemRecordBytes,
+      confidence: "confirmed"
+    }
   };
 }
 

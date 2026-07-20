@@ -1,6 +1,7 @@
 import { LevelType, TriggerRecord } from "./types";
+import { REALMZ_NATIVE_LAYOUT } from "./generated/realmzNativeManifestPolicy";
 
-export const ACTION_POINTS_PER_LEVEL = 100;
+export const ACTION_POINTS_PER_LEVEL = REALMZ_NATIVE_LAYOUT.actionPointsPerLevel;
 
 export type ActionPointCapacity = {
   total: number;

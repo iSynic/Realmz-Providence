@@ -23,13 +23,20 @@ import {
   TimedEncounterRecord,
   TreasureRecord
 } from "../types";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
-const ITEM_BYTES = 100;
-const MONSTER_BYTES = 210;
-const MONSTER_DESCRIPTION_BYTES = 256;
-const THIEF_ENCOUNTER_BYTES = 118;
-const TIMED_ENCOUNTER_BYTES = 40;
-const OPTION_LABEL_BYTES = 25;
+const MESSAGE_BYTES = REALMZ_NATIVE_LAYOUT.messageRecordBytes;
+const OPTION_LABEL_BYTES = REALMZ_NATIVE_LAYOUT.optionLabelRecordBytes;
+const BATTLE_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
+const MONSTER_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
+const MONSTER_DESCRIPTION_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;
+const ITEM_BYTES = REALMZ_NATIVE_LAYOUT.scenarioItemRecordBytes;
+const TREASURE_BYTES = REALMZ_NATIVE_LAYOUT.treasureRecordBytes;
+const SHOP_BYTES = REALMZ_NATIVE_LAYOUT.shopRecordBytes;
+const SIMPLE_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.simpleEncounterRecordBytes;
+const COMPLEX_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.complexEncounterRecordBytes;
+const THIEF_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.thiefEncounterRecordBytes;
+const TIMED_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.timedEncounterRecordBytes;
 const MONSTER_SET_SOURCE_FILES: Record<Exclude<MonsterSetId, 0>, string> = {
   1: "Data MD1",
   [-1]: "Data MD-1"
@@ -607,7 +614,7 @@ export function upsertQuestLabel(project: Project, quest: { id: number; label: s
 }
 
 export function emptyMessage(id: number): MessageRecord {
-  return { id, text: "", authored: true, provenance: authoredProvenance("Data SD2", id, id * 256, 256) };
+  return { id, text: "", authored: true, provenance: authoredProvenance("Data SD2", id, id * MESSAGE_BYTES, MESSAGE_BYTES) };
 }
 
 export function emptyOptionLabel(id: number): OptionLabelRecord {
@@ -615,7 +622,7 @@ export function emptyOptionLabel(id: number): OptionLabelRecord {
 }
 
 export function emptyBattle(id: number): BattleRecord {
-  return { id, grid: new Array(13 * 13).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, authored: true, provenance: authoredProvenance("Data BD", id, id * 346, 346) };
+  return { id, grid: new Array(BATTLE_GRID_CELL_COUNT).fill(0), dist: 0, messageBefore: 0, messageAfter: 0, battleMacro: 0, authored: true, provenance: authoredProvenance("Data BD", id, id * BATTLE_BYTES, BATTLE_BYTES) };
 }
 
 function emptyMonster(id: number): MonsterRecord {
@@ -687,7 +694,7 @@ function canonicalMonsterDescription(record: MonsterDescriptionRecord): MonsterD
 }
 
 export function emptyTreasure(id: number): TreasureRecord {
-  return { id, itemIds: new Array(20).fill(0), exp: 0, gold: 0, gems: 0, jewelry: 0, authored: true, provenance: authoredProvenance("Data TD", id, id * 48, 48) };
+  return { id, itemIds: new Array(20).fill(0), exp: 0, gold: 0, gems: 0, jewelry: 0, authored: true, provenance: authoredProvenance("Data TD", id, id * TREASURE_BYTES, TREASURE_BYTES) };
 }
 
 export function emptyScenarioItem(id: number): ScenarioItemRecord {
@@ -741,11 +748,11 @@ export function emptyScenarioItem(id: number): ScenarioItemRecord {
 }
 
 export function emptyShop(id: number): ShopRecord {
-  return { id, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, authored: true, provenance: authoredProvenance("Data SD", id, id * 3002, 3002) };
+  return { id, itemIds: new Array(1000).fill(0), quantities: new Array(1000).fill(0), inflation: 0, authored: true, provenance: authoredProvenance("Data SD", id, id * SHOP_BYTES, SHOP_BYTES) };
 }
 
 export function emptySimpleEncounter(id: number): SimpleEncounterRecord {
-  return { id, actions: [], choiceResults: [0, 0, 0, 0], canBackOut: false, maxTimes: 0, casteSuccess: 0, prompt: 0, texts: ["", "", "", ""], authored: true, provenance: authoredProvenance("Data ED", id, id * 426, 426) };
+  return { id, actions: [], choiceResults: [0, 0, 0, 0], canBackOut: false, maxTimes: 0, casteSuccess: 0, prompt: 0, texts: ["", "", "", ""], authored: true, provenance: authoredProvenance("Data ED", id, id * SIMPLE_ENCOUNTER_BYTES, SIMPLE_ENCOUNTER_BYTES) };
 }
 
 export function emptyComplexEncounter(id: number): ComplexEncounterRecord {
@@ -768,7 +775,7 @@ export function emptyComplexEncounter(id: number): ComplexEncounterRecord {
     prompt: 0,
     texts: ["", "", "", "", "", "", "", "", ""],
     authored: true,
-    provenance: authoredProvenance("Data ED2", id, id * 520, 520)
+    provenance: authoredProvenance("Data ED2", id, id * COMPLEX_ENCOUNTER_BYTES, COMPLEX_ENCOUNTER_BYTES)
   };
 }
 

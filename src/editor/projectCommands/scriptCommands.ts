@@ -8,10 +8,11 @@ import {
   ensureActionPointMarker,
   updateActionPointMapCell
 } from "../map/actionPointMarkers";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
-const DOOR_RECORD_BYTES = 40;
-const DOORS_PER_LEVEL = 100;
-const EXTRACODE_BYTES = 10;
+const DOOR_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.actionPointRecordBytes;
+const DOORS_PER_LEVEL = REALMZ_NATIVE_LAYOUT.actionPointsPerLevel;
+const EXTRACODE_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
 
 export function createMacro(project: Project, displayName?: string) {
   const recordIndex =
