@@ -8,6 +8,10 @@ pub struct RealmzNativeLayout {
     pub action_points_per_level: usize,
     pub action_point_level_bytes: usize,
     pub extra_code_record_bytes: usize,
+    pub simple_encounter_record_bytes: usize,
+    pub complex_encounter_record_bytes: usize,
+    pub thief_encounter_record_bytes: usize,
+    pub timed_encounter_record_bytes: usize,
 }
 
 pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
@@ -18,6 +22,10 @@ pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
     action_points_per_level: 100,
     action_point_level_bytes: 4000,
     extra_code_record_bytes: 10,
+    simple_encounter_record_bytes: 426,
+    complex_encounter_record_bytes: 520,
+    thief_encounter_record_bytes: 118,
+    timed_encounter_record_bytes: 40,
 };
 
 pub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = 200;

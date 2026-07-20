@@ -64,8 +64,10 @@ export const SPELL_BYTES = 30;
 export const SPELL_OVERRIDE_RECORDS = 105;
 export const RACE_BYTES = 408;
 export const CASTE_BYTES = 576;
-export const THIEF_ENCOUNTER_BYTES = 118;
-export const TIMED_ENCOUNTER_BYTES = 40;
+export const SIMPLE_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.simpleEncounterRecordBytes;
+export const COMPLEX_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.complexEncounterRecordBytes;
+export const THIEF_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.thiefEncounterRecordBytes;
+export const TIMED_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.timedEncounterRecordBytes;
 const BROWSER_EAGER_PICTURE_PREVIEW_MAX_BYTES = 128 * 1024;
 const BROWSER_EAGER_PICTURE_PREVIEW_MAX_COUNT = 4;
 const BROWSER_EAGER_ICON_PREVIEW_MAX_BYTES = 24 * 1024;
@@ -122,8 +124,8 @@ const RECORD_BYTES: Record<string, number> = {
   "Data DDD": DOOR_LEVEL_BYTES,
   "Data RD": RANDLEVEL_BYTES,
   "Data RDD": RANDLEVEL_BYTES,
-  "Data ED": 426,
-  "Data ED2": 520,
+  "Data ED": SIMPLE_ENCOUNTER_BYTES,
+  "Data ED2": COMPLEX_ENCOUNTER_BYTES,
   "Data ED3": DOOR_BYTES,
   "Data EDCD": EXTRACODE_BYTES,
   "Data MD": MONSTER_BYTES,
@@ -136,8 +138,8 @@ const RECORD_BYTES: Record<string, number> = {
   "Data OD": OPTION_LABEL_BYTES,
   "Data MD2": 340,
   "Data TD": 48,
-  "Data TD2": 118,
-  "Data TD3": 40,
+  "Data TD2": THIEF_ENCOUNTER_BYTES,
+  "Data TD3": TIMED_ENCOUNTER_BYTES,
   "Data CI": 4608,
   "Data RI": 320,
   "Data CS": 316,
@@ -833,7 +835,7 @@ function parseScenarioItems(buffer: Uint8Array | undefined): ScenarioItemRecord[
 }
 
 function parseSimpleEncounters(buffer: Uint8Array | undefined): SimpleEncounterRecord[] {
-  return fixedRecords(buffer, 426, "Data ED", (id, start, record) => ({
+  return fixedRecords(buffer, SIMPLE_ENCOUNTER_BYTES, "Data ED", (id, start, record) => ({
     id,
     actions: parseEncounterActions(record),
     choiceResults: Array.from(record.subarray(96, 100)),
@@ -843,12 +845,12 @@ function parseSimpleEncounters(buffer: Uint8Array | undefined): SimpleEncounterR
     prompt: i16(record, 104),
     texts: Array.from({ length: 4 }, (_, slot) => decodePascalText(record.subarray(106 + slot * 80, 106 + slot * 80 + 80))),
     authored: false,
-    provenance: provenance("Data ED", id, start, 426, "source-backed")
+    provenance: provenance("Data ED", id, start, SIMPLE_ENCOUNTER_BYTES, "source-backed")
   }));
 }
 
 function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounterRecord[] {
-  return fixedRecords(buffer, 520, "Data ED2", (id, start, record) => ({
+  return fixedRecords(buffer, COMPLEX_ENCOUNTER_BYTES, "Data ED2", (id, start, record) => ({
     id,
     actions: parseEncounterActions(record),
     actionResult: signedByte(record[96]),
@@ -867,7 +869,7 @@ function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounte
     prompt: i16(record, 158),
     texts: Array.from({ length: 9 }, (_, slot) => decodePascalText(record.subarray(160 + slot * 40, 160 + slot * 40 + 40))),
     authored: false,
-    provenance: provenance("Data ED2", id, start, 520, "source-backed")
+    provenance: provenance("Data ED2", id, start, COMPLEX_ENCOUNTER_BYTES, "source-backed")
   }));
 }
 

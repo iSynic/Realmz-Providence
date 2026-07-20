@@ -877,7 +877,15 @@ ownership proof retains independent exact-size and byte-parity assertions so cha
 cannot silently redefine Realmz's format. UI/editor-module constants outside the compiler path
 remain a bounded later consolidation concern rather than part of this slice.
 
-Branch validation through the eighty-second slice completed on 2026-07-20:
+The eighty-third slice extends that compiler-owned geometry to the complete encounter family.
+Native-manifest contract v4 now owns the 426-byte simple, 520-byte complex, 118-byte thief, and
+40-byte timed encounter rows. Generated TypeScript and Rust definitions drive the browser writer
+and parser, the browser semantic index through those parser exports, the Scenario JSON script
+compiler, and the Rust encounter codec. Existing exact-length codec tests and the independent
+ownership proof remain fixed Realmz-format assertions rather than deriving their expectations from
+the policy, preserving a check against a mutually consistent but incorrect contract change.
+
+Branch validation through the eighty-third slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -937,6 +945,8 @@ The dungeon parity slice changes only the canonical ownership fixture and proof 
 no new module-size violation.
 The shared native-layout slice replaces compiler/parser literals with generated constants and adds
 no new ISY-319/320/321 module-size violation.
+The shared encounter-layout slice likewise replaces existing literals without adding a new
+ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1609,7 +1619,7 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 ### Phase 5: One compiler contract across desktop and browser
 
 - **Implemented for baseline and native paths:** generate native map/random-level/Action Point/EDCD
-  layout geometry, scenario-item capacity, startup roles,
+  and encounter-row layout geometry, scenario-item capacity, startup roles,
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
   project-derived semantic paths, and default resource sidecars from one native-manifest policy
   and enforce the applicable projections in both compilers.

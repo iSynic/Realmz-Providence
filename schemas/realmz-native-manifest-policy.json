@@ -1,5 +1,5 @@
 {
-  "contractVersion": 3,
+  "contractVersion": 4,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -14,6 +14,12 @@
     },
     "extraCode": {
       "recordBytes": 10
+    },
+    "encounter": {
+      "simpleRecordBytes": 426,
+      "complexRecordBytes": 520,
+      "thiefRecordBytes": 118,
+      "timedRecordBytes": 40
     }
   },
   "authoredBaseline": {

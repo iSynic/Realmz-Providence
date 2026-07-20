@@ -1,4 +1,5 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{
     ComplexEncounterRecord, EncounterActionRow, SimpleEncounterRecord, ThiefEncounterRecord,
     TimedEncounterLocationKind, TimedEncounterRecord,
@@ -10,10 +11,10 @@ use super::record_bytes::{
     write_i8_array,
 };
 
-pub const SIMPLE_ENCOUNTER_BYTES: usize = 426;
-pub const COMPLEX_ENCOUNTER_BYTES: usize = 520;
-pub const TIMED_ENCOUNTER_BYTES: usize = 40;
-pub const THIEF_ENCOUNTER_BYTES: usize = 118;
+pub const SIMPLE_ENCOUNTER_BYTES: usize = REALMZ_NATIVE_LAYOUT.simple_encounter_record_bytes;
+pub const COMPLEX_ENCOUNTER_BYTES: usize = REALMZ_NATIVE_LAYOUT.complex_encounter_record_bytes;
+pub const TIMED_ENCOUNTER_BYTES: usize = REALMZ_NATIVE_LAYOUT.timed_encounter_record_bytes;
+pub const THIEF_ENCOUNTER_BYTES: usize = REALMZ_NATIVE_LAYOUT.thief_encounter_record_bytes;
 
 pub fn parse_simple_encounter_records(buffer: &[u8]) -> Vec<SimpleEncounterRecord> {
     parse_fixed_records(buffer, SIMPLE_ENCOUNTER_BYTES)

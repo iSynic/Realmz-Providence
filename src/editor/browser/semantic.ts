@@ -15,7 +15,7 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES } from "./realmzParser";
+import { COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
@@ -652,7 +652,7 @@ function addShopRecords(schema: SemanticSchema, buffer?: Uint8Array) {
 
 function addSimpleEncounterRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  const recordBytes = 426;
+  const recordBytes = SIMPLE_ENCOUNTER_BYTES;
   const count = Math.floor(buffer.byteLength / recordBytes);
   for (let index = 0; index < count; index += 1) {
     const start = index * recordBytes;
@@ -673,7 +673,7 @@ function addSimpleEncounterRecords(schema: SemanticSchema, buffer?: Uint8Array) 
 
 function addComplexEncounterRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  const recordBytes = 520;
+  const recordBytes = COMPLEX_ENCOUNTER_BYTES;
   const count = Math.floor(buffer.byteLength / recordBytes);
   for (let index = 0; index < count; index += 1) {
     const start = index * recordBytes;
@@ -723,9 +723,9 @@ function addTreasureRecords(schema: SemanticSchema, buffer?: Uint8Array) {
 
 function addThiefRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  for (let index = 0; index + 118 <= buffer.byteLength; index += 1) {
-    const start = index * 118;
-    if (start + 118 > buffer.byteLength) break;
+  for (let index = 0; index + THIEF_ENCOUNTER_BYTES <= buffer.byteLength; index += 1) {
+    const start = index * THIEF_ENCOUNTER_BYTES;
+    if (start + THIEF_ENCOUNTER_BYTES > buffer.byteLength) break;
     const summary = {
       id: index,
       typeFlags: Array.from(buffer.slice(start, start + 10)).map((value) => value !== 0),
@@ -743,16 +743,16 @@ function addThiefRecords(schema: SemanticSchema, buffer?: Uint8Array) {
       prompts: shortArray(buffer, start + 106, 3),
       promptSounds: shortArray(buffer, start + 112, 3)
     };
-    upsertRecord(schema, browserRecord("Data TD2", index, 118, "thief-encounter", `Thief ${index}`, summary));
-    schema.entities.push(browserEntity(`thief:${index}`, "thief-encounter", `Thief ${index}`, "Data TD2", `record:Data TD2:${index}`, start, 118, summary));
+    upsertRecord(schema, browserRecord("Data TD2", index, THIEF_ENCOUNTER_BYTES, "thief-encounter", `Thief ${index}`, summary));
+    schema.entities.push(browserEntity(`thief:${index}`, "thief-encounter", `Thief ${index}`, "Data TD2", `record:Data TD2:${index}`, start, THIEF_ENCOUNTER_BYTES, summary));
   }
 }
 
 function addTimedRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  for (let index = 0; index + 40 <= buffer.byteLength; index += 1) {
-    const start = index * 40;
-    if (start + 40 > buffer.byteLength) break;
+  for (let index = 0; index + TIMED_ENCOUNTER_BYTES <= buffer.byteLength; index += 1) {
+    const start = index * TIMED_ENCOUNTER_BYTES;
+    if (start + TIMED_ENCOUNTER_BYTES > buffer.byteLength) break;
     const stuff = shortArray(buffer, start + 20, 10);
     const locationKind = stuff[0] === 1 ? "land" : stuff[0] === 2 ? "dungeon" : "any";
     const summary = {
@@ -769,8 +769,8 @@ function addTimedRecords(schema: SemanticSchema, buffer?: Uint8Array) {
       requiredQuest: i16At(buffer, start + 18),
       locationKind
     };
-    upsertRecord(schema, browserRecord("Data TD3", index, 40, "timed-encounter", `Timed Encounter ${index}`, summary));
-    schema.entities.push(browserEntity(`time:${index}`, "timed-encounter", `Timed Encounter ${index}`, "Data TD3", `record:Data TD3:${index}`, start, 40, summary));
+    upsertRecord(schema, browserRecord("Data TD3", index, TIMED_ENCOUNTER_BYTES, "timed-encounter", `Timed Encounter ${index}`, summary));
+    schema.entities.push(browserEntity(`time:${index}`, "timed-encounter", `Timed Encounter ${index}`, "Data TD3", `record:Data TD3:${index}`, start, TIMED_ENCOUNTER_BYTES, summary));
     if (summary.door > 0) pushLink(schema, `time:${index}`, `macro:${summary.door}`, "calls_macro", "source-backed");
     if (summary.requiredItem > 0) pushLink(schema, `time:${index}`, `item:${summary.requiredItem}`, "requires_item", "source-backed");
     if (summary.requiredQuest >= 0) pushLink(schema, `time:${index}`, `quest-flag:${summary.requiredQuest}`, "reads_flag", "source-backed");
@@ -2645,8 +2645,8 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data RDD": ["dungeon random metadata", RANDLEVEL_BYTES],
   "Data ED3": ["macro trigger/action table", 40],
   "Data EDCD": ["extra-code row", 10],
-  "Data ED": ["simple encounter", 426],
-  "Data ED2": ["complex encounter", 520],
+  "Data ED": ["simple encounter", SIMPLE_ENCOUNTER_BYTES],
+  "Data ED2": ["complex encounter", COMPLEX_ENCOUNTER_BYTES],
   "Data BD": ["battle record", 346],
   "Data MD": ["monster record", 210],
   "Data MD1": ["alternate monster set", 210],
@@ -2657,8 +2657,8 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data OD": ["option label", OPTION_LABEL_BYTES],
   "Data MD2": ["map record", 340],
   "Data TD": ["treasure", 48],
-  "Data TD2": ["thief encounters", 118],
-  "Data TD3": ["timed encounters", 40],
+  "Data TD2": ["thief encounters", THIEF_ENCOUNTER_BYTES],
+  "Data TD3": ["timed encounters", TIMED_ENCOUNTER_BYTES],
   "Data Spell": ["spell overrides", SPELL_RECORD_BYTES],
   "Data Race": ["race overrides", RACE_RECORD_BYTES],
   "Data Caste": ["caste overrides", CASTE_RECORD_BYTES],

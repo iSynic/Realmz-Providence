@@ -54,10 +54,10 @@ import {
 } from "./referenceResolver";
 import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
-const SIMPLE_ENCOUNTER_BYTES = 426;
-const COMPLEX_ENCOUNTER_BYTES = 520;
-const THIEF_ENCOUNTER_BYTES = 118;
-const TIMED_ENCOUNTER_BYTES = 40;
+const SIMPLE_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.simpleEncounterRecordBytes;
+const COMPLEX_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.complexEncounterRecordBytes;
+const THIEF_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.thiefEncounterRecordBytes;
+const TIMED_ENCOUNTER_BYTES = REALMZ_NATIVE_LAYOUT.timedEncounterRecordBytes;
 const EXTRACODE_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
 const DOOR_BYTES = REALMZ_NATIVE_LAYOUT.actionPointRecordBytes;
 const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
