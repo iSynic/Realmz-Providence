@@ -201,17 +201,28 @@ describe("project command facade", () => {
 
   it("creates fresh simple encounters from semantic fields without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Simple Encounter");
-
-    const next = applyProjectCommand(project, {
+    const created = applyProjectCommand(project, {
       kind: "createTargetRecord",
       label: "Create simple encounter",
       recordType: "simpleEncounter",
       id: 4
     });
+    created.simpleEncounters = [{
+      ...created.simpleEncounters[0],
+      rawBytes: new Array(426).fill(0xa5)
+    } as unknown as Project["simpleEncounters"][number]];
+
+    const next = applyProjectCommand(created, {
+      kind: "updateSimpleEncounterRecord",
+      label: "Update simple encounter",
+      id: 4,
+      changes: { prompt: 17 }
+    });
 
     expect(next.simpleEncounters).toHaveLength(1);
     expect(next.simpleEncounters[0].texts).toEqual(["", "", "", ""]);
-    expect(next.simpleEncounters[0].rawBytes).toBeUndefined();
+    expect(next.simpleEncounters[0].prompt).toBe(17);
+    expect("rawBytes" in next.simpleEncounters[0]).toBe(false);
   });
 
   it("creates fresh complex encounters from semantic fields without compatibility bytes", () => {

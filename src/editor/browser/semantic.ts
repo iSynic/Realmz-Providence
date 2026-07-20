@@ -414,7 +414,7 @@ function addCanonicalRecordBuffer<T extends { id: number }>(
 ) {
   if (records.length === 0) return;
   try {
-    const canonicalRecords = records.map((record) => ({ ...record, authored: true, rawBytes: [] }));
+    const canonicalRecords = records.map((record) => ({ ...record, authored: true }));
     const bytes = encode(canonicalRecords);
     buffers.set(name, bytes);
     sources.push({ name, path, ids: new Set(records.map((record) => record.id)) });

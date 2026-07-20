@@ -373,6 +373,22 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in battle).toBe(false);
   });
 
+  it("strips obsolete simple-encounter bytes when opening legacy browser projects", () => {
+    const project = createBrowserProject("Legacy simple encounter");
+    project.simpleEncounters = [{
+      ...parseScenarioBuffers(new Map([["Data ED", new Uint8Array(426)]])).simpleEncounters[0],
+      prompt: 17,
+      texts: ["Semantic choice", "", "", ""],
+      rawBytes: new Array(426).fill(0xa5)
+    } as unknown as Project["simpleEncounters"][number]];
+
+    const encounter = normalizeBrowserProject(project).simpleEncounters[0];
+
+    expect(encounter.prompt).toBe(17);
+    expect(encounter.texts[0]).toBe("Semantic choice");
+    expect("rawBytes" in encounter).toBe(false);
+  });
+
   it("strips obsolete monster-description bytes when opening legacy browser projects", () => {
     const project = createBrowserProject("Legacy Monster Description");
     project.monsterDescriptions = [{
@@ -823,8 +839,7 @@ describe("browser project native manifest validation", () => {
       canBackOut: true,
       prompt: 12,
       texts: ["Canonical simple encounter", "", "", ""],
-      authored: false,
-      rawBytes: new Array(426).fill(0xa5)
+      authored: false
     }];
     project.complexEncounters = [{
       ...parsed.complexEncounters[0],

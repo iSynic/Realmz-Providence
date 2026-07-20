@@ -522,7 +522,7 @@ function upsertRecord<K extends TargetCollectionName>(project: Project, collecti
 }
 
 function canonicalTargetRecord<K extends TargetCollectionName>(collection: K, record: Project[K][number]) {
-  if (collection !== "messages" && collection !== "battles" && collection !== "monsters" && collection !== "scenarioItems" && collection !== "treasures" && collection !== "shops") return record;
+  if (collection !== "messages" && collection !== "battles" && collection !== "monsters" && collection !== "scenarioItems" && collection !== "treasures" && collection !== "shops" && collection !== "simpleEncounters") return record;
   const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as Project[K][number] & { rawBytes?: number[] };
   return canonicalRecord as Project[K][number];
 }

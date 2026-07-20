@@ -333,7 +333,6 @@ mod tests {
                 String::new(),
                 String::new(),
             ],
-            raw_bytes: vec![0; SIMPLE_ENCOUNTER_BYTES],
             authored: true,
             provenance: provenance("Data ED", 0, 0, SIMPLE_ENCOUNTER_BYTES),
         };

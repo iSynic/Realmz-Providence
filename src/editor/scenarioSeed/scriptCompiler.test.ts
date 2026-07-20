@@ -41,7 +41,7 @@ describe("scenario seed script compiler", () => {
     expect(result.simpleEncounters[0].actions).toEqual([
       { slot: 0, rawCode: 1, id: 7 }
     ]);
-    expect(result.simpleEncounters[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in result.simpleEncounters[0]).toBe(false);
     expect(result.triggers).toHaveLength(2);
     expect(result.triggers[0]).toMatchObject({
       source: "Data DD",

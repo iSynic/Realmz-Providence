@@ -538,7 +538,7 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       "docs/generated/encounter-record-evidence.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh and authored simple encounters compile all 426 bytes from canonical semantics, including deterministic zero alignment padding, without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
+    preservationPolicy: "Canonical simple-encounter records expose no rawBytes and compile all 426 bytes from actions, results, controls, prompt, and text, including deterministic zero alignment and Pascal padding. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
   },
   {
     container: "Data ED2",

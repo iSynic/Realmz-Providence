@@ -964,8 +964,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceSimpleEncounterRecord",
       "x-providence-rust-name": "SimpleEncounterRecord",
-      "x-providence-rust-default": ["rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["authored"],
       "required": ["id", "actions", "choiceResults", "canBackOut", "maxTimes", "casteSuccess", "prompt", "texts", "provenance"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
@@ -976,7 +975,6 @@
         "casteSuccess": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
         "prompt": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "texts": { "type": "array", "minItems": 4, "maxItems": 4, "items": { "type": "string" } },
-        "rawBytes": { "type": "array", "minItems": 426, "maxItems": 426, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

@@ -1182,8 +1182,8 @@ const authoredTimedEncounter = timedEncounterRecord(1, {
 const encounterProject = {
   ...project,
   simpleEncounters: [
-    simpleEncounterRecord(0, { rawBytes: new Array(426).fill(0x11), authored: false }),
-    { ...authoredSimpleEncounter, rawBytes: new Array(426).fill(0x22), authored: true }
+    simpleEncounterRecord(0, { authored: false }),
+    { ...authoredSimpleEncounter, authored: true }
   ],
   complexEncounters: [
     complexEncounterRecord(0, { rawBytes: new Array(520).fill(0x11), authored: false }),

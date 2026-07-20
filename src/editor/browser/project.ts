@@ -630,7 +630,10 @@ export function normalizeBrowserProject(project: Project): Project {
       quantities: normalizedShopQuantities(record)
     };
   });
-  project.simpleEncounters ??= [];
+  project.simpleEncounters = (project.simpleEncounters ?? []).map((record) => {
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
+    return canonicalRecord;
+  });
   project.complexEncounters = (project.complexEncounters ?? []).map(normalizedComplexEncounter);
   project.thiefEncounters = (project.thiefEncounters ?? []).map(normalizedThiefEncounter);
   project.timedEncounters = (project.timedEncounters ?? []).map(normalizedTimedEncounter);
@@ -1104,10 +1107,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
   for (const treasure of project.treasures ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "treasure", treasure.id), errors, warnings);
   for (const shop of project.shops ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "shop", shop.id), errors, warnings);
   for (const encounter of project.simpleEncounters ?? []) {
-    const rawBytes = encounter.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 426) {
-      errors.push(`Simple encounter ${encounter.id} has invalid 426-byte compatibility storage.`);
-    }
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "simpleEncounter", encounter.id), errors, warnings);
   }
   for (const encounter of project.complexEncounters ?? []) {

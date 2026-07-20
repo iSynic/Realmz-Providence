@@ -362,6 +362,7 @@ function checkSimpleEncounter(createProjectFromScenarioSeed) {
   expect(allocationId(result, "messages", "door-prompt") === 0, "door-prompt should allocate to message ID 0");
   expect(allocationId(result, "simpleEncounters", "door-choice") === 0, "door-choice should allocate to simple encounter ID 0");
   const encounter = result.project.simpleEncounters[0];
+  expect(encounter != null && !Object.hasOwn(encounter, "rawBytes"), "fresh Scenario JSON simple encounters should not carry compatibility bytes");
   expect(encounter?.prompt === 0, "simple encounter prompt should resolve keyed message");
   expect(encounter?.texts?.[0] === "Try the latch" && encounter?.texts?.[1] === "Step away", "simple encounter option text should be preserved");
   expect(encounter?.choiceResults?.join(",") === "1,0,0,0", "simple encounter choice results should be padded to four entries");

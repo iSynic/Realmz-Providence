@@ -524,7 +524,7 @@ describe("browser simple-encounter writer", () => {
       texts: ["Continue", "Search", "Leave", "Wait"]
     };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeSimpleEncounters([record]);
 
     expect(output).toHaveLength(426);
@@ -548,8 +548,9 @@ describe("browser simple-encounter writer", () => {
     input.set([2, 79, 107], 106);
     const imported = parseScenarioBuffers(new Map([["Data ED", input]])).simpleEncounters[0];
 
-    const output = writeSimpleEncounters([{ ...imported, rawBytes: new Array(426).fill(0x5a) }]);
+    const output = writeSimpleEncounters([imported]);
 
+    expect("rawBytes" in imported).toBe(false);
     expect(output[0]).toBe(9);
     expect(i16(output, 32)).toBe(-12);
     expect(Array.from(output.slice(96, 103))).toEqual([4, 3, 2, 1, 1, 7, 8]);
@@ -560,10 +561,6 @@ describe("browser simple-encounter writer", () => {
     expect(output).not.toEqual(input);
   });
 
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeSimpleEncounters([{ ...emptySimpleEncounter(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
-  });
 });
 
 describe("browser complex-encounter writer", () => {

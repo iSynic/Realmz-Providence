@@ -542,7 +542,6 @@ export const PROVIDENCE_SIMPLE_ENCOUNTER_FIELDS = [
   "casteSuccess",
   "prompt",
   "texts",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1247,7 +1246,6 @@ export type ProvidenceSimpleEncounterRecord = {
   casteSuccess: number;
   prompt: number;
   texts: string[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

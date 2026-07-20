@@ -488,15 +488,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for encounter in &project.simple_encounters {
-        if !encounter.raw_bytes.is_empty()
-            && encounter.raw_bytes.len() != crate::realmz::SIMPLE_ENCOUNTER_BYTES
-        {
-            errors.push(format!(
-                "Simple encounter {} has invalid {}-byte compatibility storage.",
-                encounter.id,
-                crate::realmz::SIMPLE_ENCOUNTER_BYTES
-            ));
-        }
         if encounter.authored {
             validate_encounter_actions(
                 "Simple encounter",
@@ -538,11 +529,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     encounter.id
                 ));
             }
-        } else if encounter.raw_bytes.is_empty() {
-            warnings.push(format!(
-                "Simple encounter {} has incomplete preserved source bytes and should be re-imported before editing.",
-                encounter.id
-            ));
         }
     }
     for encounter in &project.complex_encounters {

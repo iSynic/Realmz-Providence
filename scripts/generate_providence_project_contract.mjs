@@ -444,14 +444,13 @@ expectSameArray(Object.keys(encounterActionRowSchema.properties ?? {}), encounte
 expectSameArray(encounterActionRowSchema.required ?? [], encounterActionFields, "Encounter action required field inventory");
 expect(encounterActionRowSchema.properties?.slot?.minimum === 0 && encounterActionRowSchema.properties?.slot?.maximum === 31, "encounter action slots must match Realmz's 32 action rows");
 expect(encounterActionRowSchema.properties?.rawCode?.minimum === -128 && encounterActionRowSchema.properties?.rawCode?.maximum === 127, "encounter action CODE must retain the signed byte domain");
-const simpleEncounterFields = ["id", "actions", "choiceResults", "canBackOut", "maxTimes", "casteSuccess", "prompt", "texts", "rawBytes", "authored", "provenance"];
+const simpleEncounterFields = ["id", "actions", "choiceResults", "canBackOut", "maxTimes", "casteSuccess", "prompt", "texts", "authored", "provenance"];
 expectSameArray(Object.keys(simpleEncounterRecordSchema.properties ?? {}), simpleEncounterFields, "Simple-encounter field inventory");
-expectSameArray(simpleEncounterRecordSchema.required ?? [], simpleEncounterFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Simple-encounter authored field inventory");
+expectSameArray(simpleEncounterRecordSchema.required ?? [], simpleEncounterFields.filter((field) => field !== "authored"), "Simple-encounter authored field inventory");
 expect(simpleEncounterRecordSchema.properties?.actions?.items?.$ref === "#/$defs/encounterActionRow", "simple encounters must contain canonical encounter action rows");
 expect(simpleEncounterRecordSchema.properties?.choiceResults?.minItems === 4 && simpleEncounterRecordSchema.properties?.choiceResults?.maxItems === 4, "simple encounters must retain four choice-result slots");
 expect(simpleEncounterRecordSchema.properties?.texts?.minItems === 4 && simpleEncounterRecordSchema.properties?.texts?.maxItems === 4, "simple encounters must retain four inline text slots");
-expect(simpleEncounterRecordSchema.properties?.rawBytes?.minItems === 426 && simpleEncounterRecordSchema.properties?.rawBytes?.maxItems === 426, "simple-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
-expectSameArray(simpleEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Simple-encounter omitted empty compatibility inventory");
+expectSameArray(simpleEncounterRecordSchema["x-providence-rust-default"] ?? [], ["authored"], "Simple-encounter Rust default inventory");
 const complexEncounterFields = ["id", "actions", "actionResult", "wordResult", "groups", "spellIds", "spellResults", "itemIds", "itemResults", "choiceResults", "wordResults", "canBackOut", "thief", "maxTimes", "casteSuccess", "thiefSuccess", "thiefFail", "prompt", "texts", "rawBytes", "authored", "provenance"];
 expectSameArray(Object.keys(complexEncounterRecordSchema.properties ?? {}), complexEncounterFields, "Complex-encounter field inventory");
 expectSameArray(complexEncounterRecordSchema.required ?? [], complexEncounterFields.filter((field) => !["choiceResults", "wordResults", "rawBytes", "authored"].includes(field)), "Complex-encounter authored field inventory");
@@ -481,7 +480,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

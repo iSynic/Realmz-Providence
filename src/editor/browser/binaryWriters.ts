@@ -703,10 +703,6 @@ function validateCasteStorage(record: ScenarioCasteOverride) {
 
 export function writeSimpleEncounters(records: SimpleEncounterRecord[]) {
   return writeFixedRecords(records, SIMPLE_ENCOUNTER_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== SIMPLE_ENCOUNTER_RECORD_BYTES) {
-      throw new Error(`Simple encounter ${record.id} has invalid compatibility byte storage`);
-    }
     writeEncounterActions(target, record.actions);
     for (let slot = 0; slot < 4; slot += 1) {
       target[96 + slot] = (record.choiceResults[slot] ?? 0) & 0xff;

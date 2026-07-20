@@ -3097,8 +3097,6 @@ mod tests {
         fs::write(raw_dir.join("Data ED"), &source).unwrap();
 
         let mut encounters = crate::realmz::parse_simple_encounter_records(&source);
-        encounters[0].raw_bytes.fill(0x11);
-        encounters[1].raw_bytes.fill(0x22);
         encounters[1].actions = vec![crate::project::EncounterActionRow {
             slot: 3,
             raw_code: -2,

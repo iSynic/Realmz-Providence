@@ -377,6 +377,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_battle_raw_bytes(&mut value);
     migrate_legacy_monster_raw_bytes(&mut value);
     migrate_legacy_monster_description_raw_bytes(&mut value);
+    migrate_legacy_simple_encounter_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -552,6 +553,10 @@ fn migrate_legacy_monster_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_monster_description_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "monsterDescriptions");
+}
+
+fn migrate_legacy_simple_encounter_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "simpleEncounters");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2688,6 +2693,28 @@ mod tests {
                 "confidence": "fixture-backed"
             }
         }]);
+        let mut legacy_simple = crate::realmz::parse_simple_encounter_records(&vec![
+            0;
+            crate::realmz::SIMPLE_ENCOUNTER_BYTES
+        ])
+        .into_iter()
+        .next()
+        .expect("legacy simple encounter");
+        legacy_simple.id = 8;
+        legacy_simple.actions = vec![crate::project::EncounterActionRow {
+            slot: 3,
+            raw_code: -2,
+            id: 260,
+        }];
+        legacy_simple.choice_results = vec![1, 2, 3, 4];
+        legacy_simple.can_back_out = true;
+        legacy_simple.prompt = 17;
+        legacy_simple.texts[0] = "Semantic legacy choice".to_string();
+        let mut legacy_simple_value =
+            serde_json::to_value(legacy_simple).expect("serialize legacy simple encounter");
+        legacy_simple_value["rawBytes"] =
+            serde_json::json!(vec![0xa5u8; crate::realmz::SIMPLE_ENCOUNTER_BYTES]);
+        saved["simpleEncounters"] = serde_json::json!([legacy_simple_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2745,6 +2772,14 @@ mod tests {
             opened.monster_descriptions[0].text,
             "Semantic monster description"
         );
+        assert_eq!(opened.simple_encounters[0].id, 8);
+        assert_eq!(opened.simple_encounters[0].actions[0].slot, 3);
+        assert_eq!(opened.simple_encounters[0].actions[0].raw_code, -2);
+        assert_eq!(opened.simple_encounters[0].actions[0].id, 260);
+        assert_eq!(opened.simple_encounters[0].choice_results, [1, 2, 3, 4]);
+        assert!(opened.simple_encounters[0].can_back_out);
+        assert_eq!(opened.simple_encounters[0].prompt, 17);
+        assert_eq!(opened.simple_encounters[0].texts[0], "Semantic legacy choice");
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2784,6 +2819,7 @@ mod tests {
             .get("rawBytes")
             .is_none());
         assert!(upgraded["monsterDescriptions"][0].get("rawBytes").is_none());
+        assert!(upgraded["simpleEncounters"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -3216,7 +3252,6 @@ mod tests {
         simple.prompt = 12;
         simple.texts[0] = "A simple choice".to_string();
         simple.authored = false;
-        simple.raw_bytes.fill(0xA5);
         project.simple_encounters = vec![simple];
 
         let mut complex = crate::realmz::parse_complex_encounter_records(&vec![

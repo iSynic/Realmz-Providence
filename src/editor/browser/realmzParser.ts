@@ -844,7 +844,6 @@ function parseSimpleEncounters(buffer: Uint8Array | undefined): SimpleEncounterR
     casteSuccess: signedByte(record[102]),
     prompt: i16(record, 104),
     texts: Array.from({ length: 4 }, (_, slot) => decodePascalText(record.subarray(106 + slot * 80, 106 + slot * 80 + 80))),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data ED", id, start, 426, "source-backed")
   }));
