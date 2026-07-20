@@ -50,8 +50,9 @@ export const DOORS_PER_LEVEL = REALMZ_NATIVE_LAYOUT.actionPointsPerLevel;
 export const DOOR_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.actionPointLevelBytes;
 export const RANDLEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
 export const EXTRACODE_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
-export const MONSTER_BYTES = 210;
-export const MONSTER_DESCRIPTION_BYTES = 256;
+export const BATTLE_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
+export const MONSTER_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
+export const MONSTER_DESCRIPTION_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;
 export const OPTION_LABEL_BYTES = 25;
 export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLS = 16;
@@ -132,7 +133,7 @@ const RECORD_BYTES: Record<string, number> = {
   "Data MD1": MONSTER_BYTES,
   "Data MD-1": MONSTER_BYTES,
   "Data DES": MONSTER_DESCRIPTION_BYTES,
-  "Data BD": 346,
+  "Data BD": BATTLE_BYTES,
   "Data SD": 3002,
   "Data SD2": 256,
   "Data OD": OPTION_LABEL_BYTES,
@@ -590,7 +591,7 @@ function parseOptionLabels(buffer: Uint8Array | undefined): OptionLabelRecord[] 
 }
 
 function parseBattles(buffer: Uint8Array | undefined): BattleRecord[] {
-  return fixedRecords(buffer, 346, "Data BD", (id, start, record) => ({
+  return fixedRecords(buffer, BATTLE_BYTES, "Data BD", (id, start, record) => ({
     id,
     grid: Array.from({ length: 13 * 13 }, (_, slot) => i16(record, slot * 2)),
     dist: signedByte(record[338]),
@@ -598,7 +599,7 @@ function parseBattles(buffer: Uint8Array | undefined): BattleRecord[] {
     messageAfter: i16(record, 342),
     battleMacro: i16(record, 344),
     authored: false,
-    provenance: provenance("Data BD", id, start, 346, "source-backed")
+    provenance: provenance("Data BD", id, start, BATTLE_BYTES, "source-backed")
   }));
 }
 

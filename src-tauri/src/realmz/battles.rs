@@ -1,11 +1,12 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::BattleRecord;
 
 use super::record_bytes::{
     i16_be, parse_fixed_records, provenance, write_fixed_records, write_i16_be,
 };
 
-pub const BATTLE_BYTES: usize = 346;
+pub const BATTLE_BYTES: usize = REALMZ_NATIVE_LAYOUT.battle_record_bytes;
 const BATTLE_GRID_SLOTS: usize = 13 * 13;
 const BATTLE_RUNTIME_MONSTER_LIMIT: usize = 100;
 

@@ -885,7 +885,14 @@ compiler, and the Rust encounter codec. Existing exact-length codec tests and th
 ownership proof remain fixed Realmz-format assertions rather than deriving their expectations from
 the policy, preserving a check against a mutually consistent but incorrect contract change.
 
-Branch validation through the eighty-third slice completed on 2026-07-20:
+The eighty-fourth slice extends compiler-owned geometry to authored combat content. Native-
+manifest contract v5 now owns the 346-byte battle, 210-byte monster, and 256-byte monster-
+description rows. Generated TypeScript and Rust definitions drive the browser writer and parser,
+the browser semantic index through parser exports, the Scenario JSON core-record compiler, and the
+Rust battle and combat codecs. Exact-length writer/parser tests and the independent ownership proof
+remain fixed-format checks rather than deriving their expected sizes from the generated policy.
+
+Branch validation through the eighty-fourth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -946,6 +953,8 @@ no new module-size violation.
 The shared native-layout slice replaces compiler/parser literals with generated constants and adds
 no new ISY-319/320/321 module-size violation.
 The shared encounter-layout slice likewise replaces existing literals without adding a new
+ISY-319/320/321 module-size violation.
+The shared combat-layout slice replaces battle and monster literals without adding a new
 ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
@@ -1618,8 +1627,8 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 
 ### Phase 5: One compiler contract across desktop and browser
 
-- **Implemented for baseline and native paths:** generate native map/random-level/Action Point/EDCD
-  and encounter-row layout geometry, scenario-item capacity, startup roles,
+- **Implemented for baseline and native paths:** generate native map/random-level/Action Point/EDCD,
+  encounter-row, and combat-row layout geometry, scenario-item capacity, startup roles,
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
   project-derived semantic paths, and default resource sidecars from one native-manifest policy
   and enforce the applicable projections in both compilers.

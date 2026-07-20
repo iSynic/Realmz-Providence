@@ -13,7 +13,10 @@ export const REALMZ_NATIVE_LAYOUT = {
   "simpleEncounterRecordBytes": 426,
   "complexEncounterRecordBytes": 520,
   "thiefEncounterRecordBytes": 118,
-  "timedEncounterRecordBytes": 40
+  "timedEncounterRecordBytes": 40,
+  "battleRecordBytes": 346,
+  "monsterRecordBytes": 210,
+  "monsterDescriptionRecordBytes": 256
 } as const;
 
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;

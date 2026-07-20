@@ -1,4 +1,5 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{MonsterDescriptionRecord, MonsterRecord, MonsterSet};
 
 use super::record_bytes::{
@@ -7,8 +8,8 @@ use super::record_bytes::{
     write_i16_array, write_i16_be, write_i8_array,
 };
 
-pub const MONSTER_BYTES: usize = 210;
-pub const MONSTER_DESCRIPTION_BYTES: usize = 256;
+pub const MONSTER_BYTES: usize = REALMZ_NATIVE_LAYOUT.monster_record_bytes;
+pub const MONSTER_DESCRIPTION_BYTES: usize = REALMZ_NATIVE_LAYOUT.monster_description_record_bytes;
 
 pub fn parse_monsters(buffer: &[u8]) -> Vec<MonsterRecord> {
     parse_monsters_from_source(buffer, "Data MD")

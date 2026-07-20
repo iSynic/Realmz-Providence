@@ -1,5 +1,5 @@
 {
-  "contractVersion": 4,
+  "contractVersion": 5,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -20,6 +20,11 @@
       "complexRecordBytes": 520,
       "thiefRecordBytes": 118,
       "timedRecordBytes": 40
+    },
+    "combat": {
+      "battleRecordBytes": 346,
+      "monsterRecordBytes": 210,
+      "monsterDescriptionRecordBytes": 256
     }
   },
   "authoredBaseline": {

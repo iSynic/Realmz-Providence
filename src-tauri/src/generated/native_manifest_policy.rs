@@ -12,6 +12,9 @@ pub struct RealmzNativeLayout {
     pub complex_encounter_record_bytes: usize,
     pub thief_encounter_record_bytes: usize,
     pub timed_encounter_record_bytes: usize,
+    pub battle_record_bytes: usize,
+    pub monster_record_bytes: usize,
+    pub monster_description_record_bytes: usize,
 }
 
 pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
@@ -26,6 +29,9 @@ pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
     complex_encounter_record_bytes: 520,
     thief_encounter_record_bytes: 118,
     timed_encounter_record_bytes: 40,
+    battle_record_bytes: 346,
+    monster_record_bytes: 210,
+    monster_description_record_bytes: 256,
 };
 
 pub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = 200;

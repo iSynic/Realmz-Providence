@@ -15,7 +15,7 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES } from "./realmzParser";
+import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { shopPrefixRecordCount } from "./shopRecords";
@@ -565,11 +565,11 @@ function addMonsterRecords(
   entityPrefix: string
 ) {
   if (!buffer) return;
-  const recordBytes = 210;
+  const recordBytes = MONSTER_BYTES;
   const count = Math.floor(buffer.byteLength / recordBytes);
   for (let index = 0; index < count; index += 1) {
     const start = index * recordBytes;
-    const name = decodeClassicText(buffer.slice(start + 170, start + 210));
+    const name = decodeClassicText(buffer.slice(start + 170, start + MONSTER_BYTES));
     const summary = {
       id: index,
       hd: buffer[start] ?? 0,
@@ -597,7 +597,7 @@ function addMonsterRecords(
 
 function addBattleRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  const recordBytes = 346;
+  const recordBytes = BATTLE_BYTES;
   const count = Math.floor(buffer.byteLength / recordBytes);
   for (let index = 0; index < count; index += 1) {
     const start = index * recordBytes;
@@ -2647,10 +2647,10 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data EDCD": ["extra-code row", 10],
   "Data ED": ["simple encounter", SIMPLE_ENCOUNTER_BYTES],
   "Data ED2": ["complex encounter", COMPLEX_ENCOUNTER_BYTES],
-  "Data BD": ["battle record", 346],
-  "Data MD": ["monster record", 210],
-  "Data MD1": ["alternate monster set", 210],
-  "Data MD-1": ["alternate monster set", 210],
+  "Data BD": ["battle record", BATTLE_BYTES],
+  "Data MD": ["monster record", MONSTER_BYTES],
+  "Data MD1": ["alternate monster set", MONSTER_BYTES],
+  "Data MD-1": ["alternate monster set", MONSTER_BYTES],
   "Data DES": ["monster description", MONSTER_DESCRIPTION_BYTES],
   "Data SD": ["shop record", 3002],
   "Data SD2": ["message record", 256],

@@ -35,9 +35,9 @@ import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
 export const MESSAGE_RECORD_BYTES = 256;
 export const OPTION_LABEL_RECORD_BYTES = 25;
-export const BATTLE_RECORD_BYTES = 346;
-export const MONSTER_RECORD_BYTES = 210;
-export const MONSTER_DESCRIPTION_RECORD_BYTES = 256;
+export const BATTLE_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
+export const MONSTER_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
+export const MONSTER_DESCRIPTION_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;
 export const ITEM_RECORD_BYTES = 100;
 export const TREASURE_RECORD_BYTES = 48;
 export const SHOP_RECORD_BYTES = 3002;

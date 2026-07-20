@@ -29,12 +29,13 @@ import type {
 import { SCENARIO_ITEM_TYPE_CODES } from "./recordContracts";
 import { authoredProvenance, padArray, padNestedNumberArrays } from "./recordEncoding";
 import { resolveItemRef, resolveMonsterRef, resolveSeedAssetRef } from "./referenceResolver";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
 const MESSAGE_BYTES = 256;
 const OPTION_LABEL_BYTES = 25;
-const BATTLE_BYTES = 346;
-const MONSTER_BYTES = 210;
-const MONSTER_DESCRIPTION_BYTES = 256;
+const BATTLE_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
+const MONSTER_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
+const MONSTER_DESCRIPTION_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;
 const TREASURE_BYTES = 48;
 const SHOP_BYTES = 3002;
 const ITEM_BYTES = 100;
