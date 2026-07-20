@@ -817,7 +817,17 @@ semantic solidity, and both native target resource paths; Rust manifest checks c
 Classic Mac, and portable targets. Imported resource-fork preference and compatibility remapping
 remain unchanged.
 
-Branch validation through the seventy-sixth slice completed on 2026-07-20:
+The seventy-seventh slice adds the first canonical presence projection for optional semantic files.
+Seventeen fixed-path map, Action Point, singleton, text, combat, record, and rule families now pair
+their native path with a schema-v5 JSON pointer and a closed `present`, `collection-non-empty`, or
+`collection-match` predicate. The policy generator validates every pointer and collection field
+against the canonical project schema, emits the predicates and path roles for both languages, and
+both authored compilers reject a manifest whose file presence disagrees with the projection. Their
+semantic writers and imported annex lookups consume the generated paths without moving codec sizes
+or byte encoding into policy. Dynamic custom-landlook/monster-set names and resource sidecar paths
+remain a separate resource-focused contract slice.
+
+Branch validation through the seventy-seventh slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 616 passed, plus typecheck;
@@ -864,6 +874,8 @@ The trigger-table policy extension changes only those generated definitions, bot
 functions, and their existing golden coverage, so it likewise adds no module-size violation.
 The startup-role extension replaces path and capacity literals inside the same compiler owners and
 adds no module-size violation.
+The optional-semantic projection adds generated policy and replaces literals in the existing
+compiler owners without adding a module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1050,9 +1062,11 @@ the same content-neutral package directly as authored compiler output:
 The versioned `schemas/realmz-native-manifest-policy.json` contract is now the neutral owner of the
 shared 200-row scenario-item capacity, always-empty runtime-file inventory, and land/dungeon
 trigger-table minimums. It also names the stable support, security, item, solidity, and
-target-specific resource-fork roles. Its generated TypeScript and Rust constants feed both
-baseline implementations and the corresponding semantic overlays. Native codec sizes, record
-encoding, and semantic compilation order intentionally remain beside the corresponding writers.
+target-specific resource-fork roles, plus seventeen fixed-path optional semantic families and
+their canonical presence predicates. Its generated TypeScript and Rust constants feed both
+baseline implementations and the corresponding semantic overlays; both compilers enforce the
+same optional-file projection. Native codec sizes, record encoding, and semantic compilation order
+intentionally remain beside the corresponding writers.
 
 Neither path materializes these files as preserved input or adds them to the canonical project's
 source inventory.
@@ -1190,7 +1204,11 @@ A pragmatic sequence is:
 24. **Implemented for authored startup roles:** define support, security, item, solidity, and
     per-target resource-fork paths in the neutral policy; use them for baseline and semantic
     overlays; remove the duplicate Rust item-capacity literal; and check every target manifest.
-25. Keep parser, compiler, validator, and UI behavior in handwritten modules.
+25. **Implemented for fixed-path optional semantic families:** define canonical JSON-pointer
+    presence predicates and native paths; generate both language projections; enforce them during
+    authored compilation; and independently compare the browser golden manifests with the policy.
+26. Keep parser, codec, validator, and UI behavior in handwritten modules; add dynamic
+    source/resource-sidecar path policy only where it removes real cross-runtime duplication.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1374,10 +1392,11 @@ must not be called fresh-authoritative merely because imported round trips are f
 1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
    annex and the minimum ownership fixture enforces byte parity. A versioned neutral policy now
    owns scenario-item capacity, always-empty runtime files, and the land/dungeon trigger-table
-   minimums, plus stable startup roles and target resource-fork paths. Rust and TypeScript still
-   implement codec sizes, optional record/resource families, and semantic writer execution
-   independently. Broader golden fixtures or a shared Rust/Wasm compiler should prevent policy
-   drift across optional families without forcing those implementation details into the policy.
+   minimums, plus stable startup roles, target resource-fork paths, and fixed-path optional
+   semantic-file presence. Rust and TypeScript still implement codec sizes, dynamic
+   record/resource paths, and semantic writer execution independently. Broader golden fixtures or
+   a shared Rust/Wasm compiler should prevent policy drift across dynamic resource families without
+   forcing those implementation details into the policy.
 2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
    `PICT`/`cicn`/`snd `/`TEXT`/`styl` resources, item strings, and custom-spell strings are generated
    in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families
@@ -1515,6 +1534,9 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 
 ### Phase 5: One compiler contract across desktop and browser
 
+- **Implemented for baseline and fixed-path semantic presence:** generate scenario-item capacity,
+  startup roles, trigger-table minimums, empty runtime files, and optional semantic-file predicates
+  from one native-manifest policy and enforce the projection in both compilers.
 - Prefer exposing the Rust compiler to browser/Wasm, or generate both implementations from shared
   codec/manifest specifications.
 - Keep byte-parity fixtures for every supported target.

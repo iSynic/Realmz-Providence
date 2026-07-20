@@ -25,6 +25,150 @@
         "minimumLevels": 0
       }
     ],
+    "optionalSemanticFiles": [
+      {
+        "id": "landMaps",
+        "path": "Data LD",
+        "presence": {
+          "kind": "collection-match",
+          "projectPath": "/maps",
+          "field": "levelType",
+          "equals": "land"
+        }
+      },
+      {
+        "id": "landRandomLevels",
+        "path": "Data RD",
+        "presence": {
+          "kind": "collection-match",
+          "projectPath": "/randomLevels",
+          "field": "levelType",
+          "equals": "land"
+        }
+      },
+      {
+        "id": "macroActions",
+        "path": "Data ED3",
+        "presence": {
+          "kind": "collection-match",
+          "projectPath": "/triggers",
+          "field": "source",
+          "equals": "Data ED3"
+        }
+      },
+      {
+        "id": "extraCodes",
+        "path": "Data EDCD",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/extracodes"
+        }
+      },
+      {
+        "id": "contactInfo",
+        "path": "Data CI",
+        "presence": {
+          "kind": "present",
+          "projectPath": "/scenario/contactInfo"
+        }
+      },
+      {
+        "id": "restrictions",
+        "path": "Data RI",
+        "presence": {
+          "kind": "present",
+          "projectPath": "/scenario/restrictions"
+        }
+      },
+      {
+        "id": "globalHooks",
+        "path": "Global",
+        "presence": {
+          "kind": "present",
+          "projectPath": "/scenario/globalMacroHooks"
+        }
+      },
+      {
+        "id": "landLayout",
+        "path": "Layout",
+        "presence": {
+          "kind": "present",
+          "projectPath": "/landLayout"
+        }
+      },
+      {
+        "id": "messages",
+        "path": "Data SD2",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/messages"
+        }
+      },
+      {
+        "id": "optionLabels",
+        "path": "Data OD",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/optionLabels"
+        }
+      },
+      {
+        "id": "mapRecords",
+        "path": "Data MD2",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/mapRecords"
+        }
+      },
+      {
+        "id": "battles",
+        "path": "Data BD",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/battles"
+        }
+      },
+      {
+        "id": "monsterDescriptions",
+        "path": "Data DES",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/monsterDescriptions"
+        }
+      },
+      {
+        "id": "treasures",
+        "path": "Data TD",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/treasures"
+        }
+      },
+      {
+        "id": "spellOverrides",
+        "path": "Data Spell",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/spellOverrides"
+        }
+      },
+      {
+        "id": "raceOverrides",
+        "path": "Data Race",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/raceOverrides"
+        }
+      },
+      {
+        "id": "casteOverrides",
+        "path": "Data Caste",
+        "presence": {
+          "kind": "collection-non-empty",
+          "projectPath": "/casteOverrides"
+        }
+      }
+    ],
     "emptyRuntimeFiles": [
       "Data DL",
       "Data RDD",

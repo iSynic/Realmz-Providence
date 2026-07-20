@@ -69,7 +69,12 @@ import { createStoredZip } from "./zip";
 import type { ExportReport, ManagedAsset, MapRecord, Project, RandomLevel, ScenarioIconResource, ScenarioItemRecord, ScenarioSpellOverride, ScenarioTarget } from "../types";
 import { appendPreservedShopSourceSuffix } from "./shopRecords";
 import { requiresCompatibilityAnnex } from "../projectOrigin";
-import { AUTHORED_STARTUP_FILES } from "../generated/realmzNativeManifestPolicy";
+import {
+  authoredOptionalSemanticFilePaths,
+  AUTHORED_OPTIONAL_SEMANTIC_FILES,
+  AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS,
+  AUTHORED_STARTUP_FILES
+} from "../generated/realmzNativeManifestPolicy";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
 import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 import { isNormalizedLandlookAtlasPict } from "../pictWriter";
@@ -215,6 +220,9 @@ function compileBrowserScenarioManifest(
   if (resourceResult.resourceFileWritten) {
     outputFiles.set(resourceResult.resourceFilePath, resourceResult.resourceBytes);
   }
+  if (!requiresCompatibilityAnnex(project)) {
+    validateAuthoredOptionalSemanticFiles(project, outputFiles);
+  }
 
   const writtenFiles = uniqueStrings([
     ...compilerBaseline.map((file) => file.path),
@@ -228,6 +236,16 @@ function compileBrowserScenarioManifest(
     passThroughFiles: passThroughFiles.filter((path) => !written.has(path)),
     resourceResult
   };
+}
+
+function validateAuthoredOptionalSemanticFiles(project: Project, outputFiles: Map<string, Uint8Array>) {
+  const expected = new Set(authoredOptionalSemanticFilePaths(project));
+  for (const family of AUTHORED_OPTIONAL_SEMANTIC_FILES) {
+    if (outputFiles.has(family.path) === expected.has(family.path)) continue;
+    throw new Error(
+      `Authored optional semantic file policy '${family.id}' expected ${expected.has(family.path) ? "output" : "no output"} at '${family.path}' from ${family.presence.projectPath} ${family.presence.kind}.`
+    );
+  }
 }
 
 function writeManagedResources(
@@ -305,19 +323,19 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.messages.length > 0) {
     writes.push({
-      path: "Data SD2",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.messages,
       bytes: writeMessagesForExport(project.messages, annex)
     });
   }
   if (project.optionLabels.length > 0) {
     writes.push({
-      path: "Data OD",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.optionLabels,
       bytes: writeOptionLabelsForExport(project.optionLabels, annex)
     });
   }
   if (project.battles.length > 0) {
     writes.push({
-      path: "Data BD",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.battles,
       bytes: writeBattlesForExport(project.battles, annex)
     });
   }
@@ -336,14 +354,14 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.monsterDescriptions.length > 0) {
     writes.push({
-      path: "Data DES",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.monsterDescriptions,
       bytes: writeMonsterDescriptionsForExport(project.monsterDescriptions, annex)
     });
   }
   if (project.maps.some((map) => map.levelType === "land")) {
     writes.push({
-      path: "Data LD",
-      bytes: preserveMalformedRawTail("Data LD", writeMapFields(project.maps, "land"), FIELD_RECORD_BYTES, annex)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.landMaps,
+      bytes: preserveMalformedRawTail(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.landMaps, writeMapFields(project.maps, "land"), FIELD_RECORD_BYTES, annex)
     });
   }
   if (project.maps.some((map) => map.levelType === "dungeon")) {
@@ -354,16 +372,16 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.mapRecords.length > 0) {
     writes.push({
-      path: "Data MD2",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.mapRecords,
       bytes: preserveImportedMapRecordCompatibility(writeMapRecords(project.mapRecords), project.mapRecords, annex)
     });
   }
   if (project.randomLevels.some((level) => level.levelType === "land")) {
     writes.push({
-      path: "Data RD",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.landRandomLevels,
       bytes: preserveImportedRandomLevelCompatibility(
         writeRandomLevels(project.randomLevels, "land"),
-        "Data RD",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.landRandomLevels,
         project.randomLevels,
         "land",
         annex
@@ -404,21 +422,21 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
       )
     });
   }
-  if (project.triggers.some((trigger) => trigger.source === "Data ED3") || rawSourceBytes("Data ED3", annex)) {
+  if (project.triggers.some((trigger) => trigger.source === AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.macroActions) || rawSourceBytes(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.macroActions, annex)) {
     writes.push({
-      path: "Data ED3",
-      bytes: compileFixedRowsWithCompatibilityAnnex("Data ED3", writeMacroFile(project.triggers), DOOR_RECORD_BYTES, annex)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.macroActions,
+      bytes: compileFixedRowsWithCompatibilityAnnex(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.macroActions, writeMacroFile(project.triggers), DOOR_RECORD_BYTES, annex)
     });
   }
-  if (project.extracodes.length > 0 || rawSourceBytes("Data EDCD", annex)) {
+  if (project.extracodes.length > 0 || rawSourceBytes(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.extraCodes, annex)) {
     writes.push({
-      path: "Data EDCD",
-      bytes: compileFixedRowsWithCompatibilityAnnex("Data EDCD", writeExtraCodes(project.extracodes), EXTRACODE_RECORD_BYTES, annex)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.extraCodes,
+      bytes: compileFixedRowsWithCompatibilityAnnex(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.extraCodes, writeExtraCodes(project.extracodes), EXTRACODE_RECORD_BYTES, annex)
     });
   }
   if (project.scenario.globalMacroHooks) {
     writes.push({
-      path: "Global",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.globalHooks,
       bytes: preserveImportedGlobalMacroHooks(
         writeGlobalMacroHooks(project.scenario.globalMacroHooks),
         project.scenario.globalMacroHooks.authored,
@@ -428,7 +446,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.landLayout) {
     writes.push({
-      path: "Layout",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.landLayout,
       bytes: preserveImportedLandLayoutTail(writeLandLayout(project.landLayout), annex)
     });
   }
@@ -449,14 +467,14 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.scenario.contactInfo) {
     writes.push({
-      path: "Data CI",
-      bytes: preserveImportedSingleton("Data CI", writeScenarioContactInfo(project.scenario.contactInfo), SCENARIO_CONTACT_INFO_BYTES, project.scenario.contactInfo.authored, annex)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.contactInfo,
+      bytes: preserveImportedSingleton(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.contactInfo, writeScenarioContactInfo(project.scenario.contactInfo), SCENARIO_CONTACT_INFO_BYTES, project.scenario.contactInfo.authored, annex)
     });
   }
   if (project.scenario.restrictions) {
     writes.push({
-      path: "Data RI",
-      bytes: preserveImportedSingleton("Data RI", writeScenarioRestrictions(project.scenario.restrictions), SCENARIO_RESTRICTIONS_BYTES, project.scenario.restrictions.authored, annex)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.restrictions,
+      bytes: preserveImportedSingleton(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.restrictions, writeScenarioRestrictions(project.scenario.restrictions), SCENARIO_RESTRICTIONS_BYTES, project.scenario.restrictions.authored, annex)
     });
   }
   if (project.scenarioItems.length > 0) {
@@ -471,8 +489,8 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.treasures.length > 0) {
     writes.push({
-      path: "Data TD",
-      bytes: preserveMalformedRawTail("Data TD", writeTreasures(project.treasures), TREASURE_RECORD_BYTES, annex)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.treasures,
+      bytes: preserveMalformedRawTail(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.treasures, writeTreasures(project.treasures), TREASURE_RECORD_BYTES, annex)
     });
   }
   if (project.shops.length > 0) {
@@ -483,7 +501,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.spellOverrides.length > 0) {
     writes.push({
-      path: "Data Spell",
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.spellOverrides,
       bytes: writeSpellOverridesForExport(project.spellOverrides, annex)
     });
     const spellNameResourceWrite = writeCustomSpellNameResources(project, annex);
@@ -493,14 +511,14 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (itemTextResourceWrite) writes.push(itemTextResourceWrite);
   if (project.raceOverrides.length > 0) {
     writes.push({
-      path: "Data Race",
-      bytes: writeRuleOverridesForExport("Data Race", project.raceOverrides, RACE_RECORD_BYTES, annex, writeRaceOverrides, writeFreshRaceOverrides)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.raceOverrides,
+      bytes: writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.raceOverrides, project.raceOverrides, RACE_RECORD_BYTES, annex, writeRaceOverrides, writeFreshRaceOverrides)
     });
   }
   if (project.casteOverrides.length > 0) {
     writes.push({
-      path: "Data Caste",
-      bytes: writeRuleOverridesForExport("Data Caste", project.casteOverrides, CASTE_RECORD_BYTES, annex, writeCasteOverrides, writeFreshCasteOverrides)
+      path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.casteOverrides,
+      bytes: writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.casteOverrides, project.casteOverrides, CASTE_RECORD_BYTES, annex, writeCasteOverrides, writeFreshCasteOverrides)
     });
   }
   if (project.simpleEncounters.length > 0) {
@@ -577,7 +595,7 @@ function writeCustomSpellNameResources(project: Project, annex: BrowserCompatibi
 function writeSpellOverridesForExport(records: ScenarioSpellOverride[], annex: BrowserCompatibilityAnnex | null) {
   const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= CUSTOM_SPELL_RECORDS);
   if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..104 custom slot range.`);
-  return writeRuleOverridesForExport("Data Spell", records, SPELL_RECORD_BYTES, annex, writeSpellOverrides, writeFreshSpellOverrides);
+  return writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.spellOverrides, records, SPELL_RECORD_BYTES, annex, writeSpellOverrides, writeFreshSpellOverrides);
 }
 
 function writeRuleOverridesForExport<T extends { id: number; authored?: boolean }>(
@@ -961,9 +979,9 @@ function preserveImportedMapRecordCompatibility(
   annex: BrowserCompatibilityAnnex | null
 ) {
   if (bytes.byteLength === 0) return bytes;
-  const raw = rawSourceBytes("Data MD2", annex);
+  const raw = rawSourceBytes(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.mapRecords, annex);
   if (!raw) return bytes;
-  const output = compileFixedRowsWithCompatibilityAnnex("Data MD2", bytes, MAP_RECORD_BYTES, annex);
+  const output = compileFixedRowsWithCompatibilityAnnex(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.mapRecords, bytes, MAP_RECORD_BYTES, annex);
   const completeSourceBytes = Math.floor(raw.byteLength / MAP_RECORD_BYTES) * MAP_RECORD_BYTES;
   for (const record of records) {
     const start = record.id * MAP_RECORD_BYTES;
@@ -1071,7 +1089,7 @@ function preserveImportedDataSolidsTail(bytes: Uint8Array, annex: BrowserCompati
 }
 
 function preserveImportedLandLayoutTail(bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {
-  const raw = rawSourceBytes("Layout", annex);
+  const raw = rawSourceBytes(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.landLayout, annex);
   if (!raw || raw.byteLength <= LAND_LAYOUT_RECORD_BYTES) return bytes;
   const output = new Uint8Array(raw.byteLength);
   output.set(bytes);
@@ -1121,10 +1139,10 @@ function preserveImportedGlobalMacroHooks(
   authored: boolean | undefined,
   annex: BrowserCompatibilityAnnex | null
 ) {
-  const raw = rawSourceBytes("Global", annex);
+  const raw = rawSourceBytes(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.globalHooks, annex);
   if (!raw) return bytes;
   if (!authored) return raw;
-  const output = preserveMalformedRawTail("Global", bytes, GLOBAL_MACRO_HOOK_BYTES, annex);
+  const output = preserveMalformedRawTail(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.globalHooks, bytes, GLOBAL_MACRO_HOOK_BYTES, annex);
   if (raw.byteLength >= GLOBAL_MACRO_HOOK_BYTES) {
     output.set(raw.slice(6, 8), 6);
     output.set(raw.slice(12, GLOBAL_MACRO_HOOK_BYTES), 12);
@@ -1133,15 +1151,15 @@ function preserveImportedGlobalMacroHooks(
 }
 
 function writeMessagesForExport(messages: Project["messages"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedFixedRows("Data SD2", writeMessages(messages), messages, MESSAGE_RECORD_BYTES, annex);
+  return preserveImportedFixedRows(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.messages, writeMessages(messages), messages, MESSAGE_RECORD_BYTES, annex);
 }
 
 function writeOptionLabelsForExport(options: Project["optionLabels"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedFixedRows("Data OD", writeOptionLabels(options), options, OPTION_LABEL_RECORD_BYTES, annex);
+  return preserveImportedFixedRows(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.optionLabels, writeOptionLabels(options), options, OPTION_LABEL_RECORD_BYTES, annex);
 }
 
 function writeBattlesForExport(battles: Project["battles"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedFixedRows("Data BD", writeBattles(battles), battles, BATTLE_RECORD_BYTES, annex);
+  return preserveImportedFixedRows(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.battles, writeBattles(battles), battles, BATTLE_RECORD_BYTES, annex);
 }
 
 function writeMonstersForExport(fileName: string, monsters: Project["monsters"], annex: BrowserCompatibilityAnnex | null) {
@@ -1149,7 +1167,7 @@ function writeMonstersForExport(fileName: string, monsters: Project["monsters"],
 }
 
 function writeMonsterDescriptionsForExport(descriptions: Project["monsterDescriptions"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedFixedRows("Data DES", writeMonsterDescriptions(descriptions), descriptions, MONSTER_DESCRIPTION_RECORD_BYTES, annex);
+  return preserveImportedFixedRows(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.monsterDescriptions, writeMonsterDescriptions(descriptions), descriptions, MONSTER_DESCRIPTION_RECORD_BYTES, annex);
 }
 
 function writeSimpleEncountersForExport(encounters: Project["simpleEncounters"], annex: BrowserCompatibilityAnnex | null) {

@@ -152,6 +152,12 @@ try {
     expect(dungeonFiles.get(table.path)?.every((byte) => byte === 0), `dungeon-only ${table.path} baseline should remain neutral without Action Points`);
     expect(dungeonResult.report.writtenFiles.includes(table.path), `dungeon-only export should report ${table.path} as authored output`);
   }
+  for (const family of manifestPolicy.authoredBaseline.optionalSemanticFiles) {
+    const expected = optionalSemanticFileExpected(compiled.project, family.presence);
+    const dungeonExpected = optionalSemanticFileExpected(dungeonProject, family.presence);
+    expect(files.has(family.path) === expected, `${family.path} should follow canonical presence predicate ${family.presence.kind} ${family.presence.projectPath}`);
+    expect(dungeonFiles.has(family.path) === dungeonExpected, `dungeon-only ${family.path} should follow canonical presence predicate ${family.presence.kind} ${family.presence.projectPath}`);
+  }
   for (const name of manifestPolicy.authoredBaseline.emptyRuntimeFiles) {
     expect(files.get(name)?.byteLength === 0, `${name} should follow the shared authored empty-runtime policy`);
   }
@@ -187,6 +193,19 @@ console.log("Generated scenario runtime baseline check passed.");
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function optionalSemanticFileExpected(project, presence) {
+  const value = presence.projectPath
+    .slice(1)
+    .split("/")
+    .reduce((current, segment) => current?.[segment], project);
+  if (presence.kind === "present") return value != null;
+  if (presence.kind === "collection-non-empty") return Array.isArray(value) && value.length > 0;
+  if (presence.kind === "collection-match") {
+    return Array.isArray(value) && value.some((entry) => entry?.[presence.field] === presence.equals);
+  }
+  throw new Error(`Unsupported optional semantic presence predicate ${presence.kind}.`);
 }
 
 function readU16(bytes, offset) {

@@ -1,8 +1,9 @@
 use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot};
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::generated::native_manifest_policy::{
-    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES,
-    AUTHORED_TRIGGER_TABLES,
+    authored_optional_semantic_file_paths, AUTHORED_EMPTY_RUNTIME_FILES,
+    AUTHORED_OPTIONAL_SEMANTIC_FILES, AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS,
+    AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES,
 };
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
@@ -163,7 +164,7 @@ fn compile_realmz_scenario(
     if let Some(contact_info) = &project.scenario.contact_info {
         write_scenario_singleton_for_export(
             &mut manifest,
-            "Data CI",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.contact_info,
             crate::realmz::SCENARIO_CONTACT_INFO_BYTES,
             contact_info.authored,
             write_scenario_contact_info(contact_info)?,
@@ -173,7 +174,7 @@ fn compile_realmz_scenario(
     if let Some(restrictions) = &project.scenario.restrictions {
         write_scenario_singleton_for_export(
             &mut manifest,
-            "Data RI",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.restrictions,
             crate::realmz::SCENARIO_RESTRICTIONS_BYTES,
             restrictions.authored,
             write_scenario_restrictions(restrictions)?,
@@ -183,7 +184,7 @@ fn compile_realmz_scenario(
     if let Some(global_hooks) = &project.scenario.global_macro_hooks {
         write_if_nonempty(
             &mut manifest,
-            "Global",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.global_hooks,
             preserve_imported_global_macro_hooks(
                 write_global_macro_hooks(global_hooks)?,
                 global_hooks.authored,
@@ -203,7 +204,7 @@ fn compile_realmz_scenario(
     }
     write_if_nonempty(
         &mut manifest,
-        "Data LD",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_maps,
         write_fields(&project.maps, LevelType::Land)?,
     )?;
     write_if_nonempty(
@@ -214,7 +215,7 @@ fn compile_realmz_scenario(
     if let Some(layout) = &project.land_layout {
         write_if_nonempty(
             &mut manifest,
-            "Layout",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_layout,
             preserve_imported_land_layout_tail(write_land_layout(layout)?, compatibility_annex)?,
         )?;
     }
@@ -267,10 +268,10 @@ fn compile_realmz_scenario(
     )?;
     write_if_nonempty(
         &mut manifest,
-        "Data RD",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_random_levels,
         preserve_imported_random_level_compatibility(
             write_random_levels(&project.random_levels, LevelType::Land)?,
-            "Data RD",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_random_levels,
             &project.random_levels,
             LevelType::Land,
             compatibility_annex,
@@ -289,9 +290,9 @@ fn compile_realmz_scenario(
     )?;
     write_if_nonempty(
         &mut manifest,
-        "Data ED3",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.macro_actions,
         compile_fixed_rows_with_compatibility_annex(
-            "Data ED3",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.macro_actions,
             write_macro_file(&project.triggers)?,
             DOOR_BYTES,
             compatibility_annex,
@@ -299,9 +300,9 @@ fn compile_realmz_scenario(
     )?;
     write_if_nonempty(
         &mut manifest,
-        "Data EDCD",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.extra_codes,
         compile_fixed_rows_with_compatibility_annex(
-            "Data EDCD",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.extra_codes,
             write_extracodes(&project.extracodes)?,
             EXTRACODE_BYTES,
             compatibility_annex,
@@ -311,7 +312,7 @@ fn compile_realmz_scenario(
     write_option_labels_for_export(&mut manifest, &project.option_labels, compatibility_annex)?;
     write_if_nonempty(
         &mut manifest,
-        "Data MD2",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.map_records,
         preserve_imported_map_record_compatibility(
             write_map_records(&project.map_records)?,
             &project.map_records,
@@ -356,7 +357,7 @@ fn compile_realmz_scenario(
     )?;
     write_fixed_if_nonempty(
         &mut manifest,
-        "Data TD",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.treasures,
         write_treasures(&project.treasures)?,
         crate::realmz::TREASURE_BYTES,
         compatibility_annex,
@@ -408,6 +409,9 @@ fn compile_realmz_scenario(
         project,
         target,
     )?;
+    if !preserves_source_snapshot {
+        validate_authored_optional_semantic_files(project, &manifest)?;
+    }
 
     let warnings = if project.validation.ok {
         Vec::new()
@@ -424,6 +428,29 @@ fn compile_realmz_scenario(
         target_compatibility_issues,
         target_compatibility,
     })
+}
+
+fn validate_authored_optional_semantic_files(
+    project: &ProvidenceProject,
+    manifest: &NativeScenarioManifest,
+) -> Result<()> {
+    let expected = authored_optional_semantic_file_paths(project);
+    for family in AUTHORED_OPTIONAL_SEMANTIC_FILES {
+        let should_exist = expected.iter().any(|path| *path == family.path);
+        if manifest.files().contains_key(family.path) != should_exist {
+            return Err(ProvidenceError::message(format!(
+                "Authored optional semantic file policy '{}' expected {} at '{}' from {} {} {:?} {:?}.",
+                family.id,
+                if should_exist { "output" } else { "no output" },
+                family.path,
+                family.project_path,
+                family.presence_kind,
+                family.match_field,
+                family.match_value,
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn write_authored_runtime_baseline(
@@ -648,7 +675,7 @@ fn preserve_imported_global_macro_hooks(
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
     let Some(raw) = (match annex {
-        Some(annex) => annex.read("Global")?,
+        Some(annex) => annex.read(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.global_hooks)?,
         None => None,
     }) else {
         return Ok(bytes);
@@ -673,7 +700,11 @@ fn write_messages_for_export(
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<()> {
     let bytes = preserve_imported_message_rows(write_messages(records)?, records, annex)?;
-    write_if_nonempty(manifest, "Data SD2", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.messages,
+        bytes,
+    )
 }
 
 fn write_option_labels_for_export(
@@ -682,7 +713,11 @@ fn write_option_labels_for_export(
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<()> {
     let bytes = preserve_imported_option_label_rows(write_option_labels(records)?, records, annex)?;
-    write_if_nonempty(manifest, "Data OD", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.option_labels,
+        bytes,
+    )
 }
 
 fn write_battles_for_export(
@@ -691,7 +726,11 @@ fn write_battles_for_export(
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<()> {
     let bytes = preserve_imported_battle_rows(write_battles(records)?, records, annex)?;
-    write_if_nonempty(manifest, "Data BD", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.battles,
+        bytes,
+    )
 }
 
 fn write_monsters_for_export(
@@ -714,7 +753,11 @@ fn write_monster_descriptions_for_export(
         records,
         annex,
     )?;
-    write_if_nonempty(manifest, "Data DES", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.monster_descriptions,
+        bytes,
+    )
 }
 
 fn write_simple_encounters_for_export(
@@ -767,7 +810,7 @@ fn preserve_imported_message_rows(
 ) -> Result<Vec<u8>> {
     preserve_imported_fixed_rows(
         bytes,
-        "Data SD2",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.messages,
         crate::realmz::MESSAGE_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
@@ -781,7 +824,7 @@ fn preserve_imported_option_label_rows(
 ) -> Result<Vec<u8>> {
     preserve_imported_fixed_rows(
         bytes,
-        "Data OD",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.option_labels,
         crate::realmz::OPTION_LABEL_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
@@ -795,7 +838,7 @@ fn preserve_imported_battle_rows(
 ) -> Result<Vec<u8>> {
     preserve_imported_fixed_rows(
         bytes,
-        "Data BD",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.battles,
         crate::realmz::BATTLE_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
@@ -824,7 +867,7 @@ fn preserve_imported_monster_description_rows(
 ) -> Result<Vec<u8>> {
     preserve_imported_fixed_rows(
         modeled,
-        "Data DES",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.monster_descriptions,
         crate::realmz::MONSTER_DESCRIPTION_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
@@ -1020,7 +1063,7 @@ fn preserve_imported_map_record_compatibility(
         return Ok(bytes);
     }
     let Some(raw) = (match annex {
-        Some(annex) => annex.read("Data MD2")?,
+        Some(annex) => annex.read(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.map_records)?,
         None => None,
     }) else {
         return Ok(bytes);
@@ -1163,7 +1206,7 @@ fn preserve_imported_land_layout_tail(
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
     let Some(raw) = (match annex {
-        Some(annex) => annex.read("Layout")?,
+        Some(annex) => annex.read(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_layout)?,
         None => None,
     }) else {
         return Ok(bytes);
@@ -1211,16 +1254,20 @@ fn write_race_overrides_for_export(
     records: &[ScenarioRaceOverride],
 ) -> Result<()> {
     let source_backed = match annex {
-        Some(annex) => annex.contains("Data Race")?,
+        Some(annex) => annex.contains(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.race_overrides)?,
         None => false,
     };
     if !source_backed {
-        return write_if_nonempty(manifest, "Data Race", write_fresh_race_overrides(records)?);
+        return write_if_nonempty(
+            manifest,
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.race_overrides,
+            write_fresh_race_overrides(records)?,
+        );
     }
     write_rule_overrides_for_export(
         manifest,
         annex,
-        "Data Race",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.race_overrides,
         crate::realmz::RACE_BYTES,
         records
             .iter()
@@ -1236,20 +1283,20 @@ fn write_caste_overrides_for_export(
     records: &[ScenarioCasteOverride],
 ) -> Result<()> {
     let source_backed = match annex {
-        Some(annex) => annex.contains("Data Caste")?,
+        Some(annex) => annex.contains(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.caste_overrides)?,
         None => false,
     };
     if !source_backed {
         return write_if_nonempty(
             manifest,
-            "Data Caste",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.caste_overrides,
             write_fresh_caste_overrides(records)?,
         );
     }
     write_rule_overrides_for_export(
         manifest,
         annex,
-        "Data Caste",
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.caste_overrides,
         crate::realmz::CASTE_BYTES,
         records
             .iter()
@@ -1323,12 +1370,12 @@ fn write_spell_overrides_preserving_tail(
         return Ok(());
     }
     let Some(mut bytes) = (match annex {
-        Some(annex) => annex.read("Data Spell")?,
+        Some(annex) => annex.read(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.spell_overrides)?,
         None => None,
     }) else {
         return write_if_nonempty(
             manifest,
-            "Data Spell",
+            AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.spell_overrides,
             write_fresh_spell_overrides(records)?,
         );
     };
@@ -1348,7 +1395,11 @@ fn write_spell_overrides_preserving_tail(
         bytes[start..end].copy_from_slice(&encoded[start..end]);
     }
     bytes.extend_from_slice(&tail);
-    write_if_nonempty(manifest, "Data Spell", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.spell_overrides,
+        bytes,
+    )
 }
 
 fn write_custom_spell_name_resources(

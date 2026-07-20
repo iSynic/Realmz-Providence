@@ -42,6 +42,266 @@ pub const AUTHORED_TRIGGER_TABLES: &[AuthoredTriggerTablePolicy] = &[
     },
 ];
 
+pub struct AuthoredOptionalSemanticFilePolicy {
+    pub id: &'static str,
+    pub path: &'static str,
+    pub project_path: &'static str,
+    pub presence_kind: &'static str,
+    pub match_field: Option<&'static str>,
+    pub match_value: Option<&'static str>,
+}
+
+#[rustfmt::skip]
+pub const AUTHORED_OPTIONAL_SEMANTIC_FILES: &[AuthoredOptionalSemanticFilePolicy] = &[
+    AuthoredOptionalSemanticFilePolicy {
+        id: "landMaps",
+        path: "Data LD",
+        project_path: "/maps",
+        presence_kind: "collection-match",
+        match_field: Some("levelType"),
+        match_value: Some("land"),
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "landRandomLevels",
+        path: "Data RD",
+        project_path: "/randomLevels",
+        presence_kind: "collection-match",
+        match_field: Some("levelType"),
+        match_value: Some("land"),
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "macroActions",
+        path: "Data ED3",
+        project_path: "/triggers",
+        presence_kind: "collection-match",
+        match_field: Some("source"),
+        match_value: Some("Data ED3"),
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "extraCodes",
+        path: "Data EDCD",
+        project_path: "/extracodes",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "contactInfo",
+        path: "Data CI",
+        project_path: "/scenario/contactInfo",
+        presence_kind: "present",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "restrictions",
+        path: "Data RI",
+        project_path: "/scenario/restrictions",
+        presence_kind: "present",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "globalHooks",
+        path: "Global",
+        project_path: "/scenario/globalMacroHooks",
+        presence_kind: "present",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "landLayout",
+        path: "Layout",
+        project_path: "/landLayout",
+        presence_kind: "present",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "messages",
+        path: "Data SD2",
+        project_path: "/messages",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "optionLabels",
+        path: "Data OD",
+        project_path: "/optionLabels",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "mapRecords",
+        path: "Data MD2",
+        project_path: "/mapRecords",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "battles",
+        path: "Data BD",
+        project_path: "/battles",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "monsterDescriptions",
+        path: "Data DES",
+        project_path: "/monsterDescriptions",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "treasures",
+        path: "Data TD",
+        project_path: "/treasures",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "spellOverrides",
+        path: "Data Spell",
+        project_path: "/spellOverrides",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "raceOverrides",
+        path: "Data Race",
+        project_path: "/raceOverrides",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+    AuthoredOptionalSemanticFilePolicy {
+        id: "casteOverrides",
+        path: "Data Caste",
+        project_path: "/casteOverrides",
+        presence_kind: "collection-non-empty",
+        match_field: None,
+        match_value: None,
+    },
+];
+
+pub struct AuthoredOptionalSemanticFilePaths {
+    pub land_maps: &'static str,
+    pub land_random_levels: &'static str,
+    pub macro_actions: &'static str,
+    pub extra_codes: &'static str,
+    pub contact_info: &'static str,
+    pub restrictions: &'static str,
+    pub global_hooks: &'static str,
+    pub land_layout: &'static str,
+    pub messages: &'static str,
+    pub option_labels: &'static str,
+    pub map_records: &'static str,
+    pub battles: &'static str,
+    pub monster_descriptions: &'static str,
+    pub treasures: &'static str,
+    pub spell_overrides: &'static str,
+    pub race_overrides: &'static str,
+    pub caste_overrides: &'static str,
+}
+
+pub const AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS: AuthoredOptionalSemanticFilePaths =
+    AuthoredOptionalSemanticFilePaths {
+        land_maps: "Data LD",
+        land_random_levels: "Data RD",
+        macro_actions: "Data ED3",
+        extra_codes: "Data EDCD",
+        contact_info: "Data CI",
+        restrictions: "Data RI",
+        global_hooks: "Global",
+        land_layout: "Layout",
+        messages: "Data SD2",
+        option_labels: "Data OD",
+        map_records: "Data MD2",
+        battles: "Data BD",
+        monster_descriptions: "Data DES",
+        treasures: "Data TD",
+        spell_overrides: "Data Spell",
+        race_overrides: "Data Race",
+        caste_overrides: "Data Caste",
+    };
+
+pub fn authored_optional_semantic_file_paths(
+    project: &crate::project::ProvidenceProject,
+) -> Vec<&'static str> {
+    let mut paths = Vec::new();
+    if project
+        .maps
+        .iter()
+        .any(|entry| entry.level_type == crate::project::LevelType::Land)
+    {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_maps);
+    }
+    if project
+        .random_levels
+        .iter()
+        .any(|entry| entry.level_type == crate::project::LevelType::Land)
+    {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_random_levels);
+    }
+    if project
+        .triggers
+        .iter()
+        .any(|entry| entry.source == "Data ED3")
+    {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.macro_actions);
+    }
+    if !project.extracodes.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.extra_codes);
+    }
+    if project.scenario.contact_info.is_some() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.contact_info);
+    }
+    if project.scenario.restrictions.is_some() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.restrictions);
+    }
+    if project.scenario.global_macro_hooks.is_some() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.global_hooks);
+    }
+    if project.land_layout.is_some() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.land_layout);
+    }
+    if !project.messages.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.messages);
+    }
+    if !project.option_labels.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.option_labels);
+    }
+    if !project.map_records.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.map_records);
+    }
+    if !project.battles.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.battles);
+    }
+    if !project.monster_descriptions.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.monster_descriptions);
+    }
+    if !project.treasures.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.treasures);
+    }
+    if !project.spell_overrides.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.spell_overrides);
+    }
+    if !project.race_overrides.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.race_overrides);
+    }
+    if !project.caste_overrides.is_empty() {
+        paths.push(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.caste_overrides);
+    }
+    paths
+}
+
 #[rustfmt::skip]
 pub const AUTHORED_EMPTY_RUNTIME_FILES: &[&str] = &[
     "Data DL",
