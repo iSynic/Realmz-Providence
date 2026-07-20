@@ -2886,8 +2886,6 @@ mod tests {
         fs::write(raw_dir.join("Data SD2"), &source).unwrap();
 
         let mut messages = crate::realmz::parse_messages(&source);
-        messages[0].raw_bytes.fill(0x11);
-        messages[1].raw_bytes.fill(0x22);
         messages[1].text = "Go".to_string();
         messages[1].authored = true;
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();

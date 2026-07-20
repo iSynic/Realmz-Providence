@@ -749,7 +749,7 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       "docs/format-evidence-cards/text-message-runtime-anchors.md",
       "docs/format-evidence-cards/strings-data-od-string-sound.md"
     ],
-    preservationPolicy: "Fresh and authored messages compile the complete 256-byte row from canonical text without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
+    preservationPolicy: "Canonical message records expose no rawBytes and compile the complete 256-byte row from semantic text. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export."
   },
   {
     container: "Data OD",

@@ -107,7 +107,7 @@ export function bulkUpdateMessageRecords(project: Project, updates: Array<{ id: 
     if (!Number.isInteger(update.id) || update.id < 0) continue;
     const existingIndex = messages.findIndex((record) => record.id === update.id);
     const base = existingIndex >= 0 ? messages[existingIndex] : emptyMessage(update.id);
-    const next = { ...base, text: update.text, authored: true };
+    const next = canonicalTargetRecord("messages", { ...base, text: update.text, authored: true });
     if (existingIndex >= 0) messages[existingIndex] = next;
     else messages.push(next);
   }
@@ -520,7 +520,7 @@ function upsertRecord<K extends TargetCollectionName>(project: Project, collecti
 }
 
 function canonicalTargetRecord<K extends TargetCollectionName>(collection: K, record: Project[K][number]) {
-  if (collection !== "scenarioItems" && collection !== "treasures" && collection !== "shops") return record;
+  if (collection !== "messages" && collection !== "scenarioItems" && collection !== "treasures" && collection !== "shops") return record;
   const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as Project[K][number] & { rawBytes?: number[] };
   return canonicalRecord as Project[K][number];
 }

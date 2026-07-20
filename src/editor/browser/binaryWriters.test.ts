@@ -455,7 +455,7 @@ describe("browser message writer", () => {
   it("compiles a fresh record entirely from semantic text", () => {
     const record = { ...emptyMessage(0), text: "Providence" };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeMessages([record]);
 
     expect(output).toHaveLength(256);
@@ -463,20 +463,21 @@ describe("browser message writer", () => {
     expect(Array.from(output.slice(11))).toEqual(new Array(245).fill(0));
   });
 
-  it("recompiles imported text without record byte identity", () => {
+  it("recompiles imported text from semantic data", () => {
     const input = new Uint8Array(256).fill(0xa5);
     input.set([2, "G".charCodeAt(0), "o".charCodeAt(0)]);
     const imported = parseScenarioBuffers(new Map([["Data SD2", input]])).messages[0];
 
-    const output = writeMessages([{ ...imported, rawBytes: new Array(256).fill(0x5a) }]);
+    expect("rawBytes" in imported).toBe(false);
+    const output = writeMessages([imported]);
 
     expect(Array.from(output.slice(0, 3))).toEqual([2, 71, 111]);
     expect(Array.from(output.slice(3))).toEqual(new Array(253).fill(0));
   });
 
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeMessages([{ ...emptyMessage(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
+  it("rejects text that exceeds the native slot", () => {
+    expect(() => writeMessages([{ ...emptyMessage(0), text: "x".repeat(256) }]))
+      .toThrow("maximum is 255");
   });
 });
 

@@ -33,7 +33,15 @@ pub(super) fn add_canonical_record_collections(
                 .collect::<Vec<_>>()
         };
     }
-    let messages = canonical_records!(parsed.messages);
+    let messages = parsed
+        .messages
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let option_labels = canonical_records!(parsed.option_labels);
     let monster_descriptions = canonical_records!(parsed.monster_descriptions);
     let battles = canonical_records!(parsed.battles);

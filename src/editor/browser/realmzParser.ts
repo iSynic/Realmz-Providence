@@ -572,7 +572,6 @@ function parseMessages(buffer: Uint8Array | undefined): MessageRecord[] {
   return fixedRecords(buffer, 256, "Data SD2", (id, start, record) => ({
     id,
     text: decodePascalText(record),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data SD2", id, start, 256, "source-backed")
   }));

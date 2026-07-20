@@ -1,4 +1,4 @@
-use crate::error::{ProvidenceError, Result};
+use crate::error::Result;
 use crate::project::MessageRecord;
 
 use super::record_bytes::{
@@ -12,7 +12,6 @@ pub fn parse_messages(buffer: &[u8]) -> Vec<MessageRecord> {
         .map(|(id, start, record)| MessageRecord {
             id,
             text: decode_pascal_text(record),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: Some(provenance("Data SD2", id, start, MESSAGE_BYTES)),
         })
@@ -21,12 +20,6 @@ pub fn parse_messages(buffer: &[u8]) -> Vec<MessageRecord> {
 
 pub fn write_messages(records: &[MessageRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, MESSAGE_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != MESSAGE_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Message {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         encode_pascal_text(buffer, &record.text)
     })
 }
@@ -41,7 +34,6 @@ mod tests {
             .into_iter()
             .next()
             .expect("message");
-        message.raw_bytes.clear();
         message.text = "Providence".to_string();
 
         let output = write_messages(&[message]).unwrap();
@@ -56,8 +48,7 @@ mod tests {
         let mut input = vec![0xa5; MESSAGE_BYTES];
         input[0] = 2;
         input[1..3].copy_from_slice(b"Go");
-        let mut messages = parse_messages(&input);
-        messages[0].raw_bytes.fill(0x5a);
+        let messages = parse_messages(&input);
 
         let output = write_messages(&messages).unwrap();
 
@@ -67,16 +58,16 @@ mod tests {
     }
 
     #[test]
-    fn message_writer_rejects_malformed_compatibility_storage() {
+    fn message_writer_rejects_text_that_exceeds_the_native_slot() {
         let mut message = parse_messages(&vec![0; MESSAGE_BYTES])
             .into_iter()
             .next()
             .expect("message");
-        message.raw_bytes = vec![1];
+        message.text = "x".repeat(256);
 
         assert!(write_messages(&[message])
             .unwrap_err()
             .to_string()
-            .contains("invalid compatibility byte storage"));
+            .contains("maximum is 255"));
     }
 }

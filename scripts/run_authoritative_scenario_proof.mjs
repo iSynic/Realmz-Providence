@@ -270,7 +270,6 @@ expect(project.extracodes[0].id === 0 && project.extracodes[0].values.join(",") 
 expect(project.extracodes.every((record) => !("rawBytes" in record)), "Fresh canonical EDCD settings must not carry compatibility bytes");
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
 assertOwnershipMessage(project.messages, "Canonical project");
-expect(project.messages.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical messages must not carry compatibility bytes");
 assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
 expect(project.optionLabels.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical option labels must not carry compatibility bytes");
 assertOwnershipSimpleEncounter(project.simpleEncounters, "Canonical project");
@@ -315,6 +314,7 @@ await runCargoExample("export_project_fixture", [projectDir, windowsOutputA, "wi
 await assertNoRawSources("after first Windows export");
 const poisonedProject = JSON.parse(canonicalProjectJson);
 poisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
+poisonedProject.messages[0].rawBytes = new Array(256).fill(0xa5);
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -347,6 +347,7 @@ const browserWindowsPackage = createBrowserScenarioPackageZip(project, null, "wi
 const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "mac-classic-folder");
 const browserPoisonedProject = JSON.parse(JSON.stringify(project));
 browserPoisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
+browserPoisonedProject.messages[0].rawBytes = new Array(256).fill(0xa5);
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -669,7 +670,6 @@ async function assertNoRawSources(stage) {
   assertOwnershipCustomLandlookAtlas(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipManagedResources(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
-  expect(savedProject.messages?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} messages contain compatibility bytes`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
   expect(savedProject.optionLabels?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} option labels contain compatibility bytes`);
   assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
@@ -885,6 +885,7 @@ function assertOwnershipMessage(records, label) {
   expect(message, `${label} is missing message 0`);
   expect(message.text === "Providence owns this scenario.", `${label} has the wrong canonical message text`);
   expect(rogueMessage?.text === "Providence owns this rogue encounter.", `${label} has the wrong canonical rogue message text`);
+  expect(records.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} messages expose compatibility storage`);
 }
 
 function assertOwnershipOptionLabels(records, label) {

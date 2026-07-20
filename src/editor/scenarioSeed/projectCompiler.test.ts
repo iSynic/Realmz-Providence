@@ -29,7 +29,7 @@ describe("scenario seed project compiler", () => {
       immutable: true,
       files: [{ name: "Data BD", relativePath: "Data BD", bytes: 12, sha256: "fixture", role: "supported-binary", editable: true }]
     };
-    template.messages = [{ id: 8, text: "Preserved", rawBytes: [], authored: true }];
+    template.messages = [{ id: 8, text: "Preserved", authored: true }];
     const seed: ScenarioSeed = {
       schemaVersion: 1,
       baseTemplate: "fixture",

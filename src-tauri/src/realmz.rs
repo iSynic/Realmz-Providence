@@ -99,7 +99,6 @@ mod tests {
         let message = MessageRecord {
             id: 0,
             text: "Hello".to_string(),
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: Some(provenance("Data SD2", 0, 0, MESSAGE_BYTES)),
         };

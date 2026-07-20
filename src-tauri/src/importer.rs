@@ -372,6 +372,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_scenario_item_raw_bytes(&mut value);
     migrate_legacy_treasure_raw_bytes(&mut value);
     migrate_legacy_shop_raw_bytes(&mut value);
+    migrate_legacy_message_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -506,6 +507,20 @@ fn migrate_legacy_shop_raw_bytes(project: &mut serde_json::Value) {
                     .unwrap_or(0) as u8;
                 quantities.push(serde_json::json!(quantity));
             }
+        }
+    }
+}
+
+fn migrate_legacy_message_raw_bytes(project: &mut serde_json::Value) {
+    let Some(records) = project
+        .get_mut("messages")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for record in records {
+        if let Some(record) = record.as_object_mut() {
+            record.remove("rawBytes");
         }
     }
 }
@@ -2558,6 +2573,15 @@ mod tests {
         legacy_shop_raw[2001] = 7;
         legacy_shop_value["rawBytes"] = serde_json::json!(legacy_shop_raw);
         saved["shops"] = serde_json::json!([legacy_shop_value]);
+        let mut legacy_message_raw = vec![0u8; crate::realmz::MESSAGE_BYTES];
+        legacy_message_raw[0] = 5;
+        legacy_message_raw[1..6].copy_from_slice(b"Bytes");
+        saved["messages"] = serde_json::json!([{
+            "id": 0,
+            "text": "Semantic legacy message",
+            "rawBytes": legacy_message_raw,
+            "authored": false
+        }]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2594,6 +2618,7 @@ mod tests {
         assert_eq!(opened.shops[0].quantities.len(), 1000);
         assert_eq!(opened.shops[0].item_ids[..2], [901, -321]);
         assert_eq!(opened.shops[0].quantities[..2], [3, 7]);
+        assert_eq!(opened.messages[0].text, "Semantic legacy message");
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2625,6 +2650,7 @@ mod tests {
         assert!(upgraded["scenarioItems"][0].get("rawBytes").is_none());
         assert!(upgraded["treasures"][0].get("rawBytes").is_none());
         assert!(upgraded["shops"][0].get("rawBytes").is_none());
+        assert!(upgraded["messages"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -2968,7 +2994,6 @@ mod tests {
         message.id = 5;
         message.text = "Canonical message".to_string();
         message.authored = false;
-        message.raw_bytes.fill(0xA5);
         project.messages = vec![message];
 
         let mut option_label =

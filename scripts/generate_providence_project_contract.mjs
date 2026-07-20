@@ -368,14 +368,13 @@ expect(shopRecordSchema.properties?.itemIds?.minItems === 1000 && shopRecordSche
 expect(shopRecordSchema.properties?.quantities?.minItems === 1000 && shopRecordSchema.properties?.quantities?.maxItems === 1000, "shop quantities must retain one thousand Realmz slots");
 expect(shopRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "shop provenance must reference canonical provenance");
 expectSameArray(shopRecordSchema["x-providence-rust-default"] ?? [], ["itemIds", "quantities", "authored"], "Shop Rust default inventory");
-const messageFields = ["id", "text", "rawBytes", "authored", "provenance"];
+const messageFields = ["id", "text", "authored", "provenance"];
 expectSameArray(Object.keys(messageRecordSchema.properties ?? {}), messageFields, "Message field inventory");
 expectSameArray(messageRecordSchema.required ?? [], ["id", "text"], "Message authored field inventory");
-expect(messageRecordSchema.properties?.rawBytes?.minItems === 256 && messageRecordSchema.properties?.rawBytes?.maxItems === 256, "message rawBytes must retain one complete Realmz Str255 slot when compatibility bytes are present");
 expect(messageRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "message provenance must reference canonical provenance");
 expectSameArray(messageRecordSchema["x-providence-rust-optional"] ?? [], ["provenance"], "Message migration-optional Rust inventory");
 expectSameArray(messageRecordSchema["x-providence-rust-skip-none"] ?? [], ["provenance"], "Message omitted empty provenance inventory");
-expectSameArray(messageRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Message omitted empty compatibility inventory");
+expectSameArray(messageRecordSchema["x-providence-rust-default"] ?? [], ["authored"], "Message Rust default inventory");
 const optionLabelFields = ["id", "text", "rawBytes", "authored", "provenance"];
 expectSameArray(Object.keys(optionLabelRecordSchema.properties ?? {}), optionLabelFields, "Option-label field inventory");
 expectSameArray(optionLabelRecordSchema.required ?? [], ["id", "text"], "Option-label authored field inventory");
@@ -486,7 +485,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

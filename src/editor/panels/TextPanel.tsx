@@ -822,7 +822,7 @@ function MessageEditor({
         <div className="summary-table">
           <div><dt>Record</dt><dd>Scenario string #{record.id}</dd></div>
           <div><dt>State</dt><dd>{record.authored ? "Editable project string" : "Imported string"}</dd></div>
-          <div><dt>Bytes</dt><dd>{record.rawBytes?.length ?? 0} preserved bytes</dd></div>
+          <div><dt>Native row</dt><dd>256-byte Data SD2 record</dd></div>
         </div>
       </details>
     </article>

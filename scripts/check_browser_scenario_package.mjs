@@ -63,13 +63,14 @@ const sourceResourceFork = writeResourceFork([
   resource("TEXT", 202, "Old text", 7, [79, 108, 100]),
   resource("styl", 202, "Old style", 8, [9, 9, 9])
 ]);
-const sourceMessages = new Uint8Array(512);
+const sourceMessages = new Uint8Array(515);
 sourceMessages[0] = 1;
 sourceMessages[1] = "Z".charCodeAt(0);
 sourceMessages[200] = 0x91;
 sourceMessages[256] = 1;
 sourceMessages[257] = "X".charCodeAt(0);
 sourceMessages[500] = 0x92;
+sourceMessages.set([0xde, 0xad, 0xbe], 512);
 const sourceOptionLabels = new Uint8Array(75).fill(0x20);
 sourceOptionLabels[0] = 1;
 sourceOptionLabels[1] = "A".charCodeAt(0);
@@ -334,8 +335,8 @@ expect(ruleNameWarningUpdate.report.warnings.some((warning) => warning.includes(
 const textUpdateProject = {
   ...project,
   messages: [
-    { id: 0, text: "Z", rawBytes: new Array(256).fill(0x11), authored: false },
-    { id: 1, text: "Go", rawBytes: new Array(256).fill(0x22), authored: true }
+    { id: 0, text: "Z", authored: false },
+    { id: 1, text: "Go", authored: true }
   ],
   optionLabels: [
     { id: 0, text: "A", rawBytes: new Array(25).fill(0x11), authored: false },
@@ -351,10 +352,11 @@ expect(!textUpdate.report.passThroughFiles.includes("Data SD2"), "Written Data S
 expect(!textUpdate.report.passThroughFiles.includes("Data OD"), "Written Data OD should not be reported as pass-through");
 const writtenMessages = textUpdatedFiles.get("Data SD2");
 const writtenOptions = textUpdatedFiles.get("Data OD");
-expect(writtenMessages?.byteLength === 512, "Written Data SD2 should retain source row count");
+expect(writtenMessages?.byteLength === 515, "Written Data SD2 should retain source row count and malformed tail");
 expect(writtenOptions?.byteLength === 75, "Written Data OD should retain source row count");
 expect(bytesEqual(writtenMessages?.slice(0, 256), sourceMessages.slice(0, 256)), "Unauthored message row should preserve legacy bytes from the annex");
 expect(bytesEqual(writtenMessages?.slice(256, 512), pascalRow(256, "Go")), "Authored message row should compile canonical Pascal text without embedded raw-byte identity");
+expect(bytesEqual(writtenMessages?.slice(512), new Uint8Array([0xde, 0xad, 0xbe])), "Written Data SD2 should retain its annex-only malformed tail bytes");
 expect(bytesEqual(writtenOptions?.slice(0, 25), sourceOptionLabels.slice(0, 25)), "Unauthored option label row should preserve legacy bytes from the annex");
 expect(bytesEqual(writtenOptions?.slice(25, 50), sourceOptionLabels.slice(25, 50)), "Unauthored noncanonical option-label capacity should remain annex-owned");
 expect(bytesEqual(writtenOptions?.slice(50, 75), pascalRow(25, "On")), "Authored option label row should compile canonical Pascal text without embedded raw-byte identity");

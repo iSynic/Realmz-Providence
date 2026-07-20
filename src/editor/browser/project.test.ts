@@ -323,6 +323,21 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in normalized).toBe(false);
   });
 
+  it("strips obsolete message bytes when opening legacy browser projects", () => {
+    const project = createBrowserProject("Legacy Message");
+    project.messages = [{
+      id: 0,
+      text: "Semantic legacy message",
+      rawBytes: new Array(256).fill(0xa5),
+      authored: false
+    } as unknown as Project["messages"][number]];
+
+    const message = normalizeBrowserProject(project).messages[0];
+
+    expect(message.text).toBe("Semantic legacy message");
+    expect("rawBytes" in message).toBe(false);
+  });
+
   it("backfills shop inventories when opening legacy browser projects", () => {
     const bytes = new Uint8Array(3002);
     bytes.set([0xfe, 0xbf], 2);
@@ -689,8 +704,7 @@ describe("browser project native manifest validation", () => {
       ...parsed.messages[0],
       id: 5,
       text: "Canonical message",
-      authored: false,
-      rawBytes: new Array(256).fill(0xa5)
+      authored: false
     }];
     project.optionLabels = [{
       ...parsed.optionLabels[0],

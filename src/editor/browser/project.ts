@@ -584,7 +584,10 @@ export function normalizeBrowserProject(project: Project): Project {
   });
   project.tileAttributes ??= [];
   project.customLandlooks ??= [];
-  project.messages ??= [];
+  project.messages = (project.messages ?? []).map((record) => {
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
+    return canonicalRecord;
+  });
   project.optionLabels ??= [];
   project.battles ??= [];
   project.monsters = (project.monsters ?? []).map(normalizedMonsterRecord);
@@ -1071,10 +1074,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
     for (const warning of asset.conversion?.warnings ?? []) warnings.push(`${asset.label} import note: ${warning}`);
   }
   for (const message of project.messages ?? []) {
-    const rawBytes = message.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 256) {
-      errors.push(`Message ${message.id} has invalid 256-byte compatibility storage.`);
-    }
     if (message.text.length > 255) errors.push(`Message ${message.id} is too long for Realmz's 255-character message slot.`);
     if (!/^[\x00-\x7F]*$/.test(message.text)) warnings.push(`Message ${message.id} contains non-ASCII text and may not render as intended.`);
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);

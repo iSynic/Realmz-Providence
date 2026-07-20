@@ -326,7 +326,6 @@ export const PROVIDENCE_SHOP_FIELDS = [
 export const PROVIDENCE_MESSAGE_FIELDS = [
   "id",
   "text",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1030,7 +1029,6 @@ export type ProvidenceShopRecord = {
 export type ProvidenceMessageRecord = {
   id: number;
   text: string;
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };
