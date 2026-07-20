@@ -847,10 +847,20 @@ Realmz files. This is an internal compiler-policy evolution: it changes neither 
 `project.json`, Realmz output names, nor the Remake bundle contract. Codec behavior, resource-update
 decisions, and semantic writer execution remain handwritten.
 
-Branch validation through the seventy-ninth slice completed on 2026-07-20:
+The eightieth slice closes the last fixed-path semantic coverage hole in the authoritative fixture.
+The Scenario JSON contract now accepts canonical `scenario.restrictions` fields with native party,
+level, race, caste, uniqueness, and Str255 bounds. Explicit restrictions replace a template record;
+omission preserves template semantics or leaves a blank project without `Data RI`. The ownership
+fixture authors the record without imported bytes and independently checks its exact 320-byte
+layout, neutral padding, four native flag bytes, Windows/Classic-Mac browser/Rust byte parity,
+deterministic repeat output, Remake projection, Rust save/open behavior, and semantic reimport.
+Every fixed-path optional semantic family in the neutral manifest policy is now present in that
+canonical-to-native parity fixture.
+
+Branch validation through the eightieth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
-- full TypeScript suite: 616 passed, plus typecheck;
+- full TypeScript suite: 617 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -901,6 +911,8 @@ generated definitions, compiler boundaries, and ownership proof, with no new mod
 violation.
 The named runtime-baseline and trigger-path closure likewise replaces literals in those same
 compiler owners and adds no new module-size violation.
+The Scenario JSON restriction and `Data RI` parity slice changes only the focused seed contract,
+compiler, fixture, and proof owners and adds no new module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1241,7 +1253,10 @@ A pragmatic sequence is:
     eight semantic roles, consume those roles in baseline seeding, semantic overlays, and annex
     lookups, generate land/dungeon trigger path roles, and keep exact Realmz names independently
     golden-tested.
-28. Keep parser, codec, validator, resource-update, and UI behavior in handwritten modules.
+28. **Implemented for complete fixed-path parity coverage:** expose canonical Scenario JSON party
+    restrictions, author `Data RI` without a template, and prove exact bytes plus semantic reimport
+    so the ownership fixture now exercises every fixed-path optional family.
+29. Keep parser, codec, validator, resource-update, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1423,14 +1438,15 @@ must not be called fresh-authoritative merely because imported round trips are f
 ## Principal Blockers And Remaining Unknowns
 
 1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
-   annex and the minimum ownership fixture enforces byte parity. A versioned neutral policy now
+   annex, and the ownership fixture exercises every fixed-path optional semantic family with byte
+   parity. A versioned neutral policy now
    owns scenario-item capacity, named runtime-baseline files, and the land/dungeon trigger-table
    paths and minimums, plus stable startup roles, target resource-fork paths, fixed-path optional
    semantic-file presence, project-derived custom-landlook/monster-set paths, and authored
    item/spell sidecar roles. Rust and TypeScript still implement codec sizes, resource-update
-   decisions, and semantic writer execution independently. Broader golden fixtures or a shared
-   Rust/Wasm compiler should prevent implementation drift without forcing those details into the
-   policy.
+   decisions, and semantic writer execution independently. Broader edge-case/resource goldens or a
+   shared Rust/Wasm compiler should prevent implementation drift without forcing those details
+   into the policy.
 2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
    `PICT`/`cicn`/`snd `/`TEXT`/`styl` resources, item strings, and custom-spell strings are generated
    in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families
@@ -1572,6 +1588,9 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
   project-derived semantic paths, and default resource sidecars from one native-manifest policy
   and enforce the applicable projections in both compilers.
+- **Implemented for the canonical ownership fixture:** exercise every fixed-path optional semantic
+  family, including authored `Data RI`, through both compilers and both native targets with exact
+  byte parity and semantic reimport.
 - Prefer exposing the Rust compiler to browser/Wasm, or generate both implementations from shared
   codec/manifest specifications.
 - Keep byte-parity fixtures for every supported target.

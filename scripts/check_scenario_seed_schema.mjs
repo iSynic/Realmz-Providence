@@ -29,6 +29,11 @@ expect(schema.additionalProperties === false, "root schema must reject additiona
 expect(schema.properties?.optionLabels?.items?.$ref === "#/$defs/optionLabel", "optionLabels must use the semantic option-label schema");
 expect(schema.$defs?.optionLabel?.required?.includes("id"), "option labels must require an explicit native row ID");
 expect(schema.$defs?.optionLabel?.properties?.text?.maxLength === 24, "option-label text must respect the Data OD Str24 capacity");
+expect(schema.$defs?.scenario?.properties?.restrictions?.$ref === "#/$defs/scenarioRestrictions", "scenario restrictions must use the semantic Data RI schema");
+expect(schema.$defs?.scenarioRestrictions?.properties?.description?.maxLength === 255, "scenario restriction text must respect the Data RI Str255 capacity");
+expect(schema.$defs?.scenarioRestrictions?.properties?.maxPartyCharacters?.maximum === 6, "scenario restrictions must respect Realmz's six-character party capacity");
+expect(schema.$defs?.scenarioRestrictions?.properties?.bannedRaces?.uniqueItems === true, "scenario restriction race IDs must be unique");
+expect(schema.$defs?.scenarioRestrictions?.properties?.bannedCastes?.uniqueItems === true, "scenario restriction caste IDs must be unique");
 expect(docs.includes("schemas/scenario-seed.schema.json"), "docs must link the scenario seed schema");
 expect(source.includes("export { parseScenarioSeed }"), "scenarioSeed.ts must re-export parseScenarioSeed");
 expect(source.includes("export function createProjectFromScenarioSeed"), "scenarioSeed.ts must export createProjectFromScenarioSeed");

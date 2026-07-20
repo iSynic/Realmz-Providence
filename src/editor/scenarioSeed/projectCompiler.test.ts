@@ -102,7 +102,17 @@ describe("scenario seed project compiler", () => {
   it("creates a schema-v5 authored project without a compatibility annex", () => {
     const result = compileScenarioSeedProject({
       schemaVersion: 1,
-      scenario: { name: "Authored From Zero", globalMacros: { start: "opening" } },
+      scenario: {
+        name: "Authored From Zero",
+        globalMacros: { start: "opening" },
+        restrictions: {
+          description: "Four seasoned adventurers only.",
+          maxPartyCharacters: 4,
+          maxPartyLevel: 20,
+          bannedRaces: [1, 30],
+          bannedCastes: [2, 29]
+        }
+      },
       extraActionPoints: [{ key: "opening", id: 9, steps: [] }]
     });
 
@@ -118,8 +128,18 @@ describe("scenario seed project compiler", () => {
     });
     expect(result.project.scenario.globalMacroHooks).toMatchObject({ authored: true });
     expect(result.project.scenario.globalMacroHooks?.slots.find((slot) => slot.slot === 0)?.door).toBe(9);
+    expect(result.project.scenario.restrictions).toMatchObject({
+      description: "Four seasoned adventurers only.",
+      maxPartyCharacters: 4,
+      maxPartyLevel: 20,
+      bannedRaces: [1, 30],
+      bannedCastes: [2, 29],
+      authored: true,
+      provenance: null
+    });
     expect("rawBytes" in (result.project.scenario.globalMacroHooks ?? {})).toBe(false);
     expect("rawBytes" in (result.project.scenario.contactInfo ?? {})).toBe(false);
+    expect("rawBytes" in (result.project.scenario.restrictions ?? {})).toBe(false);
   });
 
   it("replaces only trigger domains explicitly supplied by the seed", () => {

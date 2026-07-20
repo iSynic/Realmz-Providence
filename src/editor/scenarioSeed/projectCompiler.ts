@@ -106,6 +106,18 @@ function initializeScenarioSeedProject(
         authored: true
       };
   const globalMacroHooks = globalMacroHooksSource ? withoutLegacyRawBytes(globalMacroHooksSource) : null;
+  const restrictionsSource = seed.scenario.restrictions === undefined
+    ? project.scenario.restrictions
+    : {
+        description: seed.scenario.restrictions.description ?? "",
+        maxPartyCharacters: seed.scenario.restrictions.maxPartyCharacters ?? 0,
+        maxPartyLevel: seed.scenario.restrictions.maxPartyLevel ?? 0,
+        bannedRaces: [...(seed.scenario.restrictions.bannedRaces ?? [])],
+        bannedCastes: [...(seed.scenario.restrictions.bannedCastes ?? [])],
+        authored: true,
+        provenance: null
+      };
+  const restrictions = restrictionsSource ? withoutLegacyRawBytes(restrictionsSource) : null;
   return {
     ...project,
     schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -132,7 +144,7 @@ function initializeScenarioSeedProject(
             authored: true
           })
         : null,
-      restrictions: project.scenario.restrictions ? withoutLegacyRawBytes(project.scenario.restrictions) : null,
+      restrictions,
       contactInfo: contactInfo
         ? withoutLegacyRawBytes({
             ...contactInfo,

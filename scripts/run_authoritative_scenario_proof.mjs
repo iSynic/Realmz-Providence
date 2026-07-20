@@ -473,6 +473,10 @@ assertCompiledLandLayout(windowsFilesA, "Windows");
 assertCompiledLandLayout(classicFilesA, "Classic Mac");
 assertCompiledLandLayout(browserWindowsFiles, "browser Windows");
 assertCompiledLandLayout(browserClassicFiles, "browser Classic Mac");
+assertCompiledScenarioRestrictions(windowsFilesA, "Windows");
+assertCompiledScenarioRestrictions(classicFilesA, "Classic Mac");
+assertCompiledScenarioRestrictions(browserWindowsFiles, "browser Windows");
+assertCompiledScenarioRestrictions(browserClassicFiles, "browser Classic Mac");
 assertCompiledCustomLandlook(windowsFilesA, "Windows");
 assertCompiledCustomLandlook(classicFilesA, "Classic Mac");
 assertCompiledCustomLandlook(browserWindowsFiles, "browser Windows");
@@ -746,6 +750,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Scenario", 600],
     ["Data CS", 316],
     ["Data CI", 4608],
+    ["Data RI", 320],
     ["Global", 60],
     ["Data LD", 90 * 90 * 2],
     ["Data RD", 644],
@@ -932,6 +937,19 @@ function assertCompiledLandLayout(files, label) {
   expect(bytes.slice(2, 254).every((byte) => byte === 0), `${label} Layout has non-neutral unspecified cells`);
 }
 
+function assertCompiledScenarioRestrictions(files, label) {
+  const bytes = files.get("Data RI");
+  const description = "Four seasoned adventurers only.";
+  expect(bytes?.byteLength === 320, `${label} Data RI does not have the exact native record size`);
+  expect(bytes[0] === description.length, `${label} Data RI has the wrong restriction-message length`);
+  expect(Buffer.from(bytes.slice(1, 1 + description.length)).toString("ascii") === description, `${label} Data RI has the wrong restriction message`);
+  expect(bytes.slice(1 + description.length, 256).every((byte) => byte === 0), `${label} Data RI has non-neutral message padding`);
+  expect(readI16(bytes, 256) === 4 && readI16(bytes, 258) === 20, `${label} Data RI has the wrong party limits`);
+  expect(bytes[260] === 1 && bytes[289] === 1, `${label} Data RI has the wrong banned-race flags`);
+  expect(bytes[291] === 1 && bytes[318] === 1, `${label} Data RI has the wrong banned-caste flags`);
+  expect(bytes.slice(260, 320).filter((byte) => byte !== 0).length === 4, `${label} Data RI has non-neutral restriction flags`);
+}
+
 function assertOwnershipMessage(records, label) {
   const message = records?.find((record) => record.id === 0);
   const rogueMessage = records?.find((record) => record.id === 1);
@@ -1056,6 +1074,12 @@ function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityB
   expect(contact, `${label} is missing scenario contact info`);
   expect(contact.scenarioName === scenarioName, `${label} has the wrong scenario contact name`);
   expect(contact.author === "Providence", `${label} has the wrong scenario contact author`);
+  const restrictions = project.scenario?.restrictions;
+  expect(restrictions, `${label} is missing scenario party restrictions`);
+  expect(restrictions.description === "Four seasoned adventurers only.", `${label} has the wrong scenario restriction message`);
+  expect(restrictions.maxPartyCharacters === 4 && restrictions.maxPartyLevel === 20, `${label} has the wrong scenario party limits`);
+  expect(restrictions.bannedRaces?.join(",") === "1,30", `${label} has the wrong banned scenario races`);
+  expect(restrictions.bannedCastes?.join(",") === "2,29", `${label} has the wrong banned scenario castes`);
   if (requireNoCompatibilityBytes) {
     expect(!Object.hasOwn(shell, "rawBytes"), `${label} scenario shell exposes raw compatibility bytes`);
     expect(!Object.hasOwn(shell, "trailingBytes"), `${label} scenario shell exposes a compatibility tail`);
@@ -1063,7 +1087,7 @@ function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityB
     expect(!Object.hasOwn(project.scenario?.securityBackup ?? {}, "trailingBytes"), `${label} scenario security backup exposes a compatibility tail`);
     expect(!Object.hasOwn(project.scenario?.supportFile ?? {}, "rawBytes"), `${label} scenario support file exposes compatibility bytes`);
     expect(!Object.hasOwn(contact, "rawBytes"), `${label} scenario contact exposes compatibility bytes`);
-    expect(!Object.hasOwn(project.scenario?.restrictions ?? {}, "rawBytes"), `${label} scenario restrictions expose compatibility bytes`);
+    expect(!Object.hasOwn(restrictions, "rawBytes"), `${label} scenario restrictions expose compatibility bytes`);
   }
 }
 
@@ -1183,6 +1207,10 @@ function assertCompiledCustomLandlook(files, label) {
 
 function assertSharedManifestPathPolicy(files, project, label) {
   const baseline = manifestPolicy.authoredBaseline;
+  for (const family of baseline.optionalSemanticFiles) {
+    expect(optionalSemanticFamilyPresent(project, family), `${label} ownership fixture does not cover optional semantic family ${family.id}`);
+    expect(files.has(family.path), `${label} ownership output is missing optional semantic family ${family.id} at ${family.path}`);
+  }
   for (const family of baseline.projectPathSemanticFiles) {
     const collection = projectValueAtPointer(project, family.projectPath);
     expect(Array.isArray(collection), `${label} manifest policy ${family.id} does not resolve to a canonical collection`);
@@ -1202,6 +1230,16 @@ function assertSharedManifestPathPolicy(files, project, label) {
     expect(sidecar.emission === "semantic-updates", `${label} resource sidecar ${sidecar.id} has an unknown emission rule`);
     expect(files.has(sidecar.path), `${label} ownership proof is missing shared ${sidecar.id} resource sidecar ${sidecar.path}`);
   }
+}
+
+function optionalSemanticFamilyPresent(project, family) {
+  const value = projectValueAtPointer(project, family.presence.projectPath);
+  if (family.presence.kind === "present") return value != null;
+  if (family.presence.kind === "collection-non-empty") return Array.isArray(value) && value.length > 0;
+  if (family.presence.kind === "collection-match") {
+    return Array.isArray(value) && value.some((entry) => entry?.[family.presence.field] === family.presence.equals);
+  }
+  throw new Error(`Unknown optional semantic presence kind ${family.presence.kind}`);
 }
 
 function projectValueAtPointer(project, pointer) {

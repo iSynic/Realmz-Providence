@@ -95,6 +95,7 @@ export type ScenarioSeedScenario = {
   name: string;
   start?: ScenarioSeedStart;
   globalMacros?: ScenarioSeedGlobalMacros;
+  restrictions?: ScenarioSeedRestrictions;
   author?: string;
   version?: string;
   date?: string;
@@ -104,6 +105,14 @@ export type ScenarioSeedScenario = {
 };
 
 export type ScenarioSeedGlobalMacros = Partial<Record<"start" | "death" | "quit" | "shop" | "temple", ScenarioSeedRef>>;
+
+export type ScenarioSeedRestrictions = {
+  description?: string;
+  maxPartyCharacters?: number;
+  maxPartyLevel?: number;
+  bannedRaces?: number[];
+  bannedCastes?: number[];
+};
 
 export type ScenarioSeedStart = {
   landLevel: number;

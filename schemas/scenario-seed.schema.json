@@ -123,6 +123,7 @@
         "name": { "type": "string", "minLength": 1, "maxLength": 64 },
         "start": { "$ref": "#/$defs/scenarioStart" },
         "globalMacros": { "$ref": "#/$defs/scenarioGlobalMacros" },
+        "restrictions": { "$ref": "#/$defs/scenarioRestrictions" },
         "author": { "type": "string", "maxLength": 64 },
         "version": { "type": "string", "maxLength": 32 },
         "date": { "type": "string", "maxLength": 32 },
@@ -140,6 +141,17 @@
         "quit": { "$ref": "#/$defs/idRef" },
         "shop": { "$ref": "#/$defs/idRef" },
         "temple": { "$ref": "#/$defs/idRef" }
+      }
+    },
+    "scenarioRestrictions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string", "maxLength": 255 },
+        "maxPartyCharacters": { "type": "integer", "minimum": 0, "maximum": 6 },
+        "maxPartyLevel": { "type": "integer", "minimum": 0, "maximum": 32767 },
+        "bannedRaces": { "type": "array", "maxItems": 30, "uniqueItems": true, "items": { "type": "integer", "minimum": 1, "maximum": 30 } },
+        "bannedCastes": { "type": "array", "maxItems": 30, "uniqueItems": true, "items": { "type": "integer", "minimum": 1, "maximum": 30 } }
       }
     },
     "scenarioStart": {

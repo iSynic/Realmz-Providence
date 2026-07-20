@@ -6,7 +6,14 @@
     "author": "Providence",
     "description": "A minimal scenario compiled entirely from canonical Providence data.",
     "start": { "landLevel": 0, "x": 10, "y": 12 },
-    "globalMacros": { "start": "ownership-timed-macro" }
+    "globalMacros": { "start": "ownership-timed-macro" },
+    "restrictions": {
+      "description": "Four seasoned adventurers only.",
+      "maxPartyCharacters": 4,
+      "maxPartyLevel": 20,
+      "bannedRaces": [1, 30],
+      "bannedCastes": [2, 29]
+    }
   },
   "maps": [
     {
