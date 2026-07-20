@@ -1,7 +1,10 @@
 import type {
   ProvidenceAction,
+  ProvidenceAssetCatalog,
+  ProvidenceAssetImportTarget,
   ProvidenceConfidence,
   ProvidenceComplexEncounterRecord,
+  ProvidenceDitherMode,
   ProvidenceGlobalMacroHook,
   ProvidenceLandLayout,
   ProvidenceLevelType,
@@ -13,13 +16,24 @@ import type {
   ProvidenceBattleRecord,
   ProvidenceEncounterActionRow,
   ProvidenceExtraCodeRow,
+  ProvidenceImageFitMode,
+  ProvidenceImageMatte,
+  ProvidenceImageScaleMode,
   ProvidenceItemTextRecord,
   ProvidenceMessageRecord,
   ProvidenceMonsterDescriptionRecord,
+  ProvidenceMonsterIconOverride,
   ProvidenceMonsterRecord,
   ProvidenceMonsterSet,
   ProvidenceMonsterSetId,
   ProvidenceOptionLabelRecord,
+  ProvidencePaletteMode,
+  ProvidenceManagedAsset,
+  ProvidenceManagedAssetConversion,
+  ProvidenceManagedAssetExportState,
+  ProvidenceManagedAssetKind,
+  ProvidenceManagedAssetLibraryScope,
+  ProvidenceResourceAsset,
   ProvidenceScenarioCasteOverride,
   ProvidenceScenarioRaceOverride,
   ProvidenceScenarioSpellOverride,
@@ -32,6 +46,7 @@ import type {
   ProvidenceScenarioContactInfo,
   ProvidenceScenarioGlobalMacroHooks,
   ProvidenceScenarioItemRecord,
+  ProvidenceScenarioIconResource,
   ProvidenceScenarioMeta,
   ProvidenceScenarioRestrictions,
   ProvidenceScenarioShell,
@@ -40,6 +55,7 @@ import type {
   ProvidenceThiefEncounterRecord,
   ProvidenceTimedEncounterLocationKind,
   ProvidenceTimedEncounterRecord,
+  ProvidenceTilesetAsset,
   ProvidenceTriggerRecord,
   ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
@@ -100,6 +116,22 @@ export type CustomLandlookMetadata = ProvidenceCustomLandlookMetadata;
 export type TriggerRecord = ProvidenceTriggerRecord;
 export type Action = ProvidenceAction;
 export type ExtraCodeRow = ProvidenceExtraCodeRow;
+export type MonsterIconOverride = ProvidenceMonsterIconOverride;
+export type ScenarioIconResource = ProvidenceScenarioIconResource;
+export type AssetImportTarget = ProvidenceAssetImportTarget;
+export type ManagedAssetLibraryScope = ProvidenceManagedAssetLibraryScope;
+export type ImageFitMode = ProvidenceImageFitMode;
+export type ImageScaleMode = ProvidenceImageScaleMode;
+export type ImageMatte = ProvidenceImageMatte;
+export type PaletteMode = ProvidencePaletteMode;
+export type DitherMode = ProvidenceDitherMode;
+export type ManagedAssetKind = ProvidenceManagedAssetKind;
+export type ManagedAssetExportState = ProvidenceManagedAssetExportState;
+export type ManagedAssetConversion = ProvidenceManagedAssetConversion;
+export type ManagedAsset = ProvidenceManagedAsset;
+export type TilesetAsset = ProvidenceTilesetAsset;
+export type ResourceAsset = ProvidenceResourceAsset;
+export type AssetCatalog = ProvidenceAssetCatalog;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -240,37 +272,11 @@ export type MapViewOptions = Record<MapViewFlag, boolean>;
 
 export type PaintCellChange = { x: number; y: number; index: number; from: number; to: number };
 export type BattleGridCellChange = { index: number; from: number; to: number };
-export type ManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
 export type ReferenceAssetScenarioCopyKind = "icon" | "special-land-tile";
 export type ReferenceAssetScenarioCopyResult = {
   kind: ManagedAssetKind;
   label: string;
   resourceId: number;
-};
-export type ManagedAssetExportState = "ready" | "blocked" | "preview-only";
-export type ManagedAssetLibraryScope = "scenario" | "custom-library";
-export type AssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound" | "text" | "raw-resource";
-export type ImageFitMode = "fit" | "crop" | "stretch";
-export type ImageScaleMode = "smooth" | "crisp";
-export type ImageMatte = "transparent" | "white" | "black";
-export type PaletteMode = "adaptive-256";
-export type DitherMode = "none" | "floyd-steinberg";
-
-export type ManagedAssetConversion = {
-  target: AssetImportTarget;
-  fitMode: ImageFitMode | null;
-  scaleMode: ImageScaleMode | null;
-  matte: ImageMatte | null;
-  paletteMode: PaletteMode | null;
-  ditherMode: DitherMode | null;
-  sourceWidth?: number | null;
-  sourceHeight?: number | null;
-  sourceDurationMs?: number | null;
-  sourceSampleRate?: number | null;
-  sourceChannels?: number | null;
-  finalWidth: number | null;
-  finalHeight: number | null;
-  warnings: string[];
 };
 export type ResourcePreviewStatus =
   | "preview-ready"
@@ -375,31 +381,6 @@ export type DecodedResourcePreview = {
   dataUrl: string | null;
   summary: Record<string, string>;
   diagnostics: ResourcePreviewDiagnostic[];
-};
-
-export type ManagedAsset = {
-  id: string;
-  label: string;
-  kind: ManagedAssetKind;
-  resourceType: string;
-  resourceId: number;
-  fileName: string;
-  originalPath: string;
-  previewPath: string;
-  resourcePath: string;
-  mimeType: string;
-  bytes: number;
-  sha256: string;
-  width: number | null;
-  height: number | null;
-  durationMs: number | null;
-  sampleRate: number | null;
-  channels: number | null;
-  exportState: ManagedAssetExportState;
-  libraryScope?: ManagedAssetLibraryScope;
-  provenance: string;
-  linkedEntity: string | null;
-  conversion?: ManagedAssetConversion | null;
 };
 
 export type StampPaletteItem = {
@@ -1002,31 +983,12 @@ export type Project = {
   casteOverrides: ScenarioCasteOverride[];
   ruleNames: RuleNames;
   assets: ManagedAsset[];
-  assetCatalog: { tilesets: TilesetAsset[]; pictures?: ResourceAsset[]; icons?: ResourceAsset[]; sounds?: ResourceAsset[] };
+  assetCatalog: AssetCatalog;
   editorMetadata: EditorMetadata;
   records: { counts: Record<string, number>; alignments: Alignment[] };
   diagnostics: Diagnostic[];
   semanticSchema: SemanticSchema;
   validation: ValidationReport;
-};
-
-export type MonsterIconOverride = {
-  targetBaseIconId: number;
-  sourceBaseIconId: number;
-  sourceLabel?: string;
-  sourceKind: "monster-mash" | "scenario-resource" | "providence-library";
-  sourceBaseResourceBase64: string;
-  sourcePairedResourceBase64: string;
-  imported?: boolean;
-};
-
-export type ScenarioIconResource = {
-  resourceId: number;
-  label: string;
-  sourceKind: "vault-of-arcana" | "providence-library" | "scenario-resource";
-  resourceBase64: string;
-  previewPath?: string | null;
-  imported?: boolean;
 };
 
 export type SemanticEditState = "editable" | "inspect-only" | "blocked";
@@ -1134,31 +1096,6 @@ export type LibraryDiagnostic = {
 
 export type SourceFile = ProvidenceSourceFile;
 export type SourceFileRole = ProvidenceSourceFileRole;
-
-export type TilesetAsset = {
-  id: string;
-  landlook: number;
-  name: string;
-  source: string;
-  available: boolean;
-  imagePath: string | null;
-  pictId: number | null;
-  tileWidth: number;
-  tileHeight: number;
-  columns: number;
-  rows: number;
-  custom: boolean;
-  baseTile?: number | null;
-};
-
-export type ResourceAsset = {
-  id: string;
-  resourceType: string;
-  resourceId: number;
-  name?: string | null;
-  source: string;
-  previewPath?: string | null;
-};
 
 export type AtlasEntry = { image: HTMLImageElement; url: string; asset: TilesetAsset };
 export type IconEntry = { image: HTMLImageElement; url: string; id: number };

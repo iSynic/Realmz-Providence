@@ -222,6 +222,61 @@ pub const PROVIDENCE_EXTRA_CODE_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
+pub const PROVIDENCE_MONSTER_ICON_OVERRIDE_FIELDS: &[&str] = &[
+    "targetBaseIconId",
+    "sourceBaseIconId",
+    "sourceLabel",
+    "sourceKind",
+    "sourceBaseResourceBase64",
+    "sourcePairedResourceBase64",
+    "imported",
+];
+
+#[allow(dead_code)]
+pub const PROVIDENCE_SCENARIO_ICON_RESOURCE_FIELDS: &[&str] = &[
+    "resourceId",
+    "label",
+    "sourceKind",
+    "resourceBase64",
+    "previewPath",
+    "imported",
+];
+
+#[allow(dead_code)]
+pub const PROVIDENCE_MANAGED_ASSET_FIELDS: &[&str] = &[
+    "id",
+    "label",
+    "kind",
+    "resourceType",
+    "resourceId",
+    "fileName",
+    "originalPath",
+    "previewPath",
+    "resourcePath",
+    "mimeType",
+    "bytes",
+    "sha256",
+    "width",
+    "height",
+    "durationMs",
+    "sampleRate",
+    "channels",
+    "exportState",
+    "libraryScope",
+    "provenance",
+    "linkedEntity",
+    "conversion",
+];
+
+#[allow(dead_code)]
+pub const PROVIDENCE_ASSET_CATALOG_FIELDS: &[&str] = &[
+    "tilesets",
+    "pictures",
+    "icons",
+    "sounds",
+];
+
+#[allow(dead_code)]
 pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[
     "id",
     "itemId",
@@ -923,6 +978,222 @@ pub struct CustomLandlookMetadata {
     pub writer_gate: LandlookWriterGate,
     #[serde(default)]
     pub authored: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum MonsterIconOverrideSource {
+    MonsterMash,
+    ScenarioResource,
+    ProvidenceLibrary,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MonsterIconOverride {
+    pub target_base_icon_id: i32,
+    pub source_base_icon_id: i32,
+    #[serde(default)]
+    pub source_label: Option<String>,
+    pub source_kind: MonsterIconOverrideSource,
+    pub source_base_resource_base64: String,
+    pub source_paired_resource_base64: String,
+    #[serde(default)]
+    pub imported: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ScenarioIconResourceSource {
+    VaultOfArcana,
+    ProvidenceLibrary,
+    ScenarioResource,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScenarioIconResource {
+    pub resource_id: i32,
+    pub label: String,
+    pub source_kind: ScenarioIconResourceSource,
+    pub resource_base64: String,
+    #[serde(default)]
+    pub preview_path: Option<String>,
+    #[serde(default)]
+    pub imported: bool,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum AssetImportTarget {
+    ScenarioPicture,
+    CustomLandlookAtlas,
+    Icon,
+    SpecialLandTile,
+    Sound,
+    Text,
+    RawResource,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum ManagedAssetLibraryScope {
+    Scenario,
+    CustomLibrary,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImageFitMode {
+    Fit,
+    Crop,
+    Stretch,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImageScaleMode {
+    Smooth,
+    Crisp,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ImageMatte {
+    Transparent,
+    White,
+    Black,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum PaletteMode {
+    #[serde(rename = "adaptive-256", alias = "adaptive256")]
+    Adaptive256,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum DitherMode {
+    None,
+    FloydSteinberg,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ManagedAssetKind {
+    Picture,
+    Icon,
+    SpecialLandTile,
+    Sound,
+    Text,
+    Other,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum ManagedAssetExportState {
+    Ready,
+    Blocked,
+    PreviewOnly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManagedAssetConversion {
+    pub target: AssetImportTarget,
+    pub fit_mode: Option<ImageFitMode>,
+    pub scale_mode: Option<ImageScaleMode>,
+    pub matte: Option<ImageMatte>,
+    pub palette_mode: Option<PaletteMode>,
+    pub dither_mode: Option<DitherMode>,
+    #[serde(default)]
+    pub source_width: Option<u32>,
+    #[serde(default)]
+    pub source_height: Option<u32>,
+    #[serde(default)]
+    pub source_duration_ms: Option<u32>,
+    #[serde(default)]
+    pub source_sample_rate: Option<u32>,
+    #[serde(default)]
+    pub source_channels: Option<u16>,
+    pub final_width: Option<u32>,
+    pub final_height: Option<u32>,
+    #[serde(default)]
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManagedAsset {
+    pub id: String,
+    pub label: String,
+    pub kind: ManagedAssetKind,
+    pub resource_type: String,
+    pub resource_id: i16,
+    pub file_name: String,
+    pub original_path: String,
+    pub preview_path: String,
+    pub resource_path: String,
+    pub mime_type: String,
+    pub bytes: u64,
+    pub sha256: String,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub duration_ms: Option<u32>,
+    pub sample_rate: Option<u32>,
+    pub channels: Option<u16>,
+    pub export_state: ManagedAssetExportState,
+    #[serde(default)]
+    pub library_scope: Option<ManagedAssetLibraryScope>,
+    pub provenance: String,
+    pub linked_entity: Option<String>,
+    #[serde(default)]
+    pub conversion: Option<ManagedAssetConversion>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TilesetAsset {
+    pub id: String,
+    pub landlook: i8,
+    pub name: String,
+    pub source: String,
+    pub available: bool,
+    pub image_path: Option<String>,
+    pub pict_id: Option<i32>,
+    pub tile_width: u32,
+    pub tile_height: u32,
+    pub columns: u32,
+    pub rows: u32,
+    pub custom: bool,
+    #[serde(default)]
+    pub base_tile: Option<i16>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceAsset {
+    pub id: String,
+    pub resource_type: String,
+    pub resource_id: i32,
+    pub name: Option<String>,
+    pub source: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preview_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetCatalog {
+    #[serde(default)]
+    pub tilesets: Vec<TilesetAsset>,
+    #[serde(default)]
+    pub pictures: Vec<ResourceAsset>,
+    #[serde(default)]
+    pub icons: Vec<ResourceAsset>,
+    #[serde(default)]
+    pub sounds: Vec<ResourceAsset>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]

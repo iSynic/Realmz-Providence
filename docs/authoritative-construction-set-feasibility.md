@@ -528,7 +528,21 @@ boundary type instead of falsely declaring both meanings identical. Focused ED3/
 browser/desktop parity and the full deterministic ownership proof pass without native or Remake
 output changes. Managed/resource asset DTOs are now the only remaining ISY-392 family.
 
-Branch validation through the fiftieth slice completed on 2026-07-19:
+The fifty-first slice completes ISY-392's compiler-facing DTO convergence. The schema now owns all
+four persisted asset surfaces—monster icon overrides, scenario icon resources, managed assets, and
+asset-catalog metadata—plus their source, kind, export-state, library-scope, conversion, palette,
+image, and import-target vocabularies. Generated TypeScript and Rust definitions replace the
+handwritten records and enums while preserving signed resource IDs, nullable media dimensions,
+optional browser fields, Rust serializer order/defaults, omitted empty preview paths, and the
+legacy `adaptive256` palette alias. The canonical distinction between scenario-bundled assets and
+the reusable `custom-library` remains unchanged: only scenario-scoped managed assets participate
+in native or Remake output. Base64 icon resources remain authoritative authored payloads rather
+than compatibility-annex snapshots. Resource previews, diagnostics, atlas audit artifacts,
+library view models, codecs, and validators remain intentionally derived/handwritten rather than
+being promoted into the persisted scenario contract. Project ZIP checks, browser/native package
+parity, the complete test suites, and deterministic native/Remake ownership proof all pass.
+
+Branch validation through the fifty-first slice completed on 2026-07-19:
 
 - full Rust suite: 260 passed, 2 ignored;
 - full TypeScript suite: 608 passed, plus typecheck;
@@ -1001,13 +1015,13 @@ must not be called fresh-authoritative merely because imported round trips are f
    in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families
    remain incomplete. Built-in `RLMZ` index metadata is intentionally not synthesized for fresh
    third-party scenarios.
-3. **Remaining nested generated DTOs:** the language-neutral schema now owns and checks the
-   persisted top-level inventory, complete source-origin/source-file, scenario startup, map
-   identity/layout, random-level/rectangle, map-record, scenario-item, treasure, shop, message,
-   option-label, battle, monster, monster-description, monster-set, item-text, Action Point/EDCD,
-   spell, race, and caste DTO families, shared provenance/confidence primitives, and the
-   schema-version constant. Managed/resource asset DTOs are still maintained manually and should
-   migrate as the final bounded family.
+3. **Generated compiler DTO boundary:** the language-neutral schema now owns and checks the
+   persisted top-level inventory; source-origin/source-file, scenario startup, map/layout,
+   Action Point/EDCD, record/rules, managed-resource, and asset-catalog DTO families; shared
+   provenance/confidence primitives; and the schema-version constant. The remaining handwritten
+   shapes are derived semantic graphs, diagnostics, UI-only metadata, codecs, validators, and
+   behavior helpers by design. Future persisted fields must enter through the schema rather than
+   reopening TypeScript/Rust duplication.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. Scenario shell/support, monster, monster-description, spell, race,
    caste, contact, restriction, and global-hook export no longer consults those fields; marker and

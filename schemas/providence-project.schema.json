@@ -115,8 +115,14 @@
       "type": "array",
       "items": { "$ref": "#/$defs/monsterDescriptionRecord" }
     },
-    "monsterIconOverrides": { "$ref": "#/$defs/canonicalRecordArray" },
-    "scenarioIconResources": { "$ref": "#/$defs/canonicalRecordArray" },
+    "monsterIconOverrides": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/monsterIconOverride" }
+    },
+    "scenarioIconResources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/scenarioIconResource" }
+    },
     "scenarioItems": {
       "type": "array",
       "items": { "$ref": "#/$defs/scenarioItemRecord" }
@@ -154,8 +160,11 @@
     "raceOverrides": { "type": "array", "items": { "$ref": "#/$defs/scenarioRaceOverride" } },
     "casteOverrides": { "type": "array", "items": { "$ref": "#/$defs/scenarioCasteOverride" } },
     "ruleNames": { "$ref": "#/$defs/canonicalObject" },
-    "assets": { "$ref": "#/$defs/canonicalRecordArray" },
-    "assetCatalog": { "$ref": "#/$defs/canonicalObject" },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/managedAsset" }
+    },
+    "assetCatalog": { "$ref": "#/$defs/assetCatalog" },
     "editorMetadata": { "$ref": "#/$defs/canonicalObject" },
     "records": { "$ref": "#/$defs/canonicalObject" },
     "diagnostics": { "$ref": "#/$defs/canonicalRecordArray" },
@@ -570,6 +579,239 @@
           "x-providence-rust-type": "[i16; 5]"
         },
         "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "monsterIconOverrideSource": {
+      "type": "string",
+      "enum": ["monster-mash", "scenario-resource", "providence-library"],
+      "x-providence-typescript-name": "ProvidenceMonsterIconOverrideSource",
+      "x-providence-rust-name": "MonsterIconOverrideSource"
+    },
+    "monsterIconOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceMonsterIconOverride",
+      "x-providence-rust-name": "MonsterIconOverride",
+      "x-providence-rust-optional": ["sourceLabel"],
+      "x-providence-rust-default": ["imported"],
+      "required": ["targetBaseIconId", "sourceBaseIconId", "sourceKind", "sourceBaseResourceBase64", "sourcePairedResourceBase64"],
+      "properties": {
+        "targetBaseIconId": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647, "x-providence-rust-type": "i32" },
+        "sourceBaseIconId": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647, "x-providence-rust-type": "i32" },
+        "sourceLabel": {
+          "oneOf": [{ "type": "string" }, { "type": "null" }],
+          "x-providence-typescript-type": "string"
+        },
+        "sourceKind": { "$ref": "#/$defs/monsterIconOverrideSource" },
+        "sourceBaseResourceBase64": { "type": "string" },
+        "sourcePairedResourceBase64": { "type": "string" },
+        "imported": { "type": "boolean" }
+      }
+    },
+    "scenarioIconResourceSource": {
+      "type": "string",
+      "enum": ["vault-of-arcana", "providence-library", "scenario-resource"],
+      "x-providence-typescript-name": "ProvidenceScenarioIconResourceSource",
+      "x-providence-rust-name": "ScenarioIconResourceSource"
+    },
+    "scenarioIconResource": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceScenarioIconResource",
+      "x-providence-rust-name": "ScenarioIconResource",
+      "x-providence-rust-optional": ["previewPath"],
+      "x-providence-rust-default": ["imported"],
+      "required": ["resourceId", "label", "sourceKind", "resourceBase64"],
+      "properties": {
+        "resourceId": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647, "x-providence-rust-type": "i32" },
+        "label": { "type": "string" },
+        "sourceKind": { "$ref": "#/$defs/scenarioIconResourceSource" },
+        "resourceBase64": { "type": "string" },
+        "previewPath": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
+        "imported": { "type": "boolean" }
+      }
+    },
+    "assetImportTarget": {
+      "type": "string",
+      "enum": ["scenario-picture", "custom-landlook-atlas", "icon", "special-land-tile", "sound", "text", "raw-resource"],
+      "x-providence-typescript-name": "ProvidenceAssetImportTarget",
+      "x-providence-rust-name": "AssetImportTarget",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "managedAssetLibraryScope": {
+      "type": "string",
+      "enum": ["scenario", "custom-library"],
+      "x-providence-typescript-name": "ProvidenceManagedAssetLibraryScope",
+      "x-providence-rust-name": "ManagedAssetLibraryScope",
+      "x-providence-rust-derives": ["Debug", "Clone", "PartialEq", "Eq", "Serialize", "Deserialize"]
+    },
+    "imageFitMode": {
+      "type": "string",
+      "enum": ["fit", "crop", "stretch"],
+      "x-providence-typescript-name": "ProvidenceImageFitMode",
+      "x-providence-rust-name": "ImageFitMode",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "imageScaleMode": {
+      "type": "string",
+      "enum": ["smooth", "crisp"],
+      "x-providence-typescript-name": "ProvidenceImageScaleMode",
+      "x-providence-rust-name": "ImageScaleMode",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "imageMatte": {
+      "type": "string",
+      "enum": ["transparent", "white", "black"],
+      "x-providence-typescript-name": "ProvidenceImageMatte",
+      "x-providence-rust-name": "ImageMatte",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "paletteMode": {
+      "type": "string",
+      "enum": ["adaptive-256"],
+      "x-providence-typescript-name": "ProvidencePaletteMode",
+      "x-providence-rust-name": "PaletteMode",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"],
+      "x-providence-rust-renames": { "adaptive-256": "adaptive-256" },
+      "x-providence-rust-aliases": { "adaptive-256": ["adaptive256"] }
+    },
+    "ditherMode": {
+      "type": "string",
+      "enum": ["none", "floyd-steinberg"],
+      "x-providence-typescript-name": "ProvidenceDitherMode",
+      "x-providence-rust-name": "DitherMode",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "managedAssetKind": {
+      "type": "string",
+      "enum": ["picture", "icon", "special-land-tile", "sound", "text", "other"],
+      "x-providence-typescript-name": "ProvidenceManagedAssetKind",
+      "x-providence-rust-name": "ManagedAssetKind",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "managedAssetExportState": {
+      "type": "string",
+      "enum": ["ready", "blocked", "preview-only"],
+      "x-providence-typescript-name": "ProvidenceManagedAssetExportState",
+      "x-providence-rust-name": "ManagedAssetExportState",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
+    },
+    "managedAssetConversion": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceManagedAssetConversion",
+      "x-providence-rust-name": "ManagedAssetConversion",
+      "x-providence-rust-default": ["sourceWidth", "sourceHeight", "sourceDurationMs", "sourceSampleRate", "sourceChannels", "warnings"],
+      "required": ["target", "fitMode", "scaleMode", "matte", "paletteMode", "ditherMode", "finalWidth", "finalHeight", "warnings"],
+      "properties": {
+        "target": { "$ref": "#/$defs/assetImportTarget" },
+        "fitMode": { "oneOf": [{ "$ref": "#/$defs/imageFitMode" }, { "type": "null" }], "x-providence-rust-type": "Option<ImageFitMode>" },
+        "scaleMode": { "oneOf": [{ "$ref": "#/$defs/imageScaleMode" }, { "type": "null" }], "x-providence-rust-type": "Option<ImageScaleMode>" },
+        "matte": { "oneOf": [{ "$ref": "#/$defs/imageMatte" }, { "type": "null" }], "x-providence-rust-type": "Option<ImageMatte>" },
+        "paletteMode": { "oneOf": [{ "$ref": "#/$defs/paletteMode" }, { "type": "null" }], "x-providence-rust-type": "Option<PaletteMode>" },
+        "ditherMode": { "oneOf": [{ "$ref": "#/$defs/ditherMode" }, { "type": "null" }], "x-providence-rust-type": "Option<DitherMode>" },
+        "sourceWidth": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "sourceHeight": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "sourceDurationMs": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "sourceSampleRate": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "sourceChannels": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 65535 }, { "type": "null" }], "x-providence-rust-type": "Option<u16>" },
+        "finalWidth": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "finalHeight": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "managedAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceManagedAsset",
+      "x-providence-rust-name": "ManagedAsset",
+      "x-providence-rust-default": ["libraryScope", "conversion"],
+      "required": ["id", "label", "kind", "resourceType", "resourceId", "fileName", "originalPath", "previewPath", "resourcePath", "mimeType", "bytes", "sha256", "width", "height", "durationMs", "sampleRate", "channels", "exportState", "provenance", "linkedEntity"],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "kind": { "$ref": "#/$defs/managedAssetKind" },
+        "resourceType": { "type": "string" },
+        "resourceId": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "fileName": { "type": "string" },
+        "originalPath": { "type": "string" },
+        "previewPath": { "type": "string" },
+        "resourcePath": { "type": "string" },
+        "mimeType": { "type": "string" },
+        "bytes": { "type": "integer", "minimum": 0, "x-providence-rust-type": "u64" },
+        "sha256": { "type": "string" },
+        "width": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "height": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "durationMs": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "sampleRate": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }], "x-providence-rust-type": "Option<u32>" },
+        "channels": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 65535 }, { "type": "null" }], "x-providence-rust-type": "Option<u16>" },
+        "exportState": { "$ref": "#/$defs/managedAssetExportState" },
+        "libraryScope": {
+          "oneOf": [{ "$ref": "#/$defs/managedAssetLibraryScope" }, { "type": "null" }],
+          "x-providence-typescript-type": "ProvidenceManagedAssetLibraryScope",
+          "x-providence-rust-type": "Option<ManagedAssetLibraryScope>"
+        },
+        "provenance": { "type": "string" },
+        "linkedEntity": { "oneOf": [{ "type": "string" }, { "type": "null" }], "x-providence-rust-type": "Option<String>" },
+        "conversion": {
+          "oneOf": [{ "$ref": "#/$defs/managedAssetConversion" }, { "type": "null" }],
+          "x-providence-rust-type": "Option<ManagedAssetConversion>"
+        }
+      }
+    },
+    "tilesetAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceTilesetAsset",
+      "x-providence-rust-name": "TilesetAsset",
+      "x-providence-rust-default": ["baseTile"],
+      "required": ["id", "landlook", "name", "source", "available", "imagePath", "pictId", "tileWidth", "tileHeight", "columns", "rows", "custom"],
+      "properties": {
+        "id": { "type": "string" },
+        "landlook": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "name": { "type": "string" },
+        "source": { "type": "string" },
+        "available": { "type": "boolean" },
+        "imagePath": { "oneOf": [{ "type": "string" }, { "type": "null" }], "x-providence-rust-type": "Option<String>" },
+        "pictId": { "oneOf": [{ "type": "integer", "minimum": -2147483648, "maximum": 2147483647 }, { "type": "null" }], "x-providence-rust-type": "Option<i32>" },
+        "tileWidth": { "type": "integer", "minimum": 0, "x-providence-rust-type": "u32" },
+        "tileHeight": { "type": "integer", "minimum": 0, "x-providence-rust-type": "u32" },
+        "columns": { "type": "integer", "minimum": 0, "x-providence-rust-type": "u32" },
+        "rows": { "type": "integer", "minimum": 0, "x-providence-rust-type": "u32" },
+        "custom": { "type": "boolean" },
+        "baseTile": { "oneOf": [{ "type": "integer", "minimum": -32768, "maximum": 32767 }, { "type": "null" }], "x-providence-rust-type": "Option<i16>" }
+      }
+    },
+    "resourceAsset": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceResourceAsset",
+      "x-providence-rust-name": "ResourceAsset",
+      "x-providence-rust-default": ["previewPath"],
+      "x-providence-rust-skip-none": ["previewPath"],
+      "required": ["id", "resourceType", "resourceId", "source"],
+      "properties": {
+        "id": { "type": "string" },
+        "resourceType": { "type": "string" },
+        "resourceId": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647, "x-providence-rust-type": "i32" },
+        "name": { "oneOf": [{ "type": "string" }, { "type": "null" }], "x-providence-rust-type": "Option<String>" },
+        "source": { "type": "string" },
+        "previewPath": { "oneOf": [{ "type": "string" }, { "type": "null" }], "x-providence-rust-type": "Option<String>" }
+      }
+    },
+    "assetCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceAssetCatalog",
+      "x-providence-rust-name": "AssetCatalog",
+      "x-providence-rust-derives": ["Debug", "Clone", "Serialize", "Deserialize", "Default"],
+      "x-providence-rust-default": ["tilesets", "pictures", "icons", "sounds"],
+      "required": ["tilesets"],
+      "properties": {
+        "tilesets": { "type": "array", "items": { "$ref": "#/$defs/tilesetAsset" } },
+        "pictures": { "type": "array", "items": { "$ref": "#/$defs/resourceAsset" } },
+        "icons": { "type": "array", "items": { "$ref": "#/$defs/resourceAsset" } },
+        "sounds": { "type": "array", "items": { "$ref": "#/$defs/resourceAsset" } }
       }
     },
     "scenarioItemRecord": {

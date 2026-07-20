@@ -72,6 +72,22 @@ const mapstatsRecordSchema = schema.$defs?.mapstatsRecord ?? {};
 const landlookRangeSlotSchema = schema.$defs?.landlookRangeSlot ?? {};
 const landlookWriterGateSchema = schema.$defs?.landlookWriterGate ?? {};
 const customLandlookMetadataSchema = schema.$defs?.customLandlookMetadata ?? {};
+const assetDefinitionNames = ["monsterIconOverrideSource", "monsterIconOverride", "scenarioIconResourceSource", "scenarioIconResource", "assetImportTarget", "managedAssetLibraryScope", "imageFitMode", "imageScaleMode", "imageMatte", "paletteMode", "ditherMode", "managedAssetKind", "managedAssetExportState", "managedAssetConversion", "managedAsset", "tilesetAsset", "resourceAsset", "assetCatalog"];
+const assetDefinitions = assetDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
+const monsterIconOverrideSourceSchema = schema.$defs?.monsterIconOverrideSource ?? {};
+const monsterIconOverrideSchema = schema.$defs?.monsterIconOverride ?? {};
+const scenarioIconResourceSourceSchema = schema.$defs?.scenarioIconResourceSource ?? {};
+const scenarioIconResourceSchema = schema.$defs?.scenarioIconResource ?? {};
+const assetImportTargetSchema = schema.$defs?.assetImportTarget ?? {};
+const managedAssetLibraryScopeSchema = schema.$defs?.managedAssetLibraryScope ?? {};
+const paletteModeSchema = schema.$defs?.paletteMode ?? {};
+const managedAssetKindSchema = schema.$defs?.managedAssetKind ?? {};
+const managedAssetExportStateSchema = schema.$defs?.managedAssetExportState ?? {};
+const managedAssetConversionSchema = schema.$defs?.managedAssetConversion ?? {};
+const managedAssetSchema = schema.$defs?.managedAsset ?? {};
+const tilesetAssetSchema = schema.$defs?.tilesetAsset ?? {};
+const resourceAssetSchema = schema.$defs?.resourceAsset ?? {};
+const assetCatalogSchema = schema.$defs?.assetCatalog ?? {};
 const recordDefinitionNames = ["actionCategory", "mapCoordinate", "action", "triggerRecord", "extraCodeRow", "scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "monsterSet", "itemTextRecord", "scenarioSpellOverride", "scenarioRaceOverride", "scenarioCasteOverride", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
 const actionCategorySchema = schema.$defs?.actionCategory ?? {};
@@ -131,6 +147,10 @@ expect(schema.properties?.customLandlooks?.items?.$ref === "#/$defs/customLandlo
 expect(schema.properties?.randomLevels?.items?.$ref === "#/$defs/randomLevel", "project randomLevels must contain canonical random-level DTOs");
 expect(schema.properties?.triggers?.items?.$ref === "#/$defs/triggerRecord", "project triggers must contain canonical trigger DTOs");
 expect(schema.properties?.extracodes?.items?.$ref === "#/$defs/extraCodeRow", "project extracodes must contain canonical EDCD DTOs");
+expect(schema.properties?.monsterIconOverrides?.items?.$ref === "#/$defs/monsterIconOverride", "project monsterIconOverrides must contain canonical resource override DTOs");
+expect(schema.properties?.scenarioIconResources?.items?.$ref === "#/$defs/scenarioIconResource", "project scenarioIconResources must contain canonical resource DTOs");
+expect(schema.properties?.assets?.items?.$ref === "#/$defs/managedAsset", "project assets must contain canonical managed-asset DTOs");
+expect(schema.properties?.assetCatalog?.$ref === "#/$defs/assetCatalog", "project assetCatalog must reference canonical catalog metadata");
 expect(schema.properties?.scenarioItems?.items?.$ref === "#/$defs/scenarioItemRecord", "project scenarioItems must contain canonical scenario-item DTOs");
 expect(schema.properties?.treasures?.items?.$ref === "#/$defs/treasureRecord", "project treasures must contain canonical treasure DTOs");
 expect(schema.properties?.shops?.items?.$ref === "#/$defs/shopRecord", "project shops must contain canonical shop DTOs");
@@ -223,6 +243,62 @@ const landlookCompatibilityFields = landlookDefinitions.flatMap((definition) =>
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
 expectSameSet(landlookCompatibilityFields, ["TileAttributeProfile.spare", "TileAttributeProfile.rawByte", "MapstatsRecord.spare", "LandlookRangeSlot.reserved", "CustomLandlookMetadata.trailingBytes", "CustomLandlookMetadata.rawBytes"], "Landlook compatibility-only field inventory");
+for (const [index, definition] of assetDefinitions.entries()) {
+  const definitionName = assetDefinitionNames[index];
+  expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);
+  if (definition.type === "object") expect(definition.additionalProperties === false, `${definitionName} must reject unknown fields`);
+  expect(typeof definition["x-providence-typescript-name"] === "string", `${definitionName} must declare its TypeScript name`);
+  expect(typeof definition["x-providence-rust-name"] === "string", `${definitionName} must declare its Rust name`);
+}
+expectSameArray(monsterIconOverrideSourceSchema.enum ?? [], ["monster-mash", "scenario-resource", "providence-library"], "Monster-icon override source vocabulary");
+const monsterIconOverrideFields = ["targetBaseIconId", "sourceBaseIconId", "sourceLabel", "sourceKind", "sourceBaseResourceBase64", "sourcePairedResourceBase64", "imported"];
+expectSameArray(Object.keys(monsterIconOverrideSchema.properties ?? {}), monsterIconOverrideFields, "Monster-icon override field inventory");
+expectSameArray(monsterIconOverrideSchema.required ?? [], monsterIconOverrideFields.filter((field) => !["sourceLabel", "imported"].includes(field)), "Monster-icon override authored field inventory");
+expect(monsterIconOverrideSchema.properties?.sourceKind?.$ref === "#/$defs/monsterIconOverrideSource", "monster-icon overrides must reference their canonical source vocabulary");
+expectSameArray(monsterIconOverrideSchema["x-providence-rust-optional"] ?? [], ["sourceLabel"], "Monster-icon optional Rust inventory");
+expectSameArray(monsterIconOverrideSchema["x-providence-rust-default"] ?? [], ["imported"], "Monster-icon defaulted Rust inventory");
+expectSameArray(scenarioIconResourceSourceSchema.enum ?? [], ["vault-of-arcana", "providence-library", "scenario-resource"], "Scenario-icon source vocabulary");
+const scenarioIconResourceFields = ["resourceId", "label", "sourceKind", "resourceBase64", "previewPath", "imported"];
+expectSameArray(Object.keys(scenarioIconResourceSchema.properties ?? {}), scenarioIconResourceFields, "Scenario-icon resource field inventory");
+expectSameArray(scenarioIconResourceSchema.required ?? [], scenarioIconResourceFields.filter((field) => !["previewPath", "imported"].includes(field)), "Scenario-icon resource authored field inventory");
+expect(scenarioIconResourceSchema.properties?.sourceKind?.$ref === "#/$defs/scenarioIconResourceSource", "scenario-icon resources must reference their canonical source vocabulary");
+expectSameArray(scenarioIconResourceSchema["x-providence-rust-optional"] ?? [], ["previewPath"], "Scenario-icon optional Rust inventory");
+expectSameArray(scenarioIconResourceSchema["x-providence-rust-default"] ?? [], ["imported"], "Scenario-icon defaulted Rust inventory");
+expectSameArray(assetImportTargetSchema.enum ?? [], ["scenario-picture", "custom-landlook-atlas", "icon", "special-land-tile", "sound", "text", "raw-resource"], "Asset import-target vocabulary");
+expectSameArray(managedAssetLibraryScopeSchema.enum ?? [], ["scenario", "custom-library"], "Managed-asset library-scope vocabulary");
+expectSameArray(managedAssetKindSchema.enum ?? [], ["picture", "icon", "special-land-tile", "sound", "text", "other"], "Managed-asset kind vocabulary");
+expectSameArray(managedAssetExportStateSchema.enum ?? [], ["ready", "blocked", "preview-only"], "Managed-asset export-state vocabulary");
+expectSameArray(paletteModeSchema.enum ?? [], ["adaptive-256"], "Managed-asset palette vocabulary");
+expect(paletteModeSchema["x-providence-rust-renames"]?.["adaptive-256"] === "adaptive-256", "adaptive palette mode must retain its explicit Rust wire spelling");
+expectSameArray(paletteModeSchema["x-providence-rust-aliases"]?.["adaptive-256"] ?? [], ["adaptive256"], "Adaptive palette legacy aliases");
+const managedAssetConversionFields = ["target", "fitMode", "scaleMode", "matte", "paletteMode", "ditherMode", "sourceWidth", "sourceHeight", "sourceDurationMs", "sourceSampleRate", "sourceChannels", "finalWidth", "finalHeight", "warnings"];
+expectSameArray(Object.keys(managedAssetConversionSchema.properties ?? {}), managedAssetConversionFields, "Managed-asset conversion field inventory");
+expectSameArray(managedAssetConversionSchema.required ?? [], managedAssetConversionFields.filter((field) => !field.startsWith("source")), "Managed-asset conversion required field inventory");
+expect(managedAssetConversionSchema.properties?.target?.$ref === "#/$defs/assetImportTarget", "managed-asset conversion must reference the canonical import target");
+expectSameArray(managedAssetConversionSchema["x-providence-rust-default"] ?? [], ["sourceWidth", "sourceHeight", "sourceDurationMs", "sourceSampleRate", "sourceChannels", "warnings"], "Managed-asset conversion defaulted Rust inventory");
+const managedAssetFields = ["id", "label", "kind", "resourceType", "resourceId", "fileName", "originalPath", "previewPath", "resourcePath", "mimeType", "bytes", "sha256", "width", "height", "durationMs", "sampleRate", "channels", "exportState", "libraryScope", "provenance", "linkedEntity", "conversion"];
+expectSameArray(Object.keys(managedAssetSchema.properties ?? {}), managedAssetFields, "Managed-asset field inventory");
+expectSameArray(managedAssetSchema.required ?? [], managedAssetFields.filter((field) => !["libraryScope", "conversion"].includes(field)), "Managed-asset required field inventory");
+expect(managedAssetSchema.properties?.kind?.$ref === "#/$defs/managedAssetKind", "managed assets must reference the canonical kind vocabulary");
+expect(managedAssetSchema.properties?.exportState?.$ref === "#/$defs/managedAssetExportState", "managed assets must reference the canonical export-state vocabulary");
+expect(managedAssetSchema.properties?.libraryScope?.["x-providence-typescript-type"] === "ProvidenceManagedAssetLibraryScope", "managed-asset library scope must retain its non-null optional TypeScript shape");
+expectSameArray(managedAssetSchema["x-providence-rust-default"] ?? [], ["libraryScope", "conversion"], "Managed-asset defaulted Rust inventory");
+const tilesetAssetFields = ["id", "landlook", "name", "source", "available", "imagePath", "pictId", "tileWidth", "tileHeight", "columns", "rows", "custom", "baseTile"];
+expectSameArray(Object.keys(tilesetAssetSchema.properties ?? {}), tilesetAssetFields, "Tileset-asset field inventory");
+expectSameArray(tilesetAssetSchema.required ?? [], tilesetAssetFields.filter((field) => field !== "baseTile"), "Tileset-asset required field inventory");
+expectSameArray(tilesetAssetSchema["x-providence-rust-default"] ?? [], ["baseTile"], "Tileset-asset defaulted Rust inventory");
+const resourceAssetFields = ["id", "resourceType", "resourceId", "name", "source", "previewPath"];
+expectSameArray(Object.keys(resourceAssetSchema.properties ?? {}), resourceAssetFields, "Resource-asset field inventory");
+expectSameArray(resourceAssetSchema.required ?? [], ["id", "resourceType", "resourceId", "source"], "Resource-asset required field inventory");
+expectSameArray(resourceAssetSchema["x-providence-rust-skip-none"] ?? [], ["previewPath"], "Resource-asset omitted preview inventory");
+const assetCatalogFields = ["tilesets", "pictures", "icons", "sounds"];
+expectSameArray(Object.keys(assetCatalogSchema.properties ?? {}), assetCatalogFields, "Asset-catalog field inventory");
+expectSameArray(assetCatalogSchema.required ?? [], ["tilesets"], "Asset-catalog browser-compatible field inventory");
+expectSameArray(assetCatalogSchema["x-providence-rust-default"] ?? [], assetCatalogFields, "Asset-catalog defaulted Rust inventory");
+expect(assetCatalogSchema.properties?.tilesets?.items?.$ref === "#/$defs/tilesetAsset", "asset catalog tilesets must contain canonical tileset DTOs");
+for (const field of ["pictures", "icons", "sounds"]) {
+  expect(assetCatalogSchema.properties?.[field]?.items?.$ref === "#/$defs/resourceAsset", `asset catalog ${field} must contain canonical resource metadata`);
+}
 for (const [index, definition] of recordDefinitions.entries()) {
   const definitionName = recordDefinitionNames[index];
   expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);
@@ -476,6 +552,22 @@ for (const alias of [
   "export type TriggerRecord = ProvidenceTriggerRecord;",
   "export type Action = ProvidenceAction;",
   "export type ExtraCodeRow = ProvidenceExtraCodeRow;",
+  "export type MonsterIconOverride = ProvidenceMonsterIconOverride;",
+  "export type ScenarioIconResource = ProvidenceScenarioIconResource;",
+  "export type AssetImportTarget = ProvidenceAssetImportTarget;",
+  "export type ManagedAssetLibraryScope = ProvidenceManagedAssetLibraryScope;",
+  "export type ImageFitMode = ProvidenceImageFitMode;",
+  "export type ImageScaleMode = ProvidenceImageScaleMode;",
+  "export type ImageMatte = ProvidenceImageMatte;",
+  "export type PaletteMode = ProvidencePaletteMode;",
+  "export type DitherMode = ProvidenceDitherMode;",
+  "export type ManagedAssetKind = ProvidenceManagedAssetKind;",
+  "export type ManagedAssetExportState = ProvidenceManagedAssetExportState;",
+  "export type ManagedAssetConversion = ProvidenceManagedAssetConversion;",
+  "export type ManagedAsset = ProvidenceManagedAsset;",
+  "export type TilesetAsset = ProvidenceTilesetAsset;",
+  "export type ResourceAsset = ProvidenceResourceAsset;",
+  "export type AssetCatalog = ProvidenceAssetCatalog;",
   "export type ScenarioItemRecord = ProvidenceScenarioItemRecord;",
   "export type TreasureRecord = ProvidenceTreasureRecord;",
   "export type ShopRecord = ProvidenceShopRecord;",
@@ -507,6 +599,7 @@ for (const alias of [
   expect(typesSource.includes(alias), `types.ts must consume generated project contract alias: ${alias}`);
 }
 expect(typesSource.includes('from "./generated/providenceProjectContract";'), "types.ts must import the generated source DTOs");
+expect(typesSource.includes("assetCatalog: AssetCatalog;"), "Project must consume the generated AssetCatalog alias");
 expect(!typesSource.includes('export type ProjectOrigin = "authored"'), "types.ts must not handwrite ProjectOrigin");
 expect(!typesSource.includes("export type ProjectSource = {"), "types.ts must not handwrite ProjectSource");
 expect(!typesSource.includes("export type SourceFile = {"), "types.ts must not handwrite SourceFile");
@@ -520,6 +613,12 @@ for (const landlookType of ["TileAttributeProfile", "MapstatsRecord", "LandlookR
 expect(!typesSource.includes("export type TriggerRecord = {"), "types.ts must not handwrite TriggerRecord");
 expect(!typesSource.includes("export type Action = {"), "types.ts must not handwrite Action");
 expect(!typesSource.includes("export type ExtraCodeRow = {"), "types.ts must not handwrite ExtraCodeRow");
+for (const assetType of ["MonsterIconOverride", "ScenarioIconResource", "ManagedAssetConversion", "ManagedAsset", "TilesetAsset", "ResourceAsset"]) {
+  expect(!typesSource.includes(`export type ${assetType} = {`), `types.ts must not handwrite ${assetType}`);
+}
+for (const assetEnum of ["ManagedAssetKind", "ManagedAssetExportState", "ManagedAssetLibraryScope", "AssetImportTarget", "ImageFitMode", "ImageScaleMode", "ImageMatte", "PaletteMode", "DitherMode"]) {
+  expect(!typesSource.includes(`export type ${assetEnum} = \"`), `types.ts must not handwrite ${assetEnum}`);
+}
 expect(!typesSource.includes("export type ScenarioItemRecord = {"), "types.ts must not handwrite ScenarioItemRecord");
 expect(!typesSource.includes("export type TreasureRecord = {"), "types.ts must not handwrite TreasureRecord");
 expect(!typesSource.includes("export type ShopRecord = {"), "types.ts must not handwrite ShopRecord");
@@ -574,6 +673,24 @@ expectSameSet(rustGeneratedReExports, [
   "Action",
   "TriggerRecord",
   "ExtraCodeRow",
+  "MonsterIconOverrideSource",
+  "MonsterIconOverride",
+  "ScenarioIconResourceSource",
+  "ScenarioIconResource",
+  "AssetImportTarget",
+  "ManagedAssetLibraryScope",
+  "ImageFitMode",
+  "ImageScaleMode",
+  "ImageMatte",
+  "PaletteMode",
+  "DitherMode",
+  "ManagedAssetKind",
+  "ManagedAssetExportState",
+  "ManagedAssetConversion",
+  "ManagedAsset",
+  "TilesetAsset",
+  "ResourceAsset",
+  "AssetCatalog",
   "ScenarioContactInfo",
   "ScenarioGlobalMacroHooks",
   "ScenarioMeta",
@@ -630,6 +747,12 @@ expect(!rustProjectSource.includes("pub struct MapCoordinate {"), "project.rs mu
 expect(!rustProjectSource.includes("pub struct Action {"), "project.rs must not handwrite Action");
 expect(!rustProjectSource.includes("pub struct TriggerRecord {"), "project.rs must not handwrite TriggerRecord");
 expect(!rustProjectSource.includes("pub struct ExtraCodeRow {"), "project.rs must not handwrite ExtraCodeRow");
+for (const assetStruct of ["MonsterIconOverride", "ScenarioIconResource", "ManagedAssetConversion", "ManagedAsset", "TilesetAsset", "ResourceAsset", "AssetCatalog"]) {
+  expect(!rustProjectSource.includes(`pub struct ${assetStruct} {`), `project.rs must not handwrite ${assetStruct}`);
+}
+for (const assetEnum of ["MonsterIconOverrideSource", "ScenarioIconResourceSource", "AssetImportTarget", "ManagedAssetLibraryScope", "ImageFitMode", "ImageScaleMode", "ImageMatte", "PaletteMode", "DitherMode", "ManagedAssetKind", "ManagedAssetExportState"]) {
+  expect(!rustProjectSource.includes(`pub enum ${assetEnum} {`), `project.rs must not handwrite ${assetEnum}`);
+}
 expect(!rustProjectSource.includes("pub struct ScenarioItemRecord {"), "project.rs must not handwrite ScenarioItemRecord");
 expect(!rustProjectSource.includes("pub struct TreasureRecord {"), "project.rs must not handwrite TreasureRecord");
 expect(!rustProjectSource.includes("pub struct ShopRecord {"), "project.rs must not handwrite ShopRecord");
@@ -760,6 +883,10 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_TRIGGER_FIELDS = ${JSON.stringify(Object.keys(triggerRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_ACTION_FIELDS = ${JSON.stringify(Object.keys(actionSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_EXTRA_CODE_FIELDS = ${JSON.stringify(Object.keys(extraCodeRowSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_MONSTER_ICON_OVERRIDE_FIELDS = ${JSON.stringify(Object.keys(monsterIconOverrideSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_SCENARIO_ICON_RESOURCE_FIELDS = ${JSON.stringify(Object.keys(scenarioIconResourceSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_MANAGED_ASSET_FIELDS = ${JSON.stringify(Object.keys(managedAssetSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_ASSET_CATALOG_FIELDS = ${JSON.stringify(Object.keys(assetCatalogSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SCENARIO_ITEM_FIELDS = ${JSON.stringify(Object.keys(scenarioItemRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_TREASURE_FIELDS = ${JSON.stringify(Object.keys(treasureRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SHOP_FIELDS = ${JSON.stringify(Object.keys(shopRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
@@ -783,6 +910,7 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     renderTypeScriptObject(provenance["x-providence-typescript-name"], provenance, new Set()) + `\n` +
     mapDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     landlookDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
+    assetDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
     renderTypeScriptEnum(timedEncounterLocationKindSchema) + `\n` +
     renderTypeScriptEnum(monsterSetIdSchema) + `\n` +
     recordDefinitions.map(renderTypeScriptDefinition).join("\n") + `\n` +
@@ -835,6 +963,14 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_EXTRA_CODE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(extraCodeRowSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_MONSTER_ICON_OVERRIDE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(monsterIconOverrideSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_SCENARIO_ICON_RESOURCE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioIconResourceSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_MANAGED_ASSET_FIELDS: &[&str] = &[\n${renderArray(Object.keys(managedAssetSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_ASSET_CATALOG_FIELDS: &[&str] = &[\n${renderArray(Object.keys(assetCatalogSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioItemRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_TREASURE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(treasureRecordSchema.properties ?? {}))}\n];\n\n` +
@@ -874,6 +1010,7 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     renderRustStruct(provenance) + `\n` +
     mapDefinitions.map(renderRustDefinition).join("\n") + `\n` +
     landlookDefinitions.map(renderRustDefinition).join("\n") + `\n` +
+    assetDefinitions.map(renderRustDefinition).join("\n") + `\n` +
     renderRustEnum(timedEncounterLocationKindSchema) + `\n` +
     recordDefinitions.map(renderRustDefinition).join("\n") + `\n` +
     renderRustStruct(sourceFile) + `\n` +
@@ -901,6 +1038,7 @@ function renderTypeScriptObject(name, definition, optionalFields) {
 }
 
 function typeScriptType(property) {
+  if (property["x-providence-typescript-type"]) return property["x-providence-typescript-type"];
   if (Array.isArray(property.oneOf)) {
     return [...new Set(property.oneOf.map(typeScriptType))].join(" | ");
   }
@@ -923,12 +1061,16 @@ function renderRustEnum(definition) {
   const defaultVariant = definition["x-providence-rust-default-variant"];
   const renameAll = definition["x-providence-rust-rename-all"] ?? "kebab-case";
   const aliases = definition["x-providence-rust-aliases"] ?? {};
+  const renames = definition["x-providence-rust-renames"] ?? {};
   const variants = (definition.enum ?? []).map((value) => {
     const attributes = [];
     if (value === defaultVariant) attributes.push("    #[default]");
     const legacyAliases = aliases[value] ?? [];
-    if (legacyAliases.length > 0) {
-      attributes.push(`    #[serde(${legacyAliases.map((alias) => `alias = ${JSON.stringify(alias)}`).join(", ")})]`);
+    const serdeNames = [];
+    if (renames[value]) serdeNames.push(`rename = ${JSON.stringify(renames[value])}`);
+    serdeNames.push(...legacyAliases.map((alias) => `alias = ${JSON.stringify(alias)}`));
+    if (serdeNames.length > 0) {
+      attributes.push(`    #[serde(${serdeNames.join(", ")})]`);
     }
     attributes.push(`    ${kebabToPascal(value)},`);
     return attributes.join("\n");
@@ -942,6 +1084,7 @@ function renderRustDefinition(definition) {
 
 function renderRustStruct(definition) {
   const name = definition["x-providence-rust-name"];
+  const derives = definition["x-providence-rust-derives"] ?? ["Debug", "Clone", "Serialize", "Deserialize"];
   const optionalFields = new Set([
     ...(definition["x-providence-runtime-optional"] ?? []),
     ...(definition["x-providence-rust-optional"] ?? [])
@@ -958,15 +1101,15 @@ function renderRustStruct(definition) {
         ? '    #[serde(default, skip_serializing_if = "Option::is_none")]'
         : "    #[serde(default)]");
     } else if (defaultFields.has(field)) {
-      lines.push(skipEmptyFields.has(field)
-        ? '    #[serde(default, skip_serializing_if = "Vec::is_empty")]'
-        : "    #[serde(default)]");
+      if (skipNoneFields.has(field)) lines.push('    #[serde(default, skip_serializing_if = "Option::is_none")]');
+      else if (skipEmptyFields.has(field)) lines.push('    #[serde(default, skip_serializing_if = "Vec::is_empty")]');
+      else lines.push("    #[serde(default)]");
     }
     if (rustFieldName !== camelToSnake(field)) lines.push(`    #[serde(rename = ${JSON.stringify(field)})]`);
     lines.push(`    pub ${rustFieldName}: ${optionalFields.has(field) ? `Option<${rustType}>` : rustType},`);
     return lines;
   });
-  return `#[derive(Debug, Clone, Serialize, Deserialize)]\n#[serde(rename_all = "camelCase")]\npub struct ${name} {\n${fields.join("\n")}\n}\n`;
+  return `#[derive(${derives.join(", ")})]\n#[serde(rename_all = "camelCase")]\npub struct ${name} {\n${fields.join("\n")}\n}\n`;
 }
 
 function rustPropertyType(property) {

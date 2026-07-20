@@ -207,6 +207,57 @@ export const PROVIDENCE_EXTRA_CODE_FIELDS = [
   "provenance"
 ] as const;
 
+export const PROVIDENCE_MONSTER_ICON_OVERRIDE_FIELDS = [
+  "targetBaseIconId",
+  "sourceBaseIconId",
+  "sourceLabel",
+  "sourceKind",
+  "sourceBaseResourceBase64",
+  "sourcePairedResourceBase64",
+  "imported"
+] as const;
+
+export const PROVIDENCE_SCENARIO_ICON_RESOURCE_FIELDS = [
+  "resourceId",
+  "label",
+  "sourceKind",
+  "resourceBase64",
+  "previewPath",
+  "imported"
+] as const;
+
+export const PROVIDENCE_MANAGED_ASSET_FIELDS = [
+  "id",
+  "label",
+  "kind",
+  "resourceType",
+  "resourceId",
+  "fileName",
+  "originalPath",
+  "previewPath",
+  "resourcePath",
+  "mimeType",
+  "bytes",
+  "sha256",
+  "width",
+  "height",
+  "durationMs",
+  "sampleRate",
+  "channels",
+  "exportState",
+  "libraryScope",
+  "provenance",
+  "linkedEntity",
+  "conversion"
+] as const;
+
+export const PROVIDENCE_ASSET_CATALOG_FIELDS = [
+  "tilesets",
+  "pictures",
+  "icons",
+  "sounds"
+] as const;
+
 export const PROVIDENCE_SCENARIO_ITEM_FIELDS = [
   "id",
   "itemId",
@@ -758,6 +809,121 @@ export type ProvidenceCustomLandlookMetadata = {
   rawBytes?: number[];
   writerGate: ProvidenceLandlookWriterGate;
   authored?: boolean;
+};
+
+export type ProvidenceMonsterIconOverrideSource = "monster-mash" | "scenario-resource" | "providence-library";
+
+export type ProvidenceMonsterIconOverride = {
+  targetBaseIconId: number;
+  sourceBaseIconId: number;
+  sourceLabel?: string;
+  sourceKind: ProvidenceMonsterIconOverrideSource;
+  sourceBaseResourceBase64: string;
+  sourcePairedResourceBase64: string;
+  imported?: boolean;
+};
+
+export type ProvidenceScenarioIconResourceSource = "vault-of-arcana" | "providence-library" | "scenario-resource";
+
+export type ProvidenceScenarioIconResource = {
+  resourceId: number;
+  label: string;
+  sourceKind: ProvidenceScenarioIconResourceSource;
+  resourceBase64: string;
+  previewPath?: string | null;
+  imported?: boolean;
+};
+
+export type ProvidenceAssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound" | "text" | "raw-resource";
+
+export type ProvidenceManagedAssetLibraryScope = "scenario" | "custom-library";
+
+export type ProvidenceImageFitMode = "fit" | "crop" | "stretch";
+
+export type ProvidenceImageScaleMode = "smooth" | "crisp";
+
+export type ProvidenceImageMatte = "transparent" | "white" | "black";
+
+export type ProvidencePaletteMode = "adaptive-256";
+
+export type ProvidenceDitherMode = "none" | "floyd-steinberg";
+
+export type ProvidenceManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
+
+export type ProvidenceManagedAssetExportState = "ready" | "blocked" | "preview-only";
+
+export type ProvidenceManagedAssetConversion = {
+  target: ProvidenceAssetImportTarget;
+  fitMode: ProvidenceImageFitMode | null;
+  scaleMode: ProvidenceImageScaleMode | null;
+  matte: ProvidenceImageMatte | null;
+  paletteMode: ProvidencePaletteMode | null;
+  ditherMode: ProvidenceDitherMode | null;
+  sourceWidth?: number | null;
+  sourceHeight?: number | null;
+  sourceDurationMs?: number | null;
+  sourceSampleRate?: number | null;
+  sourceChannels?: number | null;
+  finalWidth: number | null;
+  finalHeight: number | null;
+  warnings: string[];
+};
+
+export type ProvidenceManagedAsset = {
+  id: string;
+  label: string;
+  kind: ProvidenceManagedAssetKind;
+  resourceType: string;
+  resourceId: number;
+  fileName: string;
+  originalPath: string;
+  previewPath: string;
+  resourcePath: string;
+  mimeType: string;
+  bytes: number;
+  sha256: string;
+  width: number | null;
+  height: number | null;
+  durationMs: number | null;
+  sampleRate: number | null;
+  channels: number | null;
+  exportState: ProvidenceManagedAssetExportState;
+  libraryScope?: ProvidenceManagedAssetLibraryScope;
+  provenance: string;
+  linkedEntity: string | null;
+  conversion?: ProvidenceManagedAssetConversion | null;
+};
+
+export type ProvidenceTilesetAsset = {
+  id: string;
+  landlook: number;
+  name: string;
+  source: string;
+  available: boolean;
+  imagePath: string | null;
+  pictId: number | null;
+  tileWidth: number;
+  tileHeight: number;
+  columns: number;
+  rows: number;
+  custom: boolean;
+  baseTile?: number | null;
+};
+
+export type ProvidenceResourceAsset = {
+  id: string;
+  resourceType: string;
+  resourceId: number;
+  name?: string | null;
+  source: string;
+  previewPath?: string | null;
+};
+
+export type ProvidenceAssetCatalog = {
+  tilesets: ProvidenceTilesetAsset[];
+  pictures?: ProvidenceResourceAsset[];
+  icons?: ProvidenceResourceAsset[];
+  sounds?: ProvidenceResourceAsset[];
 };
 
 export type ProvidenceTimedEncounterLocationKind = "any" | "land" | "dungeon";
