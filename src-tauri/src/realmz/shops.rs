@@ -21,7 +21,6 @@ pub fn parse_shops(buffer: &[u8]) -> Vec<ShopRecord> {
                 .collect(),
             quantities: record[2000..3000].to_vec(),
             inflation: i16_be(record, 3000),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: provenance("Data SD", id, start, SHOP_BYTES),
         })
@@ -64,12 +63,6 @@ fn is_foreign_shop_tail_record(record: &[u8]) -> bool {
 
 pub fn write_shops(records: &[ShopRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, SHOP_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != SHOP_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Shop {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         if record.item_ids.len() != SHOP_ITEM_SLOTS || record.quantities.len() != SHOP_ITEM_SLOTS {
             return Err(ProvidenceError::message(format!(
                 "Shop {} must define 1000 item and quantity slots",
@@ -128,7 +121,6 @@ mod tests {
             .into_iter()
             .next()
             .expect("shop");
-        shop.raw_bytes.clear();
         shop.item_ids = (0..SHOP_ITEM_SLOTS)
             .map(|slot| (slot % 1999) as i16 - 999)
             .collect();
@@ -152,25 +144,17 @@ mod tests {
             input[2000 + slot] = slot as u8;
         }
         write_i16_be(&mut input, 3000, -12);
-        let mut shops = parse_shops(&input);
-        shops[0].raw_bytes = vec![0xA5; SHOP_BYTES];
+        let shops = parse_shops(&input);
 
         assert_eq!(write_shops(&shops).unwrap(), input);
     }
 
     #[test]
-    fn shop_writer_rejects_malformed_canonical_storage() {
+    fn shop_writer_rejects_malformed_slot_inventories() {
         let mut shop = parse_shops(&vec![0; SHOP_BYTES])
             .into_iter()
             .next()
             .expect("shop");
-        shop.raw_bytes = vec![1];
-        assert!(write_shops(&[shop.clone()])
-            .unwrap_err()
-            .to_string()
-            .contains("invalid compatibility byte storage"));
-
-        shop.raw_bytes.clear();
         shop.item_ids.clear();
         assert!(write_shops(&[shop])
             .unwrap_err()

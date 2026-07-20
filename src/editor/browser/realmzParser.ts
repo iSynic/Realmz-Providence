@@ -692,7 +692,6 @@ function parseShops(buffer: Uint8Array | undefined): ShopRecord[] {
     itemIds: Array.from({ length: 1000 }, (_, slot) => i16(record, slot * 2)),
     quantities: Array.from(record.subarray(2000, 3000)),
     inflation: i16(record, 3000),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data SD", id, start, SHOP_RECORD_BYTES, "source-backed")
   }));

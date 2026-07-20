@@ -313,7 +313,6 @@ mod tests {
             item_ids: [vec![21], vec![0; 999]].concat(),
             quantities: [vec![9], vec![0; 999]].concat(),
             inflation: 125,
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data SD", 0, 0, SHOP_BYTES),
         };

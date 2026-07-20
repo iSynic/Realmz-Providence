@@ -587,13 +587,13 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       "src-tauri/src/realmz/shops.rs:fresh_shop_compiles_all_semantic_fields",
       "src-tauri/src/realmz/shops.rs:imported_shop_recompiles_without_record_byte_identity",
       "src-tauri/src/realmz/shops.rs:shop_storage_mutates_only_owned_fields",
-      "src-tauri/src/project.rs:shop_normalization_backfills_legacy_inventory_slots",
+      "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
       "src-tauri/src/exporter.rs:inserts_added_shop_before_preserved_source_suffix",
       "src-tauri/src/realmz/shops.rs:write_shops",
       "src-tauri/src/realmz/shops.rs:parse_shops",
       "docs/format-evidence-cards/item-treasure-shop-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh shop records compile all 3,002 bytes from one thousand item IDs, one thousand quantity bytes, and inflation without rawBytes. Imported rows recompile from decoded semantics; dense foreign suffix records and malformed file tails are appended only from the compatibility annex."
+    preservationPolicy: "Canonical shop records expose no rawBytes and compile all 3,002 bytes from one thousand item IDs, one thousand quantity bytes, and inflation. Imported rows recompile from decoded semantics; dense foreign suffix records and malformed file tails are appended only from the compatibility annex."
   },
   {
     container: "Data TD2",

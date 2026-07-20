@@ -610,7 +610,17 @@ commands enforce the same boundary. The package gate preserves a poisoned malfor
 from the annex, while the ownership proof poison-tests the obsolete embedded row in both
 compilers and requires semantic recovery after native reimport.
 
-Branch validation through the fifty-seventh slice completed on 2026-07-19:
+The fifty-eighth slice removes `ShopRecord.rawBytes` from schema-v5 canonical projects. Browser
+and desktop import decode every byte in each ordinary 3,002-byte `Data SD` row into one thousand
+item IDs, one thousand quantities, and inflation; the writers compile only those semantic fields.
+Dense foreign suffix records and malformed tails remain annex-owned and are appended after the
+canonical shop prefix. Old project JSON remains load-tolerant: incomplete item and quantity arrays
+are filled from the obsolete embedded row before `rawBytes` is discarded and never repersisted.
+Browser normalization and shop edit commands enforce the same boundary. The package gate keeps a
+malformed tail only through the annex, while the ownership proof poison-tests obsolete embedded
+shop bytes in both compilers and requires semantic recovery after native reimport.
+
+Branch validation through the fifty-eighth slice completed on 2026-07-19:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 610 passed, plus typecheck;
@@ -628,12 +638,12 @@ and CSS files. The random-level, scenario-item, shop, message, option-label, and
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
 also removes that file from the current violation list, and the simple-encounter changes remain
 within the existing `encounters.rs` ceiling; the complex- and thief-encounter changes add no new
-module-size violation. Removing treasure compatibility storage further reduces `economy.rs` and
-adds no new size violation. The authoritative rules slice likewise keeps `rules.rs` within its
-ceiling by separating exact-shape validation from the native codec. The `Data Solids` slice
-likewise moves
-its 1,024-byte codec and tests into a focused module, returns `landlooks.rs` below its baseline, and
-does not add a new ISY-320 violation. The `Layout` slice likewise moves its codec and tests into a
+module-size violation. Removing treasure and shop compatibility storage further reduces their
+focused codecs and adds no new size violation. The authoritative rules slice likewise keeps
+`rules.rs` within its ceiling by separating exact-shape validation from the native codec. The
+`Data Solids` slice likewise moves its 1,024-byte codec and tests into a focused module, returns
+`landlooks.rs` below its baseline, and does not add a new ISY-320 violation. The `Layout` slice
+likewise moves its codec and tests into a
 focused module and reduces `maps.rs`; the remaining size failures are the pre-existing ISY-319 map
 UI files, ISY-320 `assembly.rs`, and ISY-321 stylesheets. The ED3/EDCD slice changes only the
 exporter/package boundary and adds no new module-size violation. The custom-landlook metadata
@@ -743,10 +753,10 @@ them from the emitted scenario source files.
   at native export.
 - Map-record marker, rectangle, and metadata DTOs plus complete scenario-item, treasure, shop,
   message, option-label, and battle records are generated in both languages. Canonical map,
-  scenario-item, and treasure records expose no `rawBytes`; other fresh records omit it. The item
-  writer owns all 100 `Data NI` bytes, including the seven source-backed spare words, the treasure
-  writer owns all 48 `Data TD` bytes, the shop writer owns all 3,002 bytes in each ordinary
-  `Data SD` row, and the
+  scenario-item, treasure, and shop records expose no `rawBytes`; other fresh records omit it. The
+  item writer owns all 100 `Data NI` bytes, including the seven source-backed spare words, the
+  treasure writer owns all 48 `Data TD` bytes, the shop writer owns all 3,002 bytes in each
+  ordinary `Data SD` row, and the
   message writer owns all 256 canonical `Data SD2` bytes, the option-label writer owns all 25
   canonical `Data OD` bytes, and the battle writer owns all 346 canonical `Data BD` bytes.
 - Authored browser project ZIPs round-trip with no `raw-sources` directory or annex manifest;
@@ -889,7 +899,8 @@ A pragmatic sequence is:
    canonical item slots, recover incomplete legacy arrays before deserialization, and discard the
    obsolete embedded row rather than repersisting it.
 7. **Implemented for shops:** generate the complete 3,002-byte semantic row, require both thousand-
-   slot inventories, and keep classified foreign suffix/tail bytes in the annex.
+   slot inventories, recover incomplete legacy arrays before deserialization, discard the obsolete
+   embedded row, and keep classified foreign suffix/tail bytes only in the annex.
 8. **Implemented for messages:** generate the semantic Str255 DTO, compile deterministic complete
    rows without raw identity, and preserve unchanged legacy rows/tails only from the annex.
 9. **Implemented for option labels:** generate the semantic Str24 DTO, add Scenario JSON authoring,
@@ -976,7 +987,7 @@ Legend:
 | `Data MD2` | Generated + legacy annex | Generate structured map records | Canonical records expose no `rawBytes`. The pure writer compiles all semantic fields plus deterministic gap, Boolean, and Pascal padding bytes. Imported bytes 74-75, equivalent noncanonical true words, unchanged Pascal-note tails, and malformed file tails can be restored only from the compatibility annex. Marker UI and semantic summaries use structured slots only. |
 | `Data NI` | Generated + legacy annex encoding | Generate exactly 200 x 100 bytes for fresh projects | All 100 bytes are canonical semantic fields, including `spare2[7]`, and records expose no `rawBytes`. Imported row capacity, malformed tails, and an unchanged zero stored item-ID alias can be restored only from the compatibility annex; semantic edits and deletions win. |
 | `Data TD` | Generated + malformed-tail annex | Generate all 48 record bytes from canonical semantics | Twenty item IDs and four reward words cover the full record, and canonical records expose no `rawBytes`. Imported rows recompile from decoded values; only malformed file tails remain annex data. |
-| `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Classified foreign suffix records and malformed tails are appended from the annex. |
+| `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row, and canonical records expose no `rawBytes`. Imported rows recompile from decoded values; classified foreign suffix records and malformed tails are appended only from the annex. |
 | `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Fresh/authored rows compile all 426 bytes from canonical actions, results, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and historical tails are restored only from the compatibility annex. |
 | `Data ED2` | Generated + legacy row/tail annex | Generate complete deterministic complex encounters | Fresh/authored rows compile all 520 bytes from canonical actions, physical/word/group/spell/item routes, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data TD2` | Generated + legacy row/tail annex | Generate complete deterministic rogue/thief encounters | Fresh/authored rows compile all 118 bytes from canonical action, result, message, sound, trap, lock, and prompt fields without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |

@@ -319,7 +319,6 @@ export const PROVIDENCE_SHOP_FIELDS = [
   "itemIds",
   "quantities",
   "inflation",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1024,7 +1023,6 @@ export type ProvidenceShopRecord = {
   itemIds: number[];
   quantities: number[];
   inflation: number;
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

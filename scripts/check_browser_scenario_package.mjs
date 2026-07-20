@@ -107,11 +107,12 @@ sourceTreasures[1] = 0x4a;
 sourceTreasures.set([0xca, 0xfe, 0x02], 96);
 sourceTreasures[48] = 0x4b;
 sourceTreasures[49] = 0x4c;
-const sourceShops = new Uint8Array(6004);
+const sourceShops = new Uint8Array(6007);
 sourceShops[0] = 0x4d;
 sourceShops[1] = 0x4e;
 sourceShops[3002] = 0x4f;
 sourceShops[3003] = 0x50;
+sourceShops.set([0xba, 0xdc, 0x0d], 6004);
 const sourceSpells = new Uint8Array(76);
 sourceSpells[0] = 0x51;
 sourceSpells[1] = 0x52;
@@ -953,7 +954,7 @@ const itemEconomyProject = {
   ],
   shops: [
     shopRecordFromRaw(0, sourceShops.slice(0, 3002)),
-    { ...shopRecord(1, { itemIds: [901, 902, -903, ...new Array(997).fill(0)], quantities: [1, 2, 255, ...new Array(997).fill(0)], inflation: -12 }), rawBytes: Array.from(sourceShops.slice(3002, 6004)), authored: true }
+    shopRecord(1, { itemIds: [901, 902, -903, ...new Array(997).fill(0)], quantities: [1, 2, 255, ...new Array(997).fill(0)], inflation: -12 })
   ]
 };
 const itemEconomyUpdate = createBrowserScenarioPackageZip(itemEconomyProject, rawSources, "mac-classic-folder");
@@ -967,7 +968,7 @@ const writtenTreasures = itemEconomyFiles.get("Data TD");
 const writtenShops = itemEconomyFiles.get("Data SD");
 expect(writtenScenarioItems?.byteLength === 203, "Written Data NI should retain source row capacity and malformed tail");
 expect(writtenTreasures?.byteLength === 99, "Written Data TD should retain its annex-only malformed tail");
-expect(writtenShops?.byteLength === 6004, "Written Data SD should retain source row count");
+expect(writtenShops?.byteLength === 6007, "Written Data SD should retain its annex-only malformed tail");
 expect(bytesEqual(writtenScenarioItems?.slice(0, 100), sourceScenarioItems.slice(0, 100)), "Unauthored item row should remain byte-identical");
 expect(bytesEqual(writtenScenarioItems?.slice(100, 200), scenarioItemRow(authoredItem)), "Authored item row should encode item fields");
 expect(bytesEqual(writtenScenarioItems?.slice(200), new Uint8Array([0xde, 0xad, 0xbe])), "Written Data NI should retain its annex-only malformed tail");
@@ -976,6 +977,7 @@ expect(bytesEqual(writtenTreasures?.slice(48, 96), treasureRow({ itemIds: [901, 
 expect(bytesEqual(writtenTreasures?.slice(96), new Uint8Array([0xca, 0xfe, 0x02])), "Written Data TD should retain its annex-only malformed tail bytes");
 expect(bytesEqual(writtenShops?.slice(0, 3002), sourceShops.slice(0, 3002)), "Imported shop row should semantically recompile byte-identically");
 expect(bytesEqual(writtenShops?.slice(3002, 6004), shopRow({ itemIds: [901, 902, -903], quantities: [1, 2, 255], inflation: -12 })), "Authored shop row should encode shop fields");
+expect(bytesEqual(writtenShops?.slice(6004), new Uint8Array([0xba, 0xdc, 0x0d])), "Written Data SD should retain its annex-only malformed tail bytes");
 
 const shrunkItemProject = { ...itemEconomyProject, scenarioItems: itemEconomyProject.scenarioItems.slice(0, 1) };
 const shrunkItemFiles = unzipScenarioPackage(createBrowserScenarioPackageZip(shrunkItemProject, rawSources, "mac-classic-folder").zip);
@@ -2056,7 +2058,6 @@ function shopRecordFromRaw(id, bytes) {
     itemIds: Array.from({ length: 1000 }, (_, slot) => readI16(bytes, slot * 2)),
     quantities: Array.from(bytes.slice(2000, 3000)),
     inflation: readI16(bytes, 3000),
-    rawBytes: Array.from(bytes),
     authored: false
   });
 }

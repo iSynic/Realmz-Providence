@@ -857,7 +857,7 @@ describe("browser shop writer", () => {
       inflation: -12
     };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeShops([record]);
 
     expect(output).toHaveLength(3002);
@@ -868,7 +868,7 @@ describe("browser shop writer", () => {
     expect(i16(output, 3000)).toBe(-12);
   });
 
-  it("recompiles imported rows without record byte identity", () => {
+  it("recompiles imported rows from semantic data", () => {
     const input = new Uint8Array(3002);
     for (let slot = 0; slot < 1000; slot += 1) {
       setI16(input, slot * 2, (slot % 1999) - 999);
@@ -877,12 +877,11 @@ describe("browser shop writer", () => {
     setI16(input, 3000, -12);
     const imported = parseScenarioBuffers(new Map([["Data SD", input]])).shops[0];
 
-    expect(writeShops([{ ...imported, rawBytes: new Array(3002).fill(0xa5) }])).toEqual(input);
+    expect("rawBytes" in imported).toBe(false);
+    expect(writeShops([imported])).toEqual(input);
   });
 
-  it("rejects malformed compatibility bytes and slot inventories", () => {
-    expect(() => writeShops([{ ...emptyShop(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
+  it("rejects malformed slot inventories", () => {
     expect(() => writeShops([{ ...emptyShop(0), itemIds: [] }]))
       .toThrow("must define 1000 item and quantity slots");
   });

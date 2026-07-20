@@ -329,7 +329,7 @@ describe("browser project native manifest validation", () => {
     bytes[2001] = 7;
     const record = parseScenarioBuffers(new Map([["Data SD", bytes]])).shops[0];
     const project = createBrowserProject("Legacy Shop");
-    project.shops = [{ ...record, itemIds: [901], quantities: [3] }];
+    project.shops = [{ ...record, itemIds: [901], quantities: [3], rawBytes: Array.from(bytes) } as unknown as Project["shops"][number]];
 
     const shop = normalizeBrowserProject(project).shops[0];
 
@@ -339,6 +339,7 @@ describe("browser project native manifest validation", () => {
     expect(shop.quantities.slice(0, 2)).toEqual([3, 7]);
     expect(shop.itemIds.slice(2)).toEqual(new Array(998).fill(0));
     expect(shop.quantities.slice(2)).toEqual(new Array(998).fill(0));
+    expect("rawBytes" in shop).toBe(false);
   });
 
   it("uses the authored compiler manifest instead of source inventory", () => {
@@ -755,8 +756,7 @@ describe("browser project native manifest validation", () => {
       itemIds: [901, ...new Array(999).fill(0)],
       quantities: [3, ...new Array(999).fill(0)],
       inflation: 120,
-      authored: false,
-      rawBytes: new Array(3002).fill(0xa5)
+      authored: false
     }];
     project.simpleEncounters = [{
       ...parsed.simpleEncounters[0],

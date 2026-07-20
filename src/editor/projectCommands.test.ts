@@ -5,7 +5,7 @@ import {
   projectCommandChangeCount,
   projectCommandLabel
 } from "./projectCommands";
-import { emptyScenarioItem, emptyTreasure } from "./projectCommands/targetRecordCommands";
+import { emptyScenarioItem, emptyShop, emptyTreasure } from "./projectCommands/targetRecordCommands";
 import type { Project, ProjectCommand } from "./types";
 
 describe("project command facade", () => {
@@ -271,6 +271,7 @@ describe("project command facade", () => {
 
   it("creates fresh shops from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Shop");
+    project.shops = [{ ...emptyShop(4), rawBytes: new Array(3002).fill(0xa5) } as unknown as Project["shops"][number]];
 
     const next = applyProjectCommand(project, {
       kind: "updateShopRecord",
@@ -287,7 +288,7 @@ describe("project command facade", () => {
     expect(next.shops[0].inflation).toBe(105);
     expect(next.shops[0].itemIds).toHaveLength(1000);
     expect(next.shops[0].quantities).toHaveLength(1000);
-    expect(next.shops[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in next.shops[0]).toBe(false);
   });
 
   it("applies an immutable command and exposes history metadata", () => {

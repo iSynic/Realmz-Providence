@@ -340,7 +340,6 @@ pub const PROVIDENCE_SHOP_FIELDS: &[&str] = &[
     "itemIds",
     "quantities",
     "inflation",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1339,8 +1338,6 @@ pub struct ShopRecord {
     #[serde(default)]
     pub quantities: Vec<u8>,
     pub inflation: i16,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

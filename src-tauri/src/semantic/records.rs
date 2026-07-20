@@ -50,7 +50,15 @@ pub(super) fn add_canonical_record_collections(
             set
         })
         .collect();
-    let shops = canonical_records!(parsed.shops);
+    let shops = parsed
+        .shops
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let simple_encounters = canonical_records!(parsed.simple_encounters);
     let complex_encounters = canonical_records!(parsed.complex_encounters);
     let scenario_items = parsed

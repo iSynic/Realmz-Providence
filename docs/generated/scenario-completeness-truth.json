@@ -1017,7 +1017,7 @@
         "src-tauri/src/realmz/shops.rs:fresh_shop_compiles_all_semantic_fields",
         "src-tauri/src/realmz/shops.rs:imported_shop_recompiles_without_record_byte_identity",
         "src-tauri/src/realmz/shops.rs:shop_storage_mutates_only_owned_fields",
-        "src-tauri/src/project.rs:shop_normalization_backfills_legacy_inventory_slots",
+        "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
         "src-tauri/src/exporter.rs:inserts_added_shop_before_preserved_source_suffix",
         "src-tauri/src/realmz/shops.rs:write_shops",
         "src-tauri/src/realmz/shops.rs:parse_shops"

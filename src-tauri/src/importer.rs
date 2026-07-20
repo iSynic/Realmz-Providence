@@ -371,6 +371,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_map_record_raw_bytes(&mut value);
     migrate_legacy_scenario_item_raw_bytes(&mut value);
     migrate_legacy_treasure_raw_bytes(&mut value);
+    migrate_legacy_shop_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -463,6 +464,48 @@ fn migrate_legacy_treasure_raw_bytes(project: &mut serde_json::Value) {
         while item_ids.len() < 20 {
             let offset = item_ids.len() * 2;
             item_ids.push(serde_json::json!(legacy_project_i16(&raw, offset)));
+        }
+    }
+}
+
+fn migrate_legacy_shop_raw_bytes(project: &mut serde_json::Value) {
+    let Some(records) = project
+        .get_mut("shops")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for record in records {
+        let Some(record) = record.as_object_mut() else {
+            continue;
+        };
+        let Some(raw) = record
+            .remove("rawBytes")
+            .and_then(|value| value.as_array().cloned())
+        else {
+            continue;
+        };
+        let item_ids = record
+            .entry("itemIds")
+            .or_insert_with(|| serde_json::Value::Array(Vec::new()));
+        if let Some(item_ids) = item_ids.as_array_mut() {
+            while item_ids.len() < 1000 {
+                let offset = item_ids.len() * 2;
+                item_ids.push(serde_json::json!(legacy_project_i16(&raw, offset)));
+            }
+        }
+        let quantities = record
+            .entry("quantities")
+            .or_insert_with(|| serde_json::Value::Array(Vec::new()));
+        if let Some(quantities) = quantities.as_array_mut() {
+            while quantities.len() < 1000 {
+                let offset = 2000 + quantities.len();
+                let quantity = raw
+                    .get(offset)
+                    .and_then(serde_json::Value::as_u64)
+                    .unwrap_or(0) as u8;
+                quantities.push(serde_json::json!(quantity));
+            }
         }
     }
 }
@@ -2503,6 +2546,18 @@ mod tests {
         legacy_treasure_raw[2..4].copy_from_slice(&(-321i16).to_be_bytes());
         legacy_treasure_value["rawBytes"] = serde_json::json!(legacy_treasure_raw);
         saved["treasures"] = serde_json::json!([legacy_treasure_value]);
+        let mut legacy_shop = crate::realmz::parse_shops(&vec![0; crate::realmz::SHOP_BYTES])
+            .into_iter()
+            .next()
+            .expect("legacy shop");
+        legacy_shop.item_ids = vec![901];
+        legacy_shop.quantities = vec![3];
+        let mut legacy_shop_value = serde_json::to_value(legacy_shop).expect("serialize shop");
+        let mut legacy_shop_raw = vec![0u8; crate::realmz::SHOP_BYTES];
+        legacy_shop_raw[2..4].copy_from_slice(&(-321i16).to_be_bytes());
+        legacy_shop_raw[2001] = 7;
+        legacy_shop_value["rawBytes"] = serde_json::json!(legacy_shop_raw);
+        saved["shops"] = serde_json::json!([legacy_shop_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2535,6 +2590,10 @@ mod tests {
         assert_eq!(opened.treasures[0].item_ids.len(), 20);
         assert_eq!(opened.treasures[0].item_ids[0], 901);
         assert_eq!(opened.treasures[0].item_ids[1], -321);
+        assert_eq!(opened.shops[0].item_ids.len(), 1000);
+        assert_eq!(opened.shops[0].quantities.len(), 1000);
+        assert_eq!(opened.shops[0].item_ids[..2], [901, -321]);
+        assert_eq!(opened.shops[0].quantities[..2], [3, 7]);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2565,6 +2624,7 @@ mod tests {
         assert!(upgraded["mapRecords"][0].get("rawBytes").is_none());
         assert!(upgraded["scenarioItems"][0].get("rawBytes").is_none());
         assert!(upgraded["treasures"][0].get("rawBytes").is_none());
+        assert!(upgraded["shops"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -2990,7 +3050,6 @@ mod tests {
         shop.quantities = [vec![3], vec![0; 999]].concat();
         shop.inflation = 120;
         shop.authored = false;
-        shop.raw_bytes.fill(0xA5);
         project.shops = vec![shop];
 
         let mut simple = crate::realmz::parse_simple_encounter_records(&vec![

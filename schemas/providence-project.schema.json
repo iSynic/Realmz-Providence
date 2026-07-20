@@ -886,15 +886,13 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceShopRecord",
       "x-providence-rust-name": "ShopRecord",
-      "x-providence-rust-default": ["itemIds", "quantities", "rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["itemIds", "quantities", "authored"],
       "required": ["id", "itemIds", "quantities", "inflation", "provenance"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
         "itemIds": { "type": "array", "minItems": 1000, "maxItems": 1000, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "quantities": { "type": "array", "minItems": 1000, "maxItems": 1000, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" } },
         "inflation": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
-        "rawBytes": { "type": "array", "minItems": 3002, "maxItems": 3002, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

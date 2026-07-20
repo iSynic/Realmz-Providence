@@ -914,10 +914,6 @@ fn normalize_map_record_markers(record: &mut MapRecord) {
         .collect();
 }
 
-fn project_i16(bytes: &[u8], offset: usize) -> i16 {
-    i16::from_be_bytes([bytes[offset], bytes[offset + 1]])
-}
-
 fn normalize_scenario_item_spare_words(record: &mut ScenarioItemRecord) {
     let existing = record.spare2.clone();
     record.spare2 = (0..7)
@@ -935,27 +931,11 @@ fn normalize_treasure_item_ids(record: &mut TreasureRecord) {
 fn normalize_shop_slots(record: &mut ShopRecord) {
     let existing_item_ids = record.item_ids.clone();
     let existing_quantities = record.quantities.clone();
-    let raw_bytes = record.raw_bytes.clone();
     record.item_ids = (0..1000)
-        .map(|slot| {
-            existing_item_ids.get(slot).copied().unwrap_or_else(|| {
-                let offset = slot * 2;
-                if raw_bytes.len() >= offset + 2 {
-                    project_i16(&raw_bytes, offset)
-                } else {
-                    0
-                }
-            })
-        })
+        .map(|slot| existing_item_ids.get(slot).copied().unwrap_or(0))
         .collect();
     record.quantities = (0..1000)
-        .map(|slot| {
-            existing_quantities
-                .get(slot)
-                .copied()
-                .or_else(|| raw_bytes.get(2000 + slot).copied())
-                .unwrap_or(0)
-        })
+        .map(|slot| existing_quantities.get(slot).copied().unwrap_or(0))
         .collect();
 }
 
@@ -1119,16 +1099,13 @@ mod tests {
     }
 
     #[test]
-    fn shop_normalization_backfills_legacy_inventory_slots() {
-        let mut raw_bytes = vec![0; crate::realmz::SHOP_BYTES];
-        raw_bytes[2..4].copy_from_slice(&(-321i16).to_be_bytes());
-        raw_bytes[2001] = 7;
-        let mut record = crate::realmz::parse_shops(&raw_bytes)
+    fn shop_normalization_fills_missing_semantic_inventory_slots() {
+        let mut record = crate::realmz::parse_shops(&vec![0; crate::realmz::SHOP_BYTES])
             .into_iter()
             .next()
             .expect("shop");
-        record.item_ids = vec![901];
-        record.quantities = vec![3];
+        record.item_ids = vec![901, -321];
+        record.quantities = vec![3, 7];
 
         normalize_shop_slots(&mut record);
 

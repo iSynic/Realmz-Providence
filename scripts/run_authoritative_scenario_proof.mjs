@@ -288,10 +288,7 @@ expect(project.monsters.every((record) => (record.rawBytes?.length ?? 0) === 0),
 expect(project.monsterDescriptions.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical monster descriptions must not carry compatibility bytes");
 assertOwnershipScenarioItem(project.scenarioItems, "Canonical project");
 assertOwnershipTreasure(project.treasures, "Canonical project");
-expect(project.shops.length === 1, `Expected one shop, found ${project.shops.length}`);
-expect((project.shops[0].rawBytes?.length ?? 0) === 0, "Fresh canonical shop must not carry compatibility bytes");
-expect(project.shops[0].itemIds?.length === 1000 && project.shops[0].quantities?.length === 1000, "Fresh canonical shop must own all stock slots");
-expect(project.shops[0].itemIds[0] === 901 && project.shops[0].quantities[0] === 1 && project.shops[0].inflation === 105, "Fresh canonical shop has the wrong semantic stock");
+assertOwnershipShop(project.shops, "Canonical project");
 expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
 assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);
@@ -328,6 +325,7 @@ poisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
 poisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 poisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 poisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
+poisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
 await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(poisonedProject, null, 2)}\n`);
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputB, "windows-realmz-folder"]);
 await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
@@ -359,6 +357,7 @@ browserPoisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x34
 browserPoisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 browserPoisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 browserPoisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
+browserPoisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
 const browserEmbeddedCompatibilityTrapPackage = createBrowserScenarioPackageZip(browserPoisonedProject, null, "windows-realmz-folder");
 const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
   rootName: "ANNEX READ TRAP",
@@ -690,7 +689,6 @@ async function assertNoRawSources(stage) {
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
   assertOwnershipShop(savedProject.shops, `Rust-saved project ${stage}`);
-  expect(savedProject.shops?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} shops contain compatibility bytes`);
   assertOwnershipSpell(savedProject.spellOverrides, `Rust-saved project ${stage}`);
   assertOwnershipRules(savedProject, `Rust-saved project ${stage}`, true);
   assertNoFreshRuleCompatibilityBytes(savedProject, `Rust-saved project ${stage}`);
@@ -976,6 +974,7 @@ function assertOwnershipShop(records, label) {
   expect(shop, `${label} is missing shop 0`);
   expect(shop.itemIds?.length === 1000 && shop.quantities?.length === 1000, `${label} shop has the wrong stock-slot inventory`);
   expect(shop.itemIds[0] === 901 && shop.quantities[0] === 1 && shop.inflation === 105, `${label} shop has the wrong semantic stock`);
+  expect(!Object.hasOwn(shop, "rawBytes"), `${label} shop exposes compatibility storage`);
 }
 
 function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityBytes) {

@@ -537,10 +537,6 @@ export function writeTreasures(records: TreasureRecord[]) {
 
 export function writeShops(records: ShopRecord[]) {
   return writeFixedRecords(records, SHOP_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== SHOP_RECORD_BYTES) {
-      throw new Error(`Shop ${record.id} has invalid compatibility byte storage`);
-    }
     if (record.itemIds.length !== 1000 || record.quantities.length !== 1000) {
       throw new Error(`Shop ${record.id} must define 1000 item and quantity slots`);
     }
