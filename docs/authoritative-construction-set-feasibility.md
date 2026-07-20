@@ -923,7 +923,15 @@ noncanonical Boolean words, unchanged Pascal-note tails, and malformed file tail
 the compatibility-annex overlays. Fixed-size codec tests and the independent ownership proof keep
 literal Realmz-format expectations as checks against an incorrect policy change.
 
-Branch validation through the eighty-eighth slice completed on 2026-07-20:
+The eighty-ninth slice extends compiler-owned geometry to the scenario singleton family. Native-
+manifest contract v10 now owns the 316-byte scenario shell and `Data CS` core, 600-byte `Scenario`
+support file, 4,608-byte `Data CI`, 320-byte `Data RI`, and 60-byte `Global` hook record. Generated
+TypeScript and Rust definitions drive both codecs, project-import recognition, fixed-layout and
+semantic indexing, authored baseline sizing, and compatibility-overlay cutoffs. Imported shell and
+support tails, singleton byte identity, and reserved global words remain bounded to compatibility-
+annex overlays; fixed-size tests and the ownership proof retain literal Realmz-format expectations.
+
+Branch validation through the eighty-ninth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -996,6 +1004,9 @@ ISY-319/320/321 module-size violation.
 The shared map-record-layout slice replaces `Data MD2` geometry literals across compiler,
 normalization, semantic, map-name, and authoring consumers without refactoring the deferred map UI;
 it adds no new ISY-319/320/321 module-size violation.
+The shared scenario-singleton-layout slice replaces startup and metadata literals across codec,
+import, assembly, semantic, baseline, and compatibility-overlay consumers without refactoring the
+deferred ISY-320 assembly module; it adds no new ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1667,7 +1678,7 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 
 ### Phase 5: One compiler contract across desktop and browser
 
-- **Implemented for baseline and native paths:** generate native map/map-record/random-level/Action Point/EDCD,
+- **Implemented for baseline and native paths:** generate native scenario-singleton, map/map-record/random-level/Action Point/EDCD,
   encounter-row, combat-row, economy/content-row, text-row, and rules-row layout geometry,
   scenario-item capacity,
   startup roles,

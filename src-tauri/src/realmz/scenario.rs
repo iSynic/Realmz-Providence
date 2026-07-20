@@ -1,4 +1,5 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{
     GlobalMacroHook, ScenarioContactInfo, ScenarioGlobalMacroHooks, ScenarioRestrictions,
     ScenarioShell, ScenarioSupportFile,
@@ -9,17 +10,19 @@ use super::record_bytes::{
     provenance, write_i16_be, write_i32_be,
 };
 
-pub const SCENARIO_CONTACT_INFO_BYTES: usize = 4608;
-pub const SCENARIO_RESTRICTIONS_BYTES: usize = 320;
-pub const GLOBAL_MACRO_HOOK_BYTES: usize = 60;
-pub const SCENARIO_SUPPORT_FILE_BYTES: usize = 600;
+pub const SCENARIO_SHELL_BYTES: usize = REALMZ_NATIVE_LAYOUT.scenario_shell_bytes;
+pub const SCENARIO_CONTACT_INFO_BYTES: usize = REALMZ_NATIVE_LAYOUT.scenario_contact_info_bytes;
+pub const SCENARIO_RESTRICTIONS_BYTES: usize = REALMZ_NATIVE_LAYOUT.scenario_restrictions_bytes;
+pub const GLOBAL_MACRO_HOOK_BYTES: usize = REALMZ_NATIVE_LAYOUT.global_macro_hook_bytes;
+pub const SCENARIO_SUPPORT_FILE_BYTES: usize = REALMZ_NATIVE_LAYOUT.scenario_support_file_bytes;
 
 pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<ScenarioShell> {
-    if buffer.len() < 316 {
+    if buffer.len() < SCENARIO_SHELL_BYTES {
         return Err(ProvidenceError::message(format!(
-            "{} is {} byte(s); scenario marker/main file must be at least 316 bytes",
+            "{} is {} byte(s); scenario marker/main file must be at least {} bytes",
             source_file,
-            buffer.len()
+            buffer.len(),
+            SCENARIO_SHELL_BYTES
         )));
     }
     Ok(ScenarioShell {
@@ -31,14 +34,14 @@ pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<Scenario
         look_y: i32_be(buffer, 16),
         codeseg1: buffer[20..40].to_vec(),
         codeseg2: buffer[40..60].to_vec(),
-        creator_user: decode_pascal_text(&buffer[60..316]),
+        creator_user: decode_pascal_text(&buffer[60..SCENARIO_SHELL_BYTES]),
         authored: false,
         provenance: Some(provenance(source_file, 0, 0, buffer.len())),
     })
 }
 
 pub fn write_scenario_shell(shell: &ScenarioShell) -> Result<Vec<u8>> {
-    let mut output = vec![0u8; 316];
+    let mut output = vec![0u8; SCENARIO_SHELL_BYTES];
     write_i32_be(&mut output, 0, shell.rec_level);
     write_i32_be(&mut output, 4, shell.max_level);
     write_i32_be(&mut output, 8, shell.land_level);
@@ -46,7 +49,7 @@ pub fn write_scenario_shell(shell: &ScenarioShell) -> Result<Vec<u8>> {
     write_i32_be(&mut output, 16, shell.look_y);
     copy_fixed_bytes(&mut output[20..40], &shell.codeseg1);
     copy_fixed_bytes(&mut output[40..60], &shell.codeseg2);
-    encode_pascal_text(&mut output[60..316], &shell.creator_user)?;
+    encode_pascal_text(&mut output[60..SCENARIO_SHELL_BYTES], &shell.creator_user)?;
     Ok(output)
 }
 
@@ -92,10 +95,11 @@ pub fn write_scenario_support_file(support: &ScenarioSupportFile) -> Result<Vec<
 }
 
 pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo> {
-    if buffer.len() < 4608 {
+    if buffer.len() < SCENARIO_CONTACT_INFO_BYTES {
         return Err(ProvidenceError::message(format!(
-            "Data CI is {} byte(s); expected 4608 bytes",
-            buffer.len()
+            "Data CI is {} byte(s); expected {} bytes",
+            buffer.len(),
+            SCENARIO_CONTACT_INFO_BYTES
         )));
     }
     Ok(ScenarioContactInfo {
@@ -114,12 +118,12 @@ pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo>
             .collect(),
         description: pascal_record_string(buffer, 17),
         authored: false,
-        provenance: Some(provenance("Data CI", 0, 0, 4608)),
+        provenance: Some(provenance("Data CI", 0, 0, SCENARIO_CONTACT_INFO_BYTES)),
     })
 }
 
 pub fn write_scenario_contact_info(contact: &ScenarioContactInfo) -> Result<Vec<u8>> {
-    let mut output = vec![0u8; 4608];
+    let mut output = vec![0u8; SCENARIO_CONTACT_INFO_BYTES];
     let fields = [
         contact.scenario_name.as_str(),
         contact.version.as_str(),
@@ -151,10 +155,11 @@ pub fn write_scenario_contact_info(contact: &ScenarioContactInfo) -> Result<Vec<
 }
 
 pub fn parse_scenario_restrictions(buffer: &[u8]) -> Result<ScenarioRestrictions> {
-    if buffer.len() < 320 {
+    if buffer.len() < SCENARIO_RESTRICTIONS_BYTES {
         return Err(ProvidenceError::message(format!(
-            "Data RI is {} byte(s); expected 320 bytes",
-            buffer.len()
+            "Data RI is {} byte(s); expected {} bytes",
+            buffer.len(),
+            SCENARIO_RESTRICTIONS_BYTES
         )));
     }
     Ok(ScenarioRestrictions {
@@ -166,22 +171,27 @@ pub fn parse_scenario_restrictions(buffer: &[u8]) -> Result<ScenarioRestrictions
             .enumerate()
             .filter_map(|(index, value)| (*value != 0).then_some((index + 1) as u8))
             .collect(),
-        banned_castes: buffer[290..320]
+        banned_castes: buffer[290..SCENARIO_RESTRICTIONS_BYTES]
             .iter()
             .enumerate()
             .filter_map(|(index, value)| (*value != 0).then_some((index + 1) as u8))
             .collect(),
         authored: false,
-        provenance: Some(provenance("Data RI", 0, 0, 320)),
+        provenance: Some(provenance(
+            "Data RI",
+            0,
+            0,
+            SCENARIO_RESTRICTIONS_BYTES,
+        )),
     })
 }
 
 pub fn write_scenario_restrictions(restrictions: &ScenarioRestrictions) -> Result<Vec<u8>> {
-    let mut output = vec![0u8; 320];
+    let mut output = vec![0u8; SCENARIO_RESTRICTIONS_BYTES];
     encode_pascal_text(&mut output[0..256], &restrictions.description)?;
     write_i16_be(&mut output, 256, restrictions.max_party_characters);
     write_i16_be(&mut output, 258, restrictions.max_party_level);
-    output[260..320].fill(0);
+    output[260..SCENARIO_RESTRICTIONS_BYTES].fill(0);
     for race in &restrictions.banned_races {
         if (1..=30).contains(race) {
             output[260 + *race as usize - 1] = 1;

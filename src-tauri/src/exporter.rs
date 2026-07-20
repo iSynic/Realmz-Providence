@@ -148,7 +148,7 @@ fn compile_realmz_scenario(
         write_scenario_singleton_for_export(
             &mut manifest,
             scenario_shell_file_name(project),
-            316,
+            crate::realmz::SCENARIO_SHELL_BYTES,
             shell.authored,
             write_scenario_shell(shell)?,
             compatibility_annex,
@@ -198,7 +198,7 @@ fn compile_realmz_scenario(
         write_scenario_singleton_for_export(
             &mut manifest,
             AUTHORED_STARTUP_FILES.security_backup,
-            316,
+            crate::realmz::SCENARIO_SHELL_BYTES,
             security_backup.authored,
             write_scenario_shell(security_backup)?,
             compatibility_annex,

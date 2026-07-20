@@ -58,14 +58,14 @@ export const DOOR_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.actionPointRecordBytes;
 export const DOORS_PER_LEVEL = REALMZ_NATIVE_LAYOUT.actionPointsPerLevel;
 export const DOOR_LEVEL_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.actionPointLevelBytes;
 export const EXTRACODE_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
-export const GLOBAL_MACRO_HOOK_BYTES = 60;
+export const GLOBAL_MACRO_HOOK_BYTES = REALMZ_NATIVE_LAYOUT.globalMacroHookBytes;
 export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLUMNS = 16;
 export const LAND_LAYOUT_RECORD_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLUMNS * 2;
-export const SCENARIO_SHELL_BYTES = 316;
-export const SCENARIO_SUPPORT_FILE_BYTES = 600;
-export const SCENARIO_CONTACT_INFO_BYTES = 4608;
-export const SCENARIO_RESTRICTIONS_BYTES = 320;
+export const SCENARIO_SHELL_BYTES = REALMZ_NATIVE_LAYOUT.scenarioShellBytes;
+export const SCENARIO_SUPPORT_FILE_BYTES = REALMZ_NATIVE_LAYOUT.scenarioSupportFileBytes;
+export const SCENARIO_CONTACT_INFO_BYTES = REALMZ_NATIVE_LAYOUT.scenarioContactInfoBytes;
+export const SCENARIO_RESTRICTIONS_BYTES = REALMZ_NATIVE_LAYOUT.scenarioRestrictionsBytes;
 export const TILE_SOLIDS_BYTES = 1024;
 export const MAPSTATS_RECORD_BYTES = 40;
 export const MAPSTATS_RECORDS = 201;
@@ -437,7 +437,7 @@ export function writeScenarioRestrictions(restrictions: ScenarioRestrictions) {
   encodePascalText(output.subarray(0, MESSAGE_RECORD_BYTES), restrictions.description ?? "");
   writeI16(output, 256, restrictions.maxPartyCharacters);
   writeI16(output, 258, restrictions.maxPartyLevel);
-  output.fill(0, 260, 320);
+  output.fill(0, 260, SCENARIO_RESTRICTIONS_BYTES);
   for (const race of restrictions.bannedRaces) {
     if (race >= 1 && race <= 30) output[260 + race - 1] = 1;
   }

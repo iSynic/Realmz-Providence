@@ -1,8 +1,10 @@
 use crate::project::*;
 use crate::realmz::{
     CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES, DOOR_BYTES, DOOR_LEVEL_BYTES, EXTRACODE_BYTES,
-    FIELD_BYTES, LAND_LAYOUT_BYTES, MAP_RECORD_BYTES, MESSAGE_BYTES, MONSTER_DESCRIPTION_BYTES,
-    OPTION_LABEL_BYTES, RACE_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
+    FIELD_BYTES, GLOBAL_MACRO_HOOK_BYTES, LAND_LAYOUT_BYTES, MAP_RECORD_BYTES, MESSAGE_BYTES,
+    MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RACE_BYTES, RANDLEVEL_BYTES,
+    SCENARIO_CONTACT_INFO_BYTES, SCENARIO_RESTRICTIONS_BYTES, SCENARIO_SHELL_BYTES,
+    SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -102,10 +104,10 @@ pub(super) fn layout_for(name: &str) -> Option<SemanticLayout> {
         "Data Spell" => ("spell overrides", SPELL_BYTES),
         "Data Race" => ("race overrides", RACE_BYTES),
         "Data Caste" => ("caste overrides", CASTE_BYTES),
-        "Data CI" => ("scenario contact", 4608),
-        "Data RI" => ("scenario restrictions", 320),
-        "Data CS" => ("scenario security backup", 316),
-        "Global" => ("global macro hooks", 60),
+        "Data CI" => ("scenario contact", SCENARIO_CONTACT_INFO_BYTES),
+        "Data RI" => ("scenario restrictions", SCENARIO_RESTRICTIONS_BYTES),
+        "Data CS" => ("scenario security backup", SCENARIO_SHELL_BYTES),
+        "Global" => ("global macro hooks", GLOBAL_MACRO_HOOK_BYTES),
         "Data MENU" => ("monster menu cache", 502),
         "Data Solids" => ("solid tile table", 1024),
         "Data NI" => ("scenario item table", 100),

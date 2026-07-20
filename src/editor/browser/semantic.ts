@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MAP_RECORD_BYTES, MESSAGE_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { CASTE_RECORD_BYTES, GLOBAL_MACRO_HOOK_BYTES, RACE_RECORD_BYTES, SCENARIO_CONTACT_INFO_BYTES, SCENARIO_RESTRICTIONS_BYTES, SCENARIO_SHELL_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
 import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
@@ -878,9 +878,9 @@ function addCasteOverrideRecords(schema: SemanticSchema, buffer?: Uint8Array) {
 
 function addContactRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  for (let index = 0; index + 4608 <= buffer.byteLength; index += 1) {
-    const start = index * 4608;
-    if (start + 4608 > buffer.byteLength) break;
+  for (let index = 0; index + SCENARIO_CONTACT_INFO_BYTES <= buffer.byteLength; index += 1) {
+    const start = index * SCENARIO_CONTACT_INFO_BYTES;
+    if (start + SCENARIO_CONTACT_INFO_BYTES > buffer.byteLength) break;
     const summary = {
       id: index,
       scenarioName: pascalSlot(buffer, start, 0),
@@ -892,8 +892,8 @@ function addContactRecords(schema: SemanticSchema, buffer?: Uint8Array) {
       fee: pascalSlot(buffer, start, 6),
       description: pascalSlot(buffer, start, 17)
     };
-    upsertRecord(schema, browserRecord("Data CI", index, 4608, "contact-info", summary.scenarioName || `Contact ${index}`, summary));
-    schema.entities.push(browserEntity(`contact:${index}`, "contact-info", summary.scenarioName || `Contact ${index}`, "Data CI", `record:Data CI:${index}`, start, 4608, summary));
+    upsertRecord(schema, browserRecord("Data CI", index, SCENARIO_CONTACT_INFO_BYTES, "contact-info", summary.scenarioName || `Contact ${index}`, summary));
+    schema.entities.push(browserEntity(`contact:${index}`, "contact-info", summary.scenarioName || `Contact ${index}`, "Data CI", `record:Data CI:${index}`, start, SCENARIO_CONTACT_INFO_BYTES, summary));
     if (index === 0) {
       const scenario = schema.entities.find((entity) => entity.type === "scenario");
       if (scenario) pushLink(schema, scenario.id, "contact:0", "has_contact_info", "source-backed");
@@ -903,9 +903,9 @@ function addContactRecords(schema: SemanticSchema, buffer?: Uint8Array) {
 
 function addGlobalMacroRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  for (let index = 0; index + 60 <= buffer.byteLength; index += 1) {
-    const start = index * 60;
-    if (start + 60 > buffer.byteLength) break;
+  for (let index = 0; index + GLOBAL_MACRO_HOOK_BYTES <= buffer.byteLength; index += 1) {
+    const start = index * GLOBAL_MACRO_HOOK_BYTES;
+    if (start + GLOBAL_MACRO_HOOK_BYTES > buffer.byteLength) break;
     const slots = Array.from({ length: 30 }, (_, slot) => {
       const door = i16At(buffer, start + slot * 2);
       return {
@@ -923,9 +923,9 @@ function addGlobalMacroRecords(schema: SemanticSchema, buffer?: Uint8Array) {
       activeSlots,
       preview: `${activeSlots.length} active global macro hook(s)`
     };
-    upsertRecord(schema, browserRecord("Global", index, 60, "global-macro", `Global Macro Hooks ${index}`, summary));
+    upsertRecord(schema, browserRecord("Global", index, GLOBAL_MACRO_HOOK_BYTES, "global-macro", `Global Macro Hooks ${index}`, summary));
     const entityId = `global:${index}`;
-    schema.entities.push(browserEntity(entityId, "global-macro", `Global Macro Hooks ${index}`, "Global", `record:Global:${index}`, start, 60, summary));
+    schema.entities.push(browserEntity(entityId, "global-macro", `Global Macro Hooks ${index}`, "Global", `record:Global:${index}`, start, GLOBAL_MACRO_HOOK_BYTES, summary));
     for (const slot of activeSlots) {
       if (!slot.sourceBacked || slot.door <= 0) continue;
       pushLink(schema, entityId, `macro:${slot.door}`, "calls_macro", "source-backed", {
@@ -2459,19 +2459,19 @@ function i16At(buffer: Uint8Array, offset: number) {
 
 function addRestrictionRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  for (let index = 0; index + 320 <= buffer.byteLength; index += 1) {
-    const start = index * 320;
+  for (let index = 0; index + SCENARIO_RESTRICTIONS_BYTES <= buffer.byteLength; index += 1) {
+    const start = index * SCENARIO_RESTRICTIONS_BYTES;
     const summary = {
       id: index,
       description: pascalTextAt(buffer, start, 256),
       maxPartyCharacters: i16At(buffer, start + 256),
       maxPartyLevel: i16At(buffer, start + 258),
       bannedRaces: Array.from(buffer.slice(start + 260, start + 290)).flatMap((value, race) => value ? [race + 1] : []),
-      bannedCastes: Array.from(buffer.slice(start + 290, start + 320)).flatMap((value, caste) => value ? [caste + 1] : [])
+      bannedCastes: Array.from(buffer.slice(start + 290, start + SCENARIO_RESTRICTIONS_BYTES)).flatMap((value, caste) => value ? [caste + 1] : [])
     };
     const label = summary.description || `Restrictions ${index}`;
-    upsertRecord(schema, browserRecord("Data RI", index, 320, "scenario-restriction", label, summary));
-    schema.entities.push(browserEntity(`restriction:${index}`, "scenario-restriction", label, "Data RI", `record:Data RI:${index}`, start, 320, summary));
+    upsertRecord(schema, browserRecord("Data RI", index, SCENARIO_RESTRICTIONS_BYTES, "scenario-restriction", label, summary));
+    schema.entities.push(browserEntity(`restriction:${index}`, "scenario-restriction", label, "Data RI", `record:Data RI:${index}`, start, SCENARIO_RESTRICTIONS_BYTES, summary));
     if (index === 0) {
       const scenario = schema.entities.find((entity) => entity.type === "scenario");
       if (scenario) pushLink(schema, scenario.id, "restriction:0", "has_party_restrictions", "source-backed");
@@ -2662,10 +2662,10 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data Spell": ["spell overrides", SPELL_RECORD_BYTES],
   "Data Race": ["race overrides", RACE_RECORD_BYTES],
   "Data Caste": ["caste overrides", CASTE_RECORD_BYTES],
-  "Data CI": ["scenario contact", 4608],
-  "Data RI": ["scenario restrictions", 320],
-  "Data CS": ["scenario security backup", 316],
-  "Global": ["global macro hooks", 60],
+  "Data CI": ["scenario contact", SCENARIO_CONTACT_INFO_BYTES],
+  "Data RI": ["scenario restrictions", SCENARIO_RESTRICTIONS_BYTES],
+  "Data CS": ["scenario security backup", SCENARIO_SHELL_BYTES],
+  "Global": ["global macro hooks", GLOBAL_MACRO_HOOK_BYTES],
   "Data MENU": ["monster menu cache", 502],
   "Data Solids": ["solid tile table", 1024],
   "Data NI": ["scenario item table", ITEM_BYTES],

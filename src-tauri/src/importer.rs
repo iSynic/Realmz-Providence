@@ -1039,10 +1039,16 @@ fn read_scenario_shell_candidate_from_dir(dir: &Path) -> Result<Option<ScenarioS
             continue;
         }
         let bytes = fs::read(&path).with_path(&path)?;
-        if bytes.len() < 316 || crate::realmz::parse_scenario_shell(name, &bytes).is_err() {
+        if bytes.len() < crate::realmz::SCENARIO_SHELL_BYTES
+            || crate::realmz::parse_scenario_shell(name, &bytes).is_err()
+        {
             continue;
         }
-        let size_rank = if bytes.len() == 316 { 0 } else { 1 };
+        let size_rank = if bytes.len() == crate::realmz::SCENARIO_SHELL_BYTES {
+            0
+        } else {
+            1
+        };
         candidates.push((size_rank, name.to_string(), path));
     }
     candidates.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));

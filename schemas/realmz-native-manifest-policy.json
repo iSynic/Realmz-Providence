@@ -1,5 +1,5 @@
 {
-  "contractVersion": 9,
+  "contractVersion": 10,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -9,6 +9,13 @@
       "recordBytes": 340,
       "markerSlots": 10,
       "markerBytes": 6
+    },
+    "scenario": {
+      "shellRecordBytes": 316,
+      "supportFileBytes": 600,
+      "contactInfoRecordBytes": 4608,
+      "restrictionsRecordBytes": 320,
+      "globalMacroHooksRecordBytes": 60
     },
     "randomLevel": {
       "recordBytes": 644

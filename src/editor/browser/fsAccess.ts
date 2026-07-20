@@ -1,4 +1,5 @@
 import type { SourceFile } from "../types";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import { normalizeSourceFileRole } from "../projectOrigin";
 import { readStoredZip } from "./zip";
 
@@ -468,7 +469,7 @@ export async function sha256Hex(bytes: Uint8Array) {
 
 function roleForFile(name: string, tracked: Set<string>, bytes?: Uint8Array): SourceFile["role"] {
   if (SUPPORTED_WRITE_FILES.has(name)) return "supported-binary";
-  if (name === "Scenario" && bytes?.byteLength === 600) return "supported-binary";
+  if (name === "Scenario" && bytes?.byteLength === REALMZ_NATIVE_LAYOUT.scenarioSupportFileBytes) return "supported-binary";
   if (isResourceFileName(name)) return "resource-fork";
   if (tracked.has(name)) return "pass-through";
   return "unknown";
@@ -519,7 +520,7 @@ function resourceSidecarKey(name: string, relativePath: string) {
 }
 
 function isScenarioMarkerCandidate(name: string, bytes: Uint8Array, tracked: Set<string>) {
-  return bytes.byteLength >= 316
+  return bytes.byteLength >= REALMZ_NATIVE_LAYOUT.scenarioShellBytes
     && !tracked.has(name)
     && !isResourceFileName(name)
     && !name.startsWith("Data ")

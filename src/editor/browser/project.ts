@@ -18,6 +18,10 @@ const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 const FIELD_BYTES = REALMZ_NATIVE_LAYOUT.mapFieldBytes;
 const MAP_RECORD_MARKERS = REALMZ_NATIVE_LAYOUT.mapRecordMarkers;
 const MAP_RECORD_MARKER_BYTES = REALMZ_NATIVE_LAYOUT.mapRecordMarkerBytes;
+const SCENARIO_SHELL_BYTES = REALMZ_NATIVE_LAYOUT.scenarioShellBytes;
+const SCENARIO_SUPPORT_FILE_BYTES = REALMZ_NATIVE_LAYOUT.scenarioSupportFileBytes;
+const SCENARIO_CONTACT_INFO_BYTES = REALMZ_NATIVE_LAYOUT.scenarioContactInfoBytes;
+const SCENARIO_RESTRICTIONS_BYTES = REALMZ_NATIVE_LAYOUT.scenarioRestrictionsBytes;
 const RANDOM_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
 const BUNDLED_LANDLOOK_MAPSTATS = [
   ["Data P BD", 0],
@@ -409,7 +413,7 @@ function defaultScenarioContactInfo(name: string): NonNullable<Project["scenario
 }
 
 function parseScenarioContactInfo(buffer?: Uint8Array): Project["scenario"]["contactInfo"] {
-  if (!buffer || buffer.byteLength < 4608) return null;
+  if (!buffer || buffer.byteLength < SCENARIO_CONTACT_INFO_BYTES) return null;
   return {
     scenarioName: pascalSlot(buffer, 0),
     version: pascalSlot(buffer, 1),
@@ -426,7 +430,7 @@ function parseScenarioContactInfo(buffer?: Uint8Array): Project["scenario"]["con
 }
 
 function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioShell | null {
-  if (!buffer || buffer.byteLength < 316) return null;
+  if (!buffer || buffer.byteLength < SCENARIO_SHELL_BYTES) return null;
   return {
     sourceFile,
     recLevel: i32At(buffer, 0),
@@ -436,7 +440,7 @@ function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioSh
     lookY: i32At(buffer, 16),
     codeseg1: Array.from(buffer.slice(20, 40)),
     codeseg2: Array.from(buffer.slice(40, 60)),
-    creatorUser: pascalString(buffer.slice(60, 316)),
+    creatorUser: pascalString(buffer.slice(60, SCENARIO_SHELL_BYTES)),
     authored: false,
     provenance: {
       sourceFile,
@@ -449,7 +453,7 @@ function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioSh
 }
 
 function parseScenarioSupportFile(sourceFile: string, buffer?: Uint8Array): Project["scenario"]["supportFile"] {
-  if (!buffer || buffer.byteLength !== 600) return null;
+  if (!buffer || buffer.byteLength !== SCENARIO_SUPPORT_FILE_BYTES) return null;
   return {
     sourceFile,
     divinityStringEditorSlot: buffer[23],
@@ -471,8 +475,8 @@ function parseImportedScenarioShell(scenarioName: string, files: Map<string, Uin
   const candidates = [...files.entries()]
     .filter(([name, buffer]) => isScenarioMarkerCandidate(name, buffer))
     .sort(([leftName, leftBytes], [rightName, rightBytes]) => {
-      const leftExactSize = leftBytes.byteLength === 316 ? 0 : 1;
-      const rightExactSize = rightBytes.byteLength === 316 ? 0 : 1;
+      const leftExactSize = leftBytes.byteLength === SCENARIO_SHELL_BYTES ? 0 : 1;
+      const rightExactSize = rightBytes.byteLength === SCENARIO_SHELL_BYTES ? 0 : 1;
       return leftExactSize - rightExactSize || leftName.localeCompare(rightName);
     });
   for (const [name, buffer] of candidates) {
@@ -483,7 +487,7 @@ function parseImportedScenarioShell(scenarioName: string, files: Map<string, Uin
 }
 
 function isScenarioMarkerCandidate(name: string, buffer: Uint8Array) {
-  return buffer.byteLength >= 316
+  return buffer.byteLength >= SCENARIO_SHELL_BYTES
     && name !== "Scenario"
     && name !== "Global"
     && name !== "Layout"
@@ -495,13 +499,13 @@ function isScenarioMarkerCandidate(name: string, buffer: Uint8Array) {
 }
 
 function parseScenarioRestrictions(buffer?: Uint8Array): Project["scenario"]["restrictions"] {
-  if (!buffer || buffer.byteLength < 320) return null;
+  if (!buffer || buffer.byteLength < SCENARIO_RESTRICTIONS_BYTES) return null;
   return {
     description: pascalString(buffer.slice(0, 256)),
     maxPartyCharacters: i16At(buffer, 256),
     maxPartyLevel: i16At(buffer, 258),
     bannedRaces: Array.from(buffer.slice(260, 290)).flatMap((value, index) => value ? [index + 1] : []),
-    bannedCastes: Array.from(buffer.slice(290, 320)).flatMap((value, index) => value ? [index + 1] : []),
+    bannedCastes: Array.from(buffer.slice(290, SCENARIO_RESTRICTIONS_BYTES)).flatMap((value, index) => value ? [index + 1] : []),
     authored: false
   };
 }
