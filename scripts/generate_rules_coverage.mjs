@@ -33,7 +33,7 @@ const RULE_FILES = {
     recordBytes: RACE_BYTES,
     expectedRecords: RACE_RECORDS,
     expectedBytes: RACE_BYTES * RACE_RECORDS,
-    status: "decoded-writable",
+    status: "decoded-writable-with-preserved-record-ranges",
     label: "Race override table"
   },
   "Data Caste": {
@@ -41,7 +41,7 @@ const RULE_FILES = {
     recordBytes: CASTE_BYTES,
     expectedRecords: CASTE_RECORDS,
     expectedBytes: CASTE_BYTES * CASTE_RECORDS,
-    status: "decoded-writable",
+    status: "decoded-writable-with-preserved-record-ranges",
     label: "Caste override table"
   }
 };
@@ -58,16 +58,16 @@ const FIELD_OWNERSHIP = {
   ],
   "Data Race": [
     { offset: 0, size: 96, name: "Combat, abilities, attributes", internal: "plusminustohit/specialability/drvbonus/attbonus/minmax", status: "decoded-writable" },
-    { offset: 96, size: 16, name: "Reserved race words", internal: "spare[8]", status: "decoded-writable" },
+    { offset: 96, size: 16, name: "Reserved race words", internal: "compatibility annex", status: "preserve-only" },
     { offset: 112, size: 222, name: "Conditions, movement, caste compatibility, age, item, and portrait fields", internal: "conditions..canregenerate", status: "decoded-writable" },
     { offset: 334, size: 12, name: "Default portrait set, item masks, descriptors", internal: "defaulticonset/itemtypes/descriptors", status: "decoded-writable" },
-    { offset: 346, size: 62, name: "Reserved race tail", internal: "spacer[31]", status: "decoded-writable" }
+    { offset: 346, size: 62, name: "Reserved race tail", internal: "compatibility annex", status: "preserve-only" }
   ],
   "Data Caste": [
     { offset: 0, size: 240, name: "Abilities, spellcasting, attributes, conditions, and level-up values", internal: "specialability..hand2hand", status: "decoded-writable" },
-    { offset: 240, size: 8, name: "Reserved caste words", internal: "spare1/spare2", status: "decoded-writable" },
+    { offset: 240, size: 8, name: "Reserved caste words", internal: "compatibility annex", status: "preserve-only" },
     { offset: 248, size: 202, name: "Class, movement, victory points, starting items, attacks, items, icon, spell caps", internal: "casteclass..spellssofar", status: "decoded-writable" },
-    { offset: 450, size: 126, name: "Reserved caste tail", internal: "spacer[63]", status: "decoded-writable" }
+    { offset: 450, size: 126, name: "Reserved caste tail", internal: "compatibility annex", status: "preserve-only" }
   ]
 };
 
@@ -161,10 +161,10 @@ const output = {
       { start: SPELL_RECORD_BYTES, endExclusive: null, status: "preserved-known", field: "Data Spell packaging tail", reason: "Runtime reads only 105 records before opening resource evidence." }
     ],
     "Data Race": [
-      { start: 0, endExclusive: RACE_BYTES * RACE_RECORDS, status: "decoded-writable", field: "30 race override records" }
+      { start: 0, endExclusive: RACE_BYTES * RACE_RECORDS, status: "decoded-writable-with-preserved-record-ranges", field: "30 race override records", reason: "Semantic fields compile canonically; offsets 96..111 and 346..407 in each imported row remain annex-only." }
     ],
     "Data Caste": [
-      { start: 0, endExclusive: CASTE_BYTES * CASTE_RECORDS, status: "decoded-writable", field: "30 caste override records" }
+      { start: 0, endExclusive: CASTE_BYTES * CASTE_RECORDS, status: "decoded-writable-with-preserved-record-ranges", field: "30 caste override records", reason: "Semantic fields compile canonically; offsets 240..247 and 450..575 in each imported row remain annex-only." }
     ]
   },
   fieldOwnership: FIELD_OWNERSHIP,
@@ -211,13 +211,13 @@ const output = {
     spellRecords: "complete-semantic-writer-fixture-proven",
     spellTail: "imported-annex-only",
     spellResources: "spell-name-str-writer-safe-existing-resource",
-    raceRecords: "complete-semantic-writer-fixture-proven",
-    casteRecords: "complete-semantic-writer-fixture-proven",
+    raceRecords: "semantic-writer-plus-annex-ranges-fixture-proven",
+    casteRecords: "semantic-writer-plus-annex-ranges-fixture-proven",
     raceCasteNames: "project-label-no-export"
   },
   authoritativeCompiler: {
-    fresh: "Spell, race, and caste rows compile every native byte from canonical semantic fields; rawBytes is omitted and never consulted.",
-    imported: "Authored rows replace their complete native row. Unchanged imported rows and malformed file tails are restored only from the compatibility annex.",
+    fresh: "Spell rows compile every byte from canonical semantics. Race and caste rows compile semantic fields and deterministically zero reserved compatibility ranges; rawBytes and spare/spacer fields are omitted and never consulted.",
+    imported: "Authored race and caste rows replace semantic ranges while restoring only declared reserved ranges from the compatibility annex. Unchanged imported rows and malformed file tails are also annex-only.",
     evidence: [
       "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
       "src-tauri/src/realmz/rules_validation.rs:rule_writers_reject_malformed_fixed_arrays",
@@ -263,7 +263,11 @@ function classifyRuleFile(fileName, config, bytes) {
     records,
     trailingBytes,
     status: malformed ? "malformed-preserve-only" : config.status,
-    writerStatus: malformed ? "preserve-only" : "complete-semantic-writer-fixture-proven"
+    writerStatus: malformed
+      ? "preserve-only"
+      : fileName === "Data Spell"
+        ? "complete-semantic-writer-fixture-proven"
+        : "semantic-writer-plus-annex-ranges-fixture-proven"
   };
 }
 

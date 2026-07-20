@@ -1913,17 +1913,6 @@ fn validate_rules_overrides(
                 ));
             }
         }
-        for (label, actual, expected) in [
-            ("spare", race.spare.as_ref().map(Vec::len), 8),
-            ("spacer", race.spacer.as_ref().map(Vec::len), 31),
-        ] {
-            if let Some(actual) = actual.filter(|actual| *actual != expected) {
-                errors.push(format!(
-                    "Race override {} {label} must contain {expected} words; found {actual}.",
-                    race.id
-                ));
-            }
-        }
         if race.max_age < 0 {
             warnings.push(format!("Race override {} has a negative max age.", race.id));
         }
@@ -1998,18 +1987,6 @@ fn validate_rules_overrides(
                         values.len()
                     ));
                 }
-            }
-        }
-        for (label, actual, expected) in [
-            ("spare1", caste.spare1.as_ref().map(Vec::len), 2),
-            ("spare2", caste.spare2.as_ref().map(Vec::len), 2),
-            ("spacer", caste.spacer.as_ref().map(Vec::len), 63),
-        ] {
-            if let Some(actual) = actual.filter(|actual| *actual != expected) {
-                errors.push(format!(
-                    "Caste override {} {label} must contain {expected} words; found {actual}.",
-                    caste.id
-                ));
             }
         }
         for item_id in caste.start_items.iter().filter(|item_id| **item_id < 0) {

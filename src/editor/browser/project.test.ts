@@ -91,7 +91,7 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in project.scenario.supportFile!).toBe(false);
   });
 
-  it("drops legacy spell, race, and caste byte identity during normalization and edits", () => {
+  it("drops legacy rule byte identity and compatibility words during normalization and edits", () => {
     const project = createBrowserProject("Legacy rule bytes");
     project.spellOverrides = [{
       ...emptySpellOverride(16),
@@ -123,14 +123,14 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in normalized.spellOverrides[0]).toBe(false);
     expect(updatedSpell.spellOverrides[0].cost).toBe(42);
     expect("rawBytes" in updatedSpell.spellOverrides[0]).toBe(false);
-    expect(normalized.raceOverrides[0].spare?.[0]).toBe(123);
-    expect(normalized.raceOverrides[0].spacer?.[30]).toBe(-321);
+    expect("spare" in normalized.raceOverrides[0]).toBe(false);
+    expect("spacer" in normalized.raceOverrides[0]).toBe(false);
     expect("rawBytes" in normalized.raceOverrides[0]).toBe(false);
     expect(updatedRace.raceOverrides[0].baseMove).toBe(14);
     expect("rawBytes" in updatedRace.raceOverrides[0]).toBe(false);
-    expect(normalized.casteOverrides[0].spare1?.[0]).toBe(456);
-    expect(normalized.casteOverrides[0].spare2?.[1]).toBe(-654);
-    expect(normalized.casteOverrides[0].spacer?.[62]).toBe(789);
+    expect("spare1" in normalized.casteOverrides[0]).toBe(false);
+    expect("spare2" in normalized.casteOverrides[0]).toBe(false);
+    expect("spacer" in normalized.casteOverrides[0]).toBe(false);
     expect("rawBytes" in normalized.casteOverrides[0]).toBe(false);
     expect(updatedCaste.casteOverrides[0].startMoney).toBe(223);
     expect("rawBytes" in updatedCaste.casteOverrides[0]).toBe(false);
@@ -329,16 +329,14 @@ describe("browser project native manifest validation", () => {
       ...parsed.raceOverrides[0],
       plusMinusToHit: [1],
       ageRange: [[2]],
-      ageChange: [[3]],
-      spacer: [4]
+      ageChange: [[3]]
     }];
     project.casteOverrides = [{
       ...parsed.casteOverrides[0],
       specialAbility: [[5]],
       spellcasters: [[6]],
       victory: [7],
-      startItems: [8],
-      spacer: [9]
+      startItems: [8]
     }];
 
     const normalized = normalizeBrowserProject(project);
@@ -349,14 +347,12 @@ describe("browser project native manifest validation", () => {
     expect(race.ageRange).toHaveLength(5);
     expect(race.ageRange[0]).toEqual([2, 0]);
     expect(race.ageChange[0]).toHaveLength(15);
-    expect(race.spacer).toHaveLength(31);
     expect(caste.specialAbility).toHaveLength(2);
     expect(caste.specialAbility[0]).toHaveLength(14);
     expect(caste.spellcasters).toHaveLength(4);
     expect(caste.spellcasters[0]).toEqual([6, 0, 0]);
     expect(caste.victory).toHaveLength(30);
     expect(caste.startItems).toHaveLength(20);
-    expect(caste.spacer).toHaveLength(63);
   });
 
   it("parses player-map markers into canonical semantic slots", () => {

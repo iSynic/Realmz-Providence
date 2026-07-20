@@ -771,7 +771,7 @@ function normalizedSpellOverride(record: Project["spellOverrides"][number]): Pro
 }
 
 function normalizedRaceOverride(record: Project["raceOverrides"][number]): Project["raceOverrides"][number] {
-  const { rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
+  const { rawBytes: _legacyRawBytes, spare: _legacySpare, spacer: _legacySpacer, ...canonical } = record as typeof record & { rawBytes?: number[]; spare?: number[]; spacer?: number[] };
   return {
     ...canonical,
     plusMinusToHit: normalizedFixedArray(record.plusMinusToHit, 8, 0),
@@ -779,19 +779,23 @@ function normalizedRaceOverride(record: Project["raceOverrides"][number]): Proje
     drvBonus: normalizedFixedArray(record.drvBonus, 8, 0),
     attBonus: normalizedFixedArray(record.attBonus, 6, 0),
     minMax: normalizedFixedArray(record.minMax, 12, 0),
-    spare: record.spare === undefined ? undefined : normalizedFixedArray(record.spare, 8, 0),
     conditions: normalizedFixedArray(record.conditions, 40, 0),
     numOfAttacks: normalizedFixedArray(record.numOfAttacks, 2, 0),
     canCaste: normalizedFixedArray(record.canCaste, 30, 0),
     ageRange: Array.from({ length: 5 }, (_, row) => normalizedFixedArray(record.ageRange?.[row], 2, 0)),
     ageChange: Array.from({ length: 5 }, (_, row) => normalizedFixedArray(record.ageChange?.[row], 15, 0)),
-    itemTypes: normalizedFixedArray(record.itemTypes, 2, 0),
-    spacer: record.spacer === undefined ? undefined : normalizedFixedArray(record.spacer, 31, 0)
+    itemTypes: normalizedFixedArray(record.itemTypes, 2, 0)
   };
 }
 
 function normalizedCasteOverride(record: Project["casteOverrides"][number]): Project["casteOverrides"][number] {
-  const { rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
+  const {
+    rawBytes: _legacyRawBytes,
+    spare1: _legacySpare1,
+    spare2: _legacySpare2,
+    spacer: _legacySpacer,
+    ...canonical
+  } = record as typeof record & { rawBytes?: number[]; spare1?: number[]; spare2?: number[]; spacer?: number[] };
   return {
     ...canonical,
     specialAbility: Array.from({ length: 2 }, (_, row) => normalizedFixedArray(record.specialAbility?.[row], 14, 0)),
@@ -806,13 +810,10 @@ function normalizedCasteOverride(record: Project["casteOverrides"][number]): Pro
     toHit: normalizedFixedArray(record.toHit, 2, 0),
     missile: normalizedFixedArray(record.missile, 2, 0),
     hand2Hand: normalizedFixedArray(record.hand2Hand, 2, 0),
-    spare1: record.spare1 === undefined ? undefined : normalizedFixedArray(record.spare1, 2, 0),
-    spare2: record.spare2 === undefined ? undefined : normalizedFixedArray(record.spare2, 2, 0),
     victory: normalizedFixedArray(record.victory, 30, 0),
     startItems: normalizedFixedArray(record.startItems, 20, 0),
     attacks: normalizedFixedArray(record.attacks, 10, 0),
-    itemTypes: normalizedFixedArray(record.itemTypes, 2, 0),
-    spacer: record.spacer === undefined ? undefined : normalizedFixedArray(record.spacer, 63, 0)
+    itemTypes: normalizedFixedArray(record.itemTypes, 2, 0)
   };
 }
 
@@ -1294,11 +1295,9 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
     validateLength(errors, `Race ${race.id} DRVs`, race.drvBonus, 8);
     validateLength(errors, `Race ${race.id} Att Bonus`, race.attBonus, 6);
     validateLength(errors, `Race ${race.id} Attribute Min/Max`, race.minMax, 12);
-    if (race.spare) validateLength(errors, `Race ${race.id} Spare Words`, race.spare, 8);
     validateLength(errors, `Race ${race.id} Conditions`, race.conditions, 40);
     validateLength(errors, `Race ${race.id} Caste Permissions`, race.canCaste, 30);
     validateLength(errors, `Race ${race.id} Item Type Words`, race.itemTypes, 2);
-    if (race.spacer) validateLength(errors, `Race ${race.id} Spacer Words`, race.spacer, 31);
     for (const [field, values] of [
       ["+/- To Hit", race.plusMinusToHit],
       ["Special Ability", race.specialAbility],
@@ -1320,8 +1319,6 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
     ] as const) validateRange(errors, `Race ${race.id} ${field}`, value, -32768, 32767, "signed 16-bit");
     validateNumberArray(errors, `Race ${race.id} Caste Permissions`, race.canCaste, 0, 255, "unsigned byte");
     validateNumberArray(errors, `Race ${race.id} Item Type Words`, race.itemTypes, -2147483648, 2147483647, "signed 32-bit");
-    if (race.spare) validateNumberArray(errors, `Race ${race.id} Spare Words`, race.spare, -32768, 32767, "signed 16-bit");
-    if (race.spacer) validateNumberArray(errors, `Race ${race.id} Spacer Words`, race.spacer, -32768, 32767, "signed 16-bit");
     validateRaceMatrices(race.id, race.ageRange, race.ageChange, errors);
     if (race.minMax.length >= 12) validateMinMaxPairs(`Race ${race.id}`, race.minMax, warnings);
   }
@@ -1351,13 +1348,7 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
     validateLength(errors, `Caste ${caste.id} Bonus Attack Rounds`, caste.attacks, 10);
     validateNumberArray(errors, `Caste ${caste.id} Bonus Attack Rounds`, caste.attacks, 0, 255, "unsigned byte");
     validateLength(errors, `Caste ${caste.id} Item Type Words`, caste.itemTypes, 2);
-    if (caste.spare1) validateLength(errors, `Caste ${caste.id} Spare 1 Words`, caste.spare1, 2);
-    if (caste.spare2) validateLength(errors, `Caste ${caste.id} Spare 2 Words`, caste.spare2, 2);
-    if (caste.spacer) validateLength(errors, `Caste ${caste.id} Spacer Words`, caste.spacer, 63);
     validateNumberArray(errors, `Caste ${caste.id} Item Type Words`, caste.itemTypes, -2147483648, 2147483647, "signed 32-bit");
-    if (caste.spare1) validateNumberArray(errors, `Caste ${caste.id} Spare 1 Words`, caste.spare1, -32768, 32767, "signed 16-bit");
-    if (caste.spare2) validateNumberArray(errors, `Caste ${caste.id} Spare 2 Words`, caste.spare2, -32768, 32767, "signed 16-bit");
-    if (caste.spacer) validateNumberArray(errors, `Caste ${caste.id} Spacer Words`, caste.spacer, -32768, 32767, "signed 16-bit");
     for (const [field, value] of [
       ["Can Use Missile Weapons", caste.canUseMissile],
       ["Missile Bonus Damage", caste.getsMissileBonus],

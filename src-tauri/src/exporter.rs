@@ -2,10 +2,11 @@ use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot}
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::generated::native_manifest_policy::{
     authored_optional_semantic_file_paths, authored_project_path_semantic_file_expectations,
-    AUTHORED_OPTIONAL_SEMANTIC_FILES, AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS,
-    AUTHORED_RESOURCE_SIDECAR_PATHS, AUTHORED_RUNTIME_BASELINE_FILES,
-    AUTHORED_RUNTIME_BASELINE_FILE_PATHS, AUTHORED_SCENARIO_ITEM_RECORDS,
-    AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES, AUTHORED_TRIGGER_TABLE_PATHS,
+    RealmzNativeCompatibilityRange, AUTHORED_OPTIONAL_SEMANTIC_FILES,
+    AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS, AUTHORED_RESOURCE_SIDECAR_PATHS,
+    AUTHORED_RUNTIME_BASELINE_FILES, AUTHORED_RUNTIME_BASELINE_FILE_PATHS,
+    AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES,
+    AUTHORED_TRIGGER_TABLE_PATHS, CASTE_COMPATIBILITY_RANGES, RACE_COMPATIBILITY_RANGES,
 };
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
@@ -1307,6 +1308,7 @@ fn write_race_overrides_for_export(
             .map(|record| (record.id, record.authored))
             .collect(),
         write_race_overrides(records)?,
+        RACE_COMPATIBILITY_RANGES,
     )
 }
 
@@ -1336,6 +1338,7 @@ fn write_caste_overrides_for_export(
             .map(|record| (record.id, record.authored))
             .collect(),
         write_caste_overrides(records)?,
+        CASTE_COMPATIBILITY_RANGES,
     )
 }
 
@@ -1347,6 +1350,7 @@ fn write_rule_overrides_for_export(
     record_bytes: usize,
     records: Vec<(usize, bool)>,
     encoded: Vec<u8>,
+    compatibility_ranges: &[RealmzNativeCompatibilityRange],
 ) -> Result<()> {
     if records.is_empty() {
         return Ok(());
@@ -1358,6 +1362,7 @@ fn write_rule_overrides_for_export(
     .ok_or_else(|| {
         ProvidenceError::message(format!("Missing compatibility annex source {name}."))
     })?;
+    let source = raw.clone();
     let mut body = raw;
     let body_bytes = body.len() / record_bytes * record_bytes;
     let tail = body.split_off(body_bytes);
@@ -1379,6 +1384,13 @@ fn write_rule_overrides_for_export(
             ProvidenceError::message(format!("{name} writer did not produce record {id}."))
         })?;
         body[start..end].copy_from_slice(record);
+        if end <= body_bytes {
+            for range in compatibility_ranges {
+                let range_start = start + range.offset;
+                let range_end = range_start + range.bytes;
+                body[range_start..range_end].copy_from_slice(&source[range_start..range_end]);
+            }
+        }
     }
     body.extend_from_slice(&tail);
     write_if_nonempty(manifest, name, body)
@@ -2963,15 +2975,13 @@ mod tests {
     }
 
     #[test]
-    fn fresh_rule_exports_use_fixed_compiler_baselines_and_semantic_spare_words() {
+    fn fresh_rule_exports_use_fixed_compiler_baselines_and_zero_compatibility_words() {
         let mut race =
             crate::realmz::parse_race_overrides(&vec![0; 20 * crate::realmz::RACE_BYTES])
                 .pop()
                 .unwrap();
         race.authored = true;
         race.base_move = 11;
-        race.spare.as_mut().unwrap()[0] = 123;
-        race.spacer.as_mut().unwrap()[30] = -321;
 
         let mut caste =
             crate::realmz::parse_caste_overrides(&vec![0; 21 * crate::realmz::CASTE_BYTES])
@@ -2979,9 +2989,6 @@ mod tests {
                 .unwrap();
         caste.authored = true;
         caste.start_money = 25;
-        caste.spare1.as_mut().unwrap()[0] = 456;
-        caste.spare2.as_mut().unwrap()[1] = -654;
-        caste.spacer.as_mut().unwrap()[62] = 789;
 
         let mut manifest = NativeScenarioManifest::default();
         write_race_overrides_for_export(&mut manifest, None, std::slice::from_ref(&race)).unwrap();
@@ -3010,19 +3017,19 @@ mod tests {
         );
         let race_record =
             &race_bytes[19 * crate::realmz::RACE_BYTES..20 * crate::realmz::RACE_BYTES];
-        assert_eq!(crate::realmz::i16_be(race_record, 96), 123);
+        assert_eq!(crate::realmz::i16_be(race_record, 96), 0);
         assert_eq!(crate::realmz::i16_be(race_record, 196), 11);
-        assert_eq!(crate::realmz::i16_be(race_record, 406), -321);
+        assert_eq!(crate::realmz::i16_be(race_record, 406), 0);
         assert_ne!(
             race_record[350], 0xab,
             "fresh raw bytes must not leak into output"
         );
         let caste_record =
             &caste_bytes[20 * crate::realmz::CASTE_BYTES..21 * crate::realmz::CASTE_BYTES];
-        assert_eq!(crate::realmz::i16_be(caste_record, 240), 456);
-        assert_eq!(crate::realmz::i16_be(caste_record, 246), -654);
+        assert_eq!(crate::realmz::i16_be(caste_record, 240), 0);
+        assert_eq!(crate::realmz::i16_be(caste_record, 246), 0);
         assert_eq!(crate::realmz::i16_be(caste_record, 384), 25);
-        assert_eq!(crate::realmz::i16_be(caste_record, 574), 789);
+        assert_eq!(crate::realmz::i16_be(caste_record, 574), 0);
         assert_eq!(
             caste_record[500], 0,
             "fresh unspecified spacer words must be deterministic"

@@ -1229,9 +1229,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceScenarioRaceOverride",
       "x-providence-rust-name": "ScenarioRaceOverride",
-      "x-providence-rust-optional": ["spare", "spacer"],
       "x-providence-rust-default": ["displayName", "authored"],
-      "x-providence-rust-skip-none": ["spare", "spacer"],
       "required": ["id", "plusMinusToHit", "specialAbility", "drvBonus", "attBonus", "minMax", "conditions", "maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "numOfAttacks", "canCaste", "ageRange", "ageChange", "canRegenerate", "defaultIconSet", "itemTypes", "descriptors"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "maximum": 29, "x-providence-rust-type": "usize" },
@@ -1241,7 +1239,6 @@
         "drvBonus": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "attBonus": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "minMax": { "type": "array", "minItems": 12, "maxItems": 12, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
-        "spare": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
         "conditions": { "type": "array", "minItems": 40, "maxItems": 40, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "maxAge": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "doesNotDie": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
@@ -1257,7 +1254,6 @@
         "defaultIconSet": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "itemTypes": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647, "x-providence-rust-type": "i32" } },
         "descriptors": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
-        "spacer": { "type": "array", "minItems": 31, "maxItems": 31, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }
@@ -1267,9 +1263,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceScenarioCasteOverride",
       "x-providence-rust-name": "ScenarioCasteOverride",
-      "x-providence-rust-optional": ["spare1", "spare2", "spacer"],
       "x-providence-rust-default": ["displayName", "authored"],
-      "x-providence-rust-skip-none": ["spare1", "spare2", "spacer"],
       "required": ["id", "specialAbility", "drvBonus", "attBonus", "spellcasters", "minMax", "conditions", "canUseMissile", "getsMissileBonus", "stamina", "strength", "dodge", "toHit", "missile", "hand2Hand", "casteClass", "minimumAgeGroup", "moveBonus", "magRes", "twoHand", "maxStaminaBonus", "bonusAttacks", "maxAttacks", "victory", "startMoney", "startItems", "attacks", "itemTypes", "defaultIcon", "maxSpellsAttacks", "spellsSoFar"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "maximum": 29, "x-providence-rust-type": "usize" },
@@ -1288,8 +1282,6 @@
         "toHit": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "missile": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
         "hand2Hand": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } },
-        "spare1": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
-        "spare2": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
         "casteClass": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "minimumAgeGroup": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "moveBonus": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
@@ -1306,7 +1298,6 @@
         "defaultIcon": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "maxSpellsAttacks": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "spellsSoFar": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
-        "spacer": { "type": "array", "minItems": 63, "maxItems": 63, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

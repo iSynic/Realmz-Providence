@@ -50,6 +50,29 @@ export const REALMZ_NATIVE_LAYOUT = {
   "casteOverrideRecords": 30
 } as const;
 
+export const REALMZ_NATIVE_COMPATIBILITY_RANGES = {
+  "race": [
+    {
+      "offset": 96,
+      "bytes": 16
+    },
+    {
+      "offset": 346,
+      "bytes": 62
+    }
+  ],
+  "caste": [
+    {
+      "offset": 240,
+      "bytes": 8
+    },
+    {
+      "offset": 450,
+      "bytes": 126
+    }
+  ]
+} as const;
+
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;
 
 export const AUTHORED_STARTUP_FILES = {

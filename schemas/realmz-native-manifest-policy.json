@@ -1,5 +1,5 @@
 {
-  "contractVersion": 12,
+  "contractVersion": 13,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -67,8 +67,16 @@
       "spellOverrideRecords": 105,
       "raceRecordBytes": 408,
       "raceOverrideRecords": 30,
+      "raceCompatibilityRanges": [
+        { "offset": 96, "bytes": 16 },
+        { "offset": 346, "bytes": 62 }
+      ],
       "casteRecordBytes": 576,
-      "casteOverrideRecords": 30
+      "casteOverrideRecords": 30,
+      "casteCompatibilityRanges": [
+        { "offset": 240, "bytes": 8 },
+        { "offset": 450, "bytes": 126 }
+      ]
     }
   },
   "authoredBaseline": {

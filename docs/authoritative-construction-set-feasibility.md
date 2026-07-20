@@ -76,8 +76,8 @@ reimport without an annex.
 The eighth slice completes fresh race/caste rule tables and corrects a stale capacity assumption.
 Scenario `Data Race` is 30 x 408 bytes, not the 70 records used by the shared race library/name
 catalog; `Data Caste` is 30 x 576 bytes. Both compilers now start from one checked-in, hash-gated
-Realmz rules baseline and overlay canonical records, while the project model explicitly owns the
-native `spare`/`spacer` words. Fresh records carry no `rawBytes`; imported records, aligned legacy
+Realmz rules baseline and overlay canonical records. The later compatibility-range slice removes
+native `spare`/`spacer` words from the project model. Fresh records carry no `rawBytes`; imported records, aligned legacy
 rows, and malformed tails retain compatibility preservation. The ownership proof now carries one
 race and one caste through TypeScript compilation, Rust save/open, byte-identical native output,
 semantic reimport, and the unmodified Realmz runtime.
@@ -719,24 +719,22 @@ rows in both compilers, and the imported-fixture gate continues to require exact
 identity.
 
 The sixty-eighth slice removes `ScenarioRaceOverride.rawBytes` from schema-v5 canonical projects.
-Browser and desktop import decode every byte of each complete 408-byte `Data Race` row into
-canonical race mechanics plus the bounded compatibility-only `spare[8]` and `spacer[31]` word
-arrays; both writers rebuild the complete row from those fields. Untouched imported rows, row
-capacity, and malformed tails remain annex-owned, while the two preserve-only arrays remain
-explicit rather than being assigned invented semantics. Old project JSON remains load-tolerant by
-discarding obsolete embedded rows without losing either decoded mechanics or those bounded words.
+Browser and desktop import decode the semantic fields of each complete 408-byte `Data Race` row
+into canonical race mechanics. The bounded `spare[8]` and `spacer[31]` ranges are now excluded
+from canonical records and restored only from the compatibility annex when an imported row is
+edited. Untouched imported rows, row capacity, and malformed tails also remain annex-owned. Old
+project JSON remains load-tolerant while discarding obsolete embedded rows and compatibility fields.
 Browser normalization, rule editing, semantic mapping, and the generated TypeScript/Rust contract
 enforce the same boundary. The authoritative proof poison-tests obsolete embedded race rows in
 both compilers, and the imported-fixture gate continues to require exact no-edit byte identity.
 
 The sixty-ninth slice removes `ScenarioCasteOverride.rawBytes` from schema-v5 canonical projects.
-Browser and desktop import decode every byte of each complete 576-byte `Data Caste` row into
-canonical caste mechanics plus the bounded compatibility-only `spare1[2]`, `spare2[2]`, and
-`spacer[63]` word arrays; both writers rebuild the complete row from those fields. Untouched
-imported rows, row capacity, and malformed tails remain annex-owned, while the three preserve-only
-arrays remain explicit rather than being assigned invented semantics. Old project JSON remains
-load-tolerant by discarding obsolete embedded rows without losing decoded mechanics or bounded
-words. Browser normalization, rule editing, semantic mapping, and the generated TypeScript/Rust
+Browser and desktop import decode the semantic fields of each complete 576-byte `Data Caste` row
+into canonical caste mechanics. The bounded `spare1[2]`, `spare2[2]`, and `spacer[63]` ranges are
+now excluded from canonical records and restored only from the compatibility annex when an
+imported row is edited. Untouched imported rows, row capacity, and malformed tails also remain
+annex-owned. Old project JSON remains load-tolerant while discarding obsolete embedded rows and
+compatibility fields. Browser normalization, rule editing, semantic mapping, and the generated TypeScript/Rust
 contract enforce the same boundary. The authoritative proof poison-tests obsolete embedded caste
 rows in both compilers, and the imported-fixture gate continues to require exact no-edit byte
 identity.
@@ -1326,14 +1324,14 @@ A pragmatic sequence is:
     byte identity, discard obsolete rows during project migration and all edit paths, compile every
     byte from canonical fields, and keep unchanged imported rows, short-table shape, noncanonical
     Boolean encodings, and malformed tails only in the compatibility annex.
-16. **Implemented for race overrides:** remove duplicate 408-byte row identity, retain the bounded
-    `spare[8]` and `spacer[31]` words as explicit compatibility-only fields, discard obsolete raw
-    rows during project migration and all edit paths, and keep unchanged imported rows, capacity,
-    and malformed tails in the compatibility annex.
-17. **Implemented for caste overrides:** remove duplicate 576-byte row identity, retain the bounded
-    `spare1[2]`, `spare2[2]`, and `spacer[63]` words as explicit compatibility-only fields, discard
-    obsolete raw rows during project migration and all edit paths, and keep unchanged imported
-    rows, capacity, and malformed tails in the compatibility annex.
+16. **Implemented for race overrides:** remove duplicate 408-byte row identity and the bounded
+    `spare[8]` and `spacer[31]` compatibility fields from canonical records; discard obsolete raw
+    rows and compatibility fields during project migration and all edit paths; deterministically
+    zero those ranges for fresh output; and restore them only from the annex for imported edits.
+17. **Implemented for caste overrides:** remove duplicate 576-byte row identity and the bounded
+    `spare1[2]`, `spare2[2]`, and `spacer[63]` compatibility fields from canonical records; discard
+    obsolete raw rows and compatibility fields during migration and edit paths; deterministically
+    zero those ranges for fresh output; and restore them only from the annex for imported edits.
 18. **Implemented for scenario metadata singletons:** remove duplicate `Data CI`, `Data RI`, and
     `Global` byte identity from the canonical DTOs; migrate older JSON without losing decoded
     semantics; and retain untouched singleton identity, noncanonical padding/Boolean encodings,
@@ -1460,10 +1458,10 @@ Legend:
 
 | Native file/family | Current ownership | Fresh authoritative target | Evidence/remaining issue |
 | --- | --- | --- | --- |
-| `Data Spell` | Fully generated + legacy row/tail annex | Emit exactly 105 x 30 bytes for fresh custom spells | Native-manifest contract v12 owns the 105-slot authored capacity. Canonical spell records expose no `rawBytes`, and both compilers emit the runtime's fixed 3,150-byte table without an annex. Authored rows compile all 30 bytes from semantics; unchanged imported rows, short-file shapes, noncanonical nonzero Boolean encodings, and trailing bytes remain annex-only compatibility data. |
+| `Data Spell` | Fully generated + legacy row/tail annex | Emit exactly 105 x 30 bytes for fresh custom spells | Native-manifest contract v13 owns the 105-slot authored capacity. Canonical spell records expose no `rawBytes`, and both compilers emit the runtime's fixed 3,150-byte table without an annex. Authored rows compile all 30 bytes from semantics; unchanged imported rows, short-file shapes, noncanonical nonzero Boolean encodings, and trailing bytes remain annex-only compatibility data. |
 | `Data Spell.rsrc` / `.rsf` / AppleDouble form | Generated + compatibility | Build custom spell `STR# 5000..5006` resources from canonical names | Both compilers create missing name families and preserve imported entry metadata and unrelated resources. Byte parity and semantic reimport are proof-gated. |
-| `Data Race` | Fully generated + legacy row/tail annex | Emit exactly 30 x 408 bytes | Native-manifest contract v12 owns the 30-slot authored capacity and checks it against the shared hash-gated baseline. Canonical race records expose no `rawBytes`; both compilers replace authored baseline rows from decoded fields covering all 408 bytes. The still-uninterpreted `spare[8]` and `spacer[31]` words remain explicit compatibility-only fields; unchanged imported rows, capacity, and malformed tails are annex-only. |
-| `Data Caste` | Fully generated + legacy row/tail annex | Emit exactly 30 x 576 bytes | Native-manifest contract v12 owns the 30-slot authored capacity and checks it against the shared hash-gated baseline. Canonical caste records expose no `rawBytes`; both compilers replace authored baseline rows from decoded fields covering all 576 bytes. The still-uninterpreted `spare1[2]`, `spare2[2]`, and `spacer[63]` words remain explicit compatibility-only fields; unchanged imported rows, capacity, and malformed tails are annex-only. |
+| `Data Race` | Fully generated semantic core + bounded legacy annex | Emit exactly 30 x 408 bytes | Native-manifest contract v13 owns the 30-slot authored capacity, shared hash-gated baseline, and compatibility ranges. Canonical race records contain only interpreted mechanics. Fresh output deterministically zeros the reserved `spare[8]` and `spacer[31]` ranges; imported edits restore those exact ranges only from the annex. Unchanged rows, capacity, and malformed tails are also annex-only. |
+| `Data Caste` | Fully generated semantic core + bounded legacy annex | Emit exactly 30 x 576 bytes | Native-manifest contract v13 owns the 30-slot authored capacity, shared hash-gated baseline, and compatibility ranges. Canonical caste records contain only interpreted mechanics. Fresh output deterministically zeros the reserved `spare1[2]`, `spare2[2]`, and `spacer[63]` ranges; imported edits restore those exact ranges only from the annex. Unchanged rows, capacity, and malformed tails are also annex-only. |
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
 | `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Native-manifest contract v11 owns the 201-row, four-byte-header, ten-range geometry and checks canonical cardinalities. Both compilers generate it without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
@@ -1581,8 +1579,8 @@ must not be called fresh-authoritative merely because imported round trips are f
 4. **Preserved bytes inside records:** resolved for whole source-record and source-file identity in
    canonical scenario DTOs. Shell/security, support-file, custom-landlook, contact, restriction,
    and global-hook DTOs expose no raw fields at all. Race and caste rows no longer retain byte
-   identity, but their bounded `spare`/`spacer` words remain explicit compatibility-only fields
-   pending interpretation or narrower annex isolation; marker and `Data CS` identity/tails and
+   identity or bounded `spare`/`spacer` fields; those native ranges are restored only from an
+   imported compatibility annex. Marker and `Data CS` identity/tails and
    support-file editor state are annex-owned, and `Global`
    reserved slots are recovered only as bounded annex ranges. Remaining families must follow the
    same pattern rather than treating compatibility bytes as normal canonical fields.

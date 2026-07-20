@@ -44,12 +44,6 @@ pub(super) fn validate_race_storage(record: &ScenarioRaceOverride) -> Result<()>
             record.id
         )));
     }
-    if let Some(spare) = &record.spare {
-        validate_exact_length("Race override", record.id, "spare words", spare.len(), 8)?;
-    }
-    if let Some(spacer) = &record.spacer {
-        validate_exact_length("Race override", record.id, "spacer words", spacer.len(), 31)?;
-    }
     Ok(())
 }
 
@@ -85,15 +79,6 @@ pub(super) fn validate_caste_storage(record: &ScenarioCasteOverride) -> Result<(
             "Caste override {} spellcaster rows must have exactly 3 values",
             record.id
         )));
-    }
-    for (field, values, expected) in [
-        ("spare1 words", record.spare1.as_ref(), 2),
-        ("spare2 words", record.spare2.as_ref(), 2),
-        ("spacer words", record.spacer.as_ref(), 63),
-    ] {
-        if let Some(values) = values {
-            validate_exact_length("Caste override", record.id, field, values.len(), expected)?;
-        }
     }
     Ok(())
 }

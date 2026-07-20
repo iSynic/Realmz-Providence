@@ -457,7 +457,6 @@ export function emptyRaceOverride(id: number): ScenarioRaceOverride {
     drvBonus: new Array(8).fill(0),
     attBonus: new Array(6).fill(0),
     minMax: [3, 25, 3, 25, 3, 25, 3, 25, 3, 25, 3, 25],
-    spare: new Array(8).fill(0),
     conditions: new Array(40).fill(0),
     maxAge: 70,
     doesNotDie: 0,
@@ -473,7 +472,6 @@ export function emptyRaceOverride(id: number): ScenarioRaceOverride {
     defaultIconSet: 0,
     itemTypes: [0, 0],
     descriptors: 0,
-    spacer: new Array(31).fill(0),
     authored: true,
     provenance: authoredProvenance("Data Race", id, id * RACE_BYTES, RACE_BYTES)
   };
@@ -497,8 +495,6 @@ export function emptyCasteOverride(id: number): ScenarioCasteOverride {
     toHit: [0, 0],
     missile: [0, 0],
     hand2Hand: [0, 0],
-    spare1: [0, 0],
-    spare2: [0, 0],
     casteClass: 0,
     minimumAgeGroup: 0,
     moveBonus: 0,
@@ -515,7 +511,6 @@ export function emptyCasteOverride(id: number): ScenarioCasteOverride {
     defaultIcon: 0,
     maxSpellsAttacks: 0,
     spellsSoFar: 0,
-    spacer: new Array(63).fill(0),
     authored: true,
     provenance: authoredProvenance("Data Caste", id, id * CASTE_BYTES, CASTE_BYTES)
   };

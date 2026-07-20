@@ -467,7 +467,6 @@ export const PROVIDENCE_RACE_OVERRIDE_FIELDS = [
   "drvBonus",
   "attBonus",
   "minMax",
-  "spare",
   "conditions",
   "maxAge",
   "doesNotDie",
@@ -483,7 +482,6 @@ export const PROVIDENCE_RACE_OVERRIDE_FIELDS = [
   "defaultIconSet",
   "itemTypes",
   "descriptors",
-  "spacer",
   "authored",
   "provenance"
 ] as const;
@@ -505,8 +503,6 @@ export const PROVIDENCE_CASTE_OVERRIDE_FIELDS = [
   "toHit",
   "missile",
   "hand2Hand",
-  "spare1",
-  "spare2",
   "casteClass",
   "minimumAgeGroup",
   "moveBonus",
@@ -523,7 +519,6 @@ export const PROVIDENCE_CASTE_OVERRIDE_FIELDS = [
   "defaultIcon",
   "maxSpellsAttacks",
   "spellsSoFar",
-  "spacer",
   "authored",
   "provenance"
 ] as const;
@@ -1158,7 +1153,6 @@ export type ProvidenceScenarioRaceOverride = {
   drvBonus: number[];
   attBonus: number[];
   minMax: number[];
-  spare?: number[];
   conditions: number[];
   maxAge: number;
   doesNotDie: number;
@@ -1174,7 +1168,6 @@ export type ProvidenceScenarioRaceOverride = {
   defaultIconSet: number;
   itemTypes: number[];
   descriptors: number;
-  spacer?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };
@@ -1196,8 +1189,6 @@ export type ProvidenceScenarioCasteOverride = {
   toHit: number[];
   missile: number[];
   hand2Hand: number[];
-  spare1?: number[];
-  spare2?: number[];
   casteClass: number;
   minimumAgeGroup: number;
   moveBonus: number;
@@ -1214,7 +1205,6 @@ export type ProvidenceScenarioCasteOverride = {
   defaultIcon: number;
   maxSpellsAttacks: number;
   spellsSoFar: number;
-  spacer?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };

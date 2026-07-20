@@ -2812,10 +2812,11 @@ mod tests {
                 .expect("legacy race override");
         legacy_race.id = 2;
         legacy_race.base_move = 13;
-        legacy_race.spare.as_mut().expect("race spare words")[0] = 123;
-        legacy_race.spacer.as_mut().expect("race spacer words")[30] = -321;
         let mut legacy_race_value =
             serde_json::to_value(legacy_race).expect("serialize legacy race override");
+        legacy_race_value["spare"] = serde_json::json!([123, 0, 0, 0, 0, 0, 0, 0]);
+        legacy_race_value["spacer"] =
+            serde_json::json!([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -321]);
         legacy_race_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::RACE_BYTES]);
         saved["raceOverrides"] = serde_json::json!([legacy_race_value]);
@@ -2826,11 +2827,11 @@ mod tests {
                 .expect("legacy caste override");
         legacy_caste.id = 3;
         legacy_caste.start_money = 222;
-        legacy_caste.spare1.as_mut().expect("caste spare1 words")[0] = 456;
-        legacy_caste.spare2.as_mut().expect("caste spare2 words")[1] = -654;
-        legacy_caste.spacer.as_mut().expect("caste spacer words")[62] = 789;
         let mut legacy_caste_value =
             serde_json::to_value(legacy_caste).expect("serialize legacy caste override");
+        legacy_caste_value["spare1"] = serde_json::json!([456, 0]);
+        legacy_caste_value["spare2"] = serde_json::json!([0, -654]);
+        legacy_caste_value["spacer"] = serde_json::json!(vec![789; 63]);
         legacy_caste_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::CASTE_BYTES]);
         saved["casteOverrides"] = serde_json::json!([legacy_caste_value]);
@@ -2960,13 +2961,8 @@ mod tests {
         assert_eq!(opened.spell_overrides[0].cost, 41);
         assert_eq!(opened.race_overrides[0].id, 2);
         assert_eq!(opened.race_overrides[0].base_move, 13);
-        assert_eq!(opened.race_overrides[0].spare.as_ref().unwrap()[0], 123);
-        assert_eq!(opened.race_overrides[0].spacer.as_ref().unwrap()[30], -321);
         assert_eq!(opened.caste_overrides[0].id, 3);
         assert_eq!(opened.caste_overrides[0].start_money, 222);
-        assert_eq!(opened.caste_overrides[0].spare1.as_ref().unwrap()[0], 456);
-        assert_eq!(opened.caste_overrides[0].spare2.as_ref().unwrap()[1], -654);
-        assert_eq!(opened.caste_overrides[0].spacer.as_ref().unwrap()[62], 789);
         assert_eq!(opened.scenario.shell.as_ref().unwrap().look_x, 12);
         assert_eq!(opened.scenario.security_backup.as_ref().unwrap().look_y, -19);
         assert_eq!(
@@ -3037,7 +3033,12 @@ mod tests {
         assert!(upgraded["simpleEncounters"][0].get("rawBytes").is_none());
         assert!(upgraded["spellOverrides"][0].get("rawBytes").is_none());
         assert!(upgraded["raceOverrides"][0].get("rawBytes").is_none());
+        assert!(upgraded["raceOverrides"][0].get("spare").is_none());
+        assert!(upgraded["raceOverrides"][0].get("spacer").is_none());
         assert!(upgraded["casteOverrides"][0].get("rawBytes").is_none());
+        assert!(upgraded["casteOverrides"][0].get("spare1").is_none());
+        assert!(upgraded["casteOverrides"][0].get("spare2").is_none());
+        assert!(upgraded["casteOverrides"][0].get("spacer").is_none());
         assert!(upgraded["scenario"]["contactInfo"]
             .get("rawBytes")
             .is_none());

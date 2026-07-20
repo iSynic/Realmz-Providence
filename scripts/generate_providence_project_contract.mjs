@@ -416,25 +416,25 @@ const spellOverrideFields = ["id", "range1", "range2", "queueIcon", "toHitBonus"
 expectSameArray(Object.keys(scenarioSpellOverrideSchema.properties ?? {}), spellOverrideFields, "Spell-override field inventory");
 expectSameArray(scenarioSpellOverrideSchema.required ?? [], spellOverrideFields.filter((field) => !["displayName", "description", "authored", "provenance"].includes(field)), "Spell-override authored field inventory");
 expect(!Object.hasOwn(scenarioSpellOverrideSchema, "x-providence-rust-skip-empty"), "spell overrides must not retain record-local compatibility storage");
-const raceOverrideFields = ["id", "displayName", "plusMinusToHit", "specialAbility", "drvBonus", "attBonus", "minMax", "spare", "conditions", "maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "numOfAttacks", "canCaste", "ageRange", "ageChange", "canRegenerate", "defaultIconSet", "itemTypes", "descriptors", "spacer", "authored", "provenance"];
+const raceOverrideFields = ["id", "displayName", "plusMinusToHit", "specialAbility", "drvBonus", "attBonus", "minMax", "conditions", "maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "numOfAttacks", "canCaste", "ageRange", "ageChange", "canRegenerate", "defaultIconSet", "itemTypes", "descriptors", "authored", "provenance"];
 expectSameArray(Object.keys(scenarioRaceOverrideSchema.properties ?? {}), raceOverrideFields, "Race-override field inventory");
-expectSameArray(scenarioRaceOverrideSchema.required ?? [], raceOverrideFields.filter((field) => !["displayName", "spare", "spacer", "authored", "provenance"].includes(field)), "Race-override authored field inventory");
-for (const [field, length] of [["plusMinusToHit", 8], ["specialAbility", 14], ["drvBonus", 8], ["attBonus", 6], ["minMax", 12], ["spare", 8], ["conditions", 40], ["numOfAttacks", 2], ["canCaste", 30], ["ageRange", 5], ["ageChange", 5], ["itemTypes", 2], ["spacer", 31]]) {
+expectSameArray(scenarioRaceOverrideSchema.required ?? [], raceOverrideFields.filter((field) => !["displayName", "authored", "provenance"].includes(field)), "Race-override authored field inventory");
+for (const [field, length] of [["plusMinusToHit", 8], ["specialAbility", 14], ["drvBonus", 8], ["attBonus", 6], ["minMax", 12], ["conditions", 40], ["numOfAttacks", 2], ["canCaste", 30], ["ageRange", 5], ["ageChange", 5], ["itemTypes", 2]]) {
   expect(scenarioRaceOverrideSchema.properties?.[field]?.minItems === length && scenarioRaceOverrideSchema.properties?.[field]?.maxItems === length, `race overrides must retain ${length} ${field} slots`);
 }
 expect(scenarioRaceOverrideSchema.properties?.ageRange?.items?.minItems === 2 && scenarioRaceOverrideSchema.properties?.ageRange?.items?.maxItems === 2, "race age ranges must retain two bounds per band");
 expect(scenarioRaceOverrideSchema.properties?.ageChange?.items?.minItems === 15 && scenarioRaceOverrideSchema.properties?.ageChange?.items?.maxItems === 15, "race age changes must retain fifteen values per band");
-expectSameArray(scenarioRaceOverrideSchema["x-providence-rust-optional"] ?? [], ["spare", "spacer"], "Race-override optional compatibility inventory");
+expectSameArray(scenarioRaceOverrideSchema["x-providence-rust-optional"] ?? [], [], "Race-override optional inventory");
 expect(!Object.hasOwn(scenarioRaceOverrideSchema, "x-providence-rust-skip-empty"), "race overrides must not retain record-local byte identity");
-const casteOverrideFields = ["id", "displayName", "specialAbility", "drvBonus", "attBonus", "spellcasters", "minMax", "conditions", "canUseMissile", "getsMissileBonus", "stamina", "strength", "dodge", "toHit", "missile", "hand2Hand", "spare1", "spare2", "casteClass", "minimumAgeGroup", "moveBonus", "magRes", "twoHand", "maxStaminaBonus", "bonusAttacks", "maxAttacks", "victory", "startMoney", "startItems", "attacks", "itemTypes", "defaultIcon", "maxSpellsAttacks", "spellsSoFar", "spacer", "authored", "provenance"];
+const casteOverrideFields = ["id", "displayName", "specialAbility", "drvBonus", "attBonus", "spellcasters", "minMax", "conditions", "canUseMissile", "getsMissileBonus", "stamina", "strength", "dodge", "toHit", "missile", "hand2Hand", "casteClass", "minimumAgeGroup", "moveBonus", "magRes", "twoHand", "maxStaminaBonus", "bonusAttacks", "maxAttacks", "victory", "startMoney", "startItems", "attacks", "itemTypes", "defaultIcon", "maxSpellsAttacks", "spellsSoFar", "authored", "provenance"];
 expectSameArray(Object.keys(scenarioCasteOverrideSchema.properties ?? {}), casteOverrideFields, "Caste-override field inventory");
-expectSameArray(scenarioCasteOverrideSchema.required ?? [], casteOverrideFields.filter((field) => !["displayName", "spare1", "spare2", "spacer", "authored", "provenance"].includes(field)), "Caste-override authored field inventory");
-for (const [field, length] of [["specialAbility", 2], ["drvBonus", 8], ["attBonus", 6], ["spellcasters", 4], ["minMax", 12], ["conditions", 40], ["stamina", 2], ["strength", 2], ["dodge", 2], ["toHit", 2], ["missile", 2], ["hand2Hand", 2], ["spare1", 2], ["spare2", 2], ["victory", 30], ["startItems", 20], ["attacks", 10], ["itemTypes", 2], ["spacer", 63]]) {
+expectSameArray(scenarioCasteOverrideSchema.required ?? [], casteOverrideFields.filter((field) => !["displayName", "authored", "provenance"].includes(field)), "Caste-override authored field inventory");
+for (const [field, length] of [["specialAbility", 2], ["drvBonus", 8], ["attBonus", 6], ["spellcasters", 4], ["minMax", 12], ["conditions", 40], ["stamina", 2], ["strength", 2], ["dodge", 2], ["toHit", 2], ["missile", 2], ["hand2Hand", 2], ["victory", 30], ["startItems", 20], ["attacks", 10], ["itemTypes", 2]]) {
   expect(scenarioCasteOverrideSchema.properties?.[field]?.minItems === length && scenarioCasteOverrideSchema.properties?.[field]?.maxItems === length, `caste overrides must retain ${length} ${field} slots`);
 }
 expect(scenarioCasteOverrideSchema.properties?.specialAbility?.items?.minItems === 14 && scenarioCasteOverrideSchema.properties?.specialAbility?.items?.maxItems === 14, "caste special-ability rows must retain fourteen values");
 expect(scenarioCasteOverrideSchema.properties?.spellcasters?.items?.minItems === 3 && scenarioCasteOverrideSchema.properties?.spellcasters?.items?.maxItems === 3, "caste spellcaster rows must retain three values");
-expectSameArray(scenarioCasteOverrideSchema["x-providence-rust-optional"] ?? [], ["spare1", "spare2", "spacer"], "Caste-override optional compatibility inventory");
+expectSameArray(scenarioCasteOverrideSchema["x-providence-rust-optional"] ?? [], [], "Caste-override optional inventory");
 expect(!Object.hasOwn(scenarioCasteOverrideSchema, "x-providence-rust-skip-empty"), "caste overrides must not retain record-local byte identity");
 const encounterActionFields = ["slot", "rawCode", "id"];
 expectSameArray(Object.keys(encounterActionRowSchema.properties ?? {}), encounterActionFields, "Encounter action field inventory");
@@ -474,7 +474,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, [], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

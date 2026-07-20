@@ -96,6 +96,23 @@ pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
     caste_override_records: 30,
 };
 
+pub struct RealmzNativeCompatibilityRange {
+    pub offset: usize,
+    pub bytes: usize,
+}
+
+#[rustfmt::skip]
+pub const RACE_COMPATIBILITY_RANGES: &[RealmzNativeCompatibilityRange] = &[
+    RealmzNativeCompatibilityRange { offset: 96, bytes: 16 },
+    RealmzNativeCompatibilityRange { offset: 346, bytes: 62 },
+];
+
+#[rustfmt::skip]
+pub const CASTE_COMPATIBILITY_RANGES: &[RealmzNativeCompatibilityRange] = &[
+    RealmzNativeCompatibilityRange { offset: 240, bytes: 8 },
+    RealmzNativeCompatibilityRange { offset: 450, bytes: 126 },
+];
+
 pub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = 200;
 
 pub struct AuthoredStartupFilePolicy {

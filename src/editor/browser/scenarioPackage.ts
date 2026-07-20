@@ -78,7 +78,8 @@ import {
   AUTHORED_RESOURCE_SIDECAR_PATHS,
   AUTHORED_RUNTIME_BASELINE_FILE_PATHS,
   AUTHORED_STARTUP_FILES,
-  AUTHORED_TRIGGER_TABLE_PATHS
+  AUTHORED_TRIGGER_TABLE_PATHS,
+  REALMZ_NATIVE_COMPATIBILITY_RANGES
 } from "../generated/realmzNativeManifestPolicy";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
 import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
@@ -525,13 +526,13 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.raceOverrides.length > 0) {
     writes.push({
       path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.raceOverrides,
-      bytes: writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.raceOverrides, project.raceOverrides, RACE_RECORD_BYTES, annex, writeRaceOverrides, writeFreshRaceOverrides)
+      bytes: writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.raceOverrides, project.raceOverrides, RACE_RECORD_BYTES, annex, writeRaceOverrides, writeFreshRaceOverrides, REALMZ_NATIVE_COMPATIBILITY_RANGES.race)
     });
   }
   if (project.casteOverrides.length > 0) {
     writes.push({
       path: AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.casteOverrides,
-      bytes: writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.casteOverrides, project.casteOverrides, CASTE_RECORD_BYTES, annex, writeCasteOverrides, writeFreshCasteOverrides)
+      bytes: writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.casteOverrides, project.casteOverrides, CASTE_RECORD_BYTES, annex, writeCasteOverrides, writeFreshCasteOverrides, REALMZ_NATIVE_COMPATIBILITY_RANGES.caste)
     });
   }
   if (project.simpleEncounters.length > 0) {
@@ -617,7 +618,8 @@ function writeRuleOverridesForExport<T extends { id: number; authored?: boolean 
   recordBytes: number,
   annex: BrowserCompatibilityAnnex | null,
   writer: (records: T[]) => Uint8Array,
-  freshWriter: (records: T[]) => Uint8Array
+  freshWriter: (records: T[]) => Uint8Array,
+  compatibilityRanges: readonly { readonly offset: number; readonly bytes: number }[] = []
 ) {
   const raw = rawSourceBytes(fileName, annex);
   const structurallyInvalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0);
@@ -633,6 +635,11 @@ function writeRuleOverridesForExport<T extends { id: number; authored?: boolean 
     if (!record.authored) continue;
     const start = record.id * recordBytes;
     body.set(encoded.slice(start, start + recordBytes), start);
+    if (start + recordBytes <= sourceBodyBytes) {
+      for (const range of compatibilityRanges) {
+        body.set(raw.slice(start + range.offset, start + range.offset + range.bytes), start + range.offset);
+      }
+    }
   }
   const tail = raw.slice(sourceBodyBytes);
   if (tail.byteLength === 0) return body;

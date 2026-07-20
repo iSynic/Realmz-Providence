@@ -800,7 +800,6 @@ function raceRecordSummary(index: number, record: Uint8Array) {
     drvBonus: readI16s(record, 44, 8),
     attBonus: readI16s(record, 60, 6),
     minMax: readI16s(record, 72, 12),
-    spare: readI16s(record, 96, 8),
     conditions: readI16s(record, 112, 40),
     maxAge: i16At(record, 192),
     doesNotDie: i16At(record, 194),
@@ -815,8 +814,7 @@ function raceRecordSummary(index: number, record: Uint8Array) {
     canRegenerate: record[333],
     defaultIconSet: i16At(record, 334),
     itemTypes: [i32At(record, 336), i32At(record, 340)],
-    descriptors: i16At(record, 344),
-    spacer: readI16s(record, 346, 31)
+    descriptors: i16At(record, 344)
   };
 }
 
@@ -837,8 +835,6 @@ function casteRecordSummary(index: number, record: Uint8Array) {
     toHit: readI16s(record, 228, 2),
     missile: readI16s(record, 232, 2),
     hand2Hand: readI16s(record, 236, 2),
-    spare1: readI16s(record, 240, 2),
-    spare2: readI16s(record, 244, 2),
     casteClass: i16At(record, 248),
     minimumAgeGroup: i16At(record, 250),
     moveBonus: i16At(record, 252),
@@ -854,8 +850,7 @@ function casteRecordSummary(index: number, record: Uint8Array) {
     itemTypes: [i32At(record, 436), i32At(record, 440)],
     defaultIcon: i16At(record, 444),
     maxSpellsAttacks: i16At(record, 446),
-    spellsSoFar: i16At(record, 448),
-    spacer: readI16s(record, 450, 63)
+    spellsSoFar: i16At(record, 448)
   };
 }
 

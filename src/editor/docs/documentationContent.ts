@@ -2308,7 +2308,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Shared spells come from Data S; scenario custom spells come from Data Spell.",
           "Shared races come from Data Race; third-party scenarios can provide scenario-local Data Race overrides.",
           "Shared castes come from Data Caste; third-party scenarios can provide scenario-local Data Caste overrides.",
-          "Race and caste override files are fixed 30-record tables. Providence models their reserved spare/spacer words explicitly and uses a versioned compiler baseline for untouched rows.",
+          "Race and caste override files are fixed 30-record tables. Providence keeps reserved spare/spacer words out of canonical projects, restores them only from a legacy compatibility annex, and uses a versioned compiler baseline for untouched rows.",
           "Providence compiles canonical custom spell names into scenario STR# 5000 through 5006 resources."
         ],
         callout: {
@@ -2432,8 +2432,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ],
         points: [
           "Fresh Data Spell output owns all 105 custom spell records and canonical name resources; imported extra tails and unrelated resources remain preserved compatibility data.",
-          "Data Race override files are 30 x 408-byte tables; fresh output owns every word, including the reserved spare and spacer arrays.",
-          "Data Caste override files are 30 x 576-byte tables; progression, victory, spellcasting, starting items, item use, combat, and reserved arrays are source-backed structurally.",
+          "Data Race override files are 30 x 408-byte tables; fresh output compiles semantic fields and deterministically zeros reserved compatibility ranges.",
+          "Data Caste override files are 30 x 576-byte tables; progression, victory, spellcasting, starting items, item use, and combat are canonical, while reserved ranges are legacy-annex-only.",
           "Race and caste names are safest as editor-authored display labels unless a scenario/resource storage path is proven for that package.",
           "When a label seems vague, prefer the field help and evidence references over renaming the field casually."
         ]

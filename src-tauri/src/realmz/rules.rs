@@ -119,7 +119,6 @@ pub fn parse_race_overrides(buffer: &[u8]) -> Vec<ScenarioRaceOverride> {
                 drv_bonus: read_i16_vec(record, 44, 8),
                 att_bonus: read_i16_vec(record, 60, 6),
                 min_max: read_i16_vec(record, 72, 12),
-                spare: Some(read_i16_vec(record, 96, 8)),
                 conditions: read_i16_vec(record, 112, 40),
                 max_age: i16_be(record, 192),
                 does_not_die: i16_be(record, 194),
@@ -144,7 +143,6 @@ pub fn parse_race_overrides(buffer: &[u8]) -> Vec<ScenarioRaceOverride> {
                 default_icon_set: i16_be(record, 334),
                 item_types: vec![i32_be(record, 336), i32_be(record, 340)],
                 descriptors: i16_be(record, 344),
-                spacer: Some(read_i16_vec(record, 346, 31)),
                 authored: false,
                 provenance: provenance("Data Race", id, start, RACE_BYTES),
             }
@@ -167,9 +165,6 @@ pub fn write_race_overrides(records: &[ScenarioRaceOverride]) -> Result<Vec<u8>>
         write_i16_vec(target, 44, &record.drv_bonus, 8);
         write_i16_vec(target, 60, &record.att_bonus, 6);
         write_i16_vec(target, 72, &record.min_max, 12);
-        if let Some(spare) = &record.spare {
-            write_i16_vec(target, 96, spare, 8);
-        }
         write_i16_vec(target, 112, &record.conditions, 40);
         write_i16_be(target, 192, record.max_age);
         write_i16_be(target, 194, record.does_not_die);
@@ -200,9 +195,6 @@ pub fn write_race_overrides(records: &[ScenarioRaceOverride]) -> Result<Vec<u8>>
         write_i32_be(target, 336, *record.item_types.first().unwrap_or(&0));
         write_i32_be(target, 340, *record.item_types.get(1).unwrap_or(&0));
         write_i16_be(target, 344, record.descriptors);
-        if let Some(spacer) = &record.spacer {
-            write_i16_vec(target, 346, spacer, 31);
-        }
     }
     Ok(output)
 }
@@ -232,8 +224,6 @@ pub fn parse_caste_overrides(buffer: &[u8]) -> Vec<ScenarioCasteOverride> {
                 to_hit: read_i16_vec(record, 228, 2),
                 missile: read_i16_vec(record, 232, 2),
                 hand2_hand: read_i16_vec(record, 236, 2),
-                spare1: Some(read_i16_vec(record, 240, 2)),
-                spare2: Some(read_i16_vec(record, 244, 2)),
                 caste_class: i16_be(record, 248),
                 minimum_age_group: i16_be(record, 250),
                 move_bonus: i16_be(record, 252),
@@ -250,7 +240,6 @@ pub fn parse_caste_overrides(buffer: &[u8]) -> Vec<ScenarioCasteOverride> {
                 default_icon: i16_be(record, 444),
                 max_spells_attacks: i16_be(record, 446),
                 spells_so_far: i16_be(record, 448),
-                spacer: Some(read_i16_vec(record, 450, 63)),
                 authored: false,
                 provenance: provenance("Data Caste", id, start, CASTE_BYTES),
             }
@@ -312,12 +301,6 @@ pub fn write_caste_overrides(records: &[ScenarioCasteOverride]) -> Result<Vec<u8
         write_i16_vec(target, 228, &record.to_hit, 2);
         write_i16_vec(target, 232, &record.missile, 2);
         write_i16_vec(target, 236, &record.hand2_hand, 2);
-        if let Some(spare1) = &record.spare1 {
-            write_i16_vec(target, 240, spare1, 2);
-        }
-        if let Some(spare2) = &record.spare2 {
-            write_i16_vec(target, 244, spare2, 2);
-        }
         write_i16_be(target, 248, record.caste_class);
         write_i16_be(target, 250, record.minimum_age_group);
         write_i16_be(target, 252, record.move_bonus);
@@ -335,9 +318,6 @@ pub fn write_caste_overrides(records: &[ScenarioCasteOverride]) -> Result<Vec<u8
         write_i16_be(target, 444, record.default_icon);
         write_i16_be(target, 446, record.max_spells_attacks);
         write_i16_be(target, 448, record.spells_so_far);
-        if let Some(spacer) = &record.spacer {
-            write_i16_vec(target, 450, spacer, 63);
-        }
     }
     Ok(output)
 }
@@ -357,22 +337,22 @@ mod tests {
 
     #[test]
     fn rules_records_round_trip_full_records() {
-        let cases: [(usize, fn(&[u8]) -> Vec<u8>); 3] = [
-            (SPELL_BYTES, |bytes| {
+        let cases: [(usize, usize, fn(&[u8]) -> Vec<u8>); 3] = [
+            (SPELL_BYTES, 29, |bytes| {
                 write_spell_overrides(&parse_spell_overrides(bytes)).unwrap()
             }),
-            (RACE_BYTES, |bytes| {
+            (RACE_BYTES, 333, |bytes| {
                 write_race_overrides(&parse_race_overrides(bytes)).unwrap()
             }),
-            (CASTE_BYTES, |bytes| {
+            (CASTE_BYTES, 449, |bytes| {
                 write_caste_overrides(&parse_caste_overrides(bytes)).unwrap()
             }),
         ];
-        for (record_bytes, parse_write) in cases {
+        for (record_bytes, semantic_offset, parse_write) in cases {
             let mut input = vec![0u8; record_bytes * 2];
             input[0] = 1;
             input[record_bytes + 3] = 42;
-            input[record_bytes * 2 - 1] = 1;
+            input[record_bytes + semantic_offset] = 1;
             assert_eq!(input, parse_write(&input));
         }
     }

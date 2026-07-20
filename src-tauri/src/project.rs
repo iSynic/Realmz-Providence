@@ -844,9 +844,6 @@ fn normalize_race_override(record: &mut ScenarioRaceOverride) {
     resize_vec(&mut record.drv_bonus, 8, 0);
     resize_vec(&mut record.att_bonus, 6, 0);
     resize_vec(&mut record.min_max, 12, 0);
-    if let Some(spare) = &mut record.spare {
-        resize_vec(spare, 8, 0);
-    }
     resize_vec(&mut record.conditions, 40, 0);
     resize_vec(&mut record.num_of_attacks, 2, 0);
     resize_vec(&mut record.can_caste, 30, 0);
@@ -859,9 +856,6 @@ fn normalize_race_override(record: &mut ScenarioRaceOverride) {
         resize_vec(row, 15, 0);
     }
     resize_vec(&mut record.item_types, 2, 0);
-    if let Some(spacer) = &mut record.spacer {
-        resize_vec(spacer, 31, 0);
-    }
 }
 
 fn normalize_caste_override(record: &mut ScenarioCasteOverride) {
@@ -883,19 +877,10 @@ fn normalize_caste_override(record: &mut ScenarioCasteOverride) {
     resize_vec(&mut record.to_hit, 2, 0);
     resize_vec(&mut record.missile, 2, 0);
     resize_vec(&mut record.hand2_hand, 2, 0);
-    if let Some(spare1) = &mut record.spare1 {
-        resize_vec(spare1, 2, 0);
-    }
-    if let Some(spare2) = &mut record.spare2 {
-        resize_vec(spare2, 2, 0);
-    }
     resize_vec(&mut record.victory, 30, 0);
     resize_vec(&mut record.start_items, 20, 0);
     resize_vec(&mut record.attacks, 10, 0);
     resize_vec(&mut record.item_types, 2, 0);
-    if let Some(spacer) = &mut record.spacer {
-        resize_vec(spacer, 63, 0);
-    }
 }
 
 fn resize_vec<T: Clone>(values: &mut Vec<T>, length: usize, default: T) {
@@ -1059,13 +1044,11 @@ mod tests {
         race.plus_minus_to_hit = vec![1];
         race.age_range = vec![vec![2]];
         race.age_change = vec![vec![3]];
-        race.spacer = Some(vec![4]);
         normalize_race_override(&mut race);
         assert_eq!(race.plus_minus_to_hit, [1, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(race.age_range.len(), 5);
         assert_eq!(race.age_range[0], [2, 0]);
         assert_eq!(race.age_change[0].len(), 15);
-        assert_eq!(race.spacer.as_ref().unwrap().len(), 31);
 
         let mut caste =
             crate::realmz::parse_caste_overrides(&vec![0; crate::realmz::CASTE_BYTES]).remove(0);
@@ -1073,7 +1056,6 @@ mod tests {
         caste.spellcasters = vec![vec![6]];
         caste.victory = vec![7];
         caste.start_items = vec![8];
-        caste.spacer = Some(vec![9]);
         normalize_caste_override(&mut caste);
         assert_eq!(caste.special_ability.len(), 2);
         assert_eq!(caste.special_ability[0].len(), 14);
@@ -1081,7 +1063,6 @@ mod tests {
         assert_eq!(caste.spellcasters[0], [6, 0, 0]);
         assert_eq!(caste.victory.len(), 30);
         assert_eq!(caste.start_items.len(), 20);
-        assert_eq!(caste.spacer.as_ref().unwrap().len(), 63);
     }
 
     #[test]

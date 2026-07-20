@@ -119,16 +119,11 @@ describe("browser rule-override writers", () => {
     };
     const race = {
       ...emptyRaceOverride(0),
-      baseMove: 13,
-      spare: undefined,
-      spacer: undefined
+      baseMove: 13
     };
     const caste = {
       ...emptyCasteOverride(0),
-      startMoney: 222,
-      spare1: undefined,
-      spare2: undefined,
-      spacer: undefined
+      startMoney: 222
     };
 
     const spellBytes = writeSpellOverrides([spell]);
