@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserProject } from "../browser/project";
+import { parseScenarioBuffers } from "../browser/realmzParser";
 import type { TriggerRecord } from "../types";
 import type { ScenarioSeed } from "./contracts";
 import { compileScenarioSeedProject } from "./projectCompiler";
@@ -30,6 +31,15 @@ describe("scenario seed project compiler", () => {
       files: [{ name: "Data BD", relativePath: "Data BD", bytes: 12, sha256: "fixture", role: "supported-binary", editable: true }]
     };
     template.messages = [{ id: 8, text: "Preserved", authored: true }];
+    const legacyCustomLandlook = parseScenarioBuffers(new Map([
+      ["Data Custom 1 BD", new Uint8Array(8_107)]
+    ])).customLandlooks[0];
+    legacyCustomLandlook.records[5].sound = 321;
+    template.customLandlooks = [{
+      ...legacyCustomLandlook,
+      rawBytes: new Array(8_107).fill(0xa5),
+      trailingBytes: [0xca, 0xfe, 0x01]
+    } as unknown as NonNullable<typeof template.customLandlooks>[number]];
     const seed: ScenarioSeed = {
       schemaVersion: 1,
       baseTemplate: "fixture",
@@ -65,6 +75,9 @@ describe("scenario seed project compiler", () => {
     expect(result.project.source.files).toEqual(template.source.files);
     expect(result.project.source.files).not.toBe(template.source.files);
     expect(result.project.messages).toEqual(template.messages);
+    expect(result.project.customLandlooks?.[0].records[5].sound).toBe(321);
+    expect("rawBytes" in result.project.customLandlooks![0]).toBe(false);
+    expect("trailingBytes" in result.project.customLandlooks![0]).toBe(false);
     expect(template.scenario.name).toBe("Template Source");
     expect(template.source.immutable).toBe(true);
     expect(result.warnings).toContain("parser warning");

@@ -37,8 +37,9 @@ pub use landlooks::{
     parse_custom_landlook_metadata, parse_landlook_mapstats_data, parse_landlook_range_tail,
     update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
     update_custom_landlook_base, update_custom_landlook_range_slot, write_custom_landlook_metadata,
-    write_tile_solids, CustomLandTileAttributePatch, LANDLOOK_RANGE_SLOTS,
-    LANDLOOK_RANGE_SLOT_BYTES, LANDLOOK_RANGE_TAIL_BYTES, MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES,
+    write_tile_solids, CustomLandTileAttributePatch, CUSTOM_LANDLOOK_METADATA_BYTES,
+    LANDLOOK_RANGE_SLOTS, LANDLOOK_RANGE_SLOT_BYTES, LANDLOOK_RANGE_TAIL_BYTES, MAPSTATS_RECORDS,
+    MAPSTATS_RECORD_BYTES,
 };
 pub use maps::{
     parse_fields, parse_land_layout, parse_map_records, write_fields, write_land_layout,

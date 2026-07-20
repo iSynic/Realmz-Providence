@@ -770,6 +770,8 @@ function checkCustomCombatBuildSync({ updateCustomLandTileCombatBuild }, { class
 
 function checkCustomLandlookBaseSync({ updateCustomLandlookBase }) {
   const project = projectWithCustomLandlook({ tileAttributes: [mapstatsProfile(6, record(4), { baseTile: 156, baseScale: 1 })] });
+  project.customLandlooks[0].rawBytes = [0xa5];
+  project.customLandlooks[0].trailingBytes = [0xca, 0xfe];
   const next = updateCustomLandlookBase(project, {
     kind: "updateCustomLandlookBase",
     label: "Update custom landlook base",
@@ -780,6 +782,8 @@ function checkCustomLandlookBaseSync({ updateCustomLandlookBase }) {
   const profile = findProfile(next, 6, 4);
   assert(profile?.baseTile === 111, "custom landlook base tile edit did not refresh tileAttributes");
   assert(profile?.baseScale === 2, "custom landlook base scale edit did not refresh tileAttributes");
+  assert(!("rawBytes" in next.customLandlooks[0]), "Custom-landlook edits should drop legacy embedded source identity.");
+  assert(!("trailingBytes" in next.customLandlooks[0]), "Custom-landlook edits should drop legacy embedded tail identity.");
 }
 
 function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource }) {
@@ -988,8 +992,6 @@ function projectWithCustomLandlook(overrides = {}) {
     baseTile: 156,
     baseScale: 1,
     rangeSlots: [],
-    trailingBytes: [],
-    rawBytes: [],
     writerGate: { metadataWriterStatus: "decoded-writable", atlasWriterStatus: "preserved", writableFields: [], preserveOnlyFields: [], evidence: [] },
     authored: false
   }];

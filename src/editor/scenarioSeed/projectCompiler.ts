@@ -154,12 +154,22 @@ function initializeScenarioSeedProject(
       rawSourcesDir: origin === "authored" ? "" : project.source.rawSourcesDir || "raw-sources",
       immutable: false,
       files: origin === "authored" ? [] : [...(project.source.files ?? [])]
-    }
+    },
+    customLandlooks: (project.customLandlooks ?? []).map(withoutLegacyCustomLandlookSourceBytes)
   };
 }
 
 function withoutLegacyRawBytes<T extends object>(record: T): T {
   const { rawBytes: _legacyRawBytes, ...canonical } = record as T & { rawBytes?: number[] };
+  return canonical as T;
+}
+
+function withoutLegacyCustomLandlookSourceBytes<T extends object>(landlook: T): T {
+  const {
+    rawBytes: _legacyRawBytes,
+    trailingBytes: _legacyTrailingBytes,
+    ...canonical
+  } = landlook as T & { rawBytes?: number[]; trailingBytes?: number[] };
   return canonical as T;
 }
 

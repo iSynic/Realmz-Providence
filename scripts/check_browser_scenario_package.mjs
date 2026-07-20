@@ -771,7 +771,7 @@ const customLandlookUpdate = createBrowserScenarioPackageZip(customLandlookProje
 const customLandlookFiles = unzipScenarioPackage(customLandlookUpdate.zip);
 expect(customLandlookUpdate.report.writtenFiles.includes("Data Custom 1 BD"), "Authored custom landlook metadata should write Data Custom 1 BD");
 expect(!customLandlookUpdate.report.passThroughFiles.includes("Data Custom 1 BD"), "Written custom landlook metadata should not be reported as pass-through");
-expect(bytesEqual(customLandlookFiles.get("Data Custom 1 BD"), customLandlookRow(authoredCustomLandlook)), "Authored custom landlook metadata should encode mapstats/base/ranges and preserve tail bytes");
+expect(bytesEqual(customLandlookFiles.get("Data Custom 1 BD"), customLandlookRow(authoredCustomLandlook, sourceCustomLandlook)), "Authored custom landlook metadata should encode mapstats/base/ranges and restore preserve-only bytes from the annex");
 expect(readI16(customLandlookFiles.get("Data Custom 1 BD") ?? new Uint8Array(), 5 * MAPSTATS_RECORD_BYTES + 18) === 1234, "Custom landlook writer should preserve spare mapstats words");
 expect(readI16(customLandlookFiles.get("Data Custom 1 BD") ?? new Uint8Array(), MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 8) === 4321, "Custom landlook writer should preserve reserved range words");
 expect(bytesEqual(customLandlookFiles.get("Data Custom 1 BD")?.slice(CUSTOM_LANDLOOK_METADATA_BYTES), sourceCustomLandlook.slice(CUSTOM_LANDLOOK_METADATA_BYTES)), "Custom landlook writer should preserve trailing bytes");
@@ -1729,8 +1729,6 @@ function customLandlookMetadataFromRaw(landlook, sourceFile, rawBytes) {
         reserved: rawBytes.byteLength >= start + 6 ? readI16(rawBytes, start + 4) : 0
       };
     }),
-    trailingBytes: Array.from(rawBytes.slice(CUSTOM_LANDLOOK_METADATA_BYTES)),
-    rawBytes: Array.from(rawBytes),
     writerGate: {
       metadataWriterStatus: "writer-safe-fixture-gated",
       atlasWriterStatus: "writable-by-generated-pict-replacement",
@@ -1784,10 +1782,8 @@ function emptyMapstatsRecord(tile) {
   };
 }
 
-function customLandlookRow(metadata) {
-  let output = metadata.rawBytes?.length >= CUSTOM_LANDLOOK_METADATA_BYTES
-    ? new Uint8Array(metadata.rawBytes.map((value) => value & 0xff))
-    : new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES);
+function customLandlookRow(metadata, compatibilityBytes) {
+  let output = new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES);
   for (const [tile, record] of metadata.records.slice(0, MAPSTATS_RECORDS).entries()) {
     setMapstatsRecord(output, tile, record);
   }
@@ -1799,13 +1795,27 @@ function customLandlookRow(metadata) {
     const start = baseOffset + 4 + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
     setI16(output, start, slot.firstTile);
     setI16(output, start + 2, slot.lastTile);
-    setI16(output, start + 4, slot.reserved);
+    setI16(output, start + 4, 0);
   }
-  if ((metadata.rawBytes?.length ?? 0) <= CUSTOM_LANDLOOK_METADATA_BYTES && metadata.trailingBytes?.length > 0) {
-    const extended = new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES + metadata.trailingBytes.length);
-    extended.set(output.subarray(0, CUSTOM_LANDLOOK_METADATA_BYTES));
-    extended.set(metadata.trailingBytes.map((value) => value & 0xff), CUSTOM_LANDLOOK_METADATA_BYTES);
-    output = extended;
+  if (compatibilityBytes) {
+    for (let tile = 0; tile < MAPSTATS_RECORDS; tile += 1) {
+      const spareOffset = tile * MAPSTATS_RECORD_BYTES + 18;
+      if (compatibilityBytes.byteLength >= spareOffset + 2) {
+        output.set(compatibilityBytes.slice(spareOffset, spareOffset + 2), spareOffset);
+      }
+    }
+    for (let slot = 0; slot < LANDLOOK_RANGE_SLOTS; slot += 1) {
+      const reservedOffset = baseOffset + 4 + slot * LANDLOOK_RANGE_SLOT_BYTES + 4;
+      if (compatibilityBytes.byteLength >= reservedOffset + 2) {
+        output.set(compatibilityBytes.slice(reservedOffset, reservedOffset + 2), reservedOffset);
+      }
+    }
+    if (compatibilityBytes.byteLength > CUSTOM_LANDLOOK_METADATA_BYTES) {
+      const extended = new Uint8Array(compatibilityBytes.byteLength);
+      extended.set(output);
+      extended.set(compatibilityBytes.slice(CUSTOM_LANDLOOK_METADATA_BYTES), CUSTOM_LANDLOOK_METADATA_BYTES);
+      output = extended;
+    }
   }
   return output;
 }
@@ -1821,7 +1831,7 @@ function setMapstatsRecord(output, tile, record) {
   setI16(output, start + 12, record.los);
   setI16(output, start + 14, record.flyFloat);
   setI16(output, start + 16, record.forest);
-  setI16(output, start + 18, record.spare);
+  setI16(output, start + 18, 0);
   for (let row = 0; row < 3; row += 1) {
     for (let col = 0; col < 3; col += 1) {
       setI16(output, start + 20 + (row * 3 + col) * 2, record.combatBuild?.[row]?.[col] ?? 0);

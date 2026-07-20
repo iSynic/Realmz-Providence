@@ -584,6 +584,7 @@ export function normalizeBrowserProject(project: Project): Project {
   });
   project.tileAttributes ??= [];
   project.customLandlooks ??= [];
+  project.customLandlooks = project.customLandlooks.map(withoutLegacyCustomLandlookSourceBytes);
   project.messages = (project.messages ?? []).map((record) => {
     const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
     return canonicalRecord;
@@ -658,6 +659,16 @@ export function normalizeBrowserProject(project: Project): Project {
   backfillTilesetMetadata(project);
   project.validation = validateBrowserProject(project);
   return project;
+}
+
+function withoutLegacyCustomLandlookSourceBytes<T extends NonNullable<Project["customLandlooks"]>[number]>(landlook: T): T {
+  if (!("rawBytes" in landlook) && !("trailingBytes" in landlook)) return landlook;
+  const {
+    rawBytes: _legacyRawBytes,
+    trailingBytes: _legacyTrailingBytes,
+    ...canonical
+  } = landlook as T & { rawBytes?: number[]; trailingBytes?: number[] };
+  return canonical as T;
 }
 
 function withoutLegacySingletonRawBytes<T extends object>(record: T): T {

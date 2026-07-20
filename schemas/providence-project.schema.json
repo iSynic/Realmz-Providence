@@ -363,8 +363,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceCustomLandlookMetadata",
       "x-providence-rust-name": "CustomLandlookMetadata",
-      "x-providence-rust-default": ["trailingBytes", "rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["trailingBytes", "rawBytes"],
+      "x-providence-rust-default": ["authored"],
       "required": ["landlook", "sourceFile", "records", "baseTile", "baseScale", "rangeSlots", "writerGate"],
       "properties": {
         "landlook": { "type": "integer", "minimum": 6, "maximum": 8, "x-providence-rust-type": "i8" },
@@ -373,8 +372,6 @@
         "baseTile": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "baseScale": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "rangeSlots": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "$ref": "#/$defs/landlookRangeSlot" } },
-        "trailingBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
-        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "writerGate": { "$ref": "#/$defs/landlookWriterGate" },
         "authored": { "type": "boolean" }
       }

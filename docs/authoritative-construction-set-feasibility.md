@@ -754,10 +754,22 @@ arrays before canonical persistence without losing decoded semantics. The genera
 Rust contract, project commands, Scenario JSON compiler, semantic index, package gate, and
 authoritative ownership proof now enforce the same boundary.
 
-Branch validation through the seventieth slice completed on 2026-07-20:
+The seventy-first slice removes `CustomLandlookMetadata.rawBytes` and `trailingBytes` from
+schema-v5 canonical projects. Browser and desktop import continue decoding all 201 mapstats rows,
+base metadata, and ten range slots, but no longer place the complete source file or its malformed
+tail in the DTO. The pure writers already compiled a fresh exact 8,104-byte semantic core and
+ignored both arrays. Edited imported landlooks still recover only the 201 unnamed spare words, ten
+unnamed range-reserved words, and bytes after offset 8,104 from the compatibility annex; fresh
+output deterministically zeros the bounded preserve-only words and has no tail. Browser
+normalization, desktop project-open migration, custom-landlook cloning/editing, and Scenario JSON
+template compilation discard the two obsolete fields without losing decoded semantics. The
+authoritative proof keeps poisoning legacy-shaped in-memory objects to prove neither compiler
+consults them.
+
+Branch validation through the seventy-first slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
-- full TypeScript suite: 615 passed, plus typecheck;
+- full TypeScript suite: 616 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -780,7 +792,9 @@ violation. Removing spell-override compatibility storage likewise reduces the fo
 without changing its native row shape; removing duplicate race- and caste-row identity does the
 same while retaining their explicitly bounded preserve-only arrays. Removing duplicate contact,
 restriction, and global-hook identity changes only their focused schema, codecs, and migration
-boundaries and adds no module-size violation. The authoritative rules slice likewise keeps
+boundaries and adds no module-size violation. Removing duplicate custom-landlook source identity
+likewise changes only its focused contract, import, command, and compiler boundaries and adds no
+module-size violation. The authoritative rules slice likewise keeps
 `rules.rs` within its ceiling by separating exact-shape validation from the native codec. The
 `Data Solids` slice likewise moves its 1,024-byte codec and tests into a focused module, returns
 `landlooks.rs` below its baseline, and does not add a new ISY-320 violation. The `Layout` slice
@@ -933,8 +947,8 @@ EDCD rows, messages, options, battles, monsters, items, shops, encounters, rules
 assets, diagnostics, and editor metadata. Scenario JSON compiles directly into these families.
 
 No foundational scenario domain was found that requires an imported scenario merely to exist in
-the editor. The remaining embedded `rawBytes` fields are confined to custom-landlook metadata and
-the scenario shell/support compatibility boundary. The completed semantic families demonstrate the
+the editor. The remaining embedded `rawBytes` fields are confined to the scenario shell/support
+compatibility boundary. The completed semantic families demonstrate the
 preferred pattern: omit compatibility storage from canonical records, zero-initialize compiler
 output, and consult preserved bytes only for imported projects.
 
@@ -1087,7 +1101,11 @@ A pragmatic sequence is:
     `Global` byte identity from the canonical DTOs; migrate older JSON without losing decoded
     semantics; and retain untouched singleton identity, noncanonical padding/Boolean encodings,
     `Global` reserved offsets, and malformed tails only in the compatibility annex.
-19. Keep parser, compiler, validator, and UI behavior in handwritten modules.
+19. **Implemented for custom-landlook metadata:** remove duplicate source-file and trailing-byte
+    identity from the canonical DTO; migrate older JSON and sanitize clone/edit/template paths;
+    compile an exact semantic core; and recover only unnamed spare/reserved words plus malformed
+    tails from the compatibility annex for edited imports.
+20. Keep parser, compiler, validator, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1285,8 +1303,8 @@ must not be called fresh-authoritative merely because imported round trips are f
    behavior helpers by design. Future persisted fields must enter through the schema rather than
    reopening TypeScript/Rust duplication.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but a few
-   imported project records still embed unowned bytes. Custom-landlook metadata and scenario
-   shell/support are the remaining embedded-identity DTOs; contact, restriction, and global-hook
+   imported project records still embed unowned bytes. Scenario shell/support are the remaining
+   embedded-identity DTOs; custom-landlook, contact, restriction, and global-hook
    DTOs no longer expose raw fields at all.
    Race and caste rows no longer retain byte identity, but their bounded `spare`/`spacer` words
    remain explicit compatibility-only fields pending interpretation or narrower annex isolation; marker and

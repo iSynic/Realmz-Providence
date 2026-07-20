@@ -150,7 +150,6 @@ pub fn parse_custom_landlook_metadata(
     } else {
         0
     };
-    let expected_len = base_offset + 4 + LANDLOOK_RANGE_TAIL_BYTES;
     let mut range_slots = parse_landlook_range_tail(buffer);
     for slot in range_slots.len()..LANDLOOK_RANGE_SLOTS {
         range_slots.push(LandlookRangeSlot {
@@ -168,12 +167,6 @@ pub fn parse_custom_landlook_metadata(
         base_tile,
         base_scale,
         range_slots,
-        trailing_bytes: if buffer.len() > expected_len {
-            buffer[expected_len..].to_vec()
-        } else {
-            Vec::new()
-        },
-        raw_bytes: buffer.to_vec(),
         writer_gate: custom_landlook_writer_gate(),
         authored: false,
     }
@@ -751,7 +744,7 @@ mod tests {
     }
 
     #[test]
-    fn custom_landlook_writer_ignores_embedded_compatibility_bytes() {
+    fn custom_landlook_writer_keeps_preserve_only_words_neutral() {
         let input =
             vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES];
         let mut metadata = parse_custom_landlook_metadata(&input, 6, "Data Custom 1 BD");
@@ -760,9 +753,6 @@ mod tests {
         metadata.range_slots[0].first_tile = 62;
         metadata.range_slots[0].last_tile = 85;
         metadata.range_slots[0].reserved = Some(0x2345);
-        metadata.raw_bytes = vec![0xa5; CUSTOM_LANDLOOK_METADATA_BYTES + 7];
-        metadata.trailing_bytes = vec![0xca, 0xfe, 0x01];
-
         let output = write_custom_landlook_metadata(&metadata).unwrap();
 
         assert_eq!(output.len(), CUSTOM_LANDLOOK_METADATA_BYTES);

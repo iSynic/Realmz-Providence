@@ -692,7 +692,6 @@ function parseShops(buffer: Uint8Array | undefined): ShopRecord[] {
   }));
 }
 
-const CUSTOM_LANDLOOK_METADATA_BYTES = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + 60;
 const LANDLOOK_RANGE_SLOTS = 10;
 const LANDLOOK_RANGE_SLOT_BYTES = 6;
 
@@ -743,8 +742,6 @@ export function parseCustomLandlookMetadata(
         ...(buffer.byteLength >= start + 6 ? { reserved: i16(buffer, start + 4) } : {})
       };
     }),
-    trailingBytes: Array.from(buffer.slice(CUSTOM_LANDLOOK_METADATA_BYTES)),
-    rawBytes: Array.from(buffer),
     writerGate: customLandlookWriterGate(),
     authored: false
   };

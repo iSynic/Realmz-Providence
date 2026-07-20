@@ -176,8 +176,6 @@ pub const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS: &[&str] = &[
     "baseTile",
     "baseScale",
     "rangeSlots",
-    "trailingBytes",
-    "rawBytes",
     "writerGate",
     "authored",
 ];
@@ -946,10 +944,6 @@ pub struct CustomLandlookMetadata {
     pub base_tile: i16,
     pub base_scale: i16,
     pub range_slots: Vec<LandlookRangeSlot>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub trailing_bytes: Vec<u8>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     pub writer_gate: LandlookWriterGate,
     #[serde(default)]
     pub authored: bool,

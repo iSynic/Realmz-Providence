@@ -13,6 +13,26 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
+  it("drops legacy custom-landlook source identity during normalization", () => {
+    const project = createBrowserProject("Legacy custom landlook bytes");
+    const parsed = parseScenarioBuffers(new Map([
+      ["Data Custom 1 BD", new Uint8Array(8_107)]
+    ])).customLandlooks[0];
+    parsed.records[5].sound = 321;
+    parsed.records[5].spare = 0x1234;
+    project.customLandlooks = [{
+      ...parsed,
+      rawBytes: new Array(8_107).fill(0xa5),
+      trailingBytes: [0xca, 0xfe, 0x01]
+    } as unknown as NonNullable<Project["customLandlooks"]>[number]];
+
+    normalizeBrowserProject(project);
+
+    expect(project.customLandlooks[0].records[5]).toMatchObject({ sound: 321, spare: 0x1234 });
+    expect("rawBytes" in project.customLandlooks[0]).toBe(false);
+    expect("trailingBytes" in project.customLandlooks[0]).toBe(false);
+  });
+
   it("drops legacy scenario singleton byte identity during normalization", () => {
     const project = createBrowserProject("Legacy scenario singleton bytes");
     project.scenario.contactInfo = {

@@ -18,7 +18,7 @@ function readI16(bytes: Uint8Array, offset: number) {
 }
 
 describe("custom landlook browser import", () => {
-  it("recovers semantic metadata while the writer ignores embedded compatibility bytes", () => {
+  it("recovers semantic metadata without embedding source identity", () => {
     const source = new Uint8Array(CUSTOM_LANDLOOK_METADATA_BYTES + 3);
     const tileOffset = 5 * MAPSTATS_RECORD_BYTES;
     writeI16(source, tileOffset, 321);
@@ -39,8 +39,8 @@ describe("custom landlook browser import", () => {
     expect(metadata?.rangeSlots).toHaveLength(10);
     expect(metadata?.records[5]).toMatchObject({ sound: 321, time: 2, spare: 0x1234 });
     expect(metadata?.rangeSlots[0]).toMatchObject({ firstTile: 62, lastTile: 85, reserved: 0x2345 });
-    expect(metadata?.trailingBytes).toEqual([0xca, 0xfe, 0x01]);
-    expect(metadata?.rawBytes).toHaveLength(CUSTOM_LANDLOOK_METADATA_BYTES + 3);
+    expect("trailingBytes" in metadata!).toBe(false);
+    expect("rawBytes" in metadata!).toBe(false);
 
     const output = writeCustomLandlookMetadata(metadata!);
 

@@ -232,20 +232,20 @@ expectSameArray(Object.keys(landlookRangeSlotSchema.properties ?? {}), ["slot", 
 expectSameArray(landlookRangeSlotSchema.required ?? [], ["slot", "label", "firstTile", "lastTile"], "Landlook range-slot authored field inventory");
 expectSameArray(Object.keys(landlookWriterGateSchema.properties ?? {}), ["metadataWriterStatus", "atlasWriterStatus", "writableFields", "preserveOnlyFields", "evidence"], "Landlook writer-gate field inventory");
 expectSameArray(landlookWriterGateSchema.required ?? [], Object.keys(landlookWriterGateSchema.properties ?? {}), "Landlook writer-gate required field inventory");
-expectSameArray(Object.keys(customLandlookMetadataSchema.properties ?? {}), ["landlook", "sourceFile", "records", "baseTile", "baseScale", "rangeSlots", "trailingBytes", "rawBytes", "writerGate", "authored"], "Custom-landlook field inventory");
+expectSameArray(Object.keys(customLandlookMetadataSchema.properties ?? {}), ["landlook", "sourceFile", "records", "baseTile", "baseScale", "rangeSlots", "writerGate", "authored"], "Custom-landlook field inventory");
 expectSameArray(customLandlookMetadataSchema.required ?? [], ["landlook", "sourceFile", "records", "baseTile", "baseScale", "rangeSlots", "writerGate"], "Custom-landlook authored field inventory");
 expect(customLandlookMetadataSchema.properties?.records?.minItems === 201 && customLandlookMetadataSchema.properties?.records?.maxItems === 201, "custom landlooks must retain 201 mapstats rows");
 expect(customLandlookMetadataSchema.properties?.rangeSlots?.minItems === 10 && customLandlookMetadataSchema.properties?.rangeSlots?.maxItems === 10, "custom landlooks must retain ten range slots");
 expect(customLandlookMetadataSchema.properties?.records?.items?.$ref === "#/$defs/mapstatsRecord", "custom landlooks must contain canonical mapstats DTOs");
 expect(customLandlookMetadataSchema.properties?.rangeSlots?.items?.$ref === "#/$defs/landlookRangeSlot", "custom landlooks must contain canonical range-slot DTOs");
 expect(customLandlookMetadataSchema.properties?.writerGate?.$ref === "#/$defs/landlookWriterGate", "custom landlooks must reference the canonical writer gate");
-expectSameArray(customLandlookMetadataSchema["x-providence-rust-skip-empty"] ?? [], ["trailingBytes", "rawBytes"], "Custom-landlook omitted compatibility inventory");
+expectSameArray(customLandlookMetadataSchema["x-providence-rust-skip-empty"] ?? [], [], "Custom-landlook omitted compatibility inventory");
 const landlookCompatibilityFields = landlookDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(landlookCompatibilityFields, ["TileAttributeProfile.spare", "TileAttributeProfile.rawByte", "MapstatsRecord.spare", "LandlookRangeSlot.reserved", "CustomLandlookMetadata.trailingBytes", "CustomLandlookMetadata.rawBytes"], "Landlook compatibility-only field inventory");
+expectSameSet(landlookCompatibilityFields, ["TileAttributeProfile.spare", "TileAttributeProfile.rawByte", "MapstatsRecord.spare", "LandlookRangeSlot.reserved"], "Landlook compatibility-only field inventory");
 for (const [index, definition] of assetDefinitions.entries()) {
   const definitionName = assetDefinitionNames[index];
   expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);

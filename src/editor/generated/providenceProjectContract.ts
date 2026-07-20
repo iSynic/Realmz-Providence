@@ -165,8 +165,6 @@ export const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS = [
   "baseTile",
   "baseScale",
   "rangeSlots",
-  "trailingBytes",
-  "rawBytes",
   "writerGate",
   "authored"
 ] as const;
@@ -783,8 +781,6 @@ export type ProvidenceCustomLandlookMetadata = {
   baseTile: number;
   baseScale: number;
   rangeSlots: ProvidenceLandlookRangeSlot[];
-  trailingBytes?: number[];
-  rawBytes?: number[];
   writerGate: ProvidenceLandlookWriterGate;
   authored?: boolean;
 };

@@ -384,6 +384,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_race_override_raw_bytes(&mut value);
     migrate_legacy_caste_override_raw_bytes(&mut value);
     migrate_legacy_scenario_singleton_raw_bytes(&mut value);
+    migrate_legacy_custom_landlook_source_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -598,6 +599,21 @@ fn migrate_legacy_scenario_singleton_raw_bytes(project: &mut serde_json::Value) 
             .and_then(serde_json::Value::as_object_mut)
         {
             record.remove("rawBytes");
+        }
+    }
+}
+
+fn migrate_legacy_custom_landlook_source_bytes(project: &mut serde_json::Value) {
+    let Some(landlooks) = project
+        .get_mut("customLandlooks")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for landlook in landlooks {
+        if let Some(landlook) = landlook.as_object_mut() {
+            landlook.remove("rawBytes");
+            landlook.remove("trailingBytes");
         }
     }
 }
@@ -2821,6 +2837,25 @@ mod tests {
             "rawBytes": vec![0xc7u8; crate::realmz::GLOBAL_MACRO_HOOK_BYTES],
             "authored": false
         });
+        let mut legacy_custom = crate::realmz::parse_custom_landlook_metadata(
+            &vec![0; crate::realmz::CUSTOM_LANDLOOK_METADATA_BYTES + 3],
+            6,
+            "Data Custom 1 BD",
+        );
+        legacy_custom.records[5].sound = 321;
+        legacy_custom.records[5].spare = Some(0x1234);
+        legacy_custom.range_slots[0].first_tile = 62;
+        legacy_custom.range_slots[0].last_tile = 85;
+        legacy_custom.range_slots[0].reserved = Some(0x2345);
+        let mut legacy_custom_value =
+            serde_json::to_value(legacy_custom).expect("serialize legacy custom landlook");
+        legacy_custom_value["rawBytes"] = serde_json::json!(vec![
+            0xa5u8;
+            crate::realmz::CUSTOM_LANDLOOK_METADATA_BYTES
+                + 3
+        ]);
+        legacy_custom_value["trailingBytes"] = serde_json::json!([0xca, 0xfe, 0x01]);
+        saved["customLandlooks"] = serde_json::json!([legacy_custom_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2897,6 +2932,13 @@ mod tests {
         assert_eq!(opened.caste_overrides[0].spare1.as_ref().unwrap()[0], 456);
         assert_eq!(opened.caste_overrides[0].spare2.as_ref().unwrap()[1], -654);
         assert_eq!(opened.caste_overrides[0].spacer.as_ref().unwrap()[62], 789);
+        assert_eq!(opened.custom_landlooks[0].records[5].sound, 321);
+        assert_eq!(opened.custom_landlooks[0].records[5].spare, Some(0x1234));
+        assert_eq!(opened.custom_landlooks[0].range_slots[0].first_tile, 62);
+        assert_eq!(
+            opened.custom_landlooks[0].range_slots[0].reserved,
+            Some(0x2345)
+        );
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2949,6 +2991,10 @@ mod tests {
             .is_none());
         assert!(upgraded["scenario"]["globalMacroHooks"]
             .get("rawBytes")
+            .is_none());
+        assert!(upgraded["customLandlooks"][0].get("rawBytes").is_none());
+        assert!(upgraded["customLandlooks"][0]
+            .get("trailingBytes")
             .is_none());
         assert_eq!(
             upgraded["scenario"]["contactInfo"]["scenarioName"],

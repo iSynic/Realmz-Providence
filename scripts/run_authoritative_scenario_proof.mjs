@@ -1087,8 +1087,8 @@ function assertOwnershipCustomLandlook(project, label, requireNoCompatibilityByt
   expect(landlook.records[5].sound === 321 && landlook.records[5].time === 2 && landlook.records[5].isPath === 1 && landlook.records[5].clearLandId === 156, `${label} has the wrong custom-landlook tile semantics`);
   expect(landlook.rangeSlots[0].firstTile === 62 && landlook.rangeSlots[0].lastTile === 85, `${label} has the wrong custom-landlook range semantics`);
   if (requireNoCompatibilityBytes) {
-    expect((landlook.rawBytes?.length ?? 0) === 0, `${label} custom landlook depends on embedded raw bytes`);
-    expect((landlook.trailingBytes?.length ?? 0) === 0, `${label} custom landlook depends on embedded trailing bytes`);
+    expect(!Object.hasOwn(landlook, "rawBytes"), `${label} custom landlook exposes embedded raw bytes`);
+    expect(!Object.hasOwn(landlook, "trailingBytes"), `${label} custom landlook exposes embedded trailing bytes`);
     expect(landlook.records.every((record) => record.spare == null), `${label} custom landlook contains imported spare words`);
     expect(landlook.rangeSlots.every((slot) => slot.reserved == null), `${label} custom landlook contains imported reserved range words`);
   }

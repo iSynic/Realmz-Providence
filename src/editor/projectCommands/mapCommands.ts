@@ -348,7 +348,7 @@ export function createCustomLandlookFromSource(
 }
 
 function cloneCustomLandlookMetadata(source: CustomLandlookMetadata, targetLandlook: number, sourceFile: string): CustomLandlookMetadata {
-  const { trailingBytes: _trailingBytes, rawBytes: _rawBytes, ...semanticSource } = source;
+  const semanticSource = withoutLegacyCustomLandlookSourceBytes(source);
   return {
     ...semanticSource,
     landlook: targetLandlook,
@@ -620,11 +620,21 @@ function updateCustomLandlook(project: Project, landlook: number, update: (landl
   let changed = false;
   const next = customLandlooks.map((candidate) => {
     if (candidate.landlook !== landlook) return candidate;
-    const updated = update(candidate);
+    const updated = withoutLegacyCustomLandlookSourceBytes(update(withoutLegacyCustomLandlookSourceBytes(candidate)));
     if (updated !== candidate) changed = true;
     return updated;
   });
   return changed ? { ...project, customLandlooks: next } : project;
+}
+
+function withoutLegacyCustomLandlookSourceBytes(landlook: CustomLandlookMetadata): CustomLandlookMetadata {
+  if (!("rawBytes" in landlook) && !("trailingBytes" in landlook)) return landlook;
+  const {
+    rawBytes: _legacyRawBytes,
+    trailingBytes: _legacyTrailingBytes,
+    ...canonical
+  } = landlook as CustomLandlookMetadata & { rawBytes?: number[]; trailingBytes?: number[] };
+  return canonical;
 }
 
 function syncCustomLandlookTileAttribute(project: Project, landlook: CustomLandlookMetadata, tile: number): Project {
