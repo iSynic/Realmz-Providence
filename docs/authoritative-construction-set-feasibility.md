@@ -943,7 +943,7 @@ tests and the ownership proof retain literal format expectations independent of 
 
 Branch validation through the ninetieth slice completed on 2026-07-20:
 
-- full Rust suite: 262 passed, 2 ignored;
+- full Rust suite: 263 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;

@@ -1458,6 +1458,10 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const dungeonTrigger = scripts.triggers.find((candidate) => candidate.id === "dungeon:0:ap:1");
   expect(dungeonTrigger?.source === "Data DDD" && dungeonTrigger.doorid === 504, "Remake export lost the stable dungeon Action Point identity");
   expect(dungeonTrigger.actions.length === 1 && dungeonTrigger.actions[0].rawCode === 1 && dungeonTrigger.actions[0].code === 1, "Remake export lost the normalized dungeon message action");
+  const extraAction = scripts.triggers.find((candidate) => candidate.source === "Data ED3");
+  expect(extraAction && typeof extraAction.callable === "boolean", "Remake export lost authoritative Data ED3 callability");
+  const evidence = documents.get("classic/evidence.json");
+  expect(evidence.semanticDecoding.ed3Reachability.some((row) => row.recordIndex === extraAction.recordIndex && row.reachable === extraAction.callable), "Remake export callability differs from its reachability evidence");
   const encounters = documents.get("classic/encounters.json");
   expect(encounters.simpleEncounters.some((record) => record.id === 0), "Remake export lost the stable simple-encounter identity");
   expect(encounters.complexEncounters.some((record) => record.id === 0), "Remake export lost the stable complex-encounter identity");

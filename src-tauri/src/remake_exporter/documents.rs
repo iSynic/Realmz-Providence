@@ -1,10 +1,20 @@
 use super::assets::PackagedAssets;
 use super::{portable_campaign_id, REMAKE_CLASSIC_FORMAT_VERSION};
 use crate::error::Result;
-use crate::project::ProvidenceProject;
+use crate::project::{ProvidenceProject, SemanticSchema, TriggerRecord};
 use crate::remake_exporter::portable::{portable_source_label, portable_value};
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportTrigger<'a> {
+    #[serde(flatten)]
+    trigger: &'a TriggerRecord,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    callable: Option<bool>,
+}
 
 pub(crate) fn contract_files() -> BTreeMap<&'static str, &'static str> {
     BTreeMap::from([
@@ -23,15 +33,19 @@ pub(crate) fn build_documents(
     project: &ProvidenceProject,
     assets: &PackagedAssets,
 ) -> Result<Vec<(&'static str, Value)>> {
+    let semantic_schema = crate::semantic::build_canonical_project_semantic_schema(project);
     Ok(vec![
         ("scenario.json", scenario_document(project)?),
         ("maps.json", maps_document(project)?),
-        ("scripts.json", scripts_document(project)?),
+        ("scripts.json", scripts_document(project, &semantic_schema)?),
         ("encounters.json", encounters_document(project)?),
         ("content.json", content_document(project)?),
         ("rules.json", rules_document(project)?),
         ("assets.json", assets.document()),
-        ("evidence.json", evidence_document(project)?),
+        (
+            "evidence.json",
+            evidence_document(project, &semantic_schema)?,
+        ),
     ])
 }
 
@@ -61,10 +75,32 @@ fn maps_document(project: &ProvidenceProject) -> Result<Value> {
     }))
 }
 
-fn scripts_document(project: &ProvidenceProject) -> Result<Value> {
+fn scripts_document(
+    project: &ProvidenceProject,
+    semantic_schema: &SemanticSchema,
+) -> Result<Value> {
+    let callable_by_record: BTreeMap<usize, bool> = semantic_schema
+        .decoding
+        .ed3_reachability
+        .iter()
+        .map(|row| (row.record_index, row.reachable))
+        .collect();
+    let triggers: Vec<_> = project
+        .triggers
+        .iter()
+        .map(|trigger| ExportTrigger {
+            trigger,
+            callable: (trigger.source == "Data ED3").then(|| {
+                callable_by_record
+                    .get(&trigger.record_index)
+                    .copied()
+                    .unwrap_or(false)
+            }),
+        })
+        .collect();
     Ok(json!({
         "schemaVersion": REMAKE_CLASSIC_FORMAT_VERSION,
-        "triggers": portable_value(&project.triggers)?,
+        "triggers": portable_value(&triggers)?,
         "randomLevels": portable_value(&project.random_levels)?,
         "extraCodes": portable_value(&project.extracodes)?,
         "messages": portable_value(&project.messages)?,
@@ -114,7 +150,10 @@ fn rules_document(project: &ProvidenceProject) -> Result<Value> {
     }))
 }
 
-fn evidence_document(project: &ProvidenceProject) -> Result<Value> {
+fn evidence_document(
+    project: &ProvidenceProject,
+    semantic_schema: &SemanticSchema,
+) -> Result<Value> {
     let source_files = project
         .source
         .files
@@ -171,7 +210,8 @@ fn evidence_document(project: &ProvidenceProject) -> Result<Value> {
             "warnings": &project.validation.warnings,
         },
         "semanticDecoding": {
-            "dispatcherNoops": portable_value(&project.semantic_schema.decoding.dispatcher_noops)?,
+            "ed3Reachability": portable_value(&semantic_schema.decoding.ed3_reachability)?,
+            "dispatcherNoops": portable_value(&semantic_schema.decoding.dispatcher_noops)?,
         },
     }))
 }

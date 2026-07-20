@@ -1,7 +1,8 @@
 use super::*;
 use crate::importer::create_project;
 use crate::project::{
-    ManagedAsset, ManagedAssetLibraryScope, ProjectOrigin, ResourceAsset, ScenarioSupportFile,
+    Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
+    MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioSupportFile, TriggerRecord,
 };
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
@@ -158,6 +159,56 @@ fn imported_projects_export_without_consulting_the_compatibility_annex() {
 }
 
 #[test]
+fn exports_authoritative_ed3_callability_from_canonical_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("reachability.providence");
+    let mut project = create_project("Reachability".to_string(), &project_dir).unwrap();
+    project.source.origin = Some(ProjectOrigin::Imported);
+    project.source.immutable = true;
+    project.source.raw_sources_dir = "missing-compatibility-annex".to_string();
+    project.triggers = vec![
+        trigger_record("Data DD", 0, vec![action(0, 39, 2)]),
+        trigger_record("Data ED3", 2, vec![action(0, 1, 100)]),
+        trigger_record("Data ED3", 3, vec![action(0, 256, 0)]),
+    ];
+    assert!(project.semantic_schema.decoding.ed3_reachability.is_empty());
+
+    let output = workspace.path().join("reachability-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let triggers = documents["classic/scripts.json"]["triggers"]
+        .as_array()
+        .unwrap();
+    let map_trigger = triggers
+        .iter()
+        .find(|trigger| trigger["source"] == "Data DD")
+        .unwrap();
+    let called_extra_action = triggers
+        .iter()
+        .find(|trigger| trigger["recordIndex"] == 2 && trigger["source"] == "Data ED3")
+        .unwrap();
+    let unreferenced_extra_action = triggers
+        .iter()
+        .find(|trigger| trigger["recordIndex"] == 3 && trigger["source"] == "Data ED3")
+        .unwrap();
+
+    assert!(map_trigger.get("callable").is_none());
+    assert_eq!(called_extra_action["callable"], true);
+    assert_eq!(unreferenced_extra_action["callable"], false);
+    assert_eq!(unreferenced_extra_action["actions"][0]["rawCode"], 256);
+
+    let reachability = documents["classic/evidence.json"]["semanticDecoding"]["ed3Reachability"]
+        .as_array()
+        .unwrap();
+    assert!(reachability
+        .iter()
+        .any(|row| row["recordIndex"] == 2 && row["reachable"] == true));
+    assert!(reachability
+        .iter()
+        .any(|row| row["recordIndex"] == 3 && row["reachable"] == false));
+}
+
+#[test]
 fn preserves_negative_special_land_tile_ids_outside_the_v1_icon_catalog() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("special-tile.providence");
@@ -228,6 +279,48 @@ fn resource_type_file_tokens_cannot_create_paths() {
         super::assets::resource_type_file_token("../x"),
         "type-2e2e2f78"
     );
+}
+
+fn trigger_record(source: &str, record_index: usize, actions: Vec<Action>) -> TriggerRecord {
+    let is_extra_action = source == "Data ED3";
+    TriggerRecord {
+        id: if is_extra_action {
+            format!("Data ED3:macro:{record_index}")
+        } else {
+            format!("Data DD:0:{record_index}")
+        },
+        source: source.to_string(),
+        level_type: (!is_extra_action).then_some(LevelType::Land),
+        level_index: (!is_extra_action).then_some(0),
+        record_index,
+        active: true,
+        doorid: record_index as i32,
+        landid: 0,
+        target_x: 1,
+        target_y: 1,
+        percent: 100,
+        coordinate: (!is_extra_action).then_some(MapCoordinate { x: 1, y: 1 }),
+        actions,
+        provenance: Provenance {
+            source_file: source.to_string(),
+            record_index,
+            byte_offset: record_index * 40,
+            byte_length: 40,
+            confidence: Confidence::SourceBacked,
+        },
+    }
+}
+
+fn action(slot: usize, code: i16, id: i16) -> Action {
+    Action {
+        slot,
+        raw_code: code,
+        code,
+        id,
+        label: format!("Opcode {code}"),
+        category: ActionCategory::Branch,
+        gosub: false,
+    }
 }
 
 fn managed_asset(id: &str, scope: ManagedAssetLibraryScope, bytes: &[u8]) -> ManagedAsset {

@@ -19,7 +19,7 @@ self-contained projection governed by Realmz Remake's
 | --- | --- | --- |
 | Campaign identity and start | `scenario.id`, `scenario.name`, `scenario.shell` | Compatible. Schema 5 currently authors land starts only. |
 | Map identity | `maps[].id`, `levelType`, `index` | Compatible namespaced string identity. |
-| Action Point identity | `triggers[].id`, `source`, `recordIndex` | Compatible stable identity; array position is not used. |
+| Action Point identity | `triggers[].id`, `source`, `recordIndex` | Compatible stable identity; array position is not used. Data ED3 rows also carry authoritative `callable` reachability. |
 | Trigger action | `slot`, `rawCode`, normalized `code`, `id` | Compatible without reinterpretation. |
 | Encounter result action | `slot`, `rawCode`, `id` | Compatible; Remake normalizes signed encounter opcodes when selecting a result. |
 | Monster identity | `monsters[].id` and independent `nameId` | Compatible. The two IDs remain distinct. |
@@ -33,6 +33,12 @@ All nine version-1 JSON documents are emitted. Runtime records retain semantic f
 Classic identities while `rawBytes`, raw/trailing/reserved compatibility data, editor metadata,
 project paths, preview paths, conversion controls, compatibility-annex locations, and embedded
 data URIs are omitted. Custom-library assets are authoring-library state and are not bundled.
+
+The exporter rebuilds Data ED3 reachability from canonical project records without reading the
+compatibility annex. Every Extra Action Point remains in `scripts.triggers`; source-backed callable
+rows export with `callable: true`, while unreferenced imported rows export with `callable: false`.
+The corresponding classification and evidence path remain available under
+`evidence.semanticDecoding.ed3Reachability`.
 
 ## Managed resource payloads
 

@@ -5,6 +5,46 @@ use crate::realmz::{ParsedScenario, FIELD_BYTES, RANDLEVEL_BYTES};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 
+pub fn build_canonical_project_semantic_schema(project: &ProvidenceProject) -> SemanticSchema {
+    let parsed = ParsedScenario {
+        maps: project.maps.clone(),
+        land_layout: project.land_layout.clone(),
+        map_records: project.map_records.clone(),
+        tile_attributes: project.tile_attributes.clone(),
+        custom_landlooks: project.custom_landlooks.clone(),
+        triggers: project.triggers.clone(),
+        random_levels: project.random_levels.clone(),
+        extracodes: project.extracodes.clone(),
+        messages: project.messages.clone(),
+        option_labels: project.option_labels.clone(),
+        battles: project.battles.clone(),
+        monsters: project.monsters.clone(),
+        monster_sets: project.monster_sets.clone(),
+        monster_descriptions: project.monster_descriptions.clone(),
+        scenario_items: project.scenario_items.clone(),
+        treasures: project.treasures.clone(),
+        shops: project.shops.clone(),
+        simple_encounters: project.simple_encounters.clone(),
+        complex_encounters: project.complex_encounters.clone(),
+        thief_encounters: project.thief_encounters.clone(),
+        timed_encounters: project.timed_encounters.clone(),
+        spell_overrides: project.spell_overrides.clone(),
+        race_overrides: project.race_overrides.clone(),
+        caste_overrides: project.caste_overrides.clone(),
+        records: project.records.clone(),
+        diagnostics: project.diagnostics.clone(),
+        asset_catalog: project.asset_catalog.clone(),
+    };
+    build_semantic_schema(
+        &project.scenario,
+        &BTreeMap::new(),
+        &project.source.files,
+        &parsed,
+        &project.assets,
+        true,
+    )
+}
+
 pub fn build_semantic_schema(
     scenario: &ScenarioMeta,
     buffers: &BTreeMap<String, Vec<u8>>,
