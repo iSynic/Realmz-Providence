@@ -330,6 +330,12 @@ poisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 poisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 poisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 poisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
+poisonedProject.scenario.shell.rawBytes = new Array(320).fill(0xd8);
+poisonedProject.scenario.shell.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
+if (poisonedProject.scenario.securityBackup) {
+  poisonedProject.scenario.securityBackup.rawBytes = new Array(318).fill(0xe9);
+  poisonedProject.scenario.securityBackup.trailingBytes = [0xba, 0xdc];
+}
 poisonedProject.scenario.contactInfo.rawBytes = new Array(4608).fill(0xa5);
 if (poisonedProject.scenario.restrictions) poisonedProject.scenario.restrictions.rawBytes = new Array(320).fill(0xa5);
 poisonedProject.scenario.globalMacroHooks.rawBytes = new Array(60).fill(0xa5);
@@ -377,6 +383,12 @@ browserPoisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 browserPoisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 browserPoisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 browserPoisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
+browserPoisonedProject.scenario.shell.rawBytes = new Array(320).fill(0xd8);
+browserPoisonedProject.scenario.shell.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
+if (browserPoisonedProject.scenario.securityBackup) {
+  browserPoisonedProject.scenario.securityBackup.rawBytes = new Array(318).fill(0xe9);
+  browserPoisonedProject.scenario.securityBackup.trailingBytes = [0xba, 0xdc];
+}
 browserPoisonedProject.scenario.contactInfo.rawBytes = new Array(4608).fill(0xa5);
 if (browserPoisonedProject.scenario.restrictions) browserPoisonedProject.scenario.restrictions.rawBytes = new Array(320).fill(0xa5);
 browserPoisonedProject.scenario.globalMacroHooks.rawBytes = new Array(60).fill(0xa5);
@@ -1025,10 +1037,10 @@ function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityB
   expect(contact.scenarioName === scenarioName, `${label} has the wrong scenario contact name`);
   expect(contact.author === "Providence", `${label} has the wrong scenario contact author`);
   if (requireNoCompatibilityBytes) {
-    expect((shell.rawBytes?.length ?? 0) === 0, `${label} scenario shell contains raw compatibility bytes`);
-    expect((shell.trailingBytes?.length ?? 0) === 0, `${label} scenario shell contains a compatibility tail`);
-    expect((project.scenario?.securityBackup?.rawBytes?.length ?? 0) === 0, `${label} scenario security backup contains raw compatibility bytes`);
-    expect((project.scenario?.securityBackup?.trailingBytes?.length ?? 0) === 0, `${label} scenario security backup contains a compatibility tail`);
+    expect(!Object.hasOwn(shell, "rawBytes"), `${label} scenario shell exposes raw compatibility bytes`);
+    expect(!Object.hasOwn(shell, "trailingBytes"), `${label} scenario shell exposes a compatibility tail`);
+    expect(!Object.hasOwn(project.scenario?.securityBackup ?? {}, "rawBytes"), `${label} scenario security backup exposes raw compatibility bytes`);
+    expect(!Object.hasOwn(project.scenario?.securityBackup ?? {}, "trailingBytes"), `${label} scenario security backup exposes a compatibility tail`);
     expect(!Object.hasOwn(contact, "rawBytes"), `${label} scenario contact exposes compatibility bytes`);
     expect(!Object.hasOwn(project.scenario?.restrictions ?? {}, "rawBytes"), `${label} scenario restrictions expose compatibility bytes`);
   }

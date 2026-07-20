@@ -32,8 +32,6 @@ pub fn parse_scenario_shell(source_file: &str, buffer: &[u8]) -> Result<Scenario
         codeseg1: buffer[20..40].to_vec(),
         codeseg2: buffer[40..60].to_vec(),
         creator_user: decode_pascal_text(&buffer[60..316]),
-        trailing_bytes: buffer.get(316..).unwrap_or(&[]).to_vec(),
-        raw_bytes: buffer.to_vec(),
         authored: false,
         provenance: Some(provenance(source_file, 0, 0, buffer.len())),
     })
@@ -307,8 +305,6 @@ mod tests {
             creator_user: "Eric".to_string(),
             codeseg1: (0..20).collect(),
             codeseg2: (20..40).collect(),
-            trailing_bytes: vec![9, 8, 7, 6],
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: None,
         };
@@ -322,7 +318,6 @@ mod tests {
         assert_eq!(parsed_shell.creator_user, "Eric");
         assert_eq!(parsed_shell.codeseg1[19], 19);
         assert_eq!(parsed_shell.codeseg2[0], 20);
-        assert!(parsed_shell.trailing_bytes.is_empty());
 
         let contact = ScenarioContactInfo {
             scenario_name: "New Scenario".to_string(),
@@ -386,8 +381,6 @@ mod tests {
         shell.authored = true;
         shell.rec_level = 0x01020304;
         shell.creator_user = "Go".to_string();
-        shell.raw_bytes.fill(0xa5);
-        shell.trailing_bytes = vec![0x66, 0x77, 0x88, 0x99];
 
         let output = write_scenario_shell(&shell).unwrap();
 

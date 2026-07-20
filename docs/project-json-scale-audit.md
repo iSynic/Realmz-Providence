@@ -10,6 +10,11 @@ This audit supports `ISY-271` and focuses on why imported Providence projects ar
 
 Measured on July 3, 2026 from existing `tmp/` projects.
 
+The measurements below are historical. The authoritative-compiler work subsequently
+moved imported byte identity out of the completed canonical record families and into
+the bounded compatibility annex. The architecture notes below describe the current
+state as of July 20, 2026.
+
 | Sample | Pretty JSON | Minified JSON | Main owners | Status |
 | --- | ---: | ---: | --- | --- |
 | `tmp/oracle-runs/.../War in the Sword Lands.providence/project.json` | 220.98 MB | 116.92 MB | `semanticSchema` 100.85 MB, provenance 7.43 MB, values arrays 5.00 MB | stale-artifact |
@@ -29,22 +34,23 @@ Measured on July 3, 2026 from existing `tmp/` projects.
 
 ## Consumption Map
 
-- `rawBytes` is export-critical today. `src-tauri/src/realmz.rs` copies preserved raw records before writing authored fields for maps, messages, battles, monsters, items, shops, encounters, spells, races, castes, scenario shell/support/metadata, and other target records. Removing persisted `rawBytes` requires an alternate source-snapshot/byte-slice model that can reconstruct those preserved bytes during export.
-- Browser tooling also reads `rawBytes` for map marker extraction, browser semantic/resource parsing, monster-library decoding, blank-record checks, and exact byte counts in editor panels. Some of those uses could move to helpers that fetch from source slices, but they cannot simply disappear.
+- The compatibility annex is now the export-critical source of imported byte identity for completed canonical families. Untouched legacy records can still round-trip exactly; authored records compile from semantic fields and preserve only explicitly bounded unsupported annex data.
+- `ScenarioSupportFile.rawBytes` is the remaining embedded scenario-record identity payload. Scenario shell and security-backup records now compile from semantic fields, while imported singleton identity and malformed suffixes live in the annex.
+- Browser tooling still reads raw import buffers and library/evidence payloads for parsing, diagnostics, and reusable source assets. Those uses are separate from keeping raw bytes embedded in canonical scenario records.
 - `provenance` is mostly regular source/file/record/offset metadata. It feeds semantic byte ranges, validation/source diagnostics, authored record allocation, and UI source context. It looks more suitable for table compression or load-time rehydration, but authored records and inferred/custom sources need sparse exceptions.
 
 ## Decision
 
 - Keep `semanticSchema` as a derived cache, not persisted project state. Current desktop saves already follow this rule; old `tmp/oracle-runs` projects with persisted semantic data are stale scale artifacts.
 - Treat benchmark JSON size separately from project schema size. Benchmark projects should stay compact and carry an empty current-version `semanticSchema` unless a specific smoke test is intentionally measuring semantic-link stress.
-- Implement provenance compression before attempting raw-byte removal. It has the larger measured payoff on the imported-heavy benchmark and lower export risk because most provenance can be reconstructed from shared source/file/record/stride metadata plus sparse exceptions.
-- Keep per-record `rawBytes` embedded until there is a source-snapshot/byte-slice export model. They remain runtime/export-critical for preserving untouched record bytes and are still consumed by browser helpers.
+- The authoritative-compiler compatibility annex now provides the source-snapshot boundary this audit required. Completed record families no longer keep imported identity bytes in their canonical DTOs.
+- Finish the support-file compiler boundary before declaring scenario-record byte identity fully removed from the canonical model. Keep raw payloads only where they are intentionally import evidence, library data, or the bounded compatibility annex.
 - Leave `values` arrays and map tile compaction as secondary work after provenance. They are real contributors, but their measured savings are smaller and the current invalidation pain is better addressed by reducing repeated provenance and avoiding derived semantic payloads.
 
 ## Implementation Follow-Up
 
-- Open implementation work should target a shared provenance table plus load-time rehydration helpers first. The compatibility contract is that existing UI source context, allocation diagnostics, and export behavior keep seeing equivalent per-record provenance.
-- A later source-snapshot/byte-slice design can revisit `rawBytes`, but it must prove export round-trips across maps, messages, battles, monsters, resources, scenario metadata, and custom/authored records before removing embedded arrays.
+- Continue the current compatibility contract: UI source context, allocation diagnostics, untouched-import identity, and authored export behavior must remain equivalent while record DTOs become semantic-only.
+- The remaining source-byte follow-up is the 600-byte scenario support file. Its semantic writer and annex overlay must prove fresh authored output, untouched legacy identity, and deterministic authored rewrite before `ScenarioSupportFile.rawBytes` is removed.
 
 ## Repeatable Report
 

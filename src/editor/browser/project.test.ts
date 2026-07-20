@@ -35,6 +35,19 @@ describe("browser project native manifest validation", () => {
 
   it("drops legacy scenario singleton byte identity during normalization", () => {
     const project = createBrowserProject("Legacy scenario singleton bytes");
+    project.scenario.shell = {
+      ...project.scenario.shell!,
+      lookX: 12,
+      rawBytes: new Array(320).fill(0xd8),
+      trailingBytes: [0xde, 0xad, 0xbe, 0xef]
+    } as unknown as NonNullable<Project["scenario"]["shell"]>;
+    project.scenario.securityBackup = {
+      ...project.scenario.shell,
+      sourceFile: "Data CS",
+      lookY: -19,
+      rawBytes: new Array(318).fill(0xe9),
+      trailingBytes: [0xba, 0xdc]
+    } as unknown as NonNullable<Project["scenario"]["securityBackup"]>;
     project.scenario.contactInfo = {
       ...project.scenario.contactInfo!,
       author: "Semantic author",
@@ -55,12 +68,18 @@ describe("browser project native manifest validation", () => {
 
     normalizeBrowserProject(project);
 
+    expect(project.scenario.shell?.lookX).toBe(12);
+    expect(project.scenario.securityBackup?.lookY).toBe(-19);
     expect(project.scenario.contactInfo?.author).toBe("Semantic author");
     expect(project.scenario.restrictions?.description).toBe("Semantic restrictions");
     expect(project.scenario.globalMacroHooks?.slots).toHaveLength(7);
     expect("rawBytes" in project.scenario.contactInfo!).toBe(false);
     expect("rawBytes" in project.scenario.restrictions!).toBe(false);
     expect("rawBytes" in project.scenario.globalMacroHooks!).toBe(false);
+    expect("rawBytes" in project.scenario.shell!).toBe(false);
+    expect("trailingBytes" in project.scenario.shell!).toBe(false);
+    expect("rawBytes" in project.scenario.securityBackup!).toBe(false);
+    expect("trailingBytes" in project.scenario.securityBackup!).toBe(false);
   });
 
   it("drops legacy spell, race, and caste byte identity during normalization and edits", () => {
@@ -792,7 +811,7 @@ describe("browser project native manifest validation", () => {
       rawBytes: new Array(320).fill(0xa5),
       trailingBytes: [0xde, 0xad, 0xbe, 0xef],
       authored: false
-    };
+    } as unknown as NonNullable<Project["scenario"]["shell"]>;
     const parsed = parseScenarioBuffers(new Map([
       ["Data NI", new Uint8Array(100)],
       ["Data TD", new Uint8Array(48)],

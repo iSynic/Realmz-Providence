@@ -36,36 +36,30 @@ export function updateScenarioStartup(project: Project, fields: Extract<ProjectC
 }
 
 export function updateScenarioShell(project: Project, changes: Extract<ProjectCommand, { kind: "updateScenarioShell" }>["changes"]) {
-  const shell = {
+  const shell = withoutLegacyScenarioShellSourceBytes({
     ...defaultScenarioShell(project),
     ...(project.scenario.shell ?? {}),
     ...changes,
-    trailingBytes: [],
-    rawBytes: undefined,
     authored: true
-  };
+  });
   return { ...project, scenario: { ...project.scenario, shell } };
 }
 
 export function updateScenarioSecurityCodes(project: Project, command: Extract<ProjectCommand, { kind: "updateScenarioSecurityCodes" }>) {
-  const shell = {
+  const shell = withoutLegacyScenarioShellSourceBytes({
     ...defaultScenarioShell(project),
     ...(project.scenario.shell ?? {}),
     ...command.shellChanges,
-    trailingBytes: [],
-    rawBytes: undefined,
     authored: true
-  };
+  });
   const securityBackup = command.backupChanges
-    ? {
+      ? withoutLegacyScenarioShellSourceBytes({
         ...defaultScenarioShell(project),
         sourceFile: "Data CS",
         ...(project.scenario.securityBackup ?? {}),
         ...command.backupChanges,
-        trailingBytes: [],
-        rawBytes: undefined,
         authored: true
-      }
+      })
     : project.scenario.securityBackup;
   return { ...project, scenario: { ...project.scenario, shell, securityBackup } };
 }
@@ -196,6 +190,15 @@ export function updateRuleOverride<T extends { id: number; authored?: boolean }>
 
 function withoutLegacyRuleRawBytes<T extends object>(record: T): T {
   const { rawBytes: _legacyRawBytes, ...canonical } = record as T & { rawBytes?: number[] };
+  return canonical as T;
+}
+
+function withoutLegacyScenarioShellSourceBytes<T extends object>(shell: T): T {
+  const {
+    rawBytes: _legacyRawBytes,
+    trailingBytes: _legacyTrailingBytes,
+    ...canonical
+  } = shell as T & { rawBytes?: number[]; trailingBytes?: number[] };
   return canonical as T;
 }
 
@@ -354,8 +357,7 @@ export function defaultScenarioShell(project: Project) {
     lookY: 0,
     creatorUser: "",
     codeseg1: new Array(20).fill(0),
-    codeseg2: new Array(20).fill(0),
-    trailingBytes: []
+    codeseg2: new Array(20).fill(0)
   };
 }
 

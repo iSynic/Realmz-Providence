@@ -401,8 +401,7 @@ function SecurityRegistrationCard({
       backupChanges: securityBackup ? undefined : {
         sourceFile: "Data CS",
         codeseg1: encoded.backupCodeseg1,
-        codeseg2: encoded.backupCodeseg2,
-        trailingBytes: []
+        codeseg2: encoded.backupCodeseg2
       }
     });
     setUnlocked(false);
@@ -622,8 +621,7 @@ function defaultShell(project: Project): NonNullable<Project["scenario"]["shell"
     lookY: 0,
     creatorUser: "",
     codeseg1: new Array(20).fill(0),
-    codeseg2: new Array(20).fill(0),
-    trailingBytes: []
+    codeseg2: new Array(20).fill(0)
   };
 }
 

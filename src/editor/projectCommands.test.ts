@@ -16,7 +16,7 @@ describe("project command facade", () => {
       rawBytes: new Array(320).fill(0xa5),
       trailingBytes: [0xde, 0xad, 0xbe, 0xef],
       authored: false
-    };
+    } as unknown as NonNullable<Project["scenario"]["shell"]>;
     project.scenario.contactInfo = {
       ...project.scenario.contactInfo!,
       rawBytes: new Array(4608).fill(0xa5),
@@ -47,7 +47,7 @@ describe("project command facade", () => {
       rawBytes: new Array(318).fill(0xb6),
       trailingBytes: [0xba, 0xdc],
       authored: false
-    };
+    } as unknown as NonNullable<Project["scenario"]["securityBackup"]>;
     project.scenario.supportFile = {
       sourceFile: "Scenario",
       divinityStringEditorSlot: 4,
@@ -93,11 +93,11 @@ describe("project command facade", () => {
     expect(globalHooks.scenario.supportFile).toMatchObject({ divinityStringEditorSlot: 12, divinityStringSoundId: -303, authored: true });
     expect(globalHooks.scenario.supportFile?.rawBytes).toBeUndefined();
     expect(globalHooks.scenario.shell).toMatchObject({ lookX: 12, codeseg1: [1, 2, 3], authored: true });
-    expect(globalHooks.scenario.shell?.rawBytes).toBeUndefined();
-    expect(globalHooks.scenario.shell?.trailingBytes).toEqual([]);
+    expect("rawBytes" in (globalHooks.scenario.shell ?? {})).toBe(false);
+    expect("trailingBytes" in (globalHooks.scenario.shell ?? {})).toBe(false);
     expect(globalHooks.scenario.securityBackup).toMatchObject({ codeseg1: [4, 5, 6], authored: true });
-    expect(globalHooks.scenario.securityBackup?.rawBytes).toBeUndefined();
-    expect(globalHooks.scenario.securityBackup?.trailingBytes).toEqual([]);
+    expect("rawBytes" in (globalHooks.scenario.securityBackup ?? {})).toBe(false);
+    expect("trailingBytes" in (globalHooks.scenario.securityBackup ?? {})).toBe(false);
     expect(globalHooks.scenario.contactInfo).toMatchObject({ author: "Providence", authored: true });
     expect("rawBytes" in (globalHooks.scenario.contactInfo ?? {})).toBe(false);
     expect(globalHooks.scenario.restrictions).toMatchObject({ maxPartyCharacters: 4, authored: true });

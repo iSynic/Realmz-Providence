@@ -766,7 +766,19 @@ template compilation discard the two obsolete fields without losing decoded sema
 authoritative proof keeps poisoning legacy-shaped in-memory objects to prove neither compiler
 consults them.
 
-Branch validation through the seventy-first slice completed on 2026-07-20:
+The seventy-second slice removes `ScenarioShell.rawBytes` and `trailingBytes` from schema-v5
+canonical projects, covering both the scenario-named startup marker and the optional `Data CS`
+security backup. Browser and desktop import now retain only the five runtime integers, both
+20-byte code segments, creator text, authored state, and provenance. Both writers already compiled
+an exact fresh 316-byte core without consulting embedded bytes. Untouched imported singletons
+remain byte-exact through the compatibility annex, while authored imports recover only a malformed
+suffix after offset 316; fresh output has no suffix. Browser normalization, desktop project-open
+migration, scenario/security commands, Scenario JSON template compilation, semantic mapping, and
+the Remake projection now share that boundary. The authoritative proof poisons both obsolete
+properties on legacy-shaped shell and backup objects and proves neither native compiler consults
+them.
+
+Branch validation through the seventy-second slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 616 passed, plus typecheck;
@@ -794,7 +806,9 @@ same while retaining their explicitly bounded preserve-only arrays. Removing dup
 restriction, and global-hook identity changes only their focused schema, codecs, and migration
 boundaries and adds no module-size violation. Removing duplicate custom-landlook source identity
 likewise changes only its focused contract, import, command, and compiler boundaries and adds no
-module-size violation. The authoritative rules slice likewise keeps
+module-size violation. Removing scenario-shell source identity likewise reduces the generated DTO
+and its focused codec/normalization paths without adding a module-size violation. The authoritative
+rules slice likewise keeps
 `rules.rs` within its ceiling by separating exact-shape validation from the native codec. The
 `Data Solids` slice likewise moves its 1,024-byte codec and tests into a focused module, returns
 `landlooks.rs` below its baseline, and does not add a new ISY-320 violation. The `Layout` slice
@@ -947,8 +961,8 @@ EDCD rows, messages, options, battles, monsters, items, shops, encounters, rules
 assets, diagnostics, and editor metadata. Scenario JSON compiles directly into these families.
 
 No foundational scenario domain was found that requires an imported scenario merely to exist in
-the editor. The remaining embedded `rawBytes` fields are confined to the scenario shell/support
-compatibility boundary. The completed semantic families demonstrate the
+the editor. The remaining embedded `rawBytes` field is confined to the 600-byte scenario support
+file compatibility boundary. The completed semantic families demonstrate the
 preferred pattern: omit compatibility storage from canonical records, zero-initialize compiler
 output, and consult preserved bytes only for imported projects.
 
@@ -1009,7 +1023,7 @@ architecture.
 | --- | --- | --- |
 | `components/maps/MapRecordsWorkbench.tsx` and `app/appUtils.ts` | **Resolved:** consume ten structured marker slots only. | Browser import and project-open migration backfill legacy markers at the compatibility boundary. |
 | `panels/TextPanel.tsx` | **Resolved for messages and option labels:** the workbench consumes semantic text and reports each fixed native row contract. | Keep exact imported text-row bytes in the compatibility annex rather than the canonical editor model. |
-| `panels/rules/ruleUtils.ts` and `projectCommands/scenarioRulesCommands.ts` | **Resolved for rules and scenario startup metadata:** canonical contact, restriction, and global-hook DTOs expose no `rawBytes`; shell/security edits strip compatibility storage; template copies strip shell identity; and blank detection uses semantic fields. | Imported library summaries may continue exposing raw byte counts as compatibility evidence. |
+| `panels/rules/ruleUtils.ts` and `projectCommands/scenarioRulesCommands.ts` | **Resolved for rules and scenario startup metadata:** canonical shell, security-backup, contact, restriction, and global-hook DTOs expose no embedded byte identity; template copies and edits retain semantics only; and blank detection uses semantic fields. | Imported library summaries may continue exposing raw byte counts as compatibility evidence. |
 | `panels/combat/monsterLibraryWorkflow.ts` and `monsterLibrary.ts` | **Resolved at scenario-copy boundary:** legacy library bytes may be decoded as input evidence, but copied `MonsterRecord` values omit them. | Raw library evidence may remain in the library annex; normalize it earlier only if library persistence needs a shared contract. |
 | `projectCommands/mapCommands.ts` and target/rules record constructors | Map-record, scenario-item, treasure, shop, message, option-label, battle, monster, monster-description, spell, race, and caste dependencies are **resolved**. | Keep fresh constructors semantic-only as later DTO families migrate. |
 | `browser/realmzParser.ts`, `browser/project.ts`, and `browser/semantic.ts` | Parse imported files, build evidence, and sometimes backfill semantic fields from raw buffers. | Retain in the legacy import/evidence pipeline; fresh semantic graphs should build from canonical data. |
@@ -1105,7 +1119,11 @@ A pragmatic sequence is:
     identity from the canonical DTO; migrate older JSON and sanitize clone/edit/template paths;
     compile an exact semantic core; and recover only unnamed spare/reserved words plus malformed
     tails from the compatibility annex for edited imports.
-20. Keep parser, compiler, validator, and UI behavior in handwritten modules.
+20. **Implemented for scenario shell/security metadata:** remove duplicate 316-byte singleton and
+    trailing identity from the canonical DTO; migrate older shell and `Data CS` JSON; sanitize
+    browser normalization, commands, templates, and semantic mapping; and retain untouched identity
+    or edited malformed suffixes only through the compatibility annex.
+21. Keep parser, compiler, validator, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1146,10 +1164,10 @@ Legend:
 
 | Native file/family | Current ownership | Fresh authoritative target | Evidence/remaining issue |
 | --- | --- | --- | --- |
-| `<ScenarioName>` marker/main file | Generated semantic core + legacy singleton/tail annex | Generate exactly 316 bytes from canonical shell data | Both writers compile all five startup integers, both fixed code segments, and deterministic Str255 creator padding without consulting embedded compatibility storage. Untouched imported identity and an optional 316-320 tail are restored only from the annex. |
+| `<ScenarioName>` marker/main file | Generated semantic core + legacy singleton/tail annex | Generate exactly 316 bytes from canonical shell data | The canonical DTO exposes neither `rawBytes` nor `trailingBytes`. Both writers compile all five startup integers, both fixed code segments, and deterministic Str255 creator padding. Untouched imported identity and an optional post-316 tail are restored only from the annex. |
 | `Scenario` 600-byte data fork | Deterministic neutral baseline + bounded editor fields + legacy annex | Generate exactly 600 bytes without imported identity | Both writers zero-initialize the file and compile only offset 23 and offsets 38-39. Untouched imported identity remains annex-owned; edited imports recover other editor/view-state bytes only from the annex. The modern runtime proof accepts the neutral default. |
 | `Scenario.rsrc` / native `Scenario` resource fork | Canonical 46-byte minimum container plus generated overlays and legacy annex | Always construct an openable target resource fork without invented built-in metadata | Both compilers emit the exact zero-entry Resource Manager container and can build/merge map names, icons, pictures, sounds, text, and styles. Source and corpus evidence show that third-party scenarios do not require synthetic `RLMZ` entries. Stock Classic-Mac transport remains an acceptance gate. |
-| `Data CS` | Generated semantic core + legacy singleton/tail annex | Generate canonical fresh security backup; annex imported identity only | The same 316-byte semantic codec is used. Fresh output duplicates the shell unless an explicit canonical backup exists; imported identity/tails remain annex-owned. Exact Divinity publish/refusal behavior is still not fixture-proven. |
+| `Data CS` | Generated semantic core + legacy singleton/tail annex | Generate canonical fresh security backup; annex imported identity only | The same byte-identity-free 316-byte DTO and semantic codec are used. Fresh output duplicates the shell unless an explicit canonical backup exists; imported identity/tails remain annex-owned. Exact Divinity publish/refusal behavior is still not fixture-proven. |
 | `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | The canonical DTO exposes no `rawBytes`. Both writers compile all eighteen Str255 slots and deterministic padding; an untouched imported singleton and malformed tail are restored only from the annex. |
 | `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | The canonical DTO exposes no `rawBytes`. Both writers compile all 320 bytes and normalize ban flags; untouched noncanonical flags, Pascal padding, singleton identity, and malformed tails are annex-only. |
 | `Global` | Generated semantic hooks + bounded legacy annex | Generate 60 bytes with zero defaults for reserved slots | The canonical DTO exposes no `rawBytes`. Both writers compile the five runtime-backed slots; untouched imported identity is annex-owned, while edited imports restore only offsets 6..7 and 12..59 plus a malformed tail. |
@@ -1303,8 +1321,8 @@ must not be called fresh-authoritative merely because imported round trips are f
    behavior helpers by design. Future persisted fields must enter through the schema rather than
    reopening TypeScript/Rust duplication.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but a few
-   imported project records still embed unowned bytes. Scenario shell/support are the remaining
-   embedded-identity DTOs; custom-landlook, contact, restriction, and global-hook
+   imported project records still embed unowned bytes. The 600-byte scenario support file is the
+   remaining embedded-identity DTO; shell/security, custom-landlook, contact, restriction, and global-hook
    DTOs no longer expose raw fields at all.
    Race and caste rows no longer retain byte identity, but their bounded `spare`/`spacer` words
    remain explicit compatibility-only fields pending interpretation or narrower annex isolation; marker and

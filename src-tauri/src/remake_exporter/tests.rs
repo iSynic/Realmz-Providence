@@ -1,6 +1,8 @@
 use super::*;
 use crate::importer::create_project;
-use crate::project::{ManagedAsset, ManagedAssetLibraryScope, ProjectOrigin, ResourceAsset};
+use crate::project::{
+    ManagedAsset, ManagedAssetLibraryScope, ProjectOrigin, ResourceAsset, ScenarioSupportFile,
+};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -134,9 +136,14 @@ fn imported_projects_export_without_consulting_the_compatibility_annex() {
     project.source.immutable = true;
     project.source.source_path = "Z:\\missing\\Imported Scenario".to_string();
     project.source.raw_sources_dir = "Z:\\missing\\raw-sources".to_string();
-    let shell = project.scenario.shell.as_mut().unwrap();
-    shell.raw_bytes = vec![0xaa; 316];
-    shell.trailing_bytes = vec![0xbb; 4];
+    project.scenario.support_file = Some(ScenarioSupportFile {
+        source_file: "Scenario".to_string(),
+        divinity_string_editor_slot: Some(2),
+        divinity_string_sound_id: Some(143),
+        raw_bytes: vec![0xaa; 600],
+        authored: false,
+        provenance: None,
+    });
 
     let output = workspace.path().join("imported-out");
     export_remake_campaign(&project, &project_dir, &output).unwrap();

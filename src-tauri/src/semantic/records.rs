@@ -170,8 +170,6 @@ pub(super) fn add_canonical_record_collections(
     if let Some(shell) = &scenario.shell {
         let mut shell = shell.clone();
         shell.authored = true;
-        shell.raw_bytes.clear();
-        shell.trailing_bytes.clear();
         let shell_source = shell.source_file.clone();
         insert_canonical_buffer(
             schema,
@@ -183,8 +181,6 @@ pub(super) fn add_canonical_record_collections(
         );
         let mut security_backup = scenario.security_backup.clone().unwrap_or(shell);
         security_backup.authored = true;
-        security_backup.raw_bytes.clear();
-        security_backup.trailing_bytes.clear();
         insert_canonical_buffer(
             schema,
             &mut buffers,

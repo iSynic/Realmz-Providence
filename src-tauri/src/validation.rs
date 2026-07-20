@@ -2991,8 +2991,6 @@ mod tests {
             creator_user: String::new(),
             codeseg1: vec![0; 20],
             codeseg2: vec![0; 20],
-            trailing_bytes: Vec::new(),
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: None,
         }

@@ -385,7 +385,6 @@ function defaultScenarioShell(name: string): NonNullable<Project["scenario"]["sh
     creatorUser: "",
     codeseg1: new Array(20).fill(0),
     codeseg2: new Array(20).fill(0),
-    trailingBytes: [],
     authored: true
   };
 }
@@ -435,7 +434,6 @@ function parseScenarioShell(sourceFile: string, buffer?: Uint8Array): ScenarioSh
     codeseg1: Array.from(buffer.slice(20, 40)),
     codeseg2: Array.from(buffer.slice(40, 60)),
     creatorUser: pascalString(buffer.slice(60, 316)),
-    trailingBytes: Array.from(buffer.slice(316)),
     authored: false,
     provenance: {
       sourceFile,
@@ -561,6 +559,8 @@ export async function openBrowserProject(source: BrowserProjectSource): Promise<
 export function normalizeBrowserProject(project: Project): Project {
   normalizeProjectContract(project);
   project.assets ??= [];
+  if (project.scenario.shell) project.scenario.shell = withoutLegacyScenarioShellSourceBytes(project.scenario.shell);
+  if (project.scenario.securityBackup) project.scenario.securityBackup = withoutLegacyScenarioShellSourceBytes(project.scenario.securityBackup);
   if (project.scenario.contactInfo) project.scenario.contactInfo = withoutLegacySingletonRawBytes(project.scenario.contactInfo);
   if (project.scenario.restrictions) project.scenario.restrictions = withoutLegacySingletonRawBytes(project.scenario.restrictions);
   if (project.scenario.globalMacroHooks) project.scenario.globalMacroHooks = withoutLegacySingletonRawBytes(project.scenario.globalMacroHooks);
@@ -659,6 +659,16 @@ export function normalizeBrowserProject(project: Project): Project {
   backfillTilesetMetadata(project);
   project.validation = validateBrowserProject(project);
   return project;
+}
+
+function withoutLegacyScenarioShellSourceBytes<T extends NonNullable<Project["scenario"]["shell"]>>(shell: T): T {
+  if (!("rawBytes" in shell) && !("trailingBytes" in shell)) return shell;
+  const {
+    rawBytes: _legacyRawBytes,
+    trailingBytes: _legacyTrailingBytes,
+    ...canonical
+  } = shell as T & { rawBytes?: number[]; trailingBytes?: number[] };
+  return canonical as T;
 }
 
 function withoutLegacyCustomLandlookSourceBytes<T extends NonNullable<Project["customLandlooks"]>[number]>(landlook: T): T {

@@ -1335,8 +1335,6 @@ export type ProvidenceScenarioShell = {
   creatorUser: string;
   codeseg1: number[];
   codeseg2: number[];
-  trailingBytes: number[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
 };

@@ -118,7 +118,7 @@ function initializeScenarioSeedProject(
       importedAt: now,
       globalMacroHooks,
       shell: scenarioShell
-        ? {
+        ? withoutLegacyScenarioShellSourceBytes({
             ...scenarioShell,
             ...(seed.scenario.start
               ? {
@@ -128,10 +128,8 @@ function initializeScenarioSeedProject(
                 }
               : {}),
             sourceFile: seed.scenario.name,
-            trailingBytes: [],
-            rawBytes: undefined,
             authored: true
-          }
+          })
         : null,
       restrictions: project.scenario.restrictions ? withoutLegacyRawBytes(project.scenario.restrictions) : null,
       contactInfo: contactInfo
@@ -161,6 +159,15 @@ function initializeScenarioSeedProject(
 
 function withoutLegacyRawBytes<T extends object>(record: T): T {
   const { rawBytes: _legacyRawBytes, ...canonical } = record as T & { rawBytes?: number[] };
+  return canonical as T;
+}
+
+function withoutLegacyScenarioShellSourceBytes<T extends object>(shell: T): T {
+  const {
+    rawBytes: _legacyRawBytes,
+    trailingBytes: _legacyTrailingBytes,
+    ...canonical
+  } = shell as T & { rawBytes?: number[]; trailingBytes?: number[] };
   return canonical as T;
 }
 

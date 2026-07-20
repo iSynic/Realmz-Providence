@@ -488,15 +488,14 @@ expect(scenarioProvenanceOwners.length === 5, "five scenario startup DTOs must c
 for (const definition of scenarioProvenanceOwners) {
   expect(definition.properties.provenance?.oneOf?.[0]?.$ref === "#/$defs/provenance", `${definition["x-providence-rust-name"]} must reference canonical provenance`);
 }
-expect(Object.hasOwn(schema.$defs?.scenarioShell?.properties ?? {}, "rawBytes"), "scenarioShell must expose imported rawBytes as compatibility-only data");
+expect(!Object.hasOwn(schema.$defs?.scenarioShell?.properties ?? {}, "rawBytes"), "scenarioShell must not expose imported rawBytes");
+expect(!Object.hasOwn(schema.$defs?.scenarioShell?.properties ?? {}, "trailingBytes"), "scenarioShell must not expose imported trailingBytes");
 const compatibilityScenarioFields = scenarioDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
 expectSameSet(compatibilityScenarioFields, [
-  "ScenarioShell.trailingBytes",
-  "ScenarioShell.rawBytes",
   "ScenarioSupportFile.rawBytes"
 ], "Scenario compatibility-only field inventory");
 

@@ -383,7 +383,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_spell_override_raw_bytes(&mut value);
     migrate_legacy_race_override_raw_bytes(&mut value);
     migrate_legacy_caste_override_raw_bytes(&mut value);
-    migrate_legacy_scenario_singleton_raw_bytes(&mut value);
+    migrate_legacy_scenario_source_bytes(&mut value);
     migrate_legacy_custom_landlook_source_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
@@ -586,7 +586,7 @@ fn migrate_legacy_caste_override_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "casteOverrides");
 }
 
-fn migrate_legacy_scenario_singleton_raw_bytes(project: &mut serde_json::Value) {
+fn migrate_legacy_scenario_source_bytes(project: &mut serde_json::Value) {
     let Some(scenario) = project
         .get_mut("scenario")
         .and_then(serde_json::Value::as_object_mut)
@@ -599,6 +599,15 @@ fn migrate_legacy_scenario_singleton_raw_bytes(project: &mut serde_json::Value) 
             .and_then(serde_json::Value::as_object_mut)
         {
             record.remove("rawBytes");
+        }
+    }
+    for field in ["shell", "securityBackup"] {
+        if let Some(record) = scenario
+            .get_mut(field)
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            record.remove("rawBytes");
+            record.remove("trailingBytes");
         }
     }
 }
@@ -1050,8 +1059,6 @@ fn default_scenario_shell(source_file: &str) -> ScenarioShell {
         creator_user: String::new(),
         codeseg1: vec![0; 20],
         codeseg2: vec![0; 20],
-        trailing_bytes: Vec::new(),
-        raw_bytes: Vec::new(),
         authored: true,
         provenance: None,
     }
@@ -2816,6 +2823,16 @@ mod tests {
         legacy_caste_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::CASTE_BYTES]);
         saved["casteOverrides"] = serde_json::json!([legacy_caste_value]);
+        saved["scenario"]["shell"]["lookX"] = serde_json::json!(12);
+        saved["scenario"]["shell"]["rawBytes"] = serde_json::json!(vec![0xd8u8; 320]);
+        saved["scenario"]["shell"]["trailingBytes"] =
+            serde_json::json!([0xde, 0xad, 0xbe, 0xef]);
+        let mut legacy_security_backup = saved["scenario"]["shell"].clone();
+        legacy_security_backup["sourceFile"] = serde_json::json!("Data CS");
+        legacy_security_backup["lookY"] = serde_json::json!(-19);
+        legacy_security_backup["rawBytes"] = serde_json::json!(vec![0xe9u8; 318]);
+        legacy_security_backup["trailingBytes"] = serde_json::json!([0xba, 0xdc]);
+        saved["scenario"]["securityBackup"] = legacy_security_backup;
         saved["scenario"]["contactInfo"]["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::SCENARIO_CONTACT_INFO_BYTES]);
         saved["scenario"]["restrictions"] = serde_json::json!({
@@ -2932,6 +2949,8 @@ mod tests {
         assert_eq!(opened.caste_overrides[0].spare1.as_ref().unwrap()[0], 456);
         assert_eq!(opened.caste_overrides[0].spare2.as_ref().unwrap()[1], -654);
         assert_eq!(opened.caste_overrides[0].spacer.as_ref().unwrap()[62], 789);
+        assert_eq!(opened.scenario.shell.as_ref().unwrap().look_x, 12);
+        assert_eq!(opened.scenario.security_backup.as_ref().unwrap().look_y, -19);
         assert_eq!(opened.custom_landlooks[0].records[5].sound, 321);
         assert_eq!(opened.custom_landlooks[0].records[5].spare, Some(0x1234));
         assert_eq!(opened.custom_landlooks[0].range_slots[0].first_tile, 62);
@@ -2991,6 +3010,16 @@ mod tests {
             .is_none());
         assert!(upgraded["scenario"]["globalMacroHooks"]
             .get("rawBytes")
+            .is_none());
+        assert!(upgraded["scenario"]["shell"].get("rawBytes").is_none());
+        assert!(upgraded["scenario"]["shell"]
+            .get("trailingBytes")
+            .is_none());
+        assert!(upgraded["scenario"]["securityBackup"]
+            .get("rawBytes")
+            .is_none());
+        assert!(upgraded["scenario"]["securityBackup"]
+            .get("trailingBytes")
             .is_none());
         assert!(upgraded["customLandlooks"][0].get("rawBytes").is_none());
         assert!(upgraded["customLandlooks"][0]
@@ -3296,8 +3325,6 @@ mod tests {
             .as_mut()
             .expect("fresh scenario shell");
         shell.look_x = 12;
-        shell.raw_bytes = vec![0xa5; 320];
-        shell.trailing_bytes = vec![0xde, 0xad, 0xbe, 0xef];
         shell.authored = false;
 
         let contact = project

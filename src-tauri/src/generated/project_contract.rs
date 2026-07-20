@@ -1723,10 +1723,6 @@ pub struct ScenarioShell {
     pub codeseg1: Vec<u8>,
     #[serde(default)]
     pub codeseg2: Vec<u8>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub trailing_bytes: Vec<u8>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     #[serde(default)]
