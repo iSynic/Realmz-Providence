@@ -1,5 +1,5 @@
 import type { Project, ScenarioTarget } from "../types";
-import { AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES } from "../generated/realmzNativeManifestPolicy";
+import { AUTHORED_RUNTIME_BASELINE_FILES, AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES } from "../generated/realmzNativeManifestPolicy";
 import { DOOR_LEVEL_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, TILE_SOLIDS_BYTES, writeScenarioShell, writeTileSolids } from "./binaryWriters";
 import { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, writeMinimumScenarioResourceFork } from "./resourceFork";
 
@@ -30,7 +30,7 @@ export function createAuthoredScenarioCompilerBaseline(project: Project, target:
     ...triggerTables,
     { path: AUTHORED_STARTUP_FILES.scenarioItems, bytes: new Uint8Array(SCENARIO_ITEM_TABLE_BYTES) },
     { path: AUTHORED_STARTUP_FILES.tileSolids, bytes: writeTileSolids(project.tileAttributes) },
-    ...AUTHORED_EMPTY_RUNTIME_FILES.map((path) => ({ path, bytes: new Uint8Array() }))
+    ...AUTHORED_RUNTIME_BASELINE_FILES.map((file) => ({ path: file.path, bytes: new Uint8Array() }))
   ];
 }
 

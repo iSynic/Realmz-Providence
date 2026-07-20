@@ -836,7 +836,18 @@ remain in the resource writers. Imported
 `.rsf`, AppleDouble, and data-fork selections remain compatibility-annex behavior. The ownership
 proof independently evaluates the JSON policy across Rust/browser and Windows/Classic-Mac output.
 
-Branch validation through the seventy-eighth slice completed on 2026-07-20:
+The seventy-ninth slice closes the remaining authored native-filename duplication. Native-manifest
+policy contract version 2 replaces the anonymous always-empty inventory with eight named runtime-
+baseline roles for dungeon maps, dungeon random levels, shops, all four encounter families, and
+monsters. Both compiler baselines seed those roles, while their semantic overlays and imported-
+annex lookups consume the same generated paths. Generated land/dungeon trigger path roles likewise
+replace the last `Data DD`/`Data DDD` literals in semantic compilation. An independent baseline
+golden retains the exact expected native filenames so a mistaken policy edit cannot silently rename
+Realmz files. This is an internal compiler-policy evolution: it changes neither schema-v5
+`project.json`, Realmz output names, nor the Remake bundle contract. Codec behavior, resource-update
+decisions, and semantic writer execution remain handwritten.
+
+Branch validation through the seventy-ninth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 616 passed, plus typecheck;
@@ -888,6 +899,8 @@ compiler owners without adding a module-size violation.
 The project-path and resource-sidecar projection likewise changes only the policy generator,
 generated definitions, compiler boundaries, and ownership proof, with no new module-size
 violation.
+The named runtime-baseline and trigger-path closure likewise replaces literals in those same
+compiler owners and adds no new module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1072,8 +1085,8 @@ the same content-neutral package directly as authored compiler output:
 - required zero-length startup tables.
 
 The versioned `schemas/realmz-native-manifest-policy.json` contract is now the neutral owner of the
-shared 200-row scenario-item capacity, always-empty runtime-file inventory, and land/dungeon
-trigger-table minimums. It also names the stable support, security, item, solidity, and
+shared 200-row scenario-item capacity, eight named runtime-baseline file roles, and land/dungeon
+trigger-table paths and minimums. It also names the stable support, security, item, solidity, and
 target-specific resource-fork roles, seventeen fixed-path optional semantic families and their
 canonical presence predicates, two project-derived filename families, and the two default authored
 rule/item resource sidecars. Its generated TypeScript and Rust constants feed both baseline
@@ -1208,7 +1221,7 @@ A pragmatic sequence is:
     template copies; compile the two known Divinity fields into a neutral exact-size file; and keep
     untouched identity or edited editor/view state only in the compatibility annex.
 22. **Implemented for the first native-manifest policy seam:** define the authored scenario-item
-    capacity and always-empty runtime-file inventory once in a versioned neutral contract, generate
+    capacity and runtime-baseline file inventory once in a versioned neutral contract, generate
     TypeScript and Rust constants, require both compiler baselines to consume them, and verify the
     generated package against the source policy.
 23. **Implemented for authored trigger-table baselines:** define the land and dungeon paths, level
@@ -1224,7 +1237,11 @@ A pragmatic sequence is:
     filters for custom landlooks and alternate monster sets, define fresh-authored `Data ID.rsrc`
     and `Data Spell.rsrc` roles, preserve imported fork-name selection, and check all four ownership
     proof outputs against the neutral policy.
-27. Keep parser, codec, validator, resource-update, and UI behavior in handwritten modules.
+27. **Implemented for native filename closure:** replace anonymous runtime-baseline entries with
+    eight semantic roles, consume those roles in baseline seeding, semantic overlays, and annex
+    lookups, generate land/dungeon trigger path roles, and keep exact Realmz names independently
+    golden-tested.
+28. Keep parser, codec, validator, resource-update, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1407,8 +1424,8 @@ must not be called fresh-authoritative merely because imported round trips are f
 
 1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
    annex and the minimum ownership fixture enforces byte parity. A versioned neutral policy now
-   owns scenario-item capacity, always-empty runtime files, and the land/dungeon trigger-table
-   minimums, plus stable startup roles, target resource-fork paths, fixed-path optional
+   owns scenario-item capacity, named runtime-baseline files, and the land/dungeon trigger-table
+   paths and minimums, plus stable startup roles, target resource-fork paths, fixed-path optional
    semantic-file presence, project-derived custom-landlook/monster-set paths, and authored
    item/spell sidecar roles. Rust and TypeScript still implement codec sizes, resource-update
    decisions, and semantic writer execution independently. Broader golden fixtures or a shared
@@ -1552,9 +1569,9 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 ### Phase 5: One compiler contract across desktop and browser
 
 - **Implemented for baseline and native paths:** generate scenario-item capacity, startup roles,
-  trigger-table minimums, empty runtime files, fixed optional predicates, project-derived semantic
-  paths, and default resource sidecars from one native-manifest policy and enforce the applicable
-  projections in both compilers.
+  trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
+  project-derived semantic paths, and default resource sidecars from one native-manifest policy
+  and enforce the applicable projections in both compilers.
 - Prefer exposing the Rust compiler to browser/Wasm, or generate both implementations from shared
   codec/manifest specifications.
 - Keep byte-parity fixtures for every supported target.

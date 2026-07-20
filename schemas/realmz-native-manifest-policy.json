@@ -1,5 +1,5 @@
 {
-  "contractVersion": 1,
+  "contractVersion": 2,
   "authoredBaseline": {
     "scenarioItemRecords": 200,
     "startupFiles": {
@@ -203,15 +203,39 @@
         "emission": "semantic-updates"
       }
     ],
-    "emptyRuntimeFiles": [
-      "Data DL",
-      "Data RDD",
-      "Data SD",
-      "Data TD2",
-      "Data TD3",
-      "Data ED",
-      "Data ED2",
-      "Data MD"
+    "runtimeBaselineFiles": [
+      {
+        "id": "dungeonMaps",
+        "path": "Data DL"
+      },
+      {
+        "id": "dungeonRandomLevels",
+        "path": "Data RDD"
+      },
+      {
+        "id": "shops",
+        "path": "Data SD"
+      },
+      {
+        "id": "thiefEncounters",
+        "path": "Data TD2"
+      },
+      {
+        "id": "timedEncounters",
+        "path": "Data TD3"
+      },
+      {
+        "id": "simpleEncounters",
+        "path": "Data ED"
+      },
+      {
+        "id": "complexEncounters",
+        "path": "Data ED2"
+      },
+      {
+        "id": "monsters",
+        "path": "Data MD"
+      }
     ]
   }
 }

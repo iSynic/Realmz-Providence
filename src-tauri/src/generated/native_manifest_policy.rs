@@ -42,6 +42,16 @@ pub const AUTHORED_TRIGGER_TABLES: &[AuthoredTriggerTablePolicy] = &[
     },
 ];
 
+pub struct AuthoredTriggerTablePaths {
+    pub land: &'static str,
+    pub dungeon: &'static str,
+}
+
+pub const AUTHORED_TRIGGER_TABLE_PATHS: AuthoredTriggerTablePaths = AuthoredTriggerTablePaths {
+    land: "Data DD",
+    dungeon: "Data DDD",
+};
+
 pub struct AuthoredOptionalSemanticFilePolicy {
     pub id: &'static str,
     pub path: &'static str,
@@ -341,7 +351,7 @@ pub const AUTHORED_RESOURCE_SIDECAR_PATHS: AuthoredResourceSidecarPaths =
     };
 
 #[rustfmt::skip]
-pub const AUTHORED_EMPTY_RUNTIME_FILES: &[&str] = &[
+pub const AUTHORED_RUNTIME_BASELINE_FILES: &[&str] = &[
     "Data DL",
     "Data RDD",
     "Data SD",
@@ -351,3 +361,26 @@ pub const AUTHORED_EMPTY_RUNTIME_FILES: &[&str] = &[
     "Data ED2",
     "Data MD",
 ];
+
+pub struct AuthoredRuntimeBaselineFilePaths {
+    pub dungeon_maps: &'static str,
+    pub dungeon_random_levels: &'static str,
+    pub shops: &'static str,
+    pub thief_encounters: &'static str,
+    pub timed_encounters: &'static str,
+    pub simple_encounters: &'static str,
+    pub complex_encounters: &'static str,
+    pub monsters: &'static str,
+}
+
+pub const AUTHORED_RUNTIME_BASELINE_FILE_PATHS: AuthoredRuntimeBaselineFilePaths =
+    AuthoredRuntimeBaselineFilePaths {
+        dungeon_maps: "Data DL",
+        dungeon_random_levels: "Data RDD",
+        shops: "Data SD",
+        thief_encounters: "Data TD2",
+        timed_encounters: "Data TD3",
+        simple_encounters: "Data ED",
+        complex_encounters: "Data ED2",
+        monsters: "Data MD",
+    };

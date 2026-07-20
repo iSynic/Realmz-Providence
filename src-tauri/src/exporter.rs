@@ -2,9 +2,10 @@ use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot}
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::generated::native_manifest_policy::{
     authored_optional_semantic_file_paths, authored_project_path_semantic_file_expectations,
-    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_OPTIONAL_SEMANTIC_FILES,
-    AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS, AUTHORED_RESOURCE_SIDECAR_PATHS,
-    AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES,
+    AUTHORED_OPTIONAL_SEMANTIC_FILES, AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS,
+    AUTHORED_RESOURCE_SIDECAR_PATHS, AUTHORED_RUNTIME_BASELINE_FILES,
+    AUTHORED_RUNTIME_BASELINE_FILE_PATHS, AUTHORED_SCENARIO_ITEM_RECORDS,
+    AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES, AUTHORED_TRIGGER_TABLE_PATHS,
 };
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
@@ -210,7 +211,7 @@ fn compile_realmz_scenario(
     )?;
     write_if_nonempty(
         &mut manifest,
-        "Data DL",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.dungeon_maps,
         write_fields(&project.maps, LevelType::Dungeon)?,
     )?;
     if let Some(layout) = &project.land_layout {
@@ -243,7 +244,7 @@ fn compile_realmz_scenario(
     }
     write_if_nonempty(
         &mut manifest,
-        "Data DD",
+        AUTHORED_TRIGGER_TABLE_PATHS.land,
         write_door_file_for_levels(
             &project.triggers,
             LevelType::Land,
@@ -256,7 +257,7 @@ fn compile_realmz_scenario(
     )?;
     write_if_nonempty(
         &mut manifest,
-        "Data DDD",
+        AUTHORED_TRIGGER_TABLE_PATHS.dungeon,
         write_door_file_for_levels(
             &project.triggers,
             LevelType::Dungeon,
@@ -280,10 +281,10 @@ fn compile_realmz_scenario(
     )?;
     write_if_nonempty(
         &mut manifest,
-        "Data RDD",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.dungeon_random_levels,
         preserve_imported_random_level_compatibility(
             write_random_levels(&project.random_levels, LevelType::Dungeon)?,
-            "Data RDD",
+            AUTHORED_RUNTIME_BASELINE_FILE_PATHS.dungeon_random_levels,
             &project.random_levels,
             LevelType::Dungeon,
             compatibility_annex,
@@ -323,7 +324,7 @@ fn compile_realmz_scenario(
     write_battles_for_export(&mut manifest, &project.battles, compatibility_annex)?;
     write_monsters_for_export(
         &mut manifest,
-        "Data MD",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.monsters,
         &project.monsters,
         compatibility_annex,
     )?;
@@ -365,7 +366,7 @@ fn compile_realmz_scenario(
     )?;
     write_fixed_if_nonempty(
         &mut manifest,
-        "Data SD",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.shops,
         append_preserved_shop_source_suffix(write_shops(&project.shops)?, compatibility_annex)?,
         crate::realmz::SHOP_BYTES,
         compatibility_annex,
@@ -525,8 +526,8 @@ fn write_authored_runtime_baseline(
             vec![0; level_count * crate::realmz::DOOR_LEVEL_BYTES],
         );
     }
-    for name in AUTHORED_EMPTY_RUNTIME_FILES {
-        manifest.insert_generated(*name, Vec::new());
+    for path in AUTHORED_RUNTIME_BASELINE_FILES {
+        manifest.insert_generated(*path, Vec::new());
     }
     Ok(())
 }
@@ -782,7 +783,11 @@ fn write_simple_encounters_for_export(
 ) -> Result<()> {
     let bytes =
         preserve_imported_simple_encounter_rows(write_simple_encounters(records)?, records, annex)?;
-    write_if_nonempty(manifest, "Data ED", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.simple_encounters,
+        bytes,
+    )
 }
 
 fn write_complex_encounters_for_export(
@@ -795,7 +800,11 @@ fn write_complex_encounters_for_export(
         records,
         annex,
     )?;
-    write_if_nonempty(manifest, "Data ED2", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.complex_encounters,
+        bytes,
+    )
 }
 
 fn write_thief_encounters_for_export(
@@ -805,7 +814,11 @@ fn write_thief_encounters_for_export(
 ) -> Result<()> {
     let bytes =
         preserve_imported_thief_encounter_rows(write_thief_encounters(records)?, records, annex)?;
-    write_if_nonempty(manifest, "Data TD2", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.thief_encounters,
+        bytes,
+    )
 }
 
 fn write_timed_encounters_for_export(
@@ -815,7 +828,11 @@ fn write_timed_encounters_for_export(
 ) -> Result<()> {
     let bytes =
         preserve_imported_timed_encounter_rows(write_timed_encounters(records)?, records, annex)?;
-    write_if_nonempty(manifest, "Data TD3", bytes)
+    write_if_nonempty(
+        manifest,
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.timed_encounters,
+        bytes,
+    )
 }
 
 fn preserve_imported_message_rows(
@@ -896,7 +913,7 @@ fn preserve_imported_simple_encounter_rows(
 ) -> Result<Vec<u8>> {
     preserve_imported_fixed_rows(
         bytes,
-        "Data ED",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.simple_encounters,
         crate::realmz::SIMPLE_ENCOUNTER_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
@@ -910,7 +927,7 @@ fn preserve_imported_complex_encounter_rows(
 ) -> Result<Vec<u8>> {
     preserve_imported_fixed_rows(
         bytes,
-        "Data ED2",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.complex_encounters,
         crate::realmz::COMPLEX_ENCOUNTER_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
@@ -924,7 +941,7 @@ fn preserve_imported_thief_encounter_rows(
 ) -> Result<Vec<u8>> {
     preserve_imported_fixed_rows(
         bytes,
-        "Data TD2",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.thief_encounters,
         crate::realmz::THIEF_ENCOUNTER_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
@@ -938,13 +955,13 @@ fn preserve_imported_timed_encounter_rows(
 ) -> Result<Vec<u8>> {
     let mut output = preserve_imported_fixed_rows(
         bytes,
-        "Data TD3",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.timed_encounters,
         crate::realmz::TIMED_ENCOUNTER_BYTES,
         records.iter().map(|record| (record.id, record.authored)),
         annex,
     )?;
     let Some(raw) = (match annex {
-        Some(annex) => annex.read("Data TD3")?,
+        Some(annex) => annex.read(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.timed_encounters)?,
         None => None,
     }) else {
         return Ok(output);
@@ -1028,7 +1045,7 @@ fn append_preserved_shop_source_suffix(
     let Some(annex) = annex else {
         return Ok(bytes);
     };
-    let Some(raw) = annex.read("Data SD")? else {
+    let Some(raw) = annex.read(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.shops)? else {
         return Ok(bytes);
     };
     if bytes.is_empty() {

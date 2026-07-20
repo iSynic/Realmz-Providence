@@ -75,7 +75,9 @@ import {
   AUTHORED_OPTIONAL_SEMANTIC_FILES,
   AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS,
   AUTHORED_RESOURCE_SIDECAR_PATHS,
-  AUTHORED_STARTUP_FILES
+  AUTHORED_RUNTIME_BASELINE_FILE_PATHS,
+  AUTHORED_STARTUP_FILES,
+  AUTHORED_TRIGGER_TABLE_PATHS
 } from "../generated/realmzNativeManifestPolicy";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
 import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
@@ -351,8 +353,8 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.monsters.length > 0) {
     writes.push({
-      path: "Data MD",
-      bytes: writeMonstersForExport("Data MD", project.monsters, annex)
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.monsters,
+      bytes: writeMonstersForExport(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.monsters, project.monsters, annex)
     });
   }
   for (const monsterSet of project.monsterSets) {
@@ -376,8 +378,8 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.maps.some((map) => map.levelType === "dungeon")) {
     writes.push({
-      path: "Data DL",
-      bytes: preserveMalformedRawTail("Data DL", writeMapFields(project.maps, "dungeon"), FIELD_RECORD_BYTES, annex)
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.dungeonMaps,
+      bytes: preserveMalformedRawTail(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.dungeonMaps, writeMapFields(project.maps, "dungeon"), FIELD_RECORD_BYTES, annex)
     });
   }
   if (project.mapRecords.length > 0) {
@@ -400,10 +402,10 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.randomLevels.some((level) => level.levelType === "dungeon")) {
     writes.push({
-      path: "Data RDD",
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.dungeonRandomLevels,
       bytes: preserveImportedRandomLevelCompatibility(
         writeRandomLevels(project.randomLevels, "dungeon"),
-        "Data RDD",
+        AUTHORED_RUNTIME_BASELINE_FILE_PATHS.dungeonRandomLevels,
         project.randomLevels,
         "dungeon",
         annex
@@ -412,9 +414,9 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.maps.some((map) => map.levelType === "land") || project.triggers.some((trigger) => trigger.levelType === "land")) {
     writes.push({
-      path: "Data DD",
+      path: AUTHORED_TRIGGER_TABLE_PATHS.land,
       bytes: preserveMalformedRawTail(
-        "Data DD",
+        AUTHORED_TRIGGER_TABLE_PATHS.land,
         writeDoorFile(project.triggers, "land", project.maps.filter((map) => map.levelType === "land").length),
         DOOR_LEVEL_RECORD_BYTES,
         annex
@@ -423,9 +425,9 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.maps.some((map) => map.levelType === "dungeon") || project.triggers.some((trigger) => trigger.levelType === "dungeon")) {
     writes.push({
-      path: "Data DDD",
+      path: AUTHORED_TRIGGER_TABLE_PATHS.dungeon,
       bytes: preserveMalformedRawTail(
-        "Data DDD",
+        AUTHORED_TRIGGER_TABLE_PATHS.dungeon,
         writeDoorFile(project.triggers, "dungeon", project.maps.filter((map) => map.levelType === "dungeon").length),
         DOOR_LEVEL_RECORD_BYTES,
         annex
@@ -505,8 +507,8 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.shops.length > 0) {
     writes.push({
-      path: "Data SD",
-      bytes: appendPreservedShopSourceSuffix(writeShops(project.shops), rawSourceBytes("Data SD", annex))
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.shops,
+      bytes: appendPreservedShopSourceSuffix(writeShops(project.shops), rawSourceBytes(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.shops, annex))
     });
   }
   if (project.spellOverrides.length > 0) {
@@ -533,25 +535,25 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   }
   if (project.simpleEncounters.length > 0) {
     writes.push({
-      path: "Data ED",
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.simpleEncounters,
       bytes: writeSimpleEncountersForExport(project.simpleEncounters, annex)
     });
   }
   if (project.complexEncounters.length > 0) {
     writes.push({
-      path: "Data ED2",
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.complexEncounters,
       bytes: writeComplexEncountersForExport(project.complexEncounters, annex)
     });
   }
   if (project.thiefEncounters.length > 0) {
     writes.push({
-      path: "Data TD2",
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.thiefEncounters,
       bytes: writeThiefEncountersForExport(project.thiefEncounters, annex)
     });
   }
   if (project.timedEncounters.length > 0) {
     writes.push({
-      path: "Data TD3",
+      path: AUTHORED_RUNTIME_BASELINE_FILE_PATHS.timedEncounters,
       bytes: writeTimedEncountersForExport(project.timedEncounters, annex)
     });
   }
@@ -1182,20 +1184,20 @@ function writeMonsterDescriptionsForExport(descriptions: Project["monsterDescrip
 }
 
 function writeSimpleEncountersForExport(encounters: Project["simpleEncounters"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedFixedRows("Data ED", writeSimpleEncounters(encounters), encounters, SIMPLE_ENCOUNTER_RECORD_BYTES, annex);
+  return preserveImportedFixedRows(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.simpleEncounters, writeSimpleEncounters(encounters), encounters, SIMPLE_ENCOUNTER_RECORD_BYTES, annex);
 }
 
 function writeComplexEncountersForExport(encounters: Project["complexEncounters"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedFixedRows("Data ED2", writeComplexEncounters(encounters), encounters, COMPLEX_ENCOUNTER_RECORD_BYTES, annex);
+  return preserveImportedFixedRows(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.complexEncounters, writeComplexEncounters(encounters), encounters, COMPLEX_ENCOUNTER_RECORD_BYTES, annex);
 }
 
 function writeThiefEncountersForExport(encounters: Project["thiefEncounters"], annex: BrowserCompatibilityAnnex | null) {
-  return preserveImportedFixedRows("Data TD2", writeThiefEncounters(encounters), encounters, THIEF_ENCOUNTER_RECORD_BYTES, annex);
+  return preserveImportedFixedRows(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.thiefEncounters, writeThiefEncounters(encounters), encounters, THIEF_ENCOUNTER_RECORD_BYTES, annex);
 }
 
 function writeTimedEncountersForExport(encounters: Project["timedEncounters"], annex: BrowserCompatibilityAnnex | null) {
-  const bytes = preserveImportedFixedRows("Data TD3", writeTimedEncounters(encounters), encounters, TIMED_ENCOUNTER_RECORD_BYTES, annex);
-  const raw = rawSourceBytes("Data TD3", annex);
+  const bytes = preserveImportedFixedRows(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.timedEncounters, writeTimedEncounters(encounters), encounters, TIMED_ENCOUNTER_RECORD_BYTES, annex);
+  const raw = rawSourceBytes(AUTHORED_RUNTIME_BASELINE_FILE_PATHS.timedEncounters, annex);
   if (!raw) return bytes;
   const completeSourceBytes = Math.floor(raw.byteLength / TIMED_ENCOUNTER_RECORD_BYTES) * TIMED_ENCOUNTER_RECORD_BYTES;
   for (const record of encounters) {

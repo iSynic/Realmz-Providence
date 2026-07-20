@@ -158,8 +158,23 @@ try {
     expect(files.has(family.path) === expected, `${family.path} should follow canonical presence predicate ${family.presence.kind} ${family.presence.projectPath}`);
     expect(dungeonFiles.has(family.path) === dungeonExpected, `dungeon-only ${family.path} should follow canonical presence predicate ${family.presence.kind} ${family.presence.projectPath}`);
   }
-  for (const name of manifestPolicy.authoredBaseline.emptyRuntimeFiles) {
-    expect(files.get(name)?.byteLength === 0, `${name} should follow the shared authored empty-runtime policy`);
+  const expectedRuntimeBaselinePaths = {
+    dungeonMaps: "Data DL",
+    dungeonRandomLevels: "Data RDD",
+    shops: "Data SD",
+    thiefEncounters: "Data TD2",
+    timedEncounters: "Data TD3",
+    simpleEncounters: "Data ED",
+    complexEncounters: "Data ED2",
+    monsters: "Data MD"
+  };
+  expect(
+    manifestPolicy.authoredBaseline.runtimeBaselineFiles.length === Object.keys(expectedRuntimeBaselinePaths).length,
+    "runtime-baseline policy should retain every required native role"
+  );
+  for (const file of manifestPolicy.authoredBaseline.runtimeBaselineFiles) {
+    expect(expectedRuntimeBaselinePaths[file.id] === file.path, `${file.id} should retain native runtime path ${expectedRuntimeBaselinePaths[file.id]}`);
+    expect(files.get(file.path)?.byteLength === 0, `${file.path} should follow the shared authored runtime-baseline policy`);
   }
   expect(AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems === manifestPolicy.authoredBaseline.scenarioItemRecords * 100, "browser item-table size should follow the shared authored capacity policy");
   const supportFile = files.get(startupFiles.scenarioSupport);

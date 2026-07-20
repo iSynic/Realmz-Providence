@@ -29,6 +29,11 @@ export const AUTHORED_TRIGGER_TABLES = [
   }
 ] as const;
 
+export const AUTHORED_TRIGGER_TABLE_PATHS = {
+  "land": "Data DD",
+  "dungeon": "Data DDD"
+} as const;
+
 export const AUTHORED_OPTIONAL_SEMANTIC_FILES = [
   {
     "id": "landMaps",
@@ -280,13 +285,48 @@ export const AUTHORED_RESOURCE_SIDECAR_PATHS = {
   "customSpellNames": "Data Spell.rsrc"
 } as const;
 
-export const AUTHORED_EMPTY_RUNTIME_FILES = [
-  "Data DL",
-  "Data RDD",
-  "Data SD",
-  "Data TD2",
-  "Data TD3",
-  "Data ED",
-  "Data ED2",
-  "Data MD"
+export const AUTHORED_RUNTIME_BASELINE_FILES = [
+  {
+    "id": "dungeonMaps",
+    "path": "Data DL"
+  },
+  {
+    "id": "dungeonRandomLevels",
+    "path": "Data RDD"
+  },
+  {
+    "id": "shops",
+    "path": "Data SD"
+  },
+  {
+    "id": "thiefEncounters",
+    "path": "Data TD2"
+  },
+  {
+    "id": "timedEncounters",
+    "path": "Data TD3"
+  },
+  {
+    "id": "simpleEncounters",
+    "path": "Data ED"
+  },
+  {
+    "id": "complexEncounters",
+    "path": "Data ED2"
+  },
+  {
+    "id": "monsters",
+    "path": "Data MD"
+  }
 ] as const;
+
+export const AUTHORED_RUNTIME_BASELINE_FILE_PATHS = {
+  "dungeonMaps": "Data DL",
+  "dungeonRandomLevels": "Data RDD",
+  "shops": "Data SD",
+  "thiefEncounters": "Data TD2",
+  "timedEncounters": "Data TD3",
+  "simpleEncounters": "Data ED",
+  "complexEncounters": "Data ED2",
+  "monsters": "Data MD"
+} as const;
