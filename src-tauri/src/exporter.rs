@@ -1394,8 +1394,9 @@ fn write_spell_overrides_preserving_tail(
         .find(|record| record.id >= crate::realmz::SPELL_OVERRIDE_RECORDS)
     {
         return Err(ProvidenceError::message(format!(
-            "Custom spell {} is outside Data Spell's 0..104 custom slot range.",
-            record.id
+            "Custom spell {} is outside Data Spell's 0..{} custom slot range.",
+            record.id,
+            crate::realmz::SPELL_OVERRIDE_RECORDS - 1
         )));
     }
     let encoded = write_spell_overrides(records)?;

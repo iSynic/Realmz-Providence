@@ -25,6 +25,9 @@ const SCENARIO_RESTRICTIONS_BYTES = REALMZ_NATIVE_LAYOUT.scenarioRestrictionsByt
 const CUSTOM_LANDLOOK_RECORDS = REALMZ_NATIVE_LAYOUT.mapstatsRecords;
 const LANDLOOK_RANGE_SLOTS = REALMZ_NATIVE_LAYOUT.landlookRangeSlots;
 const RANDOM_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
+const SPELL_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.spellOverrideRecords;
+const RACE_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.raceOverrideRecords;
+const CASTE_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.casteOverrideRecords;
 const BUNDLED_LANDLOOK_MAPSTATS = [
   ["Data P BD", 0],
   ["Data SUB BD", 3],
@@ -1243,7 +1246,7 @@ function isGeneratedRuntimeCacheFile(name: string) {
 function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {
   project.ruleNames = defaultRuleNames(project.ruleNames);
   for (const spell of project.spellOverrides ?? []) {
-    if (spell.id < 0 || spell.id > 104) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..104 custom slot range.`);
+    if (spell.id < 0 || spell.id >= SPELL_OVERRIDE_RECORDS) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..${SPELL_OVERRIDE_RECORDS - 1} custom slot range.`);
     for (const [field, value] of [
       ["Fixed Range", spell.range1],
       ["Power Range", spell.range2],
@@ -1285,7 +1288,7 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
   }
 
   for (const race of project.raceOverrides ?? []) {
-    if (race.id < 0 || race.id > 29) errors.push(`Race override ${race.id} is outside Data Race's 0..29 record range.`);
+    if (race.id < 0 || race.id >= RACE_OVERRIDE_RECORDS) errors.push(`Race override ${race.id} is outside Data Race's 0..${RACE_OVERRIDE_RECORDS - 1} record range.`);
     validateLength(errors, `Race ${race.id} +/- To Hit`, race.plusMinusToHit, 8);
     validateLength(errors, `Race ${race.id} Special Ability`, race.specialAbility, 14);
     validateLength(errors, `Race ${race.id} DRVs`, race.drvBonus, 8);
@@ -1324,7 +1327,7 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
   }
 
   for (const caste of project.casteOverrides ?? []) {
-    if (caste.id < 0 || caste.id > 29) errors.push(`Caste override ${caste.id} is outside Data Caste's 0..29 record range.`);
+    if (caste.id < 0 || caste.id >= CASTE_OVERRIDE_RECORDS) errors.push(`Caste override ${caste.id} is outside Data Caste's 0..${CASTE_OVERRIDE_RECORDS - 1} record range.`);
     validateMatrix(errors, `Caste ${caste.id} Special Ability`, caste.specialAbility, 2, 14, -32768, 32767, "signed 16-bit");
     validateMatrix(errors, `Caste ${caste.id} Spellcasters`, caste.spellcasters, 4, 3, -32768, 32767, "signed 16-bit");
     for (const [field, values, length] of [

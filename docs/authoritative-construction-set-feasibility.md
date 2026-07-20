@@ -1021,6 +1021,9 @@ The shared land-layout/solidity/custom-landlook-layout slice replaces geometry l
 codec, parser, semantic, validation, package-overlay, project-command, and workbench consumers. Its
 single `assembly.rs` substitution does not grow or refactor the deferred ISY-320 module, and the
 slice adds no new ISY-319/320/321 module-size violation.
+The shared rule-table-capacity slice replaces fresh spell/race/caste slot-limit literals across
+compiler, parser, validation, package-overlay, and project-command consumers and adds no new
+ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1205,14 +1208,15 @@ the same content-neutral package directly as authored compiler output:
 - required zero-length startup tables.
 
 The versioned `schemas/realmz-native-manifest-policy.json` contract is now the neutral owner of the
-shared 200-row scenario-item capacity, eight named runtime-baseline file roles, and land/dungeon
-trigger-table paths and minimums. It also names the stable support, security, item, solidity, and
-target-specific resource-fork roles, seventeen fixed-path optional semantic families and their
-canonical presence predicates, two project-derived filename families, and the two default authored
-rule/item resource sidecars. Its generated TypeScript and Rust constants feed both baseline
-implementations and the corresponding semantic overlays; both compilers enforce the same fixed
-and project-derived file projection. Native codec sizes, resource-update decisions, record
-encoding, and semantic compilation order intentionally remain beside the corresponding writers.
+shared native codec geometry, the 200-row scenario-item capacity, the 105/30/30 authored rule-table
+capacities, eight named runtime-baseline file roles, and land/dungeon trigger-table paths and
+minimums. It also names the stable support, security, item, solidity, and target-specific resource-
+fork roles, seventeen fixed-path optional semantic families and their canonical presence
+predicates, two project-derived filename families, and the two default authored rule/item resource
+sidecars. Its generated TypeScript and Rust constants feed both baseline implementations and the
+corresponding semantic overlays; both compilers enforce the same fixed and project-derived file
+projection. Resource-update decisions, field-level record encoding, and semantic compilation order
+intentionally remain beside the corresponding writers.
 
 Neither path materializes these files as preserved input or adds them to the canonical project's
 source inventory.
@@ -1450,10 +1454,10 @@ Legend:
 
 | Native file/family | Current ownership | Fresh authoritative target | Evidence/remaining issue |
 | --- | --- | --- | --- |
-| `Data Spell` | Fully generated + legacy row/tail annex | Emit exactly 105 x 30 bytes for fresh custom spells | Canonical spell records expose no `rawBytes`, and both compilers emit the runtime's fixed 3,150-byte table without an annex. Authored rows compile all 30 bytes from semantics; unchanged imported rows, short-file shapes, noncanonical nonzero Boolean encodings, and trailing bytes remain annex-only compatibility data. |
+| `Data Spell` | Fully generated + legacy row/tail annex | Emit exactly 105 x 30 bytes for fresh custom spells | Native-manifest contract v12 owns the 105-slot authored capacity. Canonical spell records expose no `rawBytes`, and both compilers emit the runtime's fixed 3,150-byte table without an annex. Authored rows compile all 30 bytes from semantics; unchanged imported rows, short-file shapes, noncanonical nonzero Boolean encodings, and trailing bytes remain annex-only compatibility data. |
 | `Data Spell.rsrc` / `.rsf` / AppleDouble form | Generated + compatibility | Build custom spell `STR# 5000..5006` resources from canonical names | Both compilers create missing name families and preserve imported entry metadata and unrelated resources. Byte parity and semantic reimport are proof-gated. |
-| `Data Race` | Fully generated + legacy row/tail annex | Emit exactly 30 x 408 bytes | Canonical race records expose no `rawBytes`. Both compilers use the shared hash-gated baseline for unoverridden slots, then replace each authored row from decoded fields covering all 408 bytes. The still-uninterpreted `spare[8]` and `spacer[31]` words remain explicit compatibility-only fields; unchanged imported rows, capacity, and malformed tails are annex-only. |
-| `Data Caste` | Fully generated + legacy row/tail annex | Emit exactly 30 x 576 bytes | Canonical caste records expose no `rawBytes`. Both compilers use the shared hash-gated baseline for unoverridden slots, then replace each authored row from decoded fields covering all 576 bytes. The still-uninterpreted `spare1[2]`, `spare2[2]`, and `spacer[63]` words remain explicit compatibility-only fields; unchanged imported rows, capacity, and malformed tails are annex-only. |
+| `Data Race` | Fully generated + legacy row/tail annex | Emit exactly 30 x 408 bytes | Native-manifest contract v12 owns the 30-slot authored capacity and checks it against the shared hash-gated baseline. Canonical race records expose no `rawBytes`; both compilers replace authored baseline rows from decoded fields covering all 408 bytes. The still-uninterpreted `spare[8]` and `spacer[31]` words remain explicit compatibility-only fields; unchanged imported rows, capacity, and malformed tails are annex-only. |
+| `Data Caste` | Fully generated + legacy row/tail annex | Emit exactly 30 x 576 bytes | Native-manifest contract v12 owns the 30-slot authored capacity and checks it against the shared hash-gated baseline. Canonical caste records expose no `rawBytes`; both compilers replace authored baseline rows from decoded fields covering all 576 bytes. The still-uninterpreted `spare1[2]`, `spare2[2]`, and `spacer[63]` words remain explicit compatibility-only fields; unchanged imported rows, capacity, and malformed tails are annex-only. |
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
 | `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Native-manifest contract v11 owns the 201-row, four-byte-header, ten-range geometry and checks canonical cardinalities. Both compilers generate it without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
@@ -1548,11 +1552,12 @@ must not be called fresh-authoritative merely because imported round trips are f
 1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
    annex, and the ownership fixture exercises every fixed-path optional semantic family with byte
    parity. A versioned neutral policy now
-   owns scenario-item capacity, named runtime-baseline files, and the land/dungeon trigger-table
+   owns native codec geometry, scenario-item and rule-table capacities, named runtime-baseline files, and the land/dungeon trigger-table
    paths and minimums, plus stable startup roles, target resource-fork paths, fixed-path optional
    semantic-file presence, project-derived custom-landlook/monster-set paths, and authored
-   item/spell sidecar roles. Rust and TypeScript still implement codec sizes, resource-update
-   decisions, and semantic writer execution independently. Broader edge-case/resource goldens or a
+   item/spell sidecar roles. Rust and TypeScript consume the generated sizes and capacities but
+   still implement field placement, resource-update decisions, and semantic writer execution
+   independently. Broader edge-case/resource goldens or a
    shared Rust/Wasm compiler should prevent implementation drift without forcing those details
    into the policy.
 2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
@@ -1695,7 +1700,7 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 - **Implemented for baseline and native paths:** generate native scenario-singleton, land-layout,
   tile-solidity, custom-landlook, map/map-record/random-level/Action Point/EDCD, encounter-row,
   combat-row, economy/content-row, text-row, and rules-row layout geometry,
-  scenario-item capacity,
+  scenario-item and authored spell/race/caste table capacities,
   startup roles,
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
   project-derived semantic paths, and default resource sidecars from one native-manifest policy

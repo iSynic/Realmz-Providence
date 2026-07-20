@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const policyPath = path.join(root, "schemas", "realmz-native-manifest-policy.json");
 const projectSchemaPath = path.join(root, "schemas", "providence-project.schema.json");
+const rulesCompilerBaselinePath = path.join(root, "src", "shared", "rulesCompilerBaseline.json");
 const typescriptPath = path.join(root, "src", "editor", "generated", "realmzNativeManifestPolicy.ts");
 const rustPath = path.join(root, "src-tauri", "src", "generated", "native_manifest_policy.rs");
 const browserBaselinePath = path.join(root, "src", "editor", "browser", "scenarioCompilerBaseline.ts");
@@ -53,6 +54,7 @@ const checkOnly = process.argv.includes("--check");
 
 const policy = JSON.parse(fs.readFileSync(policyPath, "utf8"));
 const projectSchema = JSON.parse(fs.readFileSync(projectSchemaPath, "utf8"));
+const rulesCompilerBaseline = JSON.parse(fs.readFileSync(rulesCompilerBaselinePath, "utf8"));
 const nativeLayout = policy.nativeLayout;
 const baseline = policy.authoredBaseline;
 
@@ -102,8 +104,16 @@ validatePositiveInteger(nativeLayout.economy?.shopRecordBytes, "nativeLayout.eco
 validatePositiveInteger(nativeLayout.text?.messageRecordBytes, "nativeLayout.text.messageRecordBytes");
 validatePositiveInteger(nativeLayout.text?.optionLabelRecordBytes, "nativeLayout.text.optionLabelRecordBytes");
 validatePositiveInteger(nativeLayout.rules?.spellRecordBytes, "nativeLayout.rules.spellRecordBytes");
+validatePositiveInteger(nativeLayout.rules?.spellOverrideRecords, "nativeLayout.rules.spellOverrideRecords");
 validatePositiveInteger(nativeLayout.rules?.raceRecordBytes, "nativeLayout.rules.raceRecordBytes");
+validatePositiveInteger(nativeLayout.rules?.raceOverrideRecords, "nativeLayout.rules.raceOverrideRecords");
 validatePositiveInteger(nativeLayout.rules?.casteRecordBytes, "nativeLayout.rules.casteRecordBytes");
+validatePositiveInteger(nativeLayout.rules?.casteOverrideRecords, "nativeLayout.rules.casteOverrideRecords");
+expect(rulesCompilerBaseline.schemaVersion === 1, "rules compiler baseline schema must be version 1");
+expect(rulesCompilerBaseline.race.recordBytes === nativeLayout.rules.raceRecordBytes, "rules compiler race baseline record size must match native layout geometry");
+expect(rulesCompilerBaseline.race.records === nativeLayout.rules.raceOverrideRecords, "rules compiler race baseline capacity must match native layout geometry");
+expect(rulesCompilerBaseline.caste.recordBytes === nativeLayout.rules.casteRecordBytes, "rules compiler caste baseline record size must match native layout geometry");
+expect(rulesCompilerBaseline.caste.records === nativeLayout.rules.casteOverrideRecords, "rules compiler caste baseline capacity must match native layout geometry");
 const generatedNativeLayout = {
   mapSize: nativeLayout.mapField.dimension,
   mapFieldBytes: nativeLayout.mapField.dimension * nativeLayout.mapField.dimension * nativeLayout.mapField.cellBytes,
@@ -146,8 +156,11 @@ const generatedNativeLayout = {
   messageRecordBytes: nativeLayout.text.messageRecordBytes,
   optionLabelRecordBytes: nativeLayout.text.optionLabelRecordBytes,
   spellRecordBytes: nativeLayout.rules.spellRecordBytes,
+  spellOverrideRecords: nativeLayout.rules.spellOverrideRecords,
   raceRecordBytes: nativeLayout.rules.raceRecordBytes,
-  casteRecordBytes: nativeLayout.rules.casteRecordBytes
+  raceOverrideRecords: nativeLayout.rules.raceOverrideRecords,
+  casteRecordBytes: nativeLayout.rules.casteRecordBytes,
+  casteOverrideRecords: nativeLayout.rules.casteOverrideRecords
 };
 expect(baseline && typeof baseline === "object" && !Array.isArray(baseline), "authoredBaseline must be an object");
 expect(Number.isInteger(baseline.scenarioItemRecords) && baseline.scenarioItemRecords > 0, "scenarioItemRecords must be a positive integer");
@@ -338,8 +351,11 @@ const rustNativeLayout = [
   "    pub message_record_bytes: usize,",
   "    pub option_label_record_bytes: usize,",
   "    pub spell_record_bytes: usize,",
+  "    pub spell_override_records: usize,",
   "    pub race_record_bytes: usize,",
+  "    pub race_override_records: usize,",
   "    pub caste_record_bytes: usize,",
+  "    pub caste_override_records: usize,",
   "}",
   "",
   "pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {",
@@ -383,8 +399,11 @@ const rustNativeLayout = [
   `    message_record_bytes: ${generatedNativeLayout.messageRecordBytes},`,
   `    option_label_record_bytes: ${generatedNativeLayout.optionLabelRecordBytes},`,
   `    spell_record_bytes: ${generatedNativeLayout.spellRecordBytes},`,
+  `    spell_override_records: ${generatedNativeLayout.spellOverrideRecords},`,
   `    race_record_bytes: ${generatedNativeLayout.raceRecordBytes},`,
+  `    race_override_records: ${generatedNativeLayout.raceOverrideRecords},`,
   `    caste_record_bytes: ${generatedNativeLayout.casteRecordBytes},`,
+  `    caste_override_records: ${generatedNativeLayout.casteOverrideRecords},`,
   "};"
 ].join("\n");
 const rust = `// Generated by scripts/generate_realmz_native_manifest_policy.mjs; do not edit.\n\npub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = ${baseline.scenarioItemRecords};\n\npub struct AuthoredStartupFilePolicy {\n    pub scenario_support: &'static str,\n    pub security_backup: &'static str,\n    pub scenario_items: &'static str,\n    pub tile_solids: &'static str,\n    pub windows_resource_fork: &'static str,\n    pub mac_classic_resource_fork: &'static str,\n    pub providence_portable_resource_fork: &'static str,\n}\n\npub const AUTHORED_STARTUP_FILES: AuthoredStartupFilePolicy = AuthoredStartupFilePolicy {\n    scenario_support: ${JSON.stringify(startupFiles.scenarioSupport)},\n    security_backup: ${JSON.stringify(startupFiles.securityBackup)},\n    scenario_items: ${JSON.stringify(startupFiles.scenarioItems)},\n    tile_solids: ${JSON.stringify(startupFiles.tileSolids)},\n    windows_resource_fork: ${JSON.stringify(startupFiles.resourceForkByTarget["windows-realmz-folder"])},\n    mac_classic_resource_fork: ${JSON.stringify(startupFiles.resourceForkByTarget["mac-classic-folder"])},\n    providence_portable_resource_fork: ${JSON.stringify(startupFiles.resourceForkByTarget["providence-portable-folder"])},\n};\n\npub struct AuthoredTriggerTablePolicy {\n    pub path: &'static str,\n    pub level_type: &'static str,\n    pub minimum_levels: usize,\n}\n\n#[rustfmt::skip]\npub const AUTHORED_TRIGGER_TABLES: &[AuthoredTriggerTablePolicy] = &[\n${rustTriggerTables}\n];\n\npub struct AuthoredTriggerTablePaths {\n    pub land: &'static str,\n    pub dungeon: &'static str,\n}\n\npub const AUTHORED_TRIGGER_TABLE_PATHS: AuthoredTriggerTablePaths = AuthoredTriggerTablePaths {\n    land: ${JSON.stringify(triggerTablePaths.land)},\n    dungeon: ${JSON.stringify(triggerTablePaths.dungeon)},\n};\n\npub struct AuthoredOptionalSemanticFilePolicy {\n    pub id: &'static str,\n    pub path: &'static str,\n    pub project_path: &'static str,\n    pub presence_kind: &'static str,\n    pub match_field: Option<&'static str>,\n    pub match_value: Option<&'static str>,\n}\n\n#[rustfmt::skip]\npub const AUTHORED_OPTIONAL_SEMANTIC_FILES: &[AuthoredOptionalSemanticFilePolicy] = &[\n${rustOptionalSemanticFiles}\n];\n\npub struct AuthoredOptionalSemanticFilePaths {\n${rustOptionalPathFields}\n}\n\npub const AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS: AuthoredOptionalSemanticFilePaths =\n    AuthoredOptionalSemanticFilePaths {\n${rustOptionalPathValues}\n    };\n\npub fn authored_optional_semantic_file_paths(\n    project: &crate::project::ProvidenceProject,\n) -> Vec<&'static str> {\n    let mut paths = Vec::new();\n${rustOptionalPresence}\n    paths\n}\n\npub struct AuthoredProjectPathSemanticFileExpectation<'a> {\n    pub family_id: &'static str,\n    pub path: &'a str,\n    pub should_exist: bool,\n}\n\npub fn authored_project_path_semantic_file_expectations(\n    project: &crate::project::ProvidenceProject,\n) -> Vec<AuthoredProjectPathSemanticFileExpectation<'_>> {\n    let mut expectations = Vec::new();\n${rustProjectPathExpectations}\n    expectations\n}\n\npub struct AuthoredResourceSidecarPaths {\n${rustResourceSidecarFields}\n}\n\npub const AUTHORED_RESOURCE_SIDECAR_PATHS: AuthoredResourceSidecarPaths =\n    AuthoredResourceSidecarPaths {\n${rustResourceSidecarValues}\n    };\n\n#[rustfmt::skip]\npub const AUTHORED_RUNTIME_BASELINE_FILES: &[&str] = &[\n${rustRuntimeBaselineFiles}\n];\n\npub struct AuthoredRuntimeBaselineFilePaths {\n${rustRuntimeBaselineFields}\n}\n\npub const AUTHORED_RUNTIME_BASELINE_FILE_PATHS: AuthoredRuntimeBaselineFilePaths =\n    AuthoredRuntimeBaselineFilePaths {\n${rustRuntimeBaselineValues}\n    };\n`;
@@ -405,12 +424,12 @@ const nativeLayoutConsumers = [
   [browserBinaryWritersPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserParserPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserSemanticPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "SIMPLE_ENCOUNTER_BYTES", "COMPLEX_ENCOUNTER_BYTES", "THIEF_ENCOUNTER_BYTES", "TIMED_ENCOUNTER_BYTES", "BATTLE_BYTES", "MONSTER_BYTES", "MONSTER_DESCRIPTION_BYTES", "ITEM_BYTES", "TREASURE_BYTES", "SHOP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES", "TILE_SOLIDS_BYTES"]],
-  [browserProjectPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "CUSTOM_LANDLOOK_RECORDS", "LANDLOOK_RANGE_SLOTS"]],
+  [browserProjectPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "CUSTOM_LANDLOOK_RECORDS", "LANDLOOK_RANGE_SLOTS", "SPELL_OVERRIDE_RECORDS", "RACE_OVERRIDE_RECORDS", "CASTE_OVERRIDE_RECORDS"]],
   [browserFsAccessPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserBaselinePath, ["SCENARIO_SUPPORT_FILE_BYTES", "TILE_SOLIDS_BYTES"]],
-  [browserScenarioPackagePath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "LAND_LAYOUT_RECORD_BYTES", "TILE_SOLIDS_BYTES", "CUSTOM_LANDLOOK_METADATA_BYTES", "MAPSTATS_RECORD_BYTES", "MAPSTATS_RECORDS", "LANDLOOK_RANGE_HEADER_BYTES", "LANDLOOK_RANGE_SLOT_BYTES", "LANDLOOK_RANGE_SLOTS"]],
+  [browserScenarioPackagePath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "LAND_LAYOUT_RECORD_BYTES", "TILE_SOLIDS_BYTES", "CUSTOM_LANDLOOK_METADATA_BYTES", "MAPSTATS_RECORD_BYTES", "MAPSTATS_RECORDS", "LANDLOOK_RANGE_HEADER_BYTES", "LANDLOOK_RANGE_SLOT_BYTES", "LANDLOOK_RANGE_SLOTS", "CUSTOM_SPELL_RECORDS"]],
   [browserShopRecordsPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [browserRuleCompilerPath, ["SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES"]],
+  [browserRuleCompilerPath, ["SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES", "REALMZ_NATIVE_LAYOUT"]],
   [scenarioRulesCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserMapCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserMapRecordsWorkbenchPath, ["REALMZ_NATIVE_LAYOUT"]],
@@ -420,7 +439,7 @@ const nativeLayoutConsumers = [
   [scenarioSeedCoreRecordCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustProjectPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustScenarioPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [rustExporterPath, ["SCENARIO_SHELL_BYTES", "LAND_LAYOUT_BYTES", "TILE_SOLIDS_BYTES", "CUSTOM_LANDLOOK_METADATA_BYTES", "MAPSTATS_RECORD_BYTES", "MAPSTATS_RECORDS", "LANDLOOK_RANGE_HEADER_BYTES", "LANDLOOK_RANGE_SLOT_BYTES", "LANDLOOK_RANGE_SLOTS"]],
+  [rustExporterPath, ["SCENARIO_SHELL_BYTES", "LAND_LAYOUT_BYTES", "TILE_SOLIDS_BYTES", "CUSTOM_LANDLOOK_METADATA_BYTES", "MAPSTATS_RECORD_BYTES", "MAPSTATS_RECORDS", "LANDLOOK_RANGE_HEADER_BYTES", "LANDLOOK_RANGE_SLOT_BYTES", "LANDLOOK_RANGE_SLOTS", "SPELL_OVERRIDE_RECORDS"]],
   [rustImporterPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES"]],
   [rustAssemblyPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "LAND_LAYOUT_BYTES", "TILE_SOLIDS_BYTES"]],
   [rustLandLayoutPath, ["REALMZ_NATIVE_LAYOUT"]],
@@ -438,12 +457,12 @@ const nativeLayoutConsumers = [
   [rustMessagesPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustOptionLabelsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustRulesPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [rustRuleCompilerPath, ["SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
+  [rustRuleCompilerPath, ["SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES", "SPELL_OVERRIDE_RECORDS", "RACE_OVERRIDE_RECORDS", "CASTE_OVERRIDE_RECORDS"]],
   [rustSemanticCommonPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES", "LAND_LAYOUT_BYTES", "TILE_SOLIDS_BYTES"]],
   [rustSemanticRecordsPath, ["SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES", "TILE_SOLIDS_BYTES"]],
   [rustSemanticMapNamesPath, ["MAP_RECORD_BYTES"]],
   [rustSemanticTriggersPath, ["MESSAGE_BYTES"]],
-  [rustValidationPath, ["MAPSTATS_RECORDS", "LANDLOOK_RANGE_SLOTS"]]
+  [rustValidationPath, ["MAPSTATS_RECORDS", "LANDLOOK_RANGE_SLOTS", "SPELL_OVERRIDE_RECORDS", "RACE_OVERRIDE_RECORDS", "CASTE_OVERRIDE_RECORDS"]]
 ];
 for (const [consumerPath, symbols] of nativeLayoutConsumers) {
   const source = fs.readFileSync(consumerPath, "utf8");

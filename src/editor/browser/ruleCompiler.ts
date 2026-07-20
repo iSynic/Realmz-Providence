@@ -1,4 +1,5 @@
 import rulesCompilerBaseline from "../../shared/rulesCompilerBaseline.json";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import type { ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride } from "../types";
 import {
   CASTE_RECORD_BYTES,
@@ -9,12 +10,13 @@ import {
   writeSpellOverrides
 } from "./binaryWriters";
 
-export const CUSTOM_SPELL_RECORDS = 105;
-export const RULE_OVERRIDE_RECORDS = 30;
+export const CUSTOM_SPELL_RECORDS = REALMZ_NATIVE_LAYOUT.spellOverrideRecords;
+export const RACE_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.raceOverrideRecords;
+export const CASTE_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.casteOverrideRecords;
 
 export function writeFreshSpellOverrides(records: ScenarioSpellOverride[]) {
   const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= CUSTOM_SPELL_RECORDS);
-  if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..104 custom slot range.`);
+  if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..${CUSTOM_SPELL_RECORDS - 1} custom slot range.`);
   if (records.length === 0) return new Uint8Array();
   const overlay = writeSpellOverrides(records);
   const output = new Uint8Array(CUSTOM_SPELL_RECORDS * SPELL_RECORD_BYTES);
@@ -23,11 +25,11 @@ export function writeFreshSpellOverrides(records: ScenarioSpellOverride[]) {
 }
 
 export function writeFreshRaceOverrides(records: ScenarioRaceOverride[]) {
-  return writeFreshRuleOverrides("Data Race", "race", records, RACE_RECORD_BYTES, writeRaceOverrides);
+  return writeFreshRuleOverrides("Data Race", "race", records, RACE_RECORD_BYTES, RACE_OVERRIDE_RECORDS, writeRaceOverrides);
 }
 
 export function writeFreshCasteOverrides(records: ScenarioCasteOverride[]) {
-  return writeFreshRuleOverrides("Data Caste", "caste", records, CASTE_RECORD_BYTES, writeCasteOverrides);
+  return writeFreshRuleOverrides("Data Caste", "caste", records, CASTE_RECORD_BYTES, CASTE_OVERRIDE_RECORDS, writeCasteOverrides);
 }
 
 function writeFreshRuleOverrides<T extends { id: number; rawBytes?: number[] }>(
@@ -35,13 +37,14 @@ function writeFreshRuleOverrides<T extends { id: number; rawBytes?: number[] }>(
   family: "race" | "caste",
   records: T[],
   recordBytes: number,
+  recordCapacity: number,
   writer: (records: T[]) => Uint8Array
 ) {
-  const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= RULE_OVERRIDE_RECORDS);
-  if (invalid) throw new Error(`${fileName} record ${invalid.id} is outside the fresh 0..29 scenario slot range.`);
+  const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= recordCapacity);
+  if (invalid) throw new Error(`${fileName} record ${invalid.id} is outside the fresh 0..${recordCapacity - 1} scenario slot range.`);
   if (records.length === 0) return new Uint8Array();
   const encoded = writer(records);
-  const output = ruleCompilerBaselineBytes(family, recordBytes, RULE_OVERRIDE_RECORDS);
+  const output = ruleCompilerBaselineBytes(family, recordBytes, recordCapacity);
   for (const record of records) {
     const start = record.id * recordBytes;
     output.set(encoded.slice(start, start + recordBytes), start);

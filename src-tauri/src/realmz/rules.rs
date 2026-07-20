@@ -10,11 +10,11 @@ mod validation;
 use validation::{validate_caste_storage, validate_race_storage};
 
 pub const SPELL_BYTES: usize = REALMZ_NATIVE_LAYOUT.spell_record_bytes;
-pub const SPELL_OVERRIDE_RECORDS: usize = 105;
+pub const SPELL_OVERRIDE_RECORDS: usize = REALMZ_NATIVE_LAYOUT.spell_override_records;
 pub const RACE_BYTES: usize = REALMZ_NATIVE_LAYOUT.race_record_bytes;
 pub const CASTE_BYTES: usize = REALMZ_NATIVE_LAYOUT.caste_record_bytes;
-pub const RACE_OVERRIDE_RECORDS: usize = 30;
-pub const CASTE_OVERRIDE_RECORDS: usize = 30;
+pub const RACE_OVERRIDE_RECORDS: usize = REALMZ_NATIVE_LAYOUT.race_override_records;
+pub const CASTE_OVERRIDE_RECORDS: usize = REALMZ_NATIVE_LAYOUT.caste_override_records;
 
 pub fn parse_spell_overrides(buffer: &[u8]) -> Vec<ScenarioSpellOverride> {
     let count = (buffer.len() / SPELL_BYTES).min(SPELL_OVERRIDE_RECORDS);

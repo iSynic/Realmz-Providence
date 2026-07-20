@@ -6,6 +6,9 @@ import { normalizedEditorMetadata } from "./tilePaletteCommands";
 const SPELL_BYTES = REALMZ_NATIVE_LAYOUT.spellRecordBytes;
 const RACE_BYTES = REALMZ_NATIVE_LAYOUT.raceRecordBytes;
 const CASTE_BYTES = REALMZ_NATIVE_LAYOUT.casteRecordBytes;
+const SPELL_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.spellOverrideRecords;
+const RACE_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.raceOverrideRecords;
+const CASTE_OVERRIDE_RECORDS = REALMZ_NATIVE_LAYOUT.casteOverrideRecords;
 
 export function renameEditorEntity(project: Project, entityId: string, displayName: string) {
   const label = displayName.trim();
@@ -133,7 +136,7 @@ export function createSpellOverride(project: Project, id?: number, template?: Pa
 
 function nextSpellOverrideId(records: ScenarioSpellOverride[]) {
   const used = new Set(records.map((record) => record.id));
-  for (let id = 0; id < 105; id += 1) {
+  for (let id = 0; id < SPELL_OVERRIDE_RECORDS; id += 1) {
     const existing = records.find((record) => record.id === id);
     if (!used.has(id) || (existing && isBlankSpellOverride(existing))) return id;
   }
@@ -141,7 +144,7 @@ function nextSpellOverrideId(records: ScenarioSpellOverride[]) {
 }
 
 export function createRaceOverride(project: Project, id?: number, template?: Partial<ScenarioRaceOverride>) {
-  const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 30);
+  const nextId = id ?? nextIdFor(project.raceOverrides ?? [], RACE_OVERRIDE_RECORDS);
   if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
   const displayName = template?.displayName?.trim() || defaultRaceName(nextId);
   const semanticTemplate = withoutLegacyRuleRawBytes(template ?? {});
@@ -171,7 +174,7 @@ export function createCasteOverride(project: Project, id?: number, template?: Pa
 }
 
 function nextCasteOverrideId(records: ScenarioCasteOverride[]) {
-  for (let id = 0; id < 30; id += 1) {
+  for (let id = 0; id < CASTE_OVERRIDE_RECORDS; id += 1) {
     const existing = records.find((record) => record.id === id);
     if (!existing || isBlankCasteOverride(existing)) return id;
   }

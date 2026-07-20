@@ -43,8 +43,11 @@ export const REALMZ_NATIVE_LAYOUT = {
   "messageRecordBytes": 256,
   "optionLabelRecordBytes": 25,
   "spellRecordBytes": 30,
+  "spellOverrideRecords": 105,
   "raceRecordBytes": 408,
-  "casteRecordBytes": 576
+  "raceOverrideRecords": 30,
+  "casteRecordBytes": 576,
+  "casteOverrideRecords": 30
 } as const;
 
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;

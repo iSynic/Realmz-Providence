@@ -1,5 +1,5 @@
 {
-  "contractVersion": 11,
+  "contractVersion": 12,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -64,8 +64,11 @@
     },
     "rules": {
       "spellRecordBytes": 30,
+      "spellOverrideRecords": 105,
       "raceRecordBytes": 408,
-      "casteRecordBytes": 576
+      "raceOverrideRecords": 30,
+      "casteRecordBytes": 576,
+      "casteOverrideRecords": 30
     }
   },
   "authoredBaseline": {

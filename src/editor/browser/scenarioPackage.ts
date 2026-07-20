@@ -607,7 +607,7 @@ function writeCustomSpellNameResources(project: Project, annex: BrowserCompatibi
 
 function writeSpellOverridesForExport(records: ScenarioSpellOverride[], annex: BrowserCompatibilityAnnex | null) {
   const invalid = records.find((record) => !Number.isInteger(record.id) || record.id < 0 || record.id >= CUSTOM_SPELL_RECORDS);
-  if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..104 custom slot range.`);
+  if (invalid) throw new Error(`Custom spell ${invalid.id} is outside Data Spell's 0..${CUSTOM_SPELL_RECORDS - 1} custom slot range.`);
   return writeRuleOverridesForExport(AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS.spellOverrides, records, SPELL_RECORD_BYTES, annex, writeSpellOverrides, writeFreshSpellOverrides);
 }
 

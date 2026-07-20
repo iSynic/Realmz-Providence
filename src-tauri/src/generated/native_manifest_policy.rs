@@ -41,8 +41,11 @@ pub struct RealmzNativeLayout {
     pub message_record_bytes: usize,
     pub option_label_record_bytes: usize,
     pub spell_record_bytes: usize,
+    pub spell_override_records: usize,
     pub race_record_bytes: usize,
+    pub race_override_records: usize,
     pub caste_record_bytes: usize,
+    pub caste_override_records: usize,
 }
 
 pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
@@ -86,8 +89,11 @@ pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
     message_record_bytes: 256,
     option_label_record_bytes: 25,
     spell_record_bytes: 30,
+    spell_override_records: 105,
     race_record_bytes: 408,
+    race_override_records: 30,
     caste_record_bytes: 576,
+    caste_override_records: 30,
 };
 
 pub const AUTHORED_SCENARIO_ITEM_RECORDS: usize = 200;

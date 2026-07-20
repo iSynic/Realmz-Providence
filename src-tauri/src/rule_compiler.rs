@@ -28,8 +28,9 @@ pub fn write_fresh_spell_overrides(records: &[ScenarioSpellOverride]) -> Result<
         .find(|record| record.id >= SPELL_OVERRIDE_RECORDS)
     {
         return Err(ProvidenceError::message(format!(
-            "Custom spell {} is outside Data Spell's 0..104 custom slot range.",
-            record.id
+            "Custom spell {} is outside Data Spell's 0..{} custom slot range.",
+            record.id,
+            SPELL_OVERRIDE_RECORDS - 1
         )));
     }
     let overlay = write_spell_overrides(records)?;

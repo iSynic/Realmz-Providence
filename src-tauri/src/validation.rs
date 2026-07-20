@@ -1863,10 +1863,11 @@ fn validate_rules_overrides(
 
     let mut race_ids = BTreeSet::new();
     for race in &project.race_overrides {
-        if race.id >= 30 {
+        if race.id >= crate::realmz::RACE_OVERRIDE_RECORDS {
             errors.push(format!(
-                "Race override {} is outside the 0..29 race table.",
-                race.id
+                "Race override {} is outside the 0..{} race table.",
+                race.id,
+                crate::realmz::RACE_OVERRIDE_RECORDS - 1
             ));
         }
         if !race_ids.insert(race.id) {
@@ -1949,10 +1950,11 @@ fn validate_rules_overrides(
 
     let mut caste_ids = BTreeSet::new();
     for caste in &project.caste_overrides {
-        if caste.id >= 30 {
+        if caste.id >= crate::realmz::CASTE_OVERRIDE_RECORDS {
             errors.push(format!(
-                "Caste override {} is outside the 0..29 caste table.",
-                caste.id
+                "Caste override {} is outside the 0..{} caste table.",
+                caste.id,
+                crate::realmz::CASTE_OVERRIDE_RECORDS - 1
             ));
         }
         if !caste_ids.insert(caste.id) {
