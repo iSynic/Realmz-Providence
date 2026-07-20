@@ -250,7 +250,6 @@ pub fn parse_caste_overrides(buffer: &[u8]) -> Vec<ScenarioCasteOverride> {
                 max_spells_attacks: i16_be(record, 446),
                 spells_so_far: i16_be(record, 448),
                 spacer: Some(read_i16_vec(record, 450, 63)),
-                raw_bytes: record.to_vec(),
                 authored: false,
                 provenance: provenance("Data Caste", id, start, CASTE_BYTES),
             }
@@ -423,7 +422,6 @@ mod tests {
         assert_eq!(castes[0].victory[0], 3000);
         assert_eq!(castes[0].victory[1], 999999);
         assert_eq!(castes[0].start_money, 500);
-        castes[0].raw_bytes.fill(0xa5);
         castes[0].authored = true;
         castes[0].victory[2] = 125000;
         castes[0].start_money = 750;

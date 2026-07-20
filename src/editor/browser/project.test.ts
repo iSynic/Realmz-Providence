@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "../types";
 import { emptyBattle } from "../projectCommands/targetRecordCommands";
-import { defaultGlobalMacroHooks, emptyRaceOverride, emptySpellOverride, updateRuleOverride } from "../projectCommands/scenarioRulesCommands";
+import { defaultGlobalMacroHooks, emptyCasteOverride, emptyRaceOverride, emptySpellOverride, updateRuleOverride } from "../projectCommands/scenarioRulesCommands";
 import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
@@ -13,7 +13,7 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
-  it("drops legacy spell and race byte identity during normalization and edits", () => {
+  it("drops legacy spell, race, and caste byte identity during normalization and edits", () => {
     const project = createBrowserProject("Legacy rule bytes");
     project.spellOverrides = [{
       ...emptySpellOverride(16),
@@ -27,10 +27,19 @@ describe("browser project native manifest validation", () => {
       spacer: [...new Array(30).fill(0), -321],
       rawBytes: new Array(408).fill(0xa5)
     } as unknown as Project["raceOverrides"][number]];
+    project.casteOverrides = [{
+      ...emptyCasteOverride(3),
+      startMoney: 222,
+      spare1: [456, 0],
+      spare2: [0, -654],
+      spacer: [...new Array(62).fill(0), 789],
+      rawBytes: new Array(576).fill(0xa5)
+    } as unknown as Project["casteOverrides"][number]];
 
     const normalized = normalizeBrowserProject(project);
     const updatedSpell = updateRuleOverride<Project["spellOverrides"][number]>(normalized, "spellOverrides", 16, { cost: 42 });
     const updatedRace = updateRuleOverride<Project["raceOverrides"][number]>(normalized, "raceOverrides", 2, { baseMove: 14 });
+    const updatedCaste = updateRuleOverride<Project["casteOverrides"][number]>(normalized, "casteOverrides", 3, { startMoney: 223 });
 
     expect(normalized.spellOverrides[0].cost).toBe(41);
     expect("rawBytes" in normalized.spellOverrides[0]).toBe(false);
@@ -41,6 +50,12 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in normalized.raceOverrides[0]).toBe(false);
     expect(updatedRace.raceOverrides[0].baseMove).toBe(14);
     expect("rawBytes" in updatedRace.raceOverrides[0]).toBe(false);
+    expect(normalized.casteOverrides[0].spare1?.[0]).toBe(456);
+    expect(normalized.casteOverrides[0].spare2?.[1]).toBe(-654);
+    expect(normalized.casteOverrides[0].spacer?.[62]).toBe(789);
+    expect("rawBytes" in normalized.casteOverrides[0]).toBe(false);
+    expect(updatedCaste.casteOverrides[0].startMoney).toBe(223);
+    expect("rawBytes" in updatedCaste.casteOverrides[0]).toBe(false);
   });
 
   it("migrates obsolete complex encounter result aliases into canonical fields", () => {
@@ -899,8 +914,7 @@ describe("browser project native manifest validation", () => {
       ...parsed.casteOverrides[0],
       id: 3,
       startMoney: 222,
-      authored: false,
-      rawBytes: new Array(576).fill(0xa5)
+      authored: false
     }];
 
     const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);

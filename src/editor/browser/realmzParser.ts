@@ -1047,7 +1047,6 @@ function parseCasteOverrides(buffer: Uint8Array | undefined): ScenarioCasteOverr
       maxSpellsAttacks: i16(record, 446),
       spellsSoFar: i16(record, 448),
       spacer: readI16s(record, 450, 63),
-      rawBytes: Array.from(record),
       authored: false,
       provenance: provenance("Data Caste", id, start, CASTE_BYTES, "source-backed")
     };

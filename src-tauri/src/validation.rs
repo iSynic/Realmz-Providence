@@ -1949,13 +1949,6 @@ fn validate_rules_overrides(
 
     let mut caste_ids = BTreeSet::new();
     for caste in &project.caste_overrides {
-        if !caste.raw_bytes.is_empty() && caste.raw_bytes.len() != crate::realmz::CASTE_BYTES {
-            errors.push(format!(
-                "Caste override {} has invalid {}-byte compatibility storage.",
-                caste.id,
-                crate::realmz::CASTE_BYTES
-            ));
-        }
         if caste.id >= 30 {
             errors.push(format!(
                 "Caste override {} is outside the 0..29 caste table.",

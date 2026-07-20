@@ -20,19 +20,6 @@ pub(super) fn add_canonical_record_collections(
     scenario: &ScenarioMeta,
     parsed: &ParsedScenario,
 ) {
-    macro_rules! canonical_records {
-        ($records:expr) => {
-            $records
-                .iter()
-                .cloned()
-                .map(|mut record| {
-                    record.authored = true;
-                    record.raw_bytes.clear();
-                    record
-                })
-                .collect::<Vec<_>>()
-        };
-    }
     let messages = parsed
         .messages
         .iter()
@@ -170,7 +157,15 @@ pub(super) fn add_canonical_record_collections(
             record
         })
         .collect::<Vec<_>>();
-    let caste_overrides = canonical_records!(parsed.caste_overrides);
+    let caste_overrides = parsed
+        .caste_overrides
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let mut buffers = BTreeMap::new();
     if let Some(shell) = &scenario.shell {
         let mut shell = shell.clone();

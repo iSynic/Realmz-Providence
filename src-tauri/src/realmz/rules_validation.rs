@@ -1,22 +1,6 @@
 use crate::error::{ProvidenceError, Result};
 use crate::project::{ScenarioCasteOverride, ScenarioRaceOverride};
 
-use super::CASTE_BYTES;
-
-pub(super) fn validate_compatibility_storage(
-    label: &str,
-    id: usize,
-    raw_bytes: &[u8],
-    record_bytes: usize,
-) -> Result<()> {
-    if !raw_bytes.is_empty() && raw_bytes.len() != record_bytes {
-        return Err(ProvidenceError::message(format!(
-            "{label} {id} has invalid compatibility byte storage"
-        )));
-    }
-    Ok(())
-}
-
 fn validate_exact_length(
     label: &str,
     id: usize,
@@ -70,7 +54,6 @@ pub(super) fn validate_race_storage(record: &ScenarioRaceOverride) -> Result<()>
 }
 
 pub(super) fn validate_caste_storage(record: &ScenarioCasteOverride) -> Result<()> {
-    validate_compatibility_storage("Caste override", record.id, &record.raw_bytes, CASTE_BYTES)?;
     for (field, actual, expected) in [
         ("special-ability rows", record.special_ability.len(), 2),
         ("defense bonuses", record.drv_bonus.len(), 8),

@@ -163,7 +163,7 @@ export function createCasteOverride(project: Project, id?: number, template?: Pa
   const existing = records.find((record) => record.id === nextId);
   if (existing && !isBlankCasteOverride(existing)) return project;
   const displayName = template?.displayName?.trim() || defaultCasteName(nextId);
-  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template ?? {};
+  const semanticTemplate = withoutLegacyRuleRawBytes(template ?? {});
   const record = { ...emptyCasteOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
   const withName = setRuleName(project, "caste", nextId, displayName, true);
   return {
@@ -192,9 +192,7 @@ export function updateRuleOverride<T extends { id: number; authored?: boolean }>
   return {
     ...project,
     [key]: records.map((record) =>
-      key !== "casteOverrides"
-        ? withoutLegacyRuleRawBytes(record.id === id ? { ...record, ...changes, authored: true } : record)
-        : record.id === id ? { ...record, ...changes, authored: true } : record
+      withoutLegacyRuleRawBytes(record.id === id ? { ...record, ...changes, authored: true } : record)
     )
   };
 }

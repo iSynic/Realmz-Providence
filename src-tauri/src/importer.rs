@@ -382,6 +382,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_thief_encounter_raw_bytes(&mut value);
     migrate_legacy_spell_override_raw_bytes(&mut value);
     migrate_legacy_race_override_raw_bytes(&mut value);
+    migrate_legacy_caste_override_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -577,6 +578,10 @@ fn migrate_legacy_spell_override_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_race_override_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "raceOverrides");
+}
+
+fn migrate_legacy_caste_override_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "casteOverrides");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2763,6 +2768,21 @@ mod tests {
         legacy_race_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::RACE_BYTES]);
         saved["raceOverrides"] = serde_json::json!([legacy_race_value]);
+        let mut legacy_caste =
+            crate::realmz::parse_caste_overrides(&vec![0; crate::realmz::CASTE_BYTES])
+                .into_iter()
+                .next()
+                .expect("legacy caste override");
+        legacy_caste.id = 3;
+        legacy_caste.start_money = 222;
+        legacy_caste.spare1.as_mut().expect("caste spare1 words")[0] = 456;
+        legacy_caste.spare2.as_mut().expect("caste spare2 words")[1] = -654;
+        legacy_caste.spacer.as_mut().expect("caste spacer words")[62] = 789;
+        let mut legacy_caste_value =
+            serde_json::to_value(legacy_caste).expect("serialize legacy caste override");
+        legacy_caste_value["rawBytes"] =
+            serde_json::json!(vec![0xa5u8; crate::realmz::CASTE_BYTES]);
+        saved["casteOverrides"] = serde_json::json!([legacy_caste_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2834,6 +2854,11 @@ mod tests {
         assert_eq!(opened.race_overrides[0].base_move, 13);
         assert_eq!(opened.race_overrides[0].spare.as_ref().unwrap()[0], 123);
         assert_eq!(opened.race_overrides[0].spacer.as_ref().unwrap()[30], -321);
+        assert_eq!(opened.caste_overrides[0].id, 3);
+        assert_eq!(opened.caste_overrides[0].start_money, 222);
+        assert_eq!(opened.caste_overrides[0].spare1.as_ref().unwrap()[0], 456);
+        assert_eq!(opened.caste_overrides[0].spare2.as_ref().unwrap()[1], -654);
+        assert_eq!(opened.caste_overrides[0].spacer.as_ref().unwrap()[62], 789);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2877,6 +2902,7 @@ mod tests {
         assert!(upgraded["simpleEncounters"][0].get("rawBytes").is_none());
         assert!(upgraded["spellOverrides"][0].get("rawBytes").is_none());
         assert!(upgraded["raceOverrides"][0].get("rawBytes").is_none());
+        assert!(upgraded["casteOverrides"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -3386,7 +3412,6 @@ mod tests {
         caste.id = 3;
         caste.start_money = 222;
         caste.authored = false;
-        caste.raw_bytes.fill(0xA5);
         project.caste_overrides = vec![caste];
 
         let schema = build_project_semantic_schema(&project_dir, &project)

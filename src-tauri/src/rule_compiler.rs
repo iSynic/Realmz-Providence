@@ -161,7 +161,6 @@ mod tests {
         let mut caste = parse_caste_overrides(&vec![0; CASTE_BYTES]).remove(0);
         caste.id = 3;
         caste.start_money = 222;
-        caste.raw_bytes.fill(0xA5);
         let caste_bytes = write_fresh_caste_overrides(&[caste]).unwrap();
         assert_eq!(caste_bytes.len(), CASTE_OVERRIDE_RECORDS * CASTE_BYTES);
         assert_eq!(i16_be(&caste_bytes, 3 * CASTE_BYTES + 384), 222);

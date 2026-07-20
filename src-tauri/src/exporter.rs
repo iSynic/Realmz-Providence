@@ -2817,7 +2817,6 @@ mod tests {
                 .pop()
                 .unwrap();
         caste.authored = true;
-        caste.raw_bytes = vec![0xcd; crate::realmz::CASTE_BYTES];
         caste.start_money = 25;
         caste.spare1.as_mut().unwrap()[0] = 456;
         caste.spare2.as_mut().unwrap()[1] = -654;
@@ -2863,9 +2862,9 @@ mod tests {
         assert_eq!(crate::realmz::i16_be(caste_record, 246), -654);
         assert_eq!(crate::realmz::i16_be(caste_record, 384), 25);
         assert_eq!(crate::realmz::i16_be(caste_record, 574), 789);
-        assert_ne!(
-            caste_record[500], 0xcd,
-            "fresh raw bytes must not leak into output"
+        assert_eq!(
+            caste_record[500], 0,
+            "fresh unspecified spacer words must be deterministic"
         );
         assert_eq!(manifest.written_files(), ["Data Race", "Data Caste"]);
     }
@@ -3294,7 +3293,6 @@ mod tests {
         caste_source.extend_from_slice(&[0xbe, 0xef, 0x01]);
         fs::write(raw_dir.join("Data Caste"), &caste_source).unwrap();
         let mut caste = crate::realmz::parse_caste_overrides(&caste_source)[1].clone();
-        caste.raw_bytes.fill(0x22);
         caste.authored = true;
         caste.start_money = 42;
 

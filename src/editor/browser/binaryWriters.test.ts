@@ -128,8 +128,7 @@ describe("browser rule-override writers", () => {
       startMoney: 222,
       spare1: undefined,
       spare2: undefined,
-      spacer: undefined,
-      rawBytes: new Array(576).fill(0xa5)
+      spacer: undefined
     };
 
     const spellBytes = writeSpellOverrides([spell]);

@@ -1096,8 +1096,8 @@ const rulesProject = {
     { ...authoredRace, authored: true }
   ],
   casteOverrides: [
-    casteRecord(0, { rawBytes: Array.from(sourceCastes.slice(0, 576)), authored: false }),
-    { ...authoredCaste, rawBytes: Array.from(sourceCastes.slice(576, 1152)), authored: true }
+    casteRecord(0, { authored: false }),
+    { ...authoredCaste, authored: true }
   ]
 };
 const rulesUpdate = createBrowserScenarioPackageZip(rulesProject, rawSources, "mac-classic-folder");
@@ -2243,7 +2243,6 @@ function casteRecord(id, overrides = {}) {
     defaultIcon: 0,
     maxSpellsAttacks: 0,
     spellsSoFar: 0,
-    rawBytes: new Array(576).fill(0),
     authored: true,
     ...overrides
   };

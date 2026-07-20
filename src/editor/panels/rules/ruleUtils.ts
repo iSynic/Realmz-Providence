@@ -331,7 +331,6 @@ export function casteFromSummary(summary: Record<string, unknown>, id: number): 
     maxSpellsAttacks: num(summary.maxSpellsAttacks),
     spellsSoFar: num(summary.spellsSoFar),
     spacer: numArray(summary.spacer, 63),
-    rawBytes: numArray(summary.rawBytes, 576),
     authored: false,
     provenance: undefined
   };
@@ -447,7 +446,6 @@ export function emptyCasteView(id: number): ScenarioCasteOverride {
     maxSpellsAttacks: 0,
     spellsSoFar: 0,
     spacer: new Array(63).fill(0),
-    rawBytes: [],
     authored: false,
     provenance: undefined
   };

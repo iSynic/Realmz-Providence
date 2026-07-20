@@ -753,8 +753,9 @@ function normalizedRaceOverride(record: Project["raceOverrides"][number]): Proje
 }
 
 function normalizedCasteOverride(record: Project["casteOverrides"][number]): Project["casteOverrides"][number] {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
   return {
-    ...record,
+    ...canonical,
     specialAbility: Array.from({ length: 2 }, (_, row) => normalizedFixedArray(record.specialAbility?.[row], 14, 0)),
     drvBonus: normalizedFixedArray(record.drvBonus, 8, 0),
     attBonus: normalizedFixedArray(record.attBonus, 6, 0),
@@ -1288,8 +1289,6 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
   }
 
   for (const caste of project.casteOverrides ?? []) {
-    const rawBytes = caste.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 576) errors.push(`Caste override ${caste.id} has invalid 576-byte compatibility storage.`);
     if (caste.id < 0 || caste.id > 29) errors.push(`Caste override ${caste.id} is outside Data Caste's 0..29 record range.`);
     validateMatrix(errors, `Caste ${caste.id} Special Ability`, caste.specialAbility, 2, 14, -32768, 32767, "signed 16-bit");
     validateMatrix(errors, `Caste ${caste.id} Spellcasters`, caste.spellcasters, 4, 3, -32768, 32767, "signed 16-bit");

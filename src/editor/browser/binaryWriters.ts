@@ -671,7 +671,6 @@ function validateRaceStorage(record: ScenarioRaceOverride) {
 }
 
 function validateCasteStorage(record: ScenarioCasteOverride) {
-  validateCompatibilityStorage("Caste override", record.id, record.rawBytes, CASTE_RECORD_BYTES);
   for (const [field, values, expected] of [
     ["special-ability rows", record.specialAbility, 2],
     ["defense bonuses", record.drvBonus, 8],

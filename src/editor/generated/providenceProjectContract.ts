@@ -526,7 +526,6 @@ export const PROVIDENCE_CASTE_OVERRIDE_FIELDS = [
   "maxSpellsAttacks",
   "spellsSoFar",
   "spacer",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1220,7 +1219,6 @@ export type ProvidenceScenarioCasteOverride = {
   maxSpellsAttacks: number;
   spellsSoFar: number;
   spacer?: number[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };

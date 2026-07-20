@@ -557,7 +557,6 @@ pub const PROVIDENCE_CASTE_OVERRIDE_FIELDS: &[&str] = &[
     "maxSpellsAttacks",
     "spellsSoFar",
     "spacer",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1576,8 +1575,6 @@ pub struct ScenarioCasteOverride {
     pub spells_so_far: i16,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub spacer: Option<Vec<i16>>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,
