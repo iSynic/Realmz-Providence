@@ -60,7 +60,8 @@ export const LAND_LAYOUT_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
 export const MAP_RECORD_BYTES = 340;
 const MAP_RECORD_MARKERS = 10;
 const MAP_RECORD_MARKER_BYTES = 6;
-export const ITEM_BYTES = 100;
+export const ITEM_BYTES = REALMZ_NATIVE_LAYOUT.scenarioItemRecordBytes;
+export const TREASURE_BYTES = REALMZ_NATIVE_LAYOUT.treasureRecordBytes;
 export const SPELL_BYTES = 30;
 export const SPELL_OVERRIDE_RECORDS = 105;
 export const RACE_BYTES = 408;
@@ -134,11 +135,11 @@ const RECORD_BYTES: Record<string, number> = {
   "Data MD-1": MONSTER_BYTES,
   "Data DES": MONSTER_DESCRIPTION_BYTES,
   "Data BD": BATTLE_BYTES,
-  "Data SD": 3002,
+  "Data SD": SHOP_RECORD_BYTES,
   "Data SD2": 256,
   "Data OD": OPTION_LABEL_BYTES,
   "Data MD2": 340,
-  "Data TD": 48,
+  "Data TD": TREASURE_BYTES,
   "Data TD2": THIEF_ENCOUNTER_BYTES,
   "Data TD3": TIMED_ENCOUNTER_BYTES,
   "Data CI": 4608,
@@ -672,7 +673,7 @@ function parseMonsters(buffer: Uint8Array | undefined, source = "Data MD"): Mons
 }
 
 function parseTreasures(buffer: Uint8Array | undefined): TreasureRecord[] {
-  return fixedRecords(buffer, 48, "Data TD", (id, start, record) => ({
+  return fixedRecords(buffer, TREASURE_BYTES, "Data TD", (id, start, record) => ({
     id,
     itemIds: Array.from({ length: 20 }, (_, slot) => i16(record, slot * 2)),
     exp: i16(record, 40),
@@ -680,7 +681,7 @@ function parseTreasures(buffer: Uint8Array | undefined): TreasureRecord[] {
     gems: i16(record, 44),
     jewelry: i16(record, 46),
     authored: false,
-    provenance: provenance("Data TD", id, start, 48, "source-backed")
+    provenance: provenance("Data TD", id, start, TREASURE_BYTES, "source-backed")
   }));
 }
 

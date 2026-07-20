@@ -1,11 +1,12 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::ShopRecord;
 
 use super::record_bytes::{
     i16_be, parse_fixed_records, provenance, write_fixed_records, write_i16_be,
 };
 
-pub const SHOP_BYTES: usize = 3002;
+pub const SHOP_BYTES: usize = REALMZ_NATIVE_LAYOUT.shop_record_bytes;
 const SHOP_ITEM_SLOTS: usize = 1000;
 const FOREIGN_RECORD_MIN_NONZERO_ITEMS: usize = 900;
 const FOREIGN_RECORD_MIN_OUT_OF_RANGE_ITEMS: usize = 500;

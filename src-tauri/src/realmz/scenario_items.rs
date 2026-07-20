@@ -1,4 +1,5 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::ScenarioItemRecord;
 
 use super::record_bytes::{
@@ -6,7 +7,7 @@ use super::record_bytes::{
     write_i16_be, write_i32_be,
 };
 
-pub const ITEM_BYTES: usize = 100;
+pub const ITEM_BYTES: usize = REALMZ_NATIVE_LAYOUT.scenario_item_record_bytes;
 
 pub fn parse_scenario_items(buffer: &[u8]) -> Vec<ScenarioItemRecord> {
     parse_fixed_records(buffer, ITEM_BYTES)

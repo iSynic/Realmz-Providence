@@ -892,7 +892,15 @@ the browser semantic index through parser exports, the Scenario JSON core-record
 Rust battle and combat codecs. Exact-length writer/parser tests and the independent ownership proof
 remain fixed-format checks rather than deriving their expected sizes from the generated policy.
 
-Branch validation through the eighty-fourth slice completed on 2026-07-20:
+The eighty-fifth slice extends compiler-owned geometry to authored economy/content records. Native-
+manifest contract v6 now owns the 100-byte scenario-item, 48-byte treasure, and 3,002-byte shop
+rows. Generated TypeScript and Rust definitions drive browser writers/parsers, the browser semantic
+index, the Scenario JSON core-record compiler, and the Rust item/economy/shop codecs. The browser
+and Rust imported-shop suffix classifiers now use the same shop-row width as authored compilation,
+while their legacy-annex preservation behavior remains unchanged. Exact-size codec tests and the
+independent ownership proof continue to provide fixed Realmz-format checks.
+
+Branch validation through the eighty-fifth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -956,6 +964,8 @@ The shared encounter-layout slice likewise replaces existing literals without ad
 ISY-319/320/321 module-size violation.
 The shared combat-layout slice replaces battle and monster literals without adding a new
 ISY-319/320/321 module-size violation.
+The shared economy/content-layout slice replaces item, treasure, and shop literals without adding
+a new ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1628,7 +1638,8 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 ### Phase 5: One compiler contract across desktop and browser
 
 - **Implemented for baseline and native paths:** generate native map/random-level/Action Point/EDCD,
-  encounter-row, and combat-row layout geometry, scenario-item capacity, startup roles,
+  encounter-row, combat-row, and economy/content-row layout geometry, scenario-item capacity,
+  startup roles,
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
   project-derived semantic paths, and default resource sidecars from one native-manifest policy
   and enforce the applicable projections in both compilers.

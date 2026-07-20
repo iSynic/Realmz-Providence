@@ -1,5 +1,5 @@
 {
-  "contractVersion": 5,
+  "contractVersion": 6,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -25,6 +25,11 @@
       "battleRecordBytes": 346,
       "monsterRecordBytes": 210,
       "monsterDescriptionRecordBytes": 256
+    },
+    "economy": {
+      "scenarioItemRecordBytes": 100,
+      "treasureRecordBytes": 48,
+      "shopRecordBytes": 3002
     }
   },
   "authoredBaseline": {

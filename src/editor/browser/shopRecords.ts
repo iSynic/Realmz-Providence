@@ -1,4 +1,6 @@
-export const SHOP_RECORD_BYTES = 3002;
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
+
+export const SHOP_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.shopRecordBytes;
 
 const SHOP_ITEM_SLOTS = 1000;
 const FOREIGN_RECORD_MIN_NONZERO_ITEMS = 900;

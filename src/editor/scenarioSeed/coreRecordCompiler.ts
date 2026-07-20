@@ -36,9 +36,9 @@ const OPTION_LABEL_BYTES = 25;
 const BATTLE_BYTES = REALMZ_NATIVE_LAYOUT.battleRecordBytes;
 const MONSTER_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
 const MONSTER_DESCRIPTION_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;
-const TREASURE_BYTES = 48;
-const SHOP_BYTES = 3002;
-const ITEM_BYTES = 100;
+const TREASURE_BYTES = REALMZ_NATIVE_LAYOUT.treasureRecordBytes;
+const SHOP_BYTES = REALMZ_NATIVE_LAYOUT.shopRecordBytes;
+const ITEM_BYTES = REALMZ_NATIVE_LAYOUT.scenarioItemRecordBytes;
 
 export function compileScenarioSeedAssets(
   seedAssets: ScenarioSeedAsset[] | undefined,

@@ -15,10 +15,10 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES } from "./realmzParser";
+import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
-import { shopPrefixRecordCount } from "./shopRecords";
+import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
 import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
 export type BrowserSemanticBuildProgress = {
@@ -633,7 +633,7 @@ function addBattleRecords(schema: SemanticSchema, buffer?: Uint8Array) {
 
 function addShopRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  const recordBytes = 3002;
+  const recordBytes = SHOP_RECORD_BYTES;
   const count = shopPrefixRecordCount(buffer);
   for (let index = 0; index < count; index += 1) {
     const start = index * recordBytes;
@@ -701,9 +701,9 @@ function addComplexEncounterRecords(schema: SemanticSchema, buffer?: Uint8Array)
 
 function addTreasureRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  for (let index = 0; index + 48 <= buffer.byteLength; index += 1) {
-    const start = index * 48;
-    if (start + 48 > buffer.byteLength) break;
+  for (let index = 0; index + TREASURE_BYTES <= buffer.byteLength; index += 1) {
+    const start = index * TREASURE_BYTES;
+    if (start + TREASURE_BYTES > buffer.byteLength) break;
     const items = Array.from({ length: 20 }, (_, slot) => ({ slot, id: i16At(buffer, start + slot * 2) })).filter((item) => item.id !== 0);
     const summary = {
       id: index,
@@ -715,8 +715,8 @@ function addTreasureRecords(schema: SemanticSchema, buffer?: Uint8Array) {
       jewelry: i16At(buffer, start + 46),
       preview: `${items.length} items`
     };
-    upsertRecord(schema, browserRecord("Data TD", index, 48, "treasure", `Treasure ${index}`, summary));
-    schema.entities.push(browserEntity(`treasure:${index}`, "treasure", `Treasure ${index}`, "Data TD", `record:Data TD:${index}`, start, 48, summary));
+    upsertRecord(schema, browserRecord("Data TD", index, TREASURE_BYTES, "treasure", `Treasure ${index}`, summary));
+    schema.entities.push(browserEntity(`treasure:${index}`, "treasure", `Treasure ${index}`, "Data TD", `record:Data TD:${index}`, start, TREASURE_BYTES, summary));
     for (const item of items) pushLink(schema, `treasure:${index}`, `item:${item.id}`, "gives_item", "source-backed", { slot: item.slot });
   }
 }
@@ -2652,11 +2652,11 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data MD1": ["alternate monster set", MONSTER_BYTES],
   "Data MD-1": ["alternate monster set", MONSTER_BYTES],
   "Data DES": ["monster description", MONSTER_DESCRIPTION_BYTES],
-  "Data SD": ["shop record", 3002],
+  "Data SD": ["shop record", SHOP_RECORD_BYTES],
   "Data SD2": ["message record", 256],
   "Data OD": ["option label", OPTION_LABEL_BYTES],
   "Data MD2": ["map record", 340],
-  "Data TD": ["treasure", 48],
+  "Data TD": ["treasure", TREASURE_BYTES],
   "Data TD2": ["thief encounters", THIEF_ENCOUNTER_BYTES],
   "Data TD3": ["timed encounters", TIMED_ENCOUNTER_BYTES],
   "Data Spell": ["spell overrides", SPELL_RECORD_BYTES],

@@ -1,4 +1,5 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::TreasureRecord;
 
 use super::record_bytes::{
@@ -6,7 +7,7 @@ use super::record_bytes::{
 };
 pub use super::shops::{parse_shops, shop_prefix_record_count, write_shops, SHOP_BYTES};
 
-pub const TREASURE_BYTES: usize = 48;
+pub const TREASURE_BYTES: usize = REALMZ_NATIVE_LAYOUT.treasure_record_bytes;
 
 pub fn parse_treasures(buffer: &[u8]) -> Vec<TreasureRecord> {
     parse_fixed_records(buffer, TREASURE_BYTES)
