@@ -12,8 +12,11 @@ const browserScenarioPackagePath = path.join(root, "src", "editor", "browser", "
 const browserBinaryWritersPath = path.join(root, "src", "editor", "browser", "binaryWriters.ts");
 const browserParserPath = path.join(root, "src", "editor", "browser", "realmzParser.ts");
 const browserSemanticPath = path.join(root, "src", "editor", "browser", "semantic.ts");
+const browserProjectPath = path.join(root, "src", "editor", "browser", "project.ts");
 const browserShopRecordsPath = path.join(root, "src", "editor", "browser", "shopRecords.ts");
 const browserRuleCompilerPath = path.join(root, "src", "editor", "browser", "ruleCompiler.ts");
+const browserMapCommandsPath = path.join(root, "src", "editor", "projectCommands", "mapCommands.ts");
+const browserMapRecordsWorkbenchPath = path.join(root, "src", "editor", "components", "maps", "MapRecordsWorkbench.tsx");
 const scenarioRulesCommandsPath = path.join(root, "src", "editor", "projectCommands", "scenarioRulesCommands.ts");
 const scenarioSeedMapCompilerPath = path.join(root, "src", "editor", "scenarioSeed", "mapCompiler.ts");
 const scenarioSeedScriptCompilerPath = path.join(root, "src", "editor", "scenarioSeed", "scriptCompiler.ts");
@@ -35,6 +38,7 @@ const rustRulesPath = path.join(root, "src-tauri", "src", "realmz", "rules.rs");
 const rustRuleCompilerPath = path.join(root, "src-tauri", "src", "rule_compiler.rs");
 const rustSemanticCommonPath = path.join(root, "src-tauri", "src", "semantic", "common.rs");
 const rustSemanticRecordsPath = path.join(root, "src-tauri", "src", "semantic", "records.rs");
+const rustSemanticMapNamesPath = path.join(root, "src-tauri", "src", "semantic", "map_names.rs");
 const rustSemanticTriggersPath = path.join(root, "src-tauri", "src", "semantic", "triggers.rs");
 const checkOnly = process.argv.includes("--check");
 
@@ -47,6 +51,10 @@ expect(Number.isInteger(policy.contractVersion) && policy.contractVersion > 0, "
 expect(nativeLayout && typeof nativeLayout === "object" && !Array.isArray(nativeLayout), "nativeLayout must be an object");
 validatePositiveInteger(nativeLayout.mapField?.dimension, "nativeLayout.mapField.dimension");
 validatePositiveInteger(nativeLayout.mapField?.cellBytes, "nativeLayout.mapField.cellBytes");
+validatePositiveInteger(nativeLayout.mapRecord?.recordBytes, "nativeLayout.mapRecord.recordBytes");
+validatePositiveInteger(nativeLayout.mapRecord?.markerSlots, "nativeLayout.mapRecord.markerSlots");
+validatePositiveInteger(nativeLayout.mapRecord?.markerBytes, "nativeLayout.mapRecord.markerBytes");
+expect(nativeLayout.mapRecord.markerSlots * nativeLayout.mapRecord.markerBytes <= nativeLayout.mapRecord.recordBytes, "nativeLayout.mapRecord markers must fit within one record");
 validatePositiveInteger(nativeLayout.randomLevel?.recordBytes, "nativeLayout.randomLevel.recordBytes");
 validatePositiveInteger(nativeLayout.actionPoint?.recordBytes, "nativeLayout.actionPoint.recordBytes");
 validatePositiveInteger(nativeLayout.actionPoint?.recordsPerLevel, "nativeLayout.actionPoint.recordsPerLevel");
@@ -69,6 +77,9 @@ validatePositiveInteger(nativeLayout.rules?.casteRecordBytes, "nativeLayout.rule
 const generatedNativeLayout = {
   mapSize: nativeLayout.mapField.dimension,
   mapFieldBytes: nativeLayout.mapField.dimension * nativeLayout.mapField.dimension * nativeLayout.mapField.cellBytes,
+  mapRecordBytes: nativeLayout.mapRecord.recordBytes,
+  mapRecordMarkers: nativeLayout.mapRecord.markerSlots,
+  mapRecordMarkerBytes: nativeLayout.mapRecord.markerBytes,
   randomLevelRecordBytes: nativeLayout.randomLevel.recordBytes,
   actionPointRecordBytes: nativeLayout.actionPoint.recordBytes,
   actionPointsPerLevel: nativeLayout.actionPoint.recordsPerLevel,
@@ -241,6 +252,9 @@ const rustNativeLayout = [
   "pub struct RealmzNativeLayout {",
   "    pub map_size: usize,",
   "    pub map_field_bytes: usize,",
+  "    pub map_record_bytes: usize,",
+  "    pub map_record_markers: usize,",
+  "    pub map_record_marker_bytes: usize,",
   "    pub random_level_record_bytes: usize,",
   "    pub action_point_record_bytes: usize,",
   "    pub action_points_per_level: usize,",
@@ -266,6 +280,9 @@ const rustNativeLayout = [
   "pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {",
   `    map_size: ${generatedNativeLayout.mapSize},`,
   `    map_field_bytes: ${generatedNativeLayout.mapFieldBytes},`,
+  `    map_record_bytes: ${generatedNativeLayout.mapRecordBytes},`,
+  `    map_record_markers: ${generatedNativeLayout.mapRecordMarkers},`,
+  `    map_record_marker_bytes: ${generatedNativeLayout.mapRecordMarkerBytes},`,
   `    random_level_record_bytes: ${generatedNativeLayout.randomLevelRecordBytes},`,
   `    action_point_record_bytes: ${generatedNativeLayout.actionPointRecordBytes},`,
   `    action_points_per_level: ${generatedNativeLayout.actionPointsPerLevel},`,
@@ -305,10 +322,13 @@ const rustExporterSource = fs.readFileSync(rustExporterPath, "utf8");
 const nativeLayoutConsumers = [
   [browserBinaryWritersPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserParserPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [browserSemanticPath, ["SIMPLE_ENCOUNTER_BYTES", "COMPLEX_ENCOUNTER_BYTES", "THIEF_ENCOUNTER_BYTES", "TIMED_ENCOUNTER_BYTES", "BATTLE_BYTES", "MONSTER_BYTES", "MONSTER_DESCRIPTION_BYTES", "ITEM_BYTES", "TREASURE_BYTES", "SHOP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES"]],
+  [browserSemanticPath, ["MAP_RECORD_BYTES", "SIMPLE_ENCOUNTER_BYTES", "COMPLEX_ENCOUNTER_BYTES", "THIEF_ENCOUNTER_BYTES", "TIMED_ENCOUNTER_BYTES", "BATTLE_BYTES", "MONSTER_BYTES", "MONSTER_DESCRIPTION_BYTES", "ITEM_BYTES", "TREASURE_BYTES", "SHOP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES"]],
+  [browserProjectPath, ["MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES"]],
   [browserShopRecordsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserRuleCompilerPath, ["SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES"]],
   [scenarioRulesCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserMapCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserMapRecordsWorkbenchPath, ["REALMZ_NATIVE_LAYOUT"]],
   [scenarioSeedMapCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],
   [scenarioSeedScriptCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],
   [scenarioSeedCoreRecordCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],
@@ -326,8 +346,9 @@ const nativeLayoutConsumers = [
   [rustOptionLabelsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustRulesPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustRuleCompilerPath, ["SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
-  [rustSemanticCommonPath, ["MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
-  [rustSemanticRecordsPath, ["SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
+  [rustSemanticCommonPath, ["MAP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
+  [rustSemanticRecordsPath, ["MAP_RECORD_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
+  [rustSemanticMapNamesPath, ["MAP_RECORD_BYTES"]],
   [rustSemanticTriggersPath, ["MESSAGE_BYTES"]]
 ];
 for (const [consumerPath, symbols] of nativeLayoutConsumers) {

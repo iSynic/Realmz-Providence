@@ -3,6 +3,9 @@
 pub struct RealmzNativeLayout {
     pub map_size: usize,
     pub map_field_bytes: usize,
+    pub map_record_bytes: usize,
+    pub map_record_markers: usize,
+    pub map_record_marker_bytes: usize,
     pub random_level_record_bytes: usize,
     pub action_point_record_bytes: usize,
     pub action_points_per_level: usize,
@@ -28,6 +31,9 @@ pub struct RealmzNativeLayout {
 pub const REALMZ_NATIVE_LAYOUT: RealmzNativeLayout = RealmzNativeLayout {
     map_size: 90,
     map_field_bytes: 16200,
+    map_record_bytes: 340,
+    map_record_markers: 10,
+    map_record_marker_bytes: 6,
     random_level_record_bytes: 644,
     action_point_record_bytes: 40,
     action_points_per_level: 100,

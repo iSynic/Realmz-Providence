@@ -26,6 +26,8 @@ pub const PROJECT_SCHEMA_VERSION: u32 =
     crate::generated::project_contract::PROVIDENCE_PROJECT_SCHEMA_VERSION;
 pub const SEMANTIC_SCHEMA_VERSION: u32 = 5;
 pub const MAP_SIZE: usize = crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT.map_size;
+const MAP_RECORD_MARKERS: usize =
+    crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT.map_record_markers;
 pub const RACE_NAME_LIMIT: usize = 70;
 pub const CASTE_NAME_LIMIT: usize = 30;
 pub const CUSTOM_NAMES_SOURCE_FILE: &str = "Data Files/Custom Names.rsrc";
@@ -903,7 +905,7 @@ fn resize_vec<T: Clone>(values: &mut Vec<T>, length: usize, default: T) {
 
 fn normalize_map_record_markers(record: &mut MapRecord) {
     let existing = std::mem::take(&mut record.markers);
-    record.markers = (0..10)
+    record.markers = (0..MAP_RECORD_MARKERS)
         .map(|slot| {
             existing.get(slot).cloned().unwrap_or(MapMarker {
                 icon_id: 0,

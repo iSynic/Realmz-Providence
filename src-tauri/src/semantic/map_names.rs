@@ -1,14 +1,12 @@
 use super::common::*;
 use super::resources::{parse_resource_fork, parse_string_list_resource, resource_entity_id};
 use crate::project::*;
-use crate::realmz::ParsedScenario;
+use crate::realmz::{ParsedScenario, MAP_RECORD_BYTES};
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
 
 const PRIMARY_MAP_NAMES_RESOURCE_ID: i16 = -102;
 const SECONDARY_MAP_NAMES_RESOURCE_ID: i16 = -101;
-const MAP_RECORD_BYTES: usize = 340;
-
 #[derive(Debug, Clone)]
 pub(super) struct ResourceMapName {
     pub id: usize,

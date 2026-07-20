@@ -16,6 +16,8 @@ import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 const FIELD_BYTES = REALMZ_NATIVE_LAYOUT.mapFieldBytes;
+const MAP_RECORD_MARKERS = REALMZ_NATIVE_LAYOUT.mapRecordMarkers;
+const MAP_RECORD_MARKER_BYTES = REALMZ_NATIVE_LAYOUT.mapRecordMarkerBytes;
 const RANDOM_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
 const BUNDLED_LANDLOOK_MAPSTATS = [
   ["Data P BD", 0],
@@ -822,11 +824,11 @@ function signedMigrationByte(value: number) {
 
 function normalizedMapRecordMarkers(record: Project["mapRecords"][number]) {
   const raw = (record as typeof record & { rawBytes?: number[] }).rawBytes ?? [];
-  return Array.from({ length: 10 }, (_, slot) => {
+  return Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => {
     const marker = record.markers?.[slot];
     if (marker) return marker;
-    const offset = slot * 6;
-    return raw.length >= offset + 6
+    const offset = slot * MAP_RECORD_MARKER_BYTES;
+    return raw.length >= offset + MAP_RECORD_MARKER_BYTES
       ? { iconId: readSignedI16(raw, offset), x: readSignedI16(raw, offset + 2), y: readSignedI16(raw, offset + 4) }
       : { iconId: 0, x: 0, y: 0 };
   });
@@ -1462,8 +1464,8 @@ function validateMapRecords(project: Project, errors: string[], warnings: string
   const mapIds = new Set(project.maps.map((map) => `${map.levelType}:${map.index}`));
   const pictures = new Set(project.assetCatalog.pictures?.map((picture) => picture.resourceId) ?? []);
   for (const record of project.mapRecords ?? []) {
-    if (record.markers.length !== 10) {
-      errors.push(`Map record ${record.id} must define 10 semantic marker slots.`);
+    if (record.markers.length !== MAP_RECORD_MARKERS) {
+      errors.push(`Map record ${record.id} must define ${MAP_RECORD_MARKERS} semantic marker slots.`);
     }
     if (record.startX < 0 || record.startX >= 90 || record.startY < 0 || record.startY >= 90) {
       warnings.push(`Map record ${record.id} starts outside the 90x90 map at ${record.startX},${record.startY}.`);

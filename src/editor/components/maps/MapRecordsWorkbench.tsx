@@ -7,6 +7,7 @@ import { EmptyState, EntityRow, ScrollArea, SearchField, WorkbenchActionBar } fr
 import { InfoGrid } from "../InfoGrid";
 import { TutorialTip } from "../TutorialTip";
 import { MapDiagnostics, MapNumberField } from "./MapFormControls";
+import { REALMZ_NATIVE_LAYOUT } from "../../generated/realmzNativeManifestPolicy";
 
 const MAP_RECORD_CANVAS_HELP =
   "Show Player Map starts and markers on the canvas without changing the maps.";
@@ -809,7 +810,7 @@ function drawFallbackPlayerMapMarker(ctx: CanvasRenderingContext2D, iconId: numb
 }
 
 function mapRecordMarkers(record: MapRecord): MapMarker[] {
-  return Array.from({ length: 10 }, (_, slot) => record.markers[slot] ?? { iconId: 0, x: 0, y: 0 });
+  return Array.from({ length: REALMZ_NATIVE_LAYOUT.mapRecordMarkers }, (_, slot) => record.markers[slot] ?? { iconId: 0, x: 0, y: 0 });
 }
 
 function activeMarkerCount(record: MapRecord) {

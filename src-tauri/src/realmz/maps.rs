@@ -1,4 +1,5 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{
     Confidence, LevelType, MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender, Provenance,
     RandomLevel, RenderMode, MAP_SIZE,
@@ -14,11 +15,10 @@ pub use land_layout::{
     parse_land_layout, write_land_layout, LAND_LAYOUT_BYTES, LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
 };
 
-pub const FIELD_BYTES: usize =
-    crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT.map_field_bytes;
-pub const MAP_RECORD_BYTES: usize = 340;
-pub const MAP_RECORD_MARKERS: usize = 10;
-pub const MAP_RECORD_MARKER_BYTES: usize = 6;
+pub const FIELD_BYTES: usize = REALMZ_NATIVE_LAYOUT.map_field_bytes;
+pub const MAP_RECORD_BYTES: usize = REALMZ_NATIVE_LAYOUT.map_record_bytes;
+pub const MAP_RECORD_MARKERS: usize = REALMZ_NATIVE_LAYOUT.map_record_markers;
+pub const MAP_RECORD_MARKER_BYTES: usize = REALMZ_NATIVE_LAYOUT.map_record_marker_bytes;
 
 pub fn parse_fields(buffer: &[u8], level_type: LevelType, source: &str) -> Vec<MapEntity> {
     let count = buffer.len() / FIELD_BYTES;

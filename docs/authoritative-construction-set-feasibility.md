@@ -915,7 +915,15 @@ constructors used by Scenario JSON compilation now derive authored provenance ra
 contract. Stock-library decoders and fixed-size golden tests retain literal Realmz-format assertions
 as independent checks.
 
-Branch validation through the eighty-seventh slice completed on 2026-07-20:
+The eighty-eighth slice extends compiler-owned geometry to the complete 340-byte `Data MD2` map
+record, including its ten six-byte marker slots. Native-manifest contract v9 now drives both native
+codecs, semantic indexes, resource-backed map-name resolution, project-open marker normalization,
+map-record validation, and the editor command/workbench authoring paths. Imported unknown gap bytes,
+noncanonical Boolean words, unchanged Pascal-note tails, and malformed file tails remain bounded to
+the compatibility-annex overlays. Fixed-size codec tests and the independent ownership proof keep
+literal Realmz-format expectations as checks against an incorrect policy change.
+
+Branch validation through the eighty-eighth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -985,6 +993,9 @@ The shared text-record-layout slice replaces message and option-label literals w
 ISY-319/320/321 module-size violation.
 The shared rules-layout slice replaces spell, race, and caste compiler literals without adding a new
 ISY-319/320/321 module-size violation.
+The shared map-record-layout slice replaces `Data MD2` geometry literals across compiler,
+normalization, semantic, map-name, and authoring consumers without refactoring the deferred map UI;
+it adds no new ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1656,7 +1667,7 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 
 ### Phase 5: One compiler contract across desktop and browser
 
-- **Implemented for baseline and native paths:** generate native map/random-level/Action Point/EDCD,
+- **Implemented for baseline and native paths:** generate native map/map-record/random-level/Action Point/EDCD,
   encounter-row, combat-row, economy/content-row, text-row, and rules-row layout geometry,
   scenario-item capacity,
   startup roles,

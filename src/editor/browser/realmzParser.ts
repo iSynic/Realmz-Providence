@@ -58,9 +58,9 @@ export const OPTION_LABEL_BYTES = REALMZ_NATIVE_LAYOUT.optionLabelRecordBytes;
 export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLS = 16;
 export const LAND_LAYOUT_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
-export const MAP_RECORD_BYTES = 340;
-const MAP_RECORD_MARKERS = 10;
-const MAP_RECORD_MARKER_BYTES = 6;
+export const MAP_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.mapRecordBytes;
+const MAP_RECORD_MARKERS = REALMZ_NATIVE_LAYOUT.mapRecordMarkers;
+const MAP_RECORD_MARKER_BYTES = REALMZ_NATIVE_LAYOUT.mapRecordMarkerBytes;
 export const ITEM_BYTES = REALMZ_NATIVE_LAYOUT.scenarioItemRecordBytes;
 export const TREASURE_BYTES = REALMZ_NATIVE_LAYOUT.treasureRecordBytes;
 export const SPELL_BYTES = REALMZ_NATIVE_LAYOUT.spellRecordBytes;
@@ -139,7 +139,7 @@ const RECORD_BYTES: Record<string, number> = {
   "Data SD": SHOP_RECORD_BYTES,
   "Data SD2": MESSAGE_BYTES,
   "Data OD": OPTION_LABEL_BYTES,
-  "Data MD2": 340,
+  "Data MD2": MAP_RECORD_BYTES,
   "Data TD": TREASURE_BYTES,
   "Data TD2": THIEF_ENCOUNTER_BYTES,
   "Data TD3": TIMED_ENCOUNTER_BYTES,

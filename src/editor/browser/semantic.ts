@@ -15,7 +15,7 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MESSAGE_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
+import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MAP_RECORD_BYTES, MESSAGE_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { CASTE_RECORD_BYTES, RACE_RECORD_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
@@ -1172,9 +1172,9 @@ function addMapRecords(schema: SemanticSchema, mapRecords: MapRecord[], maps: Ma
       rect: record.rect,
       note: record.note
     };
-    upsertRecord(schema, browserRecord("Data MD2", record.id, 340, "map record", name, summary));
+    upsertRecord(schema, browserRecord("Data MD2", record.id, MAP_RECORD_BYTES, "map record", name, summary));
     const entityId = `map-record:${record.id}`;
-    schema.entities.push(browserEntity(entityId, "map record", name, "Data MD2", recordRef, record.id * 340, 340, summary));
+    schema.entities.push(browserEntity(entityId, "map record", name, "Data MD2", recordRef, record.id * MAP_RECORD_BYTES, MAP_RECORD_BYTES, summary));
     const isScrollingTextMap = record.pictId === 0 && record.show < 0;
     const isTerrainMap = record.pictId === 0 && record.show >= 0;
     const levelType = record.isDungeon ? "dungeon" : "land";
@@ -2655,7 +2655,7 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data SD": ["shop record", SHOP_RECORD_BYTES],
   "Data SD2": ["message record", MESSAGE_BYTES],
   "Data OD": ["option label", OPTION_LABEL_BYTES],
-  "Data MD2": ["map record", 340],
+  "Data MD2": ["map record", MAP_RECORD_BYTES],
   "Data TD": ["treasure", TREASURE_BYTES],
   "Data TD2": ["thief encounters", THIEF_ENCOUNTER_BYTES],
   "Data TD3": ["timed encounters", TIMED_ENCOUNTER_BYTES],

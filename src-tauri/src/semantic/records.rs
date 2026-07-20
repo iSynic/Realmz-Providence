@@ -7,7 +7,8 @@ use crate::realmz::{
     write_option_labels, write_scenario_contact_info, write_scenario_items,
     write_scenario_restrictions, write_scenario_shell, write_shops, write_simple_encounters,
     write_thief_encounters, write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES,
-    COMPLEX_ENCOUNTER_BYTES, RACE_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
+    COMPLEX_ENCOUNTER_BYTES, MAP_RECORD_BYTES, MAP_RECORD_MARKERS, MAP_RECORD_MARKER_BYTES,
+    RACE_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
 };
 use crate::rule_compiler::{
     write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
@@ -1108,7 +1109,7 @@ fn parse_map_record_collection(
     map_names: &BTreeMap<usize, ResourceMapName>,
 ) {
     let source = "Data MD2";
-    let record_bytes = 340;
+    let record_bytes = MAP_RECORD_BYTES;
     let Some(buffer) = buffers.get(source) else {
         return;
     };
@@ -1986,9 +1987,9 @@ fn parse_map_record(
     id: usize,
     map_names: &BTreeMap<usize, ResourceMapName>,
 ) -> BTreeMap<String, Value> {
-    let icon_slots: Vec<Value> = (0..10)
+    let icon_slots: Vec<Value> = (0..MAP_RECORD_MARKERS)
         .filter_map(|slot| {
-            let offset = slot * 6;
+            let offset = slot * MAP_RECORD_MARKER_BYTES;
             let icon_id = i16_be(buffer, offset);
             (icon_id != 0).then(|| {
                 json!({
@@ -2019,7 +2020,10 @@ fn parse_map_record(
                 "right": i16_be(buffer, 82),
             }),
         ),
-        ("note", json!(decode_pascal_text(&buffer[84..340]))),
+        (
+            "note",
+            json!(decode_pascal_text(&buffer[84..MAP_RECORD_BYTES])),
+        ),
     ]);
     if let Some(name) = map_record_name(map_names, id) {
         data.insert("name".to_string(), json!(name.name));

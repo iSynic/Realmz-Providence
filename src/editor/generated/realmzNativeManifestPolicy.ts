@@ -5,6 +5,9 @@ import type { Project } from "../types";
 export const REALMZ_NATIVE_LAYOUT = {
   "mapSize": 90,
   "mapFieldBytes": 16200,
+  "mapRecordBytes": 340,
+  "mapRecordMarkers": 10,
+  "mapRecordMarkerBytes": 6,
   "randomLevelRecordBytes": 644,
   "actionPointRecordBytes": 40,
   "actionPointsPerLevel": 100,
