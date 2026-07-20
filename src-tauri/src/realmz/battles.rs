@@ -20,7 +20,6 @@ pub fn parse_battles(buffer: &[u8]) -> Vec<BattleRecord> {
             message_before: i16_be(record, 340),
             message_after: i16_be(record, 342),
             battle_macro: i16_be(record, 344),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: provenance("Data BD", id, start, BATTLE_BYTES),
         })
@@ -29,12 +28,6 @@ pub fn parse_battles(buffer: &[u8]) -> Vec<BattleRecord> {
 
 pub fn write_battles(records: &[BattleRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, BATTLE_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != BATTLE_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Battle {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         if record.grid.len() != BATTLE_GRID_SLOTS {
             return Err(ProvidenceError::message(format!(
                 "Battle {} must have a 13 x 13 monster grid",
@@ -77,7 +70,6 @@ mod tests {
             message_before: 4,
             message_after: 5,
             battle_macro: -6,
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data BD", 0, 0, BATTLE_BYTES),
         };
@@ -102,8 +94,7 @@ mod tests {
         write_i16_be(&mut input, 340, 10);
         write_i16_be(&mut input, 342, 11);
         write_i16_be(&mut input, 344, -12);
-        let mut records = parse_battles(&input);
-        records[0].raw_bytes.fill(0x5a);
+        let records = parse_battles(&input);
 
         let output = write_battles(&records).unwrap();
 
@@ -130,13 +121,13 @@ mod tests {
     }
 
     #[test]
-    fn battle_writer_rejects_malformed_compatibility_storage() {
+    fn battle_writer_rejects_malformed_grid() {
         let mut record = parse_battles(&vec![0; BATTLE_BYTES]).remove(0);
-        record.raw_bytes = vec![1];
+        record.grid.pop();
 
         assert!(write_battles(&[record])
             .unwrap_err()
             .to_string()
-            .contains("invalid compatibility byte storage"));
+            .contains("13 x 13 monster grid"));
     }
 }

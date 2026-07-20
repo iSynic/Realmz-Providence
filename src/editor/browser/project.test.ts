@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "../types";
+import { emptyBattle } from "../projectCommands/targetRecordCommands";
 import { defaultGlobalMacroHooks } from "../projectCommands/scenarioRulesCommands";
 import {
   buildBrowserSemanticSchemaForProject,
@@ -351,6 +352,23 @@ describe("browser project native manifest validation", () => {
 
     expect(option.text).toBe("Semantic option");
     expect("rawBytes" in option).toBe(false);
+  });
+
+  it("strips obsolete battle bytes when opening legacy browser projects", () => {
+    const project = createBrowserProject("Legacy Battle");
+    project.battles = [{
+      ...emptyBattle(0),
+      grid: [7, ...new Array(168).fill(0)],
+      dist: -2,
+      rawBytes: new Array(346).fill(0xa5),
+      authored: false
+    } as unknown as Project["battles"][number]];
+
+    const battle = normalizeBrowserProject(project).battles[0];
+
+    expect(battle.grid[0]).toBe(7);
+    expect(battle.dist).toBe(-2);
+    expect("rawBytes" in battle).toBe(false);
   });
 
   it("backfills shop inventories when opening legacy browser projects", () => {
@@ -740,8 +758,7 @@ describe("browser project native manifest validation", () => {
       grid: [2, ...parsed.battles[0].grid.slice(1)],
       dist: -4,
       messageBefore: 5,
-      authored: false,
-      rawBytes: new Array(346).fill(0xa5)
+      authored: false
     }];
     project.monsters = [{
       ...parsed.monsters[0],

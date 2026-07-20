@@ -594,7 +594,6 @@ function parseBattles(buffer: Uint8Array | undefined): BattleRecord[] {
     messageBefore: i16(record, 340),
     messageAfter: i16(record, 342),
     battleMacro: i16(record, 344),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data BD", id, start, 346, "source-backed")
   }));

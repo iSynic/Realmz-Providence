@@ -829,7 +829,7 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       "docs/generated/battle-record-evidence.json",
       "docs/format-evidence-cards/battle-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh and authored battle records compile all 346 bytes from canonical semantics, including deterministic zero alignment padding, without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex. Monster template writers and encounter routing stay outside this batch."
+    preservationPolicy: "Canonical battle records expose no rawBytes and compile all 346 bytes from semantic fields, including deterministic zero alignment padding. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex. Monster template writers and encounter routing stay outside this batch."
   },
   {
     container: "Data TD3",

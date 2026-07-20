@@ -117,10 +117,6 @@ export function writeTileSolids(attributes: TileAttributeProfile[]) {
 
 export function writeBattles(records: BattleRecord[]) {
   return writeFixedRecords(records, BATTLE_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== BATTLE_RECORD_BYTES) {
-      throw new Error(`Battle ${record.id} has invalid compatibility byte storage`);
-    }
     if (record.grid.length !== BATTLE_GRID_SLOTS) {
       throw new Error(`Battle ${record.id} must have a 13 x 13 monster grid`);
     }

@@ -801,7 +801,7 @@ describe("browser battle writer", () => {
       battleMacro: -6
     };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeBattles([record]);
 
     expect(output).toHaveLength(346);
@@ -823,7 +823,8 @@ describe("browser battle writer", () => {
     setI16(input, 344, -12);
     const imported = parseScenarioBuffers(new Map([["Data BD", input]])).battles[0];
 
-    const output = writeBattles([{ ...imported, rawBytes: new Array(346).fill(0x5a) }]);
+    expect("rawBytes" in imported).toBe(false);
+    const output = writeBattles([imported]);
 
     expect(i16(output, 12 * 2)).toBe(9);
     expect(output[338]).toBe(2);
@@ -844,9 +845,9 @@ describe("browser battle writer", () => {
       .toThrow("at most 100 loaded monsters");
   });
 
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeBattles([{ ...emptyBattle(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
+  it("rejects a malformed grid", () => {
+    expect(() => writeBattles([{ ...emptyBattle(0), grid: new Array(168).fill(0) }]))
+      .toThrow("13 x 13 monster grid");
   });
 });
 

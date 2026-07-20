@@ -52,7 +52,15 @@ pub(super) fn add_canonical_record_collections(
         })
         .collect::<Vec<_>>();
     let monster_descriptions = canonical_records!(parsed.monster_descriptions);
-    let battles = canonical_records!(parsed.battles);
+    let battles = parsed
+        .battles
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let monsters = canonical_records!(parsed.monsters);
     let monster_sets: Vec<_> = parsed
         .monster_sets

@@ -344,7 +344,6 @@ export const PROVIDENCE_BATTLE_FIELDS = [
   "messageBefore",
   "messageAfter",
   "battleMacro",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1046,7 +1045,6 @@ export type ProvidenceBattleRecord = {
   messageBefore: number;
   messageAfter: number;
   battleMacro: number;
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

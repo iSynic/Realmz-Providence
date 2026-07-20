@@ -137,7 +137,6 @@ mod tests {
             message_before: 3,
             message_after: 4,
             battle_macro: 5,
-            raw_bytes: vec![0; BATTLE_BYTES],
             authored: true,
             provenance: provenance("Data BD", 0, 0, BATTLE_BYTES),
         };
@@ -155,7 +154,6 @@ mod tests {
             message_before: 0,
             message_after: 0,
             battle_macro: 0,
-            raw_bytes: vec![0; BATTLE_BYTES],
             authored: true,
             provenance: provenance("Data BD", 1, BATTLE_BYTES, BATTLE_BYTES),
         };

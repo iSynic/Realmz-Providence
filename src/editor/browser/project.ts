@@ -592,7 +592,10 @@ export function normalizeBrowserProject(project: Project): Project {
     const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
     return canonicalRecord;
   });
-  project.battles ??= [];
+  project.battles = (project.battles ?? []).map((record) => {
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
+    return canonicalRecord;
+  });
   project.monsters = (project.monsters ?? []).map(normalizedMonsterRecord);
   project.monsterSets = (project.monsterSets ?? []).map((set) => ({
     ...set,
@@ -1087,10 +1090,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
   }
   validateRulesRecords(project, errors, warnings);
   for (const battle of project.battles ?? []) {
-    const rawBytes = battle.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 346) {
-      errors.push(`Battle ${battle.id} has invalid 346-byte compatibility storage.`);
-    }
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
   }
   for (const description of project.monsterDescriptions ?? []) {

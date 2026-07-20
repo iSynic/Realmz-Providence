@@ -368,7 +368,6 @@ pub const PROVIDENCE_BATTLE_FIELDS: &[&str] = &[
     "messageBefore",
     "messageAfter",
     "battleMacro",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1372,8 +1371,6 @@ pub struct BattleRecord {
     pub message_before: i16,
     pub message_after: i16,
     pub battle_macro: i16,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

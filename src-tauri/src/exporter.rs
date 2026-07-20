@@ -2966,8 +2966,6 @@ mod tests {
         fs::write(raw_dir.join("Data BD"), &source).unwrap();
 
         let mut battles = crate::realmz::parse_battles(&source);
-        battles[0].raw_bytes.fill(0x11);
-        battles[1].raw_bytes.fill(0x22);
         battles[1].grid[84] = -7;
         battles[1].dist = 3;
         battles[1].message_before = 4;

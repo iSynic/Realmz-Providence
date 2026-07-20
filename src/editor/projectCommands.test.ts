@@ -5,7 +5,7 @@ import {
   projectCommandChangeCount,
   projectCommandLabel
 } from "./projectCommands";
-import { emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptyTreasure } from "./projectCommands/targetRecordCommands";
+import { emptyBattle, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptyTreasure } from "./projectCommands/targetRecordCommands";
 import type { Project, ProjectCommand } from "./types";
 
 describe("project command facade", () => {
@@ -141,6 +141,7 @@ describe("project command facade", () => {
 
   it("creates fresh battles from semantic fields without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Battle");
+    project.battles = [{ ...emptyBattle(4), rawBytes: new Array(346).fill(0xa5) } as unknown as Project["battles"][number]];
 
     const next = applyProjectCommand(project, {
       kind: "createTargetRecord",
@@ -151,7 +152,7 @@ describe("project command facade", () => {
 
     expect(next.battles).toHaveLength(1);
     expect(next.battles[0].grid).toHaveLength(13 * 13);
-    expect(next.battles[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in next.battles[0]).toBe(false);
   });
 
   it("creates fresh simple encounters from semantic fields without compatibility bytes", () => {

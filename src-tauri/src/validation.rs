@@ -317,13 +317,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for battle in &project.battles {
-        if !battle.raw_bytes.is_empty() && battle.raw_bytes.len() != crate::realmz::BATTLE_BYTES {
-            errors.push(format!(
-                "Battle {} has invalid {}-byte compatibility storage.",
-                battle.id,
-                crate::realmz::BATTLE_BYTES
-            ));
-        }
         if battle.grid.len() != 13 * 13 {
             errors.push(format!(
                 "Battle {} has {} grid cells; Data BD requires 169.",
@@ -3197,7 +3190,6 @@ mod tests {
             message_before: 0,
             message_after: 0,
             battle_macro: 0,
-            raw_bytes: vec![0; crate::realmz::BATTLE_BYTES],
             authored: true,
             provenance: test_provenance(
                 "Data BD",

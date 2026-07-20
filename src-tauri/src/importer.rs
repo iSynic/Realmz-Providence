@@ -374,6 +374,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_shop_raw_bytes(&mut value);
     migrate_legacy_message_raw_bytes(&mut value);
     migrate_legacy_option_label_raw_bytes(&mut value);
+    migrate_legacy_battle_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -518,6 +519,10 @@ fn migrate_legacy_message_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_option_label_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "optionLabels");
+}
+
+fn migrate_legacy_battle_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "battles");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2600,6 +2605,21 @@ mod tests {
             "rawBytes": legacy_option_raw,
             "authored": false
         }]);
+        let mut legacy_battle =
+            crate::realmz::parse_battles(&vec![0; crate::realmz::BATTLE_BYTES])
+                .into_iter()
+                .next()
+                .expect("legacy battle");
+        legacy_battle.grid[0] = 7;
+        legacy_battle.dist = -2;
+        legacy_battle.message_before = 12;
+        legacy_battle.message_after = 13;
+        legacy_battle.battle_macro = 14;
+        let mut legacy_battle_value =
+            serde_json::to_value(legacy_battle).expect("serialize battle");
+        legacy_battle_value["rawBytes"] =
+            serde_json::json!(vec![0xa5u8; crate::realmz::BATTLE_BYTES]);
+        saved["battles"] = serde_json::json!([legacy_battle_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2638,6 +2658,11 @@ mod tests {
         assert_eq!(opened.shops[0].quantities[..2], [3, 7]);
         assert_eq!(opened.messages[0].text, "Semantic legacy message");
         assert_eq!(opened.option_labels[0].text, "Semantic option");
+        assert_eq!(opened.battles[0].grid[0], 7);
+        assert_eq!(opened.battles[0].dist, -2);
+        assert_eq!(opened.battles[0].message_before, 12);
+        assert_eq!(opened.battles[0].message_after, 13);
+        assert_eq!(opened.battles[0].battle_macro, 14);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2671,6 +2696,7 @@ mod tests {
         assert!(upgraded["shops"][0].get("rawBytes").is_none());
         assert!(upgraded["messages"][0].get("rawBytes").is_none());
         assert!(upgraded["optionLabels"][0].get("rawBytes").is_none());
+        assert!(upgraded["battles"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -3048,7 +3074,6 @@ mod tests {
         battle.dist = -4;
         battle.message_before = 5;
         battle.authored = false;
-        battle.raw_bytes.fill(0xA5);
         project.battles = vec![battle];
 
         let mut monster = crate::realmz::parse_monsters(&vec![0; crate::realmz::MONSTER_BYTES])
