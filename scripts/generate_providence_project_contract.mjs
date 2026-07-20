@@ -472,20 +472,18 @@ for (const [field, length] of [["typeFlags", 10], ["modifiers", 8], ["successCod
 }
 expect(thiefEncounterRecordSchema.properties?.rawBytes?.minItems === 118 && thiefEncounterRecordSchema.properties?.rawBytes?.maxItems === 118, "thief-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
 expectSameArray(thiefEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Thief-encounter omitted compatibility inventory");
-const timedEncounterFields = ["id", "day", "increment", "percent", "door", "requiredLevel", "requiredRandomRect", "requiredX", "requiredY", "requiredItem", "requiredQuest", "locationKind", "reservedWords", "rawBytes", "authored", "provenance"];
+const timedEncounterFields = ["id", "day", "increment", "percent", "door", "requiredLevel", "requiredRandomRect", "requiredX", "requiredY", "requiredItem", "requiredQuest", "locationKind", "authored", "provenance"];
 expectSameArray(Object.keys(timedEncounterRecordSchema.properties ?? {}), timedEncounterFields, "Timed-encounter field inventory");
-expectSameArray(timedEncounterRecordSchema.required ?? [], timedEncounterFields.filter((field) => !["reservedWords", "rawBytes", "authored"].includes(field)), "Timed-encounter authored field inventory");
+expectSameArray(timedEncounterRecordSchema.required ?? [], timedEncounterFields.filter((field) => field !== "authored"), "Timed-encounter authored field inventory");
 expectSameArray(timedEncounterLocationKindSchema.enum ?? [], ["any", "land", "dungeon"], "Timed-encounter location-kind vocabulary");
 expect(timedEncounterRecordSchema.properties?.locationKind?.$ref === "#/$defs/timedEncounterLocationKind", "timed encounters must reference the canonical location-kind enum");
-expect(timedEncounterRecordSchema.properties?.reservedWords?.minItems === 9 && timedEncounterRecordSchema.properties?.reservedWords?.maxItems === 9, "timed-encounter compatibility storage must retain nine reserved Realmz words");
-expect(timedEncounterRecordSchema.properties?.rawBytes?.minItems === 40 && timedEncounterRecordSchema.properties?.rawBytes?.maxItems === 40, "timed-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
-expectSameArray(timedEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["reservedWords", "rawBytes"], "Timed-encounter omitted compatibility inventory");
+expect(!Object.hasOwn(timedEncounterRecordSchema, "x-providence-rust-skip-empty"), "timed encounters must not retain record-local compatibility storage");
 const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes", "TimedEncounterRecord.reservedWords", "TimedEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioItemRecord.rawBytes", "TreasureRecord.rawBytes", "ShopRecord.rawBytes", "MessageRecord.rawBytes", "OptionLabelRecord.rawBytes", "BattleRecord.rawBytes", "MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

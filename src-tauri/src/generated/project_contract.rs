@@ -652,8 +652,6 @@ pub const PROVIDENCE_TIMED_ENCOUNTER_FIELDS: &[&str] = &[
     "requiredItem",
     "requiredQuest",
     "locationKind",
-    "reservedWords",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1741,10 +1739,6 @@ pub struct TimedEncounterRecord {
     pub required_item: i16,
     pub required_quest: i16,
     pub location_kind: TimedEncounterLocationKind,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub reserved_words: Vec<i16>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

@@ -81,7 +81,7 @@ describe("browser project native manifest validation", () => {
     expect(normalized.promptSounds).toEqual([0, 0, 0]);
   });
 
-  it("migrates legacy timed stuff words into bounded compatibility storage", () => {
+  it("drops legacy timed compatibility fields from the canonical record", () => {
     const project = createBrowserProject("Legacy timed encounter words");
     project.timedEncounters = [{
       id: 0,
@@ -97,13 +97,16 @@ describe("browser project native manifest validation", () => {
       requiredQuest: -1,
       locationKind: "land",
       stuff: [1, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+      reservedWords: [21, 22, 23, 24, 25, 26, 27, 28, 29],
+      rawBytes: new Array(40).fill(0xa5),
       provenance: { sourceFile: "Data TD3", recordIndex: 0, byteOffset: 0, byteLength: 40, confidence: "fixture-backed" }
     } as unknown as Project["timedEncounters"][number]];
 
     const normalized = normalizeBrowserProject(project).timedEncounters[0];
 
-    expect(normalized.reservedWords).toEqual([11, 12, 13, 14, 15, 16, 17, 18, 19]);
     expect("stuff" in normalized).toBe(false);
+    expect("reservedWords" in normalized).toBe(false);
+    expect("rawBytes" in normalized).toBe(false);
   });
 
   it("normalizes legacy monster slot arrays into the canonical fixed contract", () => {
@@ -460,6 +463,10 @@ describe("browser project native manifest validation", () => {
     importedComplexEncounter[152] = 1;
     importedComplexEncounter[155] = 2;
     importedComplexEncounter.set([0x00, 0x12], 158);
+    const importedTimedEncounter = new Uint8Array(40);
+    importedTimedEncounter.set([0x00, 0x23], 0);
+    importedTimedEncounter.set([0x00, 0x01], 20);
+    importedTimedEncounter.set([0x34, 0x56], 22);
     const importedSpell = new Uint8Array(30);
     importedSpell[10] = 41;
     const importedRace = new Uint8Array(408);
@@ -483,6 +490,7 @@ describe("browser project native manifest validation", () => {
       ["Data SD", importedShop],
       ["Data ED", importedSimpleEncounter],
       ["Data ED2", importedComplexEncounter],
+      ["Data TD3", importedTimedEncounter],
       ["Data Spell", importedSpell],
       ["Data Race", importedRace],
       ["Data Caste", importedCaste],
@@ -526,6 +534,7 @@ describe("browser project native manifest validation", () => {
       "shop:0",
       "encounter:simple:0",
       "encounter:complex:0",
+      "time:0",
       "spell-override:0",
       "race-override:0",
       "caste-override:0",
@@ -539,6 +548,7 @@ describe("browser project native manifest validation", () => {
       });
       expect(semanticSchema.entities.find((entity) => entity.id === entityId)?.summary.canonical).toBeUndefined();
     }
+    expect("reservedWords" in (semanticSchema.entities.find((entity) => entity.id === "time:0")?.summary ?? {})).toBe(false);
     expect(semanticSchema.sources.some((source) => source.name === "Data TD")).toBe(true);
   });
 
@@ -624,9 +634,7 @@ describe("browser project native manifest validation", () => {
       requiredItem: 901,
       requiredQuest: 6,
       locationKind: "land",
-      reservedWords: [0, 0, 0, 0, 0, 0, 0, 0, 0],
-      authored: false,
-      rawBytes: new Array(40).fill(0xa5)
+      authored: false
     }];
     project.messages = [{
       ...parsed.messages[0],
@@ -810,6 +818,7 @@ describe("browser project native manifest validation", () => {
     expect(semanticSchema.entities.find((entity) => entity.id === "monster:2")?.summary.name).toBe("Canonical monster");
     expect(semanticSchema.entities.find((entity) => entity.id === "shop:2")?.summary.inflation).toBe(120);
     expect(semanticSchema.entities.find((entity) => entity.id === "encounter:simple:2")?.summary.prompt).toBe(12);
+    expect("reservedWords" in (semanticSchema.entities.find((entity) => entity.id === "time:3")?.summary ?? {})).toBe(false);
     expect(semanticSchema.entities.find((entity) => entity.id === "spell-override:16")?.summary.cost).toBe(41);
     expect(semanticSchema.entities.find((entity) => entity.id === "race-override:2")?.summary.baseMove).toBe(13);
     expect(semanticSchema.entities.find((entity) => entity.id === "caste-override:3")?.summary.startMoney).toBe(222);

@@ -704,11 +704,9 @@ describe("browser timed-encounter writer", () => {
       requiredY: 11,
       requiredItem: 901,
       requiredQuest: 7,
-      locationKind: "dungeon" as const,
-      reservedWords: new Array(9).fill(0x1234)
+      locationKind: "dungeon" as const
     };
 
-    expect(record.rawBytes).toBeUndefined();
     const output = writeTimedEncounters([record]);
 
     expect(output).toHaveLength(40);
@@ -723,7 +721,7 @@ describe("browser timed-encounter writer", () => {
     setI16(input, 22, 0x1234);
     const imported = parseScenarioBuffers(new Map([["Data TD3", input]])).timedEncounters[0];
 
-    const output = writeTimedEncounters([{ ...imported, rawBytes: new Array(40).fill(0xa5) }]);
+    const output = writeTimedEncounters([imported]);
 
     expect(output).not.toEqual(input);
     expect(i16(output, 0)).toBe(12);
@@ -731,10 +729,6 @@ describe("browser timed-encounter writer", () => {
     expect(i16(output, 22)).toBe(0);
   });
 
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeTimedEncounters([{ ...emptyTimedEncounter(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
-  });
 });
 
 describe("browser monster writers", () => {

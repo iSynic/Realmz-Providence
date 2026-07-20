@@ -2896,7 +2896,6 @@ mod tests {
         timed.required_quest = 6;
         timed.location_kind = crate::project::TimedEncounterLocationKind::Land;
         timed.authored = false;
-        timed.raw_bytes.fill(0xA5);
         project.timed_encounters = vec![timed];
 
         let mut spell = crate::realmz::parse_spell_overrides(&vec![0; crate::realmz::SPELL_BYTES])

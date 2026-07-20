@@ -213,8 +213,8 @@ describe("project command facade", () => {
 
     expect(next.timedEncounters).toHaveLength(1);
     expect(next.timedEncounters[0]).toMatchObject({ day: -1, increment: -1, percent: 100, locationKind: "any" });
-    expect(next.timedEncounters[0].reservedWords).toBeUndefined();
-    expect(next.timedEncounters[0].rawBytes).toBeUndefined();
+    expect("reservedWords" in next.timedEncounters[0]).toBe(false);
+    expect("rawBytes" in next.timedEncounters[0]).toBe(false);
   });
 
   it("creates fresh map records from semantic data without compatibility bytes", () => {

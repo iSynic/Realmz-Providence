@@ -140,7 +140,6 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
 pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
     parse_fixed_records(buffer, TIMED_ENCOUNTER_BYTES)
         .map(|(id, start, record)| {
-            let words: Vec<i16> = (0..10).map(|slot| i16_be(record, 20 + slot * 2)).collect();
             TimedEncounterRecord {
                 id,
                 day: i16_be(record, 0),
@@ -153,9 +152,7 @@ pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
                 required_y: i16_be(record, 14),
                 required_item: i16_be(record, 16),
                 required_quest: i16_be(record, 18),
-                location_kind: timed_location_kind(words.first().copied().unwrap_or_default()),
-                reserved_words: words[1..].to_vec(),
-                raw_bytes: record.to_vec(),
+                location_kind: timed_location_kind(i16_be(record, 20)),
                 authored: false,
                 provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES),
             }
@@ -165,12 +162,6 @@ pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
 
 pub fn write_timed_encounters(records: &[TimedEncounterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, TIMED_ENCOUNTER_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != TIMED_ENCOUNTER_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Timed encounter {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         write_i16_be(buffer, 0, record.day);
         write_i16_be(buffer, 2, record.increment);
         write_i16_be(buffer, 4, record.percent);
@@ -297,7 +288,6 @@ mod tests {
     #[test]
     fn fresh_timed_encounter_compiles_semantic_fields_and_zero_reserved_words() {
         let mut encounter = parse_timed_encounters(&vec![0; TIMED_ENCOUNTER_BYTES]).remove(0);
-        encounter.raw_bytes.clear();
         encounter.authored = true;
         encounter.day = 35;
         encounter.increment = 5;
@@ -310,8 +300,6 @@ mod tests {
         encounter.required_item = 901;
         encounter.required_quest = 7;
         encounter.location_kind = TimedEncounterLocationKind::Dungeon;
-        encounter.reserved_words.fill(0x1234);
-
         let output = write_timed_encounters(&[encounter]).unwrap();
         assert_eq!(output.len(), TIMED_ENCOUNTER_BYTES);
         assert_eq!(
@@ -329,15 +317,12 @@ mod tests {
         write_i16_be(&mut input, 0, 12);
         write_i16_be(&mut input, 20, 1);
         write_i16_be(&mut input, 22, 0x1234);
-        let mut records = parse_timed_encounters(&input);
-        records[0].raw_bytes.fill(0xa5);
+        let records = parse_timed_encounters(&input);
         let output = write_timed_encounters(&records).unwrap();
         assert_ne!(output, input);
         assert_eq!(i16_be(&output, 0), 12);
         assert_eq!(i16_be(&output, 20), 1);
         assert_eq!(i16_be(&output, 22), 0);
-        records[0].raw_bytes = vec![1];
-        assert!(write_timed_encounters(&records).is_err());
     }
 
     #[test]

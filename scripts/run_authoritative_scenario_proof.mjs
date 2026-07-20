@@ -252,7 +252,7 @@ expect(project.complexEncounters.every((record) => (record.rawBytes?.length ?? 0
 assertOwnershipThiefEncounter(project.thiefEncounters, "Canonical project");
 expect(project.thiefEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical thief encounters must not carry compatibility bytes");
 assertOwnershipTimedEncounter(project.timedEncounters, "Canonical project");
-expect(project.timedEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0 && (record.reservedWords?.length ?? 0) === 0), "Fresh canonical timed encounters must not carry compatibility bytes");
+expect(project.timedEncounters.every((record) => !Object.hasOwn(record, "rawBytes") && !Object.hasOwn(record, "reservedWords")), "Fresh canonical timed encounters must not expose compatibility fields");
 assertOwnershipBattle(project.battles, "Canonical project");
 expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical battles must not carry compatibility bytes");
 assertOwnershipMonster(project.monsters, project.monsterDescriptions, "Canonical project");
@@ -299,6 +299,8 @@ poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
 poisonedLandlook.records[5].spare = 0x1234;
 poisonedLandlook.rangeSlots[0].reserved = 0x2345;
+poisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
+poisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
 await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(poisonedProject, null, 2)}\n`);
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputB, "windows-realmz-folder"]);
 await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
@@ -324,6 +326,8 @@ browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
 browserPoisonedLandlook.records[5].spare = 0x1234;
 browserPoisonedLandlook.rangeSlots[0].reserved = 0x2345;
+browserPoisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
+browserPoisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
 const browserEmbeddedCompatibilityTrapPackage = createBrowserScenarioPackageZip(browserPoisonedProject, null, "windows-realmz-folder");
 const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
   rootName: "ANNEX READ TRAP",
@@ -408,6 +412,7 @@ const reimportedSemanticSchema = JSON.parse(await fs.readFile(reimportSemanticSc
 expect(reimported.source.immutable === true, "Reimported native output should be a preserved legacy snapshot");
 expect(reimported.source.files.length > 0, "Reimported native output should inventory compatibility files");
 expect(await isDirectory(path.join(reimportDir, "raw-sources")), "Reimport should create a bounded compatibility annex");
+expect(!("reservedWords" in (reimportedSemanticSchema.entities?.find((entity) => entity.id === "time:0")?.summary ?? {})), "Reimport semantic summary must not expose timed compatibility words");
 expect(reimported.maps.filter((map) => map.levelType === "land").length === 1, "Reimport should recover one land map");
 const activeTrigger = reimported.triggers.find((trigger) =>
   trigger.active
@@ -629,7 +634,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipThiefEncounter(savedProject.thiefEncounters, `Rust-saved project ${stage}`);
   expect(savedProject.thiefEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} thief encounters contain compatibility bytes`);
   assertOwnershipTimedEncounter(savedProject.timedEncounters, `Rust-saved project ${stage}`);
-  expect(savedProject.timedEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0 && (record.reservedWords?.length ?? 0) === 0), `Rust-saved project ${stage} timed encounters contain compatibility bytes`);
+  expect(savedProject.timedEncounters?.every((record) => !Object.hasOwn(record, "rawBytes") && !Object.hasOwn(record, "reservedWords")), `Rust-saved project ${stage} timed encounters expose compatibility fields`);
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
   expect(savedProject.battles?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} battles contain compatibility bytes`);
   assertOwnershipMonster(savedProject.monsters, savedProject.monsterDescriptions, `Rust-saved project ${stage}`);
@@ -871,6 +876,7 @@ function assertOwnershipTimedEncounter(records, label) {
   expect(encounter.door === 2, `${label} timed encounter has the wrong Extra Action Point target`);
   expect(encounter.requiredLevel === 0 && encounter.requiredRandomRect === -1 && encounter.requiredX === 10 && encounter.requiredY === 12, `${label} timed encounter has the wrong location gates`);
   expect(encounter.requiredItem === 901 && encounter.requiredQuest === 1 && encounter.locationKind === "land", `${label} timed encounter has the wrong item, quest, or location kind`);
+  expect(!("rawBytes" in encounter) && !("reservedWords" in encounter), `${label} timed encounter exposes compatibility storage`);
 }
 
 function assertOwnershipBattle(records, label) {

@@ -663,13 +663,18 @@ function normalizedThiefEncounter(record: Project["thiefEncounters"][number]): P
 }
 
 function normalizedTimedEncounter(record: Project["timedEncounters"][number]): Project["timedEncounters"][number] {
-  const legacyRecord = record as Project["timedEncounters"][number] & { stuff?: number[] };
-  const { stuff: _obsoleteStuff, ...canonical } = legacyRecord;
-  const reservedWords = record.reservedWords ?? legacyRecord.stuff?.slice(1);
-  return {
-    ...canonical,
-    ...(reservedWords ? { reservedWords: normalizedFixedArray(reservedWords, 9, 0) } : {})
+  const legacyRecord = record as Project["timedEncounters"][number] & {
+    stuff?: number[];
+    reservedWords?: number[];
+    rawBytes?: number[];
   };
+  const {
+    stuff: _obsoleteStuff,
+    reservedWords: _obsoleteReservedWords,
+    rawBytes: _obsoleteRawBytes,
+    ...canonical
+  } = legacyRecord;
+  return canonical;
 }
 
 function normalizedMonsterRecord(record: Project["monsters"][number]): Project["monsters"][number] {

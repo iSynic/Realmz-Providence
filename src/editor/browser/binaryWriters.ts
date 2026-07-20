@@ -832,10 +832,6 @@ export function writeThiefEncounters(records: ThiefEncounterRecord[]) {
 
 export function writeTimedEncounters(records: TimedEncounterRecord[]) {
   return writeFixedRecords(records, TIMED_ENCOUNTER_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== TIMED_ENCOUNTER_RECORD_BYTES) {
-      throw new Error(`Timed encounter ${record.id} has invalid compatibility byte storage`);
-    }
     writeI16(target, 0, record.day);
     writeI16(target, 2, record.increment);
     writeI16(target, 4, record.percent);

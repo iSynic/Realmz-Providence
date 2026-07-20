@@ -1073,8 +1073,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceTimedEncounterRecord",
       "x-providence-rust-name": "TimedEncounterRecord",
-      "x-providence-rust-default": ["reservedWords", "rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["reservedWords", "rawBytes"],
+      "x-providence-rust-default": ["authored"],
       "required": ["id", "day", "increment", "percent", "door", "requiredLevel", "requiredRandomRect", "requiredX", "requiredY", "requiredItem", "requiredQuest", "locationKind", "provenance"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
@@ -1089,8 +1088,6 @@
         "requiredItem": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "requiredQuest": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "locationKind": { "$ref": "#/$defs/timedEncounterLocationKind" },
-        "reservedWords": { "type": "array", "minItems": 9, "maxItems": 9, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
-        "rawBytes": { "type": "array", "minItems": 40, "maxItems": 40, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

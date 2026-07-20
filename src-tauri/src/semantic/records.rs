@@ -56,7 +56,15 @@ pub(super) fn add_canonical_record_collections(
     let scenario_items = canonical_records!(parsed.scenario_items);
     let treasures = canonical_records!(parsed.treasures);
     let thief_encounters = canonical_records!(parsed.thief_encounters);
-    let timed_encounters = canonical_records!(parsed.timed_encounters);
+    let timed_encounters = parsed
+        .timed_encounters
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let spell_overrides = canonical_records!(parsed.spell_overrides);
     let race_overrides = canonical_records!(parsed.race_overrides);
     let caste_overrides = canonical_records!(parsed.caste_overrides);
@@ -2035,7 +2043,6 @@ fn parse_timed_encounter(buffer: &[u8], id: usize) -> BTreeMap<String, Value> {
         ("requiredY", json!(i16_be(buffer, 14))),
         ("requiredItem", json!(i16_be(buffer, 16))),
         ("requiredQuest", json!(i16_be(buffer, 18))),
-        ("reservedWords", json!(&stuff[1..])),
         ("locationKind", json!(location_kind)),
         (
             "preview",
@@ -2478,5 +2485,17 @@ mod tests {
         assert_eq!(link.from, "battle:3");
         assert_eq!(link.to, "macro:7");
         assert_eq!(link.metadata.get("rawValue"), Some(&json!(-7)));
+    }
+
+    #[test]
+    fn timed_summary_omits_annex_only_reserved_words() {
+        let mut bytes = vec![0; crate::realmz::TIMED_ENCOUNTER_BYTES];
+        bytes[20..22].copy_from_slice(&1i16.to_be_bytes());
+        bytes[22..24].copy_from_slice(&0x3456i16.to_be_bytes());
+
+        let summary = parse_timed_encounter(&bytes, 0);
+
+        assert_eq!(summary.get("locationKind"), Some(&json!("land")));
+        assert!(!summary.contains_key("reservedWords"));
     }
 }

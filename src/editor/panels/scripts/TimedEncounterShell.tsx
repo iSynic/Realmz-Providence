@@ -5,7 +5,6 @@ import type {
   ProjectCommand,
   SelectedEntity
 } from "../../types";
-import { CollapsibleSection } from "../../ui";
 import { EncounterRecordPicker } from "./EncounterRecordPicker";
 import { ItemIdField } from "./ItemIdField";
 
@@ -13,8 +12,6 @@ const TIMED_SCHEDULE_HELP =
   "The midnight schedule controls when this record is considered. Day and Increment define timing, Percent gates execution, and Extra AP To Activate is the macro Realmz runs.";
 const TIMED_LOCATION_HELP =
   "Location gates restrict the timed encounter to any map, land, or dungeon, then optionally to level, random rectangle, X, and Y.";
-const TIMED_EXTRA_HELP =
-  "Data TD3 has nine signed-number slots after the confirmed schedule, macro, item, quest, and location fields. Realmz runtime evidence currently names only the first slot as the location kind. Providence preserves the remaining values but keeps them locked until a real authoring meaning is proven.";
 
 export function TimedEncounterShell({
   project,
@@ -38,8 +35,6 @@ export function TimedEncounterShell({
     update({ locationKind });
   };
   const eligibilitySummary = timedEncounterEligibilitySummary(record);
-  const reservedTimedValues = Array.from({ length: 9 }, (_, index) => record.reservedWords?.[index] ?? 0);
-  const reservedNonZeroCount = reservedTimedValues.filter((value) => value !== 0).length;
   return (
     <div className="timed-encounter-editor">
       <EncounterRecordPicker project={project} recordType="timedEncounter" id={id} onSelectEntity={onSelectEntity} className="encounter-record-picker-standalone" />
@@ -81,24 +76,6 @@ export function TimedEncounterShell({
           </div>
         </div>
       </section>
-      <CollapsibleSection title="Compatibility Data" eyebrow="advanced" count={reservedNonZeroCount ? `${reservedNonZeroCount} preserved value${reservedNonZeroCount === 1 ? "" : "s"}` : "all zero"} density="compact" className="script-encounter-text-section timed-extra-section" defaultOpen={false}>
-        <p className="script-encounter-text-note">
-          <TutorialTip title="Reserved Time Encounter Fields" body={TIMED_EXTRA_HELP} side="below">
-            <span>Preserved Data TD3 compatibility values. Providence keeps these on save/export, but they do not have confirmed authoring meaning.</span>
-          </TutorialTip>
-        </p>
-        <div className="timed-compatibility-grid" aria-label="Read-only timed encounter compatibility values">
-          {reservedTimedValues.map((value, index) => {
-            const slot = index + 1;
-            return (
-              <div key={slot} className={`timed-compatibility-chip${value !== 0 ? " is-preserved" : ""}`}>
-                <span>Reserved word {slot}</span>
-                <strong>{value}</strong>
-              </div>
-            );
-          })}
-        </div>
-      </CollapsibleSection>
     </div>
   );
 }

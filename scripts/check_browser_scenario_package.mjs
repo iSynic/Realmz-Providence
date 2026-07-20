@@ -1135,8 +1135,7 @@ const authoredTimedEncounter = timedEncounterRecord(1, {
   requiredY: -2,
   requiredItem: 901,
   requiredQuest: 7,
-  locationKind: "dungeon",
-  reservedWords: new Array(9).fill(0x2222)
+  locationKind: "dungeon"
 });
 const encounterProject = {
   ...project,
@@ -1153,8 +1152,8 @@ const encounterProject = {
     { ...authoredThiefEncounter, rawBytes: new Array(118).fill(0x22), authored: true }
   ],
   timedEncounters: [
-    timedEncounterRecord(0, { rawBytes: Array.from(sourceTimedEncounters.slice(0, 40)), authored: false }),
-    { ...authoredTimedEncounter, rawBytes: Array.from(sourceTimedEncounters.slice(40, 80)), authored: true }
+    timedEncounterRecord(0, { authored: false }),
+    { ...authoredTimedEncounter, authored: true }
   ]
 };
 const encounterUpdate = createBrowserScenarioPackageZip(encounterProject, rawSources, "mac-classic-folder");

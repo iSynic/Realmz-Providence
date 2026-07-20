@@ -151,8 +151,8 @@ describe("scenario seed script compiler", () => {
       requiredQuest: 1,
       locationKind: "land"
     });
-    expect(result.timedEncounters[0].reservedWords).toBeUndefined();
-    expect(result.timedEncounters[0].rawBytes).toBeUndefined();
+    expect("reservedWords" in result.timedEncounters[0]).toBe(false);
+    expect("rawBytes" in result.timedEncounters[0]).toBe(false);
   });
 
   it("resolves semantic map regions into trigger location and identity", () => {

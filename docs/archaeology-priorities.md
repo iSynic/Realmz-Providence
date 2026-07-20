@@ -229,7 +229,7 @@ The eleventh follow-up archaeology pass tightened `Core records` around thief/ro
 - thief actions mutate runtime flags such as trap detected/disarmed/sprung state and save as `Data H1`;
 - `Data TD3` is a 40-byte timed encounter source file copied to runtime `CTD3`;
 - timed encounters gate macro execution by day, percent, item, quest, land/dungeon location, random rectangle, and coordinate;
-- the authoritative `Data TD3` writer now compiles offsets 0..21 from canonical semantics and emits deterministic zero for fresh `stuff[1..9]`;
+- the authoritative `Data TD3` writer now compiles offsets 0..21 from canonical semantics and emits deterministic zero for fresh `stuff[1..9]`; imported unnamed words are available only from annex `Data TD3`, not canonical timed records;
 - a focused audit found 30 aligned payloads and 301 rows, including 192 rows with nonzero unnamed words, so offsets 22..39 remain bounded compatibility-annex data for imported scenarios;
 - opcode `54` mutates runtime timed encounter state, not source `Data TD3`.
 

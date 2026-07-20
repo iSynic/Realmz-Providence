@@ -75,13 +75,24 @@ function writeReport(report, outputDir) {
 function buildProjectReport(file) {
   const project = readJson(file);
   const scenario = scenarioName(project, file);
-  const records = (project.timedEncounters ?? []).map((record) => normalizeTimedRecord(record, "project"));
+  const annexDirectory = path.resolve(path.dirname(file), project.source?.rawSourcesDir || "raw-sources");
+  const annexFile = fs.existsSync(annexDirectory) && fs.statSync(annexDirectory).isDirectory()
+    ? findChildFileCaseInsensitive(annexDirectory, "Data TD3")
+    : null;
+  const parsed = annexFile ? parseRawTimedEncounterFile(annexFile) : { records: [], warnings: [] };
+  const warnings = [...parsed.warnings];
+  if (!annexFile && project.source?.origin === "imported") {
+    warnings.push({
+      kind: "missing-annex-source",
+      message: "Imported project has no Data TD3 compatibility-annex source; canonical timed records intentionally expose no reserved words."
+    });
+  }
   return sourceReport({
     scenario,
-    sourceKind: "project",
-    sourcePath: file,
-    records,
-    warnings: []
+    sourceKind: annexFile ? "project-annex" : "project-without-annex",
+    sourcePath: annexFile ?? file,
+    records: parsed.records,
+    warnings
   });
 }
 
@@ -132,33 +143,6 @@ function sourceReport({ scenario, sourceKind, sourcePath, records, warnings }) {
     recordCount: records.length,
     findings,
     warnings: warnings.sort((a, b) => a.message.localeCompare(b.message))
-  };
-}
-
-function normalizeTimedRecord(record, sourceKind) {
-  const legacyStuff = Array.isArray(record.stuff) ? record.stuff.slice(0, 10).map(numberValue) : [];
-  while (legacyStuff.length < 10) legacyStuff.push(0);
-  const reservedWords = Array.isArray(record.reservedWords)
-    ? record.reservedWords.slice(0, 9).map(numberValue)
-    : legacyStuff.slice(1);
-  while (reservedWords.length < 9) reservedWords.push(0);
-  const locationKind = record.locationKind ?? locationKindFromValue(legacyStuff[0]);
-  const stuff = [locationKind === "land" ? 1 : locationKind === "dungeon" ? 2 : -1, ...reservedWords];
-  return {
-    id: numberValue(record.id),
-    day: numberValue(record.day),
-    increment: numberValue(record.increment),
-    percent: numberValue(record.percent),
-    door: numberValue(record.door),
-    requiredLevel: numberValue(record.requiredLevel),
-    requiredRandomRect: numberValue(record.requiredRandomRect),
-    requiredX: numberValue(record.requiredX),
-    requiredY: numberValue(record.requiredY),
-    requiredItem: numberValue(record.requiredItem),
-    requiredQuest: numberValue(record.requiredQuest),
-    locationKind,
-    stuff,
-    sourceKind
   };
 }
 
@@ -584,7 +568,14 @@ function runSelfTest() {
 
 function writeProject(file, name, timedEncounters) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  writeJson(file, { scenario: { name }, timedEncounters });
+  writeJson(file, {
+    scenario: { name },
+    source: { origin: "imported", rawSourcesDir: "raw-sources" },
+    timedEncounters: timedEncounters.map(({ stuff: _compatibilityWords, ...record }) => record)
+  });
+  const annexDirectory = path.join(path.dirname(file), "raw-sources");
+  fs.mkdirSync(annexDirectory, { recursive: true });
+  fs.writeFileSync(path.join(annexDirectory, "Data TD3"), Buffer.concat(timedEncounters.map(rawTimedRecord)));
 }
 
 function timedRecord(id, overrides = {}) {

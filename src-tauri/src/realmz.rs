@@ -450,8 +450,6 @@ mod tests {
             required_item: 901,
             required_quest: 7,
             location_kind: crate::project::TimedEncounterLocationKind::Dungeon,
-            reserved_words: Vec::new(),
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data TD3", 0, 0, TIMED_ENCOUNTER_BYTES),
         };

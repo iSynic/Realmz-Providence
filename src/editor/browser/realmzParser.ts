@@ -889,7 +889,6 @@ function parseComplexEncounters(buffer: Uint8Array | undefined): ComplexEncounte
 
 function parseTimedEncounters(buffer: Uint8Array | undefined): TimedEncounterRecord[] {
   return fixedRecords(buffer, TIMED_ENCOUNTER_BYTES, "Data TD3", (id, start, record) => {
-    const stuff = Array.from({ length: 10 }, (_, slot) => i16(record, 20 + slot * 2));
     return {
       id,
       day: i16(record, 0),
@@ -902,9 +901,7 @@ function parseTimedEncounters(buffer: Uint8Array | undefined): TimedEncounterRec
       requiredY: i16(record, 14),
       requiredItem: i16(record, 16),
       requiredQuest: i16(record, 18),
-      locationKind: timedLocationKind(stuff[0]),
-      reservedWords: stuff.slice(1),
-      rawBytes: Array.from(record),
+      locationKind: timedLocationKind(i16(record, 20)),
       authored: false,
       provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES, "source-backed")
     };

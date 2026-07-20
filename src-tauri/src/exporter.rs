@@ -2925,14 +2925,11 @@ mod tests {
         fs::write(raw_dir.join("Data TD3"), &source).unwrap();
 
         let mut encounters = crate::realmz::parse_timed_encounters(&source);
-        encounters[0].raw_bytes.fill(0x11);
-        encounters[1].raw_bytes.fill(0x22);
         encounters[1].day = 35;
         encounters[1].increment = 5;
         encounters[1].percent = 50;
         encounters[1].door = 24;
         encounters[1].location_kind = crate::project::TimedEncounterLocationKind::Dungeon;
-        encounters[1].reserved_words.fill(0x3456);
         encounters[1].authored = true;
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
 

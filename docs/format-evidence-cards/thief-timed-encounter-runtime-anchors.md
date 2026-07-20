@@ -145,7 +145,7 @@ authoring meanings.
 
 ## Timed Reserved Field Report
 
-`scripts/report_timed_encounter_reserved_fields.mjs` scans `Data TD3` `stuff[1..9]` so Providence can decide whether the remaining nine signed fields deserve deeper archaeology before giving them normal UI labels.
+`scripts/report_timed_encounter_reserved_fields.mjs` scans native or compatibility-annex `Data TD3` `stuff[1..9]`; canonical `project.json` records intentionally do not expose those values. This keeps archaeology possible without giving the nine signed fields normal UI labels or a second authored meaning.
 
 The generated report lives at:
 
@@ -154,7 +154,7 @@ The generated report lives at:
 
 The current benchmark scan found nonzero reserved values in the Wrath timed encounter benchmark records, with two repeated nine-field patterns. Optional raw scenario-root scans also show repeated patterns across local scenario folders. That proves the bytes are not simply always zero, but the repeated pattern shape is not enough to name user-facing behavior.
 
-The cheap source pass found the classic runtime location gate reading `dotime.stuff[0]` in `textbox-time.c`; no named main-loop use of `stuff[1..9]` was found in that path. `stuff[1..9]` therefore remain read-only compatibility evidence in Providence. Fresh compilation does not consult them and emits zero; imported edits recover the exact 18-byte range only from the compatibility annex. Follow-up should test named scenarios/records in Divinity or Realmz before promoting any slot into authoring UI.
+The cheap source pass found the classic runtime location gate reading `dotime.stuff[0]` in `textbox-time.c`; no named main-loop use of `stuff[1..9]` was found in that path. `stuff[1..9]` therefore remain annex-only compatibility evidence rather than canonical editor data. Fresh compilation does not consult them and emits zero; imported edits recover the exact 18-byte range only from the compatibility annex. Follow-up should test named scenarios/records in Divinity or Realmz before promoting any slot into a future schema and authoring UI.
 
 ## Providence Editor Implications
 

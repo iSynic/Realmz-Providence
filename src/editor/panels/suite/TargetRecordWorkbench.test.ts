@@ -146,7 +146,6 @@ function encounterProject(): Project {
     requiredItem: 0,
     requiredQuest: 0,
     locationKind: "any",
-    reservedWords: new Array(9).fill(0),
     provenance: {
       sourceFile: "Data TD3",
       recordIndex: 4,

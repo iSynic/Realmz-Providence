@@ -777,9 +777,6 @@ impl ProvidenceProject {
         for record in &mut self.thief_encounters {
             normalize_thief_encounter(record);
         }
-        for record in &mut self.timed_encounters {
-            normalize_timed_encounter(record);
-        }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;
         }
@@ -822,19 +819,6 @@ fn normalize_thief_encounter(record: &mut ThiefEncounterRecord) {
     resize_vec(&mut record.failure_sounds, 8, 0);
     resize_vec(&mut record.prompts, 3, 0);
     resize_vec(&mut record.prompt_sounds, 3, 0);
-}
-
-fn normalize_timed_encounter(record: &mut TimedEncounterRecord) {
-    if record.reserved_words.is_empty()
-        && record.raw_bytes.len() == crate::realmz::TIMED_ENCOUNTER_BYTES
-    {
-        record.reserved_words = (0..9)
-            .map(|slot| crate::realmz::i16_be(&record.raw_bytes, 22 + slot * 2))
-            .collect();
-    }
-    if !record.reserved_words.is_empty() {
-        resize_vec(&mut record.reserved_words, 9, 0);
-    }
 }
 
 fn normalize_monster(record: &mut MonsterRecord) {

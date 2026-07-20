@@ -617,8 +617,6 @@ export const PROVIDENCE_TIMED_ENCOUNTER_FIELDS = [
   "requiredItem",
   "requiredQuest",
   "locationKind",
-  "reservedWords",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1335,8 +1333,6 @@ export type ProvidenceTimedEncounterRecord = {
   requiredItem: number;
   requiredQuest: number;
   locationKind: ProvidenceTimedEncounterLocationKind;
-  reservedWords?: number[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

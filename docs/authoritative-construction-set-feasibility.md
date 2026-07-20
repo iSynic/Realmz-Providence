@@ -542,10 +542,23 @@ library view models, codecs, and validators remain intentionally derived/handwri
 being promoted into the persisted scenario contract. Project ZIP checks, browser/native package
 parity, the complete test suites, and deterministic native/Remake ownership proof all pass.
 
-Branch validation through the fifty-first slice completed on 2026-07-19:
+The fifty-second slice begins ISY-396 by moving the complete timed-encounter preservation family
+out of canonical records. Schema-v5 `TimedEncounterRecord` now contains only its stable ID,
+source-backed schedule/gate/location semantics, authored label, and provenance; `rawBytes` and the
+nine unnamed `reservedWords` no longer exist in the generated TypeScript or Rust DTO. Browser and
+desktop native import still decode the semantic prefix, while the original `Data TD3` remains in
+the imported compatibility annex. Unchanged imported rows remain byte-exact; edited imported rows
+compile offsets 0..21 and recover only offsets 22..39 plus a malformed tail from that annex. Old
+project JSON carrying `stuff`, `reservedWords`, or `rawBytes` remains load-tolerant, but those
+fields are discarded rather than repersisted or exposed in the editor/semantic summary. The
+archaeology report now reads reserved words from annex/native `Data TD3` bytes. Poisoned embedded
+fields cannot affect authored Rust or browser output. Other record-local preservation families
+remain the bounded follow-on work under ISY-396.
 
-- full Rust suite: 260 passed, 2 ignored;
-- full TypeScript suite: 608 passed, plus typecheck;
+Branch validation through the fifty-second slice completed on 2026-07-19:
+
+- full Rust suite: 261 passed, 2 ignored;
+- full TypeScript suite: 607 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -907,7 +920,7 @@ Legend:
 | `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Fresh/authored rows compile all 426 bytes from canonical actions, results, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and historical tails are restored only from the compatibility annex. |
 | `Data ED2` | Generated + legacy row/tail annex | Generate complete deterministic complex encounters | Fresh/authored rows compile all 520 bytes from canonical actions, physical/word/group/spell/item routes, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data TD2` | Generated + legacy row/tail annex | Generate complete deterministic rogue/thief encounters | Fresh/authored rows compile all 118 bytes from canonical action, result, message, sound, trap, lock, and prompt fields without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
-| `Data TD3` | Generated semantic prefix + bounded legacy annex | Generate timed encounters and zero reserved `stuff[1..9]` | Fresh rows compile offsets 0..21 from canonical schedule, macro, gate, and location fields and deterministically zero offsets 22..39 without `rawBytes`. Unchanged imported rows are annex-restored; edited imported rows compile semantics while recovering only the nine unnamed words from the annex. Their meanings remain unknown. |
+| `Data TD3` | Generated semantic prefix + bounded legacy annex | Generate timed encounters and zero reserved `stuff[1..9]` | Canonical timed records contain only stable identity, schedule/gate/location semantics, authored state, and provenance; they expose neither `rawBytes` nor the nine unnamed words. Fresh rows compile offsets 0..21 and deterministically zero offsets 22..39. Unchanged imported rows are annex-restored; edited imported rows compile semantics while recovering only offsets 22..39 and any malformed tail from annex `Data TD3`. Their meanings remain unknown. |
 
 ### Rules and resource-bearing optional families
 
@@ -987,7 +1000,8 @@ must not be called fresh-authoritative merely because imported round trips are f
 5. **Implemented at the export boundary:** move preservation helpers behind an optional,
    path-bounded compatibility-annex interface. Fresh compilation has poison-annex tests that fail
    if it enumerates or reads supplied legacy material. Completed authoritative families ignore
-   embedded imported record bytes; remaining compatibility fields can migrate incrementally.
+   embedded imported record bytes; timed-encounter raw rows and unnamed words now live exclusively
+   in the annex, while the remaining compatibility fields can migrate incrementally.
 6. **Implemented for authored projects:** build validation and the Export panel's source plan from
    the compiler's expected native manifest. Imported projects remain intentionally source-driven
    at the compatibility boundary.
