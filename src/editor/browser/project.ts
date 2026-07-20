@@ -680,8 +680,9 @@ function normalizedComplexEncounter(record: Project["complexEncounters"][number]
 }
 
 function normalizedThiefEncounter(record: Project["thiefEncounters"][number]): Project["thiefEncounters"][number] {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
   return {
-    ...record,
+    ...canonical,
     typeFlags: normalizedFixedArray(record.typeFlags, 10, false),
     modifiers: normalizedFixedArray(record.modifiers, 8, 0),
     successCodes: normalizedFixedArray(record.successCodes, 8, 0),
@@ -1113,10 +1114,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "complexEncounter", encounter.id), errors, warnings);
   }
   for (const encounter of project.thiefEncounters ?? []) {
-    const rawBytes = encounter.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 118) {
-      errors.push(`Rogue encounter ${encounter.id} has invalid 118-byte compatibility storage.`);
-    }
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "thiefEncounter", encounter.id), errors, warnings);
   }
   for (const encounter of project.timedEncounters ?? []) appendTargetDiagnostics(validateRealmzTargetRecord(project, "timedEncounter", encounter.id), errors, warnings);

@@ -379,6 +379,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_monster_description_raw_bytes(&mut value);
     migrate_legacy_simple_encounter_raw_bytes(&mut value);
     migrate_legacy_complex_encounter_raw_bytes(&mut value);
+    migrate_legacy_thief_encounter_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -562,6 +563,10 @@ fn migrate_legacy_simple_encounter_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_complex_encounter_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "complexEncounters");
+}
+
+fn migrate_legacy_thief_encounter_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "thiefEncounters");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2554,6 +2559,7 @@ mod tests {
             "highDamage": 9,
             "tumblers": 5,
             "prompts": [4],
+            "rawBytes": vec![0xa5u8; crate::realmz::THIEF_ENCOUNTER_BYTES],
             "provenance": {
                 "sourceFile": "Data TD2",
                 "recordIndex": 1,
@@ -3296,7 +3302,6 @@ mod tests {
         thief.type_flags[0] = true;
         thief.prompts[0] = 17;
         thief.authored = false;
-        thief.raw_bytes.fill(0xA5);
         project.thief_encounters = vec![thief];
 
         let mut timed =

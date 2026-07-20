@@ -3198,8 +3198,6 @@ mod tests {
         fs::write(raw_dir.join("Data TD2"), &source).unwrap();
 
         let mut encounters = crate::realmz::parse_thief_encounters(&source);
-        encounters[0].raw_bytes.fill(0x11);
-        encounters[1].raw_bytes.fill(0x22);
         encounters[1].type_flags[3] = true;
         encounters[1].modifiers[4] = -8;
         encounters[1].success_codes[5] = 9;

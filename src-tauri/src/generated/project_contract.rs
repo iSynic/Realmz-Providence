@@ -620,7 +620,6 @@ pub const PROVIDENCE_THIEF_ENCOUNTER_FIELDS: &[&str] = &[
     "tumblers",
     "prompts",
     "promptSounds",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1678,8 +1677,6 @@ pub struct ThiefEncounterRecord {
     pub prompts: Vec<i16>,
     #[serde(default)]
     pub prompt_sounds: Vec<i16>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

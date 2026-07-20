@@ -432,7 +432,7 @@ function checkThiefEncounters(createProjectFromScenarioSeed) {
   expect(encounter?.prompts?.join(",") === "0,137,5", "Rogue prompt, trap sound, and spell power should occupy the source-backed prompt fields");
   expect(encounter?.promptSounds?.join(",") === "0,7,6", "Rogue Open Lock and Disarm spell chances should occupy their source-backed support fields");
   expect(encounter?.spell === 17 && encounter?.lowDamage === 3 && encounter?.highDamage === 9 && encounter?.tumblers === 5, "Rogue trap and lock settings should be preserved");
-  expect((encounter?.rawBytes?.length ?? 0) === 0 && encounter?.authored === true, "Rogue encounter should compile from canonical fields without Data TD2 compatibility bytes");
+  expect(encounter != null && !Object.hasOwn(encounter, "rawBytes") && encounter.authored === true, "Rogue encounter should compile from canonical fields without Data TD2 compatibility bytes");
   expect(result.project.validation.errors.length === 0, "Rogue encounter seed should pass project validation without errors");
 }
 

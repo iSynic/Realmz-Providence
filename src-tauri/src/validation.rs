@@ -593,15 +593,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for encounter in &project.thief_encounters {
-        if !encounter.raw_bytes.is_empty()
-            && encounter.raw_bytes.len() != crate::realmz::THIEF_ENCOUNTER_BYTES
-        {
-            errors.push(format!(
-                "Rogue encounter {} has invalid {}-byte compatibility storage.",
-                encounter.id,
-                crate::realmz::THIEF_ENCOUNTER_BYTES
-            ));
-        }
         if encounter.authored {
             if encounter.type_flags.len() != 10 {
                 errors.push(format!(
@@ -670,11 +661,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                     encounter.id
                 ));
             }
-        } else if encounter.raw_bytes.is_empty() {
-            warnings.push(format!(
-                "Rogue encounter {} has incomplete preserved source bytes and should be re-imported before editing.",
-                encounter.id
-            ));
         }
     }
     let scenario_assets = project

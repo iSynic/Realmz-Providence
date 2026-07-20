@@ -181,7 +181,6 @@ pub fn parse_thief_encounters(buffer: &[u8]) -> Vec<ThiefEncounterRecord> {
             tumblers: i16_be(record, 104),
             prompts: read_i16_array(record, 106, 3),
             prompt_sounds: read_i16_array(record, 112, 3),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: provenance("Data TD2", id, start, THIEF_ENCOUNTER_BYTES),
         })
@@ -190,12 +189,6 @@ pub fn parse_thief_encounters(buffer: &[u8]) -> Vec<ThiefEncounterRecord> {
 
 pub fn write_thief_encounters(records: &[ThiefEncounterRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, THIEF_ENCOUNTER_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != THIEF_ENCOUNTER_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Rogue encounter {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         for slot in 0..10 {
             buffer[slot] = u8::from(*record.type_flags.get(slot).unwrap_or(&false));
         }
@@ -405,7 +398,6 @@ mod tests {
     #[test]
     fn fresh_thief_encounter_compiles_complete_semantic_row() {
         let mut encounter = parse_thief_encounters(&vec![0; THIEF_ENCOUNTER_BYTES]).remove(0);
-        encounter.raw_bytes.clear();
         encounter.authored = true;
         encounter.type_flags = vec![
             true, false, true, false, true, false, true, false, true, true,
@@ -444,14 +436,11 @@ mod tests {
         input[0] = 0x48;
         input[10] = 0xff;
         input[34..36].copy_from_slice(&[1, 2]);
-        let mut records = parse_thief_encounters(&input);
-        records[0].raw_bytes.fill(0xa5);
+        let records = parse_thief_encounters(&input);
         let output = write_thief_encounters(&records).unwrap();
         assert_ne!(output, input);
         assert_eq!(output[0], 1);
         assert_eq!(output[10], 0xff);
         assert_eq!(i16_be(&output, 34), 0x0102);
-        records[0].raw_bytes = vec![1];
-        assert!(write_thief_encounters(&records).is_err());
     }
 }

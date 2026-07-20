@@ -116,7 +116,7 @@ describe("scenario seed script compiler", () => {
     expect(encounter.modifiers).toHaveLength(8);
     expect(encounter.successCodes).toHaveLength(8);
     expect(encounter.prompts).toEqual([7, 0, 0]);
-    expect(encounter.rawBytes).toBeUndefined();
+    expect("rawBytes" in encounter).toBe(false);
   });
 
   it("compiles timed encounters from semantic fields without compatibility bytes", () => {

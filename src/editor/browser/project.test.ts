@@ -70,8 +70,9 @@ describe("browser project native manifest validation", () => {
       tumblers: 5,
       prompts: [4],
       promptSounds: [],
+      rawBytes: new Array(118).fill(0xa5),
       provenance: { sourceFile: "Data TD2", recordIndex: 1, byteOffset: 118, byteLength: 118, confidence: "fixture-backed" }
-    }];
+    } as unknown as Project["thiefEncounters"][number]];
 
     const normalized = normalizeBrowserProject(project).thiefEncounters[0];
 
@@ -82,6 +83,7 @@ describe("browser project native manifest validation", () => {
     expect(normalized.successSounds).toHaveLength(8);
     expect(normalized.prompts).toEqual([4, 0, 0]);
     expect(normalized.promptSounds).toEqual([0, 0, 0]);
+    expect("rawBytes" in normalized).toBe(false);
   });
 
   it("drops legacy timed compatibility fields from the canonical record", () => {
@@ -757,8 +759,7 @@ describe("browser project native manifest validation", () => {
       id: 2,
       typeFlags: [true, ...parsed.thiefEncounters[0].typeFlags.slice(1)],
       prompts: [17, 0, 0],
-      authored: false,
-      rawBytes: new Array(118).fill(0xa5)
+      authored: false
     }];
     project.timedEncounters = [{
       ...parsed.timedEncounters[0],

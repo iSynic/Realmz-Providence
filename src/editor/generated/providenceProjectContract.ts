@@ -586,7 +586,6 @@ export const PROVIDENCE_THIEF_ENCOUNTER_FIELDS = [
   "tumblers",
   "prompts",
   "promptSounds",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1289,7 +1288,6 @@ export type ProvidenceThiefEncounterRecord = {
   tumblers: number;
   prompts: number[];
   promptSounds: number[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

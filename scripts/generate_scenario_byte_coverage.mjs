@@ -616,7 +616,7 @@ const ENCOUNTER_SHOP_WRITER_GATE_SPECS = [
       "scripts/run_authoritative_scenario_proof.mjs",
       "docs/format-evidence-cards/thief-timed-encounter-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh thief encounter records compile all 118 bytes from canonical flags, modifiers, result codes, message and sound links, trap fields, lock fields, and prompt support fields without rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
+    preservationPolicy: "Canonical thief-encounter records expose no rawBytes and compile all 118 bytes from flags, modifiers, result codes, message and sound links, trap fields, lock fields, and prompt support fields. Unchanged imported rows, noncanonical Boolean encodings, row capacity, and malformed file tails are restored only from the compatibility annex."
   }
 ];
 

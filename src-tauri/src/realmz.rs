@@ -407,7 +407,6 @@ mod tests {
             tumblers: 3,
             prompts: vec![55, 77, 6],
             prompt_sounds: vec![10136, 5, 10],
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data TD2", 0, 0, THIEF_ENCOUNTER_BYTES),
         };

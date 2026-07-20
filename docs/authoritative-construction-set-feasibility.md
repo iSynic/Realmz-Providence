@@ -695,10 +695,21 @@ generated contract enforce the same boundary. The authoritative proof poison-tes
 embedded rows in both compilers, and the imported-fixture gate continues to require exact no-edit
 byte identity.
 
-Branch validation through the sixty-fifth slice completed on 2026-07-20:
+The sixty-sixth slice removes `ThiefEncounterRecord.rawBytes` from schema-v5 canonical projects.
+Browser and desktop import decode every byte of each 118-byte `Data TD2` row into canonical action
+and trap flags, modifiers, result codes, message and sound routes, trap and lock fields, prompt
+support, authored state, and provenance; both writers rebuild the complete row from those
+semantics. Unchanged imported rows, noncanonical nonzero Boolean encodings, row capacity, and
+malformed tails remain annex-owned. Old project JSON remains load-tolerant by discarding obsolete
+embedded rows while retaining decoded semantics. Browser normalization, thief-encounter commands,
+semantic mapping, and the generated contract enforce the same boundary. The authoritative proof
+poison-tests obsolete embedded rows in both compilers, and the imported-fixture gate continues to
+require exact no-edit byte identity.
+
+Branch validation through the sixty-sixth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
-- full TypeScript suite: 615 passed, plus typecheck;
+- full TypeScript suite: 614 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -716,7 +727,8 @@ also removes that file from the current violation list, and the simple-encounter
 within the existing `encounters.rs` ceiling; the complex- and thief-encounter changes add no new
 module-size violation. Removing treasure, shop, message, option-label, battle, monster,
 monster-description, simple-encounter, and complex-encounter compatibility storage further reduces
-their focused codecs and adds no new size violation. The authoritative rules slice likewise keeps
+their focused codecs; removing thief-encounter compatibility storage likewise adds no new size
+violation. The authoritative rules slice likewise keeps
 `rules.rs` within its ceiling by separating exact-shape validation from the native codec. The
 `Data Solids` slice likewise moves its 1,024-byte codec and tests into a focused module, returns
 `landlooks.rs` below its baseline, and does not add a new ISY-320 violation. The `Layout` slice
@@ -782,9 +794,9 @@ them from the emitted scenario source files.
 | 1. Can the current model become authoritative without a disruptive rewrite? | **Yes.** It already represents the minimum proof and most construction-set families. Add explicit authored/imported origin, remove preservation data from the normal fresh path, and migrate model drift. |
 | 2. Can fresh projects export with no `raw-sources`? | **Yes on the investigation branch.** Fresh desktop projects now omit the directory and source inventory, and annex-free export emits compiler defaults directly. Imported projects still require their compatibility material. |
 | 3. Which native files are completely generated? | The 316-byte scenario marker and `Data CS` cores, neutral 600-byte support-file baseline, maps, trigger tables, random levels, ED3/EDCD, messages, options, monsters/descriptions, treasures, shops, thief/timed encounters, custom spell records/names, contact/restrictions, and most record cores have writers. The detailed matrix separates semantic generation from neutral compiler defaults and compatibility ranges. |
-| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, arbitrary legacy resources, and Classic-Mac resource-fork transport metadata. The fresh main resource container, support output, marker, `Data CS`, complete `Data Solids` table, and simple/complex-encounter rows no longer require preserved bytes; exact legacy security/publish and stock Classic-Mac behavior remain acceptance unknowns. |
+| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, arbitrary legacy resources, and Classic-Mac resource-fork transport metadata. The fresh main resource container, support output, marker, `Data CS`, complete `Data Solids` table, and simple/complex/thief-encounter rows no longer require preserved bytes; exact legacy security/publish and stock Classic-Mac behavior remain acceptance unknowns. |
 | 5. Can legacy preservation be isolated? | **Yes, and the boundary is explicit on the investigation branch.** Schema v5 records authored/imported origin; native export requires the annex only for imported projects. Remaining work is moving embedded record tails and browser-native preservation behind the same contract. |
-| 6. Can TypeScript and Rust derive from one schema? | **Yes, incrementally.** The investigation branch generates the shared schema version, persisted top-level inventory, source/origin/source-file DTOs, scenario identity/startup DTOs, shared provenance/confidence primitives, map identity/layout and map-record DTOs, random-level/rectangle DTOs, and complete scenario-item, treasure, shop, message, option-label, battle, monster, monster-description, simple/complex-encounter, spell, race, and caste DTOs from JSON Schema. It checks both project models plus the Rust serializer; remaining DTO families can migrate incrementally. |
+| 6. Can TypeScript and Rust derive from one schema? | **Yes, incrementally.** The investigation branch generates the shared schema version, persisted top-level inventory, source/origin/source-file DTOs, scenario identity/startup DTOs, shared provenance/confidence primitives, map identity/layout and map-record DTOs, random-level/rectangle DTOs, and complete scenario-item, treasure, shop, message, option-label, battle, monster, monster-description, simple/complex/thief-encounter, spell, race, and caste DTOs from JSON Schema. It checks both project models plus the Rust serializer; remaining DTO families can migrate incrementally. |
 | 7. Can export become a deterministic compiler without a UI rewrite? | **Yes.** The UI already calls thin desktop/browser export boundaries with a `Project`; extract a pure file/resource manifest compiler behind them. |
 | 8. Which editor components require imported byte identity? | No major workbench requires it as its primary model. A bounded set of marker fallbacks, blank-record tests, provenance displays, library decoders, parsers, semantic builders, and writers use it; see the component table below. |
 | 9. What is the smallest ownership proof? | A no-annex fresh project compiled twice byte-identically, reimported, then consumed through Realmz's ordinary scenario path with movement, one message Action Point, save, and reload. |
@@ -949,7 +961,7 @@ The branch now also defines the persisted contract in language-neutral JSON Sche
 supplies the schema-version constant to both runtimes, emits one ordered top-level field inventory,
 and owns the complete source/origin/source-file, scenario identity/startup, map identity/layout,
 random-level/rectangle, map-record/marker/rectangle, scenario-item, treasure, shop, message,
-option-label, battle, monster, monster-description, simple/complex-encounter, spell, race, and caste DTO
+option-label, battle, monster, monster-description, simple/complex/thief-encounter, spell, race, and caste DTO
 families plus their shared
 provenance/confidence primitives. A
 conformance gate compares the inventory to both project models and the Rust serializer, rejects
@@ -957,7 +969,7 @@ handwritten duplicates, fixes the compatibility-only startup payload and semanti
 level inventories, and checks the evidence/render vocabularies. This removes silent top-level,
 source-boundary, startup-metadata, provenance, core-map, item-record, treasure-record, shop-record,
 message-record, option-label-record, battle-record, monster-record, monster-description-record,
-simple/complex-encounter-record, and rule-override drift while leaving other record and asset DTO families
+simple/complex/thief-encounter-record, and rule-override drift while leaving other record and asset DTO families
 as bounded, incremental work.
 
 This is evidence for a canonical contract, not for a new repository. Introduce a versioned
@@ -1002,7 +1014,11 @@ A pragmatic sequence is:
     obsolete embedded rows during project migration and all edit paths, retain legacy result aliases
     only as normalization inputs, and keep unchanged imported rows, capacity, and malformed tails
     only in the compatibility annex.
-14. Keep parser, compiler, validator, and UI behavior in handwritten modules.
+14. **Implemented for thief encounters:** generate the semantic 118-byte encounter DTO, discard
+    obsolete embedded rows during project migration and all edit paths, and keep unchanged imported
+    rows, noncanonical Boolean encodings, capacity, and malformed tails only in the compatibility
+    annex.
+15. Keep parser, compiler, validator, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1081,7 +1097,7 @@ Legend:
 | `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row, and canonical records expose no `rawBytes`. Imported rows recompile from decoded values; classified foreign suffix records and malformed tails are appended only from the annex. |
 | `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Canonical records expose no `rawBytes` and compile all 426 bytes from actions, results, controls, prompt, and text, including deterministic zero alignment and Pascal padding. Unchanged imported rows, row capacity, and malformed tails are restored only from the compatibility annex. |
 | `Data ED2` | Generated + legacy row/tail annex | Generate complete deterministic complex encounters | Canonical records expose no `rawBytes` and compile all 520 bytes from actions, physical and word results, group flags, spell and item routes, controls, prompt, and text, including deterministic zero alignment and Pascal padding. Unchanged imported rows, row capacity, and malformed tails are restored only from the compatibility annex. |
-| `Data TD2` | Generated + legacy row/tail annex | Generate complete deterministic rogue/thief encounters | Fresh/authored rows compile all 118 bytes from canonical action, result, message, sound, trap, lock, and prompt fields without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
+| `Data TD2` | Generated + legacy row/tail annex | Generate complete deterministic rogue/thief encounters | Canonical records expose no `rawBytes` and compile all 118 bytes from action and trap flags, modifiers, result codes, message and sound links, trap and lock fields, and prompt support. Unchanged imported rows, noncanonical Boolean encodings, row capacity, and malformed tails are restored only from the compatibility annex. |
 | `Data TD3` | Generated semantic prefix + bounded legacy annex | Generate timed encounters and zero reserved `stuff[1..9]` | Canonical timed records contain only stable identity, schedule/gate/location semantics, authored state, and provenance; they expose neither `rawBytes` nor the nine unnamed words. Fresh rows compile offsets 0..21 and deterministically zero offsets 22..39. Unchanged imported rows are annex-restored; edited imported rows compile semantics while recovering only offsets 22..39 and any malformed tail from annex `Data TD3`. Their meanings remain unknown. |
 
 ### Rules and resource-bearing optional families
@@ -1200,7 +1216,7 @@ must not be called fresh-authoritative merely because imported round trips are f
    reopening TypeScript/Rust duplication.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. Custom-landlook metadata, scenario
-   shell/support, thief encounter, spell, race, caste, contact, restriction, and global-hook
+   shell/support, spell, race, caste, contact, restriction, and global-hook
    export no longer consult those fields; marker and
    `Data CS` identity/tails and support-file editor state are annex-owned, and `Global`
    reserved slots are recovered only as bounded annex ranges. Remaining families must follow the

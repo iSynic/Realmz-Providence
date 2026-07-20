@@ -134,7 +134,15 @@ pub(super) fn add_canonical_record_collections(
             record
         })
         .collect::<Vec<_>>();
-    let thief_encounters = canonical_records!(parsed.thief_encounters);
+    let thief_encounters = parsed
+        .thief_encounters
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let timed_encounters = parsed
         .timed_encounters
         .iter()

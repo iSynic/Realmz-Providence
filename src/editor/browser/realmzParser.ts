@@ -911,7 +911,6 @@ function parseThiefEncounters(buffer: Uint8Array | undefined): ThiefEncounterRec
     tumblers: i16(record, 104),
     prompts: readI16s(record, 106, 3),
     promptSounds: readI16s(record, 112, 3),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data TD2", id, start, THIEF_ENCOUNTER_BYTES, "source-backed")
   }));

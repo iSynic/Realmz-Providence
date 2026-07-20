@@ -460,14 +460,12 @@ for (const [field, length] of [["groups", 8], ["spellIds", 10], ["spellResults",
 }
 expect(complexEncounterRecordSchema.properties?.choiceResults?.["x-providence-migration-only"] === true && complexEncounterRecordSchema.properties?.wordResults?.["x-providence-migration-only"] === true, "complex encounter aliases must remain migration-only");
 expectSameArray(complexEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["choiceResults", "wordResults"], "Complex-encounter omitted migration inventory");
-const thiefEncounterFields = ["id", "typeFlags", "modifiers", "successCodes", "failureCodes", "successText", "failureText", "successSounds", "failureSounds", "spell", "lowDamage", "highDamage", "tumblers", "prompts", "promptSounds", "rawBytes", "authored", "provenance"];
+const thiefEncounterFields = ["id", "typeFlags", "modifiers", "successCodes", "failureCodes", "successText", "failureText", "successSounds", "failureSounds", "spell", "lowDamage", "highDamage", "tumblers", "prompts", "promptSounds", "authored", "provenance"];
 expectSameArray(Object.keys(thiefEncounterRecordSchema.properties ?? {}), thiefEncounterFields, "Thief-encounter field inventory");
-expectSameArray(thiefEncounterRecordSchema.required ?? [], thiefEncounterFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Thief-encounter authored field inventory");
+expectSameArray(thiefEncounterRecordSchema.required ?? [], thiefEncounterFields.filter((field) => field !== "authored"), "Thief-encounter authored field inventory");
 for (const [field, length] of [["typeFlags", 10], ["modifiers", 8], ["successCodes", 8], ["failureCodes", 8], ["successText", 8], ["failureText", 8], ["successSounds", 8], ["failureSounds", 8], ["prompts", 3], ["promptSounds", 3]]) {
   expect(thiefEncounterRecordSchema.properties?.[field]?.minItems === length && thiefEncounterRecordSchema.properties?.[field]?.maxItems === length, `thief encounters must retain ${length} ${field} slots`);
 }
-expect(thiefEncounterRecordSchema.properties?.rawBytes?.minItems === 118 && thiefEncounterRecordSchema.properties?.rawBytes?.maxItems === 118, "thief-encounter rawBytes must retain one complete Realmz row when compatibility bytes are present");
-expectSameArray(thiefEncounterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Thief-encounter omitted compatibility inventory");
 const timedEncounterFields = ["id", "day", "increment", "percent", "door", "requiredLevel", "requiredRandomRect", "requiredX", "requiredY", "requiredItem", "requiredQuest", "locationKind", "authored", "provenance"];
 expectSameArray(Object.keys(timedEncounterRecordSchema.properties ?? {}), timedEncounterFields, "Timed-encounter field inventory");
 expectSameArray(timedEncounterRecordSchema.required ?? [], timedEncounterFields.filter((field) => field !== "authored"), "Timed-encounter authored field inventory");
@@ -479,7 +477,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

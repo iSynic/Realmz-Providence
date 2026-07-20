@@ -1190,8 +1190,8 @@ const encounterProject = {
     { ...authoredComplexEncounter, authored: true }
   ],
   thiefEncounters: [
-    thiefEncounterRecord(0, { rawBytes: new Array(118).fill(0x11), authored: false }),
-    { ...authoredThiefEncounter, rawBytes: new Array(118).fill(0x22), authored: true }
+    thiefEncounterRecord(0, { authored: false }),
+    { ...authoredThiefEncounter, authored: true }
   ],
   timedEncounters: [
     timedEncounterRecord(0, { authored: false }),

@@ -274,7 +274,6 @@ assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
 assertOwnershipSimpleEncounter(project.simpleEncounters, "Canonical project");
 assertOwnershipComplexEncounter(project.complexEncounters, "Canonical project");
 assertOwnershipThiefEncounter(project.thiefEncounters, "Canonical project");
-expect(project.thiefEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical thief encounters must not carry compatibility bytes");
 assertOwnershipTimedEncounter(project.timedEncounters, "Canonical project");
 expect(project.timedEncounters.every((record) => !Object.hasOwn(record, "rawBytes") && !Object.hasOwn(record, "reservedWords")), "Fresh canonical timed encounters must not expose compatibility fields");
 assertOwnershipBattle(project.battles, "Canonical project");
@@ -316,6 +315,7 @@ for (const set of poisonedProject.monsterSets) set.monsters[0].rawBytes = new Ar
 poisonedProject.monsterDescriptions[0].rawBytes = new Array(256).fill(0xa5);
 poisonedProject.simpleEncounters[0].rawBytes = new Array(426).fill(0xa5);
 poisonedProject.complexEncounters[0].rawBytes = new Array(520).fill(0xa5);
+poisonedProject.thiefEncounters[0].rawBytes = new Array(118).fill(0xa5);
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -356,6 +356,7 @@ for (const set of browserPoisonedProject.monsterSets) set.monsters[0].rawBytes =
 browserPoisonedProject.monsterDescriptions[0].rawBytes = new Array(256).fill(0xa5);
 browserPoisonedProject.simpleEncounters[0].rawBytes = new Array(426).fill(0xa5);
 browserPoisonedProject.complexEncounters[0].rawBytes = new Array(520).fill(0xa5);
+browserPoisonedProject.thiefEncounters[0].rawBytes = new Array(118).fill(0xa5);
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -682,7 +683,6 @@ async function assertNoRawSources(stage) {
   assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
   assertOwnershipComplexEncounter(savedProject.complexEncounters, `Rust-saved project ${stage}`);
   assertOwnershipThiefEncounter(savedProject.thiefEncounters, `Rust-saved project ${stage}`);
-  expect(savedProject.thiefEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} thief encounters contain compatibility bytes`);
   assertOwnershipTimedEncounter(savedProject.timedEncounters, `Rust-saved project ${stage}`);
   expect(savedProject.timedEncounters?.every((record) => !Object.hasOwn(record, "rawBytes") && !Object.hasOwn(record, "reservedWords")), `Rust-saved project ${stage} timed encounters expose compatibility fields`);
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
@@ -942,6 +942,7 @@ function assertOwnershipThiefEncounter(records, label) {
   expect(encounter.successSounds?.every((value) => value === 137) && encounter.failureSounds?.every((value) => value === 137), `${label} thief encounter has the wrong sound routes`);
   expect(encounter.spell === 17 && encounter.lowDamage === 3 && encounter.highDamage === 9 && encounter.tumblers === 5, `${label} thief encounter has the wrong trap or lock fields`);
   expect(encounter.prompts?.join(",") === "1,137,5" && encounter.promptSounds?.join(",") === "0,7,6", `${label} thief encounter has the wrong prompt support fields`);
+  expect(records.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} thief encounters expose compatibility storage`);
 }
 
 function assertOwnershipTimedEncounter(records, label) {

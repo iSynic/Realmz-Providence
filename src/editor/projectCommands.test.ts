@@ -258,18 +258,30 @@ describe("project command facade", () => {
   it("creates fresh thief encounters from semantic fields without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Thief Encounter");
 
-    const next = applyProjectCommand(project, {
+    const created = applyProjectCommand(project, {
       kind: "createTargetRecord",
       label: "Create thief encounter",
       recordType: "thiefEncounter",
       id: 4
+    });
+    created.thiefEncounters = [{
+      ...created.thiefEncounters[0],
+      rawBytes: new Array(118).fill(0xa5)
+    } as unknown as Project["thiefEncounters"][number]];
+
+    const next = applyProjectCommand(created, {
+      kind: "updateThiefEncounterRecord",
+      label: "Update thief encounter",
+      id: 4,
+      changes: { spell: 17 }
     });
 
     expect(next.thiefEncounters).toHaveLength(1);
     expect(next.thiefEncounters[0].typeFlags).toHaveLength(10);
     expect(next.thiefEncounters[0].successCodes).toHaveLength(8);
     expect(next.thiefEncounters[0].prompts).toHaveLength(3);
-    expect(next.thiefEncounters[0].rawBytes).toBeUndefined();
+    expect(next.thiefEncounters[0].spell).toBe(17);
+    expect("rawBytes" in next.thiefEncounters[0]).toBe(false);
   });
 
   it("creates fresh timed encounters from semantic fields without compatibility bytes", () => {

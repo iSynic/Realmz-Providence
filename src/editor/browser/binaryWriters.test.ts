@@ -639,7 +639,7 @@ describe("browser thief-encounter writer", () => {
       promptSounds: [0x0701, 0x0702, 0x0703]
     };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeThiefEncounters([record]);
 
     expect(output).toHaveLength(118);
@@ -661,18 +661,14 @@ describe("browser thief-encounter writer", () => {
     input[10] = 0xff;
     input.set([1, 2], 34);
     const imported = parseScenarioBuffers(new Map([["Data TD2", input]])).thiefEncounters[0];
+    expect("rawBytes" in imported).toBe(false);
 
-    const output = writeThiefEncounters([{ ...imported, rawBytes: new Array(118).fill(0xa5) }]);
+    const output = writeThiefEncounters([imported]);
 
     expect(output).not.toEqual(input);
     expect(output[0]).toBe(1);
     expect(output[10]).toBe(0xff);
     expect(i16(output, 34)).toBe(0x0102);
-  });
-
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeThiefEncounters([{ ...emptyThiefEncounter(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
   });
 });
 
