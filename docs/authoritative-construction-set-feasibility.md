@@ -789,7 +789,16 @@ other byte. Browser normalization, desktop project-open migration, string-sound 
 JSON template compilation, and the Remake projection now share that boundary. No canonical
 scenario startup DTO exposes a compatibility-only byte array.
 
-Branch validation through the seventy-third slice completed on 2026-07-20:
+The seventy-fourth slice introduces a language-neutral native-manifest policy contract for the
+first genuinely shared authored-baseline decisions. Version 1 owns the 200-record scenario-item
+capacity and the eight runtime files that are always emitted empty. Generated TypeScript and Rust
+constants now drive both compiler baselines, and the generator gate requires both implementations
+to consume them. Codec byte sizes, conditional families such as `Data DDD`, and semantic writer
+execution order remain local implementation details. The generated-scenario baseline check also
+proves that emitted output follows the neutral policy rather than merely generating unused
+constants.
+
+Branch validation through the seventy-fourth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 616 passed, plus typecheck;
@@ -830,7 +839,9 @@ UI files, ISY-320 `assembly.rs`, and ISY-321 stylesheets. The ED3/EDCD slice cha
 exporter/package boundary and adds no new module-size violation. The custom-landlook metadata
 slice adds a focused browser parser test and changes only existing contract/compiler owners. The
 atlas slice adds one focused shared PICT writer and only small workbench/compiler-boundary wiring,
-so neither slice adds an ISY-319/320/321 violation. Architecture, lint, unit,
+so neither slice adds an ISY-319/320/321 violation. The native-manifest policy slice replaces
+duplicated local baseline constants with generated definitions and adds no module-size violation.
+Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
 
@@ -1013,6 +1024,11 @@ the same content-neutral package directly as authored compiler output:
 - 1,024-byte zero-filled `Data Solids`;
 - required zero-length startup tables.
 
+The versioned `schemas/realmz-native-manifest-policy.json` contract is now the neutral owner of the
+shared 200-row scenario-item capacity and always-empty runtime-file inventory. Its generated
+TypeScript and Rust constants feed both baseline implementations. Native codec sizes, conditional
+file rules, and semantic compilation order intentionally remain beside the corresponding writers.
+
 Neither path materializes these files as preserved input or adds them to the canonical project's
 source inventory.
 
@@ -1139,7 +1155,11 @@ A pragmatic sequence is:
     canonical DTO; migrate older JSON and sanitize browser normalization, string-sound edits, and
     template copies; compile the two known Divinity fields into a neutral exact-size file; and keep
     untouched identity or edited editor/view state only in the compatibility annex.
-22. Keep parser, compiler, validator, and UI behavior in handwritten modules.
+22. **Implemented for the first native-manifest policy seam:** define the authored scenario-item
+    capacity and always-empty runtime-file inventory once in a versioned neutral contract, generate
+    TypeScript and Rust constants, require both compiler baselines to consume them, and verify the
+    generated package against the source policy.
+23. Keep parser, compiler, validator, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1321,9 +1341,11 @@ must not be called fresh-authoritative merely because imported round trips are f
 ## Principal Blockers And Remaining Unknowns
 
 1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
-   annex and the minimum ownership fixture enforces byte parity, but they still implement the native
-   manifest in Rust and TypeScript. Broader golden fixtures or a shared Rust/Wasm compiler should
-   prevent policy drift across optional families.
+   annex and the minimum ownership fixture enforces byte parity. A versioned neutral policy now
+   owns the first shared baseline seam: scenario-item capacity and always-empty runtime files. Rust
+   and TypeScript still implement codec sizes, conditional families, and semantic writer execution
+   independently. Broader golden fixtures or a shared Rust/Wasm compiler should prevent policy
+   drift across optional families without forcing those implementation details into the policy.
 2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
    `PICT`/`cicn`/`snd `/`TEXT`/`styl` resources, item strings, and custom-spell strings are generated
    in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families

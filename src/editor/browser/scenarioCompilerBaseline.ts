@@ -1,19 +1,9 @@
 import type { Project } from "../types";
+import { AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS } from "../generated/realmzNativeManifestPolicy";
 import { DOOR_LEVEL_RECORD_BYTES, SCENARIO_SUPPORT_FILE_BYTES, TILE_SOLIDS_BYTES, writeDoorFile, writeScenarioShell, writeTileSolids } from "./binaryWriters";
 import { MINIMUM_SCENARIO_RESOURCE_FORK_BYTES, writeMinimumScenarioResourceFork } from "./resourceFork";
 
-const SCENARIO_ITEM_TABLE_BYTES = 200 * 100;
-
-const EMPTY_RUNTIME_TABLES = [
-  "Data DL",
-  "Data RDD",
-  "Data SD",
-  "Data TD2",
-  "Data TD3",
-  "Data ED",
-  "Data ED2",
-  "Data MD"
-] as const;
+const SCENARIO_ITEM_TABLE_BYTES = AUTHORED_SCENARIO_ITEM_RECORDS * 100;
 
 export type ScenarioCompilerBaselineFile = {
   path: string;
@@ -36,7 +26,7 @@ export function createAuthoredScenarioCompilerBaseline(project: Project): Scenar
     { path: "Data DDD", bytes: writeDoorFile(project.triggers, "dungeon", dungeonLevelCount) },
     { path: "Data NI", bytes: new Uint8Array(SCENARIO_ITEM_TABLE_BYTES) },
     { path: "Data Solids", bytes: writeTileSolids(project.tileAttributes) },
-    ...EMPTY_RUNTIME_TABLES.map((path) => ({ path, bytes: new Uint8Array() }))
+    ...AUTHORED_EMPTY_RUNTIME_FILES.map((path) => ({ path, bytes: new Uint8Array() }))
   ];
 }
 

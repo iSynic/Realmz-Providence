@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const requireFromRoot = createRequire(path.join(root, "package.json"));
 const { buildSync } = requireFromRoot("esbuild");
+const manifestPolicy = JSON.parse(fs.readFileSync(path.join(root, "schemas", "realmz-native-manifest-policy.json"), "utf8"));
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "providence-generated-baseline-"));
 
 try {
@@ -115,6 +116,10 @@ try {
   }
   expect(files.get("Data DD")?.byteLength === 2 * AUTHORED_SCENARIO_BASELINE_SIZES.doorLevel, "Data DD should contain one door table per land map");
   expect(files.get("Data DDD")?.byteLength === 0, "a scenario without dungeon maps should retain an empty Data DDD startup file");
+  for (const name of manifestPolicy.authoredBaseline.emptyRuntimeFiles) {
+    expect(files.get(name)?.byteLength === 0, `${name} should follow the shared authored empty-runtime policy`);
+  }
+  expect(AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems === manifestPolicy.authoredBaseline.scenarioItemRecords * 100, "browser item-table size should follow the shared authored capacity policy");
   expect(files.get("Data NI")?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.scenarioItems, "authored items should overlay Realmz's fixed 200-item table without truncating it");
   const tileSolids = files.get("Data Solids");
   expect(tileSolids?.byteLength === AUTHORED_SCENARIO_BASELINE_SIZES.tileSolids, "Data Solids should contain the exact 1024-byte compiler table");

@@ -1,5 +1,8 @@
 use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot};
 use crate::error::{IoPath, ProvidenceError, Result};
+use crate::generated::native_manifest_policy::{
+    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_SCENARIO_ITEM_RECORDS,
+};
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
     BattleRecord, ComplexEncounterRecord, ItemTextRecord, LevelType, MapRecord, MessageRecord,
@@ -420,10 +423,8 @@ fn write_authored_runtime_baseline(
     project: &ProvidenceProject,
     target: ScenarioTarget,
 ) -> Result<()> {
-    const SCENARIO_ITEM_TABLE_BYTES: usize = 200 * crate::realmz::ITEM_BYTES;
-    const EMPTY_RUNTIME_TABLES: &[&str] = &[
-        "Data DL", "Data RDD", "Data SD", "Data TD2", "Data TD3", "Data ED", "Data ED2", "Data MD",
-    ];
+    const SCENARIO_ITEM_TABLE_BYTES: usize =
+        AUTHORED_SCENARIO_ITEM_RECORDS * crate::realmz::ITEM_BYTES;
 
     let shell = project.scenario.shell.as_ref().ok_or_else(|| {
         ProvidenceError::message("Authored scenarios require scenario shell metadata.")
@@ -448,7 +449,7 @@ fn write_authored_runtime_baseline(
         manifest.insert_generated(name, bytes);
     }
     manifest.insert_generated("Data DDD", Vec::new());
-    for name in EMPTY_RUNTIME_TABLES {
+    for name in AUTHORED_EMPTY_RUNTIME_FILES {
         manifest.insert_generated(*name, Vec::new());
     }
     Ok(())

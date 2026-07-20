@@ -1,0 +1,16 @@
+{
+  "contractVersion": 1,
+  "authoredBaseline": {
+    "scenarioItemRecords": 200,
+    "emptyRuntimeFiles": [
+      "Data DL",
+      "Data RDD",
+      "Data SD",
+      "Data TD2",
+      "Data TD3",
+      "Data ED",
+      "Data ED2",
+      "Data MD"
+    ]
+  }
+}
