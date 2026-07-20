@@ -371,6 +371,22 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in battle).toBe(false);
   });
 
+  it("strips obsolete monster-description bytes when opening legacy browser projects", () => {
+    const project = createBrowserProject("Legacy Monster Description");
+    project.monsterDescriptions = [{
+      id: 7,
+      text: "Semantic monster description",
+      rawBytes: new Array(256).fill(0xa5),
+      authored: false,
+      provenance: { sourceFile: "Data DES", recordIndex: 7, byteOffset: 7 * 256, byteLength: 256, confidence: "fixture-backed" }
+    } as unknown as Project["monsterDescriptions"][number]];
+
+    const description = normalizeBrowserProject(project).monsterDescriptions[0];
+
+    expect(description.text).toBe("Semantic monster description");
+    expect("rawBytes" in description).toBe(false);
+  });
+
   it("backfills shop inventories when opening legacy browser projects", () => {
     const bytes = new Uint8Array(3002);
     bytes.set([0xfe, 0xbf], 2);
@@ -749,8 +765,7 @@ describe("browser project native manifest validation", () => {
       ...parsed.monsterDescriptions[0],
       id: 7,
       text: "Canonical monster description",
-      authored: false,
-      rawBytes: new Array(256).fill(0xa5)
+      authored: false
     }];
     project.battles = [{
       ...parsed.battles[0],

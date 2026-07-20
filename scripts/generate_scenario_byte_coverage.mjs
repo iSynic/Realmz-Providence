@@ -784,7 +784,7 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       ...FIXED_RECORD_COMMON_EVIDENCE,
       "docs/format-evidence-cards/monster-descriptions-and-sets-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh and authored Data DES rows compile complete Str255 records with deterministic zero fill and no rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
+    preservationPolicy: "Canonical monster-description records expose no rawBytes and compile complete Str255 rows with deterministic zero fill. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
   },
   {
     container: "Data TD",

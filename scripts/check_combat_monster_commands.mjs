@@ -155,8 +155,8 @@ function checkSwitchMonsterRecords({ switchMonsterRecords }) {
     monsters: [monster(1, { displayName: "Normal One", armor: 11 }), monster(2, { displayName: "Normal Two", armor: 22 })],
     monsterSets: [monsterSet(1, [monster(1, { displayName: "Monster One", armor: 101 }), monster(2, { displayName: "Monster Two", armor: 202 })])],
     monsterDescriptions: [
-      { id: 1, text: "One description", authored: true },
-      { id: 2, text: "Two description", authored: true }
+      { id: 1, text: "One description", rawBytes: new Array(256).fill(0xa5), authored: true },
+      { id: 2, text: "Two description", rawBytes: new Array(256).fill(0xb6), authored: true }
     ]
   });
   const next = switchMonsterRecords(project, 1, 1, 2);
@@ -166,6 +166,7 @@ function checkSwitchMonsterRecords({ switchMonsterRecords }) {
   assert(findSet(next, 1, 1).id === 1 && findSet(next, 1, 2).id === 2, "switchMonsterRecords did not preserve destination ids");
   assert(description(next, 1) === "Two description", "switchMonsterRecords did not swap description into source id");
   assert(description(next, 2) === "One description", "switchMonsterRecords did not swap description into target id");
+  assert(next.monsterDescriptions.every((record) => !Object.hasOwn(record, "rawBytes")), "switchMonsterRecords retained obsolete Data DES compatibility bytes");
 }
 
 function checkGenerateMonsterVariants({ generateMonsterVariants }) {

@@ -157,7 +157,6 @@ pub fn parse_monster_descriptions(buffer: &[u8]) -> Vec<MonsterDescriptionRecord
         .map(|(id, start, record)| MonsterDescriptionRecord {
             id,
             text: decode_pascal_text(record),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: provenance("Data DES", id, start, MONSTER_DESCRIPTION_BYTES),
         })
@@ -166,12 +165,6 @@ pub fn parse_monster_descriptions(buffer: &[u8]) -> Vec<MonsterDescriptionRecord
 
 pub fn write_monster_descriptions(records: &[MonsterDescriptionRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, MONSTER_DESCRIPTION_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != MONSTER_DESCRIPTION_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Monster description {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         encode_pascal_text(buffer, &record.text)?;
         Ok(())
     })
@@ -321,7 +314,6 @@ mod tests {
             parse_monster_descriptions(&vec![0; MONSTER_DESCRIPTION_BYTES]).remove(0);
         description.text = "Canonical description".to_string();
         description.authored = true;
-        description.raw_bytes = vec![0xa5; MONSTER_DESCRIPTION_BYTES];
 
         let output = write_monster_descriptions(&[description]).unwrap();
         assert_eq!(output[0], 21);
@@ -341,7 +333,7 @@ mod tests {
     }
 
     #[test]
-    fn monster_writers_reject_malformed_compatibility_and_fixed_arrays() {
+    fn monster_writer_rejects_malformed_compatibility_and_fixed_arrays() {
         let mut monster = semantic_monster();
         monster.raw_bytes = vec![1];
         assert!(write_monsters(&[monster]).is_err());
@@ -349,10 +341,5 @@ mod tests {
         let mut monster = semantic_monster();
         monster.attacks[0].pop();
         assert!(write_monsters(&[monster]).is_err());
-
-        let mut description =
-            parse_monster_descriptions(&vec![0; MONSTER_DESCRIPTION_BYTES]).remove(0);
-        description.raw_bytes = vec![1];
-        assert!(write_monster_descriptions(&[description]).is_err());
     }
 }

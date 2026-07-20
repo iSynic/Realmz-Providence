@@ -70,7 +70,7 @@ describe("scenario seed core record compiler", () => {
     expect(compiled.itemTexts[0]).toMatchObject({ itemId: 805, identifiedName: "Bell Clapper" });
     expect(compiled.monsters[0]).toMatchObject({ id: 3, iconId: 30126, hitDice: 4 });
     expect(compiled.monsters[0]?.rawBytes).toBeUndefined();
-    expect(compiled.monsterDescriptions[0]?.rawBytes).toBeUndefined();
+    expect(compiled.monsterDescriptions.every((record) => !("rawBytes" in record))).toBe(true);
     expect(compiled.monsterSets.find((set) => set.setId === -1)?.monsters[0]).toMatchObject({ id: 3, hitDice: 4 });
     expect(compiled.monsterSets.find((set) => set.setId === 1)?.monsters[0]).toMatchObject({ id: 3, hitDice: 4 });
     expect(compiled.monsterSets.flatMap((set) => set.monsters).every((record) => record.rawBytes === undefined)).toBe(true);

@@ -282,7 +282,6 @@ expect(project.timedEncounters.every((record) => !Object.hasOwn(record, "rawByte
 assertOwnershipBattle(project.battles, "Canonical project");
 assertOwnershipMonster(project.monsters, project.monsterDescriptions, "Canonical project");
 expect(project.monsters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical monsters must not carry compatibility bytes");
-expect(project.monsterDescriptions.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical monster descriptions must not carry compatibility bytes");
 assertOwnershipScenarioItem(project.scenarioItems, "Canonical project");
 assertOwnershipTreasure(project.treasures, "Canonical project");
 assertOwnershipShop(project.shops, "Canonical project");
@@ -315,6 +314,7 @@ poisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
 poisonedProject.messages[0].rawBytes = new Array(256).fill(0xa5);
 poisonedProject.optionLabels[0].rawBytes = new Array(25).fill(0xa5);
 poisonedProject.battles[0].rawBytes = new Array(346).fill(0xa5);
+poisonedProject.monsterDescriptions[0].rawBytes = new Array(256).fill(0xa5);
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -350,6 +350,7 @@ browserPoisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
 browserPoisonedProject.messages[0].rawBytes = new Array(256).fill(0xa5);
 browserPoisonedProject.optionLabels[0].rawBytes = new Array(25).fill(0xa5);
 browserPoisonedProject.battles[0].rawBytes = new Array(346).fill(0xa5);
+browserPoisonedProject.monsterDescriptions[0].rawBytes = new Array(256).fill(0xa5);
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -684,7 +685,6 @@ async function assertNoRawSources(stage) {
   assertOwnershipBattle(savedProject.battles, `Rust-saved project ${stage}`);
   assertOwnershipMonster(savedProject.monsters, savedProject.monsterDescriptions, `Rust-saved project ${stage}`);
   expect(savedProject.monsters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} monsters contain compatibility bytes`);
-  expect(savedProject.monsterDescriptions?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} monster descriptions contain compatibility bytes`);
   assertOwnershipScenarioItem(savedProject.scenarioItems, `Rust-saved project ${stage}`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
@@ -962,6 +962,7 @@ function assertOwnershipMonster(records, descriptions, label) {
   expect(monster.displayName === "Providence Sentinel", `${label} monster has the wrong display name`);
   const description = descriptions?.find((record) => record.id === 1);
   expect(description?.text === "Compiled entirely from canonical Providence monster data.", `${label} has the wrong monster description`);
+  expect(descriptions.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} monster descriptions expose compatibility storage`);
 }
 
 function assertOwnershipTreasure(records, label) {

@@ -1140,13 +1140,11 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceMonsterDescriptionRecord",
       "x-providence-rust-name": "MonsterDescriptionRecord",
-      "x-providence-rust-default": ["rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["authored"],
       "required": ["id", "text"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
         "text": { "type": "string", "maxLength": 255 },
-        "rawBytes": { "type": "array", "minItems": 256, "maxItems": 256, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

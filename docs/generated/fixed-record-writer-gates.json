@@ -458,7 +458,7 @@
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Fresh and authored Data DES rows compile complete Str255 records with deterministic zero fill and no rawBytes. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
+      "preservationPolicy": "Canonical monster-description records expose no rawBytes and compile complete Str255 rows with deterministic zero fill. Unchanged imported rows and malformed file tails are restored only from the compatibility annex."
     },
     {
       "container": "Data TD",

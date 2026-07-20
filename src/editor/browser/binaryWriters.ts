@@ -191,10 +191,6 @@ export function writeMonsters(records: MonsterRecord[]) {
 
 export function writeMonsterDescriptions(records: MonsterDescriptionRecord[]) {
   return writeFixedRecords(records, MONSTER_DESCRIPTION_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== MONSTER_DESCRIPTION_RECORD_BYTES) {
-      throw new Error(`Monster description ${record.id} has invalid compatibility byte storage`);
-    }
     encodePascalText(target, record.text);
   });
 }

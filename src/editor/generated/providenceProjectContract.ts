@@ -404,7 +404,6 @@ export const PROVIDENCE_MONSTER_FIELDS = [
 export const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS = [
   "id",
   "text",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1105,7 +1104,6 @@ export type ProvidenceMonsterRecord = {
 export type ProvidenceMonsterDescriptionRecord = {
   id: number;
   text: string;
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };

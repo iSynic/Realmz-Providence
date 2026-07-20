@@ -397,11 +397,10 @@ for (const [field, length] of [["typeFlags", 8], ["attacks", 5], ["saves", 6], [
 expect(monsterRecordSchema.properties?.attacks?.items?.minItems === 4 && monsterRecordSchema.properties?.attacks?.items?.maxItems === 4, "monster attack rows must retain four signed-byte slots");
 expect(monsterRecordSchema.properties?.rawBytes?.minItems === 210 && monsterRecordSchema.properties?.rawBytes?.maxItems === 210, "monster rawBytes must retain one complete Realmz row when compatibility bytes are present");
 expectSameArray(monsterRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Monster omitted empty compatibility inventory");
-const monsterDescriptionFields = ["id", "text", "rawBytes", "authored", "provenance"];
+const monsterDescriptionFields = ["id", "text", "authored", "provenance"];
 expectSameArray(Object.keys(monsterDescriptionRecordSchema.properties ?? {}), monsterDescriptionFields, "Monster-description field inventory");
 expectSameArray(monsterDescriptionRecordSchema.required ?? [], ["id", "text"], "Monster-description authored field inventory");
-expect(monsterDescriptionRecordSchema.properties?.rawBytes?.minItems === 256 && monsterDescriptionRecordSchema.properties?.rawBytes?.maxItems === 256, "monster-description rawBytes must retain one complete Realmz Str255 row when compatibility bytes are present");
-expectSameArray(monsterDescriptionRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Monster-description omitted empty compatibility inventory");
+expectSameArray(monsterDescriptionRecordSchema["x-providence-rust-default"] ?? [], ["authored"], "Monster-description Rust default inventory");
 expectSameArray(monsterSetIdSchema.enum ?? [], [-1, 0, 1], "Monster-set identity vocabulary");
 const monsterSetFields = ["sourceFile", "setId", "monsters"];
 expectSameArray(Object.keys(monsterSetSchema.properties ?? {}), monsterSetFields, "Monster-set field inventory");
@@ -483,7 +482,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["MonsterRecord.rawBytes", "MonsterDescriptionRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["MonsterRecord.rawBytes", "ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes", "SimpleEncounterRecord.rawBytes", "ComplexEncounterRecord.rawBytes", "ThiefEncounterRecord.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

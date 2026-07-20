@@ -453,8 +453,8 @@ expect(bytesEqual(writtenMonsters?.slice(420), sourceMonsters.slice(420)), "Data
 const monsterDescriptionProject = {
   ...project,
   monsterDescriptions: [
-    { id: 0, text: "Raw", rawBytes: Array.from(sourceMonsterDescriptions.slice(0, 256)), authored: false },
-    { id: 1, text: "Browser description", rawBytes: new Array(256).fill(0xa5), authored: true }
+    { id: 0, text: "Raw", authored: false },
+    { id: 1, text: "Browser description", authored: true }
   ]
 };
 const monsterDescriptionUpdate = createBrowserScenarioPackageZip(monsterDescriptionProject, rawSources, "mac-classic-folder");

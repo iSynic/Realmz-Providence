@@ -651,10 +651,20 @@ fields; browser normalization and every battle edit path enforce the same bounda
 gate keeps a noncanonical unchanged row and malformed tail only through the annex, while the
 ownership proof poison-tests obsolete embedded battle bytes in both compilers.
 
-Branch validation through the sixty-first slice completed on 2026-07-19:
+The sixty-second slice removes `MonsterDescriptionRecord.rawBytes` from schema-v5 canonical
+projects. Browser and desktop import decode each complete 256-byte `Data DES` row into semantic
+Classic text, and both writers deterministically compile the Str255 length, payload, and zero fill
+from that text. Unchanged imported rows, noncanonical post-length bytes, row capacity, and malformed
+tails remain annex-owned. Old project JSON remains load-tolerant by discarding the obsolete
+embedded row while retaining its already-decoded semantic text; browser normalization and every
+monster-description edit/switch path enforce the same boundary. The package gate keeps an
+unchanged imported row and malformed tail only through the annex, while the ownership proof
+poison-tests obsolete embedded description bytes in both compilers.
+
+Branch validation through the sixty-second slice completed on 2026-07-19:
 
 - full Rust suite: 262 passed, 2 ignored;
-- full TypeScript suite: 613 passed, plus typecheck;
+- full TypeScript suite: 615 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -665,12 +675,14 @@ Branch validation through the sixty-first slice completed on 2026-07-19:
 
 The aggregate `npm run check` currently stops after the passing TypeScript tests because the
 module-size baseline reports unrelated pre-existing ISY-319/320/321 growth in map, assembly,
-and CSS files. The random-level, scenario-item, shop, message, option-label, and battle codec
-extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
+and CSS files. The random-level, scenario-item, shop, message, option-label, battle, and
+monster-description codec extractions add no new module-size violation; moving `Data NI` and
+`Data SD` out of `economy.rs`
 also removes that file from the current violation list, and the simple-encounter changes remain
 within the existing `encounters.rs` ceiling; the complex- and thief-encounter changes add no new
-module-size violation. Removing treasure, shop, message, option-label, and battle compatibility
-storage further reduces their focused codecs and adds no new size violation. The authoritative
+module-size violation. Removing treasure, shop, message, option-label, battle, and
+monster-description compatibility storage further reduces their focused codecs and adds no new
+size violation. The authoritative
 rules slice likewise keeps `rules.rs` within its ceiling by separating exact-shape validation from the native codec. The
 `Data Solids` slice likewise moves its 1,024-byte codec and tests into a focused module, returns
 `landlooks.rs` below its baseline, and does not add a new ISY-320 violation. The `Layout` slice
@@ -783,13 +795,15 @@ them from the emitted scenario source files.
   final unmodeled byte, and malformed tails remain accessible only through the compatibility annex
   at native export.
 - Map-record marker, rectangle, and metadata DTOs plus complete scenario-item, treasure, shop,
-  message, option-label, and battle records are generated in both languages. Canonical map,
-  scenario-item, treasure, shop, message, option-label, and battle records expose no `rawBytes`;
+  message, option-label, battle, and monster-description records are generated in both languages.
+  Canonical map, scenario-item, treasure, shop, message, option-label, battle, and
+  monster-description records expose no `rawBytes`;
   other fresh records omit it. The item writer owns all 100 `Data NI` bytes, including the seven
   source-backed spare words, the treasure writer owns all 48 `Data TD` bytes, the shop writer owns all 3,002 bytes in each
   ordinary `Data SD` row, and the
   message writer owns all 256 canonical `Data SD2` bytes, the option-label writer owns all 25
-  canonical `Data OD` bytes, and the battle writer owns all 346 canonical `Data BD` bytes.
+  canonical `Data OD` bytes, the battle writer owns all 346 canonical `Data BD` bytes, and the
+  monster-description writer owns all 256 canonical `Data DES` bytes.
 - Authored browser project ZIPs round-trip with no `raw-sources` directory or annex manifest;
   imported packages still round-trip their captured raw files.
 - A live browser smoke created and saved a fresh project, selected Windows native export, and
@@ -1016,7 +1030,7 @@ Legend:
 | `Data OD` | Generated + legacy row/tail annex | Generate complete deterministic option labels | Canonical records expose no `rawBytes` and compile the Str24 length, payload, and zero fill from semantic text. Unchanged imported padding, noncanonical capacity rows, and malformed tails are preserved only from the compatibility annex. |
 | `Data BD` | Generated + legacy row/tail annex | Generate complete deterministic battle records | Canonical records expose no `rawBytes` and compile all 346 bytes from semantic data, including zero alignment padding. Unchanged imported rows, noncanonical alignment bytes, and malformed tails are preserved only from the compatibility annex. |
 | `Data MD`, `Data MD1`, `Data MD-1` | Generated + legacy row/tail annex | Generate complete deterministic monster records/sets | Fresh/authored rows compile all 210 bytes from canonical scalars, fixed arrays, Boolean state, and fixed display name without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
-| `Data DES` | Generated + legacy row/tail annex | Generate complete deterministic monster descriptions | Fresh/authored rows compile the complete Str255 record with deterministic zero fill and no `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
+| `Data DES` | Generated + legacy row/tail annex | Generate complete deterministic monster descriptions | Canonical records expose no `rawBytes` and compile the complete Str255 record with deterministic zero fill. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data MD2` | Generated + legacy annex | Generate structured map records | Canonical records expose no `rawBytes`. The pure writer compiles all semantic fields plus deterministic gap, Boolean, and Pascal padding bytes. Imported bytes 74-75, equivalent noncanonical true words, unchanged Pascal-note tails, and malformed file tails can be restored only from the compatibility annex. Marker UI and semantic summaries use structured slots only. |
 | `Data NI` | Generated + legacy annex encoding | Generate exactly 200 x 100 bytes for fresh projects | All 100 bytes are canonical semantic fields, including `spare2[7]`, and records expose no `rawBytes`. Imported row capacity, malformed tails, and an unchanged zero stored item-ID alias can be restored only from the compatibility annex; semantic edits and deletions win. |
 | `Data TD` | Generated + malformed-tail annex | Generate all 48 record bytes from canonical semantics | Twenty item IDs and four reward words cover the full record, and canonical records expose no `rawBytes`. Imported rows recompile from decoded values; only malformed file tails remain annex data. |
@@ -1212,7 +1226,8 @@ Realmz scenario.
 - **Implemented at the top level:** establish the versioned canonical project schema, generated
   runtime constants, model/serializer conformance tests, and generated source, scenario-startup,
   provenance, map identity/layout, random-level/rectangle, map-record, scenario-item, treasure,
-  shop, message, option-label, and battle DTOs; continue with later record families.
+  shop, message, option-label, battle, monster, and monster-description DTOs; continue with later
+  record families.
 
 Exit: an authored project can be saved/opened without raw material, and both runtimes agree on its
 serialized contract.

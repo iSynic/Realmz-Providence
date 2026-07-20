@@ -119,7 +119,6 @@ mod tests {
         let monster_description = MonsterDescriptionRecord {
             id: 0,
             text: "A rather dramatic monster.".to_string(),
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data DES", 0, 0, MONSTER_DESCRIPTION_BYTES),
         };

@@ -293,15 +293,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for description in &project.monster_descriptions {
-        if !description.raw_bytes.is_empty()
-            && description.raw_bytes.len() != crate::realmz::MONSTER_DESCRIPTION_BYTES
-        {
-            errors.push(format!(
-                "Monster description {} has invalid {}-byte compatibility storage.",
-                description.id,
-                crate::realmz::MONSTER_DESCRIPTION_BYTES
-            ));
-        }
         let description_bytes = classic_text_len(&description.text);
         if description_bytes > crate::realmz::MONSTER_DESCRIPTION_BYTES - 1 {
             errors.push(format!(

@@ -770,7 +770,6 @@ describe("browser monster writers", () => {
     const output = writeMonsterDescriptions([{
       id: 0,
       text: "Canonical description",
-      rawBytes: new Array(256).fill(0xa5),
       authored: true
     }]);
 
@@ -785,8 +784,6 @@ describe("browser monster writers", () => {
       .toThrow("invalid compatibility byte storage");
     expect(() => writeMonsters([{ ...parsed, attacks: [[0, 0, 0]] }]))
       .toThrow("exactly 5 attack rows");
-    expect(() => writeMonsterDescriptions([{ id: 0, text: "", rawBytes: [1], authored: true }]))
-      .toThrow("invalid compatibility byte storage");
   });
 });
 

@@ -603,7 +603,6 @@ function parseMonsterDescriptions(buffer: Uint8Array | undefined): MonsterDescri
   return fixedRecords(buffer, MONSTER_DESCRIPTION_BYTES, "Data DES", (id, start, record) => ({
     id,
     text: decodePascalText(record),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data DES", id, start, MONSTER_DESCRIPTION_BYTES, "source-backed")
   }));

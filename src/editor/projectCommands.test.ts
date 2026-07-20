@@ -155,6 +155,27 @@ describe("project command facade", () => {
     expect("rawBytes" in next.battles[0]).toBe(false);
   });
 
+  it("authors monster descriptions without compatibility bytes", () => {
+    const project = createBrowserProject("Semantic Monster Description");
+    project.monsterDescriptions = [{
+      id: 4,
+      text: "Imported description",
+      rawBytes: new Array(256).fill(0xa5),
+      authored: false,
+      provenance: { sourceFile: "Data DES", recordIndex: 4, byteOffset: 4 * 256, byteLength: 256, confidence: "fixture-backed" }
+    } as unknown as Project["monsterDescriptions"][number]];
+
+    const next = applyProjectCommand(project, {
+      kind: "upsertMonsterDescription",
+      label: "Author monster description",
+      id: 4,
+      text: "Providence owns this description."
+    });
+
+    expect(next.monsterDescriptions[0].text).toBe("Providence owns this description.");
+    expect("rawBytes" in next.monsterDescriptions[0]).toBe(false);
+  });
+
   it("creates fresh simple encounters from semantic fields without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Simple Encounter");
 

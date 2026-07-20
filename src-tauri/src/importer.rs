@@ -375,6 +375,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_message_raw_bytes(&mut value);
     migrate_legacy_option_label_raw_bytes(&mut value);
     migrate_legacy_battle_raw_bytes(&mut value);
+    migrate_legacy_monster_description_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -523,6 +524,10 @@ fn migrate_legacy_option_label_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_battle_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "battles");
+}
+
+fn migrate_legacy_monster_description_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "monsterDescriptions");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2620,6 +2625,19 @@ mod tests {
         legacy_battle_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::BATTLE_BYTES]);
         saved["battles"] = serde_json::json!([legacy_battle_value]);
+        saved["monsterDescriptions"] = serde_json::json!([{
+            "id": 7,
+            "text": "Semantic monster description",
+            "rawBytes": vec![0xa5u8; crate::realmz::MONSTER_DESCRIPTION_BYTES],
+            "authored": false,
+            "provenance": {
+                "sourceFile": "Data DES",
+                "recordIndex": 7,
+                "byteOffset": 7 * crate::realmz::MONSTER_DESCRIPTION_BYTES,
+                "byteLength": crate::realmz::MONSTER_DESCRIPTION_BYTES,
+                "confidence": "fixture-backed"
+            }
+        }]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2663,6 +2681,10 @@ mod tests {
         assert_eq!(opened.battles[0].message_before, 12);
         assert_eq!(opened.battles[0].message_after, 13);
         assert_eq!(opened.battles[0].battle_macro, 14);
+        assert_eq!(
+            opened.monster_descriptions[0].text,
+            "Semantic monster description"
+        );
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2697,6 +2719,7 @@ mod tests {
         assert!(upgraded["messages"][0].get("rawBytes").is_none());
         assert!(upgraded["optionLabels"][0].get("rawBytes").is_none());
         assert!(upgraded["battles"][0].get("rawBytes").is_none());
+        assert!(upgraded["monsterDescriptions"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -3062,7 +3085,6 @@ mod tests {
         monster_description.id = 7;
         monster_description.text = "Canonical monster description".to_string();
         monster_description.authored = false;
-        monster_description.raw_bytes.fill(0xA5);
         project.monster_descriptions = vec![monster_description];
 
         let mut battle = crate::realmz::parse_battles(&vec![0; crate::realmz::BATTLE_BYTES])

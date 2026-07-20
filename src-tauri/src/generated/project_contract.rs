@@ -430,7 +430,6 @@ pub const PROVIDENCE_MONSTER_FIELDS: &[&str] = &[
 pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] = &[
     "id",
     "text",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1438,8 +1437,6 @@ pub struct MonsterRecord {
 pub struct MonsterDescriptionRecord {
     pub id: usize,
     pub text: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

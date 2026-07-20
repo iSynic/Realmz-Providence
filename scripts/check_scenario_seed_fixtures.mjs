@@ -472,7 +472,7 @@ function checkMonsters(createProjectFromScenarioSeed) {
   expect(monster?.items?.[0] === 902 && monster?.weapon === 902, "monster item references should resolve item keys");
   expect(monster?.attacks?.[0]?.join(",") === "1,8,0,0", "monster attack row should be preserved");
   expect(result.project.monsterDescriptions[0]?.id === 7 && result.project.monsterDescriptions[0]?.text.includes("temple guardian"), "monster description should be generated");
-  expect(result.project.monsterDescriptions[0]?.rawBytes === undefined, "fresh Scenario JSON monster descriptions should not carry compatibility bytes");
+  expect(!Object.hasOwn(result.project.monsterDescriptions[0] ?? {}, "rawBytes"), "fresh Scenario JSON monster descriptions should not expose compatibility bytes");
   const libraryMonster = result.project.monsters.find((entry) => entry.id === 8);
   expect(libraryMonster?.displayName === "Library Guardian" && libraryMonster?.hitDice === 6, "Monster Library templates should provide reusable defaults while seed names override the library label");
   expect(libraryMonster?.armor === 9 && libraryMonster?.iconId === 130 && libraryMonster?.attacks?.[0]?.join(",") === "2,6,0,0", "seed fields should override selected Monster Library defaults without losing inherited art or attacks");

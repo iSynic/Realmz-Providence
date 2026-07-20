@@ -601,7 +601,10 @@ export function normalizeBrowserProject(project: Project): Project {
     ...set,
     monsters: (set.monsters ?? []).map(normalizedMonsterRecord)
   }));
-  project.monsterDescriptions ??= [];
+  project.monsterDescriptions = (project.monsterDescriptions ?? []).map((record) => {
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
+    return canonicalRecord;
+  });
   project.monsterIconOverrides ??= [];
   project.scenarioIconResources ??= [];
   project.scenarioItems = (project.scenarioItems ?? []).map((record) => {
@@ -1093,10 +1096,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "battle", battle.id), errors, warnings);
   }
   for (const description of project.monsterDescriptions ?? []) {
-    const rawBytes = description.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 256) {
-      errors.push(`Monster description ${description.id} has invalid 256-byte compatibility storage.`);
-    }
     if (description.text.length > 255) errors.push(`Monster description ${description.id} is too long for Realmz's 255-character description slot.`);
     if (!/^[\x00-\x7F]*$/.test(description.text)) warnings.push(`Monster description ${description.id} contains non-ASCII text and may not render as intended.`);
   }

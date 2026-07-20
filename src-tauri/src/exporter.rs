@@ -3057,8 +3057,6 @@ mod tests {
         fs::write(raw_dir.join("Data DES"), &source).unwrap();
 
         let mut records = crate::realmz::parse_monster_descriptions(&source);
-        records[0].raw_bytes.fill(0x11);
-        records[1].raw_bytes.fill(0x22);
         records[1].text = "Authored description".to_string();
         records[1].authored = true;
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();

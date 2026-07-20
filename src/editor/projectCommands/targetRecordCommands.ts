@@ -288,7 +288,7 @@ export function upsertMonsterDescription(project: Project, id: number, text: str
   if (!Number.isInteger(id) || id < 0) return project;
   const current = [...(project.monsterDescriptions ?? [])];
   const index = current.findIndex((record) => record.id === id);
-  const base = index >= 0 ? current[index] : emptyMonsterDescription(id);
+  const base = canonicalMonsterDescription(index >= 0 ? current[index] : emptyMonsterDescription(id));
   const next: MonsterDescriptionRecord = {
     ...base,
     id,
@@ -414,8 +414,8 @@ function monsterSetSourceFile(setId: MonsterSetId) {
 
 function switchMonsterDescriptions(project: Project, fromId: number, toId: number): Project {
   const descriptions = [...(project.monsterDescriptions ?? [])];
-  const from = descriptions.find((description) => description.id === fromId) ?? emptyMonsterDescription(fromId);
-  const to = descriptions.find((description) => description.id === toId) ?? emptyMonsterDescription(toId);
+  const from = canonicalMonsterDescription(descriptions.find((description) => description.id === fromId) ?? emptyMonsterDescription(fromId));
+  const to = canonicalMonsterDescription(descriptions.find((description) => description.id === toId) ?? emptyMonsterDescription(toId));
   const next = descriptions.filter((description) => description.id !== fromId && description.id !== toId);
   next.push({
     ...to,
@@ -677,6 +677,11 @@ function emptyMonsterDescription(id: number): MonsterDescriptionRecord {
     authored: true,
     provenance: authoredProvenance("Data DES", id, id * MONSTER_DESCRIPTION_BYTES, MONSTER_DESCRIPTION_BYTES)
   };
+}
+
+function canonicalMonsterDescription(record: MonsterDescriptionRecord): MonsterDescriptionRecord {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as MonsterDescriptionRecord & { rawBytes?: number[] };
+  return canonical;
 }
 
 export function emptyTreasure(id: number): TreasureRecord {
