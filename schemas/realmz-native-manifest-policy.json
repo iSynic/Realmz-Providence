@@ -1,5 +1,5 @@
 {
-  "contractVersion": 7,
+  "contractVersion": 8,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -34,6 +34,11 @@
     "text": {
       "messageRecordBytes": 256,
       "optionLabelRecordBytes": 25
+    },
+    "rules": {
+      "spellRecordBytes": 30,
+      "raceRecordBytes": 408,
+      "casteRecordBytes": 576
     }
   },
   "authoredBaseline": {

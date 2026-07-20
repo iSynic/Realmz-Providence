@@ -21,7 +21,10 @@ export const REALMZ_NATIVE_LAYOUT = {
   "treasureRecordBytes": 48,
   "shopRecordBytes": 3002,
   "messageRecordBytes": 256,
-  "optionLabelRecordBytes": 25
+  "optionLabelRecordBytes": 25,
+  "spellRecordBytes": 30,
+  "raceRecordBytes": 408,
+  "casteRecordBytes": 576
 } as const;
 
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;

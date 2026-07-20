@@ -3,15 +3,16 @@ use super::record_bytes::{
     write_i16_vec, write_i32_be, write_i32_vec,
 };
 use crate::error::Result;
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride};
 #[path = "rules_validation.rs"]
 mod validation;
 use validation::{validate_caste_storage, validate_race_storage};
 
-pub const SPELL_BYTES: usize = 30;
+pub const SPELL_BYTES: usize = REALMZ_NATIVE_LAYOUT.spell_record_bytes;
 pub const SPELL_OVERRIDE_RECORDS: usize = 105;
-pub const RACE_BYTES: usize = 408;
-pub const CASTE_BYTES: usize = 576;
+pub const RACE_BYTES: usize = REALMZ_NATIVE_LAYOUT.race_record_bytes;
+pub const CASTE_BYTES: usize = REALMZ_NATIVE_LAYOUT.caste_record_bytes;
 pub const RACE_OVERRIDE_RECORDS: usize = 30;
 pub const CASTE_OVERRIDE_RECORDS: usize = 30;
 

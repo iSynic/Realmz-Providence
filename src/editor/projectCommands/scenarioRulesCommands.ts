@@ -1,6 +1,11 @@
 import { Project, ProjectCommand, ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride } from "../types";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import { defaultCasteName, defaultRaceName, defaultRuleNames } from "../ruleNames";
 import { normalizedEditorMetadata } from "./tilePaletteCommands";
+
+const SPELL_BYTES = REALMZ_NATIVE_LAYOUT.spellRecordBytes;
+const RACE_BYTES = REALMZ_NATIVE_LAYOUT.raceRecordBytes;
+const CASTE_BYTES = REALMZ_NATIVE_LAYOUT.casteRecordBytes;
 
 export function renameEditorEntity(project: Project, entityId: string, displayName: string) {
   const label = displayName.trim();
@@ -111,7 +116,7 @@ export function createSpellOverride(project: Project, id?: number, template?: Pa
   const records = project.spellOverrides ?? [];
   const nextId = id ?? nextSpellOverrideId(records);
   const semanticTemplate = withoutLegacyRuleRawBytes(template ?? {});
-  const record = { ...emptySpellOverride(nextId), ...semanticTemplate, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * 30, 30) };
+  const record = { ...emptySpellOverride(nextId), ...semanticTemplate, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * SPELL_BYTES, SPELL_BYTES) };
   const existing = records.find((candidate) => candidate.id === nextId);
   if (existing) {
     if (!isBlankSpellOverride(existing)) return project;
@@ -140,7 +145,7 @@ export function createRaceOverride(project: Project, id?: number, template?: Par
   if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
   const displayName = template?.displayName?.trim() || defaultRaceName(nextId);
   const semanticTemplate = withoutLegacyRuleRawBytes(template ?? {});
-  const record = { ...emptyRaceOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
+  const record = { ...emptyRaceOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * RACE_BYTES, RACE_BYTES) };
   const withName = setRuleName(project, "race", nextId, displayName, true);
   return {
     ...withName,
@@ -155,7 +160,7 @@ export function createCasteOverride(project: Project, id?: number, template?: Pa
   if (existing && !isBlankCasteOverride(existing)) return project;
   const displayName = template?.displayName?.trim() || defaultCasteName(nextId);
   const semanticTemplate = withoutLegacyRuleRawBytes(template ?? {});
-  const record = { ...emptyCasteOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * 576, 576) };
+  const record = { ...emptyCasteOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Caste", nextId, nextId * CASTE_BYTES, CASTE_BYTES) };
   const withName = setRuleName(project, "caste", nextId, displayName, true);
   return {
     ...withName,
@@ -436,7 +441,7 @@ export function emptySpellOverride(id: number): ScenarioSpellOverride {
     displayName: `Custom Spell ${id}`,
     description: "",
     authored: true,
-    provenance: authoredProvenance("Data Spell", id, id * 30, 30)
+    provenance: authoredProvenance("Data Spell", id, id * SPELL_BYTES, SPELL_BYTES)
   };
 }
 
@@ -467,7 +472,7 @@ export function emptyRaceOverride(id: number): ScenarioRaceOverride {
     descriptors: 0,
     spacer: new Array(31).fill(0),
     authored: true,
-    provenance: authoredProvenance("Data Race", id, id * 408, 408)
+    provenance: authoredProvenance("Data Race", id, id * RACE_BYTES, RACE_BYTES)
   };
 }
 
@@ -509,7 +514,7 @@ export function emptyCasteOverride(id: number): ScenarioCasteOverride {
     spellsSoFar: 0,
     spacer: new Array(63).fill(0),
     authored: true,
-    provenance: authoredProvenance("Data Caste", id, id * 576, 576)
+    provenance: authoredProvenance("Data Caste", id, id * CASTE_BYTES, CASTE_BYTES)
   };
 }
 
