@@ -939,7 +939,15 @@ canonical schema's cell, row, and range-slot cardinalities. Imported layout/soli
 custom-landlook spare and reserved words, and malformed suffixes remain annex-only; fixed-size
 tests and the ownership proof retain literal format expectations independent of the policy.
 
-Branch validation through the ninetieth slice completed on 2026-07-20:
+The ninety-first slice closes the remaining production semantic-index geometry duplication. Native-
+manifest contract v14 carries forward the shared rule-table capacities and bounded race/caste
+compatibility ranges while requiring both browser and Rust semantic consumers to use compiler-owned
+record widths for Action Points, EDCD rows, encounters, combat, economy, text, rules, maps, and
+scenario singletons. Field offsets, stock-library decoders, and fixed-size golden tests remain
+literal independent evidence. This changes semantic byte ranges and reference counts only; it does
+not alter any native writer or compatibility-annex policy.
+
+Branch validation through the ninety-first slice completed on 2026-07-20:
 
 - full Rust suite: 263 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -1028,6 +1036,10 @@ Action Point capacity guard, semantic fallback reconstruction, fresh browser bas
 Monster Library decoding, and Item Catalog copy provenance. The policy generator now requires
 those paths to consume the shared contract; internal fixed-array semantics remain beside their
 editors, and the closure adds no new ISY-319/320/321 module-size violation.
+The semantic-index geometry closure replaces the remaining production full-record width literals in
+the browser and Rust semantic builders and extends the policy generator's consumer gate. It does not
+touch the deferred map UI, assembly, or stylesheet modules and adds no new ISY-319/320/321 module-
+size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1458,10 +1470,10 @@ Legend:
 
 | Native file/family | Current ownership | Fresh authoritative target | Evidence/remaining issue |
 | --- | --- | --- | --- |
-| `Data Spell` | Fully generated + legacy row/tail annex | Emit exactly 105 x 30 bytes for fresh custom spells | Native-manifest contract v13 owns the 105-slot authored capacity. Canonical spell records expose no `rawBytes`, and both compilers emit the runtime's fixed 3,150-byte table without an annex. Authored rows compile all 30 bytes from semantics; unchanged imported rows, short-file shapes, noncanonical nonzero Boolean encodings, and trailing bytes remain annex-only compatibility data. |
+| `Data Spell` | Fully generated + legacy row/tail annex | Emit exactly 105 x 30 bytes for fresh custom spells | Native-manifest contract v14 owns the 105-slot authored capacity. Canonical spell records expose no `rawBytes`, and both compilers emit the runtime's fixed 3,150-byte table without an annex. Authored rows compile all 30 bytes from semantics; unchanged imported rows, short-file shapes, noncanonical nonzero Boolean encodings, and trailing bytes remain annex-only compatibility data. |
 | `Data Spell.rsrc` / `.rsf` / AppleDouble form | Generated + compatibility | Build custom spell `STR# 5000..5006` resources from canonical names | Both compilers create missing name families and preserve imported entry metadata and unrelated resources. Byte parity and semantic reimport are proof-gated. |
-| `Data Race` | Fully generated semantic core + bounded legacy annex | Emit exactly 30 x 408 bytes | Native-manifest contract v13 owns the 30-slot authored capacity, shared hash-gated baseline, and compatibility ranges. Canonical race records contain only interpreted mechanics. Fresh output deterministically zeros the reserved `spare[8]` and `spacer[31]` ranges; imported edits restore those exact ranges only from the annex. Unchanged rows, capacity, and malformed tails are also annex-only. |
-| `Data Caste` | Fully generated semantic core + bounded legacy annex | Emit exactly 30 x 576 bytes | Native-manifest contract v13 owns the 30-slot authored capacity, shared hash-gated baseline, and compatibility ranges. Canonical caste records contain only interpreted mechanics. Fresh output deterministically zeros the reserved `spare1[2]`, `spare2[2]`, and `spacer[63]` ranges; imported edits restore those exact ranges only from the annex. Unchanged rows, capacity, and malformed tails are also annex-only. |
+| `Data Race` | Fully generated semantic core + bounded legacy annex | Emit exactly 30 x 408 bytes | Native-manifest contract v14 owns the 30-slot authored capacity, shared hash-gated baseline, and compatibility ranges. Canonical race records contain only interpreted mechanics. Fresh output deterministically zeros the reserved `spare[8]` and `spacer[31]` ranges; imported edits restore those exact ranges only from the annex. Unchanged rows, capacity, and malformed tails are also annex-only. |
+| `Data Caste` | Fully generated semantic core + bounded legacy annex | Emit exactly 30 x 576 bytes | Native-manifest contract v14 owns the 30-slot authored capacity, shared hash-gated baseline, and compatibility ranges. Canonical caste records contain only interpreted mechanics. Fresh output deterministically zeros the reserved `spare1[2]`, `spare2[2]`, and `spacer[63]` ranges; imported edits restore those exact ranges only from the annex. Unchanged rows, capacity, and malformed tails are also annex-only. |
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
 | `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Native-manifest contract v11 owns the 201-row, four-byte-header, ten-range geometry and checks canonical cardinalities. Both compilers generate it without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |

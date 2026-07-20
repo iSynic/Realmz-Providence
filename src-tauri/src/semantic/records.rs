@@ -6,10 +6,12 @@ use crate::realmz::{
     write_messages, write_monster_descriptions, write_monster_set, write_monsters,
     write_option_labels, write_scenario_contact_info, write_scenario_items,
     write_scenario_restrictions, write_scenario_shell, write_shops, write_simple_encounters,
-    write_thief_encounters, write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES,
-    COMPLEX_ENCOUNTER_BYTES, GLOBAL_MACRO_HOOK_BYTES, MAP_RECORD_BYTES, MAP_RECORD_MARKERS,
-    MAP_RECORD_MARKER_BYTES, RACE_BYTES, SCENARIO_CONTACT_INFO_BYTES,
-    SCENARIO_RESTRICTIONS_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES, TILE_SOLIDS_BYTES,
+    write_thief_encounters, write_timed_encounters, write_treasures, ParsedScenario, BATTLE_BYTES,
+    CASTE_BYTES, COMPLEX_ENCOUNTER_BYTES, GLOBAL_MACRO_HOOK_BYTES, ITEM_BYTES, MAP_RECORD_BYTES,
+    MAP_RECORD_MARKERS, MAP_RECORD_MARKER_BYTES, MESSAGE_BYTES, MONSTER_BYTES,
+    MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RACE_BYTES, SCENARIO_CONTACT_INFO_BYTES,
+    SCENARIO_RESTRICTIONS_BYTES, SHOP_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
+    THIEF_ENCOUNTER_BYTES, TILE_SOLIDS_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES,
 };
 use crate::rule_compiler::{
     write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
@@ -645,7 +647,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data BD",
-        346,
+        BATTLE_BYTES,
         "battle",
         "battle",
         parse_battle,
@@ -654,7 +656,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data MD",
-        210,
+        MONSTER_BYTES,
         "monster",
         "monster",
         parse_monster,
@@ -663,7 +665,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data MD1",
-        210,
+        MONSTER_BYTES,
         "alternate-monster",
         "monster-set:1",
         parse_monster,
@@ -672,7 +674,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data MD-1",
-        210,
+        MONSTER_BYTES,
         "alternate-monster",
         "monster-set:-1",
         parse_monster,
@@ -681,17 +683,19 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data DES",
-        256,
+        MONSTER_DESCRIPTION_BYTES,
         "monster-description",
         "monster-description",
         parse_monster_description,
     );
-    parse_fixed_collection(schema, buffers, "Data SD", 3002, "shop", "shop", parse_shop);
+    parse_fixed_collection(
+        schema, buffers, "Data SD", SHOP_BYTES, "shop", "shop", parse_shop,
+    );
     parse_fixed_collection(
         schema,
         buffers,
         "Data SD2",
-        256,
+        MESSAGE_BYTES,
         "message",
         "message",
         parse_message,
@@ -700,7 +704,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data OD",
-        25,
+        OPTION_LABEL_BYTES,
         "option-label",
         "option-label",
         parse_option_label,
@@ -710,7 +714,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data TD",
-        48,
+        TREASURE_BYTES,
         "treasure",
         "treasure",
         parse_treasure,
@@ -719,7 +723,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data TD2",
-        118,
+        THIEF_ENCOUNTER_BYTES,
         "thief-encounter",
         "thief",
         parse_thief,
@@ -728,7 +732,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data TD3",
-        40,
+        TIMED_ENCOUNTER_BYTES,
         "timed-encounter",
         "time",
         parse_timed_encounter,
@@ -999,7 +1003,7 @@ fn parse_fixed_collection(
 
 fn parse_item_collection(schema: &mut SemanticSchema, buffers: &BTreeMap<String, Vec<u8>>) {
     let source = "Data NI";
-    let record_bytes = 100;
+    let record_bytes = ITEM_BYTES;
     let Some(buffer) = buffers.get(source) else {
         return;
     };

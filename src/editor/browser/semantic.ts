@@ -15,7 +15,7 @@ import {
   SourceFile,
   TriggerRecord
 } from "../types";
-import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MAP_RECORD_BYTES, MESSAGE_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
+import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, DOOR_BYTES, DOOR_LEVEL_BYTES, EXTRACODE_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MAP_RECORD_BYTES, MESSAGE_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
 import { CASTE_RECORD_BYTES, GLOBAL_MACRO_HOOK_BYTES, RACE_RECORD_BYTES, SCENARIO_CONTACT_INFO_BYTES, SCENARIO_RESTRICTIONS_BYTES, SCENARIO_SHELL_BYTES, SPELL_RECORD_BYTES, TILE_SOLIDS_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
@@ -1297,7 +1297,7 @@ function addExtracodes(schema: SemanticSchema, rows: ExtraCodeRow[]) {
       type: "extra-code row",
       label: `Parameter Row ${row.id}`,
       editState: "inspect-only",
-      byteRange: byteRange(row.id * 10, 10),
+      byteRange: byteRange(row.id * EXTRACODE_BYTES, EXTRACODE_BYTES),
       confidence: "source-backed",
       summary: { values: row.values }
     });
@@ -1309,7 +1309,7 @@ function addExtracodes(schema: SemanticSchema, rows: ExtraCodeRow[]) {
       confidence: "source-backed",
       source: "Data EDCD",
       recordRef: null,
-      byteRange: byteRange(row.id * 10, 10),
+      byteRange: byteRange(row.id * EXTRACODE_BYTES, EXTRACODE_BYTES),
       editable: true,
       summary: { values: row.values }
     });
@@ -2639,12 +2639,12 @@ function recordTypeFor(source: string) {
 const LAYOUTS: Record<string, [string, number]> = {
   "Data LD": ["land field grid", FIELD_BYTES],
   "Data DL": ["dungeon field grid", FIELD_BYTES],
-  "Data DD": ["land trigger/action table", 4000],
-  "Data DDD": ["dungeon trigger/action table", 4000],
+  "Data DD": ["land trigger/action table", DOOR_LEVEL_BYTES],
+  "Data DDD": ["dungeon trigger/action table", DOOR_LEVEL_BYTES],
   "Data RD": ["land random metadata", RANDLEVEL_BYTES],
   "Data RDD": ["dungeon random metadata", RANDLEVEL_BYTES],
-  "Data ED3": ["macro trigger/action table", 40],
-  "Data EDCD": ["extra-code row", 10],
+  "Data ED3": ["macro trigger/action table", DOOR_BYTES],
+  "Data EDCD": ["extra-code row", EXTRACODE_BYTES],
   "Data ED": ["simple encounter", SIMPLE_ENCOUNTER_BYTES],
   "Data ED2": ["complex encounter", COMPLEX_ENCOUNTER_BYTES],
   "Data BD": ["battle record", BATTLE_BYTES],
