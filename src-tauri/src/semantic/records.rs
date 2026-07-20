@@ -42,7 +42,15 @@ pub(super) fn add_canonical_record_collections(
             record
         })
         .collect::<Vec<_>>();
-    let option_labels = canonical_records!(parsed.option_labels);
+    let option_labels = parsed
+        .option_labels
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let monster_descriptions = canonical_records!(parsed.monster_descriptions);
     let battles = canonical_records!(parsed.battles);
     let monsters = canonical_records!(parsed.monsters);

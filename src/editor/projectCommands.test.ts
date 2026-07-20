@@ -5,7 +5,7 @@ import {
   projectCommandChangeCount,
   projectCommandLabel
 } from "./projectCommands";
-import { emptyMessage, emptyScenarioItem, emptyShop, emptyTreasure } from "./projectCommands/targetRecordCommands";
+import { emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptyTreasure } from "./projectCommands/targetRecordCommands";
 import type { Project, ProjectCommand } from "./types";
 
 describe("project command facade", () => {
@@ -125,6 +125,7 @@ describe("project command facade", () => {
 
   it("creates fresh option labels from semantic text without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Option Label");
+    project.optionLabels = [{ ...emptyOptionLabel(4), rawBytes: new Array(25).fill(0xa5) } as unknown as Project["optionLabels"][number]];
 
     const next = applyProjectCommand(project, {
       kind: "updateOptionLabel",
@@ -135,7 +136,7 @@ describe("project command facade", () => {
 
     expect(next.optionLabels).toHaveLength(1);
     expect(next.optionLabels[0].text).toBe("Proceed");
-    expect(next.optionLabels[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in next.optionLabels[0]).toBe(false);
   });
 
   it("creates fresh battles from semantic fields without compatibility bytes", () => {

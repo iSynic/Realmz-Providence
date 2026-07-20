@@ -64,7 +64,7 @@ describe("scenario seed core record compiler", () => {
 
     expect(compiled.messages).toEqual([expect.objectContaining({ id: 4, text: "The bell answers." })]);
     expect(compiled.optionLabels).toEqual([expect.objectContaining({ id: 2, text: "Proceed", authored: true })]);
-    expect(compiled.optionLabels[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in compiled.optionLabels[0]).toBe(false);
     expect(compiled.questLabels).toEqual([{ id: 5, label: "Wake the Bell", note: "Optional" }]);
     expect(compiled.scenarioItems[0]).toMatchObject({ id: 5, itemId: 805, iconId: 300 });
     expect(compiled.itemTexts[0]).toMatchObject({ itemId: 805, identifiedName: "Bell Clapper" });

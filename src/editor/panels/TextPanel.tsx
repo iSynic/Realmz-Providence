@@ -1111,7 +1111,7 @@ function OptionLabelEditor({
         <div className="summary-table">
           <div><dt>Record</dt><dd>Option label #{record.id}</dd></div>
           <div><dt>State</dt><dd>{record.authored ? "Editable option label" : "Imported option label"}</dd></div>
-          <div><dt>Bytes</dt><dd>{record.rawBytes?.length ?? 0} preserved bytes</dd></div>
+          <div><dt>Native row</dt><dd>25-byte Data OD record</dd></div>
         </div>
       </details>
     </article>

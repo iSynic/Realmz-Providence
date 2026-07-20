@@ -765,7 +765,7 @@ const FIXED_RECORD_WRITER_GATE_SPECS = [
       "docs/generated/string-sound-audit.json",
       "docs/format-evidence-cards/strings-data-od-string-sound.md"
     ],
-    preservationPolicy: "Fresh and authored option labels compile the complete 25-byte row from canonical text without rawBytes. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export. The blocked Strings Sound affordance is not part of this writer gate."
+    preservationPolicy: "Canonical option-label records expose no rawBytes and compile the complete 25-byte row from semantic text. Unchanged imported rows and malformed file tails are preserved only from the compatibility annex at export. The blocked Strings Sound affordance is not part of this writer gate."
   },
   {
     container: "Data DES",

@@ -333,7 +333,6 @@ export const PROVIDENCE_MESSAGE_FIELDS = [
 export const PROVIDENCE_OPTION_LABEL_FIELDS = [
   "id",
   "text",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1036,7 +1035,6 @@ export type ProvidenceMessageRecord = {
 export type ProvidenceOptionLabelRecord = {
   id: number;
   text: string;
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };

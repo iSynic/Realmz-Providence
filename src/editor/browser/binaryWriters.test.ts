@@ -485,7 +485,7 @@ describe("browser option-label writer", () => {
   it("compiles a fresh record entirely from semantic text", () => {
     const record = { ...emptyOptionLabel(0), text: "Proceed" };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeOptionLabels([record]);
 
     expect(output).toHaveLength(25);
@@ -493,20 +493,21 @@ describe("browser option-label writer", () => {
     expect(Array.from(output.slice(8))).toEqual(new Array(17).fill(0));
   });
 
-  it("recompiles imported text without record byte identity", () => {
+  it("recompiles imported text from semantic data", () => {
     const input = new Uint8Array(25).fill(0x20);
     input.set([2, "G".charCodeAt(0), "o".charCodeAt(0)]);
     const imported = parseScenarioBuffers(new Map([["Data OD", input]])).optionLabels[0];
 
-    const output = writeOptionLabels([{ ...imported, rawBytes: new Array(25).fill(0x5a) }]);
+    expect("rawBytes" in imported).toBe(false);
+    const output = writeOptionLabels([imported]);
 
     expect(Array.from(output.slice(0, 3))).toEqual([2, 71, 111]);
     expect(Array.from(output.slice(3))).toEqual(new Array(22).fill(0));
   });
 
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeOptionLabels([{ ...emptyOptionLabel(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
+  it("rejects text that exceeds the native slot", () => {
+    expect(() => writeOptionLabels([{ ...emptyOptionLabel(0), text: "x".repeat(25) }]))
+      .toThrow("maximum is 24");
   });
 });
 

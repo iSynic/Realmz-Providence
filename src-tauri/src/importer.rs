@@ -373,6 +373,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_treasure_raw_bytes(&mut value);
     migrate_legacy_shop_raw_bytes(&mut value);
     migrate_legacy_message_raw_bytes(&mut value);
+    migrate_legacy_option_label_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -512,8 +513,16 @@ fn migrate_legacy_shop_raw_bytes(project: &mut serde_json::Value) {
 }
 
 fn migrate_legacy_message_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "messages");
+}
+
+fn migrate_legacy_option_label_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "optionLabels");
+}
+
+fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
     let Some(records) = project
-        .get_mut("messages")
+        .get_mut(collection)
         .and_then(serde_json::Value::as_array_mut)
     else {
         return;
@@ -2582,6 +2591,15 @@ mod tests {
             "rawBytes": legacy_message_raw,
             "authored": false
         }]);
+        let mut legacy_option_raw = vec![0u8; crate::realmz::OPTION_LABEL_BYTES];
+        legacy_option_raw[0] = 5;
+        legacy_option_raw[1..6].copy_from_slice(b"Bytes");
+        saved["optionLabels"] = serde_json::json!([{
+            "id": 0,
+            "text": "Semantic option",
+            "rawBytes": legacy_option_raw,
+            "authored": false
+        }]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2619,6 +2637,7 @@ mod tests {
         assert_eq!(opened.shops[0].item_ids[..2], [901, -321]);
         assert_eq!(opened.shops[0].quantities[..2], [3, 7]);
         assert_eq!(opened.messages[0].text, "Semantic legacy message");
+        assert_eq!(opened.option_labels[0].text, "Semantic option");
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2651,6 +2670,7 @@ mod tests {
         assert!(upgraded["treasures"][0].get("rawBytes").is_none());
         assert!(upgraded["shops"][0].get("rawBytes").is_none());
         assert!(upgraded["messages"][0].get("rawBytes").is_none());
+        assert!(upgraded["optionLabels"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -3004,7 +3024,6 @@ mod tests {
         option_label.id = 6;
         option_label.text = "Canonical option".to_string();
         option_label.authored = false;
-        option_label.raw_bytes.fill(0xA5);
         project.option_labels = vec![option_label];
 
         let mut monster_description = crate::realmz::parse_monster_descriptions(&vec![

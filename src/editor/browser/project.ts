@@ -588,7 +588,10 @@ export function normalizeBrowserProject(project: Project): Project {
     const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
     return canonicalRecord;
   });
-  project.optionLabels ??= [];
+  project.optionLabels = (project.optionLabels ?? []).map((record) => {
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
+    return canonicalRecord;
+  });
   project.battles ??= [];
   project.monsters = (project.monsters ?? []).map(normalizedMonsterRecord);
   project.monsterSets = (project.monsterSets ?? []).map((set) => ({
@@ -1079,10 +1082,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
     appendTargetDiagnostics(validateRealmzTargetRecord(project, "message", message.id), errors, warnings);
   }
   for (const option of project.optionLabels ?? []) {
-    const rawBytes = option.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 25) {
-      errors.push(`Option label ${option.id} has invalid 25-byte compatibility storage.`);
-    }
     if (option.text.length > 24) errors.push(`Option label ${option.id} is too long for Realmz's 24-character option string slot.`);
     if (!/^[\x00-\x7F]*$/.test(option.text)) warnings.push(`Option label ${option.id} contains non-ASCII text and may not render as intended.`);
   }

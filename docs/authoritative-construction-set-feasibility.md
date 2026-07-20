@@ -630,10 +630,21 @@ enforce the same boundary. The Strings workbench now reports the fixed native ro
 than a record-local preserved-byte count. The package gate keeps a malformed tail only through the
 annex, while the ownership proof poison-tests obsolete embedded message bytes in both compilers.
 
-Branch validation through the fifty-ninth slice completed on 2026-07-19:
+The sixtieth slice removes `OptionLabelRecord.rawBytes` from schema-v5 canonical projects. Browser
+and desktop import decode each complete 25-byte `Data OD` row into semantic Classic text, and both
+writers deterministically compile the Str24 length, payload, and zero fill from that text. Unchanged
+imported rows, noncanonical capacity and padding, and malformed tails remain annex-owned. Old
+project JSON remains load-tolerant by discarding the obsolete embedded row while retaining its
+already-decoded semantic text; browser normalization and every option-label edit path enforce the
+same boundary. The Strings workbench now reports the fixed native row contract rather than a
+record-local preserved-byte count. The package gate keeps noncanonical capacity and a malformed
+tail only through the annex, while the ownership proof poison-tests obsolete embedded option-label
+bytes in both compilers.
+
+Branch validation through the sixtieth slice completed on 2026-07-19:
 
 - full Rust suite: 262 passed, 2 ignored;
-- full TypeScript suite: 611 passed, plus typecheck;
+- full TypeScript suite: 612 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -648,9 +659,9 @@ and CSS files. The random-level, scenario-item, shop, message, option-label, and
 extractions add no new module-size violation; moving `Data NI` and `Data SD` out of `economy.rs`
 also removes that file from the current violation list, and the simple-encounter changes remain
 within the existing `encounters.rs` ceiling; the complex- and thief-encounter changes add no new
-module-size violation. Removing treasure, shop, and message compatibility storage further reduces
-their focused codecs and adds no new size violation. The authoritative rules slice likewise keeps
-`rules.rs` within its ceiling by separating exact-shape validation from the native codec. The
+module-size violation. Removing treasure, shop, message, and option-label compatibility storage
+further reduces their focused codecs and adds no new size violation. The authoritative rules slice
+likewise keeps `rules.rs` within its ceiling by separating exact-shape validation from the native codec. The
 `Data Solids` slice likewise moves its 1,024-byte codec and tests into a focused module, returns
 `landlooks.rs` below its baseline, and does not add a new ISY-320 violation. The `Layout` slice
 likewise moves its codec and tests into a
@@ -763,9 +774,9 @@ them from the emitted scenario source files.
   at native export.
 - Map-record marker, rectangle, and metadata DTOs plus complete scenario-item, treasure, shop,
   message, option-label, and battle records are generated in both languages. Canonical map,
-  scenario-item, treasure, shop, and message records expose no `rawBytes`; other fresh records omit
-  it. The item writer owns all 100 `Data NI` bytes, including the seven source-backed spare words,
-  the treasure writer owns all 48 `Data TD` bytes, the shop writer owns all 3,002 bytes in each
+  scenario-item, treasure, shop, message, and option-label records expose no `rawBytes`; other fresh
+  records omit it. The item writer owns all 100 `Data NI` bytes, including the seven source-backed
+  spare words, the treasure writer owns all 48 `Data TD` bytes, the shop writer owns all 3,002 bytes in each
   ordinary `Data SD` row, and the
   message writer owns all 256 canonical `Data SD2` bytes, the option-label writer owns all 25
   canonical `Data OD` bytes, and the battle writer owns all 346 canonical `Data BD` bytes.
@@ -859,7 +870,7 @@ architecture.
 | Editor area | Direct byte dependency | Refactor disposition |
 | --- | --- | --- |
 | `components/maps/MapRecordsWorkbench.tsx` and `app/appUtils.ts` | **Resolved:** consume ten structured marker slots only. | Browser import and project-open migration backfill legacy markers at the compatibility boundary. |
-| `panels/TextPanel.tsx` | **Resolved for messages:** the workbench consumes semantic text and reports the fixed 256-byte native row contract. Option-label imported byte counts remain legacy evidence. | Remove the option-label byte count when that canonical record drops `rawBytes`; keep exact legacy text bytes in the annex. |
+| `panels/TextPanel.tsx` | **Resolved for messages and option labels:** the workbench consumes semantic text and reports each fixed native row contract. | Keep exact imported text-row bytes in the compatibility annex rather than the canonical editor model. |
 | `panels/rules/ruleUtils.ts` and `projectCommands/scenarioRulesCommands.ts` | **Resolved for rules and scenario startup metadata:** fresh constructors omit `rawBytes`; shell, security, contact, and restriction edits strip compatibility storage; template copies strip shell identity; and blank detection uses semantic fields. | Imported library summaries may continue exposing raw byte counts as compatibility evidence. |
 | `panels/combat/monsterLibraryWorkflow.ts` and `monsterLibrary.ts` | **Resolved at scenario-copy boundary:** legacy library bytes may be decoded as input evidence, but copied `MonsterRecord` values omit them. | Raw library evidence may remain in the library annex; normalize it earlier only if library persistence needs a shared contract. |
 | `projectCommands/mapCommands.ts` and target/rules record constructors | Map-record, scenario-item, treasure, shop, message, option-label, battle, monster, monster-description, spell, race, and caste dependencies are **resolved**. | Keep fresh constructors semantic-only as later DTO families migrate. |
@@ -915,8 +926,8 @@ A pragmatic sequence is:
    rows without raw identity, discard obsolete embedded rows during project migration, and
    preserve unchanged legacy rows/tails only from the annex.
 9. **Implemented for option labels:** generate the semantic Str24 DTO, add Scenario JSON authoring,
-   compile deterministic complete rows without raw identity, and keep noncanonical legacy capacity
-   annex-only.
+   compile deterministic complete rows without raw identity, discard obsolete embedded rows during
+   project migration, and keep noncanonical legacy capacity and tails annex-only.
 10. **Implemented for battles:** generate the 169-slot semantic battle DTO, compile all 346 row
     bytes with deterministic alignment padding, and keep unchanged imported rows annex-only.
 11. **Implemented for monsters and rule overrides:** generate complete monster, description,
@@ -991,7 +1002,7 @@ Legend:
 | Native file/family | Current ownership | Fresh authoritative target | Evidence/remaining issue |
 | --- | --- | --- | --- |
 | `Data SD2` | Generated + legacy row/tail annex | Generate complete deterministic message records | Canonical records expose no `rawBytes` and compile the Str255 length, payload, and zero fill from semantic text. Unchanged imported rows and malformed tails are preserved only from the compatibility annex because post-length bytes are common in the legacy corpus. |
-| `Data OD` | Generated + legacy row/tail annex | Generate complete deterministic option labels | Fresh/authored rows compile the Str24 length, payload, and zero fill without `rawBytes`. Unchanged imported padding, noncanonical capacity rows, and malformed tails are preserved only from the compatibility annex. |
+| `Data OD` | Generated + legacy row/tail annex | Generate complete deterministic option labels | Canonical records expose no `rawBytes` and compile the Str24 length, payload, and zero fill from semantic text. Unchanged imported padding, noncanonical capacity rows, and malformed tails are preserved only from the compatibility annex. |
 | `Data BD` | Generated + legacy row/tail annex | Generate complete deterministic battle records | Fresh/authored rows compile all 346 bytes from canonical data, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are preserved only from the compatibility annex. |
 | `Data MD`, `Data MD1`, `Data MD-1` | Generated + legacy row/tail annex | Generate complete deterministic monster records/sets | Fresh/authored rows compile all 210 bytes from canonical scalars, fixed arrays, Boolean state, and fixed display name without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data DES` | Generated + legacy row/tail annex | Generate complete deterministic monster descriptions | Fresh/authored rows compile the complete Str255 record with deterministic zero fill and no `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |

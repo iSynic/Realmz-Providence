@@ -71,12 +71,13 @@ sourceMessages[256] = 1;
 sourceMessages[257] = "X".charCodeAt(0);
 sourceMessages[500] = 0x92;
 sourceMessages.set([0xde, 0xad, 0xbe], 512);
-const sourceOptionLabels = new Uint8Array(75).fill(0x20);
+const sourceOptionLabels = new Uint8Array(78).fill(0x20);
 sourceOptionLabels[0] = 1;
 sourceOptionLabels[1] = "A".charCodeAt(0);
 sourceOptionLabels[25] = 0xff;
 sourceOptionLabels[50] = 1;
 sourceOptionLabels[51] = "Q".charCodeAt(0);
+sourceOptionLabels.set([0xde, 0xad, 0xbe], 75);
 const sourceBattles = new Uint8Array(692);
 sourceBattles[0] = 0xaa;
 sourceBattles[1] = 0xbb;
@@ -339,9 +340,9 @@ const textUpdateProject = {
     { id: 1, text: "Go", authored: true }
   ],
   optionLabels: [
-    { id: 0, text: "A", rawBytes: new Array(25).fill(0x11), authored: false },
-    { id: 1, text: "", rawBytes: new Array(25).fill(0x33), authored: false },
-    { id: 2, text: "On", rawBytes: new Array(25).fill(0x22), authored: true }
+    { id: 0, text: "A", authored: false },
+    { id: 1, text: "", authored: false },
+    { id: 2, text: "On", authored: true }
   ]
 };
 const textUpdate = createBrowserScenarioPackageZip(textUpdateProject, rawSources, "mac-classic-folder");
@@ -353,13 +354,14 @@ expect(!textUpdate.report.passThroughFiles.includes("Data OD"), "Written Data OD
 const writtenMessages = textUpdatedFiles.get("Data SD2");
 const writtenOptions = textUpdatedFiles.get("Data OD");
 expect(writtenMessages?.byteLength === 515, "Written Data SD2 should retain source row count and malformed tail");
-expect(writtenOptions?.byteLength === 75, "Written Data OD should retain source row count");
+expect(writtenOptions?.byteLength === 78, "Written Data OD should retain source row count and malformed tail");
 expect(bytesEqual(writtenMessages?.slice(0, 256), sourceMessages.slice(0, 256)), "Unauthored message row should preserve legacy bytes from the annex");
 expect(bytesEqual(writtenMessages?.slice(256, 512), pascalRow(256, "Go")), "Authored message row should compile canonical Pascal text without embedded raw-byte identity");
 expect(bytesEqual(writtenMessages?.slice(512), new Uint8Array([0xde, 0xad, 0xbe])), "Written Data SD2 should retain its annex-only malformed tail bytes");
 expect(bytesEqual(writtenOptions?.slice(0, 25), sourceOptionLabels.slice(0, 25)), "Unauthored option label row should preserve legacy bytes from the annex");
 expect(bytesEqual(writtenOptions?.slice(25, 50), sourceOptionLabels.slice(25, 50)), "Unauthored noncanonical option-label capacity should remain annex-owned");
 expect(bytesEqual(writtenOptions?.slice(50, 75), pascalRow(25, "On")), "Authored option label row should compile canonical Pascal text without embedded raw-byte identity");
+expect(bytesEqual(writtenOptions?.slice(75), new Uint8Array([0xde, 0xad, 0xbe])), "Written Data OD should retain its annex-only malformed tail bytes");
 
 const battleGrid = new Array(13 * 13).fill(0);
 battleGrid[0] = 7;

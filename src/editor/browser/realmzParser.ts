@@ -581,7 +581,6 @@ function parseOptionLabels(buffer: Uint8Array | undefined): OptionLabelRecord[] 
   return fixedRecords(buffer, OPTION_LABEL_BYTES, "Data OD", (id, start, record) => ({
     id,
     text: decodePascalText(record),
-    rawBytes: Array.from(record),
     authored: false,
     provenance: provenance("Data OD", id, start, OPTION_LABEL_BYTES, "source-backed")
   }));

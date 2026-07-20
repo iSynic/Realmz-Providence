@@ -338,6 +338,21 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in message).toBe(false);
   });
 
+  it("strips obsolete option-label bytes when opening legacy browser projects", () => {
+    const project = createBrowserProject("Legacy Option Label");
+    project.optionLabels = [{
+      id: 0,
+      text: "Semantic option",
+      rawBytes: new Array(25).fill(0xa5),
+      authored: false
+    } as unknown as Project["optionLabels"][number]];
+
+    const option = normalizeBrowserProject(project).optionLabels[0];
+
+    expect(option.text).toBe("Semantic option");
+    expect("rawBytes" in option).toBe(false);
+  });
+
   it("backfills shop inventories when opening legacy browser projects", () => {
     const bytes = new Uint8Array(3002);
     bytes.set([0xfe, 0xbf], 2);
@@ -710,8 +725,7 @@ describe("browser project native manifest validation", () => {
       ...parsed.optionLabels[0],
       id: 6,
       text: "Canonical option",
-      authored: false,
-      rawBytes: new Array(25).fill(0xa5)
+      authored: false
     }];
     project.monsterDescriptions = [{
       ...parsed.monsterDescriptions[0],

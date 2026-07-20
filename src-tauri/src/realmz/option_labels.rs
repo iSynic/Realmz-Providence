@@ -1,4 +1,4 @@
-use crate::error::{ProvidenceError, Result};
+use crate::error::Result;
 use crate::project::OptionLabelRecord;
 
 use super::record_bytes::{
@@ -12,7 +12,6 @@ pub fn parse_option_labels(buffer: &[u8]) -> Vec<OptionLabelRecord> {
         .map(|(id, start, record)| OptionLabelRecord {
             id,
             text: decode_pascal_text(record),
-            raw_bytes: record.to_vec(),
             authored: false,
             provenance: Some(provenance("Data OD", id, start, OPTION_LABEL_BYTES)),
         })
@@ -21,12 +20,6 @@ pub fn parse_option_labels(buffer: &[u8]) -> Vec<OptionLabelRecord> {
 
 pub fn write_option_labels(records: &[OptionLabelRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, OPTION_LABEL_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != OPTION_LABEL_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Option label {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         encode_pascal_text(buffer, &record.text)
     })
 }
@@ -41,7 +34,6 @@ mod tests {
             .into_iter()
             .next()
             .expect("option label");
-        option.raw_bytes.clear();
         option.text = "Proceed".to_string();
 
         let output = write_option_labels(&[option]).unwrap();
@@ -56,8 +48,7 @@ mod tests {
         let mut input = vec![b' '; OPTION_LABEL_BYTES];
         input[0] = 2;
         input[1..3].copy_from_slice(b"Go");
-        let mut options = parse_option_labels(&input);
-        options[0].raw_bytes.fill(0x5a);
+        let options = parse_option_labels(&input);
 
         let output = write_option_labels(&options).unwrap();
 
@@ -67,16 +58,16 @@ mod tests {
     }
 
     #[test]
-    fn option_label_writer_rejects_malformed_compatibility_storage() {
+    fn option_label_writer_rejects_text_that_exceeds_the_native_slot() {
         let mut option = parse_option_labels(&vec![0; OPTION_LABEL_BYTES])
             .into_iter()
             .next()
             .expect("option label");
-        option.raw_bytes = vec![1];
+        option.text = "x".repeat(25);
 
         assert!(write_option_labels(&[option])
             .unwrap_err()
             .to_string()
-            .contains("invalid compatibility byte storage"));
+            .contains("maximum is 24"));
     }
 }

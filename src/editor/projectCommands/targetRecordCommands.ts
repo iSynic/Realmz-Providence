@@ -557,10 +557,16 @@ function nextOptionLabelId(project: Project) {
 function upsertOptionLabel(project: Project, record: OptionLabelRecord) {
   const current = [...(project.optionLabels ?? [])];
   const index = current.findIndex((candidate) => candidate.id === record.id);
-  if (index >= 0) current[index] = { ...current[index], ...record };
-  else current.push(record);
+  const canonicalRecord = canonicalOptionLabelRecord(record);
+  if (index >= 0) current[index] = canonicalOptionLabelRecord({ ...current[index], ...canonicalRecord });
+  else current.push(canonicalRecord);
   current.sort((a, b) => a.id - b.id);
   return { ...project, optionLabels: current };
+}
+
+function canonicalOptionLabelRecord(record: OptionLabelRecord) {
+  const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as OptionLabelRecord & { rawBytes?: number[] };
+  return canonicalRecord;
 }
 
 function fixedArray(values: number[] | undefined, length: number, fill = 0) {

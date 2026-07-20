@@ -356,7 +356,6 @@ pub const PROVIDENCE_MESSAGE_FIELDS: &[&str] = &[
 pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[
     "id",
     "text",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1358,8 +1357,6 @@ pub struct MessageRecord {
 pub struct OptionLabelRecord {
     pub id: usize,
     pub text: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]

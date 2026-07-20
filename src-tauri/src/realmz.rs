@@ -109,7 +109,6 @@ mod tests {
         let option_label = OptionLabelRecord {
             id: 0,
             text: "Attack".to_string(),
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: Some(provenance("Data OD", 0, 0, OPTION_LABEL_BYTES)),
         };

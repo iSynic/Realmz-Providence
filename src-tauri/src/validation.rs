@@ -278,15 +278,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for option in &project.option_labels {
-        if !option.raw_bytes.is_empty()
-            && option.raw_bytes.len() != crate::realmz::OPTION_LABEL_BYTES
-        {
-            errors.push(format!(
-                "Option label {} has invalid {}-byte compatibility storage.",
-                option.id,
-                crate::realmz::OPTION_LABEL_BYTES
-            ));
-        }
         let option_bytes = classic_text_len(&option.text);
         if option_bytes > crate::realmz::OPTION_LABEL_BYTES - 1 {
             errors.push(format!(

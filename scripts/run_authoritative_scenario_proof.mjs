@@ -271,7 +271,6 @@ expect(project.extracodes.every((record) => !("rawBytes" in record)), "Fresh can
 expect(project.messages.length === 2, `Expected two messages, found ${project.messages.length}`);
 assertOwnershipMessage(project.messages, "Canonical project");
 assertOwnershipOptionLabels(project.optionLabels, "Canonical project");
-expect(project.optionLabels.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical option labels must not carry compatibility bytes");
 assertOwnershipSimpleEncounter(project.simpleEncounters, "Canonical project");
 expect(project.simpleEncounters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical simple encounters must not carry compatibility bytes");
 assertOwnershipComplexEncounter(project.complexEncounters, "Canonical project");
@@ -315,6 +314,7 @@ await assertNoRawSources("after first Windows export");
 const poisonedProject = JSON.parse(canonicalProjectJson);
 poisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
 poisonedProject.messages[0].rawBytes = new Array(256).fill(0xa5);
+poisonedProject.optionLabels[0].rawBytes = new Array(25).fill(0xa5);
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -348,6 +348,7 @@ const browserClassicPackage = createBrowserScenarioPackageZip(project, null, "ma
 const browserPoisonedProject = JSON.parse(JSON.stringify(project));
 browserPoisonedProject.landLayout.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
 browserPoisonedProject.messages[0].rawBytes = new Array(256).fill(0xa5);
+browserPoisonedProject.optionLabels[0].rawBytes = new Array(25).fill(0xa5);
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -671,7 +672,6 @@ async function assertNoRawSources(stage) {
   assertOwnershipManagedResources(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
-  expect(savedProject.optionLabels?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} option labels contain compatibility bytes`);
   assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
   expect(savedProject.simpleEncounters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} simple encounters contain compatibility bytes`);
   assertOwnershipComplexEncounter(savedProject.complexEncounters, `Rust-saved project ${stage}`);
@@ -893,6 +893,7 @@ function assertOwnershipOptionLabels(records, label) {
   const withdraw = records?.find((record) => record.id === 1);
   expect(proceed?.text === "Proceed", `${label} has the wrong option label 0`);
   expect(withdraw?.text === "Withdraw", `${label} has the wrong option label 1`);
+  expect(records.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} option labels expose compatibility storage`);
 }
 
 function assertOwnershipSimpleEncounter(records, label) {

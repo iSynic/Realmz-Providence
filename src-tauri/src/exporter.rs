@@ -2925,8 +2925,6 @@ mod tests {
         fs::write(raw_dir.join("Data OD"), &source).unwrap();
 
         let mut options = crate::realmz::parse_option_labels(&source);
-        options[0].raw_bytes.fill(0x11);
-        options[1].raw_bytes.fill(0x22);
         options[1].text = "On".to_string();
         options[1].authored = true;
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
