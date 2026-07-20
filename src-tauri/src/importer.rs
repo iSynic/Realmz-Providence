@@ -381,6 +381,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_complex_encounter_raw_bytes(&mut value);
     migrate_legacy_thief_encounter_raw_bytes(&mut value);
     migrate_legacy_spell_override_raw_bytes(&mut value);
+    migrate_legacy_race_override_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -572,6 +573,10 @@ fn migrate_legacy_thief_encounter_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_spell_override_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "spellOverrides");
+}
+
+fn migrate_legacy_race_override_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "raceOverrides");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2744,6 +2749,20 @@ mod tests {
         legacy_spell_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::SPELL_BYTES]);
         saved["spellOverrides"] = serde_json::json!([legacy_spell_value]);
+        let mut legacy_race =
+            crate::realmz::parse_race_overrides(&vec![0; crate::realmz::RACE_BYTES])
+                .into_iter()
+                .next()
+                .expect("legacy race override");
+        legacy_race.id = 2;
+        legacy_race.base_move = 13;
+        legacy_race.spare.as_mut().expect("race spare words")[0] = 123;
+        legacy_race.spacer.as_mut().expect("race spacer words")[30] = -321;
+        let mut legacy_race_value =
+            serde_json::to_value(legacy_race).expect("serialize legacy race override");
+        legacy_race_value["rawBytes"] =
+            serde_json::json!(vec![0xa5u8; crate::realmz::RACE_BYTES]);
+        saved["raceOverrides"] = serde_json::json!([legacy_race_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2811,6 +2830,10 @@ mod tests {
         assert_eq!(opened.simple_encounters[0].texts[0], "Semantic legacy choice");
         assert_eq!(opened.spell_overrides[0].id, 16);
         assert_eq!(opened.spell_overrides[0].cost, 41);
+        assert_eq!(opened.race_overrides[0].id, 2);
+        assert_eq!(opened.race_overrides[0].base_move, 13);
+        assert_eq!(opened.race_overrides[0].spare.as_ref().unwrap()[0], 123);
+        assert_eq!(opened.race_overrides[0].spacer.as_ref().unwrap()[30], -321);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2853,6 +2876,7 @@ mod tests {
         assert!(upgraded["monsterDescriptions"][0].get("rawBytes").is_none());
         assert!(upgraded["simpleEncounters"][0].get("rawBytes").is_none());
         assert!(upgraded["spellOverrides"][0].get("rawBytes").is_none());
+        assert!(upgraded["raceOverrides"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -3353,7 +3377,6 @@ mod tests {
         race.id = 2;
         race.base_move = 13;
         race.authored = false;
-        race.raw_bytes.fill(0xA5);
         project.race_overrides = vec![race];
 
         let mut caste = crate::realmz::parse_caste_overrides(&vec![0; crate::realmz::CASTE_BYTES])

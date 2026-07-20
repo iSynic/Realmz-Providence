@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "../types";
 import { emptyBattle } from "../projectCommands/targetRecordCommands";
-import { defaultGlobalMacroHooks, emptySpellOverride, updateRuleOverride } from "../projectCommands/scenarioRulesCommands";
+import { defaultGlobalMacroHooks, emptyRaceOverride, emptySpellOverride, updateRuleOverride } from "../projectCommands/scenarioRulesCommands";
 import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
@@ -13,21 +13,34 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
-  it("drops legacy spell compatibility bytes during normalization and edits", () => {
-    const project = createBrowserProject("Legacy spell bytes");
+  it("drops legacy spell and race byte identity during normalization and edits", () => {
+    const project = createBrowserProject("Legacy rule bytes");
     project.spellOverrides = [{
       ...emptySpellOverride(16),
       cost: 41,
       rawBytes: new Array(30).fill(0xa5)
     } as unknown as Project["spellOverrides"][number]];
+    project.raceOverrides = [{
+      ...emptyRaceOverride(2),
+      baseMove: 13,
+      spare: [123, 0, 0, 0, 0, 0, 0, 0],
+      spacer: [...new Array(30).fill(0), -321],
+      rawBytes: new Array(408).fill(0xa5)
+    } as unknown as Project["raceOverrides"][number]];
 
     const normalized = normalizeBrowserProject(project);
-    const updated = updateRuleOverride<Project["spellOverrides"][number]>(normalized, "spellOverrides", 16, { cost: 42 });
+    const updatedSpell = updateRuleOverride<Project["spellOverrides"][number]>(normalized, "spellOverrides", 16, { cost: 42 });
+    const updatedRace = updateRuleOverride<Project["raceOverrides"][number]>(normalized, "raceOverrides", 2, { baseMove: 14 });
 
     expect(normalized.spellOverrides[0].cost).toBe(41);
     expect("rawBytes" in normalized.spellOverrides[0]).toBe(false);
-    expect(updated.spellOverrides[0].cost).toBe(42);
-    expect("rawBytes" in updated.spellOverrides[0]).toBe(false);
+    expect(updatedSpell.spellOverrides[0].cost).toBe(42);
+    expect("rawBytes" in updatedSpell.spellOverrides[0]).toBe(false);
+    expect(normalized.raceOverrides[0].spare?.[0]).toBe(123);
+    expect(normalized.raceOverrides[0].spacer?.[30]).toBe(-321);
+    expect("rawBytes" in normalized.raceOverrides[0]).toBe(false);
+    expect(updatedRace.raceOverrides[0].baseMove).toBe(14);
+    expect("rawBytes" in updatedRace.raceOverrides[0]).toBe(false);
   });
 
   it("migrates obsolete complex encounter result aliases into canonical fields", () => {
@@ -880,8 +893,7 @@ describe("browser project native manifest validation", () => {
       ...parsed.raceOverrides[0],
       id: 2,
       baseMove: 13,
-      authored: false,
-      rawBytes: new Array(408).fill(0xa5)
+      authored: false
     }];
     project.casteOverrides = [{
       ...parsed.casteOverrides[0],

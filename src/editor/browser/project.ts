@@ -733,8 +733,9 @@ function normalizedSpellOverride(record: Project["spellOverrides"][number]): Pro
 }
 
 function normalizedRaceOverride(record: Project["raceOverrides"][number]): Project["raceOverrides"][number] {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
   return {
-    ...record,
+    ...canonical,
     plusMinusToHit: normalizedFixedArray(record.plusMinusToHit, 8, 0),
     specialAbility: normalizedFixedArray(record.specialAbility, 14, 0),
     drvBonus: normalizedFixedArray(record.drvBonus, 8, 0),
@@ -1248,8 +1249,6 @@ function validateRulesRecords(project: Project, errors: string[], warnings: stri
   }
 
   for (const race of project.raceOverrides ?? []) {
-    const rawBytes = race.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 408) errors.push(`Race override ${race.id} has invalid 408-byte compatibility storage.`);
     if (race.id < 0 || race.id > 29) errors.push(`Race override ${race.id} is outside Data Race's 0..29 record range.`);
     validateLength(errors, `Race ${race.id} +/- To Hit`, race.plusMinusToHit, 8);
     validateLength(errors, `Race ${race.id} Special Ability`, race.specialAbility, 14);

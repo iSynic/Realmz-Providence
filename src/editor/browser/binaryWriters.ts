@@ -649,7 +649,6 @@ function validateExactLength(label: string, id: number, field: string, actual: n
 }
 
 function validateRaceStorage(record: ScenarioRaceOverride) {
-  validateCompatibilityStorage("Race override", record.id, record.rawBytes, RACE_RECORD_BYTES);
   for (const [field, values, expected] of [
     ["to-hit adjustments", record.plusMinusToHit, 8],
     ["special abilities", record.specialAbility, 14],

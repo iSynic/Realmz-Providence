@@ -1863,13 +1863,6 @@ fn validate_rules_overrides(
 
     let mut race_ids = BTreeSet::new();
     for race in &project.race_overrides {
-        if !race.raw_bytes.is_empty() && race.raw_bytes.len() != crate::realmz::RACE_BYTES {
-            errors.push(format!(
-                "Race override {} has invalid {}-byte compatibility storage.",
-                race.id,
-                crate::realmz::RACE_BYTES
-            ));
-        }
         if race.id >= 30 {
             errors.push(format!(
                 "Race override {} is outside the 0..29 race table.",

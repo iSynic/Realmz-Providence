@@ -1233,9 +1233,8 @@
       "x-providence-typescript-name": "ProvidenceScenarioRaceOverride",
       "x-providence-rust-name": "ScenarioRaceOverride",
       "x-providence-rust-optional": ["spare", "spacer"],
-      "x-providence-rust-default": ["displayName", "rawBytes", "authored"],
+      "x-providence-rust-default": ["displayName", "authored"],
       "x-providence-rust-skip-none": ["spare", "spacer"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
       "required": ["id", "plusMinusToHit", "specialAbility", "drvBonus", "attBonus", "minMax", "conditions", "maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "numOfAttacks", "canCaste", "ageRange", "ageChange", "canRegenerate", "defaultIconSet", "itemTypes", "descriptors"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "maximum": 29, "x-providence-rust-type": "usize" },
@@ -1262,7 +1261,6 @@
         "itemTypes": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647, "x-providence-rust-type": "i32" } },
         "descriptors": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "spacer": { "type": "array", "minItems": 31, "maxItems": 31, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
-        "rawBytes": { "type": "array", "minItems": 408, "maxItems": 408, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

@@ -516,7 +516,6 @@ pub const PROVIDENCE_RACE_OVERRIDE_FIELDS: &[&str] = &[
     "itemTypes",
     "descriptors",
     "spacer",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1530,8 +1529,6 @@ pub struct ScenarioRaceOverride {
     pub descriptors: i16,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub spacer: Option<Vec<i16>>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

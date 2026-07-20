@@ -144,7 +144,6 @@ pub fn parse_race_overrides(buffer: &[u8]) -> Vec<ScenarioRaceOverride> {
                 item_types: vec![i32_be(record, 336), i32_be(record, 340)],
                 descriptors: i16_be(record, 344),
                 spacer: Some(read_i16_vec(record, 346, 31)),
-                raw_bytes: record.to_vec(),
                 authored: false,
                 provenance: provenance("Data Race", id, start, RACE_BYTES),
             }
@@ -406,7 +405,6 @@ mod tests {
         assert_eq!(races[0].max_age, 88);
         assert_eq!(races[0].base_move, 14);
         assert_eq!(races[0].can_caste[0], 1);
-        races[0].raw_bytes.fill(0xa5);
         races[0].authored = true;
         races[0].base_move = 16;
         races[0].can_caste[1] = 1;

@@ -153,7 +153,6 @@ mod tests {
         let mut race = parse_race_overrides(&vec![0; RACE_BYTES]).remove(0);
         race.id = 2;
         race.base_move = 13;
-        race.raw_bytes.fill(0xA5);
         let race_bytes = write_fresh_race_overrides(&[race]).unwrap();
         assert_eq!(race_bytes.len(), RACE_OVERRIDE_RECORDS * RACE_BYTES);
         assert_eq!(i16_be(&race_bytes, 2 * RACE_BYTES + 196), 13);

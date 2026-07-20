@@ -121,8 +121,7 @@ describe("browser rule-override writers", () => {
       ...emptyRaceOverride(0),
       baseMove: 13,
       spare: undefined,
-      spacer: undefined,
-      rawBytes: new Array(408).fill(0xa5)
+      spacer: undefined
     };
     const caste = {
       ...emptyCasteOverride(0),

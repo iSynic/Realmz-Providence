@@ -570,7 +570,7 @@ function checkRuleOverrides(createProjectFromScenarioSeed) {
   const caste = result.project.casteOverrides.find((record) => record.id === 10);
   expect(caste?.displayName === "Bell Warden" && caste?.startMoney === 75 && caste?.startItems[0] === 901, "caste overrides should resolve keyed starting items");
   expect(caste?.spellcasters.length === 4 && caste?.conditions.length === 40 && caste?.rawBytes === undefined, "fresh caste overrides should retain canonical dimensions without compatibility bytes");
-  expect(race?.rawBytes === undefined, "fresh race overrides should not carry compatibility bytes");
+  expect(race != null && !Object.hasOwn(race, "rawBytes"), "fresh race overrides should not carry compatibility bytes");
   expect(result.project.ruleNames.raceNames[29] === "Stoneborn" && result.project.ruleNames.casteNames[10] === "Bell Warden", "generated rule names should follow race and caste override labels");
 }
 

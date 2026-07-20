@@ -119,7 +119,7 @@ export function updateGlobalMacroHook(project: Project, slot: number, door: numb
 export function createSpellOverride(project: Project, id?: number, template?: Partial<ScenarioSpellOverride>) {
   const records = project.spellOverrides ?? [];
   const nextId = id ?? nextSpellOverrideId(records);
-  const semanticTemplate = withoutLegacySpellRawBytes(template ?? {});
+  const semanticTemplate = withoutLegacyRuleRawBytes(template ?? {});
   const record = { ...emptySpellOverride(nextId), ...semanticTemplate, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * 30, 30) };
   const existing = records.find((candidate) => candidate.id === nextId);
   if (existing) {
@@ -148,7 +148,7 @@ export function createRaceOverride(project: Project, id?: number, template?: Par
   const nextId = id ?? nextIdFor(project.raceOverrides ?? [], 30);
   if ((project.raceOverrides ?? []).some((record) => record.id === nextId)) return project;
   const displayName = template?.displayName?.trim() || defaultRaceName(nextId);
-  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template ?? {};
+  const semanticTemplate = withoutLegacyRuleRawBytes(template ?? {});
   const record = { ...emptyRaceOverride(nextId), ...semanticTemplate, displayName, id: nextId, authored: true, provenance: authoredProvenance("Data Race", nextId, nextId * 408, 408) };
   const withName = setRuleName(project, "race", nextId, displayName, true);
   return {
@@ -192,14 +192,14 @@ export function updateRuleOverride<T extends { id: number; authored?: boolean }>
   return {
     ...project,
     [key]: records.map((record) =>
-      key === "spellOverrides"
-        ? withoutLegacySpellRawBytes(record.id === id ? { ...record, ...changes, authored: true } : record)
+      key !== "casteOverrides"
+        ? withoutLegacyRuleRawBytes(record.id === id ? { ...record, ...changes, authored: true } : record)
         : record.id === id ? { ...record, ...changes, authored: true } : record
     )
   };
 }
 
-function withoutLegacySpellRawBytes<T extends object>(record: T): T {
+function withoutLegacyRuleRawBytes<T extends object>(record: T): T {
   const { rawBytes: _legacyRawBytes, ...canonical } = record as T & { rawBytes?: number[] };
   return canonical as T;
 }

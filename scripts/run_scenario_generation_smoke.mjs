@@ -97,7 +97,7 @@ try {
         expect(result.project.raceOverrides.length === 1, "rules: expected one race override");
         expect(result.project.casteOverrides.length === 1, "rules: expected one caste override");
         expect(result.project.spellOverrides.every((record) => !Object.hasOwn(record, "rawBytes")), "rules: fresh spell overrides should not contain compatibility bytes");
-        expect(result.project.raceOverrides[0]?.rawBytes === undefined, "rules: fresh race override should not contain compatibility bytes");
+        expect(!Object.hasOwn(result.project.raceOverrides[0], "rawBytes"), "rules: fresh race override should not contain compatibility bytes");
         expect(result.project.casteOverrides[0]?.rawBytes === undefined, "rules: fresh caste override should not contain compatibility bytes");
       },
       inspectPackage: (_packageResult, files) => {

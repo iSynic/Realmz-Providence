@@ -2808,7 +2808,6 @@ mod tests {
                 .pop()
                 .unwrap();
         race.authored = true;
-        race.raw_bytes = vec![0xab; crate::realmz::RACE_BYTES];
         race.base_move = 11;
         race.spare.as_mut().unwrap()[0] = 123;
         race.spacer.as_mut().unwrap()[30] = -321;
@@ -3288,7 +3287,6 @@ mod tests {
         race_source.extend_from_slice(&[0xde, 0xad]);
         fs::write(raw_dir.join("Data Race"), &race_source).unwrap();
         let mut race = crate::realmz::parse_race_overrides(&race_source)[1].clone();
-        race.raw_bytes.fill(0x11);
         race.authored = true;
         race.base_move = 12;
 

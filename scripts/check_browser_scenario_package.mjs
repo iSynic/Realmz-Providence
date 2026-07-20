@@ -1092,8 +1092,8 @@ const rulesProject = {
     { ...authoredSpell, authored: true }
   ],
   raceOverrides: [
-    raceRecord(0, { rawBytes: Array.from(sourceRaces.slice(0, 408)), authored: false }),
-    { ...authoredRace, rawBytes: Array.from(sourceRaces.slice(408, 816)), authored: true }
+    raceRecord(0, { authored: false }),
+    { ...authoredRace, authored: true }
   ],
   casteOverrides: [
     casteRecord(0, { rawBytes: Array.from(sourceCastes.slice(0, 576)), authored: false }),
@@ -2175,7 +2175,6 @@ function raceRecord(id, overrides = {}) {
     defaultIconSet: 0,
     itemTypes: new Array(2).fill(0),
     descriptors: 0,
-    rawBytes: new Array(408).fill(0),
     authored: true,
     ...overrides
   };

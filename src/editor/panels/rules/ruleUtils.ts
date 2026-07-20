@@ -289,7 +289,6 @@ export function raceFromSummary(summary: Record<string, unknown>, id: number): S
     itemTypes: numArray(summary.itemTypes, 2),
     descriptors: num(summary.descriptors),
     spacer: numArray(summary.spacer, 31),
-    rawBytes: numArray(summary.rawBytes, 408),
     authored: false,
     provenance: undefined
   };
@@ -406,7 +405,6 @@ export function emptyRaceView(id: number): ScenarioRaceOverride {
     itemTypes: [0, 0],
     descriptors: 0,
     spacer: new Array(31).fill(0),
-    rawBytes: [],
     authored: false,
     provenance: undefined
   };

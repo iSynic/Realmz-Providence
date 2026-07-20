@@ -486,7 +486,6 @@ export const PROVIDENCE_RACE_OVERRIDE_FIELDS = [
   "itemTypes",
   "descriptors",
   "spacer",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1181,7 +1180,6 @@ export type ProvidenceScenarioRaceOverride = {
   itemTypes: number[];
   descriptors: number;
   spacer?: number[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };

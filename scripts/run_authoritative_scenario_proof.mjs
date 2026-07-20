@@ -317,6 +317,7 @@ poisonedProject.simpleEncounters[0].rawBytes = new Array(426).fill(0xa5);
 poisonedProject.complexEncounters[0].rawBytes = new Array(520).fill(0xa5);
 poisonedProject.thiefEncounters[0].rawBytes = new Array(118).fill(0xa5);
 poisonedProject.spellOverrides[0].rawBytes = new Array(30).fill(0xa5);
+poisonedProject.raceOverrides[0].rawBytes = new Array(408).fill(0xa5);
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -359,6 +360,7 @@ browserPoisonedProject.simpleEncounters[0].rawBytes = new Array(426).fill(0xa5);
 browserPoisonedProject.complexEncounters[0].rawBytes = new Array(520).fill(0xa5);
 browserPoisonedProject.thiefEncounters[0].rawBytes = new Array(118).fill(0xa5);
 browserPoisonedProject.spellOverrides[0].rawBytes = new Array(30).fill(0xa5);
+browserPoisonedProject.raceOverrides[0].rawBytes = new Array(408).fill(0xa5);
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -1198,6 +1200,7 @@ function assertOwnershipSpell(records, label) {
 }
 
 function assertOwnershipRules(project, label, expectCanonicalNames) {
+  expect(project.raceOverrides?.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} race overrides expose byte identity`);
   const race = project.raceOverrides?.find((record) => record.id === 19);
   expect(race, `${label} is missing race override 19`);
   expect(race.baseMove === 11 && race.maxAge === 120 && race.magRes === 7 && race.canRegenerate === 1, `${label} has the wrong race semantics`);
@@ -1212,7 +1215,7 @@ function assertOwnershipRules(project, label, expectCanonicalNames) {
 
 function assertNoFreshRuleCompatibilityBytes(project, label) {
   expect(project.spellOverrides?.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} spell overrides contain compatibility bytes`);
-  expect(project.raceOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} race overrides contain compatibility bytes`);
+  expect(project.raceOverrides?.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} race overrides contain compatibility bytes`);
   expect(project.casteOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} caste overrides contain compatibility bytes`);
 }
 

@@ -1,7 +1,7 @@
 use crate::error::{ProvidenceError, Result};
 use crate::project::{ScenarioCasteOverride, ScenarioRaceOverride};
 
-use super::{CASTE_BYTES, RACE_BYTES};
+use super::CASTE_BYTES;
 
 pub(super) fn validate_compatibility_storage(
     label: &str,
@@ -33,7 +33,6 @@ fn validate_exact_length(
 }
 
 pub(super) fn validate_race_storage(record: &ScenarioRaceOverride) -> Result<()> {
-    validate_compatibility_storage("Race override", record.id, &record.raw_bytes, RACE_BYTES)?;
     for (field, actual, expected) in [
         ("to-hit adjustments", record.plus_minus_to_hit.len(), 8),
         ("special abilities", record.special_ability.len(), 14),

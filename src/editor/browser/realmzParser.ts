@@ -999,7 +999,6 @@ function parseRaceOverrides(buffer: Uint8Array | undefined): ScenarioRaceOverrid
       itemTypes: [i32(record, 336), i32(record, 340)],
       descriptors: i16(record, 344),
       spacer: readI16s(record, 346, 31),
-      rawBytes: Array.from(record),
       authored: false,
       provenance: provenance("Data Race", id, start, RACE_BYTES, "source-backed")
     };
