@@ -857,7 +857,17 @@ deterministic repeat output, Remake projection, Rust save/open behavior, and sem
 Every fixed-path optional semantic family in the neutral manifest policy is now present in that
 canonical-to-native parity fixture.
 
-Branch validation through the eightieth slice completed on 2026-07-20:
+The eighty-first slice replaces the ownership fixture's last three neutral-only native paths with
+canonical dungeon semantics. The same fresh Scenario JSON now authors one 90 x 90 dungeon map, a
+north/south secret passage with an Action Point marker, darkness and line-of-sight random-level
+flags, and a message Action Point. The proof checks exact non-empty `Data DL`, `Data RDD`, and
+`Data DDD` sizes and bytes, deterministic zero baselines around the authored fields, Rust/browser
+byte parity on Windows and Classic-Mac targets, semantic reimport, and the corresponding Remake
+map, random-level, stable trigger identity, and normalized action. No production codec changed:
+the slice converts previously empty agreement into exercised semantic agreement across every
+existing compiler projection.
+
+Branch validation through the eighty-first slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -913,6 +923,8 @@ The named runtime-baseline and trigger-path closure likewise replaces literals i
 compiler owners and adds no new module-size violation.
 The Scenario JSON restriction and `Data RI` parity slice changes only the focused seed contract,
 compiler, fixture, and proof owners and adds no new module-size violation.
+The dungeon parity slice changes only the canonical ownership fixture and proof assertions and adds
+no new module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.

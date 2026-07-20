@@ -262,10 +262,11 @@ assertOwnershipMapRecord(project.mapRecords, "Canonical project");
 assertOwnershipCustomLandlook(project, "Canonical project", true);
 assertOwnershipCustomLandlookAtlas(project, "Canonical project");
 assertOwnershipManagedResources(project, "Canonical project");
+assertOwnershipDungeon(project, "Canonical project");
 expect(project.maps[0].render.landlook === 6 && project.maps[0].render.tilesetId === "landlook-6", "Canonical map must select Custom 1");
 expect(project.randomLevels[0].landlook === 6, "Canonical random-level record must select Custom 1");
-expect(project.maps.length === 1, `Expected one map, found ${project.maps.length}`);
-expect(project.triggers.length === 2, `Expected one map Action Point and one Extra Action Point, found ${project.triggers.length}`);
+expect(project.maps.length === 2, `Expected one land map and one dungeon map, found ${project.maps.length}`);
+expect(project.triggers.length === 3, `Expected two map Action Points and one Extra Action Point, found ${project.triggers.length}`);
 expect(project.triggers.every((record) => !("rawBytes" in record)), "Fresh canonical Action Points must not carry compatibility bytes");
 expect(project.extracodes.length === 1, `Expected one EDCD settings row, found ${project.extracodes.length}`);
 expect(project.extracodes[0].id === 0 && project.extracodes[0].values.join(",") === "25,0,0,0,0", "Fresh canonical EDCD settings have the wrong semantic values");
@@ -514,6 +515,8 @@ expect(reimported.source.files.length > 0, "Reimported native output should inve
 expect(await isDirectory(path.join(reimportDir, "raw-sources")), "Reimport should create a bounded compatibility annex");
 expect(!("reservedWords" in (reimportedSemanticSchema.entities?.find((entity) => entity.id === "time:0")?.summary ?? {})), "Reimport semantic summary must not expose timed compatibility words");
 expect(reimported.maps.filter((map) => map.levelType === "land").length === 1, "Reimport should recover one land map");
+expect(reimported.maps.filter((map) => map.levelType === "dungeon").length === 1, "Reimport should recover one dungeon map");
+assertOwnershipDungeon(reimported, "Reimport");
 const activeTrigger = reimported.triggers.find((trigger) =>
   trigger.active
   && trigger.levelType === "land"
@@ -641,7 +644,10 @@ const summary = {
     landLayoutRecovered: true,
     customLandlookMetadataRecovered: true,
     customLandlookAtlasRecovered: true,
-    representativeManagedResourcesRecovered: true
+    representativeManagedResourcesRecovered: true,
+    dungeonMapRecovered: true,
+    dungeonRandomLevelRecovered: true,
+    dungeonActionPointRecovered: true
   },
   runtime: {
     realmzStarted: false,
@@ -726,6 +732,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipCustomLandlook(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipCustomLandlookAtlas(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipManagedResources(savedProject, `Rust-saved project ${stage}`);
+  assertOwnershipDungeon(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
   assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
@@ -753,8 +760,11 @@ function assertCompleteNativeFolder(files, label) {
     ["Data RI", 320],
     ["Global", 60],
     ["Data LD", 90 * 90 * 2],
+    ["Data DL", 90 * 90 * 2],
     ["Data RD", 644],
+    ["Data RDD", 644],
     ["Data DD", 100 * 40],
+    ["Data DDD", 100 * 40],
     ["Data SD2", 2 * 256],
     ["Data OD", 50],
     ["Data ED", 426],
@@ -782,10 +792,6 @@ function assertCompleteNativeFolder(files, label) {
   for (const [name, bytes] of exactSizes) {
     expect(files.has(name), `${label} output is missing ${name}`);
     expect(files.get(name).byteLength === bytes, `${label} ${name} should be ${bytes} bytes, found ${files.get(name).byteLength}`);
-  }
-  for (const name of ["Data DDD", "Data DL", "Data RDD"]) {
-    expect(files.has(name), `${label} output is missing required empty table ${name}`);
-    expect(files.get(name).byteLength === 0, `${label} ${name} should be empty`);
   }
   expect(files.has("Scenario.rsrc"), `${label} output is missing Scenario.rsrc`);
   const scenarioResourceFork = files.get("Scenario.rsrc");
@@ -816,6 +822,21 @@ function assertCompleteNativeFolder(files, label) {
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this rogue encounter.")), `${label} Data SD2 is missing the authored rogue message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
+  const dungeonMap = files.get("Data DL");
+  const dungeonTriggerCellOffset = (5 * 90 + 4) * 2;
+  expect(readI16(dungeonMap, 0) === 1 && readI16(dungeonMap, dungeonMap.byteLength - 2) === 1, `${label} Data DL has the wrong deterministic baseline cells`);
+  expect(readI16(dungeonMap, dungeonTriggerCellOffset) === 0x1501, `${label} Data DL did not preserve the north/south passage bits and add the Action Point marker`);
+  const dungeonRandomLevel = files.get("Data RDD");
+  expect(dungeonRandomLevel.slice(0, 521).every((byte) => byte === 0), `${label} Data RDD random-rectangle and landlook fields are not deterministic zero`);
+  expect(dungeonRandomLevel[521] === 1 && dungeonRandomLevel[522] === 1, `${label} Data RDD has the wrong authored darkness or line-of-sight flags`);
+  expect(dungeonRandomLevel.slice(523).every((byte) => byte === 0), `${label} Data RDD reserved rectangle fields are not deterministic zero`);
+  const dungeonDoors = files.get("Data DDD");
+  const dungeonDoorOffset = 40;
+  expect(dungeonDoors.slice(0, dungeonDoorOffset).every((byte) => byte === 0), `${label} Data DDD unused record 0 is not deterministic zero`);
+  expect(readI32(dungeonDoors, dungeonDoorOffset) === 504, `${label} Data DDD has the wrong authored packed coordinate`);
+  expect(Buffer.from(dungeonDoors.slice(dungeonDoorOffset + 4, dungeonDoorOffset + 8)).equals(Buffer.from([0, 4, 5, 100])), `${label} Data DDD has the wrong authored level, target, or percent fields`);
+  expect(readI16(dungeonDoors, dungeonDoorOffset + 8) === 1 && readI16(dungeonDoors, dungeonDoorOffset + 24) === 0, `${label} Data DDD has the wrong authored message action`);
+  expect(dungeonDoors.slice(dungeonDoorOffset + 10, dungeonDoorOffset + 24).every((byte) => byte === 0) && dungeonDoors.slice(dungeonDoorOffset + 26).every((byte) => byte === 0), `${label} Data DDD unused action slots and records are not deterministic zero`);
   const mapRecord = files.get("Data MD2");
   expect(readI16(mapRecord, 0) === -100 && readI16(mapRecord, 2) === 11 && readI16(mapRecord, 4) === 12, `${label} Data MD2 has the wrong authored marker`);
   expect(readI16(mapRecord, 60) === 10 && readI16(mapRecord, 62) === 12 && readI16(mapRecord, 66) === 306, `${label} Data MD2 has the wrong authored display fields`);
@@ -904,6 +925,34 @@ function assertCompleteNativeFolder(files, label) {
   expect([35, 5, 50, 2, 0, -1, 10, 12, 901, 1, 1].every((value, slot) => readI16(timedEncounter, slot * 2) === value), `${label} Data TD3 has the wrong authored schedule, target, gates, or location`);
   expect(timedEncounter.slice(22).every((byte) => byte === 0), `${label} Data TD3 fresh reserved words are not deterministic zero`);
   expect(!files.has("Data MENU"), `${label} output should not include the Realmz-owned runtime cache Data MENU`);
+}
+
+function assertOwnershipDungeon(project, label) {
+  const map = project.maps?.find((candidate) => candidate.levelType === "dungeon" && candidate.index === 0);
+  expect(map, `${label} is missing canonical dungeon map 0`);
+  expect(map.source === "Data DL", `${label} dungeon map has the wrong native source`);
+  expect(map.tiles.length === 90 * 90, `${label} dungeon map has the wrong dimensions`);
+  expect(map.tiles[0] === 1 && map.tiles.at(-1) === 1, `${label} dungeon map has the wrong deterministic baseline cells`);
+  expect(map.tiles[5 * 90 + 4] === 0x1501, `${label} dungeon map did not preserve the north/south passage bits and add the Action Point marker`);
+
+  const randomLevel = project.randomLevels?.find((candidate) => candidate.levelType === "dungeon" && candidate.levelIndex === 0);
+  expect(randomLevel, `${label} is missing canonical dungeon random-level metadata`);
+  expect(randomLevel.source === "Data RDD", `${label} dungeon random-level metadata has the wrong native source`);
+  expect(randomLevel.landlook === 0 && randomLevel.isDark && randomLevel.useLos, `${label} dungeon random-level metadata has the wrong authored flags`);
+  expect(randomLevel.rects.length === 0, `${label} dungeon random-level metadata should not invent random rectangles`);
+
+  const trigger = project.triggers?.find((candidate) =>
+    candidate.active
+    && candidate.levelType === "dungeon"
+    && candidate.levelIndex === 0
+    && candidate.recordIndex === 1
+    && candidate.coordinate?.x === 4
+    && candidate.coordinate?.y === 5
+  );
+  expect(trigger, `${label} is missing the canonical dungeon Action Point`);
+  expect(trigger.source === "Data DDD" && trigger.doorid === 504, `${label} dungeon Action Point has the wrong native identity`);
+  expect(trigger.percent === 100 && trigger.landid === 0 && trigger.targetX === 4 && trigger.targetY === 5, `${label} dungeon Action Point has the wrong authored target fields`);
+  expect(trigger.actions.length === 1 && trigger.actions[0].rawCode === 1 && trigger.actions[0].id === 0, `${label} dungeon Action Point has the wrong authored message action`);
 }
 
 function assertOwnershipItemText(records, label) {
@@ -1398,11 +1447,17 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(scenario.identity.id === manifest.id && scenario.identity.name === manifest.name, "Remake scenario identity differs from its manifest");
   const maps = documents.get("classic/maps.json");
   expect(maps.maps.some((map) => map.id === "land:0" && map.tiles.at(-1) === -100), "Remake export lost the canonical map identity or special tile");
+  expect(maps.maps.some((map) => map.id === "dungeon:0" && map.levelType === "dungeon" && map.tiles[5 * 90 + 4] === 0x1501), "Remake export lost the canonical dungeon map or Action Point marker");
   const scripts = documents.get("classic/scripts.json");
   const trigger = scripts.triggers.find((candidate) => candidate.id === "land:0:ap:0");
   expect(trigger, "Remake export lost the stable Action Point identity");
   expect(trigger.actions.some((action) => action.rawCode === 1 && action.code === 1), "Remake export lost the normalized message action");
   expect(trigger.actions.some((action) => action.rawCode === 47 && action.code === 47), "Remake export lost the normalized quest action");
+  const dungeonRandomLevel = scripts.randomLevels.find((candidate) => candidate.id === "dungeon:0:randlevel");
+  expect(dungeonRandomLevel?.isDark && dungeonRandomLevel.useLos && dungeonRandomLevel.landlook === 0, "Remake export lost the canonical dungeon random-level flags");
+  const dungeonTrigger = scripts.triggers.find((candidate) => candidate.id === "dungeon:0:ap:1");
+  expect(dungeonTrigger?.source === "Data DDD" && dungeonTrigger.doorid === 504, "Remake export lost the stable dungeon Action Point identity");
+  expect(dungeonTrigger.actions.length === 1 && dungeonTrigger.actions[0].rawCode === 1 && dungeonTrigger.actions[0].code === 1, "Remake export lost the normalized dungeon message action");
   const encounters = documents.get("classic/encounters.json");
   expect(encounters.simpleEncounters.some((record) => record.id === 0), "Remake export lost the stable simple-encounter identity");
   expect(encounters.complexEncounters.some((record) => record.id === 0), "Remake export lost the stable complex-encounter identity");

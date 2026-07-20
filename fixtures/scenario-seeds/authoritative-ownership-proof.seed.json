@@ -26,6 +26,20 @@
         { "key": "start", "x": 10, "y": 12 },
         { "key": "ownership-trigger", "x": 11, "y": 12 }
       ]
+    },
+    {
+      "key": "proof-dungeon",
+      "levelType": "dungeon",
+      "index": 0,
+      "fillTile": 1,
+      "isDark": true,
+      "useLos": true,
+      "regions": [
+        { "key": "ownership-dungeon-trigger", "x": 4, "y": 5 }
+      ],
+      "operations": [
+        { "kind": "dungeonPassage", "x": 4, "y": 5, "directions": ["north", "south"] }
+      ]
     }
   ],
   "messages": [
@@ -226,6 +240,15 @@
       "steps": [
         { "kind": "message", "message": "ownership-message" },
         { "kind": "setQuestFlag", "quest": "ownership-proven" }
+      ]
+    },
+    {
+      "key": "ownership-dungeon-action-point",
+      "map": "proof-dungeon",
+      "at": "ownership-dungeon-trigger",
+      "percent": 100,
+      "steps": [
+        { "kind": "message", "message": "ownership-message" }
       ]
     }
   ],
