@@ -115,8 +115,7 @@ describe("browser rule-override writers", () => {
       ...emptySpellOverride(0),
       range1: 200,
       toHitBonus: -7,
-      inCombat: true,
-      rawBytes: new Array(30).fill(0xa5)
+      inCombat: true
     };
     const race = {
       ...emptyRaceOverride(0),
@@ -148,9 +147,7 @@ describe("browser rule-override writers", () => {
     expect(casteBytes[450]).toBe(0);
   });
 
-  it("reject malformed compatibility storage and fixed arrays", () => {
-    expect(() => writeSpellOverrides([{ ...emptySpellOverride(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
+  it("reject malformed fixed arrays", () => {
     expect(() => writeRaceOverrides([{ ...emptyRaceOverride(0), plusMinusToHit: [1] }]))
       .toThrow("exactly 8 to-hit adjustments");
     expect(() => writeCasteOverrides([{ ...emptyCasteOverride(0), spellcasters: [[1, 2, 3]] }]))

@@ -412,11 +412,10 @@ expectSameArray(itemTextRecordSchema.required ?? [], itemTextFields.filter((fiel
 expect(itemTextRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "item text provenance must reference canonical provenance");
 expectSameArray(itemTextRecordSchema["x-providence-rust-optional"] ?? [], ["provenance"], "Item-text migration-optional Rust inventory");
 expectSameArray(itemTextRecordSchema["x-providence-rust-skip-none"] ?? [], ["provenance"], "Item-text omitted empty provenance inventory");
-const spellOverrideFields = ["id", "range1", "range2", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetNum", "canRotate", "saveAdjust", "cannot", "resistAdjust", "cost", "damage1", "damage2", "powerDamage1", "powerDamage2", "duration1", "duration2", "powerDuration1", "powerDuration2", "spellLook1", "spellLook2", "sound1", "sound2", "targetType", "size", "special", "damageType", "spellClass", "inCombat", "inCamp", "displayName", "description", "rawBytes", "authored", "provenance"];
+const spellOverrideFields = ["id", "range1", "range2", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetNum", "canRotate", "saveAdjust", "cannot", "resistAdjust", "cost", "damage1", "damage2", "powerDamage1", "powerDamage2", "duration1", "duration2", "powerDuration1", "powerDuration2", "spellLook1", "spellLook2", "sound1", "sound2", "targetType", "size", "special", "damageType", "spellClass", "inCombat", "inCamp", "displayName", "description", "authored", "provenance"];
 expectSameArray(Object.keys(scenarioSpellOverrideSchema.properties ?? {}), spellOverrideFields, "Spell-override field inventory");
-expectSameArray(scenarioSpellOverrideSchema.required ?? [], spellOverrideFields.filter((field) => !["displayName", "description", "rawBytes", "authored", "provenance"].includes(field)), "Spell-override authored field inventory");
-expect(scenarioSpellOverrideSchema.properties?.rawBytes?.minItems === 30 && scenarioSpellOverrideSchema.properties?.rawBytes?.maxItems === 30, "spell-override rawBytes must retain one complete Data Spell row when compatibility bytes are present");
-expectSameArray(scenarioSpellOverrideSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Spell-override omitted empty compatibility inventory");
+expectSameArray(scenarioSpellOverrideSchema.required ?? [], spellOverrideFields.filter((field) => !["displayName", "description", "authored", "provenance"].includes(field)), "Spell-override authored field inventory");
+expect(!Object.hasOwn(scenarioSpellOverrideSchema, "x-providence-rust-skip-empty"), "spell overrides must not retain record-local compatibility storage");
 const raceOverrideFields = ["id", "displayName", "plusMinusToHit", "specialAbility", "drvBonus", "attBonus", "minMax", "spare", "conditions", "maxAge", "doesNotDie", "baseMove", "magRes", "twoHand", "missile", "numOfAttacks", "canCaste", "ageRange", "ageChange", "canRegenerate", "defaultIconSet", "itemTypes", "descriptors", "spacer", "rawBytes", "authored", "provenance"];
 expectSameArray(Object.keys(scenarioRaceOverrideSchema.properties ?? {}), raceOverrideFields, "Race-override field inventory");
 expectSameArray(scenarioRaceOverrideSchema.required ?? [], raceOverrideFields.filter((field) => !["displayName", "spare", "spacer", "rawBytes", "authored", "provenance"].includes(field)), "Race-override authored field inventory");
@@ -477,7 +476,7 @@ const recordCompatibilityFields = recordDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(recordCompatibilityFields, ["ScenarioSpellOverride.rawBytes", "ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes"], "Record compatibility-only field inventory");
+expectSameSet(recordCompatibilityFields, ["ScenarioRaceOverride.spare", "ScenarioRaceOverride.spacer", "ScenarioRaceOverride.rawBytes", "ScenarioCasteOverride.spare1", "ScenarioCasteOverride.spare2", "ScenarioCasteOverride.spacer", "ScenarioCasteOverride.rawBytes"], "Record compatibility-only field inventory");
 for (const [index, definition] of scenarioDefinitions.entries()) {
   const definitionName = scenarioDefinitionNames[index];
   expect(definition.type === "object", `${definitionName} must be an object schema`);

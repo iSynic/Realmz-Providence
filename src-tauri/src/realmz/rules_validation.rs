@@ -119,16 +119,12 @@ pub(super) fn validate_caste_storage(record: &ScenarioCasteOverride) -> Result<(
 #[cfg(test)]
 mod tests {
     use super::super::{
-        parse_caste_overrides, parse_race_overrides, parse_spell_overrides, write_caste_overrides,
-        write_race_overrides, write_spell_overrides, CASTE_BYTES, RACE_BYTES, SPELL_BYTES,
+        parse_caste_overrides, parse_race_overrides, write_caste_overrides,
+        write_race_overrides, CASTE_BYTES, RACE_BYTES,
     };
 
     #[test]
-    fn rule_writers_reject_malformed_compatibility_and_fixed_arrays() {
-        let mut spell = parse_spell_overrides(&vec![0; SPELL_BYTES]).remove(0);
-        spell.raw_bytes = vec![1];
-        assert!(write_spell_overrides(&[spell]).is_err());
-
+    fn rule_writers_reject_malformed_fixed_arrays() {
         let mut race = parse_race_overrides(&vec![0; RACE_BYTES]).remove(0);
         race.plus_minus_to_hit.pop();
         assert!(write_race_overrides(&[race]).is_err());

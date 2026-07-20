@@ -457,7 +457,6 @@ export const PROVIDENCE_SPELL_OVERRIDE_FIELDS = [
   "inCamp",
   "displayName",
   "description",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1153,7 +1152,6 @@ export type ProvidenceScenarioSpellOverride = {
   inCamp: boolean;
   displayName?: string;
   description?: string;
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance;
 };

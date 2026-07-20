@@ -119,7 +119,7 @@ export function updateGlobalMacroHook(project: Project, slot: number, door: numb
 export function createSpellOverride(project: Project, id?: number, template?: Partial<ScenarioSpellOverride>) {
   const records = project.spellOverrides ?? [];
   const nextId = id ?? nextSpellOverrideId(records);
-  const { rawBytes: _compatibilityBytes, ...semanticTemplate } = template ?? {};
+  const semanticTemplate = withoutLegacySpellRawBytes(template ?? {});
   const record = { ...emptySpellOverride(nextId), ...semanticTemplate, id: nextId, authored: true, provenance: authoredProvenance("Data Spell", nextId, nextId * 30, 30) };
   const existing = records.find((candidate) => candidate.id === nextId);
   if (existing) {
@@ -192,9 +192,16 @@ export function updateRuleOverride<T extends { id: number; authored?: boolean }>
   return {
     ...project,
     [key]: records.map((record) =>
-      record.id === id ? { ...record, ...changes, authored: true } : record
+      key === "spellOverrides"
+        ? withoutLegacySpellRawBytes(record.id === id ? { ...record, ...changes, authored: true } : record)
+        : record.id === id ? { ...record, ...changes, authored: true } : record
     )
   };
+}
+
+function withoutLegacySpellRawBytes<T extends object>(record: T): T {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as T & { rawBytes?: number[] };
+  return canonical as T;
 }
 
 export function updateCustomSpellName(project: Project, id: number, displayName: string) {

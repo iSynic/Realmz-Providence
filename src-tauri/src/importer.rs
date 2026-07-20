@@ -380,6 +380,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_simple_encounter_raw_bytes(&mut value);
     migrate_legacy_complex_encounter_raw_bytes(&mut value);
     migrate_legacy_thief_encounter_raw_bytes(&mut value);
+    migrate_legacy_spell_override_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -567,6 +568,10 @@ fn migrate_legacy_complex_encounter_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_thief_encounter_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "thiefEncounters");
+}
+
+fn migrate_legacy_spell_override_raw_bytes(project: &mut serde_json::Value) {
+    migrate_legacy_record_raw_bytes(project, "spellOverrides");
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -2727,6 +2732,18 @@ mod tests {
         legacy_simple_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::SIMPLE_ENCOUNTER_BYTES]);
         saved["simpleEncounters"] = serde_json::json!([legacy_simple_value]);
+        let mut legacy_spell =
+            crate::realmz::parse_spell_overrides(&vec![0; crate::realmz::SPELL_BYTES])
+                .into_iter()
+                .next()
+                .expect("legacy spell override");
+        legacy_spell.id = 16;
+        legacy_spell.cost = 41;
+        let mut legacy_spell_value =
+            serde_json::to_value(legacy_spell).expect("serialize legacy spell override");
+        legacy_spell_value["rawBytes"] =
+            serde_json::json!(vec![0xa5u8; crate::realmz::SPELL_BYTES]);
+        saved["spellOverrides"] = serde_json::json!([legacy_spell_value]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2792,6 +2809,8 @@ mod tests {
         assert!(opened.simple_encounters[0].can_back_out);
         assert_eq!(opened.simple_encounters[0].prompt, 17);
         assert_eq!(opened.simple_encounters[0].texts[0], "Semantic legacy choice");
+        assert_eq!(opened.spell_overrides[0].id, 16);
+        assert_eq!(opened.spell_overrides[0].cost, 41);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2833,6 +2852,7 @@ mod tests {
             .is_none());
         assert!(upgraded["monsterDescriptions"][0].get("rawBytes").is_none());
         assert!(upgraded["simpleEncounters"][0].get("rawBytes").is_none());
+        assert!(upgraded["spellOverrides"][0].get("rawBytes").is_none());
     }
 
     #[test]
@@ -3324,7 +3344,6 @@ mod tests {
         spell.id = 16;
         spell.cost = 41;
         spell.authored = false;
-        spell.raw_bytes.fill(0xA5);
         project.spell_overrides = vec![spell];
 
         let mut race = crate::realmz::parse_race_overrides(&vec![0; crate::realmz::RACE_BYTES])

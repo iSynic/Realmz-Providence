@@ -152,7 +152,15 @@ pub(super) fn add_canonical_record_collections(
             record
         })
         .collect::<Vec<_>>();
-    let spell_overrides = canonical_records!(parsed.spell_overrides);
+    let spell_overrides = parsed
+        .spell_overrides
+        .iter()
+        .cloned()
+        .map(|mut record| {
+            record.authored = true;
+            record
+        })
+        .collect::<Vec<_>>();
     let race_overrides = canonical_records!(parsed.race_overrides);
     let caste_overrides = canonical_records!(parsed.caste_overrides);
     let mut buffers = BTreeMap::new();

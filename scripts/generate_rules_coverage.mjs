@@ -220,7 +220,7 @@ const output = {
     imported: "Authored rows replace their complete native row. Unchanged imported rows and malformed file tails are restored only from the compatibility annex.",
     evidence: [
       "src-tauri/src/realmz/rules.rs:rules_overrides_round_trip_source_backed_fields",
-      "src-tauri/src/realmz/rules_validation.rs:rule_writers_reject_malformed_compatibility_and_fixed_arrays",
+      "src-tauri/src/realmz/rules_validation.rs:rule_writers_reject_malformed_fixed_arrays",
       "src-tauri/src/exporter.rs:imported_rule_exports_preserve_aligned_rows_and_malformed_tails",
       "src-tauri/src/exporter.rs:imported_spell_export_bounds_legacy_rows_and_tail_to_annex",
       "src/editor/browser/binaryWriters.test.ts",

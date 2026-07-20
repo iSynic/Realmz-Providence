@@ -557,7 +557,7 @@ function checkSpells(createProjectFromScenarioSeed) {
   expect(allocationId(result, "spells", "quiet-chime") === 0, "keyed spell overrides should allocate the first open custom slot");
   const ward = result.project.spellOverrides.find((spell) => spell.id === 12);
   expect(ward?.displayName === "Bell Ward" && ward?.cost === 4 && ward?.damage2 === 4, "spell override fields should compile through Providence's Rules defaults");
-  expect(ward?.inCombat === true && ward?.inCamp === false && ward?.rawBytes === undefined, "fresh spell overrides should carry usage flags without compatibility bytes");
+  expect(ward?.inCombat === true && ward?.inCamp === false && !Object.hasOwn(ward, "rawBytes"), "fresh spell overrides should carry usage flags without compatibility bytes");
 }
 
 function checkRuleOverrides(createProjectFromScenarioSeed) {

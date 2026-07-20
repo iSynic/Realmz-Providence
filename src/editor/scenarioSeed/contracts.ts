@@ -49,7 +49,7 @@ export type ScenarioSeedSpell = {
   inCamp?: boolean;
 } & Partial<Record<ScenarioSeedSpellNumberField, number>>;
 
-export type ScenarioSeedSpellNumberField = Exclude<keyof ScenarioSpellOverride, "id" | "displayName" | "description" | "inCombat" | "inCamp" | "rawBytes" | "authored" | "provenance">;
+export type ScenarioSeedSpellNumberField = Exclude<keyof ScenarioSpellOverride, "id" | "displayName" | "description" | "inCombat" | "inCamp" | "authored" | "provenance">;
 
 export type ScenarioSeedRace = {
   key?: string;

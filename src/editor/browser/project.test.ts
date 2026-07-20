@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Project } from "../types";
 import { emptyBattle } from "../projectCommands/targetRecordCommands";
-import { defaultGlobalMacroHooks } from "../projectCommands/scenarioRulesCommands";
+import { defaultGlobalMacroHooks, emptySpellOverride, updateRuleOverride } from "../projectCommands/scenarioRulesCommands";
 import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
@@ -13,6 +13,23 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
+  it("drops legacy spell compatibility bytes during normalization and edits", () => {
+    const project = createBrowserProject("Legacy spell bytes");
+    project.spellOverrides = [{
+      ...emptySpellOverride(16),
+      cost: 41,
+      rawBytes: new Array(30).fill(0xa5)
+    } as unknown as Project["spellOverrides"][number]];
+
+    const normalized = normalizeBrowserProject(project);
+    const updated = updateRuleOverride<Project["spellOverrides"][number]>(normalized, "spellOverrides", 16, { cost: 42 });
+
+    expect(normalized.spellOverrides[0].cost).toBe(41);
+    expect("rawBytes" in normalized.spellOverrides[0]).toBe(false);
+    expect(updated.spellOverrides[0].cost).toBe(42);
+    expect("rawBytes" in updated.spellOverrides[0]).toBe(false);
+  });
+
   it("migrates obsolete complex encounter result aliases into canonical fields", () => {
     const project = createBrowserProject("Legacy complex encounter aliases");
     project.complexEncounters = [{
@@ -857,8 +874,7 @@ describe("browser project native manifest validation", () => {
       ...parsed.spellOverrides[0],
       id: 16,
       cost: 41,
-      authored: false,
-      rawBytes: new Array(30).fill(0xa5)
+      authored: false
     }];
     project.raceOverrides = [{
       ...parsed.raceOverrides[0],

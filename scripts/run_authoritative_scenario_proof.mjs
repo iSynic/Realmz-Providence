@@ -316,6 +316,7 @@ poisonedProject.monsterDescriptions[0].rawBytes = new Array(256).fill(0xa5);
 poisonedProject.simpleEncounters[0].rawBytes = new Array(426).fill(0xa5);
 poisonedProject.complexEncounters[0].rawBytes = new Array(520).fill(0xa5);
 poisonedProject.thiefEncounters[0].rawBytes = new Array(118).fill(0xa5);
+poisonedProject.spellOverrides[0].rawBytes = new Array(30).fill(0xa5);
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -357,6 +358,7 @@ browserPoisonedProject.monsterDescriptions[0].rawBytes = new Array(256).fill(0xa
 browserPoisonedProject.simpleEncounters[0].rawBytes = new Array(426).fill(0xa5);
 browserPoisonedProject.complexEncounters[0].rawBytes = new Array(520).fill(0xa5);
 browserPoisonedProject.thiefEncounters[0].rawBytes = new Array(118).fill(0xa5);
+browserPoisonedProject.spellOverrides[0].rawBytes = new Array(30).fill(0xa5);
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -1187,6 +1189,7 @@ async function assertReimportedManagedResources(project, semanticSchema, label) 
 }
 
 function assertOwnershipSpell(records, label) {
+  expect(records?.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} spell overrides expose compatibility storage`);
   const spell = records?.find((record) => record.id === 16);
   expect(spell, `${label} is missing custom spell 16`);
   expect(spell.displayName === "Providence Ward", `${label} has the wrong custom spell name`);
@@ -1208,7 +1211,7 @@ function assertOwnershipRules(project, label, expectCanonicalNames) {
 }
 
 function assertNoFreshRuleCompatibilityBytes(project, label) {
-  expect(project.spellOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} spell overrides contain compatibility bytes`);
+  expect(project.spellOverrides?.every((record) => !Object.hasOwn(record, "rawBytes")), `${label} spell overrides contain compatibility bytes`);
   expect(project.raceOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} race overrides contain compatibility bytes`);
   expect(project.casteOverrides?.every((record) => (record.rawBytes?.length ?? 0) === 0), `${label} caste overrides contain compatibility bytes`);
 }

@@ -86,7 +86,6 @@ export function spellFromSummary(summary: Record<string, unknown>, id: number): 
     inCamp: Boolean(summary.inCamp),
     displayName: str(summary.displayName),
     description: "",
-    rawBytes: numArray(summary.rawBytes, 30),
     authored: false,
     provenance: undefined
   };
@@ -127,7 +126,6 @@ export function emptySpellView(id: number, packedId: number, spellcasterClass: n
     inCamp: false,
     displayName: spellcasterClass === 4 ? `Level ${levelIndex + 1} Spell ${slotIndex + 1}` : `Spell ${packedId}`,
     description: "",
-    rawBytes: [],
     authored: false,
     provenance: undefined
   };

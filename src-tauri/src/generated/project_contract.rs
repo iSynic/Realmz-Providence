@@ -486,7 +486,6 @@ pub const PROVIDENCE_SPELL_OVERRIDE_FIELDS: &[&str] = &[
     "inCamp",
     "displayName",
     "description",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1496,8 +1495,6 @@ pub struct ScenarioSpellOverride {
     pub display_name: String,
     #[serde(default)]
     pub description: String,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

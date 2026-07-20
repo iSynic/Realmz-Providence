@@ -6,7 +6,7 @@ use crate::error::Result;
 use crate::project::{ScenarioCasteOverride, ScenarioRaceOverride, ScenarioSpellOverride};
 #[path = "rules_validation.rs"]
 mod validation;
-use validation::{validate_caste_storage, validate_compatibility_storage, validate_race_storage};
+use validation::{validate_caste_storage, validate_race_storage};
 
 pub const SPELL_BYTES: usize = 30;
 pub const SPELL_OVERRIDE_RECORDS: usize = 105;
@@ -55,7 +55,6 @@ pub fn parse_spell_overrides(buffer: &[u8]) -> Vec<ScenarioSpellOverride> {
                 in_camp: record[29] != 0,
                 display_name: format!("Custom Spell {}", id),
                 description: String::new(),
-                raw_bytes: record.to_vec(),
                 authored: false,
                 provenance: provenance("Data Spell", id, start, SPELL_BYTES),
             }
@@ -70,7 +69,6 @@ pub fn write_spell_overrides(records: &[ScenarioSpellOverride]) -> Result<Vec<u8
     let max_id = records.iter().map(|record| record.id).max().unwrap_or(0);
     let mut output = vec![0u8; (max_id + 1) * SPELL_BYTES];
     for record in records {
-        validate_compatibility_storage("Custom spell", record.id, &record.raw_bytes, SPELL_BYTES)?;
         let start = record.id * SPELL_BYTES;
         output[start] = record.range1;
         output[start + 1] = record.range2;
@@ -390,7 +388,6 @@ mod tests {
         assert_eq!(spells.len(), 2);
         assert_eq!(spells[0].range1, 3);
         assert!(spells[0].in_camp);
-        spells[0].raw_bytes.fill(0xa5);
         spells[0].authored = true;
         spells[0].cost = 11;
         let spell_output = write_spell_overrides(&spells).unwrap();

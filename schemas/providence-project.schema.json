@@ -1187,8 +1187,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceScenarioSpellOverride",
       "x-providence-rust-name": "ScenarioSpellOverride",
-      "x-providence-rust-default": ["displayName", "description", "rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["displayName", "description", "authored"],
       "required": ["id", "range1", "range2", "queueIcon", "toHitBonus", "saveBonus", "fixedTargetNum", "canRotate", "saveAdjust", "cannot", "resistAdjust", "cost", "damage1", "damage2", "powerDamage1", "powerDamage2", "duration1", "duration2", "powerDuration1", "powerDuration2", "spellLook1", "spellLook2", "sound1", "sound2", "targetType", "size", "special", "damageType", "spellClass", "inCombat", "inCamp"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "maximum": 104, "x-providence-rust-type": "usize" },
@@ -1224,7 +1223,6 @@
         "inCamp": { "type": "boolean" },
         "displayName": { "type": "string" },
         "description": { "type": "string" },
-        "rawBytes": { "type": "array", "minItems": 30, "maxItems": 30, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

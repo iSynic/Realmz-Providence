@@ -146,7 +146,6 @@ mod tests {
         let mut spell = parse_spell_overrides(&vec![0; SPELL_BYTES]).remove(0);
         spell.id = 16;
         spell.cost = 41;
-        spell.raw_bytes.fill(0xA5);
         let spell_bytes = write_fresh_spell_overrides(&[spell]).unwrap();
         assert_eq!(spell_bytes.len(), SPELL_OVERRIDE_RECORDS * SPELL_BYTES);
         assert_eq!(spell_bytes[16 * SPELL_BYTES + 10], 41);

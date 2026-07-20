@@ -3335,16 +3335,14 @@ mod tests {
         fs::create_dir_all(&raw_dir).unwrap();
 
         let mut source = vec![0xa5; 2 * crate::realmz::SPELL_BYTES];
-        source[28] = 1;
-        source[29] = 1;
+        source[28] = 0x7f;
+        source[29] = 0xfe;
         source[crate::realmz::SPELL_BYTES + 28] = 1;
         source[crate::realmz::SPELL_BYTES + 29] = 0;
         source.extend_from_slice(&[0xde, 0xad, 0xbe]);
         fs::write(raw_dir.join("Data Spell"), &source).unwrap();
 
         let mut spells = crate::realmz::parse_spell_overrides(&source);
-        spells[0].raw_bytes.fill(0x11);
-        spells[1].raw_bytes.fill(0x22);
         spells[1].cost = 42;
         spells[1].authored = true;
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();

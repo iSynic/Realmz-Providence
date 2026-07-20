@@ -530,7 +530,6 @@ export function writeShops(records: ShopRecord[]) {
 
 export function writeSpellOverrides(records: ScenarioSpellOverride[]) {
   return writeFixedRecords(records, SPELL_RECORD_BYTES, (record, target) => {
-    validateCompatibilityStorage("Custom spell", record.id, record.rawBytes, SPELL_RECORD_BYTES);
     target[0] = record.range1 & 0xff;
     target[1] = record.range2 & 0xff;
     target[2] = record.queueIcon & 0xff;

@@ -81,7 +81,7 @@ describe("scenario seed core record compiler", () => {
     expect(compiled.shops[0]?.itemIds[0]).toBe(805);
     expect(compiled.shops[0]?.quantities[0]).toBe(2);
     expect(compiled.spellOverrides[0]).toMatchObject({ id: 0, displayName: "Bell Ward", cost: 4 });
-    expect(compiled.spellOverrides[0]?.rawBytes).toBeUndefined();
+    expect("rawBytes" in compiled.spellOverrides[0]).toBe(false);
     expect(compiled.raceOverrides[0]).toMatchObject({ id: 29, displayName: "Stoneborn", baseMove: 9 });
     expect(compiled.raceOverrides[0]?.rawBytes).toBeUndefined();
     expect(compiled.casteOverrides[0]?.startItems[0]).toBe(805);

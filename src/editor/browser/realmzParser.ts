@@ -962,7 +962,6 @@ function parseSpellOverrides(buffer: Uint8Array | undefined): ScenarioSpellOverr
       inCamp: record[29] !== 0,
       displayName: `Custom Spell ${id}`,
       description: "",
-      rawBytes: Array.from(record),
       authored: false,
       provenance: provenance("Data Spell", id, start, SPELL_BYTES, "source-backed")
     };

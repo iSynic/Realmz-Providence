@@ -638,7 +638,7 @@ export function normalizeBrowserProject(project: Project): Project {
   project.thiefEncounters = (project.thiefEncounters ?? []).map(normalizedThiefEncounter);
   project.timedEncounters = (project.timedEncounters ?? []).map(normalizedTimedEncounter);
   project.questLabels ??= [];
-  project.spellOverrides ??= [];
+  project.spellOverrides = (project.spellOverrides ?? []).map(normalizedSpellOverride);
   project.raceOverrides = (project.raceOverrides ?? []).map(normalizedRaceOverride);
   project.casteOverrides = (project.casteOverrides ?? []).map(normalizedCasteOverride);
   project.maps = (project.maps ?? []).map((map) => ({
@@ -725,6 +725,11 @@ function normalizedMonsterRecord(record: Project["monsters"][number]): Project["
     underneath: normalizedFixedArray(record.underneath, 4, 0),
     conditions: normalizedFixedArray(record.conditions, 40, 0)
   };
+}
+
+function normalizedSpellOverride(record: Project["spellOverrides"][number]): Project["spellOverrides"][number] {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as typeof record & { rawBytes?: number[] };
+  return canonical;
 }
 
 function normalizedRaceOverride(record: Project["raceOverrides"][number]): Project["raceOverrides"][number] {
@@ -1201,8 +1206,6 @@ function isGeneratedRuntimeCacheFile(name: string) {
 function validateRulesRecords(project: Project, errors: string[], warnings: string[]) {
   project.ruleNames = defaultRuleNames(project.ruleNames);
   for (const spell of project.spellOverrides ?? []) {
-    const rawBytes = spell.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 30) errors.push(`Custom spell ${spell.id} has invalid 30-byte compatibility storage.`);
     if (spell.id < 0 || spell.id > 104) errors.push(`Custom spell ${spell.id} is outside Data Spell's 0..104 custom slot range.`);
     for (const [field, value] of [
       ["Fixed Range", spell.range1],

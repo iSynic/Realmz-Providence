@@ -119,6 +119,8 @@ sourceShops.set([0xba, 0xdc, 0x0d], 6004);
 const sourceSpells = new Uint8Array(76);
 sourceSpells[0] = 0x51;
 sourceSpells[1] = 0x52;
+sourceSpells[28] = 0x7f;
+sourceSpells[29] = 0xfe;
 sourceSpells[30] = 0x53;
 sourceSpells[31] = 0x54;
 sourceSpells[60] = 0x55;
@@ -1086,8 +1088,8 @@ const authoredCaste = casteRecord(1, {
 const rulesProject = {
   ...project,
   spellOverrides: [
-    spellRecord(0, { rawBytes: Array.from(sourceSpells.slice(0, 30)), authored: false }),
-    { ...authoredSpell, rawBytes: Array.from(sourceSpells.slice(30, 60)), authored: true }
+    spellRecord(0, { authored: false }),
+    { ...authoredSpell, authored: true }
   ],
   raceOverrides: [
     raceRecord(0, { rawBytes: Array.from(sourceRaces.slice(0, 408)), authored: false }),
@@ -2110,7 +2112,6 @@ function spellRecord(id, overrides = {}) {
     inCombat: false,
     inCamp: false,
     displayName: `Custom Spell ${id}`,
-    rawBytes: new Array(30).fill(0),
     authored: true,
     ...overrides
   };

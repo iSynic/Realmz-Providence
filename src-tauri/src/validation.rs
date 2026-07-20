@@ -1817,13 +1817,6 @@ fn validate_rules_overrides(
     let mut missing_race_icons = BTreeSet::new();
     let mut missing_caste_icons = BTreeSet::new();
     for spell in &project.spell_overrides {
-        if !spell.raw_bytes.is_empty() && spell.raw_bytes.len() != crate::realmz::SPELL_BYTES {
-            errors.push(format!(
-                "Spell override {} has invalid {}-byte compatibility storage.",
-                spell.id,
-                crate::realmz::SPELL_BYTES
-            ));
-        }
         if spell.id >= crate::realmz::SPELL_OVERRIDE_RECORDS {
             errors.push(format!(
                 "Custom spell slot {} is outside the scenario custom spell range 5101..5715.",
