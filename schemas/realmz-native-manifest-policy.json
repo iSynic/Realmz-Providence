@@ -1,5 +1,21 @@
 {
-  "contractVersion": 2,
+  "contractVersion": 3,
+  "nativeLayout": {
+    "mapField": {
+      "dimension": 90,
+      "cellBytes": 2
+    },
+    "randomLevel": {
+      "recordBytes": 644
+    },
+    "actionPoint": {
+      "recordBytes": 40,
+      "recordsPerLevel": 100
+    },
+    "extraCode": {
+      "recordBytes": 10
+    }
+  },
   "authoredBaseline": {
     "scenarioItemRecords": 200,
     "startupFiles": {

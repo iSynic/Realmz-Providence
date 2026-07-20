@@ -1,6 +1,7 @@
 import type { ScenarioSeedPoint, ScenarioSeedTerrainGeometry } from "./contracts";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
-const MAP_SIZE = 90;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 
 export function terrainGeometryCells(
   geometry: ScenarioSeedTerrainGeometry,

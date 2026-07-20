@@ -14,7 +14,8 @@ pub use land_layout::{
     parse_land_layout, write_land_layout, LAND_LAYOUT_BYTES, LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
 };
 
-pub const FIELD_BYTES: usize = MAP_SIZE * MAP_SIZE * 2;
+pub const FIELD_BYTES: usize =
+    crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT.map_field_bytes;
 pub const MAP_RECORD_BYTES: usize = 340;
 pub const MAP_RECORD_MARKERS: usize = 10;
 pub const MAP_RECORD_MARKER_BYTES: usize = 6;

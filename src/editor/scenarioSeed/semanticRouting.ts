@@ -1,13 +1,14 @@
 import { GENERATED_SMART_TERRAIN_PROFILES } from "../map/generatedSmartTerrainProfiles";
 import { semanticRoadTile } from "../map/semanticRoads";
 import { normalizeSmartTerrainTile } from "../map/smartTerrainTopology";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "./contracts";
 import { addScenarioSeedDiagnostic } from "./compilerContext";
 import type { ScenarioSeedMapOperationContext } from "./mapCompiler";
 import { mapStorageTileIndex, setTile } from "./mapPaintingPrimitives";
 import { deterministicHash, linePoints } from "./terrainGeometry";
 
-const MAP_SIZE = 90;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 
 export function applySemanticRoad(
   tiles: number[],

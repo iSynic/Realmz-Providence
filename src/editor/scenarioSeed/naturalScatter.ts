@@ -1,12 +1,13 @@
 import { namedLandStampVariants, resolveNamedLandStamp } from "../map/namedLandStamps";
 import { namedLandTileVariants } from "../map/namedLandTiles";
 import { normalizeSmartTerrainTile } from "../map/smartTerrainTopology";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "./contracts";
 import type { ScenarioSeedMapOperationContext } from "./mapCompiler";
 import { mapStorageTileIndex, setTile } from "./mapPaintingPrimitives";
 import { deterministicHash, terrainGeometryCells } from "./terrainGeometry";
 
-const MAP_SIZE = 90;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 
 type NaturalScatterPalette = {
   ground: number[];

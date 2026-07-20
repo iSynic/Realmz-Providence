@@ -25,7 +25,7 @@ pub use crate::generated::project_contract::{
 pub const PROJECT_SCHEMA_VERSION: u32 =
     crate::generated::project_contract::PROVIDENCE_PROJECT_SCHEMA_VERSION;
 pub const SEMANTIC_SCHEMA_VERSION: u32 = 5;
-pub const MAP_SIZE: usize = 90;
+pub const MAP_SIZE: usize = crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT.map_size;
 pub const RACE_NAME_LIMIT: usize = 70;
 pub const CASTE_NAME_LIMIT: usize = 30;
 pub const CUSTOM_NAMES_SOURCE_FILE: &str = "Data Files/Custom Names.rsrc";

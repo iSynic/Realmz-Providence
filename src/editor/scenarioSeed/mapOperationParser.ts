@@ -1,5 +1,6 @@
 import { isScenarioSeedNamedStampName } from "../map/namedLandStamps";
 import { isScenarioSeedNamedTileName } from "../map/namedLandTiles";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import type { LevelType } from "../types";
 import type {
   ScenarioSeedCastleRoomDoor,
@@ -24,7 +25,7 @@ import {
   type ParseContext
 } from "./parsePrimitives";
 
-export const MAP_SIZE = 90;
+export const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 export const MAP_TILE_MIN = -32768;
 export const MAP_TILE_MAX = 32767;
 

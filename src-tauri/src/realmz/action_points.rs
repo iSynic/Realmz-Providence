@@ -1,15 +1,15 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{
     Action, ActionCategory, Confidence, ExtraCodeRow, LevelType, MapCoordinate, Provenance,
     TriggerRecord, MAP_SIZE,
 };
-
 use super::record_bytes::{i16_be, i32_be, write_i16_be, write_i32_be};
 
-pub const DOOR_BYTES: usize = 40;
-pub const DOORS_PER_LEVEL: usize = 100;
-pub const DOOR_LEVEL_BYTES: usize = DOOR_BYTES * DOORS_PER_LEVEL;
-pub const EXTRACODE_BYTES: usize = 10;
+pub const DOOR_BYTES: usize = REALMZ_NATIVE_LAYOUT.action_point_record_bytes;
+pub const DOORS_PER_LEVEL: usize = REALMZ_NATIVE_LAYOUT.action_points_per_level;
+pub const DOOR_LEVEL_BYTES: usize = REALMZ_NATIVE_LAYOUT.action_point_level_bytes;
+pub const EXTRACODE_BYTES: usize = REALMZ_NATIVE_LAYOUT.extra_code_record_bytes;
 
 pub fn parse_door_file(buffer: &[u8], level_type: LevelType, source: &str) -> Vec<TriggerRecord> {
     let levels = buffer.len() / DOOR_LEVEL_BYTES;

@@ -9,10 +9,11 @@ import type {
   ScenarioSeedPoint
 } from "./contracts";
 import type { ScenarioSeedCompilerContext } from "./compilerContext";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
-const MAP_SIZE = 90;
-const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
-const RANDOM_LEVEL_BYTES = 644;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
+const FIELD_BYTES = REALMZ_NATIVE_LAYOUT.mapFieldBytes;
+const RANDOM_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
 
 export type ScenarioSeedMapOperationContext = {
   landlook: number;

@@ -4,6 +4,7 @@ import { GENERATED_SMART_TERRAIN_PROFILES } from "../map/generatedSmartTerrainPr
 import { resolveNamedLandStamp } from "../map/namedLandStamps";
 import { resolveNamedLandTile } from "../map/namedLandTiles";
 import { supportsSemanticRoads } from "../map/semanticRoads";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import {
   defaultStockCombatClearingTile,
   defaultStockHiddenWalkableTile
@@ -18,7 +19,7 @@ import { applySemanticRoad, applySemanticRoute } from "./semanticRouting";
 import { applyTerrainCells, applyTerrainGroup } from "./terrainPainter";
 import { terrainGeometryCells } from "./terrainGeometry";
 
-const MAP_SIZE = 90;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 
 export function applyScenarioSeedMapOperation(
   tiles: number[],

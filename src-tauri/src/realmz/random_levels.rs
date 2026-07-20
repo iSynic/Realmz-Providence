@@ -3,7 +3,8 @@ use crate::project::{Confidence, LevelType, Provenance, RandomLevel, RandomRect}
 
 use super::record_bytes::{i16_be, write_i16_be};
 
-pub const RANDLEVEL_BYTES: usize = 644;
+pub const RANDLEVEL_BYTES: usize =
+    crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT.random_level_record_bytes;
 
 pub fn parse_random_levels(buffer: &[u8], level_type: LevelType, source: &str) -> Vec<RandomLevel> {
     let count = buffer.len() / RANDLEVEL_BYTES;

@@ -11,11 +11,12 @@ import { tileIconCandidates } from "../map/renderValues";
 import { defaultRuleNames } from "../ruleNames";
 import { normalizeProjectContract, PROJECT_SCHEMA_VERSION, requiresCompatibilityAnnex } from "../projectOrigin";
 import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
-const MAP_SIZE = 90;
-const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
-const RANDOM_LEVEL_BYTES = 644;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
+const FIELD_BYTES = REALMZ_NATIVE_LAYOUT.mapFieldBytes;
+const RANDOM_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
 const BUNDLED_LANDLOOK_MAPSTATS = [
   ["Data P BD", 0],
   ["Data SUB BD", 3],

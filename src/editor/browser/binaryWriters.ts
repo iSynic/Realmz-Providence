@@ -31,6 +31,7 @@ import type {
   TriggerRecord,
   TreasureRecord
 } from "../types";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
 export const MESSAGE_RECORD_BYTES = 256;
 export const OPTION_LABEL_RECORD_BYTES = 25;
@@ -47,16 +48,16 @@ export const SIMPLE_ENCOUNTER_RECORD_BYTES = 426;
 export const COMPLEX_ENCOUNTER_RECORD_BYTES = 520;
 export const THIEF_ENCOUNTER_RECORD_BYTES = 118;
 export const TIMED_ENCOUNTER_RECORD_BYTES = 40;
-export const MAP_SIZE = 90;
-export const FIELD_RECORD_BYTES = MAP_SIZE * MAP_SIZE * 2;
+export const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
+export const FIELD_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.mapFieldBytes;
 export const MAP_RECORD_BYTES = 340;
 export const MAP_RECORD_MARKERS = 10;
 export const MAP_RECORD_MARKER_BYTES = 6;
-export const RANDOM_LEVEL_RECORD_BYTES = 644;
-export const DOOR_RECORD_BYTES = 40;
-export const DOORS_PER_LEVEL = 100;
-export const DOOR_LEVEL_RECORD_BYTES = DOOR_RECORD_BYTES * DOORS_PER_LEVEL;
-export const EXTRACODE_RECORD_BYTES = 10;
+export const RANDOM_LEVEL_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
+export const DOOR_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.actionPointRecordBytes;
+export const DOORS_PER_LEVEL = REALMZ_NATIVE_LAYOUT.actionPointsPerLevel;
+export const DOOR_LEVEL_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.actionPointLevelBytes;
+export const EXTRACODE_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
 export const GLOBAL_MACRO_HOOK_BYTES = 60;
 export const LAND_LAYOUT_ROWS = 8;
 export const LAND_LAYOUT_COLUMNS = 16;

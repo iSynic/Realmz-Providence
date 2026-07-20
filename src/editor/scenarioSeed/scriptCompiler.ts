@@ -52,13 +52,14 @@ import {
   resolveRegionTarget,
   resolveSeedAssetRef
 } from "./referenceResolver";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 
 const SIMPLE_ENCOUNTER_BYTES = 426;
 const COMPLEX_ENCOUNTER_BYTES = 520;
 const THIEF_ENCOUNTER_BYTES = 118;
 const TIMED_ENCOUNTER_BYTES = 40;
-const EXTRACODE_BYTES = 10;
-const DOOR_BYTES = 40;
+const EXTRACODE_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
+const DOOR_BYTES = REALMZ_NATIVE_LAYOUT.actionPointRecordBytes;
 const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
 
 type ActionBuildScope =
@@ -401,7 +402,7 @@ function buildTriggers(actionPoints: ScenarioSeedActionPoint[], extraActionPoint
       landid: levelIndex,
       targetX: x,
       targetY: y,
-      provenance: authoredProvenance(levelType === "land" ? "Data DD" : "Data DDD", recordIndex, (levelIndex * 100 + recordIndex) * DOOR_BYTES, DOOR_BYTES)
+      provenance: authoredProvenance(levelType === "land" ? "Data DD" : "Data DDD", recordIndex, (levelIndex * REALMZ_NATIVE_LAYOUT.actionPointsPerLevel + recordIndex) * DOOR_BYTES, DOOR_BYTES)
     };
   });
   const macros = extraActionPoints.map((extraActionPoint): TriggerRecord => {

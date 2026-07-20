@@ -2,6 +2,16 @@
 
 import type { Project } from "../types";
 
+export const REALMZ_NATIVE_LAYOUT = {
+  "mapSize": 90,
+  "mapFieldBytes": 16200,
+  "randomLevelRecordBytes": 644,
+  "actionPointRecordBytes": 40,
+  "actionPointsPerLevel": 100,
+  "actionPointLevelBytes": 4000,
+  "extraCodeRecordBytes": 10
+} as const;
+
 export const AUTHORED_SCENARIO_ITEM_RECORDS = 200 as const;
 
 export const AUTHORED_STARTUP_FILES = {

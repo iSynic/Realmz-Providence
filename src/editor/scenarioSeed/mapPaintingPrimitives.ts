@@ -1,7 +1,8 @@
 import type { LevelType } from "../types";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import type { ScenarioSeedPoint } from "./contracts";
 
-const MAP_SIZE = 90;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 
 export function drawPath(
   tiles: number[],

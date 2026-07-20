@@ -1,12 +1,13 @@
 import { landlookName, landlookPictId } from "../browser/realmzParser";
 import { buildSmartTerrainChanges } from "../map/smartTerrainBrush";
+import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
 import type { MapEntity, SmartBrushPreset, TilesetAsset } from "../types";
 import type { ScenarioSeedMapOperation, ScenarioSeedPoint } from "./contracts";
 import type { ScenarioSeedMapOperationContext } from "./mapCompiler";
 import { setTile } from "./mapPaintingPrimitives";
 import { terrainGeometryCells } from "./terrainGeometry";
 
-const MAP_SIZE = 90;
+const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 
 export function applyTerrainGroup(
   tiles: number[],
