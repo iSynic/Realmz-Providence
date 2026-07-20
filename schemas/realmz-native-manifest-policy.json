@@ -169,6 +169,40 @@
         }
       }
     ],
+    "projectPathSemanticFiles": [
+      {
+        "id": "customLandlooks",
+        "projectPath": "/customLandlooks",
+        "pathField": "sourceFile",
+        "include": {
+          "kind": "field-truthy",
+          "field": "authored"
+        }
+      },
+      {
+        "id": "alternateMonsterSets",
+        "projectPath": "/monsterSets",
+        "pathField": "sourceFile",
+        "include": {
+          "kind": "field-collection-non-empty",
+          "field": "monsters"
+        }
+      }
+    ],
+    "resourceSidecars": [
+      {
+        "id": "itemTexts",
+        "path": "Data ID.rsrc",
+        "projectPath": "/itemTexts",
+        "emission": "semantic-updates"
+      },
+      {
+        "id": "customSpellNames",
+        "path": "Data Spell.rsrc",
+        "projectPath": "/spellOverrides",
+        "emission": "semantic-updates"
+      }
+    ],
     "emptyRuntimeFiles": [
       "Data DL",
       "Data RDD",

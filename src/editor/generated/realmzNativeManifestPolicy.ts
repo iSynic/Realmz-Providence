@@ -250,6 +250,36 @@ export function authoredOptionalSemanticFilePaths(project: Project): string[] {
   return paths;
 }
 
+export type AuthoredProjectPathSemanticFileExpectation = {
+  familyId: string;
+  path: string;
+  shouldExist: boolean;
+};
+
+export function authoredProjectPathSemanticFileExpectations(project: Project): AuthoredProjectPathSemanticFileExpectation[] {
+  const expectations: AuthoredProjectPathSemanticFileExpectation[] = [];
+  for (const entry of (project.customLandlooks ?? [])) {
+    expectations.push({
+      familyId: "customLandlooks",
+      path: entry.sourceFile,
+      shouldExist: Boolean(entry.authored)
+    });
+  }
+  for (const entry of (project.monsterSets ?? [])) {
+    expectations.push({
+      familyId: "alternateMonsterSets",
+      path: entry.sourceFile,
+      shouldExist: entry.monsters.length > 0
+    });
+  }
+  return expectations;
+}
+
+export const AUTHORED_RESOURCE_SIDECAR_PATHS = {
+  "itemTexts": "Data ID.rsrc",
+  "customSpellNames": "Data Spell.rsrc"
+} as const;
+
 export const AUTHORED_EMPTY_RUNTIME_FILES = [
   "Data DL",
   "Data RDD",

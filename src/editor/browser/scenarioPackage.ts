@@ -71,8 +71,10 @@ import { appendPreservedShopSourceSuffix } from "./shopRecords";
 import { requiresCompatibilityAnnex } from "../projectOrigin";
 import {
   authoredOptionalSemanticFilePaths,
+  authoredProjectPathSemanticFileExpectations,
   AUTHORED_OPTIONAL_SEMANTIC_FILES,
   AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS,
+  AUTHORED_RESOURCE_SIDECAR_PATHS,
   AUTHORED_STARTUP_FILES
 } from "../generated/realmzNativeManifestPolicy";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
@@ -221,7 +223,7 @@ function compileBrowserScenarioManifest(
     outputFiles.set(resourceResult.resourceFilePath, resourceResult.resourceBytes);
   }
   if (!requiresCompatibilityAnnex(project)) {
-    validateAuthoredOptionalSemanticFiles(project, outputFiles);
+    validateAuthoredSemanticFiles(project, outputFiles);
   }
 
   const writtenFiles = uniqueStrings([
@@ -238,12 +240,20 @@ function compileBrowserScenarioManifest(
   };
 }
 
-function validateAuthoredOptionalSemanticFiles(project: Project, outputFiles: Map<string, Uint8Array>) {
+function validateAuthoredSemanticFiles(project: Project, outputFiles: Map<string, Uint8Array>) {
   const expected = new Set(authoredOptionalSemanticFilePaths(project));
   for (const family of AUTHORED_OPTIONAL_SEMANTIC_FILES) {
     if (outputFiles.has(family.path) === expected.has(family.path)) continue;
     throw new Error(
       `Authored optional semantic file policy '${family.id}' expected ${expected.has(family.path) ? "output" : "no output"} at '${family.path}' from ${family.presence.projectPath} ${family.presence.kind}.`
+    );
+  }
+  const projectPathExpectations = authoredProjectPathSemanticFileExpectations(project);
+  for (const expectation of projectPathExpectations) {
+    const shouldExist = projectPathExpectations.some((candidate) => candidate.path === expectation.path && candidate.shouldExist);
+    if (outputFiles.has(expectation.path) === shouldExist) continue;
+    throw new Error(
+      `Authored project-path semantic file policy '${expectation.familyId}' expected ${shouldExist ? "output" : "no output"} at canonical path '${expectation.path}'.`
     );
   }
 }
@@ -587,7 +597,7 @@ function writeCustomSpellNameResources(project: Project, annex: BrowserCompatibi
   }
   if (updates.length === 0) return null;
   return {
-    path: source ? outputPathForRawSource(source) : "Data Spell.rsrc",
+    path: source ? outputPathForRawSource(source) : AUTHORED_RESOURCE_SIDECAR_PATHS.customSpellNames,
     bytes: mergeResourceEntries(original, updates).bytes
   };
 }
@@ -669,16 +679,17 @@ function writeItemTextResources(project: Project, annex: BrowserCompatibilityAnn
   }
   if (updates.length === 0) return null;
   return {
-    path: source ? outputPathForRawSource(source) : "Data ID.rsrc",
+    path: source ? outputPathForRawSource(source) : AUTHORED_RESOURCE_SIDECAR_PATHS.itemTexts,
     bytes: mergeResourceEntries(original, updates).bytes
   };
 }
 
 function dataIdResourceFork(annex: BrowserCompatibilityAnnex | null) {
+  const authoredPath = AUTHORED_RESOURCE_SIDECAR_PATHS.itemTexts.toLowerCase();
   for (const source of annex?.files() ?? []) {
     const outputPath = outputPathForRawSource(source).toLowerCase();
     const name = source.name.toLowerCase();
-    if (!["data id", "data id.rsrc", "data id.rsf", "._data id"].includes(name) && !outputPath.endsWith("/data id") && !outputPath.endsWith("/data id.rsrc") && !outputPath.endsWith("/data id.rsf") && !outputPath.endsWith("/._data id")) {
+    if (!["data id", authoredPath, "data id.rsf", "._data id"].includes(name) && !outputPath.endsWith("/data id") && !outputPath.endsWith(`/${authoredPath}`) && !outputPath.endsWith("/data id.rsf") && !outputPath.endsWith("/._data id")) {
       continue;
     }
     if (parseResourceFork(source.bytesData).some((entry) => entry.resourceType === "STR#" && itemTextResourceBase(entry.id) != null)) {
@@ -702,7 +713,7 @@ function itemTextResourceName(offset: number) {
 }
 
 function dataSpellResourceFork(annex: BrowserCompatibilityAnnex | null) {
-  for (const name of ["Data Spell.rsrc", "Data Spell.rsf", "._Data Spell"]) {
+  for (const name of [AUTHORED_RESOURCE_SIDECAR_PATHS.customSpellNames, "Data Spell.rsf", "._Data Spell"]) {
     const source = annex?.find((file) => file.name === name || outputPathForRawSource(file) === name);
     if (!source) continue;
     if (parseResourceFork(source.bytesData).some((entry) => entry.resourceType === "STR#" && entry.id >= 5000 && entry.id <= 5006)) {

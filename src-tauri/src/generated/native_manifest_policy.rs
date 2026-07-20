@@ -302,6 +302,44 @@ pub fn authored_optional_semantic_file_paths(
     paths
 }
 
+pub struct AuthoredProjectPathSemanticFileExpectation<'a> {
+    pub family_id: &'static str,
+    pub path: &'a str,
+    pub should_exist: bool,
+}
+
+pub fn authored_project_path_semantic_file_expectations(
+    project: &crate::project::ProvidenceProject,
+) -> Vec<AuthoredProjectPathSemanticFileExpectation<'_>> {
+    let mut expectations = Vec::new();
+    for entry in &project.custom_landlooks {
+        expectations.push(AuthoredProjectPathSemanticFileExpectation {
+            family_id: "customLandlooks",
+            path: entry.source_file.as_str(),
+            should_exist: entry.authored,
+        });
+    }
+    for entry in &project.monster_sets {
+        expectations.push(AuthoredProjectPathSemanticFileExpectation {
+            family_id: "alternateMonsterSets",
+            path: entry.source_file.as_str(),
+            should_exist: !entry.monsters.is_empty(),
+        });
+    }
+    expectations
+}
+
+pub struct AuthoredResourceSidecarPaths {
+    pub item_texts: &'static str,
+    pub custom_spell_names: &'static str,
+}
+
+pub const AUTHORED_RESOURCE_SIDECAR_PATHS: AuthoredResourceSidecarPaths =
+    AuthoredResourceSidecarPaths {
+        item_texts: "Data ID.rsrc",
+        custom_spell_names: "Data Spell.rsrc",
+    };
+
 #[rustfmt::skip]
 pub const AUTHORED_EMPTY_RUNTIME_FILES: &[&str] = &[
     "Data DL",

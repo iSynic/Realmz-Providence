@@ -1,8 +1,9 @@
 use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot};
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::generated::native_manifest_policy::{
-    authored_optional_semantic_file_paths, AUTHORED_EMPTY_RUNTIME_FILES,
-    AUTHORED_OPTIONAL_SEMANTIC_FILES, AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS,
+    authored_optional_semantic_file_paths, authored_project_path_semantic_file_expectations,
+    AUTHORED_EMPTY_RUNTIME_FILES, AUTHORED_OPTIONAL_SEMANTIC_FILES,
+    AUTHORED_OPTIONAL_SEMANTIC_FILE_PATHS, AUTHORED_RESOURCE_SIDECAR_PATHS,
     AUTHORED_SCENARIO_ITEM_RECORDS, AUTHORED_STARTUP_FILES, AUTHORED_TRIGGER_TABLES,
 };
 use crate::native_manifest::NativeScenarioManifest;
@@ -410,7 +411,7 @@ fn compile_realmz_scenario(
         target,
     )?;
     if !preserves_source_snapshot {
-        validate_authored_optional_semantic_files(project, &manifest)?;
+        validate_authored_semantic_files(project, &manifest)?;
     }
 
     let warnings = if project.validation.ok {
@@ -430,7 +431,7 @@ fn compile_realmz_scenario(
     })
 }
 
-fn validate_authored_optional_semantic_files(
+fn validate_authored_semantic_files(
     project: &ProvidenceProject,
     manifest: &NativeScenarioManifest,
 ) -> Result<()> {
@@ -447,6 +448,20 @@ fn validate_authored_optional_semantic_files(
                 family.presence_kind,
                 family.match_field,
                 family.match_value,
+            )));
+        }
+    }
+    let project_path_expectations = authored_project_path_semantic_file_expectations(project);
+    for expectation in &project_path_expectations {
+        let should_exist = project_path_expectations
+            .iter()
+            .any(|candidate| candidate.path == expectation.path && candidate.should_exist);
+        if manifest.files().contains_key(expectation.path) != should_exist {
+            return Err(ProvidenceError::message(format!(
+                "Authored project-path semantic file policy '{}' expected {} at canonical path '{}'.",
+                expectation.family_id,
+                if should_exist { "output" } else { "no output" },
+                expectation.path,
             )));
         }
     }
@@ -1421,8 +1436,14 @@ fn write_custom_spell_name_resources(
     if candidates.is_empty() {
         return Ok(());
     }
-    let (resource_file_name, original) =
-        preserved.unwrap_or_else(|| ("Data Spell.rsrc".to_string(), Vec::new()));
+    let (resource_file_name, original) = preserved.unwrap_or_else(|| {
+        (
+            AUTHORED_RESOURCE_SIDECAR_PATHS
+                .custom_spell_names
+                .to_string(),
+            Vec::new(),
+        )
+    });
     let updates = custom_spell_name_resource_updates(&candidates, &original);
     if updates.is_empty() {
         return Ok(());
@@ -1490,7 +1511,11 @@ fn custom_spell_name_resource_updates(
 fn data_spell_resource_fork(
     annex: &CompatibilityAnnexSnapshot,
 ) -> Result<Option<(String, Vec<u8>)>> {
-    for name in ["Data Spell.rsrc", "Data Spell.rsf", "._Data Spell"] {
+    for name in [
+        AUTHORED_RESOURCE_SIDECAR_PATHS.custom_spell_names,
+        "Data Spell.rsf",
+        "._Data Spell",
+    ] {
         let Some(bytes) = annex.read(name)? else {
             continue;
         };
@@ -1517,9 +1542,16 @@ fn write_item_text_resources(
         return Ok(());
     }
     let (resource_file_name, original) = match annex {
-        Some(annex) => data_id_resource_fork(annex)?
-            .unwrap_or_else(|| ("Data ID.rsrc".to_string(), Vec::new())),
-        None => ("Data ID.rsrc".to_string(), Vec::new()),
+        Some(annex) => data_id_resource_fork(annex)?.unwrap_or_else(|| {
+            (
+                AUTHORED_RESOURCE_SIDECAR_PATHS.item_texts.to_string(),
+                Vec::new(),
+            )
+        }),
+        None => (
+            AUTHORED_RESOURCE_SIDECAR_PATHS.item_texts.to_string(),
+            Vec::new(),
+        ),
     };
     let updates = item_text_resource_updates(&authored, &original);
     if updates.is_empty() {
@@ -1531,7 +1563,12 @@ fn write_item_text_resources(
 }
 
 fn data_id_resource_fork(annex: &CompatibilityAnnexSnapshot) -> Result<Option<(String, Vec<u8>)>> {
-    for name in ["Data ID.rsrc", "Data ID.rsf", "._Data ID", "Data ID"] {
+    for name in [
+        AUTHORED_RESOURCE_SIDECAR_PATHS.item_texts,
+        "Data ID.rsf",
+        "._Data ID",
+        "Data ID",
+    ] {
         let Some(bytes) = annex.read(name)? else {
             continue;
         };

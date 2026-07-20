@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixturePath = path.join(repoRoot, "fixtures", "scenario-seeds", "authoritative-ownership-proof.seed.json");
+const manifestPolicyPath = path.join(repoRoot, "schemas", "realmz-native-manifest-policy.json");
 const proofRoot = path.join(repoRoot, "tmp", "authoritative-scenario-proof");
 const buildRoot = path.join(proofRoot, "compiler-build");
 const projectDir = path.join(proofRoot, "Providence Ownership Proof.providence");
@@ -38,6 +39,7 @@ const { decodePictPreviewImageForTest } = requireFromBuild("./resourcePreview.cj
 const { replaceCustomLandlookAtlas } = requireFromBuild("./assetCommands.cjs");
 const { readStoredZip } = requireFromBuild("./zip.cjs");
 const seed = JSON.parse(await fs.readFile(fixturePath, "utf8"));
+const manifestPolicy = JSON.parse(await fs.readFile(manifestPolicyPath, "utf8"));
 const result = createProjectFromScenarioSeed(seed, {
   now: "2026-07-18T00:00:00.000Z",
   appVersion: "authoritative-scenario-proof"
@@ -459,6 +461,10 @@ assertCompleteNativeFolder(windowsFilesA, "Windows");
 assertCompleteNativeFolder(classicFilesA, "Classic Mac");
 assertCompleteNativeFolder(browserWindowsFiles, "browser Windows");
 assertCompleteNativeFolder(browserClassicFiles, "browser Classic Mac");
+assertSharedManifestPathPolicy(windowsFilesA, project, "Windows");
+assertSharedManifestPathPolicy(classicFilesA, project, "Classic Mac");
+assertSharedManifestPathPolicy(browserWindowsFiles, project, "browser Windows");
+assertSharedManifestPathPolicy(browserClassicFiles, project, "browser Classic Mac");
 assertCompiledTileSolids(windowsFilesA, "Windows");
 assertCompiledTileSolids(classicFilesA, "Classic Mac");
 assertCompiledTileSolids(browserWindowsFiles, "browser Windows");
@@ -1173,6 +1179,33 @@ function assertCompiledCustomLandlook(files, label) {
   expect(readI16(bytes, 201 * 40) === 156 && readI16(bytes, 201 * 40 + 2) === 1, `${label} custom-landlook base metadata is wrong`);
   expect(readI16(bytes, 201 * 40 + 4) === 62 && readI16(bytes, 201 * 40 + 6) === 85, `${label} custom-landlook first range is wrong`);
   expect(readI16(bytes, 201 * 40 + 8) === 0, `${label} custom-landlook reserved range word is not deterministic zero`);
+}
+
+function assertSharedManifestPathPolicy(files, project, label) {
+  const baseline = manifestPolicy.authoredBaseline;
+  for (const family of baseline.projectPathSemanticFiles) {
+    const collection = projectValueAtPointer(project, family.projectPath);
+    expect(Array.isArray(collection), `${label} manifest policy ${family.id} does not resolve to a canonical collection`);
+    const expectations = collection.map((entry) => ({
+      path: entry?.[family.pathField],
+      shouldExist:
+        family.include.kind === "field-truthy"
+          ? Boolean(entry?.[family.include.field])
+          : Array.isArray(entry?.[family.include.field]) && entry[family.include.field].length > 0
+    }));
+    for (const expectation of expectations) {
+      const shouldExist = expectations.some((candidate) => candidate.path === expectation.path && candidate.shouldExist);
+      expect(files.has(expectation.path) === shouldExist, `${label} ${family.id} path ${expectation.path} disagrees with the shared project-path policy`);
+    }
+  }
+  for (const sidecar of baseline.resourceSidecars) {
+    expect(sidecar.emission === "semantic-updates", `${label} resource sidecar ${sidecar.id} has an unknown emission rule`);
+    expect(files.has(sidecar.path), `${label} ownership proof is missing shared ${sidecar.id} resource sidecar ${sidecar.path}`);
+  }
+}
+
+function projectValueAtPointer(project, pointer) {
+  return pointer.slice(1).split("/").reduce((value, segment) => value?.[segment], project);
 }
 
 function assertCompiledCustomLandlookAtlas(files, label) {
