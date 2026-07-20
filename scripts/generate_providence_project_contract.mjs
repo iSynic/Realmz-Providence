@@ -72,8 +72,13 @@ const mapstatsRecordSchema = schema.$defs?.mapstatsRecord ?? {};
 const landlookRangeSlotSchema = schema.$defs?.landlookRangeSlot ?? {};
 const landlookWriterGateSchema = schema.$defs?.landlookWriterGate ?? {};
 const customLandlookMetadataSchema = schema.$defs?.customLandlookMetadata ?? {};
-const recordDefinitionNames = ["scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "monsterSet", "itemTextRecord", "scenarioSpellOverride", "scenarioRaceOverride", "scenarioCasteOverride", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
+const recordDefinitionNames = ["actionCategory", "mapCoordinate", "action", "triggerRecord", "extraCodeRow", "scenarioItemRecord", "treasureRecord", "shopRecord", "messageRecord", "optionLabelRecord", "battleRecord", "monsterRecord", "monsterDescriptionRecord", "monsterSet", "itemTextRecord", "scenarioSpellOverride", "scenarioRaceOverride", "scenarioCasteOverride", "encounterActionRow", "simpleEncounterRecord", "complexEncounterRecord", "thiefEncounterRecord", "timedEncounterRecord"];
 const recordDefinitions = recordDefinitionNames.map((name) => schema.$defs?.[name] ?? {});
+const actionCategorySchema = schema.$defs?.actionCategory ?? {};
+const mapCoordinateSchema = schema.$defs?.mapCoordinate ?? {};
+const actionSchema = schema.$defs?.action ?? {};
+const triggerRecordSchema = schema.$defs?.triggerRecord ?? {};
+const extraCodeRowSchema = schema.$defs?.extraCodeRow ?? {};
 const scenarioItemRecordSchema = schema.$defs?.scenarioItemRecord ?? {};
 const treasureRecordSchema = schema.$defs?.treasureRecord ?? {};
 const shopRecordSchema = schema.$defs?.shopRecord ?? {};
@@ -124,6 +129,8 @@ expect(schema.properties?.mapRecords?.items?.$ref === "#/$defs/mapRecord", "proj
 expect(schema.properties?.tileAttributes?.items?.$ref === "#/$defs/tileAttributeProfile", "project tileAttributes must contain canonical tile-attribute DTOs");
 expect(schema.properties?.customLandlooks?.items?.$ref === "#/$defs/customLandlookMetadata", "project customLandlooks must contain canonical custom-landlook DTOs");
 expect(schema.properties?.randomLevels?.items?.$ref === "#/$defs/randomLevel", "project randomLevels must contain canonical random-level DTOs");
+expect(schema.properties?.triggers?.items?.$ref === "#/$defs/triggerRecord", "project triggers must contain canonical trigger DTOs");
+expect(schema.properties?.extracodes?.items?.$ref === "#/$defs/extraCodeRow", "project extracodes must contain canonical EDCD DTOs");
 expect(schema.properties?.scenarioItems?.items?.$ref === "#/$defs/scenarioItemRecord", "project scenarioItems must contain canonical scenario-item DTOs");
 expect(schema.properties?.treasures?.items?.$ref === "#/$defs/treasureRecord", "project treasures must contain canonical treasure DTOs");
 expect(schema.properties?.shops?.items?.$ref === "#/$defs/shopRecord", "project shops must contain canonical shop DTOs");
@@ -218,11 +225,50 @@ const landlookCompatibilityFields = landlookDefinitions.flatMap((definition) =>
 expectSameSet(landlookCompatibilityFields, ["TileAttributeProfile.spare", "TileAttributeProfile.rawByte", "MapstatsRecord.spare", "LandlookRangeSlot.reserved", "CustomLandlookMetadata.trailingBytes", "CustomLandlookMetadata.rawBytes"], "Landlook compatibility-only field inventory");
 for (const [index, definition] of recordDefinitions.entries()) {
   const definitionName = recordDefinitionNames[index];
-  expect(definition.type === "object", `${definitionName} must be an object schema`);
-  expect(definition.additionalProperties === false, `${definitionName} must reject unknown fields`);
+  expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);
+  if (definition.type === "object") expect(definition.additionalProperties === false, `${definitionName} must reject unknown fields`);
   expect(typeof definition["x-providence-typescript-name"] === "string", `${definitionName} must declare its TypeScript name`);
   expect(typeof definition["x-providence-rust-name"] === "string", `${definitionName} must declare its Rust name`);
 }
+const actionCategoryValues = ["branch", "combat", "encounter", "item_shop", "map", "registration", "state", "time", "ui_text", "unknown"];
+expectSameArray(actionCategorySchema.enum ?? [], actionCategoryValues, "Action category vocabulary");
+expect(actionCategorySchema["x-providence-rust-rename-all"] === "snake_case", "Action categories must retain their snake_case Rust wire names");
+const actionCategoryAliases = {
+  branch: ["Branch", "Quest"],
+  combat: ["Combat"],
+  encounter: ["Encounter"],
+  item_shop: ["Economy", "ItemShop"],
+  map: ["Map"],
+  registration: ["Registration", "Scenario"],
+  state: ["Advanced", "Characters", "Rules", "State"],
+  time: ["Time"],
+  ui_text: ["Media", "Text", "UiText"],
+  unknown: ["Unknown"]
+};
+expectSameArray(Object.keys(actionCategorySchema["x-providence-rust-aliases"] ?? {}), actionCategoryValues, "Action category legacy-alias inventory");
+for (const [category, aliases] of Object.entries(actionCategoryAliases)) {
+  expectSameArray(actionCategorySchema["x-providence-rust-aliases"]?.[category] ?? [], aliases, `Action category ${category} legacy aliases`);
+}
+expectSameArray(Object.keys(mapCoordinateSchema.properties ?? {}), ["x", "y"], "Action Point coordinate field inventory");
+expectSameArray(mapCoordinateSchema.required ?? [], ["x", "y"], "Action Point coordinate required field inventory");
+const actionFields = ["slot", "rawCode", "code", "id", "label", "category", "gosub"];
+expectSameArray(Object.keys(actionSchema.properties ?? {}), actionFields, "Action Point step field inventory");
+expectSameArray(actionSchema.required ?? [], actionFields.filter((field) => field !== "gosub"), "Action Point step browser-compatible field inventory");
+expect(actionSchema.properties?.category?.type === "string", "Action Point steps must retain the editor's open author-facing category labels");
+expect(actionSchema.properties?.category?.["x-providence-rust-type"] === "ActionCategory", "Action Point steps must retain the normalized Rust boundary category type");
+const triggerFields = ["id", "source", "levelType", "levelIndex", "recordIndex", "active", "doorid", "landid", "targetX", "targetY", "percent", "coordinate", "actions", "provenance"];
+expectSameArray(Object.keys(triggerRecordSchema.properties ?? {}), triggerFields, "Action Point trigger field inventory");
+expectSameArray(triggerRecordSchema.required ?? [], triggerFields.filter((field) => !["landid", "targetX", "targetY", "provenance"].includes(field)), "Action Point trigger browser-compatible field inventory");
+expect(triggerRecordSchema.properties?.actions?.items?.$ref === "#/$defs/action", "Action Point triggers must contain canonical action steps");
+expect(triggerRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "Action Point provenance must reference canonical provenance");
+expect(triggerRecordSchema.properties?.levelType?.["x-providence-rust-type"] === "Option<LevelType>", "Action Point nullable levelType must preserve the Rust option wire shape");
+expect(triggerRecordSchema.properties?.coordinate?.["x-providence-rust-type"] === "Option<MapCoordinate>", "Action Point nullable coordinate must preserve the Rust option wire shape");
+const extraCodeFields = ["id", "values", "provenance"];
+expectSameArray(Object.keys(extraCodeRowSchema.properties ?? {}), extraCodeFields, "EDCD row field inventory");
+expectSameArray(extraCodeRowSchema.required ?? [], ["id", "values"], "EDCD browser-compatible field inventory");
+expect(extraCodeRowSchema.properties?.values?.minItems === 5 && extraCodeRowSchema.properties?.values?.maxItems === 5, "EDCD rows must retain exactly five signed-short values");
+expect(extraCodeRowSchema.properties?.values?.["x-providence-rust-type"] === "[i16; 5]", "EDCD rows must preserve the fixed Rust array wire shape");
+expect(extraCodeRowSchema.properties?.provenance?.$ref === "#/$defs/provenance", "EDCD provenance must reference canonical provenance");
 const scenarioItemFields = ["id", "itemId", "iconId", "type", "st", "blunt", "hands", "lu", "movement", "ac", "magicResistance", "damage", "spellPoints", "sound", "weight", "cost", "charge", "cursedItemId", "magical", "itemCat0", "itemCat1", "raceRestrictions", "casteRestrictions", "specificRace", "specificCaste", "raceClassOnly", "casteClassOnly", "spare2", "vSmall", "vLarge", "heat", "cold", "electric", "vsUndead", "vsDemonDevil", "vsEvil", "special1", "special2", "special3", "special4", "special5", "weightPerCharge", "dropOnEmpty", "rawBytes", "authored", "provenance"];
 expectSameArray(Object.keys(scenarioItemRecordSchema.properties ?? {}), scenarioItemFields, "Scenario-item field inventory");
 expectSameArray(scenarioItemRecordSchema.required ?? [], scenarioItemFields.filter((field) => !["rawBytes", "authored"].includes(field)), "Scenario-item authored field inventory");
@@ -427,6 +473,9 @@ for (const alias of [
   "export type LandlookRangeSlot = ProvidenceLandlookRangeSlot;",
   "export type LandlookWriterGate = ProvidenceLandlookWriterGate;",
   "export type CustomLandlookMetadata = ProvidenceCustomLandlookMetadata;",
+  "export type TriggerRecord = ProvidenceTriggerRecord;",
+  "export type Action = ProvidenceAction;",
+  "export type ExtraCodeRow = ProvidenceExtraCodeRow;",
   "export type ScenarioItemRecord = ProvidenceScenarioItemRecord;",
   "export type TreasureRecord = ProvidenceTreasureRecord;",
   "export type ShopRecord = ProvidenceShopRecord;",
@@ -468,6 +517,9 @@ for (const mapType of ["MapRender", "MapEntity", "LandLayout", "MapMarker", "Map
 for (const landlookType of ["TileAttributeProfile", "MapstatsRecord", "LandlookRangeSlot", "LandlookWriterGate", "CustomLandlookMetadata"]) {
   expect(!typesSource.includes(`export type ${landlookType} = {`), `types.ts must not handwrite ${landlookType}`);
 }
+expect(!typesSource.includes("export type TriggerRecord = {"), "types.ts must not handwrite TriggerRecord");
+expect(!typesSource.includes("export type Action = {"), "types.ts must not handwrite Action");
+expect(!typesSource.includes("export type ExtraCodeRow = {"), "types.ts must not handwrite ExtraCodeRow");
 expect(!typesSource.includes("export type ScenarioItemRecord = {"), "types.ts must not handwrite ScenarioItemRecord");
 expect(!typesSource.includes("export type TreasureRecord = {"), "types.ts must not handwrite TreasureRecord");
 expect(!typesSource.includes("export type ShopRecord = {"), "types.ts must not handwrite ShopRecord");
@@ -517,6 +569,11 @@ expectSameSet(rustGeneratedReExports, [
   "LandlookRangeSlot",
   "LandlookWriterGate",
   "CustomLandlookMetadata",
+  "ActionCategory",
+  "MapCoordinate",
+  "Action",
+  "TriggerRecord",
+  "ExtraCodeRow",
   "ScenarioContactInfo",
   "ScenarioGlobalMacroHooks",
   "ScenarioMeta",
@@ -568,6 +625,11 @@ expect(!rustProjectSource.includes("pub struct CustomLandlookMetadata {"), "proj
 expect(!rustProjectSource.includes("pub enum TileAttributeConfidence {"), "project.rs must not handwrite TileAttributeConfidence");
 expect(!rustProjectSource.includes("pub enum TileAttributeSourceKind {"), "project.rs must not handwrite TileAttributeSourceKind");
 expect(!rustProjectSource.includes("pub enum TileAttributeFlag {"), "project.rs must not handwrite TileAttributeFlag");
+expect(!rustProjectSource.includes("pub enum ActionCategory {"), "project.rs must not handwrite ActionCategory");
+expect(!rustProjectSource.includes("pub struct MapCoordinate {"), "project.rs must not handwrite MapCoordinate");
+expect(!rustProjectSource.includes("pub struct Action {"), "project.rs must not handwrite Action");
+expect(!rustProjectSource.includes("pub struct TriggerRecord {"), "project.rs must not handwrite TriggerRecord");
+expect(!rustProjectSource.includes("pub struct ExtraCodeRow {"), "project.rs must not handwrite ExtraCodeRow");
 expect(!rustProjectSource.includes("pub struct ScenarioItemRecord {"), "project.rs must not handwrite ScenarioItemRecord");
 expect(!rustProjectSource.includes("pub struct TreasureRecord {"), "project.rs must not handwrite TreasureRecord");
 expect(!rustProjectSource.includes("pub struct ShopRecord {"), "project.rs must not handwrite ShopRecord");
@@ -695,6 +757,9 @@ function renderTypeScript(version, fields, derived, source, sourceFile, projectO
     `export const PROVIDENCE_RANDOM_LEVEL_FIELDS = ${JSON.stringify(Object.keys(randomLevelSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_TILE_ATTRIBUTE_FIELDS = ${JSON.stringify(Object.keys(tileAttributeProfileSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS = ${JSON.stringify(Object.keys(customLandlookMetadataSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_TRIGGER_FIELDS = ${JSON.stringify(Object.keys(triggerRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_ACTION_FIELDS = ${JSON.stringify(Object.keys(actionSchema.properties ?? {}), null, 2)} as const;\n\n` +
+    `export const PROVIDENCE_EXTRA_CODE_FIELDS = ${JSON.stringify(Object.keys(extraCodeRowSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SCENARIO_ITEM_FIELDS = ${JSON.stringify(Object.keys(scenarioItemRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_TREASURE_FIELDS = ${JSON.stringify(Object.keys(treasureRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
     `export const PROVIDENCE_SHOP_FIELDS = ${JSON.stringify(Object.keys(shopRecordSchema.properties ?? {}), null, 2)} as const;\n\n` +
@@ -763,6 +828,12 @@ function renderRust(version, fields, derived, source, sourceFile, projectOrigin,
     `pub const PROVIDENCE_TILE_ATTRIBUTE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(tileAttributeProfileSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS: &[&str] = &[\n${renderArray(Object.keys(customLandlookMetadataSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_TRIGGER_FIELDS: &[&str] = &[\n${renderArray(Object.keys(triggerRecordSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_ACTION_FIELDS: &[&str] = &[\n${renderArray(Object.keys(actionSchema.properties ?? {}))}\n];\n\n` +
+    `#[allow(dead_code)]\n` +
+    `pub const PROVIDENCE_EXTRA_CODE_FIELDS: &[&str] = &[\n${renderArray(Object.keys(extraCodeRowSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
     `pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[\n${renderArray(Object.keys(scenarioItemRecordSchema.properties ?? {}))}\n];\n\n` +
     `#[allow(dead_code)]\n` +
@@ -850,8 +921,19 @@ function renderRustEnum(definition) {
   const name = definition["x-providence-rust-name"];
   const derives = definition["x-providence-rust-derives"] ?? ["Debug", "Clone", "Serialize", "Deserialize"];
   const defaultVariant = definition["x-providence-rust-default-variant"];
-  const variants = (definition.enum ?? []).map((value) => `${value === defaultVariant ? "    #[default]\n" : ""}    ${kebabToPascal(value)},`).join("\n");
-  return `#[derive(${derives.join(", ")})]\n#[serde(rename_all = "kebab-case")]\npub enum ${name} {\n${variants}\n}\n`;
+  const renameAll = definition["x-providence-rust-rename-all"] ?? "kebab-case";
+  const aliases = definition["x-providence-rust-aliases"] ?? {};
+  const variants = (definition.enum ?? []).map((value) => {
+    const attributes = [];
+    if (value === defaultVariant) attributes.push("    #[default]");
+    const legacyAliases = aliases[value] ?? [];
+    if (legacyAliases.length > 0) {
+      attributes.push(`    #[serde(${legacyAliases.map((alias) => `alias = ${JSON.stringify(alias)}`).join(", ")})]`);
+    }
+    attributes.push(`    ${kebabToPascal(value)},`);
+    return attributes.join("\n");
+  }).join("\n");
+  return `#[derive(${derives.join(", ")})]\n#[serde(rename_all = ${JSON.stringify(renameAll)})]\npub enum ${name} {\n${variants}\n}\n`;
 }
 
 function renderRustDefinition(definition) {
@@ -911,7 +993,7 @@ function definitionName(reference) {
 }
 
 function kebabToPascal(value) {
-  return value.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("");
+  return value.split(/[-_]/).map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("");
 }
 
 function camelToSnake(value) {

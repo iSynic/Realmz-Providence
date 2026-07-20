@@ -79,12 +79,18 @@
       "type": "array",
       "items": { "$ref": "#/$defs/customLandlookMetadata" }
     },
-    "triggers": { "$ref": "#/$defs/canonicalRecordArray" },
+    "triggers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/triggerRecord" }
+    },
     "randomLevels": {
       "type": "array",
       "items": { "$ref": "#/$defs/randomLevel" }
     },
-    "extracodes": { "$ref": "#/$defs/canonicalRecordArray" },
+    "extracodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/extraCodeRow" }
+    },
     "messages": {
       "type": "array",
       "items": { "$ref": "#/$defs/messageRecord" }
@@ -461,6 +467,108 @@
         "mapNameAuthored": { "type": "boolean" },
         "rawBytes": { "type": "array", "minItems": 340, "maxItems": 340, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "actionCategory": {
+      "type": "string",
+      "description": "The normalized Rust compiler/runtime vocabulary. Editor action-category labels remain an open author-facing string and are not silently coerced to this enum.",
+      "enum": ["branch", "combat", "encounter", "item_shop", "map", "registration", "state", "time", "ui_text", "unknown"],
+      "x-providence-typescript-name": "ProvidenceNormalizedActionCategory",
+      "x-providence-rust-name": "ActionCategory",
+      "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"],
+      "x-providence-rust-rename-all": "snake_case",
+      "x-providence-rust-aliases": {
+        "branch": ["Branch", "Quest"],
+        "combat": ["Combat"],
+        "encounter": ["Encounter"],
+        "item_shop": ["Economy", "ItemShop"],
+        "map": ["Map"],
+        "registration": ["Registration", "Scenario"],
+        "state": ["Advanced", "Characters", "Rules", "State"],
+        "time": ["Time"],
+        "ui_text": ["Media", "Text", "UiText"],
+        "unknown": ["Unknown"]
+      }
+    },
+    "mapCoordinate": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceMapCoordinate",
+      "x-providence-rust-name": "MapCoordinate",
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "y": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" }
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceAction",
+      "x-providence-rust-name": "Action",
+      "required": ["slot", "rawCode", "code", "id", "label", "category"],
+      "properties": {
+        "slot": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "rawCode": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "code": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "id": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "label": { "type": "string" },
+        "category": {
+          "type": "string",
+          "description": "Open editor-facing label in TypeScript; normalized through ActionCategory at the Rust boundary.",
+          "x-providence-rust-type": "ActionCategory"
+        },
+        "gosub": { "type": "boolean" }
+      }
+    },
+    "triggerRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceTriggerRecord",
+      "x-providence-rust-name": "TriggerRecord",
+      "required": ["id", "source", "levelType", "levelIndex", "recordIndex", "active", "doorid", "percent", "coordinate", "actions"],
+      "properties": {
+        "id": { "type": "string" },
+        "source": { "type": "string" },
+        "levelType": {
+          "oneOf": [{ "$ref": "#/$defs/levelType" }, { "type": "null" }],
+          "x-providence-rust-type": "Option<LevelType>"
+        },
+        "levelIndex": {
+          "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }],
+          "x-providence-rust-type": "Option<usize>"
+        },
+        "recordIndex": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "active": { "type": "boolean" },
+        "doorid": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647, "x-providence-rust-type": "i32" },
+        "landid": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" },
+        "targetX": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" },
+        "targetY": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" },
+        "percent": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" },
+        "coordinate": {
+          "oneOf": [{ "$ref": "#/$defs/mapCoordinate" }, { "type": "null" }],
+          "x-providence-rust-type": "Option<MapCoordinate>"
+        },
+        "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "extraCodeRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-providence-typescript-name": "ProvidenceExtraCodeRow",
+      "x-providence-rust-name": "ExtraCodeRow",
+      "required": ["id", "values"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
+        "values": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+          "x-providence-rust-type": "[i16; 5]"
+        },
         "provenance": { "$ref": "#/$defs/provenance" }
       }
     },

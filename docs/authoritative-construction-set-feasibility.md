@@ -514,7 +514,21 @@ serde behavior, and schema-v4/v5 compatibility path. The native and Remake compi
 consume the same canonical values. Action Point/EDCD and managed/resource asset DTOs remain the
 bounded follow-on families under ISY-392.
 
-Branch validation through the forty-ninth slice completed on 2026-07-19:
+The fiftieth slice moves the complete Action Point/EDCD compiler-facing DTO family into the same
+generated contract. The schema now owns trigger records, map coordinates, action rows, normalized
+Rust action categories with their legacy aliases, and fixed five-signed-short EDCD rows. Generated
+TypeScript and Rust definitions replace all five handwritten Rust types and the three duplicated
+editor types while preserving nullable level/coordinate fields, fixed native integer widths,
+serializer field order, and the browser's historically optional `landid`, target-coordinate,
+`gosub`, and provenance fields. The audit also records a genuine language-boundary distinction:
+the editor retains open author-facing action-category labels such as `Travel` and `Empty`, whereas
+Rust normalizes persisted/runtime categories to its closed snake-case enum. The schema therefore
+keeps the shared `category` property as a string and uses the generated Rust enum only as the Rust
+boundary type instead of falsely declaring both meanings identical. Focused ED3/EDCD
+browser/desktop parity and the full deterministic ownership proof pass without native or Remake
+output changes. Managed/resource asset DTOs are now the only remaining ISY-392 family.
+
+Branch validation through the fiftieth slice completed on 2026-07-19:
 
 - full Rust suite: 260 passed, 2 ignored;
 - full TypeScript suite: 608 passed, plus typecheck;
@@ -990,10 +1004,10 @@ must not be called fresh-authoritative merely because imported round trips are f
 3. **Remaining nested generated DTOs:** the language-neutral schema now owns and checks the
    persisted top-level inventory, complete source-origin/source-file, scenario startup, map
    identity/layout, random-level/rectangle, map-record, scenario-item, treasure, shop, message,
-   option-label, battle, monster, monster-description, monster-set, item-text, spell, race, and caste
-   DTO families, shared provenance/confidence primitives, and the schema-version constant. Action
-   Point/EDCD and managed/resource asset DTOs are still maintained manually and should migrate in
-   bounded families.
+   option-label, battle, monster, monster-description, monster-set, item-text, Action Point/EDCD,
+   spell, race, and caste DTO families, shared provenance/confidence primitives, and the
+   schema-version constant. Managed/resource asset DTOs are still maintained manually and should
+   migrate as the final bounded family.
 4. **Preserved bytes inside records:** export-time file access is now annex-bounded, but several
    imported project records still embed unowned bytes. Scenario shell/support, monster, monster-description, spell, race,
    caste, contact, restriction, and global-hook export no longer consults those fields; marker and

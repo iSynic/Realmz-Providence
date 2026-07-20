@@ -174,6 +174,39 @@ export const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS = [
   "authored"
 ] as const;
 
+export const PROVIDENCE_TRIGGER_FIELDS = [
+  "id",
+  "source",
+  "levelType",
+  "levelIndex",
+  "recordIndex",
+  "active",
+  "doorid",
+  "landid",
+  "targetX",
+  "targetY",
+  "percent",
+  "coordinate",
+  "actions",
+  "provenance"
+] as const;
+
+export const PROVIDENCE_ACTION_FIELDS = [
+  "slot",
+  "rawCode",
+  "code",
+  "id",
+  "label",
+  "category",
+  "gosub"
+] as const;
+
+export const PROVIDENCE_EXTRA_CODE_FIELDS = [
+  "id",
+  "values",
+  "provenance"
+] as const;
+
 export const PROVIDENCE_SCENARIO_ITEM_FIELDS = [
   "id",
   "itemId",
@@ -730,6 +763,46 @@ export type ProvidenceCustomLandlookMetadata = {
 export type ProvidenceTimedEncounterLocationKind = "any" | "land" | "dungeon";
 
 export type ProvidenceMonsterSetId = -1 | 0 | 1;
+
+export type ProvidenceNormalizedActionCategory = "branch" | "combat" | "encounter" | "item_shop" | "map" | "registration" | "state" | "time" | "ui_text" | "unknown";
+
+export type ProvidenceMapCoordinate = {
+  x: number;
+  y: number;
+};
+
+export type ProvidenceAction = {
+  slot: number;
+  rawCode: number;
+  code: number;
+  id: number;
+  label: string;
+  category: string;
+  gosub?: boolean;
+};
+
+export type ProvidenceTriggerRecord = {
+  id: string;
+  source: string;
+  levelType: ProvidenceLevelType | null;
+  levelIndex: number | null;
+  recordIndex: number;
+  active: boolean;
+  doorid: number;
+  landid?: number;
+  targetX?: number;
+  targetY?: number;
+  percent: number;
+  coordinate: ProvidenceMapCoordinate | null;
+  actions: ProvidenceAction[];
+  provenance?: ProvidenceProvenance;
+};
+
+export type ProvidenceExtraCodeRow = {
+  id: number;
+  values: number[];
+  provenance?: ProvidenceProvenance;
+};
 
 export type ProvidenceScenarioItemRecord = {
   id: number;

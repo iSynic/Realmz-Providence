@@ -1,4 +1,5 @@
 import type {
+  ProvidenceAction,
   ProvidenceConfidence,
   ProvidenceComplexEncounterRecord,
   ProvidenceGlobalMacroHook,
@@ -11,6 +12,7 @@ import type {
   ProvidenceMapRender,
   ProvidenceBattleRecord,
   ProvidenceEncounterActionRow,
+  ProvidenceExtraCodeRow,
   ProvidenceItemTextRecord,
   ProvidenceMessageRecord,
   ProvidenceMonsterDescriptionRecord,
@@ -38,6 +40,7 @@ import type {
   ProvidenceThiefEncounterRecord,
   ProvidenceTimedEncounterLocationKind,
   ProvidenceTimedEncounterRecord,
+  ProvidenceTriggerRecord,
   ProvidenceScenarioSupportFile,
   ProvidenceSourceFile,
   ProvidenceSourceFileRole,
@@ -94,6 +97,9 @@ export type MapstatsRecord = ProvidenceMapstatsRecord;
 export type LandlookRangeSlot = ProvidenceLandlookRangeSlot;
 export type LandlookWriterGate = ProvidenceLandlookWriterGate;
 export type CustomLandlookMetadata = ProvidenceCustomLandlookMetadata;
+export type TriggerRecord = ProvidenceTriggerRecord;
+export type Action = ProvidenceAction;
+export type ExtraCodeRow = ProvidenceExtraCodeRow;
 export type EditorTab =
   | "maps"
   | "player-maps"
@@ -1128,35 +1134,6 @@ export type LibraryDiagnostic = {
 
 export type SourceFile = ProvidenceSourceFile;
 export type SourceFileRole = ProvidenceSourceFileRole;
-
-export type TriggerRecord = {
-  id: string;
-  source: string;
-  levelType: LevelType | null;
-  levelIndex: number | null;
-  recordIndex: number;
-  active: boolean;
-  doorid: number;
-  percent: number;
-  coordinate: { x: number; y: number } | null;
-  actions: Action[];
-  landid?: number;
-  targetX?: number;
-  targetY?: number;
-  provenance?: Provenance;
-};
-
-export type Action = {
-  slot: number;
-  rawCode: number;
-  code: number;
-  id: number;
-  label: string;
-  category: string;
-  gosub?: boolean;
-};
-
-export type ExtraCodeRow = { id: number; values: number[]; provenance?: Provenance };
 
 export type TilesetAsset = {
   id: string;

@@ -2,16 +2,17 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub use crate::generated::project_contract::{
-    BattleRecord, ComplexEncounterRecord, Confidence, CustomLandlookMetadata, EncounterActionRow,
-    GlobalMacroHook, ItemTextRecord, LandLayout, LandlookRangeSlot, LandlookWriterGate, LevelType,
-    MapEntity, MapMarker, MapRecord, MapRecordRect, MapRender, MapstatsRecord, MessageRecord,
+    Action, ActionCategory, BattleRecord, ComplexEncounterRecord, Confidence,
+    CustomLandlookMetadata, EncounterActionRow, ExtraCodeRow, GlobalMacroHook, ItemTextRecord,
+    LandLayout, LandlookRangeSlot, LandlookWriterGate, LevelType, MapCoordinate, MapEntity,
+    MapMarker, MapRecord, MapRecordRect, MapRender, MapstatsRecord, MessageRecord,
     MonsterDescriptionRecord, MonsterRecord, MonsterSet, OptionLabelRecord, Provenance,
     RandomLevel, RandomRect, RenderMode, ScenarioCasteOverride, ScenarioContactInfo,
     ScenarioGlobalMacroHooks, ScenarioItemRecord, ScenarioMeta, ScenarioRaceOverride,
     ScenarioRestrictions, ScenarioShell, ScenarioSpellOverride, ScenarioSupportFile, ShopRecord,
     SimpleEncounterRecord, ThiefEncounterRecord, TileAttributeConfidence, TileAttributeFlag,
     TileAttributeProfile, TileAttributeSourceKind, TileEditableScope, TimedEncounterLocationKind,
-    TimedEncounterRecord, TreasureRecord,
+    TimedEncounterRecord, TreasureRecord, TriggerRecord,
 };
 pub use crate::generated::project_contract::{
     ProjectOrigin, SourceFile, SourceFileRole, SourceSnapshot,
@@ -712,82 +713,6 @@ impl LevelType {
             Self::Dungeon => "Data RDD",
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TriggerRecord {
-    pub id: String,
-    pub source: String,
-    pub level_type: Option<LevelType>,
-    pub level_index: Option<usize>,
-    pub record_index: usize,
-    pub active: bool,
-    pub doorid: i32,
-    pub landid: u8,
-    pub target_x: u8,
-    pub target_y: u8,
-    pub percent: i8,
-    pub coordinate: Option<MapCoordinate>,
-    pub actions: Vec<Action>,
-    pub provenance: Provenance,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MapCoordinate {
-    pub x: usize,
-    pub y: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Action {
-    pub slot: usize,
-    pub raw_code: i16,
-    pub code: i16,
-    pub id: i16,
-    pub label: String,
-    pub category: ActionCategory,
-    pub gosub: bool,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(rename_all = "snake_case")]
-pub enum ActionCategory {
-    #[serde(alias = "Branch", alias = "Quest")]
-    Branch,
-    #[serde(alias = "Combat")]
-    Combat,
-    #[serde(alias = "Encounter")]
-    Encounter,
-    #[serde(alias = "Economy", alias = "ItemShop")]
-    ItemShop,
-    #[serde(alias = "Map")]
-    Map,
-    #[serde(alias = "Registration", alias = "Scenario")]
-    Registration,
-    #[serde(
-        alias = "Advanced",
-        alias = "Characters",
-        alias = "Rules",
-        alias = "State"
-    )]
-    State,
-    #[serde(alias = "Time")]
-    Time,
-    #[serde(alias = "Media", alias = "Text", alias = "UiText")]
-    UiText,
-    #[serde(alias = "Unknown")]
-    Unknown,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ExtraCodeRow {
-    pub id: usize,
-    pub values: [i16; 5],
-    pub provenance: Provenance,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
