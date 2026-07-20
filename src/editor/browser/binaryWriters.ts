@@ -336,10 +336,6 @@ export function writeExtraCodes(rows: ExtraCodeRow[]) {
 }
 
 export function writeGlobalMacroHooks(hooks: ScenarioGlobalMacroHooks) {
-  const rawBytes = hooks.rawBytes ?? [];
-  if (rawBytes.length !== 0 && rawBytes.length !== GLOBAL_MACRO_HOOK_BYTES) {
-    throw new Error("Global macro hooks have invalid compatibility byte storage");
-  }
   const output = new Uint8Array(GLOBAL_MACRO_HOOK_BYTES);
   for (const hook of hooks.slots) {
     if (![0, 1, 2, 4, 5].includes(hook.slot)) continue;
@@ -414,7 +410,6 @@ export function writeScenarioSupportFile(support: ScenarioSupportFile) {
 }
 
 export function writeScenarioContactInfo(contact: ScenarioContactInfo) {
-  validateCompatibilityStorage("Scenario contact info", 0, contact.rawBytes, SCENARIO_CONTACT_INFO_BYTES);
   const output = new Uint8Array(SCENARIO_CONTACT_INFO_BYTES);
   const fields = [
     contact.scenarioName,
@@ -437,7 +432,6 @@ export function writeScenarioContactInfo(contact: ScenarioContactInfo) {
 }
 
 export function writeScenarioRestrictions(restrictions: ScenarioRestrictions) {
-  validateCompatibilityStorage("Scenario restrictions", 0, restrictions.rawBytes, SCENARIO_RESTRICTIONS_BYTES);
   const output = new Uint8Array(SCENARIO_RESTRICTIONS_BYTES);
   encodePascalText(output.subarray(0, MESSAGE_RECORD_BYTES), restrictions.description ?? "");
   writeI16(output, 256, restrictions.maxPartyCharacters);
@@ -635,13 +629,6 @@ export function writeCasteOverrides(records: ScenarioCasteOverride[]) {
     writeI16(target, 448, record.spellsSoFar);
     if (record.spacer) writeI16Array(target, 450, record.spacer, 63);
   });
-}
-
-function validateCompatibilityStorage(label: string, id: number, rawBytes: number[] | undefined, recordBytes: number) {
-  const length = rawBytes?.length ?? 0;
-  if (length !== 0 && length !== recordBytes) {
-    throw new Error(`${label} ${id} has invalid compatibility byte storage`);
-  }
 }
 
 function validateExactLength(label: string, id: number, field: string, actual: number, expected: number) {

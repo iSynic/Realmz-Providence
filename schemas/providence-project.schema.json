@@ -1434,8 +1434,7 @@
       "x-providence-typescript-name": "ProvidenceScenarioContactInfo",
       "x-providence-rust-name": "ScenarioContactInfo",
       "x-providence-rust-optional": ["provenance"],
-      "x-providence-rust-default": ["payInfo", "titles", "rawBytes", "authored", "provenance"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["payInfo", "titles", "authored", "provenance"],
       "required": ["scenarioName", "version", "date", "author", "email", "web", "fee", "payInfo", "titles", "description"],
       "properties": {
         "scenarioName": { "type": "string" },
@@ -1448,7 +1447,6 @@
         "payInfo": { "type": "array", "items": { "type": "string" } },
         "titles": { "type": "array", "items": { "type": "string" } },
         "description": { "type": "string" },
-        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [
@@ -1464,8 +1462,7 @@
       "x-providence-typescript-name": "ProvidenceScenarioRestrictions",
       "x-providence-rust-name": "ScenarioRestrictions",
       "x-providence-rust-optional": ["provenance"],
-      "x-providence-rust-default": ["bannedRaces", "bannedCastes", "rawBytes", "authored", "provenance"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["bannedRaces", "bannedCastes", "authored", "provenance"],
       "required": ["description", "maxPartyCharacters", "maxPartyLevel", "bannedRaces", "bannedCastes"],
       "properties": {
         "description": { "type": "string" },
@@ -1473,7 +1470,6 @@
         "maxPartyLevel": { "type": "integer", "x-providence-rust-type": "i16" },
         "bannedRaces": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" } },
         "bannedCastes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" } },
-        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [
@@ -1503,12 +1499,10 @@
       "x-providence-typescript-name": "ProvidenceScenarioGlobalMacroHooks",
       "x-providence-rust-name": "ScenarioGlobalMacroHooks",
       "x-providence-rust-optional": ["provenance"],
-      "x-providence-rust-default": ["rawBytes", "authored", "provenance"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["authored", "provenance"],
       "required": ["slots"],
       "properties": {
         "slots": { "type": "array", "items": { "$ref": "#/$defs/globalMacroHook" } },
-        "rawBytes": { "type": "array", "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": {
           "oneOf": [

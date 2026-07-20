@@ -89,7 +89,8 @@ describe("scenario seed project compiler", () => {
     });
     expect(result.project.scenario.globalMacroHooks).toMatchObject({ authored: true });
     expect(result.project.scenario.globalMacroHooks?.slots.find((slot) => slot.slot === 0)?.door).toBe(9);
-    expect(result.project.scenario.globalMacroHooks?.rawBytes).toBeUndefined();
+    expect("rawBytes" in (result.project.scenario.globalMacroHooks ?? {})).toBe(false);
+    expect("rawBytes" in (result.project.scenario.contactInfo ?? {})).toBe(false);
   });
 
   it("replaces only trigger domains explicitly supplied by the seed", () => {

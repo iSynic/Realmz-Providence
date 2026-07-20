@@ -383,6 +383,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_spell_override_raw_bytes(&mut value);
     migrate_legacy_race_override_raw_bytes(&mut value);
     migrate_legacy_caste_override_raw_bytes(&mut value);
+    migrate_legacy_scenario_singleton_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
@@ -582,6 +583,23 @@ fn migrate_legacy_race_override_raw_bytes(project: &mut serde_json::Value) {
 
 fn migrate_legacy_caste_override_raw_bytes(project: &mut serde_json::Value) {
     migrate_legacy_record_raw_bytes(project, "casteOverrides");
+}
+
+fn migrate_legacy_scenario_singleton_raw_bytes(project: &mut serde_json::Value) {
+    let Some(scenario) = project
+        .get_mut("scenario")
+        .and_then(serde_json::Value::as_object_mut)
+    else {
+        return;
+    };
+    for field in ["contactInfo", "restrictions", "globalMacroHooks"] {
+        if let Some(record) = scenario
+            .get_mut(field)
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            record.remove("rawBytes");
+        }
+    }
 }
 
 fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: &str) {
@@ -1035,7 +1053,6 @@ fn default_contact_info(name: &str) -> ScenarioContactInfo {
         pay_info: vec![String::new(); 5],
         titles: vec![String::new(); 5],
         description: String::new(),
-        raw_bytes: Vec::new(),
         authored: true,
         provenance: None,
     }
@@ -2783,6 +2800,27 @@ mod tests {
         legacy_caste_value["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::CASTE_BYTES]);
         saved["casteOverrides"] = serde_json::json!([legacy_caste_value]);
+        saved["scenario"]["contactInfo"]["rawBytes"] =
+            serde_json::json!(vec![0xa5u8; crate::realmz::SCENARIO_CONTACT_INFO_BYTES]);
+        saved["scenario"]["restrictions"] = serde_json::json!({
+            "description": "Legacy restriction semantics",
+            "maxPartyCharacters": 4,
+            "maxPartyLevel": 20,
+            "bannedRaces": [1, 30],
+            "bannedCastes": [2, 29],
+            "rawBytes": vec![0xb6u8; crate::realmz::SCENARIO_RESTRICTIONS_BYTES],
+            "authored": false
+        });
+        let global_slots = crate::realmz::parse_global_macro_hooks(&vec![
+            0;
+            crate::realmz::GLOBAL_MACRO_HOOK_BYTES
+        ])
+        .slots;
+        saved["scenario"]["globalMacroHooks"] = serde_json::json!({
+            "slots": global_slots,
+            "rawBytes": vec![0xc7u8; crate::realmz::GLOBAL_MACRO_HOOK_BYTES],
+            "authored": false
+        });
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2903,6 +2941,23 @@ mod tests {
         assert!(upgraded["spellOverrides"][0].get("rawBytes").is_none());
         assert!(upgraded["raceOverrides"][0].get("rawBytes").is_none());
         assert!(upgraded["casteOverrides"][0].get("rawBytes").is_none());
+        assert!(upgraded["scenario"]["contactInfo"]
+            .get("rawBytes")
+            .is_none());
+        assert!(upgraded["scenario"]["restrictions"]
+            .get("rawBytes")
+            .is_none());
+        assert!(upgraded["scenario"]["globalMacroHooks"]
+            .get("rawBytes")
+            .is_none());
+        assert_eq!(
+            upgraded["scenario"]["contactInfo"]["scenarioName"],
+            "Legacy Starter"
+        );
+        assert_eq!(
+            upgraded["scenario"]["restrictions"]["description"],
+            "Legacy restriction semantics"
+        );
     }
 
     #[test]
@@ -3207,7 +3262,6 @@ mod tests {
         contact.scenario_name = "Canonical contact".to_string();
         contact.description = "Canonical contact description".to_string();
         contact.authored = false;
-        contact.raw_bytes = vec![0xa5; crate::realmz::SCENARIO_CONTACT_INFO_BYTES];
         let mut restrictions = crate::realmz::parse_scenario_restrictions(&vec![
             0;
             crate::realmz::SCENARIO_RESTRICTIONS_BYTES
@@ -3219,7 +3273,6 @@ mod tests {
         restrictions.banned_races = vec![1, 30];
         restrictions.banned_castes = vec![2, 29];
         restrictions.authored = false;
-        restrictions.raw_bytes.fill(0xa5);
         project.scenario.restrictions = Some(restrictions);
         let mut global_hooks = crate::realmz::parse_global_macro_hooks(&vec![
                 0xa5;

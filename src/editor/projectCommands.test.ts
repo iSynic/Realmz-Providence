@@ -21,7 +21,7 @@ describe("project command facade", () => {
       ...project.scenario.contactInfo!,
       rawBytes: new Array(4608).fill(0xa5),
       authored: false
-    };
+    } as unknown as NonNullable<Project["scenario"]["contactInfo"]>;
     project.scenario.restrictions = {
       description: "Imported restrictions",
       maxPartyCharacters: 0,
@@ -30,7 +30,7 @@ describe("project command facade", () => {
       bannedCastes: [],
       rawBytes: new Array(320).fill(0xa5),
       authored: false
-    };
+    } as unknown as NonNullable<Project["scenario"]["restrictions"]>;
     project.scenario.globalMacroHooks = {
       ...applyProjectCommand(project, {
         kind: "updateGlobalMacroHook",
@@ -40,7 +40,7 @@ describe("project command facade", () => {
       }).scenario.globalMacroHooks!,
       rawBytes: new Array(60).fill(0xa5),
       authored: false
-    };
+    } as unknown as NonNullable<Project["scenario"]["globalMacroHooks"]>;
     project.scenario.securityBackup = {
       ...project.scenario.shell,
       sourceFile: "Data CS",
@@ -99,12 +99,12 @@ describe("project command facade", () => {
     expect(globalHooks.scenario.securityBackup?.rawBytes).toBeUndefined();
     expect(globalHooks.scenario.securityBackup?.trailingBytes).toEqual([]);
     expect(globalHooks.scenario.contactInfo).toMatchObject({ author: "Providence", authored: true });
-    expect(globalHooks.scenario.contactInfo?.rawBytes).toBeUndefined();
+    expect("rawBytes" in (globalHooks.scenario.contactInfo ?? {})).toBe(false);
     expect(globalHooks.scenario.restrictions).toMatchObject({ maxPartyCharacters: 4, authored: true });
-    expect(globalHooks.scenario.restrictions?.rawBytes).toBeUndefined();
+    expect("rawBytes" in (globalHooks.scenario.restrictions ?? {})).toBe(false);
     expect(globalHooks.scenario.globalMacroHooks).toMatchObject({ authored: true });
     expect(globalHooks.scenario.globalMacroHooks?.slots.find((slot) => slot.slot === 0)?.door).toBe(9);
-    expect(globalHooks.scenario.globalMacroHooks?.rawBytes).toBeUndefined();
+    expect("rawBytes" in (globalHooks.scenario.globalMacroHooks ?? {})).toBe(false);
   });
 
   it("creates fresh messages from semantic text without compatibility bytes", () => {

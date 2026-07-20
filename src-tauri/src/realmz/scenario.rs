@@ -116,18 +116,12 @@ pub fn parse_scenario_contact_info(buffer: &[u8]) -> Result<ScenarioContactInfo>
             .map(|slot| pascal_record_string(buffer, slot))
             .collect(),
         description: pascal_record_string(buffer, 17),
-        raw_bytes: buffer[..4608].to_vec(),
         authored: false,
         provenance: Some(provenance("Data CI", 0, 0, 4608)),
     })
 }
 
 pub fn write_scenario_contact_info(contact: &ScenarioContactInfo) -> Result<Vec<u8>> {
-    if !contact.raw_bytes.is_empty() && contact.raw_bytes.len() != 4608 {
-        return Err(ProvidenceError::message(
-            "Scenario contact info has invalid compatibility byte storage",
-        ));
-    }
     let mut output = vec![0u8; 4608];
     let fields = [
         contact.scenario_name.as_str(),
@@ -180,18 +174,12 @@ pub fn parse_scenario_restrictions(buffer: &[u8]) -> Result<ScenarioRestrictions
             .enumerate()
             .filter_map(|(index, value)| (*value != 0).then_some((index + 1) as u8))
             .collect(),
-        raw_bytes: buffer[..320].to_vec(),
         authored: false,
         provenance: Some(provenance("Data RI", 0, 0, 320)),
     })
 }
 
 pub fn write_scenario_restrictions(restrictions: &ScenarioRestrictions) -> Result<Vec<u8>> {
-    if !restrictions.raw_bytes.is_empty() && restrictions.raw_bytes.len() != 320 {
-        return Err(ProvidenceError::message(
-            "Scenario restrictions have invalid compatibility byte storage",
-        ));
-    }
     let mut output = vec![0u8; 320];
     encode_pascal_text(&mut output[0..256], &restrictions.description)?;
     write_i16_be(&mut output, 256, restrictions.max_party_characters);
@@ -228,18 +216,12 @@ pub fn parse_global_macro_hooks(buffer: &[u8]) -> ScenarioGlobalMacroHooks {
     }
     ScenarioGlobalMacroHooks {
         slots,
-        raw_bytes: buffer.to_vec(),
         authored: false,
         provenance: Some(provenance("Global", 0, 0, buffer.len())),
     }
 }
 
 pub fn write_global_macro_hooks(hooks: &ScenarioGlobalMacroHooks) -> Result<Vec<u8>> {
-    if !hooks.raw_bytes.is_empty() && hooks.raw_bytes.len() != GLOBAL_MACRO_HOOK_BYTES {
-        return Err(ProvidenceError::message(
-            "Global macro hooks have invalid compatibility byte storage",
-        ));
-    }
     let mut output = vec![0u8; GLOBAL_MACRO_HOOK_BYTES];
     for hook in &hooks.slots {
         if matches!(hook.slot, 0 | 1 | 2 | 4 | 5) {
@@ -365,7 +347,6 @@ mod tests {
                 "T5".to_string(),
             ],
             description: "Description".to_string(),
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: None,
         };
@@ -382,7 +363,6 @@ mod tests {
             max_party_level: 20,
             banned_races: vec![1, 30],
             banned_castes: vec![2, 29],
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: None,
         };
@@ -460,7 +440,6 @@ mod tests {
         let mut contact = parse_scenario_contact_info(&contact_input).unwrap();
         contact.authored = true;
         contact.scenario_name = "Go".to_string();
-        contact.raw_bytes.fill(0xa5);
         let contact_output = write_scenario_contact_info(&contact).unwrap();
         assert_eq!(contact_output.len(), contact_input.len());
         assert_eq!(
@@ -476,17 +455,12 @@ mod tests {
         restrictions.max_party_level = 0x0304;
         restrictions.banned_races = vec![1, 30];
         restrictions.banned_castes = vec![2];
-        restrictions.raw_bytes.fill(0xa5);
         let restrictions_output = write_scenario_restrictions(&restrictions).unwrap();
         assert_eq!(restrictions_output.len(), restrictions_input.len());
         assert_eq!(
             changed_offsets(&restrictions_input, &restrictions_output),
             vec![0, 1, 2, 256, 257, 258, 259, 260, 289, 291]
         );
-        contact.raw_bytes = vec![1];
-        assert!(write_scenario_contact_info(&contact).is_err());
-        restrictions.raw_bytes = vec![1];
-        assert!(write_scenario_restrictions(&restrictions).is_err());
     }
 
     #[test]
@@ -505,7 +479,5 @@ mod tests {
         assert_eq!(output.len(), input.len());
         assert_eq!(i16_be(&output, 6), 0);
         assert_eq!(changed_offsets(&input, &output), vec![0, 1, 6, 7, 8, 9]);
-        hooks.raw_bytes = vec![1];
-        assert!(write_global_macro_hooks(&hooks).is_err());
     }
 }

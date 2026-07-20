@@ -485,7 +485,9 @@ function addCanonicalSingletonBuffer<T extends { rawBytes?: number[]; authored?:
 ) {
   if (!record) return;
   try {
-    const bytes = encode({ ...record, authored: true, rawBytes: [] });
+    const canonicalRecord = { ...record, authored: true };
+    if ("rawBytes" in canonicalRecord) canonicalRecord.rawBytes = [];
+    const bytes = encode(canonicalRecord);
     buffers.set(name, bytes);
     sources.push({ name, path, ids: new Set([0]) });
     schema.sources.push({

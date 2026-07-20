@@ -13,6 +13,36 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
+  it("drops legacy scenario singleton byte identity during normalization", () => {
+    const project = createBrowserProject("Legacy scenario singleton bytes");
+    project.scenario.contactInfo = {
+      ...project.scenario.contactInfo!,
+      author: "Semantic author",
+      rawBytes: new Array(4608).fill(0xa5)
+    } as unknown as NonNullable<Project["scenario"]["contactInfo"]>;
+    project.scenario.restrictions = {
+      description: "Semantic restrictions",
+      maxPartyCharacters: 4,
+      maxPartyLevel: 20,
+      bannedRaces: [1],
+      bannedCastes: [2],
+      rawBytes: new Array(320).fill(0xb6)
+    } as unknown as NonNullable<Project["scenario"]["restrictions"]>;
+    project.scenario.globalMacroHooks = {
+      ...defaultGlobalMacroHooks(),
+      rawBytes: new Array(60).fill(0xc7)
+    } as unknown as NonNullable<Project["scenario"]["globalMacroHooks"]>;
+
+    normalizeBrowserProject(project);
+
+    expect(project.scenario.contactInfo?.author).toBe("Semantic author");
+    expect(project.scenario.restrictions?.description).toBe("Semantic restrictions");
+    expect(project.scenario.globalMacroHooks?.slots).toHaveLength(7);
+    expect("rawBytes" in project.scenario.contactInfo!).toBe(false);
+    expect("rawBytes" in project.scenario.restrictions!).toBe(false);
+    expect("rawBytes" in project.scenario.globalMacroHooks!).toBe(false);
+  });
+
   it("drops legacy spell, race, and caste byte identity during normalization and edits", () => {
     const project = createBrowserProject("Legacy rule bytes");
     project.spellOverrides = [{
@@ -768,7 +798,7 @@ describe("browser project native manifest validation", () => {
       description: "Canonical contact description",
       authored: false,
       rawBytes: new Array(4608).fill(0xa5)
-    };
+    } as typeof project.scenario.contactInfo;
     project.scenario.restrictions = {
       description: "No giants",
       maxPartyCharacters: 4,
@@ -777,13 +807,13 @@ describe("browser project native manifest validation", () => {
       bannedCastes: [2, 29],
       authored: false,
       rawBytes: new Array(320).fill(0xa5)
-    };
+    } as typeof project.scenario.restrictions;
     project.scenario.globalMacroHooks = {
       ...defaultGlobalMacroHooks(),
       slots: defaultGlobalMacroHooks().slots.map((slot) => slot.slot === 0 ? { ...slot, door: 11 } : slot),
       authored: false,
       rawBytes: new Array(60).fill(0xa5)
-    };
+    } as typeof project.scenario.globalMacroHooks;
     project.scenarioItems = [{
       ...parsed.scenarioItems[0],
       id: 4,

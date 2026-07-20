@@ -330,6 +330,9 @@ poisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 poisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 poisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 poisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
+poisonedProject.scenario.contactInfo.rawBytes = new Array(4608).fill(0xa5);
+if (poisonedProject.scenario.restrictions) poisonedProject.scenario.restrictions.rawBytes = new Array(320).fill(0xa5);
+poisonedProject.scenario.globalMacroHooks.rawBytes = new Array(60).fill(0xa5);
 await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(poisonedProject, null, 2)}\n`);
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputB, "windows-realmz-folder"]);
 await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
@@ -374,6 +377,9 @@ browserPoisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 browserPoisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 browserPoisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 browserPoisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
+browserPoisonedProject.scenario.contactInfo.rawBytes = new Array(4608).fill(0xa5);
+if (browserPoisonedProject.scenario.restrictions) browserPoisonedProject.scenario.restrictions.rawBytes = new Array(320).fill(0xa5);
+browserPoisonedProject.scenario.globalMacroHooks.rawBytes = new Array(60).fill(0xa5);
 const browserEmbeddedCompatibilityTrapPackage = createBrowserScenarioPackageZip(browserPoisonedProject, null, "windows-realmz-folder");
 const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
   rootName: "ANNEX READ TRAP",
@@ -1023,8 +1029,8 @@ function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityB
     expect((shell.trailingBytes?.length ?? 0) === 0, `${label} scenario shell contains a compatibility tail`);
     expect((project.scenario?.securityBackup?.rawBytes?.length ?? 0) === 0, `${label} scenario security backup contains raw compatibility bytes`);
     expect((project.scenario?.securityBackup?.trailingBytes?.length ?? 0) === 0, `${label} scenario security backup contains a compatibility tail`);
-    expect((contact.rawBytes?.length ?? 0) === 0, `${label} scenario contact contains compatibility bytes`);
-    expect((project.scenario?.restrictions?.rawBytes?.length ?? 0) === 0, `${label} scenario restrictions contain compatibility bytes`);
+    expect(!Object.hasOwn(contact, "rawBytes"), `${label} scenario contact exposes compatibility bytes`);
+    expect(!Object.hasOwn(project.scenario?.restrictions ?? {}, "rawBytes"), `${label} scenario restrictions expose compatibility bytes`);
   }
 }
 
@@ -1033,7 +1039,7 @@ function assertOwnershipGlobalMacros(project, label, requireNoCompatibilityBytes
   expect(hooks, `${label} is missing global macro hooks`);
   expect(hooks.slots.find((slot) => slot.slot === 0)?.door === 2, `${label} has the wrong global start macro`);
   if (requireNoCompatibilityBytes) {
-    expect((hooks.rawBytes?.length ?? 0) === 0, `${label} global macros contain compatibility bytes`);
+    expect(!Object.hasOwn(hooks, "rawBytes"), `${label} global macros expose compatibility bytes`);
   }
 }
 

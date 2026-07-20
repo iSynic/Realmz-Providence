@@ -419,7 +419,6 @@ function parseScenarioContactInfo(buffer?: Uint8Array): Project["scenario"]["con
     payInfo: [7, 8, 9, 10, 11].map((slot) => pascalSlot(buffer, slot)),
     titles: [12, 13, 14, 15, 16].map((slot) => pascalSlot(buffer, slot)),
     description: pascalSlot(buffer, 17),
-    rawBytes: Array.from(buffer.slice(0, 4608)),
     authored: false
   };
 }
@@ -503,7 +502,6 @@ function parseScenarioRestrictions(buffer?: Uint8Array): Project["scenario"]["re
     maxPartyLevel: i16At(buffer, 258),
     bannedRaces: Array.from(buffer.slice(260, 290)).flatMap((value, index) => value ? [index + 1] : []),
     bannedCastes: Array.from(buffer.slice(290, 320)).flatMap((value, index) => value ? [index + 1] : []),
-    rawBytes: Array.from(buffer.slice(0, 320)),
     authored: false
   };
 }
@@ -527,7 +525,6 @@ function parseGlobalMacroHooks(buffer?: Uint8Array): Project["scenario"]["global
       sourceBacked,
       runtimeConsumer
     })),
-    rawBytes: Array.from(buffer),
     authored: false
   };
 }
@@ -564,6 +561,9 @@ export async function openBrowserProject(source: BrowserProjectSource): Promise<
 export function normalizeBrowserProject(project: Project): Project {
   normalizeProjectContract(project);
   project.assets ??= [];
+  if (project.scenario.contactInfo) project.scenario.contactInfo = withoutLegacySingletonRawBytes(project.scenario.contactInfo);
+  if (project.scenario.restrictions) project.scenario.restrictions = withoutLegacySingletonRawBytes(project.scenario.restrictions);
+  if (project.scenario.globalMacroHooks) project.scenario.globalMacroHooks = withoutLegacySingletonRawBytes(project.scenario.globalMacroHooks);
   project.scenario.shell ??= defaultScenarioShell(project.scenario.name);
   project.scenario.contactInfo ??= defaultScenarioContactInfo(project.scenario.name);
   project.scenario.restrictions ??= null;
@@ -658,6 +658,11 @@ export function normalizeBrowserProject(project: Project): Project {
   backfillTilesetMetadata(project);
   project.validation = validateBrowserProject(project);
   return project;
+}
+
+function withoutLegacySingletonRawBytes<T extends object>(record: T): T {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as T & { rawBytes?: number[] };
+  return canonical as T;
 }
 
 function canonicalMapLevelName(levelType: Project["maps"][number]["levelType"], index: number) {

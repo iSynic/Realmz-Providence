@@ -699,7 +699,6 @@ const globalHookProject = {
   scenario: {
     ...project.scenario,
     globalMacroHooks: globalMacroHooks({
-      rawBytes: new Array(60).fill(0xa5),
       slots: [
         { slot: 0, door: 101 },
         { slot: 4, door: -102 },
@@ -792,7 +791,6 @@ const scenarioRawMetadataProject = {
       payInfo: ["", "", "", "", ""],
       titles: ["", "", "", "", ""],
       description: "",
-      rawBytes: Array.from(sourceContactInfo),
       authored: false
     },
     restrictions: {
@@ -801,7 +799,6 @@ const scenarioRawMetadataProject = {
       maxPartyLevel: 0,
       bannedRaces: [],
       bannedCastes: [30],
-      rawBytes: Array.from(sourceRestrictions),
       authored: false
     }
   }
@@ -826,7 +823,6 @@ const scenarioMetadataProject = {
       payInfo: ["A", "B", "C", "D", "E"],
       titles: ["One", "Two", "Three", "Four", "Five"],
       description: "Browser-authored contact info",
-      rawBytes: new Array(4608).fill(0xa5),
       authored: true
     },
     restrictions: {
@@ -835,7 +831,6 @@ const scenarioMetadataProject = {
       maxPartyLevel: 20,
       bannedRaces: [1, 30, 31],
       bannedCastes: [2, 29, 0],
-      rawBytes: new Array(320).fill(0xa5),
       authored: true
     }
   }
@@ -1682,9 +1677,8 @@ function extraCodeRow(values) {
   return output;
 }
 
-function globalMacroHooks({ rawBytes, slots, authored }) {
+function globalMacroHooks({ slots, authored }) {
   return {
-    rawBytes,
     authored,
     slots: slots.map((slot) => ({
       label: `Slot ${slot.slot}`,

@@ -71,28 +71,26 @@ export function updateScenarioSecurityCodes(project: Project, command: Extract<P
 }
 
 export function updateScenarioContactInfo(project: Project, changes: Extract<ProjectCommand, { kind: "updateScenarioContactInfo" }>["changes"]) {
-  const contactInfo = {
+  const contactInfo = withoutLegacyRuleRawBytes({
     ...defaultScenarioContactInfo(project),
     ...(project.scenario.contactInfo ?? {}),
     ...changes,
     payInfo: changes.payInfo ?? project.scenario.contactInfo?.payInfo ?? defaultScenarioContactInfo(project).payInfo,
     titles: changes.titles ?? project.scenario.contactInfo?.titles ?? defaultScenarioContactInfo(project).titles,
-    rawBytes: undefined,
     authored: true
-  };
+  });
   return { ...project, scenario: { ...project.scenario, contactInfo } };
 }
 
 export function updateScenarioRestrictions(project: Project, changes: Extract<ProjectCommand, { kind: "updateScenarioRestrictions" }>["changes"]) {
-  const restrictions = {
+  const restrictions = withoutLegacyRuleRawBytes({
     ...defaultScenarioRestrictions(),
     ...(project.scenario.restrictions ?? {}),
     ...changes,
     bannedRaces: changes.bannedRaces ?? project.scenario.restrictions?.bannedRaces ?? [],
     bannedCastes: changes.bannedCastes ?? project.scenario.restrictions?.bannedCastes ?? [],
-    rawBytes: undefined,
     authored: true
-  };
+  });
   return { ...project, scenario: { ...project.scenario, restrictions } };
 }
 
@@ -106,12 +104,11 @@ export function updateGlobalMacroHook(project: Project, slot: number, door: numb
     ...project,
     scenario: {
       ...project.scenario,
-      globalMacroHooks: {
+      globalMacroHooks: withoutLegacyRuleRawBytes({
         ...hooks,
         slots,
-        rawBytes: undefined,
         authored: true
-      }
+      })
     }
   };
 }

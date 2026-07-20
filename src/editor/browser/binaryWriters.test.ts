@@ -224,34 +224,10 @@ describe("browser scenario metadata writers", () => {
       authored: false
     };
 
-    expect(writeScenarioContactInfo({ ...contact, rawBytes: new Array(4608).fill(0xa5) }))
+    expect(writeScenarioContactInfo({ ...contact, rawBytes: new Array(4608).fill(0xa5) } as typeof contact))
       .toEqual(writeScenarioContactInfo(contact));
-    expect(writeScenarioRestrictions({ ...restrictions, rawBytes: new Array(320).fill(0xa5) }))
+    expect(writeScenarioRestrictions({ ...restrictions, rawBytes: new Array(320).fill(0xa5) } as typeof restrictions))
       .toEqual(writeScenarioRestrictions(restrictions));
-  });
-
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeScenarioContactInfo({
-      scenarioName: "",
-      version: "",
-      date: "",
-      author: "",
-      email: "",
-      web: "",
-      fee: "",
-      payInfo: [],
-      titles: [],
-      description: "",
-      rawBytes: [1]
-    })).toThrow("invalid compatibility byte storage");
-    expect(() => writeScenarioRestrictions({
-      description: "",
-      maxPartyCharacters: 0,
-      maxPartyLevel: 0,
-      bannedRaces: [],
-      bannedCastes: [],
-      rawBytes: [1]
-    })).toThrow("invalid compatibility byte storage");
   });
 });
 

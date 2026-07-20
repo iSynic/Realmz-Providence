@@ -334,7 +334,6 @@ pub(super) fn add_canonical_record_collections(
     if let Some(contact) = &scenario.contact_info {
         let mut contact = contact.clone();
         contact.authored = true;
-        contact.raw_bytes.clear();
         insert_canonical_buffer(
             schema,
             &mut buffers,
@@ -347,7 +346,6 @@ pub(super) fn add_canonical_record_collections(
     if let Some(restrictions) = &scenario.restrictions {
         let mut restrictions = restrictions.clone();
         restrictions.authored = true;
-        restrictions.raw_bytes.clear();
         insert_canonical_buffer(
             schema,
             &mut buffers,
@@ -360,7 +358,6 @@ pub(super) fn add_canonical_record_collections(
     if let Some(global_hooks) = &scenario.global_macro_hooks {
         let mut global_hooks = global_hooks.clone();
         global_hooks.authored = true;
-        global_hooks.raw_bytes.clear();
         insert_canonical_buffer(
             schema,
             &mut buffers,

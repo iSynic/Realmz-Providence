@@ -497,10 +497,7 @@ const compatibilityScenarioFields = scenarioDefinitions.flatMap((definition) =>
 expectSameSet(compatibilityScenarioFields, [
   "ScenarioShell.trailingBytes",
   "ScenarioShell.rawBytes",
-  "ScenarioSupportFile.rawBytes",
-  "ScenarioContactInfo.rawBytes",
-  "ScenarioRestrictions.rawBytes",
-  "ScenarioGlobalMacroHooks.rawBytes"
+  "ScenarioSupportFile.rawBytes"
 ], "Scenario compatibility-only field inventory");
 
 const tsProjectFields = extractFields(typesSource, "export type Project =", /^  ([A-Za-z][A-Za-z0-9]*)(?:\?)?:/gm);

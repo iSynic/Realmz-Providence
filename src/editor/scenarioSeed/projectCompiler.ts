@@ -94,7 +94,7 @@ function initializeScenarioSeedProject(
   const contactInfo = project.scenario.contactInfo ?? scenarioDefaults.contactInfo;
   const origin = baseTemplate === "blank" ? "authored" : resolvedProjectOrigin(project.source);
   const globalMacroFields = ["start", "death", "quit", null, "shop", "temple", null] as const;
-  const globalMacroHooks = seed.scenario.globalMacros === undefined
+  const globalMacroHooksSource = seed.scenario.globalMacros === undefined
     ? project.scenario.globalMacroHooks
     : {
         ...defaultGlobalMacroHooks(),
@@ -105,6 +105,7 @@ function initializeScenarioSeedProject(
         }),
         authored: true
       };
+  const globalMacroHooks = globalMacroHooksSource ? withoutLegacyRawBytes(globalMacroHooksSource) : null;
   return {
     ...project,
     schemaVersion: PROJECT_SCHEMA_VERSION,
@@ -132,8 +133,9 @@ function initializeScenarioSeedProject(
             authored: true
           }
         : null,
+      restrictions: project.scenario.restrictions ? withoutLegacyRawBytes(project.scenario.restrictions) : null,
       contactInfo: contactInfo
-        ? {
+        ? withoutLegacyRawBytes({
             ...contactInfo,
             scenarioName: seed.scenario.name,
             version: seed.scenario.version ?? contactInfo.version,
@@ -143,7 +145,7 @@ function initializeScenarioSeedProject(
             web: seed.scenario.web ?? contactInfo.web,
             description: seed.scenario.description ?? contactInfo.description,
             authored: true
-          }
+          })
         : null
     },
     source: {
@@ -154,6 +156,11 @@ function initializeScenarioSeedProject(
       files: origin === "authored" ? [] : [...(project.source.files ?? [])]
     }
   };
+}
+
+function withoutLegacyRawBytes<T extends object>(record: T): T {
+  const { rawBytes: _legacyRawBytes, ...canonical } = record as T & { rawBytes?: number[] };
+  return canonical as T;
 }
 
 function applyScenarioSeedScripts(

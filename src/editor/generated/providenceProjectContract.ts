@@ -1365,7 +1365,6 @@ export type ProvidenceScenarioContactInfo = {
   payInfo: string[];
   titles: string[];
   description: string;
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
 };
@@ -1376,7 +1375,6 @@ export type ProvidenceScenarioRestrictions = {
   maxPartyLevel: number;
   bannedRaces: number[];
   bannedCastes: number[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
 };
@@ -1391,7 +1389,6 @@ export type ProvidenceGlobalMacroHook = {
 
 export type ProvidenceScenarioGlobalMacroHooks = {
   slots: ProvidenceGlobalMacroHook[];
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
 };
