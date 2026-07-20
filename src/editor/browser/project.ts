@@ -22,6 +22,8 @@ const SCENARIO_SHELL_BYTES = REALMZ_NATIVE_LAYOUT.scenarioShellBytes;
 const SCENARIO_SUPPORT_FILE_BYTES = REALMZ_NATIVE_LAYOUT.scenarioSupportFileBytes;
 const SCENARIO_CONTACT_INFO_BYTES = REALMZ_NATIVE_LAYOUT.scenarioContactInfoBytes;
 const SCENARIO_RESTRICTIONS_BYTES = REALMZ_NATIVE_LAYOUT.scenarioRestrictionsBytes;
+const CUSTOM_LANDLOOK_RECORDS = REALMZ_NATIVE_LAYOUT.mapstatsRecords;
+const LANDLOOK_RANGE_SLOTS = REALMZ_NATIVE_LAYOUT.landlookRangeSlots;
 const RANDOM_LEVEL_BYTES = REALMZ_NATIVE_LAYOUT.randomLevelRecordBytes;
 const BUNDLED_LANDLOOK_MAPSTATS = [
   ["Data P BD", 0],
@@ -1499,8 +1501,8 @@ function validateCustomLandlooks(project: Project, errors: string[]) {
     if (metadata.sourceFile !== expectedSource) {
       errors.push(`Custom landlook ${metadata.landlook} must compile to ${expectedSource}; found ${metadata.sourceFile}.`);
     }
-    if (metadata.records.length !== 201) {
-      errors.push(`Custom landlook ${metadata.landlook} must define 201 mapstats rows; found ${metadata.records.length}.`);
+    if (metadata.records.length !== CUSTOM_LANDLOOK_RECORDS) {
+      errors.push(`Custom landlook ${metadata.landlook} must define ${CUSTOM_LANDLOOK_RECORDS} mapstats rows; found ${metadata.records.length}.`);
     }
     for (const [index, record] of metadata.records.entries()) {
       if (record.tile !== index) errors.push(`Custom landlook ${metadata.landlook} mapstats row ${index} has tile ID ${record.tile}.`);
@@ -1508,8 +1510,8 @@ function validateCustomLandlooks(project: Project, errors: string[]) {
         errors.push(`Custom landlook ${metadata.landlook} tile ${record.tile} must define a 3 x 3 combat-build grid.`);
       }
     }
-    if (metadata.rangeSlots.length !== 10) {
-      errors.push(`Custom landlook ${metadata.landlook} must define 10 range slots; found ${metadata.rangeSlots.length}.`);
+    if (metadata.rangeSlots.length !== LANDLOOK_RANGE_SLOTS) {
+      errors.push(`Custom landlook ${metadata.landlook} must define ${LANDLOOK_RANGE_SLOTS} range slots; found ${metadata.rangeSlots.length}.`);
     }
     for (const [index, slot] of metadata.rangeSlots.entries()) {
       if (slot.slot !== index) errors.push(`Custom landlook ${metadata.landlook} range row ${index} has slot ID ${slot.slot}.`);

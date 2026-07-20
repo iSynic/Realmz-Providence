@@ -1,10 +1,11 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{
     TileAttributeConfidence, TileAttributeFlag, TileAttributeProfile, TileAttributeSourceKind,
     TileEditableScope,
 };
 
-pub const TILE_SOLIDS_BYTES: usize = 1024;
+pub const TILE_SOLIDS_BYTES: usize = REALMZ_NATIVE_LAYOUT.tile_solids_bytes;
 
 pub(in crate::realmz) fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttributeProfile> {
     buffer

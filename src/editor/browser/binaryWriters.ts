@@ -59,20 +59,22 @@ export const DOORS_PER_LEVEL = REALMZ_NATIVE_LAYOUT.actionPointsPerLevel;
 export const DOOR_LEVEL_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.actionPointLevelBytes;
 export const EXTRACODE_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.extraCodeRecordBytes;
 export const GLOBAL_MACRO_HOOK_BYTES = REALMZ_NATIVE_LAYOUT.globalMacroHookBytes;
-export const LAND_LAYOUT_ROWS = 8;
-export const LAND_LAYOUT_COLUMNS = 16;
-export const LAND_LAYOUT_RECORD_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLUMNS * 2;
+export const LAND_LAYOUT_ROWS = REALMZ_NATIVE_LAYOUT.landLayoutRows;
+export const LAND_LAYOUT_COLUMNS = REALMZ_NATIVE_LAYOUT.landLayoutColumns;
+export const LAND_LAYOUT_CELL_BYTES = REALMZ_NATIVE_LAYOUT.landLayoutCellBytes;
+export const LAND_LAYOUT_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.landLayoutBytes;
 export const SCENARIO_SHELL_BYTES = REALMZ_NATIVE_LAYOUT.scenarioShellBytes;
 export const SCENARIO_SUPPORT_FILE_BYTES = REALMZ_NATIVE_LAYOUT.scenarioSupportFileBytes;
 export const SCENARIO_CONTACT_INFO_BYTES = REALMZ_NATIVE_LAYOUT.scenarioContactInfoBytes;
 export const SCENARIO_RESTRICTIONS_BYTES = REALMZ_NATIVE_LAYOUT.scenarioRestrictionsBytes;
-export const TILE_SOLIDS_BYTES = 1024;
-export const MAPSTATS_RECORD_BYTES = 40;
-export const MAPSTATS_RECORDS = 201;
-export const LANDLOOK_RANGE_TAIL_BYTES = 60;
-export const LANDLOOK_RANGE_SLOT_BYTES = 6;
-export const LANDLOOK_RANGE_SLOTS = LANDLOOK_RANGE_TAIL_BYTES / LANDLOOK_RANGE_SLOT_BYTES;
-export const CUSTOM_LANDLOOK_METADATA_BYTES = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES;
+export const TILE_SOLIDS_BYTES = REALMZ_NATIVE_LAYOUT.tileSolidsBytes;
+export const MAPSTATS_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.mapstatsRecordBytes;
+export const MAPSTATS_RECORDS = REALMZ_NATIVE_LAYOUT.mapstatsRecords;
+export const LANDLOOK_RANGE_HEADER_BYTES = REALMZ_NATIVE_LAYOUT.landlookRangeHeaderBytes;
+export const LANDLOOK_RANGE_TAIL_BYTES = REALMZ_NATIVE_LAYOUT.landlookRangeTailBytes;
+export const LANDLOOK_RANGE_SLOT_BYTES = REALMZ_NATIVE_LAYOUT.landlookRangeSlotBytes;
+export const LANDLOOK_RANGE_SLOTS = REALMZ_NATIVE_LAYOUT.landlookRangeSlots;
+export const CUSTOM_LANDLOOK_METADATA_BYTES = REALMZ_NATIVE_LAYOUT.customLandlookMetadataBytes;
 const BATTLE_GRID_SLOTS = 13 * 13;
 const BATTLE_RUNTIME_MONSTER_LIMIT = 100;
 
@@ -355,7 +357,7 @@ export function writeLandLayout(layout: LandLayout) {
   }
   const output = new Uint8Array(LAND_LAYOUT_RECORD_BYTES);
   for (let index = 0; index < LAND_LAYOUT_ROWS * LAND_LAYOUT_COLUMNS; index += 1) {
-    writeI16(output, index * 2, layout.cells[index]);
+    writeI16(output, index * LAND_LAYOUT_CELL_BYTES, layout.cells[index]);
   }
   return output;
 }
@@ -370,7 +372,7 @@ export function writeCustomLandlookMetadata(metadata: CustomLandlookMetadata) {
   writeI16(output, baseOffset + 2, metadata.baseScale);
   for (const slot of metadata.rangeSlots.slice(0, LANDLOOK_RANGE_SLOTS)) {
     if (slot.slot < 0 || slot.slot >= LANDLOOK_RANGE_SLOTS) continue;
-    const start = baseOffset + 4 + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
+    const start = baseOffset + LANDLOOK_RANGE_HEADER_BYTES + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
     writeI16(output, start, slot.firstTile);
     writeI16(output, start + 2, slot.lastTile);
   }

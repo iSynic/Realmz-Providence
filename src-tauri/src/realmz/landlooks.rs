@@ -1,4 +1,5 @@
 use crate::error::Result;
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::{
     CustomLandlookMetadata, LandlookRangeSlot, LandlookWriterGate, MapstatsRecord,
     TileAttributeConfidence, TileAttributeFlag, TileAttributeProfile, TileAttributeSourceKind,
@@ -7,11 +8,12 @@ use crate::project::{
 
 use super::record_bytes::{i16_be, write_i16_be};
 
-pub const MAPSTATS_RECORD_BYTES: usize = 40;
-pub const MAPSTATS_RECORDS: usize = 201;
-pub const LANDLOOK_RANGE_TAIL_BYTES: usize = 60;
-pub const LANDLOOK_RANGE_SLOT_BYTES: usize = 6;
-pub const LANDLOOK_RANGE_SLOTS: usize = LANDLOOK_RANGE_TAIL_BYTES / LANDLOOK_RANGE_SLOT_BYTES;
+pub const MAPSTATS_RECORD_BYTES: usize = REALMZ_NATIVE_LAYOUT.mapstats_record_bytes;
+pub const MAPSTATS_RECORDS: usize = REALMZ_NATIVE_LAYOUT.mapstats_records;
+pub const LANDLOOK_RANGE_HEADER_BYTES: usize = REALMZ_NATIVE_LAYOUT.landlook_range_header_bytes;
+pub const LANDLOOK_RANGE_TAIL_BYTES: usize = REALMZ_NATIVE_LAYOUT.landlook_range_tail_bytes;
+pub const LANDLOOK_RANGE_SLOT_BYTES: usize = REALMZ_NATIVE_LAYOUT.landlook_range_slot_bytes;
+pub const LANDLOOK_RANGE_SLOTS: usize = REALMZ_NATIVE_LAYOUT.landlook_range_slots;
 
 mod tile_solids;
 pub(super) use tile_solids::parse_tile_attributes;
@@ -29,7 +31,7 @@ pub fn parse_landlook_mapstats_data(
     } else {
         None
     };
-    let base_scale = if buffer.len() >= base_offset + 4 {
+    let base_scale = if buffer.len() >= base_offset + LANDLOOK_RANGE_HEADER_BYTES {
         Some(i16_be(buffer, base_offset + 2))
     } else {
         None
@@ -145,7 +147,7 @@ pub fn parse_custom_landlook_metadata(
     } else {
         0
     };
-    let base_scale = if buffer.len() >= base_offset + 4 {
+    let base_scale = if buffer.len() >= base_offset + LANDLOOK_RANGE_HEADER_BYTES {
         i16_be(buffer, base_offset + 2)
     } else {
         0
@@ -261,7 +263,7 @@ fn custom_landlook_writer_gate() -> LandlookWriterGate {
 }
 
 pub const CUSTOM_LANDLOOK_METADATA_BYTES: usize =
-    MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES;
+    REALMZ_NATIVE_LAYOUT.custom_landlook_metadata_bytes;
 
 pub fn write_custom_landlook_metadata(metadata: &CustomLandlookMetadata) -> Result<Vec<u8>> {
     let mut output = vec![0u8; CUSTOM_LANDLOOK_METADATA_BYTES];
@@ -275,7 +277,8 @@ pub fn write_custom_landlook_metadata(metadata: &CustomLandlookMetadata) -> Resu
         if slot.slot >= LANDLOOK_RANGE_SLOTS {
             continue;
         }
-        let start = base_offset + 4 + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
+        let start = base_offset + LANDLOOK_RANGE_HEADER_BYTES
+            + slot.slot * LANDLOOK_RANGE_SLOT_BYTES;
         write_i16_be(&mut output, start, slot.first_tile);
         write_i16_be(&mut output, start + 2, slot.last_tile);
     }
@@ -426,7 +429,7 @@ pub fn update_custom_landlook_range_slot(
 }
 
 pub fn parse_landlook_range_tail(buffer: &[u8]) -> Vec<LandlookRangeSlot> {
-    let tail_offset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+    let tail_offset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + LANDLOOK_RANGE_HEADER_BYTES;
     if buffer.len() < tail_offset + LANDLOOK_RANGE_SLOT_BYTES {
         return Vec::new();
     }

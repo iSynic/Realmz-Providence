@@ -16,8 +16,8 @@ use crate::project::{
     TargetCompatibilityIssue, ThiefEncounterRecord, TimedEncounterRecord,
 };
 use crate::realmz::landlooks::{
-    CUSTOM_LANDLOOK_METADATA_BYTES, LANDLOOK_RANGE_SLOTS, LANDLOOK_RANGE_SLOT_BYTES,
-    MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES, TILE_SOLIDS_BYTES,
+    CUSTOM_LANDLOOK_METADATA_BYTES, LANDLOOK_RANGE_HEADER_BYTES, LANDLOOK_RANGE_SLOTS,
+    LANDLOOK_RANGE_SLOT_BYTES, MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES, TILE_SOLIDS_BYTES,
 };
 use crate::realmz::{
     write_battles, write_caste_overrides, write_complex_encounters, write_custom_landlook_metadata,
@@ -1267,7 +1267,8 @@ fn preserve_imported_custom_landlook_compatibility(
             bytes[offset..offset + 2].copy_from_slice(&raw[offset..offset + 2]);
         }
     }
-    let range_offset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+    let range_offset =
+        MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + LANDLOOK_RANGE_HEADER_BYTES;
     for slot in 0..LANDLOOK_RANGE_SLOTS {
         let offset = range_offset + slot * LANDLOOK_RANGE_SLOT_BYTES + 4;
         if raw.len() >= offset + 2 {

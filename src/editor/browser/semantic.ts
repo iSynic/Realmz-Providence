@@ -17,7 +17,7 @@ import {
 } from "../types";
 import { BATTLE_BYTES, COMPLEX_ENCOUNTER_BYTES, FIELD_BYTES, ITEM_BYTES, LAND_LAYOUT_BYTES, MAP_RECORD_BYTES, MESSAGE_BYTES, MONSTER_BYTES, MONSTER_DESCRIPTION_BYTES, OPTION_LABEL_BYTES, RANDLEVEL_BYTES, SIMPLE_ENCOUNTER_BYTES, THIEF_ENCOUNTER_BYTES, TIMED_ENCOUNTER_BYTES, TREASURE_BYTES } from "./realmzParser";
 import { parseResourceFork, type ResourceEntry } from "./library";
-import { CASTE_RECORD_BYTES, GLOBAL_MACRO_HOOK_BYTES, RACE_RECORD_BYTES, SCENARIO_CONTACT_INFO_BYTES, SCENARIO_RESTRICTIONS_BYTES, SCENARIO_SHELL_BYTES, SPELL_RECORD_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { CASTE_RECORD_BYTES, GLOBAL_MACRO_HOOK_BYTES, RACE_RECORD_BYTES, SCENARIO_CONTACT_INFO_BYTES, SCENARIO_RESTRICTIONS_BYTES, SCENARIO_SHELL_BYTES, SPELL_RECORD_BYTES, TILE_SOLIDS_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
 import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 
@@ -986,19 +986,19 @@ function addMenuRecords(schema: SemanticSchema, buffer?: Uint8Array) {
 
 function addSolidsRecords(schema: SemanticSchema, buffer?: Uint8Array) {
   if (!buffer) return;
-  for (let index = 0; index + 1024 <= buffer.byteLength; index += 1) {
-    const start = index * 1024;
-    if (start + 1024 > buffer.byteLength) break;
-    const slice = buffer.slice(start, start + 1024);
+  for (let index = 0; index + TILE_SOLIDS_BYTES <= buffer.byteLength; index += 1) {
+    const start = index * TILE_SOLIDS_BYTES;
+    if (start + TILE_SOLIDS_BYTES > buffer.byteLength) break;
+    const slice = buffer.slice(start, start + TILE_SOLIDS_BYTES);
     const summary = {
       id: index,
       solidEntries: Array.from(slice).filter((value) => value !== 0).length,
       openEntries: Array.from(slice).filter((value) => value === 0).length,
       tableKind: "special negative tile solidity",
-      bytes: 1024
+      bytes: TILE_SOLIDS_BYTES
     };
-    upsertRecord(schema, browserRecord("Data Solids", index, 1024, "solidity-table", `Solids ${index}`, summary));
-    schema.entities.push(browserEntity(`solids:${index}`, "solidity-table", `Solids ${index}`, "Data Solids", `record:Data Solids:${index}`, start, 1024, summary));
+    upsertRecord(schema, browserRecord("Data Solids", index, TILE_SOLIDS_BYTES, "solidity-table", `Solids ${index}`, summary));
+    schema.entities.push(browserEntity(`solids:${index}`, "solidity-table", `Solids ${index}`, "Data Solids", `record:Data Solids:${index}`, start, TILE_SOLIDS_BYTES, summary));
   }
 }
 
@@ -2667,7 +2667,7 @@ const LAYOUTS: Record<string, [string, number]> = {
   "Data CS": ["scenario security backup", SCENARIO_SHELL_BYTES],
   "Global": ["global macro hooks", GLOBAL_MACRO_HOOK_BYTES],
   "Data MENU": ["monster menu cache", 502],
-  "Data Solids": ["solid tile table", 1024],
+  "Data Solids": ["solid tile table", TILE_SOLIDS_BYTES],
   "Data NI": ["scenario item table", ITEM_BYTES],
   "Layout": ["outdoor land layout", LAND_LAYOUT_BYTES]
 };

@@ -9,7 +9,7 @@ use crate::realmz::{
     write_thief_encounters, write_timed_encounters, write_treasures, ParsedScenario, CASTE_BYTES,
     COMPLEX_ENCOUNTER_BYTES, GLOBAL_MACRO_HOOK_BYTES, MAP_RECORD_BYTES, MAP_RECORD_MARKERS,
     MAP_RECORD_MARKER_BYTES, RACE_BYTES, SCENARIO_CONTACT_INFO_BYTES,
-    SCENARIO_RESTRICTIONS_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES,
+    SCENARIO_RESTRICTIONS_BYTES, SIMPLE_ENCOUNTER_BYTES, SPELL_BYTES, TILE_SOLIDS_BYTES,
 };
 use crate::rule_compiler::{
     write_fresh_caste_overrides, write_fresh_race_overrides, write_fresh_spell_overrides,
@@ -791,7 +791,7 @@ pub(super) fn add_fixed_collections(
         schema,
         buffers,
         "Data Solids",
-        1024,
+        TILE_SOLIDS_BYTES,
         "solidity-table",
         "solids",
         parse_solids,

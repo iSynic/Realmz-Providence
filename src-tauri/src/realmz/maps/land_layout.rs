@@ -1,10 +1,12 @@
 use crate::error::{ProvidenceError, Result};
+use crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT;
 use crate::project::LandLayout;
 use crate::realmz::record_bytes::{i16_be, provenance, write_i16_be};
 
-pub const LAND_LAYOUT_ROWS: usize = 8;
-pub const LAND_LAYOUT_COLS: usize = 16;
-pub const LAND_LAYOUT_BYTES: usize = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
+pub const LAND_LAYOUT_ROWS: usize = REALMZ_NATIVE_LAYOUT.land_layout_rows;
+pub const LAND_LAYOUT_COLS: usize = REALMZ_NATIVE_LAYOUT.land_layout_columns;
+pub const LAND_LAYOUT_CELL_BYTES: usize = REALMZ_NATIVE_LAYOUT.land_layout_cell_bytes;
+pub const LAND_LAYOUT_BYTES: usize = REALMZ_NATIVE_LAYOUT.land_layout_bytes;
 
 pub fn parse_land_layout(buffer: &[u8]) -> Result<LandLayout> {
     if buffer.len() < LAND_LAYOUT_BYTES {
@@ -15,7 +17,7 @@ pub fn parse_land_layout(buffer: &[u8]) -> Result<LandLayout> {
         )));
     }
     let cells = (0..LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS)
-        .map(|index| i16_be(buffer, index * 2))
+        .map(|index| i16_be(buffer, index * LAND_LAYOUT_CELL_BYTES))
         .collect();
     Ok(LandLayout {
         rows: LAND_LAYOUT_ROWS,
@@ -42,7 +44,7 @@ pub fn write_land_layout(layout: &LandLayout) -> Result<Vec<u8>> {
     }
     let mut output = vec![0u8; LAND_LAYOUT_BYTES];
     for (index, value) in layout.cells.iter().enumerate() {
-        write_i16_be(&mut output, index * 2, *value);
+        write_i16_be(&mut output, index * LAND_LAYOUT_CELL_BYTES, *value);
     }
     Ok(output)
 }

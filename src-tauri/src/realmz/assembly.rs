@@ -214,7 +214,7 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
         ("Data CS", super::SCENARIO_SHELL_BYTES),
         ("Global", super::GLOBAL_MACRO_HOOK_BYTES),
         ("Data MENU", 502),
-        ("Data Solids", 1024),
+        ("Data Solids", super::TILE_SOLIDS_BYTES),
         ("Data NI", ITEM_BYTES),
         ("Data Spell", SPELL_BYTES),
         ("Data Race", RACE_BYTES),

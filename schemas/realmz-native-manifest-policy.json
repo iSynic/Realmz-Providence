@@ -1,5 +1,5 @@
 {
-  "contractVersion": 10,
+  "contractVersion": 11,
   "nativeLayout": {
     "mapField": {
       "dimension": 90,
@@ -16,6 +16,21 @@
       "contactInfoRecordBytes": 4608,
       "restrictionsRecordBytes": 320,
       "globalMacroHooksRecordBytes": 60
+    },
+    "landLayout": {
+      "rows": 8,
+      "columns": 16,
+      "cellBytes": 2
+    },
+    "tileSolids": {
+      "tableBytes": 1024
+    },
+    "customLandlook": {
+      "mapstatsRecordBytes": 40,
+      "mapstatsRecords": 201,
+      "rangeHeaderBytes": 4,
+      "rangeTailBytes": 60,
+      "rangeSlotBytes": 6
     },
     "randomLevel": {
       "recordBytes": 644

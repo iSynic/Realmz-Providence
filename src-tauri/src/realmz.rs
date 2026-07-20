@@ -38,13 +38,13 @@ pub use landlooks::{
     update_custom_land_tile_attributes, update_custom_land_tile_combat_build,
     update_custom_landlook_base, update_custom_landlook_range_slot, write_custom_landlook_metadata,
     write_tile_solids, CustomLandTileAttributePatch, CUSTOM_LANDLOOK_METADATA_BYTES,
-    LANDLOOK_RANGE_SLOTS, LANDLOOK_RANGE_SLOT_BYTES, LANDLOOK_RANGE_TAIL_BYTES, MAPSTATS_RECORDS,
-    MAPSTATS_RECORD_BYTES,
+    LANDLOOK_RANGE_HEADER_BYTES, LANDLOOK_RANGE_SLOTS, LANDLOOK_RANGE_SLOT_BYTES,
+    LANDLOOK_RANGE_TAIL_BYTES, MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES, TILE_SOLIDS_BYTES,
 };
 pub use maps::{
     parse_fields, parse_land_layout, parse_map_records, write_fields, write_land_layout,
-    write_map_records, FIELD_BYTES, LAND_LAYOUT_BYTES, LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
-    MAP_RECORD_BYTES, MAP_RECORD_MARKERS, MAP_RECORD_MARKER_BYTES,
+    write_map_records, FIELD_BYTES, LAND_LAYOUT_BYTES, LAND_LAYOUT_CELL_BYTES, LAND_LAYOUT_COLS,
+    LAND_LAYOUT_ROWS, MAP_RECORD_BYTES, MAP_RECORD_MARKERS, MAP_RECORD_MARKER_BYTES,
 };
 pub use messages::{parse_messages, write_messages, MESSAGE_BYTES};
 pub use option_labels::{parse_option_labels, write_option_labels, OPTION_LABEL_BYTES};

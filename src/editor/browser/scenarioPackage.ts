@@ -10,6 +10,7 @@ import {
   GLOBAL_MACRO_HOOK_BYTES,
   LAND_LAYOUT_RECORD_BYTES,
   ITEM_RECORD_BYTES,
+  LANDLOOK_RANGE_HEADER_BYTES,
   LANDLOOK_RANGE_SLOT_BYTES,
   LANDLOOK_RANGE_SLOTS,
   MAPSTATS_RECORD_BYTES,
@@ -1123,7 +1124,7 @@ function preserveImportedCustomLandlookCompatibility(
     const offset = tile * MAPSTATS_RECORD_BYTES + 18;
     if (raw.byteLength >= offset + 2) output.set(raw.slice(offset, offset + 2), offset);
   }
-  const rangeOffset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+  const rangeOffset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + LANDLOOK_RANGE_HEADER_BYTES;
   for (let slot = 0; slot < LANDLOOK_RANGE_SLOTS; slot += 1) {
     const offset = rangeOffset + slot * LANDLOOK_RANGE_SLOT_BYTES + 4;
     if (raw.byteLength >= offset + 2) output.set(raw.slice(offset, offset + 2), offset);

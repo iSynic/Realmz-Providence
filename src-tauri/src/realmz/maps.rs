@@ -12,7 +12,8 @@ use super::record_bytes::{
 
 mod land_layout;
 pub use land_layout::{
-    parse_land_layout, write_land_layout, LAND_LAYOUT_BYTES, LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
+    parse_land_layout, write_land_layout, LAND_LAYOUT_BYTES, LAND_LAYOUT_CELL_BYTES,
+    LAND_LAYOUT_COLS, LAND_LAYOUT_ROWS,
 };
 
 pub const FIELD_BYTES: usize = REALMZ_NATIVE_LAYOUT.map_field_bytes;

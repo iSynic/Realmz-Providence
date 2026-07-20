@@ -55,9 +55,11 @@ export const MONSTER_BYTES = REALMZ_NATIVE_LAYOUT.monsterRecordBytes;
 export const MONSTER_DESCRIPTION_BYTES = REALMZ_NATIVE_LAYOUT.monsterDescriptionRecordBytes;
 export const MESSAGE_BYTES = REALMZ_NATIVE_LAYOUT.messageRecordBytes;
 export const OPTION_LABEL_BYTES = REALMZ_NATIVE_LAYOUT.optionLabelRecordBytes;
-export const LAND_LAYOUT_ROWS = 8;
-export const LAND_LAYOUT_COLS = 16;
-export const LAND_LAYOUT_BYTES = LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2;
+export const LAND_LAYOUT_ROWS = REALMZ_NATIVE_LAYOUT.landLayoutRows;
+export const LAND_LAYOUT_COLS = REALMZ_NATIVE_LAYOUT.landLayoutColumns;
+export const LAND_LAYOUT_CELL_BYTES = REALMZ_NATIVE_LAYOUT.landLayoutCellBytes;
+export const LAND_LAYOUT_BYTES = REALMZ_NATIVE_LAYOUT.landLayoutBytes;
+export const TILE_SOLIDS_BYTES = REALMZ_NATIVE_LAYOUT.tileSolidsBytes;
 export const MAP_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.mapRecordBytes;
 const MAP_RECORD_MARKERS = REALMZ_NATIVE_LAYOUT.mapRecordMarkers;
 const MAP_RECORD_MARKER_BYTES = REALMZ_NATIVE_LAYOUT.mapRecordMarkerBytes;
@@ -148,7 +150,7 @@ const RECORD_BYTES: Record<string, number> = {
   "Data CS": REALMZ_NATIVE_LAYOUT.scenarioShellBytes,
   "Global": REALMZ_NATIVE_LAYOUT.globalMacroHookBytes,
   "Data MENU": 502,
-  "Data Solids": 1024,
+  "Data Solids": TILE_SOLIDS_BYTES,
   "Data NI": ITEM_BYTES,
   "Data Spell": SPELL_BYTES,
   "Data Race": RACE_BYTES,
@@ -276,7 +278,7 @@ function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
   return {
     rows: LAND_LAYOUT_ROWS,
     cols: LAND_LAYOUT_COLS,
-    cells: Array.from({ length: LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS }, (_, index) => i16(buffer, index * 2)),
+    cells: Array.from({ length: LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS }, (_, index) => i16(buffer, index * LAND_LAYOUT_CELL_BYTES)),
     authored: false,
     provenance: {
       sourceFile: "Layout",
@@ -290,7 +292,7 @@ function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
 
 function parseTileAttributes(buffer: Uint8Array | undefined): TileAttributeProfile[] {
   if (!buffer) return [];
-  const count = Math.min(1024, buffer.byteLength);
+  const count = Math.min(TILE_SOLIDS_BYTES, buffer.byteLength);
   return Array.from({ length: count }, (_, tile) => {
     const solidType = buffer[tile] ?? 0;
     return {
@@ -309,15 +311,16 @@ function parseTileAttributes(buffer: Uint8Array | undefined): TileAttributeProfi
   });
 }
 
-const MAPSTATS_RECORD_BYTES = 40;
-const MAPSTATS_RECORDS = 201;
+const MAPSTATS_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.mapstatsRecordBytes;
+const MAPSTATS_RECORDS = REALMZ_NATIVE_LAYOUT.mapstatsRecords;
+const LANDLOOK_RANGE_HEADER_BYTES = REALMZ_NATIVE_LAYOUT.landlookRangeHeaderBytes;
 
 export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: number, source: string): TileAttributeProfile[] {
   if (!buffer) return [];
   const count = Math.min(MAPSTATS_RECORDS, Math.floor(buffer.byteLength / MAPSTATS_RECORD_BYTES));
   const baseOffset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS;
   const baseTile = buffer.byteLength >= baseOffset + 2 ? i16(buffer, baseOffset) : null;
-  const baseScale = buffer.byteLength >= baseOffset + 4 ? i16(buffer, baseOffset + 2) : null;
+  const baseScale = buffer.byteLength >= baseOffset + LANDLOOK_RANGE_HEADER_BYTES ? i16(buffer, baseOffset + 2) : null;
   const editableScope = source.toLowerCase().includes("custom") ? "scenario-custom" : "built-in-reference";
   return Array.from({ length: count }, (_, tile) => {
     const start = tile * MAPSTATS_RECORD_BYTES;
@@ -698,8 +701,8 @@ function parseShops(buffer: Uint8Array | undefined): ShopRecord[] {
   }));
 }
 
-const LANDLOOK_RANGE_SLOTS = 10;
-const LANDLOOK_RANGE_SLOT_BYTES = 6;
+const LANDLOOK_RANGE_SLOTS = REALMZ_NATIVE_LAYOUT.landlookRangeSlots;
+const LANDLOOK_RANGE_SLOT_BYTES = REALMZ_NATIVE_LAYOUT.landlookRangeSlotBytes;
 
 export function parseCustomLandlookMetadata(
   buffer: Uint8Array | undefined,
@@ -731,13 +734,13 @@ export function parseCustomLandlookMetadata(
     };
   });
   const baseOffset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS;
-  const rangeOffset = baseOffset + 4;
+  const rangeOffset = baseOffset + LANDLOOK_RANGE_HEADER_BYTES;
   return {
     landlook,
     sourceFile,
     records,
     baseTile: buffer.byteLength >= baseOffset + 2 ? i16(buffer, baseOffset) : 0,
-    baseScale: buffer.byteLength >= baseOffset + 4 ? i16(buffer, baseOffset + 2) : 0,
+    baseScale: buffer.byteLength >= baseOffset + LANDLOOK_RANGE_HEADER_BYTES ? i16(buffer, baseOffset + 2) : 0,
     rangeSlots: Array.from({ length: LANDLOOK_RANGE_SLOTS }, (_, slot) => {
       const start = rangeOffset + slot * LANDLOOK_RANGE_SLOT_BYTES;
       return {

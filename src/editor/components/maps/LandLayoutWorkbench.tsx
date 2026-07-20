@@ -6,11 +6,12 @@ import { InfoGrid } from "../InfoGrid";
 import { TutorialTip } from "../TutorialTip";
 import { drawTileSprite, tileColor } from "../TileSprite";
 import { SegmentedControl, type SegmentedControlOption } from "../../ui";
+import { REALMZ_NATIVE_LAYOUT } from "../../generated/realmzNativeManifestPolicy";
 
 export type LandLayoutCellSelection = { row: number; col: number } | null;
 type LandLayoutPreviewMode = "compact" | "preview";
-const LAND_LAYOUT_ROWS = 8;
-const LAND_LAYOUT_COLS = 16;
+const LAND_LAYOUT_ROWS = REALMZ_NATIVE_LAYOUT.landLayoutRows;
+const LAND_LAYOUT_COLS = REALMZ_NATIVE_LAYOUT.landLayoutColumns;
 const LAND_LAYOUT_PREVIEW_OPTIONS: ReadonlyArray<SegmentedControlOption<LandLayoutPreviewMode>> = [
   { value: "preview", label: "Preview" },
   { value: "compact", label: "Compact" }

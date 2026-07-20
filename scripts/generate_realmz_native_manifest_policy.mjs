@@ -18,6 +18,7 @@ const browserShopRecordsPath = path.join(root, "src", "editor", "browser", "shop
 const browserRuleCompilerPath = path.join(root, "src", "editor", "browser", "ruleCompiler.ts");
 const browserMapCommandsPath = path.join(root, "src", "editor", "projectCommands", "mapCommands.ts");
 const browserMapRecordsWorkbenchPath = path.join(root, "src", "editor", "components", "maps", "MapRecordsWorkbench.tsx");
+const browserLandLayoutWorkbenchPath = path.join(root, "src", "editor", "components", "maps", "LandLayoutWorkbench.tsx");
 const scenarioRulesCommandsPath = path.join(root, "src", "editor", "projectCommands", "scenarioRulesCommands.ts");
 const scenarioSeedMapCompilerPath = path.join(root, "src", "editor", "scenarioSeed", "mapCompiler.ts");
 const scenarioSeedScriptCompilerPath = path.join(root, "src", "editor", "scenarioSeed", "scriptCompiler.ts");
@@ -27,6 +28,9 @@ const rustImporterPath = path.join(root, "src-tauri", "src", "importer.rs");
 const rustProjectPath = path.join(root, "src-tauri", "src", "project.rs");
 const rustAssemblyPath = path.join(root, "src-tauri", "src", "realmz", "assembly.rs");
 const rustScenarioPath = path.join(root, "src-tauri", "src", "realmz", "scenario.rs");
+const rustLandLayoutPath = path.join(root, "src-tauri", "src", "realmz", "maps", "land_layout.rs");
+const rustLandlooksPath = path.join(root, "src-tauri", "src", "realmz", "landlooks.rs");
+const rustTileSolidsPath = path.join(root, "src-tauri", "src", "realmz", "landlooks", "tile_solids.rs");
 const rustMapsPath = path.join(root, "src-tauri", "src", "realmz", "maps.rs");
 const rustRandomLevelsPath = path.join(root, "src-tauri", "src", "realmz", "random_levels.rs");
 const rustActionPointsPath = path.join(root, "src-tauri", "src", "realmz", "action_points.rs");
@@ -44,6 +48,7 @@ const rustSemanticCommonPath = path.join(root, "src-tauri", "src", "semantic", "
 const rustSemanticRecordsPath = path.join(root, "src-tauri", "src", "semantic", "records.rs");
 const rustSemanticMapNamesPath = path.join(root, "src-tauri", "src", "semantic", "map_names.rs");
 const rustSemanticTriggersPath = path.join(root, "src-tauri", "src", "semantic", "triggers.rs");
+const rustValidationPath = path.join(root, "src-tauri", "src", "validation.rs");
 const checkOnly = process.argv.includes("--check");
 
 const policy = JSON.parse(fs.readFileSync(policyPath, "utf8"));
@@ -64,6 +69,22 @@ validatePositiveInteger(nativeLayout.scenario?.supportFileBytes, "nativeLayout.s
 validatePositiveInteger(nativeLayout.scenario?.contactInfoRecordBytes, "nativeLayout.scenario.contactInfoRecordBytes");
 validatePositiveInteger(nativeLayout.scenario?.restrictionsRecordBytes, "nativeLayout.scenario.restrictionsRecordBytes");
 validatePositiveInteger(nativeLayout.scenario?.globalMacroHooksRecordBytes, "nativeLayout.scenario.globalMacroHooksRecordBytes");
+validatePositiveInteger(nativeLayout.landLayout?.rows, "nativeLayout.landLayout.rows");
+validatePositiveInteger(nativeLayout.landLayout?.columns, "nativeLayout.landLayout.columns");
+validatePositiveInteger(nativeLayout.landLayout?.cellBytes, "nativeLayout.landLayout.cellBytes");
+validatePositiveInteger(nativeLayout.tileSolids?.tableBytes, "nativeLayout.tileSolids.tableBytes");
+validatePositiveInteger(nativeLayout.customLandlook?.mapstatsRecordBytes, "nativeLayout.customLandlook.mapstatsRecordBytes");
+validatePositiveInteger(nativeLayout.customLandlook?.mapstatsRecords, "nativeLayout.customLandlook.mapstatsRecords");
+validatePositiveInteger(nativeLayout.customLandlook?.rangeHeaderBytes, "nativeLayout.customLandlook.rangeHeaderBytes");
+validatePositiveInteger(nativeLayout.customLandlook?.rangeTailBytes, "nativeLayout.customLandlook.rangeTailBytes");
+validatePositiveInteger(nativeLayout.customLandlook?.rangeSlotBytes, "nativeLayout.customLandlook.rangeSlotBytes");
+expect(nativeLayout.customLandlook.rangeTailBytes % nativeLayout.customLandlook.rangeSlotBytes === 0, "nativeLayout.customLandlook range tail must contain whole slots");
+expect(projectSchema.$defs.landLayout.properties.cells.minItems === nativeLayout.landLayout.rows * nativeLayout.landLayout.columns, "canonical landLayout cell count must match native layout geometry");
+expect(projectSchema.$defs.landLayout.properties.cells.maxItems === nativeLayout.landLayout.rows * nativeLayout.landLayout.columns, "canonical landLayout cell maximum must match native layout geometry");
+expect(projectSchema.$defs.customLandlookMetadata.properties.records.minItems === nativeLayout.customLandlook.mapstatsRecords, "canonical custom-landlook record count must match native layout geometry");
+expect(projectSchema.$defs.customLandlookMetadata.properties.records.maxItems === nativeLayout.customLandlook.mapstatsRecords, "canonical custom-landlook record maximum must match native layout geometry");
+expect(projectSchema.$defs.customLandlookMetadata.properties.rangeSlots.minItems === nativeLayout.customLandlook.rangeTailBytes / nativeLayout.customLandlook.rangeSlotBytes, "canonical custom-landlook range-slot count must match native layout geometry");
+expect(projectSchema.$defs.customLandlookMetadata.properties.rangeSlots.maxItems === nativeLayout.customLandlook.rangeTailBytes / nativeLayout.customLandlook.rangeSlotBytes, "canonical custom-landlook range-slot maximum must match native layout geometry");
 validatePositiveInteger(nativeLayout.randomLevel?.recordBytes, "nativeLayout.randomLevel.recordBytes");
 validatePositiveInteger(nativeLayout.actionPoint?.recordBytes, "nativeLayout.actionPoint.recordBytes");
 validatePositiveInteger(nativeLayout.actionPoint?.recordsPerLevel, "nativeLayout.actionPoint.recordsPerLevel");
@@ -94,6 +115,19 @@ const generatedNativeLayout = {
   scenarioContactInfoBytes: nativeLayout.scenario.contactInfoRecordBytes,
   scenarioRestrictionsBytes: nativeLayout.scenario.restrictionsRecordBytes,
   globalMacroHookBytes: nativeLayout.scenario.globalMacroHooksRecordBytes,
+  landLayoutRows: nativeLayout.landLayout.rows,
+  landLayoutColumns: nativeLayout.landLayout.columns,
+  landLayoutCellBytes: nativeLayout.landLayout.cellBytes,
+  landLayoutBytes: nativeLayout.landLayout.rows * nativeLayout.landLayout.columns * nativeLayout.landLayout.cellBytes,
+  tileSolidsBytes: nativeLayout.tileSolids.tableBytes,
+  mapstatsRecordBytes: nativeLayout.customLandlook.mapstatsRecordBytes,
+  mapstatsRecords: nativeLayout.customLandlook.mapstatsRecords,
+  landlookRangeHeaderBytes: nativeLayout.customLandlook.rangeHeaderBytes,
+  landlookRangeTailBytes: nativeLayout.customLandlook.rangeTailBytes,
+  landlookRangeSlotBytes: nativeLayout.customLandlook.rangeSlotBytes,
+  landlookRangeSlots: nativeLayout.customLandlook.rangeTailBytes / nativeLayout.customLandlook.rangeSlotBytes,
+  customLandlookMetadataBytes: nativeLayout.customLandlook.mapstatsRecordBytes * nativeLayout.customLandlook.mapstatsRecords
+    + nativeLayout.customLandlook.rangeHeaderBytes + nativeLayout.customLandlook.rangeTailBytes,
   randomLevelRecordBytes: nativeLayout.randomLevel.recordBytes,
   actionPointRecordBytes: nativeLayout.actionPoint.recordBytes,
   actionPointsPerLevel: nativeLayout.actionPoint.recordsPerLevel,
@@ -274,6 +308,18 @@ const rustNativeLayout = [
   "    pub scenario_contact_info_bytes: usize,",
   "    pub scenario_restrictions_bytes: usize,",
   "    pub global_macro_hook_bytes: usize,",
+  "    pub land_layout_rows: usize,",
+  "    pub land_layout_columns: usize,",
+  "    pub land_layout_cell_bytes: usize,",
+  "    pub land_layout_bytes: usize,",
+  "    pub tile_solids_bytes: usize,",
+  "    pub mapstats_record_bytes: usize,",
+  "    pub mapstats_records: usize,",
+  "    pub landlook_range_header_bytes: usize,",
+  "    pub landlook_range_tail_bytes: usize,",
+  "    pub landlook_range_slot_bytes: usize,",
+  "    pub landlook_range_slots: usize,",
+  "    pub custom_landlook_metadata_bytes: usize,",
   "    pub random_level_record_bytes: usize,",
   "    pub action_point_record_bytes: usize,",
   "    pub action_points_per_level: usize,",
@@ -307,6 +353,18 @@ const rustNativeLayout = [
   `    scenario_contact_info_bytes: ${generatedNativeLayout.scenarioContactInfoBytes},`,
   `    scenario_restrictions_bytes: ${generatedNativeLayout.scenarioRestrictionsBytes},`,
   `    global_macro_hook_bytes: ${generatedNativeLayout.globalMacroHookBytes},`,
+  `    land_layout_rows: ${generatedNativeLayout.landLayoutRows},`,
+  `    land_layout_columns: ${generatedNativeLayout.landLayoutColumns},`,
+  `    land_layout_cell_bytes: ${generatedNativeLayout.landLayoutCellBytes},`,
+  `    land_layout_bytes: ${generatedNativeLayout.landLayoutBytes},`,
+  `    tile_solids_bytes: ${generatedNativeLayout.tileSolidsBytes},`,
+  `    mapstats_record_bytes: ${generatedNativeLayout.mapstatsRecordBytes},`,
+  `    mapstats_records: ${generatedNativeLayout.mapstatsRecords},`,
+  `    landlook_range_header_bytes: ${generatedNativeLayout.landlookRangeHeaderBytes},`,
+  `    landlook_range_tail_bytes: ${generatedNativeLayout.landlookRangeTailBytes},`,
+  `    landlook_range_slot_bytes: ${generatedNativeLayout.landlookRangeSlotBytes},`,
+  `    landlook_range_slots: ${generatedNativeLayout.landlookRangeSlots},`,
+  `    custom_landlook_metadata_bytes: ${generatedNativeLayout.customLandlookMetadataBytes},`,
   `    random_level_record_bytes: ${generatedNativeLayout.randomLevelRecordBytes},`,
   `    action_point_record_bytes: ${generatedNativeLayout.actionPointRecordBytes},`,
   `    action_points_per_level: ${generatedNativeLayout.actionPointsPerLevel},`,
@@ -346,24 +404,28 @@ const rustExporterSource = fs.readFileSync(rustExporterPath, "utf8");
 const nativeLayoutConsumers = [
   [browserBinaryWritersPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserParserPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [browserSemanticPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "SIMPLE_ENCOUNTER_BYTES", "COMPLEX_ENCOUNTER_BYTES", "THIEF_ENCOUNTER_BYTES", "TIMED_ENCOUNTER_BYTES", "BATTLE_BYTES", "MONSTER_BYTES", "MONSTER_DESCRIPTION_BYTES", "ITEM_BYTES", "TREASURE_BYTES", "SHOP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES"]],
-  [browserProjectPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES"]],
+  [browserSemanticPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "SIMPLE_ENCOUNTER_BYTES", "COMPLEX_ENCOUNTER_BYTES", "THIEF_ENCOUNTER_BYTES", "TIMED_ENCOUNTER_BYTES", "BATTLE_BYTES", "MONSTER_BYTES", "MONSTER_DESCRIPTION_BYTES", "ITEM_BYTES", "TREASURE_BYTES", "SHOP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES", "TILE_SOLIDS_BYTES"]],
+  [browserProjectPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "CUSTOM_LANDLOOK_RECORDS", "LANDLOOK_RANGE_SLOTS"]],
   [browserFsAccessPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [browserBaselinePath, ["SCENARIO_SUPPORT_FILE_BYTES"]],
-  [browserScenarioPackagePath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES"]],
+  [browserBaselinePath, ["SCENARIO_SUPPORT_FILE_BYTES", "TILE_SOLIDS_BYTES"]],
+  [browserScenarioPackagePath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "LAND_LAYOUT_RECORD_BYTES", "TILE_SOLIDS_BYTES", "CUSTOM_LANDLOOK_METADATA_BYTES", "MAPSTATS_RECORD_BYTES", "MAPSTATS_RECORDS", "LANDLOOK_RANGE_HEADER_BYTES", "LANDLOOK_RANGE_SLOT_BYTES", "LANDLOOK_RANGE_SLOTS"]],
   [browserShopRecordsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserRuleCompilerPath, ["SPELL_RECORD_BYTES", "RACE_RECORD_BYTES", "CASTE_RECORD_BYTES"]],
   [scenarioRulesCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserMapCommandsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [browserMapRecordsWorkbenchPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [browserLandLayoutWorkbenchPath, ["REALMZ_NATIVE_LAYOUT"]],
   [scenarioSeedMapCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],
   [scenarioSeedScriptCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],
   [scenarioSeedCoreRecordCompilerPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustProjectPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustScenarioPath, ["REALMZ_NATIVE_LAYOUT"]],
-  [rustExporterPath, ["SCENARIO_SHELL_BYTES"]],
+  [rustExporterPath, ["SCENARIO_SHELL_BYTES", "LAND_LAYOUT_BYTES", "TILE_SOLIDS_BYTES", "CUSTOM_LANDLOOK_METADATA_BYTES", "MAPSTATS_RECORD_BYTES", "MAPSTATS_RECORDS", "LANDLOOK_RANGE_HEADER_BYTES", "LANDLOOK_RANGE_SLOT_BYTES", "LANDLOOK_RANGE_SLOTS"]],
   [rustImporterPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_SUPPORT_FILE_BYTES"]],
-  [rustAssemblyPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES"]],
+  [rustAssemblyPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "LAND_LAYOUT_BYTES", "TILE_SOLIDS_BYTES"]],
+  [rustLandLayoutPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [rustLandlooksPath, ["REALMZ_NATIVE_LAYOUT"]],
+  [rustTileSolidsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustMapsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustRandomLevelsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustActionPointsPath, ["REALMZ_NATIVE_LAYOUT"]],
@@ -377,10 +439,11 @@ const nativeLayoutConsumers = [
   [rustOptionLabelsPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustRulesPath, ["REALMZ_NATIVE_LAYOUT"]],
   [rustRuleCompilerPath, ["SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
-  [rustSemanticCommonPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
-  [rustSemanticRecordsPath, ["SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES"]],
+  [rustSemanticCommonPath, ["SCENARIO_SHELL_BYTES", "SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "MESSAGE_BYTES", "OPTION_LABEL_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES", "LAND_LAYOUT_BYTES", "TILE_SOLIDS_BYTES"]],
+  [rustSemanticRecordsPath, ["SCENARIO_CONTACT_INFO_BYTES", "SCENARIO_RESTRICTIONS_BYTES", "GLOBAL_MACRO_HOOK_BYTES", "MAP_RECORD_BYTES", "MAP_RECORD_MARKERS", "MAP_RECORD_MARKER_BYTES", "SPELL_BYTES", "RACE_BYTES", "CASTE_BYTES", "TILE_SOLIDS_BYTES"]],
   [rustSemanticMapNamesPath, ["MAP_RECORD_BYTES"]],
-  [rustSemanticTriggersPath, ["MESSAGE_BYTES"]]
+  [rustSemanticTriggersPath, ["MESSAGE_BYTES"]],
+  [rustValidationPath, ["MAPSTATS_RECORDS", "LANDLOOK_RANGE_SLOTS"]]
 ];
 for (const [consumerPath, symbols] of nativeLayoutConsumers) {
   const source = fs.readFileSync(consumerPath, "utf8");

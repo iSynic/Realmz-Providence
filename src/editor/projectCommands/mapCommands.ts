@@ -10,10 +10,12 @@ const RANDOM_LEVEL_BYTES = 644;
 const RANDOM_RECTS_PER_LEVEL = 20;
 const MAP_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.mapRecordBytes;
 const MAP_RECORD_MARKERS = REALMZ_NATIVE_LAYOUT.mapRecordMarkers;
-const LAND_LAYOUT_ROWS = 8;
-const LAND_LAYOUT_COLS = 16;
+const LAND_LAYOUT_ROWS = REALMZ_NATIVE_LAYOUT.landLayoutRows;
+const LAND_LAYOUT_COLS = REALMZ_NATIVE_LAYOUT.landLayoutColumns;
+const LAND_LAYOUT_BYTES = REALMZ_NATIVE_LAYOUT.landLayoutBytes;
 const DUNGEON_WALL_TILE = 1;
-const CUSTOM_LANDLOOK_RECORDS = 201;
+const CUSTOM_LANDLOOK_RECORDS = REALMZ_NATIVE_LAYOUT.mapstatsRecords;
+const LANDLOOK_RANGE_SLOTS = REALMZ_NATIVE_LAYOUT.landlookRangeSlots;
 const CUSTOM_LANDLOOKS = new Set([6, 7, 8]);
 const CUSTOM_LANDLOOK_SOURCE_FILES: Record<number, string> = {
   6: "Data Custom 1 BD",
@@ -195,7 +197,7 @@ export function ensureLandLayout(project: Project) {
       cols: LAND_LAYOUT_COLS,
       cells: new Array(LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS).fill(0),
       authored: true,
-      provenance: authoredProvenance("Layout", 0, 0, LAND_LAYOUT_ROWS * LAND_LAYOUT_COLS * 2)
+      provenance: authoredProvenance("Layout", 0, 0, LAND_LAYOUT_BYTES)
     }
   };
 }
@@ -436,7 +438,7 @@ function findTilesetForLandlook(project: Project, landlook: number) {
 }
 
 function defaultCustomLandlookRangeSlots(): LandlookRangeSlot[] {
-  return Array.from({ length: 10 }, (_, slot) => ({
+  return Array.from({ length: LANDLOOK_RANGE_SLOTS }, (_, slot) => ({
     slot,
     label: `Range ${slot + 1}`,
     firstTile: 0,

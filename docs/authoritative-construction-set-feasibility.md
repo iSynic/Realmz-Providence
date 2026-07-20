@@ -931,7 +931,17 @@ semantic indexing, authored baseline sizing, and compatibility-overlay cutoffs. 
 support tails, singleton byte identity, and reserved global words remain bounded to compatibility-
 annex overlays; fixed-size tests and the ownership proof retain literal Realmz-format expectations.
 
-Branch validation through the eighty-ninth slice completed on 2026-07-20:
+The ninetieth slice extends compiler-owned geometry to the land layout, tile-solidity, and custom-
+landlook metadata families. Native-manifest contract v11 now owns the 8 x 16 two-byte `Layout`
+grid (256 bytes), the 1,024-byte `Data Solids` table, and the 8,104-byte custom-landlook core:
+201 40-byte mapstats rows, a four-byte base header, and ten six-byte range slots. Generated
+TypeScript and Rust definitions drive codecs, parsers, semantic indexes, validation, package
+overlays, project commands, and the land-layout workbench. The policy generator also checks the
+canonical schema's cell, row, and range-slot cardinalities. Imported layout/solidity tails,
+custom-landlook spare and reserved words, and malformed suffixes remain annex-only; fixed-size
+tests and the ownership proof retain literal format expectations independent of the policy.
+
+Branch validation through the ninetieth slice completed on 2026-07-20:
 
 - full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -1007,6 +1017,10 @@ it adds no new ISY-319/320/321 module-size violation.
 The shared scenario-singleton-layout slice replaces startup and metadata literals across codec,
 import, assembly, semantic, baseline, and compatibility-overlay consumers without refactoring the
 deferred ISY-320 assembly module; it adds no new ISY-319/320/321 module-size violation.
+The shared land-layout/solidity/custom-landlook-layout slice replaces geometry literals across
+codec, parser, semantic, validation, package-overlay, project-command, and workbench consumers. Its
+single `assembly.rs` substitution does not grow or refactor the deferred ISY-320 module, and the
+slice adds no new ISY-319/320/321 module-size violation.
 Architecture, lint, unit,
 typecheck, UI audit, production build, scenario proof, package parity, and the full Rust suite were
 run independently.
@@ -1398,7 +1412,7 @@ Legend:
 | `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | The canonical DTO exposes no `rawBytes`. Both writers compile all eighteen Str255 slots and deterministic padding; an untouched imported singleton and malformed tail are restored only from the annex. |
 | `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | The canonical DTO exposes no `rawBytes`. Both writers compile all 320 bytes and normalize ban flags; untouched noncanonical flags, Pascal padding, singleton identity, and malformed tails are annex-only. |
 | `Global` | Generated semantic hooks + bounded legacy annex | Generate 60 bytes with zero defaults for reserved slots | The canonical DTO exposes no `rawBytes`. Both writers compile the five runtime-backed slots; untouched imported identity is annex-owned, while edited imports restore only offsets 6..7 and 12..59 plus a malformed tail. |
-| `Data Solids` | Fully generated semantic table + legacy annex tail | Generate exactly 1,024 bytes from canonical special-tile profiles | Both compilers write every runtime-owned byte from `solidType`, use zero for unspecified rows, ignore embedded `rawByte` provenance, and reject ambiguous/out-of-domain profiles. Imported bytes beyond offset 1,023 remain annex-owned compatibility data. |
+| `Data Solids` | Fully generated semantic table + legacy annex tail | Generate exactly 1,024 bytes from canonical special-tile profiles | Native-manifest contract v11 owns the table length. Both compilers write every runtime-owned byte from `solidType`, use zero for unspecified rows, ignore embedded `rawByte` provenance, and reject ambiguous/out-of-domain profiles. Imported bytes beyond offset 1,023 remain annex-owned compatibility data. |
 
 ### Maps, Action Points, and scripts
 
@@ -1412,7 +1426,7 @@ Legend:
 | `Data RDD` | Fully generated semantic records + legacy annex ranges/tail | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file. Populated dungeon records use the same canonical writer and bounded annex policy as `Data RD`; no imported record words are exposed in the project model. |
 | `Data ED3` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every 40-byte Extra Action Point row | Both compilers write the complete `struct door` shape from canonical fields. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
 | `Data EDCD` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every five-word settings row | Both compilers write all five signed shorts from canonical values. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
-| `Layout` | Fully generated semantic grid + legacy annex tail, optional | Generate exactly 256 bytes from all 128 canonical cells | Canonical projects expose only the 8 x 16 semantic grid. Imported optional bytes 256-511 remain preserve-only annex data, including exact 512-byte files. |
+| `Layout` | Fully generated semantic grid + legacy annex tail, optional | Generate exactly 256 bytes from all 128 canonical cells | Native-manifest contract v11 owns the 8 x 16 two-byte geometry and checks it against the canonical schema. Imported optional bytes 256-511 remain preserve-only annex data, including exact 512-byte files. |
 
 ### Core records and encounters
 
@@ -1442,7 +1456,7 @@ Legend:
 | `Data Caste` | Fully generated + legacy row/tail annex | Emit exactly 30 x 576 bytes | Canonical caste records expose no `rawBytes`. Both compilers use the shared hash-gated baseline for unoverridden slots, then replace each authored row from decoded fields covering all 576 bytes. The still-uninterpreted `spare1[2]`, `spare2[2]`, and `spacer[63]` words remain explicit compatibility-only fields; unchanged imported rows, capacity, and malformed tails are annex-only. |
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
-| `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Both compilers generate 201 mapstats rows, base metadata, and ten ranges without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
+| `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Native-manifest contract v11 owns the 201-row, four-byte-header, ten-range geometry and checks canonical cardinalities. Both compilers generate it without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
 | Main-fork `PICT`, `cicn`, `snd `, `TEXT`, `styl`, map-name `STR#` | Generated/merged | Generate deterministically from managed assets and map records | Existing resource-fork writer is reusable. The ownership proof owns five representative resources (`PICT 306`, `cicn -100`, `snd  321`, and paired `TEXT`/`styl -200`), proves Rust/browser byte parity on both targets, and recovers image/audio previews plus TEXT/styl semantics on reimport. Modern Realmz loads and renders the custom PICT. Unsupported imported resources stay in the annex. |
 | `RLMZ`, `vers`, arbitrary/malformed resources | Pass-through | Omit unless proven required; annex imported entries | Their container format is understood, but payload ownership is not needed for the minimum proof. |
 
@@ -1678,8 +1692,9 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 
 ### Phase 5: One compiler contract across desktop and browser
 
-- **Implemented for baseline and native paths:** generate native scenario-singleton, map/map-record/random-level/Action Point/EDCD,
-  encounter-row, combat-row, economy/content-row, text-row, and rules-row layout geometry,
+- **Implemented for baseline and native paths:** generate native scenario-singleton, land-layout,
+  tile-solidity, custom-landlook, map/map-record/random-level/Action Point/EDCD, encounter-row,
+  combat-row, economy/content-row, text-row, and rules-row layout geometry,
   scenario-item capacity,
   startup roles,
   trigger-table paths and minimums, named runtime-baseline files, fixed optional predicates,
