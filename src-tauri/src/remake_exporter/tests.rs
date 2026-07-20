@@ -140,7 +140,6 @@ fn imported_projects_export_without_consulting_the_compatibility_annex() {
         source_file: "Scenario".to_string(),
         divinity_string_editor_slot: Some(2),
         divinity_string_sound_id: Some(143),
-        raw_bytes: vec![0xaa; 600],
         authored: false,
         provenance: None,
     });

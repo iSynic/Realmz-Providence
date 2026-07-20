@@ -118,14 +118,14 @@ export function bulkUpdateMessageRecords(project: Project, updates: Array<{ id: 
 export function updateStringSound(project: Project, messageId: number, soundId: number): Project {
   if (!Number.isInteger(messageId) || messageId < 0 || !Number.isFinite(soundId)) return project;
   const supportFile = project.scenario.supportFile ?? { sourceFile: "Scenario" };
+  const { rawBytes: _legacyRawBytes, ...canonicalSupportFile } = supportFile as typeof supportFile & { rawBytes?: number[] };
   return {
     ...project,
     scenario: {
       ...project.scenario,
       supportFile: {
-        ...supportFile,
+        ...canonicalSupportFile,
         sourceFile: supportFile.sourceFile || "Scenario",
-        rawBytes: undefined,
         authored: true,
         divinityStringEditorSlot: messageId,
         divinityStringSoundId: Math.trunc(soundId)

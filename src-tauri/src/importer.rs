@@ -593,7 +593,12 @@ fn migrate_legacy_scenario_source_bytes(project: &mut serde_json::Value) {
     else {
         return;
     };
-    for field in ["contactInfo", "restrictions", "globalMacroHooks"] {
+    for field in [
+        "supportFile",
+        "contactInfo",
+        "restrictions",
+        "globalMacroHooks",
+    ] {
         if let Some(record) = scenario
             .get_mut(field)
             .and_then(serde_json::Value::as_object_mut)
@@ -2833,6 +2838,13 @@ mod tests {
         legacy_security_backup["rawBytes"] = serde_json::json!(vec![0xe9u8; 318]);
         legacy_security_backup["trailingBytes"] = serde_json::json!([0xba, 0xdc]);
         saved["scenario"]["securityBackup"] = legacy_security_backup;
+        saved["scenario"]["supportFile"] = serde_json::json!({
+            "sourceFile": "Scenario",
+            "divinityStringEditorSlot": 202,
+            "divinityStringSoundId": -303,
+            "rawBytes": vec![0xc8u8; crate::realmz::SCENARIO_SUPPORT_FILE_BYTES],
+            "authored": false
+        });
         saved["scenario"]["contactInfo"]["rawBytes"] =
             serde_json::json!(vec![0xa5u8; crate::realmz::SCENARIO_CONTACT_INFO_BYTES]);
         saved["scenario"]["restrictions"] = serde_json::json!({
@@ -2951,6 +2963,24 @@ mod tests {
         assert_eq!(opened.caste_overrides[0].spacer.as_ref().unwrap()[62], 789);
         assert_eq!(opened.scenario.shell.as_ref().unwrap().look_x, 12);
         assert_eq!(opened.scenario.security_backup.as_ref().unwrap().look_y, -19);
+        assert_eq!(
+            opened
+                .scenario
+                .support_file
+                .as_ref()
+                .unwrap()
+                .divinity_string_editor_slot,
+            Some(202)
+        );
+        assert_eq!(
+            opened
+                .scenario
+                .support_file
+                .as_ref()
+                .unwrap()
+                .divinity_string_sound_id,
+            Some(-303)
+        );
         assert_eq!(opened.custom_landlooks[0].records[5].sound, 321);
         assert_eq!(opened.custom_landlooks[0].records[5].spare, Some(0x1234));
         assert_eq!(opened.custom_landlooks[0].range_slots[0].first_tile, 62);
@@ -3020,6 +3050,9 @@ mod tests {
             .is_none());
         assert!(upgraded["scenario"]["securityBackup"]
             .get("trailingBytes")
+            .is_none());
+        assert!(upgraded["scenario"]["supportFile"]
+            .get("rawBytes")
             .is_none());
         assert!(upgraded["customLandlooks"][0].get("rawBytes").is_none());
         assert!(upgraded["customLandlooks"][0]

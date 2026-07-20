@@ -332,6 +332,13 @@ poisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 poisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
 poisonedProject.scenario.shell.rawBytes = new Array(320).fill(0xd8);
 poisonedProject.scenario.shell.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
+poisonedProject.scenario.supportFile = {
+  sourceFile: "Scenario",
+  divinityStringEditorSlot: null,
+  divinityStringSoundId: null,
+  rawBytes: new Array(600).fill(0xc8),
+  authored: false
+};
 if (poisonedProject.scenario.securityBackup) {
   poisonedProject.scenario.securityBackup.rawBytes = new Array(318).fill(0xe9);
   poisonedProject.scenario.securityBackup.trailingBytes = [0xba, 0xdc];
@@ -385,6 +392,13 @@ browserPoisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 browserPoisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
 browserPoisonedProject.scenario.shell.rawBytes = new Array(320).fill(0xd8);
 browserPoisonedProject.scenario.shell.trailingBytes = [0xde, 0xad, 0xbe, 0xef];
+browserPoisonedProject.scenario.supportFile = {
+  sourceFile: "Scenario",
+  divinityStringEditorSlot: null,
+  divinityStringSoundId: null,
+  rawBytes: new Array(600).fill(0xc8),
+  authored: false
+};
 if (browserPoisonedProject.scenario.securityBackup) {
   browserPoisonedProject.scenario.securityBackup.rawBytes = new Array(318).fill(0xe9);
   browserPoisonedProject.scenario.securityBackup.trailingBytes = [0xba, 0xdc];
@@ -1041,6 +1055,7 @@ function assertOwnershipScenarioMetadata(project, label, requireNoCompatibilityB
     expect(!Object.hasOwn(shell, "trailingBytes"), `${label} scenario shell exposes a compatibility tail`);
     expect(!Object.hasOwn(project.scenario?.securityBackup ?? {}, "rawBytes"), `${label} scenario security backup exposes raw compatibility bytes`);
     expect(!Object.hasOwn(project.scenario?.securityBackup ?? {}, "trailingBytes"), `${label} scenario security backup exposes a compatibility tail`);
+    expect(!Object.hasOwn(project.scenario?.supportFile ?? {}, "rawBytes"), `${label} scenario support file exposes compatibility bytes`);
     expect(!Object.hasOwn(contact, "rawBytes"), `${label} scenario contact exposes compatibility bytes`);
     expect(!Object.hasOwn(project.scenario?.restrictions ?? {}, "rawBytes"), `${label} scenario restrictions expose compatibility bytes`);
   }

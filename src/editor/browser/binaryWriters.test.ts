@@ -191,7 +191,7 @@ describe("browser scenario metadata writers", () => {
       divinityStringSoundId: -303,
       rawBytes: new Array(602).fill(0xa5),
       authored: false
-    });
+    } as unknown as Parameters<typeof writeScenarioSupportFile>[0]);
 
     expect(output).toHaveLength(600);
     expect(output[23]).toBe(202);

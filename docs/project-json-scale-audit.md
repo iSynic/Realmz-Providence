@@ -35,7 +35,7 @@ state as of July 20, 2026.
 ## Consumption Map
 
 - The compatibility annex is now the export-critical source of imported byte identity for completed canonical families. Untouched legacy records can still round-trip exactly; authored records compile from semantic fields and preserve only explicitly bounded unsupported annex data.
-- `ScenarioSupportFile.rawBytes` is the remaining embedded scenario-record identity payload. Scenario shell and security-backup records now compile from semantic fields, while imported singleton identity and malformed suffixes live in the annex.
+- Canonical scenario startup and record DTOs no longer retain whole source-file or source-record identity arrays. The 600-byte scenario support file now follows the same semantic-plus-annex boundary as the scenario shell and other completed families.
 - Browser tooling still reads raw import buffers and library/evidence payloads for parsing, diagnostics, and reusable source assets. Those uses are separate from keeping raw bytes embedded in canonical scenario records.
 - `provenance` is mostly regular source/file/record/offset metadata. It feeds semantic byte ranges, validation/source diagnostics, authored record allocation, and UI source context. It looks more suitable for table compression or load-time rehydration, but authored records and inferred/custom sources need sparse exceptions.
 
@@ -44,13 +44,13 @@ state as of July 20, 2026.
 - Keep `semanticSchema` as a derived cache, not persisted project state. Current desktop saves already follow this rule; old `tmp/oracle-runs` projects with persisted semantic data are stale scale artifacts.
 - Treat benchmark JSON size separately from project schema size. Benchmark projects should stay compact and carry an empty current-version `semanticSchema` unless a specific smoke test is intentionally measuring semantic-link stress.
 - The authoritative-compiler compatibility annex now provides the source-snapshot boundary this audit required. Completed record families no longer keep imported identity bytes in their canonical DTOs.
-- Finish the support-file compiler boundary before declaring scenario-record byte identity fully removed from the canonical model. Keep raw payloads only where they are intentionally import evidence, library data, or the bounded compatibility annex.
+- Keep raw payloads only where they are intentionally import evidence, library data, or the bounded compatibility annex; do not reintroduce them into canonical scenario DTOs.
 - Leave `values` arrays and map tile compaction as secondary work after provenance. They are real contributors, but their measured savings are smaller and the current invalidation pain is better addressed by reducing repeated provenance and avoiding derived semantic payloads.
 
 ## Implementation Follow-Up
 
 - Continue the current compatibility contract: UI source context, allocation diagnostics, untouched-import identity, and authored export behavior must remain equivalent while record DTOs become semantic-only.
-- The remaining source-byte follow-up is the 600-byte scenario support file. Its semantic writer and annex overlay must prove fresh authored output, untouched legacy identity, and deterministic authored rewrite before `ScenarioSupportFile.rawBytes` is removed.
+- The support-file boundary is complete: its semantic writer and annex overlay prove fresh authored output, untouched legacy identity, and deterministic authored rewrite without `ScenarioSupportFile.rawBytes`.
 
 ## Repeatable Report
 

@@ -1343,7 +1343,6 @@ export type ProvidenceScenarioSupportFile = {
   sourceFile: string;
   divinityStringEditorSlot?: number | null;
   divinityStringSoundId?: number | null;
-  rawBytes?: number[];
   authored?: boolean;
   provenance?: ProvidenceProvenance | null;
 };

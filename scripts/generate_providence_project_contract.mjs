@@ -490,14 +490,13 @@ for (const definition of scenarioProvenanceOwners) {
 }
 expect(!Object.hasOwn(schema.$defs?.scenarioShell?.properties ?? {}, "rawBytes"), "scenarioShell must not expose imported rawBytes");
 expect(!Object.hasOwn(schema.$defs?.scenarioShell?.properties ?? {}, "trailingBytes"), "scenarioShell must not expose imported trailingBytes");
+expect(!Object.hasOwn(schema.$defs?.scenarioSupportFile?.properties ?? {}, "rawBytes"), "scenarioSupportFile must not expose imported rawBytes");
 const compatibilityScenarioFields = scenarioDefinitions.flatMap((definition) =>
   Object.entries(definition.properties ?? {})
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(compatibilityScenarioFields, [
-  "ScenarioSupportFile.rawBytes"
-], "Scenario compatibility-only field inventory");
+expectSameSet(compatibilityScenarioFields, [], "Scenario compatibility-only field inventory");
 
 const tsProjectFields = extractFields(typesSource, "export type Project =", /^  ([A-Za-z][A-Za-z0-9]*)(?:\?)?:/gm);
 const rustProjectFields = extractFields(rustProjectSource, "pub struct ProvidenceProject", /^    pub ([a-z][a-z0-9_]*):/gm).map(snakeToCamel);

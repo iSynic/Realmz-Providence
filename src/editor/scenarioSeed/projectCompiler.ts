@@ -117,6 +117,7 @@ function initializeScenarioSeedProject(
       projectPath: `seed://${slugify(seed.scenario.name)}.providence`,
       importedAt: now,
       globalMacroHooks,
+      supportFile: project.scenario.supportFile ? withoutLegacyRawBytes(project.scenario.supportFile) : null,
       shell: scenarioShell
         ? withoutLegacyScenarioShellSourceBytes({
             ...scenarioShell,

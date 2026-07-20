@@ -48,6 +48,13 @@ describe("browser project native manifest validation", () => {
       rawBytes: new Array(318).fill(0xe9),
       trailingBytes: [0xba, 0xdc]
     } as unknown as NonNullable<Project["scenario"]["securityBackup"]>;
+    project.scenario.supportFile = {
+      sourceFile: "Scenario",
+      divinityStringEditorSlot: 202,
+      divinityStringSoundId: -303,
+      rawBytes: new Array(600).fill(0xc8),
+      authored: false
+    } as unknown as NonNullable<Project["scenario"]["supportFile"]>;
     project.scenario.contactInfo = {
       ...project.scenario.contactInfo!,
       author: "Semantic author",
@@ -70,6 +77,7 @@ describe("browser project native manifest validation", () => {
 
     expect(project.scenario.shell?.lookX).toBe(12);
     expect(project.scenario.securityBackup?.lookY).toBe(-19);
+    expect(project.scenario.supportFile).toMatchObject({ divinityStringEditorSlot: 202, divinityStringSoundId: -303 });
     expect(project.scenario.contactInfo?.author).toBe("Semantic author");
     expect(project.scenario.restrictions?.description).toBe("Semantic restrictions");
     expect(project.scenario.globalMacroHooks?.slots).toHaveLength(7);
@@ -80,6 +88,7 @@ describe("browser project native manifest validation", () => {
     expect("trailingBytes" in project.scenario.shell!).toBe(false);
     expect("rawBytes" in project.scenario.securityBackup!).toBe(false);
     expect("trailingBytes" in project.scenario.securityBackup!).toBe(false);
+    expect("rawBytes" in project.scenario.supportFile!).toBe(false);
   });
 
   it("drops legacy spell, race, and caste byte identity during normalization and edits", () => {

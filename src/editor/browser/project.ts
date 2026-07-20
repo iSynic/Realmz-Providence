@@ -451,7 +451,6 @@ function parseScenarioSupportFile(sourceFile: string, buffer?: Uint8Array): Proj
     sourceFile,
     divinityStringEditorSlot: buffer[23],
     divinityStringSoundId: i16At(buffer, 38),
-    rawBytes: Array.from(buffer),
     authored: false,
     provenance: {
       sourceFile,
@@ -561,6 +560,7 @@ export function normalizeBrowserProject(project: Project): Project {
   project.assets ??= [];
   if (project.scenario.shell) project.scenario.shell = withoutLegacyScenarioShellSourceBytes(project.scenario.shell);
   if (project.scenario.securityBackup) project.scenario.securityBackup = withoutLegacyScenarioShellSourceBytes(project.scenario.securityBackup);
+  if (project.scenario.supportFile) project.scenario.supportFile = withoutLegacySingletonRawBytes(project.scenario.supportFile);
   if (project.scenario.contactInfo) project.scenario.contactInfo = withoutLegacySingletonRawBytes(project.scenario.contactInfo);
   if (project.scenario.restrictions) project.scenario.restrictions = withoutLegacySingletonRawBytes(project.scenario.restrictions);
   if (project.scenario.globalMacroHooks) project.scenario.globalMacroHooks = withoutLegacySingletonRawBytes(project.scenario.globalMacroHooks);

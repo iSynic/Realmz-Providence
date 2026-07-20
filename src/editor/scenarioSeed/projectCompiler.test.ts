@@ -36,6 +36,13 @@ describe("scenario seed project compiler", () => {
       rawBytes: new Array(320).fill(0xd8),
       trailingBytes: [0xde, 0xad, 0xbe, 0xef]
     } as unknown as NonNullable<typeof template.scenario.shell>;
+    template.scenario.supportFile = {
+      sourceFile: "Scenario",
+      divinityStringEditorSlot: 202,
+      divinityStringSoundId: -303,
+      rawBytes: new Array(600).fill(0xc8),
+      authored: false
+    } as unknown as NonNullable<typeof template.scenario.supportFile>;
     const legacyCustomLandlook = parseScenarioBuffers(new Map([
       ["Data Custom 1 BD", new Uint8Array(8_107)]
     ])).customLandlooks[0];
@@ -77,6 +84,8 @@ describe("scenario seed project compiler", () => {
     expect(result.project.scenario.shell).toMatchObject({ landLevel: 2, lookX: 7, lookY: 9, sourceFile: "Compiled Scenario" });
     expect("rawBytes" in result.project.scenario.shell!).toBe(false);
     expect("trailingBytes" in result.project.scenario.shell!).toBe(false);
+    expect(result.project.scenario.supportFile).toMatchObject({ divinityStringEditorSlot: 202, divinityStringSoundId: -303 });
+    expect("rawBytes" in result.project.scenario.supportFile!).toBe(false);
     expect(result.project.scenario.contactInfo).toMatchObject({ scenarioName: "Compiled Scenario", author: "Providence", version: "1.0" });
     expect(result.project.source).toMatchObject({ origin: "imported", sourcePath: "seed://compiled-scenario", rawSourcesDir: "template-raw", immutable: false });
     expect(result.project.source.files).toEqual(template.source.files);

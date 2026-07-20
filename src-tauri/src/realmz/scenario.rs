@@ -65,7 +65,6 @@ pub fn parse_scenario_support_file(
         source_file: source_file.to_string(),
         divinity_string_editor_slot: Some(buffer[23] as i32),
         divinity_string_sound_id: Some(i16_be(buffer, 38) as i32),
-        raw_bytes: buffer.to_vec(),
         authored: false,
         provenance: Some(provenance(source_file, 0, 0, buffer.len())),
     })
@@ -415,7 +414,6 @@ mod tests {
         support.authored = true;
         support.divinity_string_editor_slot = Some(3);
         support.divinity_string_sound_id = Some(145);
-        support.raw_bytes.fill(0xa5);
 
         let output = write_scenario_support_file(&support).unwrap();
 

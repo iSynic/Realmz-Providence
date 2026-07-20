@@ -54,7 +54,7 @@ describe("project command facade", () => {
       divinityStringSoundId: 10,
       rawBytes: new Array(600).fill(0xc7),
       authored: false
-    };
+    } as unknown as NonNullable<Project["scenario"]["supportFile"]>;
 
     const support = applyProjectCommand(project, {
       kind: "updateStringSound",
@@ -91,7 +91,7 @@ describe("project command facade", () => {
     });
 
     expect(globalHooks.scenario.supportFile).toMatchObject({ divinityStringEditorSlot: 12, divinityStringSoundId: -303, authored: true });
-    expect(globalHooks.scenario.supportFile?.rawBytes).toBeUndefined();
+    expect("rawBytes" in (globalHooks.scenario.supportFile ?? {})).toBe(false);
     expect(globalHooks.scenario.shell).toMatchObject({ lookX: 12, codeseg1: [1, 2, 3], authored: true });
     expect("rawBytes" in (globalHooks.scenario.shell ?? {})).toBe(false);
     expect("trailingBytes" in (globalHooks.scenario.shell ?? {})).toBe(false);
