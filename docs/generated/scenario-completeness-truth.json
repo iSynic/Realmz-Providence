@@ -876,9 +876,10 @@
         "docs/generated/core-rules-record-evidence.json",
         "docs/format-evidence-cards/core-rules-record-runtime-anchors.md",
         "src-tauri/src/realmz/scenario_items.rs:fresh_scenario_item_compiles_all_semantic_fields",
-        "src-tauri/src/realmz/scenario_items.rs:imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+        "src-tauri/src/realmz/scenario_items.rs:imported_zero_item_id_alias_becomes_canonical_semantics",
         "src-tauri/src/realmz/scenario_items.rs:scenario_item_storage_mutates_only_semantic_fields",
-        "src-tauri/src/project.rs:scenario_item_normalization_backfills_legacy_spare_words",
+        "src-tauri/src/exporter.rs:scenario_item_compatibility_comes_only_from_annex",
+        "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
         "src-tauri/src/realmz/scenario_items.rs:write_scenario_items",
         "src-tauri/src/realmz/scenario_items.rs:parse_scenario_items"
       ],

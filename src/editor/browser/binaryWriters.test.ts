@@ -384,7 +384,7 @@ describe("browser scenario-item writer", () => {
       special5: -123
     };
 
-    expect(record.rawBytes).toBeUndefined();
+    expect("rawBytes" in record).toBe(false);
     const output = writeScenarioItems([record]);
 
     expect(output).toHaveLength(100);
@@ -396,23 +396,21 @@ describe("browser scenario-item writer", () => {
     expect(i16(output, 94)).toBe(-123);
   });
 
-  it("preserves an imported zero item-id alias until semantics change", () => {
+  it("canonicalizes an imported zero item-id alias as semantic data", () => {
     const rawBytes = new Uint8Array(100).fill(0xa5);
     rawBytes[2] = 0;
     rawBytes[3] = 0;
     const imported = parseScenarioBuffers(new Map([["Data NI", rawBytes]])).scenarioItems[0];
 
     expect(imported.itemId).toBe(800);
-    expect(writeScenarioItems([imported])).toEqual(rawBytes);
-
-    const changed = writeScenarioItems([{ ...imported, itemId: 901 }]);
-    expect(i16(changed, 2)).toBe(901);
-    expect(Array.from(changed.slice(56, 70))).toEqual(Array.from(rawBytes.slice(56, 70)));
+    expect("rawBytes" in imported).toBe(false);
+    const output = writeScenarioItems([imported]);
+    expect(i16(output, 2)).toBe(800);
+    expect(Array.from(output.slice(56, 70))).toEqual(Array.from(rawBytes.slice(56, 70)));
+    expect(output).not.toEqual(rawBytes);
   });
 
-  it("rejects malformed compatibility bytes and spare-word inventories", () => {
-    expect(() => writeScenarioItems([{ ...emptyScenarioItem(0), rawBytes: [1] }]))
-      .toThrow("invalid compatibility byte storage");
+  it("rejects malformed spare-word inventories", () => {
     expect(() => writeScenarioItems([{ ...emptyScenarioItem(0), spare2: [] }]))
       .toThrow("must define 7 spare words");
   });

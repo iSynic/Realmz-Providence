@@ -318,7 +318,6 @@ pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[
     "special5",
     "weightPerCharge",
     "dropOnEmpty",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -1312,8 +1311,6 @@ pub struct ScenarioItemRecord {
     pub special5: i16,
     pub weight_per_charge: i16,
     pub drop_on_empty: i16,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

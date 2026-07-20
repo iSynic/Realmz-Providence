@@ -503,13 +503,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for item in &project.scenario_items {
-        if !item.raw_bytes.is_empty() && item.raw_bytes.len() != crate::realmz::ITEM_BYTES {
-            errors.push(format!(
-                "Scenario item {} has invalid {}-byte compatibility storage.",
-                item.id,
-                crate::realmz::ITEM_BYTES
-            ));
-        }
         if item.spare2.len() != 7 {
             errors.push(format!(
                 "Scenario item {} must define 7 semantic spare words.",

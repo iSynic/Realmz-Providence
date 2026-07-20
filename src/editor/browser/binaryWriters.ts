@@ -474,17 +474,11 @@ export function writeScenarioRestrictions(restrictions: ScenarioRestrictions) {
 
 export function writeScenarioItems(records: ScenarioItemRecord[]) {
   return writeFixedRecords(records, ITEM_RECORD_BYTES, (record, target) => {
-    const rawBytes = record.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== ITEM_RECORD_BYTES) {
-      throw new Error(`Scenario item ${record.id} has invalid compatibility byte storage`);
-    }
     if (record.spare2.length !== 7) {
       throw new Error(`Scenario item ${record.id} must define 7 spare words`);
     }
-    copyRaw(target, rawBytes);
-    const preserveZeroItemId = rawBytes.length === ITEM_RECORD_BYTES && readI16(target, 2) === 0 && record.itemId === 800 + record.id;
     writeI16(target, 0, record.st);
-    if (!preserveZeroItemId) writeI16(target, 2, record.itemId);
+    writeI16(target, 2, record.itemId);
     writeI16(target, 4, record.iconId);
     writeI16(target, 6, record.type);
     writeI16(target, 8, record.blunt);

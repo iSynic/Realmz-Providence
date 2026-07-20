@@ -286,9 +286,7 @@ expect(project.battles.every((record) => (record.rawBytes?.length ?? 0) === 0), 
 assertOwnershipMonster(project.monsters, project.monsterDescriptions, "Canonical project");
 expect(project.monsters.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical monsters must not carry compatibility bytes");
 expect(project.monsterDescriptions.every((record) => (record.rawBytes?.length ?? 0) === 0), "Fresh canonical monster descriptions must not carry compatibility bytes");
-expect(project.scenarioItems.length === 1, `Expected one scenario item, found ${project.scenarioItems.length}`);
-expect((project.scenarioItems[0].rawBytes?.length ?? 0) === 0, "Fresh canonical scenario item must not carry compatibility bytes");
-expect(project.scenarioItems[0].spare2?.length === 7, "Fresh canonical scenario item must own all seven spare words");
+assertOwnershipScenarioItem(project.scenarioItems, "Canonical project");
 expect(project.treasures.length === 1, `Expected one treasure, found ${project.treasures.length}`);
 expect((project.treasures[0].rawBytes?.length ?? 0) === 0, "Fresh canonical treasure must not carry compatibility bytes");
 expect(project.treasures[0].itemIds?.length === 20, "Fresh canonical treasure must own all twenty item slots");
@@ -331,6 +329,7 @@ poisonedLandlook.rangeSlots[0].reserved = 0x2345;
 poisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
 poisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
 poisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
+poisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(poisonedProject, null, 2)}\n`);
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputB, "windows-realmz-folder"]);
 await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
@@ -360,6 +359,7 @@ browserPoisonedLandlook.rangeSlots[0].reserved = 0x2345;
 browserPoisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
 browserPoisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
 browserPoisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
+browserPoisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
 const browserEmbeddedCompatibilityTrapPackage = createBrowserScenarioPackageZip(browserPoisonedProject, null, "windows-realmz-folder");
 const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
   rootName: "ANNEX READ TRAP",
@@ -480,6 +480,7 @@ assertOwnershipThiefEncounter(reimported.thiefEncounters, "Reimport");
 assertOwnershipTimedEncounter(reimported.timedEncounters, "Reimport");
 assertOwnershipBattle(reimported.battles, "Reimport");
 assertOwnershipMonster(reimported.monsters, reimported.monsterDescriptions, "Reimport");
+assertOwnershipScenarioItem(reimported.scenarioItems, "Reimport");
 assertOwnershipItemText(reimported.itemTexts, "Reimport");
 assertOwnershipTreasure(reimported.treasures, "Reimport");
 assertOwnershipShop(reimported.shops, "Reimport");
@@ -686,6 +687,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipMonster(savedProject.monsters, savedProject.monsterDescriptions, `Rust-saved project ${stage}`);
   expect(savedProject.monsters?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} monsters contain compatibility bytes`);
   expect(savedProject.monsterDescriptions?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} monster descriptions contain compatibility bytes`);
+  assertOwnershipScenarioItem(savedProject.scenarioItems, `Rust-saved project ${stage}`);
   assertOwnershipItemText(savedProject.itemTexts, `Rust-saved project ${stage}`);
   assertOwnershipTreasure(savedProject.treasures, `Rust-saved project ${stage}`);
   expect(savedProject.treasures?.every((record) => (record.rawBytes?.length ?? 0) === 0), `Rust-saved project ${stage} treasures contain compatibility bytes`);
@@ -775,7 +777,11 @@ function assertCompleteNativeFolder(files, label) {
   expect(extraActionPoints[2 * 40 + 7] === 100 && readI16(extraActionPoints, 2 * 40 + 8) === 1 && readI16(extraActionPoints, 2 * 40 + 24) === 0, `${label} Data ED3 has the wrong authored Extra Action Point`);
   const extraCodes = files.get("Data EDCD");
   expect(readI16(extraCodes, 0) === 25 && extraCodes.slice(2).every((byte) => byte === 0), `${label} Data EDCD has the wrong authored five-word settings row`);
-  expect(files.get("Data NI").some((byte) => byte !== 0), `${label} Data NI does not contain the authored scenario item`);
+  const scenarioItems = files.get("Data NI");
+  const scenarioItemOffset = 101 * 100;
+  expect(readI16(scenarioItems, scenarioItemOffset + 2) === 901, `${label} Data NI has the wrong authored item identity`);
+  expect(readI16(scenarioItems, scenarioItemOffset + 28) === 1, `${label} Data NI has the wrong authored item cost`);
+  expect(scenarioItems.slice(scenarioItemOffset + 56, scenarioItemOffset + 70).every((byte) => byte === 0), `${label} Data NI has non-deterministic semantic spare words`);
   expect(files.get("Data TD").some((byte) => byte !== 0), `${label} Data TD does not contain the authored treasure`);
   expect(files.get("Data SD").some((byte) => byte !== 0), `${label} Data SD does not contain the authored shop`);
   const battle = files.get("Data BD");
@@ -852,6 +858,14 @@ function assertOwnershipItemText(records, label) {
   expect(itemText.unidentifiedName === "Unknown Providence Token", `${label} has the wrong unidentified item name`);
   expect(itemText.identifiedName === "Providence Token", `${label} has the wrong identified item name`);
   expect(itemText.description === "This item text was compiled from canonical Providence data.", `${label} has the wrong item description`);
+}
+
+function assertOwnershipScenarioItem(records, label) {
+  const item = records?.find((record) => record.id === 101 && record.itemId === 901);
+  expect(item, `${label} is missing scenario-item record 101 for item 901`);
+  expect(item.cost === 1, `${label} scenario item has the wrong canonical cost`);
+  expect(item.spare2?.length === 7 && item.spare2.every((value) => value === 0), `${label} scenario item does not own all seven semantic spare words`);
+  expect(!Object.hasOwn(item, "rawBytes"), `${label} scenario item exposes compatibility storage`);
 }
 
 function assertCompiledTileSolids(files, label) {

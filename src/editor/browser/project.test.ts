@@ -295,13 +295,15 @@ describe("browser project native manifest validation", () => {
     bytes.set([0xfe, 0xbf], 56);
     const record = parseScenarioBuffers(new Map([["Data NI", bytes]])).scenarioItems[0];
     const project = createBrowserProject("Legacy Scenario Item");
-    project.scenarioItems = [{ ...record, spare2: undefined } as unknown as Project["scenarioItems"][number]];
+    project.scenarioItems = [{ ...record, spare2: undefined, rawBytes: Array.from(bytes) } as unknown as Project["scenarioItems"][number]];
 
-    const spare2 = normalizeBrowserProject(project).scenarioItems[0].spare2;
+    const normalized = normalizeBrowserProject(project).scenarioItems[0];
+    const spare2 = normalized.spare2;
 
     expect(spare2).toHaveLength(7);
     expect(spare2[0]).toBe(-321);
     expect(spare2.slice(1)).toEqual(new Array(6).fill(0));
+    expect("rawBytes" in normalized).toBe(false);
   });
 
   it("backfills treasure item slots when opening legacy browser projects", () => {
@@ -654,8 +656,7 @@ describe("browser project native manifest validation", () => {
       itemId: 901,
       iconId: 321,
       cost: 45,
-      authored: false,
-      rawBytes: new Array(100).fill(0xa5)
+      authored: false
     }];
     project.treasures = [{
       ...parsed.treasures[0],

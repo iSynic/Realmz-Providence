@@ -299,7 +299,6 @@ export const PROVIDENCE_SCENARIO_ITEM_FIELDS = [
   "special5",
   "weightPerCharge",
   "dropOnEmpty",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -1006,7 +1005,6 @@ export type ProvidenceScenarioItemRecord = {
   special5: number;
   weightPerCharge: number;
   dropOnEmpty: number;
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

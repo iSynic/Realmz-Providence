@@ -25,7 +25,7 @@
     "semanticCaution": [
       "alternate monster-set editing remains UI-gated",
       "map record prefix bytes remain preserve-only",
-      "imported scenario items may preserve an unchanged zero stored item-ID alias"
+      "imported scenario-item row capacity, malformed tails, and zero stored item-ID aliases are annex-only"
     ]
   },
   "summary": {
@@ -554,9 +554,10 @@
       "missingEvidence": [],
       "evidence": [
         "src-tauri/src/realmz/scenario_items.rs:fresh_scenario_item_compiles_all_semantic_fields",
-        "src-tauri/src/realmz/scenario_items.rs:imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+        "src-tauri/src/realmz/scenario_items.rs:imported_zero_item_id_alias_becomes_canonical_semantics",
         "src-tauri/src/realmz/scenario_items.rs:scenario_item_storage_mutates_only_semantic_fields",
-        "src-tauri/src/project.rs:scenario_item_normalization_backfills_legacy_spare_words",
+        "src-tauri/src/exporter.rs:scenario_item_compatibility_comes_only_from_annex",
+        "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
         "src-tauri/src/realmz/scenario_items.rs:write_scenario_items",
         "src-tauri/src/realmz/scenario_items.rs:parse_scenario_items",
         "docs/generated/core-rules-record-evidence.json",
@@ -572,9 +573,9 @@
           "present": true
         },
         {
-          "reference": "src-tauri/src/realmz/scenario_items.rs:imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+          "reference": "src-tauri/src/realmz/scenario_items.rs:imported_zero_item_id_alias_becomes_canonical_semantics",
           "file": "src-tauri/src/realmz/scenario_items.rs",
-          "anchor": "imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+          "anchor": "imported_zero_item_id_alias_becomes_canonical_semantics",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -588,9 +589,17 @@
           "present": true
         },
         {
-          "reference": "src-tauri/src/project.rs:scenario_item_normalization_backfills_legacy_spare_words",
-          "file": "src-tauri/src/project.rs",
-          "anchor": "scenario_item_normalization_backfills_legacy_spare_words",
+          "reference": "src-tauri/src/exporter.rs:scenario_item_compatibility_comes_only_from_annex",
+          "file": "src-tauri/src/exporter.rs",
+          "anchor": "scenario_item_compatibility_comes_only_from_annex",
+          "fileExists": true,
+          "anchorPresent": true,
+          "present": true
+        },
+        {
+          "reference": "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
+          "file": "src-tauri/src/importer.rs",
+          "anchor": "open_project_upgrades_legacy_source_origin",
           "fileExists": true,
           "anchorPresent": true,
           "present": true
@@ -653,7 +662,7 @@
       ],
       "preservedRanges": [],
       "partialOnly": false,
-      "preservationPolicy": "Fresh scenario items compile all 100 bytes from semantic fields, including itemattr.spare2[7], without rawBytes. Imported rawBytes can preserve only an unchanged zero stored item ID that semantically aliases row ID 800+id; semantic edits take precedence."
+      "preservationPolicy": "Canonical scenario items expose no rawBytes and compile all 100 bytes from semantic fields, including itemattr.spare2[7]. Imported row capacity, malformed tails, and an unchanged zero stored item-ID alias are restored only from the compatibility annex; semantic edits and deletions take precedence."
     }
   ]
 }

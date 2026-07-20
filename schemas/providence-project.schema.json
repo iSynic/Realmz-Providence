@@ -813,8 +813,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceScenarioItemRecord",
       "x-providence-rust-name": "ScenarioItemRecord",
-      "x-providence-rust-default": ["spare2", "rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["spare2", "authored"],
       "required": ["id", "itemId", "iconId", "type", "st", "blunt", "hands", "lu", "movement", "ac", "magicResistance", "damage", "spellPoints", "sound", "weight", "cost", "charge", "cursedItemId", "magical", "itemCat0", "itemCat1", "raceRestrictions", "casteRestrictions", "specificRace", "specificCaste", "raceClassOnly", "casteClassOnly", "spare2", "vSmall", "vLarge", "heat", "cold", "electric", "vsUndead", "vsDemonDevil", "vsEvil", "special1", "special2", "special3", "special4", "special5", "weightPerCharge", "dropOnEmpty", "provenance"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
@@ -860,7 +859,6 @@
         "special5": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "weightPerCharge": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "dropOnEmpty": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
-        "rawBytes": { "type": "array", "minItems": 100, "maxItems": 100, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

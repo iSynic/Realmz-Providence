@@ -5,7 +5,8 @@ import {
   projectCommandChangeCount,
   projectCommandLabel
 } from "./projectCommands";
-import type { ProjectCommand } from "./types";
+import { emptyScenarioItem } from "./projectCommands/targetRecordCommands";
+import type { Project, ProjectCommand } from "./types";
 
 describe("project command facade", () => {
   it("drops imported scenario metadata bytes when semantics are authored", () => {
@@ -235,6 +236,7 @@ describe("project command facade", () => {
 
   it("creates fresh scenario items from semantic data without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Scenario Item");
+    project.scenarioItems = [{ ...emptyScenarioItem(4), rawBytes: new Array(100).fill(0xa5) } as unknown as Project["scenarioItems"][number]];
 
     const next = applyProjectCommand(project, {
       kind: "updateScenarioItemRecord",
@@ -247,7 +249,7 @@ describe("project command facade", () => {
     expect(next.scenarioItems[0].itemId).toBe(904);
     expect(next.scenarioItems[0].cost).toBe(25);
     expect(next.scenarioItems[0].spare2).toHaveLength(7);
-    expect(next.scenarioItems[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in next.scenarioItems[0]).toBe(false);
   });
 
   it("creates fresh treasures from semantic data without compatibility bytes", () => {

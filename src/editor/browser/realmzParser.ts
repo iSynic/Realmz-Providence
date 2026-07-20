@@ -835,7 +835,6 @@ function parseScenarioItems(buffer: Uint8Array | undefined): ScenarioItemRecord[
       special5: i16(record, 94),
       weightPerCharge: i16(record, 96),
       dropOnEmpty: i16(record, 98),
-      rawBytes: Array.from(record),
       authored: false,
       provenance: provenance("Data NI", id, start, ITEM_BYTES, "source-backed")
     };

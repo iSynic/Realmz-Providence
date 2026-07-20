@@ -461,7 +461,11 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.scenarioItems.length > 0) {
     writes.push({
       path: "Data NI",
-      bytes: preserveZeroFilledRawCapacity("Data NI", writeScenarioItems(project.scenarioItems), ITEM_RECORD_BYTES, annex)
+      bytes: preserveImportedScenarioItemCompatibility(
+        writeScenarioItems(project.scenarioItems),
+        project.scenarioItems,
+        requiresCompatibilityAnnex(project) ? annex : null
+      )
     });
   }
   if (project.treasures.length > 0) {
@@ -1200,13 +1204,25 @@ function preserveImportedFixedRows(
   return output;
 }
 
-function preserveZeroFilledRawCapacity(fileName: string, bytes: Uint8Array, recordBytes: number, annex: BrowserCompatibilityAnnex | null) {
-  const raw = rawSourceBytes(fileName, annex);
-  if (!raw || raw.byteLength <= bytes.byteLength || raw.some((byte) => byte !== 0)) {
-    return preserveMalformedRawTail(fileName, bytes, recordBytes, annex);
-  }
-  const output = new Uint8Array(raw);
+function preserveImportedScenarioItemCompatibility(
+  bytes: Uint8Array,
+  records: ScenarioItemRecord[],
+  annex: BrowserCompatibilityAnnex | null
+) {
+  const raw = rawSourceBytes("Data NI", annex);
+  if (!raw || bytes.byteLength === 0) return bytes;
+  const completeSourceBytes = Math.floor(raw.byteLength / ITEM_RECORD_BYTES) * ITEM_RECORD_BYTES;
+  const coreBytes = Math.max(bytes.byteLength, completeSourceBytes);
+  const output = new Uint8Array(coreBytes + raw.byteLength - completeSourceBytes);
   output.set(bytes);
+  for (const record of records) {
+    const start = record.id * ITEM_RECORD_BYTES;
+    if (start + ITEM_RECORD_BYTES > completeSourceBytes || start + ITEM_RECORD_BYTES > coreBytes) continue;
+    if (raw[start + 2] === 0 && raw[start + 3] === 0 && record.itemId === 800 + record.id) {
+      output.set(raw.slice(start + 2, start + 4), start + 2);
+    }
+  }
+  output.set(raw.slice(completeSourceBytes), coreBytes);
   return output;
 }
 

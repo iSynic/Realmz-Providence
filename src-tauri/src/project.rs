@@ -920,18 +920,8 @@ fn project_i16(bytes: &[u8], offset: usize) -> i16 {
 
 fn normalize_scenario_item_spare_words(record: &mut ScenarioItemRecord) {
     let existing = record.spare2.clone();
-    let raw_bytes = record.raw_bytes.clone();
     record.spare2 = (0..7)
-        .map(|slot| {
-            existing.get(slot).copied().unwrap_or_else(|| {
-                let offset = 56 + slot * 2;
-                if raw_bytes.len() >= offset + 2 {
-                    project_i16(&raw_bytes, offset)
-                } else {
-                    0
-                }
-            })
-        })
+        .map(|slot| existing.get(slot).copied().unwrap_or(0))
         .collect();
 }
 
@@ -1047,14 +1037,12 @@ mod tests {
     }
 
     #[test]
-    fn scenario_item_normalization_backfills_legacy_spare_words() {
-        let mut raw_bytes = vec![0; crate::realmz::ITEM_BYTES];
-        raw_bytes[56..58].copy_from_slice(&(-321i16).to_be_bytes());
-        let mut record = crate::realmz::parse_scenario_items(&raw_bytes)
+    fn scenario_item_normalization_fills_missing_semantic_spare_words() {
+        let mut record = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
             .into_iter()
             .next()
             .expect("scenario item");
-        record.spare2.clear();
+        record.spare2 = vec![-321];
 
         normalize_scenario_item_spare_words(&mut record);
 

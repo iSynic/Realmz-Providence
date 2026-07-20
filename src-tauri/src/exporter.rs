@@ -334,21 +334,15 @@ fn compile_realmz_scenario(
         &project.monster_descriptions,
         compatibility_annex,
     )?;
-    let mut scenario_item_bytes = overlay_zero_filled_fixed_capacity(
-        "Data NI",
+    let mut scenario_item_bytes = preserve_imported_scenario_item_compatibility(
         write_scenario_items(&project.scenario_items)?,
+        &project.scenario_items,
         compatibility_annex,
     )?;
     if !preserves_source_snapshot {
         scenario_item_bytes.resize(200 * crate::realmz::ITEM_BYTES, 0);
     }
-    write_fixed_if_nonempty(
-        &mut manifest,
-        "Data NI",
-        scenario_item_bytes,
-        crate::realmz::ITEM_BYTES,
-        compatibility_annex,
-    )?;
+    write_if_nonempty(&mut manifest, "Data NI", scenario_item_bytes)?;
     write_fixed_if_nonempty(
         &mut manifest,
         "Data TD",
@@ -902,25 +896,36 @@ fn preserve_imported_fixed_rows(
     Ok(bytes)
 }
 
-fn overlay_zero_filled_fixed_capacity(
-    name: &str,
+fn preserve_imported_scenario_item_compatibility(
     bytes: Vec<u8>,
+    records: &[crate::project::ScenarioItemRecord],
     annex: Option<&CompatibilityAnnexSnapshot>,
 ) -> Result<Vec<u8>> {
-    let Some(annex) = annex else {
-        return Ok(bytes);
-    };
-    let Some(mut raw) = annex.read(name)? else {
-        return Ok(bytes);
-    };
     if bytes.is_empty() {
         return Ok(bytes);
     }
-    if raw.len() <= bytes.len() || raw.iter().any(|byte| *byte != 0) {
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read("Data NI")?,
+        None => None,
+    }) else {
         return Ok(bytes);
+    };
+    let record_bytes = crate::realmz::ITEM_BYTES;
+    let complete_source_bytes = raw.len() / record_bytes * record_bytes;
+    let mut output = vec![0; bytes.len().max(complete_source_bytes)];
+    output[..bytes.len()].copy_from_slice(&bytes);
+    for record in records {
+        let start = record.id * record_bytes;
+        if start + record_bytes > complete_source_bytes || start + record_bytes > output.len() {
+            continue;
+        }
+        let source_item_id = i16::from_be_bytes([raw[start + 2], raw[start + 3]]);
+        if source_item_id == 0 && record.item_id as i32 == 800 + record.id as i32 {
+            output[start + 2..start + 4].copy_from_slice(&raw[start + 2..start + 4]);
+        }
     }
-    raw[..bytes.len()].copy_from_slice(&bytes);
-    Ok(raw)
+    output.extend_from_slice(&raw[complete_source_bytes..]);
+    Ok(output)
 }
 
 fn append_preserved_shop_source_suffix(
@@ -2117,6 +2122,7 @@ mod tests {
         preserve_imported_map_record_compatibility,
         preserve_imported_monster_description_rows, preserve_imported_monster_rows,
         preserve_imported_option_label_rows, preserve_imported_random_level_compatibility,
+        preserve_imported_scenario_item_compatibility,
         preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
         preserve_imported_singleton, preserve_imported_thief_encounter_rows,
         preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
@@ -2314,6 +2320,68 @@ mod tests {
         .unwrap();
         assert_eq!(&note_changed[84..92], &[7, b'C', b'h', b'a', b'n', b'g', b'e', b'd']);
         assert_eq!(note_changed[crate::realmz::MAP_RECORD_BYTES - 1], 0);
+    }
+
+    #[test]
+    fn scenario_item_compatibility_comes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+        let mut source = vec![0xa5; crate::realmz::ITEM_BYTES * 2];
+        source[2..4].copy_from_slice(&[0, 0]);
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data NI"), &source).unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+        let mut records = crate::realmz::parse_scenario_items(
+            &source[..crate::realmz::ITEM_BYTES * 2],
+        );
+        let semantic = crate::realmz::write_scenario_items(&records).unwrap();
+
+        assert_eq!(
+            preserve_imported_scenario_item_compatibility(
+                semantic.clone(),
+                &records,
+                None,
+            )
+            .unwrap(),
+            semantic
+        );
+        assert_eq!(
+            preserve_imported_scenario_item_compatibility(
+                semantic,
+                &records,
+                Some(&annex),
+            )
+            .unwrap(),
+            source
+        );
+
+        records.truncate(1);
+        let removed = preserve_imported_scenario_item_compatibility(
+            crate::realmz::write_scenario_items(&records).unwrap(),
+            &records,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(&removed[..crate::realmz::ITEM_BYTES], &source[..crate::realmz::ITEM_BYTES]);
+        assert!(removed[crate::realmz::ITEM_BYTES..crate::realmz::ITEM_BYTES * 2]
+            .iter()
+            .all(|byte| *byte == 0));
+        assert_eq!(&removed[crate::realmz::ITEM_BYTES * 2..], &[0xde, 0xad, 0xbe]);
+
+        records[0].item_id = 901;
+        let edited = preserve_imported_scenario_item_compatibility(
+            crate::realmz::write_scenario_items(&records).unwrap(),
+            &records,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(i16::from_be_bytes([edited[2], edited[3]]), 901);
+        assert_eq!(&edited[56..70], &source[56..70]);
+        assert!(edited[crate::realmz::ITEM_BYTES..crate::realmz::ITEM_BYTES * 2]
+            .iter()
+            .all(|byte| *byte == 0));
+        assert_eq!(&edited[crate::realmz::ITEM_BYTES * 2..], &[0xde, 0xad, 0xbe]);
     }
 
     #[test]
@@ -3615,7 +3683,6 @@ mod tests {
             special5: 0,
             weight_per_charge: 0,
             drop_on_empty: 0,
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: Provenance {
                 source_file: "Data NI".to_string(),

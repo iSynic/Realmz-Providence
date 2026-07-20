@@ -2,8 +2,8 @@ use crate::error::{ProvidenceError, Result};
 use crate::project::ScenarioItemRecord;
 
 use super::record_bytes::{
-    copy_raw, i16_be, i32_be, parse_fixed_records, provenance, write_fixed_records,
-    write_i16_array, write_i16_be, write_i32_be,
+    i16_be, i32_be, parse_fixed_records, provenance, write_fixed_records, write_i16_array,
+    write_i16_be, write_i32_be,
 };
 
 pub const ITEM_BYTES: usize = 100;
@@ -60,7 +60,6 @@ pub fn parse_scenario_items(buffer: &[u8]) -> Vec<ScenarioItemRecord> {
                 special5: i16_be(record, 94),
                 weight_per_charge: i16_be(record, 96),
                 drop_on_empty: i16_be(record, 98),
-                raw_bytes: record.to_vec(),
                 authored: false,
                 provenance: provenance("Data NI", id, start, ITEM_BYTES),
             }
@@ -70,26 +69,14 @@ pub fn parse_scenario_items(buffer: &[u8]) -> Vec<ScenarioItemRecord> {
 
 pub fn write_scenario_items(records: &[ScenarioItemRecord]) -> Result<Vec<u8>> {
     write_fixed_records(records, ITEM_BYTES, |record, buffer| {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != ITEM_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Scenario item {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
         if record.spare2.len() != 7 {
             return Err(ProvidenceError::message(format!(
                 "Scenario item {} must define 7 spare words",
                 record.id
             )));
         }
-        copy_raw(buffer, &record.raw_bytes);
-        let preserve_zero_item_id = record.raw_bytes.len() == ITEM_BYTES
-            && i16_be(buffer, 2) == 0
-            && record.item_id as i32 == 800 + record.id as i32;
         write_i16_be(buffer, 0, record.st);
-        if !preserve_zero_item_id {
-            write_i16_be(buffer, 2, record.item_id);
-        }
+        write_i16_be(buffer, 2, record.item_id);
         write_i16_be(buffer, 4, record.icon_id);
         write_i16_be(buffer, 6, record.item_type);
         write_i16_be(buffer, 8, record.blunt);
@@ -153,7 +140,6 @@ mod tests {
             .into_iter()
             .next()
             .expect("scenario item");
-        item.raw_bytes.clear();
         item.item_id = 901;
         item.icon_id = 321;
         item.item_cat0 = 0x01020304;
@@ -172,18 +158,16 @@ mod tests {
     }
 
     #[test]
-    fn imported_scenario_item_preserves_zero_id_alias_until_semantics_change() {
+    fn imported_zero_item_id_alias_becomes_canonical_semantics() {
         let mut input = vec![0xA5; ITEM_BYTES];
         write_i16_be(&mut input, 2, 0);
-        let mut items = parse_scenario_items(&input);
+        let items = parse_scenario_items(&input);
 
         assert_eq!(items[0].item_id, 800);
-        assert_eq!(write_scenario_items(&items).unwrap(), input);
-
-        items[0].item_id = 901;
         let output = write_scenario_items(&items).unwrap();
-        assert_eq!(i16_be(&output, 2), 901);
+        assert_eq!(i16_be(&output, 2), 800);
         assert_eq!(&output[56..70], &input[56..70]);
+        assert_ne!(output, input);
     }
 
     #[test]
@@ -216,6 +200,8 @@ mod tests {
         assert_eq!(
             changed_offsets(&input, &output),
             vec![
+                2,
+                3,
                 item_start + 2,
                 item_start + 3,
                 item_start + 20,

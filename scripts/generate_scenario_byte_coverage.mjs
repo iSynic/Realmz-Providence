@@ -721,15 +721,16 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
     preservedRanges: [],
     evidence: [
       "src-tauri/src/realmz/scenario_items.rs:fresh_scenario_item_compiles_all_semantic_fields",
-      "src-tauri/src/realmz/scenario_items.rs:imported_scenario_item_preserves_zero_id_alias_until_semantics_change",
+      "src-tauri/src/realmz/scenario_items.rs:imported_zero_item_id_alias_becomes_canonical_semantics",
       "src-tauri/src/realmz/scenario_items.rs:scenario_item_storage_mutates_only_semantic_fields",
-      "src-tauri/src/project.rs:scenario_item_normalization_backfills_legacy_spare_words",
+      "src-tauri/src/exporter.rs:scenario_item_compatibility_comes_only_from_annex",
+      "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
       "src-tauri/src/realmz/scenario_items.rs:write_scenario_items",
       "src-tauri/src/realmz/scenario_items.rs:parse_scenario_items",
       "docs/generated/core-rules-record-evidence.json",
       "docs/format-evidence-cards/core-rules-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh scenario items compile all 100 bytes from semantic fields, including itemattr.spare2[7], without rawBytes. Imported rawBytes can preserve only an unchanged zero stored item ID that semantically aliases row ID 800+id; semantic edits take precedence."
+    preservationPolicy: "Canonical scenario items expose no rawBytes and compile all 100 bytes from semantic fields, including itemattr.spare2[7]. Imported row capacity, malformed tails, and an unchanged zero stored item-ID alias are restored only from the compatibility annex; semantic edits and deletions take precedence."
   }
 ];
 
@@ -1428,7 +1429,7 @@ function buildCoreRecordWriterGates(aggregate) {
       semanticCaution: [
         "alternate monster-set editing remains UI-gated",
         "map record prefix bytes remain preserve-only",
-        "imported scenario items may preserve an unchanged zero stored item-ID alias"
+        "imported scenario-item row capacity, malformed tails, and zero stored item-ID aliases are annex-only"
       ]
     },
     summary: {
@@ -1745,7 +1746,7 @@ function buildFunctionalAuthoringReadiness(ownership, truth) {
       label: "Scenario Items",
       containers: ["Data NI"],
       authoringStatus: "ready",
-      rationale: "All 100 Data NI bytes are writer-proven semantic storage, including source-backed itemattr.spare2[7]. Fresh records omit rawBytes; imported zero item-ID aliases remain a bounded no-edit compatibility encoding.",
+      rationale: "All 100 Data NI bytes are writer-proven semantic storage, including source-backed itemattr.spare2[7]. Canonical records expose no rawBytes; imported row capacity, malformed tails, and zero item-ID aliases remain bounded annex-only compatibility encodings.",
       evidence: [
         "docs/generated/core-rules-record-evidence.json",
         "docs/generated/core-record-writer-gates.json",

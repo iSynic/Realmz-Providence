@@ -595,10 +595,13 @@ export function normalizeBrowserProject(project: Project): Project {
   project.monsterDescriptions ??= [];
   project.monsterIconOverrides ??= [];
   project.scenarioIconResources ??= [];
-  project.scenarioItems = (project.scenarioItems ?? []).map((record) => ({
-    ...record,
-    spare2: normalizedScenarioItemSpareWords(record)
-  }));
+  project.scenarioItems = (project.scenarioItems ?? []).map((record) => {
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
+    return {
+      ...canonicalRecord,
+      spare2: normalizedScenarioItemSpareWords(record)
+    };
+  });
   project.itemTexts ??= [];
   project.treasures = (project.treasures ?? []).map((record) => ({
     ...record,
@@ -778,11 +781,11 @@ function readSignedI16(bytes: number[], offset: number) {
 }
 
 function normalizedScenarioItemSpareWords(record: Project["scenarioItems"][number]) {
+  const raw = (record as typeof record & { rawBytes?: number[] }).rawBytes ?? [];
   return Array.from({ length: 7 }, (_, slot) => {
     const existing = record.spare2?.[slot];
     if (existing != null) return existing;
     const offset = 56 + slot * 2;
-    const raw = record.rawBytes ?? [];
     return raw.length >= offset + 2 ? readSignedI16(raw, offset) : 0;
   });
 }
@@ -1486,10 +1489,6 @@ function validateCustomLandlooks(project: Project, errors: string[]) {
 
 function validateScenarioItems(project: Project, errors: string[], warnings: string[]) {
   for (const item of project.scenarioItems ?? []) {
-    const rawBytes = item.rawBytes ?? [];
-    if (rawBytes.length !== 0 && rawBytes.length !== 100) {
-      errors.push(`Scenario item ${item.id} has invalid 100-byte compatibility storage.`);
-    }
     if ((item.spare2?.length ?? 0) !== 7) {
       errors.push(`Scenario item ${item.id} must define 7 semantic spare words.`);
     }

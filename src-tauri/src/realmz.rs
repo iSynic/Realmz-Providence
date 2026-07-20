@@ -70,7 +70,7 @@ mod tests {
     use crate::realmz::record_bytes::{i32_be, provenance};
 
     #[test]
-    fn target_records_round_trip_full_records() {
+    fn canonical_target_records_round_trip_full_records() {
         let cases: [(usize, fn(&[u8]) -> Vec<u8>); 3] = [
             (ITEM_BYTES, |bytes| {
                 write_scenario_items(&parse_scenario_items(bytes)).unwrap()
@@ -85,6 +85,9 @@ mod tests {
         for (record_bytes, parse_write) in cases {
             let mut input = vec![0u8; record_bytes * 2];
             input[0] = 1;
+            if record_bytes == ITEM_BYTES {
+                input[2..4].copy_from_slice(&800i16.to_be_bytes());
+            }
             input[record_bytes + 3] = 42;
             input[record_bytes * 2 - 1] = 99;
             assert_eq!(input, parse_write(&input));
@@ -277,7 +280,6 @@ mod tests {
             special5: 26,
             weight_per_charge: 27,
             drop_on_empty: 1,
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data NI", 100, 100 * ITEM_BYTES, ITEM_BYTES),
         };

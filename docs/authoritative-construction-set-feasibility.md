@@ -588,9 +588,21 @@ now authors `Data MD2` with no annex, poison-tests an obsolete embedded row in b
 requires byte-identical Windows and Classic-Mac output, and semantically recovers the record on
 reimport.
 
-Branch validation through the fifty-fifth slice completed on 2026-07-19:
+The fifty-sixth slice removes `ScenarioItemRecord.rawBytes` from schema-v5 canonical projects.
+Browser and desktop import now decode every byte in each 100-byte `Data NI` row into semantic
+fields, including all seven `spare2` words, and the pure writers always compile those fields
+without consulting imported byte identity. Imported source row capacity, malformed file tails,
+and Realmz's equivalent zero stored item-ID encoding remain available only through the bounded
+compatibility annex. Deleting an imported canonical row now emits a zero row rather than reviving
+source semantics. Old project JSON remains load-tolerant: any missing `spare2` words are recovered
+from its obsolete row before `rawBytes` is discarded and never repersisted. The browser project
+normalizer and scenario-item edit commands likewise strip legacy-shaped embedded rows. The
+ownership proof poison-tests the obsolete field in both compilers, verifies record 101/item 901
+in the native table, and semantically recovers it on reimport.
 
-- full Rust suite: 261 passed, 2 ignored;
+Branch validation through the fifty-sixth slice completed on 2026-07-19:
+
+- full Rust suite: 262 passed, 2 ignored;
 - full TypeScript suite: 610 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
@@ -718,8 +730,8 @@ them from the emitted scenario source files.
   final unmodeled byte, and malformed tails remain accessible only through the compatibility annex
   at native export.
 - Map-record marker, rectangle, and metadata DTOs plus complete scenario-item, treasure, shop,
-  message, option-label, and battle records are generated in both languages. Fresh records omit
-  `rawBytes`; the item writer owns all
+  message, option-label, and battle records are generated in both languages. Canonical map and
+  scenario-item records expose no `rawBytes`; other fresh records omit it. The item writer owns all
   100 `Data NI` bytes, including the seven source-backed spare words, the treasure writer owns all
   48 `Data TD` bytes, the shop writer owns all 3,002 bytes in each ordinary `Data SD` row, and the
   message writer owns all 256 canonical `Data SD2` bytes, the option-label writer owns all 25
@@ -858,8 +870,8 @@ A pragmatic sequence is:
    DTO group and complete semantic map-record family.
 4. **Implemented for random levels:** generate semantic level/rectangle DTOs and keep imported raw
    storage optional and compatibility-only.
-5. **Implemented for scenario items:** generate the complete 100-byte semantic record and keep the
-   imported zero-ID alias as optional compatibility-only storage.
+5. **Implemented for scenario items:** generate the complete 100-byte semantic record and keep
+   imported row capacity, malformed tails, and the zero-ID alias only in the compatibility annex.
 6. **Implemented for treasures:** generate the complete 48-byte semantic record, require twenty
    canonical item slots, and treat legacy raw storage only as migration input.
 7. **Implemented for shops:** generate the complete 3,002-byte semantic row, require both thousand-
@@ -948,7 +960,7 @@ Legend:
 | `Data MD`, `Data MD1`, `Data MD-1` | Generated + legacy row/tail annex | Generate complete deterministic monster records/sets | Fresh/authored rows compile all 210 bytes from canonical scalars, fixed arrays, Boolean state, and fixed display name without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data DES` | Generated + legacy row/tail annex | Generate complete deterministic monster descriptions | Fresh/authored rows compile the complete Str255 record with deterministic zero fill and no `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data MD2` | Generated + legacy annex | Generate structured map records | Canonical records expose no `rawBytes`. The pure writer compiles all semantic fields plus deterministic gap, Boolean, and Pascal padding bytes. Imported bytes 74-75, equivalent noncanonical true words, unchanged Pascal-note tails, and malformed file tails can be restored only from the compatibility annex. Marker UI and semantic summaries use structured slots only. |
-| `Data NI` | Generated + bounded compatibility encoding | Always generate exactly 200 x 100 bytes | All 100 bytes are canonical semantic fields, including `spare2[7]`; fresh records omit `rawBytes`. Imported bytes may retain only an unchanged zero stored item-ID alias until its semantic ID changes. |
+| `Data NI` | Generated + legacy annex encoding | Generate exactly 200 x 100 bytes for fresh projects | All 100 bytes are canonical semantic fields, including `spare2[7]`, and records expose no `rawBytes`. Imported row capacity, malformed tails, and an unchanged zero stored item-ID alias can be restored only from the compatibility annex; semantic edits and deletions win. |
 | `Data TD` | Generated + malformed-tail annex | Generate all 48 record bytes from canonical semantics | Twenty item IDs and four reward words cover the full record. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Only malformed file tails remain annex data. |
 | `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Classified foreign suffix records and malformed tails are appended from the annex. |
 | `Data ED` | Generated + legacy row/tail annex | Generate complete deterministic simple encounters | Fresh/authored rows compile all 426 bytes from canonical actions, results, controls, prompt, and text, including zero alignment padding, without `rawBytes`. Unchanged imported rows and historical tails are restored only from the compatibility annex. |

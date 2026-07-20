@@ -506,17 +506,23 @@ const MAGIC_RESPONSE_BLANK_SPELL_ID = 1100;
 
 export function updateRecord<K extends TargetCollectionName>(project: Project, collection: K, id: number, changes: Partial<Project[K][number]>) {
   const existing = (project[collection] as TargetRecord[]).find((record) => record.id === id);
-  const base = existing ?? defaultRecordForCollection(collection, id);
-  return upsertRecord(project, collection, { ...base, ...changes, authored: true } as Project[K][number]);
+  const base = canonicalTargetRecord(collection, (existing ?? defaultRecordForCollection(collection, id)) as Project[K][number]);
+  return upsertRecord(project, collection, canonicalTargetRecord(collection, { ...base, ...changes, authored: true } as Project[K][number]));
 }
 
 function upsertRecord<K extends TargetCollectionName>(project: Project, collection: K, record: Project[K][number]) {
   const current = [...((project[collection] ?? []) as Project[K][number][])];
   const index = current.findIndex((candidate) => candidate.id === record.id);
-  if (index >= 0) current[index] = { ...current[index], ...record };
-  else current.push(record);
+  if (index >= 0) current[index] = canonicalTargetRecord(collection, { ...canonicalTargetRecord(collection, current[index]), ...record } as Project[K][number]);
+  else current.push(canonicalTargetRecord(collection, record));
   current.sort((a, b) => a.id - b.id);
   return { ...project, [collection]: current };
+}
+
+function canonicalTargetRecord<K extends TargetCollectionName>(collection: K, record: Project[K][number]) {
+  if (collection !== "scenarioItems") return record;
+  const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as Project[K][number] & { rawBytes?: number[] };
+  return canonicalRecord as Project[K][number];
 }
 
 function defaultRecordForCollection(collection: TargetCollectionName, id: number): TargetRecord {

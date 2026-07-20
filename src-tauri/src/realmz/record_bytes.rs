@@ -90,11 +90,6 @@ pub(super) fn write_i16_array(buffer: &mut [u8], offset: usize, values: &[i16], 
     }
 }
 
-pub(super) fn copy_raw(buffer: &mut [u8], raw: &[u8]) {
-    let length = buffer.len().min(raw.len());
-    buffer[..length].copy_from_slice(&raw[..length]);
-}
-
 pub(super) fn provenance(
     source_file: &str,
     record_index: usize,
