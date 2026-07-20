@@ -479,16 +479,16 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Random encounter settings and rectangles", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 643, type: "structured" }
     ],
     preservedRanges: [
-      { field: "Final compatibility byte", internal: "raw_values[321] low byte", offset: 643, bytes: 1, type: "raw-preserved-when-present" }
+      { field: "Final compatibility byte", internal: "compatibility annex", offset: 643, bytes: 1, type: "annex-preserved-when-present" }
     ],
     evidence: [
-      "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+      "src-tauri/src/exporter.rs:random_level_annex_preserves_unchanged_compatibility_and_honors_deletion",
       "src-tauri/src/realmz/random_levels.rs:write_random_levels",
       "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh random levels compile bytes 0..642 from semantic settings and rectangles. Imported rawValues may preserve byte 643 and noncanonical boolean encodings when their decoded semantics are unchanged."
+    preservationPolicy: "Fresh random levels compile bytes 0..642 from semantic settings and rectangles with deterministic zero at byte 643. Imported output restores byte 643, equivalent noncanonical Boolean encodings, hidden storage in still-inactive rectangle slots, and malformed tails only from the compatibility annex. Deleting an active imported rectangle compiles its complete slot to zero."
   },
   {
     container: "Data RDD",
@@ -499,16 +499,16 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
       { field: "Random encounter settings and rectangles", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 643, type: "structured" }
     ],
     preservedRanges: [
-      { field: "Final compatibility byte", internal: "raw_values[321] low byte", offset: 643, bytes: 1, type: "raw-preserved-when-present" }
+      { field: "Final compatibility byte", internal: "compatibility annex", offset: 643, bytes: 1, type: "annex-preserved-when-present" }
     ],
     evidence: [
-      "src-tauri/src/realmz/random_levels.rs:compatibility_base_preserves_noncanonical_bytes_until_semantics_change",
+      "src-tauri/src/exporter.rs:random_level_annex_preserves_unchanged_compatibility_and_honors_deletion",
       "src-tauri/src/realmz/random_levels.rs:write_random_levels",
       "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
       "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh dungeon random levels compile bytes 0..642 from semantic settings and rectangles. Imported rawValues may preserve byte 643 and noncanonical boolean encodings when their decoded semantics are unchanged."
+    preservationPolicy: "Fresh dungeon random levels compile bytes 0..642 from semantic settings and rectangles with deterministic zero at byte 643. Imported output restores byte 643, equivalent noncanonical Boolean encodings, hidden storage in still-inactive rectangle slots, and malformed tails only from the compatibility annex. Deleting an active imported rectangle compiles its complete slot to zero."
   }
 ];
 

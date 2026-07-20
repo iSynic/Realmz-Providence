@@ -441,7 +441,6 @@ function parseRandomLevels(buffer: Uint8Array | undefined, levelType: LevelType,
       isDark: buffer[start + 521] !== 0,
       useLos: buffer[start + 522] !== 0,
       rects,
-      rawValues: Array.from({ length: RANDLEVEL_BYTES / 2 }, (_, offset) => i16(buffer, start + offset * 2)),
       provenance: provenance(source, levelIndex, start, RANDLEVEL_BYTES, "source-backed")
     });
   }

@@ -109,6 +109,18 @@ describe("browser project native manifest validation", () => {
     expect("rawBytes" in normalized).toBe(false);
   });
 
+  it("drops legacy random-level compatibility words from the canonical record", () => {
+    const project = createBrowserProject("Legacy random-level words");
+    project.randomLevels[0] = {
+      ...project.randomLevels[0],
+      rawValues: new Array(322).fill(0xa5)
+    } as unknown as Project["randomLevels"][number];
+
+    const normalized = normalizeBrowserProject(project).randomLevels[0];
+
+    expect("rawValues" in normalized).toBe(false);
+  });
+
   it("normalizes legacy monster slot arrays into the canonical fixed contract", () => {
     const project = createBrowserProject("Legacy monster arrays");
     const parsed = parseScenarioBuffers(new Map([["Data MD", new Uint8Array(210)]])).monsters[0];

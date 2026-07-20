@@ -4,7 +4,7 @@ use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
     BattleRecord, ComplexEncounterRecord, ItemTextRecord, LevelType, MessageRecord,
     MonsterDescriptionRecord, MonsterIconOverride, MonsterIconOverrideSource, MonsterRecord,
-    OptionLabelRecord, ProvidenceProject, ScenarioCasteOverride, ScenarioRaceOverride,
+    OptionLabelRecord, ProvidenceProject, RandomLevel, ScenarioCasteOverride, ScenarioRaceOverride,
     ScenarioSpellOverride, ScenarioTarget, SimpleEncounterRecord, TargetCompatibilityBuckets,
     TargetCompatibilityIssue, ThiefEncounterRecord, TimedEncounterRecord,
 };
@@ -264,12 +264,24 @@ fn compile_realmz_scenario(
     write_if_nonempty(
         &mut manifest,
         "Data RD",
-        write_random_levels(&project.random_levels, LevelType::Land)?,
+        preserve_imported_random_level_compatibility(
+            write_random_levels(&project.random_levels, LevelType::Land)?,
+            "Data RD",
+            &project.random_levels,
+            LevelType::Land,
+            compatibility_annex,
+        )?,
     )?;
     write_if_nonempty(
         &mut manifest,
         "Data RDD",
-        write_random_levels(&project.random_levels, LevelType::Dungeon)?,
+        preserve_imported_random_level_compatibility(
+            write_random_levels(&project.random_levels, LevelType::Dungeon)?,
+            "Data RDD",
+            &project.random_levels,
+            LevelType::Dungeon,
+            compatibility_annex,
+        )?,
     )?;
     write_if_nonempty(
         &mut manifest,
@@ -955,6 +967,97 @@ fn compile_fixed_rows_with_compatibility_annex(
     bytes.resize(bytes.len().max(complete_source_bytes), 0);
     bytes.extend_from_slice(&raw[complete_source_bytes..]);
     Ok(bytes)
+}
+
+fn preserve_imported_random_level_compatibility(
+    bytes: Vec<u8>,
+    name: &str,
+    levels: &[RandomLevel],
+    level_type: LevelType,
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    if bytes.is_empty() {
+        return Ok(bytes);
+    }
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read(name)?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    let record_bytes = crate::realmz::RANDLEVEL_BYTES;
+    let complete_source_bytes = raw.len() / record_bytes * record_bytes;
+    let mut output = Vec::with_capacity(bytes.len() + raw.len() - complete_source_bytes);
+    output.extend_from_slice(&bytes);
+    output.extend_from_slice(&raw[complete_source_bytes..]);
+
+    for level in levels.iter().filter(|level| level.level_type == level_type) {
+        let start = level.level_index * record_bytes;
+        if start + record_bytes > bytes.len() || start + record_bytes > complete_source_bytes {
+            continue;
+        }
+        if (raw[start + 521] != 0) == level.is_dark {
+            output[start + 521] = raw[start + 521];
+        }
+        if (raw[start + 522] != 0) == level.use_los {
+            output[start + 522] = raw[start + 522];
+        }
+        for rect_index in 0..20 {
+            let source_active = imported_random_rect_active(&raw, start, rect_index);
+            let current = level
+                .rects
+                .iter()
+                .find(|rect| rect.rect_index == rect_index);
+            if !source_active && current.is_none() {
+                copy_imported_random_rect_slot(&mut output, &raw, start, rect_index);
+            } else if source_active
+                && current
+                    .map(|rect| (raw[start + 523 + rect_index] != 0) == rect.only)
+                    .unwrap_or(false)
+            {
+                output[start + 523 + rect_index] = raw[start + 523 + rect_index];
+            }
+        }
+        output[start + 643] = raw[start + 643];
+    }
+    Ok(output)
+}
+
+fn imported_random_rect_active(raw: &[u8], record_start: usize, rect_index: usize) -> bool {
+    let rect_start = record_start + rect_index * 8;
+    random_level_i16(raw, rect_start) != 0
+        || random_level_i16(raw, rect_start + 2) != 0
+        || random_level_i16(raw, rect_start + 4) != 0
+        || random_level_i16(raw, rect_start + 6) != 0
+        || random_level_i16(raw, record_start + 160 + rect_index * 2) != 0
+        || (0..3)
+            .any(|slot| random_level_i16(raw, record_start + 280 + rect_index * 6 + slot * 2) != 0)
+}
+
+fn copy_imported_random_rect_slot(
+    output: &mut [u8],
+    raw: &[u8],
+    record_start: usize,
+    rect_index: usize,
+) {
+    for (relative_start, length) in [
+        (rect_index * 8, 8),
+        (160 + rect_index * 2, 2),
+        (200 + rect_index * 4, 4),
+        (280 + rect_index * 6, 6),
+        (400 + rect_index * 6, 6),
+        (523 + rect_index, 1),
+        (543 + rect_index, 1),
+        (563 + rect_index * 2, 2),
+        (603 + rect_index * 2, 2),
+    ] {
+        let start = record_start + relative_start;
+        output[start..start + length].copy_from_slice(&raw[start..start + length]);
+    }
+}
+
+fn random_level_i16(bytes: &[u8], offset: usize) -> i16 {
+    i16::from_be_bytes([bytes[offset], bytes[offset + 1]])
 }
 
 fn preserve_imported_data_solids_tail(
@@ -1970,12 +2073,12 @@ mod tests {
         preserve_imported_custom_landlook_compatibility, preserve_imported_global_macro_hooks,
         preserve_imported_land_layout_tail, preserve_imported_message_rows,
         preserve_imported_monster_description_rows, preserve_imported_monster_rows,
-        preserve_imported_option_label_rows, preserve_imported_scenario_support_file,
-        preserve_imported_simple_encounter_rows, preserve_imported_singleton,
-        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
-        scenario_icon_resource_updates, write_caste_overrides_for_export,
-        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
-        NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_option_label_rows, preserve_imported_random_level_compatibility,
+        preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
+        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
+        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
+        write_caste_overrides_for_export, write_race_overrides_for_export,
+        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
@@ -2015,6 +2118,56 @@ mod tests {
         assert_eq!(first.manifest.files()["Scenario"].len(), 600);
         assert!(first.manifest.files().contains_key("Scenario.rsrc"));
         assert!(first.manifest.pass_through_files().is_empty());
+    }
+
+    #[test]
+    fn random_level_annex_preserves_unchanged_compatibility_and_honors_deletion() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+        let mut source = vec![0u8; crate::realmz::RANDLEVEL_BYTES];
+        source[0..2].copy_from_slice(&3i16.to_be_bytes());
+        source[521] = 0xa5;
+        source[522] = 0x80;
+        source[523] = 0xfe;
+        source[565..567].copy_from_slice(&17i16.to_be_bytes());
+        source[643] = 0x34;
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data RD"), &source).unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+        let mut levels = crate::realmz::parse_random_levels(
+            &source[..crate::realmz::RANDLEVEL_BYTES],
+            crate::project::LevelType::Land,
+            "Data RD",
+        );
+
+        let unchanged = preserve_imported_random_level_compatibility(
+            crate::realmz::write_random_levels(&levels, crate::project::LevelType::Land).unwrap(),
+            "Data RD",
+            &levels,
+            crate::project::LevelType::Land,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(unchanged, source);
+
+        levels[0].is_dark = false;
+        levels[0].rects.clear();
+        let edited = preserve_imported_random_level_compatibility(
+            crate::realmz::write_random_levels(&levels, crate::project::LevelType::Land).unwrap(),
+            "Data RD",
+            &levels,
+            crate::project::LevelType::Land,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(&edited[0..2], &[0, 0]);
+        assert_eq!(edited[521], 0);
+        assert_eq!(edited[522], 0x80);
+        assert_eq!(edited[523], 0);
+        assert_eq!(i16::from_be_bytes([edited[565], edited[566]]), 17);
+        assert_eq!(edited[643], 0x34);
+        assert_eq!(&edited[644..], &[0xde, 0xad, 0xbe]);
     }
 
     #[test]

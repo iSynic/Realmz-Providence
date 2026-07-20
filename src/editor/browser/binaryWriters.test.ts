@@ -276,37 +276,23 @@ describe("browser random-level writer", () => {
     expect(output[643]).toBe(0);
   });
 
-  it("overlays authored semantics on an imported compatibility base", () => {
-    const rawValues = new Array(322).fill(0);
-    rawValues[260] = 0x01a5;
-    rawValues[261] = -23296;
-    rawValues[321] = 0x1234;
+  it("recompiles imported levels from semantics without hidden storage", () => {
+    const input = new Uint8Array(644);
+    setI16(input, 0, 3);
+    input[521] = 0xa5;
+    input[522] = 0x80;
+    input[523] = 0xfe;
+    setI16(input, 565, 17);
+    input[643] = 0x34;
+    const imported = parseScenarioBuffers(new Map([["Data RD", input]])).randomLevels[0];
 
-    const output = writeRandomLevels([randomLevel({
-      landlook: 4,
-      isDark: true,
-      useLos: true,
-      rawValues
-    })], "land");
+    const output = writeRandomLevels([imported], "land");
 
-    expect(output[520]).toBe(4);
-    expect(output[521]).toBe(0xa5);
-    expect(output[522]).toBe(0xa5);
-    expect(output[642]).toBe(0x12);
-    expect(output[643]).toBe(0x34);
-
-    const changed = writeRandomLevels([randomLevel({
-      landlook: 4,
-      isDark: false,
-      useLos: true,
-      rawValues
-    })], "land");
-    expect(changed[521]).toBe(0);
-  });
-
-  it("rejects malformed compatibility storage", () => {
-    expect(() => writeRandomLevels([randomLevel({ rawValues: [1] })], "land"))
-      .toThrow("invalid random-level raw value count");
+    expect(output[521]).toBe(1);
+    expect(output[522]).toBe(1);
+    expect(output[523]).toBe(1);
+    expect(i16(output, 565)).toBe(0);
+    expect(output[643]).toBe(0);
   });
 });
 

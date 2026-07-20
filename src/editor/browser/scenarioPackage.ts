@@ -66,7 +66,7 @@ import { BrowserRawSourceFile, BrowserRawSourceSnapshot } from "./fsAccess";
 import { BrowserCompatibilityAnnex } from "./compatibilityAnnex";
 import { encodeStringListResource, mergeResourceEntries, parseResourceFork, parseStringListResource, writeMinimumScenarioResourceFork, type ResourceForkUpdate } from "./resourceFork";
 import { createStoredZip } from "./zip";
-import type { ExportReport, ManagedAsset, MapRecord, Project, ScenarioIconResource, ScenarioItemRecord, ScenarioSpellOverride, ScenarioTarget } from "../types";
+import type { ExportReport, ManagedAsset, MapRecord, Project, RandomLevel, ScenarioIconResource, ScenarioItemRecord, ScenarioSpellOverride, ScenarioTarget } from "../types";
 import { appendPreservedShopSourceSuffix } from "./shopRecords";
 import { requiresCompatibilityAnnex } from "../projectOrigin";
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
@@ -360,13 +360,25 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.randomLevels.some((level) => level.levelType === "land")) {
     writes.push({
       path: "Data RD",
-      bytes: preserveMalformedRawTail("Data RD", writeRandomLevels(project.randomLevels, "land"), RANDOM_LEVEL_RECORD_BYTES, annex)
+      bytes: preserveImportedRandomLevelCompatibility(
+        writeRandomLevels(project.randomLevels, "land"),
+        "Data RD",
+        project.randomLevels,
+        "land",
+        annex
+      )
     });
   }
   if (project.randomLevels.some((level) => level.levelType === "dungeon")) {
     writes.push({
       path: "Data RDD",
-      bytes: preserveMalformedRawTail("Data RDD", writeRandomLevels(project.randomLevels, "dungeon"), RANDOM_LEVEL_RECORD_BYTES, annex)
+      bytes: preserveImportedRandomLevelCompatibility(
+        writeRandomLevels(project.randomLevels, "dungeon"),
+        "Data RDD",
+        project.randomLevels,
+        "dungeon",
+        annex
+      )
     });
   }
   if (project.maps.some((map) => map.levelType === "land") || project.triggers.some((trigger) => trigger.levelType === "land")) {
@@ -936,6 +948,73 @@ function compileFixedRowsWithCompatibilityAnnex(
   output.set(bytes);
   output.set(tail, outputCoreBytes);
   return output;
+}
+
+function preserveImportedRandomLevelCompatibility(
+  bytes: Uint8Array,
+  fileName: string,
+  levels: RandomLevel[],
+  levelType: RandomLevel["levelType"],
+  annex: BrowserCompatibilityAnnex | null
+) {
+  if (bytes.byteLength === 0) return bytes;
+  const raw = rawSourceBytes(fileName, annex);
+  if (!raw) return bytes;
+  const completeSourceBytes = Math.floor(raw.byteLength / RANDOM_LEVEL_RECORD_BYTES) * RANDOM_LEVEL_RECORD_BYTES;
+  const tail = raw.slice(completeSourceBytes);
+  const output = new Uint8Array(bytes.byteLength + tail.byteLength);
+  output.set(bytes);
+  output.set(tail, bytes.byteLength);
+
+  for (const level of levels.filter((candidate) => candidate.levelType === levelType)) {
+    const start = level.levelIndex * RANDOM_LEVEL_RECORD_BYTES;
+    if (start + RANDOM_LEVEL_RECORD_BYTES > bytes.byteLength || start + RANDOM_LEVEL_RECORD_BYTES > completeSourceBytes) continue;
+    if ((raw[start + 521] !== 0) === level.isDark) output[start + 521] = raw[start + 521];
+    if ((raw[start + 522] !== 0) === level.useLos) output[start + 522] = raw[start + 522];
+    for (let rectIndex = 0; rectIndex < 20; rectIndex += 1) {
+      const sourceActive = importedRandomRectActive(raw, start, rectIndex);
+      const current = level.rects.find((rect) => rect.rectIndex === rectIndex);
+      if (!sourceActive && !current) {
+        copyImportedRandomRectSlot(output, raw, start, rectIndex);
+      } else if (sourceActive && current && (raw[start + 523 + rectIndex] !== 0) === current.only) {
+        output[start + 523 + rectIndex] = raw[start + 523 + rectIndex];
+      }
+    }
+    output[start + 643] = raw[start + 643];
+  }
+  return output;
+}
+
+function importedRandomRectActive(raw: Uint8Array, recordStart: number, rectIndex: number) {
+  const rectStart = recordStart + rectIndex * 8;
+  return randomLevelI16(raw, rectStart) !== 0 ||
+    randomLevelI16(raw, rectStart + 2) !== 0 ||
+    randomLevelI16(raw, rectStart + 4) !== 0 ||
+    randomLevelI16(raw, rectStart + 6) !== 0 ||
+    randomLevelI16(raw, recordStart + 160 + rectIndex * 2) !== 0 ||
+    [0, 1, 2].some((slot) => randomLevelI16(raw, recordStart + 280 + rectIndex * 6 + slot * 2) !== 0);
+}
+
+function copyImportedRandomRectSlot(output: Uint8Array, raw: Uint8Array, recordStart: number, rectIndex: number) {
+  for (const [relativeStart, length] of [
+    [rectIndex * 8, 8],
+    [160 + rectIndex * 2, 2],
+    [200 + rectIndex * 4, 4],
+    [280 + rectIndex * 6, 6],
+    [400 + rectIndex * 6, 6],
+    [523 + rectIndex, 1],
+    [543 + rectIndex, 1],
+    [563 + rectIndex * 2, 2],
+    [603 + rectIndex * 2, 2]
+  ]) {
+    const start = recordStart + relativeStart;
+    output.set(raw.slice(start, start + length), start);
+  }
+}
+
+function randomLevelI16(bytes: Uint8Array, offset: number) {
+  const value = (bytes[offset] << 8) | bytes[offset + 1];
+  return value >= 0x8000 ? value - 0x10000 : value;
 }
 
 function preserveImportedDataSolidsTail(bytes: Uint8Array, annex: BrowserCompatibilityAnnex | null) {

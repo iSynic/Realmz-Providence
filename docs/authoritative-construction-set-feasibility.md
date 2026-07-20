@@ -194,14 +194,12 @@ the provenance Rust already required. Map codecs and `LevelType` behavior method
 handwritten around the generated data types.
 
 The twenty-third slice moves random-level identity, runtime settings, and random-rectangle records
-under the same generated contract. `rawValues` is now optional compatibility-only storage rather
-than authored authority: fresh browser, desktop, and Scenario JSON projects omit it, while both
-native writers deterministically compile the full modeled record from semantic fields. Imported
-322-word streams remain available as a compatibility base, with semantic edits taking precedence
-and no-edit legacy boolean encodings preserved byte-identically. The final unmodeled record byte
-therefore remains bounded without forcing fresh projects to synthesize preserved-looking data. The
-codec now has its own Rust module rather than adding more responsibility to the deferred ISY-320
-`maps.rs` refactor.
+under the same generated contract. At that checkpoint, `rawValues` was optional
+compatibility-only storage rather than authored authority: fresh browser, desktop, and Scenario
+JSON projects omitted it, while both native writers deterministically compiled the modeled record
+from semantic fields. The fifty-third slice below completes that boundary by removing the field
+from the canonical contract entirely. The codec remains in its own Rust module rather than adding
+more responsibility to the deferred ISY-320 `maps.rs` refactor.
 
 The twenty-fourth slice moves map markers, rectangles, and complete map-record metadata under the
 generated contract. Fresh map records now contain exactly ten semantic marker slots and omit
@@ -555,7 +553,19 @@ archaeology report now reads reserved words from annex/native `Data TD3` bytes. 
 fields cannot affect authored Rust or browser output. Other record-local preservation families
 remain the bounded follow-on work under ISY-396.
 
-Branch validation through the fifty-second slice completed on 2026-07-19:
+The fifty-third slice removes random-level `rawValues` from schema-v5 canonical projects. Browser
+and desktop import now decode only `RandomLevel` settings and active `RandomRect` semantics; the
+644-byte source records remain exclusively in the compatibility annex. The pure `Data RD`/`Data
+RDD` codecs compile canonical records with normalized Boolean bytes and deterministic zero for the
+final unmodeled byte. Annex-aware compiler helpers then restore only compatible import identity:
+equivalent noncanonical Boolean encodings, hidden bytes in rectangle slots that remain inactive,
+byte 643, and malformed file tails. Active rectangles removed in Providence compile as complete
+zeroed slots, so annex preservation cannot resurrect a semantic deletion. Old browser project JSON
+with `rawValues` remains load-tolerant but drops the field during normalization. Rust ignores that
+obsolete unknown property during migration. No edit flag, compatibility mask, or byte array enters
+the canonical model.
+
+Branch validation through the fifty-third slice completed on 2026-07-19:
 
 - full Rust suite: 261 passed, 2 ignored;
 - full TypeScript suite: 607 passed, plus typecheck;
@@ -680,9 +690,10 @@ them from the emitted scenario source files.
 - Level kind, render mode/metadata, map identity/tile cells, and land layout are generated in both
   languages. The schema requires canonical map provenance and identifies layout trailing bytes as
   compatibility-only data.
-- Random-level settings and random-rectangle records are generated in both languages. Fresh
-  projects carry semantic settings only; imported `rawValues` is optional compatibility data and
-  both native writers overlay the semantic contract before emission.
+- Random-level settings and random-rectangle records are generated in both languages. Canonical
+  projects carry semantic settings only. Imported legacy encodings, inactive-slot storage, the
+  final unmodeled byte, and malformed tails remain accessible only through the compatibility annex
+  at native export.
 - Map-record marker, rectangle, and metadata DTOs plus complete scenario-item, treasure, shop,
   message, option-label, and battle records are generated in both languages. Fresh records omit
   `rawBytes`; the item writer owns all
@@ -898,8 +909,8 @@ Legend:
 | `Data DL` | Generated + compatibility | Generate authored dungeon bitfields; zero runtime/preserved bits | High/sign bit and revealed/runtime-state bits are preserved on legacy import. They are not needed as imported identity for fresh authoring. |
 | `Data DD` | Generated | Generate one table per land level | Complete trigger-table writer. |
 | `Data DDD` | Generated | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; the semantic writer overlays populated dungeon tables. |
-| `Data RD` | Generated + bounded compatibility | Generate one random-level record per land level | Fresh records compile from canonical settings and rectangle data with no `rawValues`; imported 322-word storage remains an optional compatibility base for the final unmodeled byte and noncanonical legacy encodings. |
-| `Data RDD` | Generated + bounded compatibility | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file; populated dungeon levels use the same semantic writer and optional imported compatibility base. |
+| `Data RD` | Fully generated semantic records + legacy annex ranges/tail | Generate one random-level record per land level | Canonical records contain settings and active rectangles only. Fresh output owns bytes 0..643, including normalized Boolean encodings and zero at byte 643. Imported export may restore equivalent noncanonical Boolean bytes, data in still-inactive rectangle slots, byte 643, and a malformed tail only from the annex; deleting an active rectangle zeroes its complete slot. |
+| `Data RDD` | Fully generated semantic records + legacy annex ranges/tail | Emit the file even with zero dungeon levels | The authored compiler baseline retains the empty startup file. Populated dungeon records use the same canonical writer and bounded annex policy as `Data RD`; no imported record words are exposed in the project model. |
 | `Data ED3` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every 40-byte Extra Action Point row | Both compilers write the complete `struct door` shape from canonical fields. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
 | `Data EDCD` | Fully generated semantic rows + annex-shaped neutral capacity/tail | Generate every five-word settings row | Both compilers write all five signed shorts from canonical values. Imported length may retain zero-filled row capacity; only a final partial row remains annex-owned identity. |
 | `Layout` | Fully generated semantic grid + legacy annex tail, optional | Generate exactly 256 bytes from all 128 canonical cells | Both compilers require the 8 x 16 shape and ignore embedded `trailingBytes`. Imported optional bytes 256-511 remain preserve-only annex data, including exact 512-byte files. |

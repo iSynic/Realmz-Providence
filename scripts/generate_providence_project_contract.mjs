@@ -195,9 +195,9 @@ expect(mapRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "m
 expectSameArray(mapRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Map-record omitted empty compatibility inventory");
 expectSameArray(Object.keys(randomRectSchema.properties ?? {}), ["rectIndex", "top", "left", "bottom", "right", "percent", "battleRange", "randomDoors", "randomDoorPercent", "only", "option", "sound", "text"], "Random rectangle field inventory");
 expectSameArray(randomRectSchema.required ?? [], Object.keys(randomRectSchema.properties ?? {}), "Random rectangle required field inventory");
-expectSameArray(Object.keys(randomLevelSchema.properties ?? {}), ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "rawValues", "provenance"], "Random-level field inventory");
+expectSameArray(Object.keys(randomLevelSchema.properties ?? {}), ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "provenance"], "Random-level field inventory");
 expectSameArray(randomLevelSchema.required ?? [], ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "provenance"], "Random-level authored field inventory");
-expectSameArray(randomLevelSchema["x-providence-rust-skip-empty"] ?? [], ["rawValues"], "Random-level omitted empty compatibility inventory");
+expectSameArray(randomLevelSchema["x-providence-rust-skip-empty"] ?? [], [], "Random-level omitted empty compatibility inventory");
 expect(randomLevelSchema.properties?.levelType?.$ref === "#/$defs/levelType", "random-level levelType must reference the canonical level enum");
 expect(randomLevelSchema.properties?.rects?.items?.$ref === "#/$defs/randomRect", "random-level rects must contain canonical rectangle DTOs");
 expect(randomLevelSchema.properties?.provenance?.$ref === "#/$defs/provenance", "random-level provenance must reference canonical provenance");
@@ -209,7 +209,7 @@ const mapCompatibilityFields = mapDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(mapCompatibilityFields, ["LandLayout.trailingBytes", "MapRecord.rawBytes", "RandomLevel.rawValues"], "Map compatibility-only field inventory");
+expectSameSet(mapCompatibilityFields, ["LandLayout.trailingBytes", "MapRecord.rawBytes"], "Map compatibility-only field inventory");
 for (const [index, definition] of landlookDefinitions.entries()) {
   const definitionName = landlookDefinitionNames[index];
   expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);

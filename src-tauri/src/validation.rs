@@ -190,14 +190,6 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
         }
     }
     for level in &project.random_levels {
-        if !level.raw_values.is_empty()
-            && level.raw_values.len() != crate::realmz::RANDLEVEL_BYTES / 2
-        {
-            errors.push(format!(
-                "{} has invalid raw random-level storage.",
-                level.id
-            ));
-        }
         for rect in &level.rects {
             if rect.rect_index >= 20 {
                 errors.push(format!(
@@ -2806,7 +2798,6 @@ mod tests {
                 sound: 0,
                 text: 0,
             }],
-            raw_values: vec![0; crate::realmz::RANDLEVEL_BYTES / 2],
             provenance: test_provenance("Data RD", 0, 0, crate::realmz::RANDLEVEL_BYTES),
         });
 
@@ -2832,23 +2823,6 @@ mod tests {
             .warnings
             .iter()
             .any(|warning| warning.contains("points at missing Action Point")));
-    }
-
-    #[test]
-    fn accepts_random_level_compatibility_bytes_that_disagree_with_authored_settings() {
-        let mut project = empty_project();
-        project.maps.push(test_map(LevelType::Land, 0, 0));
-        let mut level = test_random_level(LevelType::Land, 0, 2);
-        level.raw_values = vec![0; crate::realmz::RANDLEVEL_BYTES / 2];
-        level.raw_values[260] = 0;
-        project.random_levels.push(level);
-
-        let report = validate_project(&project);
-
-        assert!(!report
-            .errors
-            .iter()
-            .any(|error| error.contains("runtime flags do not match its decoded settings")));
     }
 
     #[test]
@@ -3254,7 +3228,6 @@ mod tests {
             is_dark: false,
             use_los: false,
             rects: Vec::new(),
-            raw_values: Vec::new(),
             provenance: test_provenance(
                 source,
                 index,

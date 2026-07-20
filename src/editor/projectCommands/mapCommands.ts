@@ -6,7 +6,6 @@ import { mapCellFromTileIndex, mapTileIndex } from "../map/geometry";
 const MAP_SIZE = 90;
 const FIELD_BYTES = MAP_SIZE * MAP_SIZE * 2;
 const RANDOM_LEVEL_BYTES = 644;
-const RANDOM_LEVEL_WORDS = RANDOM_LEVEL_BYTES / 2;
 const RANDOM_RECTS_PER_LEVEL = 20;
 const MAP_RECORD_BYTES = 340;
 const MAP_RECORD_MARKERS = 10;
@@ -716,11 +715,10 @@ export function updateRandomRect(project: Project, command: Extract<ProjectComma
 export function clearRandomRect(project: Project, command: Extract<ProjectCommand, { kind: "clearRandomRect" }>) {
   if (!randomRectIndexInRange(command.rectIndex)) return project;
   const level = ensureRandomLevel(project, command.levelType, command.levelIndex);
-  const cleared = defaultRandomRect(command.rectIndex);
-  const nextLevel = clearRandomRectCompatibilityBytes({
+  const nextLevel = {
     ...level,
     rects: level.rects.filter((rect) => rect.rectIndex !== command.rectIndex)
-  }, cleared);
+  };
   return replaceRandomLevel(project, nextLevel);
 }
 
@@ -990,38 +988,6 @@ function normalizeRandomRect(rect: RandomRect): RandomRect {
   };
 }
 
-function clearRandomRectCompatibilityBytes(level: RandomLevel, rect: RandomRect) {
-  if (level.rawValues?.length !== RANDOM_LEVEL_WORDS) return level;
-  const bytes = randomLevelRawBytes(level);
-  const r = rect.rectIndex;
-  writeI16(bytes, r * 8, rect.top);
-  writeI16(bytes, r * 8 + 2, rect.left);
-  writeI16(bytes, r * 8 + 4, rect.bottom);
-  writeI16(bytes, r * 8 + 6, rect.right);
-  writeI16(bytes, 160 + r * 2, rect.percent);
-  writeI16(bytes, 200 + r * 4, rect.battleRange[0] ?? 0);
-  writeI16(bytes, 202 + r * 4, rect.battleRange[1] ?? 0);
-  for (let slot = 0; slot < 3; slot += 1) {
-    writeI16(bytes, 280 + r * 6 + slot * 2, rect.randomDoors[slot] ?? 0);
-    writeI16(bytes, 400 + r * 6 + slot * 2, rect.randomDoorPercent[slot] ?? 0);
-  }
-  bytes[523 + r] = rect.only ? 1 : 0;
-  bytes[543 + r] = rect.option & 0xff;
-  writeI16(bytes, 563 + r * 2, rect.sound);
-  writeI16(bytes, 603 + r * 2, rect.text);
-  bytes[520] = level.landlook & 0xff;
-  bytes[521] = level.isDark ? 1 : 0;
-  bytes[522] = level.useLos ? 1 : 0;
-  return { ...level, rawValues: rawBytesToWords(bytes) };
-}
-
-function randomLevelRawBytes(level: RandomLevel) {
-  const bytes = new Uint8Array(RANDOM_LEVEL_BYTES);
-  const rawValues = level.rawValues?.length === RANDOM_LEVEL_WORDS ? level.rawValues : new Array(RANDOM_LEVEL_WORDS).fill(0);
-  rawValues.forEach((value, index) => writeI16(bytes, index * 2, value));
-  return bytes;
-}
-
 function nextMapRecordId(project: Project) {
   const used = new Set((project.mapRecords ?? []).map((record) => record.id));
   for (let id = 0; id < 1000; id += 1) {
@@ -1075,21 +1041,6 @@ function mapRecordMarkers(record: MapRecord): MapMarker[] {
     }
     return { iconId: 0, x: 0, y: 0 };
   });
-}
-
-function rawBytesToWords(bytes: Uint8Array) {
-  const values: number[] = [];
-  for (let offset = 0; offset < bytes.length; offset += 2) {
-    const unsigned = (bytes[offset] << 8) | bytes[offset + 1];
-    values.push(unsigned >= 0x8000 ? unsigned - 0x10000 : unsigned);
-  }
-  return values;
-}
-
-function writeI16(bytes: Uint8Array, offset: number, value: number) {
-  const normalized = clampInt(value, -32768, 32767) & 0xffff;
-  bytes[offset] = (normalized >> 8) & 0xff;
-  bytes[offset + 1] = normalized & 0xff;
 }
 
 function normalizePair(values: number[]) {

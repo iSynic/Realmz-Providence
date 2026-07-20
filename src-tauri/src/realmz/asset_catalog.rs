@@ -115,7 +115,6 @@ mod tests {
             is_dark: false,
             use_los: false,
             rects: Vec::new(),
-            raw_values: Vec::new(),
             provenance: Provenance {
                 source_file: "Data RD".to_string(),
                 record_index: 0,

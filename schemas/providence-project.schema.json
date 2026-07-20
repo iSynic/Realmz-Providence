@@ -407,8 +407,6 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceRandomLevel",
       "x-providence-rust-name": "RandomLevel",
-      "x-providence-rust-default": ["rawValues"],
-      "x-providence-rust-skip-empty": ["rawValues"],
       "required": ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "provenance"],
       "properties": {
         "id": { "type": "string" },
@@ -419,7 +417,6 @@
         "isDark": { "type": "boolean" },
         "useLos": { "type": "boolean" },
         "rects": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/randomRect" } },
-        "rawValues": { "type": "array", "minItems": 322, "maxItems": 322, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, "x-providence-compatibility-only": true },
         "provenance": { "$ref": "#/$defs/provenance" }
       }
     },

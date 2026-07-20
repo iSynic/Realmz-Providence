@@ -573,6 +573,10 @@ export function normalizeBrowserProject(project: Project): Project {
     ...record,
     markers: normalizedMapRecordMarkers(record)
   }));
+  project.randomLevels = (project.randomLevels ?? []).map((level) => {
+    const { rawValues: _legacyRawValues, ...canonical } = level as typeof level & { rawValues?: number[] };
+    return canonical;
+  });
   project.tileAttributes ??= [];
   project.customLandlooks ??= [];
   project.messages ??= [];
@@ -1019,12 +1023,6 @@ export function validateBrowserProject(project: Project): ValidationReport {
         errors.push(`${levelType} maps must have dense indices; expected ${expected}, found ${map.index}.`);
       }
     });
-  }
-  for (const level of project.randomLevels ?? []) {
-    const rawValues = level.rawValues ?? [];
-    if (rawValues.length !== 0 && rawValues.length !== RANDOM_LEVEL_BYTES / 2) {
-      errors.push(`${level.id} has invalid raw random-level storage.`);
-    }
   }
   for (const alignment of project.records.alignments) {
     if (alignment.status === "has-trailing-bytes") {

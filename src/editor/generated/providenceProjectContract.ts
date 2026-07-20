@@ -132,7 +132,6 @@ export const PROVIDENCE_RANDOM_LEVEL_FIELDS = [
   "isDark",
   "useLos",
   "rects",
-  "rawValues",
   "provenance"
 ] as const;
 
@@ -727,7 +726,6 @@ export type ProvidenceRandomLevel = {
   isDark: boolean;
   useLos: boolean;
   rects: ProvidenceRandomRect[];
-  rawValues?: number[];
   provenance: ProvidenceProvenance;
 };
 

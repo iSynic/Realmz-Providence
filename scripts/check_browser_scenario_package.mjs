@@ -187,9 +187,16 @@ sourceMapRecords[MAP_RECORD_BYTES + 74] = 0xbe;
 sourceMapRecords[MAP_RECORD_BYTES + 75] = 0xef;
 const sourceLandRandomLevels = new Uint8Array(RANDOM_LEVEL_BYTES * 2);
 setI16(sourceLandRandomLevels, 0, 31);
+sourceLandRandomLevels[521] = 0xa5;
+sourceLandRandomLevels[522] = 0x80;
+sourceLandRandomLevels[523] = 0xfe;
+setI16(sourceLandRandomLevels, 565, 17);
+sourceLandRandomLevels[643] = 0x34;
 setI16(sourceLandRandomLevels, RANDOM_LEVEL_BYTES, 32);
+sourceLandRandomLevels[RANDOM_LEVEL_BYTES + 643] = 0x44;
 const sourceDungeonRandomLevels = new Uint8Array(RANDOM_LEVEL_BYTES);
 setI16(sourceDungeonRandomLevels, 0, 33);
+sourceDungeonRandomLevels[643] = 0x55;
 const sourceLandDoors = new Uint8Array(DOOR_LEVEL_BYTES * 2);
 setDoor(sourceLandDoors.subarray(0, DOOR_BYTES), { doorid: 1, landid: 0, targetX: 2, targetY: 3, percent: 25, actions: [{ slot: 0, rawCode: 5, id: 6 }] });
 const sourceDungeonDoors = new Uint8Array(DOOR_LEVEL_BYTES);
@@ -487,7 +494,6 @@ const authoredMapRecord = mapRecord(1, {
 const authoredLandRandomValues = new Array(RANDOM_LEVEL_BYTES / 2).fill(0);
 authoredLandRandomValues[0] = 61;
 authoredLandRandomValues[260] = 7;
-authoredLandRandomValues[321] = -62;
 const authoredDungeonRandomValues = new Array(RANDOM_LEVEL_BYTES / 2).fill(0);
 authoredDungeonRandomValues[0] = 63;
 authoredDungeonRandomValues[260] = -1;
@@ -524,8 +530,8 @@ const mapProject = {
     { ...authoredMapRecord, rawBytes: Array.from(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)), authored: true }
   ],
   randomLevels: [
-    randomLevel("land", 0, rawValues(sourceLandRandomLevels.slice(0, RANDOM_LEVEL_BYTES))),
-    randomLevel("land", 1, authoredLandRandomValues),
+    randomLevel("land", 0, randomLevelWords(sourceLandRandomLevels.slice(0, RANDOM_LEVEL_BYTES))),
+    { ...randomLevel("land", 1, authoredLandRandomValues), rects: [] },
     randomLevel("dungeon", 0, authoredDungeonRandomValues)
   ],
   triggers: [
@@ -555,8 +561,16 @@ expect(bytesEqual(mapFiles.get("Data MD2")?.slice(0, MAP_RECORD_BYTES), sourceMa
 expect(bytesEqual(mapFiles.get("Data MD2")?.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2), mapRecordRow(authoredMapRecord, sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2))), "Authored map record should encode fields and preserve gaps");
 expect(mapFiles.get("Data MD2")?.[MAP_RECORD_BYTES + 74] === 0xbe && mapFiles.get("Data MD2")?.[MAP_RECORD_BYTES + 75] === 0xef, "Authored map record should preserve raw map-record gap bytes");
 expect(bytesEqual(mapFiles.get("Data RD")?.slice(0, RANDOM_LEVEL_BYTES), sourceLandRandomLevels.slice(0, RANDOM_LEVEL_BYTES)), "Unauthored land random level should remain byte-identical");
-expect(bytesEqual(mapFiles.get("Data RD")?.slice(RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES * 2), randomLevelRow(authoredLandRandomValues)), "Authored land random level should compile semantic settings over compatible storage");
-expect(bytesEqual(mapFiles.get("Data RDD")?.slice(0, RANDOM_LEVEL_BYTES), randomLevelRow(authoredDungeonRandomValues)), "Authored dungeon random level should compile semantic settings over compatible storage");
+const expectedAuthoredLandRandomLevel = randomLevelRow(authoredLandRandomValues);
+expectedAuthoredLandRandomLevel[0] = 0;
+expectedAuthoredLandRandomLevel[1] = 0;
+expectedAuthoredLandRandomLevel[521] = 1;
+expectedAuthoredLandRandomLevel[643] = 0x44;
+const expectedAuthoredDungeonRandomLevel = randomLevelRow(authoredDungeonRandomValues);
+expectedAuthoredDungeonRandomLevel[521] = 1;
+expectedAuthoredDungeonRandomLevel[643] = 0x55;
+expect(bytesEqual(mapFiles.get("Data RD")?.slice(RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES * 2), expectedAuthoredLandRandomLevel), "Authored land random level should delete the imported rectangle while preserving only the annex-owned final byte");
+expect(bytesEqual(mapFiles.get("Data RDD")?.slice(0, RANDOM_LEVEL_BYTES), expectedAuthoredDungeonRandomLevel), "Authored dungeon random level should compile semantic settings while preserving the annex-owned final byte");
 expect(bytesEqual(mapFiles.get("Data DD")?.slice(0, DOOR_BYTES), sourceLandDoors.slice(0, DOOR_BYTES)), "Unauthored land action point should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data DD")?.slice(DOOR_LEVEL_BYTES + 2 * DOOR_BYTES, DOOR_LEVEL_BYTES + 3 * DOOR_BYTES), doorRow(authoredLandTrigger)), "Authored land action point should encode trigger row");
 expect(bytesEqual(mapFiles.get("Data DDD")?.slice(0, DOOR_BYTES), sourceDungeonDoors.slice(0, DOOR_BYTES)), "Unauthored dungeon action point should remain byte-identical");
@@ -1508,25 +1522,49 @@ function mapMarkerFromRaw(rawBytes, slot) {
   };
 }
 
-function randomLevel(levelType, levelIndex, rawValues) {
+function randomLevel(levelType, levelIndex, values) {
   const source = levelType === "land" ? "Data RD" : "Data RDD";
-  const landlookDarkWord = (rawValues[260] ?? 0) & 0xffff;
-  const losWord = (rawValues[261] ?? 0) & 0xffff;
+  const bytes = randomLevelRow(values);
+  const rects = [];
+  for (let rectIndex = 0; rectIndex < 20; rectIndex += 1) {
+    const top = readI16(bytes, rectIndex * 8);
+    const left = readI16(bytes, rectIndex * 8 + 2);
+    const bottom = readI16(bytes, rectIndex * 8 + 4);
+    const right = readI16(bytes, rectIndex * 8 + 6);
+    const percent = readI16(bytes, 160 + rectIndex * 2);
+    const randomDoors = [0, 1, 2].map((slot) => readI16(bytes, 280 + rectIndex * 6 + slot * 2));
+    if (percent !== 0 || top !== 0 || left !== 0 || bottom !== 0 || right !== 0 || randomDoors.some(Boolean)) {
+      rects.push({
+        rectIndex,
+        top,
+        left,
+        bottom,
+        right,
+        percent,
+        battleRange: [readI16(bytes, 200 + rectIndex * 4), readI16(bytes, 202 + rectIndex * 4)],
+        randomDoors,
+        randomDoorPercent: [0, 1, 2].map((slot) => readI16(bytes, 400 + rectIndex * 6 + slot * 2)),
+        only: bytes[523 + rectIndex] !== 0,
+        option: signedByte(bytes[543 + rectIndex]),
+        sound: readI16(bytes, 563 + rectIndex * 2),
+        text: readI16(bytes, 603 + rectIndex * 2)
+      });
+    }
+  }
   return {
     id: `${levelType}:${levelIndex}:randlevel`,
     source,
     levelType,
     levelIndex,
-    landlook: signedByte((landlookDarkWord >>> 8) & 0xff),
-    isDark: (landlookDarkWord & 0xff) !== 0,
-    useLos: ((losWord >>> 8) & 0xff) !== 0,
-    rects: [],
-    rawValues,
+    landlook: signedByte(bytes[520]),
+    isDark: bytes[521] !== 0,
+    useLos: bytes[522] !== 0,
+    rects,
     provenance: { sourceFile: source, recordIndex: levelIndex, byteOffset: levelIndex * RANDOM_LEVEL_BYTES, byteLength: RANDOM_LEVEL_BYTES, confidence: "fixture-backed" }
   };
 }
 
-function rawValues(bytes) {
+function randomLevelWords(bytes) {
   return Array.from({ length: RANDOM_LEVEL_BYTES / 2 }, (_, index) => readI16(bytes, index * 2));
 }
 

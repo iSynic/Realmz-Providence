@@ -141,7 +141,6 @@ pub const PROVIDENCE_RANDOM_LEVEL_FIELDS: &[&str] = &[
     "isDark",
     "useLos",
     "rects",
-    "rawValues",
     "provenance",
 ];
 
@@ -823,8 +822,6 @@ pub struct RandomLevel {
     pub is_dark: bool,
     pub use_los: bool,
     pub rects: Vec<RandomRect>,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_values: Vec<i16>,
     pub provenance: Provenance,
 }
 

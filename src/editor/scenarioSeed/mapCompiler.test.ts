@@ -47,7 +47,7 @@ describe("scenario seed map compiler", () => {
       isDark: true,
       useLos: true
     });
-    expect(result.randomLevels[0].rawValues).toBeUndefined();
+    expect("rawValues" in result.randomLevels[0]).toBe(false);
     expect(result.tilesets[0]).toMatchObject({ id: "landlook-4", landlook: 4, pictId: 304, baseTile: 111 });
   });
 

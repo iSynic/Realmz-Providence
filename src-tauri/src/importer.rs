@@ -843,7 +843,6 @@ fn default_land_random_level() -> RandomLevel {
         is_dark: false,
         use_los: false,
         rects: Vec::new(),
-        raw_values: Vec::new(),
         provenance: Provenance {
             source_file: "Data RD".to_string(),
             record_index: 0,
@@ -2477,10 +2476,7 @@ mod tests {
         assert_eq!(land.render.landlook, Some(0));
         assert_eq!(land.render.tileset_id, "landlook-0");
         assert!(project.random_levels.iter().any(|level| {
-            level.level_type == LevelType::Land
-                && level.level_index == 0
-                && level.landlook == 0
-                && level.raw_values.is_empty()
+            level.level_type == LevelType::Land && level.level_index == 0 && level.landlook == 0
         }));
         assert!(project
             .asset_catalog
@@ -2718,8 +2714,7 @@ mod tests {
         restrictions.authored = false;
         restrictions.raw_bytes.fill(0xa5);
         project.scenario.restrictions = Some(restrictions);
-        let mut global_hooks =
-            crate::realmz::parse_global_macro_hooks(&vec![
+        let mut global_hooks = crate::realmz::parse_global_macro_hooks(&vec![
                 0xa5;
                 crate::realmz::GLOBAL_MACRO_HOOK_BYTES
             ]);

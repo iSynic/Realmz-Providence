@@ -60,10 +60,6 @@ pub fn parse_random_levels(buffer: &[u8], level_type: LevelType, source: &str) -
                     });
                 }
             }
-            let mut raw_values = Vec::with_capacity(RANDLEVEL_BYTES / 2);
-            for offset in (0..RANDLEVEL_BYTES).step_by(2) {
-                raw_values.push(i16_be(buffer, start + offset));
-            }
             RandomLevel {
                 id: format!("{}:{}:randlevel", level_type.as_str(), level_index),
                 source: source.to_string(),
@@ -73,7 +69,6 @@ pub fn parse_random_levels(buffer: &[u8], level_type: LevelType, source: &str) -
                 is_dark: buffer[start + 521] != 0,
                 use_los: buffer[start + 522] != 0,
                 rects,
-                raw_values,
                 provenance: Provenance {
                     source_file: source.to_string(),
                     record_index: level_index,
@@ -99,27 +94,13 @@ pub fn write_random_levels(levels: &[RandomLevel], level_type: LevelType) -> Res
                 level_type.as_str()
             )));
         }
-        if !level.raw_values.is_empty() && level.raw_values.len() != RANDLEVEL_BYTES / 2 {
-            return Err(ProvidenceError::message(format!(
-                "{} has invalid random-level raw value count",
-                level.id
-            )));
-        }
     }
     let mut output = vec![0u8; selected.len() * RANDLEVEL_BYTES];
     for level in selected {
         let start = level.level_index * RANDLEVEL_BYTES;
-        for (index, value) in level.raw_values.iter().enumerate() {
-            write_i16_be(&mut output, start + index * 2, *value);
-        }
-        let has_compatibility_base = level.raw_values.len() == RANDLEVEL_BYTES / 2;
         output[start + 520] = level.landlook as u8;
-        if !has_compatibility_base || (output[start + 521] != 0) != level.is_dark {
-            output[start + 521] = u8::from(level.is_dark);
-        }
-        if !has_compatibility_base || (output[start + 522] != 0) != level.use_los {
-            output[start + 522] = u8::from(level.use_los);
-        }
+        output[start + 521] = u8::from(level.is_dark);
+        output[start + 522] = u8::from(level.use_los);
         for rect in &level.rects {
             if rect.rect_index >= 20 {
                 return Err(ProvidenceError::message(format!(
@@ -155,10 +136,7 @@ pub fn write_random_levels(levels: &[RandomLevel], level_type: LevelType) -> Res
                     rect.random_door_percent[slot],
                 );
             }
-            let only_offset = start + 523 + rect.rect_index;
-            if !has_compatibility_base || (output[only_offset] != 0) != rect.only {
-                output[only_offset] = u8::from(rect.only);
-            }
+            output[start + 523 + rect.rect_index] = u8::from(rect.only);
             output[start + 543 + rect.rect_index] = rect.option as u8;
             write_i16_be(&mut output, start + 563 + rect.rect_index * 2, rect.sound);
             write_i16_be(&mut output, start + 603 + rect.rect_index * 2, rect.text);
@@ -171,15 +149,6 @@ pub fn write_random_levels(levels: &[RandomLevel], level_type: LevelType) -> Res
 mod tests {
     use super::*;
     use crate::realmz::record_bytes::provenance;
-
-    fn changed_offsets(before: &[u8], after: &[u8]) -> Vec<usize> {
-        before
-            .iter()
-            .zip(after.iter())
-            .enumerate()
-            .filter_map(|(offset, (left, right))| (left != right).then_some(offset))
-            .collect()
-    }
 
     #[test]
     fn random_levels_round_trip() {
@@ -220,7 +189,6 @@ mod tests {
                 sound: 17,
                 text: 23,
             }],
-            raw_values: Vec::new(),
             provenance: provenance("Data RDD", 0, 0, RANDLEVEL_BYTES),
         };
 
@@ -247,37 +215,27 @@ mod tests {
     }
 
     #[test]
-    fn compatibility_base_preserves_noncanonical_bytes_until_semantics_change() {
+    fn imported_levels_recompile_from_semantics_without_hidden_storage() {
         for (level_type, source) in [
             (LevelType::Land, "Data RD"),
             (LevelType::Dungeon, "Data RDD"),
         ] {
-            let input = vec![0xA5; RANDLEVEL_BYTES * 2];
-            let level_index = 1;
-            let raw_word_index = RANDLEVEL_BYTES / 2 - 1;
-            let raw_offset = level_index * RANDLEVEL_BYTES + raw_word_index * 2;
+            let mut input = vec![0; RANDLEVEL_BYTES];
+            write_i16_be(&mut input, 0, 3);
+            input[521] = 0xa5;
+            input[522] = 0x80;
+            input[523] = 0xfe;
+            write_i16_be(&mut input, 565, 17);
+            input[643] = 0x34;
 
-            let mut levels = parse_random_levels(&input, level_type, source);
-            assert_eq!(
-                write_random_levels(&levels, level_type).unwrap(),
-                input,
-                "no-edit export should preserve noncanonical true encodings"
-            );
-
-            levels[level_index].raw_values[raw_word_index] = i16::from_be_bytes([0xA5, 0x04]);
-            levels[level_index].is_dark = false;
-
+            let levels = parse_random_levels(&input, level_type, source);
             let output = write_random_levels(&levels, level_type).unwrap();
 
-            assert_eq!(output.len(), input.len());
-            assert_eq!(output[level_index * RANDLEVEL_BYTES + 521], 0);
-            assert_eq!(output[level_index * RANDLEVEL_BYTES + 522], 0xA5);
-            assert_eq!(output[raw_offset], 0xA5);
-            assert_eq!(output[raw_offset + 1], 0x04);
-            assert_eq!(
-                changed_offsets(&input, &output),
-                vec![level_index * RANDLEVEL_BYTES + 521, raw_offset + 1]
-            );
+            assert_eq!(output[521], 1);
+            assert_eq!(output[522], 1);
+            assert_eq!(output[523], 1);
+            assert_eq!(i16_be(&output, 565), 0);
+            assert_eq!(output[643], 0);
         }
     }
 }
