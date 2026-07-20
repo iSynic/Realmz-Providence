@@ -200,11 +200,15 @@ npm run typecheck
 npm run lint
 npm run test:unit
 npm run check:architecture
+npm run check:native-compiler-convergence
 npm run check:browser-project-package
 npm run check:browser-scenario-package
 npm run smoke:scenario-generation
 npm run test:rust
 ```
+
+The [Native Compiler v1 Contract](docs/native-compiler-v1-contract.md) defines the shared
+browser/desktop authority boundary and the parity gates required for native compiler changes.
 
 The committed manual gallery can be refreshed against a selected project with `npm run docs:capture-gallery -- --project <path>`.
 

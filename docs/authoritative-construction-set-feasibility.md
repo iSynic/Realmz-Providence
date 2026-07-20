@@ -1064,8 +1064,11 @@ Providence already has the major parts of a construction set:
 
 The investigation branch has removed that coupling from fresh desktop and browser projects: both
 compile from canonical data without manufacturing or consulting a raw snapshot. Imported projects
-alone retain a compatibility annex. The remaining browser/desktop duplication is a consolidation
-and parity-hardening task, not evidence that the project model or editor must be replaced.
+alone retain a compatibility annex. The accepted
+[`Providence Native Compiler v1 Contract`](native-compiler-v1-contract.md) keeps Rust and
+TypeScript codecs independently implemented under one generated schema and native-manifest policy,
+with exact browser/desktop byte parity as a mandatory aggregate gate. A future Rust/Wasm extraction
+is optional consolidation, not unfinished authoritative-ownership work.
 
 The recommended design is:
 
@@ -1559,13 +1562,14 @@ must not be called fresh-authoritative merely because imported round trips are f
    the exact fixed-capacity fresh compiler buffers and hide baseline-only slots.
 8. **Implemented on the investigation branch:** persist/import/export `itemTexts` in Rust and gate
    its TypeScript/Rust/native-folder conformance in the ownership proof.
-9. Gate browser and desktop output with the same golden manifest/byte fixtures. Prefer one Rust
-   compiler with a browser/Wasm surface after the proof; do not block the proof on that packaging
-   change.
+9. **Implemented as the Native Compiler v1 Contract:** gate browser and desktop output with the
+   same generated schema/native policy, imported and edited parity fixtures, and annex-free
+   authoritative byte proof. Rust/Wasm consolidation remains optional and must not block unrelated
+   authoring work without a demonstrated correctness or maintenance need.
 
 ## Principal Blockers And Remaining Unknowns
 
-1. **Shared compiler contract:** desktop and browser now both compile authored projects without an
+1. **Accepted v1 compiler contract:** desktop and browser both compile authored projects without an
    annex, and the ownership fixture exercises every fixed-path optional semantic family with byte
    parity. A versioned neutral policy now
    owns native codec geometry, scenario-item and rule-table capacities, named runtime-baseline files, and the land/dungeon trigger-table
@@ -1573,9 +1577,10 @@ must not be called fresh-authoritative merely because imported round trips are f
    semantic-file presence, project-derived custom-landlook/monster-set paths, and authored
    item/spell sidecar roles. Rust and TypeScript consume the generated sizes and capacities but
    still implement field placement, resource-update decisions, and semantic writer execution
-   independently. Broader edge-case/resource goldens or a
-   shared Rust/Wasm compiler should prevent implementation drift without forcing those details
-   into the policy.
+   independently. The aggregate gate now requires browser/desktop parity in addition to policy
+   generation, and the authored ownership proof covers both targets. Broader edge-case/resource
+   goldens should be added when features expand; a shared Rust/Wasm compiler is an optional future
+   simplification rather than a v1 blocker.
 2. **Optional resource families:** the source-backed 46-byte minimum main fork, representative
    `PICT`/`cicn`/`snd `/`TEXT`/`styl` resources, item strings, and custom-spell strings are generated
    in both compilers. Arbitrary PICT editing, custom music, and some extracted sidecar families
@@ -1725,12 +1730,17 @@ Exit: the practical Divinity-style authored surface no longer depends on importe
 - **Implemented for the canonical ownership fixture:** exercise every fixed-path optional semantic
   family, including authored `Data RI`, through both compilers and both native targets with exact
   byte parity and semantic reimport.
-- Prefer exposing the Rust compiler to browser/Wasm, or generate both implementations from shared
-  codec/manifest specifications.
-- Keep byte-parity fixtures for every supported target.
-- Remove duplicated baseline and preservation policy once both call the same compiler contract.
+- **Implemented as the accepted v1 boundary:** require native-policy generation and imported/edited
+  browser-desktop byte parity in the aggregate repository check. Keep the annex-free ownership
+  proof in the Scenario JSON gate for both supported targets.
+- Keep byte-parity fixtures for every supported target and extend them with each new native family
+  or resource behavior.
+- Consider exposing the Rust compiler to browser/Wasm only as a separately scoped simplification.
+  The independent field codecs, resource writers, and annex-overlay implementations are permitted
+  by v1 only while the shared-contract and exact-parity gates remain mandatory.
 
-Exit: browser and desktop produce the same manifest and bytes from the same canonical project.
+Exit: **met for v1.** Browser and desktop produce the same manifest and bytes from the same
+canonical project, and imported/edited compatibility paths are parity-gated.
 
 ## Rough Effort
 
