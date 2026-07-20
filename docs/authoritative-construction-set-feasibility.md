@@ -8,6 +8,9 @@ Repository state audited: `main` at `0837de8` (`Update asset smoke for Realmz Ga
 Implementation began after this decision was documented on
 `investigation/authoritative-realmz-compiler`.
 
+The compiler-scoped integration result and reproducible final gate are recorded in
+[`Authoritative Compiler Merge Readiness`](authoritative-compiler-merge-readiness.md).
+
 The first bounded compiler slice now:
 
 - creates fresh desktop projects with no `raw-sources` directory or source-file inventory;

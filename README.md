@@ -201,6 +201,7 @@ npm run lint
 npm run test:unit
 npm run check:architecture
 npm run check:native-compiler-convergence
+npm run check:authoritative-compiler-closeout
 npm run check:browser-project-package
 npm run check:browser-scenario-package
 npm run smoke:scenario-generation
