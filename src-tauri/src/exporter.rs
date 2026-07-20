@@ -2,7 +2,7 @@ use crate::compatibility_annex::{CompatibilityAnnex, CompatibilityAnnexSnapshot}
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::native_manifest::NativeScenarioManifest;
 use crate::project::{
-    BattleRecord, ComplexEncounterRecord, ItemTextRecord, LevelType, MessageRecord,
+    BattleRecord, ComplexEncounterRecord, ItemTextRecord, LevelType, MapRecord, MessageRecord,
     MonsterDescriptionRecord, MonsterIconOverride, MonsterIconOverrideSource, MonsterRecord,
     OptionLabelRecord, ProvidenceProject, RandomLevel, ScenarioCasteOverride, ScenarioRaceOverride,
     ScenarioSpellOverride, ScenarioTarget, SimpleEncounterRecord, TargetCompatibilityBuckets,
@@ -305,12 +305,14 @@ fn compile_realmz_scenario(
     )?;
     write_messages_for_export(&mut manifest, &project.messages, compatibility_annex)?;
     write_option_labels_for_export(&mut manifest, &project.option_labels, compatibility_annex)?;
-    write_fixed_if_nonempty(
+    write_if_nonempty(
         &mut manifest,
         "Data MD2",
-        write_map_records(&project.map_records)?,
-        crate::realmz::MAP_RECORD_BYTES,
-        compatibility_annex,
+        preserve_imported_map_record_compatibility(
+            write_map_records(&project.map_records)?,
+            &project.map_records,
+            compatibility_annex,
+        )?,
     )?;
     write_battles_for_export(&mut manifest, &project.battles, compatibility_annex)?;
     write_monsters_for_export(
@@ -966,6 +968,46 @@ fn compile_fixed_rows_with_compatibility_annex(
     let complete_source_bytes = raw.len() / record_bytes * record_bytes;
     bytes.resize(bytes.len().max(complete_source_bytes), 0);
     bytes.extend_from_slice(&raw[complete_source_bytes..]);
+    Ok(bytes)
+}
+
+fn preserve_imported_map_record_compatibility(
+    mut bytes: Vec<u8>,
+    records: &[MapRecord],
+    annex: Option<&CompatibilityAnnexSnapshot>,
+) -> Result<Vec<u8>> {
+    if bytes.is_empty() {
+        return Ok(bytes);
+    }
+    let Some(raw) = (match annex {
+        Some(annex) => annex.read("Data MD2")?,
+        None => None,
+    }) else {
+        return Ok(bytes);
+    };
+    let record_bytes = crate::realmz::MAP_RECORD_BYTES;
+    let complete_source_bytes = raw.len() / record_bytes * record_bytes;
+    let output_core_bytes = bytes.len().max(complete_source_bytes);
+    let mut output = vec![0; output_core_bytes];
+    output[..bytes.len()].copy_from_slice(&bytes);
+    output.extend_from_slice(&raw[complete_source_bytes..]);
+    bytes = output;
+    let source_records = crate::realmz::parse_map_records(&raw[..complete_source_bytes]);
+    for record in records {
+        let start = record.id * record_bytes;
+        if start + record_bytes > bytes.len() || start + record_bytes > complete_source_bytes {
+            continue;
+        }
+        bytes[start + 74..start + 76].copy_from_slice(&raw[start + 74..start + 76]);
+        let source = &source_records[record.id];
+        if source.is_dungeon == record.is_dungeon {
+            bytes[start + 72..start + 74].copy_from_slice(&raw[start + 72..start + 74]);
+        }
+        if source.note == record.note {
+            bytes[start + 84..start + record_bytes]
+                .copy_from_slice(&raw[start + 84..start + record_bytes]);
+        }
+    }
     Ok(bytes)
 }
 
@@ -2072,6 +2114,7 @@ mod tests {
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
         preserve_imported_custom_landlook_compatibility, preserve_imported_global_macro_hooks,
         preserve_imported_land_layout_tail, preserve_imported_message_rows,
+        preserve_imported_map_record_compatibility,
         preserve_imported_monster_description_rows, preserve_imported_monster_rows,
         preserve_imported_option_label_rows, preserve_imported_random_level_compatibility,
         preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
@@ -2193,6 +2236,84 @@ mod tests {
             preserve_imported_land_layout_tail(semantic.clone(), None).unwrap(),
             semantic
         );
+    }
+
+    #[test]
+    fn map_record_compatibility_comes_only_from_annex() {
+        let temp = tempfile::tempdir().unwrap();
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+        let mut source = vec![0xa5; crate::realmz::MAP_RECORD_BYTES * 2];
+        source[84] = 2;
+        source[85] = b'G';
+        source[86] = b'o';
+        source.extend_from_slice(&[0xde, 0xad, 0xbe]);
+        fs::write(raw_dir.join("Data MD2"), &source).unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+        let mut records = crate::realmz::parse_map_records(
+            &source[..crate::realmz::MAP_RECORD_BYTES * 2],
+        );
+        let semantic = crate::realmz::write_map_records(&records).unwrap();
+
+        assert_eq!(
+            preserve_imported_map_record_compatibility(semantic.clone(), &records, None)
+                .unwrap(),
+            semantic
+        );
+        assert_eq!(
+            preserve_imported_map_record_compatibility(semantic, &records, Some(&annex)).unwrap(),
+            source
+        );
+
+        records.truncate(1);
+        let removed = preserve_imported_map_record_compatibility(
+            crate::realmz::write_map_records(&records).unwrap(),
+            &records,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(
+            &removed[..crate::realmz::MAP_RECORD_BYTES],
+            &source[..crate::realmz::MAP_RECORD_BYTES]
+        );
+        assert!(removed[crate::realmz::MAP_RECORD_BYTES..crate::realmz::MAP_RECORD_BYTES * 2]
+            .iter()
+            .all(|byte| *byte == 0));
+        assert_eq!(
+            &removed[crate::realmz::MAP_RECORD_BYTES * 2..],
+            &[0xde, 0xad, 0xbe]
+        );
+
+        records[0].start_x = 0x1234;
+        records[0].is_dungeon = false;
+        let edited = preserve_imported_map_record_compatibility(
+            crate::realmz::write_map_records(&records).unwrap(),
+            &records,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(i16::from_be_bytes([edited[60], edited[61]]), 0x1234);
+        assert_eq!(&edited[72..74], &[0, 0]);
+        assert_eq!(&edited[74..76], &[0xa5, 0xa5]);
+        assert_eq!(&edited[84..87], &[2, b'G', b'o']);
+        assert_eq!(edited[crate::realmz::MAP_RECORD_BYTES - 1], 0xa5);
+        assert!(edited[crate::realmz::MAP_RECORD_BYTES..crate::realmz::MAP_RECORD_BYTES * 2]
+            .iter()
+            .all(|byte| *byte == 0));
+        assert_eq!(
+            &edited[crate::realmz::MAP_RECORD_BYTES * 2..],
+            &[0xde, 0xad, 0xbe]
+        );
+
+        records[0].note = "Changed".to_string();
+        let note_changed = preserve_imported_map_record_compatibility(
+            crate::realmz::write_map_records(&records).unwrap(),
+            &records,
+            Some(&annex),
+        )
+        .unwrap();
+        assert_eq!(&note_changed[84..92], &[7, b'C', b'h', b'a', b'n', b'g', b'e', b'd']);
+        assert_eq!(note_changed[crate::realmz::MAP_RECORD_BYTES - 1], 0);
     }
 
     #[test]
@@ -3567,7 +3688,6 @@ mod tests {
             secondary_name: (!secondary_name.is_empty()).then(|| secondary_name.to_string()),
             name_source: None,
             map_name_authored,
-            raw_bytes: Vec::new(),
             authored: false,
             provenance: provenance("Data MD2", id, crate::realmz::MAP_RECORD_BYTES),
         }

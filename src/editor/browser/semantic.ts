@@ -1149,16 +1149,9 @@ function addMapRecords(schema: SemanticSchema, mapRecords: MapRecord[], maps: Ma
   const knownMaps = new Set(maps.map((map) => mapEntityId(map.levelType, map.index)));
   for (const record of mapRecords) {
     const recordRef = `record:Data MD2:${record.id}`;
-    const iconSlots = Array.from({ length: 10 }, (_, slot) => {
-      const offset = slot * 6;
-      const iconId = i16Array(record.rawBytes, offset);
-      return {
-        slot,
-        iconId,
-        x: i16Array(record.rawBytes, offset + 2),
-        y: i16Array(record.rawBytes, offset + 4)
-      };
-    }).filter((slot) => slot.iconId !== 0);
+    const iconSlots = record.markers
+      .map((marker, slot) => ({ slot, iconId: marker.iconId, x: marker.x, y: marker.y }))
+      .filter((slot) => slot.iconId !== 0);
     const name = record.name || record.primaryName || `Map record ${record.id}`;
     const summary = {
       id: record.id,
@@ -2503,12 +2496,6 @@ function i32At(buffer: Uint8Array, offset: number) {
   if (offset + 4 > buffer.byteLength) return 0;
   const value = (buffer[offset] << 24) | (buffer[offset + 1] << 16) | (buffer[offset + 2] << 8) | buffer[offset + 3];
   return value | 0;
-}
-
-function i16Array(buffer: number[] | undefined, offset: number) {
-  if (!buffer || offset + 2 > buffer.length) return 0;
-  const value = ((buffer[offset] ?? 0) << 8) | (buffer[offset + 1] ?? 0);
-  return value & 0x8000 ? value - 0x10000 : value;
 }
 
 function shortArray(buffer: Uint8Array, offset: number, count: number) {

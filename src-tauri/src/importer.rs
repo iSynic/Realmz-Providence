@@ -366,10 +366,52 @@ fn hydrate_imported_compatibility_state(
 fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     let project_path = project_dir.join(PROJECT_FILE_NAME);
     let text = fs::read_to_string(&project_path).with_path(&project_path)?;
+    let mut value: serde_json::Value =
+        serde_json::from_str(&text).with_json_path(&project_path)?;
+    migrate_legacy_map_record_raw_bytes(&mut value);
     let mut project: ProvidenceProject =
-        serde_json::from_str(&text).with_json_path(project_path)?;
+        serde_json::from_value(value).with_json_path(project_path)?;
     project.normalize_project_contract();
     Ok(project)
+}
+
+fn migrate_legacy_map_record_raw_bytes(project: &mut serde_json::Value) {
+    let Some(records) = project.get_mut("mapRecords").and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for record in records {
+        let Some(record) = record.as_object_mut() else {
+            continue;
+        };
+        let raw = record
+            .remove("rawBytes")
+            .and_then(|value| value.as_array().cloned())
+            .unwrap_or_default();
+        let markers = record
+            .entry("markers")
+            .or_insert_with(|| serde_json::Value::Array(Vec::new()));
+        let Some(markers) = markers.as_array_mut() else {
+            continue;
+        };
+        while markers.len() < crate::realmz::MAP_RECORD_MARKERS {
+            let offset = markers.len() * crate::realmz::MAP_RECORD_MARKER_BYTES;
+            markers.push(serde_json::json!({
+                "iconId": legacy_project_i16(&raw, offset),
+                "x": legacy_project_i16(&raw, offset + 2),
+                "y": legacy_project_i16(&raw, offset + 4)
+            }));
+        }
+    }
+}
+
+fn legacy_project_i16(bytes: &[serde_json::Value], offset: usize) -> i16 {
+    let high = bytes.get(offset).and_then(serde_json::Value::as_u64).unwrap_or(0) as u8;
+    let low = bytes
+        .get(offset + 1)
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0) as u8;
+    i16::from_be_bytes([high, low])
 }
 
 pub fn save_project(project_dir: impl AsRef<Path>, project: &ProvidenceProject) -> Result<()> {
@@ -2346,6 +2388,30 @@ mod tests {
                 "confidence": "fixture-backed"
             }
         }]);
+        let mut legacy_map_record = vec![0u8; crate::realmz::MAP_RECORD_BYTES];
+        legacy_map_record[0..2].copy_from_slice(&400i16.to_be_bytes());
+        legacy_map_record[2..4].copy_from_slice(&12i16.to_be_bytes());
+        legacy_map_record[4..6].copy_from_slice(&13i16.to_be_bytes());
+        saved["mapRecords"] = serde_json::json!([{
+            "id": 0,
+            "startX": 12,
+            "startY": 13,
+            "level": 0,
+            "pictId": 30128,
+            "iconSize": 16,
+            "show": 1,
+            "isDungeon": false,
+            "rect": { "top": 0, "left": 0, "bottom": 10, "right": 10 },
+            "note": "Legacy map",
+            "rawBytes": legacy_map_record,
+            "provenance": {
+                "sourceFile": "Data MD2",
+                "recordIndex": 0,
+                "byteOffset": 0,
+                "byteLength": 340,
+                "confidence": "fixture-backed"
+            }
+        }]);
         fs::write(
             &project_path,
             serde_json::to_vec(&saved).expect("serialize legacy project fixture"),
@@ -2369,6 +2435,10 @@ mod tests {
         assert_eq!(opened.thief_encounters[0].success_codes.len(), 8);
         assert_eq!(opened.thief_encounters[0].prompts.len(), 3);
         assert_eq!(opened.thief_encounters[0].prompt_sounds.len(), 3);
+        assert_eq!(opened.map_records[0].markers.len(), 10);
+        assert_eq!(opened.map_records[0].markers[0].icon_id, 400);
+        assert_eq!(opened.map_records[0].markers[0].x, 12);
+        assert_eq!(opened.map_records[0].markers[0].y, 13);
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -2396,6 +2466,7 @@ mod tests {
             8
         );
         assert!(upgraded["thiefEncounters"][0].get("rawBytes").is_none());
+        assert!(upgraded["mapRecords"][0].get("rawBytes").is_none());
     }
 
     #[test]

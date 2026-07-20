@@ -354,7 +354,7 @@ function writeSupportedBinaryRecords(project: Project, annex: BrowserCompatibili
   if (project.mapRecords.length > 0) {
     writes.push({
       path: "Data MD2",
-      bytes: preserveMalformedRawTail("Data MD2", writeMapRecords(project.mapRecords), MAP_RECORD_BYTES, annex)
+      bytes: preserveImportedMapRecordCompatibility(writeMapRecords(project.mapRecords), project.mapRecords, annex)
     });
   }
   if (project.randomLevels.some((level) => level.levelType === "land")) {
@@ -948,6 +948,45 @@ function compileFixedRowsWithCompatibilityAnnex(
   output.set(bytes);
   output.set(tail, outputCoreBytes);
   return output;
+}
+
+function preserveImportedMapRecordCompatibility(
+  bytes: Uint8Array,
+  records: MapRecord[],
+  annex: BrowserCompatibilityAnnex | null
+) {
+  if (bytes.byteLength === 0) return bytes;
+  const raw = rawSourceBytes("Data MD2", annex);
+  if (!raw) return bytes;
+  const output = compileFixedRowsWithCompatibilityAnnex("Data MD2", bytes, MAP_RECORD_BYTES, annex);
+  const completeSourceBytes = Math.floor(raw.byteLength / MAP_RECORD_BYTES) * MAP_RECORD_BYTES;
+  for (const record of records) {
+    const start = record.id * MAP_RECORD_BYTES;
+    if (start + MAP_RECORD_BYTES > output.byteLength || start + MAP_RECORD_BYTES > completeSourceBytes) continue;
+    output.set(raw.slice(start + 74, start + 76), start + 74);
+    if ((mapRecordI16(raw, start + 72) !== 0) === record.isDungeon) {
+      output.set(raw.slice(start + 72, start + 74), start + 72);
+    }
+    if (decodeMapRecordNote(raw.subarray(start + 84, start + MAP_RECORD_BYTES)) === record.note) {
+      output.set(raw.slice(start + 84, start + MAP_RECORD_BYTES), start + 84);
+    }
+  }
+  return output;
+}
+
+function mapRecordI16(bytes: Uint8Array, offset: number) {
+  const value = (bytes[offset] << 8) | bytes[offset + 1];
+  return value >= 0x8000 ? value - 0x10000 : value;
+}
+
+function decodeMapRecordNote(bytes: Uint8Array) {
+  const length = Math.min(bytes[0] ?? 0, Math.max(0, bytes.byteLength - 1));
+  const body = bytes.subarray(1, 1 + length);
+  const terminator = body.findIndex((byte) => byte === 0);
+  return Array.from(body.subarray(0, terminator < 0 ? body.byteLength : terminator))
+    .map((byte) => byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : " ")
+    .join("")
+    .trimEnd();
 }
 
 function preserveImportedRandomLevelCompatibility(

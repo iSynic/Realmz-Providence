@@ -230,7 +230,7 @@ describe("project command facade", () => {
     expect(next.mapRecords).toHaveLength(1);
     expect(next.mapRecords[0].markers).toHaveLength(10);
     expect(next.mapRecords[0].note).toBe("Canonical map");
-    expect(next.mapRecords[0].rawBytes).toBeUndefined();
+    expect("rawBytes" in next.mapRecords[0]).toBe(false);
   });
 
   it("creates fresh scenario items from semantic data without compatibility bytes", () => {

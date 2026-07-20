@@ -189,13 +189,13 @@ expectSameArray(Object.keys(mapMarkerSchema.properties ?? {}), ["iconId", "x", "
 expectSameArray(mapMarkerSchema.required ?? [], Object.keys(mapMarkerSchema.properties ?? {}), "Map marker required field inventory");
 expectSameArray(Object.keys(mapRecordRectSchema.properties ?? {}), ["top", "left", "bottom", "right"], "Map-record rectangle field inventory");
 expectSameArray(mapRecordRectSchema.required ?? [], Object.keys(mapRecordRectSchema.properties ?? {}), "Map-record rectangle required field inventory");
-expectSameArray(Object.keys(mapRecordSchema.properties ?? {}), ["id", "markers", "startX", "startY", "level", "pictId", "iconSize", "show", "isDungeon", "rect", "note", "name", "primaryName", "secondaryName", "nameSource", "mapNameAuthored", "rawBytes", "authored", "provenance"], "Map-record field inventory");
+expectSameArray(Object.keys(mapRecordSchema.properties ?? {}), ["id", "markers", "startX", "startY", "level", "pictId", "iconSize", "show", "isDungeon", "rect", "note", "name", "primaryName", "secondaryName", "nameSource", "mapNameAuthored", "authored", "provenance"], "Map-record field inventory");
 expectSameArray(mapRecordSchema.required ?? [], ["id", "markers", "startX", "startY", "level", "pictId", "iconSize", "show", "isDungeon", "rect", "note", "provenance"], "Map-record authored field inventory");
 expect(mapRecordSchema.properties?.markers?.items?.$ref === "#/$defs/mapMarker", "map-record markers must contain canonical marker DTOs");
 expect(mapRecordSchema.properties?.markers?.minItems === 10 && mapRecordSchema.properties?.markers?.maxItems === 10, "map-record markers must retain ten Realmz slots");
 expect(mapRecordSchema.properties?.rect?.$ref === "#/$defs/mapRecordRect", "map-record rect must reference the canonical rectangle DTO");
 expect(mapRecordSchema.properties?.provenance?.$ref === "#/$defs/provenance", "map-record provenance must reference canonical provenance");
-expectSameArray(mapRecordSchema["x-providence-rust-skip-empty"] ?? [], ["rawBytes"], "Map-record omitted empty compatibility inventory");
+expectSameArray(mapRecordSchema["x-providence-rust-default"] ?? [], ["markers", "name", "primaryName", "secondaryName", "nameSource", "mapNameAuthored", "authored"], "Map-record defaulted field inventory");
 expectSameArray(Object.keys(randomRectSchema.properties ?? {}), ["rectIndex", "top", "left", "bottom", "right", "percent", "battleRange", "randomDoors", "randomDoorPercent", "only", "option", "sound", "text"], "Random rectangle field inventory");
 expectSameArray(randomRectSchema.required ?? [], Object.keys(randomRectSchema.properties ?? {}), "Random rectangle required field inventory");
 expectSameArray(Object.keys(randomLevelSchema.properties ?? {}), ["id", "source", "levelType", "levelIndex", "landlook", "isDark", "useLos", "rects", "provenance"], "Random-level field inventory");
@@ -212,7 +212,7 @@ const mapCompatibilityFields = mapDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(mapCompatibilityFields, ["MapRecord.rawBytes"], "Map compatibility-only field inventory");
+expectSameSet(mapCompatibilityFields, [], "Map compatibility-only field inventory");
 for (const [index, definition] of landlookDefinitions.entries()) {
   const definitionName = landlookDefinitionNames[index];
   expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);

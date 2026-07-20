@@ -178,13 +178,14 @@ setI16(sourceLandFields, 0, 11);
 setI16(sourceLandFields, FIELD_BYTES + 2, -12);
 const sourceDungeonFields = new Uint8Array(FIELD_BYTES);
 setI16(sourceDungeonFields, 0, 21);
-const sourceMapRecords = new Uint8Array(MAP_RECORD_BYTES * 2);
+const sourceMapRecords = new Uint8Array(MAP_RECORD_BYTES * 2 + 3);
 sourceMapRecords[0] = 0x71;
 sourceMapRecords[1] = 0x72;
 sourceMapRecords[MAP_RECORD_BYTES] = 0x73;
 sourceMapRecords[MAP_RECORD_BYTES + 1] = 0x74;
 sourceMapRecords[MAP_RECORD_BYTES + 74] = 0xbe;
 sourceMapRecords[MAP_RECORD_BYTES + 75] = 0xef;
+sourceMapRecords.set([0xca, 0xfe, 0x01], MAP_RECORD_BYTES * 2);
 const sourceLandRandomLevels = new Uint8Array(RANDOM_LEVEL_BYTES * 2);
 setI16(sourceLandRandomLevels, 0, 31);
 sourceLandRandomLevels[521] = 0xa5;
@@ -526,8 +527,8 @@ const mapProject = {
     mapEntity("dungeon", 0, authoredDungeonTiles)
   ],
   mapRecords: [
-    mapRecord(0, { rawBytes: Array.from(sourceMapRecords.slice(0, MAP_RECORD_BYTES)), authored: false }),
-    { ...authoredMapRecord, rawBytes: Array.from(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)), authored: true }
+    mapRecord(0, { markers: mapMarkersFromRaw(sourceMapRecords.slice(0, MAP_RECORD_BYTES)), authored: false }),
+    { ...authoredMapRecord, authored: true }
   ],
   randomLevels: [
     randomLevel("land", 0, randomLevelWords(sourceLandRandomLevels.slice(0, RANDOM_LEVEL_BYTES))),
@@ -560,6 +561,7 @@ expect(bytesEqual(mapFiles.get("Data DL")?.slice(0, FIELD_BYTES), fieldRow(autho
 expect(bytesEqual(mapFiles.get("Data MD2")?.slice(0, MAP_RECORD_BYTES), sourceMapRecords.slice(0, MAP_RECORD_BYTES)), "Unauthored map record should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data MD2")?.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2), mapRecordRow(authoredMapRecord, sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2))), "Authored map record should encode fields and preserve gaps");
 expect(mapFiles.get("Data MD2")?.[MAP_RECORD_BYTES + 74] === 0xbe && mapFiles.get("Data MD2")?.[MAP_RECORD_BYTES + 75] === 0xef, "Authored map record should preserve raw map-record gap bytes");
+expect(bytesEqual(mapFiles.get("Data MD2")?.slice(MAP_RECORD_BYTES * 2), new Uint8Array([0xca, 0xfe, 0x01])), "Malformed Data MD2 tail should remain annex-owned");
 expect(bytesEqual(mapFiles.get("Data RD")?.slice(0, RANDOM_LEVEL_BYTES), sourceLandRandomLevels.slice(0, RANDOM_LEVEL_BYTES)), "Unauthored land random level should remain byte-identical");
 const expectedAuthoredLandRandomLevel = randomLevelRow(authoredLandRandomValues);
 expectedAuthoredLandRandomLevel[0] = 0;
@@ -582,6 +584,13 @@ expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(0, 10), sourceExtraCodes.slic
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(10, 20), sourceExtraCodes.slice(10, 20)), "Unauthored EDCD row 1 should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(20, 30), extraCodeRow([70, -71, 72, -73, 74])), "Authored EDCD row should encode parameter values");
 expect(bytesEqual(mapFiles.get("Data EDCD")?.slice(30), new Uint8Array([0xca, 0xfe, 0x01])), "Malformed Data EDCD tail should remain annex-owned");
+
+const shrunkMapRecordProject = { ...mapProject, mapRecords: mapProject.mapRecords.slice(0, 1) };
+const shrunkMapRecordUpdate = createBrowserScenarioPackageZip(shrunkMapRecordProject, mapRawSources, "mac-classic-folder");
+const shrunkMapRecordFiles = unzipScenarioPackage(shrunkMapRecordUpdate.zip);
+expect(shrunkMapRecordFiles.get("Data MD2")?.byteLength === MAP_RECORD_BYTES * 2 + 3, "Shrunk Data MD2 should retain imported row capacity plus annex tail");
+expect(shrunkMapRecordFiles.get("Data MD2")?.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2).every((byte) => byte === 0), "Removed Data MD2 rows should compile as deterministic neutral capacity");
+expect(bytesEqual(shrunkMapRecordFiles.get("Data MD2")?.slice(MAP_RECORD_BYTES * 2), new Uint8Array([0xca, 0xfe, 0x01])), "Shrunk Data MD2 should preserve only the annex-owned partial row");
 
 const shrunkFixedRowProject = {
   ...mapProject,
@@ -626,14 +635,14 @@ const mapNameProject = {
       primaryName: "New Primary 0",
       secondaryName: "New Secondary 0",
       mapNameAuthored: true,
-      rawBytes: Array.from(sourceMapRecords.slice(0, MAP_RECORD_BYTES)),
+      markers: mapMarkersFromRaw(sourceMapRecords.slice(0, MAP_RECORD_BYTES)),
       authored: false
     }),
     mapRecord(1, {
       name: "Old Primary 1",
       primaryName: "Old Primary 1",
       secondaryName: "Old Secondary 1",
-      rawBytes: Array.from(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)),
+      markers: mapMarkersFromRaw(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)),
       authored: false
     })
   ]
@@ -657,14 +666,14 @@ const mapNameNoopProject = {
       primaryName: "Old Primary 0",
       secondaryName: "Old Secondary 0",
       mapNameAuthored: true,
-      rawBytes: Array.from(sourceMapRecords.slice(0, MAP_RECORD_BYTES)),
+      markers: mapMarkersFromRaw(sourceMapRecords.slice(0, MAP_RECORD_BYTES)),
       authored: false
     }),
     mapRecord(1, {
       name: "Old Primary 1",
       primaryName: "Old Primary 1",
       secondaryName: "Old Secondary 1",
-      rawBytes: Array.from(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)),
+      markers: mapMarkersFromRaw(sourceMapRecords.slice(MAP_RECORD_BYTES, MAP_RECORD_BYTES * 2)),
       authored: false
     })
   ]
@@ -1482,8 +1491,12 @@ function mapRecord(id, overrides = {}) {
   };
   return {
     ...record,
-    markers: Array.from({ length: 10 }, (_, slot) => overrides.markers?.[slot] ?? mapMarkerFromRaw(overrides.rawBytes, slot))
+    markers: Array.from({ length: 10 }, (_, slot) => overrides.markers?.[slot] ?? { iconId: 0, x: 0, y: 0 })
   };
+}
+
+function mapMarkersFromRaw(rawBytes) {
+  return Array.from({ length: 10 }, (_, slot) => mapMarkerFromRaw(rawBytes, slot));
 }
 
 function mapRecordRow(record, rawBytes = new Uint8Array(MAP_RECORD_BYTES)) {

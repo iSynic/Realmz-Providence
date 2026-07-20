@@ -102,7 +102,6 @@ pub fn parse_map_records(buffer: &[u8]) -> Vec<MapRecord> {
                     right: i16_be(record, 82),
                 },
                 note: decode_pascal_text(&record[84..MAP_RECORD_BYTES]),
-                raw_bytes: record.to_vec(),
                 authored: false,
                 name: None,
                 primary_name: None,
@@ -123,16 +122,6 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
     let mut output = vec![0u8; (max_id + 1) * MAP_RECORD_BYTES];
     for record in records {
         let start = record.id * MAP_RECORD_BYTES;
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != MAP_RECORD_BYTES {
-            return Err(ProvidenceError::message(format!(
-                "Map record {} has invalid compatibility byte storage",
-                record.id
-            )));
-        }
-        if record.raw_bytes.len() == MAP_RECORD_BYTES {
-            output[start..start + MAP_RECORD_BYTES].copy_from_slice(&record.raw_bytes);
-        }
-        let has_compatibility_base = record.raw_bytes.len() == MAP_RECORD_BYTES;
         for (slot, marker) in normalized_map_record_markers(record).iter().enumerate() {
             let offset = start + slot * MAP_RECORD_MARKER_BYTES;
             write_i16_be(&mut output, offset, marker.icon_id);
@@ -145,25 +134,19 @@ pub fn write_map_records(records: &[MapRecord]) -> Result<Vec<u8>> {
         write_i16_be(&mut output, start + 66, record.pict_id);
         write_i16_be(&mut output, start + 68, record.icon_size);
         write_i16_be(&mut output, start + 70, record.show);
-        if !has_compatibility_base || (i16_be(&output, start + 72) != 0) != record.is_dungeon {
-            write_i16_be(
-                &mut output,
-                start + 72,
-                if record.is_dungeon { 1 } else { 0 },
-            );
-        }
+        write_i16_be(
+            &mut output,
+            start + 72,
+            if record.is_dungeon { 1 } else { 0 },
+        );
         write_i16_be(&mut output, start + 76, record.rect.top);
         write_i16_be(&mut output, start + 78, record.rect.left);
         write_i16_be(&mut output, start + 80, record.rect.bottom);
         write_i16_be(&mut output, start + 82, record.rect.right);
-        if !has_compatibility_base
-            || decode_pascal_text(&output[start + 84..start + MAP_RECORD_BYTES]) != record.note
-        {
-            encode_pascal_text(
-                &mut output[start + 84..start + MAP_RECORD_BYTES],
-                &record.note,
-            )?;
-        }
+        encode_pascal_text(
+            &mut output[start + 84..start + MAP_RECORD_BYTES],
+            &record.note,
+        )?;
     }
     Ok(output)
 }
@@ -312,7 +295,6 @@ mod tests {
             secondary_name: None,
             name_source: None,
             map_name_authored: false,
-            raw_bytes: Vec::new(),
             authored: true,
             provenance: provenance("Data MD2", 0, 0, MAP_RECORD_BYTES),
         };
@@ -334,112 +316,18 @@ mod tests {
     }
 
     #[test]
-    fn imported_map_record_preserves_compatible_encodings_until_semantics_change() {
+    fn imported_map_record_parses_semantics_without_raw_identity() {
         let mut input = vec![0xA5; MAP_RECORD_BYTES];
         input[84] = 2;
         input[85] = b'G';
         input[86] = b'o';
-        let mut records = parse_map_records(&input);
-
-        assert_eq!(write_map_records(&records).unwrap(), input);
-
-        records[0].start_x = 0x1234;
-        records[0].is_dungeon = false;
+        let records = parse_map_records(&input);
         let output = write_map_records(&records).unwrap();
-        assert_eq!(i16_be(&output, 60), 0x1234);
-        assert_eq!(i16_be(&output, 72), 0);
-        assert_eq!(&output[74..76], &[0xA5, 0xA5]);
+
+        assert_eq!(i16_be(&output, 60), -23131);
+        assert_eq!(i16_be(&output, 72), 1);
+        assert_eq!(&output[74..76], &[0, 0]);
         assert_eq!(&output[84..87], &[2, b'G', b'o']);
-        assert_eq!(output[MAP_RECORD_BYTES - 1], 0xA5);
-    }
-
-    #[test]
-    fn map_record_storage_mutates_only_modeled_fields_and_preserves_prefix() {
-        let mut input = vec![0u8; MAP_RECORD_BYTES * 2];
-        let record_start = MAP_RECORD_BYTES;
-        for offset in 0..60 {
-            input[record_start + offset] = 0xA5;
-        }
-        input[record_start + 74] = 0xCA;
-        input[record_start + 75] = 0xFE;
-
-        let mut records = parse_map_records(&input);
-        records[1].start_x = 0x0304;
-        records[1].level = -2;
-        records[1].is_dungeon = true;
-        records[1].rect.bottom = 0x0506;
-        records[1].note = "Go".to_string();
-
-        let output = write_map_records(&records).unwrap();
-
-        assert_eq!(output.len(), input.len());
-        assert_eq!(
-            &output[record_start..record_start + 60],
-            &input[record_start..record_start + 60]
-        );
-        assert_eq!(
-            &output[record_start + 74..record_start + 76],
-            &input[record_start + 74..record_start + 76]
-        );
-        assert_eq!(i16_be(&output, record_start + 60), 0x0304);
-        assert_eq!(i16_be(&output, record_start + 64), -2);
-        assert_eq!(i16_be(&output, record_start + 72), 1);
-        assert_eq!(i16_be(&output, record_start + 80), 0x0506);
-        assert_eq!(
-            &output[record_start + 84..record_start + 87],
-            &[2, b'G', b'o']
-        );
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![
-                record_start + 60,
-                record_start + 61,
-                record_start + 64,
-                record_start + 65,
-                record_start + 73,
-                record_start + 80,
-                record_start + 81,
-                record_start + 84,
-                record_start + 85,
-                record_start + 86,
-            ]
-        );
-    }
-
-    #[test]
-    fn map_record_marker_storage_mutates_only_selected_marker_words() {
-        let mut input = vec![0u8; MAP_RECORD_BYTES * 2];
-        let record_start = MAP_RECORD_BYTES;
-        input[record_start + 74] = 0xCA;
-        input[record_start + 75] = 0xFE;
-
-        let marker_slot = 4;
-        let marker_start = record_start + marker_slot * MAP_RECORD_MARKER_BYTES;
-        let mut records = parse_map_records(&input);
-        records[1].markers[marker_slot].icon_id = 0x1234;
-        records[1].markers[marker_slot].x = 0x5678;
-        records[1].markers[marker_slot].y = -0x1234;
-
-        let output = write_map_records(&records).unwrap();
-
-        assert_eq!(output.len(), input.len());
-        assert_eq!(
-            &output[record_start + 74..record_start + 76],
-            &input[record_start + 74..record_start + 76]
-        );
-        assert_eq!(i16_be(&output, marker_start), 0x1234);
-        assert_eq!(i16_be(&output, marker_start + 2), 0x5678);
-        assert_eq!(i16_be(&output, marker_start + 4), -0x1234);
-        assert_eq!(
-            changed_offsets(&input, &output),
-            vec![
-                marker_start,
-                marker_start + 1,
-                marker_start + 2,
-                marker_start + 3,
-                marker_start + 4,
-                marker_start + 5,
-            ]
-        );
+        assert!(output[87..].iter().all(|byte| *byte == 0));
     }
 }

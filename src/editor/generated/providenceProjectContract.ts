@@ -117,7 +117,6 @@ export const PROVIDENCE_MAP_RECORD_FIELDS = [
   "secondaryName",
   "nameSource",
   "mapNameAuthored",
-  "rawBytes",
   "authored",
   "provenance"
 ] as const;
@@ -694,7 +693,6 @@ export type ProvidenceMapRecord = {
   secondaryName?: string | null;
   nameSource?: string | null;
   mapNameAuthored?: boolean;
-  rawBytes?: number[];
   authored?: boolean;
   provenance: ProvidenceProvenance;
 };

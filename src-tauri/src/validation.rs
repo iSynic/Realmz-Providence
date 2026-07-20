@@ -1591,14 +1591,6 @@ fn validate_map_records(
         .map(|picture| picture.resource_id)
         .collect::<BTreeSet<_>>();
     for record in &project.map_records {
-        if !record.raw_bytes.is_empty() && record.raw_bytes.len() != crate::realmz::MAP_RECORD_BYTES
-        {
-            errors.push(format!(
-                "Map record {} has invalid {}-byte compatibility storage.",
-                record.id,
-                crate::realmz::MAP_RECORD_BYTES
-            ));
-        }
         if record.markers.len() != crate::realmz::MAP_RECORD_MARKERS {
             errors.push(format!(
                 "Map record {} must define {} semantic marker slots.",

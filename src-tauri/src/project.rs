@@ -902,25 +902,13 @@ fn resize_vec<T: Clone>(values: &mut Vec<T>, length: usize, default: T) {
 }
 
 fn normalize_map_record_markers(record: &mut MapRecord) {
-    let existing = record.markers.clone();
-    let raw_bytes = record.raw_bytes.clone();
+    let existing = std::mem::take(&mut record.markers);
     record.markers = (0..10)
         .map(|slot| {
-            existing.get(slot).cloned().unwrap_or_else(|| {
-                let offset = slot * 6;
-                if raw_bytes.len() >= offset + 6 {
-                    MapMarker {
-                        icon_id: project_i16(&raw_bytes, offset),
-                        x: project_i16(&raw_bytes, offset + 2),
-                        y: project_i16(&raw_bytes, offset + 4),
-                    }
-                } else {
-                    MapMarker {
-                        icon_id: 0,
-                        x: 0,
-                        y: 0,
-                    }
-                }
+            existing.get(slot).cloned().unwrap_or(MapMarker {
+                icon_id: 0,
+                x: 0,
+                y: 0,
             })
         })
         .collect();
@@ -996,8 +984,8 @@ mod tests {
     use super::{
         normalize_caste_override, normalize_map_record_markers, normalize_monster,
         normalize_race_override, normalize_scenario_item_spare_words, normalize_shop_slots,
-        normalize_treasure_item_ids, ActionCategory, Confidence, MapRecord, MapRecordRect,
-        PaletteMode, ProjectOrigin, Provenance, SourceSnapshot,
+        normalize_treasure_item_ids, ActionCategory, Confidence, MapMarker, MapRecord,
+        MapRecordRect, PaletteMode, ProjectOrigin, Provenance, SourceSnapshot,
     };
 
     #[test]
@@ -1010,14 +998,14 @@ mod tests {
     }
 
     #[test]
-    fn map_record_normalization_backfills_legacy_raw_markers() {
-        let mut raw_bytes = vec![0; 340];
-        raw_bytes[0..2].copy_from_slice(&400i16.to_be_bytes());
-        raw_bytes[2..4].copy_from_slice(&12i16.to_be_bytes());
-        raw_bytes[4..6].copy_from_slice(&13i16.to_be_bytes());
+    fn map_record_normalization_fills_missing_semantic_marker_slots() {
         let mut record = MapRecord {
             id: 0,
-            markers: Vec::new(),
+            markers: vec![MapMarker {
+                icon_id: 400,
+                x: 12,
+                y: 13,
+            }],
             start_x: 0,
             start_y: 0,
             level: 0,
@@ -1037,7 +1025,6 @@ mod tests {
             secondary_name: None,
             name_source: None,
             map_name_authored: false,
-            raw_bytes,
             authored: false,
             provenance: Provenance {
                 source_file: "Data MD2".to_string(),

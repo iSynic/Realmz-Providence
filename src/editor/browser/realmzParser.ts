@@ -464,7 +464,6 @@ function parseMapRecords(buffer: Uint8Array | undefined) {
   const records: MapRecord[] = [];
   for (let id = 0; id < count; id += 1) {
     const start = id * MAP_RECORD_BYTES;
-    const rawBytes = Array.from(buffer.slice(start, start + MAP_RECORD_BYTES));
     records.push({
       id,
       markers: Array.from({ length: MAP_RECORD_MARKERS }, (_, slot) => {
@@ -490,7 +489,6 @@ function parseMapRecords(buffer: Uint8Array | undefined) {
       },
       note: decodePascalText(buffer.slice(start + 84, start + MAP_RECORD_BYTES)),
       mapNameAuthored: false,
-      rawBytes,
       provenance: provenance("Data MD2", id, start, MAP_RECORD_BYTES, "source-backed")
     });
   }

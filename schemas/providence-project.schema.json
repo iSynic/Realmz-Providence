@@ -450,8 +450,7 @@
       "x-providence-typescript-name": "ProvidenceMapRecord",
       "x-providence-rust-name": "MapRecord",
       "x-providence-rust-optional": ["name", "primaryName", "secondaryName", "nameSource"],
-      "x-providence-rust-default": ["markers", "name", "primaryName", "secondaryName", "nameSource", "mapNameAuthored", "rawBytes", "authored"],
-      "x-providence-rust-skip-empty": ["rawBytes"],
+      "x-providence-rust-default": ["markers", "name", "primaryName", "secondaryName", "nameSource", "mapNameAuthored", "authored"],
       "required": ["id", "markers", "startX", "startY", "level", "pictId", "iconSize", "show", "isDungeon", "rect", "note", "provenance"],
       "properties": {
         "id": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
@@ -470,7 +469,6 @@
         "secondaryName": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
         "nameSource": { "oneOf": [{ "type": "string" }, { "type": "null" }] },
         "mapNameAuthored": { "type": "boolean" },
-        "rawBytes": { "type": "array", "minItems": 340, "maxItems": 340, "items": { "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, "x-providence-compatibility-only": true },
         "authored": { "type": "boolean" },
         "provenance": { "$ref": "#/$defs/provenance" }
       }

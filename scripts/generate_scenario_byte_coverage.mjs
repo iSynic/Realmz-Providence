@@ -692,20 +692,21 @@ const CORE_RECORD_WRITER_GATE_SPECS = [
       { field: "Map note text", internal: "note", offset: 84, bytes: 256, type: "Pascal" }
     ],
     preservedRanges: [
-      { field: "Compatibility bytes", internal: "raw[74..76]", offset: 74, bytes: 2, type: "raw-preserved" }
+      { field: "Compatibility bytes", internal: "compatibility annex bytes 74..76", offset: 74, bytes: 2, type: "annex-preserved" }
     ],
     evidence: [
       "src-tauri/src/realmz/maps.rs:fresh_map_record_compiles_from_semantic_fields",
-      "src-tauri/src/realmz/maps.rs:imported_map_record_preserves_compatible_encodings_until_semantics_change",
-      "src-tauri/src/realmz/maps.rs:map_record_storage_mutates_only_modeled_fields_and_preserves_prefix",
-      "src-tauri/src/realmz/maps.rs:map_record_marker_storage_mutates_only_selected_marker_words",
-      "src-tauri/src/project.rs:map_record_normalization_backfills_legacy_raw_markers",
+      "src-tauri/src/realmz/maps.rs:imported_map_record_parses_semantics_without_raw_identity",
+      "src-tauri/src/exporter.rs:map_record_compatibility_comes_only_from_annex",
+      "src-tauri/src/importer.rs:open_project_upgrades_legacy_source_origin",
       "src-tauri/src/realmz/maps.rs:write_map_records",
       "src-tauri/src/realmz/maps.rs:parse_map_records",
+      "scripts/check_browser_scenario_package.mjs",
+      "scripts/run_authoritative_scenario_proof.mjs",
       "docs/generated/map-record-evidence.json",
       "docs/format-evidence-cards/map-record-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh map records compile all modeled marker, display/start/rectangle, and note fields from semantic data without rawBytes. Imported rawBytes may retain bytes 74..76, a compatible noncanonical true word, and unchanged Pascal-note tail bytes; semantic edits take precedence."
+    preservationPolicy: "Canonical map records expose no rawBytes. The pure writer compiles marker, display/start/rectangle, and note fields with deterministic gap, Boolean, and Pascal padding bytes. Imported byte identity for bytes 74..76, a semantically equivalent noncanonical true word, unchanged Pascal-note tails, and malformed file tails is restored only from the compatibility annex; semantic edits take precedence."
   },
   {
     container: "Data NI",
@@ -1730,7 +1731,7 @@ function buildFunctionalAuthoringReadiness(ownership, truth) {
       label: "Map Records",
       containers: ["Data MD2"],
       authoringStatus: "ready-with-preserved-compatibility",
-      rationale: "Map marker triples, start/display fields, clip rectangle, and note text are writer-proven; bytes 74..76 remain preserved compatibility storage.",
+      rationale: "Map marker triples, start/display fields, clip rectangle, and note text are writer-proven; imported bytes 74..76 remain preserve-only compatibility-annex storage.",
       evidence: [
         "docs/generated/map-record-evidence.json",
         "docs/generated/core-record-writer-gates.json",
@@ -2625,7 +2626,7 @@ function byteRangesForFile(file, layout) {
     return [
       { start: 0, length: 60, endExclusive: 60, status: "decoded-writable", field: "Map marker triples", internal: "icon[10][3]", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 60, length: 14, endExclusive: 74, status: "decoded-writable", field: "Map start and display fields", internal: "startX/startY/level/pictId/iconSize/show/isDungeon", writerGate: "docs/generated/core-record-writer-gates.json" },
-      { start: 74, length: 2, endExclusive: 76, status: "preserved-known", field: "Compatibility bytes", internal: "raw[74..76]", writerGate: "docs/generated/core-record-writer-gates.json" },
+      { start: 74, length: 2, endExclusive: 76, status: "preserved-known", field: "Compatibility bytes", internal: "compatibility annex bytes 74..76", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 76, length: 8, endExclusive: 84, status: "decoded-writable", field: "Map clip rectangle", internal: "rect", writerGate: "docs/generated/core-record-writer-gates.json" },
       { start: 84, length: 256, endExclusive: 340, status: "decoded-writable", field: "Map note text", internal: "note", writerGate: "docs/generated/core-record-writer-gates.json" }
     ];

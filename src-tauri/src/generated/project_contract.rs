@@ -125,7 +125,6 @@ pub const PROVIDENCE_MAP_RECORD_FIELDS: &[&str] = &[
     "secondaryName",
     "nameSource",
     "mapNameAuthored",
-    "rawBytes",
     "authored",
     "provenance",
 ];
@@ -783,8 +782,6 @@ pub struct MapRecord {
     pub name_source: Option<String>,
     #[serde(default)]
     pub map_name_authored: bool,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub raw_bytes: Vec<u8>,
     #[serde(default)]
     pub authored: bool,
     pub provenance: Provenance,

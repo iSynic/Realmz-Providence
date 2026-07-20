@@ -575,10 +575,23 @@ that annex bytes survive unchanged without entering the canonical model. The aut
 also poisons the obsolete property on an in-memory legacy-shaped object and proves that neither
 compiler consults it.
 
-Branch validation through the fifty-fourth slice completed on 2026-07-19:
+The fifty-fifth slice removes `MapRecord.rawBytes` from schema-v5 canonical projects. Browser and
+desktop import now decode the ten marker triples, preview/display fields, clip rectangle, note, and
+resource-backed labels into semantic records only. The pure `Data MD2` writer compiles a complete
+340-byte row with deterministic zero gap bytes, normalized Boolean encoding, and zeroed Pascal-note
+padding. Annex-aware native compiler helpers may restore only the imported bytes 74-75, an
+equivalent noncanonical true word, unchanged note-field tail bytes, and a malformed file tail;
+semantic edits always win. Old project JSON remains load-tolerant: missing marker slots are
+backfilled from its obsolete row before `rawBytes` is discarded and never repersisted. The browser
+semantic graph and Maps UI consume marker objects rather than byte identity. The ownership proof
+now authors `Data MD2` with no annex, poison-tests an obsolete embedded row in both compilers,
+requires byte-identical Windows and Classic-Mac output, and semantically recovers the record on
+reimport.
 
-- full Rust suite: 262 passed, 2 ignored;
-- full TypeScript suite: 609 passed, plus typecheck;
+Branch validation through the fifty-fifth slice completed on 2026-07-19:
+
+- full Rust suite: 261 passed, 2 ignored;
+- full TypeScript suite: 610 passed, plus typecheck;
 - ten-lane Scenario JSON generation smoke with 20 Windows/Classic-Mac exports;
 - generated-scenario baseline check;
 - canonical-to-native authoritative scenario proof;
@@ -934,7 +947,7 @@ Legend:
 | `Data BD` | Generated + legacy row/tail annex | Generate complete deterministic battle records | Fresh/authored rows compile all 346 bytes from canonical data, including zero alignment padding, without `rawBytes`. Unchanged imported rows and malformed tails are preserved only from the compatibility annex. |
 | `Data MD`, `Data MD1`, `Data MD-1` | Generated + legacy row/tail annex | Generate complete deterministic monster records/sets | Fresh/authored rows compile all 210 bytes from canonical scalars, fixed arrays, Boolean state, and fixed display name without `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
 | `Data DES` | Generated + legacy row/tail annex | Generate complete deterministic monster descriptions | Fresh/authored rows compile the complete Str255 record with deterministic zero fill and no `rawBytes`. Unchanged imported rows and malformed tails are restored only from the compatibility annex. |
-| `Data MD2` | Generated + bounded compatibility | Generate structured map records | Fresh records compile all 338 modeled bytes from canonical data and omit `rawBytes`. Imported records may retain the unknown bytes 74-75, equivalent noncanonical true words, unchanged Pascal-note tails, and malformed file tails. Marker UI uses semantic slots only. |
+| `Data MD2` | Generated + legacy annex | Generate structured map records | Canonical records expose no `rawBytes`. The pure writer compiles all semantic fields plus deterministic gap, Boolean, and Pascal padding bytes. Imported bytes 74-75, equivalent noncanonical true words, unchanged Pascal-note tails, and malformed file tails can be restored only from the compatibility annex. Marker UI and semantic summaries use structured slots only. |
 | `Data NI` | Generated + bounded compatibility encoding | Always generate exactly 200 x 100 bytes | All 100 bytes are canonical semantic fields, including `spare2[7]`; fresh records omit `rawBytes`. Imported bytes may retain only an unchanged zero stored item-ID alias until its semantic ID changes. |
 | `Data TD` | Generated + malformed-tail annex | Generate all 48 record bytes from canonical semantics | Twenty item IDs and four reward words cover the full record. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Only malformed file tails remain annex data. |
 | `Data SD` | Generated + legacy suffix/tail annex | Generate every ordinary 3,002-byte shop row from canonical semantics | One thousand item IDs, one thousand quantities, and inflation cover the complete row. Fresh records omit `rawBytes`; imported rows recompile from decoded values. Classified foreign suffix records and malformed tails are appended from the annex. |

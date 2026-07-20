@@ -1041,7 +1041,7 @@
           "endExclusive": 76,
           "status": "preserved-known",
           "field": "Compatibility bytes",
-          "internal": "raw[74..76]",
+          "internal": "compatibility annex bytes 74..76",
           "writerGate": "docs/generated/core-record-writer-gates.json"
         },
         {

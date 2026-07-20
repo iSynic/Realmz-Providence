@@ -344,39 +344,32 @@ describe("browser map-record writer", () => {
     expect(Array.from(output.slice(84, 87))).toEqual([2, 71, 111]);
   });
 
-  it("preserves only compatible encodings until semantics change", () => {
-    const rawBytes = new Array(340).fill(0xa5);
-    rawBytes[84] = 2;
-    rawBytes[85] = 71;
-    rawBytes[86] = 111;
-    const imported = mapRecord({
-      markers: Array.from({ length: 10 }, () => ({ iconId: -23131, x: -23131, y: -23131 })),
-      startX: -23131,
-      startY: -23131,
-      level: -23131,
-      pictId: -23131,
-      iconSize: -23131,
-      show: -23131,
-      isDungeon: true,
-      rect: { top: -23131, left: -23131, bottom: -23131, right: -23131 },
-      note: "Go",
-      rawBytes,
-      authored: false
-    });
+  it("imports semantic fields while raw identity remains outside the record", () => {
+    const input = new Uint8Array(340).fill(0xa5);
+    input[84] = 2;
+    input[85] = 71;
+    input[86] = 111;
+    const imported = parseScenarioBuffers(new Map([["Data MD2", input]])).mapRecords[0];
 
-    expect(writeMapRecords([imported])).toEqual(new Uint8Array(rawBytes));
-
-    const changed = writeMapRecords([{ ...imported, startX: 0x1234, isDungeon: false }]);
-    expect(i16(changed, 60)).toBe(0x1234);
-    expect(i16(changed, 72)).toBe(0);
-    expect(Array.from(changed.slice(74, 76))).toEqual([0xa5, 0xa5]);
-    expect(Array.from(changed.slice(84, 87))).toEqual([2, 71, 111]);
-    expect(changed[339]).toBe(0xa5);
+    expect("rawBytes" in imported).toBe(false);
+    const output = writeMapRecords([imported]);
+    expect(i16(output, 60)).toBe(-23131);
+    expect(i16(output, 72)).toBe(1);
+    expect(Array.from(output.slice(74, 76))).toEqual([0, 0]);
+    expect(Array.from(output.slice(84, 87))).toEqual([2, 71, 111]);
+    expect(output.slice(87).every((byte) => byte === 0)).toBe(true);
   });
 
-  it("rejects malformed map-record compatibility storage", () => {
-    expect(() => writeMapRecords([mapRecord({ rawBytes: [1] })]))
-      .toThrow("invalid compatibility byte storage");
+  it("ignores an obsolete embedded raw-byte property", () => {
+    const poisoned = {
+      ...mapRecord({ note: "Canonical" }),
+      rawBytes: new Array(340).fill(0xa5)
+    } as unknown as MapRecord;
+
+    const output = writeMapRecords([poisoned]);
+
+    expect(Array.from(output.slice(74, 76))).toEqual([0, 0]);
+    expect(output[339]).toBe(0);
   });
 });
 

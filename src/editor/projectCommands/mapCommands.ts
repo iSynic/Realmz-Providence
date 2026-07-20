@@ -155,8 +155,9 @@ export function updateMapRecord(project: Project, id: number, changes: Extract<P
   const mapRecords = (project.mapRecords ?? []).map((record) => {
     if (record.id !== id) return record;
     changed = true;
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
     const next: MapRecord = {
-      ...record,
+      ...canonicalRecord,
       ...changes,
       rect: changes.rect ? { ...record.rect, ...changes.rect } : record.rect,
       authored: true
@@ -171,9 +172,10 @@ export function updateMapRecordNames(project: Project, id: number, changes: Extr
   const mapRecords = (project.mapRecords ?? []).map((record) => {
     if (record.id !== id) return record;
     changed = true;
+    const { rawBytes: _legacyRawBytes, ...canonicalRecord } = record as typeof record & { rawBytes?: number[] };
     const primaryName = changes.primaryName ?? changes.name ?? record.primaryName ?? record.name;
     return {
-      ...record,
+      ...canonicalRecord,
       ...changes,
       name: changes.name ?? primaryName,
       primaryName,

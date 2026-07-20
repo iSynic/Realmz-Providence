@@ -75,6 +75,34 @@ project.landLayout = {
   authored: true,
   provenance: null
 };
+project.mapRecords = [{
+  id: 0,
+  markers: [
+    { iconId: -100, x: 11, y: 12 },
+    ...Array.from({ length: 9 }, () => ({ iconId: 0, x: 0, y: 0 }))
+  ],
+  startX: 10,
+  startY: 12,
+  level: 0,
+  pictId: 306,
+  iconSize: 32,
+  show: 1,
+  isDungeon: false,
+  rect: { top: 0, left: 0, bottom: 90, right: 90 },
+  note: "Providence owns this map record.",
+  name: "Providence Map",
+  primaryName: "Providence Map",
+  secondaryName: "Unknown Providence Map",
+  mapNameAuthored: false,
+  authored: true,
+  provenance: {
+    sourceFile: "Data MD2",
+    recordIndex: 0,
+    byteOffset: 0,
+    byteLength: 340,
+    confidence: "fixture-backed"
+  }
+}];
 const customLandlookRecords = Array.from({ length: 201 }, (_, tile) => ({
   tile,
   sound: 0,
@@ -228,6 +256,7 @@ assertOwnershipScenarioMetadata(project, "Canonical project", true);
 assertOwnershipGlobalMacros(project, "Canonical project", true);
 assertOwnershipTileSolids(project, "Canonical project", false);
 assertOwnershipLandLayout(project, "Canonical project");
+assertOwnershipMapRecord(project.mapRecords, "Canonical project");
 assertOwnershipCustomLandlook(project, "Canonical project", true);
 assertOwnershipCustomLandlookAtlas(project, "Canonical project");
 assertOwnershipManagedResources(project, "Canonical project");
@@ -301,6 +330,7 @@ poisonedLandlook.records[5].spare = 0x1234;
 poisonedLandlook.rangeSlots[0].reserved = 0x2345;
 poisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
 poisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
+poisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 await fs.writeFile(path.join(projectDir, "project.json"), `${JSON.stringify(poisonedProject, null, 2)}\n`);
 await runCargoExample("export_project_fixture", [projectDir, windowsOutputB, "windows-realmz-folder"]);
 await fs.writeFile(path.join(projectDir, "project.json"), canonicalProjectJson);
@@ -329,6 +359,7 @@ browserPoisonedLandlook.records[5].spare = 0x1234;
 browserPoisonedLandlook.rangeSlots[0].reserved = 0x2345;
 browserPoisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
 browserPoisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
+browserPoisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
 const browserEmbeddedCompatibilityTrapPackage = createBrowserScenarioPackageZip(browserPoisonedProject, null, "windows-realmz-folder");
 const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
   rootName: "ANNEX READ TRAP",
@@ -347,6 +378,18 @@ const browserAnnexTrapPackage = createBrowserScenarioPackageZip(project, {
       targetPlatform: "windows-realmz",
       captureConfidence: "captured",
       bytesData: new Uint8Array(20_001).fill(0xA5)
+    },
+    {
+      name: "Data MD2",
+      relativePath: "Data MD2",
+      originalRelativePath: "Data MD2",
+      bytes: 340,
+      sha256: "must-not-be-read",
+      role: "supported-binary",
+      editable: true,
+      targetPlatform: "windows-realmz",
+      captureConfidence: "captured",
+      bytesData: new Uint8Array(340).fill(0xA5)
     },
     {
       name: "ANNEX ENUMERATION TRAP",
@@ -446,6 +489,7 @@ assertOwnershipScenarioMetadata(reimported, "Reimport", false);
 assertOwnershipGlobalMacros(reimported, "Reimport", false);
 assertOwnershipTileSolids(reimported, "Reimport", true);
 assertOwnershipLandLayout(reimported, "Reimport");
+assertOwnershipMapRecord(reimported.mapRecords, "Reimport");
 assertOwnershipCustomLandlook(reimported, "Reimport", false);
 await assertReimportedCustomLandlookAtlas(reimported, "Reimport");
 await assertReimportedManagedResources(reimported, reimportedSemanticSchema, "Reimport");
@@ -621,6 +665,7 @@ async function assertNoRawSources(stage) {
   assertOwnershipGlobalMacros(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipTileSolids(savedProject, `Rust-saved project ${stage}`, false);
   assertOwnershipLandLayout(savedProject, `Rust-saved project ${stage}`);
+  assertOwnershipMapRecord(savedProject.mapRecords, `Rust-saved project ${stage}`);
   assertOwnershipCustomLandlook(savedProject, `Rust-saved project ${stage}`, true);
   assertOwnershipCustomLandlookAtlas(savedProject, `Rust-saved project ${stage}`);
   assertOwnershipManagedResources(savedProject, `Rust-saved project ${stage}`);
@@ -680,6 +725,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data Caste", 30 * 576],
     ["Data Solids", 1024],
     ["Layout", 256],
+    ["Data MD2", 340],
     ["Data Custom 1 BD", 8104]
   ]);
   for (const [name, bytes] of exactSizes) {
@@ -719,6 +765,11 @@ function assertCompleteNativeFolder(files, label) {
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this scenario.")), `${label} Data SD2 is missing the authored message`);
   expect(Buffer.from(files.get("Data SD2")).includes(Buffer.from("Providence owns this rogue encounter.")), `${label} Data SD2 is missing the authored rogue message`);
   expect(files.get("Data DD").some((byte) => byte !== 0), `${label} Data DD does not contain the authored Action Point`);
+  const mapRecord = files.get("Data MD2");
+  expect(readI16(mapRecord, 0) === -100 && readI16(mapRecord, 2) === 11 && readI16(mapRecord, 4) === 12, `${label} Data MD2 has the wrong authored marker`);
+  expect(readI16(mapRecord, 60) === 10 && readI16(mapRecord, 62) === 12 && readI16(mapRecord, 66) === 306, `${label} Data MD2 has the wrong authored display fields`);
+  expect(mapRecord[74] === 0 && mapRecord[75] === 0, `${label} Data MD2 compatibility gap is not deterministic zero`);
+  expect(Buffer.from(mapRecord).includes(Buffer.from("Providence owns this map record.")), `${label} Data MD2 is missing the authored note`);
   const extraActionPoints = files.get("Data ED3");
   expect(extraActionPoints.slice(0, 2 * 40).every((byte) => byte === 0), `${label} Data ED3 sparse rows are not deterministic zero`);
   expect(extraActionPoints[2 * 40 + 7] === 100 && readI16(extraActionPoints, 2 * 40 + 8) === 1 && readI16(extraActionPoints, 2 * 40 + 24) === 0, `${label} Data ED3 has the wrong authored Extra Action Point`);
@@ -964,6 +1015,18 @@ function assertOwnershipLandLayout(project, label) {
   expect(layout.cells?.length === 128, `${label} land layout does not own all 128 cells`);
   expect(layout.cells[0] === -1 && layout.cells[127] === 202, `${label} has the wrong canonical land-layout cells`);
   expect(!("trailingBytes" in layout), `${label} land layout exposes embedded compatibility-tail bytes`);
+}
+
+function assertOwnershipMapRecord(records, label) {
+  const record = records?.find((candidate) => candidate.id === 0);
+  expect(record, `${label} is missing canonical map record 0`);
+  expect(record.markers?.length === 10, `${label} map record does not own all ten marker slots`);
+  expect(record.markers[0].iconId === -100 && record.markers[0].x === 11 && record.markers[0].y === 12, `${label} map record has the wrong authored marker`);
+  expect(record.startX === 10 && record.startY === 12 && record.level === 0, `${label} map record has the wrong preview position`);
+  expect(record.pictId === 306 && record.iconSize === 32 && record.show === 1 && record.isDungeon === false, `${label} map record has the wrong display fields`);
+  expect(record.rect?.top === 0 && record.rect?.left === 0 && record.rect?.bottom === 90 && record.rect?.right === 90, `${label} map record has the wrong clip rectangle`);
+  expect(record.note === "Providence owns this map record.", `${label} map record has the wrong note`);
+  expect(!("rawBytes" in record), `${label} map record exposes embedded compatibility bytes`);
 }
 
 function assertOwnershipCustomLandlook(project, label, requireNoCompatibilityBytes) {

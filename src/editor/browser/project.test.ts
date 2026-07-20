@@ -121,6 +121,24 @@ describe("browser project native manifest validation", () => {
     expect("rawValues" in normalized).toBe(false);
   });
 
+  it("migrates legacy map-record markers before dropping embedded raw bytes", () => {
+    const project = createBrowserProject("Legacy map-record bytes");
+    const input = new Uint8Array(340);
+    input.set([0x01, 0x90, 0x00, 0x0c, 0x00, 0x0d]);
+    const parsed = parseScenarioBuffers(new Map([["Data MD2", input]])).mapRecords[0];
+    project.mapRecords = [{
+      ...parsed,
+      markers: [],
+      rawBytes: Array.from(input)
+    } as unknown as Project["mapRecords"][number]];
+
+    const normalized = normalizeBrowserProject(project).mapRecords[0];
+
+    expect(normalized.markers).toHaveLength(10);
+    expect(normalized.markers[0]).toEqual({ iconId: 400, x: 12, y: 13 });
+    expect("rawBytes" in normalized).toBe(false);
+  });
+
   it("drops legacy land-layout tail bytes from the canonical record", () => {
     const project = createBrowserProject("Legacy land-layout tail");
     project.landLayout = {
@@ -219,7 +237,7 @@ describe("browser project native manifest validation", () => {
 
     expect(parsed.markers).toHaveLength(10);
     expect(parsed.markers[0]).toEqual({ iconId: 400, x: 12, y: 13 });
-    expect(parsed.rawBytes).toEqual(Array.from(bytes));
+    expect("rawBytes" in parsed).toBe(false);
   });
 
   it("backfills marker slots when opening legacy browser projects", () => {
