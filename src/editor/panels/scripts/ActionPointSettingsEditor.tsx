@@ -3,7 +3,7 @@ import { EdcdRowEditor } from "../../components/EdcdRowEditor";
 import { nextUnusedEdcdRowId, normalizeEdcdValues, type EdcdRowUsage } from "../../edcdRows";
 import type { OpcodeParameterLabel } from "../../opcodeCrosswalk";
 import { edcdFieldNamesForShape } from "../../realmzEdcd";
-import type { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../../types";
+import type { LibraryCatalog, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../../types";
 import type { ScriptActionDefinition } from "./scriptActionCatalog";
 import { actionSettingsFieldLabel, actionSettingsTitleForStep, authorSettingsWarning } from "./actionPointPresentation";
 
@@ -72,6 +72,7 @@ export function ActionPointSettingsEditor({
   onSelectEntity,
   onOpenText,
   onOpenMapCoordinate,
+  previewMap,
   onDraftValuesChange,
   onSecondaryDraftValuesChange,
   onApplyCommand
@@ -92,6 +93,7 @@ export function ActionPointSettingsEditor({
   onSelectEntity: (entity: SelectedEntity) => void;
   onOpenText?: (editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  previewMap?: Pick<MapEntity, "levelType" | "index"> | null;
   onDraftValuesChange?: (values: number[], dirty: boolean) => void;
   onSecondaryDraftValuesChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
@@ -102,7 +104,13 @@ export function ActionPointSettingsEditor({
   const settingsTitle = actionSettingsTitleForStep(selectedDefinition, edcdShape);
   const settingsLabel = actionSettingsFieldLabel(settingsTitle);
   const presentation = isEdcdBackedStep ? "selected-step" : "inventory";
-  const sourceLevelType = project.triggers.find((trigger) => trigger.id === selectedTriggerId)?.levelType ?? null;
+  const selectedTrigger = project.triggers.find((trigger) => trigger.id === selectedTriggerId);
+  const sourceLevelType = selectedTrigger?.levelType ?? null;
+  const mapPreviewContext = selectedTrigger?.levelType != null && selectedTrigger.levelIndex != null
+    ? { levelType: selectedTrigger.levelType, index: selectedTrigger.levelIndex }
+    : sourceLevelType == null
+      ? previewMap
+      : null;
   const duplicateSettingsForStep = () => {
     if (!isEdcdBackedStep) return;
     const duplicate = duplicateActionPointSettings({
@@ -145,6 +153,7 @@ export function ActionPointSettingsEditor({
       showActionButtons={presentation !== "selected-step"}
       presentation={presentation}
       sourceLevelType={sourceLevelType}
+      previewMap={mapPreviewContext}
     />
   );
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { missingEdcdTargetReferences } from "./edcdTargets";
 import { actionPointStepApplyCommand } from "./panels/scripts/actionPointStepCommands";
 import { scriptActionDefinitionFor, scriptActionSummary, scriptStepFlowRoutes } from "./panels/scripts/scriptActionCatalog";
-import { teleportDestinationLevelType, teleportLevelLabel, teleportLevelOptions, teleportMapCoordinateTarget } from "./teleportDestinations";
+import { teleportDestinationLevelType, teleportLevelLabel, teleportLevelOptions, teleportMapCoordinateTarget, teleportPreviewMapCoordinateTarget } from "./teleportDestinations";
 import type { Project } from "./types";
 
 const project = {
@@ -50,6 +50,35 @@ describe("teleport destination families", () => {
       "Level index 2 (dungeon)"
     ]);
     expect(teleportLevelLabel(project, 0, null)).toBe("runtime-family level 0 (land and dungeon exist)");
+  });
+
+  it("resolves reusable teleport previews without changing their runtime family semantics", () => {
+    expect(teleportMapCoordinateTarget("teleport", [1, 10, 10, 0, 0], null)).toBeNull();
+    expect(teleportPreviewMapCoordinateTarget(project, "teleport", [1, 10, 10, 0, 0], null)).toEqual({
+      levelType: "land",
+      levelIndex: 1,
+      x: 10,
+      y: 10
+    });
+    expect(teleportPreviewMapCoordinateTarget(project, "teleport", [0, 4, 5, 0, 0], null, { levelType: "dungeon", index: 2 })).toEqual({
+      levelType: "dungeon",
+      levelIndex: 0,
+      x: 4,
+      y: 5
+    });
+    expect(teleportPreviewMapCoordinateTarget(project, "teleport", [-1, 6, 7, 0, 0], null, { levelType: "dungeon", index: 2 })).toEqual({
+      levelType: "dungeon",
+      levelIndex: 2,
+      x: 6,
+      y: 7
+    });
+    expect(teleportPreviewMapCoordinateTarget(project, "teleport", [-1, 8, 9, 0, 0], "land", { levelType: "land", index: 1 })).toEqual({
+      levelType: "land",
+      levelIndex: 1,
+      x: 8,
+      y: 9
+    });
+    expect(teleportPreviewMapCoordinateTarget(project, "teleport", [0, 4, 5, 0, 0], null)).toBeNull();
   });
 
   it("validates a map-owned Teleport against only its owning family", () => {

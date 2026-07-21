@@ -7,7 +7,7 @@ import type { EdcdRowUsage } from "../../edcdRows";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
 import { actionOptionFor, normalizeStepOpcode } from "../../realmzActions";
 import type { ScriptDiagnostic } from "../../scriptValidation";
-import type { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../../types";
+import type { LibraryCatalog, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { EmptyState } from "../../ui";
 import { ActionPointActionChooser } from "./ActionPointActionChooser";
 import { ActionPointDirectTargetField } from "./ActionPointDirectTargetField";
@@ -74,6 +74,7 @@ export function SelectedActionPointStepEditor({
   onPreviewEntity,
   onOpenTool,
   onOpenMapCoordinate,
+  previewMap,
   onEdcdDraftChange,
   onSecondaryEdcdDraftChange,
   onApplyCommand
@@ -109,6 +110,7 @@ export function SelectedActionPointStepEditor({
   onPreviewEntity: (entity: SelectedEntity) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  previewMap?: Pick<MapEntity, "levelType" | "index"> | null;
   onEdcdDraftChange?: (values: number[], dirty: boolean) => void;
   onSecondaryEdcdDraftChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
@@ -288,6 +290,7 @@ export function SelectedActionPointStepEditor({
           onSelectEntity={onSelectEntity}
           onOpenText={(editor) => onOpenTool?.("text", editor)}
           onOpenMapCoordinate={onOpenMapCoordinate}
+          previewMap={previewMap}
           onDraftValuesChange={onEdcdDraftChange}
           onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}
           onApplyCommand={onApplyCommand}

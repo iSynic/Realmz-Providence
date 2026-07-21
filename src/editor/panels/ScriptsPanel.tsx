@@ -1,6 +1,6 @@
 import { useCallback, useTransition } from "react";
 import { Database } from "lucide-react";
-import { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryCatalog, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../types";
 import { useDraftChangeGuards } from "../app/draftChangeGuard";
 import { scriptPanelTitle } from "./scripts/scriptInventory";
 import { ActionPointAuthoringPanel } from "./scripts/ActionPointAuthoringPanel";
@@ -31,6 +31,7 @@ export function ScriptsPanel({
   onSelectEditor,
   onOpenTool,
   onOpenMapCoordinate,
+  selectedMap,
   onApplyCommand,
   activeEditor = "action-points"
 }: {
@@ -44,6 +45,7 @@ export function ScriptsPanel({
   onSelectEditor?: (editor: string) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  selectedMap?: MapEntity | null;
   onApplyCommand?: (command: ProjectCommand) => void;
   activeEditor?: string;
 }) {
@@ -94,6 +96,7 @@ export function ScriptsPanel({
       onSelectEditor={onSelectEditor}
       onOpenTool={onOpenTool}
       onOpenMapCoordinate={onOpenMapCoordinate}
+      activeMap={selectedMap}
       onApplyCommand={handleApplyCommand}
     />
   );

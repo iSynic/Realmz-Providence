@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Save, Trash2 } from "lucide-react";
-import { LibraryCatalog, LevelType, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../types";
+import { LibraryCatalog, LevelType, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../types";
 import { CollapsibleSection, EmptyState, FieldRow, PanelSection, type ReferencePickerOption } from "../ui";
 import { itemReferenceOptions, type ItemReferenceOption } from "../itemReferences";
 import { createRecordTypeForEdcdTarget, edcdFieldTargetKind, edcdTargetLabel, edcdTargetOptions, missingEdcdTargetReferences, type EdcdTargetKind, type EdcdTargetOption } from "../edcdTargets";
 import { type OpcodeParameterLabel } from "../opcodeCrosswalk";
 import { CHOICE_BRANCH_MODES, choiceBranchModeLabel, choiceBranchTargetKind, choiceContinueLabel, choicePromptStorageFromOptionLabels, parseChoicePromptValue, serializeChoicePromptValue } from "../choiceDialogs";
 import { scriptActionSummary } from "../panels/scripts/scriptActionCatalog";
-import { teleportDestinationLevelType, teleportFieldIndexes, teleportHeadingLabel, teleportLevelLabel, teleportLevelOptions, teleportMapCoordinateTarget } from "../teleportDestinations";
+import { teleportDestinationLevelType, teleportFieldIndexes, teleportHeadingLabel, teleportLevelLabel, teleportLevelOptions, teleportPreviewMapCoordinateTarget } from "../teleportDestinations";
 import { selectEntityFromId } from "../utils";
 import { EdcdReferenceTargetField, numericReferenceQuery } from "./EdcdReferenceTargetField";
 
@@ -50,7 +50,8 @@ export function EdcdRowEditor({
   onApplyCommand,
   showActionButtons = true,
   presentation = "inventory",
-  sourceLevelType = null
+  sourceLevelType = null,
+  previewMap = null
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -72,6 +73,7 @@ export function EdcdRowEditor({
   showActionButtons?: boolean;
   presentation?: EdcdRowEditorPresentation;
   sourceLevelType?: LevelType | null;
+  previewMap?: Pick<MapEntity, "levelType" | "index"> | null;
 }) {
   const rowId = edcdUsage?.rowId ?? (fallbackShape ? Math.max(0, fallbackRowId) : null);
   const shape = edcdUsage?.shape ?? fallbackShape ?? null;
@@ -128,7 +130,7 @@ export function EdcdRowEditor({
   const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes, catalog, sourceLevelType);
   const guidedSections = guidedSectionsForShape(shapeId, primaryFields, numericDraft, opcode);
   const guidedSummary = guidedSummaryForEdcd(project, catalog, shapeId, opcode, rowId, numericDraft, fieldNames, edcdUsage?.summary, sourceLevelType);
-  const mapCoordinateTarget = teleportMapCoordinateTarget(shapeId, numericDraft, sourceLevelType);
+  const mapCoordinateTarget = teleportPreviewMapCoordinateTarget(project, shapeId, numericDraft, sourceLevelType, previewMap);
   const mapCoordinateMap = mapCoordinateTarget
     ? project.maps.find((candidate) => candidate.levelType === mapCoordinateTarget.levelType && candidate.index === mapCoordinateTarget.levelIndex) ?? null
     : null;
@@ -234,6 +236,7 @@ export function EdcdRowEditor({
               showActionButtons={showActionButtons && presentation !== "selected-step"}
               presentation="selected-step"
               sourceLevelType={sourceLevelType}
+              previewMap={previewMap}
             />
           </div>
         )}
@@ -362,13 +365,16 @@ export function EdcdRowEditor({
     const levelIssue = levelField ? targetIssues.find((issue) => issue.index === levelField.index) : null;
     const mapOptions = teleportLevelOptions(project, destinationLevelType);
     const hasLevelValue = levelValue === -1 || mapOptions.some((option) => option.value === levelValue);
-    const jumpTarget = teleportMapCoordinateTarget(shapeId, numericDraft, sourceLevelType);
+    const jumpTarget = teleportPreviewMapCoordinateTarget(project, shapeId, numericDraft, sourceLevelType, previewMap);
     const jumpMap = jumpTarget
       ? project.maps.find((candidate) => candidate.levelType === jumpTarget.levelType && candidate.index === jumpTarget.levelIndex) ?? null
       : null;
+    const reusablePreviewSuffix = !destinationLevelType && jumpTarget
+      ? " The stored teleport still uses the runtime's current map family."
+      : "";
     const jumpTitle = jumpTarget
       ? jumpMap
-        ? `Open ${jumpMap.name} at ${jumpTarget.x}, ${jumpTarget.y} on Maps.`
+        ? `Preview ${jumpMap.name} at ${jumpTarget.x}, ${jumpTarget.y}.${reusablePreviewSuffix}`
         : `No ${jumpTarget.levelType} level ${jumpTarget.levelIndex} exists for ${jumpTarget.x}, ${jumpTarget.y}.`
       : destinationLevelType
         ? "Choose a concrete level, X, and Y to preview this destination on Maps."

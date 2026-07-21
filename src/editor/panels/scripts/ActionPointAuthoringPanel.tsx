@@ -4,6 +4,7 @@ import type {
   LevelType,
   LibraryCatalog,
   MapCoordinateTarget,
+  MapEntity,
   Project,
   ProjectCommand,
   RealmzTargetRecordKind,
@@ -101,6 +102,7 @@ type ActionPointAuthoringPanelProps = {
   onSelectEditor?: (editor: string) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  activeMap?: MapEntity | null;
   onApplyCommand?: (command: ProjectCommand) => void;
 };
 
@@ -121,6 +123,7 @@ function ActionPointAuthoringWorkbench({
   onSelectEditor,
   onOpenTool,
   onOpenMapCoordinate,
+  activeMap,
   onApplyCommand
 }: Omit<ActionPointAuthoringPanelProps, "project"> & { project: Project }) {
   const activeTabKind = scriptTabKind(activeEditor);
@@ -537,6 +540,7 @@ function ActionPointAuthoringWorkbench({
       onPreviewEntity={previewEntity}
       onOpenTool={openTargetTool}
       onOpenMapCoordinate={previewMapCoordinate}
+      previewMap={activeMap}
       onEdcdDraftChange={updateSelectedEdcdDraft}
       onSecondaryEdcdDraftChange={updateSelectedSecondaryEdcdDraft}
       onApplyCommand={onApplyCommand}

@@ -201,6 +201,7 @@ function WorkbenchRouterContent({
         onSelectEditor={onSelectEditor}
         onOpenTool={onOpenTool}
         onOpenMapCoordinate={onOpenMapCoordinate}
+        selectedMap={selectedMap}
         onApplyCommand={onApplyCommand}
         onUpdateLibraryCatalog={onUpdateLibraryCatalog}
       />
