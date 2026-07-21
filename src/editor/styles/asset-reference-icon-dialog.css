@@ -1,0 +1,84 @@
+/* Destination chooser for reusing a reference icon as an authored asset. */
+.reference-icon-use-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #314151;
+  border-radius: 7px;
+  background: #0b1219;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.62);
+  overflow: hidden;
+}
+
+.reference-icon-use-source {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.reference-icon-use-source small {
+  grid-column: 1 / -1;
+  color: var(--ui-color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.reference-icon-use-options {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 16px;
+  overflow: auto;
+}
+
+.reference-icon-use-option {
+  min-height: 104px;
+  padding: 12px;
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: 6px;
+  background: var(--ui-color-surface-raised);
+  color: var(--ui-color-text);
+  text-align: left;
+}
+
+.reference-icon-use-option:not(:disabled):hover,
+.reference-icon-use-option:not(:disabled):focus-visible {
+  border-color: var(--ui-focus-color);
+  background: var(--ui-color-surface-hover);
+}
+
+.reference-icon-use-option > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reference-icon-use-option b {
+  color: var(--ui-color-success);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.reference-icon-use-option small {
+  display: block;
+  margin-top: 8px;
+  color: var(--ui-color-text-muted);
+  line-height: 1.45;
+}
+
+.reference-icon-use-error {
+  margin: 0 16px 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-color-danger-border);
+  color: var(--ui-color-danger);
+}
+
+@media (max-width: 720px) {
+  .reference-icon-use-options {
+    grid-template-columns: 1fr;
+  }
+}

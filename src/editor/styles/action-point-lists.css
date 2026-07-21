@@ -244,44 +244,14 @@
   grid-template-columns: minmax(180px, 1fr) auto;
 }
 
-.script-record-heading {
-  display: grid;
-  grid-template-columns: max-content minmax(200px, 360px);
-  align-items: end;
-  justify-content: start;
-  gap: 12px;
-  min-width: 0;
-}
-
-.script-record-identity {
-  display: block;
-  padding-bottom: 7px;
-  white-space: nowrap;
-}
-
-.script-name-field {
-  width: min(360px, 100%);
-}
-
-.script-record-descriptor {
-  color: #d9bd78;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-
-
-.script-create-strip label,
-.script-name-field {
+.script-create-strip label {
   display: grid;
   gap: 4px;
 }
 
 
 
-.script-create-strip label span,
-.script-name-field span {
+.script-create-strip label span {
   color: #7eaedf;
   font-size: 10px;
   font-weight: 900;

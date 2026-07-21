@@ -17,67 +17,6 @@
   overflow: hidden;
 }
 
-.map-section-browser {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
-  border-bottom: 1px solid #252a31;
-  background: #11151a;
-  flex-shrink: 0;
-}
-
-.map-section-browser-label {
-  color: #7aa8ff;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.45px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.map-section-tabs.workbench-tabs {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(118px, 1fr));
-  gap: 5px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  overflow-x: auto;
-}
-
-.map-section-tabs.workbench-tabs > button {
-  min-width: 0;
-  min-height: 34px;
-  justify-content: center;
-  padding: 4px 10px;
-  border-color: #303b49;
-  background: #151b22;
-  font-size: 11px;
-  line-height: 1.15;
-  text-align: center;
-  text-transform: none;
-}
-
-.map-section-tabs.workbench-tabs > button > span {
-  min-width: 0;
-  text-align: center;
-}
-
-.map-section-tabs.workbench-tabs > button.is-selected {
-  border-color: rgba(122, 168, 255, 0.88);
-  background: #17294a;
-  color: #c9dcff;
-}
-
-
-
-
-
 .toolbar-sep {
   width: 1px;
   height: 30px;

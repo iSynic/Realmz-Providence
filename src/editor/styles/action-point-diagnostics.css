@@ -131,14 +131,6 @@
     grid-template-columns: 1fr;
   }
 
-  .script-record-heading {
-    grid-template-columns: 1fr;
-  }
-
-  .script-record-identity {
-    padding-bottom: 0;
-  }
-
   .script-header-grid {
     grid-template-columns: 1fr;
   }

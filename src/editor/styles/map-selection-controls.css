@@ -1,0 +1,39 @@
+/* Selection-shape, smart-brush, and magic-wand controls in the map sidebar. */
+.wand-match-group,
+.selection-shape-group {
+  --pane-accent: #80eaff;
+  --pane-accent-rgb: 128, 234, 255;
+}
+
+.wand-match-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+}
+
+.wand-match-control > button {
+  min-width: 0;
+  padding-inline: 6px;
+  font-size: 10px;
+}
+
+.selection-shape-control,
+.smart-brush-shape-control {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.selection-shape-control > button,
+.smart-brush-shape-control > button,
+.shape-fill-control > button {
+  min-width: 0;
+  padding-inline: 5px;
+  font-size: 10px;
+}
+
+.shape-fill-control {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}

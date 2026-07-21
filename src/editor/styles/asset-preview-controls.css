@@ -1,0 +1,65 @@
+/* Asset preview sizing and resource-family filters. */
+.asset-preview-size-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #7eaedf;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.asset-preview-size-control .segmented-control {
+  gap: 3px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.asset-preview-size-control .segmented-control > button {
+  min-height: 28px;
+  padding-inline: 8px;
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .resource-preview-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.resource-preview-filters {
+  grid-column: 1 / -1;
+  width: min(100%, 860px);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding: 0;
+}
+
+.resource-preview-filters > button {
+  min-height: 26px;
+  justify-content: space-between;
+  padding: 0 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.resource-preview-filters > button > span {
+  justify-content: flex-start;
+  overflow: hidden;
+}
+
+.resource-preview-filters > button > b {
+  min-width: 18px;
+  min-height: 16px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #263746;
+  border-radius: 9px;
+  background: #0a1118;
+  color: #b8dfff;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 1;
+}

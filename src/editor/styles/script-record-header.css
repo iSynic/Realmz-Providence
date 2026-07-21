@@ -1,0 +1,46 @@
+/* Script identity and title editing within the shared record header. */
+.script-record-heading {
+  display: grid;
+  grid-template-columns: max-content minmax(200px, 360px);
+  align-items: end;
+  justify-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.script-record-identity {
+  display: block;
+  padding-bottom: 7px;
+  white-space: nowrap;
+}
+
+.script-name-field {
+  width: min(360px, 100%);
+  display: grid;
+  gap: 4px;
+}
+
+.script-record-descriptor {
+  color: #d9bd78;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.script-name-field span {
+  color: #7eaedf;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 980px) {
+  .script-record-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .script-record-identity {
+    padding-bottom: 0;
+  }
+}
