@@ -30,6 +30,17 @@ describe("browser PICT conformance", () => {
     expect(ids).toContain("v2-packbitsrect-rowbytes-250-packed");
     expect(ids).toContain("v2-packbitsrect-rowbytes-251-packed");
     expect(ids).toContain("v2-reserved-skip-classes");
+    expect(ids).toContain("v2-structured-opcode-lengths");
+    expect(ids).toContain("v2-fixed12-truncated");
+    expect(ids).toContain("v2-text-record-truncated");
+    expect(ids).toContain("v2-polygon-record-truncated");
+    expect(ids).toContain("v2-region-record-truncated");
+    expect(ids).toContain("v2-word-length-record-truncated");
+    expect(ids).toContain("v2-long-comment-truncated");
+    expect(ids).toContain("v2-long-length-record-truncated");
+    expect(ids).toContain("v2-high-fixed-record-truncated");
+    expect(ids).toContain("v2-high-long-record-truncated");
+    expect(ids).toContain("v2-word-padding-truncated");
     expect(ids).toContain("directbits16-byte-packbits");
     expect(ids).toContain("directbits16-word-packbits");
     expect(ids).toContain("directbits32-chunky-packbits");

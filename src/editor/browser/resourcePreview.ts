@@ -160,6 +160,7 @@ function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): 
   }
 
   const stream = parsePictOpcodeStream(pict);
+  if (stream.failure) throw stream.failure;
   const failures: PreviewFailure[] = [];
   let best: { command: BitmapDrawCommand; bitmap: DecodedBitmap } | null = null;
 
@@ -234,6 +235,7 @@ type PictOpcodeStream = {
   opcodes: PictOpcode[];
   unsupportedVisibleOpcodes: number;
   endPictureFound: boolean;
+  failure: PreviewFailure | null;
 };
 
 type BitmapDrawCommand = {
@@ -268,9 +270,17 @@ function parsePictOpcodeStream(data: Uint8Array): PictOpcodeStream {
   let unsupportedVisibleOpcodes = 0;
   let version = "unknown";
   let endPictureFound = false;
+  let failure: PreviewFailure | null = null;
 
   while (cursor + opcodeBytes <= data.byteLength) {
-    if (!byteOpcodes && cursor % 2 !== 0) cursor += 1;
+    if (!byteOpcodes && cursor % 2 !== 0) {
+      try {
+        cursor = requirePictRange(data, cursor, 1, cursor, 0, "word-alignment padding");
+      } catch (error) {
+        failure = error as PreviewFailure;
+        break;
+      }
+    }
     const offset = cursor;
     const opcode = byteOpcodes ? (data[offset] ?? null) : u16At(data, offset);
     if (opcode === null) break;
@@ -281,59 +291,126 @@ function parsePictOpcodeStream(data: Uint8Array): PictOpcodeStream {
       endPictureFound = true;
       break;
     }
-    if (opcode === 0x0000) {
-      // no-op
-    } else if (opcode === 0x0011) {
+    if (opcode === 0x0011) {
       version = cursor < data.byteLength ? `v1/${data[cursor] ?? 0}` : "v1";
-      cursor += 1;
     } else if (opcode === HEADER_OP) {
       version = "v2";
-      cursor += 24;
-    } else if (opcode === 0x0001) {
-      const size = u16At(data, cursor) ?? 0;
-      cursor += Math.max(size, 2);
-    } else if ([0x0003, 0x0005, 0x0008, 0x000d, 0x00a0].includes(opcode)) {
-      cursor += 2;
-    } else if (opcode === 0x0004) {
-      cursor += 1;
-    } else if ([0x0006, 0x0007, 0x000b, 0x000c, 0x000e, 0x000f, 0x0021].includes(opcode)) {
-      cursor += 4;
-    } else if ([0x0009, 0x000a, 0x0010, 0x0020].includes(opcode) || (opcode >= 0x0030 && opcode <= 0x0077)) {
-      cursor += 8;
-    } else if ([0x001a, 0x001b, 0x001f, 0x0022].includes(opcode)) {
-      cursor += 6;
-    } else if (opcode === 0x001e) {
-      // DefHilite has no payload.
-    } else if (opcode === 0x0028) {
-      if (cursor + 5 > data.byteLength) break;
-      cursor += 5 + (data[cursor + 4] ?? 0);
-    } else if ([0x0029, 0x002a, 0x002b].includes(opcode)) {
-      if (cursor >= data.byteLength) break;
-      cursor += 1 + (data[cursor] ?? 0);
-    } else if ([BITS_RECT, BITS_RGN, PACK_BITS_RECT, PACK_BITS_RGN, DIRECT_BITS_RECT, DIRECT_BITS_RGN].includes(opcode)) {
-      try {
-        cursor = parseBitmapCommand(data, offset, opcode, opcodeBytes).nextOffset;
-      } catch (error) {
-        unsupportedVisibleOpcodes += 1;
-        cursor = offset + opcodeBytes;
-        if ((error as PreviewFailure).previewStatus === "malformed") break;
-      }
-    } else if (opcode === 0x00a1) {
-      const size = u16At(data, cursor + 2) ?? 0;
-      cursor += 4 + size;
-    } else if (opcode === 0x8200) {
-      unsupportedVisibleOpcodes += 1;
-      const size = u16At(data, cursor) ?? 0;
-      cursor += 2 + size;
-    } else if (isProbablyVisiblePictOpcode(opcode)) {
+    }
+
+    try {
+      cursor = advancePictOpcode(data, cursor, offset, opcode, opcodeBytes);
+    } catch (error) {
+      failure = error as PreviewFailure;
+      if (isProbablyVisiblePictOpcode(opcode)) unsupportedVisibleOpcodes += 1;
+      break;
+    }
+    if (isProbablyVisiblePictOpcode(opcode) && ![BITS_RECT, BITS_RGN, PACK_BITS_RECT, PACK_BITS_RGN, DIRECT_BITS_RECT, DIRECT_BITS_RGN].includes(opcode)) {
       unsupportedVisibleOpcodes += 1;
     }
 
-    if (cursor > data.byteLength) break;
-    if (!byteOpcodes && cursor % 2 !== 0) cursor += 1;
+    if (!byteOpcodes && cursor % 2 !== 0) {
+      try {
+        cursor = requirePictRange(data, cursor, 1, offset, opcode, "word-alignment padding");
+      } catch (error) {
+        failure = error as PreviewFailure;
+        break;
+      }
+    }
   }
 
-  return { version, opcodes, unsupportedVisibleOpcodes, endPictureFound };
+  if (!failure && !endPictureFound && version === "v2") {
+    failure = previewError("malformed", "pict.v2_missing_end_picture", "PICT v2 stream ends without the required 0x00FF EndPicture opcode.", "pict");
+  }
+  return { version, opcodes, unsupportedVisibleOpcodes, endPictureFound, failure };
+}
+
+function advancePictOpcode(data: Uint8Array, cursor: number, offset: number, opcode: number, opcodeBytes: 1 | 2) {
+  if ([BITS_RECT, BITS_RGN, PACK_BITS_RECT, PACK_BITS_RGN, DIRECT_BITS_RECT, DIRECT_BITS_RGN].includes(opcode)) {
+    return parseBitmapCommand(data, offset, opcode, opcodeBytes).nextOffset;
+  }
+  if ([0x0012, 0x0013, 0x0014].includes(opcode)) return skipPixelPattern(data, cursor, offset, opcode);
+  if (opcode === 0x0001 || (opcode >= 0x0070 && opcode <= 0x0077) || (opcode >= 0x0080 && opcode <= 0x0087)) {
+    return skipSizedPictRecord(data, cursor, offset, opcode, 10);
+  }
+  if (opcode === 0x0028) {
+    requirePictRange(data, cursor, 5, offset, opcode, "LongText header");
+    return requirePictRange(data, cursor, 5 + (data[cursor + 4] ?? 0), offset, opcode, "LongText data");
+  }
+  if (opcode === 0x0029 || opcode === 0x002a) {
+    requirePictRange(data, cursor, 2, offset, opcode, "text header");
+    return requirePictRange(data, cursor, 2 + (data[cursor + 1] ?? 0), offset, opcode, "text data");
+  }
+  if (opcode === 0x002b) {
+    requirePictRange(data, cursor, 3, offset, opcode, "DHDVText header");
+    return requirePictRange(data, cursor, 3 + (data[cursor + 2] ?? 0), offset, opcode, "DHDVText data");
+  }
+  if ([0x0024, 0x0025, 0x0026, 0x0027, 0x002c, 0x002f].includes(opcode)
+    || (opcode >= 0x0092 && opcode <= 0x0097)
+    || (opcode >= 0x009c && opcode <= 0x009f)
+    || (opcode >= 0x00a2 && opcode <= 0x00af)) {
+    return skipLengthPrefixedPictData(data, cursor, offset, opcode, 2);
+  }
+  if (opcode === 0x00a1) {
+    requirePictRange(data, cursor, 4, offset, opcode, "LongComment header");
+    return requirePictRange(data, cursor, 4 + (u16At(data, cursor + 2) ?? 0), offset, opcode, "LongComment data");
+  }
+  if (opcodeBytes === 2 && opcode >= 0x00d0 && opcode <= 0x00fe) return skipLengthPrefixedPictData(data, cursor, offset, opcode, 4);
+  if (opcodeBytes === 2 && opcode >= 0x0100 && opcode <= 0x7fff) return requirePictRange(data, cursor, (opcode >>> 8) * 2, offset, opcode, "reserved fixed-length data");
+  if (opcodeBytes === 2 && opcode >= 0x8000 && opcode <= 0x80ff) return cursor;
+  if (opcodeBytes === 2 && opcode >= 0x8100) return skipLengthPrefixedPictData(data, cursor, offset, opcode, 4);
+
+  const fixedBytes = fixedPictOpcodePayloadBytes(opcode);
+  if (fixedBytes !== null) return requirePictRange(data, cursor, fixedBytes, offset, opcode, "opcode data");
+  throw previewError("unsupported-variant", "pict.opcode_length_unknown", `PICT opcode ${formatOpcode(opcode)} has no bounded payload rule.`, "pict", offset, formatOpcode(opcode));
+}
+
+function fixedPictOpcodePayloadBytes(opcode: number): number | null {
+  if ([0x0000, 0x001c, 0x001e].includes(opcode) || (opcode >= 0x0038 && opcode <= 0x003f) || (opcode >= 0x0048 && opcode <= 0x004f) || (opcode >= 0x0058 && opcode <= 0x005f) || (opcode >= 0x0078 && opcode <= 0x007f) || (opcode >= 0x0088 && opcode <= 0x008f) || (opcode >= 0x00b0 && opcode <= 0x00cf)) return 0;
+  if (opcode === 0x0004 || opcode === 0x0011) return 1;
+  if ([0x0003, 0x0005, 0x0008, 0x000d, 0x0015, 0x0016, 0x0023, 0x00a0].includes(opcode)) return 2;
+  if ([0x0006, 0x0007, 0x000b, 0x000c, 0x000e, 0x000f, 0x0021].includes(opcode) || (opcode >= 0x0068 && opcode <= 0x006f)) return 4;
+  if ([0x001a, 0x001b, 0x001d, 0x001f, 0x0022].includes(opcode)) return 6;
+  if ([0x0002, 0x0009, 0x000a, 0x0010, 0x0020, 0x002e].includes(opcode) || (opcode >= 0x0030 && opcode <= 0x0037) || (opcode >= 0x0040 && opcode <= 0x0047) || (opcode >= 0x0050 && opcode <= 0x0057)) return 8;
+  if (opcode === 0x002d) return 10;
+  if (opcode >= 0x0060 && opcode <= 0x0067) return 12;
+  return null;
+}
+
+function skipLengthPrefixedPictData(data: Uint8Array, cursor: number, offset: number, opcode: number, lengthBytes: 2 | 4) {
+  requirePictRange(data, cursor, lengthBytes, offset, opcode, "length prefix");
+  const length = lengthBytes === 2 ? (u16At(data, cursor) ?? 0) : (u32At(data, cursor) ?? 0);
+  return requirePictRange(data, cursor, lengthBytes + length, offset, opcode, "length-prefixed data");
+}
+
+function skipSizedPictRecord(data: Uint8Array, cursor: number, offset: number, opcode: number, minimumSize: number) {
+  requirePictRange(data, cursor, 2, offset, opcode, "sized record header");
+  const size = u16At(data, cursor) ?? 0;
+  if (size < minimumSize) throw previewError("malformed", "pict.invalid_record_size", `PICT opcode ${formatOpcode(opcode)} declares an invalid ${size}-byte record.`, "pict", cursor, formatOpcode(opcode));
+  return requirePictRange(data, cursor, size, offset, opcode, "sized record data");
+}
+
+function requirePictRange(data: Uint8Array, cursor: number, length: number, offset: number, opcode: number, variant: string) {
+  if (!Number.isSafeInteger(length) || length < 0 || cursor < 0 || cursor > data.byteLength || length > data.byteLength - cursor) {
+    throw previewError("malformed", "pict.opcode_truncated", `PICT ${variant} for opcode ${formatOpcode(opcode)} extends beyond the resource.`, "pict", offset, formatOpcode(opcode), variant);
+  }
+  return cursor + length;
+}
+
+function skipPixelPattern(data: Uint8Array, cursor: number, offset: number, opcode: number) {
+  requirePictRange(data, cursor, 10, offset, opcode, "pixel-pattern header");
+  const patternType = u16At(data, cursor) ?? 0;
+  if (patternType === 2) return requirePictRange(data, cursor, 16, offset, opcode, "dither pixel pattern");
+  if (patternType !== 1) throw previewError("unsupported-variant", "pict.pixel_pattern_type_unknown", `PICT pixel pattern uses unsupported pattern type ${patternType}.`, "pict", cursor, formatOpcode(opcode));
+  const pixmap = cursor + 10;
+  requirePictRange(data, pixmap, 46, offset, opcode, "pixel-pattern PixMap");
+  const rowBytes = (u16At(data, pixmap) ?? 0) & 0x3fff;
+  const bounds = parseRect(data, pixmap + 2);
+  if (!bounds || rowBytes === 0) throw previewError("malformed", "pict.pixel_pattern_pixmap_invalid", "PICT pixel pattern contains an invalid PixMap.", "pict", pixmap, formatOpcode(opcode));
+  const colorTable = pixmap + 46;
+  requirePictRange(data, colorTable, 8, offset, opcode, "pixel-pattern color table");
+  const colorCount = (u16At(data, colorTable + 6) ?? 0) + 1;
+  const pixelData = requirePictRange(data, colorTable, 8 + colorCount * 8, offset, opcode, "pixel-pattern color table");
+  return skipPictPixelRows(data, pixelData, rowBytes, rectHeight(bounds), u16At(data, pixmap + 12) ?? 0, offset, opcode);
 }
 
 function isProbablyVisiblePictOpcode(opcode: number) {
@@ -352,7 +429,11 @@ function parseBitsCommand(data: Uint8Array, offset: number, opcode: number, opco
   if (bitmap + 28 > data.byteLength) {
     throw previewError("malformed", "pict.bits_truncated", "PICT BitsRect/BitsRgn bitmap header is truncated.", "pict", offset, formatOpcode(opcode));
   }
-  const rowBytes = (u16At(data, bitmap) ?? 0) & 0x3fff;
+  const rowBytesRaw = u16At(data, bitmap) ?? 0;
+  if ((rowBytesRaw & 0x8000) !== 0) {
+    throw previewError("unsupported-variant", "pict.bits_pixmap_unsupported", "PICT BitsRect/BitsRgn contains a color PixMap that is not decoded by this parser pass.", "pict", offset, formatOpcode(opcode), "bits-pixmap");
+  }
+  const rowBytes = rowBytesRaw & 0x3fff;
   const bounds = parseRect(data, bitmap + 2);
   if (!bounds) throw previewError("malformed", "pict.bits_bounds_missing", "PICT BitsRect/BitsRgn bitmap bounds are missing.", "pict", bitmap, formatOpcode(opcode));
   const srcRect = parseRect(data, bitmap + 10) ?? bounds;
@@ -370,7 +451,7 @@ function parseBitsCommand(data: Uint8Array, offset: number, opcode: number, opco
   }
   return {
     opcode,
-    nextOffset: Math.min(data.byteLength, dataOffset + rowBytes * rectHeight(bounds)),
+    nextOffset: requirePictRange(data, dataOffset, rowBytes * rectHeight(bounds), offset, opcode, "bitmap pixel data"),
     rowBytes,
     pixelSize: 1,
     packType: 0,
@@ -432,9 +513,12 @@ function parsePackBitsCommand(data: Uint8Array, offset: number, opcode: number, 
     }
     dataOffset += regionSize;
   }
+  const nextOffset = rowBytes < 8
+    ? requirePictRange(data, dataOffset, rowBytes * rectHeight(bounds), offset, opcode, "unpacked pixmap data")
+    : skipPackedRows(data, dataOffset, rowBytes, rectHeight(bounds), offset, opcode);
   return {
     opcode,
-    nextOffset: skipPackedRows(data, dataOffset, rowBytes, rectHeight(bounds)),
+    nextOffset,
     rowBytes,
     pixelSize,
     packType: 0,
@@ -473,7 +557,7 @@ function parsePackedBitmapCommand(data: Uint8Array, offset: number, opcode: numb
   }
   return {
     opcode,
-    nextOffset: skipPackedRows(data, dataOffset, rowBytes, rectHeight(bounds)),
+    nextOffset: skipPackedRows(data, dataOffset, rowBytes, rectHeight(bounds), offset, opcode),
     rowBytes,
     pixelSize: 1,
     packType: 0,
@@ -529,9 +613,10 @@ function parseDirectBitsCommand(data: Uint8Array, offset: number, opcode: number
     }
     dataOffset += regionSize;
   }
+  const nextOffset = skipDirectPictRows(data, dataOffset, rowBytes, rectHeight(bounds), packType, offset, opcode);
   return {
     opcode,
-    nextOffset: skipPackedRows(data, dataOffset, rowBytes, rectHeight(bounds)),
+    nextOffset,
     rowBytes,
     pixelSize,
     packType,
@@ -549,15 +634,28 @@ function parseDirectBitsCommand(data: Uint8Array, offset: number, opcode: number
   };
 }
 
-function skipPackedRows(data: Uint8Array, initialCursor: number, rowBytes: number, height: number) {
+function skipPictPixelRows(data: Uint8Array, initialCursor: number, rowBytes: number, height: number, packType: number, offset: number, opcode: number) {
+  if (packType === 1 || rowBytes < 8) return requirePictRange(data, initialCursor, rowBytes * height, offset, opcode, "unpacked pixel data");
+  if (packType === 2) return requirePictRange(data, initialCursor, Math.floor(rowBytes * 3 / 4) * height, offset, opcode, "drop-pad pixel data");
+  return skipPackedRows(data, initialCursor, rowBytes, height, offset, opcode);
+}
+
+function skipDirectPictRows(data: Uint8Array, initialCursor: number, rowBytes: number, height: number, packType: number, offset: number, opcode: number) {
+  if (packType === 1) return requirePictRange(data, initialCursor, rowBytes * height, offset, opcode, "unpacked direct pixel data");
+  if (packType === 2) return requirePictRange(data, initialCursor, Math.floor(rowBytes * 3 / 4) * height, offset, opcode, "drop-pad direct pixel data");
+  return skipPackedRows(data, initialCursor, rowBytes, height, offset, opcode);
+}
+
+function skipPackedRows(data: Uint8Array, initialCursor: number, rowBytes: number, height: number, offset: number, opcode: number) {
   let cursor = initialCursor;
   for (let row = 0; row < height; row += 1) {
-    if (cursor >= data.byteLength) return data.byteLength;
+    const prefixBytes = rowBytes > 250 ? 2 : 1;
+    requirePictRange(data, cursor, prefixBytes, offset, opcode, "packed row length");
     const packedLength = rowBytes > 250 ? (u16At(data, cursor) ?? 0) : (data[cursor] ?? 0);
-    cursor += rowBytes > 250 ? 2 : 1;
-    cursor += Math.min(packedLength, Math.max(0, data.byteLength - cursor));
+    cursor += prefixBytes;
+    cursor = requirePictRange(data, cursor, packedLength, offset, opcode, "packed row data");
   }
-  return Math.min(cursor, data.byteLength);
+  return cursor;
 }
 
 function decodeBitmapCommand(data: Uint8Array, command: BitmapDrawCommand): DecodedBitmap {

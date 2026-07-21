@@ -1,6 +1,7 @@
 use super::{
-    decode_packbits_row, diagnostic, i16_be, image_preview, metadata_preview, u16_be, DecodedImage,
-    DecodedResourcePreview, DiagnosticExt, ResourcePreviewDiagnostic, ResourcePreviewStatus,
+    decode_packbits_row, diagnostic, i16_be, image_preview, metadata_preview, u16_be, u32_be,
+    DecodedImage, DecodedResourcePreview, DiagnosticExt, ResourcePreviewDiagnostic,
+    ResourcePreviewStatus,
 };
 use crate::error::Result;
 use std::collections::BTreeMap;
@@ -173,6 +174,7 @@ struct PictOpcodeStream {
     opcodes: Vec<PictOpcode>,
     unsupported_visible: Vec<PictOpcode>,
     end_picture_found: bool,
+    failure: Option<PictFailure>,
 }
 
 struct PictCanvas {
@@ -292,6 +294,9 @@ fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
         ),
     })?;
     let stream = parse_opcode_stream(data);
+    if let Some(failure) = stream.failure.clone() {
+        return Err(failure);
+    }
     let mut diagnostics = Vec::new();
     let mut parse_failures = Vec::new();
     let mut best: Option<(BitmapDrawCommand, DecodedBitmap)> = None;
@@ -452,9 +457,16 @@ fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
     let mut unsupported_visible = Vec::new();
     let mut version = "unknown".to_string();
     let mut end_picture_found = false;
-    while cursor + opcode_bytes <= data.len() {
+    let mut failure = None;
+    while cursor <= data.len().saturating_sub(opcode_bytes) {
         if !byte_opcodes && cursor % 2 != 0 {
-            cursor += 1;
+            match require_pict_range(data, cursor, 1, cursor, 0, "word-alignment padding") {
+                Ok(next) => cursor = next,
+                Err(error) => {
+                    failure = Some(error);
+                    break;
+                }
+            }
         }
         let offset = cursor;
         let opcode = if byte_opcodes {
@@ -476,71 +488,21 @@ fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
                 end_picture_found = true;
                 break;
             }
-            0x0000 => {}
             0x0011 => {
                 version = data
                     .get(cursor)
                     .map(|value| format!("v1/{value}"))
                     .unwrap_or_else(|| "v1".to_string());
-                cursor += 1;
             }
             HEADER_OP => {
                 version = "v2".to_string();
-                cursor += 24;
             }
-            0x0001 => {
-                let size = u16_be(data, cursor).unwrap_or(0);
-                cursor += size.max(2);
-            }
-            0x0003 | 0x0005 | 0x0008 | 0x000d | 0x00a0 => cursor += 2,
-            0x0004 => cursor += 1,
-            0x0006 | 0x0007 | 0x000b | 0x000c | 0x000e | 0x000f | 0x0021 => cursor += 4,
-            0x0009 | 0x000a | 0x0010 | 0x0020 | 0x0030..=0x0077 => cursor += 8,
-            0x001a | 0x001b | 0x001f | 0x0022 => cursor += 6,
-            0x001e => {}
-            0x0028 => {
-                if cursor + 5 > data.len() {
-                    break;
-                }
-                let text_len = data[cursor + 4] as usize;
-                cursor += 5 + text_len;
-            }
-            0x0029 | 0x002a | 0x002b => {
-                if cursor >= data.len() {
-                    break;
-                }
-                let text_len = data[cursor] as usize;
-                cursor += 1 + text_len;
-            }
-            BITS_RECT | BITS_RGN | PACK_BITS_RECT | PACK_BITS_RGN | DIRECT_BITS_RECT
-            | DIRECT_BITS_RGN => match parse_bitmap_command(data, offset, opcode, opcode_bytes) {
-                Ok(command) => cursor = command.next_offset,
-                Err(failure) => {
-                    unsupported_visible.push(PictOpcode {
-                        offset,
-                        opcode,
-                        opcode_bytes,
-                    });
-                    cursor = offset + opcode_bytes;
-                    if failure.malformed {
-                        break;
-                    }
-                }
-            },
-            0x00a1 => {
-                let size = u16_be(data, cursor + 2).unwrap_or(0);
-                cursor += 4 + size;
-            }
-            0x8200 => {
-                unsupported_visible.push(PictOpcode {
-                    offset,
-                    opcode,
-                    opcode_bytes,
-                });
-                let size = u16_be(data, cursor).unwrap_or(0);
-                cursor += 2 + size;
-            }
-            _ => {
+            _ => {}
+        }
+        match advance_pict_opcode(data, cursor, offset, opcode, opcode_bytes) {
+            Ok(next) => cursor = next,
+            Err(error) => {
+                failure = Some(error);
                 if is_probably_visible_opcode(opcode) {
                     unsupported_visible.push(PictOpcode {
                         offset,
@@ -548,21 +510,354 @@ fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
                         opcode_bytes,
                     });
                 }
+                break;
             }
         }
-        if cursor > data.len() {
-            break;
+        if is_probably_visible_opcode(opcode)
+            && !matches!(
+                opcode,
+                BITS_RECT
+                    | BITS_RGN
+                    | PACK_BITS_RECT
+                    | PACK_BITS_RGN
+                    | DIRECT_BITS_RECT
+                    | DIRECT_BITS_RGN
+            )
+        {
+            unsupported_visible.push(PictOpcode {
+                offset,
+                opcode,
+                opcode_bytes,
+            });
         }
         if !byte_opcodes && cursor % 2 != 0 {
-            cursor += 1;
+            match require_pict_range(data, cursor, 1, offset, opcode, "word-alignment padding") {
+                Ok(next) => cursor = next,
+                Err(error) => {
+                    failure = Some(error);
+                    break;
+                }
+            }
         }
+    }
+    if failure.is_none() && !end_picture_found && version == "v2" {
+        failure = Some(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.v2_missing_end_picture",
+                "PICT v2 stream ends without the required 0x00FF EndPicture opcode.",
+                "pict",
+            ),
+        });
     }
     PictOpcodeStream {
         version,
         opcodes,
         unsupported_visible,
         end_picture_found,
+        failure,
     }
+}
+
+fn advance_pict_opcode(
+    data: &[u8],
+    cursor: usize,
+    offset: usize,
+    opcode: usize,
+    opcode_bytes: usize,
+) -> std::result::Result<usize, PictFailure> {
+    if matches!(
+        opcode,
+        BITS_RECT | BITS_RGN | PACK_BITS_RECT | PACK_BITS_RGN | DIRECT_BITS_RECT | DIRECT_BITS_RGN
+    ) {
+        return parse_bitmap_command(data, offset, opcode, opcode_bytes)
+            .map(|command| command.next_offset);
+    }
+    if matches!(opcode, 0x0012..=0x0014) {
+        return skip_pixel_pattern(data, cursor, offset, opcode);
+    }
+    if opcode == 0x0001 || matches!(opcode, 0x0070..=0x0077 | 0x0080..=0x0087) {
+        return skip_sized_pict_record(data, cursor, offset, opcode, 10);
+    }
+    match opcode {
+        0x0028 => {
+            require_pict_range(data, cursor, 5, offset, opcode, "LongText header")?;
+            return require_pict_range(
+                data,
+                cursor,
+                5 + data[cursor + 4] as usize,
+                offset,
+                opcode,
+                "LongText data",
+            );
+        }
+        0x0029 | 0x002a => {
+            require_pict_range(data, cursor, 2, offset, opcode, "text header")?;
+            return require_pict_range(
+                data,
+                cursor,
+                2 + data[cursor + 1] as usize,
+                offset,
+                opcode,
+                "text data",
+            );
+        }
+        0x002b => {
+            require_pict_range(data, cursor, 3, offset, opcode, "DHDVText header")?;
+            return require_pict_range(
+                data,
+                cursor,
+                3 + data[cursor + 2] as usize,
+                offset,
+                opcode,
+                "DHDVText data",
+            );
+        }
+        _ => {}
+    }
+    if matches!(opcode, 0x0024..=0x0027 | 0x002c | 0x002f | 0x0092..=0x0097 | 0x009c..=0x009f | 0x00a2..=0x00af)
+    {
+        return skip_length_prefixed_pict_data(data, cursor, offset, opcode, 2);
+    }
+    if opcode == 0x00a1 {
+        require_pict_range(data, cursor, 4, offset, opcode, "LongComment header")?;
+        return require_pict_range(
+            data,
+            cursor,
+            4 + u16_be(data, cursor + 2).unwrap_or(0),
+            offset,
+            opcode,
+            "LongComment data",
+        );
+    }
+    if opcode_bytes == 2 && matches!(opcode, 0x00d0..=0x00fe) {
+        return skip_length_prefixed_pict_data(data, cursor, offset, opcode, 4);
+    }
+    if opcode_bytes == 2 && matches!(opcode, 0x0100..=0x7fff) {
+        return require_pict_range(
+            data,
+            cursor,
+            (opcode >> 8) * 2,
+            offset,
+            opcode,
+            "reserved fixed-length data",
+        );
+    }
+    if opcode_bytes == 2 && matches!(opcode, 0x8000..=0x80ff) {
+        return Ok(cursor);
+    }
+    if opcode_bytes == 2 && opcode >= 0x8100 {
+        return skip_length_prefixed_pict_data(data, cursor, offset, opcode, 4);
+    }
+    if let Some(fixed_bytes) = fixed_pict_opcode_payload_bytes(opcode) {
+        return require_pict_range(data, cursor, fixed_bytes, offset, opcode, "opcode data");
+    }
+    Err(PictFailure {
+        malformed: false,
+        diagnostic: diagnostic(
+            "warning",
+            "pict.opcode_length_unknown",
+            format!("PICT opcode 0x{opcode:04X} has no bounded payload rule."),
+            "pict",
+        )
+        .with_offset(offset)
+        .with_opcode(opcode),
+    })
+}
+
+fn fixed_pict_opcode_payload_bytes(opcode: usize) -> Option<usize> {
+    if matches!(opcode, 0x0000 | 0x001c | 0x001e | 0x0038..=0x003f | 0x0048..=0x004f | 0x0058..=0x005f | 0x0078..=0x007f | 0x0088..=0x008f | 0x00b0..=0x00cf)
+    {
+        return Some(0);
+    }
+    if matches!(opcode, 0x0004 | 0x0011) {
+        return Some(1);
+    }
+    if matches!(
+        opcode,
+        0x0003 | 0x0005 | 0x0008 | 0x000d | 0x0015 | 0x0016 | 0x0023 | 0x00a0
+    ) {
+        return Some(2);
+    }
+    if matches!(
+        opcode,
+        0x0006 | 0x0007 | 0x000b | 0x000c | 0x000e | 0x000f | 0x0021 | 0x0068..=0x006f
+    ) {
+        return Some(4);
+    }
+    if matches!(opcode, 0x001a | 0x001b | 0x001d | 0x001f | 0x0022) {
+        return Some(6);
+    }
+    if matches!(opcode, 0x0002 | 0x0009 | 0x000a | 0x0010 | 0x0020 | 0x002e | 0x0030..=0x0037 | 0x0040..=0x0047 | 0x0050..=0x0057)
+    {
+        return Some(8);
+    }
+    match opcode {
+        0x002d => Some(10),
+        0x0060..=0x0067 => Some(12),
+        _ => None,
+    }
+}
+
+fn skip_length_prefixed_pict_data(
+    data: &[u8],
+    cursor: usize,
+    offset: usize,
+    opcode: usize,
+    length_bytes: usize,
+) -> std::result::Result<usize, PictFailure> {
+    require_pict_range(data, cursor, length_bytes, offset, opcode, "length prefix")?;
+    let length = if length_bytes == 2 {
+        u16_be(data, cursor).unwrap_or(0)
+    } else {
+        u32_be(data, cursor).unwrap_or(0)
+    };
+    require_pict_range(
+        data,
+        cursor,
+        length_bytes.saturating_add(length),
+        offset,
+        opcode,
+        "length-prefixed data",
+    )
+}
+
+fn skip_sized_pict_record(
+    data: &[u8],
+    cursor: usize,
+    offset: usize,
+    opcode: usize,
+    minimum_size: usize,
+) -> std::result::Result<usize, PictFailure> {
+    require_pict_range(data, cursor, 2, offset, opcode, "sized record header")?;
+    let size = u16_be(data, cursor).unwrap_or(0);
+    if size < minimum_size {
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.invalid_record_size",
+                format!("PICT opcode 0x{opcode:04X} declares an invalid {size}-byte record."),
+                "pict",
+            )
+            .with_offset(cursor)
+            .with_opcode(opcode),
+        });
+    }
+    require_pict_range(data, cursor, size, offset, opcode, "sized record data")
+}
+
+fn require_pict_range(
+    data: &[u8],
+    cursor: usize,
+    length: usize,
+    offset: usize,
+    opcode: usize,
+    variant: &str,
+) -> std::result::Result<usize, PictFailure> {
+    let Some(next) = cursor.checked_add(length) else {
+        return Err(pict_opcode_truncated(offset, opcode, variant));
+    };
+    if cursor > data.len() || next > data.len() {
+        return Err(pict_opcode_truncated(offset, opcode, variant));
+    }
+    Ok(next)
+}
+
+fn pict_opcode_truncated(offset: usize, opcode: usize, variant: &str) -> PictFailure {
+    PictFailure {
+        malformed: true,
+        diagnostic: diagnostic(
+            "error",
+            "pict.opcode_truncated",
+            format!("PICT {variant} for opcode 0x{opcode:04X} extends beyond the resource."),
+            "pict",
+        )
+        .with_offset(offset)
+        .with_opcode(opcode)
+        .with_variant(variant),
+    }
+}
+
+fn skip_pixel_pattern(
+    data: &[u8],
+    cursor: usize,
+    offset: usize,
+    opcode: usize,
+) -> std::result::Result<usize, PictFailure> {
+    require_pict_range(data, cursor, 10, offset, opcode, "pixel-pattern header")?;
+    let pattern_type = u16_be(data, cursor).unwrap_or(0);
+    if pattern_type == 2 {
+        return require_pict_range(data, cursor, 16, offset, opcode, "dither pixel pattern");
+    }
+    if pattern_type != 1 {
+        return Err(PictFailure {
+            malformed: false,
+            diagnostic: diagnostic(
+                "warning",
+                "pict.pixel_pattern_type_unknown",
+                format!("PICT pixel pattern uses unsupported pattern type {pattern_type}."),
+                "pict",
+            )
+            .with_offset(cursor)
+            .with_opcode(opcode),
+        });
+    }
+    let pixmap = cursor + 10;
+    require_pict_range(data, pixmap, 46, offset, opcode, "pixel-pattern PixMap")?;
+    let row_bytes = u16_be(data, pixmap).unwrap_or(0) & 0x3fff;
+    let bounds = Rect::parse(data, pixmap + 2).ok_or_else(|| PictFailure {
+        malformed: true,
+        diagnostic: diagnostic(
+            "error",
+            "pict.pixel_pattern_pixmap_invalid",
+            "PICT pixel pattern contains an invalid PixMap.",
+            "pict",
+        )
+        .with_offset(pixmap)
+        .with_opcode(opcode),
+    })?;
+    if row_bytes == 0 {
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.pixel_pattern_pixmap_invalid",
+                "PICT pixel pattern contains an invalid PixMap.",
+                "pict",
+            )
+            .with_offset(pixmap)
+            .with_opcode(opcode),
+        });
+    }
+    let color_table = pixmap + 46;
+    require_pict_range(
+        data,
+        color_table,
+        8,
+        offset,
+        opcode,
+        "pixel-pattern color table",
+    )?;
+    let color_count = u16_be(data, color_table + 6).unwrap_or(0) + 1;
+    let pixel_data = require_pict_range(
+        data,
+        color_table,
+        8usize.saturating_add(color_count.saturating_mul(8)),
+        offset,
+        opcode,
+        "pixel-pattern color table",
+    )?;
+    skip_pict_pixel_rows(
+        data,
+        pixel_data,
+        row_bytes,
+        bounds.height(),
+        u16_be(data, pixmap + 12).unwrap_or(0),
+        offset,
+        opcode,
+    )
 }
 
 fn is_probably_visible_opcode(opcode: usize) -> bool {
@@ -617,7 +912,22 @@ fn parse_bits_command(
             .with_opcode(opcode),
         });
     }
-    let row_bytes = u16_be(data, bitmap).unwrap_or(0) & 0x3fff;
+    let row_bytes_raw = u16_be(data, bitmap).unwrap_or(0);
+    if row_bytes_raw & 0x8000 != 0 {
+        return Err(PictFailure {
+            malformed: false,
+            diagnostic: diagnostic(
+                "warning",
+                "pict.bits_pixmap_unsupported",
+                "PICT BitsRect/BitsRgn contains a color PixMap that is not decoded by this parser pass.",
+                "pict",
+            )
+            .with_offset(offset)
+            .with_opcode(opcode)
+            .with_variant("bits-pixmap"),
+        });
+    }
+    let row_bytes = row_bytes_raw & 0x3fff;
     let bounds = Rect::parse(data, bitmap + 2).ok_or_else(|| PictFailure {
         malformed: true,
         diagnostic: diagnostic(
@@ -667,10 +977,17 @@ fn parse_bits_command(
             .with_variant("bits-1"),
         });
     }
-    let next_offset = data_offset.saturating_add(row_bytes.saturating_mul(bounds.height()));
+    let next_offset = require_pict_range(
+        data,
+        data_offset,
+        row_bytes.saturating_mul(bounds.height()),
+        offset,
+        opcode,
+        "bitmap pixel data",
+    )?;
     Ok(BitmapDrawCommand {
         opcode,
-        next_offset: next_offset.min(data.len()),
+        next_offset,
         row_bytes,
         pixel_size: 1,
         pack_type: 0,
@@ -796,7 +1113,25 @@ fn parse_packbits_command(
         }
         data_offset += region_size;
     }
-    let next_offset = skip_packed_rows(data, data_offset, row_bytes, bounds.height());
+    let next_offset = if row_bytes < 8 {
+        require_pict_range(
+            data,
+            data_offset,
+            row_bytes.saturating_mul(bounds.height()),
+            offset,
+            opcode,
+            "unpacked pixmap data",
+        )?
+    } else {
+        skip_packed_rows(
+            data,
+            data_offset,
+            row_bytes,
+            bounds.height(),
+            offset,
+            opcode,
+        )?
+    };
     Ok(BitmapDrawCommand {
         opcode,
         next_offset,
@@ -893,7 +1228,14 @@ fn parse_packed_bitmap_command(
     }
     Ok(BitmapDrawCommand {
         opcode,
-        next_offset: skip_packed_rows(data, data_offset, row_bytes, bounds.height()),
+        next_offset: skip_packed_rows(
+            data,
+            data_offset,
+            row_bytes,
+            bounds.height(),
+            offset,
+            opcode,
+        )?,
         row_bytes,
         pixel_size: 1,
         pack_type: 0,
@@ -989,7 +1331,15 @@ fn parse_directbits_command(
         }
         data_offset += region_size;
     }
-    let next_offset = skip_packed_rows(data, data_offset, row_bytes, bounds.height());
+    let next_offset = skip_direct_pict_rows(
+        data,
+        data_offset,
+        row_bytes,
+        bounds.height(),
+        pack_type,
+        offset,
+        opcode,
+    )?;
     Ok(BitmapDrawCommand {
         opcode,
         next_offset,
@@ -1010,11 +1360,96 @@ fn parse_directbits_command(
     })
 }
 
-fn skip_packed_rows(data: &[u8], mut cursor: usize, row_bytes: usize, height: usize) -> usize {
+fn skip_pict_pixel_rows(
+    data: &[u8],
+    cursor: usize,
+    row_bytes: usize,
+    height: usize,
+    pack_type: usize,
+    offset: usize,
+    opcode: usize,
+) -> std::result::Result<usize, PictFailure> {
+    if pack_type == 1 || row_bytes < 8 {
+        return require_pict_range(
+            data,
+            cursor,
+            row_bytes.saturating_mul(height),
+            offset,
+            opcode,
+            "unpacked pixel data",
+        );
+    }
+    if pack_type == 2 {
+        return require_pict_range(
+            data,
+            cursor,
+            row_bytes
+                .saturating_mul(3)
+                .checked_div(4)
+                .unwrap_or(0)
+                .saturating_mul(height),
+            offset,
+            opcode,
+            "drop-pad pixel data",
+        );
+    }
+    skip_packed_rows(data, cursor, row_bytes, height, offset, opcode)
+}
+
+fn skip_direct_pict_rows(
+    data: &[u8],
+    cursor: usize,
+    row_bytes: usize,
+    height: usize,
+    pack_type: usize,
+    offset: usize,
+    opcode: usize,
+) -> std::result::Result<usize, PictFailure> {
+    if pack_type == 1 {
+        return require_pict_range(
+            data,
+            cursor,
+            row_bytes.saturating_mul(height),
+            offset,
+            opcode,
+            "unpacked direct pixel data",
+        );
+    }
+    if pack_type == 2 {
+        return require_pict_range(
+            data,
+            cursor,
+            row_bytes
+                .saturating_mul(3)
+                .checked_div(4)
+                .unwrap_or(0)
+                .saturating_mul(height),
+            offset,
+            opcode,
+            "drop-pad direct pixel data",
+        );
+    }
+    skip_packed_rows(data, cursor, row_bytes, height, offset, opcode)
+}
+
+fn skip_packed_rows(
+    data: &[u8],
+    mut cursor: usize,
+    row_bytes: usize,
+    height: usize,
+    offset: usize,
+    opcode: usize,
+) -> std::result::Result<usize, PictFailure> {
     for _ in 0..height {
-        if cursor >= data.len() {
-            return data.len();
-        }
+        let prefix_bytes = if row_bytes > 250 { 2 } else { 1 };
+        require_pict_range(
+            data,
+            cursor,
+            prefix_bytes,
+            offset,
+            opcode,
+            "packed row length",
+        )?;
         let packed_length = if row_bytes > 250 {
             let value = u16_be(data, cursor).unwrap_or(0);
             cursor += 2;
@@ -1024,9 +1459,16 @@ fn skip_packed_rows(data: &[u8], mut cursor: usize, row_bytes: usize, height: us
             cursor += 1;
             value
         };
-        cursor = cursor.saturating_add(packed_length.min(data.len().saturating_sub(cursor)));
+        cursor = require_pict_range(
+            data,
+            cursor,
+            packed_length,
+            offset,
+            opcode,
+            "packed row data",
+        )?;
     }
-    cursor.min(data.len())
+    Ok(cursor)
 }
 
 fn decode_bitmap_command(
