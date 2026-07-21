@@ -104,7 +104,6 @@ export function RegionPaintActions({
       </label>
       <MapPaintProtectionSummary
         enabled={protectMapFeatures}
-        impact={null}
         onSetEnabled={onSetProtectMapFeatures}
       />
       <div className="paint-region-action-buttons">

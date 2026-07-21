@@ -190,7 +190,6 @@ export function ConnectedSelectionActions({
         <div className="connected-selection-actions">
           <MapPaintProtectionSummary
             enabled={protectMapFeatures}
-            impact={null}
             onSetEnabled={onSetProtectMapFeatures}
           />
           <section>

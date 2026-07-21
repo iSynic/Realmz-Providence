@@ -139,8 +139,7 @@ export function useSmartBrushWorkbenchState({
     },
     safeguards: {
       protectMapFeatures,
-      setProtectMapFeatures,
-      smartBrushImpact
+      setProtectMapFeatures
     }
   };
 }

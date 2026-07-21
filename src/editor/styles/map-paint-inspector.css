@@ -748,10 +748,14 @@
 }
 
 .map-paint-protection {
-  display: grid;
-  gap: 8px;
-  padding: 8px;
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  padding: 6px 10px;
   border: 1px solid var(--ui-color-border-subtle);
+  border-radius: 5px;
   background: var(--ui-color-surface-raised);
 }
 
@@ -762,36 +766,7 @@
   cursor: pointer;
 }
 
-.map-paint-impact-summary {
-  display: grid;
-  gap: 3px;
-}
-
-.map-paint-impact-summary small {
-  color: var(--ui-color-text-muted);
-}
-
-.map-paint-impact-summary > div:first-child,
-.map-paint-composition {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.map-paint-impact-summary > div:first-child span,
-.map-paint-composition b {
-  padding: 2px 5px;
-  border: 1px solid var(--ui-color-border-subtle);
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.smart-brush-panel .info-grid {
-  margin: 0;
-}
-
-.smart-brush-panel .empty-copy {
+.map-paint-protection-toggle input {
   margin: 0;
 }
 

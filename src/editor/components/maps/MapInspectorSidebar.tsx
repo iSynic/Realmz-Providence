@@ -98,8 +98,7 @@ export function MapInspectorSidebar({
     },
     safeguards: {
       protectMapFeatures,
-      setProtectMapFeatures: onSetProtectMapFeatures,
-      smartBrushImpact
+      setProtectMapFeatures: onSetProtectMapFeatures
     },
     openCanvasTool: onSetTool
   },
@@ -194,7 +193,6 @@ export function MapInspectorSidebar({
             onSetSmartBrushShapeFill={onSetSmartBrushShapeFill}
             smartBrushMask={smartBrushMask}
             smartBrushPlan={smartBrushPlan}
-            smartBrushImpact={smartBrushImpact}
             protectMapFeatures={protectMapFeatures}
             onSetProtectMapFeatures={onSetProtectMapFeatures}
             onClearSmartBrushMask={onClearSmartBrushMask}

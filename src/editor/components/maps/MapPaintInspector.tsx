@@ -17,7 +17,6 @@ import type {
 } from "../../types";
 import { classifyTileValue } from "../../map/tileMetadata";
 import { SMART_BRUSH_PRESETS, smartBrushProfileForTileset } from "../../map/smartTerrainBrush";
-import { InfoGrid } from "../InfoGrid";
 import { PaintPalettePanel } from "../TileSelectionBar";
 import { TileSwatch } from "../TileSwatch";
 import { tileColor } from "../TileSprite";
@@ -27,7 +26,6 @@ import { paintModeLabel } from "./mapRegionUiUtils";
 import { tileAttributeLabel } from "./mapTileUiUtils";
 import { PaintPaletteSurface } from "./PaintPaletteSurface";
 import type { MapShapeFill, SmartBrushDrawMode } from "../../map/mapCellShapes";
-import type { MapPaintOperationImpact } from "../../map/mapPaintSafeguards";
 import { MapPaintProtectionSummary } from "./MapPaintProtectionSummary";
 import { RegionPaintActions, RegionSelectionDetails } from "./MapRegionPaintActions";
 
@@ -60,7 +58,6 @@ export function MapPaintInspector({
   onSetSmartBrushShapeFill,
   smartBrushMask,
   smartBrushPlan,
-  smartBrushImpact,
   protectMapFeatures,
   onSetProtectMapFeatures,
   onClearSmartBrushMask,
@@ -103,7 +100,6 @@ export function MapPaintInspector({
   onSetSmartBrushShapeFill: (fill: MapShapeFill) => void;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
-  smartBrushImpact: MapPaintOperationImpact | null;
   protectMapFeatures: boolean;
   onSetProtectMapFeatures: (enabled: boolean) => void;
   onClearSmartBrushMask: () => void;
@@ -190,7 +186,6 @@ export function MapPaintInspector({
         onSetSmartBrushShapeFill={onSetSmartBrushShapeFill}
         smartBrushMask={smartBrushMask}
         smartBrushPlan={smartBrushPlan}
-        smartBrushImpact={smartBrushImpact}
         protectMapFeatures={protectMapFeatures}
         onSetProtectMapFeatures={onSetProtectMapFeatures}
         triggers={state.project?.triggers ?? []}
@@ -338,7 +333,6 @@ function PaintModePanel({
   onSetSmartBrushShapeFill,
   smartBrushMask,
   smartBrushPlan,
-  smartBrushImpact,
   protectMapFeatures,
   onSetProtectMapFeatures,
   triggers,
@@ -371,7 +365,6 @@ function PaintModePanel({
   onSetSmartBrushShapeFill: (fill: MapShapeFill) => void;
   smartBrushMask: SmartBrushMaskCell[];
   smartBrushPlan: SmartBrushPlan;
-  smartBrushImpact: MapPaintOperationImpact | null;
   protectMapFeatures: boolean;
   onSetProtectMapFeatures: (enabled: boolean) => void;
   triggers: Project["triggers"];
@@ -387,8 +380,6 @@ function PaintModePanel({
 }) {
   const smartUnavailable = paintMode === "smart" && smartBrushPlan.reason != null && smartBrushMask.length === 0;
   const smartDisabled = !map || map.levelType !== "land" || smartBrushProfileForTileset(selectedTileset) == null;
-  const lowConfidenceCount = smartBrushPlan.cells.filter((cell) => cell.confidence === "low").length;
-  const unresolvedCount = smartBrushPlan.cells.filter((cell) => cell.confidence === "unresolved").length;
   const activeVariation = PAINT_VARIATION_OPTIONS.find((variation) => variation.id === paintVariation) ?? PAINT_VARIATION_OPTIONS[0];
   const setMode = (mode: MapPaintMode) => {
     onSetPaintMode(mode);
@@ -445,7 +436,6 @@ function PaintModePanel({
       {showBucketProtection && paintMode !== "smart" && !selectedRegion && (
         <MapPaintProtectionSummary
           enabled={protectMapFeatures}
-          impact={null}
           onSetEnabled={onSetProtectMapFeatures}
         />
       )}
@@ -485,28 +475,11 @@ function PaintModePanel({
               />
             )}
           </div>
-          <InfoGrid
-            rows={[
-              ["Mask Cells", smartBrushMask.length],
-              ["Will Change", smartBrushPlan.changedCount],
-              ["Preserved", smartBrushPlan.skippedCount],
-              ["Needs Review", lowConfidenceCount + unresolvedCount],
-              ["Unresolved", unresolvedCount],
-              ["Profile", smartBrushPlan.profileConfidence === "reviewed-rules" ? "reviewed rules" : smartBrushPlan.profileConfidence === "corpus-ranked" ? "corpus ranked" : smartBrushPlan.profileConfidence === "pixel-ranked" ? "pixel ranked" : smartBrushPlan.profileConfidence === "curated-fallback" ? "curated fallback" : "unsupported"],
-              ["Landlook", selectedTileset?.landlook ?? "none"]
-            ]}
-          />
           <MapPaintProtectionSummary
             enabled={protectMapFeatures}
-            impact={smartBrushImpact}
             onSetEnabled={onSetProtectMapFeatures}
           />
           {smartBrushPlan.reason && <p className={`context-capacity-note${smartUnavailable ? " blocked" : ""}`}>{smartBrushPlan.reason}</p>}
-          {!smartBrushPlan.reason && (
-            <p className="empty-copy compact">
-              Cyan cells use reviewed or supported matches. Orange cells need review, red cells are unresolved, and yellow cells are preserved.
-            </p>
-          )}
           {smartBrushPlan.cells.length > 0 && (
             <details className="context-debug-details">
               <summary>Smart Debug</summary>
