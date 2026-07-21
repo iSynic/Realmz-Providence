@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import type { EditorState } from "../../store";
 import type {
   MapEntity,
@@ -14,16 +13,11 @@ import { ScrollArea } from "../../ui";
 import type { MapWorkbenchState } from "../../panels/maps/useMapWorkbenchState";
 import { ResizablePane } from "../ResizablePane";
 import { DungeonDrawInspector } from "./DungeonFlagInspector";
+import { MapInspectorCollapsedRail, MapInspectorSwitcher } from "./MapInspectorSwitcher";
 import { MapPaintInspector } from "./MapPaintInspector";
-import { resolveMapSelection } from "./mapSelectionModel";
 import { MapSelectionInspector } from "./MapSelectionInspector";
 import { MapModeInspector, MapSetupInspector } from "./MapSetupInspector";
-import {
-  compatibleMapTool,
-  resolveMapInspectorRoute,
-  transitionToMapInspector,
-  type MapSidebarInspector
-} from "./mapInspectorRouting";
+import { useMapInspectorRouting } from "./useMapInspectorRouting";
 interface MapInspectorContext {
   state: EditorState;
   selectedMap: MapEntity | null;
@@ -123,43 +117,31 @@ export function MapInspectorSidebar({
   actions: MapInspectorActions;
 }) {
   const selectedSuperTileStampId = selectedSuperTileStamp?.id ?? null;
-  const [open, setOpen] = useState(() => localStorage.getItem("providence.mapRightContextOpen.v1") !== "0");
-  useEffect(() => {
-    localStorage.setItem("providence.mapRightContextOpen.v1", open ? "1" : "0");
-  }, [open]);
-  useEffect(() => {
-    const compatibleTool = compatibleMapTool(selectedMap?.levelType ?? null, state.activeTool);
-    if (compatibleTool !== state.activeTool) onSetTool(compatibleTool);
-  }, [onSetTool, selectedMap?.levelType, state.activeTool]);
-  const selection = resolveMapSelection(selectedMap, state.selectedEntity, state.selectedCell, selectedRegion, connectedSelection, mapTriggers, selectedRandomLevel, mapRecords);
-  const selectedMapIsDungeon = selectedMap?.levelType === "dungeon";
-  const route = resolveMapInspectorRoute({
+  const {
+    open,
+    setOpen,
+    selection,
+    selectedMapIsDungeon,
+    route,
+    activeSelection,
+    switchInspector
+  } = useMapInspectorRouting({
+    state,
+    selectedMap,
+    selectedRandomLevel,
+    mapTriggers,
+    mapRecords,
+    selectedRegion,
+    connectedSelection,
     workbenchMode,
-    activeTool: state.activeTool,
-    levelType: selectedMap?.levelType ?? null,
-    hasSelection: selection != null,
-    hasSelectedRegion: selectedRegion != null
+    onSetTool,
+    onSetSelectedRegion,
+    onSetConnectedSelection,
+    onClearSelection,
+    onSetWorkbenchMode
   });
-  const activeSelection = route.showSelection ? selection : null;
-  const switchInspector = (choice: MapSidebarInspector) => {
-    const transition = transitionToMapInspector(choice, { isDungeon: selectedMapIsDungeon, hasSelection: selection != null });
-    if (!transition) return;
-    if (transition.clearRegion) onSetSelectedRegion(null);
-    if (transition.clearSelection) {
-      onSetConnectedSelection(null);
-      onClearSelection();
-    }
-    onSetWorkbenchMode(transition.workbenchMode);
-    if (transition.tool) onSetTool(transition.tool);
-  };
   if (!open) {
-    return (
-      <aside className="map-context-rail">
-        <button type="button" onClick={() => setOpen(true)}>
-          {route.choice === "paint" ? "Paint" : "Inspector"}
-        </button>
-      </aside>
-    );
+    return <MapInspectorCollapsedRail label={route.choice === "paint" ? "Paint" : "Inspector"} onOpen={() => setOpen(true)} />;
   }
   return (
     <>
@@ -302,33 +284,5 @@ export function MapInspectorSidebar({
         </ScrollArea>
       </ResizablePane>
     </>
-  );
-}
-function MapInspectorSwitcher({
-  value,
-  hasSelection,
-  hasDungeonDraw,
-  onChange
-}: {
-  value: MapSidebarInspector;
-  hasSelection: boolean;
-  hasDungeonDraw: boolean;
-  onChange: (choice: MapSidebarInspector) => void;
-}) {
-  return (
-    <select
-      className="map-inspector-switcher"
-      aria-label="Choose right sidebar inspector"
-      value={value}
-      onChange={(event) => onChange(event.currentTarget.value as MapSidebarInspector)}
-    >
-      <option value="setup">Map Setup</option>
-      <option value="paint">Paint Inspector</option>
-      <option value="dungeon-draw" disabled={!hasDungeonDraw}>Dungeon Draw</option>
-      <option value="selection" disabled={!hasSelection}>Selection Inspector</option>
-      <option value="land-layout">Land Layout</option>
-      <option value="land-tiles">Land Tiles</option>
-      <option value="random-areas">Random Rectangles</option>
-    </select>
   );
 }
