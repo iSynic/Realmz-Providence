@@ -28,6 +28,34 @@ export function decodePictPreviewImageForTest(data: Uint8Array): { width: number
   return { ...decodePictPackBits(data, summary), summary };
 }
 
+export function inspectPictConformanceForTest(data: Uint8Array) {
+  const summary: Record<string, string> = {
+    resourceType: "PICT",
+    bytes: String(data.byteLength)
+  };
+  try {
+    const image = decodePictPackBits(data, summary);
+    return {
+      status: "decoded" as const,
+      width: image.width,
+      height: image.height,
+      rgba: image.rgba,
+      summary,
+      diagnostics: [] as ResourcePreviewDiagnostic[]
+    };
+  } catch (error) {
+    const failure = normalizePreviewError(error, "PICT");
+    return {
+      status: failure.status,
+      width: null,
+      height: null,
+      rgba: null,
+      summary,
+      diagnostics: [failure.diagnostic]
+    };
+  }
+}
+
 export async function inspectResourcePreviewAsync(resourceType: string, data: Uint8Array): Promise<DecodedResourcePreview> {
   const summary: Record<string, string> = {
     resourceType: resourceType.trim(),
@@ -136,10 +164,12 @@ function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): 
   let best: { command: BitmapDrawCommand; bitmap: DecodedBitmap } | null = null;
 
   for (const opcode of stream.opcodes) {
+    if (![BITS_RECT, BITS_RGN, PACK_BITS_RECT, PACK_BITS_RGN, DIRECT_BITS_RECT, DIRECT_BITS_RGN].includes(opcode.opcode)) continue;
     let command: BitmapDrawCommand;
     try {
-      command = parseBitmapCommand(pict, opcode.offset, opcode.opcode);
+      command = parseBitmapCommand(pict, opcode.offset, opcode.opcode, opcode.opcodeBytes);
     } catch (error) {
+      if (opcode.opcodeBytes === 1) failures.push(error as PreviewFailure);
       continue;
     }
     try {
@@ -150,6 +180,12 @@ function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): 
     } catch (error) {
       failures.push(error as PreviewFailure);
     }
+  }
+
+  if (stream.version.startsWith("v1") && !stream.endPictureFound) {
+    const failure = previewError("malformed", "pict.v1_missing_end_picture", "PICT v1 stream ends without the required 0xFF EndPicture opcode.", "pict");
+    if (best) throw failure;
+    failures.push(failure);
   }
 
   if (best) {
@@ -190,12 +226,14 @@ type Rect = {
 type PictOpcode = {
   offset: number;
   opcode: number;
+  opcodeBytes: 1 | 2;
 };
 
 type PictOpcodeStream = {
   version: string;
   opcodes: PictOpcode[];
   unsupportedVisibleOpcodes: number;
+  endPictureFound: boolean;
 };
 
 type BitmapDrawCommand = {
@@ -223,20 +261,26 @@ type DecodedBitmap = {
 };
 
 function parsePictOpcodeStream(data: Uint8Array): PictOpcodeStream {
+  const byteOpcodes = data[10] === 0x11;
+  const opcodeBytes: 1 | 2 = byteOpcodes ? 1 : 2;
   let cursor = 10;
   const opcodes: PictOpcode[] = [];
   let unsupportedVisibleOpcodes = 0;
   let version = "unknown";
+  let endPictureFound = false;
 
-  while (cursor + 2 <= data.byteLength) {
-    if (cursor % 2 !== 0) cursor += 1;
+  while (cursor + opcodeBytes <= data.byteLength) {
+    if (!byteOpcodes && cursor % 2 !== 0) cursor += 1;
     const offset = cursor;
-    const opcode = u16At(data, offset);
+    const opcode = byteOpcodes ? (data[offset] ?? null) : u16At(data, offset);
     if (opcode === null) break;
-    opcodes.push({ offset, opcode });
-    cursor += 2;
+    opcodes.push({ offset, opcode, opcodeBytes });
+    cursor += opcodeBytes;
 
-    if (opcode === END_PICTURE) break;
+    if (opcode === END_PICTURE) {
+      endPictureFound = true;
+      break;
+    }
     if (opcode === 0x0000) {
       // no-op
     } else if (opcode === 0x0011) {
@@ -268,10 +312,10 @@ function parsePictOpcodeStream(data: Uint8Array): PictOpcodeStream {
       cursor += 1 + (data[cursor] ?? 0);
     } else if ([BITS_RECT, BITS_RGN, PACK_BITS_RECT, PACK_BITS_RGN, DIRECT_BITS_RECT, DIRECT_BITS_RGN].includes(opcode)) {
       try {
-        cursor = parseBitmapCommand(data, offset, opcode).nextOffset;
+        cursor = parseBitmapCommand(data, offset, opcode, opcodeBytes).nextOffset;
       } catch (error) {
         unsupportedVisibleOpcodes += 1;
-        cursor = offset + 2;
+        cursor = offset + opcodeBytes;
         if ((error as PreviewFailure).previewStatus === "malformed") break;
       }
     } else if (opcode === 0x00a1) {
@@ -286,25 +330,25 @@ function parsePictOpcodeStream(data: Uint8Array): PictOpcodeStream {
     }
 
     if (cursor > data.byteLength) break;
-    if (cursor % 2 !== 0) cursor += 1;
+    if (!byteOpcodes && cursor % 2 !== 0) cursor += 1;
   }
 
-  return { version, opcodes, unsupportedVisibleOpcodes };
+  return { version, opcodes, unsupportedVisibleOpcodes, endPictureFound };
 }
 
 function isProbablyVisiblePictOpcode(opcode: number) {
   return (opcode >= 0x0020 && opcode <= 0x007f) || (opcode >= 0x0090 && opcode <= 0x009f) || opcode === 0x8200;
 }
 
-function parseBitmapCommand(data: Uint8Array, offset: number, opcode: number): BitmapDrawCommand {
-  if (opcode === BITS_RECT || opcode === BITS_RGN) return parseBitsCommand(data, offset, opcode);
-  if (opcode === PACK_BITS_RECT || opcode === PACK_BITS_RGN) return parsePackBitsCommand(data, offset, opcode);
-  if (opcode === DIRECT_BITS_RECT || opcode === DIRECT_BITS_RGN) return parseDirectBitsCommand(data, offset, opcode);
+function parseBitmapCommand(data: Uint8Array, offset: number, opcode: number, opcodeBytes = 2): BitmapDrawCommand {
+  if (opcode === BITS_RECT || opcode === BITS_RGN) return parseBitsCommand(data, offset, opcode, opcodeBytes);
+  if (opcode === PACK_BITS_RECT || opcode === PACK_BITS_RGN) return parsePackBitsCommand(data, offset, opcode, opcodeBytes);
+  if (opcode === DIRECT_BITS_RECT || opcode === DIRECT_BITS_RGN) return parseDirectBitsCommand(data, offset, opcode, opcodeBytes);
   throw previewError("unsupported-variant", "pict.not_bitmap_opcode", "PICT opcode is not a bitmap drawing command.", "pict", offset, formatOpcode(opcode));
 }
 
-function parseBitsCommand(data: Uint8Array, offset: number, opcode: number): BitmapDrawCommand {
-  const bitmap = offset + 2;
+function parseBitsCommand(data: Uint8Array, offset: number, opcode: number, opcodeBytes: number): BitmapDrawCommand {
+  const bitmap = offset + opcodeBytes;
   if (bitmap + 28 > data.byteLength) {
     throw previewError("malformed", "pict.bits_truncated", "PICT BitsRect/BitsRgn bitmap header is truncated.", "pict", offset, formatOpcode(opcode));
   }
@@ -344,12 +388,13 @@ function parseBitsCommand(data: Uint8Array, offset: number, opcode: number): Bit
   };
 }
 
-function parsePackBitsCommand(data: Uint8Array, offset: number, opcode: number): BitmapDrawCommand {
-  const pixmap = offset + 2;
+function parsePackBitsCommand(data: Uint8Array, offset: number, opcode: number, opcodeBytes: number): BitmapDrawCommand {
+  const pixmap = offset + opcodeBytes;
+  const rowBytesRaw = u16At(data, pixmap) ?? 0;
+  if ((rowBytesRaw & 0x8000) === 0) return parsePackedBitmapCommand(data, offset, opcode, pixmap, rowBytesRaw);
   if (pixmap + 46 > data.byteLength) {
     throw previewError("malformed", "pict.pixmap_truncated", "PICT PackBits pixmap header is truncated.", "pict", offset, formatOpcode(opcode));
   }
-  const rowBytesRaw = u16At(data, pixmap) ?? 0;
   const rowBytes = rowBytesRaw & 0x3fff;
   const bounds = parseRect(data, pixmap + 2) ?? { top: 0, left: 0, bottom: 0, right: 0 };
   const pixelType = u16At(data, pixmap + 26) ?? -1;
@@ -407,8 +452,47 @@ function parsePackBitsCommand(data: Uint8Array, offset: number, opcode: number):
   };
 }
 
-function parseDirectBitsCommand(data: Uint8Array, offset: number, opcode: number): BitmapDrawCommand {
-  const pixmap = offset + 2;
+function parsePackedBitmapCommand(data: Uint8Array, offset: number, opcode: number, bitmap: number, rowBytes: number): BitmapDrawCommand {
+  if (bitmap + 28 > data.byteLength) {
+    throw previewError("malformed", "pict.packbits_bitmap_truncated", "PICT PackBitsRect/PackBitsRgn bitmap header is truncated.", "pict", offset, formatOpcode(opcode));
+  }
+  const bounds = parseRect(data, bitmap + 2);
+  if (!bounds) throw previewError("malformed", "pict.packbits_bounds_missing", "PICT PackBitsRect/PackBitsRgn bitmap bounds are missing.", "pict", bitmap, formatOpcode(opcode));
+  const srcRect = parseRect(data, bitmap + 10) ?? bounds;
+  const dstRect = parseRect(data, bitmap + 18) ?? srcRect;
+  let dataOffset = bitmap + 28;
+  if (opcode === PACK_BITS_RGN) {
+    const regionSize = u16At(data, dataOffset) ?? 0;
+    if (regionSize < 10 || dataOffset + regionSize > data.byteLength) {
+      throw previewError("malformed", "pict.region_truncated", "PICT PackBitsRgn has a missing or truncated region before pixel data.", "pict", dataOffset, formatOpcode(opcode));
+    }
+    dataOffset += regionSize;
+  }
+  if (rowBytes === 0 || rowBytes > 512 || rectWidth(bounds) === 0 || rectHeight(bounds) === 0 || rowBytes < Math.ceil(rectWidth(bounds) / 8)) {
+    throw previewError("unsupported-variant", "pict.packbits_bitmap_unsupported_shape", `PICT PackBitsRect/PackBitsRgn has unsupported bitmap geometry: rowBytes=${rowBytes}, width=${rectWidth(bounds)}, height=${rectHeight(bounds)}.`, "pict", offset, formatOpcode(opcode), "packbits-bitmap-1");
+  }
+  return {
+    opcode,
+    nextOffset: skipPackedRows(data, dataOffset, rowBytes, rectHeight(bounds)),
+    rowBytes,
+    pixelSize: 1,
+    packType: 0,
+    componentCount: 1,
+    bounds,
+    srcRect,
+    dstRect,
+    format: "packbits-bitmap-1",
+    dataOffset,
+    colorTableOffset: null,
+    colorTableFlags: 0,
+    colorCount: 2,
+    direct: false,
+    packed: true
+  };
+}
+
+function parseDirectBitsCommand(data: Uint8Array, offset: number, opcode: number, opcodeBytes: number): BitmapDrawCommand {
+  const pixmap = offset + opcodeBytes;
   if (pixmap + 68 > data.byteLength) {
     throw previewError("malformed", "pict.directbits_truncated", "PICT DirectBits pixmap header is truncated.", "pict", offset, formatOpcode(opcode));
   }

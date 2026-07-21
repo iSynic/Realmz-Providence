@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "fixtures": [
+    {
+      "id": "v1-bitsrect-byte-stream",
+      "bytesBase64": "AAAAAAAAAAEACBEBkAABAAAAAAABAAgAAAAAAAEACAAAAAAAAQAIAACq/w==",
+      "byteLength": 43,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v1-bitsrgn-byte-stream",
+      "bytesBase64": "AAAAAAAAAAEACBEBkQABAAAAAAABAAgAAAAAAAEACAAAAAAAAQAIAAAACgAAAAAAAQAIqv8=",
+      "byteLength": 53,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v1-packbitsrect-byte-stream",
+      "bytesBase64": "AAAAAAAAAAEACBEBmAABAAAAAAABAAgAAAAAAAEACAAAAAAAAQAIAAACAKr/",
+      "byteLength": 45,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v1-packbitsrgn-byte-stream",
+      "bytesBase64": "AAAAAAAAAAEACBEBmQABAAAAAAABAAgAAAAAAAEACAAAAAAAAQAIAAAACgAAAAAAAQAIAgCq/w==",
+      "byteLength": 55,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-bitsrect-odd-text-padding",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoAAAAAAJBQgAAkAABAAAAAAABAAgAAAAAAAEACAAAAAAAAQAIAACqAAD/",
+      "byteLength": 84,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-bitsrgn-bitmap",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACRAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAAAKAAAAAAABAAiqAAD/",
+      "byteLength": 84,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-bitsrect-pixmap",
+      "bytesBase64": "AAAAAAAAAAEABAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQgAQAAAAAAAEABAAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAEAAAAAAABAAQAAAABAAEA/w==",
+      "byteLength": 136,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-420"
+    },
+    {
+      "id": "v2-bitsrgn-pixmap",
+      "bytesBase64": "AAAAAAAAAAEABAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACRgAQAAAAAAAEABAAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAEAAAAAAABAAQAAAAKAAAAAAABAAQAAQABAP8=",
+      "byteLength": 146,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-420"
+    },
+    {
+      "id": "v2-packbitsrect-rowbytes-7-unpacked",
+      "bytesBase64": "AAAAAAAAAAEABwARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYgAcAAAAAAAEABwAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAHAAAAAAABAAcAAAABAAEAAQAAAP8=",
+      "byteLength": 140,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-420"
+    },
+    {
+      "id": "v2-packbitsrect-rowbytes-8-packed",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYgAgAAAAAAAEACAAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAIAAAAAAABAAgAAAL5AAAA/w==",
+      "byteLength": 136,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-packbitsrect-rowbytes-250-packed",
+      "bytesBase64": "AAAAAAAAAAEA+gARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYgPoAAAAAAAEA+gAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQD6AAAAAAABAPoAAASBAIcAAAD/",
+      "byteLength": 138,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-packbitsrect-rowbytes-251-packed",
+      "bytesBase64": "AAAAAAAAAAEA+wARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYgPsAAAAAAAEA+wAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQD7AAAAAAABAPsAAAAEgQCGAAD/",
+      "byteLength": 138,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-packbitsrgn-rowbytes-7-unpacked",
+      "bytesBase64": "AAAAAAAAAAEABwARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACZgAcAAAAAAAEABwAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAHAAAAAAABAAcAAAAKAAAAAAABAAcAAQABAAEAAAD/",
+      "byteLength": 150,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-420"
+    },
+    {
+      "id": "v2-packbitsrgn-rowbytes-8-packed",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACZgAgAAAAAAAEACAAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAIAAAAAAABAAgAAAAKAAAAAAABAAgC+QAAAP8=",
+      "byteLength": 146,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-packbitsrgn-rowbytes-250-packed",
+      "bytesBase64": "AAAAAAAAAAEA+gARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACZgPoAAAAAAAEA+gAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQD6AAAAAAABAPoAAAAKAAAAAAABAPoEgQCHAAAA/w==",
+      "byteLength": 148,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-packbitsrgn-rowbytes-251-packed",
+      "bytesBase64": "AAAAAAAAAAEA+wARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACZgPsAAAAAAAEA+wAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQD7AAAAAAABAPsAAAAKAAAAAAABAPsABIEAhgAA/w==",
+      "byteLength": 148,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-reserved-skip-classes",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwANAAAwECAwAAogAAAAMEBQYAAQAHCIAAgQAAAAADCQoLAACQAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAKoAAP8=",
+      "byteLength": 110,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-419"
+    },
+    {
+      "id": "directbits16-byte-packbits",
+      "bytesBase64": "AAAAAAAAAAEAAQCaAAAAAIACAAAAAAABAAEAAAAAAAAAAAAAAAAAAAAAABAAEAADAAUAAAAAAAAAAAAAAAAAAAAAAAEAAQAAAAAAAQABAAADAXwAAP8=",
+      "byteLength": 86,
+      "claim": "fixture-proven"
+    },
+    {
+      "id": "directbits16-word-packbits",
+      "bytesBase64": "AAAAAAAAAAEABACaAAAAAIAIAAAAAAABAAQAAAADAAAAAAAAAAAAAAAAABAAEAADAAUAAAAAAAAAAAAAAAAAAAAAAAEABAAAAAAAAQAEAAAD/XwAAP8=",
+      "byteLength": 86,
+      "claim": "fixture-proven"
+    },
+    {
+      "id": "directbits32-chunky-packbits",
+      "bytesBase64": "AAAAAAAAAAEAAgCaAAAAAIAIAAAAAAABAAIAAAAAAAAAAAAAAAAAAAAAABAAIAAEAAgAAAAAAAAAAAAAAAAAAAAAAAEAAgAAAAAAAQACAAAJBwAKHjIAFCg8AP8=",
+      "byteLength": 92,
+      "claim": "fixture-proven"
+    },
+    {
+      "id": "directbits32-planar-packbits",
+      "bytesBase64": "AAAAAAAAAAEAAgCaAAAAAIAIAAAAAAABAAIAAAAEAAAAAAAAAAAAAAAAABAAIAADAAgAAAAAAAAAAAAAAAAAAAAAAAEAAgAAAAAAAQACAAAJBwoUHigyPAAAAP8=",
+      "byteLength": 92,
+      "claim": "fixture-proven"
+    },
+    {
+      "id": "standalone-512-byte-container",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAKoAAP8=",
+      "prefixZeroBytes": 512,
+      "byteLength": 586,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-421",
+      "container": "standalone-file"
+    },
+    {
+      "id": "v1-bitsrect-byte-stream-truncated",
+      "bytesBase64": "AAAAAAAAAAEACBEBkAABAAAAAAABAAgAAAAAAAEACAAAAAAAAQAI",
+      "byteLength": 39,
+      "claim": "specification-backed",
+      "malformedCompanionOf": "v1-bitsrect-byte-stream"
+    },
+    {
+      "id": "v1-bitsrect-byte-stream-missing-end",
+      "bytesBase64": "AAAAAAAAAAEACBEBkAABAAAAAAABAAgAAAAAAAEACAAAAAAAAQAIAACq",
+      "byteLength": 42,
+      "claim": "specification-backed",
+      "malformedCompanionOf": "v1-bitsrect-byte-stream"
+    },
+    {
+      "id": "v2-bitsrgn-bitmap-truncated",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACRAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAAAKAAAAAAABAAg=",
+      "byteLength": 80,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-419",
+      "malformedCompanionOf": "v2-bitsrgn-bitmap"
+    },
+    {
+      "id": "v2-packbitsrect-rowbytes-8-packed-truncated",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYgAgAAAAAAAEACAAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAIAAAAAAABAAgAAAL5",
+      "byteLength": 132,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-419",
+      "malformedCompanionOf": "v2-packbitsrect-rowbytes-8-packed"
+    },
+    {
+      "id": "v2-reserved-skip-classes-truncated",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwANAAAwECAwAAogAAAAMEBQYAAQAHCIAAgQAAAAADCQoLAACQAAEAAAAAAAEACAAAAAAAAQAIAAA=",
+      "byteLength": 98,
+      "claim": "specification-backed",
+      "ownerIssue": "ISY-419",
+      "malformedCompanionOf": "v2-reserved-skip-classes"
+    },
+    {
+      "id": "directbits32-planar-packbits-truncated",
+      "bytesBase64": "AAAAAAAAAAEAAgCaAAAAAIAIAAAAAAABAAIAAAAEAAAAAAAAAAAAAAAAABAAIAADAAgAAAAAAAAAAAAAAAAAAAAAAAEAAgAAAAAAAQACAAAJBwoUHigyPA==",
+      "byteLength": 88,
+      "claim": "fixture-proven",
+      "ownerIssue": "ISY-419",
+      "malformedCompanionOf": "directbits32-planar-packbits"
+    }
+  ],
+  "currentExpectations": {
+    "v1-bitsrect-byte-stream": { "status": "decoded", "width": 8, "height": 1, "version": "v1/1", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 3, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v1-bitsrgn-byte-stream": { "status": "decoded", "width": 8, "height": 1, "version": "v1/1", "format": "bits-bitmap-1", "opcode": "0x0091", "opcodeCount": 3, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v1-packbitsrect-byte-stream": { "status": "decoded", "width": 8, "height": 1, "version": "v1/1", "format": "packbits-bitmap-1", "opcode": "0x0098", "opcodeCount": 3, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v1-packbitsrgn-byte-stream": { "status": "decoded", "width": 8, "height": 1, "version": "v1/1", "format": "packbits-bitmap-1", "opcode": "0x0099", "opcodeCount": 3, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v2-bitsrect-odd-text-padding": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 5, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v2-bitsrgn-bitmap": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0091", "opcodeCount": 4, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v2-bitsrect-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 17, "rgbaFnv1a": "360779f5", "diagnosticCodes": [] },
+    "v2-bitsrgn-pixmap": { "status": "unsupported-variant", "diagnosticCodes": ["pict.unsupported_opcode"] },
+    "v2-packbitsrect-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 6, "rgbaFnv1a": "d733c9e8", "diagnosticCodes": [] },
+    "v2-packbitsrect-rowbytes-8-packed": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "4bff0505", "diagnosticCodes": [] },
+    "v2-packbitsrect-rowbytes-250-packed": { "status": "decoded", "width": 250, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "7313b055", "diagnosticCodes": [] },
+    "v2-packbitsrect-rowbytes-251-packed": { "status": "decoded", "width": 251, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "8c4e5ac8", "diagnosticCodes": [] },
+    "v2-packbitsrgn-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 6, "rgbaFnv1a": "d733c9e8", "diagnosticCodes": [] },
+    "v2-packbitsrgn-rowbytes-8-packed": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "4bff0505", "diagnosticCodes": [] },
+    "v2-packbitsrgn-rowbytes-250-packed": { "status": "decoded", "width": 250, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "7313b055", "diagnosticCodes": [] },
+    "v2-packbitsrgn-rowbytes-251-packed": { "status": "decoded", "width": 251, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "8c4e5ac8", "diagnosticCodes": [] },
+    "v2-reserved-skip-classes": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 19, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "directbits16-byte-packbits": { "status": "decoded", "width": 1, "height": 1, "version": "unknown", "format": "directbits-16-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "c68e2893", "diagnosticCodes": [] },
+    "directbits16-word-packbits": { "status": "decoded", "width": 4, "height": 1, "version": "unknown", "format": "directbits-16-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "0abcca3d", "diagnosticCodes": [] },
+    "directbits32-chunky-packbits": { "status": "decoded", "width": 2, "height": 1, "version": "unknown", "format": "directbits-32-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "145a4653", "diagnosticCodes": [] },
+    "directbits32-planar-packbits": { "status": "decoded", "width": 2, "height": 1, "version": "unknown", "format": "directbits-32-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "145a4653", "diagnosticCodes": [] },
+    "standalone-512-byte-container": { "status": "decoded", "width": 8, "height": 1, "version": "unknown", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 269, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v1-bitsrect-byte-stream-truncated": { "status": "malformed", "diagnosticCodes": ["pict.bits_truncated"] },
+    "v1-bitsrect-byte-stream-missing-end": { "status": "malformed", "diagnosticCodes": ["pict.v1_missing_end_picture"] },
+    "v2-bitsrgn-bitmap-truncated": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0091", "opcodeCount": 3, "rgbaFnv1a": "0b2ae445", "diagnosticCodes": [] },
+    "v2-packbitsrect-rowbytes-8-packed-truncated": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 3, "rgbaFnv1a": "4bff0505", "diagnosticCodes": [] },
+    "v2-reserved-skip-classes-truncated": { "status": "malformed", "diagnosticCodes": ["pict.no_drawable_opcode"] },
+    "directbits32-planar-packbits-truncated": { "status": "decoded", "width": 2, "height": 1, "version": "unknown", "format": "directbits-32-packbits", "opcode": "0x009A", "opcodeCount": 1, "rgbaFnv1a": "145a4653", "diagnosticCodes": [] }
+  },
+  "targetExpectations": {
+    "v2-bitsrect-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-8", "opcode": "0x0090", "rgbaFnv1a": "13f98ce5" },
+    "v2-bitsrgn-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-8", "opcode": "0x0091", "rgbaFnv1a": "13f98ce5" },
+    "v2-packbitsrect-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "rgbaFnv1a": "229abed9" },
+    "v2-packbitsrgn-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "rgbaFnv1a": "229abed9" },
+    "v2-reserved-skip-classes": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 10, "rgbaFnv1a": "78354205" },
+    "standalone-512-byte-container": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "78354205" },
+    "v2-bitsrgn-bitmap-truncated": { "status": "malformed" },
+    "v2-packbitsrect-rowbytes-8-packed-truncated": { "status": "malformed" },
+    "v2-reserved-skip-classes-truncated": { "status": "malformed" },
+    "directbits32-planar-packbits-truncated": { "status": "malformed" }
+  }
+}

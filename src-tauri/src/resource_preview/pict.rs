@@ -165,12 +165,14 @@ impl PictHeader {
 struct PictOpcode {
     offset: usize,
     opcode: usize,
+    opcode_bytes: usize,
 }
 
 struct PictOpcodeStream {
     version: String,
     opcodes: Vec<PictOpcode>,
     unsupported_visible: Vec<PictOpcode>,
+    end_picture_found: bool,
 }
 
 struct PictCanvas {
@@ -291,11 +293,30 @@ fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
     })?;
     let stream = parse_opcode_stream(data);
     let mut diagnostics = Vec::new();
+    let mut parse_failures = Vec::new();
     let mut best: Option<(BitmapDrawCommand, DecodedBitmap)> = None;
     for opcode in &stream.opcodes {
-        let Ok(command) = parse_bitmap_command(data, opcode.offset, opcode.opcode) else {
+        if !matches!(
+            opcode.opcode,
+            BITS_RECT
+                | BITS_RGN
+                | PACK_BITS_RECT
+                | PACK_BITS_RGN
+                | DIRECT_BITS_RECT
+                | DIRECT_BITS_RGN
+        ) {
             continue;
-        };
+        }
+        let command =
+            match parse_bitmap_command(data, opcode.offset, opcode.opcode, opcode.opcode_bytes) {
+                Ok(command) => command,
+                Err(failure) => {
+                    if opcode.opcode_bytes == 1 {
+                        parse_failures.push(failure);
+                    }
+                    continue;
+                }
+            };
         match decode_bitmap_command(data, &command) {
             Ok(bitmap) => {
                 let area = bitmap.image.width as usize * bitmap.image.height as usize;
@@ -310,7 +331,23 @@ fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
             Err(failure) => diagnostics.push(failure.diagnostic),
         }
     }
+    if stream.version.starts_with("v1") && !stream.end_picture_found {
+        let failure = PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.v1_missing_end_picture",
+                "PICT v1 stream ends without the required 0xFF EndPicture opcode.",
+                "pict",
+            ),
+        };
+        if best.is_some() {
+            return Err(failure);
+        }
+        parse_failures.push(failure);
+    }
     if let Some((command, bitmap)) = best {
+        diagnostics.extend(parse_failures.into_iter().map(|failure| failure.diagnostic));
         let mut canvas = PictCanvas::new(
             header.frame,
             bitmap.image.width as usize,
@@ -335,13 +372,11 @@ fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
     }
 
     let _ = header.size_word;
-    let mut failures = diagnostics
-        .into_iter()
-        .map(|diagnostic| PictFailure {
-            diagnostic,
-            malformed: false,
-        })
-        .collect::<Vec<_>>();
+    let mut failures = parse_failures;
+    failures.extend(diagnostics.into_iter().map(|diagnostic| PictFailure {
+        diagnostic,
+        malformed: false,
+    }));
     match find_indexed_packbits_rect(data).and_then(|rect| {
         decode_packbits_rect(data, &rect).map(|image| PictDecode {
             version: stream.version.clone(),
@@ -410,22 +445,37 @@ fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
 }
 
 fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
+    let byte_opcodes = data.get(10) == Some(&0x11);
+    let opcode_bytes = if byte_opcodes { 1 } else { 2 };
     let mut cursor = 10usize;
     let mut opcodes = Vec::new();
     let mut unsupported_visible = Vec::new();
     let mut version = "unknown".to_string();
-    while cursor + 2 <= data.len() {
-        if cursor % 2 != 0 {
+    let mut end_picture_found = false;
+    while cursor + opcode_bytes <= data.len() {
+        if !byte_opcodes && cursor % 2 != 0 {
             cursor += 1;
         }
         let offset = cursor;
-        let Some(opcode) = u16_be(data, offset) else {
-            break;
+        let opcode = if byte_opcodes {
+            data[offset] as usize
+        } else {
+            let Some(opcode) = u16_be(data, offset) else {
+                break;
+            };
+            opcode
         };
-        opcodes.push(PictOpcode { offset, opcode });
-        cursor += 2;
+        opcodes.push(PictOpcode {
+            offset,
+            opcode,
+            opcode_bytes,
+        });
+        cursor += opcode_bytes;
         match opcode {
-            END_PICTURE => break,
+            END_PICTURE => {
+                end_picture_found = true;
+                break;
+            }
             0x0000 => {}
             0x0011 => {
                 version = data
@@ -463,11 +513,15 @@ fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
                 cursor += 1 + text_len;
             }
             BITS_RECT | BITS_RGN | PACK_BITS_RECT | PACK_BITS_RGN | DIRECT_BITS_RECT
-            | DIRECT_BITS_RGN => match parse_bitmap_command(data, offset, opcode) {
+            | DIRECT_BITS_RGN => match parse_bitmap_command(data, offset, opcode, opcode_bytes) {
                 Ok(command) => cursor = command.next_offset,
                 Err(failure) => {
-                    unsupported_visible.push(PictOpcode { offset, opcode });
-                    cursor = offset + 2;
+                    unsupported_visible.push(PictOpcode {
+                        offset,
+                        opcode,
+                        opcode_bytes,
+                    });
+                    cursor = offset + opcode_bytes;
                     if failure.malformed {
                         break;
                     }
@@ -478,20 +532,28 @@ fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
                 cursor += 4 + size;
             }
             0x8200 => {
-                unsupported_visible.push(PictOpcode { offset, opcode });
+                unsupported_visible.push(PictOpcode {
+                    offset,
+                    opcode,
+                    opcode_bytes,
+                });
                 let size = u16_be(data, cursor).unwrap_or(0);
                 cursor += 2 + size;
             }
             _ => {
                 if is_probably_visible_opcode(opcode) {
-                    unsupported_visible.push(PictOpcode { offset, opcode });
+                    unsupported_visible.push(PictOpcode {
+                        offset,
+                        opcode,
+                        opcode_bytes,
+                    });
                 }
             }
         }
         if cursor > data.len() {
             break;
         }
-        if cursor % 2 != 0 {
+        if !byte_opcodes && cursor % 2 != 0 {
             cursor += 1;
         }
     }
@@ -499,6 +561,7 @@ fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
         version,
         opcodes,
         unsupported_visible,
+        end_picture_found,
     }
 }
 
@@ -510,11 +573,16 @@ fn parse_bitmap_command(
     data: &[u8],
     offset: usize,
     opcode: usize,
+    opcode_bytes: usize,
 ) -> std::result::Result<BitmapDrawCommand, PictFailure> {
     match opcode {
-        BITS_RECT | BITS_RGN => parse_bits_command(data, offset, opcode),
-        PACK_BITS_RECT | PACK_BITS_RGN => parse_packbits_command(data, offset, opcode),
-        DIRECT_BITS_RECT | DIRECT_BITS_RGN => parse_directbits_command(data, offset, opcode),
+        BITS_RECT | BITS_RGN => parse_bits_command(data, offset, opcode, opcode_bytes),
+        PACK_BITS_RECT | PACK_BITS_RGN => {
+            parse_packbits_command(data, offset, opcode, opcode_bytes)
+        }
+        DIRECT_BITS_RECT | DIRECT_BITS_RGN => {
+            parse_directbits_command(data, offset, opcode, opcode_bytes)
+        }
         _ => Err(PictFailure {
             malformed: false,
             diagnostic: diagnostic(
@@ -533,8 +601,9 @@ fn parse_bits_command(
     data: &[u8],
     offset: usize,
     opcode: usize,
+    opcode_bytes: usize,
 ) -> std::result::Result<BitmapDrawCommand, PictFailure> {
-    let bitmap = offset + 2;
+    let bitmap = offset + opcode_bytes;
     if bitmap + 28 > data.len() {
         return Err(PictFailure {
             malformed: true,
@@ -623,8 +692,13 @@ fn parse_packbits_command(
     data: &[u8],
     offset: usize,
     opcode: usize,
+    opcode_bytes: usize,
 ) -> std::result::Result<BitmapDrawCommand, PictFailure> {
-    let pixmap = offset + 2;
+    let pixmap = offset + opcode_bytes;
+    let row_bytes_raw = u16_be(data, pixmap).unwrap_or(0);
+    if row_bytes_raw & 0x8000 == 0 {
+        return parse_packed_bitmap_command(data, offset, opcode, pixmap, row_bytes_raw);
+    }
     if pixmap + 46 > data.len() {
         return Err(PictFailure {
             malformed: true,
@@ -638,7 +712,6 @@ fn parse_packbits_command(
             .with_opcode(opcode),
         });
     }
-    let row_bytes_raw = u16_be(data, pixmap).unwrap_or(0);
     let row_bytes = row_bytes_raw & 0x3fff;
     let bounds = Rect::parse(data, pixmap + 2).unwrap_or(Rect {
         top: 0,
@@ -744,12 +817,107 @@ fn parse_packbits_command(
     })
 }
 
+fn parse_packed_bitmap_command(
+    data: &[u8],
+    offset: usize,
+    opcode: usize,
+    bitmap: usize,
+    row_bytes: usize,
+) -> std::result::Result<BitmapDrawCommand, PictFailure> {
+    if bitmap + 28 > data.len() {
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.packbits_bitmap_truncated",
+                "PICT PackBitsRect/PackBitsRgn bitmap header is truncated.",
+                "pict",
+            )
+            .with_offset(offset)
+            .with_opcode(opcode),
+        });
+    }
+    let bounds = Rect::parse(data, bitmap + 2).ok_or_else(|| PictFailure {
+        malformed: true,
+        diagnostic: diagnostic(
+            "error",
+            "pict.packbits_bounds_missing",
+            "PICT PackBitsRect/PackBitsRgn bitmap bounds are missing.",
+            "pict",
+        )
+        .with_offset(bitmap)
+        .with_opcode(opcode),
+    })?;
+    let src_rect = Rect::parse(data, bitmap + 10).unwrap_or(bounds);
+    let dst_rect = Rect::parse(data, bitmap + 18).unwrap_or(src_rect);
+    let mut data_offset = bitmap + 28;
+    if opcode == PACK_BITS_RGN {
+        let region_size = u16_be(data, data_offset).unwrap_or(0);
+        if region_size < 10 || data_offset + region_size > data.len() {
+            return Err(PictFailure {
+                malformed: true,
+                diagnostic: diagnostic(
+                    "error",
+                    "pict.region_truncated",
+                    "PICT PackBitsRgn has a missing or truncated region before pixel data.",
+                    "pict",
+                )
+                .with_offset(data_offset)
+                .with_opcode(opcode),
+            });
+        }
+        data_offset += region_size;
+    }
+    if row_bytes == 0
+        || row_bytes > 512
+        || bounds.width() == 0
+        || bounds.height() == 0
+        || row_bytes < bounds.width().div_ceil(8)
+    {
+        return Err(PictFailure {
+            malformed: false,
+            diagnostic: diagnostic(
+                "warning",
+                "pict.packbits_bitmap_unsupported_shape",
+                format!(
+                    "PICT PackBitsRect/PackBitsRgn has unsupported bitmap geometry: rowBytes={row_bytes}, width={}, height={}.",
+                    bounds.width(),
+                    bounds.height()
+                ),
+                "pict",
+            )
+            .with_offset(offset)
+            .with_opcode(opcode)
+            .with_variant("packbits-bitmap-1"),
+        });
+    }
+    Ok(BitmapDrawCommand {
+        opcode,
+        next_offset: skip_packed_rows(data, data_offset, row_bytes, bounds.height()),
+        row_bytes,
+        pixel_size: 1,
+        pack_type: 0,
+        component_count: 1,
+        bounds,
+        src_rect,
+        dst_rect,
+        format: "packbits-bitmap-1".to_string(),
+        data_offset,
+        color_table_offset: None,
+        color_table_flags: 0,
+        color_count: 2,
+        direct: false,
+        packed: true,
+    })
+}
+
 fn parse_directbits_command(
     data: &[u8],
     offset: usize,
     opcode: usize,
+    opcode_bytes: usize,
 ) -> std::result::Result<BitmapDrawCommand, PictFailure> {
-    let pixmap = offset + 2;
+    let pixmap = offset + opcode_bytes;
     if pixmap + 68 > data.len() {
         return Err(PictFailure {
             malformed: true,
@@ -1591,7 +1759,119 @@ fn decode_one_bit_packbits_rect(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use serde::Deserialize;
+    use std::collections::BTreeMap;
     use std::path::Path;
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ConformanceManifest {
+        fixtures: Vec<ConformanceFixture>,
+        current_expectations: BTreeMap<String, ConformanceExpectation>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ConformanceFixture {
+        id: String,
+        bytes_base64: String,
+        byte_length: usize,
+        #[serde(default)]
+        prefix_zero_bytes: usize,
+    }
+
+    #[derive(Debug, Deserialize, PartialEq, Eq)]
+    #[serde(rename_all = "camelCase")]
+    struct ConformanceExpectation {
+        status: String,
+        width: Option<u32>,
+        height: Option<u32>,
+        version: Option<String>,
+        format: Option<String>,
+        opcode: Option<String>,
+        opcode_count: Option<usize>,
+        rgba_fnv1a: Option<String>,
+        diagnostic_codes: Vec<String>,
+    }
+
+    #[test]
+    fn matches_shared_pict_conformance_matrix() {
+        let manifest: ConformanceManifest = serde_json::from_str(include_str!(
+            "../../../fixtures/pict-conformance/manifest.json"
+        ))
+        .expect("shared PICT conformance manifest should parse");
+
+        for fixture in manifest.fixtures {
+            let payload = STANDARD
+                .decode(&fixture.bytes_base64)
+                .unwrap_or_else(|_| panic!("{} fixture bytes should decode", fixture.id));
+            let mut bytes = vec![0; fixture.prefix_zero_bytes];
+            bytes.extend_from_slice(&payload);
+            assert_eq!(
+                bytes.len(),
+                fixture.byte_length,
+                "{} byte length",
+                fixture.id
+            );
+            let expected = manifest
+                .current_expectations
+                .get(&fixture.id)
+                .unwrap_or_else(|| panic!("{} should have a current expectation", fixture.id));
+            assert_eq!(
+                normalize_conformance_result(decode_pict(&bytes)),
+                *expected,
+                "{}",
+                fixture.id
+            );
+        }
+    }
+
+    fn normalize_conformance_result(
+        result: std::result::Result<PictDecode, PictFailure>,
+    ) -> ConformanceExpectation {
+        match result {
+            Ok(decoded) => ConformanceExpectation {
+                status: "decoded".to_string(),
+                width: Some(decoded.image.width),
+                height: Some(decoded.image.height),
+                version: Some(decoded.version),
+                format: Some(decoded.format),
+                opcode: Some(format!("0x{:04X}", decoded.opcode)),
+                opcode_count: Some(decoded.opcode_count),
+                rgba_fnv1a: Some(fnv1a(&decoded.image.rgba)),
+                diagnostic_codes: decoded
+                    .diagnostics
+                    .into_iter()
+                    .map(|diagnostic| diagnostic.code)
+                    .collect(),
+            },
+            Err(failure) => ConformanceExpectation {
+                status: if failure.malformed {
+                    "malformed".to_string()
+                } else {
+                    "unsupported-variant".to_string()
+                },
+                width: None,
+                height: None,
+                version: None,
+                format: None,
+                opcode: None,
+                opcode_count: None,
+                rgba_fnv1a: None,
+                diagnostic_codes: vec![failure.diagnostic.code],
+            },
+        }
+    }
+
+    fn fnv1a(bytes: &[u8]) -> String {
+        let mut hash = 0x811c_9dc5u32;
+        for byte in bytes {
+            hash ^= u32::from(*byte);
+            hash = hash.wrapping_mul(0x0100_0193);
+        }
+        format!("{hash:08x}")
+    }
 
     #[test]
     fn decodes_ordered_custom_landlook_palette_fixture() {
@@ -1684,7 +1964,7 @@ mod tests {
     #[test]
     fn decodes_two_bit_indexed_packbits_rect() {
         let pict = indexed_packbits_rect_fixture(2, &[0b00_01_10_11, 0, 0, 0, 0, 0, 0, 0], 32, 1);
-        let command = parse_bitmap_command(&pict, 10, PACK_BITS_RECT)
+        let command = parse_bitmap_command(&pict, 10, PACK_BITS_RECT, 2)
             .expect("synthetic PackBitsRect command should parse");
         let rows = bitmap_rows(&pict, &command).collect::<Vec<_>>();
         assert_eq!(rows[0][0], 0b00_01_10_11);
