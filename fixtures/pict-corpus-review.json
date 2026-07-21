@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-07-21",
+  "status": "complete",
+  "uniquePayloads": 78,
+  "payloadCorpusSha256": "2af8054e7da5c93da801be15dfb732a8a685c82b5f9803373a1eaceab1deb598",
+  "renderedCorpusSha256": "3941ead36c21321b133efa081ad30b30d6ab8e47c7a5bfd3567e35429cafae00",
+  "findings": [
+    {
+      "scenario": "Kalypso's Island",
+      "resourceId": 30128,
+      "payloadSha256": "37101347a07c27152604b51e7ea5a54fee341c019f9dc7369f20d742bf79e98d",
+      "classification": "fixture-proven",
+      "result": "fixed",
+      "detail": "Three bitmap commands must be composed in stream order; selecting only the largest left two picture bands blank.",
+      "beforeRgbaSha256": "b73b8d63aa7f173f3ef66902635cb5cc5eff470db834b6ca8f7fd72b26e25796",
+      "afterRgbaSha256": "efe34aa43ccdb3780d3aef4e307fed8afda1edcd45ad4c1f338604afb9ec4a2f"
+    }
+  ]
+}

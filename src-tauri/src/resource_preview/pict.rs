@@ -317,7 +317,7 @@ fn decode_pict(input: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
     }
     let mut diagnostics = Vec::new();
     let mut parse_failures = Vec::new();
-    let mut best: Option<(BitmapDrawCommand, DecodedBitmap)> = None;
+    let mut decoded_bitmaps: Vec<(BitmapDrawCommand, DecodedBitmap)> = Vec::new();
     for opcode in &stream.opcodes {
         if !matches!(
             opcode.opcode,
@@ -341,16 +341,7 @@ fn decode_pict(input: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
                 }
             };
         match decode_bitmap_command(data, &command) {
-            Ok(bitmap) => {
-                let area = bitmap.image.width as usize * bitmap.image.height as usize;
-                let current_area = best
-                    .as_ref()
-                    .map(|(_, image)| image.image.width as usize * image.image.height as usize)
-                    .unwrap_or(0);
-                if area >= current_area {
-                    best = Some((command, bitmap));
-                }
-            }
+            Ok(bitmap) => decoded_bitmaps.push((command, bitmap)),
             Err(failure) => diagnostics.push(failure.diagnostic),
         }
     }
@@ -364,30 +355,45 @@ fn decode_pict(input: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
                 "pict",
             ),
         };
-        if best.is_some() {
+        if !decoded_bitmaps.is_empty() {
             return Err(failure);
         }
         parse_failures.push(failure);
     }
-    if let Some((command, bitmap)) = best {
+    if !decoded_bitmaps.is_empty() {
         diagnostics.extend(parse_failures.into_iter().map(|failure| failure.diagnostic));
-        let mut canvas = PictCanvas::new(
-            header.frame,
-            bitmap.image.width as usize,
-            bitmap.image.height as usize,
-        );
-        canvas.draw_bitmap(&bitmap, command.src_rect, command.dst_rect);
+        let best_index = decoded_bitmaps
+            .iter()
+            .enumerate()
+            .max_by_key(|(_, (_, bitmap))| {
+                bitmap.image.width as usize * bitmap.image.height as usize
+            })
+            .map(|(index, _)| index)
+            .unwrap_or(0);
+        let best_command = &decoded_bitmaps[best_index].0;
+        let fallback_width = decoded_bitmaps[best_index].1.image.width as usize;
+        let fallback_height = decoded_bitmaps[best_index].1.image.height as usize;
+        let mut canvas = PictCanvas::new(header.frame, fallback_width, fallback_height);
+        for (command, bitmap) in &decoded_bitmaps {
+            canvas.draw_bitmap(bitmap, command.src_rect, command.dst_rect);
+        }
+        let version = stream.version;
+        let format = best_command.format.clone();
+        let pixel_size = best_command.pixel_size;
+        let row_bytes = best_command.row_bytes;
+        let opcode = best_command.opcode;
+        let image = if canvas.drew {
+            canvas.into_image()
+        } else {
+            decoded_bitmaps.swap_remove(best_index).1.image
+        };
         return Ok(PictDecode {
-            image: if canvas.drew {
-                canvas.into_image()
-            } else {
-                bitmap.image
-            },
-            version: stream.version,
-            format: command.format,
-            pixel_size: command.pixel_size,
-            row_bytes: command.row_bytes,
-            opcode: command.opcode,
+            image,
+            version,
+            format,
+            pixel_size,
+            row_bytes,
+            opcode,
             opcode_count: stream.opcodes.len(),
             unsupported_visible_opcodes: stream.unsupported_visible.len(),
             diagnostics,

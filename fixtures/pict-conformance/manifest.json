@@ -32,6 +32,12 @@
       "claim": "specification-backed"
     },
     {
+      "id": "v2-multiple-bitmap-composite",
+      "bytesBase64": "AAAAAAAAAAIACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAKoAAJAAAQAAAAAAAQAIAAAAAAABAAgAAQAAAAIACAAAVQAA/w==",
+      "byteLength": 106,
+      "claim": "fixture-proven"
+    },
+    {
       "id": "v2-bitsrgn-bitmap",
       "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACRAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAAAKAAAAAAABAAiqAAD/",
       "byteLength": 84,
@@ -287,6 +293,7 @@
     "v1-packbitsrect-byte-stream": { "status": "decoded", "width": 8, "height": 1, "version": "v1/1", "format": "packbits-bitmap-1", "opcode": "0x0098", "opcodeCount": 3, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
     "v1-packbitsrgn-byte-stream": { "status": "decoded", "width": 8, "height": 1, "version": "v1/1", "format": "packbits-bitmap-1", "opcode": "0x0099", "opcodeCount": 3, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
     "v2-bitsrect-odd-text-padding": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 5, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v2-multiple-bitmap-composite": { "status": "decoded", "width": 8, "height": 2, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 5, "rgbaFnv1a": "adbe5445", "diagnosticCodes": [] },
     "v2-bitsrgn-bitmap": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0091", "opcodeCount": 4, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
     "v2-bitsrect-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-8", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "13f98ce5", "diagnosticCodes": [] },
     "v2-bitsrect-pixmap-1bit": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-indexed-1", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },

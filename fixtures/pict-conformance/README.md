@@ -21,3 +21,13 @@ PICT notes predate those later opcode meanings.
 status, dimensions, RGBA checksum, version, opcode, and diagnostics.
 `targetExpectations` names only deliberate known-gap outcomes; parser issues
 move those entries into the current contract as they are implemented.
+
+The matrix also covers ordered composition of multiple bitmap drawing commands,
+the stream shape used by Kalypso's Island PICT 30128.
+
+Run `npm run audit:pict-corpus -- --check` for the full local scenario pass. It
+inventories every PICT occurrence, compares browser and Rust RGBA output,
+round-trips each resource fork, and writes PNGs plus JSON/Markdown evidence to
+`tmp/pict-corpus-audit`. `fixtures/pict-corpus-review.json` binds the completed
+visual review to both the payload set and rendered-output fingerprints, so new
+PICT bytes or changed rendering require another visual review.

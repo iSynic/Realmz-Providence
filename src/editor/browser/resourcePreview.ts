@@ -56,6 +56,33 @@ export function inspectPictConformanceForTest(data: Uint8Array) {
   }
 }
 
+export function inspectPictOpcodeInventoryForAudit(data: Uint8Array) {
+  try {
+    const { pict, payloadOffset } = pictPayload(data);
+    const stream = parsePictOpcodeStream(pict);
+    return {
+      payloadOffset,
+      version: stream.version,
+      endPictureFound: stream.endPictureFound,
+      opcodes: stream.opcodes.map((entry) => ({
+        offset: entry.offset,
+        opcode: formatOpcode(entry.opcode),
+        opcodeBytes: entry.opcodeBytes
+      })),
+      diagnostic: stream.failure?.diagnostic ?? null
+    };
+  } catch (error) {
+    const failure = normalizePreviewError(error, "PICT");
+    return {
+      payloadOffset: 0,
+      version: "unknown",
+      endPictureFound: false,
+      opcodes: [] as Array<{ offset: number; opcode: string; opcodeBytes: 1 | 2 }>,
+      diagnostic: failure.diagnostic
+    };
+  }
+}
+
 export async function inspectResourcePreviewAsync(resourceType: string, data: Uint8Array): Promise<DecodedResourcePreview> {
   const summary: Record<string, string> = {
     resourceType: resourceType.trim(),
@@ -169,7 +196,7 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
   const stream = parsePictOpcodeStream(pict);
   if (stream.failure) throw stream.failure;
   const failures: PreviewFailure[] = [];
-  let best: { command: BitmapDrawCommand; bitmap: DecodedBitmap } | null = null;
+  const decodedBitmaps: Array<{ command: BitmapDrawCommand; bitmap: DecodedBitmap }> = [];
 
   for (const opcode of stream.opcodes) {
     if (![BITS_RECT, BITS_RGN, PACK_BITS_RECT, PACK_BITS_RGN, DIRECT_BITS_RECT, DIRECT_BITS_RGN].includes(opcode.opcode)) continue;
@@ -182,9 +209,7 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
     }
     try {
       const bitmap = decodeBitmapCommand(pict, command);
-      const area = bitmap.image.width * bitmap.image.height;
-      const currentArea = best ? best.bitmap.image.width * best.bitmap.image.height : 0;
-      if (area >= currentArea) best = { command, bitmap };
+      decodedBitmaps.push({ command, bitmap });
     } catch (error) {
       failures.push(error as PreviewFailure);
     }
@@ -192,13 +217,18 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
 
   if (stream.version.startsWith("v1") && !stream.endPictureFound) {
     const failure = previewError("malformed", "pict.v1_missing_end_picture", "PICT v1 stream ends without the required 0xFF EndPicture opcode.", "pict");
-    if (best) throw failure;
+    if (decodedBitmaps.length > 0) throw failure;
     failures.push(failure);
   }
 
-  if (best) {
+  if (decodedBitmaps.length > 0) {
+    const best = decodedBitmaps.reduce((current, candidate) => {
+      const area = candidate.bitmap.image.width * candidate.bitmap.image.height;
+      const currentArea = current.bitmap.image.width * current.bitmap.image.height;
+      return area >= currentArea ? candidate : current;
+    });
     const frame = parseRect(pict, 2);
-    const composited = frame ? drawBitmapToPictFrame(frame, best.bitmap, best.command.srcRect, best.command.dstRect) : { image: best.bitmap.image, drew: false };
+    const composited = frame ? drawBitmapsToPictFrame(frame, decodedBitmaps, best.bitmap.image) : { image: best.bitmap.image, drew: false };
     summary.pictVersion = stream.version;
     summary.format = best.command.format;
     summary.pixelSize = String(best.command.pixelSize);
@@ -891,12 +921,25 @@ function indexedPixel(row: number[], x: number, pixelSize: number) {
   return (byte >> (7 - (x % 8))) & 0x01;
 }
 
-function drawBitmapToPictFrame(frame: Rect, bitmap: DecodedBitmap, srcRect: Rect, dstRect: Rect) {
-  const width = Math.min((rectWidth(frame) || bitmap.image.width), MAX_PICT_SIDE);
-  const height = Math.min((rectHeight(frame) || bitmap.image.height), MAX_PICT_SIDE);
+function drawBitmapsToPictFrame(
+  frame: Rect,
+  entries: Array<{ command: BitmapDrawCommand; bitmap: DecodedBitmap }>,
+  fallback: DecodedImage
+) {
+  const width = Math.min((rectWidth(frame) || fallback.width), MAX_PICT_SIDE);
+  const height = Math.min((rectHeight(frame) || fallback.height), MAX_PICT_SIDE);
   const rgba = new Uint8ClampedArray(width * height * 4);
   rgba.fill(255);
+  let drew = false;
 
+  for (const { command, bitmap } of entries) {
+    drew = drawBitmapToPictCanvas(rgba, width, height, frame, bitmap, command.srcRect, command.dstRect) || drew;
+  }
+
+  return { image: { width, height, rgba }, drew };
+}
+
+function drawBitmapToPictCanvas(rgba: Uint8ClampedArray, width: number, height: number, frame: Rect, bitmap: DecodedBitmap, srcRect: Rect, dstRect: Rect) {
   const dstLeft = Math.max(0, dstRect.left - frame.left);
   const dstTop = Math.max(0, dstRect.top - frame.top);
   const dstRight = Math.min(width, Math.max(0, dstRect.right - frame.left));
@@ -907,7 +950,7 @@ function drawBitmapToPictFrame(frame: Rect, bitmap: DecodedBitmap, srcRect: Rect
   const srcHeight = Math.max(1, rectHeight(srcRect));
   let drew = false;
 
-  if (dstWidth === 0 || dstHeight === 0) return { image: { width, height, rgba }, drew };
+  if (dstWidth === 0 || dstHeight === 0) return drew;
 
   for (let y = 0; y < dstHeight; y += 1) {
     const sourceY = srcRect.top + Math.floor((y * srcHeight) / dstHeight) - bitmap.bounds.top;
@@ -925,7 +968,7 @@ function drawBitmapToPictFrame(frame: Rect, bitmap: DecodedBitmap, srcRect: Rect
     }
   }
 
-  return { image: { width, height, rgba }, drew };
+  return drew;
 }
 
 function parseRect(data: Uint8Array, offset: number): Rect | null {
