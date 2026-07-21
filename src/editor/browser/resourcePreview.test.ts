@@ -49,6 +49,7 @@ describe("browser PICT conformance", () => {
     expect(ids).toContain("directbits32-chunky-packbits");
     expect(ids).toContain("directbits32-planar-packbits");
     expect(ids).toContain("standalone-512-byte-container");
+    expect(ids).toContain("standalone-512-byte-invalid-version");
     expect(pictConformance.fixtures.filter((fixture) => "malformedCompanionOf" in fixture).length).toBeGreaterThanOrEqual(5);
   });
 
@@ -63,7 +64,7 @@ describe("browser PICT conformance", () => {
   });
 
   it("labels every target-only behavior with its owning parser issue", () => {
-    const fixtures = new Map(pictConformance.fixtures.map((fixture) => [fixture.id, fixture]));
+    const fixtures = new Map(pictConformance.fixtures.map((fixture) => [fixture.id, fixture as { ownerIssue?: string }]));
     for (const id of Object.keys(pictConformance.targetExpectations)) {
       expect(fixtures.get(id)?.ownerIssue, `${id} needs an ownerIssue`).toMatch(/^ISY-\d+$/);
     }

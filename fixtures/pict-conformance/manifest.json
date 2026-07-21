@@ -157,8 +157,16 @@
       "prefixZeroBytes": 512,
       "byteLength": 586,
       "claim": "specification-backed",
-      "ownerIssue": "ISY-421",
       "container": "standalone-file"
+    },
+    {
+      "id": "standalone-512-byte-invalid-version",
+      "bytesBase64": "AAAAAAAAAAEACAARAv4MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAEAAAAAAAEACAAAAAAAAQAIAAAAAAABAAgAAKoAAP8=",
+      "prefixZeroBytes": 512,
+      "byteLength": 586,
+      "claim": "specification-backed",
+      "container": "standalone-file",
+      "malformedCompanionOf": "standalone-512-byte-container"
     },
     {
       "id": "v1-bitsrect-byte-stream-truncated",
@@ -299,7 +307,8 @@
     "directbits16-word-packbits": { "status": "decoded", "width": 4, "height": 1, "version": "unknown", "format": "directbits-16-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "0abcca3d", "diagnosticCodes": [] },
     "directbits32-chunky-packbits": { "status": "decoded", "width": 2, "height": 1, "version": "unknown", "format": "directbits-32-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "145a4653", "diagnosticCodes": [] },
     "directbits32-planar-packbits": { "status": "decoded", "width": 2, "height": 1, "version": "unknown", "format": "directbits-32-packbits", "opcode": "0x009A", "opcodeCount": 2, "rgbaFnv1a": "145a4653", "diagnosticCodes": [] },
-    "standalone-512-byte-container": { "status": "malformed", "diagnosticCodes": ["pict.invalid_record_size"] },
+    "standalone-512-byte-container": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "standalone-512-byte-invalid-version": { "status": "malformed", "diagnosticCodes": ["pict.standalone_header_invalid"] },
     "v1-bitsrect-byte-stream-truncated": { "status": "malformed", "diagnosticCodes": ["pict.bits_truncated"] },
     "v1-bitsrect-byte-stream-missing-end": { "status": "malformed", "diagnosticCodes": ["pict.v1_missing_end_picture"] },
     "v2-bitsrgn-bitmap-truncated": { "status": "malformed", "diagnosticCodes": ["pict.opcode_truncated"] },
@@ -317,7 +326,5 @@
     "v2-word-padding-truncated": { "status": "malformed", "diagnosticCodes": ["pict.opcode_truncated"] },
     "directbits32-planar-packbits-truncated": { "status": "malformed", "diagnosticCodes": ["pict.opcode_truncated"] }
   },
-  "targetExpectations": {
-    "standalone-512-byte-container": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "78354205" }
-  }
+  "targetExpectations": {}
 }

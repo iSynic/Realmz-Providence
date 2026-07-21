@@ -147,7 +147,14 @@ function imageToObjectUrl(image: DecodedImage) {
   });
 }
 
-function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): DecodedImage {
+function decodePictPackBits(input: Uint8Array, summary: Record<string, string>): DecodedImage {
+  const { pict, payloadOffset } = pictPayload(input);
+  if (payloadOffset > 0) {
+    summary.pictContainer = "standalone-file";
+    summary.pictPayloadOffset = String(payloadOffset);
+  } else {
+    summary.pictContainer = "resource-payload";
+  }
   if (pict.byteLength >= 10) {
     const frame = parseRect(pict, 2);
     summary.pictSizeWord = String(i16At(pict, 0));
@@ -215,6 +222,38 @@ function decodePictPackBits(pict: Uint8Array, summary: Record<string, string>): 
   }
   throw failures.find((failure) => failure.diagnostic)
     ?? previewError("malformed", "pict.no_drawable_opcode", "PICT contains no supported PackBits, Bits, or DirectBits drawing opcode.", "pict");
+}
+
+function pictPayload(data: Uint8Array): { pict: Uint8Array; payloadOffset: number } {
+  if (hasPlausiblePictHeader(data, 0)) return { pict: data, payloadOffset: 0 };
+  if (hasPlausiblePictHeader(data, 512)) {
+    if (hasPictVersionRecord(data, 512)) return { pict: data.subarray(512), payloadOffset: 512 };
+    throw previewError("malformed", "pict.standalone_header_invalid", "A possible standalone PICT file has no valid version record after its 512-byte application header.", "pict", 512);
+  }
+  if (data.byteLength >= 522 && hasZeroPrefix(data, 512)) {
+    throw previewError("malformed", "pict.standalone_header_invalid", "A 512-byte-prefixed PICT file does not contain a plausible picture header and version record.", "pict", 512);
+  }
+  return { pict: data, payloadOffset: 0 };
+}
+
+function hasPlausiblePictHeader(data: Uint8Array, offset: number) {
+  const frame = parseRect(data, offset + 2);
+  return frame !== null && rectWidth(frame) > 0 && rectHeight(frame) > 0;
+}
+
+function hasPictVersionRecord(data: Uint8Array, offset: number) {
+  const version = offset + 10;
+  const isV1 = data[version] === 0x11 && data[version + 1] === 0x01;
+  const isV2 = u16At(data, version) === 0x0011 && u16At(data, version + 2) === 0x02ff;
+  return isV1 || isV2;
+}
+
+function hasZeroPrefix(data: Uint8Array, length: number) {
+  if (data.byteLength < length) return false;
+  for (let index = 0; index < length; index += 1) {
+    if (data[index] !== 0) return false;
+  }
+  return true;
 }
 
 type Rect = {

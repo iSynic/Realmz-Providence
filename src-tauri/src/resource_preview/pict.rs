@@ -33,13 +33,30 @@ pub(crate) fn inspect(
             ),
         ));
     }
-    summary.insert("pictSizeWord".to_string(), i16_be(data, 0).to_string());
-    summary.insert("frameTop".to_string(), i16_be(data, 2).to_string());
-    summary.insert("frameLeft".to_string(), i16_be(data, 4).to_string());
-    summary.insert("frameBottom".to_string(), i16_be(data, 6).to_string());
-    summary.insert("frameRight".to_string(), i16_be(data, 8).to_string());
+    let (pict, payload_offset) = match pict_payload(data) {
+        Ok(payload) => payload,
+        Err(failure) => {
+            return Ok(metadata_preview(
+                ResourcePreviewStatus::Malformed,
+                "image/pict",
+                summary,
+                failure.diagnostic,
+            ));
+        }
+    };
+    summary.insert("pictSizeWord".to_string(), i16_be(pict, 0).to_string());
+    summary.insert("frameTop".to_string(), i16_be(pict, 2).to_string());
+    summary.insert("frameLeft".to_string(), i16_be(pict, 4).to_string());
+    summary.insert("frameBottom".to_string(), i16_be(pict, 6).to_string());
+    summary.insert("frameRight".to_string(), i16_be(pict, 8).to_string());
+    if payload_offset > 0 {
+        summary.insert("pictContainer".to_string(), "standalone-file".to_string());
+        summary.insert("pictPayloadOffset".to_string(), payload_offset.to_string());
+    } else {
+        summary.insert("pictContainer".to_string(), "resource-payload".to_string());
+    }
 
-    match decode_pict(data) {
+    match decode_pict(pict) {
         Ok(decoded) => {
             summary.insert("pictVersion".to_string(), decoded.version);
             summary.insert("format".to_string(), decoded.format);
@@ -283,7 +300,8 @@ struct BitmapDrawCommand {
     packed: bool,
 }
 
-fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
+fn decode_pict(input: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
+    let (data, _) = pict_payload(input)?;
     let header = PictHeader::parse(data).ok_or_else(|| PictFailure {
         malformed: true,
         diagnostic: diagnostic(
@@ -447,6 +465,53 @@ fn decode_pict(data: &[u8]) -> std::result::Result<PictDecode, PictFailure> {
             "pict",
         ),
     }))
+}
+
+fn pict_payload(data: &[u8]) -> std::result::Result<(&[u8], usize), PictFailure> {
+    if has_plausible_pict_header(data, 0) {
+        return Ok((data, 0));
+    }
+    if has_plausible_pict_header(data, 512) {
+        if has_pict_version_record(data, 512) {
+            return Ok((&data[512..], 512));
+        }
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.standalone_header_invalid",
+                "A possible standalone PICT file has no valid version record after its 512-byte application header.",
+                "pict",
+            )
+            .with_offset(512),
+        });
+    }
+    if data.len() >= 522 && data[..512].iter().all(|byte| *byte == 0) {
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.standalone_header_invalid",
+                "A 512-byte-prefixed PICT file does not contain a plausible picture header and version record.",
+                "pict",
+            )
+            .with_offset(512),
+        });
+    }
+    Ok((data, 0))
+}
+
+fn has_plausible_pict_header(data: &[u8], offset: usize) -> bool {
+    Rect::parse(data, offset + 2)
+        .map(|frame| frame.width() > 0 && frame.height() > 0)
+        .unwrap_or(false)
+}
+
+fn has_pict_version_record(data: &[u8], offset: usize) -> bool {
+    let version = offset + 10;
+    let is_v1 = data.get(version) == Some(&0x11) && data.get(version + 1) == Some(&0x01);
+    let is_v2 = u16_be(data, version) == Some(0x0011) && u16_be(data, version + 2) == Some(0x02ff);
+    is_v1 || is_v2
 }
 
 fn parse_opcode_stream(data: &[u8]) -> PictOpcodeStream {
