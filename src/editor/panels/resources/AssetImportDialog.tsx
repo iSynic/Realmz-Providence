@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ManagedAssetKind, ManagedAssetLibraryScope } from "../../types";
 import { TutorialTip } from "../../components/TutorialTip";
 import { ModalDialog } from "../../ui";
+import { ModMusicPlayer } from "../../components/ModMusicPlayer";
 import {
   assetTargetForKind,
   fileToMediaAssetRequest,
@@ -13,10 +14,10 @@ import {
   SCENARIO_SOUND_MIN_ID
 } from "../../mediaAssets";
 
-const ASSET_IMPORT_HELP = "Import files as scenario assets or workspace custom-library assets. Pictures, icons, special land tiles, sounds, text/style resources, and unsupported raw resources keep their resource type and ID.";
+const ASSET_IMPORT_HELP = "Import files as scenario assets or workspace custom-library assets. Pictures, icons, special land tiles, sounds, standard MOD music, text/style resources, and unsupported raw resources keep their authored identity.";
 const IMPORT_KIND_HELP = "Choose the Realmz resource family before importing. Image files can become pictures or icons; text and raw resource files are preserved without image conversion.";
 const IMPORT_CONVERSION_HELP = "Providence previews the original source beside the Realmz-ready output so you can catch scaling, transparency, palette, and sound-conversion issues before the asset is added to the project.";
-const IMPORT_TARGET_HELP = "Target shows the Realmz resource family Providence will write: PICT for pictures, snd for sounds, cicn for icons, or TEXT/styl/raw bytes for resource imports.";
+const IMPORT_TARGET_HELP = "Target shows the Realmz resource family Providence will write: PICT for pictures, snd for sounds, cicn for icons, MOD for one of three scenario-music slots, or TEXT/styl/raw bytes for resource imports.";
 const IMPORT_FIT_HELP = "Fit controls how an image becomes a fixed 32 x 32 icon or special-land tile: padding preserves shape, crop fills the tile, and stretch forces the image to the target size.";
 const IMPORT_SCALE_HELP = "Smooth scaling is useful for pictures and art imports. Crisp pixels preserves hard pixel-art edges for Realmz-style icons, sprites, and map tiles.";
 const IMPORT_MATTE_HELP = "Transparency matters for cicn overlays. Special Land Tiles should usually keep transparent pixels so the landlook base tile remains visible underneath.";
@@ -49,7 +50,7 @@ export function AssetImportBar({
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [previewSummary, setPreviewSummary] = useState("");
   const [previewWarnings, setPreviewWarnings] = useState<string[]>([]);
-  const accept = fixedKind ? acceptForKind(fixedKind) : "image/*,audio/*,text/*,.txt,.text,.styl,.str,.str#,.*";
+  const accept = fixedKind ? acceptForKind(fixedKind) : "image/*,audio/*,text/*,.mod,.txt,.text,.styl,.str,.str#,.*";
   const isImage = activeKind === "picture" || activeKind === "icon" || activeKind === "special-land-tile";
   const isByteResource = activeKind === "text" || activeKind === "other";
   const fixedSizeImage = activeKind === "icon" || activeKind === "special-land-tile";
@@ -158,6 +159,7 @@ export function AssetImportBar({
                     <strong>Realmz-ready output</strong>
                   </TutorialTip>
                   {previewDataUrl && activeKind === "sound" && <audio controls src={previewDataUrl} />}
+                  {previewDataUrl && activeKind === "music" && <ModMusicPlayer source={previewDataUrl} label={pendingFiles[0].name} />}
                   {previewDataUrl && isImage && <img src={previewDataUrl} alt="Converted asset preview" />}
                   {previewDataUrl && activeKind === "text" && <pre className="asset-import-text-preview">{decodePreviewText(previewDataUrl)}</pre>}
                   {previewDataUrl && activeKind === "other" && <span>Raw bytes will be preserved.</span>}
@@ -166,6 +168,7 @@ export function AssetImportBar({
                 <div className="asset-import-preview">
                   <strong>Original source</strong>
                   {sourcePreviewDataUrl && activeKind === "sound" && <audio controls src={sourcePreviewDataUrl} />}
+                  {sourcePreviewDataUrl && activeKind === "music" && <span>Original MOD bytes are preserved unchanged.</span>}
                   {sourcePreviewDataUrl && isImage && <img src={sourcePreviewDataUrl} alt="Original source preview" />}
                   {sourcePreviewDataUrl && activeKind === "text" && <pre className="asset-import-text-preview">{decodePreviewText(sourcePreviewDataUrl)}</pre>}
                   {sourcePreviewDataUrl && activeKind === "other" && <span>{sourceInfo ? sourceSummary(sourceInfo) : "Reading..."}</span>}
@@ -288,6 +291,7 @@ export function AssetImportBar({
 }
 
 export function defaultImportKindForFile(file: File | undefined): ManagedAssetKind {
+  if (/\.mod$/i.test(file?.name ?? "")) return "music";
   if (file?.type.startsWith("audio/")) return "sound";
   if (file?.type.startsWith("text/") || /\.(txt|text|styl|str#?)$/i.test(file?.name ?? "")) return "text";
   return "picture";
@@ -300,16 +304,18 @@ export function importKindsForFile(file: File | undefined, fixedKind?: ManagedAs
     { kind: "special-land-tile" as ManagedAssetKind, label: "Special Land Tile / cicn 32 x 32" }
   ];
   const soundKind = { kind: "sound" as ManagedAssetKind, label: "Sound / snd" };
+  const musicKind = { kind: "music" as ManagedAssetKind, label: "Music / standard MOD" };
   const textKind = { kind: "text" as ManagedAssetKind, label: "Text / TEXT or styl" };
   const rawKind = { kind: "other" as ManagedAssetKind, label: "Raw Resource" };
   if (fixedKind) {
-    const fixed = [...allImageKinds, soundKind, textKind, rawKind].find((option) => option.kind === fixedKind);
+    const fixed = [...allImageKinds, soundKind, musicKind, textKind, rawKind].find((option) => option.kind === fixedKind);
     return fixed ? [fixed] : [{ kind: fixedKind, label: kindLabel(fixedKind) }];
   }
+  if (/\.mod$/i.test(file?.name ?? "")) return [musicKind, rawKind];
   if (file?.type.startsWith("audio/")) return [soundKind];
   if (file?.type.startsWith("image/")) return allImageKinds;
   if (file?.type.startsWith("text/") || /\.(txt|text|styl|str#?)$/i.test(file?.name ?? "")) return [textKind, rawKind];
-  return [rawKind, textKind, ...allImageKinds, soundKind];
+  return [rawKind, textKind, ...allImageKinds, soundKind, musicKind];
 }
 
 export function isLikelyPixelArt(file: File | undefined, kind: ManagedAssetKind) {
@@ -319,6 +325,7 @@ export function isLikelyPixelArt(file: File | undefined, kind: ManagedAssetKind)
 export function previewResourceIdForKind(kind: ManagedAssetKind) {
   if (kind === "special-land-tile") return -100;
   if (kind === "sound") return SCENARIO_SOUND_MIN_ID;
+  if (kind === "music") return 1;
   if (kind === "icon") return 30126;
   if (kind === "text") return -200;
   if (kind === "other") return 1;
@@ -329,6 +336,7 @@ export function targetLabel(kind: ManagedAssetKind) {
   if (kind === "special-land-tile") return "32 x 32 cicn, negative tile ID";
   if (kind === "icon") return "32 x 32 cicn";
   if (kind === "sound") return "Mac snd resource";
+  if (kind === "music") return "Classic music slot (Custom 1-3 Music)";
   if (kind === "text") return "TEXT, styl, or STR# resource bytes";
   if (kind === "other") return "Raw resource bytes";
   return "Scenario PICT resource";
@@ -336,6 +344,7 @@ export function targetLabel(kind: ManagedAssetKind) {
 
 export function sourceSummary(info: MediaAssetSourceInfo) {
   if (info.kind === "sound") return `${formatDuration(info.durationMs)} at ${(info.sampleRate ?? 0).toLocaleString()} Hz, ${info.channels ?? 0} channel(s)`;
+  if (info.kind === "music") return "Validated standard MOD module";
   if (info.kind === "text") return "Text resource bytes";
   if (info.kind === "raw") return "Raw resource bytes";
   return `${info.width ?? 0} x ${info.height ?? 0}`;
@@ -358,6 +367,7 @@ export function kindLabel(kind: ManagedAssetKind) {
   if (kind === "picture") return "Picture / PICT";
   if (kind === "icon") return "Icon / cicn";
   if (kind === "sound") return "Sound / snd";
+  if (kind === "music") return "Music / standard MOD";
   if (kind === "text") return "Text / TEXT or styl";
   if (kind === "other") return "Raw Resource";
   return kind;
@@ -365,6 +375,7 @@ export function kindLabel(kind: ManagedAssetKind) {
 
 function acceptForKind(kind: ManagedAssetKind) {
   if (kind === "sound") return "audio/*";
+  if (kind === "music") return ".mod,audio/x-mod,audio/mod,audio/x-protracker";
   if (kind === "text") return "text/*,.txt,.text,.styl,.str,.str#";
   if (kind === "other") return "*";
   return "image/*";
@@ -381,6 +392,7 @@ function defaultResourceTypeForKind(file: File | undefined, kind: ManagedAssetKi
 
 function previewDataUrlForImport(request: { kind: ManagedAssetKind; previewBase64: string }) {
   if (request.kind === "sound") return `data:audio/wav;base64,${request.previewBase64}`;
+  if (request.kind === "music") return `data:audio/x-mod;base64,${request.previewBase64}`;
   if (request.kind === "text") return `data:text/plain;base64,${request.previewBase64}`;
   if (request.kind === "other") return `data:application/octet-stream;base64,${request.previewBase64}`;
   return `data:image/png;base64,${request.previewBase64}`;

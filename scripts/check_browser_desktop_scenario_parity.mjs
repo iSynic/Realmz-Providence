@@ -19,6 +19,7 @@ const sourceFiles = [
   "src/editor/browser/scenarioCompilerBaseline.ts",
   "src/editor/browser/ruleCompiler.ts",
   "src/editor/pictWriter.ts",
+  "src/editor/standardMod.ts",
   "src/editor/browser/compatibilityAnnex.ts",
   "src/editor/browser/scenarioPackage.ts",
   "src/editor/generated/realmzNativeManifestPolicy.ts",

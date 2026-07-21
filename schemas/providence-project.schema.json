@@ -616,7 +616,7 @@
     },
     "assetImportTarget": {
       "type": "string",
-      "enum": ["scenario-picture", "custom-landlook-atlas", "icon", "special-land-tile", "sound", "text", "raw-resource"],
+      "enum": ["scenario-picture", "custom-landlook-atlas", "icon", "special-land-tile", "sound", "music", "text", "raw-resource"],
       "x-providence-typescript-name": "ProvidenceAssetImportTarget",
       "x-providence-rust-name": "AssetImportTarget",
       "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
@@ -667,7 +667,7 @@
     },
     "managedAssetKind": {
       "type": "string",
-      "enum": ["picture", "icon", "special-land-tile", "sound", "text", "other"],
+      "enum": ["picture", "icon", "special-land-tile", "sound", "music", "text", "other"],
       "x-providence-typescript-name": "ProvidenceManagedAssetKind",
       "x-providence-rust-name": "ManagedAssetKind",
       "x-providence-rust-derives": ["Debug", "Clone", "Copy", "Serialize", "Deserialize", "PartialEq", "Eq", "PartialOrd", "Ord"]
@@ -708,7 +708,7 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceManagedAsset",
       "x-providence-rust-name": "ManagedAsset",
-      "x-providence-rust-default": ["libraryScope", "conversion"],
+      "x-providence-rust-default": ["scenarioMusicSlot", "libraryScope", "conversion"],
       "required": ["id", "label", "kind", "resourceType", "resourceId", "fileName", "originalPath", "previewPath", "resourcePath", "mimeType", "bytes", "sha256", "width", "height", "durationMs", "sampleRate", "channels", "exportState", "provenance", "linkedEntity"],
       "properties": {
         "id": { "type": "string" },
@@ -716,6 +716,10 @@
         "kind": { "$ref": "#/$defs/managedAssetKind" },
         "resourceType": { "type": "string" },
         "resourceId": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "scenarioMusicSlot": {
+          "oneOf": [{ "type": "integer", "minimum": 1, "maximum": 3 }, { "type": "null" }],
+          "x-providence-rust-type": "Option<u8>"
+        },
         "fileName": { "type": "string" },
         "originalPath": { "type": "string" },
         "previewPath": { "type": "string" },

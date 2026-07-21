@@ -68,7 +68,7 @@ pub(crate) fn package_assets(
         !matches!(
             asset.library_scope,
             Some(ManagedAssetLibraryScope::CustomLibrary)
-        )
+        ) && !matches!(asset.kind, ManagedAssetKind::Music)
     }) {
         validate_resource_identity(asset)?;
         if !matches!(asset.export_state, ManagedAssetExportState::Ready) {

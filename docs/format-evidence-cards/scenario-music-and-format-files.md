@@ -2,30 +2,26 @@
 
 ## User-Facing Unlock
 
-Providence can preserve and eventually manage custom scenario music without confusing it with `snd ` sound effects. It can also classify zero-byte `Format` files as compatibility markers rather than unknown binary payloads.
+Providence manages authored standard MOD scenario music without confusing it with `snd ` sound effects. It also preserves unsupported legacy music and zero-byte `Format` compatibility markers in the import annex.
 
 ## Realmz Source Anchors
 
 | Source | Evidence |
 | --- | --- |
-| `F:\Realmz\src\MusicManager.cpp:31` | Runtime playlist table defines built-in music playlists and custom scenario playlists. |
-| `F:\Realmz\src\MusicManager.cpp:45` | `Custom 1 Music` is playlist `12` and scenario-local. |
-| `F:\Realmz\src\MusicManager.cpp:46` | `Custom 2 Music` is playlist `13` and scenario-local. |
-| `F:\Realmz\src\MusicManager.cpp:47` | `Custom 3 Music` is playlist `14` and scenario-local. |
-| `F:\Realmz\src\MusicManager.cpp:48` | Custom playlist support continues through `Custom 9 Music`. |
-| `F:\Realmz\src\MusicManager.cpp:118` | Scenario music lookup roots are built from the active scenario path. |
-| `F:\Realmz\src\MusicManager.cpp:173` | Music parser supports PlayerPRO `MADG` modules. |
-| `F:\Realmz\src\MusicManager.cpp:287` | Other supported module formats are passed to the ResourceDASM module parser. |
-| `F:\Realmz\src\realmz_orig\music.c:6` | Legacy `music(short playlist)` dispatches playlist numbers to the music manager. |
+| Realmz-Castle/realmz PR `#306` | Current scenario-music contract defines three custom slots named `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music`. |
+| Realmz-Castle/realmz PR `#306` | The slots are playlists `15`, `16`, and `17`, selected by custom landlooks whose final picture IDs are `6`, `7`, and `8`. |
+| Realmz-Castle/realmz PR `#306` | Authored scenario music accepts standard MOD modules. MAD/MADG, MIDI, S3M, XM, IT, MTM, MED, and PlayerPRO formats are not part of the authoring contract. |
+| Realmz-Castle/realmz PR `#306` | A hash-specific legacy MADG Outdoor Music fallback remains runtime-owned compatibility behavior, not a Providence-authored format. |
 
 ## Byte Layout Notes
 
 ### `Custom N Music`
 
 - Files are scenario-local music modules, not `snd ` sound effects.
-- Names observed in the corpus are `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music`; runtime supports up to `Custom 9 Music`.
-- Modern Realmz source supports PlayerPRO `MADG` and other module formats through ResourceDASM.
-- Providence currently preserves these files byte-for-byte. Import/preview/edit support is a future asset-workbench target.
+- The current authored contract has exactly three slots: `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music`.
+- Providence stores each as a managed `music` asset with an explicit `scenarioMusicSlot` from 1 through 3.
+- Import validates a standard 31-sample MOD structure. The original module bytes remain canonical and are written unchanged to native Mac and Windows scenario folders.
+- Assets previews MOD files through libopenmpt. Preview support does not broaden the native export contract to the other tracker formats libopenmpt can decode.
 
 ### Legacy `Custom N`
 
@@ -51,12 +47,12 @@ The byte-roundtrip audit found:
 | `Custom 3 Music` | 6/87 | Module-sized binary files from 73,480 to 184,108 bytes. |
 | `Custom 1` | 3/87 | Legacy unsuffixed module-like data fork, 85,324 bytes. |
 
-## Providence Follow-Up
+## Providence Policy
 
-- Follow-up: `preserve-only`, then `editor-ui` for music preview/import.
 - Keep scenario music separate from short sound effects in Assets.
-- Show custom music files under Scenario Assets as files that ship with the scenario.
-- Use the module parser for preview/playback only after fixture checks confirm supported formats.
+- Show authored custom music under Scenario Assets as files that ship with the scenario.
+- Preserve unsupported imported music and legacy slots 4 through 9 only in the bounded compatibility annex.
+- Omit canonical music from Realmz Remake Classic bundle v1 and report an explicit limitation until that contract defines scenario music and playlist meanings.
 - Keep `Format` hidden in normal UI or shown as an Advanced compatibility marker.
 
 ## Writer Gate

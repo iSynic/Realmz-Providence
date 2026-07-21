@@ -16,6 +16,7 @@ export type ResourceRole =
   | "scenario-picture"
   | "picture"
   | "sound"
+  | "music"
   | "icon"
   | "special-land-tile"
   | "tile-atlas"
@@ -105,6 +106,7 @@ export function resourceRole(asset: ManagedAsset | LibraryAsset): ResourceRole {
     if (asset.kind === "picture" && asset.resourceType === "PICT" && asset.resourceId >= 30000 && asset.resourceId <= 30128) return "scenario-picture";
     if (asset.kind === "picture") return "picture";
     if (asset.kind === "sound") return "sound";
+    if (asset.kind === "music") return "music";
     if (asset.kind === "icon") return "icon";
     if (asset.kind === "special-land-tile") return "special-land-tile";
     if (asset.kind === "text") return "text-resource";
@@ -116,6 +118,7 @@ export function resourceRole(asset: ManagedAsset | LibraryAsset): ResourceRole {
   if (asset.resourceType === "PICT" || asset.type === "picture") return "picture";
   if (asset.resourceType === "cicn" || asset.type.includes("icon")) return "icon";
   if (asset.resourceType?.trim() === "snd" || asset.type === "sound") return "sound";
+  if (asset.resourceType?.trim() === "MOD" || asset.type === "music") return "music";
   if (asset.resourceType === "TEXT" || asset.type === "text-resource" || asset.type === "text") return "text-resource";
   if (asset.resourceType === "STR#" || asset.type === "string-list-resource") return "string-list";
   if (asset.resourceType === "styl" || type.includes("style")) return "style";
@@ -126,6 +129,7 @@ export function resourceRole(asset: ManagedAsset | LibraryAsset): ResourceRole {
 
 export function managedAssetKindForLibrary(asset: LibraryAsset): ManagedAssetKind {
   if (asset.type === "sound" || asset.resourceType?.trim() === "snd") return "sound";
+  if (asset.type === "music" || asset.resourceType?.trim() === "MOD") return "music";
   if (asset.type === "special-land-tile") return "special-land-tile";
   if (asset.type === "icon" || asset.type === "icon-resource" || asset.type.includes("icon") || asset.resourceType === "cicn") return "icon";
   if (asset.type === "picture" || asset.resourceType === "PICT") return "picture";

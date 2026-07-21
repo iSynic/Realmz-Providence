@@ -3237,6 +3237,7 @@ mod tests {
             kind: ManagedAssetKind::Text,
             resource_type: "TEXT".to_string(),
             resource_id: -200,
+            scenario_music_slot: None,
             file_name: "scrolling-text--200.txt".to_string(),
             original_path: String::new(),
             preview_path: String::new(),

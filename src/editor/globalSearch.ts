@@ -782,6 +782,7 @@ function assetKindFilter(resourceType: string | null | undefined, kind: string):
   const type = (resourceType ?? "").trim();
   if (type === "PICT" || kind === "picture") return "picture";
   if (type === "snd" || type === "snd " || kind === "sound") return "sound";
+  if (type === "MOD" || kind === "music") return "music";
   if (type === "cicn" || kind === "icon" || kind.includes("icon")) return "icon";
   if (kind === "special-land-tile") return "special-land-tile";
   if (["TEXT", "STR#", "styl"].includes(type) || kind === "text") return "text";
@@ -849,6 +850,7 @@ function assetEditor(kind: string, resourceType: string) {
   const type = resourceType.trim();
   if (type === "PICT" || kind === "picture") return "pictures";
   if (type === "snd" || kind === "sound") return "sounds";
+  if (type === "MOD" || kind === "music") return "project-assets";
   if (type === "cicn" || kind === "icon" || kind === "special-land-tile") return "icons";
   if (["TEXT", "STR#", "styl"].includes(type) || kind === "text") return "text-resources";
   return "project-assets";

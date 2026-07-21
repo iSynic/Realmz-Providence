@@ -332,7 +332,7 @@ The latest focused string audit downgraded the Divinity Strings `Sound` box from
 
 The twenty-first follow-up archaeology pass classified the remaining high-frequency non-record pass-through files:
 
-- `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music` are scenario-local custom music module files. Realmz runtime support maps them to playlists 12, 13, and 14, with source support continuing through `Custom 9 Music`.
+- `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music` are scenario-local custom music module files. The current Realmz PR #306 contract maps them to playlists 15, 16, and 17 and supports authored standard MOD payloads only; older 1-9/PlayerPRO observations remain historical archaeology rather than the authoring contract.
 - Custom music is not `snd ` sound-effect data and should live in Assets as scenario-shipped music modules, not in the normal sound picker.
 - `Format` is observed as a zero-byte file in 47/87 visible byte-roundtrip roots. No source consumer is known yet, so Providence should preserve it and keep it under Advanced compatibility details.
 

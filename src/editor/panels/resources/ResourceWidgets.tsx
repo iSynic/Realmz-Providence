@@ -26,12 +26,13 @@ import {
 import { AssetImportBar } from "./AssetImportDialog";
 import { COPY_TO_SCENARIO_ASSETS_LABEL, type AssetSection, referenceAssetOwnershipGuidance, resourceScopeHelp } from "./assetOwnership";
 import { authoringLibraryCollection } from "../../assetLibraryClassification";
+import { ModMusicPlayer } from "../../components/ModMusicPlayer";
 
 export type { AssetSection } from "./assetOwnership";
 export const LIBRARY_PAGE_SIZE = 20;
 const SPECIAL_LAND_AUTHORING_HELP = "Special Land Tiles are scenario-local cicn resources addressed by negative map tile values. They are separate from standard landlook atlases and can be selected for map painting.";
 const PROJECT_ASSET_NAME_HELP = "This is an editor-facing Providence label. It helps authors identify the asset, but Realmz still resolves the exported resource by type and numeric resource ID.";
-const PROJECT_RESOURCE_ID_HELP = "The resource ID is the Realmz lookup key. Pictures, sounds, icons, and special land tiles can be referenced from scripts, maps, startup fields, monsters, items, and other records by this number.";
+const PROJECT_RESOURCE_ID_HELP = "The resource ID is the Realmz lookup key. For music it selects Classic slot 1, 2, or 3; other assets can be referenced from scripts, maps, startup fields, monsters, items, and other records by this number.";
 const PROJECT_ASSET_REPLACE_HELP = "Replace keeps the same Providence asset and resource ID, but reconverts the selected source file into the Realmz-ready output for this asset kind.";
 const PROJECT_ASSET_DELETE_HELP = "Delete removes this project-owned asset from Providence. Check Used By links first; records that still point at its resource ID can become missing-resource warnings.";
 const ASSET_USAGE_LINKS_HELP = "Used By links are decoded semantic references to this resource ID. Follow them before renumbering, replacing, or deleting an asset.";
@@ -119,8 +120,11 @@ export function assetAuthoringGuidance(section: AssetSection, kindFilter: Manage
   if (kindFilter === "sound") {
     return `Custom scenario sounds use snd IDs ${SCENARIO_SOUND_MIN_ID}-${SCENARIO_SOUND_MAX_ID}.`;
   }
+  if (kindFilter === "music") {
+    return "Scenario music uses three standard MOD slots exported as Custom 1 Music through Custom 3 Music.";
+  }
   if (kindFilter === "all") {
-    return `Scenario pictures use PICT IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}; custom sounds use snd IDs ${SCENARIO_SOUND_MIN_ID}-${SCENARIO_SOUND_MAX_ID}.`;
+    return `Scenario pictures use PICT IDs ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID}; custom sounds use snd IDs ${SCENARIO_SOUND_MIN_ID}-${SCENARIO_SOUND_MAX_ID}; standard MOD music uses slots 1-3.`;
   }
   return "";
 }
@@ -132,6 +136,7 @@ function kindLabel(kind: ManagedAssetKind) {
   if (kind === "picture") return "Picture / PICT";
   if (kind === "icon") return "Icon / cicn";
   if (kind === "sound") return "Sound / snd";
+  if (kind === "music") return "Music / standard MOD";
   return kind;
 }
 
@@ -368,7 +373,7 @@ export function ManagedAssetCard({
   onSelect?: (preview: string | null) => void;
   onOpenPreview?: (preview: string | null) => void;
 }) {
-  const previewLoadOverride = asset.kind === "sound" ? selected : undefined;
+  const previewLoadOverride = asset.kind === "sound" || asset.kind === "music" ? selected : undefined;
   const { previewRef, preview } = useDeferredProjectPreview<HTMLElement>(
     asset.previewPath,
     desktopRuntime,
@@ -447,14 +452,20 @@ export function ManagedAssetCard({
         />
       </label>
       <label className="domain-field compact-field">
-        <TutorialTip title="Resource ID" body={PROJECT_RESOURCE_ID_HELP} side="below">
-          <span>{asset.resourceType.trim() || asset.resourceType} ID</span>
+        <TutorialTip title={asset.kind === "music" ? "Music Slot" : "Resource ID"} body={PROJECT_RESOURCE_ID_HELP} side="below">
+          <span>{asset.kind === "music" ? "Music Slot" : `${asset.resourceType.trim() || asset.resourceType} ID`}</span>
         </TutorialTip>
         <input
           type="number"
+          min={asset.kind === "music" && asset.libraryScope !== "custom-library" ? 1 : undefined}
+          max={asset.kind === "music" && asset.libraryScope !== "custom-library" ? 3 : undefined}
           defaultValue={asset.resourceId}
           onBlur={(event) => {
             const resourceId = Number(event.currentTarget.value);
+            if (asset.kind === "music" && asset.libraryScope !== "custom-library" && (!Number.isInteger(resourceId) || resourceId < 1 || resourceId > 3)) {
+              event.currentTarget.value = String(asset.resourceId);
+              return;
+            }
             if (Number.isInteger(resourceId) && resourceId !== asset.resourceId) onUpdateAsset?.(asset.id, { resourceId });
           }}
         />
@@ -504,7 +515,7 @@ export function ManagedAssetCard({
       <input
         ref={replaceInputRef}
         type="file"
-        accept={asset.kind === "sound" ? "audio/*" : "image/*"}
+        accept={asset.kind === "sound" ? "audio/*" : asset.kind === "music" ? ".mod,audio/x-mod" : "image/*"}
         hidden
         onChange={(event) => {
           const file = event.currentTarget.files?.[0] ?? null;
@@ -799,6 +810,9 @@ export function AssetPreview({
       </div>
     );
   }
+  if (preview && kind === "music") {
+    return <ModMusicPlayer source={preview} label={label} compact />;
+  }
   if (preview && kind === "text") {
     return (
       <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
@@ -819,7 +833,7 @@ export function AssetPreview({
       </TutorialTip>
     );
   }
-  if (preview && kind !== "sound") {
+  if (preview && kind !== "sound" && kind !== "music") {
     return (
       <TutorialTip title="Resource Preview" body={RESOURCE_PREVIEW_HELP} side="below">
         <button type="button" className="asset-preview-button" onClick={onOpen}>
@@ -830,7 +844,7 @@ export function AssetPreview({
   }
   const placeholder = (
     <div className="asset-preview-placeholder">
-      {kind === "sound" ? <Music size={24} /> : kind === "text" || kind === "other" ? <FileText size={24} /> : <ImageIcon size={24} />}
+      {kind === "sound" || kind === "music" ? <Music size={24} /> : kind === "text" || kind === "other" ? <FileText size={24} /> : <ImageIcon size={24} />}
       <span>{previewFallbackLabel(kind, status)}</span>
       {diagnostics[0] && <small>{diagnosticPreviewText(diagnostics[0])}</small>}
     </div>
@@ -1400,6 +1414,7 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
   }, [preview]);
   const usablePreview = preview && preview !== failedPreview ? preview : null;
   if (usablePreview && kind === "sound") return <audio className="resource-detail-audio" src={usablePreview} controls preload="metadata" />;
+  if (usablePreview && kind === "music") return <ModMusicPlayer source={usablePreview} label={label} />;
   if (usablePreview && kind === "text") {
     const text = decodeTextDataUrl(usablePreview);
     if (text != null) return <pre className="resource-detail-text" aria-label={label}>{text}</pre>;
@@ -1461,7 +1476,7 @@ export function ResourcePreviewMedia({ kind, preview, label }: { kind: ManagedAs
   }
   return (
     <div className="resource-detail-missing">
-      {kind === "sound" ? <Music size={28} /> : kind === "text" ? <FileText size={28} /> : <ImageIcon size={28} />}
+      {kind === "sound" || kind === "music" ? <Music size={28} /> : kind === "text" ? <FileText size={28} /> : <ImageIcon size={28} />}
       <span>{kind === "text" ? "No readable text available" : "No preview available"}</span>
     </div>
   );
@@ -1609,6 +1624,7 @@ export function importTargetLabel(target: NonNullable<ManagedAsset["conversion"]
   if (target === "special-land-tile") return "Special Land Tile";
   if (target === "icon") return "Icon";
   if (target === "sound") return "Sound";
+  if (target === "music") return "Scenario Music";
   return target;
 }
 
@@ -1654,6 +1670,7 @@ export function roleLabel(role: ReturnType<typeof resourceRole>) {
   if (role === "scenario-picture") return "Scenario picture";
   if (role === "picture") return "Picture";
   if (role === "sound") return "Sound";
+  if (role === "music") return "Music";
   if (role === "icon") return "Icon";
   if (role === "special-land-tile") return "Special land tile";
   if (role === "tile-atlas") return "Tile atlas";
@@ -1924,7 +1941,7 @@ export function previewFallbackLabel(kind: ManagedAssetKind, status: ResourcePre
   if (status === "malformed") return "Malformed resource";
   if (status === "unsupported-variant") return "Cannot preview";
   if (status === "metadata-only") return "Info only";
-  if (kind === "sound") return "Select to play";
+  if (kind === "sound" || kind === "music") return "Select to play";
   if (kind === "other") return "Raw resource";
   if (status === "preview-ready") return "No preview loaded yet";
   return "No preview";
@@ -1957,6 +1974,7 @@ export function previewDiagnostic(code: string, message: string, decoder: string
 
 export function assetKind(type: string): ManagedAssetKind {
   if (type === "sound") return "sound";
+  if (type === "music") return "music";
   if (type === "special-land-tile") return "special-land-tile";
   if (type === "icon" || type.includes("icon")) return "icon";
   if (type === "picture") return "picture";

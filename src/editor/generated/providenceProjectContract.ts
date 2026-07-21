@@ -225,6 +225,7 @@ export const PROVIDENCE_MANAGED_ASSET_FIELDS = [
   "kind",
   "resourceType",
   "resourceId",
+  "scenarioMusicSlot",
   "fileName",
   "originalPath",
   "previewPath",
@@ -797,7 +798,7 @@ export type ProvidenceScenarioIconResource = {
   imported?: boolean;
 };
 
-export type ProvidenceAssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound" | "text" | "raw-resource";
+export type ProvidenceAssetImportTarget = "scenario-picture" | "custom-landlook-atlas" | "icon" | "special-land-tile" | "sound" | "music" | "text" | "raw-resource";
 
 export type ProvidenceManagedAssetLibraryScope = "scenario" | "custom-library";
 
@@ -811,7 +812,7 @@ export type ProvidencePaletteMode = "adaptive-256";
 
 export type ProvidenceDitherMode = "none" | "floyd-steinberg";
 
-export type ProvidenceManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "text" | "other";
+export type ProvidenceManagedAssetKind = "picture" | "icon" | "special-land-tile" | "sound" | "music" | "text" | "other";
 
 export type ProvidenceManagedAssetExportState = "ready" | "blocked" | "preview-only";
 
@@ -838,6 +839,7 @@ export type ProvidenceManagedAsset = {
   kind: ProvidenceManagedAssetKind;
   resourceType: string;
   resourceId: number;
+  scenarioMusicSlot?: number | null;
   fileName: string;
   originalPath: string;
   previewPath: string;

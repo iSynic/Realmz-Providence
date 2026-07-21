@@ -3,7 +3,10 @@ use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
 fn managed_resource_type_supported(resource_type: &str) -> bool {
-    matches!(resource_type, "PICT" | "cicn" | "snd " | "TEXT" | "styl")
+    matches!(
+        resource_type,
+        "PICT" | "cicn" | "snd " | "MOD " | "TEXT" | "styl"
+    )
 }
 
 fn validate_monster_record_shape(monster: &MonsterRecord, label: &str, errors: &mut Vec<String>) {
@@ -749,6 +752,48 @@ pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
                 ));
             }
         }
+        if matches!(asset.kind, ManagedAssetKind::Music) {
+            if asset.resource_type != "MOD " {
+                errors.push(format!(
+                    "{} is scenario music but targets {}; music must preserve standard MOD bytes.",
+                    asset.label, asset.resource_type
+                ));
+            }
+            match asset.scenario_music_slot {
+                Some(slot) if (1..=3).contains(&slot) => {
+                    if asset.resource_id != i16::from(slot) {
+                        errors.push(format!(
+                            "{} has Classic music slot {} but resource id {}; the canonical slot identities must match.",
+                            asset.label, slot, asset.resource_id
+                        ));
+                    }
+                    if asset.linked_entity.as_deref()
+                        != Some(format!("scenario-music:{slot}").as_str())
+                    {
+                        errors.push(format!(
+                            "{} must be linked to scenario-music:{slot}.",
+                            asset.label
+                        ));
+                    }
+                }
+                _ => errors.push(format!(
+                    "{} needs a Classic music slot from 1 through 3.",
+                    asset.label
+                )),
+            }
+            if !matches!(
+                asset
+                    .conversion
+                    .as_ref()
+                    .map(|conversion| conversion.target),
+                Some(AssetImportTarget::Music)
+            ) {
+                errors.push(format!(
+                    "{} must use the dedicated scenario music import target.",
+                    asset.label
+                ));
+            }
+        }
         if matches!(asset.kind, ManagedAssetKind::Text) {
             if asset.resource_type != "TEXT" && asset.resource_type != "styl" {
                 errors.push(format!(
@@ -1111,7 +1156,7 @@ pub fn validate_target_compatibility(project: &ProvidenceProject) -> Vec<TargetC
                 severity: DiagnosticSeverity::Warning,
                 code: "unsupported-managed-media-type".to_string(),
                 message: format!(
-                    "{unsupported_managed_assets} managed asset(s) target unsupported resource types; only PICT, cicn, snd, TEXT, and styl are known-good replacement writers."
+                    "{unsupported_managed_assets} managed asset(s) target unsupported payload types; only PICT, cicn, snd, MOD, TEXT, and styl are known-good writers."
                 ),
                 source: Some("Assets".to_string()),
             });
@@ -3002,6 +3047,7 @@ mod tests {
             },
             resource_type: resource_type.to_string(),
             resource_id,
+            scenario_music_slot: None,
             file_name: format!("{id}.bin"),
             original_path: String::new(),
             preview_path: String::new(),

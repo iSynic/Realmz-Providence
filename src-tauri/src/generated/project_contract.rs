@@ -242,6 +242,7 @@ pub const PROVIDENCE_MANAGED_ASSET_FIELDS: &[&str] = &[
     "kind",
     "resourceType",
     "resourceId",
+    "scenarioMusicSlot",
     "fileName",
     "originalPath",
     "previewPath",
@@ -985,6 +986,7 @@ pub enum AssetImportTarget {
     Icon,
     SpecialLandTile,
     Sound,
+    Music,
     Text,
     RawResource,
 }
@@ -1040,6 +1042,7 @@ pub enum ManagedAssetKind {
     Icon,
     SpecialLandTile,
     Sound,
+    Music,
     Text,
     Other,
 }
@@ -1085,6 +1088,8 @@ pub struct ManagedAsset {
     pub kind: ManagedAssetKind,
     pub resource_type: String,
     pub resource_id: i16,
+    #[serde(default)]
+    pub scenario_music_slot: Option<u8>,
     pub file_name: String,
     pub original_path: String,
     pub preview_path: String,

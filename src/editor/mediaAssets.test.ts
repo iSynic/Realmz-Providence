@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  fileToMediaAssetRequest,
+  inspectStandardMod,
   nextResourceId,
   nextScenarioResourceIdInRange,
   SCENARIO_DISPLAY_PICTURE_MAX_ID,
@@ -17,4 +19,40 @@ describe("scenario asset resource allocation", () => {
     expect(nextResourceId(occupied, "picture")).toBe(SCENARIO_SPLASH_PICTURE_ID + 1);
     expect(() => nextScenarioResourceIdInRange(occupied, "picture")).toThrow("No unused scenario picture resource ID remains");
   });
+
+  it("allocates only the three canonical Classic music slots", () => {
+    expect(nextScenarioResourceIdInRange([], "music")).toBe(1);
+    const occupied = [1, 2, 3].map((resourceId) => ({ kind: "music" as const, resourceType: "MOD ", resourceId }));
+    expect(() => nextScenarioResourceIdInRange(occupied, "music")).toThrow("No unused scenario music resource ID remains");
+  });
+
+  it("keeps reusable Custom Library MOD assets independent of scenario slots", async () => {
+    const file = new File([minimalMod()], "library-track.mod", { type: "audio/x-mod" });
+    const request = await fileToMediaAssetRequest(file, "music", 4, { libraryScope: "custom-library" });
+    expect(request.resourceId).toBe(4);
+    expect(request.scenarioMusicSlot).toBeNull();
+    expect(request.linkedEntity).toBeNull();
+  });
 });
+
+describe("standard MOD validation", () => {
+  it("accepts a complete silent 4-channel module", () => {
+    const bytes = minimalMod();
+    expect(inspectStandardMod(bytes)).toEqual({ title: "Providence Test", channels: 4, patterns: 1, sampleBytes: 0 });
+  });
+
+  it("rejects non-MOD signatures and truncated pattern data", () => {
+    const wrong = minimalMod();
+    wrong.set(new TextEncoder().encode("IMPM"), 1080);
+    expect(() => inspectStandardMod(wrong)).toThrow("not a supported standard MOD");
+    expect(() => inspectStandardMod(minimalMod().slice(0, 1200))).toThrow("payload is truncated");
+  });
+});
+
+function minimalMod() {
+  const bytes = new Uint8Array(1084 + 64 * 4 * 4);
+  bytes.set(new TextEncoder().encode("Providence Test"), 0);
+  bytes[950] = 1;
+  bytes.set(new TextEncoder().encode("M.K."), 1080);
+  return bytes;
+}

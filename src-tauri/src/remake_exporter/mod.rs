@@ -68,12 +68,13 @@ pub fn export_remake_campaign(
     fs::create_dir_all(&classic_dir).with_path(&classic_dir)?;
 
     let packaged_assets = package_assets(project, project_dir, output_dir)?;
+    let limitations = limitations_for_project(project);
     let mut counts = project_counts(project);
     counts.managed_assets = packaged_assets.managed_assets.len();
     counts.packaged_asset_payloads = packaged_assets.written_files.len();
     let files = contract_files();
     let documents = build_documents(project, &packaged_assets)?;
-    let manifest = campaign_manifest(project, &counts, &files);
+    let manifest = campaign_manifest(project, &counts, &files, &limitations);
     assert_portable_value(&manifest, project_dir, "campaign.json")?;
 
     let mut written_files = packaged_assets.written_files.clone();
@@ -91,7 +92,7 @@ pub fn export_remake_campaign(
         output_dir: output_dir.to_path_buf(),
         written_files,
         counts,
-        limitations: LIMITATIONS.iter().map(|text| (*text).to_string()).collect(),
+        limitations,
     })
 }
 
@@ -167,6 +168,7 @@ fn campaign_manifest(
     project: &ProvidenceProject,
     counts: &RemakeExportCounts,
     files: &std::collections::BTreeMap<&str, &str>,
+    limitations: &[String],
 ) -> Value {
     let start = project.scenario.shell.as_ref().map_or_else(
         || json!({ "levelType": "land", "levelIndex": 0, "x": 0, "y": 0 }),
@@ -200,8 +202,32 @@ fn campaign_manifest(
             "classicResourcePayloads": "packaged-classic-resource-data",
             "generatedGdscript": false,
         },
-        "limitations": LIMITATIONS,
+        "limitations": limitations,
     })
+}
+
+fn limitations_for_project(project: &ProvidenceProject) -> Vec<String> {
+    let mut limitations = LIMITATIONS
+        .iter()
+        .map(|text| (*text).to_string())
+        .collect::<Vec<_>>();
+    let music_assets = project
+        .assets
+        .iter()
+        .filter(|asset| {
+            matches!(asset.kind, crate::project::ManagedAssetKind::Music)
+                && !matches!(
+                    asset.library_scope,
+                    Some(crate::project::ManagedAssetLibraryScope::CustomLibrary)
+                )
+        })
+        .count();
+    if music_assets > 0 {
+        limitations.push(format!(
+            "{music_assets} canonical scenario music asset(s) were omitted: Classic bundle v1 has no scenario-music playlist contract. Native Realmz exports still carry their original MOD payloads."
+        ));
+    }
+    limitations
 }
 
 pub(crate) fn portable_campaign_id(id: &str, name: &str) -> String {

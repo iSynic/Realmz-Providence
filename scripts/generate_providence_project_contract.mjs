@@ -267,9 +267,9 @@ expectSameArray(scenarioIconResourceSchema.required ?? [], scenarioIconResourceF
 expect(scenarioIconResourceSchema.properties?.sourceKind?.$ref === "#/$defs/scenarioIconResourceSource", "scenario-icon resources must reference their canonical source vocabulary");
 expectSameArray(scenarioIconResourceSchema["x-providence-rust-optional"] ?? [], ["previewPath"], "Scenario-icon optional Rust inventory");
 expectSameArray(scenarioIconResourceSchema["x-providence-rust-default"] ?? [], ["imported"], "Scenario-icon defaulted Rust inventory");
-expectSameArray(assetImportTargetSchema.enum ?? [], ["scenario-picture", "custom-landlook-atlas", "icon", "special-land-tile", "sound", "text", "raw-resource"], "Asset import-target vocabulary");
+expectSameArray(assetImportTargetSchema.enum ?? [], ["scenario-picture", "custom-landlook-atlas", "icon", "special-land-tile", "sound", "music", "text", "raw-resource"], "Asset import-target vocabulary");
 expectSameArray(managedAssetLibraryScopeSchema.enum ?? [], ["scenario", "custom-library"], "Managed-asset library-scope vocabulary");
-expectSameArray(managedAssetKindSchema.enum ?? [], ["picture", "icon", "special-land-tile", "sound", "text", "other"], "Managed-asset kind vocabulary");
+expectSameArray(managedAssetKindSchema.enum ?? [], ["picture", "icon", "special-land-tile", "sound", "music", "text", "other"], "Managed-asset kind vocabulary");
 expectSameArray(managedAssetExportStateSchema.enum ?? [], ["ready", "blocked", "preview-only"], "Managed-asset export-state vocabulary");
 expectSameArray(paletteModeSchema.enum ?? [], ["adaptive-256"], "Managed-asset palette vocabulary");
 expect(paletteModeSchema["x-providence-rust-renames"]?.["adaptive-256"] === "adaptive-256", "adaptive palette mode must retain its explicit Rust wire spelling");
@@ -279,13 +279,13 @@ expectSameArray(Object.keys(managedAssetConversionSchema.properties ?? {}), mana
 expectSameArray(managedAssetConversionSchema.required ?? [], managedAssetConversionFields.filter((field) => !field.startsWith("source")), "Managed-asset conversion required field inventory");
 expect(managedAssetConversionSchema.properties?.target?.$ref === "#/$defs/assetImportTarget", "managed-asset conversion must reference the canonical import target");
 expectSameArray(managedAssetConversionSchema["x-providence-rust-default"] ?? [], ["sourceWidth", "sourceHeight", "sourceDurationMs", "sourceSampleRate", "sourceChannels", "warnings"], "Managed-asset conversion defaulted Rust inventory");
-const managedAssetFields = ["id", "label", "kind", "resourceType", "resourceId", "fileName", "originalPath", "previewPath", "resourcePath", "mimeType", "bytes", "sha256", "width", "height", "durationMs", "sampleRate", "channels", "exportState", "libraryScope", "provenance", "linkedEntity", "conversion"];
+const managedAssetFields = ["id", "label", "kind", "resourceType", "resourceId", "scenarioMusicSlot", "fileName", "originalPath", "previewPath", "resourcePath", "mimeType", "bytes", "sha256", "width", "height", "durationMs", "sampleRate", "channels", "exportState", "libraryScope", "provenance", "linkedEntity", "conversion"];
 expectSameArray(Object.keys(managedAssetSchema.properties ?? {}), managedAssetFields, "Managed-asset field inventory");
-expectSameArray(managedAssetSchema.required ?? [], managedAssetFields.filter((field) => !["libraryScope", "conversion"].includes(field)), "Managed-asset required field inventory");
+expectSameArray(managedAssetSchema.required ?? [], managedAssetFields.filter((field) => !["scenarioMusicSlot", "libraryScope", "conversion"].includes(field)), "Managed-asset required field inventory");
 expect(managedAssetSchema.properties?.kind?.$ref === "#/$defs/managedAssetKind", "managed assets must reference the canonical kind vocabulary");
 expect(managedAssetSchema.properties?.exportState?.$ref === "#/$defs/managedAssetExportState", "managed assets must reference the canonical export-state vocabulary");
 expect(managedAssetSchema.properties?.libraryScope?.["x-providence-typescript-type"] === "ProvidenceManagedAssetLibraryScope", "managed-asset library scope must retain its non-null optional TypeScript shape");
-expectSameArray(managedAssetSchema["x-providence-rust-default"] ?? [], ["libraryScope", "conversion"], "Managed-asset defaulted Rust inventory");
+expectSameArray(managedAssetSchema["x-providence-rust-default"] ?? [], ["scenarioMusicSlot", "libraryScope", "conversion"], "Managed-asset defaulted Rust inventory");
 const tilesetAssetFields = ["id", "landlook", "name", "source", "available", "imagePath", "pictId", "tileWidth", "tileHeight", "columns", "rows", "custom", "baseTile"];
 expectSameArray(Object.keys(tilesetAssetSchema.properties ?? {}), tilesetAssetFields, "Tileset-asset field inventory");
 expectSameArray(tilesetAssetSchema.required ?? [], tilesetAssetFields.filter((field) => field !== "baseTile"), "Tileset-asset required field inventory");

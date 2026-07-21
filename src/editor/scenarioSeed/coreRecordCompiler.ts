@@ -189,6 +189,7 @@ function managedAssetKindForResourceType(resourceType: string): ManagedAssetKind
   if (normalized === "pict") return "picture";
   if (normalized === "cicn") return "icon";
   if (normalized === "snd") return "sound";
+  if (normalized === "mod") return "music";
   if (normalized === "text" || normalized === "str#" || normalized === "styl") return "text";
   return "other";
 }
@@ -198,6 +199,8 @@ function validateScenarioAssetResourceId(kind: ManagedAssetKind, resourceId: num
     ? resourceId >= 30000 && resourceId <= 30128
     : kind === "sound"
       ? resourceId >= 200 && resourceId <= 500
+      : kind === "music"
+        ? resourceId >= 1 && resourceId <= 3
       : kind === "special-land-tile"
         ? resourceId < 0
         : true;

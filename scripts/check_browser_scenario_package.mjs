@@ -15,6 +15,7 @@ const sourceFiles = [
   "src/editor/browser/scenarioCompilerBaseline.ts",
   "src/editor/browser/ruleCompiler.ts",
   "src/editor/pictWriter.ts",
+  "src/editor/standardMod.ts",
   "src/editor/browser/compatibilityAnnex.ts",
   "src/editor/browser/scenarioPackage.ts",
   "src/editor/generated/realmzNativeManifestPolicy.ts",
@@ -1289,6 +1290,32 @@ const invalidAtlasExport = createBrowserScenarioPackageZip({
 }, rawSources, "windows-realmz-folder");
 expect(invalidAtlasExport.report.blockedAssets.some((label) => label.includes("not a normalized 640 x 320 indexed PICT atlas")), "Browser export should block a PNG payload masquerading as a ready custom-landlook PICT atlas");
 
+const standardMod = minimalStandardMod();
+const musicProject = {
+  ...project,
+  assets: [
+    {
+      ...managedAsset("asset-music-1", "Custom 1 Music", "music", "MOD ", 1, binaryDataUrl(standardMod), "music"),
+      scenarioMusicSlot: 1,
+      linkedEntity: "scenario-music:1"
+    }
+  ]
+};
+for (const target of ["mac-classic-folder", "windows-realmz-folder"]) {
+  const first = createBrowserScenarioPackageZip(musicProject, rawSources, target);
+  const second = createBrowserScenarioPackageZip(musicProject, rawSources, target);
+  const files = unzipScenarioPackage(first.zip);
+  expect(bytesEqual(files.get("Custom 1 Music"), standardMod), `${target} browser export should preserve the original MOD payload as Custom 1 Music`);
+  expect(first.report.writtenFiles.includes("Custom 1 Music"), `${target} browser report should classify Custom 1 Music as compiler-written output`);
+  expect(bytesEqual(first.zip, second.zip), `${target} browser music export should be deterministic`);
+}
+
+const invalidMusicExport = createBrowserScenarioPackageZip({
+  ...musicProject,
+  assets: [{ ...musicProject.assets[0], resourcePath: binaryDataUrl(new Uint8Array(1084)) }]
+}, rawSources, "windows-realmz-folder");
+expect(invalidMusicExport.report.blockedAssets.some((label) => label.includes("not an exportable standard MOD")), "Browser export should block malformed bytes masquerading as a ready MOD asset");
+
 try {
   createBrowserScenarioPackageZip(
     {
@@ -1338,6 +1365,14 @@ function managedAsset(id, label, kind, resourceType, resourceId, resourcePath, c
       warnings: []
     } : null
   };
+}
+
+function minimalStandardMod() {
+  const output = new Uint8Array(1084 + 64 * 4 * 4);
+  output.set([..."Providence Test"].map((char) => char.charCodeAt(0)), 0);
+  output[950] = 1;
+  output.set([..."M.K."].map((char) => char.charCodeAt(0)), 1080);
+  return output;
 }
 
 function pascalRow(length, text) {

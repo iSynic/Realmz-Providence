@@ -152,6 +152,37 @@ fn exports_decoded_sound_runtime_media_for_remake() {
 }
 
 #[test]
+fn omits_canonical_music_with_an_explicit_bundle_limitation() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("music.providence");
+    let mut project = create_project("Music".to_string(), &project_dir).unwrap();
+    project.assets.push(managed_music_asset());
+
+    let output = workspace.path().join("bundle");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 0);
+    let warning = report
+        .limitations
+        .iter()
+        .find(|value| value.contains("scenario music asset"))
+        .unwrap();
+    assert!(warning.contains("omitted"));
+    assert!(warning.contains("Classic bundle v1"));
+    assert!(!output.join("assets/managed").exists());
+    let campaign: Value =
+        serde_json::from_slice(&fs::read(output.join("campaign.json")).unwrap()).unwrap();
+    assert!(campaign["limitations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|value| value
+            .as_str()
+            .unwrap_or("")
+            .contains("scenario music asset")));
+}
+
+#[test]
 fn rejects_managed_sounds_that_cannot_produce_runtime_audio() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("unsupported-sound.providence");
@@ -450,6 +481,35 @@ fn managed_sound_asset(bytes: &[u8]) -> ManagedAsset {
         "libraryScope": "scenario",
         "provenance": "canonical test data",
         "linkedEntity": "resource:snd:321",
+        "conversion": null
+    }))
+    .unwrap()
+}
+
+fn managed_music_asset() -> ManagedAsset {
+    serde_json::from_value(json!({
+        "id": "asset:music:1",
+        "label": "Managed music",
+        "kind": "music",
+        "resourceType": "MOD ",
+        "resourceId": 1,
+        "scenarioMusicSlot": 1,
+        "fileName": "Custom 1 Music",
+        "originalPath": "data:audio/x-mod;base64,",
+        "previewPath": "data:audio/x-mod;base64,",
+        "resourcePath": "data:audio/x-mod;base64,",
+        "mimeType": "audio/x-mod",
+        "bytes": 0,
+        "sha256": "fixture",
+        "width": null,
+        "height": null,
+        "durationMs": null,
+        "sampleRate": null,
+        "channels": null,
+        "exportState": "ready",
+        "libraryScope": "scenario",
+        "provenance": "canonical test data",
+        "linkedEntity": "scenario-music:1",
         "conversion": null
     }))
     .unwrap()

@@ -30,6 +30,8 @@ pub struct MediaAssetImportRequest {
     pub kind: ManagedAssetKind,
     pub resource_type: String,
     pub resource_id: i16,
+    #[serde(default)]
+    pub scenario_music_slot: Option<u8>,
     pub mime_type: String,
     pub original_base64: String,
     pub preview_base64: String,
@@ -202,7 +204,7 @@ pub fn copy_project_asset_to_workspace(
     asset: ManagedAsset,
 ) -> Result<ProvidenceWorkspace> {
     let token = unique_asset_token_for_assets(&workspace.custom_assets, &asset.label);
-    let copied = copy_managed_asset_between_roots(
+    let mut copied = copy_managed_asset_between_roots(
         Path::new(&project_dir),
         Path::new(&workspace_dir),
         &asset,
@@ -211,6 +213,10 @@ pub fn copy_project_asset_to_workspace(
         Some(ManagedAssetLibraryScope::CustomLibrary),
         "copied from scenario asset",
     )?;
+    if matches!(copied.kind, ManagedAssetKind::Music) {
+        copied.scenario_music_slot = None;
+        copied.linked_entity = None;
+    }
     workspace.custom_assets.push(copied);
     save_workspace_impl(workspace_dir, &workspace)?;
     Ok(workspace)
@@ -235,6 +241,15 @@ pub fn copy_workspace_asset_to_project(
         "copied from workspace custom library",
     )?;
     copied.resource_id = resource_id;
+    if matches!(copied.kind, ManagedAssetKind::Music) {
+        if !(1..=3).contains(&resource_id) {
+            return Err(ProvidenceError::message(
+                "Scenario music slots must be in the range 1-3",
+            ));
+        }
+        copied.scenario_music_slot = Some(resource_id as u8);
+        copied.linked_entity = Some(format!("scenario-music:{resource_id}"));
+    }
     if matches!(copied.kind, ManagedAssetKind::SpecialLandTile) {
         copied.linked_entity = Some(format!("special-land-tile:{resource_id}"));
     }
@@ -334,7 +349,21 @@ pub fn update_project_asset(
             }
         }
         if let Some(resource_id) = resource_id {
+            let scenario_music = matches!(asset.kind, ManagedAssetKind::Music)
+                && !matches!(
+                    asset.library_scope,
+                    Some(ManagedAssetLibraryScope::CustomLibrary)
+                );
+            if scenario_music && !(1..=3).contains(&resource_id) {
+                return Err(ProvidenceError::message(
+                    "Scenario music slots must be in the range 1-3",
+                ));
+            }
             asset.resource_id = resource_id;
+            if scenario_music {
+                asset.scenario_music_slot = Some(resource_id as u8);
+                asset.linked_entity = Some(format!("scenario-music:{resource_id}"));
+            }
         }
         if let Some(library_scope) = library_scope {
             asset.library_scope = Some(library_scope);
@@ -371,6 +400,8 @@ pub fn mime_for_path(path: &str) -> &'static str {
         "audio/mpeg"
     } else if lower.ends_with(".ogg") {
         "audio/ogg"
+    } else if lower.ends_with(".mod") {
+        "audio/x-mod"
     } else if lower.ends_with(".txt") {
         "text/plain"
     } else {
@@ -416,6 +447,15 @@ fn write_managed_media_asset(
             })?;
             encode_snd_resource(audio)?
         }
+        "MOD " => {
+            if request.kind != ManagedAssetKind::Music {
+                return Err(ProvidenceError::message(
+                    "MOD imports must use the music asset kind",
+                ));
+            }
+            validate_standard_mod(&original)?;
+            original.clone()
+        }
         "TEXT" | "STR#" | "styl" => {
             if request.kind != ManagedAssetKind::Text {
                 return Err(ProvidenceError::message(
@@ -442,6 +482,7 @@ fn write_managed_media_asset(
     let original_ext = extension_for_mime(&request.mime_type, request.kind);
     let preview_ext = match request.kind {
         ManagedAssetKind::Sound => "wav",
+        ManagedAssetKind::Music => "mod",
         ManagedAssetKind::Text => "txt",
         ManagedAssetKind::Other => "bin",
         _ => "png",
@@ -466,6 +507,7 @@ fn write_managed_media_asset(
         kind: request.kind,
         resource_type: request.resource_type.clone(),
         resource_id: request.resource_id,
+        scenario_music_slot: request.scenario_music_slot,
         file_name: original_name.clone(),
         original_path: format!("{rel_dir}/{original_name}"),
         preview_path: format!("{rel_dir}/{preview_name}"),
@@ -540,6 +582,32 @@ fn validate_media_asset_request(request: &MediaAssetImportRequest) -> Result<()>
             ));
         }
     }
+    if matches!(request.target, AssetImportTarget::Music) {
+        if request.kind != ManagedAssetKind::Music || request.resource_type != "MOD " {
+            return Err(ProvidenceError::message(
+                "Scenario music imports must use the music asset kind and MOD payload type",
+            ));
+        }
+        if matches!(
+            request.library_scope,
+            Some(ManagedAssetLibraryScope::CustomLibrary)
+        ) {
+            if request.scenario_music_slot.is_some() {
+                return Err(ProvidenceError::message(
+                    "Custom Library music must not claim a scenario music slot",
+                ));
+            }
+        } else {
+            let slot = request.scenario_music_slot.ok_or_else(|| {
+                ProvidenceError::message("Scenario music imports require a Classic music slot")
+            })?;
+            if !(1..=3).contains(&slot) || request.resource_id != i16::from(slot) {
+                return Err(ProvidenceError::message(
+                    "Scenario music slots and resource IDs must match in the range 1-3",
+                ));
+            }
+        }
+    }
     if matches!(request.target, AssetImportTarget::RawResource) {
         if request.kind != ManagedAssetKind::Other {
             return Err(ProvidenceError::message(
@@ -588,14 +656,91 @@ fn extension_for_mime(mime_type: &str, kind: ManagedAssetKind) -> &'static str {
         "audio/wav" | "audio/wave" | "audio/x-wav" => "wav",
         "audio/mpeg" => "mp3",
         "audio/ogg" => "ogg",
+        "audio/x-mod" | "audio/mod" | "audio/x-protracker" => "mod",
         _ => match kind {
             ManagedAssetKind::Sound => "audio",
+            ManagedAssetKind::Music => "mod",
             ManagedAssetKind::Text => "txt",
             ManagedAssetKind::Picture
             | ManagedAssetKind::Icon
             | ManagedAssetKind::SpecialLandTile => "image",
             _ => "bin",
         },
+    }
+}
+
+pub(crate) fn validate_standard_mod(bytes: &[u8]) -> Result<()> {
+    if bytes.len() < 1084 {
+        return Err(ProvidenceError::message(
+            "The selected file is too short to be a standard 31-sample MOD module",
+        ));
+    }
+    let signature = std::str::from_utf8(&bytes[1080..1084]).unwrap_or("");
+    let channels = mod_channel_count(signature).ok_or_else(|| {
+        ProvidenceError::message(format!(
+            "The selected file is not a supported standard MOD module (signature {signature:?}); XM, S3M, IT, MADG, and PlayerPRO files are not accepted"
+        ))
+    })?;
+    let mut sample_bytes = 0usize;
+    for index in 0..31 {
+        let offset = 20 + index * 30;
+        sample_bytes = sample_bytes
+            .checked_add(
+                usize::from(u16::from_be_bytes([bytes[offset + 22], bytes[offset + 23]])) * 2,
+            )
+            .ok_or_else(|| ProvidenceError::message("MOD sample payload length overflowed"))?;
+        if bytes[offset + 25] > 64 {
+            return Err(ProvidenceError::message(format!(
+                "MOD sample {} has an invalid volume greater than 64",
+                index + 1
+            )));
+        }
+    }
+    let song_length = usize::from(bytes[950]);
+    if !(1..=128).contains(&song_length) {
+        return Err(ProvidenceError::message(
+            "The MOD order list length must be between 1 and 128",
+        ));
+    }
+    let highest_pattern = bytes[952..952 + song_length]
+        .iter()
+        .copied()
+        .max()
+        .unwrap_or(0);
+    let pattern_bytes = (usize::from(highest_pattern) + 1)
+        .checked_mul(64 * channels * 4)
+        .ok_or_else(|| ProvidenceError::message("MOD pattern payload length overflowed"))?;
+    let required_bytes = 1084usize
+        .checked_add(pattern_bytes)
+        .and_then(|value| value.checked_add(sample_bytes))
+        .ok_or_else(|| ProvidenceError::message("MOD payload length overflowed"))?;
+    if required_bytes > bytes.len() {
+        return Err(ProvidenceError::message(format!(
+            "The MOD payload is truncated: its headers require at least {required_bytes} bytes, but the file has {}",
+            bytes.len()
+        )));
+    }
+    Ok(())
+}
+
+fn mod_channel_count(signature: &str) -> Option<usize> {
+    match signature {
+        "M.K." | "M!K!" | "M&K!" | "N.T." | "FLT4" => Some(4),
+        "OCTA" | "CD81" | "FLT8" => Some(8),
+        _ => {
+            let bytes = signature.as_bytes();
+            if bytes.len() == 4 && bytes[0].is_ascii_digit() && &bytes[1..] == b"CHN" {
+                return Some(usize::from(bytes[0] - b'0'));
+            }
+            if bytes.len() == 4
+                && bytes[0].is_ascii_digit()
+                && bytes[1].is_ascii_digit()
+                && &bytes[2..] == b"CH"
+            {
+                return Some(usize::from(bytes[0] - b'0') * 10 + usize::from(bytes[1] - b'0'));
+            }
+            None
+        }
     }
 }
 
@@ -778,6 +923,7 @@ fn write_reference_library_asset(
             .unwrap_or_else(|| managed_asset_kind_for_library(asset, resource_type)),
         resource_type: resource_type.to_string(),
         resource_id,
+        scenario_music_slot: None,
         file_name: original_name.clone(),
         original_path: format!("{rel_dir}/{original_name}"),
         preview_path: format!("{rel_dir}/{preview_name}"),

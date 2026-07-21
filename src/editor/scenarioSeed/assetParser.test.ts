@@ -61,7 +61,7 @@ describe("scenario seed asset parser", () => {
     });
     expect(ctx.errors).toEqual([
       "$.assets[0].assetId is not a supported scenario seed field.",
-      "$.assets[0].kind must be picture, icon, special-land-tile, sound, text, or other."
+      "$.assets[0].kind must be picture, icon, special-land-tile, sound, music, text, or other."
     ]);
   });
 });

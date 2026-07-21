@@ -50,11 +50,12 @@ export function optionalManagedAssetKind(
     || input === "icon"
     || input === "special-land-tile"
     || input === "sound"
+    || input === "music"
     || input === "text"
     || input === "other"
   ) {
     return input;
   }
-  context.errors.push(`${path} must be picture, icon, special-land-tile, sound, text, or other.`);
+  context.errors.push(`${path} must be picture, icon, special-land-tile, sound, music, text, or other.`);
   return undefined;
 }

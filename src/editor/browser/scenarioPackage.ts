@@ -84,6 +84,7 @@ import {
 import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseline";
 import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 import { isNormalizedLandlookAtlasPict } from "../pictWriter";
+import { inspectStandardMod } from "../standardMod";
 
 type ZipEntry = {
   path: string;
@@ -226,6 +227,7 @@ function compileBrowserScenarioManifest(
   if (resourceResult.resourceFileWritten) {
     outputFiles.set(resourceResult.resourceFilePath, resourceResult.resourceBytes);
   }
+  const musicWrites = writeManagedMusic(project, outputFiles, resourceResult);
   if (!requiresCompatibilityAnnex(project)) {
     validateAuthoredSemanticFiles(project, outputFiles);
   }
@@ -233,7 +235,8 @@ function compileBrowserScenarioManifest(
   const writtenFiles = uniqueStrings([
     ...compilerBaseline.map((file) => file.path),
     ...binaryWrites.map((write) => write.path),
-    ...(resourceResult.resourceFileWritten ? [resourceResult.resourceFilePath] : [])
+    ...(resourceResult.resourceFileWritten ? [resourceResult.resourceFilePath] : []),
+    ...musicWrites
   ]);
   const written = new Set(writtenFiles);
   return {
@@ -749,6 +752,7 @@ function managedAssetResourceUpdates(assets: ManagedAsset[], originalResourceFor
     if (asset.libraryScope === "custom-library") {
       continue;
     }
+    if (asset.kind === "music") continue;
     if (asset.exportState !== "ready") {
       result.blockedAssets.push(asset.label);
       continue;
@@ -783,6 +787,43 @@ function managedAssetResourceUpdates(assets: ManagedAsset[], originalResourceFor
     result.writtenResources.push(`${asset.resourceType} ${asset.resourceId}: ${asset.label}`);
   }
   return updates;
+}
+
+function writeManagedMusic(project: Project, outputFiles: Map<string, Uint8Array>, result: ResourceExportResult) {
+  const claimedSlots = new Set<number>();
+  const writtenFiles: string[] = [];
+  for (const asset of project.assets ?? []) {
+    if (asset.kind !== "music" || asset.libraryScope === "custom-library") continue;
+    if (asset.exportState !== "ready") {
+      result.blockedAssets.push(asset.label);
+      continue;
+    }
+    const slot = asset.scenarioMusicSlot;
+    if (!Number.isInteger(slot) || (slot ?? 0) < 1 || (slot ?? 0) > 3) {
+      result.blockedAssets.push(`${asset.label} has no valid Classic music slot (1-3).`);
+      continue;
+    }
+    if (claimedSlots.has(slot!)) {
+      result.blockedAssets.push(`${asset.label} duplicates Classic music slot ${slot}.`);
+      continue;
+    }
+    const data = managedAssetResourceBytes(asset);
+    if (!data) {
+      result.blockedAssets.push(`${asset.label} is missing browser-embedded MOD payload bytes.`);
+      continue;
+    }
+    try {
+      inspectStandardMod(data);
+    } catch (error) {
+      result.blockedAssets.push(`${asset.label} is not an exportable standard MOD: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
+    claimedSlots.add(slot!);
+    const fileName = `Custom ${slot} Music`;
+    outputFiles.set(fileName, data);
+    writtenFiles.push(fileName);
+  }
+  return writtenFiles;
 }
 
 function monsterIconOverrideUpdates(project: Project, original: Uint8Array, result: ResourceExportResult) {

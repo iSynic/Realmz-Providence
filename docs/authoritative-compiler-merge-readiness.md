@@ -85,15 +85,16 @@ Classic 7.1.2 gameplay claim can be made.
 
 ### Optional follow-up work
 
-Rust/Wasm compiler unification, Classic-Mac fork-aware packaging, custom music authoring, arbitrary
+Rust/Wasm compiler unification, Classic-Mac fork-aware packaging, arbitrary
 PICT editing, and uncommon legacy sidecar authoring remain optional follow-ups. Imported
 unsupported payloads continue through the bounded compatibility annex.
 
 The optional-media and legacy-sidecar classifications are recorded in
 [`native-file-ownership-matrix.md`](native-file-ownership-matrix.md). Scenario `snd ` effects are
 not deferred with custom music: Providence authors them as managed resources and projects decoded
-WAV runtime media into the Realmz Remake Classic bundle. Filename-based `Custom 1 Music` through
-`Custom 9 Music` remain under ISY-347 because Classic bundle v1 has no playlist contract.
+WAV runtime media into the Realmz Remake Classic bundle. Standard MOD assets in the three current
+`Custom N Music` slots now compile into both native targets; they remain an explicit Realmz Remake
+Classic bundle-v1 limitation because that contract has no playlist semantics.
 
 ## Integration sequence
 

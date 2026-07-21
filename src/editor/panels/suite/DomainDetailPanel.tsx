@@ -190,6 +190,7 @@ function findLibraryAssetForDetail(detail: { id: string; label?: string; type: s
 
 function assetKind(type: string): ManagedAssetKind {
   if (type === "sound") return "sound";
+  if (type === "music") return "music";
   if (type === "icon" || type.includes("icon")) return "icon";
   if (type === "picture") return "picture";
   if (type === "text") return "text";

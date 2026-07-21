@@ -1,5 +1,21 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+
+function bundleLibopenmptWorklet() {
+  return {
+    name: "providence-bundle-libopenmpt-worklet",
+    generateBundle() {
+      // chiptune3.worklet.js imports this sibling by its literal filename. Vite
+      // bundles the entry worklet but does not discover that runtime import.
+      this.emitFile({
+        type: "asset",
+        fileName: "assets/libopenmpt.worklet.js",
+        source: readFileSync(new URL("./node_modules/chiptune3/libopenmpt.worklet.js", import.meta.url))
+      });
+    }
+  };
+}
 
 function blockWorkspaceScratchRequests() {
   const blockedPrefixes = ["/.git/", "/dist/", "/tmp/"];
@@ -20,8 +36,13 @@ function blockWorkspaceScratchRequests() {
 }
 
 export default defineConfig({
-  plugins: [blockWorkspaceScratchRequests(), react()],
+  plugins: [blockWorkspaceScratchRequests(), bundleLibopenmptWorklet(), react()],
   clearScreen: false,
+  optimizeDeps: {
+    // chiptune3 resolves its libopenmpt AudioWorklet relative to import.meta.url.
+    // Pre-bundling moves the entry without its sibling worklet modules.
+    exclude: ["chiptune3/chiptune3.js"]
+  },
   build: {
     rollupOptions: {
       output: {

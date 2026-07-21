@@ -14,7 +14,15 @@ export function replaceProjectAsset(project: Project, command: Extract<ProjectCo
 export function updateProjectAsset(project: Project, command: Extract<ProjectCommand, { kind: "updateProjectAsset" }>) {
   return {
     ...project,
-    assets: (project.assets ?? []).map((asset) => asset.id === command.assetId ? { ...asset, ...command.changes } : asset)
+    assets: (project.assets ?? []).map((asset) => {
+      if (asset.id !== command.assetId) return asset;
+      const updated = { ...asset, ...command.changes };
+      if (asset.kind === "music" && asset.libraryScope !== "custom-library" && command.changes.resourceId != null && command.changes.resourceId >= 1 && command.changes.resourceId <= 3) {
+        updated.scenarioMusicSlot = command.changes.resourceId;
+        updated.linkedEntity = `scenario-music:${command.changes.resourceId}`;
+      }
+      return updated;
+    })
   };
 }
 

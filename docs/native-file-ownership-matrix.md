@@ -16,7 +16,8 @@ The classifications used here are:
 | Native family | Classification | Fresh authored project | Imported project | Native Realmz projection | Realmz Remake projection | Follow-up owner |
 | --- | --- | --- | --- | --- | --- | --- |
 | Scenario `snd ` sound effects | authored | Import or create as scenario-scoped managed sounds with stable Classic resource IDs. | Catalog-only legacy sounds remain metadata until promoted to managed canonical assets; unsupported payloads stay in the annex. | Compiled into the generated scenario resource sidecar with the other managed resources. | Classic `snd ` payload is preserved and a deterministic WAV is emitted as `assets.catalog.sounds[].runtimeMedia` when Providence can decode it. | Current compiler/exporter; no music dependency. |
-| `Custom 1 Music` through `Custom 9 Music` | authored family, implementation deferred | Not emitted until Providence has a canonical playlist/reference contract. | Preserve exact imported files in the compatibility annex and pass them through only on legacy-preserving native export. | Optional scenario-local runtime files, not part of authoritative compiler acceptance. | Omitted: Classic bundle v1 defines sound effects but no custom-music or playlist semantics. | [ISY-347](https://linear.app/isynic/issue/ISY-347/add-scenario-music-asset-import-authoring-and-export-support), after the runtime contract is settled. |
+| `Custom 1 Music` through `Custom 3 Music` | authored | Import standard MOD bytes as scenario-scoped managed `music` assets with explicit slots 1-3. | Canonical music assets overlay same-name annex files; unsupported legacy music remains byte-preserved in the annex. | Emits the original MOD payload deterministically as the exact top-level filename for both Mac and Windows targets. | Omitted with an explicit export limitation because Classic bundle v1 has no scenario-music playlist contract. | [ISY-347](https://linear.app/isynic/issue/ISY-347/add-scenario-music-asset-import-authoring-and-export-support). |
+| Legacy `Custom 4 Music` through `Custom 9 Music` and non-MOD custom music | annex-only | Omitted. | Preserve byte-for-byte without promoting it to authored MOD semantics. | Legacy-preserving export may copy it unchanged. | Omitted because no bundle-v1 meaning is defined. | New evidence or a versioned runtime contract only. |
 | Legacy `Custom 1` through `Custom 9` companions without ` Music` | annex-only | Omitted. Custom landlook authoring uses canonical metadata plus managed PICT atlases, not these pass-through files. | Preserve byte-for-byte when present; do not infer music or landlook semantics. | Legacy-preserving export may copy them unchanged. | Omitted because no bundle-v1 meaning is defined. | New evidence issue only if a runtime consumer is proven. |
 | `Scenario.rsrc`, `Data ID.rsrc`, and `Data Spell.rsrc` | normalized-container | Generated deterministically from canonical resources and semantic updates. | Parse supported resources into the canonical model; keep unsupported resource entries in the bounded annex. | Emitted at the contract-v14 target paths. | Semantic catalogs and immutable managed payloads are projected directly from the canonical model, not parsed from native output. | Current compiler/exporter. |
 | Legacy `.rsf` resource-sidecar names | normalized-container representation plus annex residue | Not selected as a distinct authored format; fresh output uses the target path from the native manifest policy. | Parse as a resource-fork container when supported. Preserve malformed or unsupported wrapper bytes in the annex. | Normalize supported resources into deterministic compiler output; retain exact legacy form only for an explicitly legacy-preserving export. | Never bundled as a wrapper merely because the import used `.rsf`. | No core blocker. |
@@ -29,10 +30,10 @@ The classifications used here are:
 ## Acceptance boundary
 
 Core authoritative compiler completion requires the canonical model, deterministic native files,
-generated resource containers, and runtime-relevant managed assets. It does not require custom
-music, AppleDouble/HFS transport, preservation of Finder state, or reconstruction of unknown
+generated resource containers, and runtime-relevant managed assets, including the three current
+MOD music slots. It does not require AppleDouble/HFS transport, preservation of Finder state, or reconstruction of unknown
 extraction-tool sidecars.
 
 This boundary does not make scenario audio optional as a whole. Scenario `snd ` effects already
-have canonical authoring, native resource output, and a Remake runtime-media projection. Only the
-separate filename-based custom-music family remains deferred.
+have canonical authoring, native resource output, and a Remake runtime-media projection. MOD music
+has canonical native output but remains an explicit Remake bundle-v1 limitation.

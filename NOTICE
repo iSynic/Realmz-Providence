@@ -38,6 +38,13 @@ license declarations and notices are distributed with the relevant dependency
 sources, packages, or release components. CC BY-NC-SA 4.0 does not replace the
 licenses of independently licensed third-party components.
 
+Providence uses chiptune3 (MIT) for browser AudioWorklet integration and its
+compiled libopenmpt component (OpenMPT BSD license) to preview standard MOD
+scenario music. Their source and license notices are available from:
+
+https://github.com/DrSnuggles/chiptune
+https://lib.openmpt.org/libopenmpt/
+
 User-authored scenarios
 -----------------------
 

@@ -1133,7 +1133,7 @@ export function validateBrowserProject(project: Project): ValidationReport {
     if (asset.exportState === "ready" && !asset.resourcePath.trim()) {
       errors.push(`${asset.label} is marked ready but has no converted resourcePath.`);
     }
-    if (!["PICT", "cicn", "snd ", "TEXT", "styl"].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported resource type ${asset.resourceType}.`);
+    if (!["PICT", "cicn", "snd ", "MOD ", "TEXT", "styl"].includes(asset.resourceType)) errors.push(`${asset.label} uses unsupported payload type ${asset.resourceType}.`);
     const resourceKey = `${asset.resourceType}\u0000${asset.resourceId}`;
     const existingOwner = managedResourceOwners.get(resourceKey);
     if (existingOwner !== undefined) {
@@ -1143,6 +1143,14 @@ export function validateBrowserProject(project: Project): ValidationReport {
     }
     if (asset.kind === "picture" && asset.resourceType !== "PICT") errors.push(`${asset.label} must export as a PICT resource.`);
     if (asset.kind === "sound" && asset.resourceType !== "snd ") errors.push(`${asset.label} must export as an snd resource.`);
+    if (asset.kind === "music") {
+      if (asset.resourceType !== "MOD ") errors.push(`${asset.label} must preserve standard MOD bytes.`);
+      if (!Number.isInteger(asset.scenarioMusicSlot) || (asset.scenarioMusicSlot ?? 0) < 1 || (asset.scenarioMusicSlot ?? 0) > 3) {
+        errors.push(`${asset.label} needs a Classic music slot from 1 through 3.`);
+      } else if (asset.resourceId !== asset.scenarioMusicSlot) {
+        errors.push(`${asset.label} has mismatched Classic music slot and resource ID values.`);
+      }
+    }
     if ((asset.kind === "icon" || asset.kind === "special-land-tile") && asset.resourceType !== "cicn") {
       errors.push(`${asset.label} must export as a cicn resource.`);
     }

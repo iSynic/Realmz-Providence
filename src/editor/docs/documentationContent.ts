@@ -1867,12 +1867,14 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Pictures, Sounds, and Music",
         paragraphs: [
           "Imported pictures are converted into Realmz-ready PICT resources. Divinity-style scenario picture IDs live in the 30000 through 30128 range, and 30128 is the title picture used by the scenario startup flow.",
-          "Imported sound effects become custom scenario snd resources in the supported custom sound range. Scenario music is a separate preservation surface: files such as Custom 1 Music are module files, not short snd sound effects, and should remain byte-preserved until Providence has a dedicated music authoring path."
+          "Imported sound effects become custom scenario snd resources in the supported custom sound range. Scenario music is a separate managed asset kind: Providence accepts standard MOD modules in three Classic slots and preserves their original bytes for Custom 1 Music through Custom 3 Music."
         ],
         points: [
           "Use the import dialog preview to compare original source media with the Realmz-ready output before committing it as a scenario asset.",
+          "Use Music / standard MOD for scenario music. Providence previews modules through libopenmpt, but only validated MOD files are accepted for native export.",
+          "Native Mac and Windows exports carry the original MOD bytes. Realmz Remake Classic bundle v1 omits music with an explicit warning until its playlist contract is defined.",
           "Use usage links to jump from a picture or sound resource to scripts, startup fields, strings, or encounter records that refer to it.",
-          "Treat zero-byte Format files and legacy Custom N files as compatibility baggage unless newer source evidence proves they should be editable."
+          "Treat zero-byte Format files, legacy unsuffixed Custom N files, slots 4-9, and non-MOD module formats as compatibility baggage unless a newer versioned runtime contract promotes them."
         ]
       },
       {

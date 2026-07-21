@@ -121,7 +121,29 @@ pub(crate) fn expected_authored_scenario_manifest_files(
         managed_asset_bytes: project.assets.iter().map(|_| None).collect(),
     };
     let compilation = compile_realmz_scenario(project, target, &inputs)?;
-    Ok(compilation.manifest.files().keys().cloned().collect())
+    let mut files = compilation
+        .manifest
+        .files()
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    for asset in &project.assets {
+        if matches!(asset.kind, crate::project::ManagedAssetKind::Music)
+            && !matches!(
+                asset.library_scope,
+                Some(crate::project::ManagedAssetLibraryScope::CustomLibrary)
+            )
+            && matches!(
+                asset.export_state,
+                crate::project::ManagedAssetExportState::Ready
+            )
+        {
+            if let Some(slot @ 1..=3) = asset.scenario_music_slot {
+                files.insert(format!("Custom {slot} Music"));
+            }
+        }
+    }
+    Ok(files.into_iter().collect())
 }
 
 fn compile_realmz_scenario(
@@ -405,13 +427,19 @@ fn compile_realmz_scenario(
     write_item_text_resources(&mut manifest, compatibility_annex, &project.item_texts)?;
     write_race_overrides_for_export(&mut manifest, compatibility_annex, &project.race_overrides)?;
     write_caste_overrides_for_export(&mut manifest, compatibility_annex, &project.caste_overrides)?;
-    let resource_result = write_managed_resources(
+    let mut resource_result = write_managed_resources(
         &mut manifest,
         compatibility_annex,
         &inputs.managed_asset_bytes,
         project,
         target,
     )?;
+    write_managed_music(
+        &mut manifest,
+        &inputs.managed_asset_bytes,
+        project,
+        &mut resource_result,
+    );
     if !preserves_source_snapshot {
         validate_authored_semantic_files(project, &manifest)?;
     }
@@ -556,7 +584,8 @@ fn resolve_managed_asset_bytes(
             ) || !matches!(
                 asset.export_state,
                 crate::project::ManagedAssetExportState::Ready
-            ) || !managed_resource_type_supported(asset.resource_type.as_str())
+            ) || !(managed_resource_type_supported(asset.resource_type.as_str())
+                || matches!(asset.kind, crate::project::ManagedAssetKind::Music))
             {
                 None
             } else {
@@ -1851,6 +1880,9 @@ fn write_managed_resources(
         ) {
             continue;
         }
+        if matches!(asset.kind, crate::project::ManagedAssetKind::Music) {
+            continue;
+        }
         if !matches!(
             asset.export_state,
             crate::project::ManagedAssetExportState::Ready
@@ -1951,6 +1983,80 @@ fn write_managed_resources(
     }
     manifest.insert_generated(result.resource_file_name.clone(), resource_bytes);
     Ok(result)
+}
+
+fn write_managed_music(
+    manifest: &mut NativeScenarioManifest,
+    managed_asset_bytes: &[Option<std::result::Result<Vec<u8>, String>>],
+    project: &ProvidenceProject,
+    result: &mut ResourceExportResult,
+) {
+    let mut claimed_slots = BTreeSet::new();
+    for (asset_index, asset) in project.assets.iter().enumerate() {
+        if !matches!(asset.kind, crate::project::ManagedAssetKind::Music)
+            || matches!(
+                asset.library_scope,
+                Some(crate::project::ManagedAssetLibraryScope::CustomLibrary)
+            )
+        {
+            continue;
+        }
+        if !matches!(
+            asset.export_state,
+            crate::project::ManagedAssetExportState::Ready
+        ) {
+            result.blocked_assets.push(asset.label.clone());
+            continue;
+        }
+        let Some(slot) = asset.scenario_music_slot else {
+            result
+                .blocked_assets
+                .push(format!("{} has no Classic music slot", asset.label));
+            continue;
+        };
+        if !(1..=3).contains(&slot) {
+            result.blocked_assets.push(format!(
+                "{} uses invalid Classic music slot {slot}; expected 1-3",
+                asset.label
+            ));
+            continue;
+        }
+        if !claimed_slots.insert(slot) {
+            result.blocked_assets.push(format!(
+                "{} duplicates Classic music slot {slot}",
+                asset.label
+            ));
+            continue;
+        }
+        let data = match managed_asset_bytes
+            .get(asset_index)
+            .and_then(Option::as_ref)
+        {
+            Some(Ok(data)) => data.clone(),
+            Some(Err(error)) => {
+                result.blocked_assets.push(format!(
+                    "{} is missing MOD payload bytes: {error}",
+                    asset.label
+                ));
+                continue;
+            }
+            None => {
+                result.blocked_assets.push(format!(
+                    "{} is missing MOD payload bytes: compiler input was not resolved",
+                    asset.label
+                ));
+                continue;
+            }
+        };
+        if let Err(error) = crate::media_assets::validate_standard_mod(&data) {
+            result.blocked_assets.push(format!(
+                "{} is not an exportable standard MOD: {error}",
+                asset.label
+            ));
+            continue;
+        }
+        manifest.insert_generated(format!("Custom {slot} Music"), data);
+    }
 }
 
 fn monster_icon_override_updates(
@@ -2286,6 +2392,7 @@ mod tests {
     use super::{
         append_preserved_shop_source_suffix, compile_fixed_rows_with_compatibility_annex,
         compile_realmz_scenario, custom_spell_name_resource_updates,
+        expected_authored_scenario_manifest_files,
         is_normalized_landlook_atlas_pict, item_text_resource_updates,
         managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
@@ -2316,6 +2423,7 @@ mod tests {
     };
     use crate::rule_compiler::rule_compiler_baseline_bytes;
     use base64::{engine::general_purpose::STANDARD, Engine as _};
+    use serde_json::json;
     use std::fs;
 
     #[test]
@@ -2340,6 +2448,89 @@ mod tests {
         assert_eq!(first.manifest.files()["Scenario"].len(), 600);
         assert!(first.manifest.files().contains_key("Scenario.rsrc"));
         assert!(first.manifest.pass_through_files().is_empty());
+    }
+
+    #[test]
+    fn authored_music_exports_as_deterministic_native_files_for_both_targets() {
+        let temp = tempfile::tempdir().unwrap();
+        let project_dir = temp.path().join("Music Proof.providence");
+        let mut project =
+            crate::importer::create_project("Music Proof".to_string(), &project_dir).unwrap();
+        let module = minimal_mod();
+        project.assets.push(
+            serde_json::from_value(json!({
+                "id": "asset:music:1",
+                "label": "Providence Music",
+                "kind": "music",
+                "resourceType": "MOD ",
+                "resourceId": 1,
+                "scenarioMusicSlot": 1,
+                "fileName": "Custom 1 Music",
+                "originalPath": "",
+                "previewPath": "",
+                "resourcePath": "assets/media/music/resource_MOD_1.bin",
+                "mimeType": "audio/x-mod",
+                "bytes": module.len(),
+                "sha256": "fixture",
+                "width": null,
+                "height": null,
+                "durationMs": null,
+                "sampleRate": null,
+                "channels": null,
+                "exportState": "ready",
+                "libraryScope": "scenario",
+                "provenance": "authored test module",
+                "linkedEntity": "scenario-music:1",
+                "conversion": {
+                    "target": "music",
+                    "fitMode": null,
+                    "scaleMode": null,
+                    "matte": null,
+                    "paletteMode": null,
+                    "ditherMode": null,
+                    "sourceWidth": null,
+                    "sourceHeight": null,
+                    "sourceDurationMs": null,
+                    "sourceSampleRate": null,
+                    "sourceChannels": null,
+                    "finalWidth": null,
+                    "finalHeight": null,
+                    "warnings": []
+                }
+            }))
+            .unwrap(),
+        );
+        let inputs = NativeCompilerInputs {
+            compatibility_annex: None,
+            managed_asset_bytes: vec![Some(Ok(module.clone()))],
+        };
+
+        for target in [
+            ScenarioTarget::WindowsRealmzFolder,
+            ScenarioTarget::MacClassicFolder,
+        ] {
+            assert!(expected_authored_scenario_manifest_files(&project, target)
+                .unwrap()
+                .contains(&"Custom 1 Music".to_string()));
+            let first = compile_realmz_scenario(&project, target, &inputs).unwrap();
+            let second = compile_realmz_scenario(&project, target, &inputs).unwrap();
+            assert_eq!(first.manifest.files(), second.manifest.files());
+            assert_eq!(first.manifest.files()["Custom 1 Music"], module);
+            assert!(first
+                .manifest
+                .written_files()
+                .contains(&"Custom 1 Music".to_string()));
+            assert!(first.manifest.pass_through_files().is_empty());
+            assert!(first.resource_result.blocked_assets.is_empty());
+        }
+    }
+
+    fn minimal_mod() -> Vec<u8> {
+        let mut bytes = vec![0; 1084 + 64 * 4 * 4];
+        bytes[..15].copy_from_slice(b"Providence Test");
+        bytes[950] = 1;
+        bytes[1080..1084].copy_from_slice(b"M.K.");
+        bytes
     }
 
     #[test]
@@ -2804,6 +2995,7 @@ mod tests {
             kind: ManagedAssetKind::Text,
             resource_type: "TEXT".to_string(),
             resource_id: -200,
+            scenario_music_slot: None,
             file_name: "scrolling-text--200.txt".to_string(),
             original_path: String::new(),
             preview_path: String::new(),

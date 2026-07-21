@@ -332,12 +332,14 @@ function duplicateManagedAsset(
   provenanceSuffix: string,
   resourceId = asset.resourceId
 ): ManagedAsset {
+  const scenarioMusicSlot = asset.kind === "music" && libraryScope === "scenario" ? resourceId : asset.kind === "music" ? undefined : asset.scenarioMusicSlot;
   return {
     ...asset,
     id: `asset:${idPrefix}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
     resourceId,
+    scenarioMusicSlot,
     libraryScope,
-    linkedEntity: asset.kind === "special-land-tile" ? `special-land-tile:${resourceId}` : asset.linkedEntity,
+    linkedEntity: asset.kind === "special-land-tile" ? `special-land-tile:${resourceId}` : asset.kind === "music" && libraryScope === "scenario" ? `scenario-music:${resourceId}` : asset.kind === "music" ? null : asset.linkedEntity,
     provenance: `${asset.provenance}; ${provenanceSuffix}`
   };
 }

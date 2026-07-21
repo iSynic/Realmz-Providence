@@ -417,6 +417,7 @@ export function ResourcesPanel({
               <option value="all">All Types</option>
               {!isReferenceAssetSection && <option value="picture">Pictures</option>}
               <option value="sound">Sounds</option>
+              {!isReferenceAssetSection && <option value="music">Music</option>}
               <option value="icon">Icons</option>
               <option value="special-land-tile">Special Land Tiles</option>
               <option value="text">Text Resources</option>
@@ -1014,7 +1015,7 @@ function AssetSelectionInspector({
       <input
         ref={replaceInputRef}
         type="file"
-        accept={item?.type === "managed" && item.asset.kind === "sound" ? "audio/*" : "image/*"}
+        accept={item?.type === "managed" && item.asset.kind === "sound" ? "audio/*" : item?.type === "managed" && item.asset.kind === "music" ? ".mod,audio/x-mod" : "image/*"}
         hidden
         onChange={(event) => {
           const file = event.currentTarget.files?.[0] ?? null;

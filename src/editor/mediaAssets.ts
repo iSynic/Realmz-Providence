@@ -10,6 +10,10 @@ import {
   ManagedAssetLibraryScope,
   PaletteMode
 } from "./types";
+import { inspectStandardMod } from "./standardMod";
+
+export { inspectStandardMod } from "./standardMod";
+export type { StandardModInfo } from "./standardMod";
 
 const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 4096 * 4096;
@@ -24,6 +28,8 @@ export function isScenarioDisplayPictureId(resourceId: number) {
 }
 export const SCENARIO_SOUND_MIN_ID = 200;
 export const SCENARIO_SOUND_MAX_ID = 500;
+export const SCENARIO_MUSIC_MIN_SLOT = 1;
+export const SCENARIO_MUSIC_MAX_SLOT = 3;
 
 export type MediaAssetImportOptions = {
   target?: AssetImportTarget;
@@ -34,11 +40,12 @@ export type MediaAssetImportOptions = {
   paletteMode?: PaletteMode;
   ditherMode?: DitherMode;
   linkedEntity?: string | null;
+  scenarioMusicSlot?: number | null;
   libraryScope?: ManagedAssetLibraryScope;
 };
 
 export type MediaAssetSourceInfo = {
-  kind: "image" | "sound" | "text" | "raw";
+  kind: "image" | "sound" | "music" | "text" | "raw";
   width: number | null;
   height: number | null;
   durationMs: number | null;
@@ -51,6 +58,7 @@ export type MediaAssetImportRequest = {
   kind: ManagedAssetKind;
   resourceType: string;
   resourceId: number;
+  scenarioMusicSlot: number | null;
   mimeType: string;
   originalBase64: string;
   previewBase64: string;
@@ -84,6 +92,18 @@ export async function inspectMediaAssetSource(file: File, kind: ManagedAssetKind
       durationMs: decoded.durationMs,
       sampleRate: decoded.sampleRate,
       channels: decoded.sourceChannels
+    };
+  }
+  if (kind === "music") {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    inspectStandardMod(bytes);
+    return {
+      kind: "music",
+      width: null,
+      height: null,
+      durationMs: null,
+      sampleRate: null,
+      channels: null
     };
   }
   if (kind === "text" || kind === "other") {
@@ -120,6 +140,42 @@ export async function fileToMediaAssetRequest(
   const label = stripExtension(file.name);
   const target = options.target ?? assetTargetForKind(kind);
   const warnings: string[] = [];
+  if (kind === "music") {
+    const scenarioOwned = options.libraryScope !== "custom-library";
+    const slot = scenarioOwned ? options.scenarioMusicSlot ?? resourceId : null;
+    if (scenarioOwned && (!Number.isInteger(slot) || (slot ?? 0) < SCENARIO_MUSIC_MIN_SLOT || (slot ?? 0) > SCENARIO_MUSIC_MAX_SLOT)) {
+      throw new Error(`Scenario music must use one of the three Classic slots (${SCENARIO_MUSIC_MIN_SLOT}-${SCENARIO_MUSIC_MAX_SLOT}).`);
+    }
+    inspectStandardMod(original);
+    return {
+      label,
+      kind,
+      resourceType: "MOD ",
+      resourceId: slot ?? resourceId,
+      scenarioMusicSlot: slot,
+      mimeType: "audio/x-mod",
+      originalBase64: bytesToBase64(original),
+      previewBase64: bytesToBase64(original),
+      image: null,
+      audio: null,
+      linkedEntity: slot === null ? null : `scenario-music:${slot}`,
+      target: "music",
+      fitMode: null,
+      scaleMode: null,
+      matte: null,
+      paletteMode: null,
+      ditherMode: null,
+      sourceWidth: null,
+      sourceHeight: null,
+      sourceDurationMs: null,
+      sourceSampleRate: null,
+      sourceChannels: null,
+      finalWidth: null,
+      finalHeight: null,
+      warnings,
+      libraryScope: options.libraryScope ?? "scenario"
+    };
+  }
   if (kind === "text" || kind === "other") {
     const resourceType = normalizeResourceType(options.resourceType ?? resourceTypeForFile(file, kind));
     if (!resourceType.trim()) warnings.push("Resource type is empty; choose a four-character Realmz resource type before export.");
@@ -128,6 +184,7 @@ export async function fileToMediaAssetRequest(
       kind,
       resourceType,
       resourceId,
+      scenarioMusicSlot: null,
       mimeType: kind === "text" ? file.type || "text/plain" : file.type || "application/octet-stream",
       originalBase64: bytesToBase64(original),
       previewBase64: bytesToBase64(original),
@@ -163,6 +220,7 @@ export async function fileToMediaAssetRequest(
       kind,
       resourceType: "snd ",
       resourceId,
+      scenarioMusicSlot: null,
       mimeType: file.type || "audio/mpeg",
       originalBase64: bytesToBase64(original),
       previewBase64: bytesToBase64(encodeWavU8(decoded.sampleRate, decoded.pcm8)),
@@ -216,6 +274,7 @@ export async function fileToMediaAssetRequest(
     kind,
     resourceType: kind === "icon" || kind === "special-land-tile" ? "cicn" : "PICT",
     resourceId,
+    scenarioMusicSlot: null,
     mimeType: file.type || "image/png",
     originalBase64: bytesToBase64(original),
     previewBase64: bytesToBase64(preview),
@@ -250,10 +309,11 @@ export function requestToBrowserAsset(request: MediaAssetImportRequest): Managed
     kind: request.kind,
     resourceType: request.resourceType,
     resourceId: request.resourceId,
-    fileName: request.label,
+    scenarioMusicSlot: request.scenarioMusicSlot ?? undefined,
+    fileName: request.kind === "music" && request.scenarioMusicSlot ? `Custom ${request.scenarioMusicSlot} Music` : request.kind === "music" ? `${request.label}.mod` : request.label,
     originalPath,
     previewPath,
-    resourcePath: "",
+    resourcePath: request.kind === "music" ? originalPath : "",
     mimeType: request.mimeType,
     bytes: Math.floor(request.originalBase64.length * 0.75),
     sha256: "browser-preview",
@@ -262,7 +322,7 @@ export function requestToBrowserAsset(request: MediaAssetImportRequest): Managed
     durationMs: request.audio?.durationMs ?? null,
     sampleRate: request.audio?.sampleRate ?? null,
     channels: request.audio?.channels ?? null,
-    exportState: "preview-only",
+    exportState: request.kind === "music" ? "ready" : "preview-only",
     libraryScope: request.libraryScope,
     provenance: "browser media import",
     linkedEntity: request.linkedEntity,
@@ -286,6 +346,7 @@ export function assetTargetForKind(kind: ManagedAssetKind): AssetImportTarget {
   if (kind === "special-land-tile") return "special-land-tile";
   if (kind === "icon") return "icon";
   if (kind === "sound") return "sound";
+  if (kind === "music") return "music";
   if (kind === "text") return "text";
   if (kind === "other") return "raw-resource";
   return "scenario-picture";
@@ -314,6 +375,9 @@ export function nextResourceId(assets: Array<Pick<ManagedAsset, "kind" | "resour
   if (kind === "sound") {
     return nextIdInRange(assets, kind, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID);
   }
+  if (kind === "music") {
+    return nextIdInRange(assets, kind, SCENARIO_MUSIC_MIN_SLOT, 32767);
+  }
   if (kind === "text") {
     const used = new Set(assets.filter((asset) => asset.kind === "text").map((asset) => asset.resourceId));
     let id = -200;
@@ -336,6 +400,9 @@ export function nextScenarioResourceIdInRange(
   }
   if (kind === "sound") {
     return nextIdInRangeOrThrow(assets, kind, SCENARIO_SOUND_MIN_ID, SCENARIO_SOUND_MAX_ID, "scenario sound");
+  }
+  if (kind === "music") {
+    return nextIdInRangeOrThrow(assets, kind, SCENARIO_MUSIC_MIN_SLOT, SCENARIO_MUSIC_MAX_SLOT, "scenario music");
   }
   return nextResourceId(assets, kind);
 }
@@ -385,6 +452,7 @@ function requestToConversion(request: MediaAssetImportRequest): ManagedAssetConv
 
 function previewDataUrlForRequest(request: MediaAssetImportRequest) {
   if (request.kind === "sound") return `data:audio/wav;base64,${request.previewBase64}`;
+  if (request.kind === "music") return `data:audio/x-mod;base64,${request.previewBase64}`;
   if (request.kind === "text") return `data:text/plain;base64,${request.previewBase64}`;
   if (request.kind === "other") return `data:application/octet-stream;base64,${request.previewBase64}`;
   return `data:image/png;base64,${request.previewBase64}`;

@@ -168,6 +168,7 @@ fn managed_asset_kind(kind: ManagedAssetKind) -> &'static str {
         ManagedAssetKind::Icon => "icon",
         ManagedAssetKind::SpecialLandTile => "special-land-tile",
         ManagedAssetKind::Sound => "sound",
+        ManagedAssetKind::Music => "music",
         ManagedAssetKind::Text => "text",
         ManagedAssetKind::Other => "other",
     }
