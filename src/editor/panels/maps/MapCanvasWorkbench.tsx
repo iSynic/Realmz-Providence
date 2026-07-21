@@ -1,7 +1,5 @@
-import { useMemo } from "react";
 import { RealmzMapCanvas } from "../../components/MapCanvas";
 import { MapViewFilters } from "../../components/MapViewFilters";
-import { randomRectEntityId } from "../../map/geometry";
 import type { EditorState } from "../../store";
 import type {
   LevelType,
@@ -16,6 +14,8 @@ import type {
   TriggerRecord
 } from "../../types";
 import type { MapWorkbenchState } from "./useMapWorkbenchState";
+import { useMapCanvasVisibility } from "./useMapCanvasVisibility";
+import { MapCanvasEmptyState } from "./MapCanvasEmptyState";
 export function MapCanvasWorkbench({
   state,
   selectedMap,
@@ -96,26 +96,17 @@ export function MapCanvasWorkbench({
     },
     safeguards: { protectMapFeatures }
   } = workbench;
-  const visibleTriggers = useMemo(
-    () => state.showTriggers ? mapTriggers : [],
-    [mapTriggers, state.showTriggers]
-  );
-  const visibleRandomLevel = useMemo(() => {
-    if (!selectedMap || !selectedRandomLevel || !state.showRandomRects) return null;
-    if (state.visibleRandomRectIds.length === 0) return selectedRandomLevel;
-    const visibleIds = new Set(state.visibleRandomRectIds);
-    const rects = selectedRandomLevel.rects.filter((rect) => visibleIds.has(randomRectEntityId(selectedMap, rect.rectIndex)));
-    return rects.length > 0 ? { ...selectedRandomLevel, rects } : null;
-  }, [selectedMap, selectedRandomLevel, state.showRandomRects, state.visibleRandomRectIds]);
-  const visibleMapRecords = useMemo(() => {
-    if (!state.showMapRecords) return [];
-    if (state.visibleMapRecordIds.length === 0) return mapRecords;
-    const visibleIds = new Set(state.visibleMapRecordIds);
-    return mapRecords.filter((record) => {
-      const recordId = semanticMapRecordId(record);
-      return recordId != null && visibleIds.has(recordId);
-    });
-  }, [mapRecords, state.showMapRecords, state.visibleMapRecordIds]);
+  const { visibleTriggers, visibleRandomLevel, visibleMapRecords } = useMapCanvasVisibility({
+    selectedMap,
+    selectedRandomLevel,
+    mapTriggers,
+    mapRecords,
+    showTriggers: state.showTriggers,
+    showRandomRects: state.showRandomRects,
+    visibleRandomRectIds: state.visibleRandomRectIds,
+    showMapRecords: state.showMapRecords,
+    visibleMapRecordIds: state.visibleMapRecordIds
+  });
   return (
     <>
       <MapViewFilters
@@ -188,41 +179,8 @@ export function MapCanvasWorkbench({
           onCancelPaintStroke={onCancelPaintStroke}
         />
       ) : (
-        <MapEmptyState hasProject={state.project != null} onCreateMap={onCreateMap} />
+        <MapCanvasEmptyState hasProject={state.project != null} onCreateMap={onCreateMap} />
       )}
     </>
   );
-}
-function MapEmptyState({
-  hasProject,
-  onCreateMap
-}: {
-  hasProject: boolean;
-  onCreateMap: (levelType: LevelType) => void;
-}) {
-  return (
-    <div className="room-canvas-placeholder map-empty-state">
-      <div>
-        <h2>{hasProject ? "Create your first map" : "Open a project to begin mapping"}</h2>
-        <p>{hasProject ? "Start with a blank outdoor land map or a dungeon map, then paint tiles and add authoring data." : "Create or import a Providence project to browse maps."}</p>
-      </div>
-      {hasProject && (
-        <div className="map-empty-actions">
-          <button className="btn btn-primary btn-sm" type="button" onClick={() => onCreateMap("land")}>
-            New Land Map
-          </button>
-          <button className="btn btn-secondary btn-sm" type="button" onClick={() => onCreateMap("dungeon")}>
-            New Dungeon Map
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function semanticMapRecordId(record: SemanticEntity) {
-  const summaryId = record.summary.id;
-  if (typeof summaryId === "number" && Number.isFinite(summaryId)) return Math.trunc(summaryId);
-  const match = /^map-record:(-?\d+)$/.exec(record.id);
-  return match ? Number(match[1]) : null;
 }
