@@ -11,6 +11,7 @@ import {
   PaletteMode
 } from "./types";
 import { inspectStandardMod } from "./standardMod";
+import { isOutdoorMusicReplacement } from "./musicCompatibility";
 
 export { inspectStandardMod } from "./standardMod";
 export type { StandardModInfo } from "./standardMod";
@@ -146,7 +147,11 @@ export async function fileToMediaAssetRequest(
     if (scenarioOwned && (!Number.isInteger(slot) || (slot ?? 0) < SCENARIO_MUSIC_MIN_SLOT || (slot ?? 0) > SCENARIO_MUSIC_MAX_SLOT)) {
       throw new Error(`Scenario music must use one of the three Classic slots (${SCENARIO_MUSIC_MIN_SLOT}-${SCENARIO_MUSIC_MAX_SLOT}).`);
     }
-    inspectStandardMod(original);
+    try {
+      inspectStandardMod(original);
+    } catch (error) {
+      if (!await isOutdoorMusicReplacement(original)) throw error;
+    }
     return {
       label,
       kind,

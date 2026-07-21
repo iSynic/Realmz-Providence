@@ -11,7 +11,7 @@ Providence manages authored standard MOD scenario music without confusing it wit
 | Realmz-Castle/realmz PR `#306` | Current scenario-music contract defines three custom slots named `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music`. |
 | Realmz-Castle/realmz PR `#306` | The slots are playlists `15`, `16`, and `17`, selected by custom landlooks whose final picture IDs are `6`, `7`, and `8`. |
 | Realmz-Castle/realmz PR `#306` | Authored scenario music accepts standard MOD modules. MAD/MADG, MIDI, S3M, XM, IT, MTM, MED, and PlayerPRO formats are not part of the authoring contract. |
-| Realmz-Castle/realmz PR `#306` | A hash-specific legacy MADG Outdoor Music fallback remains runtime-owned compatibility behavior, not a Providence-authored format. |
+| Realmz-Castle/realmz PR `#306` | The known 60,224-byte legacy MADG Outdoor Music blob (MD5 `1A2E7CC637BCF082D21204E2DA1028B2`) redirects to a bundled standard MOD replacement. Providence mirrors that exact compatibility alias without adding general MADG support. |
 
 ## Byte Layout Notes
 
@@ -22,6 +22,9 @@ Providence manages authored standard MOD scenario music without confusing it wit
 - Providence stores each as a managed `music` asset with an explicit `scenarioMusicSlot` from 1 through 3.
 - Import validates a standard 31-sample MOD structure. The original module bytes remain canonical and are written unchanged to native Mac and Windows scenario folders.
 - Assets previews MOD files through libopenmpt. Preview support does not broaden the native export contract to the other tracker formats libopenmpt can decode.
+- Providence's protected built-in Custom Library includes the PR #306 standard MOD replacement for Outdoor Music.
+- The replacement is kept byte-identical to PR #306. Its sample headers overstate the trailing payload by four bytes, so Providence permits that discrepancy only for the replacement's exact SHA-256; other truncated MOD files still fail validation.
+- When imported `Custom 1 Music`, `Custom 2 Music`, or `Custom 3 Music` bytes match the known legacy blob exactly, the raw MADG stays in the compatibility annex while the replacement MOD becomes the canonical scenario music asset used for preview and export. Unmatched MADG remains annex-only.
 
 ### Legacy `Custom N`
 

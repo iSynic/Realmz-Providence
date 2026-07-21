@@ -256,13 +256,14 @@ export function useAssetActions({
       dispatch({ type: "setStatus", status: "Reference asset already belongs to Realmz stock resources; use its existing resource ID instead of copying it." });
       return null;
     }
-    if (!asset.resourceType || asset.resourceId == null) {
+    const inferredKind = requestedKind ?? managedAssetKindForLibrary(asset);
+    if (!asset.resourceType || (asset.resourceId == null && inferredKind !== "music")) {
       dispatch({ type: "setStatus", status: "Reference asset copy failed: resource type or ID is missing." });
       return null;
     }
     try {
       dispatch({ type: "setStatus", status: `Copying ${asset.label} to Scenario Assets...` });
-      const kind = requestedKind ?? managedAssetKindForLibrary(asset);
+      const kind = inferredKind;
       const resourceId = nextScenarioResourceId(state.project, kind);
       if (desktopRuntime) {
         const project = await invoke<Project>("copy_library_asset_to_project", {
@@ -356,13 +357,15 @@ function referenceLibraryAssetToManagedAsset(
   const mimeType = asset.mimeType ?? mimeForResource(resourceType);
   const payloadUrl = `data:${mimeType};base64,${resourceBase64}`;
   const decodedPreview = asset.resourceType ? inspectResourcePreview(asset.resourceType, resourceData).dataUrl : null;
+  const scenarioMusicSlot = kind === "music" ? resourceId : undefined;
   return {
     id: `asset:browser-reference:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`,
     label: asset.label,
     kind,
     resourceType,
     resourceId,
-    fileName: safeReferenceFileName(asset, resourceType, resourceId),
+    scenarioMusicSlot,
+    fileName: kind === "music" ? `Custom ${resourceId} Music` : safeReferenceFileName(asset, resourceType, resourceId),
     originalPath: payloadUrl,
     previewPath: decodedPreview ?? previewDataUrl ?? payloadUrl,
     resourcePath: payloadUrl,
@@ -377,8 +380,23 @@ function referenceLibraryAssetToManagedAsset(
     exportState: "ready",
     libraryScope: "scenario",
     provenance: `copied from built-in Custom Library asset ${asset.source}`,
-    linkedEntity: kind === "special-land-tile" ? `special-land-tile:${resourceId}` : null,
-    conversion: null
+    linkedEntity: kind === "special-land-tile" ? `special-land-tile:${resourceId}` : kind === "music" ? `scenario-music:${resourceId}` : null,
+    conversion: kind === "music" ? {
+      target: "music",
+      fitMode: null,
+      scaleMode: null,
+      matte: null,
+      paletteMode: null,
+      ditherMode: null,
+      sourceWidth: null,
+      sourceHeight: null,
+      sourceDurationMs: null,
+      sourceSampleRate: null,
+      sourceChannels: null,
+      finalWidth: null,
+      finalHeight: null,
+      warnings: []
+    } : null
   };
 }
 
@@ -411,6 +429,7 @@ function safeReferenceFileName(asset: LibraryAsset, resourceType: string, resour
 }
 
 function mimeForResource(resourceType: string) {
+  if (resourceType.trim() === "MOD") return "audio/x-mod";
   if (resourceType === "snd ") return "audio/x-mac-snd";
   if (resourceType === "TEXT" || resourceType === "STR#") return "text/plain";
   if (resourceType === "PICT") return "image/pict";

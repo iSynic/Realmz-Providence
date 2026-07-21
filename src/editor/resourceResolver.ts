@@ -93,7 +93,7 @@ export function canCopyLibraryAssetToScenario(asset: LibraryAsset) {
   if (collection === "excluded" || collection === "realmz-gallery") return false;
   const scope = resourceExportScope(asset);
   if (scope === "realmz-built-in-reference" || scope === "ui-reference") return false;
-  return Boolean(asset.resourceType && asset.resourceId != null);
+  return Boolean(asset.resourceType && (asset.resourceId != null || managedAssetKindForLibrary(asset) === "music"));
 }
 
 export function canReferenceLibraryAssetByStockId(asset: LibraryAsset) {

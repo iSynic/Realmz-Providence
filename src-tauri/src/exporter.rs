@@ -2414,7 +2414,7 @@ mod tests {
     use crate::project::{
         Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
         MapMarker, MapRecord, MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource,
-        Provenance, ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
+        ProjectOrigin, Provenance, ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
         ScenarioTarget,
     };
     use crate::resource_fork::{
@@ -2531,6 +2531,89 @@ mod tests {
         bytes[950] = 1;
         bytes[1080..1084].copy_from_slice(b"M.K.");
         bytes
+    }
+
+    #[test]
+    fn canonical_outdoor_music_mod_overlays_legacy_annex_payload() {
+        let temp = tempfile::tempdir().unwrap();
+        let project_dir = temp.path().join("Outdoor Music Proof.providence");
+        let mut project =
+            crate::importer::create_project("Outdoor Music Proof".to_string(), &project_dir)
+                .unwrap();
+        project.source.origin = Some(ProjectOrigin::Imported);
+        project.source.immutable = true;
+        let raw_dir = project_dir.join("raw-sources");
+        fs::create_dir_all(&raw_dir).unwrap();
+        let preserved_legacy_payload =
+            vec![0x4d; crate::music_compatibility::LEGACY_OUTDOOR_MUSIC_BYTES];
+        fs::write(raw_dir.join("Custom 2 Music"), &preserved_legacy_payload).unwrap();
+        let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
+        let replacement = crate::music_compatibility::replacement_bytes().to_vec();
+        project.assets.push(
+            serde_json::from_value(json!({
+                "id": "asset:legacy-outdoor-music:2",
+                "label": "Outdoor Music",
+                "kind": "music",
+                "resourceType": "MOD ",
+                "resourceId": 2,
+                "scenarioMusicSlot": 2,
+                "fileName": "Custom 2 Music",
+                "originalPath": "",
+                "previewPath": "",
+                "resourcePath": "assets/media/legacy-outdoor-music-2/resource_MOD.bin",
+                "mimeType": "audio/x-mod",
+                "bytes": replacement.len(),
+                "sha256": crate::music_compatibility::OUTDOOR_MUSIC_REPLACEMENT_SHA256,
+                "width": null,
+                "height": null,
+                "durationMs": null,
+                "sampleRate": null,
+                "channels": null,
+                "exportState": "ready",
+                "libraryScope": "scenario",
+                "provenance": "legacy Outdoor Music compatibility alias",
+                "linkedEntity": "scenario-music:2",
+                "conversion": {
+                    "target": "music",
+                    "fitMode": null,
+                    "scaleMode": null,
+                    "matte": null,
+                    "paletteMode": null,
+                    "ditherMode": null,
+                    "sourceWidth": null,
+                    "sourceHeight": null,
+                    "sourceDurationMs": null,
+                    "sourceSampleRate": null,
+                    "sourceChannels": null,
+                    "finalWidth": null,
+                    "finalHeight": null,
+                    "warnings": []
+                }
+            }))
+            .unwrap(),
+        );
+        let inputs = NativeCompilerInputs {
+            compatibility_annex: Some(annex),
+            managed_asset_bytes: vec![Some(Ok(replacement.clone()))],
+        };
+
+        let compiled =
+            compile_realmz_scenario(&project, ScenarioTarget::WindowsRealmzFolder, &inputs)
+                .unwrap();
+
+        assert_ne!(
+            compiled.manifest.files()["Custom 2 Music"],
+            preserved_legacy_payload
+        );
+        assert_eq!(compiled.manifest.files()["Custom 2 Music"], replacement);
+        assert!(compiled
+            .manifest
+            .written_files()
+            .contains(&"Custom 2 Music".to_string()));
+        assert!(!compiled
+            .manifest
+            .pass_through_files()
+            .contains(&"Custom 2 Music".to_string()));
     }
 
     #[test]

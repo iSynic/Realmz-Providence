@@ -24,6 +24,10 @@ export function authoringLibraryCollection(asset: LibraryAsset): AuthoringLibrar
     if (divinitySource && relativePath.startsWith("divinity data\\")) return "built-in-custom";
   }
 
+  if (resourceType === "MOD" && (source.includes(":providence:") || source.includes("providence-library"))) {
+    return "built-in-custom";
+  }
+
   return "excluded";
 }
 

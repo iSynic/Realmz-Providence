@@ -714,7 +714,9 @@ pub(crate) fn validate_standard_mod(bytes: &[u8]) -> Result<()> {
         .checked_add(pattern_bytes)
         .and_then(|value| value.checked_add(sample_bytes))
         .ok_or_else(|| ProvidenceError::message("MOD payload length overflowed"))?;
-    if required_bytes > bytes.len() {
+    if required_bytes > bytes.len()
+        && !crate::music_compatibility::is_outdoor_music_replacement(bytes)
+    {
         return Err(ProvidenceError::message(format!(
             "The MOD payload is truncated: its headers require at least {required_bytes} bytes, but the file has {}",
             bytes.len()
@@ -881,32 +883,54 @@ fn write_reference_library_asset(
     asset_id: String,
     requested_kind: Option<ManagedAssetKind>,
 ) -> Result<ManagedAsset> {
+    let kind =
+        requested_kind.unwrap_or_else(|| managed_asset_kind_for_library(asset, resource_type));
+    if matches!(kind, ManagedAssetKind::Music) {
+        if resource_type != "MOD " || !(1..=3).contains(&resource_id) {
+            return Err(ProvidenceError::message(
+                "Built-in music must be a standard MOD copied into Classic slot 1, 2, or 3",
+            ));
+        }
+        validate_standard_mod(resource_bytes)?;
+    }
     let asset_dir = project_root.join("assets").join("media").join(token);
     if asset_dir.exists() {
         fs::remove_dir_all(&asset_dir).with_path(&asset_dir)?;
     }
     fs::create_dir_all(&asset_dir).with_path(&asset_dir)?;
 
-    let original_name = format!(
-        "reference_{}_{}.bin",
-        resource_type.trim().replace(' ', "_"),
-        resource_id
-    );
+    let original_name = if matches!(kind, ManagedAssetKind::Music) {
+        format!("reference_MOD_{resource_id}.mod")
+    } else {
+        format!(
+            "reference_{}_{}.bin",
+            resource_type.trim().replace(' ', "_"),
+            resource_id
+        )
+    };
     let resource_name = format!(
         "resource_{}_{}.bin",
         resource_type.trim().replace(' ', "_"),
         resource_id
     );
-    let preview_data_url = preview_data_url_for_resource(resource_type, resource_bytes)?;
+    let preview_data_url = if matches!(kind, ManagedAssetKind::Music) {
+        None
+    } else {
+        preview_data_url_for_resource(resource_type, resource_bytes)?
+    };
     let preview_bytes = preview_data_url
         .as_deref()
         .map(decode_data_url)
         .transpose()?
         .unwrap_or_else(|| resource_bytes.to_vec());
-    let preview_name = format!(
-        "preview.{}",
-        preview_extension(preview_data_url.as_deref(), resource_type)
-    );
+    let preview_name = if matches!(kind, ManagedAssetKind::Music) {
+        "preview.mod".to_string()
+    } else {
+        format!(
+            "preview.{}",
+            preview_extension(preview_data_url.as_deref(), resource_type)
+        )
+    };
 
     fs::write(asset_dir.join(&original_name), resource_bytes)
         .with_path(asset_dir.join(&original_name))?;
@@ -919,11 +943,10 @@ fn write_reference_library_asset(
     Ok(ManagedAsset {
         id: asset_id,
         label: asset.label.trim().to_string(),
-        kind: requested_kind
-            .unwrap_or_else(|| managed_asset_kind_for_library(asset, resource_type)),
+        kind,
         resource_type: resource_type.to_string(),
         resource_id,
-        scenario_music_slot: None,
+        scenario_music_slot: matches!(kind, ManagedAssetKind::Music).then_some(resource_id as u8),
         file_name: original_name.clone(),
         original_path: format!("{rel_dir}/{original_name}"),
         preview_path: format!("{rel_dir}/{preview_name}"),
@@ -942,10 +965,29 @@ fn write_reference_library_asset(
         export_state: ManagedAssetExportState::Ready,
         library_scope: Some(ManagedAssetLibraryScope::Scenario),
         provenance: format!("copied from reference asset {}", asset.source),
-        linked_entity: requested_kind
-            .filter(|kind| matches!(kind, ManagedAssetKind::SpecialLandTile))
-            .map(|_| format!("special-land-tile:{resource_id}")),
-        conversion: None,
+        linked_entity: if matches!(kind, ManagedAssetKind::SpecialLandTile) {
+            Some(format!("special-land-tile:{resource_id}"))
+        } else if matches!(kind, ManagedAssetKind::Music) {
+            Some(format!("scenario-music:{resource_id}"))
+        } else {
+            None
+        },
+        conversion: matches!(kind, ManagedAssetKind::Music).then_some(ManagedAssetConversion {
+            target: AssetImportTarget::Music,
+            fit_mode: None,
+            scale_mode: None,
+            matte: None,
+            palette_mode: None,
+            dither_mode: None,
+            source_width: None,
+            source_height: None,
+            source_duration_ms: None,
+            source_sample_rate: None,
+            source_channels: None,
+            final_width: None,
+            final_height: None,
+            warnings: Vec::new(),
+        }),
     })
 }
 
@@ -953,14 +995,7 @@ fn library_asset_resource_bytes(
     workspace_dir: &str,
     asset: &LibraryAsset,
 ) -> Result<(String, i16, Vec<u8>)> {
-    let Some((file_path, resource_type, resource_id)) =
-        split_library_resource_fragment(&asset.relative_path)
-    else {
-        return Err(ProvidenceError::message(format!(
-            "{} is not a resource-fork member",
-            asset.relative_path
-        )));
-    };
+    let fragment = split_library_resource_fragment(&asset.relative_path);
     let folder = if asset.source.contains(":divinity:") {
         "divinity"
     } else if asset.source.contains(":realmz:") {
@@ -968,8 +1003,31 @@ fn library_asset_resource_bytes(
     } else {
         "providence"
     };
+    let file_path = fragment
+        .as_ref()
+        .map(|(file_path, _, _)| *file_path)
+        .unwrap_or(asset.relative_path.as_str());
     let relative = Path::new("raw").join(folder).join(file_path);
     let bytes = load_library_asset_impl(workspace_dir, relative)?;
+    let Some((_file_path, resource_type, resource_id)) = fragment else {
+        if asset.asset_type == "music"
+            && asset
+                .resource_type
+                .as_deref()
+                .is_some_and(|value| value.trim() == "MOD")
+        {
+            validate_standard_mod(&bytes)?;
+            return Ok((
+                "MOD ".to_string(),
+                asset.resource_id.unwrap_or_default(),
+                bytes,
+            ));
+        }
+        return Err(ProvidenceError::message(format!(
+            "{} is not a resource-fork member",
+            asset.relative_path
+        )));
+    };
     let entries = parse_resource_fork_entries(&bytes);
     if let Some(entry) = entries
         .iter()
@@ -997,6 +1055,9 @@ fn managed_asset_kind_for_library(asset: &LibraryAsset, resource_type: &str) -> 
     if asset.asset_type == "sound" || resource_type.trim() == "snd" {
         return ManagedAssetKind::Sound;
     }
+    if asset.asset_type == "music" || resource_type.trim() == "MOD" {
+        return ManagedAssetKind::Music;
+    }
     if asset.asset_type == "special-land-tile" {
         return ManagedAssetKind::SpecialLandTile;
     }
@@ -1023,6 +1084,8 @@ fn mime_for_resource(resource_type: &str) -> &'static str {
         "image/cicn"
     } else if resource_type.trim() == "snd" {
         "audio/x-mac-snd"
+    } else if resource_type.trim() == "MOD" {
+        "audio/x-mod"
     } else if resource_type == "TEXT" || resource_type == "STR#" {
         "text/plain"
     } else {
@@ -1126,5 +1189,53 @@ fn copied_file_name(path: &str, preferred: &str, fallback: &str) -> String {
         fallback.to_string()
     } else {
         safe
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn built_in_mod_copy_becomes_canonical_scenario_music() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let library_asset = LibraryAsset {
+            id: "library-asset:providence:file:outdoor-music-mod".to_string(),
+            asset_type: "music".to_string(),
+            label: "Outdoor Music".to_string(),
+            source: "library-source:providence:outdoor-music-mod".to_string(),
+            relative_path: "Outdoor Music.mod".to_string(),
+            bytes: crate::music_compatibility::replacement_bytes().len() as u64,
+            sha256: crate::music_compatibility::OUTDOOR_MUSIC_REPLACEMENT_SHA256.to_string(),
+            resource_type: Some("MOD ".to_string()),
+            resource_id: None,
+            preview_path: None,
+            mime_type: Some("audio/x-mod".to_string()),
+        };
+
+        let managed = write_reference_library_asset(
+            temp.path(),
+            &library_asset,
+            "MOD ",
+            2,
+            crate::music_compatibility::replacement_bytes(),
+            "outdoor-music",
+            "asset:test:outdoor-music".to_string(),
+            Some(ManagedAssetKind::Music),
+        )
+        .expect("copy built-in music");
+
+        assert_eq!(managed.kind, ManagedAssetKind::Music);
+        assert_eq!(managed.resource_id, 2);
+        assert_eq!(managed.scenario_music_slot, Some(2));
+        assert_eq!(managed.linked_entity.as_deref(), Some("scenario-music:2"));
+        assert!(managed
+            .conversion
+            .as_ref()
+            .is_some_and(|conversion| { matches!(conversion.target, AssetImportTarget::Music) }));
+        assert_eq!(
+            fs::read(temp.path().join(&managed.resource_path)).expect("managed MOD payload"),
+            crate::music_compatibility::replacement_bytes()
+        );
     }
 }

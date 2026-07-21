@@ -67,4 +67,14 @@ describe("authoringLibraryCollection", () => {
       resourceId: 200
     }))).toBe("realmz-gallery");
   });
+
+  it("keeps Providence's bundled standard MOD in the built-in Custom Library", () => {
+    expect(authoringLibraryCollection(asset({
+      type: "music",
+      source: "library-source:providence:outdoor-music-mod",
+      relativePath: "Outdoor Music.mod",
+      resourceType: "MOD ",
+      resourceId: null
+    }))).toBe("built-in-custom");
+  });
 });

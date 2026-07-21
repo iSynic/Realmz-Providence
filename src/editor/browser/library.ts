@@ -4,6 +4,8 @@ import { parseResourceFork, parseStringListResource, type ResourceEntry } from "
 import { inspectResourcePreview, inspectResourcePreviewAsync } from "./resourcePreview";
 import { mergeBrowserIconLibraryEntries } from "../iconLibrary";
 import { mergeBrowserMonsterLibraryEntries } from "../monsterLibrary";
+import { isOutdoorMusicReplacement, OUTDOOR_MUSIC_REPLACEMENT_PATH } from "../musicCompatibility";
+import { inspectStandardMod } from "../standardMod";
 
 export { parseResourceFork, parseStringListResource } from "./resourceFork";
 export type { ResourceEntry } from "./resourceFork";
@@ -11,9 +13,10 @@ export type { ResourceEntry } from "./resourceFork";
 export const BROWSER_WORKSPACE_PATH = "browser://workspace";
 const LIBRARY_SCHEMA_VERSION = 4;
 const bundledResourceCache = new Map<string, Promise<ResourceEntry[]>>();
+const bundledFileCache = new Map<string, Promise<Uint8Array>>();
 const bundledResourcePreviewCache = new Map<string, Promise<DecodedResourcePreview>>();
 type BrowserLibraryFile = { name: string; relativePath: string; bytes: Uint8Array };
-type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference";
+type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference" | "providence-library";
 
 export function createBrowserWorkspace(catalog: LibraryCatalog | null = null, customAssets: ManagedAsset[] = []): ProvidenceWorkspace {
   return {
@@ -41,8 +44,8 @@ export async function loadBundledLibraryCatalog() {
     sources: Array<{ sourceKind: BrowserLibrarySourceKind; path: string; bytes: number; sha256: string }>;
   };
   const catalogs: LibraryCatalog[] = [];
-  for (const sourceKind of ["divinity-import", "realmz-reference"] as const) {
-    const folder = sourceKind === "divinity-import" ? "divinity" : "realmz-reference";
+  for (const sourceKind of ["divinity-import", "realmz-reference", "providence-library"] as const) {
+    const folder = sourceKind === "divinity-import" ? "divinity" : sourceKind === "realmz-reference" ? "realmz-reference" : "providence";
     const files: BrowserLibraryFile[] = [];
     for (const entry of manifest.sources.filter((source) => source.sourceKind === sourceKind)) {
       const response = await fetch(`/bundled-libraries/${folder}/${encodePath(entry.path)}`);
@@ -72,15 +75,13 @@ export async function loadBrowserBundledLibraryResourceData(asset: LibraryCatalo
   const folder = bundledFolderForSource(asset.source);
   if (!folder) return null;
   const [filePath, fragment] = splitResourceFragment(asset.relativePath);
-  if (!fragment) return null;
   const url = `/bundled-libraries/${folder}/${encodePath(filePath.replace(/\\/g, "/"))}`;
+  if (!fragment) {
+    if (asset.type !== "music" || asset.resourceType?.trim() !== "MOD") return null;
+    return loadBundledFile(url, filePath);
+  }
   if (!bundledResourceCache.has(url)) {
-    bundledResourceCache.set(url, fetch(url)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Bundled library file missing: ${filePath}`);
-        return response.arrayBuffer();
-      })
-      .then((buffer) => parseResourceFork(new Uint8Array(buffer))));
+    bundledResourceCache.set(url, loadBundledFile(url, filePath).then(parseResourceFork));
   }
   const resources = await bundledResourceCache.get(url);
   return resources?.find((entry) => entry.resourceType === fragment.resourceType && entry.id === fragment.resourceId)?.data ?? null;
@@ -89,7 +90,7 @@ export async function loadBrowserBundledLibraryResourceData(asset: LibraryCatalo
 export async function inspectBrowserBundledLibraryAssetPreview(asset: LibraryCatalog["assets"][number]): Promise<DecodedResourcePreview> {
   if (asset.previewPath) {
     return {
-      status: asset.type === "sound" ? "playable" : asset.type === "text" ? "text-ready" : "preview-ready",
+      status: asset.type === "sound" || asset.type === "music" ? "playable" : asset.type === "text" ? "text-ready" : "preview-ready",
       mimeType: asset.mimeType ?? resourceMimeType(asset.resourceType ?? ""),
       dataUrl: asset.previewPath,
       summary: { bytes: String(asset.bytes), source: asset.source },
@@ -181,7 +182,8 @@ async function buildLibraryCatalogFromFiles(
   const assets: LibraryCatalog["assets"] = [];
   const diagnostics: LibraryCatalog["diagnostics"] = [];
   for (const file of files.sort((a, b) => a.relativePath.localeCompare(b.relativePath))) {
-    const id = `library-source:${sourceKind === "divinity-import" ? "divinity" : "realmz"}:${stableToken(file.relativePath)}`;
+    const sourceToken = sourceKind === "divinity-import" ? "divinity" : sourceKind === "realmz-reference" ? "realmz" : "providence";
+    const id = `library-source:${sourceToken}:${stableToken(file.relativePath)}`;
     sources.push({
       id,
       name: file.name,
@@ -225,6 +227,7 @@ async function buildLibraryCatalogFromFiles(
       }
     });
     addRecordSlots(sourceKind, id, file, records, entities, diagnostics, confidence);
+    await addWholeFileAsset(sourceKind, id, file, assets);
     await addResourceEntries(sourceKind, id, file, records, entities, assets, diagnostics, confidence);
   }
   const catalog: LibraryCatalog = {
@@ -246,6 +249,32 @@ async function buildLibraryCatalogFromFiles(
   };
   decorateRuleCatalog(catalog);
   return catalog;
+}
+
+async function addWholeFileAsset(
+  sourceKind: BrowserLibrarySourceKind,
+  sourceId: string,
+  file: BrowserLibraryFile,
+  assets: LibraryCatalog["assets"]
+) {
+  if (sourceKind !== "providence-library" || !file.name.toLowerCase().endsWith(".mod")) return;
+  const sha256 = await sha256Hex(file.bytes);
+  if (!await isOutdoorMusicReplacement(file.bytes)) inspectStandardMod(file.bytes);
+  assets.push({
+    id: `library-asset:${sourceKind}:file:${stableToken(file.relativePath)}`,
+    type: "music",
+    label: file.name.replace(/\.mod$/i, ""),
+    source: sourceId,
+    relativePath: file.relativePath,
+    bytes: file.bytes.byteLength,
+    sha256,
+    resourceType: "MOD ",
+    resourceId: null,
+    previewPath: file.name.toLowerCase() === "outdoor music.mod"
+      ? OUTDOOR_MUSIC_REPLACEMENT_PATH
+      : `/bundled-libraries/providence/${encodePath(file.relativePath.replace(/\\/g, "/"))}`,
+    mimeType: "audio/x-mod"
+  });
 }
 
 function mergeCatalogs(catalogs: LibraryCatalog[]): LibraryCatalog {
@@ -589,7 +618,20 @@ const ENTITY_LABELS: Record<string, string> = {
 function bundledFolderForSource(source: string) {
   if (source.includes(":divinity:") || source.includes("divinity-import")) return "divinity";
   if (source.includes(":realmz:") || source.includes("realmz-reference")) return "realmz-reference";
+  if (source.includes(":providence:") || source.includes("providence-library")) return "providence";
   return null;
+}
+
+function loadBundledFile(url: string, filePath: string) {
+  if (!bundledFileCache.has(url)) {
+    bundledFileCache.set(url, fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Bundled library file missing: ${filePath}`);
+        return response.arrayBuffer();
+      })
+      .then((buffer) => new Uint8Array(buffer)));
+  }
+  return bundledFileCache.get(url)!;
 }
 
 function splitResourceFragment(relativePath: string) {

@@ -173,12 +173,6 @@ pub fn load_library_resource_data(
     relative_path: String,
 ) -> Result<String> {
     let (file_path, fragment) = split_resource_fragment(&relative_path);
-    let Some((resource_type, resource_id)) = fragment else {
-        return Err(ProvidenceError::message(format!(
-            "{} is not a resource-fork member",
-            relative_path
-        )));
-    };
     let folder = if source.contains(":divinity:") {
         "divinity"
     } else if source.contains(":realmz:") {
@@ -188,6 +182,16 @@ pub fn load_library_resource_data(
     };
     let relative = Path::new("raw").join(folder).join(file_path);
     let bytes = load_library_asset_impl(&workspace_dir, relative)?;
+    let Some((resource_type, resource_id)) = fragment else {
+        if source.contains(":providence:") && mime_for_path(&relative_path) == "audio/x-mod" {
+            crate::media_assets::validate_standard_mod(&bytes)?;
+            return Ok(STANDARD.encode(bytes));
+        }
+        return Err(ProvidenceError::message(format!(
+            "{} is not a resource-fork member",
+            relative_path
+        )));
+    };
     let entries = parse_resource_fork_entries(&bytes);
     if let Some(entry) = entries
         .iter()
@@ -230,12 +234,20 @@ pub fn inspect_library_asset_preview(
             resource_type, resource_id, relative_path
         )));
     }
+    let mime_type = mime_for_path(&relative_path);
+    if mime_type == "audio/x-mod" {
+        crate::media_assets::validate_standard_mod(&bytes)?;
+    }
     Ok(DecodedResourcePreview {
-        status: crate::resource_preview::ResourcePreviewStatus::MetadataOnly,
-        mime_type: mime_for_path(&relative_path).to_string(),
+        status: if mime_type == "audio/x-mod" {
+            crate::resource_preview::ResourcePreviewStatus::Playable
+        } else {
+            crate::resource_preview::ResourcePreviewStatus::MetadataOnly
+        },
+        mime_type: mime_type.to_string(),
         data_url: Some(format!(
             "data:{};base64,{}",
-            mime_for_path(&relative_path),
+            mime_type,
             STANDARD.encode(bytes)
         )),
         summary: std::collections::BTreeMap::new(),

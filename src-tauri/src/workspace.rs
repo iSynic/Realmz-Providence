@@ -236,6 +236,7 @@ pub fn seed_bundled_libraries(
     for (source_kind, folder) in [
         (LibrarySourceKind::DivinityImport, "divinity"),
         (LibrarySourceKind::RealmzReference, "realmz-reference"),
+        (LibrarySourceKind::ProvidenceLibrary, "providence"),
     ] {
         let source_path = bundled_library_root.join(folder);
         if source_path.is_dir()
@@ -609,6 +610,34 @@ fn add_source_records_entities(
             ("note", json!(family.note())),
         ]),
     });
+
+    if source.source_kind == LibrarySourceKind::ProvidenceLibrary
+        && source.name.to_ascii_lowercase().ends_with(".mod")
+    {
+        crate::media_assets::validate_standard_mod(&bytes)?;
+        catalog.assets.push(LibraryAsset {
+            id: format!(
+                "{}:file:{}",
+                source.source_kind.asset_prefix(),
+                stable_token(&source.relative_path)
+            ),
+            asset_type: "music".to_string(),
+            label: source
+                .name
+                .strip_suffix(".mod")
+                .or_else(|| source.name.strip_suffix(".MOD"))
+                .unwrap_or(&source.name)
+                .to_string(),
+            source: source.id.clone(),
+            relative_path: source.relative_path.clone(),
+            bytes: bytes.len() as u64,
+            sha256: sha256_hex(&bytes),
+            resource_type: Some("MOD ".to_string()),
+            resource_id: None,
+            preview_path: None,
+            mime_type: Some("audio/x-mod".to_string()),
+        });
+    }
 
     if is_resource_file(&source.name) {
         add_resource_inventory(catalog, source, &bytes);
@@ -2002,10 +2031,17 @@ mod tests {
         let bundled = temp.path().join(BUNDLED_LIBRARY_DIR);
         let divinity = bundled.join("divinity").join("Divinity Data");
         let realmz = bundled.join("realmz-reference");
+        let providence = bundled.join("providence");
         fs::create_dir_all(&divinity).expect("divinity");
         fs::create_dir_all(&realmz).expect("realmz");
+        fs::create_dir_all(&providence).expect("providence");
         fs::write(divinity.join("Monster Scrap Book"), vec![1u8; 466]).expect("scrapbook");
         fs::write(realmz.join("Data ID"), vec![2u8; 1000]).expect("items");
+        fs::write(
+            providence.join("Outdoor Music.mod"),
+            crate::music_compatibility::replacement_bytes(),
+        )
+        .expect("music");
         let workspace_dir = temp.path().join("workspace");
 
         let workspace = open_workspace_with_bundled_libraries(&workspace_dir, Some(&bundled))
@@ -2020,6 +2056,16 @@ mod tests {
             .sources
             .iter()
             .any(|source| source.source_kind == LibrarySourceKind::RealmzReference));
+        assert!(catalog
+            .sources
+            .iter()
+            .any(|source| source.source_kind == LibrarySourceKind::ProvidenceLibrary));
+        assert!(catalog.assets.iter().any(|asset| {
+            asset.asset_type == "music"
+                && asset.label == "Outdoor Music"
+                && asset.resource_type.as_deref() == Some("MOD ")
+                && asset.resource_id.is_none()
+        }));
         assert!(catalog
             .entities
             .iter()

@@ -469,6 +469,12 @@
       "path": "The Family Jewels.rsrc",
       "bytes": 7472258,
       "sha256": "2f21229c910fb8ff03f73c969f8e4895afda954fcdf31730204736cc79ede2d9"
+    },
+    {
+      "sourceKind": "providence-library",
+      "path": "Outdoor Music.mod",
+      "bytes": 62054,
+      "sha256": "f34da5b612972af0d6da8c000a1edc494a87b0c7aee627494a8d87f12132143f"
     }
   ]
 }

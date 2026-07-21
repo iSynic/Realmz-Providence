@@ -301,6 +301,7 @@ fn import_scenario_with_name(
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
     import_sound_assets(&source_path, &assets_dir, &mut project)?;
+    import_legacy_outdoor_music_assets(&source_path, project_dir, &mut project)?;
     build_semantic_schema_from_imported_sources(project_dir, &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
@@ -359,6 +360,7 @@ fn hydrate_imported_compatibility_state(
         refresh_custom_tile_atlases(project_dir, project)?;
         import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), project)?;
         import_sound_assets(&raw_dir, &project_dir.join(ASSETS_DIR), project)?;
+        import_legacy_outdoor_music_assets(&raw_dir, project_dir, project)?;
     }
     Ok(())
 }
@@ -2216,6 +2218,90 @@ fn upsert_scenario_sound_asset(
         source: format!("Scenario resource fork: {source_file}"),
         preview_path,
     });
+}
+
+fn import_legacy_outdoor_music_assets(
+    source_path: &Path,
+    project_dir: &Path,
+    project: &mut ProvidenceProject,
+) -> Result<()> {
+    for slot in 1_u8..=3 {
+        if project.assets.iter().any(|asset| {
+            matches!(asset.kind, ManagedAssetKind::Music) && asset.scenario_music_slot == Some(slot)
+        }) {
+            continue;
+        }
+        let source_name = format!("Custom {slot} Music");
+        let source_file = source_path.join(&source_name);
+        if !source_file.is_file() {
+            continue;
+        }
+        let source_bytes = fs::read(&source_file).with_path(&source_file)?;
+        if crate::music_compatibility::legacy_outdoor_music_slot(&source_name, &source_bytes)
+            != Some(slot)
+        {
+            continue;
+        }
+
+        let replacement = crate::music_compatibility::replacement_bytes();
+        crate::media_assets::validate_standard_mod(replacement)?;
+        let token = format!("legacy-outdoor-music-{slot}");
+        let asset_dir = project_dir.join(ASSETS_DIR).join("media").join(&token);
+        fs::create_dir_all(&asset_dir).with_path(&asset_dir)?;
+        for file_name in ["original.mod", "preview.mod", "resource_MOD.bin"] {
+            let path = asset_dir.join(file_name);
+            fs::write(&path, replacement).with_path(&path)?;
+        }
+        let relative_dir = format!("{ASSETS_DIR}/media/{token}");
+        project.assets.push(ManagedAsset {
+            id: format!("asset:legacy-outdoor-music:{slot}"),
+            label: "Outdoor Music".to_string(),
+            kind: ManagedAssetKind::Music,
+            resource_type: "MOD ".to_string(),
+            resource_id: i16::from(slot),
+            scenario_music_slot: Some(slot),
+            file_name: source_name,
+            original_path: format!("{relative_dir}/original.mod"),
+            preview_path: format!("{relative_dir}/preview.mod"),
+            resource_path: format!("{relative_dir}/resource_MOD.bin"),
+            mime_type: "audio/x-mod".to_string(),
+            bytes: replacement.len() as u64,
+            sha256: crate::music_compatibility::OUTDOOR_MUSIC_REPLACEMENT_SHA256.to_string(),
+            width: None,
+            height: None,
+            duration_ms: None,
+            sample_rate: None,
+            channels: None,
+            export_state: ManagedAssetExportState::Ready,
+            library_scope: Some(ManagedAssetLibraryScope::Scenario),
+            provenance: format!(
+                "legacy Outdoor Music compatibility alias (source {} bytes, MD5 {})",
+                crate::music_compatibility::LEGACY_OUTDOOR_MUSIC_BYTES,
+                crate::music_compatibility::LEGACY_OUTDOOR_MUSIC_MD5
+            ),
+            linked_entity: Some(format!("scenario-music:{slot}")),
+            conversion: Some(ManagedAssetConversion {
+                target: AssetImportTarget::Music,
+                fit_mode: None,
+                scale_mode: None,
+                matte: None,
+                palette_mode: None,
+                dither_mode: None,
+                source_width: None,
+                source_height: None,
+                source_duration_ms: None,
+                source_sample_rate: None,
+                source_channels: None,
+                final_width: None,
+                final_height: None,
+                warnings: vec![
+                    "The imported legacy MADG payload matched Realmz's known Outdoor Music fingerprint and was replaced with the bundled standard MOD compatibility version."
+                        .to_string(),
+                ],
+            }),
+        });
+    }
+    Ok(())
 }
 
 fn map_icon_ids(maps: &[MapEntity]) -> BTreeSet<i16> {

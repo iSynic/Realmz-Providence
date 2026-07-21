@@ -12,6 +12,7 @@ import { defaultRuleNames } from "../ruleNames";
 import { normalizeProjectContract, PROJECT_SCHEMA_VERSION, requiresCompatibilityAnnex } from "../projectOrigin";
 import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
+import { legacyOutdoorMusicManagedAsset, legacyOutdoorMusicSlot, loadOutdoorMusicReplacement } from "../musicCompatibility";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
@@ -153,6 +154,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
   const scenarioName = source.name || "Untitled Scenario";
   const projectPath = `browser://${scenarioName}.providence`;
   const scenarioShell = parseImportedScenarioShell(scenarioName, files) ?? defaultScenarioShell(scenarioName);
+  const legacyOutdoorMusicAssets = await importLegacyOutdoorMusicAssets(rawSources);
   const project: Project = {
     schemaVersion: PROJECT_SCHEMA_VERSION,
     appVersion: "browser-preview",
@@ -203,7 +205,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     raceOverrides: parsed.raceOverrides,
     casteOverrides: parsed.casteOverrides,
     ruleNames: parseBrowserRuleNames(files),
-    assets: [],
+    assets: legacyOutdoorMusicAssets,
     assetCatalog: parsed.assetCatalog,
     editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [] },
     records: parsed.records,
@@ -214,6 +216,16 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
   registerBrowserSourceSnapshot(project, rawSources);
   project.validation = validateBrowserProject(project);
   return project;
+}
+
+async function importLegacyOutdoorMusicAssets(rawSources: BrowserRawSourceSnapshot) {
+  const slots = new Set(rawSources.files
+    .map((file) => ({ file, slot: legacyOutdoorMusicSlot(file.name, file.bytes, file.sha256) }))
+    .filter((entry): entry is { file: typeof rawSources.files[number]; slot: number } => entry.slot !== null)
+    .map(({ slot }) => slot));
+  if (slots.size === 0) return [];
+  const replacement = await loadOutdoorMusicReplacement();
+  return Array.from(slots).sort((a, b) => a - b).map((slot) => legacyOutdoorMusicManagedAsset(slot, replacement));
 }
 
 export function loadBrowserScenarioResourcePreview(project: Project | null | undefined, resourceType: string, resourceId: number) {
