@@ -1365,9 +1365,59 @@ fn snapshot_sources(source_path: &Path, raw_dir: &Path) -> Result<Vec<SourceFile
             editable,
         });
     }
+    snapshot_dot_rsrc_sidecars(source_path, raw_dir, &mut files)?;
     snapshot_macosx_resource_sidecars(source_path, raw_dir, &mut files)?;
     files.sort_by(|a, b| a.name.cmp(&b.name));
     Ok(files)
+}
+
+fn snapshot_dot_rsrc_sidecars(
+    source_path: &Path,
+    raw_dir: &Path,
+    files: &mut Vec<SourceFile>,
+) -> Result<()> {
+    let resource_dir = source_path.join(".rsrc");
+    if !resource_dir.is_dir() {
+        return Ok(());
+    }
+    let scenario_name = source_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Scenario");
+    let existing_names: BTreeSet<String> = files.iter().map(|file| file.name.clone()).collect();
+    for entry in WalkDir::new(&resource_dir).max_depth(1).min_depth(1) {
+        let entry = entry.map_err(|error| ProvidenceError::message(error.to_string()))?;
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let Some(data_name) = entry.path().file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+        let resource_name = if data_name.eq_ignore_ascii_case("Scenario")
+            || data_name.eq_ignore_ascii_case(scenario_name)
+        {
+            "Scenario.rsrc".to_string()
+        } else {
+            format!("{data_name}.rsrc")
+        };
+        if existing_names.contains(&resource_name)
+            || files.iter().any(|file| file.name == resource_name)
+        {
+            continue;
+        }
+        let bytes = fs::read(entry.path()).with_path(entry.path())?;
+        let dest = raw_dir.join(&resource_name);
+        fs::write(&dest, &bytes).with_path(&dest)?;
+        files.push(SourceFile {
+            name: resource_name.clone(),
+            relative_path: resource_name,
+            bytes: bytes.len() as u64,
+            sha256: sha256_hex(&bytes),
+            role: SourceFileRole::ResourceFork,
+            editable: false,
+        });
+    }
+    Ok(())
 }
 
 fn snapshot_macosx_resource_sidecars(
@@ -1673,20 +1723,49 @@ fn import_monster_icon_override_pairs(
     if entries.is_empty() {
         return;
     }
-    let by_id = entries
+    let mut by_id = BTreeMap::new();
+    let mut ambiguous_ids = BTreeSet::new();
+    for entry in entries
         .iter()
         .filter(|entry| entry.resource_type == "cicn")
-        .map(|entry| (absolute_i16_as_i32(entry.id), entry))
-        .collect::<BTreeMap<_, _>>();
+    {
+        let id = absolute_i16_as_i32(entry.id);
+        if by_id.insert(id, entry).is_some() {
+            ambiguous_ids.insert(id);
+        }
+    }
     let targets = icon_ids
         .iter()
         .filter_map(|id| monster_icon_target_id(*id))
         .collect::<BTreeSet<_>>();
+    let ambiguous_referenced = targets
+        .iter()
+        .flat_map(|target| [*target, target.saturating_add(308)])
+        .filter(|id| ambiguous_ids.contains(id))
+        .collect::<BTreeSet<_>>();
+    if !ambiguous_referenced.is_empty() {
+        project.diagnostics.push(Diagnostic {
+            severity: DiagnosticSeverity::Warning,
+            code: "ambiguous-monster-icon-override".to_string(),
+            message: format!(
+                "Scenario resource fork contains duplicate cicn IDs used by monster icon pairs: {}. Providence preserved the resources without inferring an editable override.",
+                ambiguous_referenced
+                    .iter()
+                    .map(i32::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
+            source: Some("Scenario resource fork".to_string()),
+        });
+    }
     for target in targets {
+        let paired_id = target.saturating_add(308);
+        if ambiguous_ids.contains(&target) || ambiguous_ids.contains(&paired_id) {
+            continue;
+        }
         let Some(base) = by_id.get(&target) else {
             continue;
         };
-        let paired_id = target.saturating_add(308);
         let Some(paired) = by_id.get(&paired_id) else {
             if by_id.contains_key(&target) {
                 project.diagnostics.push(Diagnostic {
@@ -2706,6 +2785,89 @@ mod tests {
         assert!(is_scenario_support_data_file("Scenario", &[0; 600]));
         assert!(!is_scenario_support_data_file("Scenario", &[0; 599]));
         assert!(!is_scenario_support_data_file("Scenario.rsrc", &[0; 600]));
+    }
+
+    #[test]
+    fn snapshots_dot_rsrc_resource_forks_under_portable_names() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source_dir = temp.path().join("Legacy Scenario");
+        let raw_dir = temp.path().join("raw-sources");
+        fs::create_dir_all(source_dir.join(".rsrc")).expect("create resource sidecars");
+        fs::create_dir_all(&raw_dir).expect("create raw sources");
+        fs::write(source_dir.join("Scenario"), vec![0; 600]).expect("write support file");
+        fs::write(source_dir.join(".rsrc").join("Scenario"), [1, 2, 3])
+            .expect("write scenario resource fork");
+        fs::write(source_dir.join(".rsrc").join("Data Spell"), [4, 5, 6])
+            .expect("write spell resource fork");
+
+        let files = snapshot_sources(&source_dir, &raw_dir).expect("snapshot source");
+
+        assert_eq!(fs::read(raw_dir.join("Scenario.rsrc")).unwrap(), [1, 2, 3]);
+        assert_eq!(
+            fs::read(raw_dir.join("Data Spell.rsrc")).unwrap(),
+            [4, 5, 6]
+        );
+        assert!(files.iter().any(|file| {
+            file.name == "Scenario.rsrc"
+                && file.relative_path == "Scenario.rsrc"
+                && matches!(file.role, SourceFileRole::ResourceFork)
+        }));
+        assert!(files.iter().any(|file| {
+            file.name == "Data Spell.rsrc"
+                && file.relative_path == "Data Spell.rsrc"
+                && matches!(file.role, SourceFileRole::ResourceFork)
+        }));
+    }
+
+    #[test]
+    fn ambiguous_monster_icon_pairs_remain_preserved_resources() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let project_dir = temp.path().join("Ambiguous Icons.providence");
+        let mut project =
+            create_project("Ambiguous Icons".to_string(), &project_dir).expect("project");
+        let fork = crate::resource_fork::write_resource_fork(&[
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "cicn".to_string(),
+                id: -144,
+                name: String::new(),
+                attributes: 0,
+                data: vec![1],
+            },
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "cicn".to_string(),
+                id: 452,
+                name: String::new(),
+                attributes: 0,
+                data: vec![2],
+            },
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "cicn".to_string(),
+                id: 452,
+                name: String::new(),
+                attributes: 0,
+                data: vec![3],
+            },
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "cicn".to_string(),
+                id: 760,
+                name: String::new(),
+                attributes: 0,
+                data: vec![4],
+            },
+        ])
+        .expect("resource fork");
+
+        import_monster_icon_override_pairs(
+            &mut project,
+            &BTreeSet::from([-144_i16, 452_i16]),
+            &fork,
+        );
+
+        assert!(project.monster_icon_overrides.is_empty());
+        assert!(project.diagnostics.iter().any(|diagnostic| {
+            diagnostic.code == "ambiguous-monster-icon-override"
+                && diagnostic.message.contains("452")
+        }));
     }
 
     #[test]

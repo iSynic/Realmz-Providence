@@ -8,7 +8,7 @@ mod generated;
 pub mod harness;
 pub mod importer;
 pub mod media_assets;
-pub(crate) mod music_compatibility;
+pub mod music_compatibility;
 mod native_manifest;
 pub mod project;
 pub mod project_package;

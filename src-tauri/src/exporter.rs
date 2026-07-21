@@ -2286,13 +2286,7 @@ fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> St
                 file.name.clone()
             }
         })
-        .unwrap_or_else(|| {
-            if target == ScenarioTarget::WindowsRealmzFolder {
-                AUTHORED_STARTUP_FILES.windows_resource_fork.to_string()
-            } else {
-                AUTHORED_STARTUP_FILES.scenario_support.to_string()
-            }
-        })
+        .unwrap_or_else(|| authored_resource_file_name(target).to_string())
 }
 
 fn authored_resource_file_name(target: ScenarioTarget) -> &'static str {

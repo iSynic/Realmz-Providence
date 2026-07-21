@@ -37,10 +37,13 @@ struct AuditAggregate {
     import_errors: usize,
     export_errors: usize,
     byte_identical_scenarios: usize,
+    contract_conformant_scenarios: usize,
     mismatched_scenarios: usize,
     missing_export_scenarios: usize,
     source_files: usize,
     byte_identical_files: usize,
+    expected_transformation_files: usize,
+    intentionally_omitted_files: usize,
     mismatched_files: usize,
     missing_export_files: usize,
     extra_export_files: usize,
@@ -76,17 +79,23 @@ struct ScenarioAudit {
     export_error: Option<String>,
     source_files: usize,
     byte_identical_files: usize,
+    expected_transformation_files: usize,
+    intentionally_omitted_files: usize,
     mismatched_files: usize,
     missing_export_files: usize,
     extra_export_files: usize,
     files: Vec<FileAudit>,
     extra_exports: Vec<String>,
+    written_resources: Vec<String>,
+    resource_warnings: Vec<String>,
+    blocked_assets: Vec<String>,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
 enum ScenarioStatus {
     ByteIdentical,
+    ContractConformant,
     HasMismatch,
     MissingExport,
     ImportError,
@@ -111,6 +120,8 @@ struct FileAudit {
 #[serde(rename_all = "kebab-case")]
 enum FileClassification {
     ByteIdentical,
+    ExpectedTransformation,
+    IntentionallyOmitted,
     ByteMismatch,
     MissingExport,
 }
@@ -123,6 +134,11 @@ fn main() {
         args.roots
     };
     let report = run_audit(&roots);
+    let has_unexpected_failures = report.aggregate.import_errors > 0
+        || report.aggregate.export_errors > 0
+        || report.aggregate.mismatched_files > 0
+        || report.aggregate.missing_export_files > 0
+        || report.aggregate.extra_export_files > 0;
     let json = serde_json::to_string_pretty(&report).expect("audit report should serialize");
     if let Some(output) = args.output {
         if let Some(parent) = output.parent() {
@@ -132,6 +148,9 @@ fn main() {
         eprintln!("Wrote {}", output.display());
     } else {
         println!("{json}");
+    }
+    if has_unexpected_failures {
+        std::process::exit(1);
     }
 }
 
@@ -208,6 +227,10 @@ fn run_audit(roots: &[PathBuf]) -> AuditReport {
         .iter()
         .filter(|scenario| matches!(scenario.status, ScenarioStatus::ByteIdentical))
         .count();
+    aggregate.contract_conformant_scenarios = scenarios
+        .iter()
+        .filter(|scenario| matches!(scenario.status, ScenarioStatus::ContractConformant))
+        .count();
     aggregate.mismatched_scenarios = scenarios
         .iter()
         .filter(|scenario| matches!(scenario.status, ScenarioStatus::HasMismatch))
@@ -262,11 +285,16 @@ fn audit_scenario(root: &Path, source: &Path) -> ScenarioAudit {
         export_error: None,
         source_files: 0,
         byte_identical_files: 0,
+        expected_transformation_files: 0,
+        intentionally_omitted_files: 0,
         mismatched_files: 0,
         missing_export_files: 0,
         extra_export_files: 0,
         files: Vec::new(),
         extra_exports: Vec::new(),
+        written_resources: Vec::new(),
+        resource_warnings: Vec::new(),
+        blocked_assets: Vec::new(),
     };
     let import_result = import_scenario(source, &project_dir);
     let Ok(project) = import_result else {
@@ -279,16 +307,24 @@ fn audit_scenario(root: &Path, source: &Path) -> ScenarioAudit {
         &export_dir,
         realmz_providence_lib::project::ScenarioTarget::ProvidencePortableFolder,
     );
-    if let Err(error) = export_result {
-        audit.status = ScenarioStatus::ExportError;
-        audit.export_error = Some(error.to_string());
-        return audit;
-    }
+    let export_report = match export_result {
+        Ok(report) => report,
+        Err(error) => {
+            audit.status = ScenarioStatus::ExportError;
+            audit.export_error = Some(error.to_string());
+            return audit;
+        }
+    };
+    audit.written_resources = export_report.written_resources;
+    audit.resource_warnings = export_report.resource_warnings;
+    audit.blocked_assets = export_report.blocked_assets;
 
     let mut source_names = BTreeSet::new();
     for source_file in &project.source.files {
         source_names.insert(source_file.relative_path.clone());
-        let source_path = source.join(&source_file.relative_path);
+        let source_path = project_dir
+            .join(&project.source.raw_sources_dir)
+            .join(&source_file.relative_path);
         if !source_path.is_file() {
             continue;
         }
@@ -298,17 +334,30 @@ fn audit_scenario(root: &Path, source: &Path) -> ScenarioAudit {
         let source_bytes = fs::read(&source_path).unwrap_or_default();
         let source_hash = sha256_hex(&source_bytes);
         if !exported_path.is_file() {
-            audit.missing_export_files += 1;
+            let intentionally_omitted = intentionally_omitted_file(&source_file.relative_path);
+            if intentionally_omitted.is_some() {
+                audit.intentionally_omitted_files += 1;
+            } else {
+                audit.missing_export_files += 1;
+            }
             audit.files.push(FileAudit {
                 name: source_file.relative_path.clone(),
                 role,
-                classification: FileClassification::MissingExport,
+                classification: if intentionally_omitted.is_some() {
+                    FileClassification::IntentionallyOmitted
+                } else {
+                    FileClassification::MissingExport
+                },
                 source_bytes: source_bytes.len() as u64,
                 exported_bytes: None,
                 source_sha256: source_hash,
                 exported_sha256: None,
                 first_diff_offset: None,
-                note: Some("Source file was imported but not exported.".to_string()),
+                note: Some(
+                    intentionally_omitted
+                        .unwrap_or("Source file was imported but not exported.")
+                        .to_string(),
+                ),
             });
             continue;
         }
@@ -326,6 +375,21 @@ fn audit_scenario(root: &Path, source: &Path) -> ScenarioAudit {
                 exported_sha256: Some(exported_hash),
                 first_diff_offset: None,
                 note: None,
+            });
+        } else if let Some(note) =
+            expected_transformation(&source_file.relative_path, &source_bytes, &exported_bytes)
+        {
+            audit.expected_transformation_files += 1;
+            audit.files.push(FileAudit {
+                name: source_file.relative_path.clone(),
+                role,
+                classification: FileClassification::ExpectedTransformation,
+                source_bytes: source_bytes.len() as u64,
+                exported_bytes: Some(exported_bytes.len() as u64),
+                source_sha256: source_hash,
+                exported_sha256: Some(exported_hash),
+                first_diff_offset: first_diff_offset(&source_bytes, &exported_bytes),
+                note: Some(note.to_string()),
             });
         } else {
             audit.mismatched_files += 1;
@@ -360,6 +424,8 @@ fn audit_scenario(root: &Path, source: &Path) -> ScenarioAudit {
         ScenarioStatus::MissingExport
     } else if audit.mismatched_files > 0 || audit.extra_export_files > 0 {
         ScenarioStatus::HasMismatch
+    } else if audit.expected_transformation_files > 0 || audit.intentionally_omitted_files > 0 {
+        ScenarioStatus::ContractConformant
     } else {
         ScenarioStatus::ByteIdentical
     };
@@ -375,6 +441,7 @@ fn accumulate_scenario(aggregate: &mut AuditAggregate, scenario: &ScenarioAudit)
             aggregate.export_errors += 1;
         }
         ScenarioStatus::ByteIdentical
+        | ScenarioStatus::ContractConformant
         | ScenarioStatus::HasMismatch
         | ScenarioStatus::MissingExport => {
             aggregate.imported += 1;
@@ -382,6 +449,8 @@ fn accumulate_scenario(aggregate: &mut AuditAggregate, scenario: &ScenarioAudit)
     }
     aggregate.source_files += scenario.source_files;
     aggregate.byte_identical_files += scenario.byte_identical_files;
+    aggregate.expected_transformation_files += scenario.expected_transformation_files;
+    aggregate.intentionally_omitted_files += scenario.intentionally_omitted_files;
     aggregate.mismatched_files += scenario.mismatched_files;
     aggregate.missing_export_files += scenario.missing_export_files;
     aggregate.extra_export_files += scenario.extra_export_files;
@@ -467,6 +536,21 @@ fn first_diff_offset(left: &[u8], right: &[u8]) -> Option<u64> {
         }
     }
     (left.len() != right.len()).then_some(shared as u64)
+}
+
+fn intentionally_omitted_file(name: &str) -> Option<&'static str> {
+    (name == "Data MENU").then_some(
+        "Realmz regenerates Data MENU at runtime; the native ownership contract intentionally omits this cache.",
+    )
+}
+
+fn expected_transformation(name: &str, source: &[u8], exported: &[u8]) -> Option<&'static str> {
+    (realmz_providence_lib::music_compatibility::legacy_outdoor_music_slot(name, source)
+        .is_some()
+        && realmz_providence_lib::music_compatibility::is_outdoor_music_replacement(exported))
+    .then_some(
+        "The exact known legacy Outdoor Music alias is intentionally promoted to the bundled standard MOD replacement.",
+    )
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
