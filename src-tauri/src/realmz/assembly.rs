@@ -2,6 +2,7 @@ use super::action_points::{
     parse_door_file, parse_extracodes, parse_macro_file, DOOR_BYTES, DOOR_LEVEL_BYTES,
     EXTRACODE_BYTES,
 };
+use super::assembly_alignment::alignment_for;
 use super::asset_catalog::build_asset_catalog;
 use super::combat::{
     parse_monster_descriptions, parse_monster_set, parse_monsters, MONSTER_BYTES,
@@ -26,7 +27,10 @@ use super::rules::{
     SPELL_BYTES,
 };
 use super::scenario_items::{parse_scenario_items, ITEM_BYTES};
-use super::{parse_battles, parse_messages, parse_option_labels, BATTLE_BYTES, MESSAGE_BYTES, OPTION_LABEL_BYTES};
+use super::{
+    parse_battles, parse_messages, parse_option_labels, BATTLE_BYTES, MESSAGE_BYTES,
+    OPTION_LABEL_BYTES,
+};
 use crate::project::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -383,54 +387,9 @@ pub fn parse_scenario_buffers(buffers: &BTreeMap<String, Vec<u8>>) -> ParsedScen
     }
 }
 
-fn alignment_for(name: &str, buffer: Option<&Vec<u8>>, record_bytes: usize) -> RecordAlignment {
-    let Some(buffer) = buffer else {
-        return RecordAlignment {
-            source: name.to_string(),
-            record_bytes,
-            count: 0,
-            trailing_bytes: 0,
-            status: AlignmentStatus::Missing,
-        };
-    };
-    let count = buffer.len() / record_bytes;
-    let trailing_bytes = buffer.len() % record_bytes;
-    RecordAlignment {
-        source: name.to_string(),
-        record_bytes,
-        count,
-        trailing_bytes,
-        status: if trailing_bytes == 0 {
-            AlignmentStatus::Aligned
-        } else {
-            AlignmentStatus::HasTrailingBytes
-        },
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn alignment_reports_missing_aligned_and_trailing_sources() {
-        let missing = alignment_for("Data SD2", None, MESSAGE_BYTES);
-        assert!(matches!(missing.status, AlignmentStatus::Missing));
-        assert_eq!(missing.count, 0);
-        assert_eq!(missing.trailing_bytes, 0);
-
-        let aligned_bytes = vec![0; MESSAGE_BYTES * 2];
-        let aligned = alignment_for("Data SD2", Some(&aligned_bytes), MESSAGE_BYTES);
-        assert!(matches!(aligned.status, AlignmentStatus::Aligned));
-        assert_eq!(aligned.count, 2);
-        assert_eq!(aligned.trailing_bytes, 0);
-
-        let trailing_bytes = vec![0; MESSAGE_BYTES + 3];
-        let trailing = alignment_for("Data SD2", Some(&trailing_bytes), MESSAGE_BYTES);
-        assert!(matches!(trailing.status, AlignmentStatus::HasTrailingBytes));
-        assert_eq!(trailing.count, 1);
-        assert_eq!(trailing.trailing_bytes, 3);
-    }
 
     #[test]
     fn scenario_assembly_preserves_alignment_diagnostics() {

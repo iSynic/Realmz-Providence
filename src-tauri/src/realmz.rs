@@ -1,5 +1,6 @@
 mod action_points;
 mod assembly;
+mod assembly_alignment;
 mod asset_catalog;
 mod battles;
 mod combat;
