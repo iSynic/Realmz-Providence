@@ -5,6 +5,7 @@ use crate::project::{
     ManagedAsset, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
     ProvidenceProject, ResourceAsset,
 };
+use crate::resource_preview::sound::decode_snd_to_wav;
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -13,6 +14,15 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 
 const ASSET_DIR: &str = "assets/managed";
+const RUNTIME_SOUND_DIR: &str = "media/sounds";
+
+#[derive(Debug, Clone)]
+struct PackagedRuntimeMedia {
+    relative_path: String,
+    bytes: u64,
+    sha256: String,
+    media_type: String,
+}
 
 #[derive(Debug, Clone)]
 pub(crate) struct PackagedPayload {
@@ -21,6 +31,7 @@ pub(crate) struct PackagedPayload {
     bytes: u64,
     sha256: String,
     media_type: String,
+    runtime_media: Option<PackagedRuntimeMedia>,
 }
 
 #[derive(Debug, Clone)]
@@ -76,6 +87,9 @@ pub(crate) fn package_assets(
             )));
         }
         written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
         managed_assets.push(managed_asset_document(asset, &payload));
     }
     managed_assets.sort_by(|left, right| value_string(left, "id").cmp(&value_string(right, "id")));
@@ -175,17 +189,54 @@ fn write_payload(
         fs::create_dir_all(parent).with_path(parent)?;
     }
     fs::write(&path, bytes).with_path(&path)?;
+    let runtime_media = if asset.resource_type == "snd " {
+        let wav = decode_snd_to_wav(bytes).map_err(|error| {
+            ProvidenceError::message(format!(
+                "Managed sound '{}' cannot be decoded for Realmz Remake runtime media: {error}",
+                asset.label
+            ))
+        })?;
+        Some(write_runtime_sound(asset, &wav, output_dir)?)
+    } else {
+        None
+    };
     Ok(PackagedPayload {
         relative_path,
         file_name,
         bytes: bytes.len() as u64,
         sha256,
         media_type: media_type.to_string(),
+        runtime_media,
+    })
+}
+
+fn write_runtime_sound(
+    asset: &ManagedAsset,
+    wav: &[u8],
+    output_dir: &Path,
+) -> Result<PackagedRuntimeMedia> {
+    let sha256 = hex::encode(Sha256::digest(wav));
+    let id = if asset.resource_id < 0 {
+        format!("neg-{}", asset.resource_id.unsigned_abs())
+    } else {
+        asset.resource_id.to_string()
+    };
+    let relative_path = format!("{RUNTIME_SOUND_DIR}/snd-{id}-{}.wav", &sha256[..12]);
+    let path = output_dir.join(PathBuf::from(&relative_path));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_path(parent)?;
+    }
+    fs::write(&path, wav).with_path(&path)?;
+    Ok(PackagedRuntimeMedia {
+        relative_path,
+        bytes: wav.len() as u64,
+        sha256,
+        media_type: "audio/wav".to_string(),
     })
 }
 
 fn managed_asset_document(asset: &ManagedAsset, payload: &PackagedPayload) -> Value {
-    json!({
+    let mut value = json!({
         "id": &asset.id,
         "label": &asset.label,
         "kind": asset.kind,
@@ -204,7 +255,9 @@ fn managed_asset_document(asset: &ManagedAsset, payload: &PackagedPayload) -> Va
         "payloadMediaType": &payload.media_type,
         "payloadBytes": payload.bytes,
         "payloadSha256": &payload.sha256,
-    })
+    });
+    add_runtime_media(&mut value, payload);
+    value
 }
 
 fn catalog_document(
@@ -392,6 +445,25 @@ fn add_payload_fields(value: &mut Value, payload: &PackagedPayload) {
     );
     object.insert("payloadBytes".to_string(), json!(payload.bytes));
     object.insert("payloadSha256".to_string(), json!(&payload.sha256));
+    add_runtime_media(value, payload);
+}
+
+fn add_runtime_media(value: &mut Value, payload: &PackagedPayload) {
+    let Some(runtime_media) = &payload.runtime_media else {
+        return;
+    };
+    value
+        .as_object_mut()
+        .expect("asset catalog rows are objects")
+        .insert(
+            "runtimeMedia".to_string(),
+            json!({
+                "path": &runtime_media.relative_path,
+                "mediaType": &runtime_media.media_type,
+                "bytes": runtime_media.bytes,
+                "sha256": &runtime_media.sha256,
+            }),
+        );
 }
 
 fn sanitized_icon_metadata<T: serde::Serialize>(records: &T) -> Result<Value> {

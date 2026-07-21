@@ -1504,9 +1504,22 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
     const resource = assets.catalog[collection].find((entry) => entry.resourceType === resourceType && entry.resourceId === resourceId);
     expect(resource?.payloadPath && files.has(resource.payloadPath), `Remake ${collection} catalog lost ${resourceType} ${resourceId}`);
   }
+  const sound = assets.catalog.sounds.find((entry) => entry.resourceType === "snd " && entry.resourceId === 321);
+  expect(sound?.runtimeMedia?.mediaType === "audio/wav", "Remake sound catalog lost decoded WAV runtime media");
+  expect(typeof sound.runtimeMedia.path === "string" && sound.runtimeMedia.path.startsWith("media/sounds/snd-321-"), "Remake sound runtime media has a non-portable path");
+  expect(files.has(sound.runtimeMedia.path), "Remake sound runtime media file is missing");
+  const runtimeSound = Buffer.from(files.get(sound.runtimeMedia.path));
+  expect(runtimeSound.subarray(0, 4).toString("ascii") === "RIFF", "Remake sound runtime media is not WAV");
+  expect(sound.runtimeMedia.bytes === runtimeSound.length, "Remake sound runtime media byte count is wrong");
+  expect(sound.runtimeMedia.sha256 === createHash("sha256").update(runtimeSound).digest("hex"), "Remake sound runtime media hash is wrong");
+  const managedSound = assets.managedAssets.find((asset) => asset.resourceType === "snd " && asset.resourceId === 321);
+  expect(JSON.stringify(managedSound?.runtimeMedia) === JSON.stringify(sound.runtimeMedia), "Managed and catalog sound runtime media differ");
 
   for (const [name, document] of documents) assertPortableRemakeDocument(document, name);
-  expect([...files.keys()].filter((name) => !requiredDocuments.includes(name)).length === canonicalProject.assets.length, "Remake export produced an unexpected payload file set");
+  const runtimeMediaFiles = canonicalProject.assets.filter((asset) => asset.resourceType === "snd ").length;
+  const expectedPayloadFiles = canonicalProject.assets.length + runtimeMediaFiles;
+  expect(manifest.counts.packagedAssetPayloads === expectedPayloadFiles, "Remake export reported the wrong packaged payload count");
+  expect([...files.keys()].filter((name) => !requiredDocuments.includes(name)).length === expectedPayloadFiles, "Remake export produced an unexpected payload file set");
 }
 
 function assertPortableRemakeDocument(value, context) {

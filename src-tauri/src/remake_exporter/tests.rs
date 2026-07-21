@@ -4,6 +4,7 @@ use crate::project::{
     Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
     MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioSupportFile, TriggerRecord,
 };
+use crate::resource_fork::{encode_snd_resource, PcmAudioPayload};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -95,6 +96,79 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
         documents["classic/rules.json"]["ruleNames"]["sourceFile"],
         "Data Files/Custom Names.rsrc"
     );
+}
+
+#[test]
+fn exports_decoded_sound_runtime_media_for_remake() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("sound.providence");
+    let mut project = create_project("Sound".to_string(), &project_dir).unwrap();
+    let snd = encode_snd_resource(&PcmAudioPayload {
+        sample_rate: 11_025,
+        channels: 1,
+        duration_ms: Some(23),
+        pcm8_base64: STANDARD.encode([0_u8, 64, 128, 192, 255]),
+    })
+    .unwrap();
+    project.assets.push(managed_sound_asset(&snd));
+    project.asset_catalog.sounds.push(ResourceAsset {
+        id: "resource:snd:321".to_string(),
+        resource_type: "snd ".to_string(),
+        resource_id: 321,
+        name: Some("Movement sound".to_string()),
+        source: "Managed scenario sound".to_string(),
+        preview_path: Some("data:audio/wav;base64,editor-only".to_string()),
+    });
+
+    let first = workspace.path().join("first");
+    let second = workspace.path().join("second");
+    let first_report = export_remake_campaign(&project, &project_dir, &first).unwrap();
+    let second_report = export_remake_campaign(&project, &project_dir, &second).unwrap();
+
+    assert_eq!(first_report.written_files, second_report.written_files);
+    assert_eq!(first_report.counts.managed_assets, 1);
+    assert_eq!(first_report.counts.packaged_asset_payloads, 2);
+    let first_documents = read_json_documents(&first);
+    let assets = &first_documents["classic/assets.json"];
+    let managed = &assets["managedAssets"][0];
+    let sound = &assets["catalog"]["sounds"][0];
+    assert_eq!(managed["runtimeMedia"], sound["runtimeMedia"]);
+    let runtime_media = &sound["runtimeMedia"];
+    assert_eq!(runtime_media["mediaType"], "audio/wav");
+    let runtime_path = runtime_media["path"].as_str().unwrap();
+    assert!(runtime_path.starts_with("media/sounds/snd-321-"));
+    assert!(runtime_path.ends_with(".wav"));
+    let wav = fs::read(first.join(runtime_path)).unwrap();
+    assert!(wav.starts_with(b"RIFF"));
+    assert_eq!(runtime_media["bytes"], wav.len());
+    assert_eq!(runtime_media["sha256"], hex::encode(Sha256::digest(&wav)));
+    assert!(!serde_json::to_string(assets)
+        .unwrap()
+        .contains("editor-only"));
+    assert_eq!(
+        fs::read(first.join(runtime_path)).unwrap(),
+        fs::read(second.join(runtime_path)).unwrap()
+    );
+}
+
+#[test]
+fn rejects_managed_sounds_that_cannot_produce_runtime_audio() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("unsupported-sound.providence");
+    let mut project = create_project("Unsupported sound".to_string(), &project_dir).unwrap();
+    project
+        .assets
+        .push(managed_sound_asset(b"not-a-snd-resource"));
+
+    let error = export_remake_campaign(
+        &project,
+        &project_dir,
+        workspace.path().join("unsupported-sound-out"),
+    )
+    .unwrap_err();
+    assert!(error
+        .to_string()
+        .contains("cannot be decoded for Realmz Remake runtime media"));
 }
 
 #[test]
@@ -347,6 +421,35 @@ fn managed_asset(id: &str, scope: ManagedAssetLibraryScope, bytes: &[u8]) -> Man
         "libraryScope": scope,
         "provenance": "canonical test data",
         "linkedEntity": format!("resource:PICT:{}", if id == "library" { 307 } else { 306 }),
+        "conversion": null
+    }))
+    .unwrap()
+}
+
+fn managed_sound_asset(bytes: &[u8]) -> ManagedAsset {
+    let sha256 = hex::encode(Sha256::digest(bytes));
+    serde_json::from_value(json!({
+        "id": "asset:sound:321:test",
+        "label": "Managed sound",
+        "kind": "sound",
+        "resourceType": "snd ",
+        "resourceId": 321,
+        "fileName": "sound-321.snd",
+        "originalPath": "",
+        "previewPath": "data:audio/wav;base64,editor-only",
+        "resourcePath": format!("data:audio/x-mac-snd;base64,{}", STANDARD.encode(bytes)),
+        "mimeType": "audio/x-mac-snd",
+        "bytes": bytes.len(),
+        "sha256": sha256,
+        "width": null,
+        "height": null,
+        "durationMs": 23,
+        "sampleRate": 11025,
+        "channels": 1,
+        "exportState": "ready",
+        "libraryScope": "scenario",
+        "provenance": "canonical test data",
+        "linkedEntity": "resource:snd:321",
         "conversion": null
     }))
     .unwrap()

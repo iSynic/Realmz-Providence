@@ -27,6 +27,7 @@ self-contained projection governed by Realmz Remake's
 | Authorship and provenance | record `authored` and normalized `provenance` | Compatible. Source paths are reduced to portable source labels. |
 | Interpreter evidence | dispatcher no-op observations and compact source/record evidence | Compatible additive v1 evidence. |
 | Managed resources | scenario-scoped `assets[].resourcePath` | Payload is moved to a bundle-relative file; the data URI is never serialized. |
+| Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
 | Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; v1's validated `icons` collection permits only non-negative IDs. |
 
 All nine version-1 JSON documents are emitted. Runtime records retain semantic fields and stable
@@ -64,6 +65,15 @@ The exporter also attaches the payload path to matching picture, icon, sound, an
 catalog entries. TEXT and styl payloads remain addressable through `managedAssets` because bundle
 v1 has no dedicated text-resource catalog.
 
+For each scenario-scoped managed `snd ` resource, Providence decodes the same canonical Classic
+resource bytes used by the native compiler into a deterministic WAV under `media/sounds`. Both the
+managed-asset row and its `assets.catalog.sounds` row receive the bundle-v1 `runtimeMedia` object
+with a campaign-relative path, `audio/wav` media type, byte length, and SHA-256 hash. The Classic
+payload remains separately available through `payloadPath`; Providence never changes that field to
+mean decoded audio. A managed sound that cannot be decoded is rejected rather than exported with a
+false Remake-playback claim. Imported catalog-only sounds remain metadata until they are promoted
+to a canonical scenario-managed asset.
+
 ## Genuine gaps and unresolved runtime path semantics
 
 No format-version change is required for the current projection, but four boundaries remain:
@@ -71,11 +81,12 @@ No format-version change is required for the current projection, but four bounda
 1. Providence schema 5 has only `scenario.shell.landLevel` for the authored start. Bundle v1 can
    represent a dungeon start, but Providence cannot currently author that distinction. Current
    projects therefore export a land start without loss.
-2. Bundle v1 validates `payloadPath` portability but does not define the payload encoding expected
-   by each Remake adapter. The current Remake picture adapter searches a campaign's `Splash Images`
-   directory for displayable images and the sound adapter uses native sound-name mappings; neither
-   directly consumes packaged PICT/cicn/snd resource bytes. Providence labels these files
-   `classic-resource-data` rather than claiming they are PNG, WAV, or installed Remake assets.
+2. Bundle v1 validates `payloadPath` portability but does not define the image encoding expected by
+   each Remake adapter. The current Remake picture adapter searches a campaign's `Splash Images`
+   directory for displayable images and does not directly consume packaged PICT/cicn bytes.
+   Providence labels those files `classic-resource-data` rather than claiming they are PNG or
+   installed Remake assets. Sound is no longer part of this gap: Remake accepts additive
+   `audio/*` runtime media, and Providence derives WAV from supported managed `snd ` resources.
 3. Scenario-icon and monster-icon override records are preserved as portable metadata, but their
    legacy embedded resource payload fields are compatibility-annex data and are intentionally
    omitted. Only scenario-scoped `ManagedAsset` payloads are packaged. A canonical asset intended

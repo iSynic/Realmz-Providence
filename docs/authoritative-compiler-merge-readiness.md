@@ -89,6 +89,12 @@ Rust/Wasm compiler unification, Classic-Mac fork-aware packaging, custom music a
 PICT editing, and uncommon legacy sidecar authoring remain optional follow-ups. Imported
 unsupported payloads continue through the bounded compatibility annex.
 
+The optional-media and legacy-sidecar classifications are recorded in
+[`native-file-ownership-matrix.md`](native-file-ownership-matrix.md). Scenario `snd ` effects are
+not deferred with custom music: Providence authors them as managed resources and projects decoded
+WAV runtime media into the Realmz Remake Classic bundle. Filename-based `Custom 1 Music` through
+`Custom 9 Music` remain under ISY-347 because Classic bundle v1 has no playlist contract.
+
 ## Integration sequence
 
 1. Refresh and verify the mainline relationship:

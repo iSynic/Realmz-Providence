@@ -18,7 +18,7 @@ pub const REMAKE_CLASSIC_FORMAT_VERSION: u32 = 1;
 
 const CLASSIC_DIR: &str = "classic";
 const LIMITATIONS: [&str; 4] = [
-    "Classic resource payloads are packaged without defining Remake-native image, icon, sound, or styled-text conversion semantics.",
+    "Classic image, icon, and styled-text payloads are packaged without defining Remake-native conversion semantics; decodable snd resources include derived WAV runtime media.",
     "Providence schema version 5 authors a land start; the v1 bundle can also represent dungeon starts when the canonical model gains that distinction.",
     "Legacy scenario-icon and monster-icon override payloads are excluded unless they are canonical scenario-managed assets.",
     "Negative cicn special-land-tile identities use the additive v1 assets.catalog.specialLandTiles collection because ordinary v1 icon identities are non-negative.",
