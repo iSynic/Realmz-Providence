@@ -3,30 +3,16 @@ import type { EditorState } from "../../store";
 import type { EditorTool, MapEntity, MapWorkbenchMode, TilesetAsset } from "../../types";
 import type { ConnectedTileMatchMode } from "../../map/connectedMapSelection";
 import type { MapSelectionDrawMode, MapShapeFill } from "../../map/mapCellShapes";
-import { SegmentedControl, type SegmentedControlOption } from "../../ui";
 import { TutorialTip } from "../TutorialTip";
 import { mapWorkbenchModeLabel } from "./mapBrowserModel";
 import { PaintTileSummary } from "./MapPaintInspector";
+import { MapSelectionToolOptions } from "./MapSelectionToolOptions";
+import { MapToolsetModeNotice } from "./MapToolsetModeNotice";
 
 const LAND_AUTHORING_TOOL_IDS: EditorTool[] = ["paint", "bucket", "stamp", "trigger", "random"];
 const DUNGEON_AUTHORING_TOOL_IDS: EditorTool[] = ["dungeon-draw", "trigger", "random"];
 const NAVIGATION_TOOL_IDS: EditorTool[] = ["select", "wand", "pan", "sample"];
 const TOOL_BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
-const CONNECTED_MATCH_OPTIONS: ReadonlyArray<SegmentedControlOption<ConnectedTileMatchMode>> = [
-  { value: "exact", label: "Exact", title: "Match the exact raw tile value" },
-  { value: "semantic-family", label: "Terrain", title: "Match the known terrain family, including center and transition variants" },
-  { value: "behavior", label: "Behavior", title: "Match known Realmz movement and blocking behavior" }
-];
-const SELECTION_DRAW_OPTIONS: ReadonlyArray<SegmentedControlOption<MapSelectionDrawMode>> = [
-  { value: "area", label: "Area", title: "Drag a filled rectangular authoring region" },
-  { value: "line", label: "Line", title: "Drag an orthogonally connected line selection" },
-  { value: "rectangle", label: "Rect", title: "Drag a rectangular cell selection" },
-  { value: "ellipse", label: "Ellipse", title: "Drag an elliptical cell selection" }
-];
-const SHAPE_FILL_OPTIONS: ReadonlyArray<SegmentedControlOption<MapShapeFill>> = [
-  { value: "outline", label: "Outline" },
-  { value: "filled", label: "Filled" }
-];
 
 export function MapToolset({
   state,
@@ -80,42 +66,15 @@ export function MapToolset({
               </div>
             </div>
           </div>
-          {(state.activeTool === "wand" || state.activeTool === "bucket") && (
-            <div className="map-sidebar-group wand-match-group">
-              <div className="map-sidebar-group-title">Connected Match</div>
-              <SegmentedControl
-                ariaLabel={`${state.activeTool === "wand" ? "Magic Wand" : "Paint Bucket"} connected tile match`}
-                value={connectedSelectionMode}
-                options={CONNECTED_MATCH_OPTIONS}
-                onChange={onSetConnectedSelectionMode}
-                className="wand-match-control"
-              />
-            </div>
-          )}
-          {state.activeTool === "select" && (
-            <div className="map-sidebar-group selection-shape-group">
-              <div className="map-sidebar-group-title">Selection Shape</div>
-              <SegmentedControl
-                ariaLabel="Selection shape"
-                value={selectionDrawMode}
-                options={SELECTION_DRAW_OPTIONS}
-                onChange={onSetSelectionDrawMode}
-                className="selection-shape-control"
-              />
-              {(selectionDrawMode === "rectangle" || selectionDrawMode === "ellipse") && (
-                <SegmentedControl
-                  ariaLabel="Selection shape fill"
-                  value={selectionShapeFill}
-                  options={SHAPE_FILL_OPTIONS}
-                  onChange={onSetSelectionShapeFill}
-                  className="shape-fill-control"
-                />
-              )}
-              {selectionDrawMode !== "area" && (
-                <small className="context-capacity-note">Drag on the map. Shift adds to the current selection; Alt subtracts.</small>
-              )}
-            </div>
-          )}
+          <MapSelectionToolOptions
+            activeTool={state.activeTool}
+            connectedSelectionMode={connectedSelectionMode}
+            selectionDrawMode={selectionDrawMode}
+            selectionShapeFill={selectionShapeFill}
+            onSetConnectedSelectionMode={onSetConnectedSelectionMode}
+            onSetSelectionDrawMode={onSetSelectionDrawMode}
+            onSetSelectionShapeFill={onSetSelectionShapeFill}
+          />
           {isDungeon ? (
             <div className="map-toolset-mode-notice">
               <strong>Dungeon cells use flags</strong>
@@ -153,42 +112,6 @@ function renderSidebarTool(id: EditorTool, activeTool: EditorTool, onSetTool: (t
         <span>{toolLabel(tool.id)}</span>
       </button>
     </TutorialTip>
-  );
-}
-
-function MapToolsetModeNotice({
-  mode,
-  onReturnToCanvas
-}: {
-  mode: MapWorkbenchMode;
-  onReturnToCanvas: () => void;
-}) {
-  const copy: Record<MapWorkbenchMode, { title: string; body: string }> = {
-    canvas: {
-      title: "Canvas tools",
-      body: "Paint, sample, place Action Points, and work directly on the map."
-    },
-    "land-layout": {
-      title: "Land Layout mode",
-      body: "Use the center grid to arrange outdoor levels for off-map travel. Canvas painting tools are hidden here."
-    },
-    "land-tiles": {
-      title: "Land Tiles mode",
-      body: "Use the center suite to inspect landlook tiles, movement flags, and combat-map expansion. Painting tools live in Canvas mode."
-    },
-    "random-areas": {
-      title: "Random Encounter Areas",
-      body: "These are Realmz random encounter rectangles: chance, battle ranges, text, sound, and extra Action Point doors."
-    }
-  };
-  return (
-    <div className="map-toolset-mode-notice">
-      <strong>{copy[mode].title}</strong>
-      <p>{copy[mode].body}</p>
-      <button className="btn btn-secondary btn-xs" type="button" onClick={onReturnToCanvas}>
-        Return To Canvas Tools
-      </button>
-    </div>
   );
 }
 
