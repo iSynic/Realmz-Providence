@@ -23,9 +23,14 @@ export const SCENARIO_PICTURE_MIN_ID = 30000;
 export const SCENARIO_PICTURE_MAX_ID = 30128;
 export const SCENARIO_SPLASH_PICTURE_ID = 30128;
 export const SCENARIO_DISPLAY_PICTURE_MAX_ID = SCENARIO_SPLASH_PICTURE_ID - 1;
+const CLASSIC_RESOURCE_ID_MAX = 32767;
 
 export function isScenarioDisplayPictureId(resourceId: number) {
   return resourceId >= SCENARIO_PICTURE_MIN_ID && resourceId < SCENARIO_SPLASH_PICTURE_ID;
+}
+
+export function isScenarioPictureReferenceId(resourceId: number) {
+  return Number.isInteger(resourceId) && resourceId >= SCENARIO_PICTURE_MIN_ID && resourceId <= CLASSIC_RESOURCE_ID_MAX;
 }
 export const SCENARIO_SOUND_MIN_ID = 200;
 export const SCENARIO_SOUND_MAX_ID = 500;

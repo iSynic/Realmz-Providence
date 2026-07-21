@@ -56,7 +56,8 @@ describe("asset target ownership", () => {
     assetCatalog: {
       pictures: [
         { resourceType: "PICT", resourceId: 170, name: "Interface Override", source: "Scenario resource fork", previewPath: "override.png" },
-        { resourceType: "PICT", resourceId: 30002, name: "Imported Scene", source: "Scenario resource fork", previewPath: "imported.png" }
+        { resourceType: "PICT", resourceId: 30002, name: "Imported Scene", source: "Scenario resource fork", previewPath: "imported.png" },
+        { resourceType: "PICT", resourceId: 32128, name: "Trial by Fire Intended Picture", source: "Scenario resource fork", previewPath: "trial-by-fire.png" }
       ],
       sounds: [],
       icons: [],
@@ -73,10 +74,16 @@ describe("asset target ownership", () => {
     ]
   } as unknown as LibraryCatalog;
 
-  it("offers scenario-safe pictures and Realmz stock IDs without leaking reusable or Divinity-only media", () => {
+  it("offers normal and imported high-numbered scenario pictures without leaking interface overrides or Divinity-only media", () => {
     const options = targetOptionsForOpcode(project, 27, catalog);
     expect(options.map((option) => option.key)).toContain("scenario-picture");
     expect(options.map((option) => option.key)).toContain("resource:PICT:30002");
+    expect(options.find((option) => option.key === "resource:PICT:32128")).toMatchObject({
+      value: 32128,
+      previewPath: "trial-by-fire.png",
+      compatibility: "Imported scenario picture; outside normal Divinity authoring range",
+      sourceState: "Scenario resource"
+    });
     expect(options.map((option) => option.key)).toContain("library-asset:realmz-reference:stock");
     expect(options.map((option) => option.key)).not.toContain("custom-picture");
     expect(options.map((option) => option.key)).not.toContain("resource:PICT:170");

@@ -1148,7 +1148,7 @@ function ScenarioResourceAssetCard({
       />
       <strong>{asset.entity.label}</strong>
       <small>{asset.resourceType} {asset.resourceId}</small>
-      {scenarioPictureOverrideWarning(asset.resourceType, asset.resourceId) && <small className="asset-card-warning">Runtime override ID</small>}
+      {scenarioPictureAuthoringWarning(asset.resourceType, asset.resourceId) && <small className="asset-card-warning">Nonstandard scenario PICT</small>}
     </article>
   );
 }
@@ -1319,15 +1319,18 @@ function directResourceEntity(resourceType: string, resourceId: number, label: s
       scenarioSupplied: true,
       previewDataUrl: previewPath ?? "",
       previewStatus,
-      authoringWarning: scenarioPictureOverrideWarning(resourceType, resourceId),
+      authoringWarning: scenarioPictureAuthoringWarning(resourceType, resourceId),
       ...summary
     }
   };
 }
 
-function scenarioPictureOverrideWarning(resourceType: string, resourceId: number) {
+export function scenarioPictureAuthoringWarning(resourceType: string, resourceId: number) {
   if (resourceType !== "PICT" || resourceId === SCENARIO_SPLASH_PICTURE_ID || (resourceId >= SCENARIO_PICTURE_MIN_ID && resourceId <= SCENARIO_PICTURE_MAX_ID)) return "";
-  return "This PICT ID is outside normal scenario picture ranges and may override Realmz interface, landlook, or runtime art. Keep it only when that override is intentional; do not select it as an ordinary Display Picture target.";
+  if (resourceId >= SCENARIO_PICTURE_MIN_ID) {
+    return `This scenario PICT ID is outside Divinity's normal ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID} authoring range. Realmz can load it from the scenario resource fork, and Display Picture actions may reference it.`;
+  }
+  return `This scenario PICT ID is outside Divinity's normal ${SCENARIO_PICTURE_MIN_ID}-${SCENARIO_PICTURE_MAX_ID} authoring range. Low PICT IDs may collide with Realmz-owned resources, so verify runtime ownership before referencing it.`;
 }
 
 function initialScenarioPreviewStatus(resourceType: string, previewPath?: string | null): ResourcePreviewStatus {

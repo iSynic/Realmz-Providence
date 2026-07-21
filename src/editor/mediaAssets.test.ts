@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   fileToMediaAssetRequest,
   inspectStandardMod,
+  isScenarioPictureReferenceId,
   nextResourceId,
   nextScenarioResourceIdInRange,
   SCENARIO_DISPLAY_PICTURE_MAX_ID,
@@ -10,6 +11,14 @@ import {
 } from "./mediaAssets";
 
 describe("scenario asset resource allocation", () => {
+  it("accepts imported high-numbered Classic resource IDs as scenario picture references", () => {
+    expect(isScenarioPictureReferenceId(30000)).toBe(true);
+    expect(isScenarioPictureReferenceId(30128)).toBe(true);
+    expect(isScenarioPictureReferenceId(32128)).toBe(true);
+    expect(isScenarioPictureReferenceId(29999)).toBe(false);
+    expect(isScenarioPictureReferenceId(32768)).toBe(false);
+  });
+
   it("never allocates the reserved title picture ID to an ordinary scenario picture", () => {
     const occupied = Array.from(
       { length: SCENARIO_DISPLAY_PICTURE_MAX_ID - SCENARIO_PICTURE_MIN_ID + 1 },

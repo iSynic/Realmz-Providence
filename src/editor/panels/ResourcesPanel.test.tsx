@@ -1,9 +1,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { LibraryAsset, LibraryCatalog, Project } from "../types";
-import { AssetGalleryControls, ResourcesPanel } from "./ResourcesPanel";
+import { AssetGalleryControls, ResourcesPanel, scenarioPictureAuthoringWarning } from "./ResourcesPanel";
 
 describe("ResourcesPanel controls", () => {
+  it("describes high-numbered imported PICTs as scenario resources rather than runtime overrides", () => {
+    const warning = scenarioPictureAuthoringWarning("PICT", 32128);
+    expect(warning).toContain("scenario resource fork");
+    expect(warning).toContain("Display Picture actions may reference it");
+    expect(warning.toLowerCase()).not.toContain("override");
+  });
+
   it("uses the shared search field without showing inert preview filters for scenario assets", () => {
     const markup = renderToStaticMarkup(
       <ResourcesPanel

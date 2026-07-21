@@ -5,7 +5,7 @@ import { selectEntityFromId } from "../utils";
 import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { playPreviewUrl, useResolvedPreviewUrl, type PreviewRuntimeContext } from "../previewUrls";
 import { divinityCompatibleSoundIds, divinitySoundReferenceLabel, isDivinityCompatibleSoundId } from "../soundReferences";
-import { isScenarioDisplayPictureId } from "../mediaAssets";
+import { isScenarioDisplayPictureId, isScenarioPictureReferenceId, SCENARIO_SPLASH_PICTURE_ID } from "../mediaAssets";
 import { canReferenceLibraryAssetByStockId } from "../resourceResolver";
 import {
   ReferencePicker,
@@ -443,7 +443,7 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
     const wantedKinds = code === 9 ? new Set(["sound"]) : new Set(["picture"]);
     for (const asset of project.assets ?? []) {
       if (asset.libraryScope === "custom-library" || !wantedKinds.has(asset.kind)) continue;
-      if (code === 27 && !isScenarioDisplayPictureId(asset.resourceId)) continue;
+      if (code === 27 && !isScenarioPictureReferenceId(asset.resourceId)) continue;
       options.push({
         key: asset.id,
         value: asset.resourceId,
@@ -452,7 +452,9 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
         entity: { type: "resource", id: asset.id },
         previewPath: asset.previewPath,
         previewMimeType: asset.mimeType,
-        managedAsset: asset
+        managedAsset: asset,
+        compatibility: code === 27 ? scenarioPictureTargetCompatibility(asset.resourceId) : undefined,
+        sourceState: code === 27 ? "Scenario resource" : undefined
       });
     }
     if (code === 9) {
@@ -472,12 +474,14 @@ export function targetOptionsForOpcode(project: Project | null, opcode: number, 
     }
     if (code === 27) {
       for (const asset of project.assetCatalog.pictures ?? []) {
-        if (!isScenarioDisplayPictureId(asset.resourceId)) continue;
+        if (!isScenarioPictureReferenceId(asset.resourceId)) continue;
         options.push({
           key: `resource:${asset.resourceType}:${asset.resourceId}`,
           value: asset.resourceId,
           label: `${asset.name || `${asset.resourceType} ${asset.resourceId}`} (${asset.resourceType.trim()} ${asset.resourceId})`,
           detail: `picture | ${asset.source}`,
+          compatibility: scenarioPictureTargetCompatibility(asset.resourceId),
+          sourceState: "Scenario resource",
           entity: { type: "resource", id: `resource:${asset.resourceType}:${asset.resourceId}` },
           previewPath: asset.previewPath
         });
@@ -784,13 +788,12 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     if (code === 27) {
       const pictureAsset = (project.assetCatalog.pictures ?? []).find((candidate) => candidate.resourceId === id);
       if (pictureAsset) {
-        const isDisplayPicture = isScenarioDisplayPictureId(pictureAsset.resourceId);
         return {
           key: `resource:${pictureAsset.resourceType}:${pictureAsset.resourceId}`,
           value: pictureAsset.resourceId,
           label: `${pictureAsset.name || `${pictureAsset.resourceType.trim()} ${pictureAsset.resourceId}`} (${pictureAsset.resourceType.trim()} ${pictureAsset.resourceId})`,
           detail: `picture | ${pictureAsset.source}`,
-          compatibility: isDisplayPicture ? "Scenario display picture" : "Runtime override ID; not an ordinary scenario display picture",
+          compatibility: scenarioPictureTargetCompatibility(pictureAsset.resourceId),
           sourceState: "Scenario resource",
           entity: { type: "resource", id: `resource:${pictureAsset.resourceType}:${pictureAsset.resourceId}` },
           previewPath: pictureAsset.previewPath
@@ -828,6 +831,13 @@ function optionFromTypedProjectTarget(project: Project, code: number, id: number
     }
   }
   return null;
+}
+
+function scenarioPictureTargetCompatibility(resourceId: number) {
+  if (isScenarioDisplayPictureId(resourceId)) return "Scenario display picture";
+  if (resourceId === SCENARIO_SPLASH_PICTURE_ID) return "Scenario title picture";
+  if (isScenarioPictureReferenceId(resourceId)) return "Imported scenario picture; outside normal Divinity authoring range";
+  return "Scenario PICT ID; verify Realmz resource ownership";
 }
 
 function targetPreviewResourceType(option: ScriptTargetOption | null) {
