@@ -24,6 +24,9 @@ describe("browser PICT conformance", () => {
     expect(ids).toContain("v1-packbitsrgn-byte-stream");
     expect(ids).toContain("v2-bitsrect-odd-text-padding");
     expect(ids).toContain("v2-bitsrect-pixmap");
+    expect(ids).toContain("v2-bitsrect-pixmap-1bit");
+    expect(ids).toContain("v2-bitsrect-pixmap-2bit");
+    expect(ids).toContain("v2-bitsrect-pixmap-4bit");
     expect(ids).toContain("v2-bitsrgn-pixmap");
     expect(ids).toContain("v2-packbitsrect-rowbytes-7-unpacked");
     expect(ids).toContain("v2-packbitsrect-rowbytes-8-packed");

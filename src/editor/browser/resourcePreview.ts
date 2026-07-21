@@ -431,7 +431,7 @@ function parseBitsCommand(data: Uint8Array, offset: number, opcode: number, opco
   }
   const rowBytesRaw = u16At(data, bitmap) ?? 0;
   if ((rowBytesRaw & 0x8000) !== 0) {
-    throw previewError("unsupported-variant", "pict.bits_pixmap_unsupported", "PICT BitsRect/BitsRgn contains a color PixMap that is not decoded by this parser pass.", "pict", offset, formatOpcode(opcode), "bits-pixmap");
+    return parseBitsPixmapCommand(data, offset, opcode, bitmap, rowBytesRaw);
   }
   const rowBytes = rowBytesRaw & 0x3fff;
   const bounds = parseRect(data, bitmap + 2);
@@ -464,6 +464,68 @@ function parseBitsCommand(data: Uint8Array, offset: number, opcode: number, opco
     colorTableOffset: null,
     colorTableFlags: 0,
     colorCount: 2,
+    direct: false,
+    packed: false
+  };
+}
+
+function parseBitsPixmapCommand(data: Uint8Array, offset: number, opcode: number, pixmap: number, rowBytesRaw: number): BitmapDrawCommand {
+  if (pixmap + 46 > data.byteLength) {
+    throw previewError("malformed", "pict.pixmap_truncated", "PICT BitsRect/BitsRgn pixmap header is truncated.", "pict", offset, formatOpcode(opcode));
+  }
+  const rowBytes = rowBytesRaw & 0x3fff;
+  const bounds = parseRect(data, pixmap + 2) ?? { top: 0, left: 0, bottom: 0, right: 0 };
+  const pixelType = u16At(data, pixmap + 26) ?? -1;
+  const pixelSize = u16At(data, pixmap + 28) ?? -1;
+  const componentCount = u16At(data, pixmap + 30) ?? -1;
+  const componentSize = u16At(data, pixmap + 32) ?? -1;
+  if (
+    rowBytes === 0 ||
+    rowBytes > 4096 ||
+    rectWidth(bounds) === 0 ||
+    rectHeight(bounds) === 0 ||
+    pixelType !== 0 ||
+    ![1, 2, 4, 8].includes(pixelSize) ||
+    componentCount !== 1 ||
+    componentSize !== pixelSize
+  ) {
+    throw previewError("unsupported-variant", "pict.bits_pixmap_unsupported_shape", `PICT uses Bits opcode ${formatOpcode(opcode)}, but this pixmap shape is unsupported. Found pixelType=${pixelType}, pixelSize=${pixelSize}, componentCount=${componentCount}, componentSize=${componentSize}, rowBytes=${rowBytes}.`, "pict", offset, formatOpcode(opcode), `pixel-size-${pixelSize}`);
+  }
+  const colorTableOffset = pixmap + 46;
+  if (colorTableOffset + 8 > data.byteLength) {
+    throw previewError("malformed", "pict.color_table_missing", "PICT Bits pixmap points beyond the resource before the color table.", "pict", colorTableOffset, formatOpcode(opcode));
+  }
+  const colorTableFlags = u16At(data, colorTableOffset + 4) ?? 0;
+  const colorCount = (u16At(data, colorTableOffset + 6) ?? 0) + 1;
+  const afterColorTable = colorTableOffset + 8 + colorCount * 8;
+  if (afterColorTable + 18 > data.byteLength) {
+    throw previewError("malformed", "pict.truncated_color_table", "PICT color table or source/destination rectangles are truncated.", "pict", colorTableOffset, formatOpcode(opcode));
+  }
+  const srcRect = parseRect(data, afterColorTable) ?? bounds;
+  const dstRect = parseRect(data, afterColorTable + 8) ?? srcRect;
+  let dataOffset = afterColorTable + 18;
+  if (opcode === BITS_RGN) {
+    const regionSize = u16At(data, dataOffset) ?? 0;
+    if (regionSize < 10 || dataOffset + regionSize > data.byteLength) {
+      throw previewError("malformed", "pict.region_truncated", "PICT BitsRgn has a missing or truncated region before pixel data.", "pict", dataOffset, formatOpcode(opcode));
+    }
+    dataOffset += regionSize;
+  }
+  return {
+    opcode,
+    nextOffset: requirePictRange(data, dataOffset, rowBytes * rectHeight(bounds), offset, opcode, "unpacked pixmap data"),
+    rowBytes,
+    pixelSize,
+    packType: 0,
+    componentCount,
+    bounds,
+    srcRect,
+    dstRect,
+    format: `bits-indexed-${pixelSize}`,
+    dataOffset,
+    colorTableOffset,
+    colorTableFlags,
+    colorCount,
     direct: false,
     packed: false
   };
@@ -532,7 +594,7 @@ function parsePackBitsCommand(data: Uint8Array, offset: number, opcode: number, 
     colorTableFlags,
     colorCount,
     direct: false,
-    packed: true
+    packed: rowBytes >= 8
   };
 }
 

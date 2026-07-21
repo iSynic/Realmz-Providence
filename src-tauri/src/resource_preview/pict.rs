@@ -914,18 +914,7 @@ fn parse_bits_command(
     }
     let row_bytes_raw = u16_be(data, bitmap).unwrap_or(0);
     if row_bytes_raw & 0x8000 != 0 {
-        return Err(PictFailure {
-            malformed: false,
-            diagnostic: diagnostic(
-                "warning",
-                "pict.bits_pixmap_unsupported",
-                "PICT BitsRect/BitsRgn contains a color PixMap that is not decoded by this parser pass.",
-                "pict",
-            )
-            .with_offset(offset)
-            .with_opcode(opcode)
-            .with_variant("bits-pixmap"),
-        });
+        return parse_bits_pixmap_command(data, offset, opcode, bitmap, row_bytes_raw);
     }
     let row_bytes = row_bytes_raw & 0x3fff;
     let bounds = Rect::parse(data, bitmap + 2).ok_or_else(|| PictFailure {
@@ -1000,6 +989,138 @@ fn parse_bits_command(
         color_table_offset: None,
         color_table_flags: 0,
         color_count: 2,
+        direct: false,
+        packed: false,
+    })
+}
+
+fn parse_bits_pixmap_command(
+    data: &[u8],
+    offset: usize,
+    opcode: usize,
+    pixmap: usize,
+    row_bytes_raw: usize,
+) -> std::result::Result<BitmapDrawCommand, PictFailure> {
+    if pixmap + 46 > data.len() {
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.pixmap_truncated",
+                "PICT BitsRect/BitsRgn pixmap header is truncated.",
+                "pict",
+            )
+            .with_offset(offset)
+            .with_opcode(opcode),
+        });
+    }
+    let row_bytes = row_bytes_raw & 0x3fff;
+    let bounds = Rect::parse(data, pixmap + 2).unwrap_or(Rect {
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+    });
+    let pixel_type = u16_be(data, pixmap + 26).unwrap_or(usize::MAX);
+    let pixel_size = u16_be(data, pixmap + 28).unwrap_or(usize::MAX);
+    let component_count = u16_be(data, pixmap + 30).unwrap_or(usize::MAX);
+    let component_size = u16_be(data, pixmap + 32).unwrap_or(usize::MAX);
+    if row_bytes == 0
+        || row_bytes > 4096
+        || bounds.width() == 0
+        || bounds.height() == 0
+        || pixel_type != 0
+        || ![1, 2, 4, 8].contains(&pixel_size)
+        || component_count != 1
+        || component_size != pixel_size
+    {
+        return Err(PictFailure {
+            malformed: false,
+            diagnostic: diagnostic(
+                "warning",
+                "pict.bits_pixmap_unsupported_shape",
+                format!(
+                    "PICT uses Bits opcode 0x{opcode:04X}, but this pixmap shape is unsupported. Found pixelType={pixel_type}, pixelSize={pixel_size}, componentCount={component_count}, componentSize={component_size}, rowBytes={row_bytes}."
+                ),
+                "pict",
+            )
+            .with_offset(offset)
+            .with_opcode(opcode)
+            .with_variant(format!("pixel-size-{pixel_size}")),
+        });
+    }
+    let color_table_offset = pixmap + 46;
+    if color_table_offset + 8 > data.len() {
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.color_table_missing",
+                "PICT Bits pixmap points beyond the resource before the color table.",
+                "pict",
+            )
+            .with_offset(color_table_offset)
+            .with_opcode(opcode),
+        });
+    }
+    let color_table_flags = u16_be(data, color_table_offset + 4).unwrap_or(0);
+    let color_count = u16_be(data, color_table_offset + 6).unwrap_or(0) + 1;
+    let after_color_table = color_table_offset + 8 + color_count * 8;
+    if after_color_table + 18 > data.len() {
+        return Err(PictFailure {
+            malformed: true,
+            diagnostic: diagnostic(
+                "error",
+                "pict.truncated_color_table",
+                "PICT color table or source/destination rectangles are truncated.",
+                "pict",
+            )
+            .with_offset(color_table_offset)
+            .with_opcode(opcode),
+        });
+    }
+    let src_rect = Rect::parse(data, after_color_table).unwrap_or(bounds);
+    let dst_rect = Rect::parse(data, after_color_table + 8).unwrap_or(src_rect);
+    let mut data_offset = after_color_table + 18;
+    if opcode == BITS_RGN {
+        let region_size = u16_be(data, data_offset).unwrap_or(0);
+        if region_size < 10 || data_offset + region_size > data.len() {
+            return Err(PictFailure {
+                malformed: true,
+                diagnostic: diagnostic(
+                    "error",
+                    "pict.region_truncated",
+                    "PICT BitsRgn has a missing or truncated region before pixel data.",
+                    "pict",
+                )
+                .with_offset(data_offset)
+                .with_opcode(opcode),
+            });
+        }
+        data_offset += region_size;
+    }
+    Ok(BitmapDrawCommand {
+        opcode,
+        next_offset: require_pict_range(
+            data,
+            data_offset,
+            row_bytes.saturating_mul(bounds.height()),
+            offset,
+            opcode,
+            "unpacked pixmap data",
+        )?,
+        row_bytes,
+        pixel_size,
+        pack_type: 0,
+        component_count,
+        bounds,
+        src_rect,
+        dst_rect,
+        format: format!("bits-indexed-{pixel_size}"),
+        data_offset,
+        color_table_offset: Some(color_table_offset),
+        color_table_flags,
+        color_count,
         direct: false,
         packed: false,
     })
@@ -1148,7 +1269,7 @@ fn parse_packbits_command(
         color_table_flags,
         color_count,
         direct: false,
-        packed: true,
+        packed: row_bytes >= 8,
     })
 }
 

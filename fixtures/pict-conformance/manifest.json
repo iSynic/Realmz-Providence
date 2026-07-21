@@ -41,22 +41,37 @@
       "id": "v2-bitsrect-pixmap",
       "bytesBase64": "AAAAAAAAAAEABAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQgAQAAAAAAAEABAAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAEAAAAAAABAAQAAAABAAEA/w==",
       "byteLength": 136,
-      "claim": "specification-backed",
-      "ownerIssue": "ISY-420"
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-bitsrect-pixmap-1bit",
+      "bytesBase64": "AAAAAAAAAAEACAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQgAEAAAAAAAEACAAAAAAAAAAAAEgAAABIAAAAAAABAAEAAQAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAIAAAAAAABAAgAAFUAAP8=",
+      "byteLength": 134,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-bitsrect-pixmap-2bit",
+      "bytesBase64": "AAAAAAAAAAEABAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQgAEAAAAAAAEABAAAAAAAAAAAAEgAAABIAAAAAAACAAEAAgAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAEAAAAAAABAAQAABEAAP8=",
+      "byteLength": 134,
+      "claim": "specification-backed"
+    },
+    {
+      "id": "v2-bitsrect-pixmap-4bit",
+      "bytesBase64": "AAAAAAAAAAEABAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQgAIAAAAAAAEABAAAAAAAAAAAAEgAAABIAAAAAAAEAAEABAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAEAAAAAAABAAQAAAEBAP8=",
+      "byteLength": 134,
+      "claim": "specification-backed"
     },
     {
       "id": "v2-bitsrgn-pixmap",
       "bytesBase64": "AAAAAAAAAAEABAARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACRgAQAAAAAAAEABAAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAEAAAAAAABAAQAAAAKAAAAAAABAAQAAQABAP8=",
       "byteLength": 146,
-      "claim": "specification-backed",
-      "ownerIssue": "ISY-420"
+      "claim": "specification-backed"
     },
     {
       "id": "v2-packbitsrect-rowbytes-7-unpacked",
       "bytesBase64": "AAAAAAAAAAEABwARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACYgAcAAAAAAAEABwAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAHAAAAAAABAAcAAAABAAEAAQAAAP8=",
       "byteLength": 140,
-      "claim": "specification-backed",
-      "ownerIssue": "ISY-420"
+      "claim": "specification-backed"
     },
     {
       "id": "v2-packbitsrect-rowbytes-8-packed",
@@ -80,8 +95,7 @@
       "id": "v2-packbitsrgn-rowbytes-7-unpacked",
       "bytesBase64": "AAAAAAAAAAEABwARAv8MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACZgAcAAAAAAAEABwAAAAAAAAAAAEgAAABIAAAAAAAIAAEACAAAAAAAAAAAAAAAAAAAAACAAAABAAAAAAAAAAAAAf///////wAAAAAAAQAHAAAAAAABAAcAAAAKAAAAAAABAAcAAQABAAEAAAD/",
       "byteLength": 150,
-      "claim": "specification-backed",
-      "ownerIssue": "ISY-420"
+      "claim": "specification-backed"
     },
     {
       "id": "v2-packbitsrgn-rowbytes-8-packed",
@@ -266,13 +280,16 @@
     "v1-packbitsrgn-byte-stream": { "status": "decoded", "width": 8, "height": 1, "version": "v1/1", "format": "packbits-bitmap-1", "opcode": "0x0099", "opcodeCount": 3, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
     "v2-bitsrect-odd-text-padding": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 5, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
     "v2-bitsrgn-bitmap": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0091", "opcodeCount": 4, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
-    "v2-bitsrect-pixmap": { "status": "unsupported-variant", "diagnosticCodes": ["pict.bits_pixmap_unsupported"] },
-    "v2-bitsrgn-pixmap": { "status": "unsupported-variant", "diagnosticCodes": ["pict.bits_pixmap_unsupported"] },
-    "v2-packbitsrect-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "d733c9e8", "diagnosticCodes": [] },
+    "v2-bitsrect-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-8", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "13f98ce5", "diagnosticCodes": [] },
+    "v2-bitsrect-pixmap-1bit": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-indexed-1", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "78354205", "diagnosticCodes": [] },
+    "v2-bitsrect-pixmap-2bit": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-2", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "13f98ce5", "diagnosticCodes": [] },
+    "v2-bitsrect-pixmap-4bit": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-4", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "13f98ce5", "diagnosticCodes": [] },
+    "v2-bitsrgn-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-8", "opcode": "0x0091", "opcodeCount": 4, "rgbaFnv1a": "13f98ce5", "diagnosticCodes": [] },
+    "v2-packbitsrect-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "229abed9", "diagnosticCodes": [] },
     "v2-packbitsrect-rowbytes-8-packed": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "4bff0505", "diagnosticCodes": [] },
     "v2-packbitsrect-rowbytes-250-packed": { "status": "decoded", "width": 250, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "7313b055", "diagnosticCodes": [] },
     "v2-packbitsrect-rowbytes-251-packed": { "status": "decoded", "width": 251, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "opcodeCount": 4, "rgbaFnv1a": "8c4e5ac8", "diagnosticCodes": [] },
-    "v2-packbitsrgn-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "d733c9e8", "diagnosticCodes": [] },
+    "v2-packbitsrgn-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "229abed9", "diagnosticCodes": [] },
     "v2-packbitsrgn-rowbytes-8-packed": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "4bff0505", "diagnosticCodes": [] },
     "v2-packbitsrgn-rowbytes-250-packed": { "status": "decoded", "width": 250, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "7313b055", "diagnosticCodes": [] },
     "v2-packbitsrgn-rowbytes-251-packed": { "status": "decoded", "width": 251, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "opcodeCount": 4, "rgbaFnv1a": "8c4e5ac8", "diagnosticCodes": [] },
@@ -301,10 +318,6 @@
     "directbits32-planar-packbits-truncated": { "status": "malformed", "diagnosticCodes": ["pict.opcode_truncated"] }
   },
   "targetExpectations": {
-    "v2-bitsrect-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-8", "opcode": "0x0090", "rgbaFnv1a": "13f98ce5" },
-    "v2-bitsrgn-pixmap": { "status": "decoded", "width": 4, "height": 1, "version": "v2", "format": "bits-indexed-8", "opcode": "0x0091", "rgbaFnv1a": "13f98ce5" },
-    "v2-packbitsrect-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0098", "rgbaFnv1a": "229abed9" },
-    "v2-packbitsrgn-rowbytes-7-unpacked": { "status": "decoded", "width": 7, "height": 1, "version": "v2", "format": "packbits-indexed-8", "opcode": "0x0099", "rgbaFnv1a": "229abed9" },
     "standalone-512-byte-container": { "status": "decoded", "width": 8, "height": 1, "version": "v2", "format": "bits-bitmap-1", "opcode": "0x0090", "opcodeCount": 4, "rgbaFnv1a": "78354205" }
   }
 }
