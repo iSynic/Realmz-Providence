@@ -1,7 +1,7 @@
 {
   "name": "realmz-providence",
   "productName": "Realmz Providence",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Modern Realmz scenario editor and creator.",
   "private": true,
   "license": "CC-BY-NC-SA-4.0",
