@@ -64,7 +64,15 @@ folder through its normal third-party scenario import. The Oracle's separate
 `scenario-not-appearing` fixture proves that removing the resource sidecar prevents selection;
 that fixture proves file/container presence, not a required payload entry.
 
-Stock Classic Realmz acceptance remains a separate manual gate. The current `mac-classic-folder`
-transport emits `Scenario.rsrc`; it does not create an HFS resource fork or AppleDouble wrapper.
-Consequently, this slice proves the resource-container payload contract, while native Classic-Mac
-metadata/transport remains an explicit packaging unknown.
+A manual Realmz 7.1.2 run under Basilisk II discovered the generated scenario and reached map
+startup, then emitted `EL412` plus `Could not locate required map data.` and `You need to update your
+copy of Realmz or this scenario.` Realmz source traces those exact messages and `scratch(412)` to
+`loadpixmap` when the requested picture is unavailable. The proof selects Custom 1 and the emitted
+`Scenario.rsrc` contains a valid `PICT 306`, so this is not evidence of a newer scenario format.
+
+The current `mac-classic-folder` transport emits `Scenario.rsrc` as an ordinary sidecar. Its ZIP has
+separate `Scenario` and `Scenario.rsrc` entries and no AppleDouble, MacBinary, or other HFS-fork
+metadata. Expanding it from Classic Mac OS therefore does not make those bytes the resource fork of
+`Scenario`. The payload contract is proven and the Classic failure is now localized to fork-aware
+transport. That packaging target is optional while current Realmz remains the required runtime;
+stock Classic gameplay is not claimed.

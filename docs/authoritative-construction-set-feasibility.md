@@ -42,8 +42,10 @@ quest mutation, save, displacement, reload, and restored-state assertions.
 
 The automated gate uses the existing Oracle-instrumented modern Realmz executable and changes no
 Realmz source or binary on this branch. This proves that the ordinary native folder is sufficient
-for the modern runtime path without requiring Realmz changes. Running the Classic-Mac target in a
-stock Classic Realmz executable remains a separate compatibility check.
+for the modern runtime path without requiring Realmz changes. A later stock Realmz 7.1.2 test under
+Basilisk II discovered the scenario but localized its map-start failure to the portable `.rsrc`
+sidecar not being reconstructed as an HFS resource fork; Classic-Mac fork-aware packaging remains
+optional compatibility work.
 
 The fourth slice makes that boundary part of the project contract rather than an exporter
 heuristic. Project schema v5 adds `source.origin` with `authored` and `imported` values. Fresh and
@@ -408,8 +410,10 @@ Divinity-authored roots. Both compilers now call a named minimum-fork writer tha
 46-byte Resource Manager container with zero data bytes, a 30-byte map, the standard empty type
 list, and no synthetic `RLMZ` metadata. Baseline and ownership proofs reject any byte or resource
 entry drift. Canonical resource workflows still add map names, media, text/style, and icons as
-needed; legacy extras remain annex-owned. This closes the payload/default question while keeping
-stock Classic-Mac HFS/AppleDouble transport as a separate packaging acceptance gate.
+needed; legacy extras remain annex-owned. This closes the payload/default question. A subsequent
+Realmz 7.1.2 test confirmed that the portable `.rsrc` ZIP does not reconstruct HFS resource forks,
+so fork-aware Classic-Mac transport remains an optional packaging task rather than a payload-model
+unknown.
 
 The forty-second slice closes complete byte ownership for the 1,024-byte `Data Solids` table.
 Both native compilers now use equivalent deterministic writers: an empty canonical collection
@@ -475,8 +479,10 @@ canonical metadata and decoded atlas preview. The existing modern Realmz runtime
 306`, renders the map, moves, executes both authored Action Points, saves, and reloads with ten
 completed render markers and no fatal resource markers. A separate ordinary, non-instrumented
 Realmz build also accepted and selected the generated folder from its Adventure menu without any
-Realmz source changes. Stock Classic execution remains the next target-specific compatibility
-gate; arbitrary PICT editing and `Custom 1/2/3` companion-file authoring remain out of scope.
+Realmz source changes. A stock Realmz 7.1.2 run under Basilisk II discovered the scenario and
+reached map startup, then failed at `loadpixmap(6)` because the ZIP's ordinary `Scenario.rsrc` entry
+was not attached as the HFS resource fork containing `PICT 306`. Fork-aware Classic packaging,
+arbitrary PICT editing, and `Custom 1/2/3` companion-file authoring remain out of scope.
 
 The forty-seventh slice closes representative main-fork resource ownership. The fresh project now
 owns deterministic payloads for `PICT 306`, referenced special-land `cicn -100`, `snd  321`, and a
@@ -488,8 +494,8 @@ icon and sound previews, and the on-demand semantic builder recovers the TEXT bo
 style run, and `styled_by` relationship. Browser and Rust validation now reject ready assets with
 no converted `resourcePath` and duplicate scenario-managed resource type/ID keys before export;
 custom-library assets remain outside that scenario ownership check. Imported unrelated resource
-entries remain compatibility-annex data. Arbitrary PICT editing and stock Classic execution remain
-separate gates.
+entries remain compatibility-annex data. Arbitrary PICT editing and fork-aware Classic-Mac
+packaging remain separate optional work.
 
 The forty-eighth slice adds Realmz Remake as an independent compiler target without routing
 through the native Realmz folder. A Providence-owned exporter projects the same schema-v5
@@ -1102,7 +1108,7 @@ them from the emitted scenario source files.
 | 1. Can the current model become authoritative without a disruptive rewrite? | **Yes.** It already represents the minimum proof and most construction-set families. Add explicit authored/imported origin, remove preservation data from the normal fresh path, and migrate model drift. |
 | 2. Can fresh projects export with no `raw-sources`? | **Yes on the investigation branch.** Fresh desktop projects now omit the directory and source inventory, and annex-free export emits compiler defaults directly. Imported projects still require their compatibility material. |
 | 3. Which native files are completely generated? | The 316-byte scenario marker and `Data CS` cores, neutral 600-byte support-file baseline, maps, trigger tables, random levels, ED3/EDCD, messages, options, monsters/descriptions, treasures, shops, thief/timed encounters, custom spell records/names, contact/restrictions, and most record cores have writers. The detailed matrix separates semantic generation from neutral compiler defaults and compatibility ranges. |
-| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, arbitrary legacy resources, and Classic-Mac resource-fork transport metadata. The fresh main resource container, support output, marker, `Data CS`, complete `Data Solids` table, and simple/complex/thief-encounter rows no longer require preserved bytes; exact legacy security/publish and stock Classic-Mac behavior remain acceptance unknowns. |
+| 4. Which still depend on preserved/placeholder/resource assumptions? | The unmodeled Divinity editor-state ranges in imported 600-byte `Scenario` support files, required empty startup files, imported `Data Spell` tails, other record compatibility ranges, custom music, arbitrary legacy resources, and Classic-Mac resource-fork transport metadata. The fresh main resource container, support output, marker, `Data CS`, complete `Data Solids` table, and simple/complex/thief-encounter rows no longer require preserved bytes; exact legacy security/publish behavior remains an acceptance unknown, while the observed stock Classic-Mac failure is localized to missing fork-aware transport. |
 | 5. Can legacy preservation be isolated? | **Yes, and the boundary is explicit on the investigation branch.** Schema v5 records authored/imported origin; native export requires the annex only for imported projects. Canonical scenario DTOs no longer retain whole imported record/file identity; remaining work is compatibility breadth and browser/native policy consolidation. |
 | 6. Can TypeScript and Rust derive from one schema? | **Yes, incrementally.** The investigation branch generates the shared schema version, persisted top-level inventory, source/origin/source-file DTOs, scenario identity/startup DTOs, shared provenance/confidence primitives, map identity/layout and map-record DTOs, random-level/rectangle DTOs, and complete scenario-item, treasure, shop, message, option-label, battle, monster, monster-description, simple/complex/thief-encounter, spell, race, and caste DTOs from JSON Schema. It checks both project models plus the Rust serializer; remaining DTO families can migrate incrementally. |
 | 7. Can export become a deterministic compiler without a UI rewrite? | **Yes.** The UI already calls thin desktop/browser export boundaries with a `Project`; extract a pure file/resource manifest compiler behind them. |
@@ -1169,9 +1175,10 @@ them from the emitted scenario source files.
 
 ### Not yet proven
 
-- The Classic-Mac target is structurally deterministic but has not been played through a stock
-  Classic Realmz executable. The automated runtime proof covers the existing Oracle-instrumented
-  modern port.
+- Stock Classic gameplay is not proven. Realmz 7.1.2 under Basilisk II discovered the scenario and
+  reached map startup, but the portable sidecar ZIP did not attach its valid `PICT 306` payload as
+  the HFS resource fork of `Scenario`. Current Realmz remains the required runtime; fork-aware
+  Classic-Mac packaging is an optional follow-up.
 - Arbitrary custom music and several legacy sidecar families do not yet have complete
   fresh-authoring paths.
 
@@ -1433,7 +1440,7 @@ Legend:
 | --- | --- | --- | --- |
 | `<ScenarioName>` marker/main file | Generated semantic core + legacy singleton/tail annex | Generate exactly 316 bytes from canonical shell data | The canonical DTO exposes neither `rawBytes` nor `trailingBytes`. Both writers compile all five startup integers, both fixed code segments, and deterministic Str255 creator padding. Untouched imported identity and an optional post-316 tail are restored only from the annex. |
 | `Scenario` 600-byte data fork | Deterministic neutral baseline + bounded editor fields + legacy annex | Generate exactly 600 bytes without imported identity | The canonical DTO exposes no `rawBytes`. Both writers zero-initialize the file and compile only offset 23 and offsets 38-39. Untouched imported identity remains annex-owned; edited imports recover other editor/view-state bytes only from the annex. The modern runtime proof accepts the neutral default. |
-| `Scenario.rsrc` / native `Scenario` resource fork | Canonical 46-byte minimum container plus generated overlays and legacy annex | Always construct an openable target resource fork without invented built-in metadata | Both compilers emit the exact zero-entry Resource Manager container and can build/merge map names, icons, pictures, sounds, text, and styles. Source and corpus evidence show that third-party scenarios do not require synthetic `RLMZ` entries. Stock Classic-Mac transport remains an acceptance gate. |
+| `Scenario.rsrc` / native `Scenario` resource fork | Canonical 46-byte minimum container plus generated overlays and legacy annex | Always construct an openable target resource fork without invented built-in metadata | Both compilers emit the exact zero-entry Resource Manager container and can build/merge map names, icons, pictures, sounds, text, and styles. Source and corpus evidence show that third-party scenarios do not require synthetic `RLMZ` entries. Realmz 7.1.2 discovered the proof but could not see `PICT 306` because the sidecar ZIP did not reconstruct an HFS resource fork; fork-aware Classic-Mac transport remains optional. |
 | `Data CS` | Generated semantic core + legacy singleton/tail annex | Generate canonical fresh security backup; annex imported identity only | The same byte-identity-free 316-byte DTO and semantic codec are used. Fresh output duplicates the shell unless an explicit canonical backup exists; imported identity/tails remain annex-owned. Exact Divinity publish/refusal behavior is still not fixture-proven. |
 | `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | The canonical DTO exposes no `rawBytes`. Both writers compile all eighteen Str255 slots and deterministic padding; an untouched imported singleton and malformed tail are restored only from the annex. |
 | `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | The canonical DTO exposes no `rawBytes`. Both writers compile all 320 bytes and normalize ban flags; untouched noncanonical flags, Pascal padding, singleton identity, and malformed tails are annex-only. |
@@ -1612,7 +1619,10 @@ must not be called fresh-authoritative merely because imported round trips are f
    as decoded-writable and keeps only the imported `Data Spell` tail mixed/preserved, but future
    reports should retain an explicit fresh-authoring dimension alongside conservative import proof.
 7. **Classic gameplay acceptance evidence:** the full fresh no-raw scenario passes the modern
-   Oracle runtime through save/reload, but stock Classic Realmz has not run the Classic-Mac target.
+   Oracle runtime through save/reload. A Realmz 7.1.2 Basilisk II run discovered the scenario but
+   failed at Custom 1 map startup because the portable sidecar ZIP did not reconstruct the HFS
+   `Scenario` resource fork. This is a localized optional transport gap, not a canonical compiler
+   or resource-payload failure.
 8. **Optional feature debt:** custom music and some extracted resource-sidecar forms need
    production decisions after the minimum proof.
 
@@ -1693,7 +1703,7 @@ Exit: fresh compile succeeds with an access guard proving no raw/annex reads.
 - **Implemented:** run the existing Oracle gameplay path for start, movement, AP, save, and reload.
 
 Exit: the smallest decisive proof passes through the existing automated modern Realmz Oracle;
-stock Classic execution remains a target-specific compatibility gate.
+fork-aware stock Classic packaging remains optional target-specific compatibility work.
 
 ### Phase 3: Legacy compatibility isolation
 

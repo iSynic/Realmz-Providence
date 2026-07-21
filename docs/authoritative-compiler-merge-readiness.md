@@ -4,13 +4,14 @@ Audit date: 2026-07-20
 
 ## Verdict
 
-The authoritative Realmz compiler work is ready for maintainer review and integration from the
-compiler, canonical-project, native-package, and imported-compatibility perspectives.
+The authoritative Realmz compiler work is ready for maintainer review and integration for current
+Realmz from the compiler, canonical-project, native-package, and imported-compatibility
+perspectives.
 
 Repository-wide `npm run check` is not yet green because the separately tracked ISY-319/320/321
-module-size milestone remains unresolved. Stock Classic Realmz execution of the Classic-Mac target
-also remains an external acceptance check. Neither condition is evidence of a remaining
-authoritative compiler architecture or native-writer blocker.
+module-size milestone remains unresolved. A stock Realmz 7.1.2 test also identified a deferred
+Classic-Mac HFS resource-fork packaging gap. Neither condition is evidence of a remaining
+authoritative compiler architecture, canonical-model, or native-writer blocker for current Realmz.
 
 ## Mainline relationship
 
@@ -67,14 +68,26 @@ the complete aggregate check.
 
 The Classic-Mac folder target is structurally deterministic and byte-parity-gated. The modern
 Oracle runtime has exercised the ownership scenario through movement, an Action Point, save, and
-reload. A stock Classic Realmz run remains required for target-specific packaging acceptance, not
-for the canonical ownership verdict.
+reload. A manual Realmz 7.1.2 run under Basilisk II discovered the scenario and began startup, then
+failed while loading its Custom 1 map with `EL412` and the paired messages `Could not locate
+required map data.` and `You need to update your copy of Realmz or this scenario.`
+
+Realmz source makes this result specific: `loadpixmap(6)` requests `PICT 306` and calls
+`scratch(412)` when that resource is unavailable. The generated `Scenario.rsrc` contains the valid,
+decoded `PICT 306`, but the acceptance ZIP stores `Scenario` and `Scenario.rsrc` as two ordinary
+entries and contains no AppleDouble, MacBinary, or other fork metadata. Expanding that ZIP on an
+HFS volume therefore does not attach the sidecar bytes as the resource fork of `Scenario`.
+
+This run proves stock Classic scenario discovery and identifies the remaining failure as transport,
+not a scenario-version handshake or canonical compiler defect. Fork-aware Classic-Mac packaging is
+deferred because current Realmz is the required compatibility target; it remains optional before a
+Classic 7.1.2 gameplay claim can be made.
 
 ### Optional follow-up work
 
-Rust/Wasm compiler unification, custom music authoring, arbitrary PICT editing, and uncommon legacy
-sidecar authoring remain optional follow-ups. Imported unsupported payloads continue through the
-bounded compatibility annex.
+Rust/Wasm compiler unification, Classic-Mac fork-aware packaging, custom music authoring, arbitrary
+PICT editing, and uncommon legacy sidecar authoring remain optional follow-ups. Imported
+unsupported payloads continue through the bounded compatibility annex.
 
 ## Integration sequence
 
@@ -86,7 +99,8 @@ bounded compatibility annex.
    ```
 
 2. Run `npm run check:authoritative-compiler-closeout`.
-3. Complete the stock Classic acceptance run when the executable environment is available.
-4. Resolve ISY-319/320/321 and run the full `npm run check` before release.
-5. Integrate this existing Providence branch; do not create a replacement repository or a Realmz
+3. Integrate this existing Providence branch; do not create a replacement repository or a Realmz
    source branch for compiler ownership.
+4. Resolve ISY-319/320/321 and run the full `npm run check` before release.
+5. Add fork-aware packaging and repeat the Classic 7.1.2 gameplay run only if Classic-Mac support is
+   promoted from optional compatibility work.
