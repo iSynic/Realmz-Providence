@@ -1,6 +1,7 @@
 [package]
 name = "realmz-providence"
-version = "0.5.0"
+version = "0.5.1"
+default-run = "realmz-providence"
 description = "Modern Realmz scenario editor and creator."
 authors = ["Realmz Providence contributors"]
 license = "CC-BY-NC-SA-4.0"

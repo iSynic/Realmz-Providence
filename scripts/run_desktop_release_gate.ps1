@@ -84,6 +84,10 @@ if (-not $SkipWindows) {
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\msi\Realmz Providence_${version}_x64_en-US.msi" -StartedAt $startedAt
   }
 
+  Invoke-Step "Windows packaged entrypoint" {
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_release_bundle_entrypoint.ps1 -SkipLinux
+  }
+
   if ($RunEditorSmokes) {
     Invoke-Step "Windows editor smoke matrix" {
       $args = @(
@@ -114,6 +118,10 @@ if (-not $SkipLinux) {
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\appimage\Realmz Providence_${version}_amd64.AppImage" -StartedAt $startedAt
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\deb\Realmz Providence_${version}_amd64.deb" -StartedAt $startedAt
     Assert-FreshArtifact -Path "src-tauri\target\release\bundle\rpm\Realmz Providence-${version}-1.x86_64.rpm" -StartedAt $startedAt
+  }
+
+  Invoke-Step "Linux packaged entrypoint" {
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_release_bundle_entrypoint.ps1 -SkipWindows
   }
 }
 

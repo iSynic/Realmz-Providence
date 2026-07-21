@@ -114,6 +114,12 @@ if ($onlineSize -ge $offlineSize) {
   throw "Primary online installer is not smaller than the offline fallback. Check webviewInstallMode before publishing."
 }
 
+Write-Host "Checking packaged Windows entrypoints..." -ForegroundColor Cyan
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_release_bundle_entrypoint.ps1 -SkipLinux
+if ($LASTEXITCODE -ne 0) {
+  throw "Windows release entrypoint verification failed with exit code $LASTEXITCODE."
+}
+
 Write-Host "Windows release variants built:" -ForegroundColor Green
 Write-Host ("  Online:  {0:n1} MB  {1}" -f ($onlineSize / 1MB), $standardNsis)
 Write-Host ("  Offline: {0:n1} MB  {1}" -f ($offlineSize / 1MB), $offlineNsis)
