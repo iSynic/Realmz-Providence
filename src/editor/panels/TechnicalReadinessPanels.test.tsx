@@ -20,7 +20,7 @@ describe("technical readiness panels", () => {
     expect(markup).toContain("workbench-pane-header");
     expect(markup).toContain("workbench-validation-gate is-blocked");
     expect(markup).toContain("No export report yet");
-    expect(markup).toContain("No source files available");
+    expect(markup).toContain("No package files available");
     expect(markup).toContain("No export diagnostics");
   });
 

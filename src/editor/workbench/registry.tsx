@@ -231,10 +231,10 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     label: "Export",
     shortLabel: "Export",
     railGroup: "release",
-    description: "Realmz Revisited export readiness, pass-through files, and resource reports.",
-    help: "Export stays conservative and explains exactly what it writes or preserves.",
+    description: "Native Realmz compiler readiness, generated files, and imported compatibility reports.",
+    help: "Export compiles authored projects from canonical data and reports any imported compatibility material it preserves.",
     tools: [
-      t({ id: "export-plan", label: "Export Plan", iconLabel: "EX", workbench: "project", description: "Supported files and pass-through behavior.", defaultInspector: "export" }),
+      t({ id: "export-plan", label: "Export Plan", iconLabel: "EX", workbench: "project", description: "Generated native files and imported compatibility behavior.", defaultInspector: "export" }),
       t({ id: "benchmark", label: "Benchmark", iconLabel: "BM", workbench: "project", description: "Large scenario interaction/export checks.", defaultInspector: "export" })
     ]
   }

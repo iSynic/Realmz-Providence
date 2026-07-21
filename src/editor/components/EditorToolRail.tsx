@@ -16,7 +16,7 @@ const RAIL_HINTS: Record<EditorTab, { short: string; title: string; detail: stri
   text: { short: "Strings", title: "Strings", detail: "Scenario strings, TEXT/styl resources, import/export spell checking" },
   records: { short: "Records", title: "Records", detail: "Realmz Data files, decoded records, byte ranges, provenance" },
   linter: { short: "Linter", title: "Linter", detail: "Compatibility diagnostics and export blockers" },
-  export: { short: "Export", title: "Export", detail: "Realmz Revisited export readiness and pass-through report" }
+  export: { short: "Export", title: "Export", detail: "Native Realmz compiler readiness and imported compatibility report" }
 };
 
 export function EditorToolRail({

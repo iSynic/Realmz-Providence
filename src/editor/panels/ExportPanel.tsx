@@ -25,8 +25,8 @@ const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export compiles autho
 const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are compiled Realmz folders.";
 const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validation scale so release candidates do not regress on dense maps, triggers, or Action Settings.";
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
-const EXPORT_PLAN_HELP = "Readiness previews the current project boundary before writing: compiler output, pass-through files, resource gaps, runtime caches, unresolved links, and blocked objects.";
-const EXPORT_SOURCES_HELP = "Export sources show the compiler's expected native manifest and imported compatibility files. Compiler files are generated from project data; pass-through files are copied from the compatibility annex.";
+const EXPORT_PLAN_HELP = "Readiness previews the current project boundary before writing: canonical compiler output, imported compatibility files, resource gaps, runtime caches, unresolved links, and blocked objects.";
+const EXPORT_SOURCES_HELP = "Package contents show the compiler's expected native manifest and any imported compatibility files. Authored projects generate native files from canonical data; imported pass-through files come only from the compatibility annex.";
 
 export function ExportPanel({
   project,
@@ -171,13 +171,13 @@ export function ExportPanel({
             />
           </section>
           <section className="export-readiness-column">
-            <TutorialTip title="Export Sources" body={EXPORT_SOURCES_HELP} side="below">
-              <h3>Source Package</h3>
+            <TutorialTip title="Native Package Contents" body={EXPORT_SOURCES_HELP} side="below">
+              <h3>Native Package Contents</h3>
             </TutorialTip>
             <InfoGrid
               rows={[
                 ["Generated Files", plan.exportableSources.length.toLocaleString()],
-                ["Copied Sources", plan.passThroughSources.length.toLocaleString()]
+                ["Imported Compatibility Files", plan.passThroughSources.length.toLocaleString()]
               ]}
             />
             <SourceRows plan={plan} />
@@ -234,7 +234,7 @@ function SourceRows({ plan }: { plan: ReturnType<typeof exportPlan> }) {
       id: `exportable:${source.name}`,
       name: source.name,
       mode: "compiler-output",
-      detail: source.bytes == null ? source.origin : `${source.bytes.toLocaleString()} source bytes`
+      detail: source.bytes == null ? source.origin : `${source.origin} · ${source.bytes.toLocaleString()} bytes`
     })),
     ...plan.passThroughSources.map((source) => ({
       id: source.id,
@@ -243,9 +243,9 @@ function SourceRows({ plan }: { plan: ReturnType<typeof exportPlan> }) {
       detail: source.origin
     }))
   ];
-  if (rows.length === 0) return <EmptyState compact title="No source files available" body="This project state has no writer-supported or pass-through sources." />;
+  if (rows.length === 0) return <EmptyState compact title="No package files available" body="This project state has no compiler-generated or imported compatibility files." />;
   return (
-    <ScrollArea className="record-table export-source-list" aria-label="Export sources">
+    <ScrollArea className="record-table export-source-list" aria-label="Native package contents">
       {rows.map((source) => (
         <EntityRow
           key={source.id}
