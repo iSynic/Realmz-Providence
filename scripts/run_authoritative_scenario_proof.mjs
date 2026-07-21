@@ -64,8 +64,7 @@ project.tileAttributes.push({
   flags: ["solid"],
   confidence: "source-backed",
   sourceKind: "data-solids",
-  source: "Data Solids",
-  rawByte: null
+  source: "Data Solids"
 });
 const landLayoutCells = new Array(8 * 16).fill(0);
 landLayoutCells[0] = -1;
@@ -327,6 +326,9 @@ poisonedProject.casteOverrides[0].rawBytes = new Array(576).fill(0xa5);
 poisonedProject.casteOverrides[0].spare1 = new Array(2).fill(0x3456);
 poisonedProject.casteOverrides[0].spare2 = new Array(2).fill(0x4567);
 poisonedProject.casteOverrides[0].spacer = new Array(63).fill(0x5678);
+const poisonedTileAttribute = poisonedProject.tileAttributes.find((profile) => profile.tile === 190);
+poisonedTileAttribute.rawByte = 0xa5;
+poisonedTileAttribute.spare = 0x1234;
 const poisonedLandlook = poisonedProject.customLandlooks[0];
 poisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 poisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -392,6 +394,9 @@ browserPoisonedProject.casteOverrides[0].rawBytes = new Array(576).fill(0xa5);
 browserPoisonedProject.casteOverrides[0].spare1 = new Array(2).fill(0x3456);
 browserPoisonedProject.casteOverrides[0].spare2 = new Array(2).fill(0x4567);
 browserPoisonedProject.casteOverrides[0].spacer = new Array(63).fill(0x5678);
+const browserPoisonedTileAttribute = browserPoisonedProject.tileAttributes.find((profile) => profile.tile === 190);
+browserPoisonedTileAttribute.rawByte = 0xa5;
+browserPoisonedTileAttribute.spare = 0x1234;
 const browserPoisonedLandlook = browserPoisonedProject.customLandlooks[0];
 browserPoisonedLandlook.rawBytes = new Array(8107).fill(0xa5);
 browserPoisonedLandlook.trailingBytes = [0xca, 0xfe, 0x01];
@@ -1159,15 +1164,14 @@ function assertOwnershipGlobalMacros(project, label, requireNoCompatibilityBytes
   }
 }
 
-function assertOwnershipTileSolids(project, label, expectImportedRawByte) {
+function assertOwnershipTileSolids(project, label, expectImportedProfiles) {
   const profiles = project.tileAttributes?.filter((profile) => profile.sourceKind === "data-solids") ?? [];
   const profile = profiles.find((candidate) => candidate.tile === 190);
   expect(profile, `${label} is missing special-tile solidity row 190`);
   expect(profile.solidType === 2 && profile.flags?.includes("solid"), `${label} has the wrong canonical special-tile solidity`);
-  if (expectImportedRawByte) {
-    expect(profile.rawByte === 2, `${label} did not retain the decoded source byte as import provenance`);
-  } else {
-    expect(profile.rawByte == null, `${label} fresh special-tile solidity depends on imported raw-byte provenance`);
+  expect(!Object.hasOwn(profile, "rawByte"), `${label} exposes obsolete Data Solids byte identity`);
+  expect(!Object.hasOwn(profile, "spare"), `${label} exposes obsolete mapstats compatibility state`);
+  if (!expectImportedProfiles) {
     expect(profiles.length === 1, `${label} fresh project should carry only explicitly authored Data Solids rows`);
   }
 }
@@ -1205,8 +1209,8 @@ function assertOwnershipCustomLandlook(project, label, requireNoCompatibilityByt
   if (requireNoCompatibilityBytes) {
     expect(!Object.hasOwn(landlook, "rawBytes"), `${label} custom landlook exposes embedded raw bytes`);
     expect(!Object.hasOwn(landlook, "trailingBytes"), `${label} custom landlook exposes embedded trailing bytes`);
-    expect(landlook.records.every((record) => record.spare == null), `${label} custom landlook contains imported spare words`);
-    expect(landlook.rangeSlots.every((slot) => slot.reserved == null), `${label} custom landlook contains imported reserved range words`);
+    expect(landlook.records.every((record) => !Object.hasOwn(record, "spare")), `${label} custom landlook contains imported spare words`);
+    expect(landlook.rangeSlots.every((slot) => !Object.hasOwn(slot, "reserved")), `${label} custom landlook contains imported reserved range words`);
   }
 }
 

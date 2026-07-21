@@ -276,9 +276,9 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceTileAttributeProfile",
       "x-providence-rust-name": "TileAttributeProfile",
-      "x-providence-rust-optional": ["landlook", "solidType", "movementSoundId", "movementCost", "shore", "boatRequirement", "pathFlag", "blocksLos", "flyFloatRequired", "forestType", "spare", "clearLandId", "baseTile", "baseScale", "rawByte"],
-      "x-providence-rust-default": ["shore", "boatRequirement", "pathFlag", "blocksLos", "flyFloatRequired", "forestType", "spare", "combatBuild", "clearLandId", "baseTile", "baseScale", "editableScope", "sourceKind"],
-      "required": ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "flags", "confidence", "source", "rawByte"],
+      "x-providence-rust-optional": ["landlook", "solidType", "movementSoundId", "movementCost", "shore", "boatRequirement", "pathFlag", "blocksLos", "flyFloatRequired", "forestType", "clearLandId", "baseTile", "baseScale"],
+      "x-providence-rust-default": ["shore", "boatRequirement", "pathFlag", "blocksLos", "flyFloatRequired", "forestType", "combatBuild", "clearLandId", "baseTile", "baseScale", "editableScope", "sourceKind"],
+      "required": ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "flags", "confidence", "source"],
       "properties": {
         "tile": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "landlook": { "oneOf": [{ "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i8" }, { "type": "null" }] },
@@ -291,7 +291,6 @@
         "blocksLos": { "oneOf": [{ "type": "boolean" }, { "type": "null" }] },
         "flyFloatRequired": { "oneOf": [{ "type": "boolean" }, { "type": "null" }] },
         "forestType": { "oneOf": [{ "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, { "type": "null" }] },
-        "spare": { "oneOf": [{ "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, { "type": "null" }], "x-providence-compatibility-only": true },
         "combatBuild": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } } },
         "clearLandId": { "oneOf": [{ "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, { "type": "null" }] },
         "baseTile": { "oneOf": [{ "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }, { "type": "null" }] },
@@ -300,8 +299,7 @@
         "flags": { "type": "array", "items": { "$ref": "#/$defs/tileAttributeFlag" } },
         "confidence": { "$ref": "#/$defs/tileAttributeConfidence" },
         "sourceKind": { "$ref": "#/$defs/tileAttributeSourceKind" },
-        "source": { "type": "string" },
-        "rawByte": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 255, "x-providence-rust-type": "u8" }, { "type": "null" }], "x-providence-compatibility-only": true }
+        "source": { "type": "string" }
       }
     },
     "mapstatsRecord": {
@@ -309,8 +307,6 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceMapstatsRecord",
       "x-providence-rust-name": "MapstatsRecord",
-      "x-providence-rust-optional": ["spare"],
-      "x-providence-rust-default": ["spare"],
       "required": ["tile", "sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "combatBuild", "clearLandId"],
       "properties": {
         "tile": { "type": "integer", "minimum": 0, "maximum": 200, "x-providence-rust-type": "i16" },
@@ -323,7 +319,6 @@
         "los": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "flyFloat": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
         "forest": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
-        "spare": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16", "x-providence-compatibility-only": true },
         "combatBuild": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" } } },
         "clearLandId": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }
       }
@@ -333,15 +328,12 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceLandlookRangeSlot",
       "x-providence-rust-name": "LandlookRangeSlot",
-      "x-providence-rust-optional": ["reserved"],
-      "x-providence-rust-default": ["reserved"],
       "required": ["slot", "label", "firstTile", "lastTile"],
       "properties": {
         "slot": { "type": "integer", "minimum": 0, "maximum": 9, "x-providence-rust-type": "usize" },
         "label": { "type": "string" },
         "firstTile": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
-        "lastTile": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
-        "reserved": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16", "x-providence-compatibility-only": true }
+        "lastTile": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }
       }
     },
     "landlookWriterGate": {

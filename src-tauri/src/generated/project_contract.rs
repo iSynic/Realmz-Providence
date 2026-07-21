@@ -155,7 +155,6 @@ pub const PROVIDENCE_TILE_ATTRIBUTE_FIELDS: &[&str] = &[
     "blocksLos",
     "flyFloatRequired",
     "forestType",
-    "spare",
     "combatBuild",
     "clearLandId",
     "baseTile",
@@ -165,7 +164,6 @@ pub const PROVIDENCE_TILE_ATTRIBUTE_FIELDS: &[&str] = &[
     "confidence",
     "sourceKind",
     "source",
-    "rawByte",
 ];
 
 #[allow(dead_code)]
@@ -870,8 +868,6 @@ pub struct TileAttributeProfile {
     #[serde(default)]
     pub forest_type: Option<i16>,
     #[serde(default)]
-    pub spare: Option<i16>,
-    #[serde(default)]
     pub combat_build: Vec<Vec<i16>>,
     #[serde(default)]
     pub clear_land_id: Option<i16>,
@@ -886,8 +882,6 @@ pub struct TileAttributeProfile {
     #[serde(default)]
     pub source_kind: TileAttributeSourceKind,
     pub source: String,
-    #[serde(default)]
-    pub raw_byte: Option<u8>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -903,8 +897,6 @@ pub struct MapstatsRecord {
     pub los: i16,
     pub fly_float: i16,
     pub forest: i16,
-    #[serde(default)]
-    pub spare: Option<i16>,
     pub combat_build: Vec<Vec<i16>>,
     pub clear_land_id: i16,
 }
@@ -916,8 +908,6 @@ pub struct LandlookRangeSlot {
     pub label: String,
     pub first_tile: i16,
     pub last_tile: i16,
-    #[serde(default)]
-    pub reserved: Option<i16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

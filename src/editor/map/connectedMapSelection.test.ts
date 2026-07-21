@@ -269,7 +269,6 @@ function attribute(tile: number, flags: TileAttributeProfile["flags"]) {
     flags,
     confidence: "source-backed",
     sourceKind: "mapstats",
-    source: "test",
-    rawByte: null
+    source: "test"
   } satisfies TileAttributeProfile;
 }

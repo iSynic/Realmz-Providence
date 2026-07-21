@@ -220,15 +220,15 @@ for (const [index, definition] of landlookDefinitions.entries()) {
   expect(typeof definition["x-providence-typescript-name"] === "string", `${definitionName} must declare its TypeScript name`);
   expect(typeof definition["x-providence-rust-name"] === "string", `${definitionName} must declare its Rust name`);
 }
-expectSameArray(Object.keys(tileAttributeProfileSchema.properties ?? {}), ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "shore", "boatRequirement", "pathFlag", "blocksLos", "flyFloatRequired", "forestType", "spare", "combatBuild", "clearLandId", "baseTile", "baseScale", "editableScope", "flags", "confidence", "sourceKind", "source", "rawByte"], "Tile-attribute field inventory");
-expectSameArray(tileAttributeProfileSchema.required ?? [], ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "flags", "confidence", "source", "rawByte"], "Tile-attribute authored field inventory");
+expectSameArray(Object.keys(tileAttributeProfileSchema.properties ?? {}), ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "shore", "boatRequirement", "pathFlag", "blocksLos", "flyFloatRequired", "forestType", "combatBuild", "clearLandId", "baseTile", "baseScale", "editableScope", "flags", "confidence", "sourceKind", "source"], "Tile-attribute field inventory");
+expectSameArray(tileAttributeProfileSchema.required ?? [], ["tile", "landlook", "solidType", "movementSoundId", "movementCost", "flags", "confidence", "source"], "Tile-attribute authored field inventory");
 expect(tileAttributeProfileSchema.properties?.combatBuild?.minItems === 3 && tileAttributeProfileSchema.properties?.combatBuild?.maxItems === 3, "tile-attribute combatBuild must retain three rows");
 expect(tileAttributeProfileSchema.properties?.combatBuild?.items?.minItems === 3 && tileAttributeProfileSchema.properties?.combatBuild?.items?.maxItems === 3, "tile-attribute combatBuild rows must retain three columns");
-expectSameArray(Object.keys(mapstatsRecordSchema.properties ?? {}), ["tile", "sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "spare", "combatBuild", "clearLandId"], "Mapstats field inventory");
+expectSameArray(Object.keys(mapstatsRecordSchema.properties ?? {}), ["tile", "sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "combatBuild", "clearLandId"], "Mapstats field inventory");
 expectSameArray(mapstatsRecordSchema.required ?? [], ["tile", "sound", "time", "solid", "shore", "needBoat", "isPath", "los", "flyFloat", "forest", "combatBuild", "clearLandId"], "Mapstats authored field inventory");
 expect(mapstatsRecordSchema.properties?.combatBuild?.minItems === 3 && mapstatsRecordSchema.properties?.combatBuild?.maxItems === 3, "mapstats combatBuild must retain three rows");
 expect(mapstatsRecordSchema.properties?.combatBuild?.items?.minItems === 3 && mapstatsRecordSchema.properties?.combatBuild?.items?.maxItems === 3, "mapstats combatBuild rows must retain three columns");
-expectSameArray(Object.keys(landlookRangeSlotSchema.properties ?? {}), ["slot", "label", "firstTile", "lastTile", "reserved"], "Landlook range-slot field inventory");
+expectSameArray(Object.keys(landlookRangeSlotSchema.properties ?? {}), ["slot", "label", "firstTile", "lastTile"], "Landlook range-slot field inventory");
 expectSameArray(landlookRangeSlotSchema.required ?? [], ["slot", "label", "firstTile", "lastTile"], "Landlook range-slot authored field inventory");
 expectSameArray(Object.keys(landlookWriterGateSchema.properties ?? {}), ["metadataWriterStatus", "atlasWriterStatus", "writableFields", "preserveOnlyFields", "evidence"], "Landlook writer-gate field inventory");
 expectSameArray(landlookWriterGateSchema.required ?? [], Object.keys(landlookWriterGateSchema.properties ?? {}), "Landlook writer-gate required field inventory");
@@ -245,7 +245,7 @@ const landlookCompatibilityFields = landlookDefinitions.flatMap((definition) =>
     .filter(([, property]) => property["x-providence-compatibility-only"] === true)
     .map(([field]) => `${definition["x-providence-rust-name"]}.${field}`)
 );
-expectSameSet(landlookCompatibilityFields, ["TileAttributeProfile.spare", "TileAttributeProfile.rawByte", "MapstatsRecord.spare", "LandlookRangeSlot.reserved"], "Landlook compatibility-only field inventory");
+expectSameSet(landlookCompatibilityFields, [], "Landlook compatibility-only field inventory");
 for (const [index, definition] of assetDefinitions.entries()) {
   const definitionName = assetDefinitionNames[index];
   expect(definition.type === "object" || definition.type === "string", `${definitionName} must be an object or string enum schema`);

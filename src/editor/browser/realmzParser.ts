@@ -305,8 +305,7 @@ function parseTileAttributes(buffer: Uint8Array | undefined): TileAttributeProfi
       flags: solidType === 0 ? ["walkable"] : ["solid"],
       confidence: "source-backed",
       sourceKind: "data-solids",
-      source: "Data Solids",
-      rawByte: solidType
+      source: "Data Solids"
     };
   });
 }
@@ -333,7 +332,6 @@ export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: 
     const los = i16(buffer, start + 12) !== 0;
     const flyFloat = i16(buffer, start + 14) !== 0;
     const forest = i16(buffer, start + 16);
-    const spare = i16(buffer, start + 18);
     const combatBuild = [
       [i16(buffer, start + 20), i16(buffer, start + 22), i16(buffer, start + 24)],
       [i16(buffer, start + 26), i16(buffer, start + 28), i16(buffer, start + 30)],
@@ -360,7 +358,6 @@ export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: 
       blocksLos: los,
       flyFloatRequired: flyFloat,
       forestType: forest,
-      spare,
       combatBuild,
       clearLandId,
       baseTile,
@@ -369,8 +366,7 @@ export function parseLandlookMapstats(buffer: Uint8Array | undefined, landlook: 
       flags,
       confidence: "source-backed",
       sourceKind: "mapstats",
-      source,
-      rawByte: null
+      source
     };
   });
 }
@@ -724,7 +720,6 @@ export function parseCustomLandlookMetadata(
       los: i16(buffer, start + 12),
       flyFloat: i16(buffer, start + 14),
       forest: i16(buffer, start + 16),
-      spare: i16(buffer, start + 18),
       combatBuild: [
         [i16(buffer, start + 20), i16(buffer, start + 22), i16(buffer, start + 24)],
         [i16(buffer, start + 26), i16(buffer, start + 28), i16(buffer, start + 30)],
@@ -747,8 +742,7 @@ export function parseCustomLandlookMetadata(
         slot,
         label: landlookRangeLabel(slot),
         firstTile: buffer.byteLength >= start + 2 ? i16(buffer, start) : 0,
-        lastTile: buffer.byteLength >= start + 4 ? i16(buffer, start + 2) : 0,
-        ...(buffer.byteLength >= start + 6 ? { reserved: i16(buffer, start + 4) } : {})
+        lastTile: buffer.byteLength >= start + 4 ? i16(buffer, start + 2) : 0
       };
     }),
     writerGate: customLandlookWriterGate(),

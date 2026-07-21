@@ -340,7 +340,6 @@ fn data_solids_export_mutates_only_selected_special_tile_solidity() {
                 && profile.tile == tile as i16
         })
         .expect("Tutorial should import Data Solids row 190");
-    profile.raw_byte = Some(next_value);
     profile.solid_type = Some(next_value as i16);
     profile.flags = if next_value == 0 {
         vec![TileAttributeFlag::Walkable]

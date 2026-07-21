@@ -47,6 +47,13 @@ describe("scenario seed project compiler", () => {
       ["Data Custom 1 BD", new Uint8Array(8_107)]
     ])).customLandlooks[0];
     legacyCustomLandlook.records[5].sound = 321;
+    (legacyCustomLandlook.records[5] as typeof legacyCustomLandlook.records[number] & { spare?: number }).spare = 0x1234;
+    (legacyCustomLandlook.rangeSlots[0] as typeof legacyCustomLandlook.rangeSlots[number] & { reserved?: number }).reserved = 0x2345;
+    template.tileAttributes = [{
+      ...parseScenarioBuffers(new Map([["Data Solids", new Uint8Array([2])]])).tileAttributes[0],
+      spare: 0x3456,
+      rawByte: 0xa5
+    } as unknown as typeof template.tileAttributes[number]];
     template.customLandlooks = [{
       ...legacyCustomLandlook,
       rawBytes: new Array(8_107).fill(0xa5),
@@ -92,6 +99,10 @@ describe("scenario seed project compiler", () => {
     expect(result.project.source.files).not.toBe(template.source.files);
     expect(result.project.messages).toEqual(template.messages);
     expect(result.project.customLandlooks?.[0].records[5].sound).toBe(321);
+    expect("spare" in result.project.customLandlooks![0].records[5]).toBe(false);
+    expect("reserved" in result.project.customLandlooks![0].rangeSlots[0]).toBe(false);
+    expect("spare" in result.project.tileAttributes[0]).toBe(false);
+    expect("rawByte" in result.project.tileAttributes[0]).toBe(false);
     expect("rawBytes" in result.project.customLandlooks![0]).toBe(false);
     expect("trailingBytes" in result.project.customLandlooks![0]).toBe(false);
     expect(template.scenario.name).toBe("Template Source");

@@ -39,8 +39,7 @@ describe("tileMatchesPaletteQuery", () => {
       movementCost: null,
       flags: ["solid", "blocks-los"],
       confidence: "source-backed",
-      source: "test",
-      rawByte: 1
+      source: "test"
     }];
     expect(tileMatchesPaletteQuery(61, "solid", plains, attributes)).toBe(true);
     expect(tileMatchesPaletteQuery(61, "blocks los", plains, attributes)).toBe(true);

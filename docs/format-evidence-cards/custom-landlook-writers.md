@@ -52,7 +52,7 @@ Providence can show and author scenario-custom landlook movement metadata, comba
   - landlook 7: `Data Custom 2 BD` plus `PICT 307`.
   - landlook 8: `Data Custom 3 BD` plus `PICT 308`.
 - Metadata writing is fixture-proven for owned two-byte fields only. Writer-safe metadata fields are tile sound, time/move, solid type, shore, boat requirement, path flag, LOS flag, fly/float flag, forest/special type, clear/base tile, combat build grid, `basetile`, `basescale`, and the first/last values of range slots.
-- Preserve-only metadata fields are `spare` and every range-slot `reserved` word. They are neutral zero in fresh output and may be restored only from an imported compatibility annex.
+- The native `spare` and range-slot `reserved` words are not canonical fields. They are neutral zero in fresh output and may be restored only from an imported compatibility annex.
 - Custom landlook picture/resource replacement is limited to generated 640 x 320 `PICT` atlas payloads written through Providence's normalized image import. Providence does not edit arbitrary PICT opcodes.
 - `Custom 1/2/3` companion files are not opened by Realmz `loadpixmap` for landlook runtime loading. They remain preserved-known compatibility/media/intermediate payloads until separate Realmz or Divinity evidence proves another role.
 

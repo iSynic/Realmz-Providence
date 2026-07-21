@@ -37,8 +37,10 @@ describe("custom landlook browser import", () => {
     expect(metadata).not.toBeNull();
     expect(metadata?.records).toHaveLength(201);
     expect(metadata?.rangeSlots).toHaveLength(10);
-    expect(metadata?.records[5]).toMatchObject({ sound: 321, time: 2, spare: 0x1234 });
-    expect(metadata?.rangeSlots[0]).toMatchObject({ firstTile: 62, lastTile: 85, reserved: 0x2345 });
+    expect(metadata?.records[5]).toMatchObject({ sound: 321, time: 2 });
+    expect("spare" in metadata!.records[5]).toBe(false);
+    expect(metadata?.rangeSlots[0]).toMatchObject({ firstTile: 62, lastTile: 85 });
+    expect("reserved" in metadata!.rangeSlots[0]).toBe(false);
     expect("trailingBytes" in metadata!).toBe(false);
     expect("rawBytes" in metadata!).toBe(false);
 

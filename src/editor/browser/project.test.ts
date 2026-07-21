@@ -13,13 +13,19 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
-  it("drops legacy custom-landlook source identity during normalization", () => {
+  it("drops legacy landlook compatibility state during normalization", () => {
     const project = createBrowserProject("Legacy custom landlook bytes");
     const parsed = parseScenarioBuffers(new Map([
       ["Data Custom 1 BD", new Uint8Array(8_107)]
     ])).customLandlooks[0];
     parsed.records[5].sound = 321;
-    parsed.records[5].spare = 0x1234;
+    (parsed.records[5] as typeof parsed.records[number] & { spare?: number }).spare = 0x1234;
+    (parsed.rangeSlots[0] as typeof parsed.rangeSlots[number] & { reserved?: number }).reserved = 0x2345;
+    project.tileAttributes = [{
+      ...parseScenarioBuffers(new Map([["Data Solids", new Uint8Array([2])]])).tileAttributes[0],
+      spare: 0x3456,
+      rawByte: 0xa5
+    } as unknown as Project["tileAttributes"][number]];
     project.customLandlooks = [{
       ...parsed,
       rawBytes: new Array(8_107).fill(0xa5),
@@ -28,7 +34,12 @@ describe("browser project native manifest validation", () => {
 
     normalizeBrowserProject(project);
 
-    expect(project.customLandlooks[0].records[5]).toMatchObject({ sound: 321, spare: 0x1234 });
+    expect(project.customLandlooks[0].records[5]).toMatchObject({ sound: 321 });
+    expect("spare" in project.customLandlooks[0].records[5]).toBe(false);
+    expect("reserved" in project.customLandlooks[0].rangeSlots[0]).toBe(false);
+    expect(project.tileAttributes[0].solidType).toBe(2);
+    expect("spare" in project.tileAttributes[0]).toBe(false);
+    expect("rawByte" in project.tileAttributes[0]).toBe(false);
     expect("rawBytes" in project.customLandlooks[0]).toBe(false);
     expect("trailingBytes" in project.customLandlooks[0]).toBe(false);
   });

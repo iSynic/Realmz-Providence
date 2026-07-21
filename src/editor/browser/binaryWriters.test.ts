@@ -21,7 +21,7 @@ const rect: RandomRect = {
   text: 23
 };
 
-function specialTileProfile(tile: number, solidType: number | null, rawByte: number | null = null): TileAttributeProfile {
+function specialTileProfile(tile: number, solidType: number | null): TileAttributeProfile {
   return {
     tile,
     landlook: null,
@@ -32,8 +32,7 @@ function specialTileProfile(tile: number, solidType: number | null, rawByte: num
     flags: solidType === 0 ? ["walkable"] : ["solid"],
     confidence: "source-backed",
     sourceKind: "data-solids",
-    source: "Data Solids",
-    rawByte
+    source: "Data Solids"
   };
 }
 
@@ -44,10 +43,10 @@ describe("browser Data Solids writer", () => {
     expect(output.every((byte) => byte === 0)).toBe(true);
   });
 
-  it("prefers canonical solidity over imported raw-byte provenance", () => {
+  it("ignores obsolete raw-byte properties and compiles canonical solidity", () => {
     const output = writeTileSolids([
-      specialTileProfile(190, 2, 0xa5),
-      specialTileProfile(191, null, 0xa5)
+      { ...specialTileProfile(190, 2), rawByte: 0xa5 } as unknown as TileAttributeProfile,
+      { ...specialTileProfile(191, null), rawByte: 0xa5 } as unknown as TileAttributeProfile
     ]);
     expect(output).toHaveLength(TILE_SOLIDS_BYTES);
     expect(output[190]).toBe(2);

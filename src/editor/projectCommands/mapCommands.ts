@@ -302,7 +302,6 @@ export function updateSpecialTileSolidity(
       blocksLos: null,
       flyFloatRequired: null,
       forestType: null,
-      spare: null,
       combatBuild: [],
       clearLandId: null,
       baseTile: null,
@@ -311,8 +310,7 @@ export function updateSpecialTileSolidity(
       flags: [],
       confidence: "source-backed",
       sourceKind: "data-solids",
-      source: "Data Solids",
-      rawByte: null
+      source: "Data Solids"
     }, command.solid));
   }
   return changed ? { ...project, tileAttributes } : project;
@@ -356,8 +354,8 @@ function cloneCustomLandlookMetadata(source: CustomLandlookMetadata, targetLandl
     ...semanticSource,
     landlook: targetLandlook,
     sourceFile,
-    records: source.records.map((record) => cloneMapstatsRecord(record)),
-    rangeSlots: source.rangeSlots.map(({ reserved: _reserved, ...slot }) => slot),
+    records: semanticSource.records.map((record) => cloneMapstatsRecord(record)),
+    rangeSlots: semanticSource.rangeSlots.map((slot) => ({ ...slot })),
     writerGate: {
       ...source.writerGate,
       evidence: [...(source.writerGate?.evidence ?? [])]
@@ -412,9 +410,8 @@ function mapstatsRecordFromProfile(tile: number, profile: TileAttributeProfile |
 }
 
 function cloneMapstatsRecord(record: MapstatsRecord): MapstatsRecord {
-  const { spare: _spare, ...semanticRecord } = record;
   return {
-    ...semanticRecord,
+    ...record,
     combatBuild: normalizeCombatBuild(record.combatBuild)
   };
 }
@@ -544,7 +541,6 @@ function specialTileSolidityProfile(profile: TileAttributeProfile, solid: boolea
   const solidType = solid ? 1 : 0;
   const flags: TileAttributeFlag[] = solid ? ["solid"] : ["walkable"];
   if (
-    profile.rawByte == null &&
     profile.solidType === solidType &&
     profile.flags.length === 1 &&
     profile.flags[0] === flags[0]
@@ -554,7 +550,6 @@ function specialTileSolidityProfile(profile: TileAttributeProfile, solid: boolea
   return {
     ...profile,
     solidType,
-    rawByte: null,
     flags,
     editableScope: "special-tile",
     confidence: "source-backed",
@@ -631,13 +626,22 @@ function updateCustomLandlook(project: Project, landlook: number, update: (landl
 }
 
 function withoutLegacyCustomLandlookSourceBytes(landlook: CustomLandlookMetadata): CustomLandlookMetadata {
-  if (!("rawBytes" in landlook) && !("trailingBytes" in landlook)) return landlook;
   const {
     rawBytes: _legacyRawBytes,
     trailingBytes: _legacyTrailingBytes,
     ...canonical
   } = landlook as CustomLandlookMetadata & { rawBytes?: number[]; trailingBytes?: number[] };
-  return canonical;
+  return {
+    ...canonical,
+    records: canonical.records.map((record) => {
+      const { spare: _legacySpare, ...semantic } = record as typeof record & { spare?: number };
+      return semantic;
+    }),
+    rangeSlots: canonical.rangeSlots.map((slot) => {
+      const { reserved: _legacyReserved, ...semantic } = slot as typeof slot & { reserved?: number };
+      return semantic;
+    })
+  };
 }
 
 function syncCustomLandlookTileAttribute(project: Project, landlook: CustomLandlookMetadata, tile: number): Project {
@@ -689,7 +693,6 @@ function customMapstatsAttributeProfile(landlook: CustomLandlookMetadata, record
     blocksLos: record.los !== 0,
     flyFloatRequired: flyFloat !== 0,
     forestType: record.forest,
-    spare: record.spare ?? null,
     combatBuild: (record.combatBuild ?? []).map((row) => [...row]),
     clearLandId: record.clearLandId,
     baseTile: landlook.baseTile,
@@ -698,8 +701,7 @@ function customMapstatsAttributeProfile(landlook: CustomLandlookMetadata, record
     flags,
     confidence: "source-backed",
     sourceKind: "mapstats",
-    source: landlook.sourceFile,
-    rawByte: null
+    source: landlook.sourceFile
   };
 }
 

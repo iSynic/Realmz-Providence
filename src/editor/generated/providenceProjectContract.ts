@@ -145,7 +145,6 @@ export const PROVIDENCE_TILE_ATTRIBUTE_FIELDS = [
   "blocksLos",
   "flyFloatRequired",
   "forestType",
-  "spare",
   "combatBuild",
   "clearLandId",
   "baseTile",
@@ -154,8 +153,7 @@ export const PROVIDENCE_TILE_ATTRIBUTE_FIELDS = [
   "flags",
   "confidence",
   "sourceKind",
-  "source",
-  "rawByte"
+  "source"
 ] as const;
 
 export const PROVIDENCE_CUSTOM_LANDLOOK_FIELDS = [
@@ -724,7 +722,6 @@ export type ProvidenceTileAttributeProfile = {
   blocksLos?: boolean | null;
   flyFloatRequired?: boolean | null;
   forestType?: number | null;
-  spare?: number | null;
   combatBuild?: number[][];
   clearLandId?: number | null;
   baseTile?: number | null;
@@ -734,7 +731,6 @@ export type ProvidenceTileAttributeProfile = {
   confidence: ProvidenceTileAttributeConfidence;
   sourceKind?: ProvidenceTileAttributeSourceKind;
   source: string;
-  rawByte: number | null;
 };
 
 export type ProvidenceMapstatsRecord = {
@@ -748,7 +744,6 @@ export type ProvidenceMapstatsRecord = {
   los: number;
   flyFloat: number;
   forest: number;
-  spare?: number;
   combatBuild: number[][];
   clearLandId: number;
 };
@@ -758,7 +753,6 @@ export type ProvidenceLandlookRangeSlot = {
   label: string;
   firstTile: number;
   lastTile: number;
-  reserved?: number;
 };
 
 export type ProvidenceLandlookWriterGate = {

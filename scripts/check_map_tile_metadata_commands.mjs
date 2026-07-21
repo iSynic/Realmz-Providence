@@ -811,7 +811,7 @@ function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource })
   assert(custom?.sourceFile === "Data Custom 1 BD", "Custom 1 creation should target Data Custom 1 BD.");
   assert(custom?.authored === true, "Custom landlook creation should mark metadata authored.");
   assert(custom?.records?.[5]?.solid === 1, "Custom landlook creation did not copy built-in tile metadata.");
-  assert(custom?.records?.[5]?.spare == null, "Custom landlook creation should drop preserve-only spare words from the source profile.");
+  assert(!Object.hasOwn(custom?.records?.[5] ?? {}, "spare"), "Custom landlook creation should drop preserve-only spare words from the source profile.");
   assert(custom?.records?.[5]?.combatBuild?.[2]?.[2] === 13, "Custom landlook creation did not copy built-in combat expansion metadata.");
   assert(findProfile(next, 6, 5)?.editableScope === "scenario-custom", "Custom landlook creation did not sync writable tileAttributes.");
   assert(findProfile(next, 6, 5)?.combatBuild?.[0]?.[1] === 6, "Custom landlook creation did not sync combat expansion into writable tileAttributes.");
@@ -835,8 +835,8 @@ function checkCreateCustomLandlookFromSource({ createCustomLandlookFromSource })
   });
   const custom2 = cloned.customLandlooks.find((landlook) => landlook.landlook === 7);
   assert(custom2?.sourceFile === "Data Custom 2 BD", "Custom duplication should retarget Data Custom 2 BD.");
-  assert(custom2?.records?.[8]?.spare == null, "Custom duplication should drop preserve-only spare mapstats words.");
-  assert(custom2?.rangeSlots?.[0]?.reserved == null, "Custom duplication should drop preserve-only range reserved words.");
+  assert(!Object.hasOwn(custom2?.records?.[8] ?? {}, "spare"), "Custom duplication should drop preserve-only spare mapstats words.");
+  assert(!Object.hasOwn(custom2?.rangeSlots?.[0] ?? {}, "reserved"), "Custom duplication should drop preserve-only range reserved words.");
   assert(custom2?.trailingBytes == null, "Custom duplication should drop preserve-only trailing bytes.");
   assert(custom2?.rawBytes == null, "Custom duplication should drop preserve-only raw bytes.");
 }
@@ -867,7 +867,7 @@ function checkSpecialTileSolidity({ updateSpecialTileSolidity }, { classifyTileV
   const special = next.tileAttributes.find((profile) => profile.sourceKind === "data-solids" && profile.tile === 384);
   assert(special?.editableScope === "special-tile", "Data Solids edit lost special-tile editable scope");
   assert(special?.flags.includes("solid"), "Data Solids edit did not set solid flag");
-  assert(special?.rawByte == null, "Data Solids edit retained imported raw-byte provenance");
+  assert(!Object.hasOwn(special ?? {}, "rawByte"), "Data Solids edit retained imported raw-byte provenance");
   assert(findProfile(next, 6, 12)?.solidType === 0, "Data Solids edit changed unrelated mapstats metadata");
   const meaning = classifyTileValue(-384, customTileset(), next.tileAttributes, {});
   assert(meaning.attributeFlags.includes("special-icon"), "negative special tile did not keep special-icon grouping");
@@ -1134,7 +1134,6 @@ function mapstatsProfile(landlook, entry, metadata = {}) {
     blocksLos: entry.los !== 0,
     flyFloatRequired: flyFloat !== 0,
     forestType: entry.forest,
-    spare: entry.spare,
     combatBuild: (entry.combatBuild ?? []).map((row) => [...row]),
     clearLandId: entry.clearLandId,
     baseTile: metadata.baseTile ?? 156,
@@ -1143,8 +1142,7 @@ function mapstatsProfile(landlook, entry, metadata = {}) {
     flags,
     confidence: "source-backed",
     sourceKind: "mapstats",
-    source: metadata.sourceFile ?? "Data Custom 1 BD",
-    rawByte: null
+    source: metadata.sourceFile ?? "Data Custom 1 BD"
   };
 }
 
@@ -1159,8 +1157,7 @@ function specialProfile(tile, solid) {
     flags: [solid ? "solid" : "walkable"],
     confidence: "source-backed",
     sourceKind: "data-solids",
-    source: "Data Solids",
-    rawByte: solid ? 1 : 0
+    source: "Data Solids"
   };
 }
 

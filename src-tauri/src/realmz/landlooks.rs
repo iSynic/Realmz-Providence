@@ -53,7 +53,6 @@ pub fn parse_landlook_mapstats_data(
             let los = i16_be(buffer, start + 12) != 0;
             let fly_float = i16_be(buffer, start + 14) != 0;
             let forest = i16_be(buffer, start + 16);
-            let spare = i16_be(buffer, start + 18);
             let combat_build = vec![
                 vec![
                     i16_be(buffer, start + 20),
@@ -111,7 +110,6 @@ pub fn parse_landlook_mapstats_data(
                 blocks_los: Some(los),
                 fly_float_required: Some(fly_float),
                 forest_type: Some(forest),
-                spare: Some(spare),
                 combat_build,
                 clear_land_id: Some(clear_land_id),
                 base_tile,
@@ -121,7 +119,6 @@ pub fn parse_landlook_mapstats_data(
                 confidence: TileAttributeConfidence::SourceBacked,
                 source_kind: TileAttributeSourceKind::Mapstats,
                 source: source.to_string(),
-                raw_byte: None,
             }
         })
         .collect()
@@ -159,7 +156,6 @@ pub fn parse_custom_landlook_metadata(
             label: landlook_range_label(slot).to_string(),
             first_tile: 0,
             last_tile: 0,
-            reserved: None,
         });
     }
     CustomLandlookMetadata {
@@ -187,7 +183,6 @@ fn parse_mapstats_record(buffer: &[u8], tile: usize) -> MapstatsRecord {
         los: i16_be(buffer, start + 12),
         fly_float: i16_be(buffer, start + 14),
         forest: i16_be(buffer, start + 16),
-        spare: Some(i16_be(buffer, start + 18)),
         combat_build: vec![
             vec![
                 i16_be(buffer, start + 20),
@@ -221,7 +216,6 @@ fn empty_mapstats_record(tile: usize) -> MapstatsRecord {
         los: 0,
         fly_float: 0,
         forest: 0,
-        spare: None,
         combat_build: vec![vec![0; 3], vec![0; 3], vec![0; 3]],
         clear_land_id: 0,
     }
@@ -443,7 +437,6 @@ pub fn parse_landlook_range_tail(buffer: &[u8]) -> Vec<LandlookRangeSlot> {
                 label: landlook_range_label(slot).to_string(),
                 first_tile: i16_be(buffer, start),
                 last_tile: i16_be(buffer, start + 2),
-                reserved: Some(i16_be(buffer, start + 4)),
             }
         })
         .collect()
@@ -502,7 +495,6 @@ mod tests {
         assert_eq!(tile.blocks_los, Some(true));
         assert_eq!(tile.fly_float_required, Some(true));
         assert_eq!(tile.forest_type, Some(3));
-        assert_eq!(tile.spare, Some(77));
         assert_eq!(tile.combat_build[0], vec![101, 102, 103]);
         assert_eq!(tile.combat_build[2], vec![107, 108, 109]);
         assert_eq!(tile.clear_land_id, Some(12));
@@ -539,44 +531,16 @@ mod tests {
 
         assert_eq!(ranges.len(), LANDLOOK_RANGE_SLOTS);
         assert_eq!(ranges[0].label, "Mountain range");
-        assert_eq!(
-            (
-                ranges[0].first_tile,
-                ranges[0].last_tile,
-                ranges[0].reserved
-            ),
-            (62, 85, Some(0))
-        );
+        assert_eq!((ranges[0].first_tile, ranges[0].last_tile), (62, 85));
         assert_eq!(ranges[1].label, "Open range");
-        assert_eq!(
-            (
-                ranges[1].first_tile,
-                ranges[1].last_tile,
-                ranges[1].reserved
-            ),
-            (155, 158, Some(0))
-        );
+        assert_eq!((ranges[1].first_tile, ranges[1].last_tile), (155, 158));
         assert_eq!(ranges[2].label, "Rubble range");
-        assert_eq!(
-            (
-                ranges[2].first_tile,
-                ranges[2].last_tile,
-                ranges[2].reserved
-            ),
-            (159, 167, Some(0))
-        );
+        assert_eq!((ranges[2].first_tile, ranges[2].last_tile), (159, 167));
         assert_eq!(ranges[3].label, "House range");
-        assert_eq!(
-            (
-                ranges[3].first_tile,
-                ranges[3].last_tile,
-                ranges[3].reserved
-            ),
-            (190, 200, Some(0))
-        );
+        assert_eq!((ranges[3].first_tile, ranges[3].last_tile), (190, 200));
         assert!(ranges[4..]
             .iter()
-            .all(|slot| slot.first_tile == 0 && slot.last_tile == 0 && slot.reserved == Some(0)));
+            .all(|slot| slot.first_tile == 0 && slot.last_tile == 0));
     }
 
     #[test]
@@ -747,21 +711,21 @@ mod tests {
     }
 
     #[test]
-    fn custom_landlook_writer_keeps_preserve_only_words_neutral() {
-        let input =
+    fn custom_landlook_writer_keeps_native_compatibility_words_neutral() {
+        let mut input =
             vec![0u8; MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4 + LANDLOOK_RANGE_TAIL_BYTES];
+        write_i16_be(&mut input, 5 * MAPSTATS_RECORD_BYTES + 18, 0x1234);
+        let range_start = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
+        write_i16_be(&mut input, range_start + 4, 0x2345);
         let mut metadata = parse_custom_landlook_metadata(&input, 6, "Data Custom 1 BD");
         metadata.records[5].sound = 321;
-        metadata.records[5].spare = Some(0x1234);
         metadata.range_slots[0].first_tile = 62;
         metadata.range_slots[0].last_tile = 85;
-        metadata.range_slots[0].reserved = Some(0x2345);
         let output = write_custom_landlook_metadata(&metadata).unwrap();
 
         assert_eq!(output.len(), CUSTOM_LANDLOOK_METADATA_BYTES);
         assert_eq!(i16_be(&output, 5 * MAPSTATS_RECORD_BYTES), 321);
         assert_eq!(i16_be(&output, 5 * MAPSTATS_RECORD_BYTES + 18), 0);
-        let range_start = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + 4;
         assert_eq!(i16_be(&output, range_start), 62);
         assert_eq!(i16_be(&output, range_start + 2), 85);
         assert_eq!(i16_be(&output, range_start + 4), 0);

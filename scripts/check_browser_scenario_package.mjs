@@ -1729,8 +1729,7 @@ function customLandlookMetadataFromRaw(landlook, sourceFile, rawBytes) {
         slot,
         label: slot === 0 ? "Mountain range" : slot === 1 ? "Open range" : slot === 2 ? "Rubble range" : slot === 3 ? "House range" : "Reserved range",
         firstTile: rawBytes.byteLength >= start + 2 ? readI16(rawBytes, start) : 0,
-        lastTile: rawBytes.byteLength >= start + 4 ? readI16(rawBytes, start + 2) : 0,
-        reserved: rawBytes.byteLength >= start + 6 ? readI16(rawBytes, start + 4) : 0
+        lastTile: rawBytes.byteLength >= start + 4 ? readI16(rawBytes, start + 2) : 0
       };
     }),
     writerGate: {
@@ -1758,7 +1757,6 @@ function mapstatsRecordFromRaw(rawBytes, tile) {
     los: readI16(rawBytes, start + 12),
     flyFloat: readI16(rawBytes, start + 14),
     forest: readI16(rawBytes, start + 16),
-    spare: readI16(rawBytes, start + 18),
     combatBuild: [
       [readI16(rawBytes, start + 20), readI16(rawBytes, start + 22), readI16(rawBytes, start + 24)],
       [readI16(rawBytes, start + 26), readI16(rawBytes, start + 28), readI16(rawBytes, start + 30)],

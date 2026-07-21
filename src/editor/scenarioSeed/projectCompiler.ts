@@ -166,6 +166,7 @@ function initializeScenarioSeedProject(
       immutable: false,
       files: origin === "authored" ? [] : [...(project.source.files ?? [])]
     },
+    tileAttributes: (project.tileAttributes ?? []).map(withoutLegacyTileAttributeCompatibilityFields),
     customLandlooks: (project.customLandlooks ?? []).map(withoutLegacyCustomLandlookSourceBytes)
   };
 }
@@ -184,13 +185,31 @@ function withoutLegacyScenarioShellSourceBytes<T extends object>(shell: T): T {
   return canonical as T;
 }
 
-function withoutLegacyCustomLandlookSourceBytes<T extends object>(landlook: T): T {
+function withoutLegacyCustomLandlookSourceBytes<T extends NonNullable<Project["customLandlooks"]>[number]>(landlook: T): T {
   const {
     rawBytes: _legacyRawBytes,
     trailingBytes: _legacyTrailingBytes,
     ...canonical
   } = landlook as T & { rawBytes?: number[]; trailingBytes?: number[] };
-  return canonical as T;
+  return {
+    ...canonical,
+    records: canonical.records.map((record) => {
+      const { spare: _legacySpare, ...semantic } = record as typeof record & { spare?: number };
+      return semantic;
+    }),
+    rangeSlots: canonical.rangeSlots.map((slot) => {
+      const { reserved: _legacyReserved, ...semantic } = slot as typeof slot & { reserved?: number };
+      return semantic;
+    })
+  } as T;
+}
+
+function withoutLegacyTileAttributeCompatibilityFields<T extends Project["tileAttributes"][number]>(attribute: T): T {
+  const { spare: _legacySpare, rawByte: _legacyRawByte, ...semantic } = attribute as T & {
+    spare?: number | null;
+    rawByte?: number | null;
+  };
+  return semantic as T;
 }
 
 function applyScenarioSeedScripts(

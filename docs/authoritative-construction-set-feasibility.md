@@ -418,7 +418,7 @@ unknown.
 The forty-second slice closes complete byte ownership for the 1,024-byte `Data Solids` table.
 Both native compilers now use equivalent deterministic writers: an empty canonical collection
 produces the neutral table, while each `data-solids` profile writes its canonical `solidType` to
-the indexed special-tile byte. Embedded `rawByte` provenance cannot influence authored output;
+the indexed special-tile byte. The canonical profile exposes no duplicate raw-byte provenance;
 duplicate rows, out-of-range tile indices, and values outside `0..255` are rejected instead of
 silently depending on array order or truncation. This fixes a concrete browser/desktop asymmetry:
 browser ZIP export previously emitted only the neutral baseline and ignored authored special-tile
@@ -956,7 +956,18 @@ scenario singletons. Field offsets, stock-library decoders, and fixed-size golde
 literal independent evidence. This changes semantic byte ranges and reference counts only; it does
 not alter any native writer or compatibility-annex policy.
 
-Branch validation through the ninety-first slice completed on 2026-07-20:
+The ninety-second slice completes ISY-396 by removing the last four compatibility-only values from
+the schema-v5 canonical model: `TileAttributeProfile.spare`, `TileAttributeProfile.rawByte`,
+`MapstatsRecord.spare`, and `LandlookRangeSlot.reserved`. Browser and desktop parsers now decode
+only semantic tile and custom-landlook fields. Opening older project JSON strips these four
+properties before deserialization and persistence, and browser normalization plus Scenario JSON
+template compilation enforce the same boundary. The native mapstats spare word, range-slot
+reserved word, and imported `Data Solids` tail remain bounded compatibility-annex ranges; fresh
+output deterministically zeros or omits them. Poisoned legacy-shaped objects remain in the
+ownership proof to show that neither compiler consults the removed properties. The shared-contract
+generator now requires the landlook compatibility-only field inventory to be empty.
+
+Branch validation through the ninety-second slice completed on 2026-07-20:
 
 - full Rust suite: 263 passed, 2 ignored;
 - full TypeScript suite: 617 passed, plus typecheck;
@@ -1397,7 +1408,11 @@ A pragmatic sequence is:
 28. **Implemented for complete fixed-path parity coverage:** expose canonical Scenario JSON party
     restrictions, author `Data RI` without a template, and prove exact bytes plus semantic reimport
     so the ownership fixture now exercises every fixed-path optional family.
-29. Keep parser, codec, validator, resource-update, and UI behavior in handwritten modules.
+29. **Implemented for the final landlook/tile compatibility values:** remove the duplicate
+    Data Solids byte, mapstats spare values, and range-slot reserved values from canonical DTOs;
+    strip them from older project JSON and all browser/template edit paths; and keep their native
+    ranges available only through the imported compatibility annex.
+30. Keep parser, codec, validator, resource-update, and UI behavior in handwritten modules.
 
 The exact generator is less important than checking the generated artifacts and migrations into
 CI. A versioned JSON Schema is a reasonable neutral source because `project.json` is the persisted
@@ -1425,8 +1440,8 @@ Rust/Wasm build later, or retain the TypeScript writer temporarily behind byte-p
 Legend:
 
 - **Generated**: the current model and writer can construct fresh bytes without imported content.
-- **Generated + compatibility**: fresh bytes can be deterministic, but legacy exports currently
-  retain explicit raw fields, reserved ranges, or file tails.
+- **Generated + compatibility**: fresh bytes are deterministic, while legacy exports may restore
+  bounded native ranges or file tails only from the compatibility annex.
 - **Compiler baseline**: the authored compiler owns the deterministic default/capacity policy and
   emits it without a compatibility annex.
 - **Pass-through**: current exporter copies the family and has no complete fresh authoring path.
@@ -1445,7 +1460,7 @@ Legend:
 | `Data CI` | Generated + legacy singleton/tail annex | Generate from contact metadata | The canonical DTO exposes no `rawBytes`. Both writers compile all eighteen Str255 slots and deterministic padding; an untouched imported singleton and malformed tail are restored only from the annex. |
 | `Data RI` | Generated, optional + legacy singleton/tail annex | Generate when restrictions exist | The canonical DTO exposes no `rawBytes`. Both writers compile all 320 bytes and normalize ban flags; untouched noncanonical flags, Pascal padding, singleton identity, and malformed tails are annex-only. |
 | `Global` | Generated semantic hooks + bounded legacy annex | Generate 60 bytes with zero defaults for reserved slots | The canonical DTO exposes no `rawBytes`. Both writers compile the five runtime-backed slots; untouched imported identity is annex-owned, while edited imports restore only offsets 6..7 and 12..59 plus a malformed tail. |
-| `Data Solids` | Fully generated semantic table + legacy annex tail | Generate exactly 1,024 bytes from canonical special-tile profiles | Native-manifest contract v11 owns the table length. Both compilers write every runtime-owned byte from `solidType`, use zero for unspecified rows, ignore embedded `rawByte` provenance, and reject ambiguous/out-of-domain profiles. Imported bytes beyond offset 1,023 remain annex-owned compatibility data. |
+| `Data Solids` | Fully generated semantic table + legacy annex tail | Generate exactly 1,024 bytes from canonical special-tile profiles | Native-manifest contract v11 owns the table length. Canonical profiles expose no duplicate `rawByte`; both compilers write every runtime-owned byte from `solidType`, use zero for unspecified rows, and reject ambiguous/out-of-domain profiles. Imported bytes beyond offset 1,023 remain annex-owned compatibility data. |
 
 ### Maps, Action Points, and scripts
 
@@ -1489,7 +1504,7 @@ Legend:
 | `Data Caste` | Fully generated semantic core + bounded legacy annex | Emit exactly 30 x 576 bytes | Native-manifest contract v14 owns the 30-slot authored capacity, shared hash-gated baseline, and compatibility ranges. Canonical caste records contain only interpreted mechanics. Fresh output deterministically zeros the reserved `spare1[2]`, `spare2[2]`, and `spacer[63]` ranges; imported edits restore those exact ranges only from the annex. Unchanged rows, capacity, and malformed tails are also annex-only. |
 | Race/caste display names | Project-only | Keep project labels or define an explicit external-support workflow | Realmz reads global `Data Files/Custom Names.rsrc`; Divinity does not package it as scenario data. This is not a native scenario-folder requirement. |
 | `Data ID.rsrc` item strings | Generated + compatibility | Generate deterministic `STR#` families from canonical item texts | Both compilers create fresh forks without an annex and preserve existing entry metadata/unrelated resources for imported scenarios. Byte parity and semantic reimport are proof-gated. |
-| `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Native-manifest contract v11 owns the 201-row, four-byte-header, ten-range geometry and checks canonical cardinalities. Both compilers generate it without embedded byte identity. Edited imports recover only spare/reserved words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
+| `Data Custom 1/2/3 BD` | Fully generated semantic core + bounded legacy annex; pass-through when untouched | Generate exact 8,104-byte metadata and zero preserve-only words for fresh custom landlooks | Native-manifest contract v11 owns the 201-row, four-byte-header, ten-range geometry and checks canonical cardinalities. Canonical records expose neither mapstats `spare` nor range-slot `reserved`; both compilers generate the semantic core without embedded byte identity. Edited imports recover only those native words and a post-8,104 tail from the annex. Browser and desktop import produce the same canonical DTO. Custom 1 metadata plus its atlas is runtime-proven. |
 | Main-fork `PICT`, `cicn`, `snd `, `TEXT`, `styl`, map-name `STR#` | Generated/merged | Generate deterministically from managed assets and map records | Existing resource-fork writer is reusable. The ownership proof owns five representative resources (`PICT 306`, `cicn -100`, `snd  321`, and paired `TEXT`/`styl -200`), proves Rust/browser byte parity on both targets, and recovers image/audio previews plus TEXT/styl semantics on reimport. Modern Realmz loads and renders the custom PICT. Unsupported imported resources stay in the annex. |
 | `RLMZ`, `vers`, arbitrary/malformed resources | Pass-through | Omit unless proven required; annex imported entries | Their container format is understood, but payload ownership is not needed for the minimum proof. |
 

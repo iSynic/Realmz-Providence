@@ -384,6 +384,7 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     migrate_legacy_race_override_raw_bytes(&mut value);
     migrate_legacy_caste_override_raw_bytes(&mut value);
     migrate_legacy_scenario_source_bytes(&mut value);
+    migrate_legacy_tile_attribute_compatibility_fields(&mut value);
     migrate_legacy_custom_landlook_source_bytes(&mut value);
     let mut project: ProvidenceProject =
         serde_json::from_value(value).with_json_path(project_path)?;
@@ -628,6 +629,41 @@ fn migrate_legacy_custom_landlook_source_bytes(project: &mut serde_json::Value) 
         if let Some(landlook) = landlook.as_object_mut() {
             landlook.remove("rawBytes");
             landlook.remove("trailingBytes");
+            if let Some(records) = landlook
+                .get_mut("records")
+                .and_then(serde_json::Value::as_array_mut)
+            {
+                for record in records {
+                    if let Some(record) = record.as_object_mut() {
+                        record.remove("spare");
+                    }
+                }
+            }
+            if let Some(slots) = landlook
+                .get_mut("rangeSlots")
+                .and_then(serde_json::Value::as_array_mut)
+            {
+                for slot in slots {
+                    if let Some(slot) = slot.as_object_mut() {
+                        slot.remove("reserved");
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn migrate_legacy_tile_attribute_compatibility_fields(project: &mut serde_json::Value) {
+    let Some(attributes) = project
+        .get_mut("tileAttributes")
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return;
+    };
+    for attribute in attributes {
+        if let Some(attribute) = attribute.as_object_mut() {
+            attribute.remove("spare");
+            attribute.remove("rawByte");
         }
     }
 }
@@ -2873,18 +2909,30 @@ mod tests {
             "rawBytes": vec![0xc7u8; crate::realmz::GLOBAL_MACRO_HOOK_BYTES],
             "authored": false
         });
+        saved["tileAttributes"] = serde_json::json!([{
+            "tile": 0,
+            "landlook": null,
+            "solidType": 2,
+            "movementSoundId": null,
+            "movementCost": null,
+            "flags": ["solid"],
+            "confidence": "source-backed",
+            "source": "Data Solids",
+            "spare": 0x1234,
+            "rawByte": 0xa5
+        }]);
         let mut legacy_custom = crate::realmz::parse_custom_landlook_metadata(
             &vec![0; crate::realmz::CUSTOM_LANDLOOK_METADATA_BYTES + 3],
             6,
             "Data Custom 1 BD",
         );
         legacy_custom.records[5].sound = 321;
-        legacy_custom.records[5].spare = Some(0x1234);
         legacy_custom.range_slots[0].first_tile = 62;
         legacy_custom.range_slots[0].last_tile = 85;
-        legacy_custom.range_slots[0].reserved = Some(0x2345);
         let mut legacy_custom_value =
             serde_json::to_value(legacy_custom).expect("serialize legacy custom landlook");
+        legacy_custom_value["records"][5]["spare"] = serde_json::json!(0x1234);
+        legacy_custom_value["rangeSlots"][0]["reserved"] = serde_json::json!(0x2345);
         legacy_custom_value["rawBytes"] = serde_json::json!(vec![
             0xa5u8;
             crate::realmz::CUSTOM_LANDLOOK_METADATA_BYTES
@@ -2983,13 +3031,9 @@ mod tests {
                 .divinity_string_sound_id,
             Some(-303)
         );
+        assert_eq!(opened.tile_attributes[0].solid_type, Some(2));
         assert_eq!(opened.custom_landlooks[0].records[5].sound, 321);
-        assert_eq!(opened.custom_landlooks[0].records[5].spare, Some(0x1234));
         assert_eq!(opened.custom_landlooks[0].range_slots[0].first_tile, 62);
-        assert_eq!(
-            opened.custom_landlooks[0].range_slots[0].reserved,
-            Some(0x2345)
-        );
         let upgraded: serde_json::Value =
             serde_json::from_slice(&fs::read(&project_path).expect("read upgraded project"))
                 .expect("parse upgraded project");
@@ -3061,9 +3105,17 @@ mod tests {
         assert!(upgraded["scenario"]["supportFile"]
             .get("rawBytes")
             .is_none());
+        assert!(upgraded["tileAttributes"][0].get("spare").is_none());
+        assert!(upgraded["tileAttributes"][0].get("rawByte").is_none());
         assert!(upgraded["customLandlooks"][0].get("rawBytes").is_none());
         assert!(upgraded["customLandlooks"][0]
             .get("trailingBytes")
+            .is_none());
+        assert!(upgraded["customLandlooks"][0]["records"][5]
+            .get("spare")
+            .is_none());
+        assert!(upgraded["customLandlooks"][0]["rangeSlots"][0]
+            .get("reserved")
             .is_none());
         assert_eq!(
             upgraded["scenario"]["contactInfo"]["scenarioName"],

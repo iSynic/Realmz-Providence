@@ -595,6 +595,7 @@ export function normalizeBrowserProject(project: Project): Project {
     return canonical;
   });
   project.tileAttributes ??= [];
+  project.tileAttributes = project.tileAttributes.map(withoutLegacyTileAttributeCompatibilityFields);
   project.customLandlooks ??= [];
   project.customLandlooks = project.customLandlooks.map(withoutLegacyCustomLandlookSourceBytes);
   project.messages = (project.messages ?? []).map((record) => {
@@ -684,13 +685,30 @@ function withoutLegacyScenarioShellSourceBytes<T extends NonNullable<Project["sc
 }
 
 function withoutLegacyCustomLandlookSourceBytes<T extends NonNullable<Project["customLandlooks"]>[number]>(landlook: T): T {
-  if (!("rawBytes" in landlook) && !("trailingBytes" in landlook)) return landlook;
   const {
     rawBytes: _legacyRawBytes,
     trailingBytes: _legacyTrailingBytes,
     ...canonical
   } = landlook as T & { rawBytes?: number[]; trailingBytes?: number[] };
-  return canonical as T;
+  return {
+    ...canonical,
+    records: canonical.records.map((record) => {
+      const { spare: _legacySpare, ...semantic } = record as typeof record & { spare?: number };
+      return semantic;
+    }),
+    rangeSlots: canonical.rangeSlots.map((slot) => {
+      const { reserved: _legacyReserved, ...semantic } = slot as typeof slot & { reserved?: number };
+      return semantic;
+    })
+  } as T;
+}
+
+function withoutLegacyTileAttributeCompatibilityFields<T extends Project["tileAttributes"][number]>(attribute: T): T {
+  const { spare: _legacySpare, rawByte: _legacyRawByte, ...semantic } = attribute as T & {
+    spare?: number | null;
+    rawByte?: number | null;
+  };
+  return semantic as T;
 }
 
 function withoutLegacySingletonRawBytes<T extends object>(record: T): T {

@@ -24,7 +24,6 @@ pub(in crate::realmz) fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttribu
             blocks_los: None,
             fly_float_required: None,
             forest_type: None,
-            spare: None,
             combat_build: Vec::new(),
             clear_land_id: None,
             base_tile: None,
@@ -38,7 +37,6 @@ pub(in crate::realmz) fn parse_tile_attributes(buffer: &[u8]) -> Vec<TileAttribu
             confidence: TileAttributeConfidence::SourceBacked,
             source_kind: TileAttributeSourceKind::DataSolids,
             source: "Data Solids".to_string(),
-            raw_byte: Some(*solid_type),
         })
         .collect()
 }
@@ -109,10 +107,8 @@ mod tests {
     fn data_solids_mutates_only_selected_special_tile_solidity() {
         let input = vec![0u8; TILE_SOLIDS_BYTES];
         let mut profiles = parse_tile_attributes(&input);
-        profiles[190].raw_byte = Some(0xa5);
         profiles[190].solid_type = Some(1);
         profiles[190].flags = vec![TileAttributeFlag::Solid];
-        profiles[191].raw_byte = Some(0xa5);
         profiles[191].solid_type = None;
 
         let output = write_tile_solids(&profiles).unwrap();

@@ -66,8 +66,7 @@ try {
     flags: ["solid"],
     confidence: "source-backed",
     sourceKind: "data-solids",
-    source: "Data Solids",
-    rawByte: null
+    source: "Data Solids"
   });
   const landLayoutCells = new Array(8 * 16).fill(0);
   landLayoutCells[0] = -1;
