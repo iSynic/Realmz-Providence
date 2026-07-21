@@ -12,7 +12,8 @@ import { defaultRuleNames } from "../ruleNames";
 import { normalizeProjectContract, PROJECT_SCHEMA_VERSION, requiresCompatibilityAnnex } from "../projectOrigin";
 import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
-import { legacyOutdoorMusicManagedAsset, legacyOutdoorMusicSlot, loadOutdoorMusicReplacement } from "../musicCompatibility";
+import { inspectStandardMod } from "../standardMod";
+import { legacyOutdoorMusicManagedAsset, legacyOutdoorMusicSlot, loadOutdoorMusicReplacement, scenarioMusicManagedAsset, scenarioMusicSlot } from "../musicCompatibility";
 
 const EMPTY_TARGET_COMPATIBILITY = { blockers: [], warnings: [], notes: [] };
 const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
@@ -154,7 +155,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
   const scenarioName = source.name || "Untitled Scenario";
   const projectPath = `browser://${scenarioName}.providence`;
   const scenarioShell = parseImportedScenarioShell(scenarioName, files) ?? defaultScenarioShell(scenarioName);
-  const legacyOutdoorMusicAssets = await importLegacyOutdoorMusicAssets(rawSources);
+  const scenarioMusicAssets = await importScenarioMusicAssets(rawSources);
   const project: Project = {
     schemaVersion: PROJECT_SCHEMA_VERSION,
     appVersion: "browser-preview",
@@ -205,7 +206,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     raceOverrides: parsed.raceOverrides,
     casteOverrides: parsed.casteOverrides,
     ruleNames: parseBrowserRuleNames(files),
-    assets: legacyOutdoorMusicAssets,
+    assets: scenarioMusicAssets,
     assetCatalog: parsed.assetCatalog,
     editorMetadata: { displayNames: {}, tilePalettes: [], mapStamps: [], questThreads: [], questContextSources: [], removedScenarioResources: [] },
     records: parsed.records,
@@ -218,14 +219,47 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
   return project;
 }
 
-async function importLegacyOutdoorMusicAssets(rawSources: BrowserRawSourceSnapshot) {
-  const slots = new Set(rawSources.files
-    .map((file) => ({ file, slot: legacyOutdoorMusicSlot(file.name, file.bytes, file.sha256) }))
-    .filter((entry): entry is { file: typeof rawSources.files[number]; slot: number } => entry.slot !== null)
-    .map(({ slot }) => slot));
-  if (slots.size === 0) return [];
-  const replacement = await loadOutdoorMusicReplacement();
-  return Array.from(slots).sort((a, b) => a - b).map((slot) => legacyOutdoorMusicManagedAsset(slot, replacement));
+async function importScenarioMusicAssets(rawSources: BrowserRawSourceSnapshot) {
+  const assets: Project["assets"] = [];
+  const importedSlots = new Set<number>();
+  let outdoorMusicReplacement: Uint8Array | null = null;
+  for (const file of rawSources.files) {
+    const slot = scenarioMusicSlot(file.name);
+    if (slot === null || importedSlots.has(slot)) continue;
+    if (legacyOutdoorMusicSlot(file.name, file.bytes, file.sha256) === slot) {
+      outdoorMusicReplacement ??= await loadOutdoorMusicReplacement();
+      assets.push(legacyOutdoorMusicManagedAsset(slot, outdoorMusicReplacement));
+      importedSlots.add(slot);
+      continue;
+    }
+    try {
+      const module = inspectStandardMod(file.bytesData);
+      assets.push(scenarioMusicManagedAsset({
+        slot,
+        bytes: file.bytesData,
+        sha256: file.sha256,
+        label: module.title || file.name,
+        provenance: `imported ${module.channels}-channel standard MOD from ${file.name}`
+      }));
+      importedSlots.add(slot);
+    } catch {
+      // Unsupported legacy music stays solely in the compatibility annex.
+    }
+  }
+  return assets.sort((a, b) => (a.scenarioMusicSlot ?? 0) - (b.scenarioMusicSlot ?? 0));
+}
+
+export async function hydrateBrowserScenarioMusicAssets(project: Project, rawSources: BrowserRawSourceSnapshot | null | undefined) {
+  if (!rawSources) return project;
+  const occupiedSlots = new Set(project.assets
+    .filter((asset) => asset.kind === "music")
+    .map((asset) => asset.scenarioMusicSlot));
+  const additions = (await importScenarioMusicAssets(rawSources))
+    .filter((asset) => !occupiedSlots.has(asset.scenarioMusicSlot));
+  if (additions.length === 0) return project;
+  const hydrated = { ...project, assets: [...project.assets, ...additions] };
+  hydrated.validation = validateBrowserProject(hydrated);
+  return hydrated;
 }
 
 export function loadBrowserScenarioResourcePreview(project: Project | null | undefined, resourceType: string, resourceId: number) {
@@ -574,7 +608,10 @@ function i32At(buffer: Uint8Array, offset: number) {
 
 export async function openBrowserProject(source: BrowserProjectSource): Promise<Project> {
   const { projectJson, rawSources } = await readProjectPackage(source);
-  const project = normalizeBrowserProject(JSON.parse(projectJson) as Project);
+  const project = await hydrateBrowserScenarioMusicAssets(
+    normalizeBrowserProject(JSON.parse(projectJson) as Project),
+    rawSources
+  );
   if (rawSources) registerBrowserSourceSnapshot(project, rawSources);
   return project;
 }

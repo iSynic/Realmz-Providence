@@ -17,6 +17,7 @@
 @import "./editor/styles/map-shared.css";
 @import "./editor/styles/assets.css";
 @import "./editor/styles/asset-preview-controls.css";
+@import "./editor/styles/mod-music-player.css";
 @import "./editor/styles/asset-reference-icon-dialog.css";
 @import "./editor/styles/script-surfaces.css";
 @import "./editor/styles/export.css";

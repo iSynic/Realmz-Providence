@@ -301,7 +301,7 @@ fn import_scenario_with_name(
     import_tile_atlases(&source_path, &assets_dir, &mut project)?;
     import_icon_overlays(&source_path, &assets_dir, &mut project)?;
     import_sound_assets(&source_path, &assets_dir, &mut project)?;
-    import_legacy_outdoor_music_assets(&source_path, project_dir, &mut project)?;
+    import_scenario_music_assets(&source_path, project_dir, &mut project)?;
     build_semantic_schema_from_imported_sources(project_dir, &mut project)?;
     project.validation = crate::validation::validate_project(&project);
     save_project(project_dir, &project)?;
@@ -360,7 +360,7 @@ fn hydrate_imported_compatibility_state(
         refresh_custom_tile_atlases(project_dir, project)?;
         import_icon_overlays(&raw_dir, &project_dir.join(ASSETS_DIR), project)?;
         import_sound_assets(&raw_dir, &project_dir.join(ASSETS_DIR), project)?;
-        import_legacy_outdoor_music_assets(&raw_dir, project_dir, project)?;
+        import_scenario_music_assets(&raw_dir, project_dir, project)?;
     }
     Ok(())
 }
@@ -2220,7 +2220,7 @@ fn upsert_scenario_sound_asset(
     });
 }
 
-fn import_legacy_outdoor_music_assets(
+fn import_scenario_music_assets(
     source_path: &Path,
     project_dir: &Path,
     project: &mut ProvidenceProject,
@@ -2237,25 +2237,51 @@ fn import_legacy_outdoor_music_assets(
             continue;
         }
         let source_bytes = fs::read(&source_file).with_path(&source_file)?;
-        if crate::music_compatibility::legacy_outdoor_music_slot(&source_name, &source_bytes)
-            != Some(slot)
-        {
-            continue;
-        }
-
-        let replacement = crate::music_compatibility::replacement_bytes();
-        crate::media_assets::validate_standard_mod(replacement)?;
-        let token = format!("legacy-outdoor-music-{slot}");
+        let legacy_outdoor_music =
+            crate::music_compatibility::legacy_outdoor_music_slot(&source_name, &source_bytes)
+                == Some(slot);
+        let (payload, id, label, token, provenance, warnings) = if legacy_outdoor_music {
+            let replacement = crate::music_compatibility::replacement_bytes();
+            crate::media_assets::validate_standard_mod(replacement)?;
+            (
+                replacement,
+                format!("asset:legacy-outdoor-music:{slot}"),
+                "Outdoor Music".to_string(),
+                format!("legacy-outdoor-music-{slot}"),
+                format!(
+                    "legacy Outdoor Music compatibility alias (source {} bytes, MD5 {})",
+                    crate::music_compatibility::LEGACY_OUTDOOR_MUSIC_BYTES,
+                    crate::music_compatibility::LEGACY_OUTDOOR_MUSIC_MD5
+                ),
+                vec![
+                    "The imported legacy MADG payload matched Realmz's known Outdoor Music fingerprint and was replaced with the bundled standard MOD compatibility version."
+                        .to_string(),
+                ],
+            )
+        } else {
+            if crate::media_assets::validate_standard_mod(&source_bytes).is_err() {
+                continue;
+            }
+            let label = standard_mod_title(&source_bytes).unwrap_or_else(|| source_name.clone());
+            (
+                source_bytes.as_slice(),
+                format!("asset:scenario-music:{slot}"),
+                label,
+                format!("scenario-music-{slot}"),
+                format!("imported standard MOD from {source_name}"),
+                Vec::new(),
+            )
+        };
         let asset_dir = project_dir.join(ASSETS_DIR).join("media").join(&token);
         fs::create_dir_all(&asset_dir).with_path(&asset_dir)?;
         for file_name in ["original.mod", "preview.mod", "resource_MOD.bin"] {
             let path = asset_dir.join(file_name);
-            fs::write(&path, replacement).with_path(&path)?;
+            fs::write(&path, payload).with_path(&path)?;
         }
         let relative_dir = format!("{ASSETS_DIR}/media/{token}");
         project.assets.push(ManagedAsset {
-            id: format!("asset:legacy-outdoor-music:{slot}"),
-            label: "Outdoor Music".to_string(),
+            id,
+            label,
             kind: ManagedAssetKind::Music,
             resource_type: "MOD ".to_string(),
             resource_id: i16::from(slot),
@@ -2265,8 +2291,8 @@ fn import_legacy_outdoor_music_assets(
             preview_path: format!("{relative_dir}/preview.mod"),
             resource_path: format!("{relative_dir}/resource_MOD.bin"),
             mime_type: "audio/x-mod".to_string(),
-            bytes: replacement.len() as u64,
-            sha256: crate::music_compatibility::OUTDOOR_MUSIC_REPLACEMENT_SHA256.to_string(),
+            bytes: payload.len() as u64,
+            sha256: sha256_hex(payload),
             width: None,
             height: None,
             duration_ms: None,
@@ -2274,11 +2300,7 @@ fn import_legacy_outdoor_music_assets(
             channels: None,
             export_state: ManagedAssetExportState::Ready,
             library_scope: Some(ManagedAssetLibraryScope::Scenario),
-            provenance: format!(
-                "legacy Outdoor Music compatibility alias (source {} bytes, MD5 {})",
-                crate::music_compatibility::LEGACY_OUTDOOR_MUSIC_BYTES,
-                crate::music_compatibility::LEGACY_OUTDOOR_MUSIC_MD5
-            ),
+            provenance,
             linked_entity: Some(format!("scenario-music:{slot}")),
             conversion: Some(ManagedAssetConversion {
                 target: AssetImportTarget::Music,
@@ -2294,14 +2316,18 @@ fn import_legacy_outdoor_music_assets(
                 source_channels: None,
                 final_width: None,
                 final_height: None,
-                warnings: vec![
-                    "The imported legacy MADG payload matched Realmz's known Outdoor Music fingerprint and was replaced with the bundled standard MOD compatibility version."
-                        .to_string(),
-                ],
+                warnings,
             }),
         });
     }
     Ok(())
+}
+
+fn standard_mod_title(bytes: &[u8]) -> Option<String> {
+    let title = String::from_utf8_lossy(bytes.get(..20)?)
+        .trim_matches(|value: char| value == '\0' || value.is_whitespace())
+        .to_string();
+    (!title.is_empty()).then_some(title)
 }
 
 fn map_icon_ids(maps: &[MapEntity]) -> BTreeSet<i16> {
@@ -2623,6 +2649,15 @@ pub fn project_file_path(project_dir: impl AsRef<Path>) -> PathBuf {
 mod tests {
     use super::*;
 
+    fn standard_mod_fixture(signature: &[u8; 4], channels: usize, title: &str) -> Vec<u8> {
+        let mut bytes = vec![0; 1084 + 64 * channels * 4];
+        let title_bytes = title.as_bytes();
+        bytes[..title_bytes.len().min(20)].copy_from_slice(&title_bytes[..title_bytes.len().min(20)]);
+        bytes[950] = 1;
+        bytes[1080..1084].copy_from_slice(signature);
+        bytes
+    }
+
     fn flat_file_bytes(dir: &Path) -> BTreeMap<String, Vec<u8>> {
         fs::read_dir(dir)
             .expect("read export directory")
@@ -2671,6 +2706,31 @@ mod tests {
         assert!(is_scenario_support_data_file("Scenario", &[0; 600]));
         assert!(!is_scenario_support_data_file("Scenario", &[0; 599]));
         assert!(!is_scenario_support_data_file("Scenario.rsrc", &[0; 600]));
+    }
+
+    #[test]
+    fn imports_standard_eight_channel_scenario_music_without_changing_its_bytes() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source_dir = temp.path().join("Scenario Source");
+        let project_dir = temp.path().join("Imported.providence");
+        fs::create_dir_all(&source_dir).expect("create source");
+        let module = standard_mod_fixture(b"8CHN", 8, "Approaching Antares");
+        fs::write(source_dir.join("Custom 1 Music"), &module).expect("write module");
+        let mut project = create_project("Imported".to_string(), &project_dir).expect("project");
+
+        import_scenario_music_assets(&source_dir, &project_dir, &mut project)
+            .expect("import scenario music");
+
+        let asset = project.assets.first().expect("managed music asset");
+        assert_eq!(asset.kind, ManagedAssetKind::Music);
+        assert_eq!(asset.label, "Approaching Antares");
+        assert_eq!(asset.scenario_music_slot, Some(1));
+        assert_eq!(asset.file_name, "Custom 1 Music");
+        assert_eq!(asset.sha256, sha256_hex(&module));
+        assert_eq!(
+            fs::read(project_dir.join(&asset.resource_path)).expect("managed module"),
+            module
+        );
     }
 
     #[test]

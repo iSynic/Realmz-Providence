@@ -26,6 +26,7 @@ import {
 import { AssetImportBar } from "./AssetImportDialog";
 import { COPY_TO_SCENARIO_ASSETS_LABEL, type AssetSection, referenceAssetOwnershipGuidance, resourceScopeHelp } from "./assetOwnership";
 import { authoringLibraryCollection } from "../../assetLibraryClassification";
+import { managedAssetKindForType } from "../../assetKind";
 import { ModMusicPlayer } from "../../components/ModMusicPlayer";
 
 export type { AssetSection } from "./assetOwnership";
@@ -658,7 +659,7 @@ export function LibraryAssetCard({
       }}
       >
         <AssetPreview
-          kind={assetKind(asset.type)}
+          kind={managedAssetKindForType(asset.type)}
           label={asset.label}
           preview={preview.dataUrl}
           status={preview.status}
@@ -688,7 +689,7 @@ export function LibraryAssetCard({
   return (
     <article ref={previewRef} className={cardClass}>
       <AssetPreview
-        kind={assetKind(asset.type)}
+        kind={managedAssetKindForType(asset.type)}
         label={asset.label}
         preview={preview.dataUrl}
         status={preview.status}
@@ -1970,16 +1971,6 @@ export function diagnosticPreviewText(diagnostic: string | ResourcePreviewDiagno
 
 export function previewDiagnostic(code: string, message: string, decoder: string): ResourcePreviewDiagnostic {
   return { severity: "warning", code, message, decoder };
-}
-
-export function assetKind(type: string): ManagedAssetKind {
-  if (type === "sound") return "sound";
-  if (type === "music") return "music";
-  if (type === "special-land-tile") return "special-land-tile";
-  if (type === "icon" || type.includes("icon")) return "icon";
-  if (type === "picture") return "picture";
-  if (type === "text" || type.includes("text") || type.includes("string")) return "text";
-  return "other";
 }
 
 export function formatBytes(value: number) {

@@ -3,11 +3,11 @@ import { loadBrowserBundledLibraryAssetPreview } from "../../browser/library";
 import { ENTITY_TYPE_LABELS } from "../../constants";
 import type { DirectRecordRow } from "../../directRecordIndex";
 import { isDraftEntity } from "../../libraryDrafts";
+import { managedAssetKindForType } from "../../assetKind";
 import type {
   LibraryAsset,
   LibraryCatalog,
   LibraryEntity,
-  ManagedAssetKind,
   SemanticEntity
 } from "../../types";
 import { ScrollArea } from "../../ui";
@@ -124,7 +124,7 @@ export function DomainDetailPanel({
 }
 
 function DomainAssetPreview({ asset, preview }: { asset: LibraryAsset; preview: string | null }) {
-  const kind = assetKind(asset.type);
+  const kind = managedAssetKindForType(asset.type);
   return (
     <section className="domain-asset-preview">
       {preview && kind === "sound" ? (
@@ -186,15 +186,6 @@ function findLibraryAssetForDetail(detail: { id: string; label?: string; type: s
     ) ?? null;
   }
   return catalog.assets.find((asset) => asset.id === detail.id || (detail.label != null && asset.label === detail.label)) ?? null;
-}
-
-function assetKind(type: string): ManagedAssetKind {
-  if (type === "sound") return "sound";
-  if (type === "music") return "music";
-  if (type === "icon" || type.includes("icon")) return "icon";
-  if (type === "picture") return "picture";
-  if (type === "text") return "text";
-  return "other";
 }
 
 function formatSummaryValue(value: unknown) {

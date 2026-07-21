@@ -1,5 +1,5 @@
 import { Project } from "../types";
-import { browserSourceSnapshotForProject, normalizeBrowserProject, registerBrowserSourceSnapshot } from "./project";
+import { browserSourceSnapshotForProject, hydrateBrowserScenarioMusicAssets, normalizeBrowserProject, registerBrowserSourceSnapshot } from "./project";
 import { BrowserRawSourceSnapshot } from "./fsAccess";
 
 const DB_NAME = "realmz-providence-browser-projects";
@@ -76,7 +76,7 @@ export async function loadActiveBrowserProject(options: { includeSuppressed?: bo
   const snapshot = await getSnapshot(db, key);
   db.close();
   if (!snapshot) return null;
-  const project = normalizeBrowserProject(snapshot.project);
+  const project = await hydrateBrowserScenarioMusicAssets(normalizeBrowserProject(snapshot.project), snapshot.rawSources);
   registerBrowserSourceSnapshot(project, snapshot.rawSources);
   return {
     ...snapshot,

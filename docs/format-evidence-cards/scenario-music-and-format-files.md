@@ -12,6 +12,7 @@ Providence manages authored standard MOD scenario music without confusing it wit
 | Realmz-Castle/realmz PR `#306` | The slots are playlists `15`, `16`, and `17`, selected by custom landlooks whose final picture IDs are `6`, `7`, and `8`. |
 | Realmz-Castle/realmz PR `#306` | Authored scenario music accepts standard MOD modules. MAD/MADG, MIDI, S3M, XM, IT, MTM, MED, and PlayerPRO formats are not part of the authoring contract. |
 | Realmz-Castle/realmz PR `#306` | The known 60,224-byte legacy MADG Outdoor Music blob (MD5 `1A2E7CC637BCF082D21204E2DA1028B2`) redirects to a bundled standard MOD replacement. Providence mirrors that exact compatibility alias without adding general MADG support. |
+| `Trouble in the Sword Lands/Custom 1 Music` | 241,158-byte `8CHN` standard MOD titled `Approaching Antares` (SHA-256 `b26e7cc22a19fab1cf6e345f370c76f072b7a73c0435caa533f63e2418e3e53f`). It is canonical scenario music, distinct from that scenario's MADG `Custom 2 Music`. |
 
 ## Byte Layout Notes
 
@@ -21,6 +22,7 @@ Providence manages authored standard MOD scenario music without confusing it wit
 - The current authored contract has exactly three slots: `Custom 1 Music`, `Custom 2 Music`, and `Custom 3 Music`.
 - Providence stores each as a managed `music` asset with an explicit `scenarioMusicSlot` from 1 through 3.
 - Import validates a standard 31-sample MOD structure. The original module bytes remain canonical and are written unchanged to native Mac and Windows scenario folders.
+- Imported `Custom 1 Music` through `Custom 3 Music` files that pass that validation become canonical managed music assets. Supported signatures include common four-channel and multichannel forms such as `M.K.` and `8CHN`.
 - Assets previews MOD files through libopenmpt. Preview support does not broaden the native export contract to the other tracker formats libopenmpt can decode.
 - Providence's protected built-in Custom Library includes the PR #306 standard MOD replacement for Outdoor Music.
 - The replacement is kept byte-identical to PR #306. Its sample headers overstate the trailing payload by four bytes, so Providence permits that discrepancy only for the replacement's exact SHA-256; other truncated MOD files still fail validation.

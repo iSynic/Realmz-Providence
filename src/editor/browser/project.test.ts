@@ -5,6 +5,7 @@ import { defaultGlobalMacroHooks, emptyCasteOverride, emptyRaceOverride, emptySp
 import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
+  importBrowserScenario,
   normalizeBrowserProject,
   registerBrowserSourceSnapshot,
   validateBrowserProject
@@ -13,6 +14,26 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 
 describe("browser project native manifest validation", () => {
+  it("promotes imported eight-channel Custom music as a canonical MOD asset", async () => {
+    const module = standardModFixture("8CHN", 8, "Approaching Antares");
+    const project = await importBrowserScenario({
+      kind: "file-selection",
+      name: "Trouble in the Sword Lands",
+      files: [new File([module], "Custom 1 Music", { type: "audio/x-mod" })]
+    });
+
+    expect(project.assets).toHaveLength(1);
+    expect(project.assets[0]).toMatchObject({
+      label: "Approaching Antares",
+      kind: "music",
+      resourceType: "MOD ",
+      scenarioMusicSlot: 1,
+      fileName: "Custom 1 Music",
+      bytes: module.byteLength
+    });
+    expect(project.assets[0].resourcePath).toMatch(/^data:audio\/x-mod;base64,/);
+  });
+
   it("drops legacy landlook compatibility state during normalization", () => {
     const project = createBrowserProject("Legacy custom landlook bytes");
     const parsed = parseScenarioBuffers(new Map([
@@ -1170,4 +1191,12 @@ function testManagedAsset(id: string, resourceType: string, resourceId: number, 
     provenance: "validation fixture",
     linkedEntity: null
   };
+}
+
+function standardModFixture(signature: string, channels: number, title: string) {
+  const bytes = new Uint8Array(1084 + 64 * channels * 4);
+  bytes.set(new TextEncoder().encode(title).subarray(0, 20));
+  bytes[950] = 1;
+  bytes.set(new TextEncoder().encode(signature), 1080);
+  return bytes;
 }

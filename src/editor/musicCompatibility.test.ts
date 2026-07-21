@@ -3,14 +3,37 @@ import {
   LEGACY_OUTDOOR_MUSIC_BYTES,
   LEGACY_OUTDOOR_MUSIC_SHA256,
   legacyOutdoorMusicManagedAsset,
-  legacyOutdoorMusicSlot
+  legacyOutdoorMusicSlot,
+  scenarioMusicManagedAsset,
+  scenarioMusicSlot
 } from "./musicCompatibility";
 
 describe("legacy Outdoor Music compatibility", () => {
   it("recognizes only the exact known fingerprint in a Classic custom-music slot", () => {
+    expect(scenarioMusicSlot("Custom 1 Music")).toBe(1);
+    expect(scenarioMusicSlot("Custom 4 Music")).toBeNull();
     expect(legacyOutdoorMusicSlot("Custom 2 Music", LEGACY_OUTDOOR_MUSIC_BYTES, LEGACY_OUTDOOR_MUSIC_SHA256)).toBe(2);
     expect(legacyOutdoorMusicSlot("Custom 2 Music", LEGACY_OUTDOOR_MUSIC_BYTES - 1, LEGACY_OUTDOOR_MUSIC_SHA256)).toBeNull();
     expect(legacyOutdoorMusicSlot("Outdoor Music", LEGACY_OUTDOOR_MUSIC_BYTES, LEGACY_OUTDOOR_MUSIC_SHA256)).toBeNull();
+  });
+
+  it("projects an imported standard MOD without changing its payload", () => {
+    const module = new Uint8Array([5, 6, 7, 8]);
+    const asset = scenarioMusicManagedAsset({
+      slot: 1,
+      bytes: module,
+      sha256: "fixture-sha",
+      label: "Approaching Antares"
+    });
+    expect(asset).toMatchObject({
+      id: "asset:scenario-music:1",
+      label: "Approaching Antares",
+      kind: "music",
+      scenarioMusicSlot: 1,
+      fileName: "Custom 1 Music",
+      sha256: "fixture-sha"
+    });
+    expect(asset.resourcePath).toBe("data:audio/x-mod;base64,BQYHCA==");
   });
 
   it("projects the replacement as canonical standard MOD scenario music", () => {

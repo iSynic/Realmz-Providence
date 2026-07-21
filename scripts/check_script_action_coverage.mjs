@@ -921,7 +921,7 @@ if (!/buildBrowserSemanticSchemaForProject\(\s*project\b/.test(appBootstrap)) {
   failures.push("App bootstrap is missing Scripts semantic mapping support: buildBrowserSemanticSchemaForProject(project)");
 }
 
-const semanticTriggersForMap = semanticGraph.match(/export function semanticTriggersForMap[\s\S]*?\n}\n/);
+const semanticTriggersForMap = semanticGraph.match(/export function semanticTriggersForMap[\s\S]*?\n}\r?\n/);
 if (!semanticTriggersForMap) {
   failures.push("Semantic graph is missing semanticTriggersForMap.");
 } else {

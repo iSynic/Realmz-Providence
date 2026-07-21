@@ -7,10 +7,15 @@ export const OUTDOOR_MUSIC_REPLACEMENT_SHA256 = "f34da5b612972af0d6da8c000a1edc4
 export const OUTDOOR_MUSIC_REPLACEMENT_BYTES = 62_054;
 export const OUTDOOR_MUSIC_REPLACEMENT_PATH = "/bundled-libraries/providence/Outdoor%20Music.mod";
 
-export function legacyOutdoorMusicSlot(name: string, bytes: number, sha256: string) {
+export function scenarioMusicSlot(name: string) {
   const match = /^Custom ([1-3]) Music$/i.exec(name.trim());
-  if (!match || bytes !== LEGACY_OUTDOOR_MUSIC_BYTES || sha256.toLowerCase() !== LEGACY_OUTDOOR_MUSIC_SHA256) return null;
-  return Number(match[1]);
+  return match ? Number(match[1]) : null;
+}
+
+export function legacyOutdoorMusicSlot(name: string, bytes: number, sha256: string) {
+  const slot = scenarioMusicSlot(name);
+  if (slot === null || bytes !== LEGACY_OUTDOOR_MUSIC_BYTES || sha256.toLowerCase() !== LEGACY_OUTDOOR_MUSIC_SHA256) return null;
+  return slot;
 }
 
 export async function loadOutdoorMusicReplacement() {
@@ -35,10 +40,38 @@ export async function isOutdoorMusicReplacement(bytes: Uint8Array) {
 }
 
 export function legacyOutdoorMusicManagedAsset(slot: number, replacement: Uint8Array): ManagedAsset {
-  const payload = `data:audio/x-mod;base64,${bytesToBase64(replacement)}`;
-  return {
-    id: `asset:legacy-outdoor-music:${slot}`,
+  return scenarioMusicManagedAsset({
+    slot,
+    bytes: replacement,
+    sha256: OUTDOOR_MUSIC_REPLACEMENT_SHA256,
     label: "Outdoor Music",
+    id: `asset:legacy-outdoor-music:${slot}`,
+    provenance: `legacy Outdoor Music compatibility alias (source ${LEGACY_OUTDOOR_MUSIC_BYTES} bytes, MD5 ${LEGACY_OUTDOOR_MUSIC_MD5})`,
+    warnings: ["The imported legacy MADG payload matched Realmz's known Outdoor Music fingerprint and was replaced with the bundled standard MOD compatibility version."]
+  });
+}
+
+export function scenarioMusicManagedAsset({
+  slot,
+  bytes,
+  sha256,
+  label,
+  id = `asset:scenario-music:${slot}`,
+  provenance = `imported from Custom ${slot} Music`,
+  warnings = []
+}: {
+  slot: number;
+  bytes: Uint8Array;
+  sha256: string;
+  label: string;
+  id?: string;
+  provenance?: string;
+  warnings?: string[];
+}): ManagedAsset {
+  const payload = `data:audio/x-mod;base64,${bytesToBase64(bytes)}`;
+  return {
+    id,
+    label,
     kind: "music",
     resourceType: "MOD ",
     resourceId: slot,
@@ -48,8 +81,8 @@ export function legacyOutdoorMusicManagedAsset(slot: number, replacement: Uint8A
     previewPath: payload,
     resourcePath: payload,
     mimeType: "audio/x-mod",
-    bytes: replacement.byteLength,
-    sha256: OUTDOOR_MUSIC_REPLACEMENT_SHA256,
+    bytes: bytes.byteLength,
+    sha256,
     width: null,
     height: null,
     durationMs: null,
@@ -57,7 +90,7 @@ export function legacyOutdoorMusicManagedAsset(slot: number, replacement: Uint8A
     channels: null,
     exportState: "ready",
     libraryScope: "scenario",
-    provenance: `legacy Outdoor Music compatibility alias (source ${LEGACY_OUTDOOR_MUSIC_BYTES} bytes, MD5 ${LEGACY_OUTDOOR_MUSIC_MD5})`,
+    provenance,
     linkedEntity: `scenario-music:${slot}`,
     conversion: {
       target: "music",
@@ -73,7 +106,7 @@ export function legacyOutdoorMusicManagedAsset(slot: number, replacement: Uint8A
       sourceChannels: null,
       finalWidth: null,
       finalHeight: null,
-      warnings: ["The imported legacy MADG payload matched Realmz's known Outdoor Music fingerprint and was replaced with the bundled standard MOD compatibility version."]
+      warnings
     }
   };
 }
