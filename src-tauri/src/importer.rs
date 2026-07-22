@@ -2461,67 +2461,14 @@ fn atlas_source_path(source_path: &Path, tileset: &TilesetAsset) -> Option<PathB
 }
 
 fn bundled_realmz_reference_roots() -> Vec<PathBuf> {
-    let mut roots = Vec::new();
-    roots.push(
-        Path::new("public")
-            .join("bundled-libraries")
-            .join("realmz-reference"),
-    );
-    roots.push(
-        Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("..")
-            .join("public")
-            .join("bundled-libraries")
-            .join("realmz-reference"),
-    );
-    roots.push(Path::new("bundled-libraries").join("realmz-reference"));
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            roots.push(parent.join("bundled-libraries").join("realmz-reference"));
-            roots.push(
-                parent
-                    .join("resources")
-                    .join("bundled-libraries")
-                    .join("realmz-reference"),
-            );
-        }
-    }
-    let mut seen = BTreeSet::new();
-    roots
-        .into_iter()
-        .filter(|path| seen.insert(path.to_string_lossy().to_string()))
-        .collect()
+    crate::realmz_reference::roots()
 }
 
 fn bundled_reference_resource_ids(
     resource_type: &str,
     wanted: &BTreeSet<i16>,
 ) -> Result<BTreeSet<i16>> {
-    let mut found = BTreeSet::new();
-    if wanted.is_empty() {
-        return Ok(found);
-    }
-    for root in bundled_realmz_reference_roots() {
-        if !root.is_dir() {
-            continue;
-        }
-        for entry in WalkDir::new(&root)
-            .into_iter()
-            .filter_map(std::result::Result::ok)
-            .filter(|entry| entry.file_type().is_file())
-        {
-            let bytes = fs::read(entry.path()).with_path(entry.path())?;
-            for resource in crate::resource_fork::parse_resource_fork_entries(&bytes) {
-                if resource.resource_type == resource_type && wanted.contains(&resource.id) {
-                    found.insert(resource.id);
-                }
-            }
-            if found.len() == wanted.len() {
-                return Ok(found);
-            }
-        }
-    }
-    Ok(found)
+    crate::realmz_reference::resource_ids(resource_type, wanted)
 }
 
 enum CustomAtlasImport {

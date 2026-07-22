@@ -4,7 +4,9 @@ use crate::project::{
     Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
     MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioSupportFile, TriggerRecord,
 };
-use crate::resource_fork::{encode_snd_resource, PcmAudioPayload};
+use crate::resource_fork::{
+    encode_cicn_resource, encode_snd_resource, PcmAudioPayload, RgbaImagePayload,
+};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -318,7 +320,12 @@ fn preserves_negative_special_land_tile_ids_outside_the_v1_icon_catalog() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("special-tile.providence");
     let mut project = create_project("Special tile".to_string(), &project_dir).unwrap();
-    let payload = b"canonical-cicn";
+    let payload = encode_cicn_resource(&RgbaImagePayload {
+        width: 32,
+        height: 32,
+        rgba_base64: STANDARD.encode(vec![255_u8; 32 * 32 * 4]),
+    })
+    .unwrap();
     project.assets.push(
         serde_json::from_value(json!({
             "id": "asset:special-land-tile:-100",
@@ -331,7 +338,7 @@ fn preserves_negative_special_land_tile_ids_outside_the_v1_icon_catalog() {
             "previewPath": "",
             "resourcePath": format!(
                 "data:application/octet-stream;base64,{}",
-                STANDARD.encode(payload)
+                STANDARD.encode(&payload)
             ),
             "mimeType": "application/octet-stream",
             "bytes": payload.len(),
@@ -361,6 +368,37 @@ fn preserves_negative_special_land_tile_ids_outside_the_v1_icon_catalog() {
     assert!(special["payloadPath"]
         .as_str()
         .is_some_and(|path| path.starts_with("assets/managed/")));
+    assert_eq!(special["runtimeMedia"]["mediaType"], "image/png");
+    assert!(output
+        .join(special["runtimeMedia"]["path"].as_str().unwrap())
+        .is_file());
+}
+
+#[test]
+fn packages_referenced_shared_special_land_tiles_for_remake() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("shared-special-tile.providence");
+    let mut project = create_project("Shared special tile".to_string(), &project_dir).unwrap();
+    project.maps[0].tiles[0] = -1099;
+
+    let output = workspace.path().join("shared-special-tile-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let assets: Value =
+        serde_json::from_slice(&fs::read(output.join("classic/assets.json")).unwrap()).unwrap();
+
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 2);
+    let special = &assets["catalog"]["specialLandTiles"][0];
+    assert_eq!(special["resourceId"], -99);
+    assert_eq!(special["source"], "Realmz reference resources");
+    assert_eq!(special["payloadEncoding"], "classic-resource-data");
+    assert_eq!(special["runtimeMedia"]["mediaType"], "image/png");
+    for path in [
+        special["payloadPath"].as_str().unwrap(),
+        special["runtimeMedia"]["path"].as_str().unwrap(),
+    ] {
+        assert!(output.join(path).is_file(), "missing packaged {path}");
+    }
 }
 
 #[test]
