@@ -28,7 +28,7 @@ self-contained projection governed by Realmz Remake's
 | Interpreter evidence | dispatcher no-op observations and compact source/record evidence | Compatible additive v1 evidence. |
 | Managed resources | scenario-scoped `assets[].resourcePath` | Payload is moved to a bundle-relative file; the data URI is never serialized. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
-| Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; v1's validated `icons` collection permits only non-negative IDs. |
+| Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
 
 All nine version-1 JSON documents are emitted. Runtime records retain semantic fields and stable
 Classic identities while `rawBytes`, raw/trailing/reserved compatibility data, editor metadata,
@@ -74,34 +74,30 @@ mean decoded audio. A managed sound that cannot be decoded is rejected rather th
 false Remake-playback claim. Imported catalog-only sounds remain metadata until they are promoted
 to a canonical scenario-managed asset.
 
+Referenced negative land fields are normalized to their signed `cicn` identities without changing
+the authored field values. When a matching scenario-managed payload is absent, the exporter resolves
+only those referenced IDs from Providence's bundled Realmz reference resources. Each resolved icon
+ships as immutable Classic bytes under `assets/managed` and deterministic PNG `runtimeMedia` under
+`media/images`. Missing referenced stock art fails export instead of becoming approximate terrain.
+
 ## Genuine gaps and unresolved runtime path semantics
 
-No format-version change is required for the current projection, but four boundaries remain:
+No format-version change is required for the current projection, but three boundaries remain:
 
 1. Providence schema 5 has only `scenario.shell.landLevel` for the authored start. Bundle v1 can
    represent a dungeon start, but Providence cannot currently author that distinction. Current
    projects therefore export a land start without loss.
-2. Bundle v1 validates `payloadPath` portability but does not define the image encoding expected by
-   each Remake adapter. The current Remake picture adapter searches a campaign's `Splash Images`
-   directory for displayable images and does not directly consume packaged PICT/cicn bytes.
-   Providence labels those files `classic-resource-data` rather than claiming they are PNG or
-   installed Remake assets. Sound is no longer part of this gap: Remake accepts additive
-   `audio/*` runtime media, and Providence derives WAV from supported managed `snd ` resources.
+2. Bundle v1 validates `payloadPath` portability but does not yet provide decoded runtime media for
+   every PICT variant. Providence labels immutable PICT bytes `classic-resource-data` rather than
+   claiming they are PNG or installed Remake assets. Sound and `cicn` are no longer part of this
+   gap: Providence derives WAV and PNG runtime media from supported packaged resources.
 3. Scenario-icon and monster-icon override records are preserved as portable metadata, but their
    legacy embedded resource payload fields are compatibility-annex data and are intentionally
    omitted. Only scenario-scoped `ManagedAsset` payloads are packaged. A canonical asset intended
    for direct Remake use therefore needs to be represented as a managed asset.
-4. Realmz special land tiles deliberately use negative `cicn` resource IDs. Bundle v1 validates
-   the known `assets.catalog.icons[].resourceId` identity as non-negative, so that collection cannot
-   represent them without changing its meaning. Providence retains these identities in managed
-   assets and the additive optional v1 collection `assets.catalog.specialLandTiles`. Existing v1
-   consumers ignore the new catalog while still accepting the bundle; a future adapter can consume
-   it without reinterpreting ordinary icon IDs.
-
-The second boundary is an asset-adapter contract question, not a reason to change record semantics.
-A future compatible addition can define derived Remake-native media alongside the immutable Classic
-payload. If `payloadPath` itself is later required to mean only decoded runtime media, that meaning
-must be clarified or versioned before either producer or consumer changes.
+Negative special-land identities remain in the additive optional v1
+`assets.catalog.specialLandTiles` collection. Existing v1 consumers can ignore that collection
+without reinterpreting ordinary non-negative icon IDs.
 
 ## Usage and verification
 

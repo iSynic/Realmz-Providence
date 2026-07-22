@@ -5,15 +5,16 @@ use crate::project::{
     ManagedAsset, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
     ProvidenceProject, ResourceAsset,
 };
-use crate::resource_preview::sound::decode_snd_to_wav;
+use crate::resource_preview::{inspect_resource_preview, sound::decode_snd_to_wav};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 
 const ASSET_DIR: &str = "assets/managed";
+const RUNTIME_IMAGE_DIR: &str = "media/images";
 const RUNTIME_SOUND_DIR: &str = "media/sounds";
 
 #[derive(Debug, Clone)]
@@ -31,6 +32,7 @@ pub(crate) struct PackagedPayload {
     bytes: u64,
     sha256: String,
     media_type: String,
+    source: String,
     runtime_media: Option<PackagedRuntimeMedia>,
 }
 
@@ -92,6 +94,7 @@ pub(crate) fn package_assets(
         }
         managed_assets.push(managed_asset_document(asset, &payload));
     }
+    package_shared_special_land_tiles(project, output_dir, &mut payloads, &mut written_files)?;
     managed_assets.sort_by(|left, right| value_string(left, "id").cmp(&value_string(right, "id")));
     written_files.sort();
 
@@ -174,29 +177,51 @@ fn write_payload(
     media_type: &str,
     output_dir: &Path,
 ) -> Result<PackagedPayload> {
+    write_resource_payload(
+        &asset.resource_type,
+        asset.resource_id,
+        &asset.label,
+        bytes,
+        media_type,
+        "managed",
+        output_dir,
+    )
+}
+
+fn write_resource_payload(
+    resource_type: &str,
+    resource_id: i16,
+    label: &str,
+    bytes: &[u8],
+    media_type: &str,
+    source: &str,
+    output_dir: &Path,
+) -> Result<PackagedPayload> {
     let sha256 = hex::encode(Sha256::digest(bytes));
-    let resource_type = resource_type_file_token(&asset.resource_type);
-    let id = if asset.resource_id < 0 {
-        format!("neg-{}", asset.resource_id.unsigned_abs())
+    let resource_type_token = resource_type_file_token(resource_type);
+    let id = if resource_id < 0 {
+        format!("neg-{}", resource_id.unsigned_abs())
     } else {
-        asset.resource_id.to_string()
+        resource_id.to_string()
     };
-    let extension = resource_extension(&asset.resource_type);
-    let file_name = format!("{resource_type}-{id}-{}.{}", &sha256[..12], extension);
+    let extension = resource_extension(resource_type);
+    let file_name = format!("{resource_type_token}-{id}-{}.{}", &sha256[..12], extension);
     let relative_path = format!("{ASSET_DIR}/{file_name}");
     let path = output_dir.join(PathBuf::from(&relative_path));
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).with_path(parent)?;
     }
     fs::write(&path, bytes).with_path(&path)?;
-    let runtime_media = if asset.resource_type == "snd " {
+    let runtime_media = if resource_type == "snd " {
         let wav = decode_snd_to_wav(bytes).map_err(|error| {
             ProvidenceError::message(format!(
                 "Managed sound '{}' cannot be decoded for Realmz Remake runtime media: {error}",
-                asset.label
+                label
             ))
         })?;
-        Some(write_runtime_sound(asset, &wav, output_dir)?)
+        Some(write_runtime_sound(resource_id, &wav, output_dir)?)
+    } else if resource_type == "cicn" {
+        Some(write_runtime_image(resource_id, label, bytes, output_dir)?)
     } else {
         None
     };
@@ -206,20 +231,21 @@ fn write_payload(
         bytes: bytes.len() as u64,
         sha256,
         media_type: media_type.to_string(),
+        source: source.to_string(),
         runtime_media,
     })
 }
 
 fn write_runtime_sound(
-    asset: &ManagedAsset,
+    resource_id: i16,
     wav: &[u8],
     output_dir: &Path,
 ) -> Result<PackagedRuntimeMedia> {
     let sha256 = hex::encode(Sha256::digest(wav));
-    let id = if asset.resource_id < 0 {
-        format!("neg-{}", asset.resource_id.unsigned_abs())
+    let id = if resource_id < 0 {
+        format!("neg-{}", resource_id.unsigned_abs())
     } else {
-        asset.resource_id.to_string()
+        resource_id.to_string()
     };
     let relative_path = format!("{RUNTIME_SOUND_DIR}/snd-{id}-{}.wav", &sha256[..12]);
     let path = output_dir.join(PathBuf::from(&relative_path));
@@ -233,6 +259,123 @@ fn write_runtime_sound(
         sha256,
         media_type: "audio/wav".to_string(),
     })
+}
+
+fn write_runtime_image(
+    resource_id: i16,
+    label: &str,
+    bytes: &[u8],
+    output_dir: &Path,
+) -> Result<PackagedRuntimeMedia> {
+    let preview = inspect_resource_preview("cicn", bytes)?;
+    let data_url = preview.data_url.ok_or_else(|| {
+        let detail = preview
+            .diagnostics
+            .first()
+            .map(|diagnostic| diagnostic.message.as_str())
+            .unwrap_or("no decoded image was produced");
+        ProvidenceError::message(format!(
+            "cicn '{}' cannot be decoded for Realmz Remake runtime media: {detail}",
+            label
+        ))
+    })?;
+    let encoded = data_url
+        .strip_prefix("data:image/png;base64,")
+        .ok_or_else(|| {
+            ProvidenceError::message(format!(
+                "cicn '{}' did not produce PNG runtime media",
+                label
+            ))
+        })?;
+    let png = STANDARD.decode(encoded).map_err(|error| {
+        ProvidenceError::message(format!(
+            "cicn '{}' produced invalid PNG runtime media: {error}",
+            label
+        ))
+    })?;
+    let sha256 = hex::encode(Sha256::digest(&png));
+    let id = if resource_id < 0 {
+        format!("neg-{}", resource_id.unsigned_abs())
+    } else {
+        resource_id.to_string()
+    };
+    let relative_path = format!("{RUNTIME_IMAGE_DIR}/cicn-{id}-{}.png", &sha256[..12]);
+    let path = output_dir.join(PathBuf::from(&relative_path));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_path(parent)?;
+    }
+    fs::write(&path, &png).with_path(&path)?;
+    Ok(PackagedRuntimeMedia {
+        relative_path,
+        bytes: png.len() as u64,
+        sha256,
+        media_type: "image/png".to_string(),
+    })
+}
+
+fn package_shared_special_land_tiles(
+    project: &ProvidenceProject,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let wanted = referenced_special_land_tile_ids(project)
+        .into_iter()
+        .filter(|id| !payloads.contains_key(&("cicn".to_string(), *id)))
+        .collect::<BTreeSet<_>>();
+    let resources = crate::realmz_reference::resources("cicn", &wanted)?;
+    let found = resources.keys().copied().collect::<BTreeSet<_>>();
+    let missing = wanted.difference(&found).copied().collect::<Vec<_>>();
+    if !missing.is_empty() {
+        return Err(ProvidenceError::message(format!(
+            "Realmz Remake export cannot resolve referenced shared special-land cicn resources: {}",
+            missing
+                .iter()
+                .map(i16::to_string)
+                .collect::<Vec<_>>()
+                .join(", ")
+        )));
+    }
+    for (id, resource) in resources {
+        let label = if resource.name.trim().is_empty() {
+            format!("Realmz shared special land tile {id}")
+        } else {
+            resource.name
+        };
+        let payload = write_resource_payload(
+            "cicn",
+            id,
+            &label,
+            &resource.data,
+            "image/cicn",
+            "Realmz reference resources",
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("cicn".to_string(), id), payload);
+    }
+    Ok(())
+}
+
+fn referenced_special_land_tile_ids(project: &ProvidenceProject) -> BTreeSet<i16> {
+    project
+        .maps
+        .iter()
+        .flat_map(|map| map.tiles.iter())
+        .filter_map(|value| {
+            if *value >= 0 {
+                return None;
+            }
+            let mut id = *value;
+            while id < -999 {
+                id += 1000;
+            }
+            Some(id)
+        })
+        .collect()
 }
 
 fn managed_asset_document(asset: &ManagedAsset, payload: &PackagedPayload) -> Value {
@@ -362,31 +505,18 @@ fn special_land_tile_catalog(
             )));
         }
     }
-    for asset in project.assets.iter().filter(|asset| {
-        matches!(asset.kind, ManagedAssetKind::SpecialLandTile)
-            && !matches!(
-                asset.library_scope,
-                Some(ManagedAssetLibraryScope::CustomLibrary)
-            )
-    }) {
-        let payload = payloads
-            .get(&(asset.resource_type.clone(), asset.resource_id))
-            .ok_or_else(|| {
-                ProvidenceError::message(format!(
-                    "Special land tile '{}' has no packaged payload",
-                    asset.label
-                ))
-            })?;
-        let record = records
-            .entry(i32::from(asset.resource_id))
-            .or_insert_with(|| {
-                json!({
-                    "id": format!("resource:cicn:{}", asset.resource_id),
-                    "resourceType": "cicn",
-                    "resourceId": asset.resource_id,
-                    "source": "managed",
-                })
-            });
+    for ((resource_type, resource_id), payload) in payloads
+        .iter()
+        .filter(|((resource_type, resource_id), _)| resource_type == "cicn" && *resource_id < 0)
+    {
+        let record = records.entry(i32::from(*resource_id)).or_insert_with(|| {
+            json!({
+                "id": format!("resource:{resource_type}:{resource_id}"),
+                "resourceType": resource_type,
+                "resourceId": resource_id,
+                "source": &payload.source,
+            })
+        });
         add_payload_fields(record, payload);
     }
     Ok(records.into_values().collect())

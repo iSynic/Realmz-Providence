@@ -13,6 +13,7 @@ mod native_manifest;
 pub mod project;
 pub mod project_package;
 pub mod realmz;
+mod realmz_reference;
 pub mod remake_exporter;
 pub mod resource_fork;
 pub mod resource_preview;
