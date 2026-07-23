@@ -283,7 +283,7 @@ assertOwnershipMonster(project.monsters, project.monsterSets, project.monsterDes
 assertOwnershipScenarioItem(project.scenarioItems, "Canonical project");
 assertOwnershipTreasure(project.treasures, "Canonical project");
 assertOwnershipShop(project.shops, "Canonical project");
-expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
+expect(project.itemTexts.length === 2, `Expected two item-text records, found ${project.itemTexts.length}`);
 assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);
 assertOwnershipSpell(project.spellOverrides, "Canonical project");
@@ -297,6 +297,8 @@ expect(project.source.files.length === 0, "Fresh canonical project must not inve
 expect(project.source.immutable === false, "Fresh canonical project must not be immutable");
 const questAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 47);
 expect(questAction?.id === 1, `First authored quest flag must be runtime-valid ID 1, found ${questAction?.id}`);
+const allyAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 89);
+expect(allyAction?.id === 1, `Authored ally action must resolve Providence Sentinel ID 1, found ${allyAction?.id}`);
 
 project.scenario.projectPath = projectDir;
 project.source.rawSourcesDir = "";
@@ -337,7 +339,7 @@ poisonedLandlook.rangeSlots[0].reserved = 0x2345;
 poisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
 poisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
 poisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
-poisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
+for (const item of poisonedProject.scenarioItems) item.rawBytes = new Array(100).fill(0xa5);
 poisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 poisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
 poisonedProject.scenario.shell.rawBytes = new Array(320).fill(0xd8);
@@ -588,6 +590,7 @@ const summary = {
     battles: project.battles.length,
     monsters: project.monsters.length,
     monsterDescriptions: project.monsterDescriptions.length,
+    scenarioItems: project.scenarioItems.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
     shops: project.shops.length,
@@ -972,18 +975,30 @@ function assertOwnershipDungeon(project, label) {
 
 function assertOwnershipItemText(records, label) {
   const itemText = records?.find((record) => record.itemId === 901);
+  const bladeText = records?.find((record) => record.itemId === 902);
   expect(itemText, `${label} is missing item-text record 901`);
   expect(itemText.unidentifiedName === "Unknown Providence Token", `${label} has the wrong unidentified item name`);
   expect(itemText.identifiedName === "Providence Token", `${label} has the wrong identified item name`);
   expect(itemText.description === "This item text was compiled from canonical Providence data.", `${label} has the wrong item description`);
+  expect(bladeText, `${label} is missing item-text record 902`);
+  expect(bladeText.unidentifiedName === "Plain Providence Blade", `${label} has the wrong unidentified blade name`);
+  expect(bladeText.identifiedName === "Providence Blade", `${label} has the wrong identified blade name`);
+  expect(bladeText.description === "A simple scenario-local weapon carried by the Providence Sentinel.", `${label} has the wrong blade description`);
 }
 
 function assertOwnershipScenarioItem(records, label) {
   const item = records?.find((record) => record.id === 101 && record.itemId === 901);
+  const blade = records?.find((record) => record.id === 102 && record.itemId === 902);
   expect(item, `${label} is missing scenario-item record 101 for item 901`);
   expect(item.cost === 1, `${label} scenario item has the wrong canonical cost`);
   expect(item.spare2?.length === 7 && item.spare2.every((value) => value === 0), `${label} scenario item does not own all seven semantic spare words`);
   expect(!Object.hasOwn(item, "rawBytes"), `${label} scenario item exposes compatibility storage`);
+  expect(blade, `${label} is missing scenario-item record 102 for item 902`);
+  expect(blade.type === 2 && blade.cost === 40 && blade.weight === 12 && blade.hands === 1, `${label} scenario blade has the wrong canonical equipment fields`);
+  expect(blade.itemCat0 === 0x10000000, `${label} scenario blade lost its dagger category`);
+  expect(blade.vSmall === 6 && blade.vLarge === 6, `${label} scenario blade has the wrong canonical damage fields`);
+  expect(blade.spare2?.length === 7 && blade.spare2.every((value) => value === 0), `${label} scenario blade does not own all seven semantic spare words`);
+  expect(!Object.hasOwn(blade, "rawBytes"), `${label} scenario blade exposes compatibility storage`);
 }
 
 function assertCompiledTileSolids(files, label) {
@@ -1098,6 +1113,7 @@ function assertOwnershipMonster(records, monsterSets, descriptions, label) {
   expect(monster.hitDice === 9 && monster.staminaBonus === 200 && monster.agility === 201 && monster.movementMax === 202, `${label} monster has the wrong unsigned-byte fields`);
   expect(monster.armor === -4 && monster.typeFlags?.join(",") === "1,-1,2,-2,3,-3,4,-4", `${label} monster has the wrong signed-byte fields`);
   expect(monster.attacks?.length === 5 && monster.attacks[0]?.join(",") === "1,8,0,0", `${label} monster has the wrong fixed attack inventory`);
+  expect(monster.items?.[0] === 902 && monster.weapon === 902, `${label} monster lost its carried and equipped scenario weapon`);
   expect(monster.displayName === "Providence Sentinel", `${label} monster has the wrong display name`);
   for (const [setId, sourceFile] of [[1, "Data MD1"], [-1, "Data MD-1"]]) {
     const set = monsterSets?.find((candidate) => candidate.setId === setId);
@@ -1467,6 +1483,7 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(trigger, "Remake export lost the stable Action Point identity");
   expect(trigger.actions.some((action) => action.rawCode === 1 && action.code === 1), "Remake export lost the normalized message action");
   expect(trigger.actions.some((action) => action.rawCode === 47 && action.code === 47), "Remake export lost the normalized quest action");
+  expect(trigger.actions.some((action) => action.rawCode === 89 && action.code === 89 && action.id === 1), "Remake export lost the authored ally action");
   const dungeonRandomLevel = scripts.randomLevels.find((candidate) => candidate.id === "dungeon:0:randlevel");
   expect(dungeonRandomLevel?.isDark && dungeonRandomLevel.useLos && dungeonRandomLevel.landlook === 0, "Remake export lost the canonical dungeon random-level flags");
   const dungeonTrigger = scripts.triggers.find((candidate) => candidate.id === "dungeon:0:ap:1");
@@ -1482,6 +1499,8 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const content = documents.get("classic/content.json");
   expect(content.monsters.some((record) => record.id === 1 && record.nameId === 1), "Remake export conflated monster record and name identities");
   expect(content.scenarioItems.some((record) => record.id === 101 && record.itemId === 901), "Remake export lost scenario-item record or item identity");
+  expect(content.scenarioItems.some((record) => record.id === 102 && record.itemId === 902), "Remake export lost the carried scenario-item record");
+  expect(content.monsters.some((record) => record.id === 1 && record.items?.[0] === 902 && record.weapon === 902), "Remake export lost the monster's carried or equipped scenario item");
 
   const assets = documents.get("classic/assets.json");
   expect(assets.managedAssets.length === canonicalProject.assets.length, "Remake export did not package every scenario-managed asset");

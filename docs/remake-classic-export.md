@@ -38,8 +38,8 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | Action Point identity | `triggers[].id`, `source`, `recordIndex` | Compatible stable identity; array position is not used. Data ED3 rows also carry authoritative `callable` reachability. |
 | Trigger action | `slot`, `rawCode`, normalized `code`, `id` | Compatible without reinterpretation. |
 | Encounter result action | `slot`, `rawCode`, `id` | Compatible; Remake normalizes signed encounter opcodes when selecting a result. |
-| Monster identity | `monsters[].id` and independent `nameId` | Compatible. The two IDs remain distinct. |
-| Scenario item identity | record `id` and independent `itemId` | Compatible. The ownership proof is record 101 / item 901. |
+| Monster identity | `monsters[].id` and independent `nameId` | Compatible. The two IDs remain distinct, including when an authored action adds that monster as an ally. |
+| Scenario item identity | record `id` and independent `itemId` | Compatible. The ownership proof includes shop item 901 and carried/equipped weapon 902. |
 | Authorship and provenance | record `authored` and normalized `provenance` | Compatible. Source paths are reduced to portable source labels. |
 | Interpreter evidence | dispatcher no-op observations and compact source/record evidence | Compatible additive v1 evidence. |
 | Managed resources | scenario-scoped `assets[].resourcePath` | Payload is moved to a bundle-relative file; the data URI is never serialized. |
@@ -166,6 +166,10 @@ semantic runtime records remain canonical project projections.
 
 The authoritative proof generates the bundle twice from
 `fixtures/scenario-seeds/authoritative-ownership-proof.seed.json` and compares every file byte.
+Its consumer-facing content covers a scenario-local shop item, a battle monster, a second
+scenario-local item carried and equipped by that monster, and an authored Add Special Character
+action. The same bundle separately carries immutable PICT, `snd `, and `cicn` payloads plus their
+decoded PNG or WAV runtime media.
 Run the cross-repository consumer gate with explicit checkout/tool paths:
 
 ```powershell
