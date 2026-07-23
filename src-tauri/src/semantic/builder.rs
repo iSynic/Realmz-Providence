@@ -71,6 +71,11 @@ pub fn build_semantic_schema(
         records::add_encounters(&mut schema, buffers);
         records::add_fixed_collections(&mut schema, buffers, &parsed.maps, &map_names);
     }
+    records::add_encounter_macro_links(
+        &mut schema,
+        &parsed.simple_encounters,
+        &parsed.complex_encounters,
+    );
     resources::add_resources(&mut schema, buffers);
     resources::add_managed_resources(&mut schema, managed_assets);
     map_names::add_map_name_links(&mut schema, buffers);

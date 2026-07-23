@@ -12,8 +12,76 @@ import {
 } from "./project";
 import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
+import { ed3ReachabilityFor, isCallableMacro } from "../semanticGraph";
+import { validateRealmzTargetRecord } from "../targetValidation";
 
 describe("browser project native manifest validation", () => {
+  it("treats a complex encounter result as the caller of its Extra Action Point", async () => {
+    const project = createBrowserProject("Encounter XAP Reachability");
+    const parsed = parseScenarioBuffers(new Map([
+      ["Data ED2", new Uint8Array(520)]
+    ]));
+    project.complexEncounters = [{
+      ...parsed.complexEncounters[0],
+      id: 15,
+      actions: [{ slot: 3, rawCode: 39, id: 175 }],
+      actionResult: 1,
+      texts: ["Complex Encounter 15", "", "", "", "", "", "", "", ""],
+      authored: true
+    }];
+    project.triggers = [{
+      id: "trigger:land:0:37",
+      source: "Data DD",
+      levelType: "land",
+      levelIndex: 0,
+      recordIndex: 37,
+      active: true,
+      doorid: 37,
+      percent: 100,
+      coordinate: { x: 1, y: 1 },
+      actions: [{
+        slot: 1,
+        rawCode: 5,
+        code: 5,
+        id: 15,
+        label: "Complex Encounter",
+        category: "encounter"
+      }]
+    }, {
+      id: "macro:175",
+      source: "Data ED3",
+      levelType: null,
+      levelIndex: null,
+      recordIndex: 175,
+      active: true,
+      doorid: 0,
+      percent: 0,
+      coordinate: null,
+      actions: []
+    }];
+
+    const { semanticSchema } = await buildBrowserSemanticSchemaForProject(project);
+    project.semanticSchema = semanticSchema;
+
+    expect(semanticSchema.links).toContainEqual(expect.objectContaining({
+      from: "action-slot:trigger:land:0:37:1",
+      to: "encounter:complex:15",
+      kind: "starts_encounter"
+    }));
+    expect(semanticSchema.links).toContainEqual(expect.objectContaining({
+      from: "encounter:complex:15",
+      to: "macro:175",
+      kind: "calls_macro",
+      metadata: expect.objectContaining({ result: 1, step: 4, slot: 3 })
+    }));
+    expect(ed3ReachabilityFor(project, 175)).toMatchObject({
+      reachable: true,
+      rootType: "encounter-result-call"
+    });
+    expect(isCallableMacro(project, project.triggers[1])).toBe(true);
+    expect(validateRealmzTargetRecord(project, "complexEncounter", 15).some((issue) => issue.id.includes("unlinked-extra-action-target"))).toBe(false);
+  });
+
   it("promotes imported eight-channel Custom music as a canonical MOD asset", async () => {
     const module = standardModFixture("8CHN", 8, "Approaching Antares");
     const project = await importBrowserScenario({

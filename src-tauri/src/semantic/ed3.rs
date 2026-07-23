@@ -255,6 +255,8 @@ fn is_macro_reachability_link(link: &SemanticLink) -> bool {
 fn root_type_for(from: &str) -> String {
     if from.starts_with("action-slot:trigger:") {
         "map-trigger-call".to_string()
+    } else if from.starts_with("encounter:") {
+        "encounter-result-call".to_string()
     } else if from.starts_with("random:") {
         "random-region-door".to_string()
     } else if from.starts_with("time:") {
@@ -442,6 +444,26 @@ mod tests {
         assert!(row.reachable);
         assert_eq!(row.classification, "reachable-macro");
         assert_eq!(row.root_type.as_deref(), Some("map-trigger-call"));
+    }
+
+    #[test]
+    fn encounter_result_call_promotes_ed3_record() {
+        let trigger = ed3_trigger(175, Vec::new());
+        let mut schema = SemanticSchema::default();
+        schema.entities.push(macro_entity(175));
+        schema.links.push(macro_link(
+            "link:complex:15:result:1:step:4",
+            "encounter:complex:15",
+            175,
+            "calls_macro",
+        ));
+
+        classify_ed3_reachability(&mut schema, &[trigger]);
+
+        let row = &schema.decoding.ed3_reachability[0];
+        assert!(row.reachable);
+        assert_eq!(row.classification, "reachable-macro");
+        assert_eq!(row.root_type.as_deref(), Some("encounter-result-call"));
     }
 
     #[test]
