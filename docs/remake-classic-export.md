@@ -27,6 +27,7 @@ self-contained projection governed by Realmz Remake's
 | Authorship and provenance | record `authored` and normalized `provenance` | Compatible. Source paths are reduced to portable source labels. |
 | Interpreter evidence | dispatcher no-op observations and compact source/record evidence | Compatible additive v1 evidence. |
 | Managed resources | scenario-scoped `assets[].resourcePath` | Payload is moved to a bundle-relative file; the data URI is never serialized. |
+| Scenario pictures | managed `PICT` resources or imported scenario-fork `assetCatalog.pictures` | Exact Classic bytes and deterministic PNG runtime media are packaged for every scenario-owned picture. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
 | Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
 
@@ -62,8 +63,16 @@ resource. `payloadMediaType` describes the payload container (currently
 `application/octet-stream` for the generated Classic resource data).
 
 The exporter also attaches the payload path to matching picture, icon, sound, and custom-tileset
-catalog entries. TEXT and styl payloads remain addressable through `managedAssets` because bundle
-v1 has no dedicated text-resource catalog.
+catalog entries. Every scenario-owned PICT receives deterministic PNG `runtimeMedia` under
+`media/pictures`, including imported pictures that remain catalog metadata rather than managed
+assets. For imported projects, the immutable Classic PICT bytes come from the project-local
+preserved Scenario resource fork; the exporter never consults the original campaign installation.
+Managed replacements take precedence over preserved imported bytes. TEXT and styl payloads remain
+addressable through `managedAssets` because bundle v1 has no dedicated text-resource catalog.
+
+If Providence's PICT decoder cannot produce a PNG, export fails with the picture identity and
+decoder diagnostic. It does not emit a bundle that claims to be portable while silently depending
+on a Remake fallback image or an installed native campaign.
 
 For each scenario-scoped managed `snd ` resource, Providence decodes the same canonical Classic
 resource bytes used by the native compiler into a deterministic WAV under `media/sounds`. Both the
@@ -87,10 +96,10 @@ No format-version change is required for the current projection, but three bound
 1. Providence schema 5 has only `scenario.shell.landLevel` for the authored start. Bundle v1 can
    represent a dungeon start, but Providence cannot currently author that distinction. Current
    projects therefore export a land start without loss.
-2. Bundle v1 validates `payloadPath` portability but does not yet provide decoded runtime media for
-   every PICT variant. Providence labels immutable PICT bytes `classic-resource-data` rather than
-   claiming they are PNG or installed Remake assets. Sound and `cicn` are no longer part of this
-   gap: Providence derives WAV and PNG runtime media from supported packaged resources.
+2. Providence's PICT decoder does not yet support every historical PICT variant. A successful
+   bundle export is complete: every scenario-owned PICT has both immutable Classic bytes and PNG
+   runtime media. An unsupported variant blocks export instead of becoming an implicit Remake or
+   native-installation dependency.
 3. Scenario-icon and monster-icon override records are preserved as portable metadata, but their
    legacy embedded resource payload fields are compatibility-annex data and are intentionally
    omitted. Only scenario-scoped `ManagedAsset` payloads are packaged. A canonical asset intended
@@ -109,7 +118,9 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 ```
 
 The output directory must be absent or empty. The exporter refuses absolute or parent-relative
-managed-resource paths and never reads `raw-sources`.
+managed-resource paths. For imported projects it reads only project-relative preserved resource
+forks needed to materialize catalogued scenario PICTs; semantic runtime records remain canonical
+project projections and do not consult `raw-sources`.
 
 The authoritative proof generates the bundle twice from
 `fixtures/scenario-seeds/authoritative-ownership-proof.seed.json` and compares every file byte.

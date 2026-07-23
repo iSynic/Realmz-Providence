@@ -2,10 +2,12 @@ use super::*;
 use crate::importer::create_project;
 use crate::project::{
     Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
-    MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioSupportFile, TriggerRecord,
+    MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioSupportFile, SourceFile,
+    SourceFileRole, TriggerRecord,
 };
 use crate::resource_fork::{
-    encode_cicn_resource, encode_snd_resource, PcmAudioPayload, RgbaImagePayload,
+    encode_cicn_resource, encode_pict_resource, encode_snd_resource, write_resource_fork,
+    PcmAudioPayload, ResourceForkEntry, RgbaImagePayload,
 };
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
@@ -25,10 +27,11 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
         .join("Custom Names.rsrc")
         .to_string_lossy()
         .to_string();
+    let pict = test_pict([24, 80, 160, 255]);
     project.assets.push(managed_asset(
         "picture",
         ManagedAssetLibraryScope::Scenario,
-        b"canonical-pict",
+        &pict,
     ));
     project.assets.push(managed_asset(
         "library",
@@ -59,7 +62,7 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
 
     assert_eq!(first_report.written_files, second_report.written_files);
     assert_eq!(first_report.counts.managed_assets, 1);
-    assert_eq!(first_report.counts.packaged_asset_payloads, 1);
+    assert_eq!(first_report.counts.packaged_asset_payloads, 2);
     for relative_path in &first_report.written_files {
         assert_eq!(
             fs::read(first.join(relative_path)).unwrap(),
@@ -80,24 +83,158 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
     assert_eq!(assets["managedAssets"].as_array().unwrap().len(), 1);
     let managed = &assets["managedAssets"][0];
     assert_eq!(managed["payloadEncoding"], "classic-resource-data");
-    assert_eq!(managed["payloadBytes"], b"canonical-pict".len());
-    assert_eq!(
-        managed["payloadSha256"],
-        hex::encode(Sha256::digest(b"canonical-pict"))
-    );
+    assert_eq!(managed["payloadBytes"], pict.len());
+    assert_eq!(managed["payloadSha256"], hex::encode(Sha256::digest(&pict)));
     let payload_path = managed["payloadPath"].as_str().unwrap();
-    assert_eq!(
-        fs::read(first.join(payload_path)).unwrap(),
-        b"canonical-pict"
-    );
+    assert_eq!(fs::read(first.join(payload_path)).unwrap(), pict);
     assert_eq!(
         assets["catalog"]["pictures"][0]["payloadPath"],
         managed["payloadPath"]
     );
     assert_eq!(
+        assets["catalog"]["pictures"][0]["runtimeMedia"],
+        managed["runtimeMedia"]
+    );
+    let runtime_media = &managed["runtimeMedia"];
+    assert_eq!(runtime_media["mediaType"], "image/png");
+    let runtime_path = runtime_media["path"].as_str().unwrap();
+    assert!(runtime_path.starts_with("media/pictures/pict-306-"));
+    assert!(runtime_path.ends_with(".png"));
+    let png = fs::read(first.join(runtime_path)).unwrap();
+    assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
+    assert_eq!(runtime_media["bytes"], png.len());
+    assert_eq!(runtime_media["sha256"], hex::encode(Sha256::digest(&png)));
+    assert_eq!(
         documents["classic/rules.json"]["ruleNames"]["sourceFile"],
         "Data Files/Custom Names.rsrc"
     );
+}
+
+#[test]
+fn packages_every_imported_scenario_picture_from_the_preserved_resource_fork() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("trial-by-fire.providence");
+    let mut project = create_project("Trial by Fire".to_string(), &project_dir).unwrap();
+    project.source.origin = Some(ProjectOrigin::Imported);
+    project.source.immutable = true;
+    project.source.source_path = "Z:\\missing\\Trial by Fire".to_string();
+    project.source.raw_sources_dir = "raw-sources".to_string();
+
+    let picture_32128 = test_pict([114, 128, 199, 255]);
+    let picture_32129 = test_pict([20, 90, 40, 255]);
+    let resource_fork = write_resource_fork(&[
+        ResourceForkEntry {
+            resource_type: "PICT".to_string(),
+            id: 32128,
+            name: "Title".to_string(),
+            attributes: 0,
+            data: picture_32128.clone(),
+        },
+        ResourceForkEntry {
+            resource_type: "PICT".to_string(),
+            id: 32129,
+            name: "Unreferenced scene".to_string(),
+            attributes: 0,
+            data: picture_32129.clone(),
+        },
+    ])
+    .unwrap();
+    let raw_sources_dir = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources_dir).unwrap();
+    fs::write(raw_sources_dir.join("Scenario.rsrc"), &resource_fork).unwrap();
+    project.source.files.push(SourceFile {
+        name: "Scenario.rsrc".to_string(),
+        relative_path: "Scenario.rsrc".to_string(),
+        bytes: resource_fork.len() as u64,
+        sha256: hex::encode(Sha256::digest(&resource_fork)),
+        role: SourceFileRole::ResourceFork,
+        editable: false,
+    });
+    for (resource_id, name) in [(32128, "Title"), (32129, "Unreferenced scene")] {
+        project.asset_catalog.pictures.push(ResourceAsset {
+            id: format!("scenario-pict-{resource_id}"),
+            resource_type: "PICT".to_string(),
+            resource_id,
+            name: Some(name.to_string()),
+            source: "Scenario resource fork: Scenario.rsrc".to_string(),
+            preview_path: None,
+        });
+    }
+    project.asset_catalog.pictures.push(ResourceAsset {
+        id: "picture:realmz:302".to_string(),
+        resource_type: "PICT".to_string(),
+        resource_id: 302,
+        name: Some("Dungeon Top Down".to_string()),
+        source: "Realmz reference resources".to_string(),
+        preview_path: None,
+    });
+
+    let first = workspace.path().join("first");
+    let second = workspace.path().join("second");
+    let first_report = export_remake_campaign(&project, &project_dir, &first).unwrap();
+    let second_report = export_remake_campaign(&project, &project_dir, &second).unwrap();
+
+    assert_eq!(first_report.written_files, second_report.written_files);
+    assert_eq!(first_report.counts.managed_assets, 0);
+    assert_eq!(first_report.counts.packaged_asset_payloads, 4);
+    let documents = read_json_documents(&first);
+    let pictures = documents["classic/assets.json"]["catalog"]["pictures"]
+        .as_array()
+        .unwrap();
+    assert_eq!(pictures.len(), 3);
+    let reference = pictures
+        .iter()
+        .find(|picture| picture["resourceId"] == 302)
+        .unwrap();
+    assert!(reference.get("payloadPath").is_none());
+    assert!(reference.get("runtimeMedia").is_none());
+    for (picture, expected_bytes) in pictures
+        .iter()
+        .filter(|picture| picture.get("payloadPath").is_some())
+        .zip([picture_32128, picture_32129])
+    {
+        let resource_id = picture["resourceId"].as_i64().unwrap();
+        let payload_path = picture["payloadPath"].as_str().unwrap();
+        assert!(payload_path.starts_with(&format!("assets/managed/pict-{resource_id}-")));
+        assert!(payload_path.ends_with(".pict"));
+        assert_eq!(fs::read(first.join(payload_path)).unwrap(), expected_bytes);
+
+        let runtime_media = &picture["runtimeMedia"];
+        assert_eq!(runtime_media["mediaType"], "image/png");
+        let runtime_path = runtime_media["path"].as_str().unwrap();
+        assert!(runtime_path.starts_with(&format!("media/pictures/pict-{resource_id}-")));
+        assert!(runtime_path.ends_with(".png"));
+        let png = fs::read(first.join(runtime_path)).unwrap();
+        assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
+        assert_eq!(runtime_media["bytes"], png.len());
+        assert_eq!(runtime_media["sha256"], hex::encode(Sha256::digest(&png)));
+        assert_eq!(
+            fs::read(first.join(runtime_path)).unwrap(),
+            fs::read(second.join(runtime_path)).unwrap()
+        );
+    }
+}
+
+#[test]
+fn rejects_scenario_pictures_that_cannot_produce_runtime_media() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("unsupported-picture.providence");
+    let mut project = create_project("Unsupported picture".to_string(), &project_dir).unwrap();
+    project.assets.push(managed_asset(
+        "picture",
+        ManagedAssetLibraryScope::Scenario,
+        b"not-a-pict-resource",
+    ));
+
+    let error = export_remake_campaign(
+        &project,
+        &project_dir,
+        workspace.path().join("unsupported-picture-out"),
+    )
+    .unwrap_err();
+    assert!(error
+        .to_string()
+        .contains("cannot be decoded for Realmz Remake runtime media"));
 }
 
 #[test]
@@ -211,12 +348,9 @@ fn resolves_project_relative_payloads_but_rejects_annex_paths() {
     let mut project = create_project("Relative".to_string(), &project_dir).unwrap();
     let payload_dir = project_dir.join("assets");
     fs::create_dir_all(&payload_dir).unwrap();
-    fs::write(payload_dir.join("picture.pict"), b"relative-pict").unwrap();
-    let mut relative = managed_asset(
-        "relative",
-        ManagedAssetLibraryScope::Scenario,
-        b"relative-pict",
-    );
+    let pict = test_pict([90, 60, 30, 255]);
+    fs::write(payload_dir.join("picture.pict"), &pict).unwrap();
+    let mut relative = managed_asset("relative", ManagedAssetLibraryScope::Scenario, &pict);
     relative.resource_path = "assets/picture.pict".to_string();
     project.assets.push(relative);
     export_remake_campaign(
@@ -236,7 +370,7 @@ fn resolves_project_relative_payloads_but_rejects_annex_paths() {
 }
 
 #[test]
-fn imported_projects_export_without_consulting_the_compatibility_annex() {
+fn imported_projects_without_catalog_pictures_do_not_require_the_compatibility_annex() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("imported.providence");
     let mut project = create_project("Imported".to_string(), &project_dir).unwrap();
@@ -492,6 +626,19 @@ fn managed_asset(id: &str, scope: ManagedAssetLibraryScope, bytes: &[u8]) -> Man
         "linkedEntity": format!("resource:PICT:{}", if id == "library" { 307 } else { 306 }),
         "conversion": null
     }))
+    .unwrap()
+}
+
+fn test_pict(color: [u8; 4]) -> Vec<u8> {
+    let mut rgba = Vec::with_capacity(32 * 32 * 4);
+    for _ in 0..32 * 32 {
+        rgba.extend_from_slice(&color);
+    }
+    encode_pict_resource(&RgbaImagePayload {
+        width: 32,
+        height: 32,
+        rgba_base64: STANDARD.encode(rgba),
+    })
     .unwrap()
 }
 
