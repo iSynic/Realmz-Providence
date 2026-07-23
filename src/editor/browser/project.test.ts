@@ -14,8 +14,41 @@ import { expectedAuthoredScenarioManifestFiles } from "./scenarioPackage";
 import { parseScenarioBuffers } from "./realmzParser";
 import { ed3ReachabilityFor, isCallableMacro } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
+import { encodeStringListResource, writeResourceFork } from "./resourceFork";
 
 describe("browser project native manifest validation", () => {
+  it("hydrates scenario-local item names after Data ID fallbacks", async () => {
+    const itemTextResource = (unidentified: string, identified: string, description: string) => {
+      const unidentifiedNames = new Array<string>(200).fill("");
+      const identifiedNames = new Array<string>(200).fill("");
+      const descriptions = new Array<string>(200).fill("");
+      unidentifiedNames[199] = unidentified;
+      identifiedNames[199] = identified;
+      descriptions[199] = description;
+      return writeResourceFork([
+        { resourceType: "STR#", id: 800, name: "SUPPLIES", attributes: 0, data: encodeStringListResource(unidentifiedNames) },
+        { resourceType: "STR#", id: 801, name: "SUPPLIES Short", attributes: 0, data: encodeStringListResource(identifiedNames) },
+        { resourceType: "STR#", id: 802, name: "SUPPLIES LONG", attributes: 0, data: encodeStringListResource(descriptions) }
+      ]);
+    };
+    const project = await importBrowserScenario({
+      kind: "file-selection",
+      name: "Dead of Night",
+      files: [
+        new File([itemTextResource("Fallback Seal", "Fallback Seal", "Fallback description")], "Data ID.rsrc"),
+        new File([itemTextResource("Seal", "Seal of Officialdom", "")], "Scenario.rsrc")
+      ]
+    });
+
+    expect(project.itemTexts.find((record) => record.itemId === 999)).toMatchObject({
+      unidentifiedName: "Seal",
+      identifiedName: "Seal of Officialdom",
+      description: "",
+      authored: false,
+      provenance: expect.objectContaining({ sourceFile: "Scenario.rsrc" })
+    });
+  });
+
   it("treats a complex encounter result as the caller of its Extra Action Point", async () => {
     const project = createBrowserProject("Encounter XAP Reachability");
     const parsed = parseScenarioBuffers(new Map([

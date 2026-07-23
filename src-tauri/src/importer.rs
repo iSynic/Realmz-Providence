@@ -1811,7 +1811,7 @@ fn monster_icon_target_id(value: i16) -> Option<i32> {
 }
 
 fn hydrate_item_texts(source_path: &Path, project: &mut ProvidenceProject) -> Result<()> {
-    for resource_path in data_id_resource_candidates(source_path) {
+    for resource_path in item_text_resource_candidates(source_path) {
         if !resource_path.is_file() {
             continue;
         }
@@ -2591,6 +2591,16 @@ fn data_id_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
         source_path.join(".rsrc").join("Data ID"),
         source_path.join("Data ID"),
     ])
+}
+
+fn item_text_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
+    let mut candidates = data_id_resource_candidates(source_path);
+    // Classic scenarios keep their authored 800-series item names and
+    // descriptions in the open Scenario resource fork. Process it after any
+    // Data ID fallback so scenario-local strings win the same way they do in
+    // Realmz's resource chain.
+    candidates.extend(scenario_resource_candidates(source_path));
+    dedupe_paths(candidates)
 }
 
 fn custom_names_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
@@ -3439,6 +3449,76 @@ mod tests {
             record.provenance.as_ref().unwrap().confidence,
             Confidence::SourceBacked
         ));
+    }
+
+    #[test]
+    fn scenario_resource_item_texts_override_data_id_fallbacks() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source_dir = temp.path().join("Scenario");
+        fs::create_dir_all(&source_dir).expect("source directory");
+
+        let item_text_resource = |unidentified: &str, identified: &str, description: &str| {
+            let mut unidentified_names = vec![String::new(); 200];
+            let mut identified_names = vec![String::new(); 200];
+            let mut descriptions = vec![String::new(); 200];
+            unidentified_names[199] = unidentified.to_string();
+            identified_names[199] = identified.to_string();
+            descriptions[199] = description.to_string();
+            crate::resource_fork::write_resource_fork(&[
+                crate::resource_fork::ResourceForkEntry {
+                    resource_type: "STR#".to_string(),
+                    id: 800,
+                    name: "SUPPLIES".to_string(),
+                    attributes: 0,
+                    data: crate::resource_fork::encode_string_list_resource(&unidentified_names),
+                },
+                crate::resource_fork::ResourceForkEntry {
+                    resource_type: "STR#".to_string(),
+                    id: 801,
+                    name: "SUPPLIES Short".to_string(),
+                    attributes: 0,
+                    data: crate::resource_fork::encode_string_list_resource(&identified_names),
+                },
+                crate::resource_fork::ResourceForkEntry {
+                    resource_type: "STR#".to_string(),
+                    id: 802,
+                    name: "SUPPLIES LONG".to_string(),
+                    attributes: 0,
+                    data: crate::resource_fork::encode_string_list_resource(&descriptions),
+                },
+            ])
+            .expect("item text resource fork")
+        };
+
+        fs::write(
+            source_dir.join("Data ID.rsrc"),
+            item_text_resource("Fallback Seal", "Fallback Seal", "Fallback description"),
+        )
+        .expect("write Data ID resource fork");
+        fs::write(
+            source_dir.join("Scenario.rsrc"),
+            item_text_resource("Seal", "Seal of Officialdom", ""),
+        )
+        .expect("write Scenario resource fork");
+        let project_dir = temp.path().join("Project.providence");
+        let mut project = create_project("Project".to_string(), &project_dir).expect("project");
+
+        hydrate_item_texts(&source_dir, &mut project).expect("hydrate item texts");
+
+        let record = project
+            .item_texts
+            .iter()
+            .find(|record| record.item_id == 999)
+            .expect("item 999 text");
+        assert_eq!(record.unidentified_name, "Seal");
+        assert_eq!(record.identified_name, "Seal of Officialdom");
+        assert_eq!(record.description, "");
+        assert!(record
+            .provenance
+            .as_ref()
+            .unwrap()
+            .source_file
+            .ends_with("Scenario.rsrc"));
     }
 
     #[test]

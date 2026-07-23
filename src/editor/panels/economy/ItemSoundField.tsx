@@ -11,10 +11,30 @@ import "./ItemSoundField.css";
 
 export type ItemSoundReference = {
   value: number;
+  resourceId: number;
   label: string;
   detail: string;
   searchText: string;
 };
+
+const ITEM_SOUND_RESOURCE_OFFSET = 600;
+const I16_MIN = -0x8000;
+const I16_MAX = 0x7fff;
+
+export function itemSoundResourceId(value: number) {
+  if (!Number.isFinite(value) || value === 0) return null;
+  const shifted = Math.trunc(value) + ITEM_SOUND_RESOURCE_OFFSET;
+  const wrapped = ((shifted - I16_MIN) % 0x10000 + 0x10000) % 0x10000 + I16_MIN;
+  return Math.abs(wrapped);
+}
+
+function itemSoundValueForResourceId(resourceId: number | null | undefined) {
+  if (resourceId == null || !Number.isFinite(resourceId)) return null;
+  const normalizedResourceId = Math.abs(Math.trunc(resourceId));
+  const value = normalizedResourceId - ITEM_SOUND_RESOURCE_OFFSET;
+  if (value === 0 || value < I16_MIN || value > I16_MAX) return null;
+  return value;
+}
 
 export function itemSoundReferences(
   project: Project,
@@ -22,9 +42,10 @@ export function itemSoundReferences(
 ): ItemSoundReference[] {
   const references = new Map<number, ItemSoundReference>();
   const addReference = (resourceId: number | null | undefined, label: string, detail: string) => {
-    if (resourceId == null || resourceId === 0 || !Number.isFinite(resourceId)) return;
-    const value = Math.abs(Math.trunc(resourceId));
-    const normalizedLabel = label.trim() || `snd ${value}`;
+    const value = itemSoundValueForResourceId(resourceId);
+    if (value == null || resourceId == null) return;
+    const normalizedResourceId = Math.abs(Math.trunc(resourceId));
+    const normalizedLabel = label.trim() || `snd ${normalizedResourceId}`;
     const normalizedDetail = detail.trim();
     const existing = references.get(value);
     if (existing) {
@@ -36,9 +57,10 @@ export function itemSoundReferences(
     }
     references.set(value, {
       value,
+      resourceId: normalizedResourceId,
       label: normalizedLabel,
       detail: normalizedDetail,
-      searchText: `${value} snd ${normalizedLabel} ${normalizedDetail}`.trim()
+      searchText: `${value} snd ${normalizedResourceId} ${normalizedLabel} ${normalizedDetail}`.trim()
     });
   };
 
@@ -71,28 +93,36 @@ function itemSoundSourceLabel(source: string | null | undefined, fallback: strin
 
 export function itemSoundReferenceOptions(references: ItemSoundReference[]): ReferencePickerOption<number>[] {
   return references.map((reference) => ({
-    key: `item-sound:${reference.value}`,
+    key: `item-sound:${reference.resourceId}`,
     value: reference.value,
     label: reference.label,
-    detail: `snd ${reference.value}${reference.detail ? ` | ${reference.detail}` : ""}`,
+    detail: `Item value ${reference.value} | snd ${reference.resourceId}${reference.detail ? ` | ${reference.detail}` : ""}`,
     searchText: reference.searchText
   }));
 }
 
 export function itemSoundRawOption(
   query: string,
-  options: ReferencePickerOption<number>[]
+  options: ReferencePickerOption<number>[],
+  references: ItemSoundReference[] = []
 ): ReferencePickerOption<number> | null {
-  const value = numericReferenceQuery(query);
-  if (value == null || value === 0 || !Number.isSafeInteger(value) || options.some((option) => option.value === value)) {
+  const queryNumber = numericReferenceQuery(query);
+  if (queryNumber == null || queryNumber === 0 || !Number.isSafeInteger(queryNumber)) {
     return null;
   }
-  const resourceId = Math.abs(value);
+  if (references.some((reference) => reference.resourceId === Math.abs(queryNumber))) return null;
+  const value = queryNumber >= ITEM_SOUND_RESOURCE_OFFSET
+    ? queryNumber - ITEM_SOUND_RESOURCE_OFFSET
+    : queryNumber;
+  if (value === 0 || value < I16_MIN || value > I16_MAX || options.some((option) => option.value === value)) {
+    return null;
+  }
+  const resourceId = itemSoundResourceId(value);
   return {
     key: `item-sound:raw:${value}`,
     value,
     label: `Sound value ${value}`,
-    detail: `Raw stored item value | plays snd ${resourceId}`,
+    detail: resourceId == null ? "Raw stored item sound value" : `Raw stored item value | plays snd ${resourceId}`,
     searchText: `${value} snd ${resourceId} raw unresolved imported`
   };
 }
@@ -112,25 +142,28 @@ export function ItemSoundField({
 }) {
   const references = useMemo(() => itemSoundReferences(project, catalog), [catalog, project]);
   const options = useMemo(() => itemSoundReferenceOptions(references), [references]);
-  const selectedReference = references.find((reference) => reference.value === Math.abs(value)) ?? null;
-  const selectedOption = value > 0 ? options.find((option) => option.value === value) ?? null : null;
+  const selectedReference = references.find((reference) => reference.value === value) ?? null;
+  const selectedOption = options.find((option) => option.value === value) ?? null;
   const previewUrl = useItemSoundPreviewUrl(value, project, catalog, previewContext);
+  const resourceId = itemSoundResourceId(value);
   const current = value === 0 ? {
     label: "No sound",
     detail: "This item does not play a sound.",
     state: "empty" as const
   } : selectedReference ? {
     label: selectedReference.label,
-    detail: `Stored value ${value} | snd ${Math.abs(value)}${selectedReference.detail ? ` | ${selectedReference.detail}` : ""}`,
+    detail: `Stored value ${value} | snd ${selectedReference.resourceId}${selectedReference.detail ? ` | ${selectedReference.detail}` : ""}`,
     state: "resolved" as const
   } : {
     label: `Sound value ${value}`,
-    detail: `snd ${Math.abs(value)} is not available in the current project or reference library.`,
+    detail: resourceId == null
+      ? "This raw stored item sound value is unresolved."
+      : `snd ${resourceId} is not available in the current project or reference library.`,
     state: "unresolved" as const
   };
 
   return (
-    <div className="item-sound-reference-field" title="Sound resource played when Realmz uses this item.">
+    <div className="item-sound-reference-field" title="Realmz adds 600 to this stored item value before playing the sound resource.">
       <span className="item-sound-reference-label">Sound</span>
       <div className="item-sound-reference-control">
         <ReferenceField
@@ -140,7 +173,7 @@ export function ItemSoundField({
           value={value}
           selectedValue={selectedOption?.value ?? null}
           current={current}
-          rawOptionForQuery={(query) => itemSoundRawOption(query, options)}
+          rawOptionForQuery={(query) => itemSoundRawOption(query, options, references)}
           resultNoun="sound"
           resultNounPlural="sounds"
           emptyTitle="No matching item sounds"
@@ -176,7 +209,7 @@ function useItemSoundPreviewUrl(
   catalog: LibraryCatalog | null | undefined,
   previewContext: PreviewRuntimeContext
 ) {
-  const resourceId = soundId ? Math.abs(soundId) : null;
+  const resourceId = itemSoundResourceId(soundId);
   const managedAsset = resourceId == null ? null : (project.assets ?? []).find((asset) =>
     asset.kind === "sound" && Math.abs(asset.resourceId) === resourceId
   ) ?? null;

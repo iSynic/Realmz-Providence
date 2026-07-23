@@ -1072,10 +1072,11 @@ function mergeRuleNameStrings(defaults: string[], decoded: string[]) {
 
 function parseBrowserItemTexts(files: Map<string, Uint8Array>): ItemTextRecord[] {
   const byItemId = new Map<number, ItemTextRecord>();
-  for (const [name, bytes] of files) {
-    const normalized = name.replace(/\\/g, "/").toLowerCase();
-    const baseName = normalized.split("/").pop() ?? normalized;
-    if (baseName !== "data id" && baseName !== "data id.rsrc" && baseName !== "data id.rsf" && baseName !== "._data id") continue;
+  const candidates = [...files.entries()]
+    .map(([name, bytes]) => ({ name, bytes, priority: browserItemTextResourcePriority(name) }))
+    .filter((candidate): candidate is { name: string; bytes: Uint8Array; priority: number } => candidate.priority != null)
+    .sort((left, right) => left.priority - right.priority);
+  for (const { name, bytes } of candidates) {
     for (const resource of parseResourceFork(bytes)) {
       if (resource.resourceType !== "STR#") continue;
       const resourceBase = itemTextResourceBase(resource.id);
@@ -1099,11 +1100,30 @@ function parseBrowserItemTexts(files: Map<string, Uint8Array>): ItemTextRecord[]
         if (slotKind === 0) existing.unidentifiedName = text;
         else if (slotKind === 1) existing.identifiedName = text;
         else if (slotKind === 2) existing.description = text;
+        existing.provenance = {
+          sourceFile: name,
+          recordIndex: itemId,
+          byteOffset: 0,
+          byteLength: resource.data.byteLength,
+          confidence: "source-backed"
+        };
         byItemId.set(itemId, existing);
       }
     }
   }
   return [...byItemId.values()].sort((a, b) => a.itemId - b.itemId);
+}
+
+function browserItemTextResourcePriority(name: string) {
+  const normalized = name.replace(/\\/g, "/").toLowerCase();
+  const baseName = normalized.split("/").pop() ?? normalized;
+  if (baseName === "data id" || baseName === "data id.rsrc" || baseName === "data id.rsf" || baseName === "._data id") {
+    return 0;
+  }
+  if (baseName === "scenario" || baseName === "scenario.rsrc" || baseName === "scenario.rsf") {
+    return 1;
+  }
+  return null;
 }
 
 function itemTextResourceBase(resourceId: number) {
