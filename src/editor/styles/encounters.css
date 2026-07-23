@@ -2081,6 +2081,19 @@
   max-width: 51px;
 }
 
+.encounter-action-progression-media {
+  grid-column: 2 / -1;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #b9cad8;
+  font-size: 10px;
+}
+
+.simple-encounter-action-cell .encounter-action-progression-media input {
+  min-height: auto;
+}
+
 .encounter-action-preview,
 .encounter-action-create {
   display: inline-flex;

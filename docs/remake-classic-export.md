@@ -36,8 +36,8 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | Campaign identity and start | `scenario.id`, `scenario.name`, `scenario.shell` | Compatible. Schema 5 currently authors land starts only. |
 | Map identity | `maps[].id`, `levelType`, `index` | Compatible namespaced string identity. |
 | Action Point identity | `triggers[].id`, `source`, `recordIndex` | Compatible stable identity; array position is not used. Data ED3 rows also carry authoritative `callable` reachability. |
-| Trigger action | `slot`, `rawCode`, normalized `code`, `id` | Compatible without reinterpretation. |
-| Encounter result action | `slot`, `rawCode`, `id` | Compatible; Remake normalizes signed encounter opcodes when selecting a result. |
+| Trigger action | `slot`, `rawCode`, normalized `code`, `id` | Compatible without reinterpretation. Picture, sound, and player-map steps may also carry the project-only `mediaRequiredForProgression` readiness marker when their content is needed to continue. |
+| Encounter result action | `slot`, `rawCode`, `id` | Compatible; Remake normalizes signed encounter opcodes when selecting a result. Media result actions use the same optional progression-readiness marker as Action Points. |
 | Monster identity | `monsters[].id` and independent `nameId` | Compatible. The two IDs remain distinct, including when an authored action adds that monster as an ally. |
 | Scenario item identity | record `id` and independent `itemId` | Compatible. The ownership proof includes shop item 901 and carried/equipped weapon 902. |
 | Authorship and provenance | record `authored` and normalized `provenance` | Compatible. Source paths are reduced to portable source labels. |
@@ -60,6 +60,12 @@ compatibility annex. Every Extra Action Point remains in `scripts.triggers`; sou
 rows export with `callable: true`, while unreferenced imported rows export with `callable: false`.
 The corresponding classification and evidence path remain available under
 `evidence.semanticDecoding.ed3Reachability`.
+
+Providence authors can mark an individual picture, sound, or standalone player-map action as
+required for Remake progression, whether it appears in an Action Point or an encounter result.
+The optional marker is exported on that exact action and is otherwise omitted. It is Remake
+readiness metadata only: native Realmz compilation continues to write the same CODE and ID values,
+and Providence does not infer narrative importance from an opcode or resource type.
 
 ## Race and caste table selection
 

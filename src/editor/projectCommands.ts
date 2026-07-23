@@ -160,7 +160,16 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "createRandomRect") return createRandomRect(project, command);
   if (command.kind === "updateRandomRect") return updateRandomRect(project, command);
   if (command.kind === "clearRandomRect") return clearRandomRect(project, command);
-  if (command.kind === "updateActionSlot") return updateActionSlot(project, command.triggerId, command.slot, command.rawCode, command.id);
+  if (command.kind === "updateActionSlot") {
+    return updateActionSlot(
+      project,
+      command.triggerId,
+      command.slot,
+      command.rawCode,
+      command.id,
+      command.mediaRequiredForProgression
+    );
+  }
   if (command.kind === "swapActionSlots") return swapActionSlots(project, command.triggerId, command.fromSlot, command.toSlot);
   if (command.kind === "duplicateActionSlot") return duplicateActionSlot(project, command.triggerId, command.fromSlot, command.toSlot);
   if (command.kind === "deleteActionSlot") return updateActionSlot(project, command.triggerId, command.slot, 0, 0);

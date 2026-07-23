@@ -205,6 +205,7 @@ pub const PROVIDENCE_ACTION_FIELDS: &[&str] = &[
     "label",
     "category",
     "gosub",
+    "mediaRequiredForProgression",
 ];
 
 #[allow(dead_code)]
@@ -1205,6 +1206,8 @@ pub struct Action {
     pub label: String,
     pub category: ActionCategory,
     pub gosub: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_required_for_progression: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1560,6 +1563,8 @@ pub struct EncounterActionRow {
     pub slot: usize,
     pub raw_code: i16,
     pub id: i16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_required_for_progression: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

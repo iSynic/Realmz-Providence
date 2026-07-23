@@ -3223,6 +3223,7 @@ mod tests {
             slot: 3,
             raw_code: -2,
             id: 260,
+            media_required_for_progression: None,
         }];
         legacy_simple.choice_results = vec![1, 2, 3, 4];
         legacy_simple.can_back_out = true;

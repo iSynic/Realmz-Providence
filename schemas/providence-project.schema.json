@@ -499,6 +499,8 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceAction",
       "x-providence-rust-name": "Action",
+      "x-providence-rust-optional": ["mediaRequiredForProgression"],
+      "x-providence-rust-skip-none": ["mediaRequiredForProgression"],
       "required": ["slot", "rawCode", "code", "id", "label", "category"],
       "properties": {
         "slot": { "type": "integer", "minimum": 0, "x-providence-rust-type": "usize" },
@@ -511,7 +513,11 @@
           "description": "Open editor-facing label in TypeScript; normalized through ActionCategory at the Rust boundary.",
           "x-providence-rust-type": "ActionCategory"
         },
-        "gosub": { "type": "boolean" }
+        "gosub": { "type": "boolean" },
+        "mediaRequiredForProgression": {
+          "type": "boolean",
+          "description": "Project-only Remake readiness marker for media the player must receive to continue."
+        }
       }
     },
     "triggerRecord": {
@@ -945,11 +951,17 @@
       "additionalProperties": false,
       "x-providence-typescript-name": "ProvidenceEncounterActionRow",
       "x-providence-rust-name": "EncounterActionRow",
+      "x-providence-rust-optional": ["mediaRequiredForProgression"],
+      "x-providence-rust-skip-none": ["mediaRequiredForProgression"],
       "required": ["slot", "rawCode", "id"],
       "properties": {
         "slot": { "type": "integer", "minimum": 0, "maximum": 31, "x-providence-rust-type": "usize" },
         "rawCode": { "type": "integer", "minimum": -128, "maximum": 127, "x-providence-rust-type": "i16" },
-        "id": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" }
+        "id": { "type": "integer", "minimum": -32768, "maximum": 32767, "x-providence-rust-type": "i16" },
+        "mediaRequiredForProgression": {
+          "type": "boolean",
+          "description": "Project-only Remake readiness marker for media the player must receive to continue."
+        }
       }
     },
     "simpleEncounterRecord": {

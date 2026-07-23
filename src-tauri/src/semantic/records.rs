@@ -2661,6 +2661,7 @@ mod tests {
                 slot: 3,
                 raw_code: 39,
                 id: 175,
+                media_required_for_progression: None,
             }],
             action_result: 1,
             word_result: 0,

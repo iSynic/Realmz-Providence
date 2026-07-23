@@ -260,6 +260,7 @@ fn describe_action(slot: usize, raw_code: i16, id: i16) -> Action {
         label: label.to_string(),
         category,
         gosub: raw_code < 0 && raw_code != -14 && raw_code != -23,
+        media_required_for_progression: None,
     }
 }
 

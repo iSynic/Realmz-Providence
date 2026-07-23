@@ -1,4 +1,9 @@
-import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../../realmzActions";
+import {
+  ACTION_OPTIONS,
+  actionOptionFor,
+  isDispatcherNoopOpcode,
+  supportsRemakeProgressionMediaRequirement
+} from "../../realmzActions";
 import type { EncounterActionRow, Project } from "../../types";
 
 export const ENCOUNTER_RESULT_COUNT = 4;
@@ -224,6 +229,12 @@ export function encounterActionAt(actions: EncounterActionRow[], slot: number): 
 export function updateEncounterActionRow(actions: EncounterActionRow[], slot: number, changes: Partial<EncounterActionRow>) {
   const next = new Map(actions.map((row) => [row.slot, { ...row }]));
   const updated = { ...(next.get(slot) ?? { slot, rawCode: 0, id: 0 }), ...changes, slot };
+  if (
+    !supportsRemakeProgressionMediaRequirement(updated.rawCode) ||
+    updated.mediaRequiredForProgression !== true
+  ) {
+    delete updated.mediaRequiredForProgression;
+  }
   if (updated.rawCode === 0 && updated.id === 0) next.delete(slot);
   else next.set(slot, updated);
   return [...next.values()].sort((a, b) => a.slot - b.slot);

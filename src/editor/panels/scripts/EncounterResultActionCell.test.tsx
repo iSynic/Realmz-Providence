@@ -5,7 +5,13 @@ import { EncounterResultActionCell, encounterResultIdHelp } from "./EncounterRes
 
 const project = {
   messages: [{ id: 15, text: "The tide answers." }],
-  triggers: []
+  triggers: [],
+  assetCatalog: {
+    tilesets: [],
+    pictures: [],
+    icons: [],
+    sounds: []
+  }
 } as unknown as Project;
 
 function renderCell(row: EncounterActionRow) {
@@ -67,5 +73,16 @@ describe("EncounterResultActionCell", () => {
   it("falls back to useful raw-value guidance for undocumented actions", () => {
     expect(encounterResultIdHelp(project, null, { slot: 0, rawCode: 200, id: 7 }).body)
       .toBe("No contextual ID-field description is documented for this action. Current raw value: 7.");
+  });
+
+  it("offers Remake progression readiness only for media actions", () => {
+    const sound = renderCell({ slot: 0, rawCode: 9, id: 321, mediaRequiredForProgression: true });
+    const negativePicture = renderCell({ slot: 0, rawCode: -27, id: 306 });
+    const message = renderCell({ slot: 0, rawCode: 1, id: 15 });
+
+    expect(sound).toContain("Required for Remake progression");
+    expect(sound).toContain('type="checkbox" checked=""');
+    expect(negativePicture).toContain("Required for Remake progression");
+    expect(message).not.toContain("Required for Remake progression");
   });
 });

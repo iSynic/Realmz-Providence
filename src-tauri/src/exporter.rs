@@ -3549,6 +3549,7 @@ mod tests {
             slot: 3,
             raw_code: -2,
             id: 0x0304,
+            media_required_for_progression: None,
         }];
         encounters[1].choice_results = vec![0, 0, 7, 0];
         encounters[1].can_back_out = true;
@@ -3602,6 +3603,7 @@ mod tests {
             slot: 3,
             raw_code: -2,
             id: 0x0304,
+            media_required_for_progression: None,
         }];
         encounters[1].action_result = 6;
         encounters[1].word_result = 7;

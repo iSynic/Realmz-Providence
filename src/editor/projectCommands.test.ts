@@ -373,6 +373,63 @@ describe("project command facade", () => {
     expect("rawBytes" in next.shops[0]).toBe(false);
   });
 
+  it("persists progression-required media only on supported action steps", () => {
+    const project = createBrowserProject("Remake media readiness");
+    project.triggers = [{
+      id: "Data DD:0:0",
+      source: "Data DD",
+      levelType: "land",
+      levelIndex: 0,
+      recordIndex: 0,
+      active: true,
+      doorid: 101,
+      landid: 0,
+      targetX: 1,
+      targetY: 1,
+      percent: 100,
+      coordinate: { x: 1, y: 1 },
+      actions: [],
+      provenance: {
+        sourceFile: "Data DD",
+        recordIndex: 0,
+        byteOffset: 0,
+        byteLength: 40,
+        confidence: "confirmed"
+      }
+    }];
+
+    const marked = applyProjectCommand(project, {
+      kind: "updateActionSlot",
+      label: "Mark picture required",
+      triggerId: "Data DD:0:0",
+      slot: 0,
+      rawCode: 27,
+      id: 306,
+      mediaRequiredForProgression: true
+    });
+    const duplicated = applyProjectCommand(marked, {
+      kind: "duplicateActionSlot",
+      label: "Duplicate picture",
+      triggerId: "Data DD:0:0",
+      fromSlot: 0,
+      toSlot: 1
+    });
+    const changedToText = applyProjectCommand(duplicated, {
+      kind: "updateActionSlot",
+      label: "Change action",
+      triggerId: "Data DD:0:0",
+      slot: 0,
+      rawCode: 1,
+      id: 306,
+      mediaRequiredForProgression: true
+    });
+
+    expect(duplicated.triggers[0].actions.map((action) => action.mediaRequiredForProgression))
+      .toEqual([true, true]);
+    expect(changedToText.triggers[0].actions[0].mediaRequiredForProgression).toBeUndefined();
+    expect(changedToText.triggers[0].actions[1].mediaRequiredForProgression).toBe(true);
+  });
+
   it("applies an immutable command and exposes history metadata", () => {
     const project = createBrowserProject("Command Facade");
     const originalTile = project.maps[0].tiles[0];

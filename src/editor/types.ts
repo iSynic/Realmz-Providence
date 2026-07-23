@@ -802,6 +802,7 @@ export type ProjectCommand =
       slot: number;
       rawCode: number;
       id: number;
+      mediaRequiredForProgression?: boolean;
     }
   | {
       kind: "swapActionSlots";

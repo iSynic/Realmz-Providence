@@ -8,7 +8,10 @@ import {
   targetOptionForOpcodeValue
 } from "../../components/RealmzTargetPicker";
 import { divinityHelpForOpcode } from "../../divinityOpcodeHelp";
-import { actionOptionFor } from "../../realmzActions";
+import {
+  actionOptionFor,
+  supportsRemakeProgressionMediaRequirement
+} from "../../realmzActions";
 import type {
   EncounterActionRow,
   LibraryCatalog,
@@ -160,6 +163,19 @@ export function EncounterResultActionCell({
         )}
         {!populated && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
       </div>
+      {supportsRemakeProgressionMediaRequirement(row.rawCode) && (
+        <label
+          className="encounter-action-progression-media"
+          title="A missing asset will block this scenario from launching in Remake. This does not change Classic Realmz behavior."
+        >
+          <input
+            type="checkbox"
+            checked={Boolean(row.mediaRequiredForProgression)}
+            onChange={(event) => onUpdate({ mediaRequiredForProgression: event.currentTarget.checked })}
+          />
+          <span>Required for Remake progression</span>
+        </label>
+      )}
     </div>
   );
 }

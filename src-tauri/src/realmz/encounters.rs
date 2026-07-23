@@ -232,7 +232,12 @@ fn parse_encounter_actions(record: &[u8]) -> Vec<EncounterActionRow> {
         let raw_code = record[slot] as i8 as i16;
         let id = i16_be(record, 32 + slot * 2);
         if raw_code != 0 || id != 0 {
-            actions.push(EncounterActionRow { slot, raw_code, id });
+            actions.push(EncounterActionRow {
+                slot,
+                raw_code,
+                id,
+                media_required_for_progression: None,
+            });
         }
     }
     actions
@@ -314,6 +319,7 @@ mod tests {
             slot: 3,
             raw_code: -2,
             id: 0x0304,
+            media_required_for_progression: None,
         }];
         encounter.choice_results[2] = 7;
         encounter.can_back_out = true;
@@ -351,6 +357,7 @@ mod tests {
             slot: 4,
             raw_code: -2,
             id: 0x0304,
+            media_required_for_progression: None,
         });
         encounter.action_result = 6;
         encounter.word_result = 7;

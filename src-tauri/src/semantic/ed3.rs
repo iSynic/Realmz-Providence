@@ -375,6 +375,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -427,6 +428,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -478,6 +480,7 @@ mod tests {
                 label: "Extend AP".to_string(),
                 category: ActionCategory::Branch,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let nested_trigger = ed3_trigger(
@@ -490,6 +493,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -533,6 +537,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let revive_trigger = ed3_trigger(
@@ -545,6 +550,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -589,6 +595,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();
@@ -624,6 +631,7 @@ mod tests {
                 label: "Message".to_string(),
                 category: ActionCategory::UiText,
                 gosub: false,
+                media_required_for_progression: None,
             }],
         );
         let mut schema = SemanticSchema::default();

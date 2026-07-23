@@ -1,5 +1,5 @@
 param(
-  [string]$ProvidenceRoot = (Split-Path -Parent $PSScriptRoot),
+  [string]$ProvidenceRoot = "",
 
   [Parameter(Mandatory = $true)]
   [string]$RemakeRoot,
@@ -10,6 +10,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($ProvidenceRoot)) {
+  $ProvidenceRoot = Split-Path -Parent $PSScriptRoot
+}
 
 function Resolve-Directory([string]$PathValue, [string]$Label) {
   if (-not (Test-Path -LiteralPath $PathValue -PathType Container)) {

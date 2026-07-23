@@ -5,7 +5,11 @@ import { categoryColor } from "../../components/TileSprite";
 import { divinityHelpForOpcode } from "../../divinityOpcodeHelp";
 import type { EdcdRowUsage } from "../../edcdRows";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
-import { actionOptionFor, normalizeStepOpcode } from "../../realmzActions";
+import {
+  actionOptionFor,
+  normalizeStepOpcode,
+  supportsRemakeProgressionMediaRequirement
+} from "../../realmzActions";
 import type { ScriptDiagnostic } from "../../scriptValidation";
 import type { LibraryCatalog, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { EmptyState } from "../../ui";
@@ -82,7 +86,7 @@ export function SelectedActionPointStepEditor({
   project: Project;
   catalog?: LibraryCatalog | null;
   selectedSlot: number;
-  selectedDraft: { rawCode: number; id: number };
+  selectedDraft: { rawCode: number; id: number; mediaRequiredForProgression: boolean };
   selectedDraftDirty: boolean;
   selectedSlotApplied: boolean;
   selectedOption: ReturnType<typeof actionOptionFor>;
@@ -105,7 +109,11 @@ export function SelectedActionPointStepEditor({
   onShowTargetRecord?: () => void;
   onSetCategoryFilter: (category: ScriptActionCategoryFilter) => void;
   onSetOpcodeQuery: (query: string) => void;
-  onSetSelectedDraft: (values: { rawCode: number; id: number }) => void;
+  onSetSelectedDraft: (values: {
+    rawCode: number;
+    id: number;
+    mediaRequiredForProgression?: boolean;
+  }) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onPreviewEntity: (entity: SelectedEntity) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
@@ -145,6 +153,8 @@ export function SelectedActionPointStepEditor({
   const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
   const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
   const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
+  const supportsProgressionMediaRequirement =
+    supportsRemakeProgressionMediaRequirement(selectedDraft.rawCode);
   const isSameMapActionPointStep = normalizeStepOpcode(selectedDraft.rawCode) === 8;
   const selectedTriggerRecord = useMemo(
     () => project.triggers.find((trigger) => trigger.id === selectedTriggerId) ?? null,
@@ -182,7 +192,10 @@ export function SelectedActionPointStepEditor({
     return definition;
   };
   const selectActionDefinition = (definition: ScriptActionDefinition) => {
-    onSetSelectedDraft(defaultDraftForProject(project, definitionForActionChooserUse(definition)));
+    onSetSelectedDraft({
+      ...defaultDraftForProject(project, definitionForActionChooserUse(definition)),
+      mediaRequiredForProgression: false
+    });
     setActionChooserOpen(false);
   };
 
@@ -229,6 +242,25 @@ export function SelectedActionPointStepEditor({
           />
         )}
         <p>{selectedDefinition.summary}</p>
+        {supportsProgressionMediaRequirement && (
+          <div className="realmz-current-step-authoring-subpane">
+            <label className="realmz-target-picker-wait">
+              <input
+                type="checkbox"
+                checked={selectedDraft.mediaRequiredForProgression}
+                onChange={(event) => onSetSelectedDraft({
+                  ...selectedDraft,
+                  mediaRequiredForProgression: event.currentTarget.checked
+                })}
+              />
+              <span>Required for Remake progression</span>
+            </label>
+            <small>
+              Enable this only when the player must receive this media to continue.
+              It affects Remake launch readiness, not Classic Realmz behavior.
+            </small>
+          </div>
+        )}
         {selectedCombatMacroActionNote && combatMacroContext && (
           <div className="combat-macro-action-note">
             <span>{combatMacroContextTitle(combatMacroContext)}</span>

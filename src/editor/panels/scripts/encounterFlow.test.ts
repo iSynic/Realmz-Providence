@@ -120,6 +120,24 @@ describe("encounter action row updates", () => {
     expect(encounterActionAt(inserted, 0)).toEqual({ slot: 0, rawCode: 9, id: 200 });
     expect(updateEncounterActionRow(inserted, 0, { rawCode: 0, id: 0 })).toEqual([{ slot: 8, rawCode: 1, id: 2 }]);
   });
+
+  it("retains progression requirements only on Remake media actions", () => {
+    const sound = updateEncounterActionRow([], 0, {
+      rawCode: 9,
+      id: 321,
+      mediaRequiredForProgression: true
+    });
+    expect(sound[0].mediaRequiredForProgression).toBe(true);
+
+    const picture = updateEncounterActionRow(sound, 0, { rawCode: -27 });
+    expect(picture[0].mediaRequiredForProgression).toBe(true);
+
+    const message = updateEncounterActionRow(picture, 0, { rawCode: 1 });
+    expect(message[0]).not.toHaveProperty("mediaRequiredForProgression");
+
+    const unmarkedSound = updateEncounterActionRow(message, 0, { rawCode: 9 });
+    expect(unmarkedSound[0]).not.toHaveProperty("mediaRequiredForProgression");
+  });
 });
 
 describe("encounter result action opcodes", () => {

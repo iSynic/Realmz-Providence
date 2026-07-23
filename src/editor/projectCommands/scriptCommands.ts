@@ -1,5 +1,9 @@
 import { Action, ExtraCodeRow, Project, ProjectCommand, Provenance, TriggerRecord } from "../types";
-import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
+import {
+  actionOptionFor,
+  normalizeStepOpcode,
+  supportsRemakeProgressionMediaRequirement
+} from "../realmzActions";
 import { isReusableDoorPlaceholder } from "../actionPointCapacity";
 import { normalizedEditorMetadata } from "./tilePaletteCommands";
 import { defaultGlobalMacroHooks } from "./scenarioRulesCommands";
@@ -292,12 +296,26 @@ export function moveActionPoint(project: Project, command: Extract<ProjectComman
   };
 }
 
-export function updateActionSlot(project: Project, triggerId: string, slot: number, rawCode: number, id: number) {
+export function updateActionSlot(
+  project: Project,
+  triggerId: string,
+  slot: number,
+  rawCode: number,
+  id: number,
+  mediaRequiredForProgression = false
+) {
   let changed = false;
   const triggers = project.triggers.map((trigger) => {
     if (trigger.id !== triggerId) return trigger;
     const actions = trigger.actions.filter((action) => action.slot !== slot);
-    if (rawCode !== 0 || id !== 0) actions.push(describeAction(slot, rawCode, id));
+    if (rawCode !== 0 || id !== 0) {
+      actions.push(describeAction(
+        slot,
+        rawCode,
+        id,
+        supportsRemakeProgressionMediaRequirement(rawCode) && mediaRequiredForProgression
+      ));
+    }
     actions.sort((a, b) => a.slot - b.slot);
     changed = true;
     return { ...trigger, actions };
@@ -331,7 +349,7 @@ export function duplicateActionSlot(project: Project, triggerId: string, fromSlo
     const action = trigger.actions.find((candidate) => candidate.slot === fromSlot);
     if (!action) return trigger;
     const actions = trigger.actions.filter((candidate) => candidate.slot !== toSlot);
-    actions.push(describeAction(toSlot, action.rawCode, action.id));
+    actions.push(describeAction(toSlot, action.rawCode, action.id, action.mediaRequiredForProgression));
     actions.sort((a, b) => a.slot - b.slot);
     changed = true;
     return { ...trigger, actions };
@@ -378,7 +396,12 @@ function emptyActionPointPlaceholder(trigger: TriggerRecord): TriggerRecord {
   };
 }
 
-function describeAction(slot: number, rawCode: number, id: number): Action {
+function describeAction(
+  slot: number,
+  rawCode: number,
+  id: number,
+  mediaRequiredForProgression = false
+): Action {
   const code = normalizeStepOpcode(rawCode);
   const option = actionOptionFor(rawCode);
   return {
@@ -388,7 +411,8 @@ function describeAction(slot: number, rawCode: number, id: number): Action {
     id,
     label: option.shortLabel,
     category: projectActionCategory(code, option.category),
-    gosub: rawCode < 0 && rawCode !== -14 && rawCode !== -23
+    gosub: rawCode < 0 && rawCode !== -14 && rawCode !== -23,
+    ...(mediaRequiredForProgression ? { mediaRequiredForProgression: true } : {})
   };
 }
 

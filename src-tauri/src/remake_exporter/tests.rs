@@ -796,6 +796,59 @@ fn exports_authoritative_ed3_callability_from_canonical_records() {
 }
 
 #[test]
+fn exports_only_explicit_progression_media_requirements() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("media-readiness.providence");
+    let mut project = create_project("Media readiness".to_string(), &project_dir).unwrap();
+    let mut required_picture = action(0, 27, 306);
+    required_picture.media_required_for_progression = Some(true);
+    project.triggers = vec![trigger_record(
+        "Data DD",
+        0,
+        vec![required_picture, action(1, 9, 3001)],
+    )];
+    let mut encounter =
+        crate::realmz::parse_simple_encounter_records(&vec![0; 426]).remove(0);
+    encounter.authored = true;
+    encounter.actions = vec![
+        crate::project::EncounterActionRow {
+            slot: 0,
+            raw_code: -27,
+            id: 306,
+            media_required_for_progression: Some(true),
+        },
+        crate::project::EncounterActionRow {
+            slot: 1,
+            raw_code: 9,
+            id: 3001,
+            media_required_for_progression: None,
+        },
+    ];
+    project.simple_encounters = vec![encounter];
+
+    let output = workspace.path().join("media-readiness-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let actions = documents["classic/scripts.json"]["triggers"][0]["actions"]
+        .as_array()
+        .unwrap();
+
+    assert_eq!(actions[0]["mediaRequiredForProgression"], true);
+    assert!(actions[1].get("mediaRequiredForProgression").is_none());
+    let encounter_actions =
+        documents["classic/encounters.json"]["simpleEncounters"][0]["actions"]
+            .as_array()
+            .unwrap();
+    assert_eq!(
+        encounter_actions[0]["mediaRequiredForProgression"],
+        true
+    );
+    assert!(encounter_actions[1]
+        .get("mediaRequiredForProgression")
+        .is_none());
+}
+
+#[test]
 fn preserves_negative_special_land_tile_ids_outside_the_v1_icon_catalog() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("special-tile.providence");
@@ -943,6 +996,7 @@ fn action(slot: usize, code: i16, id: i16) -> Action {
         label: format!("Opcode {code}"),
         category: ActionCategory::Branch,
         gosub: false,
+        media_required_for_progression: None,
     }
 }
 

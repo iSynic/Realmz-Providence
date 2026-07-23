@@ -276,6 +276,26 @@ project.assets.push(
     linkedEntity: "resource:styl:-200"
   })
 );
+const progressionMediaTrigger = project.triggers.find((trigger) => trigger.id === "land:0:ap:0");
+expect(progressionMediaTrigger, "Canonical project is missing its primary Action Point");
+progressionMediaTrigger.actions.push({
+  slot: 3,
+  rawCode: 9,
+  code: 9,
+  id: 321,
+  label: "Play Sound",
+  category: "ui_text",
+  gosub: false,
+  mediaRequiredForProgression: true
+});
+const progressionMediaEncounter = project.simpleEncounters.find((encounter) => encounter.id === 0);
+expect(progressionMediaEncounter, "Canonical project is missing its primary simple encounter");
+progressionMediaEncounter.actions.push({
+  slot: 2,
+  rawCode: 9,
+  id: 321,
+  mediaRequiredForProgression: true
+});
 project.validation.exportableFiles = [...new Set([...project.validation.exportableFiles, "Layout", "Data Custom 1 BD"])];
 project.validation = validateBrowserProject(project);
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
@@ -326,6 +346,16 @@ const questAction = project.triggers.flatMap((trigger) => trigger.actions).find(
 expect(questAction?.id === 1, `First authored quest flag must be runtime-valid ID 1, found ${questAction?.id}`);
 const allyAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 89);
 expect(allyAction?.id === 1, `Authored ally action must resolve Providence Sentinel ID 1, found ${allyAction?.id}`);
+const progressionMediaAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 9 && action.id === 321);
+expect(progressionMediaAction?.mediaRequiredForProgression === true, "Canonical sound action must retain its Remake progression requirement");
+expect(
+  progressionMediaEncounter.actions.some((action) =>
+    action.rawCode === 9 &&
+    action.id === 321 &&
+    action.mediaRequiredForProgression === true
+  ),
+  "Canonical encounter sound action must retain its Remake progression requirement"
+);
 
 project.scenario.projectPath = projectDir;
 project.source.rawSourcesDir = "";
@@ -781,6 +811,16 @@ async function assertNoRawSources(stage) {
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
   assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
+  expect(
+    savedProject.simpleEncounters
+      .flatMap((encounter) => encounter.actions)
+      .some((action) =>
+        action.rawCode === 9 &&
+        action.id === 321 &&
+        action.mediaRequiredForProgression === true
+      ),
+    `Rust-saved project ${stage} lost its encounter progression-media marker`
+  );
   assertOwnershipComplexEncounter(savedProject.complexEncounters, `Rust-saved project ${stage}`);
   assertOwnershipThiefEncounter(savedProject.thiefEncounters, `Rust-saved project ${stage}`);
   assertOwnershipTimedEncounter(savedProject.timedEncounters, `Rust-saved project ${stage}`);
@@ -1518,6 +1558,14 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(trigger.actions.some((action) => action.rawCode === 1 && action.code === 1), "Remake export lost the normalized message action");
   expect(trigger.actions.some((action) => action.rawCode === 47 && action.code === 47), "Remake export lost the normalized quest action");
   expect(trigger.actions.some((action) => action.rawCode === 89 && action.code === 89 && action.id === 1), "Remake export lost the authored ally action");
+  expect(
+    trigger.actions.some((action) =>
+      action.rawCode === 9 &&
+      action.id === 321 &&
+      action.mediaRequiredForProgression === true
+    ),
+    "Remake export lost the explicit progression-required sound marker"
+  );
   const dungeonRandomLevel = scripts.randomLevels.find((candidate) => candidate.id === "dungeon:0:randlevel");
   expect(dungeonRandomLevel?.isDark && dungeonRandomLevel.useLos && dungeonRandomLevel.landlook === 0, "Remake export lost the canonical dungeon random-level flags");
   const dungeonTrigger = scripts.triggers.find((candidate) => candidate.id === "dungeon:0:ap:1");
@@ -1530,6 +1578,16 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const encounters = documents.get("classic/encounters.json");
   expect(encounters.simpleEncounters.some((record) => record.id === 0), "Remake export lost the stable simple-encounter identity");
   expect(encounters.complexEncounters.some((record) => record.id === 0), "Remake export lost the stable complex-encounter identity");
+  expect(
+    encounters.simpleEncounters
+      .flatMap((record) => record.actions)
+      .some((action) =>
+        action.rawCode === 9 &&
+        action.id === 321 &&
+        action.mediaRequiredForProgression === true
+      ),
+    "Remake export lost the encounter progression-required sound marker"
+  );
   const content = documents.get("classic/content.json");
   expect(content.monsters.some((record) => record.id === 1 && record.nameId === 1), "Remake export conflated monster record and name identities");
   expect(content.scenarioItems.some((record) => record.id === 101 && record.itemId === 901), "Remake export lost scenario-item record or item identity");

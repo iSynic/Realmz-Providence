@@ -107,7 +107,7 @@ describe("teleport action presentation", () => {
     expect(actionPointStepApplyCommand({
       triggerId: "trigger:land:0:4",
       slot: 3,
-      draft: { rawCode: 37, id: 12 },
+      draft: { rawCode: 37, id: 12, mediaRequiredForProgression: false },
       edcdShape: definition.edcdShape,
       edcdValues: [1, 2, 30, 40, -3]
     })).toMatchObject({

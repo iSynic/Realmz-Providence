@@ -2413,6 +2413,7 @@ mod tests {
             label: "test".to_string(),
             category: ActionCategory::Unknown,
             gosub: false,
+            media_required_for_progression: None,
         }
     }
 

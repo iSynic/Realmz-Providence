@@ -30,7 +30,11 @@ export function ActionPointStepList({
   usedStepCount: number;
   firstEmptyStep: number | null | undefined;
   issueCounts: Map<number, { errors: number; warnings: number }>;
-  slotDraft: (slot: number, action: Action | undefined) => { rawCode: number; id: number };
+  slotDraft: (slot: number, action: Action | undefined) => {
+    rawCode: number;
+    id: number;
+    mediaRequiredForProgression: boolean;
+  };
   onSelectSlot: (slot: number) => void;
   flowPreview?: ReactNode;
 }) {
@@ -60,8 +64,10 @@ export function ActionPointStepList({
           const option = actionOptionFor(current.rawCode);
           const definition = scriptActionDefinitionFor(current.rawCode);
           const changed = action
-            ? current.rawCode !== action.rawCode || current.id !== action.id
-            : current.rawCode !== 0 || current.id !== 0;
+            ? current.rawCode !== action.rawCode ||
+              current.id !== action.id ||
+              current.mediaRequiredForProgression !== Boolean(action.mediaRequiredForProgression)
+            : current.rawCode !== 0 || current.id !== 0 || current.mediaRequiredForProgression;
           const slotIssues = issueCounts.get(slot) ?? { errors: 0, warnings: 0 };
           const branchHint = scriptStepBranchHint(current.rawCode, current.id);
           const issueCount = slotIssues.errors + slotIssues.warnings;
