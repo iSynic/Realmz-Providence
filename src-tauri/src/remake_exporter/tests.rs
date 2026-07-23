@@ -5,6 +5,10 @@ use crate::project::{
     MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioIconResource,
     ScenarioIconResourceSource, ScenarioSupportFile, SourceFile, SourceFileRole, TriggerRecord,
 };
+use crate::realmz::{
+    parse_caste_overrides, parse_race_overrides, CASTE_BYTES, CASTE_OVERRIDE_RECORDS, RACE_BYTES,
+    RACE_OVERRIDE_RECORDS,
+};
 use crate::resource_fork::{
     encode_cicn_resource, encode_pict_resource, encode_snd_resource, write_resource_fork,
     PcmAudioPayload, ResourceForkEntry, RgbaImagePayload,
@@ -530,6 +534,161 @@ fn imported_projects_without_catalog_pictures_do_not_require_the_compatibility_a
 }
 
 #[test]
+fn exports_authored_rule_rows_as_exact_scenario_local_changes() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("authored-rules.providence");
+    let mut project = create_project("Authored rules".to_string(), &project_dir).unwrap();
+    let race_baseline = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    let caste_baseline = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Caste",
+        CASTE_BYTES,
+        CASTE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    let mut race = parse_race_overrides(&race_baseline)[19].clone();
+    race.authored = true;
+    race.base_move += 1;
+    let mut caste = parse_caste_overrides(&caste_baseline)[20].clone();
+    caste.authored = true;
+    caste.start_money += 1;
+    project.race_overrides = vec![race];
+    project.caste_overrides = vec![caste];
+
+    let output = workspace.path().join("authored-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "scenario-local");
+    assert_eq!(
+        rules["tableSelection"]["races"]["changedRecordIds"],
+        json!([19])
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["source"],
+        "scenario-local"
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["changedRecordIds"],
+        json!([20])
+    );
+}
+
+#[test]
+fn imported_builtin_metadata_selects_shared_rule_tables() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("builtin-rules.providence");
+    let mut project = create_project("Built-in rules".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let mut race_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    race_bytes[19 * RACE_BYTES + 196] ^= 1;
+    project.race_overrides = parse_race_overrides(&race_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Race", &race_bytes);
+    let resource_fork = write_resource_fork(&[ResourceForkEntry {
+        resource_type: "RLMZ".to_string(),
+        id: 128,
+        name: "Built-in scenario index".to_string(),
+        attributes: 0,
+        data: vec![0; 8],
+    }])
+    .unwrap();
+    preserve_resource_fork(&mut project, &project_dir, &resource_fork);
+
+    let output = workspace.path().join("builtin-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "shared");
+    assert!(rules["tableSelection"]["races"]
+        .get("changedRecordIds")
+        .is_none());
+    assert_eq!(rules["tableSelection"]["castes"]["source"], "shared");
+}
+
+#[test]
+fn imported_third_party_tables_report_only_changed_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("third-party-rules.providence");
+    let mut project = create_project("Third-party rules".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let mut race_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    race_bytes[3 * RACE_BYTES + 196] ^= 1;
+    let caste_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Caste",
+        CASTE_BYTES,
+        CASTE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    project.race_overrides = parse_race_overrides(&race_bytes);
+    project.caste_overrides = parse_caste_overrides(&caste_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Race", &race_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Caste", &caste_bytes);
+    preserve_resource_fork(
+        &mut project,
+        &project_dir,
+        &write_resource_fork(&[]).unwrap(),
+    );
+
+    let output = workspace.path().join("third-party-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "scenario-local");
+    assert_eq!(
+        rules["tableSelection"]["races"]["changedRecordIds"],
+        json!([3])
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["source"],
+        "scenario-local"
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["changedRecordIds"],
+        json!([])
+    );
+}
+
+#[test]
+fn imported_tables_without_preserved_selection_evidence_remain_unresolved() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("unresolved-rules.providence");
+    let mut project = create_project("Unresolved rules".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let race_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    project.race_overrides = parse_race_overrides(&race_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Race", &race_bytes);
+
+    let output = workspace.path().join("unresolved-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "unresolved");
+    assert!(rules["tableSelection"]["races"]
+        .get("changedRecordIds")
+        .is_none());
+    assert_eq!(rules["tableSelection"]["castes"]["source"], "shared");
+}
+
+#[test]
 fn exports_authoritative_ed3_callability_from_canonical_records() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("reachability.providence");
@@ -843,6 +1002,49 @@ fn managed_music_asset() -> ManagedAsset {
         "conversion": null
     }))
     .unwrap()
+}
+
+fn mark_imported(project: &mut crate::project::ProvidenceProject) {
+    project.source.origin = Some(ProjectOrigin::Imported);
+    project.source.immutable = true;
+    project.source.raw_sources_dir = "raw-sources".to_string();
+}
+
+fn preserve_source_file(
+    project: &mut crate::project::ProvidenceProject,
+    project_dir: &Path,
+    name: &str,
+    bytes: &[u8],
+) {
+    let raw_sources = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources).unwrap();
+    fs::write(raw_sources.join(name), bytes).unwrap();
+    project.source.files.push(SourceFile {
+        name: name.to_string(),
+        relative_path: name.to_string(),
+        bytes: bytes.len() as u64,
+        sha256: hex::encode(Sha256::digest(bytes)),
+        role: SourceFileRole::SupportedBinary,
+        editable: true,
+    });
+}
+
+fn preserve_resource_fork(
+    project: &mut crate::project::ProvidenceProject,
+    project_dir: &Path,
+    bytes: &[u8],
+) {
+    let raw_sources = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources).unwrap();
+    fs::write(raw_sources.join("Scenario.rsrc"), bytes).unwrap();
+    project.source.files.push(SourceFile {
+        name: "Scenario.rsrc".to_string(),
+        relative_path: "Scenario.rsrc".to_string(),
+        bytes: bytes.len() as u64,
+        sha256: hex::encode(Sha256::digest(bytes)),
+        role: SourceFileRole::ResourceFork,
+        editable: false,
+    });
 }
 
 fn read_json_documents(root: &Path) -> BTreeMap<String, Value> {

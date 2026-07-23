@@ -47,6 +47,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | Scenario item icons | referenced `scenarioItems[].iconId` plus `scenarioIconResources` | Scenario-owned `cicn` bytes and deterministic PNG runtime media are packaged when a custom item references them; shared Realmz IDs remain runtime references. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
 | Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
+| Race and caste table selection | project origin plus preserved `Data Race`, `Data Caste`, and main-fork `RLMZ` evidence | Emits `rules.tableSelection` so Remake does not mistake inactive built-in copies for scenario overrides. |
 
 All nine version-1 JSON documents are emitted. Runtime records retain semantic fields and stable
 Classic identities while `rawBytes`, raw/trailing/reserved compatibility data, editor metadata,
@@ -58,6 +59,26 @@ compatibility annex. Every Extra Action Point remains in `scripts.triggers`; sou
 rows export with `callable: true`, while unreferenced imported rows export with `callable: false`.
 The corresponding classification and evidence path remain available under
 `evidence.semanticDecoding.ed3Reachability`.
+
+## Race and caste table selection
+
+Classic selects the shared race and caste files for built-in scenarios even when the scenario
+folder contains `Data Race` or `Data Caste`. Third-party scenarios use their local table when it
+exists and otherwise fall back to the shared file. File presence alone therefore cannot tell a
+consumer whether an exported row is active.
+
+`classic/rules.json` includes additive `tableSelection.races` and `tableSelection.castes` evidence:
+
+- a fresh authored project with no rows selects `shared`;
+- authored rows select `scenario-local`, with their exact record IDs in `changedRecordIds`;
+- an imported table paired with preserved built-in `RLMZ` metadata selects `shared`;
+- an imported third-party table is compared byte-for-byte with Providence's checked-in shared
+  baseline and selects `scenario-local`, with only differing records listed; and
+- an imported table without enough preserved source evidence selects `unresolved`.
+
+This is runtime-selection evidence, not a copy of the compatibility annex. Remake can ignore shared
+rows, apply or gate only known changed local rows, and retain its conservative behavior for older
+or unresolved bundles.
 
 ## Managed resource payloads
 
@@ -139,9 +160,9 @@ without reinterpreting ordinary non-negative icon IDs.
 ## Usage and verification
 
 The output directory must be absent or empty. The exporter refuses absolute or parent-relative
-managed-resource paths. For imported projects it reads only project-relative preserved resource
-forks needed to materialize catalogued scenario PICTs; semantic runtime records remain canonical
-project projections and do not consult `raw-sources`.
+managed-resource paths. For imported projects it reads only project-relative preserved files
+needed to materialize catalogued scenario PICTs and establish Classic's race/caste table selection;
+semantic runtime records remain canonical project projections.
 
 The authoritative proof generates the bundle twice from
 `fixtures/scenario-seeds/authoritative-ownership-proof.seed.json` and compares every file byte.

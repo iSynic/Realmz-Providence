@@ -1,6 +1,7 @@
 mod assets;
 mod documents;
 mod portable;
+mod rule_selection;
 
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::{LevelType, ProvidenceProject};
@@ -74,7 +75,7 @@ pub fn export_remake_campaign(
     counts.managed_assets = packaged_assets.managed_assets.len();
     counts.packaged_asset_payloads = packaged_assets.written_files.len();
     let files = contract_files();
-    let documents = build_documents(project, &packaged_assets)?;
+    let documents = build_documents(project, &packaged_assets, project_dir)?;
     let manifest = campaign_manifest(project, &counts, &files, &limitations);
     assert_portable_value(&manifest, project_dir, "campaign.json")?;
 

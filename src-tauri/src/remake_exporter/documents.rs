@@ -1,4 +1,5 @@
 use super::assets::PackagedAssets;
+use super::rule_selection::rule_table_selection;
 use super::{portable_campaign_id, REMAKE_CLASSIC_FORMAT_VERSION};
 use crate::error::Result;
 use crate::project::{ProvidenceProject, SemanticSchema, TriggerRecord};
@@ -6,6 +7,7 @@ use crate::remake_exporter::portable::{portable_source_label, portable_value};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
+use std::path::Path;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +34,7 @@ pub(crate) fn contract_files() -> BTreeMap<&'static str, &'static str> {
 pub(crate) fn build_documents(
     project: &ProvidenceProject,
     assets: &PackagedAssets,
+    project_dir: &Path,
 ) -> Result<Vec<(&'static str, Value)>> {
     let semantic_schema = crate::semantic::build_canonical_project_semantic_schema(project);
     Ok(vec![
@@ -40,7 +43,7 @@ pub(crate) fn build_documents(
         ("scripts.json", scripts_document(project, &semantic_schema)?),
         ("encounters.json", encounters_document(project)?),
         ("content.json", content_document(project)?),
-        ("rules.json", rules_document(project)?),
+        ("rules.json", rules_document(project, project_dir)?),
         ("assets.json", assets.document()),
         (
             "evidence.json",
@@ -133,7 +136,7 @@ fn content_document(project: &ProvidenceProject) -> Result<Value> {
     }))
 }
 
-fn rules_document(project: &ProvidenceProject) -> Result<Value> {
+fn rules_document(project: &ProvidenceProject, project_dir: &Path) -> Result<Value> {
     let rule_names = json!({
         "sourceFile": portable_source_label(&project.rule_names.source_file),
         "raceNames": &project.rule_names.race_names,
@@ -147,6 +150,7 @@ fn rules_document(project: &ProvidenceProject) -> Result<Value> {
         "raceOverrides": portable_value(&project.race_overrides)?,
         "casteOverrides": portable_value(&project.caste_overrides)?,
         "ruleNames": rule_names,
+        "tableSelection": rule_table_selection(project, project_dir)?,
     }))
 }
 
