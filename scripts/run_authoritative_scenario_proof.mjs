@@ -1504,6 +1504,17 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
     const resource = assets.catalog[collection].find((entry) => entry.resourceType === resourceType && entry.resourceId === resourceId);
     expect(resource?.payloadPath && files.has(resource.payloadPath), `Remake ${collection} catalog lost ${resourceType} ${resourceId}`);
   }
+  const picture = assets.catalog.pictures.find((entry) => entry.resourceType === "PICT" && entry.resourceId === 306);
+  expect(picture?.runtimeMedia?.mediaType === "image/png", "Remake picture catalog lost decoded PNG runtime media");
+  expect(typeof picture.runtimeMedia.path === "string" && picture.runtimeMedia.path.startsWith("media/pictures/pict-306-"), "Remake picture runtime media has a non-portable path");
+  expect(files.has(picture.runtimeMedia.path), "Remake picture runtime media file is missing");
+  const runtimePicture = Buffer.from(files.get(picture.runtimeMedia.path));
+  expect(runtimePicture.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])), "Remake picture runtime media is not PNG");
+  expect(picture.runtimeMedia.bytes === runtimePicture.length, "Remake picture runtime media byte count is wrong");
+  expect(picture.runtimeMedia.sha256 === createHash("sha256").update(runtimePicture).digest("hex"), "Remake picture runtime media hash is wrong");
+  const managedPicture = assets.managedAssets.find((asset) => asset.resourceType === "PICT" && asset.resourceId === 306);
+  expect(JSON.stringify(managedPicture?.runtimeMedia) === JSON.stringify(picture.runtimeMedia), "Managed and catalog picture runtime media differ");
+
   const sound = assets.catalog.sounds.find((entry) => entry.resourceType === "snd " && entry.resourceId === 321);
   expect(sound?.runtimeMedia?.mediaType === "audio/wav", "Remake sound catalog lost decoded WAV runtime media");
   expect(typeof sound.runtimeMedia.path === "string" && sound.runtimeMedia.path.startsWith("media/sounds/snd-321-"), "Remake sound runtime media has a non-portable path");
@@ -1516,7 +1527,7 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(JSON.stringify(managedSound?.runtimeMedia) === JSON.stringify(sound.runtimeMedia), "Managed and catalog sound runtime media differ");
 
   for (const [name, document] of documents) assertPortableRemakeDocument(document, name);
-  const runtimeMediaFiles = canonicalProject.assets.filter((asset) => asset.resourceType === "snd ").length;
+  const runtimeMediaFiles = canonicalProject.assets.filter((asset) => ["PICT", "cicn", "snd "].includes(asset.resourceType)).length;
   const expectedPayloadFiles = canonicalProject.assets.length + runtimeMediaFiles;
   expect(manifest.counts.packagedAssetPayloads === expectedPayloadFiles, "Remake export reported the wrong packaged payload count");
   expect([...files.keys()].filter((name) => !requiredDocuments.includes(name)).length === expectedPayloadFiles, "Remake export produced an unexpected payload file set");

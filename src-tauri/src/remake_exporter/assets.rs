@@ -3,8 +3,9 @@ use super::REMAKE_CLASSIC_FORMAT_VERSION;
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::project::{
     ManagedAsset, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
-    ProvidenceProject, ResourceAsset,
+    ProvidenceProject, ResourceAsset, SourceFileRole,
 };
+use crate::resource_fork::parse_resource_fork_entries;
 use crate::resource_preview::{inspect_resource_preview, sound::decode_snd_to_wav};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
@@ -15,6 +16,7 @@ use std::path::{Component, Path, PathBuf};
 
 const ASSET_DIR: &str = "assets/managed";
 const RUNTIME_IMAGE_DIR: &str = "media/images";
+const RUNTIME_PICTURE_DIR: &str = "media/pictures";
 const RUNTIME_SOUND_DIR: &str = "media/sounds";
 
 #[derive(Debug, Clone)]
@@ -23,6 +25,13 @@ struct PackagedRuntimeMedia {
     bytes: u64,
     sha256: String,
     media_type: String,
+}
+
+#[derive(Debug, Clone)]
+struct ScenarioPicturePayload {
+    source_file: String,
+    name: String,
+    bytes: Vec<u8>,
 }
 
 #[derive(Debug, Clone)]
@@ -94,6 +103,13 @@ pub(crate) fn package_assets(
         }
         managed_assets.push(managed_asset_document(asset, &payload));
     }
+    package_scenario_pictures(
+        project,
+        project_dir,
+        output_dir,
+        &mut payloads,
+        &mut written_files,
+    )?;
     package_shared_special_land_tiles(project, output_dir, &mut payloads, &mut written_files)?;
     managed_assets.sort_by(|left, right| value_string(left, "id").cmp(&value_string(right, "id")));
     written_files.sort();
@@ -220,8 +236,14 @@ fn write_resource_payload(
             ))
         })?;
         Some(write_runtime_sound(resource_id, &wav, output_dir)?)
-    } else if resource_type == "cicn" {
-        Some(write_runtime_image(resource_id, label, bytes, output_dir)?)
+    } else if resource_type == "PICT" || resource_type == "cicn" {
+        Some(write_runtime_image(
+            resource_type,
+            resource_id,
+            label,
+            bytes,
+            output_dir,
+        )?)
     } else {
         None
     };
@@ -262,12 +284,14 @@ fn write_runtime_sound(
 }
 
 fn write_runtime_image(
+    resource_type: &str,
     resource_id: i16,
     label: &str,
     bytes: &[u8],
     output_dir: &Path,
 ) -> Result<PackagedRuntimeMedia> {
-    let preview = inspect_resource_preview("cicn", bytes)?;
+    let preview = inspect_resource_preview(resource_type, bytes)?;
+    let display_type = resource_type.trim();
     let data_url = preview.data_url.ok_or_else(|| {
         let detail = preview
             .diagnostics
@@ -275,22 +299,22 @@ fn write_runtime_image(
             .map(|diagnostic| diagnostic.message.as_str())
             .unwrap_or("no decoded image was produced");
         ProvidenceError::message(format!(
-            "cicn '{}' cannot be decoded for Realmz Remake runtime media: {detail}",
-            label
+            "{display_type} '{}' cannot be decoded for Realmz Remake runtime media: {detail}",
+            label,
         ))
     })?;
     let encoded = data_url
         .strip_prefix("data:image/png;base64,")
         .ok_or_else(|| {
             ProvidenceError::message(format!(
-                "cicn '{}' did not produce PNG runtime media",
-                label
+                "{display_type} '{}' did not produce PNG runtime media",
+                label,
             ))
         })?;
     let png = STANDARD.decode(encoded).map_err(|error| {
         ProvidenceError::message(format!(
-            "cicn '{}' produced invalid PNG runtime media: {error}",
-            label
+            "{display_type} '{}' produced invalid PNG runtime media: {error}",
+            label,
         ))
     })?;
     let sha256 = hex::encode(Sha256::digest(&png));
@@ -299,7 +323,15 @@ fn write_runtime_image(
     } else {
         resource_id.to_string()
     };
-    let relative_path = format!("{RUNTIME_IMAGE_DIR}/cicn-{id}-{}.png", &sha256[..12]);
+    let relative_path = match resource_type {
+        "PICT" => format!("{RUNTIME_PICTURE_DIR}/pict-{id}-{}.png", &sha256[..12]),
+        "cicn" => format!("{RUNTIME_IMAGE_DIR}/cicn-{id}-{}.png", &sha256[..12]),
+        _ => {
+            return Err(ProvidenceError::message(format!(
+                "No Realmz Remake runtime image path is defined for {display_type}"
+            )))
+        }
+    };
     let path = output_dir.join(PathBuf::from(&relative_path));
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).with_path(parent)?;
@@ -311,6 +343,208 @@ fn write_runtime_image(
         sha256,
         media_type: "image/png".to_string(),
     })
+}
+
+fn package_scenario_pictures(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let mut missing = Vec::new();
+    for asset in project
+        .asset_catalog
+        .pictures
+        .iter()
+        .filter(|asset| asset.resource_type == "PICT" && is_scenario_owned_picture(asset))
+    {
+        let resource_id = i16::try_from(asset.resource_id).map_err(|_| {
+            ProvidenceError::message(format!(
+                "Scenario picture resource ID {} is outside the Classic signed 16-bit range",
+                asset.resource_id
+            ))
+        })?;
+        if !payloads.contains_key(&("PICT".to_string(), resource_id)) {
+            missing.push((asset, resource_id));
+        }
+    }
+    if missing.is_empty() {
+        return Ok(());
+    }
+    if !project.source.requires_compatibility_annex() {
+        return Err(ProvidenceError::message(format!(
+            "Scenario-owned PICT {} has no canonical managed payload",
+            missing[0].1
+        )));
+    }
+
+    let candidates = preserved_scenario_picture_payloads(project, project_dir)?;
+    for (asset, resource_id) in missing {
+        let candidate = select_scenario_picture_payload(asset, &candidates)?;
+        let label = asset
+            .name
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+            .or_else(|| (!candidate.name.trim().is_empty()).then_some(candidate.name.as_str()))
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("Scenario picture {resource_id}"));
+        let payload = write_resource_payload(
+            "PICT",
+            resource_id,
+            &label,
+            &candidate.bytes,
+            "image/pict",
+            &format!("Preserved scenario resource {}", candidate.source_file),
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("PICT".to_string(), resource_id), payload);
+    }
+    Ok(())
+}
+
+fn is_scenario_owned_picture(asset: &ResourceAsset) -> bool {
+    let source = asset.source.to_ascii_lowercase();
+    asset.id.starts_with("scenario-pict-")
+        || source.starts_with("scenario resource fork:")
+        || (source.starts_with("browser import:")
+            && !source.contains("bundled realmz reference pict"))
+}
+
+fn preserved_scenario_picture_payloads(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+) -> Result<BTreeMap<i16, Vec<ScenarioPicturePayload>>> {
+    let raw_sources_dir = if project.source.raw_sources_dir.trim().is_empty() {
+        PathBuf::from("raw-sources")
+    } else {
+        validated_relative_path(
+            &project.source.raw_sources_dir,
+            "Imported project raw-sources directory",
+        )?
+    };
+    let raw_sources_dir = project_dir.join(raw_sources_dir);
+    let mut source_files = project
+        .source
+        .files
+        .iter()
+        .filter(|file| matches!(&file.role, SourceFileRole::ResourceFork))
+        .collect::<Vec<_>>();
+    source_files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
+
+    let mut pictures = BTreeMap::<i16, Vec<ScenarioPicturePayload>>::new();
+    for source_file in source_files {
+        let relative_path = validated_relative_path(
+            &source_file.relative_path,
+            &format!("Preserved resource fork '{}'", source_file.name),
+        )?;
+        let path = raw_sources_dir.join(relative_path);
+        if !path.is_file() {
+            continue;
+        }
+        let bytes = fs::read(&path).with_path(&path)?;
+        for entry in parse_resource_fork_entries(&bytes)
+            .into_iter()
+            .filter(|entry| entry.resource_type == "PICT")
+        {
+            pictures
+                .entry(entry.id)
+                .or_default()
+                .push(ScenarioPicturePayload {
+                    source_file: source_file.name.clone(),
+                    name: entry.name,
+                    bytes: entry.data,
+                });
+        }
+    }
+    Ok(pictures)
+}
+
+fn select_scenario_picture_payload<'a>(
+    asset: &ResourceAsset,
+    candidates: &'a BTreeMap<i16, Vec<ScenarioPicturePayload>>,
+) -> Result<&'a ScenarioPicturePayload> {
+    let resource_id = i16::try_from(asset.resource_id).map_err(|_| {
+        ProvidenceError::message(format!(
+            "Scenario picture resource ID {} is outside the Classic signed 16-bit range",
+            asset.resource_id
+        ))
+    })?;
+    let available = candidates.get(&resource_id).ok_or_else(|| {
+        ProvidenceError::message(format!(
+            "Scenario-owned PICT {resource_id} has no managed payload and was not found in the project raw-source snapshot"
+        ))
+    })?;
+    let source_hint = scenario_picture_source_hint(asset);
+    let matching = source_hint
+        .as_deref()
+        .map(|hint| {
+            available
+                .iter()
+                .filter(|candidate| source_file_matches(&candidate.source_file, hint))
+                .collect::<Vec<_>>()
+        })
+        .filter(|matching| !matching.is_empty())
+        .unwrap_or_else(|| available.iter().collect::<Vec<_>>());
+    let first = matching[0];
+    if matching
+        .iter()
+        .skip(1)
+        .any(|candidate| candidate.bytes != first.bytes)
+    {
+        return Err(ProvidenceError::message(format!(
+            "Scenario-owned PICT {resource_id} is ambiguous across preserved resource forks: {}",
+            matching
+                .iter()
+                .map(|candidate| candidate.source_file.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )));
+    }
+    Ok(first)
+}
+
+fn scenario_picture_source_hint(asset: &ResourceAsset) -> Option<String> {
+    if let Some(source) = asset.source.strip_prefix("Scenario resource fork: ") {
+        return Some(source.trim().to_string());
+    }
+    let source = asset.source.strip_prefix("Browser import: ")?;
+    let suffix = format!(" PICT {}", asset.resource_id);
+    source
+        .strip_suffix(&suffix)
+        .map(|value| value.trim().to_string())
+}
+
+fn source_file_matches(source_file: &str, hint: &str) -> bool {
+    let source_file = source_file.replace('\\', "/");
+    let hint = hint.replace('\\', "/");
+    source_file.eq_ignore_ascii_case(&hint)
+        || source_file
+            .rsplit('/')
+            .next()
+            .is_some_and(|name| name.eq_ignore_ascii_case(hint.rsplit('/').next().unwrap_or(&hint)))
+}
+
+fn validated_relative_path(value: &str, label: &str) -> Result<PathBuf> {
+    let path = Path::new(value);
+    if value.trim().is_empty()
+        || path.is_absolute()
+        || path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        })
+    {
+        return Err(ProvidenceError::message(format!(
+            "{label} must use a project-relative path"
+        )));
+    }
+    Ok(path.to_path_buf())
 }
 
 fn package_shared_special_land_tiles(
