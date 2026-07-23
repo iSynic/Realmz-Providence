@@ -292,7 +292,7 @@ function writeManagedResources(
   const updates: ResourceForkUpdate[] = [
     ...mapNameResourceUpdates(project, original),
     ...monsterIconOverrideUpdates(project, original, result),
-    ...scenarioIconResourceUpdates(project.scenarioItems, project.scenarioIconResources, result),
+    ...scenarioIconResourceUpdates(project.scenarioItems, project.scenarioIconResources, original, result),
     ...managedAssetResourceUpdates(project.assets ?? [], original, result)
   ];
   const removals = project.editorMetadata?.removedScenarioResources ?? [];
@@ -873,11 +873,13 @@ function monsterIconOverrideUpdates(project: Project, original: Uint8Array, resu
 function scenarioIconResourceUpdates(
   scenarioItems: ScenarioItemRecord[],
   scenarioIconResources: ScenarioIconResource[],
+  original: Uint8Array,
   result: ResourceExportResult
 ) {
   const referencedItemIcons = new Set(scenarioItems.filter((item) => item.iconId !== 0).map((item) => Math.abs(item.iconId)));
   const updates: ResourceForkUpdate[] = [];
   if (referencedItemIcons.size === 0) return updates;
+  const originalEntries = parseResourceFork(original);
   for (const resource of scenarioIconResources ?? []) {
     const resourceId = Math.abs(resource.resourceId);
     if (!referencedItemIcons.has(resourceId)) continue;
@@ -890,11 +892,15 @@ function scenarioIconResourceUpdates(
       result.resourceWarnings.push(`Scenario icon resource ${resource.resourceId} has invalid cicn data.`);
       continue;
     }
+    const existing = resource.imported
+      ? originalEntries.find((entry) => entry.resourceType === "cicn" && Math.abs(entry.id) === resourceId)
+      : null;
+    if (existing && bytesEqual(existing.data, data)) continue;
     updates.push({
       resourceType: "cicn",
       id: resourceId,
-      name: resource.label,
-      attributes: 0,
+      name: existing?.name ?? resource.label,
+      attributes: existing?.attributes ?? 0,
       data
     });
     result.writtenResources.push(`cicn ${resourceId}: custom item icon ${resource.label}`);

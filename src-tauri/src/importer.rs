@@ -1573,12 +1573,26 @@ fn import_icon_overlays(
         .flat_map(|set| monster_icon_ids(&set.monsters))
         .chain(monster_icon_ids(&project.monsters))
         .collect::<BTreeSet<_>>();
+    let item_icon_ids = project
+        .scenario_items
+        .iter()
+        .filter_map(|item| item.icon_id.checked_abs())
+        .filter(|icon_id| *icon_id != 0)
+        .collect::<BTreeSet<_>>();
     let referenced_icon_ids = map_icon_ids
         .union(&monster_icon_ids)
         .copied()
+        .chain(item_icon_ids.iter().copied())
         .collect::<BTreeSet<_>>();
     let bundled_map_icon_ids = bundled_reference_resource_ids("cicn", &map_icon_ids)?;
-    import_scenario_icon_overlays(source_path, &icon_dir, &referenced_icon_ids, project)?;
+    import_scenario_icon_overlays(
+        source_path,
+        &icon_dir,
+        &referenced_icon_ids,
+        &item_icon_ids,
+        &monster_icon_ids,
+        project,
+    )?;
     project
         .diagnostics
         .retain(|diagnostic| diagnostic.code != "missing-map-icon-overlay");
@@ -1640,6 +1654,8 @@ fn import_scenario_icon_overlays(
     source_path: &Path,
     icon_dir: &Path,
     icon_ids: &BTreeSet<i16>,
+    item_icon_ids: &BTreeSet<i16>,
+    monster_icon_ids: &BTreeSet<i16>,
     project: &mut ProvidenceProject,
 ) -> Result<()> {
     if icon_ids.is_empty() {
@@ -1693,19 +1709,29 @@ fn import_scenario_icon_overlays(
             let file_name = format!("icon_{}.png", entry.id);
             let dest = icon_dir.join(&file_name);
             fs::write(&dest, png_bytes).with_path(&dest)?;
+            let preview_path = format!("{ASSETS_DIR}/{ICONS_DIR}/{file_name}");
             upsert_scenario_icon_asset(
                 project,
                 entry.id,
-                entry.name,
+                entry.name.clone(),
                 resource_path
                     .file_name()
                     .and_then(|name| name.to_str())
                     .unwrap_or("Scenario resource fork"),
-                format!("{ASSETS_DIR}/{ICONS_DIR}/{file_name}"),
+                preview_path.clone(),
             );
+            if item_icon_ids.contains(&entry.id) {
+                upsert_scenario_item_icon_resource(
+                    project,
+                    entry.id,
+                    entry.name,
+                    entry.data,
+                    preview_path,
+                );
+            }
             imported.insert(entry.id);
         }
-        import_monster_icon_override_pairs(project, icon_ids, &bytes);
+        import_monster_icon_override_pairs(project, monster_icon_ids, &bytes);
     }
     project
         .asset_catalog
@@ -2070,6 +2096,47 @@ fn upsert_scenario_icon_asset(
         source: format!("Scenario resource fork: {source_file}"),
         preview_path: Some(preview_path),
     });
+}
+
+fn upsert_scenario_item_icon_resource(
+    project: &mut ProvidenceProject,
+    icon_id: i16,
+    name: String,
+    resource_data: Vec<u8>,
+    preview_path: String,
+) {
+    let resource_id = i32::from(icon_id).abs();
+    let label = if name.trim().is_empty() {
+        format!("cicn {resource_id}")
+    } else {
+        name
+    };
+    if let Some(resource) = project
+        .scenario_icon_resources
+        .iter_mut()
+        .find(|resource| resource.resource_id.abs() == resource_id)
+    {
+        if !resource.imported {
+            return;
+        }
+        resource.resource_id = resource_id;
+        resource.label = label;
+        resource.source_kind = ScenarioIconResourceSource::ScenarioResource;
+        resource.resource_base64 = STANDARD.encode(resource_data);
+        resource.preview_path = Some(preview_path);
+    } else {
+        project.scenario_icon_resources.push(ScenarioIconResource {
+            resource_id,
+            label,
+            source_kind: ScenarioIconResourceSource::ScenarioResource,
+            resource_base64: STANDARD.encode(resource_data),
+            preview_path: Some(preview_path),
+            imported: true,
+        });
+    }
+    project
+        .scenario_icon_resources
+        .sort_by_key(|resource| resource.resource_id.abs());
 }
 
 fn import_picture_assets(
@@ -2734,6 +2801,78 @@ mod tests {
         assert_eq!(monster_icon_target_id(-385), Some(385));
         assert_eq!(monster_icon_target_id(i16::MIN), None);
         assert_eq!(absolute_i16_as_i32(i16::MIN), 32768);
+    }
+
+    #[test]
+    fn imports_item_referenced_scenario_icons_as_project_owned_resources() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let source_dir = temp.path().join("Dead of Night");
+        let project_dir = temp.path().join("Dead of Night.providence");
+        let assets_dir = project_dir.join(ASSETS_DIR);
+        fs::create_dir_all(&source_dir).expect("source directory");
+        fs::create_dir_all(&assets_dir).expect("assets directory");
+        let cicn = crate::resource_fork::encode_cicn_resource(
+            &crate::resource_fork::RgbaImagePayload {
+                width: 2,
+                height: 2,
+                rgba_base64: STANDARD.encode([
+                    0_u8, 128, 0, 255, 0, 255, 0, 255, 32, 32, 32, 255, 0, 0, 0, 0,
+                ]),
+            },
+        )
+        .expect("cicn");
+        let fork = crate::resource_fork::write_resource_fork(&[
+            crate::resource_fork::ResourceForkEntry {
+                resource_type: "cicn".to_string(),
+                id: 30061,
+                name: "Robe with Green Shine".to_string(),
+                attributes: 0,
+                data: cicn.clone(),
+            },
+        ])
+        .expect("resource fork");
+        fs::write(source_dir.join("Scenario.rsrc"), fork).expect("scenario resource fork");
+
+        let mut project =
+            create_project("Dead of Night".to_string(), &project_dir).expect("project");
+        let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
+            .into_iter()
+            .next()
+            .expect("item");
+        item.item_id = 982;
+        item.icon_id = 30061;
+        project.scenario_items.push(item);
+
+        import_icon_overlays(&source_dir, &assets_dir, &mut project).expect("import icons");
+
+        let asset = project
+            .asset_catalog
+            .icons
+            .iter()
+            .find(|asset| asset.resource_id == 30061)
+            .expect("scenario icon asset");
+        assert_eq!(asset.name.as_deref(), Some("Robe with Green Shine"));
+        assert!(asset
+            .source
+            .contains("Scenario resource fork: Scenario.rsrc"));
+        assert!(asset
+            .preview_path
+            .as_deref()
+            .is_some_and(|path| path.ends_with("assets/icons/icon_30061.png")));
+        let resource = project
+            .scenario_icon_resources
+            .iter()
+            .find(|resource| resource.resource_id == 30061)
+            .expect("scenario item icon resource");
+        assert_eq!(resource.label, "Robe with Green Shine");
+        assert!(resource.imported);
+        assert_eq!(
+            STANDARD
+                .decode(&resource.resource_base64)
+                .expect("resource bytes"),
+            cicn
+        );
+        assert!(project.monster_icon_overrides.is_empty());
     }
 
     #[test]

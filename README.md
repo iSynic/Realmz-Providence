@@ -17,7 +17,7 @@ Providence is not a clone of Divinity's interface. It presents the same game con
 
 ## Download
 
-The current release is **Realmz Providence 0.5.3**.
+The current release is **Realmz Providence 0.5.4**.
 
 | Platform | Package |
 | --- | --- |

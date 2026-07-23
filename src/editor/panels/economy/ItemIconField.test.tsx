@@ -53,6 +53,7 @@ describe("Economy item icon field", () => {
     expect(references[0]?.detail).toContain("Providence Icon Library");
     expect(references[0]?.searchText).toContain("Project Beacon");
     expect(references[0]?.searchText).toContain("Library Beacon");
+    expect(references[0]?.label).toBe("Project Beacon");
   });
 
   it("uses shared term matching and preserves arbitrary numeric icon IDs", () => {
@@ -74,7 +75,7 @@ describe("Economy item icon field", () => {
     }));
     expect(html).toContain('aria-label="Search item icon"');
     expect(html).toContain('aria-haspopup="dialog"');
-    expect(html).toContain("cicn 501: Beacon Lens");
+    expect(html).toContain("cicn 501: Project Beacon");
     expect(html).not.toContain('type="number"');
     expect(html).not.toContain("item-icon-picker-backdrop");
   });

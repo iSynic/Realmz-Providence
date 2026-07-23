@@ -1870,6 +1870,7 @@ fn write_managed_resources(
     updates.extend(scenario_icon_resource_updates(
         &project.scenario_items,
         &project.scenario_icon_resources,
+        &original,
         &mut result,
     ));
     let mut scrolling_text_runtime_warning_emitted = false;
@@ -2173,6 +2174,7 @@ fn monster_icon_override_updates(
 fn scenario_icon_resource_updates(
     scenario_items: &[crate::project::ScenarioItemRecord],
     scenario_icon_resources: &[crate::project::ScenarioIconResource],
+    original: &[u8],
     result: &mut ResourceExportResult,
 ) -> Vec<ResourceForkEntry> {
     let referenced_item_icons = scenario_items
@@ -2183,6 +2185,7 @@ fn scenario_icon_resource_updates(
     if referenced_item_icons.is_empty() {
         return Vec::new();
     }
+    let original_entries = parse_resource_fork_entries(original);
     let mut updates = Vec::new();
     for resource in scenario_icon_resources {
         let resource_id = resource.resource_id.abs();
@@ -2206,11 +2209,21 @@ fn scenario_icon_resource_updates(
                 continue;
             }
         };
+        let existing = resource.imported.then(|| {
+            original_entries.iter().find(|entry| {
+                entry.resource_type == "cicn" && i32::from(entry.id).abs() == resource_id
+            })
+        }).flatten();
+        if existing.is_some_and(|entry| entry.data == data) {
+            continue;
+        }
         updates.push(ResourceForkEntry {
             resource_type: "cicn".to_string(),
             id: resource_id as i16,
-            name: resource.label.clone(),
-            attributes: 0,
+            name: existing
+                .map(|entry| entry.name.clone())
+                .unwrap_or_else(|| resource.label.clone()),
+            attributes: existing.map(|entry| entry.attributes).unwrap_or(0),
             data,
         });
         result.written_resources.push(format!(
@@ -3851,7 +3864,7 @@ mod tests {
         ];
         let mut result = ResourceExportResult::default();
 
-        let entries = scenario_icon_resource_updates(&items, &resources, &mut result);
+        let entries = scenario_icon_resource_updates(&items, &resources, &[], &mut result);
 
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].resource_type, "cicn");
@@ -3861,6 +3874,35 @@ mod tests {
             .written_resources
             .iter()
             .any(|entry| entry.contains("cicn 30126")));
+    }
+
+    #[test]
+    fn imported_scenario_icon_resource_is_not_rewritten_when_unchanged() {
+        let items = vec![scenario_item_with_icon(0, 30126)];
+        let icon_bytes = vec![9u8, 8, 7];
+        let resources = vec![ScenarioIconResource {
+            resource_id: 30126,
+            label: "Imported item icon".to_string(),
+            source_kind: ScenarioIconResourceSource::ScenarioResource,
+            resource_base64: STANDARD.encode(&icon_bytes),
+            preview_path: None,
+            imported: true,
+        }];
+        let original = crate::resource_fork::write_resource_fork(&[ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: 30126,
+            name: "Imported item icon".to_string(),
+            attributes: 0,
+            data: icon_bytes,
+        }])
+        .expect("resource fork");
+        let mut result = ResourceExportResult::default();
+
+        let entries =
+            scenario_icon_resource_updates(&items, &resources, &original, &mut result);
+
+        assert!(entries.is_empty());
+        assert!(result.written_resources.is_empty());
     }
 
     #[test]

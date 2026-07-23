@@ -110,6 +110,12 @@ pub(crate) fn package_assets(
         &mut payloads,
         &mut written_files,
     )?;
+    package_scenario_item_icons(
+        project,
+        output_dir,
+        &mut payloads,
+        &mut written_files,
+    )?;
     package_shared_special_land_tiles(project, output_dir, &mut payloads, &mut written_files)?;
     managed_assets.sort_by(|left, right| value_string(left, "id").cmp(&value_string(right, "id")));
     written_files.sort();
@@ -517,6 +523,63 @@ fn scenario_picture_source_hint(asset: &ResourceAsset) -> Option<String> {
     source
         .strip_suffix(&suffix)
         .map(|value| value.trim().to_string())
+}
+
+fn package_scenario_item_icons(
+    project: &ProvidenceProject,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let referenced = project
+        .scenario_items
+        .iter()
+        .filter_map(|item| item.icon_id.checked_abs())
+        .filter(|resource_id| *resource_id != 0)
+        .collect::<BTreeSet<_>>();
+    if referenced.is_empty() {
+        return Ok(());
+    }
+
+    let mut resources = project.scenario_icon_resources.iter().collect::<Vec<_>>();
+    resources.sort_by_key(|resource| resource.resource_id.abs());
+    for resource in resources {
+        let resource_id = i16::try_from(resource.resource_id.abs()).map_err(|_| {
+            ProvidenceError::message(format!(
+                "Scenario item icon resource ID {} is outside the Classic signed 16-bit range",
+                resource.resource_id
+            ))
+        })?;
+        if !referenced.contains(&resource_id)
+            || payloads.contains_key(&("cicn".to_string(), resource_id))
+        {
+            continue;
+        }
+        let bytes = STANDARD.decode(&resource.resource_base64).map_err(|error| {
+            ProvidenceError::message(format!(
+                "Scenario item icon cicn {resource_id} has invalid Classic resource data: {error}"
+            ))
+        })?;
+        let payload = write_resource_payload(
+            "cicn",
+            resource_id,
+            &resource.label,
+            &bytes,
+            "image/cicn",
+            if resource.imported {
+                "Preserved scenario item icon"
+            } else {
+                "Scenario item icon"
+            },
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("cicn".to_string(), resource_id), payload);
+    }
+    Ok(())
 }
 
 fn source_file_matches(source_file: &str, hint: &str) -> bool {

@@ -28,6 +28,7 @@ self-contained projection governed by Realmz Remake's
 | Interpreter evidence | dispatcher no-op observations and compact source/record evidence | Compatible additive v1 evidence. |
 | Managed resources | scenario-scoped `assets[].resourcePath` | Payload is moved to a bundle-relative file; the data URI is never serialized. |
 | Scenario pictures | managed `PICT` resources or imported scenario-fork `assetCatalog.pictures` | Exact Classic bytes and deterministic PNG runtime media are packaged for every scenario-owned picture. |
+| Scenario item icons | referenced `scenarioItems[].iconId` plus `scenarioIconResources` | Scenario-owned `cicn` bytes and deterministic PNG runtime media are packaged when a custom item references them; shared Realmz IDs remain runtime references. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
 | Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
 
@@ -70,6 +71,11 @@ preserved Scenario resource fork; the exporter never consults the original campa
 Managed replacements take precedence over preserved imported bytes. TEXT and styl payloads remain
 addressable through `managedAssets` because bundle v1 has no dedicated text-resource catalog.
 
+Referenced scenario item icons use the same ownership rule. Providence imports matching `cicn`
+resources from the preserved Scenario resource fork into `scenarioIconResources`, retains their
+Classic bytes, and emits deterministic PNG `runtimeMedia` under `media/images`. A scenario-owned
+icon wins over a same-ID Vault or Realmz reference icon, matching Classic resource-chain behavior.
+
 If Providence's PICT decoder cannot produce a PNG, export fails with the picture identity and
 decoder diagnostic. It does not emit a bundle that claims to be portable while silently depending
 on a Remake fallback image or an installed native campaign.
@@ -105,9 +111,10 @@ No format-version change is required for the current projection, but three bound
    bundle export is complete: every scenario-owned PICT has both immutable Classic bytes and PNG
    runtime media. An unsupported variant blocks export instead of becoming an implicit Remake or
    native-installation dependency.
-3. Scenario-icon and monster-icon override records are preserved as portable metadata, but their
-   legacy embedded resource payload fields are compatibility-annex data and are intentionally
-   omitted. Only scenario-scoped `ManagedAsset` payloads are packaged. A canonical asset intended
+3. Monster-icon override records are preserved as portable metadata, but their legacy embedded
+   resource payload fields are compatibility-annex data and are intentionally omitted. Referenced
+   scenario item icons are packaged; other icon overrides still require scenario-scoped
+   `ManagedAsset` payloads. A canonical asset intended
    for direct Remake use therefore needs to be represented as a managed asset.
 Negative special-land identities remain in the additive optional v1
 `assets.catalog.specialLandTiles` collection. Existing v1 consumers can ignore that collection

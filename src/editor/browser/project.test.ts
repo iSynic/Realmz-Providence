@@ -6,6 +6,7 @@ import {
   buildBrowserSemanticSchemaForProject,
   createBrowserProject,
   importBrowserScenario,
+  loadBrowserScenarioItemIconAssets,
   normalizeBrowserProject,
   registerBrowserSourceSnapshot,
   validateBrowserProject
@@ -15,6 +16,7 @@ import { parseScenarioBuffers } from "./realmzParser";
 import { ed3ReachabilityFor, isCallableMacro } from "../semanticGraph";
 import { validateRealmzTargetRecord } from "../targetValidation";
 import { encodeStringListResource, writeResourceFork } from "./resourceFork";
+import { encodeCicnResource } from "../cicnEncoder";
 
 describe("browser project native manifest validation", () => {
   it("hydrates scenario-local item names after Data ID fallbacks", async () => {
@@ -47,6 +49,67 @@ describe("browser project native manifest validation", () => {
       authored: false,
       provenance: expect.objectContaining({ sourceFile: "Scenario.rsrc" })
     });
+  });
+
+  it("imports item-referenced scenario icons instead of same-ID library fallbacks", async () => {
+    const dataNi = new Uint8Array(100);
+    dataNi[2] = 0x03;
+    dataNi[3] = 0xd6;
+    dataNi[4] = 0x75;
+    dataNi[5] = 0x6d;
+    const cicn = encodeCicnResource({
+      width: 2,
+      height: 2,
+      rgba: new Uint8Array([
+        0, 128, 0, 255,
+        0, 255, 0, 255,
+        32, 32, 32, 255,
+        0, 0, 0, 0
+      ])
+    });
+    const scenarioFork = writeResourceFork([
+      {
+        resourceType: "cicn",
+        id: 30061,
+        name: "Robe with Green Shine",
+        attributes: 0,
+        data: cicn
+      }
+    ]);
+
+    const project = await importBrowserScenario({
+      kind: "file-selection",
+      name: "Dead of Night",
+      files: [
+        new File([dataNi], "Data NI"),
+        new File([scenarioFork], "Scenario.rsrc")
+      ]
+    });
+
+    expect(project.scenarioItems[0]).toMatchObject({ itemId: 982, iconId: 30061 });
+    expect(project.assetCatalog.icons).toContainEqual(expect.objectContaining({
+      id: "scenario-cicn-30061",
+      resourceId: 30061,
+      name: "Robe with Green Shine",
+      source: expect.stringContaining("Scenario.rsrc")
+    }));
+    expect(project.scenarioIconResources).toContainEqual(expect.objectContaining({
+      resourceId: 30061,
+      label: "Robe with Green Shine",
+      sourceKind: "scenario-resource",
+      resourceBase64: expect.any(String),
+      imported: true
+    }));
+    const legacyProject = {
+      ...project,
+      scenarioIconResources: [],
+      assetCatalog: { ...project.assetCatalog, icons: [] }
+    };
+    expect(loadBrowserScenarioItemIconAssets(legacyProject)).toContainEqual(expect.objectContaining({
+      resourceId: 30061,
+      name: "Robe with Green Shine",
+      source: expect.stringContaining("Scenario.rsrc")
+    }));
   });
 
   it("treats a complex encounter result as the caller of its Extra Action Point", async () => {

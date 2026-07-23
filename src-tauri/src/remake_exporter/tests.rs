@@ -3,7 +3,7 @@ use crate::importer::create_project;
 use crate::project::{
     Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
     MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioSupportFile, SourceFile,
-    SourceFileRole, TriggerRecord,
+    ScenarioIconResource, ScenarioIconResourceSource, SourceFileRole, TriggerRecord,
 };
 use crate::resource_fork::{
     encode_cicn_resource, encode_pict_resource, encode_snd_resource, write_resource_fork,
@@ -263,6 +263,69 @@ fn packages_every_imported_scenario_picture_from_the_preserved_resource_fork() {
             fs::read(second.join(runtime_path)).unwrap()
         );
     }
+}
+
+#[test]
+fn packages_referenced_scenario_item_icons_as_classic_bytes_and_runtime_png() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("dead-of-night.providence");
+    let mut project = create_project("Dead of Night".to_string(), &project_dir).unwrap();
+    let cicn = encode_cicn_resource(&RgbaImagePayload {
+        width: 2,
+        height: 2,
+        rgba_base64: STANDARD.encode([
+            0_u8, 128, 0, 255, 0, 255, 0, 255, 32, 32, 32, 255, 0, 0, 0, 0,
+        ]),
+    })
+    .unwrap();
+    let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
+        .into_iter()
+        .next()
+        .unwrap();
+    item.item_id = 982;
+    item.icon_id = 30061;
+    project.scenario_items.push(item);
+    project.scenario_icon_resources.push(ScenarioIconResource {
+        resource_id: 30061,
+        label: "Robe with Green Shine".to_string(),
+        source_kind: ScenarioIconResourceSource::ScenarioResource,
+        resource_base64: STANDARD.encode(&cicn),
+        preview_path: Some("assets/icons/icon_30061.png".to_string()),
+        imported: true,
+    });
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: "scenario-cicn-30061".to_string(),
+        resource_type: "cicn".to_string(),
+        resource_id: 30061,
+        name: Some("Robe with Green Shine".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: Some("assets/icons/icon_30061.png".to_string()),
+    });
+
+    let output = workspace.path().join("bundle");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let icon = &documents["classic/assets.json"]["catalog"]["icons"][0];
+
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 2);
+    assert_eq!(icon["resourceId"], 30061);
+    assert_eq!(icon["name"], "Robe with Green Shine");
+    let payload_path = icon["payloadPath"].as_str().unwrap();
+    assert!(payload_path.starts_with("assets/managed/cicn-30061-"));
+    assert!(payload_path.ends_with(".cicn"));
+    assert_eq!(fs::read(output.join(payload_path)).unwrap(), cicn);
+    let runtime_media = &icon["runtimeMedia"];
+    assert_eq!(runtime_media["mediaType"], "image/png");
+    let runtime_path = runtime_media["path"].as_str().unwrap();
+    assert!(runtime_path.starts_with("media/images/cicn-30061-"));
+    assert!(runtime_path.ends_with(".png"));
+    assert!(fs::read(output.join(runtime_path))
+        .unwrap()
+        .starts_with(b"\x89PNG\r\n\x1a\n"));
+    assert!(documents["classic/assets.json"]["scenarioIconResources"][0]
+        .get("resourceBase64")
+        .is_none());
 }
 
 #[test]

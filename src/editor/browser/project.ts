@@ -1,4 +1,4 @@
-import { BenchmarkReport, ItemTextRecord, Project, RuleNames, ScenarioShell, ValidationReport } from "../types";
+import { BenchmarkReport, ItemTextRecord, Project, ResourceAsset, RuleNames, ScenarioShell, ValidationReport } from "../types";
 import { BrowserProjectSource, BrowserRawSourceSnapshot, BrowserScenarioSource, SUPPORTED_WRITE_FILES, readProjectPackage, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
@@ -41,6 +41,7 @@ const BUNDLED_LANDLOOK_MAPSTATS = [
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
 const browserScenarioResourcePreviewCache = new Map<string, string | null>();
+const browserScenarioItemIconAssetsCache = new Map<string, { signature: string; assets: ResourceAsset[] }>();
 const browserScenarioRawSourceSnapshots = new Map<string, BrowserRawSourceSnapshot>();
 let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = null;
 
@@ -192,7 +193,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     monsterSets: parsed.monsterSets,
     monsterDescriptions: parsed.monsterDescriptions,
     monsterIconOverrides: parsed.monsterIconOverrides,
-    scenarioIconResources: [],
+    scenarioIconResources: parsed.scenarioIconResources,
     scenarioItems: parsed.scenarioItems,
     itemTexts: parseBrowserItemTexts(files),
     treasures: parsed.treasures,
@@ -282,6 +283,43 @@ export function loadBrowserScenarioResourcePreview(project: Project | null | und
   return null;
 }
 
+export function loadBrowserScenarioItemIconAssets(project: Project | null | undefined): ResourceAsset[] {
+  if (!project) return [];
+  const files = browserScenarioPreviewSources.get(browserSemanticCacheKey(project));
+  if (!files) return [];
+  const wantedIds = [...new Set((project.scenarioItems ?? [])
+    .map((item) => Math.abs(item.iconId))
+    .filter((resourceId) => Number.isInteger(resourceId) && resourceId > 0))]
+    .sort((left, right) => left - right);
+  if (wantedIds.length === 0) return [];
+  const key = browserSemanticCacheKey(project);
+  const signature = wantedIds.join(",");
+  const cached = browserScenarioItemIconAssetsCache.get(key);
+  if (cached?.signature === signature) return cached.assets;
+  const wanted = new Set(wantedIds);
+  const seen = new Set<number>();
+  const assets: ResourceAsset[] = [];
+  for (const [name, bytes] of files) {
+    if (!isScenarioResourceForkName(name)) continue;
+    for (const resource of parseResourceFork(bytes)) {
+      const resourceId = Math.abs(resource.id);
+      if (normalizeResourceType(resource.resourceType) !== "cicn" || !wanted.has(resourceId) || seen.has(resourceId)) continue;
+      assets.push({
+        id: `scenario-cicn-${resourceId}`,
+        resourceType: "cicn",
+        resourceId,
+        name: resource.name || null,
+        source: `Scenario resource: browser import ${name} cicn ${resourceId}`,
+        previewPath: null
+      });
+      seen.add(resourceId);
+    }
+  }
+  assets.sort((left, right) => left.resourceId - right.resourceId);
+  browserScenarioItemIconAssetsCache.set(key, { signature, assets });
+  return assets;
+}
+
 function normalizeResourceType(resourceType: string) {
   return resourceType.trim();
 }
@@ -354,7 +392,7 @@ export async function buildBrowserSemanticSchemaForProject(
 }
 
 function browserSemanticCacheKey(project: Project) {
-  return project.source.sourcePath || project.scenario.projectPath || project.scenario.name;
+  return project.source?.sourcePath || project.scenario?.projectPath || project.scenario?.name || "";
 }
 
 export function registerBrowserSourceSnapshot(project: Project, rawSources: BrowserRawSourceSnapshot | null | undefined) {
@@ -363,6 +401,7 @@ export function registerBrowserSourceSnapshot(project: Project, rawSources: Brow
   const files = browserBuffersFromRawSourceSnapshot(rawSources);
   browserScenarioRawSourceSnapshots.set(key, rawSources);
   browserScenarioPreviewSources.set(key, files);
+  browserScenarioItemIconAssetsCache.delete(key);
   pendingBrowserSemantics.set(key, { files, sourceFiles: project.source.files ?? [] });
 }
 
