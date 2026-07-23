@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Project, TriggerRecord } from "../../types";
 import { renameEditorEntity } from "../../projectCommands/scenarioRulesCommands";
-import { scriptDescriptor, scriptIdentity, scriptLabel, scriptMatchesQuery } from "./scriptInventory";
+import { macroSelectionEditor, scriptDescriptor, scriptIdentity, scriptLabel, scriptMatchesQuery } from "./scriptInventory";
 
 const trigger: TriggerRecord = {
   id: "Data DD:0:1",
@@ -62,5 +62,19 @@ describe("Action Point project descriptors", () => {
 
     expect(scriptDescriptor(updated, trigger)).toBe("");
     expect(scriptLabel(updated, trigger)).toBe("Action Point 1 (60, 67)");
+  });
+});
+
+describe("Extra Action Point inventory routing", () => {
+  it("keeps a global event in the full Extra Action Point inventory when selected there", () => {
+    expect(macroSelectionEditor("scripts", "macros", "Global Macro")).toBe("macros");
+  });
+
+  it("routes a global event reference from another workbench to Global Macros", () => {
+    expect(macroSelectionEditor("encounters", "complex", "Global Macro")).toBe("global-macros");
+  });
+
+  it("keeps the legacy ED3 evidence view on the full Extra Action Point inventory", () => {
+    expect(macroSelectionEditor("scripts", "ed3-evidence", "Global Macro")).toBe("macros");
   });
 });

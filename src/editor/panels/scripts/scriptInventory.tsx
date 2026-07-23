@@ -1,5 +1,5 @@
 import { memo, type RefObject, useEffect, useState } from "react";
-import { Action, Project, ScriptInventoryFilter, SemanticEntity, TriggerRecord } from "../../types";
+import { Action, EditorTab, Project, ScriptInventoryFilter, SemanticEntity, TriggerRecord } from "../../types";
 import { triggerEntityId } from "../../utils";
 import { ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification, isCallableMacro } from "../../semanticGraph";
 import { isReusableDoorPlaceholder } from "../../actionPointCapacity";
@@ -116,6 +116,17 @@ export function extraActionTabClassification(project: Project | null, trigger: T
   const classification = extraActionPointClassification(project, trigger);
   if (classification === "Global Macro") return "global-macros";
   return "reusable-actions";
+}
+
+export function macroSelectionEditor(
+  activeTab: EditorTab,
+  activeEditor: string,
+  classification: string
+) {
+  if (activeTab === "scripts" && (activeEditor === "macros" || activeEditor === "ed3-evidence")) {
+    return "macros";
+  }
+  return classification === "Global Macro" ? "global-macros" : "macros";
 }
 
 export function filterScriptsByInventory(
