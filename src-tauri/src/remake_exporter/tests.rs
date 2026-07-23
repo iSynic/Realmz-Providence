@@ -111,6 +111,56 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
 }
 
 #[test]
+fn exports_quicktime_gif_pict_as_immutable_classic_bytes_and_runtime_png() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("quicktime-picture.providence");
+    let mut project = create_project("QuickTime picture".to_string(), &project_dir).unwrap();
+    let pict = conformance_pict_fixture("v2-quicktime-gif");
+    project.assets.push(managed_asset(
+        "picture",
+        ManagedAssetLibraryScope::Scenario,
+        &pict,
+    ));
+    project.asset_catalog.pictures.push(ResourceAsset {
+        id: "resource:PICT:306".to_string(),
+        resource_type: "PICT".to_string(),
+        resource_id: 306,
+        name: Some("QuickTime GIF picture".to_string()),
+        source: "Managed scenario picture".to_string(),
+        preview_path: None,
+    });
+
+    let output = workspace.path().join("bundle");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+
+    let assets = read_json_documents(&output)
+        .remove("classic/assets.json")
+        .unwrap();
+    let picture = &assets["catalog"]["pictures"][0];
+    let payload_path = picture["payloadPath"].as_str().unwrap();
+    assert!(payload_path.starts_with("assets/managed/pict-306-"));
+    assert_eq!(fs::read(output.join(payload_path)).unwrap(), pict);
+    assert_eq!(picture["payloadSha256"], hex::encode(Sha256::digest(&pict)));
+
+    let runtime_media = &picture["runtimeMedia"];
+    assert_eq!(runtime_media["mediaType"], "image/png");
+    let runtime_path = runtime_media["path"].as_str().unwrap();
+    assert!(runtime_path.starts_with("media/pictures/pict-306-"));
+    let png = fs::read(output.join(runtime_path)).unwrap();
+    assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
+    assert_eq!(runtime_media["bytes"], png.len());
+    assert_eq!(runtime_media["sha256"], hex::encode(Sha256::digest(&png)));
+    let rgba = image::load_from_memory_with_format(&png, image::ImageFormat::Png)
+        .unwrap()
+        .into_rgba8();
+    assert_eq!(rgba.dimensions(), (2, 2));
+    assert_eq!(
+        rgba.into_raw(),
+        [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255]
+    );
+}
+
+#[test]
 fn packages_every_imported_scenario_picture_from_the_preserved_resource_fork() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("trial-by-fire.providence");
@@ -640,6 +690,21 @@ fn test_pict(color: [u8; 4]) -> Vec<u8> {
         rgba_base64: STANDARD.encode(rgba),
     })
     .unwrap()
+}
+
+fn conformance_pict_fixture(id: &str) -> Vec<u8> {
+    let manifest: Value = serde_json::from_str(include_str!(
+        "../../../fixtures/pict-conformance/manifest.json"
+    ))
+    .unwrap();
+    let encoded = manifest["fixtures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|fixture| fixture["id"] == id)
+        .and_then(|fixture| fixture["bytesBase64"].as_str())
+        .unwrap_or_else(|| panic!("missing shared PICT fixture {id}"));
+    STANDARD.decode(encoded).unwrap()
 }
 
 fn managed_sound_asset(bytes: &[u8]) -> ManagedAsset {

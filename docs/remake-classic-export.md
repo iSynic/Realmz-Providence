@@ -73,6 +73,11 @@ addressable through `managedAssets` because bundle v1 has no dedicated text-reso
 If Providence's PICT decoder cannot produce a PNG, export fails with the picture identity and
 decoder diagnostic. It does not emit a bundle that claims to be portable while silently depending
 on a Remake fallback image or an installed native campaign.
+The decoder recognizes QuickTime-compressed PICT records (`0x8200`) that embed GIF, JPEG, PNG, or
+TIFF still images, plus QuickTime-uncompressed CopyBits records (`0x8201`), and normalizes the
+decoded frame to the same deterministic PNG contract.
+Unknown QuickTime codecs remain preserved and produce an explicit bounded unsupported-codec
+diagnostic instead of being mislabeled as a malformed PICT.
 
 For each scenario-scoped managed `snd ` resource, Providence decodes the same canonical Classic
 resource bytes used by the native compiler into a deterministic WAV under `media/sounds`. Both the
