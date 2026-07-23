@@ -76,34 +76,61 @@ project.landLayout = {
   authored: true,
   provenance: null
 };
-project.mapRecords = [{
-  id: 0,
-  markers: [
-    { iconId: -100, x: 11, y: 12 },
-    ...Array.from({ length: 9 }, () => ({ iconId: 0, x: 0, y: 0 }))
-  ],
-  startX: 10,
-  startY: 12,
-  level: 0,
-  pictId: 306,
-  iconSize: 32,
-  show: 1,
-  isDungeon: false,
-  rect: { top: 0, left: 0, bottom: 90, right: 90 },
-  note: "Providence owns this map record.",
-  name: "Providence Map",
-  primaryName: "Providence Map",
-  secondaryName: "Unknown Providence Map",
-  mapNameAuthored: false,
-  authored: true,
-  provenance: {
-    sourceFile: "Data MD2",
-    recordIndex: 0,
-    byteOffset: 0,
-    byteLength: 340,
-    confidence: "fixture-backed"
+project.mapRecords = [
+  {
+    id: 0,
+    markers: [
+      { iconId: -100, x: 11, y: 12 },
+      ...Array.from({ length: 9 }, () => ({ iconId: 0, x: 0, y: 0 }))
+    ],
+    startX: 10,
+    startY: 12,
+    level: 0,
+    pictId: 306,
+    iconSize: 32,
+    show: 1,
+    isDungeon: false,
+    rect: { top: 0, left: 0, bottom: 90, right: 90 },
+    note: "Providence owns this map record.",
+    name: "Providence Map",
+    primaryName: "Providence Map",
+    secondaryName: "Unknown Providence Map",
+    mapNameAuthored: false,
+    authored: true,
+    provenance: {
+      sourceFile: "Data MD2",
+      recordIndex: 0,
+      byteOffset: 0,
+      byteLength: 340,
+      confidence: "fixture-backed"
+    }
+  },
+  {
+    id: 1,
+    markers: Array.from({ length: 10 }, () => ({ iconId: 0, x: 0, y: 0 })),
+    startX: 0,
+    startY: 0,
+    level: 0,
+    pictId: 0,
+    iconSize: 0,
+    show: -200,
+    isDungeon: false,
+    rect: { top: 0, left: 0, bottom: 0, right: 0 },
+    note: "",
+    name: null,
+    primaryName: null,
+    secondaryName: null,
+    mapNameAuthored: false,
+    authored: true,
+    provenance: {
+      sourceFile: "Data MD2",
+      recordIndex: 1,
+      byteOffset: 340,
+      byteLength: 340,
+      confidence: "fixture-backed"
+    }
   }
-}];
+];
 const customLandlookRecords = Array.from({ length: 201 }, (_, tile) => ({
   tile,
   sound: 0,
@@ -804,7 +831,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data Caste", 30 * 576],
     ["Data Solids", 1024],
     ["Layout", 256],
-    ["Data MD2", 340],
+    ["Data MD2", 2 * 340],
     ["Data Custom 1 BD", 8104]
   ]);
   for (const [name, bytes] of exactSizes) {
@@ -1478,6 +1505,13 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const maps = documents.get("classic/maps.json");
   expect(maps.maps.some((map) => map.id === "land:0" && map.tiles.at(-1) === -100), "Remake export lost the canonical map identity or special tile");
   expect(maps.maps.some((map) => map.id === "dungeon:0" && map.levelType === "dungeon" && map.tiles[5 * 90 + 4] === 0x1501), "Remake export lost the canonical dungeon map or Action Point marker");
+  const scrollingMap = maps.mapRecords.find((record) => record.id === 1);
+  expect(scrollingMap?.show === -200, "Remake export lost the scrolling-text player-map identity");
+  expect(scrollingMap.scrollingText?.resourceType === "TEXT" && scrollingMap.scrollingText.resourceId === -200, "Remake export did not link the scrolling player map to TEXT -200");
+  expect(scrollingMap.scrollingText.text === scrollingText.toString("ascii").trim(), "Remake export did not decode scrolling TEXT -200");
+  expect(scrollingMap.scrollingText.payloadEncoding === "classic-resource-data" && files.has(scrollingMap.scrollingText.payloadPath), "Remake scrolling text lost its immutable TEXT payload");
+  expect(scrollingMap.scrollingText.styleResource?.resourceType === "styl" && scrollingMap.scrollingText.styleResource.resourceId === -200, "Remake scrolling text lost its paired styl identity");
+  expect(scrollingMap.scrollingText.styleResource.payloadEncoding === "classic-resource-data" && files.has(scrollingMap.scrollingText.styleResource.payloadPath), "Remake scrolling text lost its immutable styl payload");
   const scripts = documents.get("classic/scripts.json");
   const trigger = scripts.triggers.find((candidate) => candidate.id === "land:0:ap:0");
   expect(trigger, "Remake export lost the stable Action Point identity");

@@ -182,6 +182,63 @@ fn exports_quicktime_gif_pict_as_immutable_classic_bytes_and_runtime_png() {
 }
 
 #[test]
+fn exports_scrolling_text_semantics_with_player_map_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("scrolling-text.providence");
+    let mut project = create_project("Scrolling Text".to_string(), &project_dir).unwrap();
+    project.map_records.push(
+        serde_json::from_value(json!({
+            "id": 11,
+            "markers": [],
+            "startX": 0,
+            "startY": 0,
+            "level": 0,
+            "pictId": 0,
+            "iconSize": 0,
+            "show": -200,
+            "isDungeon": false,
+            "rect": {"top": 0, "left": 0, "bottom": 0, "right": 0},
+            "note": "",
+            "authored": true,
+            "provenance": {
+                "sourceFile": "Data MD2",
+                "recordIndex": 11,
+                "byteOffset": 3740,
+                "byteLength": 340,
+                "confidence": "fixture-backed"
+            }
+        }))
+        .unwrap(),
+    );
+    let text = b"First line.\rSecond line.";
+    let style = [0u8, 1, 0, 0, 0, 0, 0, 0];
+    project.assets.push(managed_text_asset("TEXT", -200, text));
+    project
+        .assets
+        .push(managed_text_asset("styl", -200, &style));
+
+    let output = workspace.path().join("scrolling-text-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let scrolling_text = &documents["classic/maps.json"]["mapRecords"][0]["scrollingText"];
+
+    assert_eq!(scrolling_text["resourceType"], "TEXT");
+    assert_eq!(scrolling_text["resourceId"], -200);
+    assert_eq!(scrolling_text["text"], "First line.\nSecond line.");
+    assert_eq!(scrolling_text["payloadEncoding"], "classic-resource-data");
+    assert_eq!(scrolling_text["styleResource"]["resourceType"], "styl");
+    assert_eq!(scrolling_text["styleResource"]["resourceId"], -200);
+    for path in [
+        scrolling_text["payloadPath"].as_str().unwrap(),
+        scrolling_text["styleResource"]["payloadPath"]
+            .as_str()
+            .unwrap(),
+    ] {
+        assert!(output.join(path).is_file(), "missing packaged {path}");
+    }
+}
+
+#[test]
 fn packages_every_imported_scenario_picture_from_the_preserved_resource_fork() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("trial-by-fire.providence");
@@ -913,6 +970,38 @@ fn managed_asset(id: &str, scope: ManagedAssetLibraryScope, bytes: &[u8]) -> Man
         "libraryScope": scope,
         "provenance": "canonical test data",
         "linkedEntity": format!("resource:PICT:{}", if id == "library" { 307 } else { 306 }),
+        "conversion": null
+    }))
+    .unwrap()
+}
+
+fn managed_text_asset(resource_type: &str, resource_id: i16, bytes: &[u8]) -> ManagedAsset {
+    let sha256 = hex::encode(Sha256::digest(bytes));
+    serde_json::from_value(json!({
+        "id": format!("asset:{resource_type}:{resource_id}:test"),
+        "label": format!("Managed {resource_type} {resource_id}"),
+        "kind": "text",
+        "resourceType": resource_type,
+        "resourceId": resource_id,
+        "fileName": format!("{resource_type}-{resource_id}.bin"),
+        "originalPath": "",
+        "previewPath": "",
+        "resourcePath": format!(
+            "data:application/octet-stream;base64,{}",
+            STANDARD.encode(bytes)
+        ),
+        "mimeType": "application/octet-stream",
+        "bytes": bytes.len(),
+        "sha256": sha256,
+        "width": null,
+        "height": null,
+        "durationMs": null,
+        "sampleRate": null,
+        "channels": null,
+        "exportState": "ready",
+        "libraryScope": "scenario",
+        "provenance": "canonical test data",
+        "linkedEntity": format!("resource:{resource_type}:{resource_id}"),
         "conversion": null
     }))
     .unwrap()

@@ -6,7 +6,9 @@ use crate::project::{
     ProvidenceProject, ResourceAsset, SourceFileRole,
 };
 use crate::resource_fork::parse_resource_fork_entries;
-use crate::resource_preview::{inspect_resource_preview, sound::decode_snd_to_wav};
+use crate::resource_preview::{
+    decode_classic_text, inspect_resource_preview, sound::decode_snd_to_wav,
+};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -52,6 +54,7 @@ pub(crate) struct PackagedAssets {
     catalog: Value,
     monster_icon_overrides: Value,
     scenario_icon_resources: Value,
+    scrolling_texts: BTreeMap<i16, Value>,
 }
 
 impl PackagedAssets {
@@ -64,6 +67,10 @@ impl PackagedAssets {
             "scenarioIconResources": &self.scenario_icon_resources,
         })
     }
+
+    pub(crate) fn scrolling_text(&self, resource_id: i16) -> Option<&Value> {
+        self.scrolling_texts.get(&resource_id)
+    }
 }
 
 pub(crate) fn package_assets(
@@ -74,6 +81,7 @@ pub(crate) fn package_assets(
     let mut managed_assets = Vec::new();
     let mut written_files = Vec::new();
     let mut payloads = BTreeMap::new();
+    let mut decoded_texts = BTreeMap::new();
 
     for asset in project.assets.iter().filter(|asset| {
         !matches!(
@@ -89,6 +97,9 @@ pub(crate) fn package_assets(
             )));
         }
         let (media_type, bytes) = read_payload(asset, project_dir)?;
+        if asset.resource_type == "TEXT" {
+            decoded_texts.insert(asset.resource_id, decode_classic_text(&bytes));
+        }
         let payload = write_payload(asset, &bytes, &media_type, output_dir)?;
         let key = (asset.resource_type.clone(), asset.resource_id);
         if payloads.insert(key, payload.clone()).is_some() {
@@ -121,6 +132,7 @@ pub(crate) fn package_assets(
     written_files.sort();
 
     let catalog = catalog_document(project, &payloads)?;
+    let scrolling_texts = scrolling_text_documents(&payloads, &decoded_texts);
     let monster_icon_overrides = sanitized_icon_metadata(&project.monster_icon_overrides)?;
     let scenario_icon_resources = sanitized_icon_metadata(&project.scenario_icon_resources)?;
     Ok(PackagedAssets {
@@ -129,7 +141,39 @@ pub(crate) fn package_assets(
         catalog,
         monster_icon_overrides,
         scenario_icon_resources,
+        scrolling_texts,
     })
+}
+
+fn scrolling_text_documents(
+    payloads: &BTreeMap<(String, i16), PackagedPayload>,
+    decoded_texts: &BTreeMap<i16, String>,
+) -> BTreeMap<i16, Value> {
+    let mut records = BTreeMap::new();
+    for (resource_id, text) in decoded_texts {
+        let Some(text_payload) = payloads.get(&("TEXT".to_string(), *resource_id)) else {
+            continue;
+        };
+        let mut record = json!({
+            "resourceType": "TEXT",
+            "resourceId": resource_id,
+            "text": text,
+        });
+        add_payload_fields(&mut record, text_payload);
+        if let Some(style_payload) = payloads.get(&("styl".to_string(), *resource_id)) {
+            let mut style = json!({
+                "resourceType": "styl",
+                "resourceId": resource_id,
+            });
+            add_payload_fields(&mut style, style_payload);
+            record
+                .as_object_mut()
+                .expect("scrolling-text records are objects")
+                .insert("styleResource".to_string(), style);
+        }
+        records.insert(*resource_id, record);
+    }
+    records
 }
 
 fn read_payload(asset: &ManagedAsset, project_dir: &Path) -> Result<(String, Vec<u8>)> {

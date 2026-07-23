@@ -39,7 +39,7 @@ pub(crate) fn build_documents(
     let semantic_schema = crate::semantic::build_canonical_project_semantic_schema(project);
     Ok(vec![
         ("scenario.json", scenario_document(project)?),
-        ("maps.json", maps_document(project)?),
+        ("maps.json", maps_document(project, assets)?),
         ("scripts.json", scripts_document(project, &semantic_schema)?),
         ("encounters.json", encounters_document(project)?),
         ("content.json", content_document(project)?),
@@ -67,12 +67,27 @@ fn scenario_document(project: &ProvidenceProject) -> Result<Value> {
     }))
 }
 
-fn maps_document(project: &ProvidenceProject) -> Result<Value> {
+fn maps_document(project: &ProvidenceProject, assets: &PackagedAssets) -> Result<Value> {
+    let mut map_records = portable_value(&project.map_records)?;
+    if let Some(records) = map_records.as_array_mut() {
+        for (record, source) in records.iter_mut().zip(&project.map_records) {
+            if source.show >= 0 {
+                continue;
+            }
+            let Some(scrolling_text) = assets.scrolling_text(source.show) else {
+                continue;
+            };
+            record
+                .as_object_mut()
+                .expect("map records are objects")
+                .insert("scrollingText".to_string(), scrolling_text.clone());
+        }
+    }
     Ok(json!({
         "schemaVersion": REMAKE_CLASSIC_FORMAT_VERSION,
         "maps": portable_value(&project.maps)?,
         "landLayout": portable_value(&project.land_layout)?,
-        "mapRecords": portable_value(&project.map_records)?,
+        "mapRecords": map_records,
         "tileAttributes": portable_value(&project.tile_attributes)?,
         "customLandlooks": portable_value(&project.custom_landlooks)?,
     }))

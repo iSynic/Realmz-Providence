@@ -46,6 +46,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | Scenario pictures | managed `PICT` resources or imported scenario-fork `assetCatalog.pictures` | Exact Classic bytes and deterministic PNG runtime media are packaged for every scenario-owned picture. |
 | Scenario item icons | referenced `scenarioItems[].iconId` plus `scenarioIconResources` | Scenario-owned `cicn` bytes and deterministic PNG runtime media are packaged when a custom item references them; shared Realmz IDs remain runtime references. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
+| Scrolling player maps | negative `mapRecords[].show` with matching managed `TEXT` and optional `styl` resources | The map record receives decoded portable text plus immutable TEXT/styl payload identity. Remake does not need to parse Classic resource bytes. |
 | Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
 | Race and caste table selection | project origin plus preserved `Data Race`, `Data Caste`, and main-fork `RLMZ` evidence | Emits `rules.tableSelection` so Remake does not mistake inactive built-in copies for scenario overrides. |
 
@@ -105,8 +106,12 @@ catalog entries. Every scenario-owned PICT receives deterministic PNG `runtimeMe
 `media/pictures`, including imported pictures that remain catalog metadata rather than managed
 assets. For imported projects, the immutable Classic PICT bytes come from the project-local
 preserved Scenario resource fork; the exporter never consults the original campaign installation.
-Managed replacements take precedence over preserved imported bytes. TEXT and styl payloads remain
-addressable through `managedAssets` because bundle v1 has no dedicated text-resource catalog.
+Managed replacements take precedence over preserved imported bytes. When a player-map record has a
+negative `show` value, the exporter resolves the matching managed `TEXT` resource and adds a
+`scrollingText` object to that map record. It contains decoded plain text and the TEXT payload's
+path, hash, byte count, and encoding. A same-ID `styl` resource remains immutable and is linked as
+`styleResource`; exact Classic style-run rendering is not claimed. Unreferenced TEXT and styl
+payloads remain addressable through `managedAssets`.
 
 Referenced scenario item icons use the same ownership rule. Providence imports matching `cicn`
 resources from the preserved Scenario resource fork into `scenarioIconResources`, retains their
@@ -169,7 +174,8 @@ The authoritative proof generates the bundle twice from
 Its consumer-facing content covers a scenario-local shop item, a battle monster, a second
 scenario-local item carried and equipped by that monster, and an authored Add Special Character
 action. The same bundle separately carries immutable PICT, `snd `, and `cicn` payloads plus their
-decoded PNG or WAV runtime media.
+decoded PNG or WAV runtime media. Its second player-map record proves decoded scrolling TEXT with
+paired immutable styl provenance.
 Run the cross-repository consumer gate with explicit checkout/tool paths:
 
 ```powershell
