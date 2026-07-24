@@ -1297,8 +1297,7 @@ fn preserve_imported_custom_landlook_compatibility(
             bytes[offset..offset + 2].copy_from_slice(&raw[offset..offset + 2]);
         }
     }
-    let range_offset =
-        MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + LANDLOOK_RANGE_HEADER_BYTES;
+    let range_offset = MAPSTATS_RECORD_BYTES * MAPSTATS_RECORDS + LANDLOOK_RANGE_HEADER_BYTES;
     for slot in 0..LANDLOOK_RANGE_SLOTS {
         let offset = range_offset + slot * LANDLOOK_RANGE_SLOT_BYTES + 4;
         if raw.len() >= offset + 2 {
@@ -2209,11 +2208,14 @@ fn scenario_icon_resource_updates(
                 continue;
             }
         };
-        let existing = resource.imported.then(|| {
-            original_entries.iter().find(|entry| {
-                entry.resource_type == "cicn" && i32::from(entry.id).abs() == resource_id
+        let existing = resource
+            .imported
+            .then(|| {
+                original_entries.iter().find(|entry| {
+                    entry.resource_type == "cicn" && i32::from(entry.id).abs() == resource_id
+                })
             })
-        }).flatten();
+            .flatten();
         if existing.is_some_and(|entry| entry.data == data) {
             continue;
         }
@@ -2265,7 +2267,9 @@ fn resource_file_name(project: &ProvidenceProject, target: ScenarioTarget) -> St
     let mut preferred = vec![
         AUTHORED_STARTUP_FILES.windows_resource_fork.to_string(),
         AUTHORED_STARTUP_FILES.mac_classic_resource_fork.to_string(),
-        AUTHORED_STARTUP_FILES.providence_portable_resource_fork.to_string(),
+        AUTHORED_STARTUP_FILES
+            .providence_portable_resource_fork
+            .to_string(),
         "Scenario.rsf".to_string(),
         format!("{shell_name}.rsrc"),
         format!("{shell_name}.rsf"),
@@ -2399,30 +2403,29 @@ mod tests {
     use super::{
         append_preserved_shop_source_suffix, compile_fixed_rows_with_compatibility_annex,
         compile_realmz_scenario, custom_spell_name_resource_updates,
-        expected_authored_scenario_manifest_files,
-        is_normalized_landlook_atlas_pict, item_text_resource_updates,
-        managed_asset_resource_bytes, managed_resource_type_supported,
+        expected_authored_scenario_manifest_files, is_normalized_landlook_atlas_pict,
+        item_text_resource_updates, managed_asset_resource_bytes, managed_resource_type_supported,
         map_name_resource_updates_for_records, monster_icon_override_updates,
         preserve_imported_battle_rows, preserve_imported_complex_encounter_rows,
         preserve_imported_custom_landlook_compatibility, preserve_imported_global_macro_hooks,
-        preserve_imported_land_layout_tail, preserve_imported_message_rows,
-        preserve_imported_map_record_compatibility,
-        preserve_imported_monster_description_rows, preserve_imported_monster_rows,
-        preserve_imported_option_label_rows, preserve_imported_random_level_compatibility,
-        preserve_imported_scenario_item_compatibility,
-        preserve_imported_scenario_support_file, preserve_imported_simple_encounter_rows,
-        preserve_imported_singleton, preserve_imported_thief_encounter_rows,
-        preserve_imported_timed_encounter_rows, scenario_icon_resource_updates,
-        write_caste_overrides_for_export, write_race_overrides_for_export,
-        write_spell_overrides_preserving_tail, NativeCompilerInputs, ResourceExportResult,
+        preserve_imported_land_layout_tail, preserve_imported_map_record_compatibility,
+        preserve_imported_message_rows, preserve_imported_monster_description_rows,
+        preserve_imported_monster_rows, preserve_imported_option_label_rows,
+        preserve_imported_random_level_compatibility,
+        preserve_imported_scenario_item_compatibility, preserve_imported_scenario_support_file,
+        preserve_imported_simple_encounter_rows, preserve_imported_singleton,
+        preserve_imported_thief_encounter_rows, preserve_imported_timed_encounter_rows,
+        scenario_icon_resource_updates, write_caste_overrides_for_export,
+        write_race_overrides_for_export, write_spell_overrides_preserving_tail,
+        NativeCompilerInputs, ResourceExportResult,
     };
     use crate::compatibility_annex::CompatibilityAnnex;
     use crate::native_manifest::NativeScenarioManifest;
     use crate::project::{
         Confidence, ItemTextRecord, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
         MapMarker, MapRecord, MapRecordRect, MonsterIconOverride, MonsterIconOverrideSource,
-        ProjectOrigin, Provenance, ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
-        ScenarioTarget,
+        ProjectOrigin, Provenance, ScenarioIconResource, ScenarioIconResourceSource,
+        ScenarioItemRecord, ScenarioTarget,
     };
     use crate::resource_fork::{
         decode_string_list_resource, encode_string_list_resource, write_resource_fork,
@@ -2710,14 +2713,12 @@ mod tests {
         source.extend_from_slice(&[0xde, 0xad, 0xbe]);
         fs::write(raw_dir.join("Data MD2"), &source).unwrap();
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
-        let mut records = crate::realmz::parse_map_records(
-            &source[..crate::realmz::MAP_RECORD_BYTES * 2],
-        );
+        let mut records =
+            crate::realmz::parse_map_records(&source[..crate::realmz::MAP_RECORD_BYTES * 2]);
         let semantic = crate::realmz::write_map_records(&records).unwrap();
 
         assert_eq!(
-            preserve_imported_map_record_compatibility(semantic.clone(), &records, None)
-                .unwrap(),
+            preserve_imported_map_record_compatibility(semantic.clone(), &records, None).unwrap(),
             semantic
         );
         assert_eq!(
@@ -2736,9 +2737,11 @@ mod tests {
             &removed[..crate::realmz::MAP_RECORD_BYTES],
             &source[..crate::realmz::MAP_RECORD_BYTES]
         );
-        assert!(removed[crate::realmz::MAP_RECORD_BYTES..crate::realmz::MAP_RECORD_BYTES * 2]
-            .iter()
-            .all(|byte| *byte == 0));
+        assert!(
+            removed[crate::realmz::MAP_RECORD_BYTES..crate::realmz::MAP_RECORD_BYTES * 2]
+                .iter()
+                .all(|byte| *byte == 0)
+        );
         assert_eq!(
             &removed[crate::realmz::MAP_RECORD_BYTES * 2..],
             &[0xde, 0xad, 0xbe]
@@ -2757,9 +2760,11 @@ mod tests {
         assert_eq!(&edited[74..76], &[0xa5, 0xa5]);
         assert_eq!(&edited[84..87], &[2, b'G', b'o']);
         assert_eq!(edited[crate::realmz::MAP_RECORD_BYTES - 1], 0xa5);
-        assert!(edited[crate::realmz::MAP_RECORD_BYTES..crate::realmz::MAP_RECORD_BYTES * 2]
-            .iter()
-            .all(|byte| *byte == 0));
+        assert!(
+            edited[crate::realmz::MAP_RECORD_BYTES..crate::realmz::MAP_RECORD_BYTES * 2]
+                .iter()
+                .all(|byte| *byte == 0)
+        );
         assert_eq!(
             &edited[crate::realmz::MAP_RECORD_BYTES * 2..],
             &[0xde, 0xad, 0xbe]
@@ -2772,7 +2777,10 @@ mod tests {
             Some(&annex),
         )
         .unwrap();
-        assert_eq!(&note_changed[84..92], &[7, b'C', b'h', b'a', b'n', b'g', b'e', b'd']);
+        assert_eq!(
+            &note_changed[84..92],
+            &[7, b'C', b'h', b'a', b'n', b'g', b'e', b'd']
+        );
         assert_eq!(note_changed[crate::realmz::MAP_RECORD_BYTES - 1], 0);
     }
 
@@ -2786,27 +2794,18 @@ mod tests {
         source.extend_from_slice(&[0xde, 0xad, 0xbe]);
         fs::write(raw_dir.join("Data NI"), &source).unwrap();
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
-        let mut records = crate::realmz::parse_scenario_items(
-            &source[..crate::realmz::ITEM_BYTES * 2],
-        );
+        let mut records =
+            crate::realmz::parse_scenario_items(&source[..crate::realmz::ITEM_BYTES * 2]);
         let semantic = crate::realmz::write_scenario_items(&records).unwrap();
 
         assert_eq!(
-            preserve_imported_scenario_item_compatibility(
-                semantic.clone(),
-                &records,
-                None,
-            )
-            .unwrap(),
+            preserve_imported_scenario_item_compatibility(semantic.clone(), &records, None,)
+                .unwrap(),
             semantic
         );
         assert_eq!(
-            preserve_imported_scenario_item_compatibility(
-                semantic,
-                &records,
-                Some(&annex),
-            )
-            .unwrap(),
+            preserve_imported_scenario_item_compatibility(semantic, &records, Some(&annex),)
+                .unwrap(),
             source
         );
 
@@ -2817,11 +2816,19 @@ mod tests {
             Some(&annex),
         )
         .unwrap();
-        assert_eq!(&removed[..crate::realmz::ITEM_BYTES], &source[..crate::realmz::ITEM_BYTES]);
-        assert!(removed[crate::realmz::ITEM_BYTES..crate::realmz::ITEM_BYTES * 2]
-            .iter()
-            .all(|byte| *byte == 0));
-        assert_eq!(&removed[crate::realmz::ITEM_BYTES * 2..], &[0xde, 0xad, 0xbe]);
+        assert_eq!(
+            &removed[..crate::realmz::ITEM_BYTES],
+            &source[..crate::realmz::ITEM_BYTES]
+        );
+        assert!(
+            removed[crate::realmz::ITEM_BYTES..crate::realmz::ITEM_BYTES * 2]
+                .iter()
+                .all(|byte| *byte == 0)
+        );
+        assert_eq!(
+            &removed[crate::realmz::ITEM_BYTES * 2..],
+            &[0xde, 0xad, 0xbe]
+        );
 
         records[0].item_id = 901;
         let edited = preserve_imported_scenario_item_compatibility(
@@ -2832,10 +2839,15 @@ mod tests {
         .unwrap();
         assert_eq!(i16::from_be_bytes([edited[2], edited[3]]), 901);
         assert_eq!(&edited[56..70], &source[56..70]);
-        assert!(edited[crate::realmz::ITEM_BYTES..crate::realmz::ITEM_BYTES * 2]
-            .iter()
-            .all(|byte| *byte == 0));
-        assert_eq!(&edited[crate::realmz::ITEM_BYTES * 2..], &[0xde, 0xad, 0xbe]);
+        assert!(
+            edited[crate::realmz::ITEM_BYTES..crate::realmz::ITEM_BYTES * 2]
+                .iter()
+                .all(|byte| *byte == 0)
+        );
+        assert_eq!(
+            &edited[crate::realmz::ITEM_BYTES * 2..],
+            &[0xde, 0xad, 0xbe]
+        );
     }
 
     #[test]
@@ -3900,8 +3912,7 @@ mod tests {
         .expect("resource fork");
         let mut result = ResourceExportResult::default();
 
-        let entries =
-            scenario_icon_resource_updates(&items, &resources, &original, &mut result);
+        let entries = scenario_icon_resource_updates(&items, &resources, &original, &mut result);
 
         assert!(entries.is_empty());
         assert!(result.written_resources.is_empty());

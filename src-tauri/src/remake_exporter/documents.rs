@@ -1,9 +1,11 @@
-use super::assets::PackagedAssets;
+use super::assets::{remake_land_tile_value, PackagedAssets};
 use super::rule_selection::rule_table_selection;
 use super::{portable_campaign_id, REMAKE_CLASSIC_FORMAT_VERSION};
 use crate::error::Result;
 use crate::project::{ProvidenceProject, SemanticSchema, TriggerRecord};
-use crate::remake_exporter::portable::{portable_source_label, portable_value};
+use crate::remake_exporter::portable::{
+    portable_project_diagnostic_message, portable_source_label, portable_value,
+};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -47,7 +49,7 @@ pub(crate) fn build_documents(
         ("assets.json", assets.document()),
         (
             "evidence.json",
-            evidence_document(project, &semantic_schema)?,
+            evidence_document(project, &semantic_schema, project_dir)?,
         ),
     ])
 }
@@ -68,6 +70,23 @@ fn scenario_document(project: &ProvidenceProject) -> Result<Value> {
 }
 
 fn maps_document(project: &ProvidenceProject, assets: &PackagedAssets) -> Result<Value> {
+    let mut maps = portable_value(&project.maps)?;
+    if let Some(records) = maps.as_array_mut() {
+        for record in records {
+            let Some(tiles) = record.get_mut("tiles").and_then(Value::as_array_mut) else {
+                continue;
+            };
+            for tile in tiles {
+                let Some(value) = tile.as_i64().and_then(|value| i16::try_from(value).ok()) else {
+                    continue;
+                };
+                let runtime_value = remake_land_tile_value(value);
+                if runtime_value != value {
+                    *tile = json!(runtime_value);
+                }
+            }
+        }
+    }
     let mut map_records = portable_value(&project.map_records)?;
     if let Some(records) = map_records.as_array_mut() {
         for (record, source) in records.iter_mut().zip(&project.map_records) {
@@ -85,7 +104,7 @@ fn maps_document(project: &ProvidenceProject, assets: &PackagedAssets) -> Result
     }
     Ok(json!({
         "schemaVersion": REMAKE_CLASSIC_FORMAT_VERSION,
-        "maps": portable_value(&project.maps)?,
+        "maps": maps,
         "landLayout": portable_value(&project.land_layout)?,
         "mapRecords": map_records,
         "tileAttributes": portable_value(&project.tile_attributes)?,
@@ -172,6 +191,7 @@ fn rules_document(project: &ProvidenceProject, project_dir: &Path) -> Result<Val
 fn evidence_document(
     project: &ProvidenceProject,
     semantic_schema: &SemanticSchema,
+    project_dir: &Path,
 ) -> Result<Value> {
     let source_files = project
         .source
@@ -204,11 +224,16 @@ fn evidence_document(
         .diagnostics
         .iter()
         .map(|diagnostic| {
+            let source = diagnostic.source.as_deref();
             json!({
                 "severity": diagnostic.severity,
                 "code": &diagnostic.code,
-                "message": &diagnostic.message,
-                "source": diagnostic.source.as_deref().map(portable_source_label),
+                "message": portable_project_diagnostic_message(
+                    &diagnostic.message,
+                    source,
+                    project_dir,
+                ),
+                "source": source.map(portable_source_label),
             })
         })
         .collect::<Vec<_>>();

@@ -316,8 +316,10 @@ enum PictQuickTimeRecord<'a> {
         codec: [u8; 4],
         width: usize,
         height: usize,
+        depth: usize,
         matte_bytes: usize,
         clut_id: usize,
+        palette: Vec<[u8; 3]>,
         encoded: &'a [u8],
     },
     Uncompressed {
@@ -766,6 +768,13 @@ fn parse_pict_quicktime_record<'a>(
         opcode,
         "QuickTime frame count",
     )?;
+    let depth = read_quicktime_u16(
+        data,
+        description_start + 82,
+        opcode_offset,
+        opcode,
+        "QuickTime image depth",
+    )?;
     let clut_id = read_quicktime_u16(
         data,
         description_start + 84,
@@ -807,6 +816,11 @@ fn parse_pict_quicktime_record<'a>(
         opcode,
         "QuickTime fixed image description",
     )?;
+    let mut palette = if depth & 0x1f == 8 {
+        quicktime_default_palette_256()
+    } else {
+        Vec::new()
+    };
     if clut_id == 0 {
         require_quicktime_range(
             data,
@@ -823,6 +837,13 @@ fn parse_pict_quicktime_record<'a>(
             opcode_offset,
             opcode,
             "QuickTime color-table size",
+        )?;
+        let color_table_flags = read_quicktime_u16(
+            data,
+            cursor + 4,
+            opcode_offset,
+            opcode,
+            "QuickTime color-table flags",
         )?;
         let color_count = if last_color_index == 0xffff {
             0
@@ -845,6 +866,33 @@ fn parse_pict_quicktime_record<'a>(
             opcode,
             "QuickTime color table",
         )?;
+        if color_count > 0 {
+            let palette_len = if depth & 0x1f <= 8 {
+                1usize << (depth & 0x1f)
+            } else {
+                color_count
+            };
+            palette = vec![[0, 0, 0]; palette_len.max(color_count)];
+            for color_offset in 0..color_count {
+                let entry = cursor + 8 + color_offset * 8;
+                let color_index = read_quicktime_u16(
+                    data,
+                    entry,
+                    opcode_offset,
+                    opcode,
+                    "QuickTime color-table index",
+                )?;
+                let palette_index = color_table_palette_index(
+                    color_table_flags,
+                    color_index,
+                    color_offset,
+                    palette.len(),
+                );
+                if palette_index < palette.len() {
+                    palette[palette_index] = [data[entry + 2], data[entry + 4], data[entry + 6]];
+                }
+            }
+        }
     }
     cursor = description_end;
     let encoded_end = require_quicktime_range(
@@ -863,8 +911,10 @@ fn parse_pict_quicktime_record<'a>(
         codec,
         width,
         height,
+        depth,
         matte_bytes,
         clut_id,
+        palette,
         encoded: &data[cursor..encoded_end],
     })
 }
@@ -883,33 +933,67 @@ fn decode_pict_quicktime_record(
             codec,
             width,
             height,
+            depth,
             matte_bytes,
             clut_id,
+            palette,
             encoded,
         } => {
             let codec_name = printable_quicktime_codec(codec);
-            let (media_type, image_format) = quicktime_image_format(codec).ok_or_else(|| {
-                pict_quicktime_failure(
-                    false,
-                    "pict.quicktime_codec_unsupported",
-                    format!("PICT QuickTime image uses unsupported codec '{codec_name}'."),
-                    opcode_offset,
-                    opcode,
-                    Some(codec_name.clone()),
-                    Some("The original PICT bytes remain preserved.".to_string()),
+            let (media_type, image) = if codec == *b"rle " {
+                if depth & 0x1f != 8 {
+                    return Err(pict_quicktime_failure(
+                        false,
+                        "pict.quicktime_rle_depth_unsupported",
+                        format!(
+                            "PICT QuickTime Animation uses unsupported image depth {depth}; Providence currently decodes 8-bit indexed frames."
+                        ),
+                        opcode_offset,
+                        opcode,
+                        Some(format!("{depth}-bit")),
+                        Some("The original PICT bytes remain preserved.".to_string()),
+                    ));
+                }
+                (
+                    "video/quicktime-rle",
+                    decode_quicktime_rle_8(
+                        encoded,
+                        width,
+                        height,
+                        &palette,
+                        opcode_offset,
+                        opcode,
+                    )?,
                 )
-            })?;
-            let image = decode_quicktime_image(
-                encoded,
-                image_format,
-                width,
-                height,
-                opcode_offset,
-                opcode,
-                &codec_name,
-            )?;
+            } else {
+                let (media_type, image_format) =
+                    quicktime_image_format(codec).ok_or_else(|| {
+                        pict_quicktime_failure(
+                            false,
+                            "pict.quicktime_codec_unsupported",
+                            format!("PICT QuickTime image uses unsupported codec '{codec_name}'."),
+                            opcode_offset,
+                            opcode,
+                            Some(codec_name.clone()),
+                            Some("The original PICT bytes remain preserved.".to_string()),
+                        )
+                    })?;
+                (
+                    media_type,
+                    decode_quicktime_image(
+                        encoded,
+                        image_format,
+                        width,
+                        height,
+                        opcode_offset,
+                        opcode,
+                        &codec_name,
+                    )?,
+                )
+            };
             details.insert("quickTimeVariant".to_string(), "compressed".to_string());
             details.insert("quickTimeCodec".to_string(), codec_name.clone());
+            details.insert("quickTimeDepth".to_string(), depth.to_string());
             details.insert("quickTimeClutId".to_string(), clut_id.to_string());
             details.insert("quickTimeMatteBytes".to_string(), matte_bytes.to_string());
             details.insert("embeddedMediaType".to_string(), media_type.to_string());
@@ -975,6 +1059,221 @@ fn decode_pict_quicktime_record(
             Ok((command, bitmap))
         }
     }
+}
+
+fn decode_quicktime_rle_8(
+    encoded: &[u8],
+    width: usize,
+    height: usize,
+    palette: &[[u8; 3]],
+    opcode_offset: usize,
+    opcode: usize,
+) -> std::result::Result<DecodedImage, PictFailure> {
+    let fail = |message: String| {
+        pict_quicktime_failure(
+            true,
+            "pict.quicktime_rle_invalid",
+            message,
+            opcode_offset,
+            opcode,
+            Some("rle-8".to_string()),
+            None,
+        )
+    };
+    if palette.len() < 256 {
+        return Err(fail(format!(
+            "PICT QuickTime Animation 8-bit frame has only {} palette entries.",
+            palette.len()
+        )));
+    }
+    if encoded.len() < 6 {
+        return Err(fail(
+            "PICT QuickTime Animation frame is shorter than its six-byte header.".to_string(),
+        ));
+    }
+    let declared_size = u32_be(encoded, 0).unwrap_or(0) & 0x3fff_ffff;
+    if declared_size < 6 || declared_size > encoded.len() {
+        return Err(fail(format!(
+            "PICT QuickTime Animation frame declares {declared_size} bytes, but {} are available.",
+            encoded.len()
+        )));
+    }
+    let frame = &encoded[..declared_size];
+    let header = u16_be(frame, 4).unwrap_or(0);
+    let mut cursor = 6usize;
+    let (start_line, lines_to_change) = if header & 0x0008 != 0 {
+        if frame.len() < 14 {
+            return Err(fail(
+                "PICT QuickTime Animation line-range header is truncated.".to_string(),
+            ));
+        }
+        let start_line = u16_be(frame, 6).unwrap_or(0);
+        let lines = u16_be(frame, 10).unwrap_or(0);
+        cursor = 14;
+        (start_line, lines)
+    } else {
+        (0, height)
+    };
+    if start_line > height || lines_to_change > height.saturating_sub(start_line) {
+        return Err(fail(format!(
+            "PICT QuickTime Animation line range {start_line}..{} exceeds image height {height}.",
+            start_line.saturating_add(lines_to_change)
+        )));
+    }
+
+    let background = palette[0];
+    let mut rgba = vec![0_u8; width * height * 4];
+    for pixel in rgba.chunks_exact_mut(4) {
+        pixel.copy_from_slice(&[background[0], background[1], background[2], 255]);
+    }
+    for line in start_line..start_line + lines_to_change {
+        let initial_skip = *frame.get(cursor).ok_or_else(|| {
+            fail(format!(
+                "PICT QuickTime Animation line {line} is missing its initial skip."
+            ))
+        })?;
+        cursor += 1;
+        if initial_skip == 0 {
+            return Err(fail(format!(
+                "PICT QuickTime Animation line {line} uses invalid initial skip 0."
+            )));
+        }
+        let mut x = 4usize * usize::from(initial_skip - 1);
+        if x > width {
+            return Err(fail(format!(
+                "PICT QuickTime Animation line {line} starts beyond image width {width}."
+            )));
+        }
+        loop {
+            let code = *frame.get(cursor).ok_or_else(|| {
+                fail(format!(
+                    "PICT QuickTime Animation line {line} has no end marker."
+                ))
+            })? as i8;
+            cursor += 1;
+            if code == -1 {
+                break;
+            }
+            if code == 0 {
+                let skip = *frame.get(cursor).ok_or_else(|| {
+                    fail(format!(
+                        "PICT QuickTime Animation line {line} has a truncated skip code."
+                    ))
+                })?;
+                cursor += 1;
+                if skip == 0 {
+                    return Err(fail(format!(
+                        "PICT QuickTime Animation line {line} uses invalid skip 0."
+                    )));
+                }
+                x = x
+                    .checked_add(4usize * usize::from(skip - 1))
+                    .ok_or_else(|| {
+                        fail(format!(
+                            "PICT QuickTime Animation line {line} skip overflows."
+                        ))
+                    })?;
+                if x > width {
+                    return Err(fail(format!(
+                        "PICT QuickTime Animation line {line} skips beyond image width {width}."
+                    )));
+                }
+                continue;
+            }
+
+            let groups = usize::from(code.unsigned_abs());
+            let pixel_count = groups.checked_mul(4).ok_or_else(|| {
+                fail(format!(
+                    "PICT QuickTime Animation line {line} run length overflows."
+                ))
+            })?;
+            if pixel_count > width.saturating_sub(x) {
+                return Err(fail(format!(
+                    "PICT QuickTime Animation line {line} writes past image width {width}."
+                )));
+            }
+            if code < 0 {
+                let group = frame.get(cursor..cursor + 4).ok_or_else(|| {
+                    fail(format!(
+                        "PICT QuickTime Animation line {line} has a truncated repeated group."
+                    ))
+                })?;
+                cursor += 4;
+                for _ in 0..groups {
+                    for &palette_index in group {
+                        write_quicktime_palette_pixel(
+                            &mut rgba,
+                            width,
+                            line,
+                            x,
+                            palette[usize::from(palette_index)],
+                        );
+                        x += 1;
+                    }
+                }
+            } else {
+                let indices = frame.get(cursor..cursor + pixel_count).ok_or_else(|| {
+                    fail(format!(
+                        "PICT QuickTime Animation line {line} has a truncated literal run."
+                    ))
+                })?;
+                cursor += pixel_count;
+                for &palette_index in indices {
+                    write_quicktime_palette_pixel(
+                        &mut rgba,
+                        width,
+                        line,
+                        x,
+                        palette[usize::from(palette_index)],
+                    );
+                    x += 1;
+                }
+            }
+        }
+    }
+
+    Ok(DecodedImage {
+        width: width as u32,
+        height: height as u32,
+        rgba,
+    })
+}
+
+fn write_quicktime_palette_pixel(
+    rgba: &mut [u8],
+    width: usize,
+    y: usize,
+    x: usize,
+    color: [u8; 3],
+) {
+    let offset = (y * width + x) * 4;
+    rgba[offset..offset + 4].copy_from_slice(&[color[0], color[1], color[2], 255]);
+}
+
+fn quicktime_default_palette_256() -> Vec<[u8; 3]> {
+    let cube = [0xff, 0xcc, 0x99, 0x66, 0x33, 0x00];
+    let ramp = [0xee, 0xdd, 0xbb, 0xaa, 0x88, 0x77, 0x55, 0x44, 0x22, 0x11];
+    let mut palette = Vec::with_capacity(256);
+    for red in cube {
+        for green in cube {
+            for blue in cube {
+                if red != 0 || green != 0 || blue != 0 {
+                    palette.push([red, green, blue]);
+                }
+            }
+        }
+    }
+    palette.extend(ramp.map(|value| [value, 0, 0]));
+    palette.extend(ramp.map(|value| [0, value, 0]));
+    palette.extend(ramp.map(|value| [0, 0, value]));
+    palette.extend(
+        [
+            0xee, 0xdd, 0xbb, 0xaa, 0x88, 0x77, 0x55, 0x44, 0x22, 0x11, 0x00,
+        ]
+        .map(|value| [value, value, value]),
+    );
+    debug_assert_eq!(palette.len(), 256);
+    palette
 }
 
 fn decode_quicktime_image(
@@ -3345,6 +3644,37 @@ mod tests {
             decoded.details.get("embeddedMediaType").map(String::as_str),
             Some("image/gif")
         );
+    }
+
+    #[test]
+    fn decodes_dark_portal_quicktime_animation_pictures() {
+        let path = Path::new("F:/Realmz/out_win_clang/Scenarios/Dark Portal/.rsrc/Scenario");
+        if !path.exists() {
+            eprintln!("Skipping Dark Portal PICT fixture; local fixture is absent.");
+            return;
+        }
+        let data = std::fs::read(path).expect("fixture should be readable");
+        let fork = extract_appledouble_resource_fork(&data).unwrap_or(data);
+
+        for resource_id in [30015, 30023] {
+            let pict = resource_data(&fork, b"PICT", resource_id)
+                .unwrap_or_else(|| panic!("Dark Portal PICT {resource_id} should exist"));
+            let decoded = decode_pict(&pict)
+                .unwrap_or_else(|error| panic!("Dark Portal PICT {resource_id}: {error:?}"));
+
+            assert_eq!(decoded.format, "quicktime-rle");
+            assert_eq!(decoded.opcode, COMPRESSED_QUICKTIME);
+            assert_eq!(decoded.image.width, 300);
+            assert_eq!(decoded.image.height, 187);
+            assert_eq!(
+                decoded.details.get("quickTimeDepth").map(String::as_str),
+                Some("8")
+            );
+            assert_eq!(
+                decoded.details.get("embeddedMediaType").map(String::as_str),
+                Some("video/quicktime-rle")
+            );
+        }
     }
 
     #[test]

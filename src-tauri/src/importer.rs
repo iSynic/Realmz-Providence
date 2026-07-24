@@ -368,8 +368,7 @@ fn hydrate_imported_compatibility_state(
 fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
     let project_path = project_dir.join(PROJECT_FILE_NAME);
     let text = fs::read_to_string(&project_path).with_path(&project_path)?;
-    let mut value: serde_json::Value =
-        serde_json::from_str(&text).with_json_path(&project_path)?;
+    let mut value: serde_json::Value = serde_json::from_str(&text).with_json_path(&project_path)?;
     migrate_legacy_map_record_raw_bytes(&mut value);
     migrate_legacy_scenario_item_raw_bytes(&mut value);
     migrate_legacy_treasure_raw_bytes(&mut value);
@@ -395,7 +394,9 @@ fn read_saved_project(project_dir: &Path) -> Result<ProvidenceProject> {
 }
 
 fn migrate_legacy_map_record_raw_bytes(project: &mut serde_json::Value) {
-    let Some(records) = project.get_mut("mapRecords").and_then(serde_json::Value::as_array_mut)
+    let Some(records) = project
+        .get_mut("mapRecords")
+        .and_then(serde_json::Value::as_array_mut)
     else {
         return;
     };
@@ -685,7 +686,10 @@ fn migrate_legacy_record_raw_bytes(project: &mut serde_json::Value, collection: 
 }
 
 fn legacy_project_i16(bytes: &[serde_json::Value], offset: usize) -> i16 {
-    let high = bytes.get(offset).and_then(serde_json::Value::as_u64).unwrap_or(0) as u8;
+    let high = bytes
+        .get(offset)
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0) as u8;
     let low = bytes
         .get(offset + 1)
         .and_then(serde_json::Value::as_u64)
@@ -1687,7 +1691,7 @@ fn import_scenario_icon_overlays(
                     message: format!(
                         "Scenario cicn {} in {} could not be decoded as an icon preview: {}",
                         entry.id,
-                        resource_path.display(),
+                        scenario_resource_file_label(&resource_path),
                         detail
                     ),
                     source: Some(resource_path.display().to_string()),
@@ -1751,10 +1755,7 @@ fn import_monster_icon_override_pairs(
     }
     let mut by_id = BTreeMap::new();
     let mut ambiguous_ids = BTreeSet::new();
-    for entry in entries
-        .iter()
-        .filter(|entry| entry.resource_type == "cicn")
-    {
+    for entry in entries.iter().filter(|entry| entry.resource_type == "cicn") {
         let id = absolute_i16_as_i32(entry.id);
         if by_id.insert(id, entry).is_some() {
             ambiguous_ids.insert(id);
@@ -2189,7 +2190,7 @@ fn import_picture_assets(
                             message: format!(
                                 "Scenario PICT {} in {} could not be decoded for preview: {}",
                                 entry.id,
-                                resource_path.display(),
+                                scenario_resource_file_label(&resource_path),
                                 detail
                             ),
                             source: Some(resource_path.display().to_string()),
@@ -2308,7 +2309,7 @@ fn import_sound_assets(
                     message: format!(
                         "Scenario snd {} in {} could not be decoded for preview: {}",
                         entry.id,
-                        resource_path.display(),
+                        scenario_resource_file_label(&resource_path),
                         detail
                     ),
                     source: Some(resource_path.display().to_string()),
@@ -2506,8 +2507,14 @@ fn normalize_icon_id(value: i16) -> Option<i16> {
         // Realmz land-state encodings and must not be reduced into icon ids here.
         return (value > 200 && value < 1000).then_some(value);
     }
+    if value < -3999 {
+        return None;
+    }
     let mut icon_id = value;
-    while icon_id < -999 {
+    for _ in 0..3 {
+        if icon_id >= -999 {
+            break;
+        }
         icon_id += 1000;
     }
     Some(icon_id)
@@ -2574,7 +2581,7 @@ fn import_custom_tile_atlas(
                 "{} PICT {} in {} could not be decoded as a tile atlas: {}",
                 tileset.name,
                 pict_id,
-                resource_path.display(),
+                scenario_resource_file_label(&resource_path),
                 detail
             )));
         };
@@ -2623,6 +2630,12 @@ fn custom_landlook_metadata_file(landlook: i8) -> Option<&'static str> {
         8 => Some("Data Custom 3 BD"),
         _ => None,
     }
+}
+
+fn scenario_resource_file_label(path: &Path) -> &str {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("Scenario resource fork")
 }
 
 fn scenario_resource_candidates(source_path: &Path) -> Vec<PathBuf> {
@@ -2755,7 +2768,8 @@ mod tests {
     fn standard_mod_fixture(signature: &[u8; 4], channels: usize, title: &str) -> Vec<u8> {
         let mut bytes = vec![0; 1084 + 64 * channels * 4];
         let title_bytes = title.as_bytes();
-        bytes[..title_bytes.len().min(20)].copy_from_slice(&title_bytes[..title_bytes.len().min(20)]);
+        bytes[..title_bytes.len().min(20)]
+            .copy_from_slice(&title_bytes[..title_bytes.len().min(20)]);
         bytes[950] = 1;
         bytes[1080..1084].copy_from_slice(signature);
         bytes
@@ -2793,6 +2807,9 @@ mod tests {
         assert_eq!(normalize_icon_id(969), Some(969));
         assert_eq!(normalize_icon_id(-462), Some(-462));
         assert_eq!(normalize_icon_id(-1462), Some(-462));
+        assert_eq!(normalize_icon_id(-3999), Some(-999));
+        assert_eq!(normalize_icon_id(-4000), None);
+        assert_eq!(normalize_icon_id(i16::MIN), None);
     }
 
     #[test]
@@ -2811,26 +2828,24 @@ mod tests {
         let assets_dir = project_dir.join(ASSETS_DIR);
         fs::create_dir_all(&source_dir).expect("source directory");
         fs::create_dir_all(&assets_dir).expect("assets directory");
-        let cicn = crate::resource_fork::encode_cicn_resource(
-            &crate::resource_fork::RgbaImagePayload {
+        let cicn =
+            crate::resource_fork::encode_cicn_resource(&crate::resource_fork::RgbaImagePayload {
                 width: 2,
                 height: 2,
                 rgba_base64: STANDARD.encode([
                     0_u8, 128, 0, 255, 0, 255, 0, 255, 32, 32, 32, 255, 0, 0, 0, 0,
                 ]),
-            },
-        )
-        .expect("cicn");
-        let fork = crate::resource_fork::write_resource_fork(&[
-            crate::resource_fork::ResourceForkEntry {
+            })
+            .expect("cicn");
+        let fork =
+            crate::resource_fork::write_resource_fork(&[crate::resource_fork::ResourceForkEntry {
                 resource_type: "cicn".to_string(),
                 id: 30061,
                 name: "Robe with Green Shine".to_string(),
                 attributes: 0,
                 data: cicn.clone(),
-            },
-        ])
-        .expect("resource fork");
+            }])
+            .expect("resource fork");
         fs::write(source_dir.join("Scenario.rsrc"), fork).expect("scenario resource fork");
 
         let mut project =
@@ -3098,13 +3113,11 @@ mod tests {
                 "confidence": "fixture-backed"
             }
         }]);
-        let mut legacy_item = crate::realmz::parse_scenario_items(&vec![
-            0;
-            crate::realmz::ITEM_BYTES
-        ])
-        .into_iter()
-        .next()
-        .expect("legacy scenario item");
+        let mut legacy_item =
+            crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
+                .into_iter()
+                .next()
+                .expect("legacy scenario item");
         legacy_item.spare2[0] = -321;
         let mut legacy_item_value = serde_json::to_value(legacy_item).expect("serialize item");
         legacy_item_value
@@ -3157,11 +3170,10 @@ mod tests {
             "rawBytes": legacy_option_raw,
             "authored": false
         }]);
-        let mut legacy_battle =
-            crate::realmz::parse_battles(&vec![0; crate::realmz::BATTLE_BYTES])
-                .into_iter()
-                .next()
-                .expect("legacy battle");
+        let mut legacy_battle = crate::realmz::parse_battles(&vec![0; crate::realmz::BATTLE_BYTES])
+            .into_iter()
+            .next()
+            .expect("legacy battle");
         legacy_battle.grid[0] = 7;
         legacy_battle.dist = -2;
         legacy_battle.message_before = 12;
@@ -3256,10 +3268,11 @@ mod tests {
         let mut legacy_race_value =
             serde_json::to_value(legacy_race).expect("serialize legacy race override");
         legacy_race_value["spare"] = serde_json::json!([123, 0, 0, 0, 0, 0, 0, 0]);
-        legacy_race_value["spacer"] =
-            serde_json::json!([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -321]);
-        legacy_race_value["rawBytes"] =
-            serde_json::json!(vec![0xa5u8; crate::realmz::RACE_BYTES]);
+        legacy_race_value["spacer"] = serde_json::json!([
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, -321
+        ]);
+        legacy_race_value["rawBytes"] = serde_json::json!(vec![0xa5u8; crate::realmz::RACE_BYTES]);
         saved["raceOverrides"] = serde_json::json!([legacy_race_value]);
         let mut legacy_caste =
             crate::realmz::parse_caste_overrides(&vec![0; crate::realmz::CASTE_BYTES])
@@ -3278,8 +3291,7 @@ mod tests {
         saved["casteOverrides"] = serde_json::json!([legacy_caste_value]);
         saved["scenario"]["shell"]["lookX"] = serde_json::json!(12);
         saved["scenario"]["shell"]["rawBytes"] = serde_json::json!(vec![0xd8u8; 320]);
-        saved["scenario"]["shell"]["trailingBytes"] =
-            serde_json::json!([0xde, 0xad, 0xbe, 0xef]);
+        saved["scenario"]["shell"]["trailingBytes"] = serde_json::json!([0xde, 0xad, 0xbe, 0xef]);
         let mut legacy_security_backup = saved["scenario"]["shell"].clone();
         legacy_security_backup["sourceFile"] = serde_json::json!("Data CS");
         legacy_security_backup["lookY"] = serde_json::json!(-19);
@@ -3409,7 +3421,10 @@ mod tests {
         assert_eq!(opened.simple_encounters[0].choice_results, [1, 2, 3, 4]);
         assert!(opened.simple_encounters[0].can_back_out);
         assert_eq!(opened.simple_encounters[0].prompt, 17);
-        assert_eq!(opened.simple_encounters[0].texts[0], "Semantic legacy choice");
+        assert_eq!(
+            opened.simple_encounters[0].texts[0],
+            "Semantic legacy choice"
+        );
         assert_eq!(opened.spell_overrides[0].id, 16);
         assert_eq!(opened.spell_overrides[0].cost, 41);
         assert_eq!(opened.race_overrides[0].id, 2);
@@ -3417,7 +3432,10 @@ mod tests {
         assert_eq!(opened.caste_overrides[0].id, 3);
         assert_eq!(opened.caste_overrides[0].start_money, 222);
         assert_eq!(opened.scenario.shell.as_ref().unwrap().look_x, 12);
-        assert_eq!(opened.scenario.security_backup.as_ref().unwrap().look_y, -19);
+        assert_eq!(
+            opened.scenario.security_backup.as_ref().unwrap().look_y,
+            -19
+        );
         assert_eq!(
             opened
                 .scenario
@@ -3498,9 +3516,7 @@ mod tests {
             .get("rawBytes")
             .is_none());
         assert!(upgraded["scenario"]["shell"].get("rawBytes").is_none());
-        assert!(upgraded["scenario"]["shell"]
-            .get("trailingBytes")
-            .is_none());
+        assert!(upgraded["scenario"]["shell"].get("trailingBytes").is_none());
         assert!(upgraded["scenario"]["securityBackup"]
             .get("rawBytes")
             .is_none());
@@ -4449,10 +4465,9 @@ mod tests {
                 startup_files.providence_portable_resource_fork,
             ),
         ] {
-            let expected = crate::exporter::expected_authored_scenario_manifest_files(
-                &project, target,
-            )
-            .expect("compile authored startup manifest");
+            let expected =
+                crate::exporter::expected_authored_scenario_manifest_files(&project, target)
+                    .expect("compile authored startup manifest");
             for path in [
                 startup_files.scenario_support,
                 startup_files.security_backup,

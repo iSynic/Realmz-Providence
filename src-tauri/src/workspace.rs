@@ -1296,7 +1296,10 @@ fn resource_payload_summary(resource_type: &str, data: &[u8]) -> BTreeMap<String
     if resource_type == "styl" {
         return summary([
             ("family", json!("text-style")),
-            ("styleRunCountCandidate", json!(u16_be(data, 0).unwrap_or(0))),
+            (
+                "styleRunCountCandidate",
+                json!(u16_be(data, 0).unwrap_or(0)),
+            ),
             ("styleBytes", json!(data.len())),
             ("styleResourceBase64", json!(BASE64_STANDARD.encode(data))),
         ]);
@@ -1305,7 +1308,10 @@ fn resource_payload_summary(resource_type: &str, data: &[u8]) -> BTreeMap<String
 }
 
 fn decode_classic_text_body(bytes: &[u8]) -> String {
-    let nul = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    let nul = bytes
+        .iter()
+        .position(|byte| *byte == 0)
+        .unwrap_or(bytes.len());
     bytes[..nul]
         .iter()
         .map(|byte| match *byte {
@@ -1321,7 +1327,10 @@ fn decode_classic_text_body(bytes: &[u8]) -> String {
 }
 
 fn decode_classic_text_offset_body(bytes: &[u8]) -> String {
-    let nul = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+    let nul = bytes
+        .iter()
+        .position(|byte| *byte == 0)
+        .unwrap_or(bytes.len());
     bytes[..nul]
         .iter()
         .map(|byte| match *byte {

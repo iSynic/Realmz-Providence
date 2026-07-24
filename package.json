@@ -49,6 +49,7 @@
     "archaeology:pict-preview-gaps": "node scripts/report_pict_preview_gaps.mjs",
     "archaeology:pict-codec": "node scripts/report_pict_preview_gaps.mjs --out docs/generated/pict-codec-report.md",
     "audit:pict-corpus": "vite-node scripts/audit_pict_corpus.ts",
+    "audit:remake-export-corpus": "cargo run --manifest-path src-tauri/Cargo.toml --example remake_export_corpus -- --root \"F:/Realmz/out_win_clang/Scenarios\" --output tmp/remake-export-corpus --replace",
     "archaeology:scenario-assets": "cargo run --manifest-path src-tauri/Cargo.toml --example audit_scenario_assets --",
     "archaeology:target-compatibility": "node scripts/generate_target_compatibility.mjs",
     "archaeology:smart-terrain": "node scripts/generate_smart_terrain_corpus.mjs",

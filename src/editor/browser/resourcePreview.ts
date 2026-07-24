@@ -1,7 +1,7 @@
 import type { DecodedResourcePreview, ResourcePreviewDiagnostic, ResourcePreviewStatus } from "../types";
 import {
   COMPRESSED_QUICKTIME,
-  decodeQuickTimeGif,
+  decodeQuickTimeImage,
   parsePictQuickTimeRecord,
   PictQuickTimeError,
   UNCOMPRESSED_QUICKTIME
@@ -221,12 +221,13 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
         summary.quickTimeMatteBytes = String(record.matteBytes);
         if (record.kind === "compressed") {
           summary.quickTimeCodec = printableQuickTimeCodec(record.codec);
+          summary.quickTimeDepth = String(record.depth);
           summary.quickTimeClutId = String(record.clutId);
           summary.embeddedMediaType = record.mediaType ?? "unknown";
           summary.embeddedBytes = String(record.encoded.byteLength);
           summary.embeddedWidth = String(record.width);
           summary.embeddedHeight = String(record.height);
-          const image = decodeQuickTimeGif(record);
+          const image = decodeQuickTimeImage(record);
           const bounds: Rect = { top: 0, left: 0, bottom: image.height, right: image.width };
           const frame = parseRect(pict, 2);
           const dstRect = frame && rectWidth(frame) > 0 && rectHeight(frame) > 0

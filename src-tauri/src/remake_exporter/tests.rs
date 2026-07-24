@@ -960,6 +960,29 @@ fn packages_scenario_owned_special_land_tiles_before_shared_fallbacks() {
     assert!(output
         .join(special["runtimeMedia"]["path"].as_str().unwrap())
         .is_file());
+
+    project.asset_catalog.icons.clear();
+    let stale_output = workspace.path().join("stale-scenario-special-tile-out");
+    let stale_report = export_remake_campaign(&project, &project_dir, &stale_output).unwrap();
+    let stale_assets: Value =
+        serde_json::from_slice(&fs::read(stale_output.join("classic/assets.json")).unwrap())
+            .unwrap();
+
+    assert_eq!(stale_report.counts.packaged_asset_payloads, 2);
+    let stale_special = &stale_assets["catalog"]["specialLandTiles"][0];
+    assert_eq!(stale_special["resourceId"], -99);
+    assert_eq!(
+        stale_special["source"],
+        "Scenario resource fork: Scenario.rsrc"
+    );
+    let stale_payload_path = stale_special["payloadPath"].as_str().unwrap();
+    assert_eq!(
+        fs::read(stale_output.join(stale_payload_path)).unwrap(),
+        cicn
+    );
+    assert!(stale_output
+        .join(stale_special["runtimeMedia"]["path"].as_str().unwrap())
+        .is_file());
 }
 
 #[test]
@@ -987,6 +1010,55 @@ fn packages_referenced_shared_special_land_tiles_for_remake() {
     ] {
         assert!(output.join(path).is_file(), "missing packaged {path}");
     }
+}
+
+#[test]
+fn packages_transparent_runtime_fallback_for_missing_special_land_tiles() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("missing-special-tile.providence");
+    let mut project = create_project("Missing special tile".to_string(), &project_dir).unwrap();
+    project.maps[0].tiles[0] = -20;
+
+    let output = workspace.path().join("missing-special-tile-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let assets: Value =
+        serde_json::from_slice(&fs::read(output.join("classic/assets.json")).unwrap()).unwrap();
+
+    let special = assets["catalog"]["specialLandTiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|record| record["resourceId"] == -20)
+        .expect("missing cicn fallback should have a catalog row");
+    assert_eq!(special["source"], "Classic missing cicn fallback");
+    assert!(special.get("payloadPath").is_none());
+    assert_eq!(special["runtimeMedia"]["mediaType"], "image/png");
+    let runtime_path = special["runtimeMedia"]["path"].as_str().unwrap();
+    let decoded = image::open(output.join(runtime_path)).unwrap().into_rgba8();
+    assert_eq!(decoded.dimensions(), (32, 32));
+    assert!(decoded.pixels().all(|pixel| pixel.0 == [0, 0, 0, 0]));
+}
+
+#[test]
+fn collapses_out_of_band_negative_land_values_to_the_base_only_fallback() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("out-of-band-land.providence");
+    let mut project = create_project("Out of band land".to_string(), &project_dir).unwrap();
+    project.maps[0].tiles[0] = i16::MIN;
+
+    let output = workspace.path().join("out-of-band-land-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+
+    assert_eq!(documents["classic/maps.json"]["maps"][0]["tiles"][0], -999);
+    let special = documents["classic/assets.json"]["catalog"]["specialLandTiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|record| record["resourceId"] == -999)
+        .expect("out-of-band values should use the base-only fallback");
+    assert_eq!(special["source"], "Classic missing cicn fallback");
+    assert!(special.get("payloadPath").is_none());
 }
 
 #[test]

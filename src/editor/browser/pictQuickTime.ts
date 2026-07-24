@@ -19,9 +19,11 @@ export type PictQuickTimeRecord =
       mediaType: string | null;
       width: number;
       height: number;
+      depth: number;
       frameCount: number;
       matteBytes: number;
       clutId: number;
+      palette: Uint8Array;
       encoded: Uint8Array;
     }
   | {
@@ -143,6 +145,7 @@ export function parsePictQuickTimeRecord(
   const height = readU16(data, descriptionStart + 34, opcodeOffset, opcode, "QuickTime image height");
   const encodedBytes = readU32(data, descriptionStart + 44, opcodeOffset, opcode, "QuickTime encoded-image length");
   const frameCount = readU16(data, descriptionStart + 48, opcodeOffset, opcode, "QuickTime frame count");
+  const depth = readU16(data, descriptionStart + 82, opcodeOffset, opcode, "QuickTime image depth");
   const clutId = readU16(data, descriptionStart + 84, opcodeOffset, opcode, "QuickTime color-table ID");
   if (width === 0 || height === 0 || width > MAX_EMBEDDED_IMAGE_SIDE || height > MAX_EMBEDDED_IMAGE_SIDE) {
     throw unsupported(
@@ -172,11 +175,13 @@ export function parsePictQuickTimeRecord(
     opcode,
     "QuickTime fixed image description"
   );
+  let palette = (depth & 0x1f) === 8 ? quickTimeDefaultPalette256() : new Uint8Array();
   if (clutId === 0) {
     requireWithinRecord(data, cursor, 8, descriptionEnd, opcodeOffset, opcode, "QuickTime color-table header");
+    const colorTableFlags = readU16(data, cursor + 4, opcodeOffset, opcode, "QuickTime color-table flags");
     const lastColorIndex = readU16(data, cursor + 6, opcodeOffset, opcode, "QuickTime color-table size");
     const colorCount = lastColorIndex === 0xffff ? 0 : lastColorIndex + 1;
-    cursor = requireWithinRecord(
+    const colorTableEnd = requireWithinRecord(
       data,
       cursor,
       8 + colorCount * 8,
@@ -185,6 +190,23 @@ export function parsePictQuickTimeRecord(
       opcode,
       "QuickTime color table"
     );
+    if (colorCount > 0) {
+      const depthBits = depth & 0x1f;
+      const paletteLength = Math.max(colorCount, depthBits > 0 && depthBits <= 8 ? 1 << depthBits : colorCount);
+      palette = new Uint8Array(paletteLength * 3);
+      for (let colorOffset = 0; colorOffset < colorCount; colorOffset += 1) {
+        const entry = cursor + 8 + colorOffset * 8;
+        const colorIndex = readU16(data, entry, opcodeOffset, opcode, "QuickTime color-table index");
+        const paletteIndex =
+          (colorTableFlags & 0x8000) !== 0 || colorIndex >= paletteLength ? colorOffset : colorIndex;
+        if (paletteIndex < paletteLength) {
+          palette[paletteIndex * 3] = data[entry + 2] ?? 0;
+          palette[paletteIndex * 3 + 1] = data[entry + 4] ?? 0;
+          palette[paletteIndex * 3 + 2] = data[entry + 6] ?? 0;
+        }
+      }
+    }
+    cursor = colorTableEnd;
   }
   cursor = descriptionEnd;
   const encodedEnd = requireWithinRecord(data, cursor, encodedBytes, recordEnd, opcodeOffset, opcode, "QuickTime encoded image");
@@ -197,14 +219,17 @@ export function parsePictQuickTimeRecord(
     mediaType: mediaTypeForQuickTimeCodec(codec),
     width,
     height,
+    depth,
     frameCount,
     matteBytes,
     clutId,
+    palette,
     encoded: data.slice(cursor, encodedEnd)
   };
 }
 
-export function decodeQuickTimeGif(record: Extract<PictQuickTimeRecord, { kind: "compressed" }>) {
+export function decodeQuickTimeImage(record: Extract<PictQuickTimeRecord, { kind: "compressed" }>) {
+  if (record.codec === "rle ") return decodeQuickTimeRle8(record);
   if (record.codec !== "gif ") {
     throw unsupported(
       "pict.quicktime_codec_unsupported",
@@ -237,6 +262,140 @@ export function decodeQuickTimeGif(record: Extract<PictQuickTimeRecord, { kind: 
   }
 }
 
+function decodeQuickTimeRle8(record: Extract<PictQuickTimeRecord, { kind: "compressed" }>) {
+  if ((record.depth & 0x1f) !== 8) {
+    throw unsupported(
+      "pict.quicktime_rle_depth_unsupported",
+      `PICT QuickTime Animation uses unsupported image depth ${record.depth}; Providence currently decodes 8-bit indexed frames.`,
+      record.opcodeOffset,
+      record.opcode,
+      `${record.depth}-bit`,
+      "The original PICT bytes remain preserved."
+    );
+  }
+  if (record.palette.byteLength < 256 * 3) {
+    throw malformed(
+      "pict.quicktime_rle_invalid",
+      `PICT QuickTime Animation 8-bit frame has only ${Math.floor(record.palette.byteLength / 3)} palette entries.`,
+      record.opcodeOffset,
+      record.opcode,
+      "rle-8"
+    );
+  }
+  const fail = (message: string) =>
+    malformed("pict.quicktime_rle_invalid", message, record.opcodeOffset, record.opcode, "rle-8");
+  const encoded = record.encoded;
+  if (encoded.byteLength < 6) throw fail("PICT QuickTime Animation frame is shorter than its six-byte header.");
+  const declaredSize = (u32At(encoded, 0) ?? 0) & 0x3fffffff;
+  if (declaredSize < 6 || declaredSize > encoded.byteLength) {
+    throw fail(
+      `PICT QuickTime Animation frame declares ${declaredSize} bytes, but ${encoded.byteLength} are available.`
+    );
+  }
+  const frame = encoded.subarray(0, declaredSize);
+  const header = u16At(frame, 4) ?? 0;
+  let cursor = 6;
+  let startLine = 0;
+  let linesToChange = record.height;
+  if ((header & 0x0008) !== 0) {
+    if (frame.byteLength < 14) throw fail("PICT QuickTime Animation line-range header is truncated.");
+    startLine = u16At(frame, 6) ?? 0;
+    linesToChange = u16At(frame, 10) ?? 0;
+    cursor = 14;
+  }
+  if (startLine > record.height || linesToChange > record.height - startLine) {
+    throw fail(
+      `PICT QuickTime Animation line range ${startLine}..${startLine + linesToChange} exceeds image height ${record.height}.`
+    );
+  }
+
+  const rgba = new Uint8ClampedArray(record.width * record.height * 4);
+  const background = record.palette.slice(0, 3);
+  for (let pixel = 0; pixel < record.width * record.height; pixel += 1) {
+    const offset = pixel * 4;
+    rgba[offset] = background[0] ?? 0;
+    rgba[offset + 1] = background[1] ?? 0;
+    rgba[offset + 2] = background[2] ?? 0;
+    rgba[offset + 3] = 255;
+  }
+  const writePixel = (line: number, x: number, paletteIndex: number) => {
+    const source = paletteIndex * 3;
+    const target = (line * record.width + x) * 4;
+    rgba[target] = record.palette[source] ?? 0;
+    rgba[target + 1] = record.palette[source + 1] ?? 0;
+    rgba[target + 2] = record.palette[source + 2] ?? 0;
+    rgba[target + 3] = 255;
+  };
+
+  for (let line = startLine; line < startLine + linesToChange; line += 1) {
+    const initialSkip = frame[cursor++];
+    if (initialSkip === undefined) throw fail(`PICT QuickTime Animation line ${line} is missing its initial skip.`);
+    if (initialSkip === 0) throw fail(`PICT QuickTime Animation line ${line} uses invalid initial skip 0.`);
+    let x = 4 * (initialSkip - 1);
+    if (x > record.width) {
+      throw fail(`PICT QuickTime Animation line ${line} starts beyond image width ${record.width}.`);
+    }
+    for (;;) {
+      const rawCode = frame[cursor++];
+      if (rawCode === undefined) throw fail(`PICT QuickTime Animation line ${line} has no end marker.`);
+      const code = rawCode > 127 ? rawCode - 256 : rawCode;
+      if (code === -1) break;
+      if (code === 0) {
+        const skip = frame[cursor++];
+        if (skip === undefined) throw fail(`PICT QuickTime Animation line ${line} has a truncated skip code.`);
+        if (skip === 0) throw fail(`PICT QuickTime Animation line ${line} uses invalid skip 0.`);
+        x += 4 * (skip - 1);
+        if (x > record.width) {
+          throw fail(`PICT QuickTime Animation line ${line} skips beyond image width ${record.width}.`);
+        }
+        continue;
+      }
+      const groups = Math.abs(code);
+      const pixelCount = groups * 4;
+      if (pixelCount > record.width - x) {
+        throw fail(`PICT QuickTime Animation line ${line} writes past image width ${record.width}.`);
+      }
+      if (code < 0) {
+        if (cursor + 4 > frame.byteLength) {
+          throw fail(`PICT QuickTime Animation line ${line} has a truncated repeated group.`);
+        }
+        const group = frame.subarray(cursor, cursor + 4);
+        cursor += 4;
+        for (let repeat = 0; repeat < groups; repeat += 1) {
+          for (const paletteIndex of group) writePixel(line, x++, paletteIndex);
+        }
+      } else {
+        if (cursor + pixelCount > frame.byteLength) {
+          throw fail(`PICT QuickTime Animation line ${line} has a truncated literal run.`);
+        }
+        for (let index = 0; index < pixelCount; index += 1) {
+          writePixel(line, x++, frame[cursor + index] ?? 0);
+        }
+        cursor += pixelCount;
+      }
+    }
+  }
+  return { width: record.width, height: record.height, rgba };
+}
+
+function quickTimeDefaultPalette256() {
+  const colors: number[] = [];
+  const cube = [0xff, 0xcc, 0x99, 0x66, 0x33, 0x00];
+  for (const red of cube) {
+    for (const green of cube) {
+      for (const blue of cube) {
+        if (red !== 0 || green !== 0 || blue !== 0) colors.push(red, green, blue);
+      }
+    }
+  }
+  const ramp = [0xee, 0xdd, 0xbb, 0xaa, 0x88, 0x77, 0x55, 0x44, 0x22, 0x11];
+  for (const value of ramp) colors.push(value, 0, 0);
+  for (const value of ramp) colors.push(0, value, 0);
+  for (const value of ramp) colors.push(0, 0, value);
+  for (const value of [...ramp, 0]) colors.push(value, value, value);
+  return Uint8Array.from(colors);
+}
+
 export function mediaTypeForQuickTimeCodec(codec: string) {
   switch (codec) {
     case "gif ":
@@ -247,6 +406,8 @@ export function mediaTypeForQuickTimeCodec(codec: string) {
       return "image/png";
     case "tiff":
       return "image/tiff";
+    case "rle ":
+      return "video/quicktime-rle";
     default:
       return null;
   }

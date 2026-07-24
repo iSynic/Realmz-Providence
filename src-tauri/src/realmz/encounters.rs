@@ -126,23 +126,21 @@ pub fn write_complex_encounters(records: &[ComplexEncounterRecord]) -> Result<Ve
 
 pub fn parse_timed_encounters(buffer: &[u8]) -> Vec<TimedEncounterRecord> {
     parse_fixed_records(buffer, TIMED_ENCOUNTER_BYTES)
-        .map(|(id, start, record)| {
-            TimedEncounterRecord {
-                id,
-                day: i16_be(record, 0),
-                increment: i16_be(record, 2),
-                percent: i16_be(record, 4),
-                door: i16_be(record, 6),
-                required_level: i16_be(record, 8),
-                required_random_rect: i16_be(record, 10),
-                required_x: i16_be(record, 12),
-                required_y: i16_be(record, 14),
-                required_item: i16_be(record, 16),
-                required_quest: i16_be(record, 18),
-                location_kind: timed_location_kind(i16_be(record, 20)),
-                authored: false,
-                provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES),
-            }
+        .map(|(id, start, record)| TimedEncounterRecord {
+            id,
+            day: i16_be(record, 0),
+            increment: i16_be(record, 2),
+            percent: i16_be(record, 4),
+            door: i16_be(record, 6),
+            required_level: i16_be(record, 8),
+            required_random_rect: i16_be(record, 10),
+            required_x: i16_be(record, 12),
+            required_y: i16_be(record, 14),
+            required_item: i16_be(record, 16),
+            required_quest: i16_be(record, 18),
+            location_kind: timed_location_kind(i16_be(record, 20)),
+            authored: false,
+            provenance: provenance("Data TD3", id, start, TIMED_ENCOUNTER_BYTES),
         })
         .collect()
 }

@@ -38,6 +38,7 @@ struct PreservedResourcePayload {
 
 #[derive(Debug, Clone)]
 pub(crate) struct PackagedPayload {
+    has_classic_payload: bool,
     relative_path: String,
     file_name: String,
     bytes: u64,
@@ -300,6 +301,7 @@ fn write_resource_payload(
         None
     };
     Ok(PackagedPayload {
+        has_classic_payload: true,
         relative_path,
         file_name,
         bytes: bytes.len() as u64,
@@ -472,6 +474,17 @@ fn preserved_scenario_resource_payloads(
     project_dir: &Path,
     resource_type: &str,
 ) -> Result<BTreeMap<i16, Vec<PreservedResourcePayload>>> {
+    let mut source_files = project
+        .source
+        .files
+        .iter()
+        .filter(|file| matches!(&file.role, SourceFileRole::ResourceFork))
+        .collect::<Vec<_>>();
+    if source_files.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    source_files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
+
     let raw_sources_dir = if project.source.raw_sources_dir.trim().is_empty() {
         PathBuf::from("raw-sources")
     } else {
@@ -481,13 +494,6 @@ fn preserved_scenario_resource_payloads(
         )?
     };
     let raw_sources_dir = project_dir.join(raw_sources_dir);
-    let mut source_files = project
-        .source
-        .files
-        .iter()
-        .filter(|file| matches!(&file.role, SourceFileRole::ResourceFork))
-        .collect::<Vec<_>>();
-    source_files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
 
     let mut resources = BTreeMap::<i16, Vec<PreservedResourcePayload>>::new();
     for source_file in source_files {
@@ -560,6 +566,44 @@ fn select_scenario_resource_payload<'a>(
         )));
     }
     Ok(first)
+}
+
+fn select_uncatalogued_scenario_resource_payload<'a>(
+    resource_id: i16,
+    candidates: &'a BTreeMap<i16, Vec<PreservedResourcePayload>>,
+    resource_type: &str,
+) -> Result<Option<&'a PreservedResourcePayload>> {
+    let Some(available) = candidates.get(&resource_id) else {
+        return Ok(None);
+    };
+    let preferred = available
+        .iter()
+        .filter(|candidate| source_file_matches(&candidate.source_file, "Scenario.rsrc"))
+        .collect::<Vec<_>>();
+    let matching = if preferred.is_empty() {
+        available.iter().collect::<Vec<_>>()
+    } else {
+        preferred
+    };
+    let first = matching
+        .first()
+        .copied()
+        .expect("resource candidate groups are non-empty");
+    if matching
+        .iter()
+        .skip(1)
+        .any(|candidate| candidate.bytes != first.bytes)
+    {
+        return Err(ProvidenceError::message(format!(
+            "Scenario-owned {resource_type} {resource_id} is ambiguous across preserved resource forks: {}",
+            matching
+                .iter()
+                .map(|candidate| candidate.source_file.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )));
+    }
+    Ok(Some(first))
 }
 
 fn scenario_resource_source_hint(asset: &ResourceAsset, resource_type: &str) -> Option<String> {
@@ -658,25 +702,37 @@ fn package_scenario_special_land_tiles(
             .cmp(&right.resource_id)
             .then_with(|| left.id.cmp(&right.id))
     });
-    if assets.is_empty() {
-        return Ok(());
-    }
+    let assets = assets
+        .into_iter()
+        .filter_map(|asset| {
+            i16::try_from(asset.resource_id)
+                .ok()
+                .map(|resource_id| (resource_id, asset))
+        })
+        .collect::<BTreeMap<_, _>>();
 
     let candidates = preserved_scenario_resource_payloads(project, project_dir, "cicn")?;
-    for asset in assets {
-        let resource_id = i16::try_from(asset.resource_id).map_err(|_| {
-            ProvidenceError::message(format!(
-                "Scenario special-land cicn resource ID {} is outside the Classic signed 16-bit range",
-                asset.resource_id
-            ))
-        })?;
+    for resource_id in wanted {
         if payloads.contains_key(&("cicn".to_string(), resource_id)) {
             continue;
         }
-        let candidate = select_scenario_resource_payload(asset, &candidates, "cicn")?;
+        let asset = assets.get(&resource_id).copied();
+        let candidate = match asset {
+            Some(asset) => select_scenario_resource_payload(asset, &candidates, "cicn")?,
+            None => {
+                let Some(candidate) = select_uncatalogued_scenario_resource_payload(
+                    resource_id,
+                    &candidates,
+                    "cicn",
+                )?
+                else {
+                    continue;
+                };
+                candidate
+            }
+        };
         let label = asset
-            .name
-            .as_deref()
+            .and_then(|asset| asset.name.as_deref())
             .filter(|value| !value.trim().is_empty())
             .or_else(|| (!candidate.name.trim().is_empty()).then_some(candidate.name.as_str()))
             .map(str::to_string)
@@ -687,7 +743,7 @@ fn package_scenario_special_land_tiles(
             &label,
             &candidate.bytes,
             "image/cicn",
-            &format!("Preserved scenario resource {}", candidate.source_file),
+            &format!("Scenario resource fork: {}", candidate.source_file),
             output_dir,
         )?;
         written_files.push(payload.relative_path.clone());
@@ -748,16 +804,6 @@ fn package_shared_special_land_tiles(
     let resources = crate::realmz_reference::resources("cicn", &wanted)?;
     let found = resources.keys().copied().collect::<BTreeSet<_>>();
     let missing = wanted.difference(&found).copied().collect::<Vec<_>>();
-    if !missing.is_empty() {
-        return Err(ProvidenceError::message(format!(
-            "Realmz Remake export cannot resolve referenced shared special-land cicn resources: {}",
-            missing
-                .iter()
-                .map(i16::to_string)
-                .collect::<Vec<_>>()
-                .join(", ")
-        )));
-    }
     for (id, resource) in resources {
         let label = if resource.name.trim().is_empty() {
             format!("Realmz shared special land tile {id}")
@@ -779,6 +825,25 @@ fn package_shared_special_land_tiles(
         }
         payloads.insert(("cicn".to_string(), id), payload);
     }
+    if !missing.is_empty() {
+        let runtime_media = write_transparent_special_land_fallback(output_dir)?;
+        written_files.push(runtime_media.relative_path.clone());
+        for id in missing {
+            payloads.insert(
+                ("cicn".to_string(), id),
+                PackagedPayload {
+                    has_classic_payload: false,
+                    relative_path: String::new(),
+                    file_name: String::new(),
+                    bytes: 0,
+                    sha256: String::new(),
+                    media_type: "image/cicn".to_string(),
+                    source: "Classic missing cicn fallback".to_string(),
+                    runtime_media: Some(runtime_media.clone()),
+                },
+            );
+        }
+    }
     Ok(())
 }
 
@@ -791,13 +856,69 @@ fn referenced_special_land_tile_ids(project: &ProvidenceProject) -> BTreeSet<i16
             if *value >= 0 {
                 return None;
             }
-            let mut id = *value;
-            while id < -999 {
-                id += 1000;
-            }
-            Some(id)
+            Some(special_land_resource_id(remake_land_tile_value(*value)))
         })
         .collect()
+}
+
+pub(crate) fn remake_land_tile_value(value: i16) -> i16 {
+    if value < -3999 {
+        // Realmz removes at most three 1000-wide state bands before looking up
+        // a special cicn. Values below this range cannot resolve and render as
+        // the base land tile, so the Remake document uses one transparent
+        // fallback identity instead of manufacturing thousands of resource IDs.
+        -999
+    } else {
+        value
+    }
+}
+
+fn special_land_resource_id(value: i16) -> i16 {
+    let mut resource_id = value;
+    for _ in 0..3 {
+        if resource_id >= -999 {
+            break;
+        }
+        resource_id += 1000;
+    }
+    resource_id
+}
+
+fn write_transparent_special_land_fallback(output_dir: &Path) -> Result<PackagedRuntimeMedia> {
+    let mut bytes = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut bytes, 32, 32);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().map_err(|error| {
+            ProvidenceError::message(format!(
+                "Could not create transparent special-land fallback PNG: {error}"
+            ))
+        })?;
+        writer
+            .write_image_data(&vec![0_u8; 32 * 32 * 4])
+            .map_err(|error| {
+                ProvidenceError::message(format!(
+                    "Could not encode transparent special-land fallback PNG: {error}"
+                ))
+            })?;
+    }
+    let sha256 = hex::encode(Sha256::digest(&bytes));
+    let relative_path = format!(
+        "{RUNTIME_IMAGE_DIR}/cicn-missing-transparent-{}.png",
+        &sha256[..12]
+    );
+    let path = output_dir.join(PathBuf::from(&relative_path));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_path(parent)?;
+    }
+    fs::write(&path, &bytes).with_path(&path)?;
+    Ok(PackagedRuntimeMedia {
+        relative_path,
+        bytes: bytes.len() as u64,
+        sha256,
+        media_type: "image/png".to_string(),
+    })
 }
 
 fn managed_asset_document(asset: &ManagedAsset, payload: &PackagedPayload) -> Value {
@@ -986,6 +1107,10 @@ fn resource_catalog(
 }
 
 fn add_payload_fields(value: &mut Value, payload: &PackagedPayload) {
+    if !payload.has_classic_payload {
+        add_runtime_media(value, payload);
+        return;
+    }
     let object = value
         .as_object_mut()
         .expect("asset catalog rows are objects");
