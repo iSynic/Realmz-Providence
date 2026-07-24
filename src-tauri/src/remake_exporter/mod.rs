@@ -48,7 +48,8 @@ pub struct RemakeExportCounts {
     pub packaged_asset_payloads: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct RemakeExportReport {
     pub output_dir: PathBuf,
     pub written_files: Vec<String>,

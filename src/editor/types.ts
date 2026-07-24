@@ -1114,7 +1114,7 @@ export type ValidationReport = {
 
 export type ExportReport = {
   outputPath: string;
-  target: ScenarioTarget;
+  target: ExportTarget;
   writtenFiles: string[];
   passThroughFiles: string[];
   writtenResources: string[];
@@ -1124,9 +1124,38 @@ export type ExportReport = {
   warnings: string[];
   targetCompatibilityIssues: TargetCompatibilityIssue[];
   targetCompatibility: TargetCompatibilityBuckets;
+  remakeCounts?: RemakeExportCounts;
 };
 
 export type ScenarioTarget = "mac-classic-folder" | "windows-realmz-folder" | "providence-portable-folder";
+export type ExportTarget = ScenarioTarget | "realmz-remake-folder";
+export type RemakeExportCounts = {
+  maps: number;
+  landMaps: number;
+  dungeonMaps: number;
+  triggers: number;
+  activeTriggers: number;
+  extraCodes: number;
+  messages: number;
+  battles: number;
+  monsters: number;
+  scenarioItems: number;
+  itemTexts: number;
+  treasures: number;
+  shops: number;
+  simpleEncounters: number;
+  complexEncounters: number;
+  thiefEncounters: number;
+  timedEncounters: number;
+  managedAssets: number;
+  packagedAssetPayloads: number;
+};
+export type RemakeExportReport = {
+  outputDir: string;
+  writtenFiles: string[];
+  counts: RemakeExportCounts;
+  limitations: string[];
+};
 export type TargetCompatibilityIssue = {
   target: ScenarioTarget;
   severity: string;

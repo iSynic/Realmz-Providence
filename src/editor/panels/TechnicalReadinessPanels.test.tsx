@@ -24,6 +24,59 @@ describe("technical readiness panels", () => {
     expect(markup).toContain("No export diagnostics");
   });
 
+  it("offers the desktop Realmz Remake folder target and summarizes its package report", () => {
+    const markup = renderToStaticMarkup(
+      <ExportPanel
+        project={null}
+        exportReport={{
+          outputPath: "C:\\Exports\\Dead of Night",
+          target: "realmz-remake-folder",
+          writtenFiles: ["campaign.json", "classic/maps.json", "media/pictures/pict-32128-proof.png"],
+          passThroughFiles: [],
+          writtenResources: [],
+          preservedResources: 0,
+          resourceWarnings: [],
+          blockedAssets: [],
+          warnings: ["Compatibility note"],
+          targetCompatibilityIssues: [],
+          targetCompatibility: { blockers: [], warnings: [], notes: [] },
+          remakeCounts: {
+            maps: 18,
+            landMaps: 10,
+            dungeonMaps: 8,
+            triggers: 2000,
+            activeTriggers: 1250,
+            extraCodes: 1689,
+            messages: 1800,
+            battles: 100,
+            monsters: 821,
+            scenarioItems: 100,
+            itemTexts: 100,
+            treasures: 100,
+            shops: 22,
+            simpleEncounters: 7,
+            complexEncounters: 102,
+            thiefEncounters: 39,
+            timedEncounters: 13,
+            managedAssets: 3,
+            packagedAssetPayloads: 6
+          }
+        }}
+        benchmark={null}
+        desktopRuntime
+        onExport={() => undefined}
+        onExportProjectJson={() => undefined}
+        onBenchmark={() => undefined}
+      />
+    );
+
+    expect(markup).toContain('value="realmz-remake-folder"');
+    expect(markup).toContain("Realmz Remake Scenario Folder");
+    expect(markup).toContain("Packaged Asset Files");
+    expect(markup).toContain(">6<");
+    expect(markup).not.toContain("<dt>Preserved Resources</dt>");
+  });
+
   it("uses the shared validation gate and empty state in Linter", () => {
     const markup = renderToStaticMarkup(
       <LinterPanel

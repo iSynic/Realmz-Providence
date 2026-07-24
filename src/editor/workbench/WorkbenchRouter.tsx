@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, ScenarioTarget, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, ExportTarget, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import type { TransientUndoScope } from "../app/transientUndo";
@@ -424,7 +424,7 @@ type WorkbenchRouterProps = {
   onCopyCustomAssetToScenario: (assetId: string) => void;
   onCopyReferenceAssetToScenario: (assetId: string, kind?: ReferenceAssetScenarioCopyKind) => Promise<ReferenceAssetScenarioCopyResult | null>;
   onValidate: () => void;
-  onExport: (target?: ScenarioTarget) => void;
+  onExport: (target?: ExportTarget) => void;
   onExportProjectJson: () => void;
   onBenchmark: () => void;
 };

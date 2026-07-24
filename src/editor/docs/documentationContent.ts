@@ -2773,7 +2773,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Export",
-            body: "Writes a Portable Providence, Mac Classic, or Windows Realmz folder and reports files, resources, pass-through data, blocked assets, and target compatibility notes.",
+            body: "Writes a Portable Providence, Mac Classic, Windows Realmz, or self-contained Realmz Remake scenario folder and reports files, resources, pass-through data, blocked assets, and target compatibility notes.",
             facts: ["writer gate"]
           },
           {
@@ -2830,8 +2830,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Export Targets and Reports",
         paragraphs: [
-          "Export target controls choose the folder shape Providence writes. Portable Providence folders are useful for internal roundtrips. Mac Classic and Windows Realmz folders are compatibility targets for actual Realmz runtimes.",
-          "The export report is the release ledger for the current session: output path, target, written source files, pass-through files, resource writes, preserved resources, blocked assets, target compatibility, and warnings."
+          "Export target controls choose the folder shape Providence writes. Portable Providence folders are useful for internal roundtrips. Mac Classic and Windows Realmz folders are compatibility targets for actual Realmz runtimes. Realmz Remake scenario folders are self-contained campaign bundles ready for Remake's normal Classic campaign installer.",
+          "The export report is the release ledger for the current session: output path, target, written files, packaged assets, pass-through files where applicable, resource writes, preserved resources, blocked assets, target compatibility, and warnings."
         ],
         points: [
           "Written files are writer-supported source files Providence encoded from the project model.",

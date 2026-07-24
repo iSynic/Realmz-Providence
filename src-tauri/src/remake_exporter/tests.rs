@@ -2,8 +2,8 @@ use super::*;
 use crate::importer::create_project;
 use crate::project::{
     Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
-    MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioSupportFile, SourceFile,
-    ScenarioIconResource, ScenarioIconResourceSource, SourceFileRole, TriggerRecord,
+    MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioIconResource,
+    ScenarioIconResourceSource, ScenarioSupportFile, SourceFile, SourceFileRole, TriggerRecord,
 };
 use crate::resource_fork::{
     encode_cicn_resource, encode_pict_resource, encode_snd_resource, write_resource_fork,
@@ -57,12 +57,29 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
 
     let first = workspace.path().join("first");
     let second = workspace.path().join("second");
+    let command_output = workspace.path().join("command");
     let first_report = export_remake_campaign(&project, &project_dir, &first).unwrap();
     let second_report = export_remake_campaign(&project, &project_dir, &second).unwrap();
+    let command_report = crate::commands::export_remake_campaign(
+        project_dir.to_string_lossy().to_string(),
+        project.clone(),
+        command_output.to_string_lossy().to_string(),
+    )
+    .unwrap();
 
     assert_eq!(first_report.written_files, second_report.written_files);
+    assert_eq!(first_report.written_files, command_report.written_files);
+    assert_eq!(first_report.counts, command_report.counts);
     assert_eq!(first_report.counts.managed_assets, 1);
     assert_eq!(first_report.counts.packaged_asset_payloads, 2);
+    let serialized_report = serde_json::to_value(&first_report).unwrap();
+    assert_eq!(
+        serialized_report["outputDir"],
+        first.to_string_lossy().as_ref()
+    );
+    assert_eq!(serialized_report["counts"]["managedAssets"], 1);
+    assert_eq!(serialized_report["counts"]["packagedAssetPayloads"], 2);
+    assert!(serialized_report["writtenFiles"].is_array());
     for relative_path in &first_report.written_files {
         assert_eq!(
             fs::read(first.join(relative_path)).unwrap(),

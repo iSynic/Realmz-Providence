@@ -57,6 +57,7 @@ pub fn run() {
             media_assets::delete_project_asset,
             commands::save_project,
             commands::export_project,
+            commands::export_remake_campaign,
             commands::validate_project,
             commands::benchmark_project,
             harness::get_harness_config,

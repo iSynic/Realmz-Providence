@@ -13,6 +13,22 @@ output, and Realmz Remake does not consume `project.json`. The bundle is an immu
 self-contained projection governed by Realmz Remake's
 `src/scripts/classic_runtime/BUNDLE_CONTRACT.md`.
 
+## Export from Providence
+
+In Providence desktop, open **Export**, choose **Realmz Remake Scenario Folder**, and select
+**Export Remake Scenario Folder**. Choose or create an empty output folder. Providence writes
+`campaign.json`, the canonical Classic documents under `classic`, immutable scenario-owned
+resource payloads under `assets`, and decoded runtime media under `media`. The resulting folder is
+ready for Realmz Remake's normal Classic campaign installer; it does not require a native Realmz
+scenario installation.
+
+The source-tree command remains available for automation and diagnostics:
+
+```powershell
+cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- `
+  --project "C:\path\Scenario.providence" "C:\output\classic-bundle"
+```
+
 ## Contract mapping
 
 | Classic bundle concept | Providence source | Result |
@@ -121,13 +137,6 @@ Negative special-land identities remain in the additive optional v1
 without reinterpreting ordinary non-negative icon IDs.
 
 ## Usage and verification
-
-Export an existing Providence project:
-
-```powershell
-cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- `
-  --project "C:\path\Scenario.providence" "C:\output\classic-bundle"
-```
 
 The output directory must be absent or empty. The exporter refuses absolute or parent-relative
 managed-resource paths. For imported projects it reads only project-relative preserved resource

@@ -1214,7 +1214,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         cards: [
           { title: "Fix Blockers", body: "Resolve missing targets, invalid records, malformed resources, and package errors that prevent export.", facts: ["must fix"] },
           { title: "Review Warnings", body: "Check compatibility risks, missing visible results, preserved source files, and target-specific notes.", facts: ["review"] },
-          { title: "Export Target", body: "Choose Providence project ZIP, Mac scenario ZIP, Windows scenario ZIP, or desktop folder output intentionally.", facts: ["package"] }
+          { title: "Export Target", body: "Choose Providence project ZIP, Mac scenario ZIP, Windows scenario ZIP, native desktop folder, or self-contained Realmz Remake scenario folder output intentionally.", facts: ["package"] }
         ]
       },
       {

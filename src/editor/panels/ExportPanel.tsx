@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Download, Gauge } from "lucide-react";
-import { BenchmarkReport, ExportReport, Project, ScenarioTarget } from "../types";
+import { BenchmarkReport, ExportReport, ExportTarget, Project, ScenarioTarget } from "../types";
 import { InfoGrid } from "../components/InfoGrid";
 import { EmptyState, EntityRow, IssueGroup, PanelHeader, ScrollArea, ValidationGate } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
@@ -17,9 +17,10 @@ import { requiresCompatibilityAnnex } from "../projectOrigin";
 
 type BrowserExportTarget = "project-zip" | "mac-classic-scenario-zip" | "windows-realmz-scenario-zip";
 
-const EXPORT_WORKBENCH_HELP = "Desktop export writes a Realmz-compatible scenario folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export downloads either a Providence project ZIP package or a compiled scenario ZIP.";
-const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match the target runtime folder conventions.";
+const EXPORT_WORKBENCH_HELP = "Desktop export writes a native Realmz folder or a self-contained Realmz Remake campaign folder from the current project and reports what was written, preserved, passed through, blocked, or warned. Browser export downloads either a Providence project ZIP package or a compiled scenario ZIP.";
+const EXPORT_TARGET_HELP = "Choose the package shape to write. Portable Providence is useful for internal roundtrips; Mac Classic and Windows Realmz match native runtime folder conventions; Realmz Remake writes the campaign bundle that Remake validates and installs.";
 const EXPORT_ACTION_HELP = "Desktop Export Scenario Folder runs the writer for the selected target. Browser export downloads the selected ZIP artifact.";
+const REMAKE_EXPORT_ACTION_HELP = "Writes campaign.json, canonical Classic documents, and packaged runtime media in the self-contained folder shape Realmz Remake validates and installs. Choose an absent or empty output folder.";
 const EXPORT_JSON_HELP = "Download the current project.json directly. This is useful as a small browser backup or for inspecting the project state without extracting the ZIP package.";
 const BROWSER_SCENARIO_EXPORT_HELP = "Browser scenario ZIP export compiles authored projects from canonical data. Imported projects also preserve unsupported source material from their compatibility annex. The export report calls out project-only labels, resource warnings, and missing imported material.";
 const BROWSER_EXPORT_TARGET_HELP = "Choose the browser export artifact. Project ZIP is a Providence backup; Mac and Windows scenario ZIPs are compiled Realmz folders.";
@@ -27,6 +28,7 @@ const BENCHMARK_HELP = "Benchmark Project measures large-scenario UI and validat
 const EXPORT_REPORT_HELP = "The export report is the release ledger for this session: output folder, target, source files, pass-through files, resource writes, preserved resources, blocked assets, and warnings.";
 const EXPORT_PLAN_HELP = "Readiness previews the current project boundary before writing: canonical compiler output, imported compatibility files, resource gaps, runtime caches, unresolved links, and blocked objects.";
 const EXPORT_SOURCES_HELP = "Package contents show the compiler's expected native manifest and any imported compatibility files. Authored projects generate native files from canonical data; imported pass-through files come only from the compatibility annex.";
+const REMAKE_SOURCES_HELP = "Remake package inputs are projected from canonical project records. Scenario-owned assets are packaged with immutable Classic payloads and decoded runtime media so the installed campaign does not depend on an existing Realmz scenario.";
 
 export function ExportPanel({
   project,
@@ -41,25 +43,32 @@ export function ExportPanel({
   exportReport: ExportReport | null;
   benchmark: BenchmarkReport | null;
   desktopRuntime: boolean;
-  onExport: (target?: ScenarioTarget) => void;
+  onExport: (target?: ExportTarget) => void;
   onExportProjectJson: () => void;
   onBenchmark: () => void;
 }) {
-  const [target, setTarget] = useState<ScenarioTarget>("providence-portable-folder");
+  const [target, setTarget] = useState<ExportTarget>("providence-portable-folder");
   const [browserTarget, setBrowserTarget] = useState<BrowserExportTarget>("project-zip");
   const plan = exportPlan(project);
   const exportTitle = desktopRuntime ? "Realmz Folder Export" : "Browser Package Export";
   const exportButtonLabel = desktopRuntime
-    ? "Export Scenario Folder"
+    ? target === "realmz-remake-folder"
+      ? "Export Remake Scenario Folder"
+      : "Export Scenario Folder"
     : browserTarget === "mac-classic-scenario-zip"
       ? "Download Mac Scenario ZIP"
       : browserTarget === "windows-realmz-scenario-zip"
         ? "Download Windows Scenario ZIP"
         : "Download Project ZIP";
-  const exportButtonHelp = !desktopRuntime && browserTarget !== "project-zip" ? BROWSER_SCENARIO_EXPORT_HELP : EXPORT_ACTION_HELP;
+  const exportButtonHelp = desktopRuntime && target === "realmz-remake-folder"
+    ? REMAKE_EXPORT_ACTION_HELP
+    : !desktopRuntime && browserTarget !== "project-zip"
+      ? BROWSER_SCENARIO_EXPORT_HELP
+      : EXPORT_ACTION_HELP;
   const exportDisabled = !project;
+  const remakeTargetSelected = desktopRuntime && target === "realmz-remake-folder";
   const selectedBrowserScenarioTarget = browserTargetToScenarioTarget(browserTarget);
-  const selectedScenarioTarget = desktopRuntime ? target : selectedBrowserScenarioTarget;
+  const selectedScenarioTarget = desktopRuntime ? exportTargetToScenarioTarget(target) : selectedBrowserScenarioTarget;
   const diagnostics = exportDiagnostics(project, exportReport, {
     browserTarget,
     desktopRuntime,
@@ -83,10 +92,11 @@ export function ExportPanel({
               <TutorialTip title="Export Target" body={EXPORT_TARGET_HELP} side="below">
                 <span>Target</span>
               </TutorialTip>
-              <select value={target} onChange={(event) => setTarget(event.target.value as ScenarioTarget)}>
+              <select value={target} onChange={(event) => setTarget(event.target.value as ExportTarget)}>
                 <option value="providence-portable-folder">Portable Providence Folder</option>
                 <option value="mac-classic-folder">Mac Classic Folder</option>
                 <option value="windows-realmz-folder">Windows Realmz Folder</option>
+                <option value="realmz-remake-folder">Realmz Remake Scenario Folder</option>
               </select>
             </label>
           ) : (
@@ -117,7 +127,7 @@ export function ExportPanel({
         <InfoGrid
           rows={[
             ["Artifact", desktopRuntime ? exportTargetLabel(target) : browserTargetLabel(browserTarget)],
-            ["Writer", desktopRuntime ? "Desktop folder writer" : "Browser ZIP writer"],
+            ["Writer", remakeTargetSelected ? "Realmz Remake campaign writer" : desktopRuntime ? "Desktop folder writer" : "Browser ZIP writer"],
             ["Scenario", project?.scenario.name ?? "No project"],
             ["Diagnostics", diagnostics.length.toLocaleString()]
           ]}
@@ -171,16 +181,31 @@ export function ExportPanel({
             />
           </section>
           <section className="export-readiness-column">
-            <TutorialTip title="Native Package Contents" body={EXPORT_SOURCES_HELP} side="below">
-              <h3>Native Package Contents</h3>
+            <TutorialTip title={remakeTargetSelected ? "Remake Package Contents" : "Native Package Contents"} body={remakeTargetSelected ? REMAKE_SOURCES_HELP : EXPORT_SOURCES_HELP} side="below">
+              <h3>{remakeTargetSelected ? "Remake Package Contents" : "Native Package Contents"}</h3>
             </TutorialTip>
-            <InfoGrid
-              rows={[
-                ["Generated Files", plan.exportableSources.length.toLocaleString()],
-                ["Imported Compatibility Files", plan.passThroughSources.length.toLocaleString()]
-              ]}
-            />
-            <SourceRows plan={plan} />
+            {remakeTargetSelected ? (
+              <>
+                <InfoGrid
+                  rows={[
+                    ["Campaign Manifest", "campaign.json"],
+                    ["Classic Documents", "canonical project projection"],
+                    ["Scenario Media", "packaged runtime derivatives"]
+                  ]}
+                />
+                <EmptyState compact title="Remake-ready campaign folder" body="Providence writes the complete folder Remake validates, installs, and materializes through its normal Classic campaign workflow." />
+              </>
+            ) : (
+              <>
+                <InfoGrid
+                  rows={[
+                    ["Generated Files", plan.exportableSources.length.toLocaleString()],
+                    ["Imported Compatibility Files", plan.passThroughSources.length.toLocaleString()]
+                  ]}
+                />
+                <SourceRows plan={plan} />
+              </>
+            )}
           </section>
         </div>
       </section>
@@ -208,21 +233,32 @@ export function ExportPanel({
 }
 
 function ExportReportSummary({ report }: { report: ExportReport }) {
+  const rows: [string, string][] = report.target === "realmz-remake-folder" && report.remakeCounts
+    ? [
+        ["Output", report.outputPath],
+        ["Target", exportTargetLabel(report.target)],
+        ["Written Files", report.writtenFiles.length.toLocaleString()],
+        ["Maps", report.remakeCounts.maps.toLocaleString()],
+        ["Active Triggers", report.remakeCounts.activeTriggers.toLocaleString()],
+        ["Messages", report.remakeCounts.messages.toLocaleString()],
+        ["Managed Assets", report.remakeCounts.managedAssets.toLocaleString()],
+        ["Packaged Asset Files", report.remakeCounts.packagedAssetPayloads.toLocaleString()],
+        ["Compatibility Notes", report.warnings.length.toLocaleString()]
+      ]
+    : [
+        ["Output", report.outputPath],
+        ["Target", exportTargetLabel(report.target)],
+        ["Written", report.writtenFiles.join(", ") || "none"],
+        ["Pass-through", report.passThroughFiles.length.toLocaleString()],
+        ["Resources", report.writtenResources.join(", ") || "none"],
+        ["Preserved Resources", report.preservedResources.toLocaleString()],
+        ["Blocked Assets", report.blockedAssets.join(", ") || "none"],
+        ["Warnings", report.warnings.length.toLocaleString()]
+      ];
   return (
     <TutorialTip title="Export Report" body={EXPORT_REPORT_HELP} side="below">
       <div>
-        <InfoGrid
-          rows={[
-            ["Output", report.outputPath],
-            ["Target", exportTargetLabel(report.target)],
-            ["Written", report.writtenFiles.join(", ") || "none"],
-            ["Pass-through", report.passThroughFiles.length.toLocaleString()],
-            ["Resources", report.writtenResources.join(", ") || "none"],
-            ["Preserved Resources", report.preservedResources.toLocaleString()],
-            ["Blocked Assets", report.blockedAssets.join(", ") || "none"],
-            ["Warnings", report.warnings.length.toLocaleString()]
-          ]}
-        />
+        <InfoGrid rows={rows} />
       </div>
     </TutorialTip>
   );
@@ -323,6 +359,8 @@ function BenchmarkSummary({
 
 function exportTargetLabel(target: ExportReport["target"]) {
   switch (target) {
+    case "realmz-remake-folder":
+      return "Realmz Remake Scenario Folder";
     case "mac-classic-folder":
       return "Mac Classic Folder";
     case "windows-realmz-folder":
@@ -332,6 +370,10 @@ function exportTargetLabel(target: ExportReport["target"]) {
     default:
       return target;
   }
+}
+
+function exportTargetToScenarioTarget(target: ExportTarget): ScenarioTarget {
+  return target === "realmz-remake-folder" ? "providence-portable-folder" : target;
 }
 
 function browserTargetLabel(target: BrowserExportTarget) {
