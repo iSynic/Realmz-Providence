@@ -1,6 +1,6 @@
 [package]
 name = "realmz-providence"
-version = "0.5.4"
+version = "0.5.5"
 default-run = "realmz-providence"
 description = "Modern Realmz scenario editor and creator."
 authors = ["Realmz Providence contributors"]
