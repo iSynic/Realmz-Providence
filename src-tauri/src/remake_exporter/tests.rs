@@ -807,8 +807,7 @@ fn exports_only_explicit_progression_media_requirements() {
         0,
         vec![required_picture, action(1, 9, 3001)],
     )];
-    let mut encounter =
-        crate::realmz::parse_simple_encounter_records(&vec![0; 426]).remove(0);
+    let mut encounter = crate::realmz::parse_simple_encounter_records(&vec![0; 426]).remove(0);
     encounter.authored = true;
     encounter.actions = vec![
         crate::project::EncounterActionRow {
@@ -835,14 +834,10 @@ fn exports_only_explicit_progression_media_requirements() {
 
     assert_eq!(actions[0]["mediaRequiredForProgression"], true);
     assert!(actions[1].get("mediaRequiredForProgression").is_none());
-    let encounter_actions =
-        documents["classic/encounters.json"]["simpleEncounters"][0]["actions"]
-            .as_array()
-            .unwrap();
-    assert_eq!(
-        encounter_actions[0]["mediaRequiredForProgression"],
-        true
-    );
+    let encounter_actions = documents["classic/encounters.json"]["simpleEncounters"][0]["actions"]
+        .as_array()
+        .unwrap();
+    assert_eq!(encounter_actions[0]["mediaRequiredForProgression"], true);
     assert!(encounter_actions[1]
         .get("mediaRequiredForProgression")
         .is_none());
@@ -902,6 +897,66 @@ fn preserves_negative_special_land_tile_ids_outside_the_v1_icon_catalog() {
         .as_str()
         .is_some_and(|path| path.starts_with("assets/managed/")));
     assert_eq!(special["runtimeMedia"]["mediaType"], "image/png");
+    assert!(output
+        .join(special["runtimeMedia"]["path"].as_str().unwrap())
+        .is_file());
+}
+
+#[test]
+fn packages_scenario_owned_special_land_tiles_before_shared_fallbacks() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("scenario-special-tile.providence");
+    let mut project = create_project("Scenario special tile".to_string(), &project_dir).unwrap();
+    project.maps[0].tiles[0] = -1099;
+    project.source.raw_sources_dir = "raw-sources".to_string();
+
+    let cicn = encode_cicn_resource(&RgbaImagePayload {
+        width: 2,
+        height: 2,
+        rgba_base64: STANDARD.encode([
+            12_u8, 34, 56, 255, 78, 90, 12, 255, 34, 56, 78, 255, 90, 12, 34, 255,
+        ]),
+    })
+    .unwrap();
+    let resource_fork = write_resource_fork(&[ResourceForkEntry {
+        resource_type: "cicn".to_string(),
+        id: -99,
+        name: "Scenario Night Tile".to_string(),
+        attributes: 0,
+        data: cicn.clone(),
+    }])
+    .unwrap();
+    let raw_sources_dir = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources_dir).unwrap();
+    fs::write(raw_sources_dir.join("Scenario.rsrc"), &resource_fork).unwrap();
+    project.source.files.push(SourceFile {
+        name: "Scenario.rsrc".to_string(),
+        relative_path: "Scenario.rsrc".to_string(),
+        bytes: resource_fork.len() as u64,
+        sha256: hex::encode(Sha256::digest(&resource_fork)),
+        role: SourceFileRole::ResourceFork,
+        editable: false,
+    });
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: "scenario-cicn--99".to_string(),
+        resource_type: "cicn".to_string(),
+        resource_id: -99,
+        name: Some("Scenario Night Tile".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: None,
+    });
+
+    let output = workspace.path().join("scenario-special-tile-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let assets: Value =
+        serde_json::from_slice(&fs::read(output.join("classic/assets.json")).unwrap()).unwrap();
+
+    assert_eq!(report.counts.packaged_asset_payloads, 2);
+    let special = &assets["catalog"]["specialLandTiles"][0];
+    assert_eq!(special["resourceId"], -99);
+    assert_eq!(special["source"], "Scenario resource fork: Scenario.rsrc");
+    let payload_path = special["payloadPath"].as_str().unwrap();
+    assert_eq!(fs::read(output.join(payload_path)).unwrap(), cicn);
     assert!(output
         .join(special["runtimeMedia"]["path"].as_str().unwrap())
         .is_file());

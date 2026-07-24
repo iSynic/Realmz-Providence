@@ -30,7 +30,7 @@ struct PackagedRuntimeMedia {
 }
 
 #[derive(Debug, Clone)]
-struct ScenarioPicturePayload {
+struct PreservedResourcePayload {
     source_file: String,
     name: String,
     bytes: Vec<u8>,
@@ -121,8 +121,10 @@ pub(crate) fn package_assets(
         &mut payloads,
         &mut written_files,
     )?;
-    package_scenario_item_icons(
+    package_scenario_item_icons(project, output_dir, &mut payloads, &mut written_files)?;
+    package_scenario_special_land_tiles(
         project,
+        project_dir,
         output_dir,
         &mut payloads,
         &mut written_files,
@@ -429,9 +431,9 @@ fn package_scenario_pictures(
         )));
     }
 
-    let candidates = preserved_scenario_picture_payloads(project, project_dir)?;
+    let candidates = preserved_scenario_resource_payloads(project, project_dir, "PICT")?;
     for (asset, resource_id) in missing {
-        let candidate = select_scenario_picture_payload(asset, &candidates)?;
+        let candidate = select_scenario_resource_payload(asset, &candidates, "PICT")?;
         let label = asset
             .name
             .as_deref()
@@ -465,10 +467,11 @@ fn is_scenario_owned_picture(asset: &ResourceAsset) -> bool {
             && !source.contains("bundled realmz reference pict"))
 }
 
-fn preserved_scenario_picture_payloads(
+fn preserved_scenario_resource_payloads(
     project: &ProvidenceProject,
     project_dir: &Path,
-) -> Result<BTreeMap<i16, Vec<ScenarioPicturePayload>>> {
+    resource_type: &str,
+) -> Result<BTreeMap<i16, Vec<PreservedResourcePayload>>> {
     let raw_sources_dir = if project.source.raw_sources_dir.trim().is_empty() {
         PathBuf::from("raw-sources")
     } else {
@@ -486,7 +489,7 @@ fn preserved_scenario_picture_payloads(
         .collect::<Vec<_>>();
     source_files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
 
-    let mut pictures = BTreeMap::<i16, Vec<ScenarioPicturePayload>>::new();
+    let mut resources = BTreeMap::<i16, Vec<PreservedResourcePayload>>::new();
     for source_file in source_files {
         let relative_path = validated_relative_path(
             &source_file.relative_path,
@@ -499,37 +502,38 @@ fn preserved_scenario_picture_payloads(
         let bytes = fs::read(&path).with_path(&path)?;
         for entry in parse_resource_fork_entries(&bytes)
             .into_iter()
-            .filter(|entry| entry.resource_type == "PICT")
+            .filter(|entry| entry.resource_type == resource_type)
         {
-            pictures
+            resources
                 .entry(entry.id)
                 .or_default()
-                .push(ScenarioPicturePayload {
+                .push(PreservedResourcePayload {
                     source_file: source_file.name.clone(),
                     name: entry.name,
                     bytes: entry.data,
                 });
         }
     }
-    Ok(pictures)
+    Ok(resources)
 }
 
-fn select_scenario_picture_payload<'a>(
+fn select_scenario_resource_payload<'a>(
     asset: &ResourceAsset,
-    candidates: &'a BTreeMap<i16, Vec<ScenarioPicturePayload>>,
-) -> Result<&'a ScenarioPicturePayload> {
+    candidates: &'a BTreeMap<i16, Vec<PreservedResourcePayload>>,
+    resource_type: &str,
+) -> Result<&'a PreservedResourcePayload> {
     let resource_id = i16::try_from(asset.resource_id).map_err(|_| {
         ProvidenceError::message(format!(
-            "Scenario picture resource ID {} is outside the Classic signed 16-bit range",
-            asset.resource_id
+            "Scenario-owned {resource_type} resource ID {} is outside the Classic signed 16-bit range",
+            asset.resource_id,
         ))
     })?;
     let available = candidates.get(&resource_id).ok_or_else(|| {
         ProvidenceError::message(format!(
-            "Scenario-owned PICT {resource_id} has no managed payload and was not found in the project raw-source snapshot"
+            "Scenario-owned {resource_type} {resource_id} has no managed payload and was not found in the project raw-source snapshot"
         ))
     })?;
-    let source_hint = scenario_picture_source_hint(asset);
+    let source_hint = scenario_resource_source_hint(asset, resource_type);
     let matching = source_hint
         .as_deref()
         .map(|hint| {
@@ -547,7 +551,7 @@ fn select_scenario_picture_payload<'a>(
         .any(|candidate| candidate.bytes != first.bytes)
     {
         return Err(ProvidenceError::message(format!(
-            "Scenario-owned PICT {resource_id} is ambiguous across preserved resource forks: {}",
+            "Scenario-owned {resource_type} {resource_id} is ambiguous across preserved resource forks: {}",
             matching
                 .iter()
                 .map(|candidate| candidate.source_file.as_str())
@@ -558,12 +562,12 @@ fn select_scenario_picture_payload<'a>(
     Ok(first)
 }
 
-fn scenario_picture_source_hint(asset: &ResourceAsset) -> Option<String> {
+fn scenario_resource_source_hint(asset: &ResourceAsset, resource_type: &str) -> Option<String> {
     if let Some(source) = asset.source.strip_prefix("Scenario resource fork: ") {
         return Some(source.trim().to_string());
     }
     let source = asset.source.strip_prefix("Browser import: ")?;
-    let suffix = format!(" PICT {}", asset.resource_id);
+    let suffix = format!(" {resource_type} {}", asset.resource_id);
     source
         .strip_suffix(&suffix)
         .map(|value| value.trim().to_string())
@@ -599,11 +603,13 @@ fn package_scenario_item_icons(
         {
             continue;
         }
-        let bytes = STANDARD.decode(&resource.resource_base64).map_err(|error| {
-            ProvidenceError::message(format!(
+        let bytes = STANDARD
+            .decode(&resource.resource_base64)
+            .map_err(|error| {
+                ProvidenceError::message(format!(
                 "Scenario item icon cicn {resource_id} has invalid Classic resource data: {error}"
             ))
-        })?;
+            })?;
         let payload = write_resource_payload(
             "cicn",
             resource_id,
@@ -624,6 +630,81 @@ fn package_scenario_item_icons(
         payloads.insert(("cicn".to_string(), resource_id), payload);
     }
     Ok(())
+}
+
+fn package_scenario_special_land_tiles(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let wanted = referenced_special_land_tile_ids(project);
+    let mut assets = project
+        .asset_catalog
+        .icons
+        .iter()
+        .filter(|asset| {
+            asset.resource_type == "cicn"
+                && asset.resource_id < 0
+                && i16::try_from(asset.resource_id)
+                    .ok()
+                    .is_some_and(|resource_id| wanted.contains(&resource_id))
+                && is_scenario_owned_icon(asset)
+        })
+        .collect::<Vec<_>>();
+    assets.sort_by(|left, right| {
+        left.resource_id
+            .cmp(&right.resource_id)
+            .then_with(|| left.id.cmp(&right.id))
+    });
+    if assets.is_empty() {
+        return Ok(());
+    }
+
+    let candidates = preserved_scenario_resource_payloads(project, project_dir, "cicn")?;
+    for asset in assets {
+        let resource_id = i16::try_from(asset.resource_id).map_err(|_| {
+            ProvidenceError::message(format!(
+                "Scenario special-land cicn resource ID {} is outside the Classic signed 16-bit range",
+                asset.resource_id
+            ))
+        })?;
+        if payloads.contains_key(&("cicn".to_string(), resource_id)) {
+            continue;
+        }
+        let candidate = select_scenario_resource_payload(asset, &candidates, "cicn")?;
+        let label = asset
+            .name
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+            .or_else(|| (!candidate.name.trim().is_empty()).then_some(candidate.name.as_str()))
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("Scenario special land tile {resource_id}"));
+        let payload = write_resource_payload(
+            "cicn",
+            resource_id,
+            &label,
+            &candidate.bytes,
+            "image/cicn",
+            &format!("Preserved scenario resource {}", candidate.source_file),
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("cicn".to_string(), resource_id), payload);
+    }
+    Ok(())
+}
+
+fn is_scenario_owned_icon(asset: &ResourceAsset) -> bool {
+    let source = asset.source.to_ascii_lowercase();
+    asset.id.starts_with("scenario-cicn-")
+        || source.starts_with("scenario resource fork:")
+        || (source.starts_with("browser import:")
+            && !source.contains("bundled realmz reference cicn"))
 }
 
 fn source_file_matches(source_file: &str, hint: &str) -> bool {
