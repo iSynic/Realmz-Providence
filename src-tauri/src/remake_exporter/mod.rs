@@ -19,7 +19,7 @@ pub const REMAKE_CLASSIC_FORMAT_VERSION: u32 = 1;
 
 const CLASSIC_DIR: &str = "classic";
 const LIMITATIONS: [&str; 4] = [
-    "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Styled-text payloads remain Classic resource data.",
+    "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Scrolling TEXT is decoded for runtime use, and matching styl resources become portable rich-text presentation runs rather than binary payloads.",
     "Providence schema version 5 authors a land start; the v1 bundle can also represent dungeon starts when the canonical model gains that distinction.",
     "Legacy scenario-icon and monster-icon override payloads are excluded unless they are canonical scenario-managed assets.",
     "Negative cicn special-land-tile identities use the additive v1 assets.catalog.specialLandTiles collection because ordinary v1 icon identities are non-negative.",

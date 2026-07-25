@@ -46,7 +46,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | Scenario pictures | managed `PICT` resources or imported scenario-fork `assetCatalog.pictures` | Exact Classic bytes and deterministic PNG runtime media are packaged for every scenario-owned picture. |
 | Scenario item icons | referenced `scenarioItems[].iconId` plus `scenarioIconResources` | Scenario-owned `cicn` bytes and deterministic PNG runtime media are packaged when a custom item references them; shared Realmz IDs remain runtime references. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
-| Scrolling player maps | negative `mapRecords[].show` with matching managed `TEXT` and optional `styl` resources | The map record receives decoded portable text plus immutable TEXT/styl payload identity. Remake does not need to parse Classic resource bytes. |
+| Scrolling text | managed or preserved scenario-owned `TEXT` resources with optional same-ID `styl` resources | `assets.scrollingTexts` receives decoded text and normalized `portable-rich-text-v1` presentation runs for player maps and standalone opcode 62 actions. Classic `styl` bytes are not copied into the runtime bundle. |
 | Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
 | Race and caste table selection | project origin plus preserved `Data Race`, `Data Caste`, and main-fork `RLMZ` evidence | Emits `rules.tableSelection` so Remake does not mistake inactive built-in copies for scenario overrides. |
 
@@ -112,12 +112,15 @@ catalog entries. Every scenario-owned PICT receives deterministic PNG `runtimeMe
 `media/pictures`, including imported pictures that remain catalog metadata rather than managed
 assets. For imported projects, the immutable Classic PICT bytes come from the project-local
 preserved Scenario resource fork; the exporter never consults the original campaign installation.
-Managed replacements take precedence over preserved imported bytes. When a player-map record has a
-negative `show` value, the exporter resolves the matching managed `TEXT` resource and adds a
-`scrollingText` object to that map record. It contains decoded plain text and the TEXT payload's
-path, hash, byte count, and encoding. A same-ID `styl` resource remains immutable and is linked as
-`styleResource`; exact Classic style-run rendering is not claimed. Unreferenced TEXT and styl
-payloads remain addressable through `managedAssets`.
+Managed replacements take precedence over preserved imported bytes. Every scenario-owned `TEXT`
+resource is emitted through `assets.scrollingTexts`, including imported resources that remain in
+the project-local preserved Scenario resource fork instead of `managedAssets`. Each object contains
+decoded plain text and the TEXT payload's path, hash, byte count, and encoding. A same-ID `styl`
+resource is decoded into ordered character ranges under `presentation`, using the
+`portable-rich-text-v1` format with normalized font size, color, face, and stretch properties.
+Remake therefore does not parse or carry Classic `styl` bytes. This campaign-wide collection
+supplies standalone opcode 62 actions. When a player-map record has a negative `show` value, the
+exporter also embeds the matching object on that record.
 
 Referenced scenario item icons use the same ownership rule. Providence imports matching `cicn`
 resources from the preserved Scenario resource fork into `scenarioIconResources`, retains their
@@ -172,8 +175,9 @@ without reinterpreting ordinary non-negative icon IDs.
 
 The output directory must be absent or empty. The exporter refuses absolute or parent-relative
 managed-resource paths. For imported projects it reads only project-relative preserved files
-needed to materialize catalogued scenario PICTs and establish Classic's race/caste table selection;
-semantic runtime records remain canonical project projections.
+needed to materialize scenario-owned PICT, `cicn`, and `TEXT` payloads, decode `styl` presentation
+metadata, and establish Classic's race/caste table selection; semantic runtime records remain
+canonical project projections.
 
 The authoritative proof generates the bundle twice from
 `fixtures/scenario-seeds/authoritative-ownership-proof.seed.json` and compares every file byte.

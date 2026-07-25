@@ -210,32 +210,139 @@ fn exports_scrolling_text_semantics_with_player_map_records() {
         }))
         .unwrap(),
     );
-    let text = b"First line.\rSecond line.";
-    let style = [0u8, 1, 0, 0, 0, 0, 0, 0];
+    let text = b" \rFirst line.\rSecond line.\r ";
+    let style = portable_style_fixture();
     project.assets.push(managed_text_asset("TEXT", -200, text));
     project
         .assets
         .push(managed_text_asset("styl", -200, &style));
 
     let output = workspace.path().join("scrolling-text-out");
-    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
     let documents = read_json_documents(&output);
     let scrolling_text = &documents["classic/maps.json"]["mapRecords"][0]["scrollingText"];
+    let asset_scrolling_text = &documents["classic/assets.json"]["scrollingTexts"][0];
 
+    assert_eq!(report.counts.managed_assets, 1);
+    assert_eq!(report.counts.packaged_asset_payloads, 1);
     assert_eq!(scrolling_text["resourceType"], "TEXT");
     assert_eq!(scrolling_text["resourceId"], -200);
     assert_eq!(scrolling_text["text"], "First line.\nSecond line.");
     assert_eq!(scrolling_text["payloadEncoding"], "classic-resource-data");
-    assert_eq!(scrolling_text["styleResource"]["resourceType"], "styl");
-    assert_eq!(scrolling_text["styleResource"]["resourceId"], -200);
-    for path in [
-        scrolling_text["payloadPath"].as_str().unwrap(),
-        scrolling_text["styleResource"]["payloadPath"]
-            .as_str()
-            .unwrap(),
-    ] {
-        assert!(output.join(path).is_file(), "missing packaged {path}");
-    }
+    assert_eq!(
+        scrolling_text["presentation"],
+        json!({
+            "format": "portable-rich-text-v1",
+            "runs": [{
+                "start": 0,
+                "end": 24,
+                "fontId": 4,
+                "fontSize": 18,
+                "color": "#ff8000",
+                "bold": true,
+                "italic": true,
+                "underline": true,
+                "outline": false,
+                "shadow": false,
+                "stretch": "normal",
+            }],
+        })
+    );
+    assert!(scrolling_text.get("styleResource").is_none());
+    assert!(output
+        .join(scrolling_text["payloadPath"].as_str().unwrap())
+        .is_file());
+    assert!(
+        report
+            .written_files
+            .iter()
+            .all(|path| !path.ends_with(".styl")),
+        "Remake runtime bundles must not carry Classic styl payloads"
+    );
+    assert_eq!(asset_scrolling_text, scrolling_text);
+}
+
+#[test]
+fn packages_imported_scrolling_texts_without_player_map_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("dead-of-night.providence");
+    let mut project = create_project("Dead of Night".to_string(), &project_dir).unwrap();
+    project.source.origin = Some(ProjectOrigin::Imported);
+    project.source.immutable = true;
+    project.source.source_path = "Z:\\missing\\Dead of Night".to_string();
+    project.source.raw_sources_dir = "raw-sources".to_string();
+    project.triggers = vec![trigger_record("Data DD", 0, vec![action(0, 62, -200)])];
+
+    let text = b"Imported first line.\rImported second line.";
+    let style = portable_style_fixture();
+    let resource_fork = write_resource_fork(&[
+        ResourceForkEntry {
+            resource_type: "TEXT".to_string(),
+            id: -200,
+            name: "Imported scrolling text".to_string(),
+            attributes: 0,
+            data: text.to_vec(),
+        },
+        ResourceForkEntry {
+            resource_type: "styl".to_string(),
+            id: -200,
+            name: "Imported scrolling text".to_string(),
+            attributes: 0,
+            data: style.to_vec(),
+        },
+    ])
+    .unwrap();
+    let raw_sources_dir = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources_dir).unwrap();
+    fs::write(raw_sources_dir.join("Scenario.rsrc"), &resource_fork).unwrap();
+    project.source.files.push(SourceFile {
+        name: "Scenario.rsrc".to_string(),
+        relative_path: "Scenario.rsrc".to_string(),
+        bytes: resource_fork.len() as u64,
+        sha256: hex::encode(Sha256::digest(&resource_fork)),
+        role: SourceFileRole::ResourceFork,
+        editable: false,
+    });
+
+    let output = workspace.path().join("dead-of-night-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let scrolling_texts = documents["classic/assets.json"]["scrollingTexts"]
+        .as_array()
+        .unwrap();
+
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 1);
+    assert_eq!(documents["classic/maps.json"]["mapRecords"], json!([]));
+    assert_eq!(
+        documents["classic/scripts.json"]["triggers"][0]["actions"][0]["id"],
+        -200
+    );
+    assert_eq!(scrolling_texts.len(), 1);
+    let scrolling_text = &scrolling_texts[0];
+    assert_eq!(scrolling_text["resourceType"], "TEXT");
+    assert_eq!(scrolling_text["resourceId"], -200);
+    assert_eq!(
+        scrolling_text["text"],
+        "Imported first line.\nImported second line."
+    );
+    assert_eq!(
+        fs::read(output.join(scrolling_text["payloadPath"].as_str().unwrap())).unwrap(),
+        text
+    );
+    assert_eq!(
+        scrolling_text["presentation"]["format"],
+        "portable-rich-text-v1"
+    );
+    assert_eq!(scrolling_text["presentation"]["runs"][0]["end"], text.len());
+    assert!(scrolling_text.get("styleResource").is_none());
+    assert!(
+        report
+            .written_files
+            .iter()
+            .all(|path| !path.ends_with(".styl")),
+        "preserved styl bytes are decoded but not copied to Remake"
+    );
 }
 
 #[test]
@@ -1186,6 +1293,21 @@ fn managed_text_asset(resource_type: &str, resource_id: i16, bytes: &[u8]) -> Ma
         "conversion": null
     }))
     .unwrap()
+}
+
+fn portable_style_fixture() -> Vec<u8> {
+    vec![
+        0x00, 0x01, // run count
+        0x00, 0x00, 0x00, 0x00, // start character
+        0x00, 0x14, // line height
+        0x00, 0x0f, // ascent
+        0x00, 0x04, // Classic font ID
+        0x07, 0x00, // bold, italic, underline; filler
+        0x00, 0x12, // 18 point
+        0xff, 0xff, // red
+        0x80, 0x80, // green
+        0x00, 0x00, // blue
+    ]
 }
 
 fn test_pict(color: [u8; 4]) -> Vec<u8> {

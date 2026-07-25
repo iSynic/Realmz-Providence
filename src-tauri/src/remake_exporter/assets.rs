@@ -20,6 +20,7 @@ const ASSET_DIR: &str = "assets/managed";
 const RUNTIME_IMAGE_DIR: &str = "media/images";
 const RUNTIME_PICTURE_DIR: &str = "media/pictures";
 const RUNTIME_SOUND_DIR: &str = "media/sounds";
+const CLASSIC_STYLE_RUN_BYTES: usize = 20;
 
 #[derive(Debug, Clone)]
 struct PackagedRuntimeMedia {
@@ -64,6 +65,7 @@ impl PackagedAssets {
             "schemaVersion": REMAKE_CLASSIC_FORMAT_VERSION,
             "managedAssets": &self.managed_assets,
             "catalog": &self.catalog,
+            "scrollingTexts": self.scrolling_texts.values().collect::<Vec<_>>(),
             "monsterIconOverrides": &self.monster_icon_overrides,
             "scenarioIconResources": &self.scenario_icon_resources,
         })
@@ -82,7 +84,8 @@ pub(crate) fn package_assets(
     let mut managed_assets = Vec::new();
     let mut written_files = Vec::new();
     let mut payloads = BTreeMap::new();
-    let mut decoded_texts = BTreeMap::new();
+    let mut text_payloads = BTreeMap::new();
+    let mut style_payloads = BTreeMap::new();
 
     for asset in project.assets.iter().filter(|asset| {
         !matches!(
@@ -99,7 +102,16 @@ pub(crate) fn package_assets(
         }
         let (media_type, bytes) = read_payload(asset, project_dir)?;
         if asset.resource_type == "TEXT" {
-            decoded_texts.insert(asset.resource_id, decode_classic_text(&bytes));
+            text_payloads.insert(asset.resource_id, bytes.clone());
+        }
+        if asset.resource_type == "styl" {
+            if style_payloads.insert(asset.resource_id, bytes).is_some() {
+                return Err(ProvidenceError::message(format!(
+                    "Duplicate managed resource styl {}",
+                    asset.resource_id
+                )));
+            }
+            continue;
         }
         let payload = write_payload(asset, &bytes, &media_type, output_dir)?;
         let key = (asset.resource_type.clone(), asset.resource_id);
@@ -122,6 +134,15 @@ pub(crate) fn package_assets(
         &mut payloads,
         &mut written_files,
     )?;
+    package_scenario_scrolling_texts(
+        project,
+        project_dir,
+        output_dir,
+        &mut payloads,
+        &mut text_payloads,
+        &mut style_payloads,
+        &mut written_files,
+    )?;
     package_scenario_item_icons(project, output_dir, &mut payloads, &mut written_files)?;
     package_scenario_special_land_tiles(
         project,
@@ -135,7 +156,7 @@ pub(crate) fn package_assets(
     written_files.sort();
 
     let catalog = catalog_document(project, &payloads)?;
-    let scrolling_texts = scrolling_text_documents(&payloads, &decoded_texts);
+    let scrolling_texts = scrolling_text_documents(&payloads, &text_payloads, &style_payloads);
     let monster_icon_overrides = sanitized_icon_metadata(&project.monster_icon_overrides)?;
     let scenario_icon_resources = sanitized_icon_metadata(&project.scenario_icon_resources)?;
     Ok(PackagedAssets {
@@ -150,33 +171,162 @@ pub(crate) fn package_assets(
 
 fn scrolling_text_documents(
     payloads: &BTreeMap<(String, i16), PackagedPayload>,
-    decoded_texts: &BTreeMap<i16, String>,
+    text_payloads: &BTreeMap<i16, Vec<u8>>,
+    style_payloads: &BTreeMap<i16, Vec<u8>>,
 ) -> BTreeMap<i16, Value> {
     let mut records = BTreeMap::new();
-    for (resource_id, text) in decoded_texts {
+    for (resource_id, text_bytes) in text_payloads {
         let Some(text_payload) = payloads.get(&("TEXT".to_string(), *resource_id)) else {
             continue;
         };
+        let text = decode_classic_text(text_bytes);
         let mut record = json!({
             "resourceType": "TEXT",
             "resourceId": resource_id,
             "text": text,
         });
         add_payload_fields(&mut record, text_payload);
-        if let Some(style_payload) = payloads.get(&("styl".to_string(), *resource_id)) {
-            let mut style = json!({
-                "resourceType": "styl",
-                "resourceId": resource_id,
-            });
-            add_payload_fields(&mut style, style_payload);
+        if let Some(presentation) = style_payloads
+            .get(resource_id)
+            .and_then(|style_bytes| portable_text_presentation(text_bytes, style_bytes))
+        {
             record
                 .as_object_mut()
                 .expect("scrolling-text records are objects")
-                .insert("styleResource".to_string(), style);
+                .insert("presentation".to_string(), presentation);
         }
         records.insert(*resource_id, record);
     }
     records
+}
+
+#[derive(Debug, Clone, Copy)]
+struct PortableTextStyle {
+    font_id: i16,
+    font_size: i16,
+    face: u8,
+    red: u16,
+    green: u16,
+    blue: u16,
+}
+
+fn portable_text_presentation(text_bytes: &[u8], style_bytes: &[u8]) -> Option<Value> {
+    let run_count = usize::from(read_u16_be(style_bytes, 0)?);
+    let expected_length = 2usize.checked_add(run_count.checked_mul(CLASSIC_STYLE_RUN_BYTES)?)?;
+    if style_bytes.len() != expected_length {
+        return None;
+    }
+
+    let (visible_start, visible_end) = classic_text_visible_range(text_bytes);
+    let mut styles_by_offset = BTreeMap::new();
+    for index in 0..run_count {
+        let offset = 2 + index * CLASSIC_STYLE_RUN_BYTES;
+        let raw_start = read_i32_be(style_bytes, offset)?;
+        if raw_start < 0 {
+            continue;
+        }
+        styles_by_offset.insert(
+            raw_start as usize,
+            PortableTextStyle {
+                font_id: read_i16_be(style_bytes, offset + 8)?,
+                face: *style_bytes.get(offset + 10)?,
+                font_size: read_i16_be(style_bytes, offset + 12)?,
+                red: read_u16_be(style_bytes, offset + 14)?,
+                green: read_u16_be(style_bytes, offset + 16)?,
+                blue: read_u16_be(style_bytes, offset + 18)?,
+            },
+        );
+    }
+
+    let offsets = styles_by_offset.keys().copied().collect::<Vec<_>>();
+    let mut runs = Vec::new();
+    for (index, raw_start) in offsets.iter().copied().enumerate() {
+        let raw_end = offsets
+            .get(index + 1)
+            .copied()
+            .unwrap_or(visible_end)
+            .min(visible_end);
+        let start = raw_start.clamp(visible_start, visible_end) - visible_start;
+        let end = raw_end.clamp(visible_start, visible_end) - visible_start;
+        if end <= start {
+            continue;
+        }
+        let style = styles_by_offset[&raw_start];
+        let stretch = if style.face & 0x20 != 0 {
+            "condensed"
+        } else if style.face & 0x40 != 0 {
+            "expanded"
+        } else {
+            "normal"
+        };
+        runs.push(json!({
+            "start": start,
+            "end": end,
+            "fontId": style.font_id,
+            "fontSize": style.font_size.max(1),
+            "color": format!(
+                "#{:02x}{:02x}{:02x}",
+                classic_color_component(style.red),
+                classic_color_component(style.green),
+                classic_color_component(style.blue),
+            ),
+            "bold": style.face & 0x01 != 0,
+            "italic": style.face & 0x02 != 0,
+            "underline": style.face & 0x04 != 0,
+            "outline": style.face & 0x08 != 0,
+            "shadow": style.face & 0x10 != 0,
+            "stretch": stretch,
+        }));
+    }
+
+    Some(json!({
+        "format": "portable-rich-text-v1",
+        "runs": runs,
+    }))
+}
+
+fn classic_text_visible_range(bytes: &[u8]) -> (usize, usize) {
+    let leading = bytes
+        .iter()
+        .take_while(|byte| classic_text_byte_is_whitespace(**byte))
+        .count();
+    let trailing = bytes
+        .iter()
+        .rev()
+        .take_while(|byte| classic_text_byte_is_whitespace(**byte))
+        .count();
+    (leading, bytes.len().saturating_sub(trailing).max(leading))
+}
+
+fn classic_text_byte_is_whitespace(byte: u8) -> bool {
+    matches!(byte, 0 | 9 | 10 | 13 | 32)
+}
+
+fn classic_color_component(value: u16) -> u8 {
+    ((u32::from(value) + 128) / 257) as u8
+}
+
+fn read_i16_be(bytes: &[u8], offset: usize) -> Option<i16> {
+    Some(i16::from_be_bytes([
+        *bytes.get(offset)?,
+        *bytes.get(offset + 1)?,
+    ]))
+}
+
+fn read_u16_be(bytes: &[u8], offset: usize) -> Option<u16> {
+    Some(u16::from_be_bytes([
+        *bytes.get(offset)?,
+        *bytes.get(offset + 1)?,
+    ]))
+}
+
+fn read_i32_be(bytes: &[u8], offset: usize) -> Option<i32> {
+    Some(i32::from_be_bytes([
+        *bytes.get(offset)?,
+        *bytes.get(offset + 1)?,
+        *bytes.get(offset + 2)?,
+        *bytes.get(offset + 3)?,
+    ]))
 }
 
 fn read_payload(asset: &ManagedAsset, project_dir: &Path) -> Result<(String, Vec<u8>)> {
@@ -467,6 +617,82 @@ fn is_scenario_owned_picture(asset: &ResourceAsset) -> bool {
         || source.starts_with("scenario resource fork:")
         || (source.starts_with("browser import:")
             && !source.contains("bundled realmz reference pict"))
+}
+
+fn package_scenario_scrolling_texts(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    text_payloads: &mut BTreeMap<i16, Vec<u8>>,
+    style_payloads: &mut BTreeMap<i16, Vec<u8>>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let text_candidates = preserved_scenario_resource_payloads(project, project_dir, "TEXT")?;
+    for resource_id in text_candidates.keys().copied().collect::<Vec<_>>() {
+        if payloads.contains_key(&("TEXT".to_string(), resource_id))
+            || scenario_resource_removed(project, "TEXT", resource_id)
+        {
+            continue;
+        }
+        let Some(candidate) =
+            select_uncatalogued_scenario_resource_payload(resource_id, &text_candidates, "TEXT")?
+        else {
+            continue;
+        };
+        let label = (!candidate.name.trim().is_empty())
+            .then_some(candidate.name.clone())
+            .unwrap_or_else(|| format!("Scenario scrolling text {resource_id}"));
+        let payload = write_resource_payload(
+            "TEXT",
+            resource_id,
+            &label,
+            &candidate.bytes,
+            "text/plain",
+            &format!("Scenario resource fork: {}", candidate.source_file),
+            output_dir,
+        )?;
+        text_payloads.insert(resource_id, candidate.bytes.clone());
+        written_files.push(payload.relative_path.clone());
+        payloads.insert(("TEXT".to_string(), resource_id), payload);
+    }
+
+    let style_candidates = preserved_scenario_resource_payloads(project, project_dir, "styl")?;
+    let text_ids = payloads
+        .keys()
+        .filter_map(|(resource_type, resource_id)| {
+            (resource_type == "TEXT").then_some(*resource_id)
+        })
+        .collect::<Vec<_>>();
+    for resource_id in text_ids {
+        if style_payloads.contains_key(&resource_id)
+            || scenario_resource_removed(project, "styl", resource_id)
+        {
+            continue;
+        }
+        let Some(candidate) =
+            select_uncatalogued_scenario_resource_payload(resource_id, &style_candidates, "styl")?
+        else {
+            continue;
+        };
+        style_payloads.insert(resource_id, candidate.bytes.clone());
+    }
+    Ok(())
+}
+
+fn scenario_resource_removed(
+    project: &ProvidenceProject,
+    resource_type: &str,
+    resource_id: i16,
+) -> bool {
+    project
+        .editor_metadata
+        .removed_scenario_resources
+        .iter()
+        .any(|resource| {
+            resource.resource_type == resource_type
+                && resource.resource_id == i32::from(resource_id)
+        })
 }
 
 fn preserved_scenario_resource_payloads(

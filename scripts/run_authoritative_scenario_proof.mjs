@@ -1550,8 +1550,18 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(scrollingMap.scrollingText?.resourceType === "TEXT" && scrollingMap.scrollingText.resourceId === -200, "Remake export did not link the scrolling player map to TEXT -200");
   expect(scrollingMap.scrollingText.text === scrollingText.toString("ascii").trim(), "Remake export did not decode scrolling TEXT -200");
   expect(scrollingMap.scrollingText.payloadEncoding === "classic-resource-data" && files.has(scrollingMap.scrollingText.payloadPath), "Remake scrolling text lost its immutable TEXT payload");
-  expect(scrollingMap.scrollingText.styleResource?.resourceType === "styl" && scrollingMap.scrollingText.styleResource.resourceId === -200, "Remake scrolling text lost its paired styl identity");
-  expect(scrollingMap.scrollingText.styleResource.payloadEncoding === "classic-resource-data" && files.has(scrollingMap.scrollingText.styleResource.payloadPath), "Remake scrolling text lost its immutable styl payload");
+  const presentation = scrollingMap.scrollingText.presentation;
+  expect(presentation?.format === "portable-rich-text-v1" && presentation.runs?.length === 1, "Remake scrolling text lost its portable presentation");
+  expect(
+    presentation.runs[0].start === 0 &&
+      presentation.runs[0].end === scrollingMap.scrollingText.text.length &&
+      presentation.runs[0].fontSize === 12 &&
+      presentation.runs[0].color === "#182038" &&
+      presentation.runs[0].bold === true,
+    "Remake scrolling text did not normalize its authored style run"
+  );
+  expect(scrollingMap.scrollingText.styleResource === undefined, "Remake scrolling text retained a Classic styl payload reference");
+  expect([...files.keys()].every((name) => !name.endsWith(".styl")), "Remake export copied Classic styl bytes into the runtime bundle");
   const scripts = documents.get("classic/scripts.json");
   const trigger = scripts.triggers.find((candidate) => candidate.id === "land:0:ap:0");
   expect(trigger, "Remake export lost the stable Action Point identity");
@@ -1595,7 +1605,8 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(content.monsters.some((record) => record.id === 1 && record.items?.[0] === 902 && record.weapon === 902), "Remake export lost the monster's carried or equipped scenario item");
 
   const assets = documents.get("classic/assets.json");
-  expect(assets.managedAssets.length === canonicalProject.assets.length, "Remake export did not package every scenario-managed asset");
+  const runtimeManagedAssets = canonicalProject.assets.filter((asset) => asset.resourceType !== "styl");
+  expect(assets.managedAssets.length === runtimeManagedAssets.length, "Remake export did not package every runtime-managed asset");
   for (const exported of assets.managedAssets) {
     const source = canonicalProject.assets.find((asset) => asset.id === exported.id);
     expect(source, `Remake export added unknown managed asset ${exported.id}`);
@@ -1639,7 +1650,7 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
 
   for (const [name, document] of documents) assertPortableRemakeDocument(document, name);
   const runtimeMediaFiles = canonicalProject.assets.filter((asset) => ["PICT", "cicn", "snd "].includes(asset.resourceType)).length;
-  const expectedPayloadFiles = canonicalProject.assets.length + runtimeMediaFiles;
+  const expectedPayloadFiles = runtimeManagedAssets.length + runtimeMediaFiles;
   expect(manifest.counts.packagedAssetPayloads === expectedPayloadFiles, "Remake export reported the wrong packaged payload count");
   expect([...files.keys()].filter((name) => !requiredDocuments.includes(name)).length === expectedPayloadFiles, "Remake export produced an unexpected payload file set");
 }
