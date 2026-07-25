@@ -1,13 +1,15 @@
 use super::*;
 use crate::importer::create_project;
 use crate::project::{
-    Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
-    MapCoordinate, ProjectOrigin, Provenance, ResourceAsset, ScenarioIconResource,
-    ScenarioIconResourceSource, ScenarioSupportFile, SourceFile, SourceFileRole, TriggerRecord,
+    Action, ActionCategory, Confidence, EncounterActionRow, ExtraCodeRow, LevelType, ManagedAsset,
+    ManagedAssetLibraryScope, MapCoordinate, ProjectOrigin, Provenance, RandomLevel, RandomRect,
+    ResourceAsset, ScenarioIconResource, ScenarioIconResourceSource, ScenarioSupportFile,
+    SourceFile, SourceFileRole, TriggerRecord,
 };
 use crate::realmz::{
-    parse_caste_overrides, parse_race_overrides, CASTE_BYTES, CASTE_OVERRIDE_RECORDS, RACE_BYTES,
-    RACE_OVERRIDE_RECORDS,
+    parse_battles, parse_caste_overrides, parse_monsters, parse_race_overrides,
+    parse_simple_encounter_records, BATTLE_BYTES, CASTE_BYTES, CASTE_OVERRIDE_RECORDS,
+    MONSTER_BYTES, RACE_BYTES, RACE_OVERRIDE_RECORDS, SIMPLE_ENCOUNTER_BYTES,
 };
 use crate::resource_fork::{
     encode_cicn_resource, encode_pict_resource, encode_snd_resource, write_resource_fork,
@@ -974,6 +976,113 @@ fn exports_authoritative_ed3_callability_from_canonical_records() {
 }
 
 #[test]
+fn exports_runtime_reachability_without_discarding_unreferenced_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("content-reachability.providence");
+    let mut project = create_project("Content reachability".to_string(), &project_dir).unwrap();
+    project.triggers = vec![
+        trigger_record("Data DD", 0, vec![action(0, 4, 1)]),
+        trigger_record("Data ED3", 7, vec![action(0, 1, 100)]),
+        trigger_record("Data ED3", 8, vec![action(0, 1, 101)]),
+        trigger_record("Data ED3", 9, vec![action(0, 1, 102)]),
+    ];
+    let mut stale_map_trigger = trigger_record("Data DD", 1, vec![action(0, 4, 2)]);
+    stale_map_trigger.id = "Data DD:99:1".to_string();
+    stale_map_trigger.level_index = Some(99);
+    project.triggers.push(stale_map_trigger);
+    project.extracodes = vec![ExtraCodeRow {
+        id: 0,
+        values: [3, 3, 0, 0, 0],
+        provenance: test_provenance("Data EDCD", 0, 10),
+    }];
+
+    project.simple_encounters =
+        parse_simple_encounter_records(&vec![0; SIMPLE_ENCOUNTER_BYTES * 3]);
+    project.simple_encounters[1].actions = vec![EncounterActionRow {
+        slot: 0,
+        raw_code: 2,
+        id: 0,
+        media_required_for_progression: None,
+    }];
+    project.simple_encounters[2].actions = vec![EncounterActionRow {
+        slot: 0,
+        raw_code: 120,
+        id: 0,
+        media_required_for_progression: None,
+    }];
+
+    project.battles = parse_battles(&vec![0; BATTLE_BYTES * 5]);
+    project.battles[3].grid[0] = 1;
+    project.battles[3].battle_macro = -7;
+    project.battles[4].grid[0] = 1;
+    project.random_levels = vec![RandomLevel {
+        id: "land:99:randlevel".to_string(),
+        source: "Data RD".to_string(),
+        level_type: LevelType::Land,
+        level_index: 99,
+        landlook: 0,
+        is_dark: false,
+        use_los: false,
+        rects: vec![RandomRect {
+            rect_index: 0,
+            top: 0,
+            left: 0,
+            bottom: 10,
+            right: 10,
+            percent: 100,
+            battle_range: [4, 4],
+            random_doors: [9, 0, 0],
+            random_door_percent: [100, 0, 0],
+            only: false,
+            option: 0,
+            sound: 0,
+            text: 0,
+        }],
+        provenance: test_provenance("Data RD", 99, 1),
+    }];
+    project.monsters = parse_monsters(&vec![0; MONSTER_BYTES * 2]);
+    project.monsters[1].death_macro = 8;
+
+    let output = workspace.path().join("content-reachability-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let encounters = &documents["classic/encounters.json"];
+
+    assert_eq!(encounters["simpleEncounters"][1]["callable"], true);
+    assert_eq!(encounters["simpleEncounters"][2]["callable"], false);
+    assert_eq!(encounters["battles"][3]["callable"], true);
+    assert_eq!(encounters["battles"][4]["callable"], false);
+
+    let triggers = documents["classic/scripts.json"]["triggers"]
+        .as_array()
+        .unwrap();
+    for (record_index, callable) in [(7, true), (8, true), (9, false)] {
+        let trigger = triggers
+            .iter()
+            .find(|trigger| {
+                trigger["source"] == "Data ED3" && trigger["recordIndex"] == record_index
+            })
+            .unwrap();
+        assert_eq!(trigger["callable"], callable);
+    }
+
+    let runtime = &documents["classic/evidence.json"]["semanticDecoding"]["runtimeReachability"];
+    assert_eq!(runtime["simpleEncounters"], json!([1]));
+    assert_eq!(runtime["battles"], json!([3]));
+    assert_eq!(runtime["macros"], json!([7, 8]));
+    assert_eq!(runtime["monsters"], json!([1]));
+    assert_eq!(runtime["evidence"]["battle:3"], json!(["Data ED:1:slot:0"]));
+    assert_eq!(
+        runtime["evidence"]["macro:7"],
+        json!(["Data BD:3:battleMacro"])
+    );
+    assert_eq!(
+        runtime["evidence"]["macro:8"],
+        json!(["Data MD:1:deathMacro"])
+    );
+}
+
+#[test]
 fn omits_legacy_progression_media_requirements() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("media-readiness.providence");
@@ -1304,6 +1413,16 @@ fn action(slot: usize, code: i16, id: i16) -> Action {
         category: ActionCategory::Branch,
         gosub: false,
         media_required_for_progression: None,
+    }
+}
+
+fn test_provenance(source: &str, record_index: usize, byte_length: usize) -> Provenance {
+    Provenance {
+        source_file: source.to_string(),
+        record_index,
+        byte_offset: record_index * byte_length,
+        byte_length,
+        confidence: Confidence::SourceBacked,
     }
 }
 

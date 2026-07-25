@@ -38,6 +38,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | Action Point identity | `triggers[].id`, `source`, `recordIndex` | Compatible stable identity; array position is not used. Data ED3 rows also carry authoritative `callable` reachability. |
 | Trigger action | `slot`, `rawCode`, normalized `code`, `id` | Compatible without reinterpretation. Referenced media dependencies are derived from the authored action rather than author-maintained export policy. |
 | Encounter result action | `slot`, `rawCode`, `id` | Compatible; Remake normalizes signed encounter opcodes when selecting a result. Referenced media follows the same automatic packaging policy as Action Points. |
+| Runtime record reachability | battle, encounter, macro, monster, map, timed-encounter, and item references | All records remain serialized. Battles and encounters carry additive `callable` markers, while `evidence.semanticDecoding.runtimeReachability` records the source-backed transitive closure and evidence paths used by Remake readiness. |
 | Monster identity | `monsters[].id` and independent `nameId` | Compatible. The two IDs remain distinct, including when an authored action adds that monster as an ally. |
 | Scenario item identity | record `id` and independent `itemId` | Compatible. The ownership proof includes shop item 901 and carried/equipped weapon 902. |
 | Authorship and provenance | record `authored` and normalized `provenance` | Compatible. Source paths are reduced to portable source labels. |
@@ -60,6 +61,14 @@ compatibility annex. Every Extra Action Point remains in `scripts.triggers`; sou
 rows export with `callable: true`, while unreferenced imported rows export with `callable: false`.
 The corresponding classification and evidence path remain available under
 `evidence.semanticDecoding.ed3Reachability`.
+
+The same source-backed traversal classifies callable battle, simple-encounter, complex-encounter,
+macro, and monster records. Map triggers and random rectangles only root records for maps that
+exist; timed encounters stop at Classic's first zero-day terminator; encounter result actions,
+negative battle macros, battle grids, monster death macros, global scenario hooks, and usable door
+items extend the transitive closure. Unreferenced imported records remain in their documents but
+export with `callable: false` where the bundle record supports that marker. Consumers that predate
+the marker continue to treat an absent value as callable.
 
 Providence derives Remake media dependencies from authored actions and packages all available
 scenario-owned media automatically. Authors do not separately classify pictures, sounds, or

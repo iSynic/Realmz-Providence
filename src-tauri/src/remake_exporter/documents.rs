@@ -2,10 +2,14 @@ use super::assets::{remake_land_tile_value, PackagedAssets};
 use super::rule_selection::rule_table_selection;
 use super::{portable_campaign_id, REMAKE_CLASSIC_FORMAT_VERSION};
 use crate::error::Result;
-use crate::project::{ProvidenceProject, SemanticSchema, TriggerRecord};
+use crate::project::{
+    BattleRecord, ComplexEncounterRecord, ProvidenceProject, SemanticSchema, SimpleEncounterRecord,
+    TriggerRecord,
+};
 use crate::remake_exporter::portable::{
     portable_project_diagnostic_message, portable_source_label, portable_value,
 };
+use crate::semantic::RuntimeReachability;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -18,6 +22,30 @@ struct ExportTrigger<'a> {
     trigger: &'a TriggerRecord,
     #[serde(skip_serializing_if = "Option::is_none")]
     callable: Option<bool>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportBattle<'a> {
+    #[serde(flatten)]
+    battle: &'a BattleRecord,
+    callable: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportSimpleEncounter<'a> {
+    #[serde(flatten)]
+    encounter: &'a SimpleEncounterRecord,
+    callable: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportComplexEncounter<'a> {
+    #[serde(flatten)]
+    encounter: &'a ComplexEncounterRecord,
+    callable: bool,
 }
 
 pub(crate) fn contract_files() -> BTreeMap<&'static str, &'static str> {
@@ -39,17 +67,26 @@ pub(crate) fn build_documents(
     project_dir: &Path,
 ) -> Result<Vec<(&'static str, Value)>> {
     let semantic_schema = crate::semantic::build_canonical_project_semantic_schema(project);
+    let runtime_reachability = crate::semantic::classify_project_runtime_reachability(project);
     Ok(vec![
         ("scenario.json", scenario_document(project)?),
         ("maps.json", maps_document(project, assets)?),
         ("scripts.json", scripts_document(project, &semantic_schema)?),
-        ("encounters.json", encounters_document(project)?),
+        (
+            "encounters.json",
+            encounters_document(project, &runtime_reachability)?,
+        ),
         ("content.json", content_document(project)?),
         ("rules.json", rules_document(project, project_dir)?),
         ("assets.json", assets.document()),
         (
             "evidence.json",
-            evidence_document(project, &semantic_schema, project_dir)?,
+            evidence_document(
+                project,
+                &semantic_schema,
+                &runtime_reachability,
+                project_dir,
+            )?,
         ),
     ])
 }
@@ -145,14 +182,45 @@ fn scripts_document(
     }))
 }
 
-fn encounters_document(project: &ProvidenceProject) -> Result<Value> {
+fn encounters_document(
+    project: &ProvidenceProject,
+    runtime_reachability: &RuntimeReachability,
+) -> Result<Value> {
+    let battles = project
+        .battles
+        .iter()
+        .map(|battle| ExportBattle {
+            battle,
+            callable: runtime_reachability.battles.contains(&battle.id),
+        })
+        .collect::<Vec<_>>();
+    let simple_encounters = project
+        .simple_encounters
+        .iter()
+        .map(|encounter| ExportSimpleEncounter {
+            encounter,
+            callable: runtime_reachability
+                .simple_encounters
+                .contains(&encounter.id),
+        })
+        .collect::<Vec<_>>();
+    let complex_encounters = project
+        .complex_encounters
+        .iter()
+        .map(|encounter| ExportComplexEncounter {
+            encounter,
+            callable: runtime_reachability
+                .complex_encounters
+                .contains(&encounter.id),
+        })
+        .collect::<Vec<_>>();
     Ok(json!({
         "schemaVersion": REMAKE_CLASSIC_FORMAT_VERSION,
-        "battles": portable_value(&project.battles)?,
+        "battles": portable_value(&battles)?,
         "treasures": portable_value(&project.treasures)?,
         "shops": portable_value(&project.shops)?,
-        "simpleEncounters": portable_value(&project.simple_encounters)?,
-        "complexEncounters": portable_value(&project.complex_encounters)?,
+        "simpleEncounters": portable_value(&simple_encounters)?,
+        "complexEncounters": portable_value(&complex_encounters)?,
         "thiefEncounters": portable_value(&project.thief_encounters)?,
         "timedEncounters": portable_value(&project.timed_encounters)?,
     }))
@@ -191,6 +259,7 @@ fn rules_document(project: &ProvidenceProject, project_dir: &Path) -> Result<Val
 fn evidence_document(
     project: &ProvidenceProject,
     semantic_schema: &SemanticSchema,
+    runtime_reachability: &RuntimeReachability,
     project_dir: &Path,
 ) -> Result<Value> {
     let source_files = project
@@ -256,6 +325,14 @@ fn evidence_document(
         "semanticDecoding": {
             "ed3Reachability": portable_value(&semantic_schema.decoding.ed3_reachability)?,
             "dispatcherNoops": portable_value(&semantic_schema.decoding.dispatcher_noops)?,
+            "runtimeReachability": {
+                "battles": runtime_reachability.battles,
+                "simpleEncounters": runtime_reachability.simple_encounters,
+                "complexEncounters": runtime_reachability.complex_encounters,
+                "macros": runtime_reachability.macros,
+                "monsters": runtime_reachability.monsters,
+                "evidence": runtime_reachability.evidence(),
+            },
         },
     }))
 }

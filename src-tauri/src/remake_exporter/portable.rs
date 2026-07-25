@@ -183,12 +183,14 @@ fn contains_filesystem_path(text: &str) -> bool {
 
 fn looks_absolute_path(text: &str) -> bool {
     let bytes = text.as_bytes();
+    let unix_rooted = text.starts_with('/')
+        && (bytes.len() == 1
+            || ((bytes[1].is_ascii_alphanumeric() || matches!(bytes[1], b'.' | b'_' | b'-'))
+                && (text[1..].contains('/')
+                    || !text[1..].bytes().any(|byte| byte.is_ascii_whitespace()))));
     text.starts_with("\\\\")
         || text.starts_with("//")
-        || (text.starts_with('/')
-            && (bytes.len() == 1
-                || bytes[1].is_ascii_alphanumeric()
-                || matches!(bytes[1], b'.' | b'_' | b'-')))
+        || unix_rooted
         || (bytes.len() >= 3
             && bytes[0].is_ascii_alphabetic()
             && bytes[1] == b':'
@@ -210,6 +212,9 @@ mod tests {
             "/   + j ; authored encounter text"
         ));
         assert!(!contains_filesystem_path("/=I_t"));
+        assert!(!contains_filesystem_path(
+            "/4  t$    w< 8  G     g      e    W ~"
+        ));
         assert!(!contains_filesystem_path("\\Z[ authored script text"));
     }
 
