@@ -8,10 +8,7 @@ import {
   targetOptionForOpcodeValue
 } from "../../components/RealmzTargetPicker";
 import { divinityHelpForOpcode } from "../../divinityOpcodeHelp";
-import {
-  actionOptionFor,
-  supportsRemakeProgressionMediaRequirement
-} from "../../realmzActions";
+import { actionOptionFor } from "../../realmzActions";
 import type {
   EncounterActionRow,
   LibraryCatalog,
@@ -23,6 +20,10 @@ import {
   signedResultActionCode
 } from "./encounterFlow";
 import { encounterEcodeActionSummary } from "./encounterEcodeSettings";
+import {
+  directActionSettingsFor,
+  directActionSummary
+} from "./directActionSettings";
 import { scriptActionAllowedInContext, scriptActionContextRestrictionReason } from "./scriptActionContexts";
 
 export function encounterResultIdHelp(
@@ -84,7 +85,8 @@ export function EncounterResultActionCell({
   onUpdate,
   onFocusCode,
   onPreviewTarget,
-  onEditSettings
+  onEditSettings,
+  onEditDirect
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
@@ -95,6 +97,7 @@ export function EncounterResultActionCell({
   onFocusCode: (code: number) => void;
   onPreviewTarget: (opcode: number, value: number) => void;
   onEditSettings: (rawCode: number) => void;
+  onEditDirect: (rawCode: number) => void;
 }) {
   const idHelpId = useId();
   const baseCode = resultActionBaseCode(row.rawCode);
@@ -102,6 +105,8 @@ export function EncounterResultActionCell({
   const rowOption = actionOptionFor(baseCode);
   const isEcodeBacked = Boolean(rowOption?.edcdShape);
   const ecodeSummary = isEcodeBacked ? encounterEcodeActionSummary(project, catalog, row) : null;
+  const directSettings = isEcodeBacked ? null : directActionSettingsFor(row.rawCode);
+  const directSummary = isEcodeBacked ? null : directActionSummary(project, catalog, row.rawCode, row.id);
   const selected = targetOptionForOpcodeValue(project, baseCode, row.id, catalog);
   const populated = row.rawCode !== 0 || row.id !== 0;
   const targetPicker = targetPickerConfig(baseCode);
@@ -136,7 +141,12 @@ export function EncounterResultActionCell({
             onEditSettings(nextRawCode);
             return;
           }
-          onUpdate({ rawCode: nextRawCode });
+          const nextSettings = directActionSettingsFor(nextRawCode);
+          if (nextSettings.kind === "none") {
+            onUpdate({ rawCode: nextRawCode, id: 0 });
+            return;
+          }
+          onEditDirect(nextRawCode);
         }}
       >
         {options.map((option) => (
@@ -163,19 +173,27 @@ export function EncounterResultActionCell({
             <SlidersHorizontal size={12} />
           </button>
         </TutorialTip>
-      ) : (
+      ) : directSettings?.kind !== "none" && baseCode !== 0 ? (
         <TutorialTip title={idHelp.title} body={idHelp.body} side="below" focusable={false} tooltipId={idHelpId}>
-          <label className="encounter-action-id-field">
-            <input
-              type="number"
-              value={row.id}
-              aria-label={`Result action ${slot} ID`}
-              aria-describedby={idHelpId}
-              onFocus={() => onFocusCode(baseCode)}
-              onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
-            />
-          </label>
+          <button
+            type="button"
+            className="encounter-action-settings-field"
+            aria-label={`Edit result action ${slot} settings`}
+            aria-describedby={idHelpId}
+            onFocus={() => onFocusCode(baseCode)}
+            onClick={() => onEditDirect(row.rawCode)}
+          >
+            <span>{directSummary}</span>
+            <SlidersHorizontal size={12} />
+          </button>
         </TutorialTip>
+      ) : (
+        <span
+          className="encounter-action-settings-field encounter-action-no-settings-field"
+          aria-label={`Result action ${slot} has no settings`}
+        >
+          <span>{baseCode === 0 ? "Empty" : directSummary}</span>
+        </span>
       )}
       <div className="encounter-action-row-actions">
         {canBrowse ? (
@@ -202,19 +220,6 @@ export function EncounterResultActionCell({
         )}
         {!populated && <span className="encounter-action-clear-placeholder" aria-hidden="true" />}
       </div>
-      {supportsRemakeProgressionMediaRequirement(row.rawCode) && (
-        <label
-          className="encounter-action-progression-media"
-          title="A missing asset will block this scenario from launching in Remake. This does not change Classic Realmz behavior."
-        >
-          <input
-            type="checkbox"
-            checked={Boolean(row.mediaRequiredForProgression)}
-            onChange={(event) => onUpdate({ mediaRequiredForProgression: event.currentTarget.checked })}
-          />
-          <span>Required for Remake progression</span>
-        </label>
-      )}
       {populated && !allowedInEncounter && (
         <small className="field-warning encounter-action-context-warning">
           Imported value preserved. {scriptActionContextRestrictionReason(baseCode)}

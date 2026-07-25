@@ -48,6 +48,7 @@ export function EdcdRowEditor({
   onStepOpcodeChange,
   onDraftValuesChange,
   onSecondaryDraftValuesChange,
+  onDraftValidityChange,
   onApplyCommand,
   showActionButtons = true,
   presentation = "inventory",
@@ -70,6 +71,7 @@ export function EdcdRowEditor({
   onStepOpcodeChange?: (rawCode: number) => void;
   onDraftValuesChange?: (values: number[], dirty: boolean) => void;
   onSecondaryDraftValuesChange?: (values: number[], dirty: boolean) => void;
+  onDraftValidityChange?: (issue: string | null) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
   showActionButtons?: boolean;
   presentation?: EdcdRowEditorPresentation;
@@ -91,12 +93,20 @@ export function EdcdRowEditor({
   const opcode = edcdUsage?.opcode ?? fallbackOpcode;
   const rowExists = Boolean(row);
   const initialDraftKey = `${rowId ?? "none"}:${shape ?? "none"}:${opcode ?? "none"}:${rowExists ? "stored" : "missing"}:${initialValues.join("|")}`;
+  const battleEditorKey = `${rowId ?? "none"}:${shape ?? "none"}:${opcode ?? "none"}`;
   const [draft, setDraft] = useState(initialValues.map(String));
+  const [battleRangeIntent, setBattleRangeIntent] = useState<boolean | null>(null);
+  const [battleSurpriseIntent, setBattleSurpriseIntent] = useState<boolean | null>(null);
   const itemOptions = useMemo(() => itemReferenceOptions(project, catalog), [project, catalog]);
 
   useEffect(() => {
     setDraft(initialValues.map(String));
   }, [initialDraftKey]);
+
+  useEffect(() => {
+    setBattleRangeIntent(null);
+    setBattleSurpriseIntent(null);
+  }, [battleEditorKey]);
 
   const numericDraft = useMemo(() => draft.map((value) => {
     const parsed = Number(value);
@@ -104,7 +114,7 @@ export function EdcdRowEditor({
   }), [draft]);
   const changed = numericDraft.some((value, index) => value !== initialValues[index]);
   const needsSelectedStepApply = !rowExists || changed;
-  const canApplySettings = Boolean(onApplyCommand) && (!rowExists || changed);
+  const canApplySettingsBase = Boolean(onApplyCommand) && (!rowExists || changed);
   const settingsActionLabel = rowExists ? "Apply Settings" : "Create Settings";
   const settingsCommandLabel = rowExists ? `Update settings ${rowId}` : `Create settings ${rowId}`;
 
@@ -112,6 +122,30 @@ export function EdcdRowEditor({
     if (rowId == null || !shape) return;
     onDraftValuesChange?.(numericDraft, needsSelectedStepApply);
   }, [needsSelectedStepApply, numericDraft, onDraftValuesChange, rowId, shape]);
+
+  const normalizedShapeId = normalizeShape(shape ?? "");
+  const battleLowIndex = normalizedShapeId.includes("battle")
+    ? fieldNames.findIndex((field) => normalizeField(field) === "battlelow")
+    : -1;
+  const battleHighIndex = normalizedShapeId.includes("battle")
+    ? fieldNames.findIndex((field) => normalizeField(field) === "battlehigh")
+    : -1;
+  const battleLowValue = battleLowIndex >= 0 ? Number(draft[battleLowIndex] ?? "0") : 0;
+  const battleHighValue = battleHighIndex >= 0 ? Number(draft[battleHighIndex] ?? "0") : 0;
+  const hasBattleSelectionFields = battleLowIndex >= 0 && battleHighIndex >= 0;
+  const battleRangeMode = hasBattleSelectionFields
+    ? battleRangeIntent ?? battleHighValue !== 0
+    : false;
+  const battleSurpriseMode = hasBattleSelectionFields
+    ? battleSurpriseIntent ?? (battleLowValue < 0 || battleHighValue < 0)
+    : false;
+  const battleDraftIssue = hasBattleSelectionFields
+    ? battleSelectionDraftIssue(battleLowValue, battleHighValue, battleRangeMode, battleSurpriseMode)
+    : null;
+
+  useEffect(() => {
+    onDraftValidityChange?.(battleDraftIssue);
+  }, [battleDraftIssue, onDraftValidityChange]);
 
   if (rowId == null || !shape) return null;
   const shapeId = shape;
@@ -128,6 +162,7 @@ export function EdcdRowEditor({
   const primaryFields = fieldMetadata.filter((field) => !field.preserved);
   const preservedFields = fieldMetadata.filter((field) => field.preserved);
   const preservedIndexes = preservedFields.map((field) => field.index);
+  const canApplySettings = canApplySettingsBase && !battleDraftIssue;
   const targetIssues = missingEdcdTargetReferences(project, shapeId, fieldNames, numericDraft, opcode, preservedIndexes, catalog, sourceLevelType);
   const guidedSections = guidedSectionsForShape(shapeId, primaryFields, numericDraft, opcode);
   const guidedSummary = guidedSummaryForEdcd(project, catalog, shapeId, opcode, rowId, numericDraft, fieldNames, edcdUsage?.summary, sourceLevelType);
@@ -326,20 +361,20 @@ export function EdcdRowEditor({
     const additionalFields = section.fields.filter((field) => !groupedIndexes.has(field.index));
     const lowValue = lowField ? Number(draft[lowField.index] ?? "0") : 0;
     const highValue = highField ? Number(draft[highField.index] ?? "0") : 0;
-    const rangeMode = highValue !== 0;
-    const surprise = lowValue < 0 || highValue < 0;
-    const signedBattleValue = (value: number, surprised = surprise) => {
+    const signedBattleValue = (value: number, surprised = battleSurpriseMode) => {
       const magnitude = Math.abs(value);
       return surprised && magnitude > 0 ? -magnitude : magnitude;
     };
     const setRangeMode = (range: boolean) => {
       if (!lowField || !highField) return;
+      setBattleRangeIntent(range);
       const next = [...draft];
       next[lowField.index] = String(signedBattleValue(lowValue));
       next[highField.index] = String(range ? signedBattleValue(highValue || lowValue) : 0);
       setDraft(next);
     };
     const setSurprise = (enabled: boolean) => {
+      setBattleSurpriseIntent(enabled);
       const next = [...draft];
       if (lowField) next[lowField.index] = String(signedBattleValue(lowValue, enabled));
       if (highField) next[highField.index] = String(signedBattleValue(highValue, enabled));
@@ -354,21 +389,22 @@ export function EdcdRowEditor({
         <fieldset className="edcd-battle-mode">
           <legend>Battle selection</legend>
           <label>
-            <input type="radio" name={`battle-range-mode-${rowId}`} checked={!rangeMode} onChange={() => setRangeMode(false)} />
+            <input type="radio" name={`battle-range-mode-${rowId}`} checked={!battleRangeMode} onChange={() => setRangeMode(false)} />
             Exact battle
           </label>
           <label>
-            <input type="radio" name={`battle-range-mode-${rowId}`} checked={rangeMode} onChange={() => setRangeMode(true)} />
+            <input type="radio" name={`battle-range-mode-${rowId}`} checked={battleRangeMode} onChange={() => setRangeMode(true)} />
             Random battle range
           </label>
           <label className="edcd-battle-surprise-toggle">
-            <input type="checkbox" checked={surprise} onChange={(event) => setSurprise(event.currentTarget.checked)} />
+            <input type="checkbox" checked={battleSurpriseMode} onChange={(event) => setSurprise(event.currentTarget.checked)} />
             Surprise the party
           </label>
         </fieldset>
+        {battleDraftIssue && <p className="field-warning" role="alert">{battleDraftIssue}</p>}
         <div className="edcd-field-grid">
-          {lowField && renderBattleTargetField(lowField, rangeMode ? "Battle Range Low" : "Battle")}
-          {rangeMode && highField && renderBattleTargetField(highField, "Battle Range High")}
+          {lowField && renderBattleTargetField(lowField, battleRangeMode ? "Battle Range Low" : "Battle", battleSurpriseMode)}
+          {battleRangeMode && highField && renderBattleTargetField(highField, "Battle Range High", battleSurpriseMode)}
           {additionalFields.map((field) => renderParameterField(field))}
         </div>
         <small className="field-help">
@@ -378,7 +414,7 @@ export function EdcdRowEditor({
     );
   }
 
-  function renderBattleTargetField(field: GuidedField, label: string) {
+  function renderBattleTargetField(field: GuidedField, label: string, surprised: boolean) {
     const rawValue = Number(draft[field.index] ?? "0");
     const value = Math.abs(rawValue);
     const options = edcdTargetOptions(project, "battle", catalog);
@@ -395,7 +431,7 @@ export function EdcdRowEditor({
           targetKind="battle"
           value={value}
           options={options}
-          onChange={(nextValue) => setDraftValue(field.index, (rawValue < 0 ? -1 : 1) * Math.abs(nextValue))}
+          onChange={(nextValue) => setDraftValue(field.index, surprised ? -Math.abs(nextValue) : Math.abs(nextValue))}
           onOpen={(entity) => onSelectEntity?.(entity)}
         />
         {targetIssue && (
@@ -743,6 +779,22 @@ export function EdcdRowEditor({
       </label>
     );
   }
+}
+
+export function battleSelectionDraftIssue(
+  battleLow: number,
+  battleHigh: number,
+  rangeMode: boolean,
+  surpriseMode: boolean
+) {
+  const issues: string[] = [];
+  if (rangeMode && Math.abs(battleHigh) === 0) {
+    issues.push("Choose a nonzero Battle Range High so Classic Realmz can store the random range.");
+  }
+  if (surpriseMode && Math.abs(battleLow) === 0) {
+    issues.push("Choose a nonzero Battle or Battle Range Low so Classic Realmz can store the surprise sign.");
+  }
+  return issues.length > 0 ? issues.join(" ") : null;
 }
 
 function authorFieldHelp(text: string, label: string) {

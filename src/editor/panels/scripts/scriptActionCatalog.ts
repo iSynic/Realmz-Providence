@@ -166,7 +166,8 @@ const ADVANCED_ACTIONS = new Set([121]);
 const IGNORED_ACTIONS = new Set([0, ...NOT_USED_ACTION_CODES]);
 
 const MANUAL_NONE_STEP_ONLY_ACTIONS = new Set([
-  25, 26, 34, 82, 83, 84, 91, 93, 94, 96, 97, 98, 99, 100, 101, 102
+  24, 25, 26, 28, 34, 49, 82, 83, 84, 91, 93, 94, 96, 97, 98, 99, 100, 101, 102,
+  111, 112, 119
 ]);
 
 const ACTION_OVERRIDES: Record<number, Partial<Pick<ScriptActionDefinition, "label" | "shortLabel" | "category" | "description" | "searchTerms">>> = {
@@ -569,7 +570,7 @@ const ACTION_METADATA_OVERRIDES: Record<number, ScriptActionMetadataOverride> = 
       realmzField: "ID",
       targetFamily: "coordinate-display-state",
       defaultValue: 1,
-      help: "0 hides the coordinate display; nonzero values show it."
+      help: "0 shows the coordinate display; nonzero values replace the coordinates with question marks."
     },
     defaultDraft: { rawCode: 71, id: 1 }
   },

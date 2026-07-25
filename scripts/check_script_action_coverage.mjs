@@ -240,7 +240,7 @@ for (const entry of coverageEntries) {
     for (const key of ["fieldLabel", "internalName", "storage", "expectedControl", "implementedSurface", "status", "evidence"]) {
       if (!(key in control)) failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} authoring control is missing ${key}.`);
     }
-    if (!["search-target", "compact-select", "toggle", "narrow-number", "step-only", "advanced-preserved"].includes(control.expectedControl)) {
+    if (!["search-target", "compact-select", "toggle", "contextual-number", "narrow-number", "step-only", "advanced-preserved"].includes(control.expectedControl)) {
       failures.push(`Opcode audit report entry ${entry.opcode ?? "(unknown)"} has unknown expectedControl ${control.expectedControl}.`);
     }
     if (!["ok", "needs-ui-fix", "needs-copy-fix", "needs-evidence", "intentionally-preserved"].includes(control.status)) {
@@ -328,16 +328,16 @@ if (inversePick?.gapStatus !== "covered-in-current-ui") {
 if (inversePick?.evidenceConfidence !== "manual-backed") {
   failures.push("Opcode -14 should inherit manual-backed confidence from opcode 14.");
 }
-if (!hasAuthoringControl(inversePick, "ID", "narrow-number", "direct-id")) {
-  failures.push("Opcode -14 should retain a direct ID control audit.");
+if (!hasAuthoringControl(inversePick, "ID", "contextual-number", "direct-id")) {
+  failures.push("Opcode -14 should retain a contextual direct-value control audit.");
 }
 if (!(inversePick?.authoringControls ?? []).every((control) => control.status === "ok")) {
   failures.push("Opcode -14 controls should audit as ok.");
 }
 
-for (const opcode of [25, 26, 34, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102]) {
+for (const opcode of [24, 25, 26, 28, 34, 49, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102, 111, 112, 119]) {
   const entry = coverageEntry(opcode);
-  const expectedGap = [34, 100].includes(opcode) ? "context-restricted" : "step-only-no-options";
+  const expectedGap = [34, 100, 119].includes(opcode) ? "context-restricted" : "step-only-no-options";
   if (entry?.gapStatus !== expectedGap) {
     failures.push(`Manual no-option opcode ${opcode} should stay marked step-only-no-options.`);
   }

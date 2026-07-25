@@ -589,6 +589,77 @@ fn exports_decoded_sound_runtime_media_for_remake() {
 }
 
 #[test]
+fn packages_every_imported_scenario_sound_from_the_preserved_resource_fork() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("war-in-the-sword-lands.providence");
+    let mut project = create_project("War in the Sword Lands".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let first_snd = encode_snd_resource(&PcmAudioPayload {
+        sample_rate: 11_025,
+        channels: 1,
+        duration_ms: Some(23),
+        pcm8_base64: STANDARD.encode([0_u8, 64, 128, 192, 255]),
+    })
+    .unwrap();
+    let second_snd = encode_snd_resource(&PcmAudioPayload {
+        sample_rate: 11_025,
+        channels: 1,
+        duration_ms: Some(23),
+        pcm8_base64: STANDARD.encode([255_u8, 192, 128, 64, 0]),
+    })
+    .unwrap();
+    let resource_fork = write_resource_fork(&[
+        ResourceForkEntry {
+            resource_type: "snd ".to_string(),
+            id: 201,
+            name: "Creek".to_string(),
+            attributes: 0,
+            data: first_snd.clone(),
+        },
+        ResourceForkEntry {
+            resource_type: "snd ".to_string(),
+            id: 202,
+            name: "Army on the march".to_string(),
+            attributes: 0,
+            data: second_snd.clone(),
+        },
+    ])
+    .unwrap();
+    preserve_resource_fork(&mut project, &project_dir, &resource_fork);
+    project.asset_catalog.sounds.push(ResourceAsset {
+        id: "scenario-snd-201".to_string(),
+        resource_type: "snd ".to_string(),
+        resource_id: 201,
+        name: Some("Creek".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: None,
+    });
+
+    let output = workspace.path().join("war-in-the-sword-lands-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let sounds = documents["classic/assets.json"]["catalog"]["sounds"]
+        .as_array()
+        .unwrap();
+
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 4);
+    assert_eq!(sounds.len(), 2);
+    for (sound, expected_snd) in sounds.iter().zip([first_snd, second_snd]) {
+        assert_eq!(
+            fs::read(output.join(sound["payloadPath"].as_str().unwrap())).unwrap(),
+            expected_snd
+        );
+        let runtime_path = sound["runtimeMedia"]["path"].as_str().unwrap();
+        assert!(runtime_path.starts_with("media/sounds/snd-"));
+        assert!(runtime_path.ends_with(".wav"));
+        assert!(fs::read(output.join(runtime_path))
+            .unwrap()
+            .starts_with(b"RIFF"));
+    }
+}
+
+#[test]
 fn omits_canonical_music_with_an_explicit_bundle_limitation() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("music.providence");
@@ -903,7 +974,7 @@ fn exports_authoritative_ed3_callability_from_canonical_records() {
 }
 
 #[test]
-fn exports_only_explicit_progression_media_requirements() {
+fn omits_legacy_progression_media_requirements() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("media-readiness.providence");
     let mut project = create_project("Media readiness".to_string(), &project_dir).unwrap();
@@ -939,12 +1010,14 @@ fn exports_only_explicit_progression_media_requirements() {
         .as_array()
         .unwrap();
 
-    assert_eq!(actions[0]["mediaRequiredForProgression"], true);
+    assert!(actions[0].get("mediaRequiredForProgression").is_none());
     assert!(actions[1].get("mediaRequiredForProgression").is_none());
     let encounter_actions = documents["classic/encounters.json"]["simpleEncounters"][0]["actions"]
         .as_array()
         .unwrap();
-    assert_eq!(encounter_actions[0]["mediaRequiredForProgression"], true);
+    assert!(encounter_actions[0]
+        .get("mediaRequiredForProgression")
+        .is_none());
     assert!(encounter_actions[1]
         .get("mediaRequiredForProgression")
         .is_none());

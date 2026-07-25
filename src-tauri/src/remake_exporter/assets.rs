@@ -143,6 +143,13 @@ pub(crate) fn package_assets(
         &mut style_payloads,
         &mut written_files,
     )?;
+    package_scenario_sounds(
+        project,
+        project_dir,
+        output_dir,
+        &mut payloads,
+        &mut written_files,
+    )?;
     package_scenario_item_icons(project, output_dir, &mut payloads, &mut written_files)?;
     package_scenario_special_land_tiles(
         project,
@@ -678,6 +685,67 @@ fn package_scenario_scrolling_texts(
         style_payloads.insert(resource_id, candidate.bytes.clone());
     }
     Ok(())
+}
+
+fn package_scenario_sounds(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let candidates = preserved_scenario_resource_payloads(project, project_dir, "snd ")?;
+    for resource_id in candidates.keys().copied().collect::<Vec<_>>() {
+        if payloads.contains_key(&("snd ".to_string(), resource_id))
+            || scenario_resource_removed(project, "snd ", resource_id)
+        {
+            continue;
+        }
+        let catalog_asset = project.asset_catalog.sounds.iter().find(|asset| {
+            asset.resource_type == "snd "
+                && asset.resource_id == i32::from(resource_id)
+                && is_scenario_owned_sound(asset)
+        });
+        let candidate = if let Some(asset) = catalog_asset {
+            select_scenario_resource_payload(asset, &candidates, "snd ")?
+        } else {
+            let Some(candidate) =
+                select_uncatalogued_scenario_resource_payload(resource_id, &candidates, "snd ")?
+            else {
+                continue;
+            };
+            candidate
+        };
+        let label = catalog_asset
+            .and_then(|asset| asset.name.as_deref())
+            .filter(|value| !value.trim().is_empty())
+            .or_else(|| (!candidate.name.trim().is_empty()).then_some(candidate.name.as_str()))
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("Scenario sound {resource_id}"));
+        let payload = write_resource_payload(
+            "snd ",
+            resource_id,
+            &label,
+            &candidate.bytes,
+            "audio/x-mac-snd",
+            &format!("Scenario resource fork: {}", candidate.source_file),
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("snd ".to_string(), resource_id), payload);
+    }
+    Ok(())
+}
+
+fn is_scenario_owned_sound(asset: &ResourceAsset) -> bool {
+    let source = asset.source.to_ascii_lowercase();
+    asset.id.starts_with("scenario-snd-")
+        || source.starts_with("scenario resource fork:")
+        || (source.starts_with("browser import:")
+            && !source.contains("bundled realmz reference snd"))
 }
 
 fn scenario_resource_removed(

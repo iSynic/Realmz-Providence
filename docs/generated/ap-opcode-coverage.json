@@ -7,6 +7,7 @@
     "actions": "src/editor/realmzActions.ts",
     "targetPicker": "src/editor/components/RealmzTargetPicker.tsx",
     "optionDomains": "src/editor/edcdOptionDomains.json",
+    "directActionDomains": "src/editor/directActionOptionDomains.json",
     "authoringContexts": "src/editor/panels/scripts/scriptActionContexts.json"
   },
   "counts": {
@@ -18,10 +19,10 @@
   },
   "gapCounts": {
     "context-restricted": 13,
-    "covered-in-current-ui": 92,
+    "covered-in-current-ui": 87,
     "intentionally-preserved": 11,
     "legacy-compatible": 3,
-    "step-only-no-options": 11
+    "step-only-no-options": 16
   },
   "confidenceCounts": {
     "catalog-only": 1,
@@ -34,14 +35,18 @@
   },
   "expectedControlCounts": {
     "advanced-preserved": 74,
-    "compact-select": 80,
-    "narrow-number": 127,
-    "search-target": 112,
-    "step-only": 17
+    "compact-select": 88,
+    "contextual-number": 5,
+    "narrow-number": 109,
+    "search-target": 111,
+    "step-only": 23
   },
   "optionContractCounts": {
     "finiteSelectDomains": 80,
     "numericSentinelDomains": 27,
+    "directFiniteChoiceDomains": 8,
+    "directGuidedNumericDomains": 3,
+    "directSignedBehaviorDomains": 6,
     "documentedNumericOptionFields": 103
   },
   "entries": [
@@ -217,8 +222,8 @@
           "index": null,
           "storage": "direct-code-id",
           "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "expectedControl": "contextual-number",
+          "implementedSurface": "Contextual direct-action modal with labeled numeric guidance",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -322,7 +327,7 @@
           "storage": "direct-code-id",
           "targetFamily": "message",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -625,7 +630,7 @@
           "storage": "direct-code-id",
           "targetFamily": "simple-encounter",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -678,7 +683,7 @@
           "storage": "direct-code-id",
           "targetFamily": "complex-encounter",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -731,7 +736,7 @@
           "storage": "direct-code-id",
           "targetFamily": "shop",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -908,8 +913,8 @@
           "index": null,
           "storage": "direct-code-id",
           "targetFamily": "same-map-action-point",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "expectedControl": "contextual-number",
+          "implementedSurface": "Contextual direct-action modal with labeled numeric guidance",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -962,7 +967,7 @@
           "storage": "direct-code-id",
           "targetFamily": "sound",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -1015,7 +1020,7 @@
           "storage": "direct-code-id",
           "targetFamily": "treasure",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -1067,8 +1072,8 @@
           "index": null,
           "storage": "direct-code-id",
           "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "expectedControl": "contextual-number",
+          "implementedSurface": "Contextual direct-action modal with labeled numeric guidance",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -1370,8 +1375,8 @@
           "index": null,
           "storage": "direct-code-id",
           "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "expectedControl": "contextual-number",
+          "implementedSurface": "Contextual direct-action modal with labeled numeric guidance",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -2528,7 +2533,7 @@
       "opcode": 24,
       "title": "Exit Action Point And Keep Codes",
       "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "gapStatus": "step-only-no-options",
       "evidenceConfidence": "manual-backed",
       "note": "",
       "manual": {
@@ -2542,26 +2547,26 @@
         "extraCodes": "None Script Tip: Code 24 is very common as the last code in an Action Point script. If you wish a specific Action Point to stick around for the entire game, then you need to put a 24 as the last code. This will cause it to be activated each and every time the party walks onto the Action point."
       },
       "manualNoOptions": false,
-      "manualNoneStepOnly": false,
+      "manualNoneStepOnly": true,
       "relatedOpcodes": [],
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
-          "internalName": "id",
-          "targetFamily": "direct-id",
+          "label": "Step only",
+          "internalName": "stepOnly",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
-          "internalName": "id",
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
           "index": null,
-          "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -2720,7 +2725,7 @@
           "storage": "direct-code-id",
           "targetFamily": "picture",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -2740,7 +2745,7 @@
       "opcode": 28,
       "title": "Redraw Screen",
       "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "gapStatus": "step-only-no-options",
       "evidenceConfidence": "manual-backed",
       "note": "",
       "manual": {
@@ -2754,26 +2759,26 @@
         "extraCodes": "None"
       },
       "manualNoOptions": false,
-      "manualNoneStepOnly": false,
+      "manualNoneStepOnly": true,
       "relatedOpcodes": [],
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
-          "internalName": "id",
-          "targetFamily": "direct-id",
+          "label": "Step only",
+          "internalName": "stepOnly",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
-          "internalName": "id",
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
           "index": null,
-          "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -2824,9 +2829,9 @@
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": "map-record",
+          "expectedControl": "search-target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -3128,8 +3133,8 @@
           "index": null,
           "storage": "direct-code-id",
           "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "expectedControl": "contextual-number",
+          "implementedSurface": "Contextual direct-action modal with labeled numeric guidance",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -3346,21 +3351,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "Simple Encounter Option",
+          "label": "Simple Encounter choice to eliminate",
           "internalName": "id",
-          "targetFamily": "simple-encounter",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "Simple Encounter Option",
+          "fieldLabel": "Simple Encounter choice to eliminate",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "simple-encounter",
-          "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -3399,21 +3404,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
+          "label": "Equipment operation",
           "internalName": "id",
-          "targetFamily": "direct-id",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
+          "fieldLabel": "Equipment operation",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -3716,7 +3721,7 @@
           "storage": "direct-code-id",
           "targetFamily": "extra-action-point",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -4255,21 +4260,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "Branch To Eliminate (0-3)",
+          "label": "Complex Encounter result to eliminate",
           "internalName": "id",
-          "targetFamily": "direct-id",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "Branch To Eliminate (0-3)",
+          "fieldLabel": "Complex Encounter result to eliminate",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "complex-encounter",
-          "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -4572,7 +4577,7 @@
           "storage": "direct-code-id",
           "targetFamily": "quest-label",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -4717,7 +4722,7 @@
       "opcode": 49,
       "title": "Offer Banking",
       "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "gapStatus": "step-only-no-options",
       "evidenceConfidence": "manual-backed",
       "note": "",
       "manual": {
@@ -4731,26 +4736,26 @@
         "extraCodes": ""
       },
       "manualNoOptions": false,
-      "manualNoneStepOnly": false,
+      "manualNoneStepOnly": true,
       "relatedOpcodes": [],
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
-          "internalName": "id",
-          "targetFamily": "direct-id",
+          "label": "Step only",
+          "internalName": "stepOnly",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
-          "internalName": "id",
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
           "index": null,
-          "storage": "direct-code-id",
-          "targetFamily": "shop",
-          "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -6303,7 +6308,7 @@
           "storage": "direct-code-id",
           "targetFamily": "text-resource",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -6717,21 +6722,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
+          "label": "Camping ability",
           "internalName": "id",
-          "targetFamily": "direct-id",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
+          "fieldLabel": "Camping ability",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -7270,21 +7275,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
+          "label": "Coordinate display",
           "internalName": "id",
-          "targetFamily": "direct-id",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
+          "fieldLabel": "Coordinate display",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -8975,9 +8980,9 @@
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -9028,9 +9033,9 @@
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": "monster",
+          "expectedControl": "search-target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -9478,21 +9483,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "Direction To Face The Party",
+          "label": "Direction to face",
           "internalName": "id",
-          "targetFamily": "direct-id",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "Direction To Face The Party",
+          "fieldLabel": "Direction to face",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -10027,21 +10032,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
+          "label": "Random battles",
           "internalName": "id",
-          "targetFamily": "battle",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
+          "fieldLabel": "Random battles",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "simple-encounter",
-          "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -10080,21 +10085,21 @@
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
+          "label": "Allies and NPCs in battle",
           "internalName": "id",
-          "targetFamily": "direct-id",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
+          "fieldLabel": "Allies and NPCs in battle",
           "internalName": "id",
           "index": null,
           "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "targetFamily": null,
+          "expectedControl": "compact-select",
+          "implementedSurface": "Contextual direct-action modal with documented choices",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -10595,7 +10600,7 @@
       "opcode": 111,
       "title": "Return From Gosub",
       "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "gapStatus": "step-only-no-options",
       "evidenceConfidence": "manual-backed",
       "note": "",
       "manual": {
@@ -10609,26 +10614,26 @@
         "extraCodes": "Not Used"
       },
       "manualNoOptions": false,
-      "manualNoneStepOnly": false,
+      "manualNoneStepOnly": true,
       "relatedOpcodes": [],
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
-          "internalName": "id",
-          "targetFamily": "direct-id",
+          "label": "Step only",
+          "internalName": "stepOnly",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
-          "internalName": "id",
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
           "index": null,
-          "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -10648,7 +10653,7 @@
       "opcode": 112,
       "title": "POP The Stack",
       "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "gapStatus": "step-only-no-options",
       "evidenceConfidence": "manual-backed",
       "note": "",
       "manual": {
@@ -10662,26 +10667,26 @@
         "extraCodes": "Not Used"
       },
       "manualNoOptions": false,
-      "manualNoneStepOnly": false,
+      "manualNoneStepOnly": true,
       "relatedOpcodes": [],
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
-          "internalName": "id",
-          "targetFamily": "direct-id",
+          "label": "Step only",
+          "internalName": "stepOnly",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
-          "internalName": "id",
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
           "index": null,
-          "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -11033,26 +11038,26 @@
         "extraCodes": "Not Used"
       },
       "manualNoOptions": false,
-      "manualNoneStepOnly": false,
+      "manualNoneStepOnly": true,
       "relatedOpcodes": [],
       "providenceFields": [
         {
           "index": null,
-          "label": "ID",
-          "internalName": "id",
-          "targetFamily": "direct-id",
+          "label": "Step only",
+          "internalName": "stepOnly",
+          "targetFamily": null,
           "preserved": false
         }
       ],
       "authoringControls": [
         {
-          "fieldLabel": "ID",
-          "internalName": "id",
+          "fieldLabel": "Step only",
+          "internalName": "stepOnly",
           "index": null,
-          "storage": "direct-code-id",
-          "targetFamily": "direct-id",
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Direct CODE/ID numeric field",
+          "storage": "step-only",
+          "targetFamily": null,
+          "expectedControl": "step-only",
+          "implementedSurface": "Action chooser step-only control",
           "status": "ok",
           "evidence": "manual-backed"
         }
@@ -11980,7 +11985,7 @@
           "storage": "direct-code-id",
           "targetFamily": "monster",
           "expectedControl": "search-target",
-          "implementedSurface": "RealmzTargetPicker search/preview target",
+          "implementedSurface": "Contextual direct-action modal with RealmzTargetPicker",
           "status": "ok",
           "evidence": "manual-backed"
         }

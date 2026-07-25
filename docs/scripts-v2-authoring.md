@@ -49,7 +49,9 @@ The visual step list is a friendlier view of the raw Realmz slots. Each step des
 - validation rules
 - compatibility status
 
-Expert users can still inspect and edit raw values. The guided form is the preferred path because it can validate target type, record existence, EDCD shape, coordinates, and known dispatcher no-op behavior beside the affected slot.
+Expert users can still inspect raw storage in each editor's collapsed Technical Details. The guided form is the authoring path because it can validate target type, record existence, finite option domains, EDCD shape, coordinates, and known dispatcher no-op behavior beside the affected slot.
+
+Direct `CODE` / `ID` actions use a contextual settings dialog in both Action Points and encounter result scripts. Providence presents record references as searchable target pickers, documented finite values as named choices, signed values as separate intent and magnitude controls, and remaining quantities as labeled numeric fields with the available manual guidance. Actions whose runtime dispatcher ignores `ID` are shown as step-only actions rather than exposing a misleading number box. Imported values outside a documented finite domain remain explicitly preservable.
 
 For EDCD-backed opcodes, the slot `ID` is a `Data EDCD` row number. The real targets are fields inside that row. Providence therefore:
 

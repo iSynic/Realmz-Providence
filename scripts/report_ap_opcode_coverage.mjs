@@ -12,10 +12,14 @@ const catalogSource = fs.readFileSync(path.join(root, "src", "editor", "panels",
 const actionSource = fs.readFileSync(path.join(root, "src", "editor", "realmzActions.ts"), "utf8");
 const targetPickerSource = fs.readFileSync(path.join(root, "src", "editor", "components", "RealmzTargetPicker.tsx"), "utf8");
 const optionDomainSource = readJson(path.join(root, "src", "editor", "edcdOptionDomains.json"));
+const directActionOptionSource = readJson(path.join(root, "src", "editor", "directActionOptionDomains.json"));
 const contextSource = readJson(path.join(root, "src", "editor", "panels", "scripts", "scriptActionContexts.json"));
 const manualEntriesByResource = new Map(manualHelp.entries.map((entry) => [entry.resourceId, entry]));
 const optionDomains = new Map(optionDomainSource.domains.map((domain) => [optionDomainKey(domain.opcode, domain.field), domain]));
 const numericGuidance = new Map(optionDomainSource.numericGuidance.map((field) => [optionDomainKey(field.opcode, field.field), field]));
+const directChoiceDomains = new Map(directActionOptionSource.domains.map((domain) => [domain.opcode, domain]));
+const directNumericGuidance = new Map(directActionOptionSource.numericGuidance.map((domain) => [domain.opcode, domain]));
+const directSignedModes = new Map(directActionOptionSource.signedModes.map((mode) => [mode.opcode, mode]));
 const contextRestrictions = new Map(contextSource.restrictions.map((restriction) => [restriction.opcode, restriction]));
 
 const firstClass = parseNumberSet(catalogSource, "FIRST_CLASS_ACTIONS");
@@ -126,6 +130,7 @@ const report = {
     actions: "src/editor/realmzActions.ts",
     targetPicker: "src/editor/components/RealmzTargetPicker.tsx",
     optionDomains: "src/editor/edcdOptionDomains.json",
+    directActionDomains: "src/editor/directActionOptionDomains.json",
     authoringContexts: "src/editor/panels/scripts/scriptActionContexts.json"
   },
   counts: Object.fromEntries([...groups.entries()].map(([key, value]) => [key, value.length]).sort()),
@@ -136,6 +141,9 @@ const report = {
   optionContractCounts: {
     finiteSelectDomains: optionDomains.size,
     numericSentinelDomains: numericGuidance.size,
+    directFiniteChoiceDomains: directChoiceDomains.size,
+    directGuidedNumericDomains: directNumericGuidance.size,
+    directSignedBehaviorDomains: directSignedModes.size,
     documentedNumericOptionFields: documentedNumericOptionFields().length
   },
   entries,
@@ -256,9 +264,9 @@ function providenceAuthoringFields(entry, state, isManualNoneStepOnly) {
   }
   return [{
     index: null,
-    label: entry.idMeaning || "ID",
+    label: directChoiceDomains.get(entry.opcode)?.label ?? (entry.idMeaning || "ID"),
     internalName: "id",
-    targetFamily: entry.targetFamily ?? null,
+    targetFamily: directChoiceDomains.has(entry.opcode) ? null : entry.targetFamily ?? null,
     preserved: false
   }];
 }
@@ -306,6 +314,7 @@ function authoringControlsForEntry(entry, state, status, gapStatus, evidenceConf
 
 function effectiveFieldTargetFamily(entry, field) {
   if (field.preserved || field.internalName === "stepOnly") return null;
+  if (!entry.edcdBacked && directChoiceDomains.has(entry.opcode)) return null;
   if (!entry.edcdBacked && field.internalName === "id") {
     return directTargetConfigs.get(entry.opcode)?.targetFamily ?? field.targetFamily ?? entry.targetFamily ?? null;
   }
@@ -350,8 +359,10 @@ function expectedControlForField(entry, field, targetFamily, gapStatus) {
   const name = String(field.internalName ?? "").toLowerCase();
   if (name === "steponly" || gapStatus === "step-only-no-options" || gapStatus === "legacy-compatible") return "step-only";
   if (field.preserved || gapStatus === "intentionally-preserved") return "advanced-preserved";
+  if (!entry.edcdBacked && directChoiceDomains.has(entry.opcode)) return "compact-select";
   if (optionDomains.has(optionDomainKey(entry.opcode, field.internalName))) return "compact-select";
   if (searchTargetFamilies.has(targetFamily)) return "search-target";
+  if (!entry.edcdBacked) return "contextual-number";
   return "narrow-number";
 }
 
@@ -359,7 +370,9 @@ function implementedSurfaceForField(entry, field, targetFamily, expectedControl)
   if (expectedControl === "advanced-preserved") return entry.edcdBacked ? "Collapsed Technical Details preserved value" : "Preserved CODE/ID value";
   if (expectedControl === "step-only") return "Action chooser step-only control";
   if (!entry.edcdBacked) {
-    return expectedControl === "search-target" ? "RealmzTargetPicker search/preview target" : "Direct CODE/ID numeric field";
+    if (expectedControl === "search-target") return "Contextual direct-action modal with RealmzTargetPicker";
+    if (expectedControl === "compact-select") return "Contextual direct-action modal with documented choices";
+    return "Contextual direct-action modal with labeled numeric guidance";
   }
   if (expectedControl === "search-target") {
     if (targetFamily === "item") return "EdcdItemTargetField search/preview control";
@@ -562,7 +575,7 @@ function targetFamilyForDirectTargetConfig(label, recordType) {
   if (normalized.includes("scrolling text")) return "text-resource";
   if (normalized.includes("extra action point")) return "extra-action-point";
   if (normalized.includes("map item")) return "map-item";
-  if (normalized.includes("map record")) return "map-record";
+  if (normalized.includes("map record") || normalized.includes("player map")) return "map-record";
   return "direct-id";
 }
 
@@ -609,6 +622,14 @@ function validateOptionDomains() {
     if (!Array.isArray(domain.options) || domain.options.length < 2) failures.push(`ECODE option domain ${key} needs at least two choices.`);
     const values = new Set((domain.options ?? []).map((option) => Number(option.value)));
     if (values.size !== (domain.options ?? []).length) failures.push(`ECODE option domain ${key} repeats a stored value.`);
+  }
+  for (const domain of directActionOptionSource.domains) {
+    const key = `direct:${domain.opcode}`;
+    if (seen.has(key)) failures.push(`Duplicate direct-action option domain ${key}.`);
+    seen.add(key);
+    if (!Array.isArray(domain.options) || domain.options.length < 2) {
+      failures.push(`Direct-action option domain ${key} must contain at least two choices.`);
+    }
   }
   for (const fieldContract of optionDomainSource.numericGuidance) {
     const key = optionDomainKey(fieldContract.opcode, fieldContract.field);

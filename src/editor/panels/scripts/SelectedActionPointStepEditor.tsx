@@ -7,8 +7,7 @@ import type { EdcdRowUsage } from "../../edcdRows";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
 import {
   actionOptionFor,
-  normalizeStepOpcode,
-  supportsRemakeProgressionMediaRequirement
+  normalizeStepOpcode
 } from "../../realmzActions";
 import type { ScriptDiagnostic } from "../../scriptValidation";
 import type { LibraryCatalog, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../../types";
@@ -19,6 +18,7 @@ import { ActionPointInlineTargetEditor } from "./ActionPointInlineTargetEditor";
 import { ActionPointSettingsEditor } from "./ActionPointSettingsEditor";
 import { ActionPointStepReference } from "./ActionPointStepReference";
 import { ActionPointTargetPreview } from "./ActionPointTargetPreview";
+import { ContextualDirectActionModal } from "./ContextualDirectActionModal";
 import { ScriptDiagnostics } from "./ScriptDiagnostics";
 import { defaultDraftForProject } from "./actionPointDraft";
 import {
@@ -125,6 +125,7 @@ export function SelectedActionPointStepEditor({
 }) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [actionChooserOpen, setActionChooserOpen] = useState(false);
+  const [directSettingsOpen, setDirectSettingsOpen] = useState(false);
   const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
   const selectedIdLabel = selectedDefinition.target?.label ?? humanActionValueLabel(opcodeIdMeaning(selectedDraft.rawCode));
   const selectedDefaultEdcdValues = selectedDefinition.defaultDraft.parameters;
@@ -148,13 +149,15 @@ export function SelectedActionPointStepEditor({
   }, [selectedSlot, selectedDraft.rawCode, selectedDraft.id]);
   useEffect(() => {
     setActionChooserOpen(false);
+    setDirectSettingsOpen(false);
   }, [selectedSlot]);
+  useEffect(() => {
+    setDirectSettingsOpen(false);
+  }, [selectedDraft.rawCode]);
   const selectedCombatMacroActionNote = combatMacroActionNote(selectedDefinition.opcode, combatMacroContext ?? null);
   const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
   const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
   const isEdcdBackedStep = Boolean(selectedOption.edcdShape);
-  const supportsProgressionMediaRequirement =
-    supportsRemakeProgressionMediaRequirement(selectedDraft.rawCode);
   const isSameMapActionPointStep = normalizeStepOpcode(selectedDraft.rawCode) === 8;
   const selectedTriggerRecord = useMemo(
     () => project.triggers.find((trigger) => trigger.id === selectedTriggerId) ?? null,
@@ -242,25 +245,6 @@ export function SelectedActionPointStepEditor({
           />
         )}
         <p>{selectedDefinition.summary}</p>
-        {supportsProgressionMediaRequirement && (
-          <div className="realmz-current-step-authoring-subpane">
-            <label className="realmz-target-picker-wait">
-              <input
-                type="checkbox"
-                checked={selectedDraft.mediaRequiredForProgression}
-                onChange={(event) => onSetSelectedDraft({
-                  ...selectedDraft,
-                  mediaRequiredForProgression: event.currentTarget.checked
-                })}
-              />
-              <span>Required for Remake progression</span>
-            </label>
-            <small>
-              Enable this only when the player must receive this media to continue.
-              It affects Remake launch readiness, not Classic Realmz behavior.
-            </small>
-          </div>
-        )}
         {selectedCombatMacroActionNote && combatMacroContext && (
           <div className="combat-macro-action-note">
             <span>{combatMacroContextTitle(combatMacroContext)}</span>
@@ -293,6 +277,8 @@ export function SelectedActionPointStepEditor({
         />
         {!isEdcdBackedStep && !hasInlineTargetPicker && !isStepOnlyAction && (
           <ActionPointDirectTargetField
+            project={project}
+            catalog={catalog}
             selectedSlot={selectedSlot}
             rawCode={selectedDraft.rawCode}
             id={selectedDraft.id}
@@ -301,7 +287,7 @@ export function SelectedActionPointStepEditor({
             sameMapActionPointStep={isSameMapActionPointStep}
             sameMapTarget={sameMapActionPointTarget}
             sameMapJumpTitle={sameMapActionPointJumpTitle}
-            onChange={onSetSelectedDraft}
+            onEdit={() => setDirectSettingsOpen(true)}
             onPreviewEntity={onPreviewEntity}
           />
         )}
@@ -338,6 +324,23 @@ export function SelectedActionPointStepEditor({
           </div>
         )}
       </div>
+      {directSettingsOpen && (
+        <ContextualDirectActionModal
+          project={project}
+          catalog={catalog}
+          title={`${selectedDefinition.label} — Action Point step ${selectedSlot + 1}`}
+          description="Choose the action behavior here, then use Apply Step to store this draft in the script."
+          rawCode={selectedDraft.rawCode}
+          initialValue={selectedDraft.id}
+          previewContext={{ desktopRuntime, projectDir, workspaceDir }}
+          onInspect={onPreviewEntity}
+          onCancel={() => setDirectSettingsOpen(false)}
+          onApply={(id) => {
+            onSetSelectedDraft({ ...selectedDraft, id });
+            setDirectSettingsOpen(false);
+          }}
+        />
+      )}
       <ActionPointStepReference
         definition={selectedDefinition}
         combatMacroContext={combatMacroContext}

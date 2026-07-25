@@ -93,6 +93,7 @@ export function ContextualEcodeSettingsModal({
     () => secondaryInitialValues ? normalizeEdcdValues(secondaryInitialValues) : undefined
   );
   const [writeMode, setWriteMode] = useState<ContextualEcodeWriteMode>(defaultWriteMode);
+  const [draftIssue, setDraftIssue] = useState<string | null>(null);
   const fieldNames = useMemo(
     () => edcdFieldNamesForShape(shape) ?? ["param0", "param1", "param2", "param3", "param4"],
     [shape]
@@ -144,6 +145,7 @@ export function ContextualEcodeSettingsModal({
   }, []);
   const apply = (event?: FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
+    if (draftIssue) return;
     onApply(contextualEcodeDraft(values, secondaryValues, writeMode));
   };
   const sourceRowId = sourceUsage?.rowId;
@@ -236,6 +238,7 @@ export function ContextualEcodeSettingsModal({
           onOpenMapCoordinate={onOpenMapCoordinate}
           onDraftValuesChange={captureValues}
           onSecondaryDraftValuesChange={captureSecondaryValues}
+          onDraftValidityChange={setDraftIssue}
           showActionButtons={false}
           presentation="selected-step"
           sourceLevelType={sourceLevelType}
@@ -243,11 +246,11 @@ export function ContextualEcodeSettingsModal({
         />
       </div>
       <ModalDialogActions>
-        <small className="ecode-settings-apply-detail">
-          {copying ? `Creates settings ${rowId} for this result.` : `Saves settings ${writeMode === "replace" && sourceRowId != null ? sourceRowId : rowId}.`}
+        <small className={`ecode-settings-apply-detail${draftIssue ? " field-warning" : ""}`}>
+          {draftIssue ?? (copying ? `Creates settings ${rowId} for this result.` : `Saves settings ${writeMode === "replace" && sourceRowId != null ? sourceRowId : rowId}.`)}
         </small>
         <button type="button" className="btn btn-secondary" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary" disabled={Boolean(draftIssue)}>
           <Save size={14} /> Apply Settings
         </button>
       </ModalDialogActions>

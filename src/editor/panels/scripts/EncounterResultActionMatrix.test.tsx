@@ -53,7 +53,7 @@ describe("EncounterResultActionMatrix", () => {
     for (let slot = 0; slot < 32; slot += 1) {
       expect(html).toContain(`aria-label="Result action ${slot} opcode"`);
     }
-    expect(html).toContain('aria-label="Result action 30 ID"');
+    expect(html).toContain('aria-label="Edit result action 30 settings"');
     expect(html).toContain('aria-label="Edit result action 31 settings"');
     expect(html).toContain("Surprise");
   });

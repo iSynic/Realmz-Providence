@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { battleSelectionDraftIssue } from "../../components/EdcdRowEditor";
 import type { EdcdRowUsage } from "../../edcdRows";
 import type { Project } from "../../types";
 import {
@@ -50,6 +51,14 @@ function renderModal(sourceUsage?: EdcdRowUsage | null, rowId = 5) {
 }
 
 describe("ContextualEcodeSettingsModal", () => {
+  it("requires representable Classic values for staged battle range and surprise modes", () => {
+    expect(battleSelectionDraftIssue(0, 0, true, false)).toContain("Battle Range High");
+    expect(battleSelectionDraftIssue(0, 0, false, true)).toContain("surprise sign");
+    expect(battleSelectionDraftIssue(0, 0, true, true)).toContain("Battle Range High");
+    expect(battleSelectionDraftIssue(4, 8, true, true)).toBeNull();
+    expect(battleSelectionDraftIssue(-4, 0, false, true)).toBeNull();
+  });
+
   it("normalizes a complete caller-owned draft", () => {
     expect(contextualEcodeDraft([1, 2], [3, 4, 5], "duplicate")).toEqual({
       values: [1, 2, 0, 0, 0],

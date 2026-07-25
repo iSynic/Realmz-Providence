@@ -3,7 +3,7 @@ use serde::Serialize;
 use serde_json::Value;
 use std::path::Path;
 
-const OMITTED_FIELDS: [&str; 21] = [
+const OMITTED_FIELDS: [&str; 22] = [
     "rawBytes",
     "rawValues",
     "rawByte",
@@ -25,6 +25,7 @@ const OMITTED_FIELDS: [&str; 21] = [
     "previewPath",
     "resourcePath",
     "imagePath",
+    "mediaRequiredForProgression",
 ];
 
 const SOURCE_FIELDS: [&str; 5] = [

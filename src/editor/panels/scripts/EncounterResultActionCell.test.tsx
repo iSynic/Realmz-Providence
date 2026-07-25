@@ -25,6 +25,7 @@ function renderCell(row: EncounterActionRow) {
       onFocusCode={() => undefined}
       onPreviewTarget={() => undefined}
       onEditSettings={() => undefined}
+      onEditDirect={() => undefined}
     />
   );
 }
@@ -77,15 +78,12 @@ describe("EncounterResultActionCell", () => {
       .toBe("No contextual ID-field description is documented for this action. Current raw value: 7.");
   });
 
-  it("offers Remake progression readiness only for media actions", () => {
+  it("does not expose Remake export policy controls on authored media actions", () => {
     const sound = renderCell({ slot: 0, rawCode: 9, id: 321, mediaRequiredForProgression: true });
     const negativePicture = renderCell({ slot: 0, rawCode: -27, id: 306 });
-    const message = renderCell({ slot: 0, rawCode: 1, id: 15 });
 
-    expect(sound).toContain("Required for Remake progression");
-    expect(sound).toContain('type="checkbox" checked=""');
-    expect(negativePicture).toContain("Required for Remake progression");
-    expect(message).not.toContain("Required for Remake progression");
+    expect(sound).not.toContain("Required for Remake progression");
+    expect(negativePicture).not.toContain("Required for Remake progression");
   });
 
   it("replaces a settings-row number with a contextual settings control", () => {
@@ -104,6 +102,7 @@ describe("EncounterResultActionCell", () => {
         onFocusCode={() => undefined}
         onPreviewTarget={() => undefined}
         onEditSettings={() => undefined}
+        onEditDirect={() => undefined}
       />
     );
 
@@ -111,5 +110,22 @@ describe("EncounterResultActionCell", () => {
     expect(html).toContain("Battle");
     expect(html).not.toContain('aria-label="Result action 0 ID"');
     expect(html).not.toMatch(/<input[^>]+value="12"/);
+  });
+
+  it("replaces direct raw values with a contextual settings control", () => {
+    const html = renderCell({ slot: 0, rawCode: 66, id: 1 });
+
+    expect(html).toContain('aria-label="Edit result action 0 settings"');
+    expect(html).toContain("Prevent camping");
+    expect(html).not.toContain('aria-label="Result action 0 ID"');
+    expect(html).not.toMatch(/<input[^>]+value="1"/);
+  });
+
+  it("does not offer an ID editor when Realmz ignores the field", () => {
+    const html = renderCell({ slot: 0, rawCode: 24, id: 17 });
+
+    expect(html).toContain("No settings · preserved ID 17");
+    expect(html).toContain('aria-label="Result action 0 has no settings"');
+    expect(html).not.toContain('aria-label="Result action 0 ID"');
   });
 });

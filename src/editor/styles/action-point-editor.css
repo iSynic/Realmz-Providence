@@ -434,6 +434,43 @@
   min-width: 0;
 }
 
+.direct-action-summary-button {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 9px;
+  border: 1px solid #426178;
+  border-radius: 5px;
+  background: #101d27;
+  color: #d4e8f7;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.direct-action-summary-button > span {
+  overflow: hidden;
+  color: inherit;
+  font-size: inherit;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.direct-action-summary-button > svg {
+  flex: 0 0 auto;
+}
+
+.direct-action-summary-button:hover,
+.direct-action-summary-button:focus-visible {
+  border-color: #78b3dc;
+  background: #162a38;
+}
+
 .realmz-step-form-grid .script-source-ap-id-field .script-source-ap-field-row input {
   flex: 0 0 6ch;
   width: 6ch;

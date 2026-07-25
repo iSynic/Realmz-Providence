@@ -1572,9 +1572,9 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
     trigger.actions.some((action) =>
       action.rawCode === 9 &&
       action.id === 321 &&
-      action.mediaRequiredForProgression === true
+      !Object.hasOwn(action, "mediaRequiredForProgression")
     ),
-    "Remake export lost the explicit progression-required sound marker"
+    "Remake export retained legacy progression-required sound policy"
   );
   const dungeonRandomLevel = scripts.randomLevels.find((candidate) => candidate.id === "dungeon:0:randlevel");
   expect(dungeonRandomLevel?.isDark && dungeonRandomLevel.useLos && dungeonRandomLevel.landlook === 0, "Remake export lost the canonical dungeon random-level flags");
@@ -1594,9 +1594,9 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
       .some((action) =>
         action.rawCode === 9 &&
         action.id === 321 &&
-        action.mediaRequiredForProgression === true
+        !Object.hasOwn(action, "mediaRequiredForProgression")
       ),
-    "Remake export lost the encounter progression-required sound marker"
+    "Remake export retained legacy encounter progression-media policy"
   );
   const content = documents.get("classic/content.json");
   expect(content.monsters.some((record) => record.id === 1 && record.nameId === 1), "Remake export conflated monster record and name identities");
