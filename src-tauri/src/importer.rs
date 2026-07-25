@@ -2614,7 +2614,9 @@ fn custom_landlook_base_tile(source_path: &Path, landlook: i8) -> Result<Option<
         return Ok(custom_landlook_fallback_base_tile(landlook));
     }
     let value = i16::from_be_bytes([bytes[8040], bytes[8041]]);
-    Ok((value > 0 && value <= 999)
+    // Realmz reads this word directly into basetile[landlook]. Zero is a
+    // source-authored tile identity, not the absence of custom metadata.
+    Ok((value >= 0 && value <= 999)
         .then_some(value)
         .or_else(|| custom_landlook_fallback_base_tile(landlook)))
 }
@@ -2764,6 +2766,25 @@ pub fn project_file_path(project_dir: impl AsRef<Path>) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn custom_landlook_base_tile_preserves_source_zero() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        assert_eq!(
+            custom_landlook_base_tile(temp.path(), 8).expect("missing custom landlook"),
+            Some(156)
+        );
+
+        fs::write(
+            temp.path().join("Data Custom 3 BD"),
+            vec![0; crate::realmz::CUSTOM_LANDLOOK_METADATA_BYTES],
+        )
+        .expect("write custom landlook");
+        assert_eq!(
+            custom_landlook_base_tile(temp.path(), 8).expect("source-backed custom landlook"),
+            Some(0)
+        );
+    }
 
     fn standard_mod_fixture(signature: &[u8; 4], channels: usize, title: &str) -> Vec<u8> {
         let mut bytes = vec![0; 1084 + 64 * channels * 4];
