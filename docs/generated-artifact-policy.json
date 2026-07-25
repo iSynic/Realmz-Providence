@@ -122,6 +122,14 @@
       ]
     },
     {
+      "name": "Encounter ECODE authoring coverage",
+      "command": "archaeology:encounter-ecode",
+      "outputs": [
+        "docs/generated/encounter-ecode-authoring.json",
+        "docs/generated/encounter-ecode-authoring.md"
+      ]
+    },
+    {
       "name": "AP authoring gaps",
       "command": "archaeology:ap-action-gaps",
       "outputs": [
