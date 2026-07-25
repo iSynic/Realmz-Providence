@@ -7,9 +7,10 @@ use crate::project::{
     SourceFile, SourceFileRole, TriggerRecord,
 };
 use crate::realmz::{
-    parse_battles, parse_caste_overrides, parse_monsters, parse_race_overrides,
-    parse_simple_encounter_records, BATTLE_BYTES, CASTE_BYTES, CASTE_OVERRIDE_RECORDS,
-    MONSTER_BYTES, RACE_BYTES, RACE_OVERRIDE_RECORDS, SIMPLE_ENCOUNTER_BYTES,
+    parse_battles, parse_caste_overrides, parse_landlook_mapstats_data, parse_monsters,
+    parse_race_overrides, parse_simple_encounter_records, BATTLE_BYTES, CASTE_BYTES,
+    CASTE_OVERRIDE_RECORDS, MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES, MONSTER_BYTES, RACE_BYTES,
+    RACE_OVERRIDE_RECORDS, SIMPLE_ENCOUNTER_BYTES,
 };
 use crate::resource_fork::{
     encode_cicn_resource, encode_pict_resource, encode_snd_resource, write_resource_fork,
@@ -1080,6 +1081,46 @@ fn exports_runtime_reachability_without_discarding_unreferenced_records() {
         runtime["evidence"]["macro:8"],
         json!(["Data MD:1:deathMacro"])
     );
+}
+
+#[test]
+fn exports_stock_landlook_used_only_by_a_runtime_change() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("runtime-landlook.providence");
+    let mut project = create_project("Runtime landlook".to_string(), &project_dir).unwrap();
+    assert!(!project
+        .asset_catalog
+        .tilesets
+        .iter()
+        .any(|tileset| tileset.landlook == 10));
+    let snow_attributes = parse_landlook_mapstats_data(
+        &vec![0; MAPSTATS_RECORDS * MAPSTATS_RECORD_BYTES],
+        10,
+        "Data Snow BD",
+    );
+    assert_eq!(snow_attributes.len(), 201);
+    project.tile_attributes.extend(snow_attributes);
+    project.triggers = vec![trigger_record("Data DD", 0, vec![action(0, 57, 4)])];
+    project.extracodes = vec![ExtraCodeRow {
+        id: 4,
+        values: [10, 0, 0, 0, 1],
+        provenance: test_provenance("Data EDCD", 4, 10),
+    }];
+
+    let output = workspace.path().join("runtime-landlook-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let tilesets = documents["classic/assets.json"]["catalog"]["tilesets"]
+        .as_array()
+        .unwrap();
+    let snow = tilesets
+        .iter()
+        .find(|tileset| tileset["id"] == "landlook-10")
+        .expect("runtime snow landlook");
+    assert_eq!(snow["landlook"], 10);
+    assert_eq!(snow["pictId"], 310);
+    assert_eq!(snow["baseTile"], 155);
+    assert_eq!(snow["custom"], false);
 }
 
 #[test]

@@ -2,8 +2,8 @@ use super::portable::{portable_source_label, portable_value};
 use super::REMAKE_CLASSIC_FORMAT_VERSION;
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::project::{
-    ManagedAsset, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
-    ProvidenceProject, ResourceAsset, SourceFileRole,
+    Action, EncounterActionRow, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
+    ManagedAssetLibraryScope, ProvidenceProject, ResourceAsset, SourceFileRole,
 };
 use crate::resource_fork::parse_resource_fork_entries;
 use crate::resource_preview::{
@@ -1245,7 +1245,9 @@ fn catalog_document(
     payloads: &BTreeMap<(String, i16), PackagedPayload>,
 ) -> Result<Value> {
     let mut tilesets = Vec::new();
+    let mut catalog_landlooks = BTreeSet::new();
     for tileset in &project.asset_catalog.tilesets {
+        catalog_landlooks.insert(tileset.landlook);
         let mut value = json!({
             "id": &tileset.id,
             "landlook": tileset.landlook,
@@ -1269,6 +1271,13 @@ fn catalog_document(
         }
         tilesets.push(value);
     }
+    for landlook in runtime_stock_landlooks(project) {
+        if catalog_landlooks.insert(landlook)
+            && has_complete_stock_landlook_table(project, landlook)
+        {
+            tilesets.push(stock_landlook_document(landlook));
+        }
+    }
     tilesets.sort_by(|left, right| value_string(left, "id").cmp(&value_string(right, "id")));
 
     Ok(json!({
@@ -1278,6 +1287,100 @@ fn catalog_document(
         "specialLandTiles": special_land_tile_catalog(project, payloads)?,
         "sounds": resource_catalog(&project.asset_catalog.sounds, "snd ", payloads)?,
     }))
+}
+
+fn runtime_stock_landlooks(project: &ProvidenceProject) -> BTreeSet<i8> {
+    let extra_codes = project
+        .extracodes
+        .iter()
+        .map(|row| (row.id, row.values))
+        .collect::<BTreeMap<_, _>>();
+    let mut landlooks = BTreeSet::new();
+    for trigger in project.triggers.iter().filter(|trigger| trigger.active) {
+        collect_action_landlooks(&trigger.actions, &extra_codes, &mut landlooks);
+    }
+    for encounter in &project.simple_encounters {
+        collect_encounter_action_landlooks(&encounter.actions, &extra_codes, &mut landlooks);
+    }
+    for encounter in &project.complex_encounters {
+        collect_encounter_action_landlooks(&encounter.actions, &extra_codes, &mut landlooks);
+    }
+    landlooks.retain(|landlook| matches!(landlook, 0 | 3 | 4 | 5 | 9 | 10));
+    landlooks
+}
+
+fn collect_action_landlooks(
+    actions: &[Action],
+    extra_codes: &BTreeMap<usize, [i16; 5]>,
+    landlooks: &mut BTreeSet<i8>,
+) {
+    for action in actions {
+        collect_landlook(action.raw_code, action.id, extra_codes, landlooks);
+    }
+}
+
+fn collect_encounter_action_landlooks(
+    actions: &[EncounterActionRow],
+    extra_codes: &BTreeMap<usize, [i16; 5]>,
+    landlooks: &mut BTreeSet<i8>,
+) {
+    for action in actions {
+        collect_landlook(action.raw_code, action.id, extra_codes, landlooks);
+    }
+}
+
+fn collect_landlook(
+    raw_code: i16,
+    extra_code_id: i16,
+    extra_codes: &BTreeMap<usize, [i16; 5]>,
+    landlooks: &mut BTreeSet<i8>,
+) {
+    if raw_code.unsigned_abs() != 57 || extra_code_id < 0 {
+        return;
+    }
+    let Some(values) = extra_codes.get(&(extra_code_id as usize)) else {
+        return;
+    };
+    if let Ok(landlook) = i8::try_from(values[0]) {
+        landlooks.insert(landlook);
+    }
+}
+
+fn has_complete_stock_landlook_table(project: &ProvidenceProject, landlook: i8) -> bool {
+    project
+        .tile_attributes
+        .iter()
+        .filter(|record| record.landlook == Some(landlook) && (1..=200).contains(&record.tile))
+        .map(|record| record.tile)
+        .collect::<BTreeSet<_>>()
+        .len()
+        == 200
+}
+
+fn stock_landlook_document(landlook: i8) -> Value {
+    let (name, base_tile) = match landlook {
+        0 => ("Plains", 156),
+        3 => ("Subterranean", 155),
+        4 => ("Castle", 111),
+        5 => ("Desert", 191),
+        9 => ("Swamp", 155),
+        10 => ("Snow", 155),
+        _ => unreachable!("filtered stock landlook"),
+    };
+    json!({
+        "id": format!("landlook-{landlook}"),
+        "landlook": landlook,
+        "name": name,
+        "source": "Realmz reference resources",
+        "available": true,
+        "pictId": 300 + i32::from(landlook),
+        "tileWidth": 32,
+        "tileHeight": 32,
+        "columns": 20,
+        "rows": 10,
+        "custom": false,
+        "baseTile": base_tile,
+    })
 }
 
 fn validate_resource_identity(asset: &ManagedAsset) -> Result<()> {

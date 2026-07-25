@@ -35,6 +35,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | --- | --- | --- |
 | Campaign identity and start | `scenario.id`, `scenario.name`, `scenario.shell` | Compatible. Schema 5 currently authors land starts only. |
 | Map identity | `maps[].id`, `levelType`, `index` | Compatible namespaced string identity. |
+| Runtime landlook changes | opcode `57` plus its `Data EDCD` row | Referenced stock landlooks with complete behavior tables are added to the asset catalog even when no map starts with that landlook, allowing Remake to materialize the matching Realmz PICT atlas before play. |
 | Action Point identity | `triggers[].id`, `source`, `recordIndex` | Compatible stable identity; array position is not used. Data ED3 rows also carry authoritative `callable` reachability. |
 | Trigger action | `slot`, `rawCode`, normalized `code`, `id` | Compatible without reinterpretation. Referenced media dependencies are derived from the authored action rather than author-maintained export policy. |
 | Encounter result action | `slot`, `rawCode`, `id` | Compatible; Remake normalizes signed encounter opcodes when selecting a result. Referenced media follows the same automatic packaging policy as Action Points. |
