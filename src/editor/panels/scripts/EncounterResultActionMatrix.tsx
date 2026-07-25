@@ -6,8 +6,11 @@ import type {
   EncounterActionRow,
   LibraryCatalog,
   Project,
+  ProjectCommand,
+  SelectedEntity,
   RealmzTargetRecordKind
 } from "../../types";
+import { parameterLabelsForOpcode } from "../../opcodeCrosswalk";
 import {
   ENCOUNTER_RESULT_COUNT,
   ENCOUNTER_RESULT_ROWS,
@@ -18,6 +21,12 @@ import {
   type EncounterDecisionSource
 } from "./encounterFlow";
 import { EncounterResultActionCell } from "./EncounterResultActionCell";
+import { ContextualEcodeSettingsModal } from "./ContextualEcodeSettingsModal";
+import {
+  encounterEcodeSettingsState,
+  encounterEcodeTargetRowId,
+  type EncounterEcodeSettingsState
+} from "./encounterEcodeSettings";
 import { ResultCodeHelperPanel } from "./EncounterResultCodeHelper";
 import { EncounterResultSoundPreview } from "./EncounterResultSoundPreview";
 import {
@@ -33,6 +42,8 @@ type StoredPreviewType = Exclude<RealmzTargetRecordKind, "message" | "questLabel
 export function EncounterResultActionMatrix({
   project,
   catalog,
+  recordKind,
+  recordId,
   actions,
   title,
   description,
@@ -41,11 +52,16 @@ export function EncounterResultActionMatrix({
   onSelectResult,
   onUpdate,
   onCreateTarget,
+  onApplyCommand,
+  onSelectEntity,
+  onOpenText,
   renderRecordPreview,
   previewContext = {}
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
+  recordKind: "simple" | "complex";
+  recordId: number;
   actions: EncounterActionRow[];
   title: string;
   description: string;
@@ -54,6 +70,9 @@ export function EncounterResultActionMatrix({
   onSelectResult: (resultIndex: number) => void;
   onUpdate: (slot: number, changes: Partial<EncounterActionRow>) => void;
   onCreateTarget: (recordType: RealmzTargetRecordKind, targetId: number) => void;
+  onApplyCommand?: (command: ProjectCommand) => void;
+  onSelectEntity?: (entity: SelectedEntity) => void;
+  onOpenText?: (editor: "messages" | "option-labels") => void;
   renderRecordPreview: (targetType: StoredPreviewType, targetId: number) => ReactNode;
   previewContext?: PreviewRuntimeContext;
 }) {
@@ -62,6 +81,7 @@ export function EncounterResultActionMatrix({
   const [targetPreview, setTargetPreview] = useState<EncounterResultTargetPreviewValue | null>(null);
   const [codeHelperSelectedCode, setCodeHelperSelectedCode] = useState(1);
   const [focusedResultCode, setFocusedResultCode] = useState<number | null>(null);
+  const [pendingEcode, setPendingEcode] = useState<EncounterEcodeSettingsState | null>(null);
   const openCodeHelper = () => {
     const normalizedFocusedCode = focusedResultCode == null ? 0 : resultActionBaseCode(focusedResultCode);
     const selectedColumnAction = selectedResultIndex == null
@@ -78,6 +98,10 @@ export function EncounterResultActionMatrix({
     opcode: encounterActionAt(actions, targetPreview.slot).rawCode,
     value: encounterActionAt(actions, targetPreview.slot).id
   } : null;
+  const openEcodeSettings = (slot: number, rawCode: number) => {
+    const next = encounterEcodeSettingsState(project, catalog, actions, slot, rawCode);
+    if (next) setPendingEcode(next);
+  };
   return (
     <section className="simple-encounter-action-matrix">
       <header>
@@ -114,11 +138,13 @@ export function EncounterResultActionMatrix({
                     key={slot}
                     project={project}
                     catalog={catalog}
+                    recordKind={recordKind}
                     slot={slot}
                     row={encounterActionAt(actions, slot)}
                     onUpdate={(changes) => onUpdate(slot, changes)}
                     onFocusCode={(code) => setFocusedResultCode(resultActionBaseCode(code))}
                     onPreviewTarget={(opcode, value) => setTargetPreview({ slot, opcode, value })}
+                    onEditSettings={(rawCode) => openEcodeSettings(slot, rawCode)}
                   />
                 );
               })}
@@ -153,6 +179,44 @@ export function EncounterResultActionMatrix({
             onUpdate(activeTargetPreview.slot, { id: value });
           }}
           onClose={() => setTargetPreview(null)}
+        />
+      )}
+      {pendingEcode && (
+        <ContextualEcodeSettingsModal
+          project={project}
+          catalog={catalog}
+          title={`${pendingEcode.definition.label} — ${recordKind === "simple" ? "Simple" : "Complex"} Encounter ${recordId}`}
+          description={`Configure Result #${Math.floor(pendingEcode.slot / ENCOUNTER_RESULT_ROWS) + 1}, step ${(pendingEcode.slot % ENCOUNTER_RESULT_ROWS) + 1}. The raw settings ID is managed automatically.`}
+          rawCode={pendingEcode.rawCode}
+          rowId={pendingEcode.editorRowId}
+          shape={pendingEcode.shape}
+          initialValues={pendingEcode.initialValues}
+          secondaryRowId={pendingEcode.secondaryRowId}
+          secondaryShape={pendingEcode.secondaryShape}
+          secondaryInitialValues={pendingEcode.secondaryInitialValues}
+          parameterLabels={parameterLabelsForOpcode(pendingEcode.rawCode)}
+          selectedSlotLabel={`${recordKind} encounter ${recordId} result step ${pendingEcode.slot + 1}`}
+          sourceUsage={pendingEcode.sourceUsage}
+          defaultWriteMode={pendingEcode.defaultWriteMode}
+          allowSharedEdit={pendingEcode.allowSharedEdit}
+          onSelectEntity={onSelectEntity}
+          onOpenText={onOpenText}
+          onCancel={() => setPendingEcode(null)}
+          onApply={(draft) => {
+            const rowId = encounterEcodeTargetRowId(pendingEcode, draft.writeMode);
+            onApplyCommand?.({
+              kind: "applyEncounterResultSettings",
+              label: `Apply ${pendingEcode.definition.shortLabel} settings`,
+              recordKind,
+              encounterId: recordId,
+              slot: pendingEcode.slot,
+              rawCode: pendingEcode.rawCode,
+              rowId,
+              edcdValues: draft.values,
+              secondaryEdcdValues: draft.secondaryValues
+            });
+            setPendingEcode(null);
+          }}
         />
       )}
     </section>

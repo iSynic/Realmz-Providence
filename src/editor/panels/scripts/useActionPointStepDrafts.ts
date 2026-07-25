@@ -21,11 +21,12 @@ import {
   type ActionPointStepDrafts
 } from "./actionPointStepCommands";
 import { actionDefinitionsForCategory, scriptActionDefinitionFor, type ScriptActionCategoryFilter } from "./scriptActionCatalog";
+import type { ScriptActionAuthoringContext } from "./scriptActionContexts";
 import { scriptLabel, triggerMatchesSelection } from "./scriptInventory";
 
 export function useActionPointStepDrafts({
   project, catalog, selectedTrigger, selectedSlot, setSelectedSlot, selectedEntityId,
-  categoryFilter, opcodeQuery, onSelectEntity, onApplyCommand
+  categoryFilter, opcodeQuery, authoringContexts, onSelectEntity, onApplyCommand
 }: {
   project: Project | null;
   catalog?: LibraryCatalog | null;
@@ -35,6 +36,7 @@ export function useActionPointStepDrafts({
   selectedEntityId?: string | null;
   categoryFilter: ScriptActionCategoryFilter;
   opcodeQuery: string;
+  authoringContexts?: readonly ScriptActionAuthoringContext[];
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
@@ -74,7 +76,7 @@ export function useActionPointStepDrafts({
   const selectedEdcdDraftPrefix = selectedTrigger ? `${selectedKey}:` : "";
   const selectedEdcdStepDraft = selectedEdcdDraftKey ? edcdStepDrafts[selectedEdcdDraftKey] : undefined;
   const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty || selectedEdcdStepDraft?.secondaryDirty);
-  const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery);
+  const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery, authoringContexts);
   const selectedEdcdUsageModel = useMemo(
     () => project && selectedOption.edcdShape ? edcdUsageForAction(project, catalog, selectedDraft.rawCode, Math.max(0, selectedDraft.id)) : null,
     [catalog, project, selectedDraft.id, selectedDraft.rawCode, selectedOption.edcdShape]

@@ -208,6 +208,7 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "updateShopRecord") return updateRecord(project, "shops", command.id, command.changes);
   if (command.kind === "updateSimpleEncounterRecord") return updateRecord(project, "simpleEncounters", command.id, command.changes);
   if (command.kind === "updateComplexEncounterRecord") return updateRecord(project, "complexEncounters", command.id, command.changes);
+  if (command.kind === "applyEncounterResultSettings") return applyEncounterResultSettings(project, command);
   if (command.kind === "updateThiefEncounterRecord") return updateRecord(project, "thiefEncounters", command.id, command.changes);
   if (command.kind === "updateTimedEncounterRecord") return updateRecord(project, "timedEncounters", command.id, command.changes);
   if (command.kind === "upsertQuestLabel") return upsertQuestLabel(project, command.quest);
@@ -253,6 +254,38 @@ export function applyProjectCommand(project: Project, command: ProjectCommand) {
   if (command.kind === "deleteProjectAsset") return deleteProjectAsset(project, command);
   if (command.kind === "removeScenarioResource") return removeScenarioResource(project, command);
   return project;
+}
+
+function applyEncounterResultSettings(
+  project: Project,
+  command: Extract<ProjectCommand, { kind: "applyEncounterResultSettings" }>
+) {
+  const withPrimarySettings = updateEdcdRow(project, command.rowId, command.edcdValues);
+  const withSettings = Math.abs(command.rawCode) === 92
+    ? updateEdcdRow(
+      withPrimarySettings,
+      command.rowId + 1,
+      command.secondaryEdcdValues
+        ?? withPrimarySettings.extracodes.find((row) => row.id === command.rowId + 1)?.values
+        ?? [0, 0, 0, 0, 0]
+    )
+    : withPrimarySettings;
+  const key = command.recordKind === "simple" ? "simpleEncounters" : "complexEncounters";
+  const records = withSettings[key];
+  const record = records.find((candidate) => candidate.id === command.encounterId);
+  if (!record) return withSettings;
+  const actions = new Map((record.actions ?? []).map((action) => [action.slot, { ...action }]));
+  const updated = {
+    ...(actions.get(command.slot) ?? { slot: command.slot, rawCode: 0, id: 0 }),
+    slot: command.slot,
+    rawCode: command.rawCode,
+    id: command.rowId
+  };
+  if (![9, 27].includes(Math.abs(command.rawCode))) delete updated.mediaRequiredForProgression;
+  actions.set(command.slot, updated);
+  return updateRecord(withSettings, key, command.encounterId, {
+    actions: [...actions.values()].sort((a, b) => a.slot - b.slot)
+  });
 }
 
 function updateItemTextRecord(

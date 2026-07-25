@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { emptyBattle, emptyComplexEncounter, emptyMessage, emptyOptionLabel, emptyScenarioItem, emptyShop, emptySimpleEncounter, emptyThiefEncounter, emptyTimedEncounter, emptyTreasure } from "../projectCommands/targetRecordCommands";
 import { emptyCasteOverride, emptyRaceOverride, emptySpellOverride } from "../projectCommands/scenarioRulesCommands";
 import type { LandLayout, MapRecord, RandomLevel, RandomRect, TileAttributeProfile } from "../types";
-import { LAND_LAYOUT_RECORD_BYTES, TILE_SOLIDS_BYTES, writeBattles, writeCasteOverrides, writeComplexEncounters, writeLandLayout, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeScenarioSupportFile, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTileSolids, writeTimedEncounters, writeTreasures } from "./binaryWriters";
+import { LAND_LAYOUT_RECORD_BYTES, TILE_SOLIDS_BYTES, writeBattles, writeCasteOverrides, writeComplexEncounters, writeExtraCodes, writeLandLayout, writeMapRecords, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeRaceOverrides, writeRandomLevels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeScenarioSupportFile, writeShops, writeSimpleEncounters, writeSpellOverrides, writeThiefEncounters, writeTileSolids, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { parseScenarioBuffers } from "./realmzParser";
 
 const rect: RandomRect = {
@@ -582,6 +582,30 @@ describe("browser complex-encounter writer", () => {
     expect(Array.from(output.slice(160, 164))).toEqual([2, 72, 105, 0]);
   });
 
+});
+
+describe("browser encounter ECODE storage", () => {
+  it("writes and parses Simple/Complex caller IDs and all five signed Data EDCD values", () => {
+    const simple = {
+      ...emptySimpleEncounter(0),
+      actions: [{ slot: 0, rawCode: -2, id: 6 }]
+    };
+    const complex = {
+      ...emptyComplexEncounter(0),
+      actions: [{ slot: 31, rawCode: 2, id: 6 }]
+    };
+    const buffers = new Map([
+      ["Data ED", writeSimpleEncounters([simple])],
+      ["Data ED2", writeComplexEncounters([complex])],
+      ["Data EDCD", writeExtraCodes([{ id: 6, values: [-4, -8, 12, 7, 10] }])]
+    ]);
+
+    const parsed = parseScenarioBuffers(buffers);
+
+    expect(parsed.simpleEncounters[0].actions).toContainEqual({ slot: 0, rawCode: -2, id: 6 });
+    expect(parsed.complexEncounters[0].actions).toContainEqual({ slot: 31, rawCode: 2, id: 6 });
+    expect(parsed.extracodes[6].values).toEqual([-4, -8, 12, 7, 10]);
+  });
 });
 
 describe("browser thief-encounter writer", () => {

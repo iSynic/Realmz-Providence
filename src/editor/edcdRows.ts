@@ -52,6 +52,18 @@ export function nextUnusedEdcdRowId(project: Project) {
   return extracodes.length;
 }
 
+export function nextUnusedPositiveEdcdRowId(project: Project, contiguousRows = 1) {
+  const extracodes = project.extracodes ?? [];
+  const used = new Set(extracodes.map((row) => row.id));
+  const width = Math.max(1, Math.trunc(contiguousRows));
+  for (let id = 1; id <= 32767 - width + 1; id += 1) {
+    if (Array.from({ length: width }, (_, offset) => id + offset).every((candidate) => !used.has(candidate))) {
+      return id;
+    }
+  }
+  return Math.max(1, extracodes.length + 1);
+}
+
 export function normalizeEdcdValues(values?: readonly number[]): [number, number, number, number, number] {
   return [0, 0, 0, 0, 0].map((_, index) => Number(values?.[index] ?? 0)) as [number, number, number, number, number];
 }

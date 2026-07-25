@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { EdcdRowUsage } from "../../edcdRows";
 import type { Ed3ReachabilityRow, Project, TriggerRecord } from "../../types";
 import {
+  actionAuthoringStateDetail,
+  actionAuthoringStateLabel,
   authorFacingExtraActionKind,
   actionSettingsTitleForShape,
   authorSettingsWarning,
@@ -14,9 +16,19 @@ import {
   textEditorNavigationLabel,
   type CombatMacroContext
 } from "./actionPointPresentation";
+import type { ScriptActionDefinition } from "./scriptActionCatalog";
 
 function context(kind: CombatMacroContext["kind"]): CombatMacroContext {
   return { kind, references: [], rootType: null };
+}
+
+function actionDefinition(opcode: number) {
+  return {
+    opcode,
+    shortLabel: `Opcode ${opcode}`,
+    validationPosture: "supported",
+    authoringLevel: "guided"
+  } as unknown as ScriptActionDefinition;
 }
 
 describe("action point presentation policy", () => {
@@ -73,6 +85,15 @@ describe("action point presentation policy", () => {
     expect(combatMacroActionOpcodes(context("monster"))).toContain(119);
     expect(combatMacroActionNote(-17, context("monster"))).toContain("destroyed monster's position");
     expect(combatMacroActionNote(-17, context("battle"))).toBeNull();
+  });
+
+  it("explains every context-restricted imported Action Point opcode", () => {
+    expect(actionAuthoringStateLabel(actionDefinition(34))).toBe("Context-only imported action");
+    expect(actionAuthoringStateDetail(actionDefinition(34))).toContain("encounter result script");
+    expect(actionAuthoringStateLabel(actionDefinition(126), context("battle"))).toBe("Context-specific action");
+    expect(actionAuthoringStateDetail(actionDefinition(126), context("battle"))).toContain("Battle Macro Criteria");
+    expect(actionAuthoringStateLabel(actionDefinition(119), context("battle"))).toBe("Context-only imported action");
+    expect(actionAuthoringStateLabel(actionDefinition(119), context("monster"))).toBe("Context-specific action");
   });
 
   it("summarizes macro references without inventing callers", () => {

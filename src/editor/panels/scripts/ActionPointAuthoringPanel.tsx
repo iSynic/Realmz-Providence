@@ -44,6 +44,7 @@ import {
   usePersistentValue
 } from "./scriptInventory";
 import type { ScriptActionCategoryFilter } from "./scriptActionCatalog";
+import type { ScriptActionAuthoringContext } from "./scriptActionContexts";
 import { TargetRecordEditor } from "./TargetRecordEditor";
 import { SelectedActionPointStepEditor } from "./SelectedActionPointStepEditor";
 import { ActionPointRecordHeader } from "./ActionPointRecordHeader";
@@ -132,7 +133,7 @@ function ActionPointAuthoringWorkbench({
     () => project?.triggers.filter((trigger) => triggerVisibleForEditor(project, trigger, activeEditor)) ?? [],
     [project, activeEditor]
   );
-  const projectMaps = project?.maps ?? [];
+  const projectMaps = useMemo(() => project.maps ?? [], [project.maps]);
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<ScriptActionCategoryFilter>("All");
   const [opcodeQuery, setOpcodeQuery] = useState("");
@@ -297,6 +298,19 @@ function ActionPointAuthoringWorkbench({
     setSelectedScriptId(trigger.id);
     onSelectEntity(selectEntityFromId(triggerSelectionId(trigger)));
   }, [onSelectEntity]);
+  const isMacro = selectedTrigger?.source === "Data ED3";
+  const selectedExtraActionEvidence = selectedTrigger && isMacro ? extraActionEvidenceSummary(project, selectedTrigger) : null;
+  const selectedEd3Reachability = selectedTrigger && isMacro ? ed3ReachabilityFor(project, selectedTrigger.recordIndex) ?? null : null;
+  const selectedCombatMacroContext = useMemo(
+    () => selectedTrigger && isMacro ? combatMacroContextFor(project, selectedTrigger, selectedEd3Reachability) : null,
+    [project, selectedTrigger, isMacro, selectedEd3Reachability]
+  );
+  const selectedActionAuthoringContexts = useMemo<readonly ScriptActionAuthoringContext[]>(() => {
+    if (selectedCombatMacroContext?.kind === "mixed") return ["battle-macro", "monster-macro"];
+    if (selectedCombatMacroContext?.kind === "battle") return ["battle-macro"];
+    if (selectedCombatMacroContext?.kind === "monster") return ["monster-macro"];
+    return ["action-point"];
+  }, [selectedCombatMacroContext]);
   const stepDrafts = useActionPointStepDrafts({
     project,
     catalog,
@@ -306,6 +320,7 @@ function ActionPointAuthoringWorkbench({
     selectedEntityId: selectedEntity?.id,
     categoryFilter,
     opcodeQuery,
+    authoringContexts: selectedActionAuthoringContexts,
     onSelectEntity,
     onApplyCommand
   });
@@ -353,13 +368,6 @@ function ActionPointAuthoringWorkbench({
   } = stepDrafts;
   const selectedSlotEntity: SemanticEntity | undefined = undefined;
   const triggerDiagnostics = selectedTrigger ? visibleDiagnosticsById.get(selectedTrigger.id) ?? [] : [];
-  const isMacro = selectedTrigger?.source === "Data ED3";
-  const selectedExtraActionEvidence = selectedTrigger && isMacro ? extraActionEvidenceSummary(project, selectedTrigger) : null;
-  const selectedEd3Reachability = selectedTrigger && isMacro ? ed3ReachabilityFor(project, selectedTrigger.recordIndex) ?? null : null;
-  const selectedCombatMacroContext = useMemo(
-    () => selectedTrigger && isMacro ? combatMacroContextFor(project, selectedTrigger, selectedEd3Reachability) : null,
-    [project, selectedTrigger, isMacro, selectedEd3Reachability]
-  );
   const selectedExtraActionClassification = selectedTrigger && isMacro ? authorFacingExtraActionKind(extraActionPointClassification(project, selectedTrigger), selectedCombatMacroContext) : "Action Point";
   const selectedMarkerState = selectedTrigger && !isMacro ? actionPointMarkerStateForTrigger(project, selectedTrigger) : "none";
   const selectedIsSecret = isSecretActionPointState(selectedMarkerState);

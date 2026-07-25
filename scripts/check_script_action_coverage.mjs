@@ -198,7 +198,7 @@ for (const opcode of expectedManualNoneStepOnlyCodes) {
     failures.push(`Manual no-option opcode ${opcode} should be in MANUAL_NONE_STEP_ONLY_ACTIONS.`);
   }
 }
-for (const key of ["crosswalk", "manualHelp", "catalog", "actions", "targetPicker"]) {
+for (const key of ["crosswalk", "manualHelp", "catalog", "actions", "targetPicker", "optionDomains", "authoringContexts"]) {
   if (!apOpcodeCoverage.source?.[key]) failures.push(`Opcode audit report is missing source.${key}.`);
 }
 if (coverageEntries.length < 120) {
@@ -288,8 +288,8 @@ for (const opcode of [84, 98, 99]) {
 }
 
 const macro121 = coverageEntry(121);
-if (macro121?.gapStatus !== "combat-macro-only") {
-  failures.push("Opcode 121 should stay marked combat-macro-only.");
+if (macro121?.gapStatus !== "context-restricted") {
+  failures.push("Opcode 121 should stay marked context-restricted.");
 }
 if (macro121?.evidenceConfidence !== "source-backed") {
   failures.push("Opcode 121 should stay source-backed.");
@@ -337,7 +337,8 @@ if (!(inversePick?.authoringControls ?? []).every((control) => control.status ==
 
 for (const opcode of [25, 26, 34, 82, 83, 91, 93, 94, 96, 97, 100, 101, 102]) {
   const entry = coverageEntry(opcode);
-  if (entry?.gapStatus !== "step-only-no-options") {
+  const expectedGap = [34, 100].includes(opcode) ? "context-restricted" : "step-only-no-options";
+  if (entry?.gapStatus !== expectedGap) {
     failures.push(`Manual no-option opcode ${opcode} should stay marked step-only-no-options.`);
   }
   if (!(entry?.authoringControls ?? []).every((control) => control.expectedControl === "step-only" && control.status === "ok")) {
@@ -1102,7 +1103,8 @@ for (const snippet of [
   "Monster Macro",
   "Combat Macro Actions",
   "Positive battle macro imports are preserved",
-  "definition.opcode === 121 && combatMacroContext",
+  "scriptActionContextRestriction(definition.opcode)",
+  "scriptActionAllowedInAnyContext",
   "combatMacroContext?.kind === \"battle\") return \"Battle Macro\"",
   "Battle / Monster / Item Action\") return \"Source-Linked Extra Action\""
 ]) {

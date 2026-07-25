@@ -5,6 +5,7 @@ import { choiceBranchModeLabel, choiceBranchTargetKind, choicePromptStorageFromO
 import { edcdFieldTargetKind, edcdTargetOptions, type EdcdTargetKind } from "../../edcdTargets";
 import { teleportDestinationLevelType, teleportHeadingLabel, teleportLevelLabel } from "../../teleportDestinations";
 import { LevelType, LibraryCatalog, Project } from "../../types";
+import { scriptActionAllowedInAnyContext, type ScriptActionAuthoringContext } from "./scriptActionContexts";
 
 export type ScriptActionCategory =
   | "Dialogue"
@@ -662,11 +663,16 @@ export function canonicalActionChooserOpcode(rawCode: number) {
   return ACTION_CHOOSER_ALIAS_BY_OPCODE.get(normalized)?.canonicalOpcode ?? normalized;
 }
 
-export function actionDefinitionsForCategory(category: ScriptActionCategoryFilter, query = "") {
+export function actionDefinitionsForCategory(
+  category: ScriptActionCategoryFilter,
+  query = "",
+  authoringContexts: readonly ScriptActionAuthoringContext[] = ["action-point"]
+) {
   const normalizedQuery = query.trim().toLowerCase();
   return SCRIPT_ACTION_DEFINITIONS.filter((definition) => {
     if (isActionChooserAliasOpcode(definition.opcode)) return false;
     if (definition.authoringLevel === "ignored") return false;
+    if (!scriptActionAllowedInAnyContext(definition.opcode, authoringContexts)) return false;
     if (category !== "All" && definition.category !== category) return false;
     if (!normalizedQuery) return true;
     return actionDefinitionSearchText(definition).includes(normalizedQuery);
@@ -832,7 +838,26 @@ function summarizeSettingsBackedAction(
     const heading = levelType === "dungeon" ? `, facing ${teleportHeadingLabel(values[4] ?? 1)}` : "";
     return `${definition.shortLabel}: ${teleportLevelLabel(project, values[1] ?? -1, levelType)}, ${coordinateLabel(values[2])}, ${coordinateLabel(values[3])}${heading}; stops script`;
   }
-  if ([2, 48, 56, 107].includes(code)) {
+  if (code === 2) {
+    const battle = rangeTargetSummary(project, "battle", values[0] ?? 0, values[1] ?? 0);
+    const surprise = (values[0] ?? 0) < 0 || (values[1] ?? 0) < 0 ? "Surprise · " : "";
+    const beforeMessage = values[3] ? ` · Before: ${messageLabel(project, values[3])}` : "";
+    const outcomeMode = values[4] ?? 0;
+    if (outcomeMode === 10) {
+      const macro = targetRoute(project, "macro", values[2] ?? 0, catalog)?.label ?? `Extra Action Point ${Math.abs(values[2] ?? 0)}`;
+      return `Battle: ${surprise}${battle}${beforeMessage} · Revive after loss, then ${macro}`;
+    }
+    const reward = outcomeMode === 5
+      ? "Victory points only"
+      : outcomeMode === 0
+        ? "Victory points and treasure"
+        : `Imported reward mode ${outcomeMode}`;
+    const sound = values[2]
+      ? ` · Before sound: ${targetRoute(project, "sound", values[2], catalog)?.label ?? Math.abs(values[2])}`
+      : "";
+    return `Battle: ${surprise}${battle}${beforeMessage} · ${reward}${sound}`;
+  }
+  if ([48, 56, 107].includes(code)) {
     return `${definition.shortLabel}: ${rangeTargetSummary(project, "battle", values[0] ?? 0, values[1] ?? 0)}`;
   }
   if (code === 92 || code === 23 || code === -23) {

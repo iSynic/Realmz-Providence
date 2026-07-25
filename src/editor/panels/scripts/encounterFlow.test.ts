@@ -156,4 +156,24 @@ describe("encounter result action opcodes", () => {
     expect(options.some((option) => option.code === 0)).toBe(true);
     expect(resultActionOptionsFor(24)[0].code).toBe(0);
   });
+
+  it("offers only actions appropriate to the selected encounter kind", () => {
+    const simple = resultActionOptionsFor(0, "simple");
+    const complex = resultActionOptionsFor(0, "complex");
+
+    expect(simple.some((option) => option.code === 34)).toBe(true);
+    expect(simple.some((option) => option.code === 35)).toBe(true);
+    expect(simple.some((option) => option.code === 44)).toBe(false);
+    expect(complex.some((option) => option.code === 34)).toBe(true);
+    expect(complex.some((option) => option.code === 35)).toBe(false);
+    expect(complex.some((option) => option.code === 44)).toBe(true);
+    expect(simple.some((option) => option.code === 122)).toBe(false);
+    expect(complex.some((option) => option.code === 126)).toBe(false);
+  });
+
+  it("retains an imported context-only opcode without offering it for new placement", () => {
+    const options = resultActionOptionsFor(122, "simple");
+    expect(options[0].code).toBe(122);
+    expect(options.slice(1).some((option) => option.code === 122)).toBe(false);
+  });
 });

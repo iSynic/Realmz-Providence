@@ -18,11 +18,13 @@ function renderCell(row: EncounterActionRow) {
   return renderToStaticMarkup(
     <EncounterResultActionCell
       project={project}
+      recordKind="simple"
       slot={0}
       row={row}
       onUpdate={() => undefined}
       onFocusCode={() => undefined}
       onPreviewTarget={() => undefined}
+      onEditSettings={() => undefined}
     />
   );
 }
@@ -84,5 +86,30 @@ describe("EncounterResultActionCell", () => {
     expect(sound).toContain('type="checkbox" checked=""');
     expect(negativePicture).toContain("Required for Remake progression");
     expect(message).not.toContain("Required for Remake progression");
+  });
+
+  it("replaces a settings-row number with a contextual settings control", () => {
+    const withBattle = {
+      ...project,
+      battles: [{ id: 4 }, { id: 8 }],
+      extracodes: [{ id: 12, values: [4, 8, 0, 0, 0] }]
+    } as unknown as Project;
+    const html = renderToStaticMarkup(
+      <EncounterResultActionCell
+        project={withBattle}
+        recordKind="simple"
+        slot={0}
+        row={{ slot: 0, rawCode: 2, id: 12 }}
+        onUpdate={() => undefined}
+        onFocusCode={() => undefined}
+        onPreviewTarget={() => undefined}
+        onEditSettings={() => undefined}
+      />
+    );
+
+    expect(html).toContain('aria-label="Edit result action 0 settings"');
+    expect(html).toContain("Battle");
+    expect(html).not.toContain('aria-label="Result action 0 ID"');
+    expect(html).not.toMatch(/<input[^>]+value="12"/);
   });
 });

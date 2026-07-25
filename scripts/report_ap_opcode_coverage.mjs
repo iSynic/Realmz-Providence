@@ -11,7 +11,12 @@ const manualHelp = readJson(path.join(root, "docs", "generated", "divinity-opcod
 const catalogSource = fs.readFileSync(path.join(root, "src", "editor", "panels", "scripts", "scriptActionCatalog.ts"), "utf8");
 const actionSource = fs.readFileSync(path.join(root, "src", "editor", "realmzActions.ts"), "utf8");
 const targetPickerSource = fs.readFileSync(path.join(root, "src", "editor", "components", "RealmzTargetPicker.tsx"), "utf8");
+const optionDomainSource = readJson(path.join(root, "src", "editor", "edcdOptionDomains.json"));
+const contextSource = readJson(path.join(root, "src", "editor", "panels", "scripts", "scriptActionContexts.json"));
 const manualEntriesByResource = new Map(manualHelp.entries.map((entry) => [entry.resourceId, entry]));
+const optionDomains = new Map(optionDomainSource.domains.map((domain) => [optionDomainKey(domain.opcode, domain.field), domain]));
+const numericGuidance = new Map(optionDomainSource.numericGuidance.map((field) => [optionDomainKey(field.opcode, field.field), field]));
+const contextRestrictions = new Map(contextSource.restrictions.map((restriction) => [restriction.opcode, restriction]));
 
 const firstClass = parseNumberSet(catalogSource, "FIRST_CLASS_ACTIONS");
 const advanced = parseNumberSet(catalogSource, "ADVANCED_ACTIONS");
@@ -105,6 +110,8 @@ const entries = Object.values(crosswalk)
     };
   });
 
+validateOptionDomains();
+
 const groups = groupBy(entries, (entry) => entry.status);
 const gapGroups = groupBy(entries, (entry) => entry.gapStatus);
 const confidenceGroups = groupBy(entries, (entry) => entry.evidenceConfidence);
@@ -117,13 +124,20 @@ const report = {
     manualHelp: "docs/generated/divinity-opcode-help.json",
     catalog: "src/editor/panels/scripts/scriptActionCatalog.ts",
     actions: "src/editor/realmzActions.ts",
-    targetPicker: "src/editor/components/RealmzTargetPicker.tsx"
+    targetPicker: "src/editor/components/RealmzTargetPicker.tsx",
+    optionDomains: "src/editor/edcdOptionDomains.json",
+    authoringContexts: "src/editor/panels/scripts/scriptActionContexts.json"
   },
   counts: Object.fromEntries([...groups.entries()].map(([key, value]) => [key, value.length]).sort()),
   gapCounts: Object.fromEntries([...gapGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
   confidenceCounts: Object.fromEntries([...confidenceGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
   controlStatusCounts: Object.fromEntries([...controlStatusGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
   expectedControlCounts: Object.fromEntries([...expectedControlGroups.entries()].map(([key, value]) => [key, value.length]).sort()),
+  optionContractCounts: {
+    finiteSelectDomains: optionDomains.size,
+    numericSentinelDomains: numericGuidance.size,
+    documentedNumericOptionFields: documentedNumericOptionFields().length
+  },
   entries,
   notes: [
     "Wrath AP 32/33 screenshot parity should be checked against the actual imported trigger selection, because the supplied Divinity and Providence screenshots appear to show neighboring Action Points rather than a guaranteed same selected row.",
@@ -140,7 +154,7 @@ console.log(`Wrote ${path.relative(root, mdOut)}`);
 
 function classify(entry, state) {
   if (state.inIgnored) return "ignored-empty";
-  if (entry.opcode === 121) return "macro-only-context-gated";
+  if (contextRestrictions.has(entry.opcode)) return "context-only-gated";
   if (entry.writerStatus === "writer-gated-not-used") return "not-used-no-dispatch";
   if (state.inAdvanced) return "preserved-but-known";
   if (entry.edcdBacked) return state.hasCatalogName ? "edcd-backed-guided" : "edcd-backed-needs-form";
@@ -153,8 +167,9 @@ function coverageNote(entry, status) {
   if (entry.opcode === -14) {
     return "Manual-backed signed pick variant. Providence preserves/writes the signed opcode and direct ID; Realmz applies the picked-character behavior at runtime.";
   }
-  if (entry.opcode === 121) {
-    return "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and treats macro/combat surfaces as the intentional authoring path.";
+  if (contextRestrictions.has(entry.opcode)) {
+    const restriction = contextRestrictions.get(entry.opcode);
+    return `${restriction.reason} Providence preserves imported uses outside that context while limiting new chooser placement to ${restriction.contexts.join(", ")}.`;
   }
   if (entry.opcode === 84) {
     return "Realmz source has a legacy registration-check dispatcher case. Classic Realmz could enforce scenario registration here; modern open-source builds keep the dispatcher but comment out enforcement.";
@@ -250,7 +265,7 @@ function providenceAuthoringFields(entry, state, isManualNoneStepOnly) {
 
 function auditGapStatus(entry, state, status, manualEntries, isManualNoneStepOnly) {
   if (state.inIgnored || status === "not-used-no-dispatch") return "intentionally-preserved";
-  if (entry.opcode === 121) return "combat-macro-only";
+  if (contextRestrictions.has(entry.opcode)) return "context-restricted";
   if (entry.opcode === 84 || entry.opcode === 98 || entry.opcode === 99) return "legacy-compatible";
   if (isManualNoneStepOnly) return "step-only-no-options";
   if (status === "truly-unknown") return "needs-source-runtime-evidence";
@@ -333,12 +348,10 @@ function branchDestinationField(name) {
 
 function expectedControlForField(entry, field, targetFamily, gapStatus) {
   const name = String(field.internalName ?? "").toLowerCase();
-  const label = String(field.label ?? "").toLowerCase();
   if (name === "steponly" || gapStatus === "step-only-no-options" || gapStatus === "legacy-compatible") return "step-only";
-  if (field.preserved || gapStatus === "combat-macro-only" || gapStatus === "intentionally-preserved") return "advanced-preserved";
-  if (compactSelectField(name, label, targetFamily)) return "compact-select";
+  if (field.preserved || gapStatus === "intentionally-preserved") return "advanced-preserved";
+  if (optionDomains.has(optionDomainKey(entry.opcode, field.internalName))) return "compact-select";
   if (searchTargetFamilies.has(targetFamily)) return "search-target";
-  if (toggleField(name, label)) return "toggle";
   return "narrow-number";
 }
 
@@ -370,41 +383,6 @@ function storageForField(entry, field, expectedControl) {
   if (field.preserved) return "preserved-edcd-value";
   if (expectedControl === "step-only") return "step-only";
   return entry.edcdBacked ? "data-edcd-parameter-row" : "direct-code-id";
-}
-
-function compactSelectField(name, label, targetFamily) {
-  if (targetFamily === "map-item") return true;
-  return [
-    "mode",
-    "branchmode",
-    "missingbehavior",
-    "replypolarity",
-    "levelkind",
-    "resultslot",
-    "revivepartyflag",
-    "testb",
-    "selector",
-    "testselector",
-    "pickedselector",
-    "abilityorattribute",
-    "attributeflag",
-    "failurebehavior",
-    "falsebehavior",
-    "scope",
-    "condition",
-    "expectedstate",
-    "gender",
-    "who",
-    "sourceset",
-    "isdungeon",
-    "shapemode",
-    "darkstateplusone",
-    "resetdayflag"
-  ].some((token) => name.includes(token) || label.includes(token));
-}
-
-function toggleField(name, label) {
-  return ["stopifalready"].some((token) => name.includes(token) || label.includes(token));
 }
 
 function renderMarkdown(report) {
@@ -458,7 +436,7 @@ function renderMarkdown(report) {
     "## Special Opcode Notes",
     "",
     "- Opcode 84: Realmz source has a legacy registration-check dispatcher case. Providence supports authoring it for old-school Realmz compatibility; modern open-source builds keep the dispatcher but comment out enforcement.",
-    "- Opcode 121: De-animate Lower Undead is useful, but source behavior is combat-gated. Ordinary Action Point imports are preserved; macro/combat authoring remains the intended surface.",
+    "- Context-restricted actions remain visible when imported, but chooser placement is limited to the encounter, battle-macro, or monster-macro contexts documented by Divinity and Realmz runtime behavior.",
     "",
     "## Wrath Crosscheck Note",
     "",
@@ -607,6 +585,61 @@ function groupBy(values, keyFor) {
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+
+function optionDomainKey(opcode, field) {
+  return `${Math.abs(Number(opcode))}:${String(field ?? "").toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+}
+
+function validateOptionDomains() {
+  const failures = [];
+  const seen = new Set();
+  for (const domain of optionDomainSource.domains) {
+    const key = optionDomainKey(domain.opcode, domain.field);
+    if (seen.has(key)) failures.push(`Duplicate ECODE option domain ${key}.`);
+    seen.add(key);
+    const entry = crosswalk[String(domain.opcode)] ?? crosswalk[String(-Math.abs(domain.opcode))];
+    if (!entry?.edcdBacked) {
+      failures.push(`ECODE option domain ${key} does not identify an ECODE-backed opcode.`);
+      continue;
+    }
+    const field = entry.parameters?.find((parameter) => optionDomainKey(domain.opcode, parameter.internalName) === key);
+    if (!field) failures.push(`ECODE option domain ${key} does not match a canonical field.`);
+    if (field?.preserved) failures.push(`ECODE option domain ${key} targets a preserved-only field.`);
+    if (!Array.isArray(domain.options) || domain.options.length < 2) failures.push(`ECODE option domain ${key} needs at least two choices.`);
+    const values = new Set((domain.options ?? []).map((option) => Number(option.value)));
+    if (values.size !== (domain.options ?? []).length) failures.push(`ECODE option domain ${key} repeats a stored value.`);
+  }
+  for (const fieldContract of optionDomainSource.numericGuidance) {
+    const key = optionDomainKey(fieldContract.opcode, fieldContract.field);
+    if (seen.has(key)) failures.push(`ECODE field contract ${key} is classified as both finite-select and numeric-guided.`);
+    seen.add(key);
+    const entry = crosswalk[String(fieldContract.opcode)];
+    const field = entry?.parameters?.find((parameter) => optionDomainKey(fieldContract.opcode, parameter.internalName) === key);
+    if (!entry?.edcdBacked || !field) failures.push(`Numeric ECODE guidance ${key} does not match a canonical ECODE field.`);
+    if (!String(fieldContract.reason ?? "").trim()) failures.push(`Numeric ECODE guidance ${key} needs an author-facing reason.`);
+  }
+  for (const candidate of documentedNumericOptionFields()) {
+    const key = optionDomainKey(candidate.opcode, candidate.field);
+    if (!optionDomains.has(key) && !numericGuidance.has(key)) {
+      failures.push(`Documented numeric ECODE choices for ${key} are not classified as a finite select or numeric sentinel field.`);
+    }
+  }
+  if (failures.length > 0) throw new Error(failures.join("\n"));
+}
+
+function documentedNumericOptionFields() {
+  const fields = [];
+  for (const entry of Object.values(crosswalk)) {
+    if (entry.opcode <= 0 || !entry.edcdBacked) continue;
+    for (const parameter of entry.parameters ?? []) {
+      if (parameter.preserved) continue;
+      if (/(?<!\d)-?\d+\s*=/.test(String(parameter.help ?? ""))) {
+        fields.push({ opcode: entry.opcode, field: parameter.internalName });
+      }
+    }
+  }
+  return fields;
 }
 
 function escapeCell(value) {

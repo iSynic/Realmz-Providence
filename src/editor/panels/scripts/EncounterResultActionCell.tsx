@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { Eye, X } from "lucide-react";
+import { Eye, SlidersHorizontal, X } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
 import {
   resolveSignedMessageTarget,
@@ -22,6 +22,8 @@ import {
   resultActionOptionsFor,
   signedResultActionCode
 } from "./encounterFlow";
+import { encounterEcodeActionSummary } from "./encounterEcodeSettings";
+import { scriptActionAllowedInContext, scriptActionContextRestrictionReason } from "./scriptActionContexts";
 
 export function encounterResultIdHelp(
   project: Project,
@@ -76,29 +78,39 @@ function conciseTargetDetail(value: string) {
 export function EncounterResultActionCell({
   project,
   catalog,
+  recordKind,
   slot,
   row,
   onUpdate,
   onFocusCode,
-  onPreviewTarget
+  onPreviewTarget,
+  onEditSettings
 }: {
   project: Project;
   catalog?: LibraryCatalog | null;
+  recordKind: "simple" | "complex";
   slot: number;
   row: EncounterActionRow;
   onUpdate: (changes: Partial<EncounterActionRow>) => void;
   onFocusCode: (code: number) => void;
   onPreviewTarget: (opcode: number, value: number) => void;
+  onEditSettings: (rawCode: number) => void;
 }) {
   const idHelpId = useId();
   const baseCode = resultActionBaseCode(row.rawCode);
   const isNegativeAction = row.rawCode < 0;
   const rowOption = actionOptionFor(baseCode);
+  const isEcodeBacked = Boolean(rowOption?.edcdShape);
+  const ecodeSummary = isEcodeBacked ? encounterEcodeActionSummary(project, catalog, row) : null;
   const selected = targetOptionForOpcodeValue(project, baseCode, row.id, catalog);
   const populated = row.rawCode !== 0 || row.id !== 0;
   const targetPicker = targetPickerConfig(baseCode);
-  const canBrowse = Boolean(targetPicker);
-  const options = resultActionOptionsFor(baseCode);
+  const canBrowse = Boolean(targetPicker) && !isEcodeBacked;
+  const options = resultActionOptionsFor(baseCode, recordKind);
+  const allowedInEncounter = scriptActionAllowedInContext(
+    baseCode,
+    recordKind === "simple" ? "simple-encounter" : "complex-encounter"
+  );
   const idHelp = encounterResultIdHelp(project, catalog, row);
   return (
     <div className={`simple-encounter-action-cell${populated ? " populated" : ""}`}>
@@ -119,25 +131,52 @@ export function EncounterResultActionCell({
         onFocus={() => onFocusCode(baseCode)}
         onChange={(event) => {
           const nextCode = Number(event.currentTarget.value);
-          onUpdate({ rawCode: signedResultActionCode(nextCode, isNegativeAction) });
+          const nextRawCode = signedResultActionCode(nextCode, isNegativeAction);
+          if (actionOptionFor(nextCode)?.edcdShape) {
+            onEditSettings(nextRawCode);
+            return;
+          }
+          onUpdate({ rawCode: nextRawCode });
         }}
       >
         {options.map((option) => (
           <option key={option.code} value={option.code}>{option.code} {option.shortLabel}</option>
         ))}
       </select>
-      <TutorialTip title={idHelp.title} body={idHelp.body} side="below" focusable={false} tooltipId={idHelpId}>
-        <label className="encounter-action-id-field">
-          <input
-            type="number"
-            value={row.id}
-            aria-label={`Result action ${slot} ID`}
+      {isEcodeBacked ? (
+        <TutorialTip
+          title={`${rowOption?.displayTitle ?? rowOption?.shortLabel ?? `Opcode ${baseCode}`} Settings`}
+          body={`${ecodeSummary ?? "Configure this action's settings."} Raw storage details remain available inside the settings dialog.`}
+          side="below"
+          focusable={false}
+          tooltipId={idHelpId}
+        >
+          <button
+            type="button"
+            className="encounter-action-settings-field"
+            aria-label={`Edit result action ${slot} settings`}
             aria-describedby={idHelpId}
             onFocus={() => onFocusCode(baseCode)}
-            onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
-          />
-        </label>
-      </TutorialTip>
+            onClick={() => onEditSettings(row.rawCode)}
+          >
+            <span>{ecodeSummary}</span>
+            <SlidersHorizontal size={12} />
+          </button>
+        </TutorialTip>
+      ) : (
+        <TutorialTip title={idHelp.title} body={idHelp.body} side="below" focusable={false} tooltipId={idHelpId}>
+          <label className="encounter-action-id-field">
+            <input
+              type="number"
+              value={row.id}
+              aria-label={`Result action ${slot} ID`}
+              aria-describedby={idHelpId}
+              onFocus={() => onFocusCode(baseCode)}
+              onChange={(event) => onUpdate({ id: Number(event.currentTarget.value) })}
+            />
+          </label>
+        </TutorialTip>
+      )}
       <div className="encounter-action-row-actions">
         {canBrowse ? (
           <button
@@ -175,6 +214,11 @@ export function EncounterResultActionCell({
           />
           <span>Required for Remake progression</span>
         </label>
+      )}
+      {populated && !allowedInEncounter && (
+        <small className="field-warning encounter-action-context-warning">
+          Imported value preserved. {scriptActionContextRestrictionReason(baseCode)}
+        </small>
       )}
     </div>
   );

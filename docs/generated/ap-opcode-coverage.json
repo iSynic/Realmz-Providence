@@ -5,21 +5,23 @@
     "manualHelp": "docs/generated/divinity-opcode-help.json",
     "catalog": "src/editor/panels/scripts/scriptActionCatalog.ts",
     "actions": "src/editor/realmzActions.ts",
-    "targetPicker": "src/editor/components/RealmzTargetPicker.tsx"
+    "targetPicker": "src/editor/components/RealmzTargetPicker.tsx",
+    "optionDomains": "src/editor/edcdOptionDomains.json",
+    "authoringContexts": "src/editor/panels/scripts/scriptActionContexts.json"
   },
   "counts": {
-    "authorable-now": 49,
-    "edcd-backed-guided": 69,
+    "authorable-now": 43,
+    "context-only-gated": 13,
+    "edcd-backed-guided": 63,
     "ignored-empty": 1,
-    "macro-only-context-gated": 1,
     "not-used-no-dispatch": 10
   },
   "gapCounts": {
-    "combat-macro-only": 1,
-    "covered-in-current-ui": 102,
+    "context-restricted": 13,
+    "covered-in-current-ui": 92,
     "intentionally-preserved": 11,
     "legacy-compatible": 3,
-    "step-only-no-options": 13
+    "step-only-no-options": 11
   },
   "confidenceCounts": {
     "catalog-only": 1,
@@ -32,11 +34,15 @@
   },
   "expectedControlCounts": {
     "advanced-preserved": 74,
-    "compact-select": 71,
-    "narrow-number": 134,
-    "search-target": 113,
-    "step-only": 17,
-    "toggle": 1
+    "compact-select": 80,
+    "narrow-number": 127,
+    "search-target": 112,
+    "step-only": 17
+  },
+  "optionContractCounts": {
+    "finiteSelectDomains": 80,
+    "numericSentinelDomains": 27,
+    "documentedNumericOptionFields": 103
   },
   "entries": [
     {
@@ -1729,8 +1735,8 @@
           "index": 3,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -1854,8 +1860,8 @@
           "index": 3,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -2900,8 +2906,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -3025,8 +3031,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -3214,8 +3220,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -3267,10 +3273,10 @@
     {
       "opcode": 34,
       "title": "Break Encounter Loop (Usable only within encounters)",
-      "status": "authorable-now",
-      "gapStatus": "step-only-no-options",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "Break Encounter Loop is meaningful only while an encounter result script is running. Providence preserves imported uses outside that context while limiting new chooser placement to simple-encounter, complex-encounter.",
       "manual": {
         "resourceIds": [
           161
@@ -3320,10 +3326,10 @@
     {
       "opcode": 35,
       "title": "Eliminate Simple Encounter Option",
-      "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "Eliminate Simple Encounter Option changes the currently running Simple Encounter. Providence preserves imported uses outside that context while limiting new chooser placement to simple-encounter.",
       "manual": {
         "resourceIds": [
           162
@@ -3531,8 +3537,8 @@
           "index": 4,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         }
@@ -3926,8 +3932,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -4051,8 +4057,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -4176,8 +4182,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "manual-backed"
         },
@@ -4229,10 +4235,10 @@
     {
       "opcode": 44,
       "title": "Eliminate Complex Encounter Choice",
-      "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "Eliminate Complex Encounter Choice changes the currently running Complex Encounter. Providence preserves imported uses outside that context while limiting new chooser placement to complex-encounter.",
       "manual": {
         "resourceIds": [
           171
@@ -5210,8 +5216,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -5449,8 +5455,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "manual-backed"
         },
@@ -5699,8 +5705,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -5710,8 +5716,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -6074,8 +6080,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -6085,8 +6091,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -6232,8 +6238,8 @@
           "index": 3,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -7055,8 +7061,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -7066,8 +7072,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": "monster",
-          "expectedControl": "search-target",
-          "implementedSurface": "EdcdSelectTargetField search-backed selected row",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -7077,8 +7083,8 @@
           "index": 2,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -7369,8 +7375,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -7380,8 +7386,8 @@
           "index": 2,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -7744,8 +7750,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -7994,8 +8000,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -8108,8 +8114,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -8119,8 +8125,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -8339,8 +8345,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -8873,8 +8879,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "compact-select",
-          "implementedSurface": "Guided EDCD compact select",
+          "expectedControl": "narrow-number",
+          "implementedSurface": "Guided EDCD narrow numeric field",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -9717,10 +9723,10 @@
     {
       "opcode": 100,
       "title": "End Battle",
-      "status": "authorable-now",
-      "gapStatus": "step-only-no-options",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "End Battle requires an active combat runtime. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro, monster-macro.",
       "manual": {
         "resourceIds": [
           227
@@ -9948,8 +9954,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -10179,8 +10185,8 @@
           "index": 1,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "toggle",
-          "implementedSurface": "Guided EDCD boolean/signed intent control",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "manual-backed"
         },
@@ -11012,10 +11018,10 @@
     {
       "opcode": 119,
       "title": "Revive NPC After Combat",
-      "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "Revive NPC After Combat is documented for an NPC Monster Macro. Providence preserves imported uses outside that context while limiting new chooser placement to monster-macro.",
       "manual": {
         "resourceIds": [
           246
@@ -11065,10 +11071,10 @@
     {
       "opcode": 120,
       "title": "Alter NPC • Monster During Combat",
-      "status": "edcd-backed-guided",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "source-backed",
-      "note": "",
+      "note": "Alter NPC / Monster During Combat requires an active combat runtime. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro, monster-macro.",
       "manual": {
         "resourceIds": [
           247
@@ -11126,8 +11132,8 @@
           "index": 0,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         },
@@ -11190,10 +11196,10 @@
     {
       "opcode": 121,
       "title": "De-animate Lower Undead (Monster & Battle Macros Only)",
-      "status": "macro-only-context-gated",
-      "gapStatus": "combat-macro-only",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "source-backed",
-      "note": "Realmz source dispatches this only during combat and loads the ID as an Extra Code row; Providence keeps ordinary AP imports preserved and treats macro/combat surfaces as the intentional authoring path.",
+      "note": "De-animate Lower Undead is documented for Monster and Battle Macros only. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro, monster-macro.",
       "manual": {
         "resourceIds": [
           248
@@ -11315,10 +11321,10 @@
     {
       "opcode": 122,
       "title": "Cause Fumble (Monster Macro Only)",
-      "status": "edcd-backed-guided",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "Cause Fumble is documented for Monster Macros only. Providence preserves imported uses outside that context while limiting new chooser placement to monster-macro.",
       "manual": {
         "resourceIds": [
           249
@@ -11440,10 +11446,10 @@
     {
       "opcode": 123,
       "title": "Cause Rout (Monster & Battle Macros Only)",
-      "status": "edcd-backed-guided",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "source-backed",
-      "note": "",
+      "note": "Cause Rout is documented for Monster and Battle Macros only. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro, monster-macro.",
       "manual": {
         "resourceIds": [
           250
@@ -11565,10 +11571,10 @@
     {
       "opcode": 124,
       "title": "Spawn Monster (Monster & Battle Macros Only)",
-      "status": "edcd-backed-guided",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "Spawn Monster is documented for Monster and Battle Macros only. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro, monster-macro.",
       "manual": {
         "resourceIds": [
           251
@@ -11690,10 +11696,10 @@
     {
       "opcode": 125,
       "title": "Destroy Related Monsters (Monster & Battle Macros Only)",
-      "status": "edcd-backed-guided",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "source-backed",
-      "note": "",
+      "note": "Destroy Related Monsters is documented for Monster and Battle Macros only. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro, monster-macro.",
       "manual": {
         "resourceIds": [
           252
@@ -11795,8 +11801,8 @@
           "index": 4,
           "storage": "data-edcd-parameter-row",
           "targetFamily": null,
-          "expectedControl": "narrow-number",
-          "implementedSurface": "Guided EDCD narrow numeric field",
+          "expectedControl": "compact-select",
+          "implementedSurface": "Guided EDCD compact select",
           "status": "ok",
           "evidence": "source-backed"
         }
@@ -11815,10 +11821,10 @@
     {
       "opcode": 126,
       "title": "Battle Macro Criteria",
-      "status": "edcd-backed-guided",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "source-backed",
-      "note": "",
+      "note": "Battle Macro Criteria is evaluated by an assigned Battle Macro after combat rounds. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro.",
       "manual": {
         "resourceIds": [
           253
@@ -11940,10 +11946,10 @@
     {
       "opcode": 127,
       "title": "Continue If Monster Present (Monster & Battle Macros Only)",
-      "status": "authorable-now",
-      "gapStatus": "covered-in-current-ui",
+      "status": "context-only-gated",
+      "gapStatus": "context-restricted",
       "evidenceConfidence": "manual-backed",
-      "note": "",
+      "note": "Continue If Monster Present is documented for Monster and Battle Macros only. Providence preserves imported uses outside that context while limiting new chooser placement to battle-macro, monster-macro.",
       "manual": {
         "resourceIds": [
           254

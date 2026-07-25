@@ -255,6 +255,67 @@ describe("project command facade", () => {
     expect(next.complexEncounters[0].wordResults).toBeUndefined();
   });
 
+  it("applies encounter result settings and caller retargeting atomically", () => {
+    let project = createBrowserProject("Encounter settings");
+    project = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create simple encounter",
+      recordType: "simpleEncounter",
+      id: 3
+    });
+    project = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create complex encounter",
+      recordType: "complexEncounter",
+      id: 7
+    });
+    project.extracodes = [{ id: 5, values: [4, 8, 9, 10, 0] }];
+    project.simpleEncounters[0].actions = [{ slot: 0, rawCode: 2, id: 5 }];
+    project.complexEncounters[0].actions = [{ slot: 8, rawCode: 2, id: 5 }];
+
+    const next = applyProjectCommand(project, {
+      kind: "applyEncounterResultSettings",
+      label: "Apply Battle settings",
+      recordKind: "simple",
+      encounterId: 3,
+      slot: 0,
+      rawCode: 2,
+      rowId: 6,
+      edcdValues: [12, 14, 0, 20, 5]
+    });
+
+    expect(next.simpleEncounters[0].actions[0]).toMatchObject({ slot: 0, rawCode: 2, id: 6 });
+    expect(next.complexEncounters[0].actions[0]).toMatchObject({ slot: 8, rawCode: 2, id: 5 });
+    expect(next.extracodes.find((row) => row.id === 5)?.values).toEqual([4, 8, 9, 10, 0]);
+    expect(next.extracodes.find((row) => row.id === 6)?.values).toEqual([12, 14, 0, 20, 5]);
+  });
+
+  it("writes paired secondary ECODE settings with a complex encounter caller", () => {
+    let project = createBrowserProject("Paired encounter settings");
+    project = applyProjectCommand(project, {
+      kind: "createTargetRecord",
+      label: "Create complex encounter",
+      recordType: "complexEncounter",
+      id: 7
+    });
+
+    const next = applyProjectCommand(project, {
+      kind: "applyEncounterResultSettings",
+      label: "Apply random area settings",
+      recordKind: "complex",
+      encounterId: 7,
+      slot: 9,
+      rawCode: 92,
+      rowId: 11,
+      edcdValues: [1, 2, 3, 4, 5],
+      secondaryEdcdValues: [6, 7, 8, 9, 10]
+    });
+
+    expect(next.complexEncounters[0].actions).toContainEqual({ slot: 9, rawCode: 92, id: 11 });
+    expect(next.extracodes.find((row) => row.id === 11)?.values).toEqual([1, 2, 3, 4, 5]);
+    expect(next.extracodes.find((row) => row.id === 12)?.values).toEqual([6, 7, 8, 9, 10]);
+  });
+
   it("creates fresh thief encounters from semantic fields without compatibility bytes", () => {
     const project = createBrowserProject("Semantic Thief Encounter");
 
