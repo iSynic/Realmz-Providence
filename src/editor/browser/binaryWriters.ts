@@ -32,6 +32,7 @@ import type {
   TreasureRecord
 } from "../types";
 import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
+import { RANDOM_LEVEL_SOUND_OFFSET, RANDOM_LEVEL_TEXT_OFFSET } from "./randomLevelLayout";
 
 export const MESSAGE_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.messageRecordBytes;
 export const OPTION_LABEL_RECORD_BYTES = REALMZ_NATIVE_LAYOUT.optionLabelRecordBytes;
@@ -287,8 +288,8 @@ export function writeRandomLevels(levels: RandomLevel[], levelType: LevelType) {
       }
       output[start + 523 + rect.rectIndex] = rect.only ? 1 : 0;
       output[start + 543 + rect.rectIndex] = rect.option & 0xff;
-      writeI16(output, start + 563 + rect.rectIndex * 2, rect.sound);
-      writeI16(output, start + 603 + rect.rectIndex * 2, rect.text);
+      writeI16(output, start + RANDOM_LEVEL_SOUND_OFFSET + rect.rectIndex * 2, rect.sound);
+      writeI16(output, start + RANDOM_LEVEL_TEXT_OFFSET + rect.rectIndex * 2, rect.text);
     }
   }
   return output;

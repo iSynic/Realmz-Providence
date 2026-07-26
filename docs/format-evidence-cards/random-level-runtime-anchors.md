@@ -44,9 +44,13 @@ Providence can present random areas as authored encounter regions instead of opa
 | 522 | 1 | `uselos` | boolean byte | Outdoor line-of-sight/unknown-site flag. |
 | 523 | 20 | `only[20]` | boolean bytes | If true and the party is in this rect, lower-priority random rectangles stop checking. |
 | 543 | 20 | `option[20]` | signed bytes | Prompt/surprise chance before random battle; used with sound/text. |
-| 563 | 40 | `sound[20]` | 20 signed shorts | Sound played when the option prompt triggers. |
-| 603 | 40 | `text[20]` | 20 signed shorts | Text message ID shown for the option prompt; runtime passes `-abs(text)` to `textbox`. |
-| 643 | 1 | Tail/padding | byte | Struct padding/alignment byte. Preserve. |
+| 563 | 1 | Alignment padding | byte | Native struct alignment byte. Preserve, but do not decode it as sound data. |
+| 564 | 40 | `sound[20]` | 20 signed shorts | Sound played when the option prompt triggers. |
+| 604 | 40 | `text[20]` | 20 signed shorts | Text message ID shown for the option prompt; runtime passes `-abs(text)` to `textbox`. |
+
+The offsets above are confirmed by a compiled `offsetof` probe against Realmz's actual `struct randlevel`: `only=523`, `option=543`, `sound=564`, `text=604`, and `sizeof=644`.
+
+Realmz Oracle build `47d4600c` independently confirmed the alignment against Mithril Vault's original `Data RD` (`SHA-256 0CBAED22D94B15D8B3DBC2A0FFB94CB1728299FB0539A98963094AAB1AC10564`). Land level 0, rectangle 17 decodes as chance `200/10000`, battle range `225..231`, XAP doors `[446, 448, 0]` with chances `[50, 50, 0]`, option `66`, sound `30000`, and text `1278`.
 
 ## Runtime Semantics
 
@@ -113,7 +117,7 @@ Highest active outdoor rectangle counts in the local output corpus:
 - Link extra AP door IDs to Scripts/AP records.
 - Link battle range values to `Data BD` battle records.
 - Link sound/text values to sound resources and `Data SD2` messages.
-- Preserve the final padding byte.
+- Preserve native padding byte 563.
 
 ## Divinity Work Remaining
 

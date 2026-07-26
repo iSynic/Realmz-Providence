@@ -5,6 +5,9 @@ use super::record_bytes::{i16_be, write_i16_be};
 
 pub const RANDLEVEL_BYTES: usize =
     crate::generated::native_manifest_policy::REALMZ_NATIVE_LAYOUT.random_level_record_bytes;
+pub const RANDLEVEL_PADDING_OFFSET: usize = 563;
+pub const RANDLEVEL_SOUND_OFFSET: usize = 564;
+pub const RANDLEVEL_TEXT_OFFSET: usize = 604;
 
 pub fn parse_random_levels(buffer: &[u8], level_type: LevelType, source: &str) -> Vec<RandomLevel> {
     let count = buffer.len() / RANDLEVEL_BYTES;
@@ -35,8 +38,8 @@ pub fn parse_random_levels(buffer: &[u8], level_type: LevelType, source: &str) -
                 ];
                 let only = buffer[start + 523 + rect_index] != 0;
                 let option = buffer[start + 543 + rect_index] as i8;
-                let sound = i16_be(buffer, start + 563 + rect_index * 2);
-                let text = i16_be(buffer, start + 603 + rect_index * 2);
+                let sound = i16_be(buffer, start + RANDLEVEL_SOUND_OFFSET + rect_index * 2);
+                let text = i16_be(buffer, start + RANDLEVEL_TEXT_OFFSET + rect_index * 2);
                 let active = percent != 0
                     || top != 0
                     || left != 0
@@ -139,8 +142,16 @@ pub fn write_random_levels(levels: &[RandomLevel], level_type: LevelType) -> Res
             }
             output[start + 523 + rect.rect_index] = u8::from(rect.only);
             output[start + 543 + rect.rect_index] = rect.option as u8;
-            write_i16_be(&mut output, start + 563 + rect.rect_index * 2, rect.sound);
-            write_i16_be(&mut output, start + 603 + rect.rect_index * 2, rect.text);
+            write_i16_be(
+                &mut output,
+                start + RANDLEVEL_SOUND_OFFSET + rect.rect_index * 2,
+                rect.sound,
+            );
+            write_i16_be(
+                &mut output,
+                start + RANDLEVEL_TEXT_OFFSET + rect.rect_index * 2,
+                rect.text,
+            );
         }
     }
     Ok(output)
@@ -210,9 +221,51 @@ mod tests {
         assert_eq!(i16_be(&output, 412), 25);
         assert_eq!(output[525], 1);
         assert_eq!(output[545], 0xfe);
-        assert_eq!(i16_be(&output, 567), 17);
-        assert_eq!(i16_be(&output, 607), 23);
+        assert_eq!(output[RANDLEVEL_PADDING_OFFSET], 0);
+        assert_eq!(i16_be(&output, 568), 17);
+        assert_eq!(i16_be(&output, 608), 23);
         assert_eq!(output[643], 0);
+    }
+
+    #[test]
+    fn native_sound_text_offsets_do_not_splice_adjacent_bytes() {
+        for (level_type, source) in [
+            (LevelType::Land, "Data RD"),
+            (LevelType::Dungeon, "Data RDD"),
+        ] {
+            let mut input = vec![0; RANDLEVEL_BYTES];
+            write_i16_be(&mut input, 0, 1);
+            write_i16_be(&mut input, 8, 2);
+            write_i16_be(&mut input, 19 * 8, 19);
+            input[RANDLEVEL_PADDING_OFFSET] = 0x5a;
+            write_i16_be(&mut input, RANDLEVEL_SOUND_OFFSET, 0x1234);
+            write_i16_be(&mut input, RANDLEVEL_SOUND_OFFSET + 2, -2345);
+            write_i16_be(&mut input, RANDLEVEL_SOUND_OFFSET + 19 * 2, 30000);
+            write_i16_be(&mut input, RANDLEVEL_TEXT_OFFSET, 0x2345);
+            write_i16_be(&mut input, RANDLEVEL_TEXT_OFFSET + 2, -1234);
+            write_i16_be(&mut input, RANDLEVEL_TEXT_OFFSET + 19 * 2, 1278);
+
+            let levels = parse_random_levels(&input, level_type, source);
+            let rect = |index| {
+                levels[0]
+                    .rects
+                    .iter()
+                    .find(|rect| rect.rect_index == index)
+                    .unwrap()
+            };
+            assert_eq!((rect(0).sound, rect(0).text), (0x1234, 0x2345));
+            assert_eq!((rect(1).sound, rect(1).text), (-2345, -1234));
+            assert_eq!((rect(19).sound, rect(19).text), (30000, 1278));
+            assert_ne!(i16_be(&input, 563), rect(0).sound);
+            assert_ne!(i16_be(&input, 603), rect(0).text);
+
+            let output = write_random_levels(&levels, level_type).unwrap();
+            assert_eq!(output[RANDLEVEL_PADDING_OFFSET], 0);
+            assert_eq!(i16_be(&output, RANDLEVEL_SOUND_OFFSET), 0x1234);
+            assert_eq!(i16_be(&output, RANDLEVEL_TEXT_OFFSET), 0x2345);
+            assert_eq!(i16_be(&output, RANDLEVEL_TEXT_OFFSET + 19 * 2), 1278);
+            assert_eq!(output[643], (1278 & 0xff) as u8);
+        }
     }
 
     #[test]
@@ -226,8 +279,9 @@ mod tests {
             input[521] = 0xa5;
             input[522] = 0x80;
             input[523] = 0xfe;
-            write_i16_be(&mut input, 565, 17);
-            input[643] = 0x34;
+            input[RANDLEVEL_PADDING_OFFSET] = 0x34;
+            write_i16_be(&mut input, RANDLEVEL_SOUND_OFFSET, 17);
+            write_i16_be(&mut input, RANDLEVEL_TEXT_OFFSET + 19 * 2, 0x1234);
 
             let levels = parse_random_levels(&input, level_type, source);
             let output = write_random_levels(&levels, level_type).unwrap();
@@ -235,7 +289,9 @@ mod tests {
             assert_eq!(output[521], 1);
             assert_eq!(output[522], 1);
             assert_eq!(output[523], 1);
-            assert_eq!(i16_be(&output, 565), 0);
+            assert_eq!(output[RANDLEVEL_PADDING_OFFSET], 0);
+            assert_eq!(i16_be(&output, RANDLEVEL_SOUND_OFFSET), 17);
+            assert_eq!(i16_be(&output, RANDLEVEL_TEXT_OFFSET + 19 * 2), 0);
             assert_eq!(output[643], 0);
         }
     }

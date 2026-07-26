@@ -250,9 +250,21 @@ describe("browser random-level writer", () => {
     expect(i16(output, 412)).toBe(25);
     expect(output[525]).toBe(1);
     expect(output[545]).toBe(0xfe);
-    expect(i16(output, 567)).toBe(17);
-    expect(i16(output, 607)).toBe(23);
+    expect(output[563]).toBe(0);
+    expect(i16(output, 568)).toBe(17);
+    expect(i16(output, 608)).toBe(23);
     expect(output[643]).toBe(0);
+  });
+
+  it("writes the final text entry through byte 643", () => {
+    const output = writeRandomLevels([randomLevel({
+      rects: [{ ...rect, rectIndex: 19, sound: -2345, text: 0x1234 }]
+    })], "land");
+
+    expect(output[563]).toBe(0);
+    expect(i16(output, 602)).toBe(-2345);
+    expect(i16(output, 642)).toBe(0x1234);
+    expect(output[643]).toBe(0x34);
   });
 
   it("recompiles imported levels from semantics without hidden storage", () => {
@@ -261,8 +273,9 @@ describe("browser random-level writer", () => {
     input[521] = 0xa5;
     input[522] = 0x80;
     input[523] = 0xfe;
-    setI16(input, 565, 17);
-    input[643] = 0x34;
+    input[563] = 0x34;
+    setI16(input, 564, 17);
+    setI16(input, 642, 0x1234);
     const imported = parseScenarioBuffers(new Map([["Data RD", input]])).randomLevels[0];
 
     const output = writeRandomLevels([imported], "land");
@@ -270,7 +283,9 @@ describe("browser random-level writer", () => {
     expect(output[521]).toBe(1);
     expect(output[522]).toBe(1);
     expect(output[523]).toBe(1);
-    expect(i16(output, 565)).toBe(0);
+    expect(output[563]).toBe(0);
+    expect(i16(output, 564)).toBe(17);
+    expect(i16(output, 642)).toBe(0);
     expect(output[643]).toBe(0);
   });
 });

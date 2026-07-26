@@ -476,19 +476,20 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
     rowKind: "644-byte land random encounter level",
     semanticExposure: "land-random-encounter-storage",
     ownedFields: [
-      { field: "Random encounter settings and rectangles", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 643, type: "structured" }
+      { field: "Random encounter settings through option bytes", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 563, type: "structured" },
+      { field: "Random encounter sound and text arrays", internal: "RandomRect[20].sound/text", offset: 564, bytes: 80, type: "i16be[40]" }
     ],
     preservedRanges: [
-      { field: "Final compatibility byte", internal: "compatibility annex", offset: 643, bytes: 1, type: "annex-preserved-when-present" }
+      { field: "Native alignment padding", internal: "compatibility annex", offset: 563, bytes: 1, type: "annex-preserved-when-present" }
     ],
     evidence: [
       "src-tauri/src/exporter.rs:random_level_annex_preserves_unchanged_compatibility_and_honors_deletion",
       "src-tauri/src/realmz/random_levels.rs:write_random_levels",
       "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
-      "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      "docs/format-evidence-cards/random-level-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh random levels compile bytes 0..642 from semantic settings and rectangles with deterministic zero at byte 643. Imported output restores byte 643, equivalent noncanonical Boolean encodings, hidden storage in still-inactive rectangle slots, and malformed tails only from the compatibility annex. Deleting an active imported rectangle compiles its complete slot to zero."
+    preservationPolicy: "Fresh random levels compile semantic fields at bytes 0..562 and 564..643 with deterministic zero at native padding byte 563. Imported output restores byte 563, equivalent noncanonical Boolean encodings, hidden storage in still-inactive rectangle slots, and malformed tails only from the compatibility annex. Deleting an active imported rectangle compiles its complete slot to zero."
   },
   {
     container: "Data RDD",
@@ -496,19 +497,20 @@ const MAPS_STORAGE_WRITER_GATE_SPECS = [
     rowKind: "644-byte dungeon random encounter level",
     semanticExposure: "dungeon-random-encounter-storage",
     ownedFields: [
-      { field: "Random encounter settings and rectangles", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 643, type: "structured" }
+      { field: "Random encounter settings through option bytes", internal: "RandomLevel + RandomRect[20]", offset: 0, bytes: 563, type: "structured" },
+      { field: "Random encounter sound and text arrays", internal: "RandomRect[20].sound/text", offset: 564, bytes: 80, type: "i16be[40]" }
     ],
     preservedRanges: [
-      { field: "Final compatibility byte", internal: "compatibility annex", offset: 643, bytes: 1, type: "annex-preserved-when-present" }
+      { field: "Native alignment padding", internal: "compatibility annex", offset: 563, bytes: 1, type: "annex-preserved-when-present" }
     ],
     evidence: [
       "src-tauri/src/exporter.rs:random_level_annex_preserves_unchanged_compatibility_and_honors_deletion",
       "src-tauri/src/realmz/random_levels.rs:write_random_levels",
       "src-tauri/src/realmz/random_levels.rs:parse_random_levels",
       "docs/generated/corpus-field-usage.json",
-      "docs/format-evidence-cards/encounter-record-runtime-anchors.md"
+      "docs/format-evidence-cards/random-level-runtime-anchors.md"
     ],
-    preservationPolicy: "Fresh dungeon random levels compile bytes 0..642 from semantic settings and rectangles with deterministic zero at byte 643. Imported output restores byte 643, equivalent noncanonical Boolean encodings, hidden storage in still-inactive rectangle slots, and malformed tails only from the compatibility annex. Deleting an active imported rectangle compiles its complete slot to zero."
+    preservationPolicy: "Fresh dungeon random levels compile semantic fields at bytes 0..562 and 564..643 with deterministic zero at native padding byte 563. Imported output restores byte 563, equivalent noncanonical Boolean encodings, hidden storage in still-inactive rectangle slots, and malformed tails only from the compatibility annex. Deleting an active imported rectangle compiles its complete slot to zero."
   }
 ];
 

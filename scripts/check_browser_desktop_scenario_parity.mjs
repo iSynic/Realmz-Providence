@@ -13,6 +13,7 @@ const workRoot = path.join(repoRoot, "tmp", "browser-desktop-scenario-parity");
 const sourceFiles = [
   "src/editor/browser/zip.ts",
   "src/editor/browser/binaryWriters.ts",
+  "src/editor/browser/randomLevelLayout.ts",
   "src/editor/browser/shopRecords.ts",
   "src/editor/browser/resourceFork.ts",
   "src/editor/browser/fsAccess.ts",

@@ -42,6 +42,7 @@ import { actionOptionFor, normalizeStepOpcode } from "../realmzActions";
 import { referencedMapIconIds } from "../map/renderValues";
 import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
 import { REALMZ_NATIVE_LAYOUT } from "../generated/realmzNativeManifestPolicy";
+import { RANDOM_LEVEL_SOUND_OFFSET, RANDOM_LEVEL_TEXT_OFFSET } from "./randomLevelLayout";
 
 export const MAP_SIZE = REALMZ_NATIVE_LAYOUT.mapSize;
 export const FIELD_BYTES = REALMZ_NATIVE_LAYOUT.mapFieldBytes;
@@ -431,8 +432,8 @@ function parseRandomLevels(buffer: Uint8Array | undefined, levelType: LevelType,
           ],
           only: buffer[start + 523 + rectIndex] !== 0,
           option: signedByte(buffer[start + 543 + rectIndex]),
-          sound: i16(buffer, start + 563 + rectIndex * 2),
-          text: i16(buffer, start + 603 + rectIndex * 2)
+          sound: i16(buffer, start + RANDOM_LEVEL_SOUND_OFFSET + rectIndex * 2),
+          text: i16(buffer, start + RANDOM_LEVEL_TEXT_OFFSET + rectIndex * 2)
         });
       }
     }

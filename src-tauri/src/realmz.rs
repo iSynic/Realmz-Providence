@@ -49,7 +49,10 @@ pub use maps::{
 };
 pub use messages::{parse_messages, write_messages, MESSAGE_BYTES};
 pub use option_labels::{parse_option_labels, write_option_labels, OPTION_LABEL_BYTES};
-pub use random_levels::{parse_random_levels, write_random_levels, RANDLEVEL_BYTES};
+pub use random_levels::{
+    parse_random_levels, write_random_levels, RANDLEVEL_BYTES, RANDLEVEL_PADDING_OFFSET,
+    RANDLEVEL_SOUND_OFFSET, RANDLEVEL_TEXT_OFFSET,
+};
 pub use record_bytes::{i16_be, write_i16_be};
 pub use rules::{
     parse_caste_overrides, parse_race_overrides, parse_spell_overrides, write_caste_overrides,

@@ -29,6 +29,7 @@ use crate::realmz::{
     write_scenario_restrictions, write_scenario_shell, write_scenario_support_file, write_shops,
     write_simple_encounters, write_spell_overrides, write_thief_encounters, write_tile_solids,
     write_timed_encounters, write_treasures, DOOR_BYTES, EXTRACODE_BYTES, LAND_LAYOUT_BYTES,
+    RANDLEVEL_PADDING_OFFSET, RANDLEVEL_SOUND_OFFSET, RANDLEVEL_TEXT_OFFSET,
 };
 use crate::resource_fork::{
     decode_string_list_resource, encode_string_list_resource, merge_resource_entries,
@@ -1205,7 +1206,7 @@ fn preserve_imported_random_level_compatibility(
                 output[start + 523 + rect_index] = raw[start + 523 + rect_index];
             }
         }
-        output[start + 643] = raw[start + 643];
+        output[start + RANDLEVEL_PADDING_OFFSET] = raw[start + RANDLEVEL_PADDING_OFFSET];
     }
     Ok(output)
 }
@@ -1235,8 +1236,8 @@ fn copy_imported_random_rect_slot(
         (400 + rect_index * 6, 6),
         (523 + rect_index, 1),
         (543 + rect_index, 1),
-        (563 + rect_index * 2, 2),
-        (603 + rect_index * 2, 2),
+        (RANDLEVEL_SOUND_OFFSET + rect_index * 2, 2),
+        (RANDLEVEL_TEXT_OFFSET + rect_index * 2, 2),
     ] {
         let start = record_start + relative_start;
         output[start..start + length].copy_from_slice(&raw[start..start + length]);
@@ -2411,6 +2412,7 @@ mod tests {
         ProjectOrigin, Provenance, ScenarioIconResource, ScenarioIconResourceSource, ScenarioItemRecord,
         ScenarioTarget,
     };
+    use crate::realmz::{RANDLEVEL_PADDING_OFFSET, RANDLEVEL_SOUND_OFFSET, RANDLEVEL_TEXT_OFFSET};
     use crate::resource_fork::{
         decode_string_list_resource, encode_string_list_resource, write_resource_fork,
         ResourceForkEntry,
@@ -2620,8 +2622,11 @@ mod tests {
         source[521] = 0xa5;
         source[522] = 0x80;
         source[523] = 0xfe;
-        source[565..567].copy_from_slice(&17i16.to_be_bytes());
-        source[643] = 0x34;
+        source[RANDLEVEL_PADDING_OFFSET] = 0x34;
+        source[RANDLEVEL_SOUND_OFFSET..RANDLEVEL_SOUND_OFFSET + 2]
+            .copy_from_slice(&17i16.to_be_bytes());
+        source[RANDLEVEL_TEXT_OFFSET + 38..RANDLEVEL_TEXT_OFFSET + 40]
+            .copy_from_slice(&0x1234i16.to_be_bytes());
         source.extend_from_slice(&[0xde, 0xad, 0xbe]);
         fs::write(raw_dir.join("Data RD"), &source).unwrap();
         let annex = CompatibilityAnnex::from_root(&raw_dir).snapshot().unwrap();
@@ -2655,8 +2660,21 @@ mod tests {
         assert_eq!(edited[521], 0);
         assert_eq!(edited[522], 0x80);
         assert_eq!(edited[523], 0);
-        assert_eq!(i16::from_be_bytes([edited[565], edited[566]]), 17);
-        assert_eq!(edited[643], 0x34);
+        assert_eq!(edited[RANDLEVEL_PADDING_OFFSET], 0x34);
+        assert_eq!(
+            i16::from_be_bytes([
+                edited[RANDLEVEL_SOUND_OFFSET],
+                edited[RANDLEVEL_SOUND_OFFSET + 1]
+            ]),
+            0
+        );
+        assert_eq!(
+            i16::from_be_bytes([
+                edited[RANDLEVEL_TEXT_OFFSET + 38],
+                edited[RANDLEVEL_TEXT_OFFSET + 39]
+            ]),
+            0x1234
+        );
         assert_eq!(&edited[644..], &[0xde, 0xad, 0xbe]);
     }
 

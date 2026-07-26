@@ -9,6 +9,7 @@ const buildRoot = path.join(repoRoot, "tmp", "browser-scenario-package-check");
 const sourceFiles = [
   "src/editor/browser/zip.ts",
   "src/editor/browser/binaryWriters.ts",
+  "src/editor/browser/randomLevelLayout.ts",
   "src/editor/browser/resourceFork.ts",
   "src/editor/browser/fsAccess.ts",
   "src/editor/browser/shopRecords.ts",
@@ -202,13 +203,16 @@ setI16(sourceLandRandomLevels, 0, 31);
 sourceLandRandomLevels[521] = 0xa5;
 sourceLandRandomLevels[522] = 0x80;
 sourceLandRandomLevels[523] = 0xfe;
-setI16(sourceLandRandomLevels, 565, 17);
-sourceLandRandomLevels[643] = 0x34;
+sourceLandRandomLevels[563] = 0x34;
+setI16(sourceLandRandomLevels, 564, 17);
+setI16(sourceLandRandomLevels, 604, 23);
 setI16(sourceLandRandomLevels, RANDOM_LEVEL_BYTES, 32);
-sourceLandRandomLevels[RANDOM_LEVEL_BYTES + 643] = 0x44;
+sourceLandRandomLevels[RANDOM_LEVEL_BYTES + 563] = 0x44;
+sourceLandRandomLevels[RANDOM_LEVEL_BYTES + 643] = 0x66;
 const sourceDungeonRandomLevels = new Uint8Array(RANDOM_LEVEL_BYTES);
 setI16(sourceDungeonRandomLevels, 0, 33);
-sourceDungeonRandomLevels[643] = 0x55;
+sourceDungeonRandomLevels[563] = 0x55;
+sourceDungeonRandomLevels[643] = 0x77;
 const sourceLandDoors = new Uint8Array(DOOR_LEVEL_BYTES * 2);
 setDoor(sourceLandDoors.subarray(0, DOOR_BYTES), { doorid: 1, landid: 0, targetX: 2, targetY: 3, percent: 25, actions: [{ slot: 0, rawCode: 5, id: 6 }] });
 const sourceDungeonDoors = new Uint8Array(DOOR_LEVEL_BYTES);
@@ -512,6 +516,8 @@ authoredLandRandomValues[260] = 7;
 const authoredDungeonRandomValues = new Array(RANDOM_LEVEL_BYTES / 2).fill(0);
 authoredDungeonRandomValues[0] = 63;
 authoredDungeonRandomValues[260] = -1;
+authoredDungeonRandomValues[76] = 65;
+authoredDungeonRandomValues[321] = 0x1234;
 const authoredLandTrigger = triggerRecord("Data DD", "land", 1, 2, {
   doorid: 10203,
   landid: 1,
@@ -581,12 +587,13 @@ const expectedAuthoredLandRandomLevel = randomLevelRow(authoredLandRandomValues)
 expectedAuthoredLandRandomLevel[0] = 0;
 expectedAuthoredLandRandomLevel[1] = 0;
 expectedAuthoredLandRandomLevel[521] = 1;
-expectedAuthoredLandRandomLevel[643] = 0x44;
+expectedAuthoredLandRandomLevel[563] = 0x44;
+expectedAuthoredLandRandomLevel[643] = 0x66;
 const expectedAuthoredDungeonRandomLevel = randomLevelRow(authoredDungeonRandomValues);
 expectedAuthoredDungeonRandomLevel[521] = 1;
-expectedAuthoredDungeonRandomLevel[643] = 0x55;
-expect(bytesEqual(mapFiles.get("Data RD")?.slice(RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES * 2), expectedAuthoredLandRandomLevel), "Authored land random level should delete the imported rectangle while preserving only the annex-owned final byte");
-expect(bytesEqual(mapFiles.get("Data RDD")?.slice(0, RANDOM_LEVEL_BYTES), expectedAuthoredDungeonRandomLevel), "Authored dungeon random level should compile semantic settings while preserving the annex-owned final byte");
+expectedAuthoredDungeonRandomLevel[563] = 0x55;
+expect(bytesEqual(mapFiles.get("Data RD")?.slice(RANDOM_LEVEL_BYTES, RANDOM_LEVEL_BYTES * 2), expectedAuthoredLandRandomLevel), "Authored land random level should delete the imported rectangle while preserving padding and still-inactive slots");
+expect(bytesEqual(mapFiles.get("Data RDD")?.slice(0, RANDOM_LEVEL_BYTES), expectedAuthoredDungeonRandomLevel), "Authored dungeon random level should compile semantic settings while preserving native padding");
 expect(bytesEqual(mapFiles.get("Data DD")?.slice(0, DOOR_BYTES), sourceLandDoors.slice(0, DOOR_BYTES)), "Unauthored land action point should remain byte-identical");
 expect(bytesEqual(mapFiles.get("Data DD")?.slice(DOOR_LEVEL_BYTES + 2 * DOOR_BYTES, DOOR_LEVEL_BYTES + 3 * DOOR_BYTES), doorRow(authoredLandTrigger)), "Authored land action point should encode trigger row");
 expect(bytesEqual(mapFiles.get("Data DDD")?.slice(0, DOOR_BYTES), sourceDungeonDoors.slice(0, DOOR_BYTES)), "Unauthored dungeon action point should remain byte-identical");
@@ -1614,8 +1621,8 @@ function randomLevel(levelType, levelIndex, values) {
         randomDoorPercent: [0, 1, 2].map((slot) => readI16(bytes, 400 + rectIndex * 6 + slot * 2)),
         only: bytes[523 + rectIndex] !== 0,
         option: signedByte(bytes[543 + rectIndex]),
-        sound: readI16(bytes, 563 + rectIndex * 2),
-        text: readI16(bytes, 603 + rectIndex * 2)
+        sound: readI16(bytes, 564 + rectIndex * 2),
+        text: readI16(bytes, 604 + rectIndex * 2)
       });
     }
   }

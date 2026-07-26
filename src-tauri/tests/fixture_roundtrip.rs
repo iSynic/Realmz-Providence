@@ -12,8 +12,8 @@ use realmz_providence_lib::project::{
 use realmz_providence_lib::realmz::{
     i16_be, parse_scenario_buffers, update_custom_land_tile_attributes,
     update_custom_land_tile_combat_build, update_custom_landlook_base,
-    update_custom_landlook_range_slot, CustomLandTileAttributePatch, SUPPORTED_WRITE_FILES,
-    TRACKED_FILES,
+    update_custom_landlook_range_slot, CustomLandTileAttributePatch, RANDLEVEL_BYTES,
+    RANDLEVEL_SOUND_OFFSET, RANDLEVEL_TEXT_OFFSET, SUPPORTED_WRITE_FILES, TRACKED_FILES,
 };
 use realmz_providence_lib::resource_fork::{
     decode_string_list_resource, encode_pict_resource, parse_resource_fork_entries,
@@ -61,6 +61,36 @@ const HARDENED_FIXTURES: &[&str] = &[
     "Wrath of the Mind Lords",
     "Tutorial",
 ];
+
+const BUILT_IN_CLASSIC_CAMPAIGNS: &[&str] = &[
+    "Assault on Giant Mountain",
+    "Castle in the Clouds",
+    "City of Bywater",
+    "Destroy the Necronomicon",
+    "Grilochs Revenge",
+    "Half Truth",
+    "Mithril Vault",
+    "Prelude to Pestilence",
+    "Trouble in the Sword Lands",
+    "Twin Sands of Time",
+    "War in the Sword Lands",
+    "White Dragon",
+    "Wrath of the Mind Lords",
+];
+
+fn built_in_classic_fixture_path(name: &str) -> Option<std::path::PathBuf> {
+    if let Some(root) = std::env::var_os("PROVIDENCE_SCENARIO_CORPUS") {
+        let path = std::path::PathBuf::from(root).join(name);
+        if path.is_dir() {
+            return Some(path);
+        }
+    }
+    let path = Path::new("F:/RealmzOracleBuild/base/Realmz/Scenarios").join(name);
+    if path.is_dir() {
+        return Some(path);
+    }
+    fixture_path(name)
+}
 
 #[test]
 fn imports_core_fixture_scenarios() {
@@ -116,6 +146,137 @@ fn imports_core_fixture_scenarios() {
             );
         }
     }
+}
+
+#[test]
+fn mithril_vault_rectangle_17_uses_authoritative_native_randlevel_layout() {
+    let oracle_path = Path::new("F:/RealmzOracleBuild/base/Realmz/Scenarios/Mithril Vault/Data RD");
+    let source_path = if oracle_path.is_file() {
+        oracle_path.to_path_buf()
+    } else {
+        let Some(source) = fixture_path("Mithril Vault") else {
+            eprintln!("Skipping authoritative Mithril random-level fixture; source is absent.");
+            return;
+        };
+        source.join("Data RD")
+    };
+    let data_rd = fs::read(&source_path).unwrap();
+    assert_eq!(
+        sha256_hex(&data_rd),
+        "0cbaed22d94b15d8b3dbc2a0ffb94cb1728299fb0539a98963094aab1ac10564",
+        "Mithril Data RD must match the Oracle-proven fixture"
+    );
+
+    let parsed = parse_scenario_buffers(&BTreeMap::from([("Data RD".to_string(), data_rd)]));
+    let level = parsed
+        .random_levels
+        .iter()
+        .find(|level| level.level_type.as_str() == "land" && level.level_index == 0)
+        .expect("Mithril should contain land random level 0");
+    let rect = level
+        .rects
+        .iter()
+        .find(|rect| rect.rect_index == 17)
+        .expect("Mithril land level 0 should contain random rectangle 17");
+
+    assert_eq!(rect.percent, 200);
+    assert_eq!(rect.battle_range, [225, 231]);
+    assert_eq!(rect.random_doors, [446, 448, 0]);
+    assert_eq!(rect.random_door_percent, [50, 50, 0]);
+    assert_eq!(rect.option, 66);
+    assert_eq!(rect.sound, 30000);
+    assert_eq!(rect.text, 1278);
+}
+
+#[test]
+fn built_in_classic_randlevel_corpus_uses_native_layout_and_round_trips_byte_identically() {
+    let available: Vec<_> = BUILT_IN_CLASSIC_CAMPAIGNS
+        .iter()
+        .filter_map(|name| built_in_classic_fixture_path(name).map(|path| (*name, path)))
+        .collect();
+    if available.is_empty() {
+        eprintln!("Skipping built-in Classic randlevel corpus; source fixtures are absent.");
+        return;
+    }
+    assert_eq!(
+        available.len(),
+        BUILT_IN_CLASSIC_CAMPAIGNS.len(),
+        "the built-in Classic randlevel comparison requires all 13 campaigns"
+    );
+
+    let mut checked_files = 0usize;
+    let mut checked_rects = 0usize;
+    for (name, source) in available {
+        for (file_name, level_type) in [("Data RD", "land"), ("Data RDD", "dungeon")] {
+            let source_file = source.join(file_name);
+            assert!(
+                source_file.is_file(),
+                "{name} should contain the built-in {file_name} record stream"
+            );
+            let bytes = fs::read(&source_file).unwrap();
+            assert_eq!(
+                bytes.len() % RANDLEVEL_BYTES,
+                0,
+                "{name} {file_name} should contain complete randlevel records"
+            );
+            let parsed =
+                parse_scenario_buffers(&BTreeMap::from([(file_name.to_string(), bytes.clone())]));
+            for level in parsed
+                .random_levels
+                .iter()
+                .filter(|level| level.level_type.as_str() == level_type)
+            {
+                let start = level.level_index * RANDLEVEL_BYTES;
+                for rect in &level.rects {
+                    assert_eq!(
+                        rect.sound,
+                        i16_be(&bytes, start + RANDLEVEL_SOUND_OFFSET + rect.rect_index * 2),
+                        "{name} {file_name} level {} rect {} sound should use native alignment",
+                        level.level_index,
+                        rect.rect_index
+                    );
+                    assert_eq!(
+                        rect.text,
+                        i16_be(&bytes, start + RANDLEVEL_TEXT_OFFSET + rect.rect_index * 2),
+                        "{name} {file_name} level {} rect {} text should use native alignment",
+                        level.level_index,
+                        rect.rect_index
+                    );
+                    checked_rects += 1;
+                }
+            }
+            checked_files += 1;
+        }
+
+        let temp = tempdir().unwrap();
+        let project_dir = temp.path().join("project");
+        let export_dir = temp.path().join("exported");
+        let project = import_scenario(&source, &project_dir).unwrap();
+        export_project(
+            &project_dir,
+            &project,
+            &export_dir,
+            ScenarioTarget::ProvidencePortableFolder,
+        )
+        .unwrap();
+        for file_name in ["Data RD", "Data RDD"] {
+            assert_eq!(
+                fs::read(source.join(file_name)).unwrap(),
+                fs::read(export_dir.join(file_name)).unwrap(),
+                "{name} {file_name} should rewrite byte-identically without edits"
+            );
+        }
+    }
+
+    assert_eq!(checked_files, BUILT_IN_CLASSIC_CAMPAIGNS.len() * 2);
+    assert!(
+        checked_rects > 0,
+        "the built-in Classic corpus should contain active random rectangles"
+    );
+    eprintln!(
+        "Compared {} randlevel files and {} active rectangles across 13 built-in Classic campaigns.",
+        checked_files, checked_rects
+    );
 }
 
 #[test]
