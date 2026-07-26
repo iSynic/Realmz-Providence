@@ -85,6 +85,7 @@ import { createAuthoredScenarioCompilerBaseline } from "./scenarioCompilerBaseli
 import { CUSTOM_SPELL_RECORDS, writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
 import { isNormalizedLandlookAtlasPict } from "../pictWriter";
 import { inspectStandardMod } from "../standardMod";
+import { RANDOM_LEVEL_PADDING_OFFSET, RANDOM_LEVEL_SOUND_OFFSET, RANDOM_LEVEL_TEXT_OFFSET } from "./randomLevelLayout";
 
 type ZipEntry = {
   path: string;
@@ -1110,7 +1111,7 @@ function preserveImportedRandomLevelCompatibility(
         output[start + 523 + rectIndex] = raw[start + 523 + rectIndex];
       }
     }
-    output[start + 643] = raw[start + 643];
+    output[start + RANDOM_LEVEL_PADDING_OFFSET] = raw[start + RANDOM_LEVEL_PADDING_OFFSET];
   }
   return output;
 }
@@ -1134,8 +1135,8 @@ function copyImportedRandomRectSlot(output: Uint8Array, raw: Uint8Array, recordS
     [400 + rectIndex * 6, 6],
     [523 + rectIndex, 1],
     [543 + rectIndex, 1],
-    [563 + rectIndex * 2, 2],
-    [603 + rectIndex * 2, 2]
+    [RANDOM_LEVEL_SOUND_OFFSET + rectIndex * 2, 2],
+    [RANDOM_LEVEL_TEXT_OFFSET + rectIndex * 2, 2]
   ]) {
     const start = recordStart + relativeStart;
     output.set(raw.slice(start, start + length), start);

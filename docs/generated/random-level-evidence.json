@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "generatedAt": "2026-05-26T00:00:00.000-05:00",
-  "source": "Manual archaeology pass over Realmz randlevel source, runtime consumers, and local output corpus",
+  "source": "Realmz struct offsetof probe, Oracle fixture proof, runtime consumers, and local output corpus",
   "record": {
     "name": "randlevel",
     "bytes": 644,
@@ -35,6 +35,30 @@
       "finding": "Opcodes 23, -23, 92, and 106 mutate random rectangle percent/ranges/shape or level landlook/darkness."
     }
   ],
+  "authoritativeOracle": {
+    "build": "47d4600c",
+    "fixture": "F:\\RealmzOracleBuild\\base\\Realmz\\Scenarios\\Mithril Vault\\Data RD",
+    "sha256": "0CBAED22D94B15D8B3DBC2A0FFB94CB1728299FB0539A98963094AAB1AC10564",
+    "record": {
+      "levelType": "land",
+      "levelIndex": 0,
+      "rectIndex": 17,
+      "percent": 200,
+      "battleRange": [225, 231],
+      "randomDoors": [446, 448, 0],
+      "randomDoorPercent": [50, 50, 0],
+      "option": 66,
+      "sound": 30000,
+      "text": 1278
+    },
+    "offsetof": {
+      "sizeof": 644,
+      "only": 523,
+      "option": 543,
+      "sound": 564,
+      "text": 604
+    }
+  },
   "layout": [
     { "offset": 0, "size": 160, "field": "randrect[20]", "type": "Rect[20]", "editorMeaning": "Random rectangle bounds top/left/bottom/right." },
     { "offset": 160, "size": 40, "field": "percent[20]", "type": "be_i16[20]", "editorMeaning": "Chance in times per 10000; negative values use a seamless-door path." },
@@ -46,9 +70,9 @@
     { "offset": 522, "size": 1, "field": "uselos", "type": "bool", "editorMeaning": "Line-of-sight/unknown-site outdoor render flag." },
     { "offset": 523, "size": 20, "field": "only[20]", "type": "bool[20]", "editorMeaning": "Stop lower-priority random rectangle checks when party is inside this rectangle." },
     { "offset": 543, "size": 20, "field": "option[20]", "type": "i8[20]", "editorMeaning": "Prompt/surprise chance used before random battle." },
-    { "offset": 563, "size": 40, "field": "sound[20]", "type": "be_i16[20]", "editorMeaning": "Sound played with option prompt." },
-    { "offset": 603, "size": 40, "field": "text[20]", "type": "be_i16[20]", "editorMeaning": "Data SD2 message ID displayed with option prompt." },
-    { "offset": 643, "size": 1, "field": "padding", "type": "u8", "editorMeaning": "Preserve alignment/padding byte." }
+    { "offset": 563, "size": 1, "field": "padding", "type": "u8", "editorMeaning": "Preserve native alignment byte without decoding it as sound data." },
+    { "offset": 564, "size": 40, "field": "sound[20]", "type": "be_i16[20]", "editorMeaning": "Sound played with option prompt." },
+    { "offset": 604, "size": 40, "field": "text[20]", "type": "be_i16[20]", "editorMeaning": "Data SD2 message ID displayed with option prompt." }
   ],
   "runtimeSemantics": {
     "priority": "Rectangles are checked from index 19 down to 0.",
