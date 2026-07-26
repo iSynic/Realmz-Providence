@@ -1,7 +1,12 @@
 mod assets;
+mod comparison;
 mod documents;
 mod portable;
 mod rule_selection;
+
+pub use comparison::{
+    compare_remake_bundles, RemakeBundleComparison, RemakeBundleMismatch, RemakeBundleMismatchKind,
+};
 
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::{LevelType, ProvidenceProject};
@@ -125,7 +130,7 @@ fn prepare_output_dir(output_dir: &Path) -> Result<()> {
 fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
     let file = File::create(path).with_path(path)?;
     let mut writer = BufWriter::new(file);
-    serde_json::to_writer_pretty(&mut writer, value).with_json_path(path)?;
+    serde_json::to_writer(&mut writer, value).with_json_path(path)?;
     writer.write_all(b"\n").with_path(path)?;
     writer.flush().with_path(path)
 }

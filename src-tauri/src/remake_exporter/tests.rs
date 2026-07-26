@@ -94,10 +94,22 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
             "{relative_path} was not deterministic"
         );
     }
+    let comparison = compare_remake_bundles(&first, &second).unwrap();
+    assert!(comparison.equivalent);
+    assert_eq!(comparison.current_files, first_report.written_files.len());
+    assert_eq!(comparison.candidate_files, first_report.written_files.len());
+    assert_eq!(comparison.json_documents, 9);
+    assert_eq!(comparison.bytes_saved, 0);
 
     let documents = read_json_documents(&first);
     for (path, value) in &documents {
         assert_no_forbidden_project_state(value, path);
+        let serialized = fs::read_to_string(first.join(path)).unwrap();
+        assert_eq!(
+            serialized.lines().count(),
+            1,
+            "{path} is not compact distribution JSON"
+        );
     }
     let manifest = &documents["campaign.json"];
     assert_eq!(manifest["format"], REMAKE_CLASSIC_FORMAT);
@@ -1403,6 +1415,50 @@ fn refuses_to_overwrite_a_non_empty_directory() {
     let error = export_remake_campaign(&project, &project_dir, &output_dir).unwrap_err();
     assert!(error.to_string().contains("Refusing to overwrite"));
     assert_eq!(fs::read(output_dir.join("keep.txt")).unwrap(), b"keep");
+}
+
+#[test]
+fn bundle_comparison_reports_semantic_and_payload_mismatches() {
+    let workspace = tempdir().unwrap();
+    let current = workspace.path().join("current");
+    let candidate = workspace.path().join("candidate");
+    fs::create_dir_all(current.join("classic")).unwrap();
+    fs::create_dir_all(candidate.join("classic")).unwrap();
+    fs::write(
+        current.join("classic/scenario.json"),
+        b"{\n  \"identity\": {\"id\": \"current\"}\n}\n",
+    )
+    .unwrap();
+    fs::write(
+        candidate.join("classic/scenario.json"),
+        b"{\"identity\":{\"id\":\"candidate\"}}\n",
+    )
+    .unwrap();
+    fs::write(current.join("payload.bin"), b"current").unwrap();
+    fs::write(candidate.join("payload.bin"), b"candidate").unwrap();
+    fs::write(candidate.join("candidate-only.bin"), b"candidate").unwrap();
+
+    let comparison = compare_remake_bundles(&current, &candidate).unwrap();
+
+    assert!(!comparison.equivalent);
+    assert_eq!(comparison.json_documents, 1);
+    assert_eq!(comparison.payload_files, 1);
+    assert_eq!(comparison.mismatches.len(), 3);
+    assert_eq!(
+        comparison.mismatches[0].kind,
+        RemakeBundleMismatchKind::MissingCurrentFile
+    );
+    assert_eq!(
+        comparison.mismatches[1].kind,
+        RemakeBundleMismatchKind::JsonValue
+    );
+    assert!(comparison.mismatches[1].detail.contains("$/identity/id"));
+    assert_eq!(
+        comparison.mismatches[2].kind,
+        RemakeBundleMismatchKind::PayloadBytes
+    );
+    assert!(comparison.mismatches[2].current_sha256.is_some());
+    assert!(comparison.mismatches[2].candidate_sha256.is_some());
 }
 
 #[test]

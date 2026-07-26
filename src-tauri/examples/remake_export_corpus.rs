@@ -1,10 +1,11 @@
 use realmz_providence_lib::importer::{import_scenario_into_project, open_project};
 use realmz_providence_lib::project::ProvidenceProject;
 use realmz_providence_lib::remake_exporter::{
-    export_remake_campaign, RemakeExportCounts, RemakeExportReport,
+    compare_remake_bundles, export_remake_campaign, RemakeBundleComparison, RemakeExportCounts,
+    RemakeExportReport,
 };
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -21,6 +22,10 @@ struct Args {
     replace: bool,
     keep_successes: bool,
     skip_legacy_catalog_check: bool,
+    baseline: Option<PathBuf>,
+    scenarios: Vec<String>,
+    name_suffix: String,
+    scenario_ids: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -31,6 +36,7 @@ struct CorpusReport {
     generated_at_unix: u64,
     source_root: String,
     output_root: String,
+    baseline_root: Option<String>,
     aggregate: CorpusAggregate,
     scenarios: Vec<ScenarioResult>,
 }
@@ -45,6 +51,14 @@ struct CorpusAggregate {
     export_failures: usize,
     legacy_catalog_failures: usize,
     harness_failures: usize,
+    comparison_failures: usize,
+    comparisons: usize,
+    comparison_json_documents: usize,
+    comparison_payload_files: usize,
+    comparison_current_bytes: u64,
+    comparison_candidate_bytes: u64,
+    comparison_bytes_saved: i64,
+    comparison_mismatches: usize,
     normal_written_files: usize,
     legacy_written_files: usize,
     normal_packaged_asset_payloads: usize,
@@ -84,6 +98,7 @@ enum ScenarioStatus {
     ExportFailed,
     LegacyCatalogExportFailed,
     HarnessFailed,
+    ComparisonFailed,
 }
 
 #[derive(Debug, Serialize)]
@@ -93,6 +108,7 @@ struct ExportAttempt {
     error: Option<String>,
     written_files: Option<usize>,
     counts: Option<RemakeExportCounts>,
+    comparison: Option<RemakeBundleComparison>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -110,6 +126,7 @@ impl ExportAttempt {
             error: None,
             written_files: None,
             counts: None,
+            comparison: None,
         }
     }
 
@@ -119,16 +136,37 @@ impl ExportAttempt {
             error: Some(error.into()),
             written_files: None,
             counts: None,
+            comparison: None,
         }
     }
 
-    fn passed(report: RemakeExportReport) -> Self {
+    fn failed_comparison(report: RemakeExportReport, comparison: RemakeBundleComparison) -> Self {
+        Self {
+            status: AttemptStatus::Failed,
+            error: Some(format!(
+                "Bundle comparison found {} mismatch(es)",
+                comparison.mismatches.len()
+            )),
+            written_files: Some(report.written_files.len()),
+            counts: Some(report.counts),
+            comparison: Some(comparison),
+        }
+    }
+
+    fn passed(report: RemakeExportReport, comparison: Option<RemakeBundleComparison>) -> Self {
         Self {
             status: AttemptStatus::Passed,
             error: None,
             written_files: Some(report.written_files.len()),
             counts: Some(report.counts),
+            comparison,
         }
+    }
+
+    fn comparison_failed(&self) -> bool {
+        self.comparison
+            .as_ref()
+            .is_some_and(|comparison| !comparison.equivalent)
     }
 }
 
@@ -177,6 +215,37 @@ fn parse_args() -> Result<Args, String> {
             "--replace" => args.replace = true,
             "--keep-successes" => args.keep_successes = true,
             "--skip-legacy-catalog-check" => args.skip_legacy_catalog_check = true,
+            "--baseline" => {
+                args.baseline = Some(PathBuf::from(
+                    values
+                        .next()
+                        .ok_or_else(|| "--baseline requires a path".to_string())?,
+                ));
+            }
+            "--scenario" => {
+                args.scenarios.push(
+                    values
+                        .next()
+                        .ok_or_else(|| "--scenario requires a directory name".to_string())?,
+                );
+            }
+            "--name-suffix" => {
+                args.name_suffix = values
+                    .next()
+                    .ok_or_else(|| "--name-suffix requires text".to_string())?;
+            }
+            "--scenario-id" => {
+                let assignment = values
+                    .next()
+                    .ok_or_else(|| "--scenario-id requires NAME=ID".to_string())?;
+                let (name, id) = assignment
+                    .split_once('=')
+                    .ok_or_else(|| "--scenario-id requires NAME=ID".to_string())?;
+                if name.is_empty() || id.is_empty() {
+                    return Err("--scenario-id requires non-empty NAME=ID".to_string());
+                }
+                args.scenario_ids.insert(name.to_string(), id.to_string());
+            }
             "--help" | "-h" => {
                 print_usage();
                 std::process::exit(0);
@@ -191,21 +260,55 @@ fn print_usage() {
     eprintln!(
         "Usage: cargo run --manifest-path src-tauri/Cargo.toml --example remake_export_corpus -- \
          [--root PATH] [--output PATH] [--replace] [--keep-successes] \
-         [--skip-legacy-catalog-check]"
+         [--skip-legacy-catalog-check] [--baseline PATH] \
+         [--scenario NAME]... [--name-suffix TEXT] [--scenario-id NAME=ID]..."
     );
 }
 
 fn run(args: &Args) -> Result<bool, String> {
     let source_root = absolute_path(&args.root)?;
     let output_root = absolute_path(&args.output)?;
+    let baseline_root = args.baseline.as_deref().map(absolute_path).transpose()?;
     if !source_root.is_dir() {
         return Err(format!(
             "Scenario corpus root does not exist: {}",
             source_root.display()
         ));
     }
+    if let Some(baseline_root) = &baseline_root {
+        if !baseline_root.is_dir() {
+            return Err(format!(
+                "Comparison baseline does not exist: {}",
+                baseline_root.display()
+            ));
+        }
+    }
     prepare_output_root(&output_root, args.replace)?;
-    let scenarios = discover_scenarios(&source_root)?;
+    let mut scenarios = discover_scenarios(&source_root)?;
+    if !args.scenarios.is_empty() {
+        let requested = args
+            .scenarios
+            .iter()
+            .map(|name| name.to_ascii_lowercase())
+            .collect::<BTreeSet<_>>();
+        scenarios.retain(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| requested.contains(&name.to_ascii_lowercase()))
+        });
+        if scenarios.len() != requested.len() {
+            let found = scenarios
+                .iter()
+                .filter_map(|path| path.file_name())
+                .map(|name| name.to_string_lossy().to_ascii_lowercase())
+                .collect::<BTreeSet<_>>();
+            let missing = requested.difference(&found).cloned().collect::<Vec<_>>();
+            return Err(format!(
+                "Requested scenario directories were not found: {}",
+                missing.join(", ")
+            ));
+        }
+    }
     if scenarios.is_empty() {
         return Err(format!(
             "No scenario directories found under {}",
@@ -236,12 +339,21 @@ fn run(args: &Args) -> Result<bool, String> {
         println!("[{}/{}] {}", index + 1, scenarios.len(), name);
         let case_name = format!("{:03}-{}", index + 1, slugify(&name));
         let case_path = cases_root.join(case_name);
+        let project_name = format!("{name}{}", args.name_suffix);
+        let scenario_id = args.scenario_ids.get(&name).map(String::as_str);
+        let baseline_case_path = baseline_root.as_ref().map(|root| {
+            root.join("cases")
+                .join(case_path.file_name().unwrap_or_default())
+        });
         let result = run_scenario(
             &name,
+            &project_name,
+            scenario_id,
             source_path,
             &case_path,
             args.keep_successes,
             args.skip_legacy_catalog_check,
+            baseline_case_path.as_deref(),
         );
         if result.status == ScenarioStatus::Passed {
             println!("  passed in {} ms", result.duration_ms);
@@ -253,7 +365,7 @@ fn run(args: &Args) -> Result<bool, String> {
 
     let aggregate = aggregate(&results);
     let report = CorpusReport {
-        schema_version: 1,
+        schema_version: 2,
         generated_by: "src-tauri/examples/remake_export_corpus.rs",
         generated_at_unix: SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -261,6 +373,9 @@ fn run(args: &Args) -> Result<bool, String> {
             .as_secs(),
         source_root: source_root.to_string_lossy().to_string(),
         output_root: output_root.to_string_lossy().to_string(),
+        baseline_root: baseline_root
+            .as_ref()
+            .map(|path| path.to_string_lossy().to_string()),
         aggregate,
         scenarios: results,
     };
@@ -354,10 +469,13 @@ fn discover_scenarios(root: &Path) -> Result<Vec<PathBuf>, String> {
 
 fn run_scenario(
     name: &str,
+    project_name: &str,
+    scenario_id: Option<&str>,
     source_path: &Path,
     case_path: &Path,
     keep_successes: bool,
     skip_legacy_catalog_check: bool,
+    baseline_case_path: Option<&Path>,
 ) -> ScenarioResult {
     let started = Instant::now();
     let project_dir = case_path.join("project.providence");
@@ -387,7 +505,13 @@ fn run_scenario(
     let project = match import_scenario_into_project(source_path, &project_dir, name.to_string())
         .and_then(|_| open_project(&project_dir))
     {
-        Ok(project) => project,
+        Ok(mut project) => {
+            project.scenario.name = project_name.to_string();
+            if let Some(scenario_id) = scenario_id {
+                project.scenario.id = scenario_id.to_string();
+            }
+            project
+        }
         Err(error) => {
             return ScenarioResult {
                 name: name.to_string(),
@@ -406,7 +530,12 @@ fn run_scenario(
         }
     };
 
-    let normal_export = run_export(&project, &project_dir, &normal_output);
+    let normal_export = run_export(
+        &project,
+        &project_dir,
+        &normal_output,
+        baseline_case_path.map(|path| path.join("remake")),
+    );
     let negative_catalog_rows_removed = project
         .asset_catalog
         .icons
@@ -421,15 +550,23 @@ fn run_scenario(
             .asset_catalog
             .icons
             .retain(|asset| asset.resource_type != "cicn" || asset.resource_id >= 0);
-        run_export(&legacy_project, &project_dir, &legacy_output)
+        run_export(
+            &legacy_project,
+            &project_dir,
+            &legacy_output,
+            baseline_case_path.map(|path| path.join("remake-without-negative-icon-catalog")),
+        )
     };
-    let mut status = if normal_export.status == AttemptStatus::Failed {
-        ScenarioStatus::ExportFailed
-    } else if legacy_catalog_export.status == AttemptStatus::Failed {
-        ScenarioStatus::LegacyCatalogExportFailed
-    } else {
-        ScenarioStatus::Passed
-    };
+    let mut status =
+        if normal_export.comparison_failed() || legacy_catalog_export.comparison_failed() {
+            ScenarioStatus::ComparisonFailed
+        } else if normal_export.status == AttemptStatus::Failed {
+            ScenarioStatus::ExportFailed
+        } else if legacy_catalog_export.status == AttemptStatus::Failed {
+            ScenarioStatus::LegacyCatalogExportFailed
+        } else {
+            ScenarioStatus::Passed
+        };
     let mut harness_error = None;
     let mut retained_case_path = retained_case_path;
     if status == ScenarioStatus::Passed && !keep_successes {
@@ -461,9 +598,27 @@ fn run_scenario(
     }
 }
 
-fn run_export(project: &ProvidenceProject, project_dir: &Path, output: &Path) -> ExportAttempt {
+fn run_export(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output: &Path,
+    baseline: Option<PathBuf>,
+) -> ExportAttempt {
     match export_remake_campaign(project, project_dir, output) {
-        Ok(report) => ExportAttempt::passed(report),
+        Ok(report) => match baseline {
+            Some(baseline) => match compare_remake_bundles(&baseline, output) {
+                Ok(comparison) if comparison.equivalent => {
+                    ExportAttempt::passed(report, Some(comparison))
+                }
+                Ok(comparison) => ExportAttempt::failed_comparison(report, comparison),
+                Err(error) => ExportAttempt::failed(format!(
+                    "Could not compare {} with {}: {error}",
+                    baseline.display(),
+                    output.display()
+                )),
+            },
+            None => ExportAttempt::passed(report, None),
+        },
         Err(error) => ExportAttempt::failed(error.to_string()),
     }
 }
@@ -481,6 +636,7 @@ fn aggregate(results: &[ScenarioResult]) -> CorpusAggregate {
             ScenarioStatus::ExportFailed => aggregate.export_failures += 1,
             ScenarioStatus::LegacyCatalogExportFailed => aggregate.legacy_catalog_failures += 1,
             ScenarioStatus::HarnessFailed => aggregate.harness_failures += 1,
+            ScenarioStatus::ComparisonFailed => aggregate.comparison_failures += 1,
         }
         accumulate_attempt(&mut aggregate, &result.normal_export, true);
         accumulate_attempt(&mut aggregate, &result.legacy_catalog_export, false);
@@ -507,6 +663,21 @@ fn aggregate(results: &[ScenarioResult]) -> CorpusAggregate {
 }
 
 fn accumulate_attempt(aggregate: &mut CorpusAggregate, attempt: &ExportAttempt, normal: bool) {
+    if let Some(comparison) = &attempt.comparison {
+        aggregate.comparisons += 1;
+        aggregate.comparison_json_documents += comparison.json_documents;
+        aggregate.comparison_payload_files += comparison.payload_files;
+        aggregate.comparison_current_bytes = aggregate
+            .comparison_current_bytes
+            .saturating_add(comparison.current_bytes);
+        aggregate.comparison_candidate_bytes = aggregate
+            .comparison_candidate_bytes
+            .saturating_add(comparison.candidate_bytes);
+        aggregate.comparison_bytes_saved = aggregate
+            .comparison_bytes_saved
+            .saturating_add(comparison.bytes_saved);
+        aggregate.comparison_mismatches += comparison.mismatches.len();
+    }
     if attempt.status != AttemptStatus::Passed {
         return;
     }
@@ -544,17 +715,37 @@ fn render_markdown(report: &CorpusReport) -> String {
          - Passed: {}\n\
          - Failed: {}\n\
          - Normal packaged payload files: {}\n\
-         - Legacy-catalog packaged payload files: {}\n\n\
-         The legacy-catalog pass removes derived negative `cicn` catalog rows before export. \
-         It verifies that preserved scenario resource forks remain sufficient for older projects.\n\n\
-         | Scenario | Result | Normal export | Legacy catalog | Duration (ms) |\n\
-         |---|---:|---:|---:|---:|\n",
+         - Legacy-catalog packaged payload files: {}\n",
         report.source_root,
         report.aggregate.scenarios,
         report.aggregate.passed,
         report.aggregate.failed,
         report.aggregate.normal_packaged_asset_payloads,
         report.aggregate.legacy_packaged_asset_payloads,
+    );
+    if report.aggregate.comparisons > 0 {
+        markdown.push_str(&format!(
+            "- Baseline comparisons: {}\n\
+             - Semantically compared JSON documents: {}\n\
+             - Byte-compared payload files: {}\n\
+             - Baseline bytes: {}\n\
+             - Candidate bytes: {}\n\
+             - Bytes saved: {}\n\
+             - Comparison mismatches: {}\n",
+            report.aggregate.comparisons,
+            report.aggregate.comparison_json_documents,
+            report.aggregate.comparison_payload_files,
+            report.aggregate.comparison_current_bytes,
+            report.aggregate.comparison_candidate_bytes,
+            report.aggregate.comparison_bytes_saved,
+            report.aggregate.comparison_mismatches,
+        ));
+    }
+    markdown.push_str(
+        "\nThe legacy-catalog pass removes derived negative `cicn` catalog rows before export. \
+         It verifies that preserved scenario resource forks remain sufficient for older projects.\n\n\
+         | Scenario | Result | Normal export | Legacy catalog | Duration (ms) |\n\
+         |---|---:|---:|---:|---:|\n",
     );
     for scenario in &report.scenarios {
         markdown.push_str(&format!(
@@ -659,6 +850,7 @@ fn status_label(status: ScenarioStatus) -> &'static str {
         ScenarioStatus::ExportFailed => "export-failed",
         ScenarioStatus::LegacyCatalogExportFailed => "legacy-catalog-export-failed",
         ScenarioStatus::HarnessFailed => "harness-failed",
+        ScenarioStatus::ComparisonFailed => "comparison-failed",
     }
 }
 
