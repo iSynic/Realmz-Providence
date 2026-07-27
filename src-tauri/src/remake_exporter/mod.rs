@@ -4,7 +4,7 @@ mod portable;
 
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::{LevelType, ProvidenceProject};
-use assets::package_assets;
+use assets::{package_assets, update_scenario_icon_assets};
 use documents::{build_documents, contract_files};
 use portable::assert_portable_value;
 use serde::Serialize;
@@ -17,10 +17,9 @@ pub const REMAKE_CLASSIC_FORMAT: &str = "realmz-remake-classic-campaign";
 pub const REMAKE_CLASSIC_FORMAT_VERSION: u32 = 1;
 
 const CLASSIC_DIR: &str = "classic";
-const LIMITATIONS: [&str; 4] = [
+const LIMITATIONS: [&str; 3] = [
     "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Styled-text payloads remain Classic resource data.",
     "Providence schema version 5 authors a land start; the v1 bundle can also represent dungeon starts when the canonical model gains that distinction.",
-    "Legacy scenario-icon and monster-icon override payloads are excluded unless they are canonical scenario-managed assets.",
     "Negative cicn special-land-tile identities use the additive v1 assets.catalog.specialLandTiles collection because ordinary v1 icon identities are non-negative.",
 ];
 
@@ -54,6 +53,13 @@ pub struct RemakeExportReport {
     pub written_files: Vec<String>,
     pub counts: RemakeExportCounts,
     pub limitations: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct RemakeIconUpdateReport {
+    pub output_dir: PathBuf,
+    pub written_files: Vec<String>,
+    pub packaged_asset_payloads: usize,
 }
 
 pub fn export_remake_campaign(
@@ -96,6 +102,70 @@ pub fn export_remake_campaign(
     })
 }
 
+pub fn update_remake_campaign_icons(
+    project: &ProvidenceProject,
+    output_dir: impl AsRef<Path>,
+) -> Result<RemakeIconUpdateReport> {
+    let output_dir = output_dir.as_ref();
+    let assets_path = output_dir.join(CLASSIC_DIR).join("assets.json");
+    let manifest_path = output_dir.join("campaign.json");
+    let assets_bytes = fs::read(&assets_path).with_path(&assets_path)?;
+    let assets_multiline = json_is_multiline(&assets_bytes);
+    let mut assets_document: Value =
+        serde_json::from_slice(&assets_bytes).with_json_path(&assets_path)?;
+    let written_files = update_scenario_icon_assets(project, output_dir, &mut assets_document)?;
+    assert_portable_value(&assets_document, output_dir, "classic/assets.json")?;
+    write_json_with_style(&assets_path, &assets_document, assets_multiline)?;
+
+    let manifest_bytes = fs::read(&manifest_path).with_path(&manifest_path)?;
+    let manifest_multiline = json_is_multiline(&manifest_bytes);
+    let mut manifest: Value =
+        serde_json::from_slice(&manifest_bytes).with_json_path(&manifest_path)?;
+    let packaged_asset_payloads = count_packaged_asset_files(output_dir)?;
+    manifest["counts"]["packagedAssetPayloads"] = json!(packaged_asset_payloads);
+    if let Some(limitations) = manifest
+        .get_mut("limitations")
+        .and_then(Value::as_array_mut)
+    {
+        limitations.retain(|limitation| {
+            !limitation
+                .as_str()
+                .is_some_and(|text| text.contains("monster-icon override payloads are excluded"))
+        });
+    }
+    assert_portable_value(&manifest, output_dir, "campaign.json")?;
+    write_json_with_style(&manifest_path, &manifest, manifest_multiline)?;
+    Ok(RemakeIconUpdateReport {
+        output_dir: output_dir.to_path_buf(),
+        written_files,
+        packaged_asset_payloads,
+    })
+}
+
+fn count_packaged_asset_files(output_dir: &Path) -> Result<usize> {
+    let mut count = 0;
+    for relative_root in [Path::new("assets").join("managed"), PathBuf::from("media")] {
+        let root = output_dir.join(relative_root);
+        if !root.is_dir() {
+            continue;
+        }
+        let mut pending = vec![root];
+        while let Some(directory) = pending.pop() {
+            for entry in fs::read_dir(&directory).with_path(&directory)? {
+                let entry = entry.with_path(&directory)?;
+                let entry_path = entry.path();
+                let file_type = entry.file_type().with_path(&entry_path)?;
+                if file_type.is_dir() {
+                    pending.push(entry_path);
+                } else if file_type.is_file() {
+                    count += 1;
+                }
+            }
+        }
+    }
+    Ok(count)
+}
+
 fn prepare_output_dir(output_dir: &Path) -> Result<()> {
     if output_dir.exists() {
         if !output_dir.is_dir() {
@@ -121,11 +191,23 @@ fn prepare_output_dir(output_dir: &Path) -> Result<()> {
 }
 
 fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
+    write_json_with_style(path, value, true)
+}
+
+fn write_json_with_style(path: &Path, value: &impl Serialize, multiline: bool) -> Result<()> {
     let file = File::create(path).with_path(path)?;
     let mut writer = BufWriter::new(file);
-    serde_json::to_writer_pretty(&mut writer, value).with_json_path(path)?;
+    if multiline {
+        serde_json::to_writer_pretty(&mut writer, value).with_json_path(path)?;
+    } else {
+        serde_json::to_writer(&mut writer, value).with_json_path(path)?;
+    }
     writer.write_all(b"\n").with_path(path)?;
     writer.flush().with_path(path)
+}
+
+fn json_is_multiline(bytes: &[u8]) -> bool {
+    String::from_utf8_lossy(bytes).trim().contains('\n')
 }
 
 fn project_counts(project: &ProvidenceProject) -> RemakeExportCounts {

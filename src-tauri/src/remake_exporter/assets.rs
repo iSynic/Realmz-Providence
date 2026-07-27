@@ -18,6 +18,7 @@ const ASSET_DIR: &str = "assets/managed";
 const RUNTIME_IMAGE_DIR: &str = "media/images";
 const RUNTIME_PICTURE_DIR: &str = "media/pictures";
 const RUNTIME_SOUND_DIR: &str = "media/sounds";
+const MONSTER_ICON_FACING_OFFSET: i32 = 308;
 
 #[derive(Debug, Clone)]
 struct PackagedRuntimeMedia {
@@ -66,6 +67,58 @@ impl PackagedAssets {
     }
 }
 
+pub(crate) fn update_scenario_icon_assets(
+    project: &ProvidenceProject,
+    output_dir: &Path,
+    assets_document: &mut Value,
+) -> Result<Vec<String>> {
+    let mut payloads = BTreeMap::new();
+    let mut written_files = Vec::new();
+    package_scenario_icon_resources(project, output_dir, &mut payloads, &mut written_files)?;
+    let icon_catalog = assets_document
+        .get_mut("catalog")
+        .and_then(Value::as_object_mut)
+        .and_then(|catalog| catalog.get_mut("icons"))
+        .and_then(Value::as_array_mut)
+        .ok_or_else(|| {
+            ProvidenceError::message(
+                "Existing Realmz Remake assets document has no catalog.icons array",
+            )
+        })?;
+    for ((resource_type, resource_id), payload) in &payloads {
+        let record_index = icon_catalog.iter().position(|record| {
+            record
+                .get("resourceId")
+                .and_then(Value::as_i64)
+                .is_some_and(|id| id == i64::from(*resource_id))
+        });
+        let record = if let Some(index) = record_index {
+            &mut icon_catalog[index]
+        } else {
+            icon_catalog.push(json!({
+                "id": format!("resource:{resource_type}:{resource_id}"),
+                "resourceType": resource_type,
+                "resourceId": resource_id,
+                "source": &payload.source,
+            }));
+            icon_catalog.last_mut().expect("inserted icon catalog row")
+        };
+        add_payload_fields(record, payload);
+    }
+    icon_catalog.sort_by_key(|record| {
+        record
+            .get("resourceId")
+            .and_then(Value::as_i64)
+            .unwrap_or_default()
+    });
+    assets_document["monsterIconOverrides"] =
+        sanitized_icon_metadata(&project.monster_icon_overrides)?;
+    assets_document["scenarioIconResources"] =
+        sanitized_icon_metadata(&project.scenario_icon_resources)?;
+    written_files.sort();
+    Ok(written_files)
+}
+
 pub(crate) fn package_assets(
     project: &ProvidenceProject,
     project_dir: &Path,
@@ -103,6 +156,7 @@ pub(crate) fn package_assets(
         }
         managed_assets.push(managed_asset_document(asset, &payload));
     }
+    package_scenario_icon_resources(project, output_dir, &mut payloads, &mut written_files)?;
     package_scenario_pictures(
         project,
         project_dir,
@@ -124,6 +178,139 @@ pub(crate) fn package_assets(
         monster_icon_overrides,
         scenario_icon_resources,
     })
+}
+
+fn package_scenario_icon_resources(
+    project: &ProvidenceProject,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let override_targets = project
+        .monster_icon_overrides
+        .iter()
+        .flat_map(|override_record| {
+            [
+                override_record.target_base_icon_id,
+                override_record.target_base_icon_id + MONSTER_ICON_FACING_OFFSET,
+            ]
+        })
+        .collect::<BTreeSet<_>>();
+
+    for resource in &project.scenario_icon_resources {
+        if override_targets.contains(&resource.resource_id) {
+            continue;
+        }
+        let bytes = decode_icon_resource(
+            &resource.resource_base64,
+            &format!("Scenario icon {}", resource.resource_id),
+        )?;
+        package_icon_payload(
+            resource.resource_id,
+            &resource.label,
+            &bytes,
+            "Scenario icon resource",
+            output_dir,
+            payloads,
+            written_files,
+        )?;
+    }
+
+    for override_record in &project.monster_icon_overrides {
+        let source_label = override_record
+            .source_label
+            .as_deref()
+            .filter(|label| !label.trim().is_empty())
+            .unwrap_or("Scenario monster icon override");
+        let base_bytes = decode_icon_resource(
+            &override_record.source_base_resource_base64,
+            &format!(
+                "Monster icon override {} base resource",
+                override_record.target_base_icon_id
+            ),
+        )?;
+        let paired_bytes = decode_icon_resource(
+            &override_record.source_paired_resource_base64,
+            &format!(
+                "Monster icon override {} paired resource",
+                override_record.target_base_icon_id
+            ),
+        )?;
+        package_icon_payload(
+            override_record.target_base_icon_id,
+            source_label,
+            &base_bytes,
+            "Scenario monster icon override",
+            output_dir,
+            payloads,
+            written_files,
+        )?;
+        package_icon_payload(
+            override_record.target_base_icon_id + MONSTER_ICON_FACING_OFFSET,
+            &format!("{source_label} facing"),
+            &paired_bytes,
+            "Scenario monster icon override",
+            output_dir,
+            payloads,
+            written_files,
+        )?;
+    }
+    Ok(())
+}
+
+fn decode_icon_resource(encoded: &str, label: &str) -> Result<Vec<u8>> {
+    if encoded.trim().is_empty() {
+        return Err(ProvidenceError::message(format!(
+            "{label} has no preserved cicn payload"
+        )));
+    }
+    STANDARD.decode(encoded).map_err(|error| {
+        ProvidenceError::message(format!(
+            "{label} has invalid base64 cicn payload data: {error}"
+        ))
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn package_icon_payload(
+    resource_id: i32,
+    label: &str,
+    bytes: &[u8],
+    source: &str,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let resource_id = i16::try_from(resource_id).map_err(|_| {
+        ProvidenceError::message(format!(
+            "Scenario cicn resource ID {resource_id} is outside the Classic signed 16-bit range"
+        ))
+    })?;
+    let key = ("cicn".to_string(), resource_id);
+    if let Some(existing) = payloads.get(&key) {
+        let sha256 = hex::encode(Sha256::digest(bytes));
+        if existing.sha256 == sha256 {
+            return Ok(());
+        }
+        return Err(ProvidenceError::message(format!(
+            "Scenario cicn resource {resource_id} has conflicting preserved payloads"
+        )));
+    }
+    let payload = write_resource_payload(
+        "cicn",
+        resource_id,
+        label,
+        bytes,
+        "image/cicn",
+        source,
+        output_dir,
+    )?;
+    written_files.push(payload.relative_path.clone());
+    if let Some(runtime_media) = &payload.runtime_media {
+        written_files.push(runtime_media.relative_path.clone());
+    }
+    payloads.insert(key, payload);
+    Ok(())
 }
 
 fn read_payload(asset: &ManagedAsset, project_dir: &Path) -> Result<(String, Vec<u8>)> {
@@ -789,7 +976,7 @@ fn resource_catalog(
                 "id": format!("resource:{resource_type}:{payload_id}"),
                 "resourceType": resource_type,
                 "resourceId": payload_id,
-                "source": "managed",
+                "source": &payload.source,
             })
         });
         add_payload_fields(record, payload);

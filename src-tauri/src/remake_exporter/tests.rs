@@ -536,6 +536,128 @@ fn packages_referenced_shared_special_land_tiles_for_remake() {
 }
 
 #[test]
+fn packages_scenario_monster_icon_overrides_under_their_target_ids() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("monster-icons.providence");
+    let mut project = create_project("Monster icons".to_string(), &project_dir).unwrap();
+    let base = encode_cicn_resource(&RgbaImagePayload {
+        width: 64,
+        height: 64,
+        rgba_base64: STANDARD.encode(vec![224_u8; 64 * 64 * 4]),
+    })
+    .unwrap();
+    let paired = encode_cicn_resource(&RgbaImagePayload {
+        width: 64,
+        height: 64,
+        rgba_base64: STANDARD.encode(vec![96_u8; 64 * 64 * 4]),
+    })
+    .unwrap();
+    project.monster_icon_overrides.push(
+        serde_json::from_value(json!({
+            "targetBaseIconId": 409,
+            "sourceBaseIconId": 12001,
+            "sourceLabel": "Harpy",
+            "sourceKind": "scenario-resource",
+            "sourceBaseResourceBase64": STANDARD.encode(&base),
+            "sourcePairedResourceBase64": STANDARD.encode(&paired),
+            "imported": true
+        }))
+        .unwrap(),
+    );
+
+    let output = workspace.path().join("monster-icons-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let assets: Value =
+        serde_json::from_slice(&fs::read(output.join("classic/assets.json")).unwrap()).unwrap();
+    let icons = assets["catalog"]["icons"].as_array().unwrap();
+    let base_icon = icons.iter().find(|icon| icon["resourceId"] == 409).unwrap();
+    let paired_icon = icons.iter().find(|icon| icon["resourceId"] == 717).unwrap();
+
+    assert_eq!(report.counts.packaged_asset_payloads, 4);
+    assert_eq!(base_icon["source"], "Scenario monster icon override");
+    assert_eq!(paired_icon["source"], "Scenario monster icon override");
+    assert_eq!(base_icon["runtimeMedia"]["mediaType"], "image/png");
+    assert_eq!(paired_icon["runtimeMedia"]["mediaType"], "image/png");
+    for icon in [base_icon, paired_icon] {
+        for path in [
+            icon["payloadPath"].as_str().unwrap(),
+            icon["runtimeMedia"]["path"].as_str().unwrap(),
+        ] {
+            assert!(output.join(path).is_file(), "missing packaged {path}");
+        }
+    }
+    assert_eq!(assets["monsterIconOverrides"][0]["targetBaseIconId"], 409);
+    assert!(assets["monsterIconOverrides"][0]
+        .get("sourceBaseResourceBase64")
+        .is_none());
+    assert!(assets["monsterIconOverrides"][0]
+        .get("sourcePairedResourceBase64")
+        .is_none());
+}
+
+#[test]
+fn updates_scenario_monster_icons_in_an_existing_remake_bundle() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("existing-monster-icons.providence");
+    let mut project = create_project("Existing monster icons".to_string(), &project_dir).unwrap();
+    let output = workspace.path().join("existing-monster-icons-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    for relative_path in ["campaign.json", "classic/assets.json"] {
+        let path = output.join(relative_path);
+        let value: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        let mut compact = serde_json::to_vec(&value).unwrap();
+        compact.push(b'\n');
+        fs::write(path, compact).unwrap();
+    }
+    let base = encode_cicn_resource(&RgbaImagePayload {
+        width: 64,
+        height: 64,
+        rgba_base64: STANDARD.encode(vec![224_u8; 64 * 64 * 4]),
+    })
+    .unwrap();
+    project.monster_icon_overrides.push(
+        serde_json::from_value(json!({
+            "targetBaseIconId": 409,
+            "sourceBaseIconId": 409,
+            "sourceLabel": "Harpy",
+            "sourceKind": "scenario-resource",
+            "sourceBaseResourceBase64": STANDARD.encode(&base),
+            "sourcePairedResourceBase64": STANDARD.encode(&base),
+            "imported": true
+        }))
+        .unwrap(),
+    );
+
+    let report = update_remake_campaign_icons(&project, &output).unwrap();
+    assert_eq!(report.written_files.len(), 4);
+    assert_eq!(report.packaged_asset_payloads, 4);
+    let documents = read_json_documents(&output);
+    let icons = documents["classic/assets.json"]["catalog"]["icons"]
+        .as_array()
+        .unwrap();
+    assert!(icons
+        .iter()
+        .any(|icon| icon["resourceId"] == 409 && icon["runtimeMedia"]["mediaType"] == "image/png"));
+    assert!(icons
+        .iter()
+        .any(|icon| icon["resourceId"] == 717 && icon["runtimeMedia"]["mediaType"] == "image/png"));
+    assert_eq!(
+        documents["campaign.json"]["counts"]["packagedAssetPayloads"],
+        4
+    );
+    for relative_path in ["campaign.json", "classic/assets.json"] {
+        assert_eq!(
+            fs::read_to_string(output.join(relative_path))
+                .unwrap()
+                .lines()
+                .count(),
+            1,
+            "{relative_path} should preserve its compact JSON style"
+        );
+    }
+}
+
+#[test]
 fn refuses_to_overwrite_a_non_empty_directory() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("starter.providence");
