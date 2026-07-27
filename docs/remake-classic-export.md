@@ -47,6 +47,7 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 | Managed resources | scenario-scoped `assets[].resourcePath` | Payload is moved to a bundle-relative file; the data URI is never serialized. |
 | Scenario pictures | managed `PICT` resources or imported scenario-fork `assetCatalog.pictures` | Exact Classic bytes and deterministic PNG runtime media are packaged for every scenario-owned picture. |
 | Scenario item icons | referenced `scenarioItems[].iconId` plus `scenarioIconResources` | Scenario-owned `cicn` bytes and deterministic PNG runtime media are packaged when a custom item references them; shared Realmz IDs remain runtime references. |
+| Scenario monster icons | `monsterIconOverrides` plus `scenarioIconResources` | Each override is packaged under its target base ID and target-plus-308 facing ID with immutable `cicn` bytes and deterministic PNG runtime media. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
 | Scrolling text | managed or preserved scenario-owned `TEXT` resources with optional same-ID `styl` resources | `assets.scrollingTexts` receives decoded text and normalized `portable-rich-text-v1` presentation runs for player maps and standalone opcode 62 actions. Classic `styl` bytes are not copied into the runtime bundle. |
 | Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
@@ -138,6 +139,12 @@ resources from the preserved Scenario resource fork into `scenarioIconResources`
 Classic bytes, and emits deterministic PNG `runtimeMedia` under `media/images`. A scenario-owned
 icon wins over a same-ID Vault or Realmz reference icon, matching Classic resource-chain behavior.
 
+Scenario monster-icon overrides package both facings under the authored target IDs rather than the
+source-library IDs. Their embedded Classic bytes are written under `assets/managed`, decoded PNGs
+are written under `media/images`, and only portable metadata remains in `assets.json`. The
+converter's `--update-icons` mode can apply the same projection to an existing Remake bundle while
+preserving whether its JSON files use compact or multiline formatting.
+
 If Providence's PICT decoder cannot produce a PNG, export fails with the picture identity and
 decoder diagnostic. It does not emit a bundle that claims to be portable while silently depending
 on a Remake fallback image or an installed native campaign.
@@ -164,7 +171,7 @@ ships as immutable Classic bytes under `assets/managed` and deterministic PNG `r
 
 ## Genuine gaps and unresolved runtime path semantics
 
-No format-version change is required for the current projection, but three boundaries remain:
+No format-version change is required for the current projection, but two boundaries remain:
 
 1. Providence schema 5 has only `scenario.shell.landLevel` for the authored start. Bundle v1 can
    represent a dungeon start, but Providence cannot currently author that distinction. Current
@@ -173,11 +180,6 @@ No format-version change is required for the current projection, but three bound
    bundle export is complete: every scenario-owned PICT has both immutable Classic bytes and PNG
    runtime media. An unsupported variant blocks export instead of becoming an implicit Remake or
    native-installation dependency.
-3. Monster-icon override records are preserved as portable metadata, but their legacy embedded
-   resource payload fields are compatibility-annex data and are intentionally omitted. Referenced
-   scenario item icons are packaged; other icon overrides still require scenario-scoped
-   `ManagedAsset` payloads. A canonical asset intended
-   for direct Remake use therefore needs to be represented as a managed asset.
 Negative special-land identities remain in the additive optional v1
 `assets.catalog.specialLandTiles` collection. Existing v1 consumers can ignore that collection
 without reinterpreting ordinary non-negative icon IDs.
@@ -189,6 +191,13 @@ managed-resource paths. For imported projects it reads only project-relative pre
 needed to materialize scenario-owned PICT, `cicn`, and `TEXT` payloads, decode `styl` presentation
 metadata, and establish Classic's race/caste table selection; semantic runtime records remain
 canonical project projections.
+
+To refresh scenario monster icons in an existing bundle without regenerating its other documents:
+
+```powershell
+cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- `
+  --update-icons --project "C:\path\Scenario.providence" "C:\path\existing-classic-bundle"
+```
 
 The authoritative proof generates the bundle twice from
 `fixtures/scenario-seeds/authoritative-ownership-proof.seed.json` and compares every file byte.
