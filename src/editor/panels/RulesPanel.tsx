@@ -14,7 +14,7 @@ const RULES_FAMILY_HELP: Record<RulesFamily, string> = {
   spells: "Browse packed Realmz spell IDs and author scenario-local custom spells in Data Spell. Built-in spell catalogs remain reference/copy sources, while Custom slots 5101 through 5715 are scenario-owned.",
   races: "Browse shared races and customize scenario Data Race overrides for movement, aging, caste permissions, descriptors, portraits, and item usability. Race edits can affect Scenario restrictions and Economy item use.",
   castes: "Browse shared castes and customize scenario Data Caste overrides for progression, spellcasting, starting items, combat rules, and item usability. Caste edits can affect spell access, party creation, and item restrictions.",
-  remake: "Select the recommended gameplay profile and author data-only semantic actions or built-in extension bindings for Realmz Remake format v2. These features make the project Remake-only."
+  remake: "Select the recommended gameplay profile and author scenario scripts, semantic actions, or built-in extension bindings for Realmz Remake format v3. These features make the project Remake-only."
 };
 
 export function RulesPanel({

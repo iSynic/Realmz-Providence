@@ -492,7 +492,11 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 function normalizeWorkspace(workspace: ProvidenceWorkspace): ProvidenceWorkspace {
   return {
     ...workspace,
-    customAssets: workspace.customAssets ?? []
+    customAssets: workspace.customAssets ?? [],
+    remakePreview: workspace.remakePreview ?? {
+      godotExecutable: "",
+      remakePath: ""
+    }
   };
 }
 
