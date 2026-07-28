@@ -1,4 +1,14 @@
-import { BenchmarkReport, ItemTextRecord, Project, ResourceAsset, RuleNames, ScenarioShell, ValidationReport } from "../types";
+import {
+  BenchmarkReport,
+  emptyRemakeRuntime,
+  ItemTextRecord,
+  Project,
+  ResourceAsset,
+  RuleNames,
+  ScenarioShell,
+  ValidationReport
+} from "../types";
+import { isRemakeOnly, validateRemakeRuntime } from "../remakeRuntimeCatalog";
 import { BrowserProjectSource, BrowserRawSourceSnapshot, BrowserScenarioSource, SUPPORTED_WRITE_FILES, readProjectPackage, readScenarioSource } from "./fsAccess";
 import { browserReferenceAtlasUrl, browserTilesetAtlasUrl, hasBrowserReferenceAtlas } from "./atlasPaths";
 import { parseResourceFork, parseStringListResource } from "./library";
@@ -68,6 +78,7 @@ export function createBrowserProject(projectName: string): Project {
       files: [],
       immutable: false
     },
+    remakeRuntime: emptyRemakeRuntime(),
     maps: [],
     landLayout: null,
     mapRecords: [],
@@ -178,6 +189,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       files: sourceFiles,
       immutable: true
     },
+    remakeRuntime: emptyRemakeRuntime(),
     maps: parsed.maps,
     landLayout: parsed.landLayout,
     mapRecords: parsed.mapRecords,
@@ -1204,15 +1216,20 @@ function isLegacyLocalReferencePath(value: string) {
 export function validateBrowserProject(project: Project): ValidationReport {
   const errors: string[] = [];
   const warnings: string[] = [];
+  errors.push(...validateRemakeRuntime(project));
   const importedProject = requiresCompatibilityAnnex(project);
   let authoredManifestFiles: string[] | null = null;
-  if (!importedProject) {
+  if (!importedProject && !isRemakeOnly(project)) {
     try {
       authoredManifestFiles = expectedAuthoredScenarioManifestFiles(project, "windows-realmz-folder");
     } catch (error) {
       errors.push(`Native scenario compiler: ${error instanceof Error ? error.message : String(error)}`);
       authoredManifestFiles = [];
     }
+  }
+  if (!importedProject && isRemakeOnly(project)) {
+    authoredManifestFiles = [];
+    warnings.push("Native Realmz output is unavailable because the project uses Remake-only runtime behavior.");
   }
   if (project.maps.length === 0) errors.push("Project has no maps. At least one land or dungeon map is required.");
   for (const map of project.maps) {

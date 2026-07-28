@@ -449,12 +449,14 @@ export function classNames(...values: Array<string | false | null | undefined>) 
 }
 
 export function normalizeFamily(activeEditor: string): RulesFamily {
+  if (activeEditor === "remake") return "remake";
   if (activeEditor === "races") return "races";
   if (activeEditor === "castes") return "castes";
   return "spells";
 }
 
 export function familyLabel(family: RulesFamily) {
+  if (family === "remake") return "Remake Runtime";
   if (family === "spells") return "Spell Editor";
   if (family === "races") return "Race Editor";
   return "Caste Editor";
@@ -469,6 +471,7 @@ export function capitalize(value: string) {
 }
 
 export function overrideCount(project: Project, family: RulesFamily) {
+  if (family === "remake") return project.remakeRuntime.requiredExtensions.length + project.remakeRuntime.semanticActions.length;
   if (family === "spells") return project.spellOverrides?.length ?? 0;
   if (family === "races") return project.raceOverrides?.length ?? 0;
   return project.casteOverrides?.filter((record) => !isBlankImportedCasteRecord(record)).length ?? 0;

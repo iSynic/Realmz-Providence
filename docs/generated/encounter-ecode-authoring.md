@@ -88,4 +88,3 @@
 - Reviewed contextual advanced identifies combat-only behavior that remains import-preserving and editable through the contextual modal plus its raw Technical Details fallback.
 - Every compact selection is backed by the shared option-domain registry used by both Action Point and encounter ECODE editors.
 - Negative result opcodes remain a caller-level toggle; signed ECODE values remain separate five-field settings.
-

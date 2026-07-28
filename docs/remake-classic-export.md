@@ -1,11 +1,11 @@
-# Realmz Remake Classic bundle export
+# Realmz Remake scenario v2 export
 
 Providence projects can be compiled into two independent runtime products:
 
 ```text
-Providence canonical project (schema 5)
+Providence canonical project (schema 6)
 |- Native compiler -> native Realmz scenario folder
-`- Compatibility exporter -> Classic bundle v1 -> Realmz Remake
+`- Scenario exporter -> realmz-remake-scenario v2 -> Realmz Remake
 ```
 
 The compatibility exporter reads the canonical project. It does not read the native compiler's
@@ -33,27 +33,30 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 
 | Classic bundle concept | Providence source | Result |
 | --- | --- | --- |
-| Campaign identity and start | `scenario.id`, `scenario.name`, `scenario.shell` | Compatible. Schema 5 currently authors land starts only. |
+| Campaign identity and start | `scenario.id`, `scenario.name`, `scenario.shell` | Compatible. Schema 6 currently authors land starts only. |
 | Map identity | `maps[].id`, `levelType`, `index` | Compatible namespaced string identity. |
 | Runtime landlook changes | opcode `57` plus its `Data EDCD` row | Referenced stock landlooks with complete behavior tables are added to the asset catalog even when no map starts with that landlook, allowing Remake to materialize the matching Realmz PICT atlas before play. |
 | Action Point identity | `triggers[].id`, `source`, `recordIndex` | Compatible stable identity; array position is not used. Data ED3 rows also carry authoritative `callable` reachability. |
-| Trigger action | `slot`, `rawCode`, normalized `code`, `id` | Compatible without reinterpretation. Referenced media dependencies are derived from the authored action rather than author-maintained export policy. |
-| Encounter result action | `slot`, `rawCode`, `id` | Compatible; Remake normalizes signed encounter opcodes when selecting a result. Referenced media follows the same automatic packaging policy as Action Points. |
+| Classic trigger or encounter action | `slot`, `rawCode`, normalized `code`, `id`, `gosub` | Exported as an explicit `kind: "classic"` instruction without reinterpretation. |
+| Remake semantic action | `remakeRuntime.semanticActions[]` | Replaces one exported action slot with a namespaced `kind: "semantic"` operation and JSON parameters. |
+| Runtime requirements | `remakeRuntime` | Gameplay-profile recommendation, built-in extension/API requirements, provider bindings, and target-support declarations are emitted in `runtime.json`. |
 | Runtime record reachability | battle, encounter, macro, monster, map, timed-encounter, and item references | All records remain serialized. Battles and encounters carry additive `callable` markers, while `evidence.semanticDecoding.runtimeReachability` records the source-backed transitive closure and evidence paths used by Remake readiness. |
 | Monster identity | `monsters[].id` and independent `nameId` | Compatible. The two IDs remain distinct, including when an authored action adds that monster as an ally. |
 | Scenario item identity | record `id` and independent `itemId` | Compatible. The ownership proof includes shop item 901 and carried/equipped weapon 902. |
 | Authorship and provenance | record `authored` and normalized `provenance` | Compatible. Source paths are reduced to portable source labels. |
-| Interpreter evidence | dispatcher no-op observations and compact source/record evidence | Compatible additive v1 evidence. |
+| Interpreter evidence | dispatcher no-op observations and compact source/record evidence | Compatible additive evidence. |
 | Managed resources | scenario-scoped `assets[].resourcePath` | Payload is moved to a bundle-relative file; the data URI is never serialized. |
 | Scenario pictures | managed `PICT` resources or imported scenario-fork `assetCatalog.pictures` | Exact Classic bytes and deterministic PNG runtime media are packaged for every scenario-owned picture. |
 | Scenario item icons | referenced `scenarioItems[].iconId` plus `scenarioIconResources` | Scenario-owned `cicn` bytes and deterministic PNG runtime media are packaged when a custom item references them; shared Realmz IDs remain runtime references. |
 | Scenario monster icons | `monsterIconOverrides` plus `scenarioIconResources` | Each override is packaged under its target base ID and target-plus-308 facing ID with immutable `cicn` bytes and deterministic PNG runtime media. |
 | Scenario sound effects | managed `snd ` resources and `assetCatalog.sounds` | Classic resource bytes remain immutable; decodable sounds also receive deterministic WAV `runtimeMedia` for Remake playback. |
 | Scrolling text | managed or preserved scenario-owned `TEXT` resources with optional same-ID `styl` resources | `assets.scrollingTexts` receives decoded text and normalized `portable-rich-text-v1` presentation runs for player maps and standalone opcode 62 actions. Classic `styl` bytes are not copied into the runtime bundle. |
-| Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while v1's validated `icons` collection remains non-negative. |
+| Special land tile identity | negative `cicn` resource ID | Preserved in additive `assets.catalog.specialLandTiles`; referenced stock art is packaged from Providence's bundled Realmz reference resources, while the validated `icons` collection remains non-negative. |
 | Race and caste table selection | project origin plus preserved `Data Race`, `Data Caste`, and main-fork `RLMZ` evidence | Emits `rules.tableSelection` so Remake does not mistake inactive built-in copies for scenario overrides. |
 
-All nine version-1 JSON documents are emitted. Runtime records retain semantic fields and stable
+The v2 manifest identifies `campaignKind: "classic-compiled"` and references nine Classic
+documents plus the required root `runtime.json`. Each document currently uses schema version 1
+inside the format-v2 envelope. Runtime records retain semantic fields and stable
 Classic identities while `rawBytes`, raw/trailing/reserved compatibility data, editor metadata,
 project paths, preview paths, conversion controls, compatibility-annex locations, and embedded
 data URIs are omitted. Custom-library assets are authoring-library state and are not bundled.
@@ -104,7 +107,7 @@ or unresolved bundles.
 Each export-ready, scenario-scoped managed asset becomes a deterministic file under
 `assets/managed`. The filename is derived from its Classic resource type, signed ID, and the first
 12 hexadecimal characters of the packaged payload hash. `classic/assets.json` references it with
-`payloadPath` and the additive version-1 fields:
+`payloadPath` and these payload fields:
 
 - `payloadEncoding: "classic-resource-data"`;
 - `payloadBytes`;
@@ -156,7 +159,7 @@ diagnostic instead of being mislabeled as a malformed PICT.
 
 For each scenario-scoped managed `snd ` resource, Providence decodes the same canonical Classic
 resource bytes used by the native compiler into a deterministic WAV under `media/sounds`. Both the
-managed-asset row and its `assets.catalog.sounds` row receive the bundle-v1 `runtimeMedia` object
+managed-asset row and its `assets.catalog.sounds` row receive the `runtimeMedia` object
 with a campaign-relative path, `audio/wav` media type, byte length, and SHA-256 hash. The Classic
 payload remains separately available through `payloadPath`; Providence never changes that field to
 mean decoded audio. A managed sound that cannot be decoded is rejected rather than exported with a
@@ -165,24 +168,47 @@ to a canonical scenario-managed asset.
 
 Referenced negative land fields are normalized to their signed `cicn` identities without changing
 the authored field values. When a matching scenario-managed payload is absent, the exporter resolves
-only those referenced IDs from Providence's bundled Realmz reference resources. Each resolved icon
-ships as immutable Classic bytes under `assets/managed` and deterministic PNG `runtimeMedia` under
-`media/images`. Missing referenced stock art fails export instead of becoming approximate terrain.
+referenced IDs from Providence's bundled Realmz reference resources. Resolved icons ship as
+immutable Classic bytes under `assets/managed` and deterministic PNG `runtimeMedia` under
+`media/images`; a genuinely missing Classic icon receives an explicit transparent runtime fallback.
+
+## Runtime extensions and native target support
+
+Providence consumes the generated extension catalog in
+`schemas/remake-extension-catalog.json`. Authors select stable built-in IDs and edit JSON data
+constrained by each extension's configuration and operation-parameter schemas. No `.gd`, `.gdc`,
+PCK, native library, or executable path is stored in the project or exported package.
+
+Ordinary imported or authored Classic projects keep empty semantic actions and provider bindings,
+so they remain eligible for both native Realmz and Realmz Remake export. Semantic actions or
+Remake runtime bindings set `targetSupport.nativeRealmz` to false and make the native compiler
+return an actionable diagnostic. Merely recommending `core.samuel` or declaring an otherwise
+unused built-in extension does not make a project Remake-only.
+
+Synchronize and verify the trusted catalog against a Remake checkout with:
+
+```powershell
+npm run generate:remake-extension-catalog -- --remake-root "C:\path\Realmz-Remake"
+npm run check:remake-extension-catalog -- --remake-root "C:\path\Realmz-Remake"
+```
 
 ## Genuine gaps and unresolved runtime path semantics
 
-No format-version change is required for the current projection, but two boundaries remain:
+Three boundaries remain:
 
-1. Providence schema 5 has only `scenario.shell.landLevel` for the authored start. Bundle v1 can
+1. Providence schema 6 has only `scenario.shell.landLevel` for the authored start. Scenario v2 can
    represent a dungeon start, but Providence cannot currently author that distinction. Current
    projects therefore export a land start without loss.
 2. Providence's PICT decoder does not yet support every historical PICT variant. A successful
    bundle export is complete: every scenario-owned PICT has both immutable Classic bytes and PNG
    runtime media. An unsupported variant blocks export instead of becoming an implicit Remake or
    native-installation dependency.
-Negative special-land identities remain in the additive optional v1
-`assets.catalog.specialLandTiles` collection. Existing v1 consumers can ignore that collection
-without reinterpreting ordinary non-negative icon IDs.
+3. The only built-in extension currently published is a conformance fixture. Production spell,
+   item, encounter, AI, lifecycle, and gameplay-provider IDs must be added to Remake's trusted
+   catalog before Providence can author them.
+
+Negative special-land identities remain in the additive optional
+`assets.catalog.specialLandTiles` collection without reinterpreting ordinary non-negative icon IDs.
 
 ## Usage and verification
 

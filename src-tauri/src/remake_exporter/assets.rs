@@ -1,5 +1,5 @@
 use super::portable::{portable_source_label, portable_value};
-use super::REMAKE_CLASSIC_FORMAT_VERSION;
+use super::REMAKE_DOCUMENT_SCHEMA_VERSION;
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::project::{
     Action, EncounterActionRow, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
@@ -63,7 +63,7 @@ pub(crate) struct PackagedAssets {
 impl PackagedAssets {
     pub(crate) fn document(&self) -> Value {
         json!({
-            "schemaVersion": REMAKE_CLASSIC_FORMAT_VERSION,
+            "schemaVersion": REMAKE_DOCUMENT_SCHEMA_VERSION,
             "managedAssets": &self.managed_assets,
             "catalog": &self.catalog,
             "scrollingTexts": self.scrolling_texts.values().collect::<Vec<_>>(),
@@ -389,7 +389,6 @@ fn read_i32_be(bytes: &[u8], offset: usize) -> Option<i32> {
         *bytes.get(offset + 3)?,
     ]))
 }
-
 fn package_scenario_icon_resources(
     project: &ProvidenceProject,
     output_dir: &Path,
@@ -965,7 +964,6 @@ fn preserved_scenario_resource_payloads(
         return Ok(BTreeMap::new());
     }
     source_files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
-
     let raw_sources_dir = if project.source.raw_sources_dir.trim().is_empty() {
         PathBuf::from("raw-sources")
     } else {
@@ -975,7 +973,6 @@ fn preserved_scenario_resource_payloads(
         )?
     };
     let raw_sources_dir = project_dir.join(raw_sources_dir);
-
     let mut resources = BTreeMap::<i16, Vec<PreservedResourcePayload>>::new();
     for source_file in source_files {
         let relative_path = validated_relative_path(
@@ -1243,7 +1240,6 @@ fn is_scenario_owned_icon(asset: &ResourceAsset) -> bool {
         || (source.starts_with("browser import:")
             && !source.contains("bundled realmz reference cicn"))
 }
-
 fn source_file_matches(source_file: &str, hint: &str) -> bool {
     let source_file = source_file.replace('\\', "/");
     let hint = hint.replace('\\', "/");
@@ -1401,7 +1397,6 @@ fn write_transparent_special_land_fallback(output_dir: &Path) -> Result<Packaged
         media_type: "image/png".to_string(),
     })
 }
-
 fn managed_asset_document(asset: &ManagedAsset, payload: &PackagedPayload) -> Value {
     let mut value = json!({
         "id": &asset.id,

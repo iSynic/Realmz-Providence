@@ -131,6 +131,7 @@ export function browserScenarioPackageFileName(project: Project, target: Scenari
 }
 
 export function expectedAuthoredScenarioManifestFiles(project: Project, target: ScenarioTarget) {
+  assertNativeRealmzCompatible(project);
   if (requiresCompatibilityAnnex(project)) {
     throw new Error("Expected authored scenario manifest files are only available for authored projects.");
   }
@@ -146,6 +147,7 @@ export function createBrowserScenarioPackageZip(
   if (target === "providence-portable-folder") {
     throw new Error("Browser scenario ZIP export expects a Mac Classic or Windows Realmz target.");
   }
+  assertNativeRealmzCompatible(project);
   const importedProject = requiresCompatibilityAnnex(project);
   const compatibilityAnnex = importedProject && rawSources ? new BrowserCompatibilityAnnex(rawSources) : null;
   if (importedProject && (!compatibilityAnnex || compatibilityAnnex.files().length === 0)) {
@@ -198,6 +200,23 @@ export function createBrowserScenarioPackageZip(
       targetCompatibility: bucketTargetCompatibility(targetCompatibilityIssues)
     }
   };
+}
+
+function assertNativeRealmzCompatible(project: Project) {
+  const runtime = project.remakeRuntime;
+  const bindingCount = runtime
+    ? Object.values(runtime.bindings).reduce((count, bindings) => count + Object.keys(bindings).length, 0)
+    : 0;
+  const reasons = [
+    ...(runtime?.semanticActions.length ? ["semantic actions"] : []),
+    ...(bindingCount > 0 ? ["Remake runtime bindings"] : [])
+  ];
+  if (reasons.length > 0) {
+    throw new Error(
+      `Native Realmz export is unavailable because this project uses Remake-only behavior: ${reasons.join(", ")}. `
+      + "Remove those features or export a Realmz Remake scenario."
+    );
+  }
 }
 
 function compileBrowserScenarioManifest(

@@ -94,7 +94,7 @@ The optional-media and legacy-sidecar classifications are recorded in
 not deferred with custom music: Providence authors them as managed resources and projects decoded
 WAV runtime media into the Realmz Remake Classic bundle. Standard MOD assets in the three current
 `Custom N Music` slots now compile into both native targets; they remain an explicit Realmz Remake
-Classic bundle-v1 limitation because that contract has no playlist semantics.
+Remake scenario-v2 limitation because that contract has no playlist semantics.
 
 ## Integration sequence
 

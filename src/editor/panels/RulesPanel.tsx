@@ -4,6 +4,7 @@ import { TutorialTip } from "../components/TutorialTip";
 import { SpellRulesEditor } from "./rules/SpellRulesEditor";
 import { RaceRulesEditor } from "./rules/RaceRulesEditor";
 import { CasteRulesEditor } from "./rules/CasteRulesEditor";
+import { RemakeRuntimeEditor } from "./rules/RemakeRuntimeEditor";
 import { RulesFamily } from "./rules/ruleTypes";
 import { familyLabel, normalizeFamily, overrideCount } from "./rules/ruleUtils";
 import { PanelHeader, WorkbenchTabs, type WorkbenchTabOption } from "../ui";
@@ -12,7 +13,8 @@ const RULES_HELP = "Rules covers Realmz spells, races, and castes. Shared Realmz
 const RULES_FAMILY_HELP: Record<RulesFamily, string> = {
   spells: "Browse packed Realmz spell IDs and author scenario-local custom spells in Data Spell. Built-in spell catalogs remain reference/copy sources, while Custom slots 5101 through 5715 are scenario-owned.",
   races: "Browse shared races and customize scenario Data Race overrides for movement, aging, caste permissions, descriptors, portraits, and item usability. Race edits can affect Scenario restrictions and Economy item use.",
-  castes: "Browse shared castes and customize scenario Data Caste overrides for progression, spellcasting, starting items, combat rules, and item usability. Caste edits can affect spell access, party creation, and item restrictions."
+  castes: "Browse shared castes and customize scenario Data Caste overrides for progression, spellcasting, starting items, combat rules, and item usability. Caste edits can affect spell access, party creation, and item restrictions.",
+  remake: "Select the recommended gameplay profile and author data-only semantic actions or built-in extension bindings for Realmz Remake format v2. These features make the project Remake-only."
 };
 
 export function RulesPanel({
@@ -34,7 +36,7 @@ export function RulesPanel({
 }) {
   const [family, setFamily] = useState<RulesFamily>(() => normalizeFamily(activeEditor));
   useEffect(() => setFamily(normalizeFamily(activeEditor)), [activeEditor]);
-  const familyTabs: WorkbenchTabOption<RulesFamily>[] = (["spells", "races", "castes"] as RulesFamily[]).map((candidate) => ({
+  const familyTabs: WorkbenchTabOption<RulesFamily>[] = (["spells", "races", "castes", "remake"] as RulesFamily[]).map((candidate) => ({
     value: candidate,
     label: (
       <TutorialTip title={familyLabel(candidate)} body={RULES_FAMILY_HELP[candidate]} side="right">
@@ -66,6 +68,7 @@ export function RulesPanel({
       {family === "spells" && <SpellRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} queueAtlasUrl={queueAtlasUrl ?? null} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
       {family === "races" && <RaceRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
       {family === "castes" && <CasteRulesEditor project={project} catalog={catalog} selectedEntity={selectedEntity} onSelectEntity={onSelectEntity} onApplyCommand={onApplyCommand} />}
+      {family === "remake" && <RemakeRuntimeEditor project={project} onApplyCommand={onApplyCommand} />}
     </section>
   );
 }

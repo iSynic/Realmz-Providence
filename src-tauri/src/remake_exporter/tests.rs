@@ -3,8 +3,9 @@ use crate::importer::create_project;
 use crate::project::{
     Action, ActionCategory, Confidence, EncounterActionRow, ExtraCodeRow, LevelType, ManagedAsset,
     ManagedAssetLibraryScope, MapCoordinate, ProjectOrigin, Provenance, RandomLevel, RandomRect,
-    ResourceAsset, ScenarioIconResource, ScenarioIconResourceSource, ScenarioSupportFile,
-    SourceFile, SourceFileRole, TriggerRecord,
+    RemakeExtensionRequirement, RemakeSemanticAction, ResourceAsset, ScenarioIconResource,
+    ScenarioIconResourceSource, ScenarioSupportFile, ScenarioTarget, SourceFile, SourceFileRole,
+    TriggerRecord,
 };
 use crate::realmz::{
     parse_battles, parse_caste_overrides, parse_landlook_mapstats_data, parse_monsters,
@@ -98,7 +99,7 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
     assert!(comparison.equivalent);
     assert_eq!(comparison.current_files, first_report.written_files.len());
     assert_eq!(comparison.candidate_files, first_report.written_files.len());
-    assert_eq!(comparison.json_documents, 9);
+    assert_eq!(comparison.json_documents, 10);
     assert_eq!(comparison.bytes_saved, 0);
 
     let documents = read_json_documents(&first);
@@ -115,6 +116,16 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
     assert_eq!(manifest["format"], REMAKE_CLASSIC_FORMAT);
     assert_eq!(manifest["formatVersion"], REMAKE_CLASSIC_FORMAT_VERSION);
     assert_eq!(manifest["producer"]["projectOrigin"], "authored");
+    assert_eq!(manifest["files"]["runtime"], "runtime.json");
+    let runtime = &documents["runtime.json"];
+    assert_eq!(runtime["schemaVersion"], REMAKE_DOCUMENT_SCHEMA_VERSION);
+    assert_eq!(runtime["recommendedGameplayProfile"], "core.classic");
+    assert_eq!(runtime["targetSupport"]["realmzRemake"], true);
+    assert_eq!(runtime["targetSupport"]["nativeRealmz"], true);
+    assert!(runtime["targetSupport"]["remakeOnlyReasons"]
+        .as_array()
+        .unwrap()
+        .is_empty());
     let assets = &documents["classic/assets.json"];
     assert_eq!(assets["managedAssets"].as_array().unwrap().len(), 1);
     let managed = &assets["managedAssets"][0];
@@ -691,7 +702,7 @@ fn omits_canonical_music_with_an_explicit_bundle_limitation() {
         .find(|value| value.contains("scenario music asset"))
         .unwrap();
     assert!(warning.contains("omitted"));
-    assert!(warning.contains("Classic bundle v1"));
+    assert!(warning.contains("scenario format v2"));
     assert!(!output.join("assets/managed").exists());
     let campaign: Value =
         serde_json::from_slice(&fs::read(output.join("campaign.json")).unwrap()).unwrap();
@@ -946,8 +957,11 @@ fn exports_authoritative_ed3_callability_from_canonical_records() {
     project.source.origin = Some(ProjectOrigin::Imported);
     project.source.immutable = true;
     project.source.raw_sources_dir = "missing-compatibility-annex".to_string();
+    let mut gosub_action = action(0, 39, 2);
+    gosub_action.raw_code = -39;
+    gosub_action.gosub = true;
     project.triggers = vec![
-        trigger_record("Data DD", 0, vec![action(0, 39, 2)]),
+        trigger_record("Data DD", 0, vec![gosub_action]),
         trigger_record("Data ED3", 2, vec![action(0, 1, 100)]),
         trigger_record("Data ED3", 3, vec![action(0, 256, 0)]),
     ];
@@ -973,6 +987,10 @@ fn exports_authoritative_ed3_callability_from_canonical_records() {
         .unwrap();
 
     assert!(map_trigger.get("callable").is_none());
+    assert_eq!(map_trigger["actions"][0]["kind"], "classic");
+    assert_eq!(map_trigger["actions"][0]["rawCode"], -39);
+    assert_eq!(map_trigger["actions"][0]["code"], 39);
+    assert_eq!(map_trigger["actions"][0]["gosub"], true);
     assert_eq!(called_extra_action["callable"], true);
     assert_eq!(unreferenced_extra_action["callable"], false);
     assert_eq!(unreferenced_extra_action["actions"][0]["rawCode"], 256);
@@ -986,6 +1004,76 @@ fn exports_authoritative_ed3_callability_from_canonical_records() {
     assert!(reachability
         .iter()
         .any(|row| row["recordIndex"] == 3 && row["reachable"] == false));
+}
+
+#[test]
+fn exports_namespaced_semantic_actions_and_blocks_native_realmz_export() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("semantic.providence");
+    let mut project = create_project("Semantic".to_string(), &project_dir).unwrap();
+    let trigger = trigger_record("Data DD", 0, vec![action(0, 42, 17)]);
+    let trigger_id = trigger.id.clone();
+    project.triggers = vec![trigger];
+    project
+        .remake_runtime
+        .required_extensions
+        .push(RemakeExtensionRequirement {
+            id: "scenario.runtime-fixture".to_string(),
+            api_version: 1,
+            configuration: json!({"marker": "providence"}),
+        });
+    project
+        .remake_runtime
+        .semantic_actions
+        .push(RemakeSemanticAction {
+            target_kind: "trigger".to_string(),
+            record_id: trigger_id,
+            slot: 0,
+            operation: "scenario.runtime-fixture.mark".to_string(),
+            parameters: json!({"marker": "providence"}),
+        });
+
+    let output = workspace.path().join("semantic-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let action = &documents["classic/scripts.json"]["triggers"][0]["actions"][0];
+    assert_eq!(action["kind"], "semantic");
+    assert_eq!(action["operation"], "scenario.runtime-fixture.mark");
+    assert_eq!(action["parameters"]["marker"], "providence");
+    let runtime = &documents["runtime.json"];
+    assert_eq!(
+        runtime["requiredExtensions"][0]["id"],
+        "scenario.runtime-fixture"
+    );
+    assert_eq!(runtime["requiredExtensions"][0]["apiVersion"], 1);
+    assert_eq!(runtime["targetSupport"]["nativeRealmz"], false);
+    assert_eq!(
+        runtime["targetSupport"]["remakeOnlyReasons"][0],
+        "semantic-actions"
+    );
+
+    let native_error = crate::exporter::export_project(
+        &project_dir,
+        &project,
+        workspace.path().join("native-out"),
+        ScenarioTarget::WindowsRealmzFolder,
+    )
+    .unwrap_err();
+    let message = native_error.to_string();
+    assert!(message.contains("Native Realmz export is unavailable"));
+    assert!(message.contains("semantic-actions"));
+    assert!(message.contains("Realmz Remake scenario"));
+
+    project.remake_runtime.semantic_actions[0].operation = "scenario.missing.operation".to_string();
+    let invalid_error = export_remake_campaign(
+        &project,
+        &project_dir,
+        workspace.path().join("invalid-semantic-out"),
+    )
+    .unwrap_err();
+    assert!(invalid_error
+        .to_string()
+        .contains("uses unavailable semantic operation"));
 }
 
 #[test]
@@ -1720,7 +1808,6 @@ fn portable_style_fixture() -> Vec<u8> {
         0x00, 0x00, // blue
     ]
 }
-
 fn test_pict(color: [u8; 4]) -> Vec<u8> {
     let mut rgba = Vec::with_capacity(32 * 32 * 4);
     for _ in 0..32 * 32 {
@@ -1748,7 +1835,6 @@ fn conformance_pict_fixture(id: &str) -> Vec<u8> {
         .unwrap_or_else(|| panic!("missing shared PICT fixture {id}"));
     STANDARD.decode(encoded).unwrap()
 }
-
 fn managed_sound_asset(bytes: &[u8]) -> ManagedAsset {
     let sha256 = hex::encode(Sha256::digest(bytes));
     serde_json::from_value(json!({
@@ -1853,6 +1939,7 @@ fn preserve_resource_fork(
 fn read_json_documents(root: &Path) -> BTreeMap<String, Value> {
     [
         "campaign.json",
+        "runtime.json",
         "classic/scenario.json",
         "classic/maps.json",
         "classic/scripts.json",

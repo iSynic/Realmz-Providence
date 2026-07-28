@@ -15,6 +15,7 @@ pub mod project_package;
 pub mod realmz;
 mod realmz_reference;
 pub mod remake_exporter;
+mod remake_extension_catalog;
 pub mod resource_fork;
 pub mod resource_preview;
 pub(crate) mod rule_compiler;

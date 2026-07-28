@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 5;
+pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 6;
 
 #[allow(dead_code)]
 pub const PROVIDENCE_PROJECT_FIELDS: &[&str] = &[
@@ -11,6 +11,7 @@ pub const PROVIDENCE_PROJECT_FIELDS: &[&str] = &[
     "appVersion",
     "scenario",
     "source",
+    "remakeRuntime",
     "maps",
     "landLayout",
     "mapRecords",

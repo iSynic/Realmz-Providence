@@ -338,7 +338,10 @@ expect(project.raceOverrides.length === 1, `Expected one race override, found ${
 expect(project.casteOverrides.length === 1, `Expected one caste override, found ${project.casteOverrides.length}`);
 assertOwnershipRules(project, "Canonical project", true);
 assertNoFreshRuleCompatibilityBytes(project, "Canonical project");
-expect(project.schemaVersion === 5, `Canonical project must use schema v5, found v${project.schemaVersion}`);
+expect(project.schemaVersion === 6, `Canonical project must use schema v6, found v${project.schemaVersion}`);
+expect(project.remakeRuntime.recommendedGameplayProfile === "core.classic", "Canonical project must recommend the Classic gameplay profile");
+expect(project.remakeRuntime.requiredExtensions.length === 0, "Ordinary Classic projects must not require Remake extensions");
+expect(project.remakeRuntime.semanticActions.length === 0, "Ordinary Classic projects must not gain semantic actions");
 expect(project.source.origin === "authored", `Fresh canonical project must declare authored origin, found ${project.source.origin}`);
 expect(project.source.files.length === 0, "Fresh canonical project must not inventory source files");
 expect(project.source.immutable === false, "Fresh canonical project must not be immutable");
@@ -694,7 +697,7 @@ const summary = {
   remakeCompatibility: {
     path: relative(remakeOutputA),
     deterministic: true,
-    formatVersion: 1,
+    formatVersion: 2,
     packagedManagedResources: project.assets.length,
     manifest: fileManifest(remakeFilesA)
   },
@@ -1521,6 +1524,7 @@ function assertFileMapsEqual(left, right, label) {
 function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const requiredDocuments = [
     "campaign.json",
+    "runtime.json",
     "classic/assets.json",
     "classic/content.json",
     "classic/encounters.json",
@@ -1534,10 +1538,11 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
 
   const documents = new Map(requiredDocuments.map((name) => [name, JSON.parse(Buffer.from(files.get(name)).toString("utf8"))]));
   const manifest = documents.get("campaign.json");
-  expect(manifest.format === "realmz-remake-classic-campaign", "Remake export has the wrong format identity");
-  expect(manifest.formatVersion === 1, `Remake export has unsupported format version ${manifest.formatVersion}`);
+  expect(manifest.format === "realmz-remake-scenario", "Remake export has the wrong format identity");
+  expect(manifest.formatVersion === 2, `Remake export has unsupported format version ${manifest.formatVersion}`);
   expect(manifest.campaignKind === "classic-compiled" && manifest.compatibilityProfile === "realmz-7.1", "Remake export has the wrong compatibility profile");
-  expect(manifest.producer.projectSchemaVersion === 5 && manifest.producer.projectOrigin === "authored", "Remake export lost its canonical producer identity");
+  expect(manifest.producer.projectSchemaVersion === 6 && manifest.producer.projectOrigin === "authored", "Remake export lost its canonical producer identity");
+  expect(manifest.files.runtime === "runtime.json", "Remake export lost the required runtime document path");
   expect(manifest.start.levelType === "land" && manifest.start.levelIndex === 0 && manifest.start.x === 10 && manifest.start.y === 12, "Remake export has the wrong canonical start");
 
   const scenario = documents.get("classic/scenario.json");
@@ -1565,11 +1570,12 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const scripts = documents.get("classic/scripts.json");
   const trigger = scripts.triggers.find((candidate) => candidate.id === "land:0:ap:0");
   expect(trigger, "Remake export lost the stable Action Point identity");
-  expect(trigger.actions.some((action) => action.rawCode === 1 && action.code === 1), "Remake export lost the normalized message action");
-  expect(trigger.actions.some((action) => action.rawCode === 47 && action.code === 47), "Remake export lost the normalized quest action");
-  expect(trigger.actions.some((action) => action.rawCode === 89 && action.code === 89 && action.id === 1), "Remake export lost the authored ally action");
+  expect(trigger.actions.some((action) => action.kind === "classic" && action.rawCode === 1 && action.code === 1 && action.gosub === false), "Remake export lost the normalized message action");
+  expect(trigger.actions.some((action) => action.kind === "classic" && action.rawCode === 47 && action.code === 47 && action.gosub === false), "Remake export lost the normalized quest action");
+  expect(trigger.actions.some((action) => action.kind === "classic" && action.rawCode === 89 && action.code === 89 && action.id === 1), "Remake export lost the authored ally action");
   expect(
     trigger.actions.some((action) =>
+      action.kind === "classic" &&
       action.rawCode === 9 &&
       action.id === 321 &&
       !Object.hasOwn(action, "mediaRequiredForProgression")
@@ -1603,6 +1609,11 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(content.scenarioItems.some((record) => record.id === 101 && record.itemId === 901), "Remake export lost scenario-item record or item identity");
   expect(content.scenarioItems.some((record) => record.id === 102 && record.itemId === 902), "Remake export lost the carried scenario-item record");
   expect(content.monsters.some((record) => record.id === 1 && record.items?.[0] === 902 && record.weapon === 902), "Remake export lost the monster's carried or equipped scenario item");
+  const runtime = documents.get("runtime.json");
+  expect(runtime.recommendedGameplayProfile === "core.classic", "Remake runtime lost the recommended gameplay profile");
+  expect(runtime.requiredExtensions.length === 0, "Ordinary Classic proof unexpectedly requires a Remake extension");
+  expect(runtime.targetSupport.realmzRemake === true && runtime.targetSupport.nativeRealmz === true, "Ordinary Classic proof must support both targets");
+  expect(runtime.targetSupport.remakeOnlyReasons.length === 0, "Ordinary Classic proof must not have Remake-only reasons");
 
   const assets = documents.get("classic/assets.json");
   const runtimeManagedAssets = canonicalProject.assets.filter((asset) => asset.resourceType !== "styl");

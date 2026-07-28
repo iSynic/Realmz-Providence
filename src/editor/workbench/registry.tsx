@@ -162,12 +162,13 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     label: "Rules",
     shortLabel: "Rules",
     railGroup: "systems",
-    description: "Spells, races, castes, and selector data.",
-    help: "Rule editors expose authored records and shared Realmz reference catalogs.",
+    description: "Spells, races, castes, and Realmz Remake runtime bindings.",
+    help: "Rule editors expose authored records, shared Realmz reference catalogs, and data-only Remake v2 extension bindings.",
     tools: [
       t({ id: "spells", label: "Spell Editor", iconLabel: "SP", workbench: "both", description: "Spells and spell references.", entityTypes: ["spell", "spell-reference"], defaultInspector: "semantic" }),
       t({ id: "races", label: "Race Editor", iconLabel: "RA", workbench: "both", description: "Race records and restrictions.", entityTypes: ["race"], defaultInspector: "semantic" }),
-      t({ id: "castes", label: "Caste Editor", iconLabel: "CA", workbench: "both", description: "Caste records and restrictions.", entityTypes: ["caste"], defaultInspector: "semantic" })
+      t({ id: "castes", label: "Caste Editor", iconLabel: "CA", workbench: "both", description: "Caste records and restrictions.", entityTypes: ["caste"], defaultInspector: "semantic" }),
+      t({ id: "remake", label: "Remake Runtime", iconLabel: "V2", workbench: "project", description: "Gameplay profile, built-in extensions, semantic actions, and provider bindings.", entityTypes: ["scenario"], defaultInspector: "semantic" })
     ]
   },
   assets: {

@@ -43,11 +43,20 @@ fn validate_monster_record_shape(monster: &MonsterRecord, label: &str, errors: &
 pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
+    errors.extend(crate::remake_extension_catalog::validate_remake_runtime(
+        project,
+    ));
     let mut exportable_files = Vec::new();
     let mut pass_through_files = Vec::new();
     let imported_project = project.source.requires_compatibility_annex();
     let authored_manifest_files = if imported_project {
         None
+    } else if project.remake_runtime.is_remake_only() {
+        warnings.push(
+            "Native Realmz output is unavailable because the project uses Remake-only runtime behavior."
+                .to_string(),
+        );
+        Some(Vec::new())
     } else {
         match crate::exporter::expected_authored_scenario_manifest_files(
             project,
@@ -2966,6 +2975,7 @@ mod tests {
                 files: Vec::new(),
                 immutable: false,
             },
+            remake_runtime: crate::project::RemakeRuntime::default(),
             maps: Vec::new(),
             land_layout: None,
             map_records: Vec::new(),

@@ -113,6 +113,8 @@
     "check:rules-compiler-baseline": "node scripts/generate_rules_compiler_baseline.mjs --check",
     "generate:providence-project-contract": "node scripts/generate_providence_project_contract.mjs",
     "check:providence-project-contract": "node scripts/generate_providence_project_contract.mjs --check",
+    "generate:remake-extension-catalog": "node scripts/generate_remake_extension_catalog.mjs",
+    "check:remake-extension-catalog": "node scripts/generate_remake_extension_catalog.mjs --check",
     "generate:realmz-native-manifest-policy": "node scripts/generate_realmz_native_manifest_policy.mjs",
     "check:realmz-native-manifest-policy": "node scripts/generate_realmz_native_manifest_policy.mjs --check",
     "check:realmz-native-abi": "node scripts/audit_realmz_native_abi.mjs --check",
