@@ -180,6 +180,9 @@ pub fn validate_remake_runtime(project: &ProvidenceProject) -> Vec<String> {
         }
     }
 
+    errors.extend(crate::remake_exporter::scripting::validate_project_scripts(
+        project,
+    ));
     errors
 }
 

@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 6;
+pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 7;
 
 #[allow(dead_code)]
 pub const PROVIDENCE_PROJECT_FIELDS: &[&str] = &[
@@ -11,6 +11,7 @@ pub const PROVIDENCE_PROJECT_FIELDS: &[&str] = &[
     "appVersion",
     "scenario",
     "source",
+    "authoringTarget",
     "remakeRuntime",
     "maps",
     "landLayout",
@@ -100,8 +101,13 @@ pub const PROVIDENCE_MAP_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] =
-    &["rows", "cols", "cells", "authored", "provenance"];
+pub const PROVIDENCE_LAND_LAYOUT_FIELDS: &[&str] = &[
+    "rows",
+    "cols",
+    "cells",
+    "authored",
+    "provenance",
+];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_MAP_RECORD_FIELDS: &[&str] = &[
@@ -205,7 +211,11 @@ pub const PROVIDENCE_ACTION_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_EXTRA_CODE_FIELDS: &[&str] = &["id", "values", "provenance"];
+pub const PROVIDENCE_EXTRA_CODE_FIELDS: &[&str] = &[
+    "id",
+    "values",
+    "provenance",
+];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_MONSTER_ICON_OVERRIDE_FIELDS: &[&str] = &[
@@ -256,7 +266,12 @@ pub const PROVIDENCE_MANAGED_ASSET_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_ASSET_CATALOG_FIELDS: &[&str] = &["tilesets", "pictures", "icons", "sounds"];
+pub const PROVIDENCE_ASSET_CATALOG_FIELDS: &[&str] = &[
+    "tilesets",
+    "pictures",
+    "icons",
+    "sounds",
+];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_SCENARIO_ITEM_FIELDS: &[&str] = &[
@@ -330,10 +345,20 @@ pub const PROVIDENCE_SHOP_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_MESSAGE_FIELDS: &[&str] = &["id", "text", "authored", "provenance"];
+pub const PROVIDENCE_MESSAGE_FIELDS: &[&str] = &[
+    "id",
+    "text",
+    "authored",
+    "provenance",
+];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &["id", "text", "authored", "provenance"];
+pub const PROVIDENCE_OPTION_LABEL_FIELDS: &[&str] = &[
+    "id",
+    "text",
+    "authored",
+    "provenance",
+];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_BATTLE_FIELDS: &[&str] = &[
@@ -401,11 +426,19 @@ pub const PROVIDENCE_MONSTER_FIELDS: &[&str] = &[
 ];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] =
-    &["id", "text", "authored", "provenance"];
+pub const PROVIDENCE_MONSTER_DESCRIPTION_FIELDS: &[&str] = &[
+    "id",
+    "text",
+    "authored",
+    "provenance",
+];
 
 #[allow(dead_code)]
-pub const PROVIDENCE_MONSTER_SET_FIELDS: &[&str] = &["sourceFile", "setId", "monsters"];
+pub const PROVIDENCE_MONSTER_SET_FIELDS: &[&str] = &[
+    "sourceFile",
+    "setId",
+    "monsters",
+];
 
 #[allow(dead_code)]
 pub const PROVIDENCE_ITEM_TEXT_FIELDS: &[&str] = &[
@@ -1148,12 +1181,7 @@ pub enum ActionCategory {
     Map,
     #[serde(alias = "Registration", alias = "Scenario")]
     Registration,
-    #[serde(
-        alias = "Advanced",
-        alias = "Characters",
-        alias = "Rules",
-        alias = "State"
-    )]
+    #[serde(alias = "Advanced", alias = "Characters", alias = "Rules", alias = "State")]
     State,
     #[serde(alias = "Time")]
     Time,

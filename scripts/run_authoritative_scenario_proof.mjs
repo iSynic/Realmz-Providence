@@ -280,13 +280,12 @@ const progressionMediaTrigger = project.triggers.find((trigger) => trigger.id ==
 expect(progressionMediaTrigger, "Canonical project is missing its primary Action Point");
 progressionMediaTrigger.actions.push({
   slot: 3,
-  rawCode: 9,
-  code: 9,
-  id: 321,
-  label: "Play Sound",
-  category: "ui_text",
-  gosub: false,
-  mediaRequiredForProgression: true
+  rawCode: 2,
+  code: 2,
+  id: 0,
+  label: "Simple Encounter",
+  category: "encounter",
+  gosub: false
 });
 const progressionMediaEncounter = project.simpleEncounters.find((encounter) => encounter.id === 0);
 expect(progressionMediaEncounter, "Canonical project is missing its primary simple encounter");
@@ -338,7 +337,7 @@ expect(project.raceOverrides.length === 1, `Expected one race override, found ${
 expect(project.casteOverrides.length === 1, `Expected one caste override, found ${project.casteOverrides.length}`);
 assertOwnershipRules(project, "Canonical project", true);
 assertNoFreshRuleCompatibilityBytes(project, "Canonical project");
-expect(project.schemaVersion === 6, `Canonical project must use schema v6, found v${project.schemaVersion}`);
+expect(project.schemaVersion === 7, `Canonical project must use schema v7, found v${project.schemaVersion}`);
 expect(project.remakeRuntime.recommendedGameplayProfile === "core.classic", "Canonical project must recommend the Classic gameplay profile");
 expect(project.remakeRuntime.requiredExtensions.length === 0, "Ordinary Classic projects must not require Remake extensions");
 expect(project.remakeRuntime.semanticActions.length === 0, "Ordinary Classic projects must not gain semantic actions");
@@ -349,8 +348,10 @@ const questAction = project.triggers.flatMap((trigger) => trigger.actions).find(
 expect(questAction?.id === 1, `First authored quest flag must be runtime-valid ID 1, found ${questAction?.id}`);
 const allyAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 89);
 expect(allyAction?.id === 1, `Authored ally action must resolve Providence Sentinel ID 1, found ${allyAction?.id}`);
-const progressionMediaAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 9 && action.id === 321);
-expect(progressionMediaAction?.mediaRequiredForProgression === true, "Canonical sound action must retain its Remake progression requirement");
+const encounterAction = project.triggers
+  .flatMap((trigger) => trigger.actions)
+  .find((action) => action.rawCode === 2 && action.id === 0);
+expect(encounterAction, "Canonical Action Point must reach its simple encounter");
 expect(
   progressionMediaEncounter.actions.some((action) =>
     action.rawCode === 9 &&
@@ -697,7 +698,7 @@ const summary = {
   remakeCompatibility: {
     path: relative(remakeOutputA),
     deterministic: true,
-    formatVersion: 2,
+    formatVersion: 3,
     packagedManagedResources: project.assets.length,
     manifest: fileManifest(remakeFilesA)
   },
@@ -1532,16 +1533,17 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
     "classic/maps.json",
     "classic/rules.json",
     "classic/scenario.json",
-    "classic/scripts.json"
+    "classic/scripts.json",
+    "remake/scripts.json"
   ];
   for (const name of requiredDocuments) expect(files.has(name), `Remake export is missing ${name}`);
 
   const documents = new Map(requiredDocuments.map((name) => [name, JSON.parse(Buffer.from(files.get(name)).toString("utf8"))]));
   const manifest = documents.get("campaign.json");
   expect(manifest.format === "realmz-remake-scenario", "Remake export has the wrong format identity");
-  expect(manifest.formatVersion === 2, `Remake export has unsupported format version ${manifest.formatVersion}`);
+  expect(manifest.formatVersion === 3, `Remake export has unsupported format version ${manifest.formatVersion}`);
   expect(manifest.campaignKind === "classic-compiled" && manifest.compatibilityProfile === "realmz-7.1", "Remake export has the wrong compatibility profile");
-  expect(manifest.producer.projectSchemaVersion === 6 && manifest.producer.projectOrigin === "authored", "Remake export lost its canonical producer identity");
+  expect(manifest.producer.projectSchemaVersion === 7 && manifest.producer.projectOrigin === "authored", "Remake export lost its canonical producer identity");
   expect(manifest.files.runtime === "runtime.json", "Remake export lost the required runtime document path");
   expect(manifest.start.levelType === "land" && manifest.start.levelIndex === 0 && manifest.start.x === 10 && manifest.start.y === 12, "Remake export has the wrong canonical start");
 
@@ -1576,21 +1578,31 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(
     trigger.actions.some((action) =>
       action.kind === "classic" &&
-      action.rawCode === 9 &&
-      action.id === 321 &&
-      !Object.hasOwn(action, "mediaRequiredForProgression")
+      action.rawCode === 2 &&
+      action.code === 2 &&
+      action.id === 0
     ),
-    "Remake export retained legacy progression-required sound policy"
+    "Remake export lost the reachable simple-encounter action"
   );
   const dungeonRandomLevel = scripts.randomLevels.find((candidate) => candidate.id === "dungeon:0:randlevel");
   expect(dungeonRandomLevel?.isDark && dungeonRandomLevel.useLos && dungeonRandomLevel.landlook === 0, "Remake export lost the canonical dungeon random-level flags");
   const dungeonTrigger = scripts.triggers.find((candidate) => candidate.id === "dungeon:0:ap:1");
-  expect(dungeonTrigger?.source === "Data DDD" && dungeonTrigger.doorid === 504, "Remake export lost the stable dungeon Action Point identity");
+  expect(dungeonTrigger?.doorid === 504, "Remake export lost the stable dungeon Action Point identity");
   expect(dungeonTrigger.actions.length === 1 && dungeonTrigger.actions[0].rawCode === 1 && dungeonTrigger.actions[0].code === 1, "Remake export lost the normalized dungeon message action");
-  const extraAction = scripts.triggers.find((candidate) => candidate.source === "Data ED3");
+  const extraAction = scripts.triggers.find((candidate) => candidate.macroId === 2);
   expect(extraAction && typeof extraAction.callable === "boolean", "Remake export lost authoritative Data ED3 callability");
   const evidence = documents.get("classic/evidence.json");
-  expect(evidence.semanticDecoding.ed3Reachability.some((row) => row.recordIndex === extraAction.recordIndex && row.reachable === extraAction.callable), "Remake export callability differs from its reachability evidence");
+  const dungeonEvidence = evidence.recordCatalog.records.find((record) => record.key === `triggers:${dungeonTrigger.id}`);
+  expect(dungeonEvidence?.metadata?.source === "Data DDD", "Remake evidence lost the dungeon Action Point source");
+  const extraActionEvidence = evidence.recordCatalog.records.find((record) => record.key === `triggers:${extraAction.id}`);
+  expect(extraActionEvidence?.metadata?.source === "Data ED3", "Remake evidence lost the extra Action Point source");
+  expect(
+    evidence.semanticDecoding.ed3Reachability.some((row) =>
+      row.recordIndex === extraActionEvidence.metadata.recordIndex &&
+      row.reachable === extraAction.callable
+    ),
+    "Remake export callability differs from its reachability evidence"
+  );
   const encounters = documents.get("classic/encounters.json");
   expect(encounters.simpleEncounters.some((record) => record.id === 0), "Remake export lost the stable simple-encounter identity");
   expect(encounters.complexEncounters.some((record) => record.id === 0), "Remake export lost the stable complex-encounter identity");

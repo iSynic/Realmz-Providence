@@ -12,6 +12,7 @@
     "appVersion",
     "scenario",
     "source",
+    "authoringTarget",
     "remakeRuntime",
     "maps",
     "landLayout",
@@ -52,12 +53,16 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 6,
+      "const": 7,
       "description": "Providence persisted-project schema version."
     },
     "appVersion": { "type": "string" },
     "scenario": { "$ref": "#/$defs/scenarioMeta" },
     "source": { "$ref": "#/$defs/source" },
+    "authoringTarget": {
+      "type": "string",
+      "enum": ["classic-compatible", "remake-enhanced"]
+    },
     "remakeRuntime": { "$ref": "#/$defs/remakeRuntime" },
     "maps": {
       "type": "array",
@@ -180,6 +185,9 @@
         "recommendedGameplayProfile",
         "requiredExtensions",
         "semanticActions",
+        "scripts",
+        "scriptAttachments",
+        "persistentVariables",
         "bindings"
       ],
       "properties": {
@@ -224,6 +232,18 @@
             }
           }
         },
+        "scripts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/remakeScript" }
+        },
+        "scriptAttachments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/remakeScriptAttachment" }
+        },
+        "persistentVariables": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/remakePersistentVariable" }
+        },
         "bindings": {
           "type": "object",
           "additionalProperties": false,
@@ -236,6 +256,140 @@
             "lifecycle": {"type": "object", "additionalProperties": {"type": "string"}}
           }
         }
+      }
+    },
+    "remakeScript": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "documentation",
+        "tier",
+        "apiVersion",
+        "parameters",
+        "returnType",
+        "requestedCapabilities",
+        "stateSchema",
+        "sourceMap",
+        "ast",
+        "source"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9.-]*$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "documentation": { "type": "string" },
+        "tier": {
+          "type": "string",
+          "enum": ["safe", "sandboxed", "trusted"]
+        },
+        "apiVersion": { "type": "integer", "minimum": 1 },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/remakeScriptParameter" }
+        },
+        "returnType": { "$ref": "#/$defs/remakeScriptValueType" },
+        "requestedCapabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^core\\.[a-z0-9][a-z0-9.-]*$"
+          },
+          "uniqueItems": true
+        },
+        "stateSchema": { "$ref": "#/$defs/canonicalObject" },
+        "sourceMap": { "$ref": "#/$defs/canonicalObject" },
+        "ast": {
+          "oneOf": [
+            { "$ref": "#/$defs/canonicalObject" },
+            { "type": "null" }
+          ]
+        },
+        "source": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "remakeScriptParameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "valueType", "maxLength"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z_][a-z0-9_]*$"
+        },
+        "valueType": { "$ref": "#/$defs/remakeScriptValueType" },
+        "maxLength": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1, "maximum": 256 },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "remakeScriptValueType": {
+      "type": "string",
+      "enum": [
+        "void",
+        "bool",
+        "int",
+        "float",
+        "string",
+        "bool-array",
+        "int-array",
+        "float-array",
+        "string-array"
+      ]
+    },
+    "remakeScriptAttachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetKind", "recordId", "slot", "hook", "scriptId"],
+      "properties": {
+        "targetKind": {
+          "type": "string",
+          "enum": ["trigger", "simpleEncounter", "complexEncounter", "lifecycle"]
+        },
+        "recordId": { "type": "string" },
+        "slot": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0, "maximum": 31 },
+            { "type": "null" }
+          ]
+        },
+        "hook": {
+          "oneOf": [
+            { "type": "string" },
+            { "type": "null" }
+          ]
+        },
+        "scriptId": { "type": "string" }
+      }
+    },
+    "remakePersistentVariable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "valueType", "maxLength", "defaultValue"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z_][a-z0-9_]*$"
+        },
+        "valueType": { "$ref": "#/$defs/remakeScriptValueType" },
+        "maxLength": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1, "maximum": 256 },
+            { "type": "null" }
+          ]
+        },
+        "defaultValue": {}
       }
     },
     "levelType": {

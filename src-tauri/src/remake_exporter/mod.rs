@@ -1,8 +1,10 @@
 mod assets;
 mod comparison;
 mod documents;
+mod evidence;
 mod portable;
 mod rule_selection;
+pub(crate) mod scripting;
 
 pub use comparison::{
     compare_remake_bundles, RemakeBundleComparison, RemakeBundleMismatch, RemakeBundleMismatchKind,
@@ -15,18 +17,20 @@ use documents::{build_documents, contract_files};
 use portable::assert_portable_value;
 use serde::Serialize;
 use serde_json::{json, Value};
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 
 pub const REMAKE_CLASSIC_FORMAT: &str = "realmz-remake-scenario";
-pub const REMAKE_CLASSIC_FORMAT_VERSION: u32 = 2;
-pub const REMAKE_DOCUMENT_SCHEMA_VERSION: u32 = 1;
+pub const REMAKE_CLASSIC_FORMAT_VERSION: u32 = 3;
+pub const REMAKE_DOCUMENT_SCHEMA_VERSION: u32 = 2;
 
 const CLASSIC_DIR: &str = "classic";
 const LIMITATIONS: [&str; 3] = [
     "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Scrolling TEXT is decoded for runtime use, and matching styl resources become portable rich-text presentation runs rather than binary payloads.",
-    "Providence schema version 6 authors a land start; the v2 bundle can also represent dungeon starts when the canonical model gains that distinction.",
+    "Providence schema version 7 authors a land start; the v3 bundle can also represent dungeon starts when the canonical model gains that distinction.",
     "Negative cicn special-land-tile identities use the additive assets.catalog.specialLandTiles collection because ordinary icon identities are non-negative.",
 ];
 
@@ -89,20 +93,25 @@ pub fn export_remake_campaign(
     fs::create_dir_all(&classic_dir).with_path(&classic_dir)?;
 
     let packaged_assets = package_assets(project, project_dir, output_dir)?;
+    let script_bundle = scripting::compile_project_scripts(project)?;
+    let script_source_files =
+        scripting::write_script_sources(output_dir, &script_bundle.source_files)?;
     let limitations = limitations_for_project(project);
     let mut counts = project_counts(project);
     counts.managed_assets = packaged_assets.managed_assets.len();
     counts.packaged_asset_payloads = packaged_assets.written_files.len();
     let files = contract_files();
-    let documents = build_documents(project, &packaged_assets, project_dir)?;
-    let manifest = campaign_manifest(project, &counts, &files, &limitations);
-    assert_portable_value(&manifest, project_dir, "campaign.json")?;
+    let documents = build_documents(
+        project,
+        &packaged_assets,
+        project_dir,
+        script_bundle.document,
+    )?;
 
     let mut written_files = packaged_assets.written_files.clone();
-    write_json(&output_dir.join("campaign.json"), &manifest)?;
-    written_files.push("campaign.json".to_string());
+    written_files.extend(script_source_files);
     for (name, document) in documents {
-        let relative_path = if name == "runtime.json" {
+        let relative_path = if name == "runtime.json" || name.starts_with("remake/") {
             name.to_string()
         } else {
             format!("{CLASSIC_DIR}/{name}")
@@ -111,6 +120,12 @@ pub fn export_remake_campaign(
         write_json(&output_dir.join(&relative_path), &document)?;
         written_files.push(relative_path);
     }
+    let integrity = bundle_integrity(output_dir)?;
+    let mut manifest = campaign_manifest(project, &counts, &files, &limitations, &integrity);
+    set_package_hash(&mut manifest)?;
+    assert_portable_value(&manifest, project_dir, "campaign.json")?;
+    write_json(&output_dir.join("campaign.json"), &manifest)?;
+    written_files.push("campaign.json".to_string());
     written_files.sort();
 
     Ok(RemakeExportReport {
@@ -152,6 +167,8 @@ pub fn update_remake_campaign_icons(
                 .is_some_and(|text| text.contains("monster-icon override payloads are excluded"))
         });
     }
+    manifest["integrity"] = bundle_integrity(output_dir)?;
+    set_package_hash(&mut manifest)?;
     assert_portable_value(&manifest, output_dir, "campaign.json")?;
     write_json_with_style(&manifest_path, &manifest, manifest_multiline)?;
     Ok(RemakeIconUpdateReport {
@@ -214,6 +231,9 @@ fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
 }
 
 fn write_json_with_style(path: &Path, value: &impl Serialize, multiline: bool) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_path(parent)?;
+    }
     let file = File::create(path).with_path(path)?;
     let mut writer = BufWriter::new(file);
     if multiline {
@@ -270,6 +290,7 @@ fn campaign_manifest(
     counts: &RemakeExportCounts,
     files: &std::collections::BTreeMap<&str, &str>,
     limitations: &[String],
+    integrity: &Value,
 ) -> Value {
     let start = project.scenario.shell.as_ref().map_or_else(
         || json!({ "levelType": "land", "levelIndex": 0, "x": 0, "y": 0 }),
@@ -291,6 +312,7 @@ fn campaign_manifest(
         "name": &project.scenario.name,
         "start": start,
         "files": files,
+        "integrity": integrity,
         "producer": {
             "name": "Providence",
             "projectSchemaVersion": project.schema_version,
@@ -302,6 +324,7 @@ fn campaign_manifest(
             "semanticScenarioData": "canonical-project-projection",
             "classicResourcePayloads": "packaged-classic-resource-data",
             "generatedGdscript": false,
+            "scriptExecutionTiers": ["safe", "sandboxed", "trusted"],
         },
         "limitations": limitations,
     })
@@ -325,10 +348,86 @@ fn limitations_for_project(project: &ProvidenceProject) -> Vec<String> {
         .count();
     if music_assets > 0 {
         limitations.push(format!(
-            "{music_assets} canonical scenario music asset(s) were omitted: scenario format v2 has no scenario-music playlist contract yet. Native Realmz exports still carry their original MOD payloads."
+            "{music_assets} canonical scenario music asset(s) were omitted: scenario format v3 has no scenario-music playlist contract yet. Native Realmz exports still carry their original MOD payloads."
         ));
     }
     limitations
+}
+
+fn bundle_integrity(output_dir: &Path) -> Result<Value> {
+    let mut entries = BTreeMap::new();
+    let mut pending = vec![output_dir.to_path_buf()];
+    while let Some(directory) = pending.pop() {
+        for entry in fs::read_dir(&directory).with_path(&directory)? {
+            let entry = entry.with_path(&directory)?;
+            let path = entry.path();
+            let file_type = entry.file_type().with_path(&path)?;
+            if file_type.is_dir() {
+                pending.push(path);
+                continue;
+            }
+            if !file_type.is_file() {
+                continue;
+            }
+            let relative = path
+                .strip_prefix(output_dir)
+                .map_err(|_| ProvidenceError::message("Bundle file escaped its output directory"))?
+                .to_string_lossy()
+                .replace('\\', "/");
+            if relative == "campaign.json" {
+                continue;
+            }
+            let bytes = fs::read(&path).with_path(&path)?;
+            entries.insert(
+                relative,
+                json!({
+                    "bytes": bytes.len(),
+                    "sha256": sha256_hex(&bytes),
+                }),
+            );
+        }
+    }
+    Ok(json!({
+        "algorithm": "sha256",
+        "files": entries,
+    }))
+}
+
+fn set_package_hash(manifest: &mut Value) -> Result<()> {
+    let integrity = manifest
+        .get_mut("integrity")
+        .and_then(Value::as_object_mut)
+        .ok_or_else(|| ProvidenceError::message("Campaign manifest has no integrity object"))?;
+    integrity.remove("packageHash");
+    let canonical = serde_json::to_vec(&canonical_json_value(manifest)).map_err(|error| {
+        ProvidenceError::message(format!(
+            "Could not serialize canonical campaign manifest: {error}"
+        ))
+    })?;
+    manifest["integrity"]["packageHash"] = Value::String(sha256_hex(&canonical));
+    Ok(())
+}
+
+fn canonical_json_value(value: &Value) -> Value {
+    match value {
+        Value::Array(values) => {
+            Value::Array(values.iter().map(canonical_json_value).collect::<Vec<_>>())
+        }
+        Value::Object(object) => {
+            let mut sorted = BTreeMap::new();
+            for (key, child) in object {
+                sorted.insert(key.clone(), canonical_json_value(child));
+            }
+            Value::Object(sorted.into_iter().collect())
+        }
+        _ => value.clone(),
+    }
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    format!("{:x}", hasher.finalize())
 }
 
 pub(crate) fn portable_campaign_id(id: &str, name: &str) -> String {

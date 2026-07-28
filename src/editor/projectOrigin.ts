@@ -24,9 +24,24 @@ export function normalizeSourceFileRole(value: string | undefined, fallback: Sou
 }
 
 export function normalizeProjectContract(project: Project): Project {
+  const upgradingToAuthoringTargets = project.schemaVersion < 7;
   project.source.origin = resolvedProjectOrigin(project.source);
   for (const file of project.source.files) file.role = normalizeSourceFileRole(file.role);
-  if (project.schemaVersion < PROJECT_SCHEMA_VERSION) project.schemaVersion = PROJECT_SCHEMA_VERSION;
   project.remakeRuntime ??= emptyRemakeRuntime();
+  project.remakeRuntime.scripts ??= [];
+  for (const script of project.remakeRuntime.scripts) {
+    script.sourceMap ??= {};
+  }
+  project.remakeRuntime.scriptAttachments ??= [];
+  project.remakeRuntime.persistentVariables ??= [];
+  const remakeOnly = project.remakeRuntime.semanticActions.length > 0
+    || project.remakeRuntime.scripts.length > 0
+    || project.remakeRuntime.scriptAttachments.length > 0
+    || project.remakeRuntime.persistentVariables.length > 0
+    || Object.values(project.remakeRuntime.bindings).some((bindings) => Object.keys(bindings).length > 0);
+  project.authoringTarget ??= upgradingToAuthoringTargets && remakeOnly
+    ? "remake-enhanced"
+    : "classic-compatible";
+  if (project.schemaVersion < PROJECT_SCHEMA_VERSION) project.schemaVersion = PROJECT_SCHEMA_VERSION;
   return project;
 }

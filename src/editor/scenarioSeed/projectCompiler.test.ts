@@ -129,7 +129,7 @@ describe("scenario seed project compiler", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.project.schemaVersion).toBe(6);
+    expect(result.project.schemaVersion).toBe(7);
     expect(result.project.source).toEqual({
       origin: "authored",
       sourcePath: "seed://authored-from-zero",

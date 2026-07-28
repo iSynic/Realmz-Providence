@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "apiVersion": 1,
+  "operations": [
+    {
+      "id": "core.encounter.start-battle",
+      "owningPort": "core.combat",
+      "minimumTier": "safe",
+      "yields": true,
+      "commandId": "start_battle",
+      "parameters": {
+        "battleId": "int"
+      },
+      "result": "void"
+    },
+    {
+      "id": "core.map.teleport",
+      "owningPort": "core.map",
+      "minimumTier": "safe",
+      "yields": true,
+      "commandId": "teleport",
+      "parameters": {
+        "levelType": "string",
+        "levelIndex": "int",
+        "x": "int",
+        "y": "int"
+      },
+      "result": "void"
+    },
+    {
+      "id": "core.presentation.choice",
+      "owningPort": "core.presentation",
+      "minimumTier": "safe",
+      "yields": true,
+      "commandId": "choice",
+      "parameters": {
+        "prompt": "string",
+        "options": "string-array"
+      },
+      "result": "int"
+    },
+    {
+      "id": "core.presentation.text",
+      "owningPort": "core.presentation",
+      "minimumTier": "safe",
+      "yields": true,
+      "commandId": "show_text",
+      "parameters": {
+        "text": "string"
+      },
+      "result": "void"
+    },
+    {
+      "id": "core.rng.roll",
+      "owningPort": "core.rules",
+      "minimumTier": "safe",
+      "yields": false,
+      "parameters": {
+        "maximum": "int"
+      },
+      "result": "int"
+    },
+    {
+      "id": "core.state.read",
+      "owningPort": "core.persistence",
+      "minimumTier": "safe",
+      "yields": false,
+      "parameters": {
+        "scope": "string",
+        "id": "int?",
+        "name": "string?"
+      },
+      "result": "variant"
+    },
+    {
+      "id": "core.state.write",
+      "owningPort": "core.persistence",
+      "minimumTier": "safe",
+      "yields": false,
+      "parameters": {
+        "scope": "string",
+        "id": "int?",
+        "name": "string?",
+        "value": "variant"
+      },
+      "result": "void"
+    }
+  ],
+  "reservedFamilies": [
+    "core.map-time",
+    "core.combat",
+    "core.inventory",
+    "core.character",
+    "core.presentation",
+    "core.persistence",
+    "core.spells",
+    "core.item-behavior",
+    "core.lifecycle",
+    "core.encounter-resolver",
+    "core.ai",
+    "core.rules"
+  ]
+}

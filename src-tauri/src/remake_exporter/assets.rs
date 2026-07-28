@@ -181,6 +181,13 @@ pub(crate) fn package_assets(
         managed_assets.push(managed_asset_document(asset, &payload));
     }
     package_scenario_icon_resources(project, output_dir, &mut payloads, &mut written_files)?;
+    package_referenced_scenario_monster_icons(
+        project,
+        project_dir,
+        output_dir,
+        &mut payloads,
+        &mut written_files,
+    )?;
     package_scenario_pictures(
         project,
         project_dir,
@@ -463,6 +470,96 @@ fn package_scenario_icon_resources(
             payloads,
             written_files,
         )?;
+    }
+    Ok(())
+}
+
+fn package_referenced_scenario_monster_icons(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let referenced_base_ids = project
+        .monsters
+        .iter()
+        .chain(
+            project
+                .monster_sets
+                .iter()
+                .flat_map(|monster_set| monster_set.monsters.iter()),
+        )
+        .filter_map(|monster| monster.icon_id.checked_abs())
+        .filter(|resource_id| *resource_id != 0)
+        .collect::<BTreeSet<_>>();
+    if referenced_base_ids.is_empty() {
+        return Ok(());
+    }
+
+    let scenario_assets = project
+        .asset_catalog
+        .icons
+        .iter()
+        .filter(|asset| asset.resource_type == "cicn" && is_scenario_owned_icon(asset))
+        .filter_map(|asset| {
+            i16::try_from(asset.resource_id)
+                .ok()
+                .map(|resource_id| (resource_id, asset))
+        })
+        .collect::<BTreeMap<_, _>>();
+    let candidates = preserved_scenario_resource_payloads(project, project_dir, "cicn")?;
+
+    for base_id in referenced_base_ids {
+        let Ok(paired_id) =
+            i16::try_from(i32::from(base_id) + MONSTER_ICON_FACING_OFFSET)
+        else {
+            continue;
+        };
+        let mut planned = Vec::new();
+        let mut complete_pair = true;
+        for resource_id in [base_id, paired_id] {
+            if payloads.contains_key(&("cicn".to_string(), resource_id)) {
+                continue;
+            }
+            let asset = scenario_assets.get(&resource_id).copied();
+            let candidate = match asset {
+                Some(asset) => select_scenario_resource_payload(asset, &candidates, "cicn")?,
+                None => {
+                    let Some(candidate) = select_uncatalogued_scenario_resource_payload(
+                        resource_id,
+                        &candidates,
+                        "cicn",
+                    )?
+                    else {
+                        complete_pair = false;
+                        break;
+                    };
+                    candidate
+                }
+            };
+            planned.push((resource_id, asset, candidate));
+        }
+        if !complete_pair {
+            continue;
+        }
+        for (resource_id, asset, candidate) in planned {
+            let label = asset
+                .and_then(|asset| asset.name.as_deref())
+                .filter(|value| !value.trim().is_empty())
+                .or_else(|| (!candidate.name.trim().is_empty()).then_some(candidate.name.as_str()))
+                .map(str::to_string)
+                .unwrap_or_else(|| format!("Scenario monster icon {resource_id}"));
+            package_icon_payload(
+                i32::from(resource_id),
+                &label,
+                &candidate.bytes,
+                &format!("Scenario resource fork: {}", candidate.source_file),
+                output_dir,
+                payloads,
+                written_files,
+            )?;
+        }
     }
     Ok(())
 }
@@ -1028,11 +1125,20 @@ fn select_scenario_resource_payload<'a>(
         })
         .filter(|matching| !matching.is_empty())
         .unwrap_or_else(|| available.iter().collect::<Vec<_>>());
-    let first = matching[0];
+    let first = matching
+        .iter()
+        .copied()
+        .max_by_key(|candidate| candidate.bytes.len())
+        .expect("resource candidate groups are non-empty");
     if matching
         .iter()
         .skip(1)
-        .any(|candidate| candidate.bytes != first.bytes)
+        .any(|candidate| {
+            !candidate
+                .source_file
+                .eq_ignore_ascii_case(&first.source_file)
+                && candidate.bytes != first.bytes
+        })
     {
         return Err(ProvidenceError::message(format!(
             "Scenario-owned {resource_type} {resource_id} is ambiguous across preserved resource forks: {}",
@@ -1064,13 +1170,19 @@ fn select_uncatalogued_scenario_resource_payload<'a>(
         preferred
     };
     let first = matching
-        .first()
+        .iter()
         .copied()
+        .max_by_key(|candidate| candidate.bytes.len())
         .expect("resource candidate groups are non-empty");
     if matching
         .iter()
         .skip(1)
-        .any(|candidate| candidate.bytes != first.bytes)
+        .any(|candidate| {
+            !candidate
+                .source_file
+                .eq_ignore_ascii_case(&first.source_file)
+                && candidate.bytes != first.bytes
+        })
     {
         return Err(ProvidenceError::message(format!(
             "Scenario-owned {resource_type} {resource_id} is ambiguous across preserved resource forks: {}",

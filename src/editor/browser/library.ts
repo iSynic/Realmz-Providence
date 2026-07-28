@@ -20,7 +20,7 @@ type BrowserLibrarySourceKind = "divinity-import" | "realmz-reference" | "provid
 
 export function createBrowserWorkspace(catalog: LibraryCatalog | null = null, customAssets: ManagedAsset[] = []): ProvidenceWorkspace {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     appVersion: "browser-preview",
     workspacePath: BROWSER_WORKSPACE_PATH,
     managedLibraryPath: "browser://workspace/library",
@@ -32,6 +32,10 @@ export function createBrowserWorkspace(catalog: LibraryCatalog | null = null, cu
     recentProjects: [],
     activeLibraryCatalog: catalog,
     customAssets,
+    remakePreview: {
+      godotExecutable: "",
+      remakePath: ""
+    },
     diagnostics: []
   };
 }

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realmz-remake.local/contracts/realmz-remake-scenario-v3.schema.json",
+  "title": "Realmz Remake scenario manifest v3",
+  "type": "object",
+  "required": [
+    "format",
+    "formatVersion",
+    "campaignKind",
+    "id",
+    "name",
+    "files",
+    "integrity"
+  ],
+  "properties": {
+    "format": { "const": "realmz-remake-scenario" },
+    "formatVersion": { "const": 3 },
+    "campaignKind": { "enum": ["classic-compiled", "remake-authored"] },
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "files": {
+      "type": "object",
+      "required": [
+        "scenario",
+        "maps",
+        "scripts",
+        "encounters",
+        "content",
+        "rules",
+        "assets",
+        "runtime",
+        "remakeScripts",
+        "evidence"
+      ],
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "integrity": {
+      "type": "object",
+      "required": ["algorithm", "packageHash", "files"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "packageHash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "files": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["bytes", "sha256"],
+            "properties": {
+              "bytes": { "type": "integer", "minimum": 0 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true,
+  "x-packageHash": {
+    "algorithm": "sha256",
+    "canonicalization": "RFC-8259 JSON with object keys sorted recursively, no insignificant whitespace, and integrity.packageHash omitted",
+    "payload": "canonical campaign.json manifest containing the complete integrity.files index"
+  },
+  "x-documentSchemaVersion": 2,
+  "x-saveSchemaVersion": 4
+}

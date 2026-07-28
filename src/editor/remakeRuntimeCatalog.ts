@@ -117,6 +117,9 @@ export function validateRemakeRuntime(project: Project): string[] {
 
 export function isRemakeOnly(project: Project) {
   return project.remakeRuntime.semanticActions.length > 0
+    || project.remakeRuntime.scripts.length > 0
+    || project.remakeRuntime.scriptAttachments.length > 0
+    || project.remakeRuntime.persistentVariables.length > 0
     || Object.values(project.remakeRuntime.bindings).some(
       (bindings) => Object.keys(bindings).length > 0
     );

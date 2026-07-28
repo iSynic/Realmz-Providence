@@ -204,11 +204,14 @@ export function createBrowserScenarioPackageZip(
 
 function assertNativeRealmzCompatible(project: Project) {
   const runtime = project.remakeRuntime;
-  const bindingCount = runtime
+  const bindingCount = runtime?.bindings
     ? Object.values(runtime.bindings).reduce((count, bindings) => count + Object.keys(bindings).length, 0)
     : 0;
   const reasons = [
-    ...(runtime?.semanticActions.length ? ["semantic actions"] : []),
+    ...(runtime?.semanticActions?.length ? ["semantic actions"] : []),
+    ...(runtime?.scripts?.length ? ["scenario scripts"] : []),
+    ...(runtime?.scriptAttachments?.length ? ["script attachments"] : []),
+    ...(runtime?.persistentVariables?.length ? ["persistent script variables"] : []),
     ...(bindingCount > 0 ? ["Remake runtime bindings"] : [])
   ];
   if (reasons.length > 0) {

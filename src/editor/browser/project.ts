@@ -78,6 +78,7 @@ export function createBrowserProject(projectName: string): Project {
       files: [],
       immutable: false
     },
+    authoringTarget: "classic-compatible",
     remakeRuntime: emptyRemakeRuntime(),
     maps: [],
     landLayout: null,
@@ -189,6 +190,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
       files: sourceFiles,
       immutable: true
     },
+    authoringTarget: "classic-compatible",
     remakeRuntime: emptyRemakeRuntime(),
     maps: parsed.maps,
     landLayout: parsed.landLayout,

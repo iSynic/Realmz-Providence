@@ -678,6 +678,7 @@ export type DungeonCellFlagState = "on" | "off" | "mixed";
 export type LandCellSecretState = "normal" | "hidden" | "revealed";
 
 export type ProjectCommand =
+  | { kind: "updateAuthoringTarget"; label: string; target: AuthoringTarget }
   | { kind: "updateRemakeRuntime"; label: string; runtime: RemakeRuntime }
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
   | {
@@ -961,14 +962,66 @@ export type RemakeSemanticAction = {
   targetKind: "trigger" | "simpleEncounter" | "complexEncounter";
   recordId: string;
   slot: number;
-  operation: `scenario.${string}`;
+  operation: `scenario.${string}` | "core.script.call";
   parameters: Record<string, unknown>;
+};
+
+export type AuthoringTarget = "classic-compatible" | "remake-enhanced";
+export type RemakeScriptTier = "safe" | "sandboxed" | "trusted";
+export type RemakeScriptValueType =
+  | "void"
+  | "bool"
+  | "int"
+  | "float"
+  | "string"
+  | "bool-array"
+  | "int-array"
+  | "float-array"
+  | "string-array";
+
+export type RemakeScriptParameter = {
+  name: string;
+  valueType: RemakeScriptValueType;
+  maxLength: number | null;
+};
+
+export type RemakeScript = {
+  id: string;
+  name: string;
+  documentation: string;
+  tier: RemakeScriptTier;
+  apiVersion: number;
+  parameters: RemakeScriptParameter[];
+  returnType: RemakeScriptValueType;
+  requestedCapabilities: string[];
+  stateSchema: Record<string, unknown>;
+  sourceMap: Record<string, unknown>;
+  ast: Record<string, unknown> | null;
+  source: string | null;
+};
+
+export type RemakeScriptAttachment = {
+  targetKind: "trigger" | "simpleEncounter" | "complexEncounter" | "lifecycle";
+  recordId: string;
+  slot: number | null;
+  hook: string | null;
+  scriptId: string;
+};
+
+export type RemakePersistentVariable = {
+  name: string;
+  valueType: RemakeScriptValueType;
+  maxLength: number | null;
+  defaultValue: unknown;
 };
 
 export type RemakeRuntime = {
   recommendedGameplayProfile: string;
   requiredExtensions: RemakeExtensionRequirement[];
   semanticActions: RemakeSemanticAction[];
+  scripts: RemakeScript[];
+  scriptAttachments: RemakeScriptAttachment[];
+  persistentVariables: RemakePersistentVariable[];
   bindings: {
     spells: Record<string, string>;
     items: Record<string, string>;
@@ -982,6 +1035,9 @@ export const emptyRemakeRuntime = (): RemakeRuntime => ({
   recommendedGameplayProfile: "core.classic",
   requiredExtensions: [],
   semanticActions: [],
+  scripts: [],
+  scriptAttachments: [],
+  persistentVariables: [],
   bindings: {
     spells: {},
     items: {},
@@ -996,6 +1052,7 @@ export type Project = {
   appVersion: string;
   scenario: ScenarioMeta;
   source: ProjectSource;
+  authoringTarget: AuthoringTarget;
   remakeRuntime: RemakeRuntime;
   maps: MapEntity[];
   landLayout?: LandLayout | null;
@@ -1059,6 +1116,10 @@ export type ProvidenceWorkspace = {
   recentProjects: string[];
   activeLibraryCatalog: LibraryCatalog | null;
   customAssets: ManagedAsset[];
+  remakePreview: {
+    godotExecutable: string;
+    remakePath: string;
+  };
   diagnostics: LibraryDiagnostic[];
 };
 

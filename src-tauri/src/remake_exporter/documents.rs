@@ -1,4 +1,5 @@
 use super::assets::{remake_land_tile_value, PackagedAssets};
+use super::evidence::RuntimeEvidence;
 use super::rule_selection::rule_table_selection;
 use super::{portable_campaign_id, REMAKE_DOCUMENT_SCHEMA_VERSION};
 use crate::error::Result;
@@ -22,6 +23,8 @@ struct ExportTrigger<'a> {
     trigger: &'a TriggerRecord,
     #[serde(skip_serializing_if = "Option::is_none")]
     callable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    macro_id: Option<usize>,
 }
 
 #[derive(Serialize)]
@@ -55,6 +58,7 @@ pub(crate) fn contract_files() -> BTreeMap<&'static str, &'static str> {
         ("encounters", "classic/encounters.json"),
         ("evidence", "classic/evidence.json"),
         ("maps", "classic/maps.json"),
+        ("remakeScripts", "remake/scripts.json"),
         ("rules", "classic/rules.json"),
         ("runtime", "runtime.json"),
         ("scenario", "classic/scenario.json"),
@@ -66,10 +70,11 @@ pub(crate) fn build_documents(
     project: &ProvidenceProject,
     assets: &PackagedAssets,
     project_dir: &Path,
+    remake_scripts: Value,
 ) -> Result<Vec<(&'static str, Value)>> {
     let semantic_schema = crate::semantic::build_canonical_project_semantic_schema(project);
     let runtime_reachability = crate::semantic::classify_project_runtime_reachability(project);
-    Ok(vec![
+    let mut documents = vec![
         ("scenario.json", scenario_document(project)?),
         ("maps.json", maps_document(project, assets)?),
         ("scripts.json", scripts_document(project, &semantic_schema)?),
@@ -80,6 +85,20 @@ pub(crate) fn build_documents(
         ("content.json", content_document(project)?),
         ("rules.json", rules_document(project, project_dir)?),
         ("assets.json", assets.document()),
+        ("remake/scripts.json", remake_scripts),
+        ("runtime.json", runtime_document(project)?),
+    ];
+    let mut runtime_evidence = RuntimeEvidence::default();
+    for (name, document) in &mut documents {
+        let runtime_path = if *name == "runtime.json" || name.starts_with("remake/") {
+            (*name).to_string()
+        } else {
+            format!("classic/{name}")
+        };
+        runtime_evidence.separate_document(&runtime_path, document);
+    }
+    documents.insert(
+        documents.len() - 1,
         (
             "evidence.json",
             evidence_document(
@@ -87,10 +106,11 @@ pub(crate) fn build_documents(
                 &semantic_schema,
                 &runtime_reachability,
                 project_dir,
+                runtime_evidence.into_sorted_records(),
             )?,
         ),
-        ("runtime.json", runtime_document(project)?),
-    ])
+    );
+    Ok(documents)
 }
 
 fn scenario_document(project: &ProvidenceProject) -> Result<Value> {
@@ -172,6 +192,7 @@ fn scripts_document(
                     .copied()
                     .unwrap_or(false)
             }),
+            macro_id: (trigger.source == "Data ED3").then_some(trigger.record_index),
         })
         .collect();
     let mut portable_triggers = portable_value(&triggers)?;
@@ -181,6 +202,49 @@ fn scripts_document(
         "trigger",
         &project.remake_runtime.semantic_actions,
     );
+    apply_script_attachments(
+        &mut portable_triggers,
+        "trigger",
+        &project.remake_runtime.script_attachments,
+    );
+    let dispatcher_noops = semantic_schema
+        .decoding
+        .dispatcher_noops
+        .iter()
+        .filter_map(|row| {
+            let record_id = match row.source.as_str() {
+                "Data ED" if project
+                    .simple_encounters
+                    .iter()
+                    .any(|encounter| encounter.id == row.record_index) =>
+                {
+                    Some(format!("encounter:simple:{}", row.record_index))
+                }
+                "Data ED2" if project
+                    .complex_encounters
+                    .iter()
+                    .any(|encounter| encounter.id == row.record_index) =>
+                {
+                    Some(format!("encounter:complex:{}", row.record_index))
+                }
+                _ => project
+                    .triggers
+                    .iter()
+                    .find(|trigger| {
+                        trigger.source == row.source
+                            && trigger.record_index == row.record_index
+                    })
+                    .map(|trigger| trigger.id.clone()),
+            };
+            record_id.map(|trigger_id| {
+                json!({
+                    "triggerId": trigger_id,
+                    "slot": row.slot,
+                    "rawCode": row.raw_code,
+                })
+            })
+        })
+        .collect::<Vec<_>>();
     Ok(json!({
         "schemaVersion": REMAKE_DOCUMENT_SCHEMA_VERSION,
         "triggers": portable_triggers,
@@ -188,6 +252,7 @@ fn scripts_document(
         "extraCodes": portable_value(&project.extracodes)?,
         "messages": portable_value(&project.messages)?,
         "optionLabels": portable_value(&project.option_labels)?,
+        "dispatcherNoops": dispatcher_noops,
     }))
 }
 
@@ -232,10 +297,20 @@ fn encounters_document(
         "simpleEncounter",
         &project.remake_runtime.semantic_actions,
     );
+    apply_script_attachments(
+        &mut simple_encounters,
+        "simpleEncounter",
+        &project.remake_runtime.script_attachments,
+    );
     apply_semantic_actions(
         &mut complex_encounters,
         "complexEncounter",
         &project.remake_runtime.semantic_actions,
+    );
+    apply_script_attachments(
+        &mut complex_encounters,
+        "complexEncounter",
+        &project.remake_runtime.script_attachments,
     );
     Ok(json!({
         "schemaVersion": REMAKE_DOCUMENT_SCHEMA_VERSION,
@@ -284,6 +359,7 @@ fn evidence_document(
     semantic_schema: &SemanticSchema,
     runtime_reachability: &RuntimeReachability,
     project_dir: &Path,
+    record_evidence: Vec<Value>,
 ) -> Result<Value> {
     let source_files = project
         .source
@@ -338,6 +414,7 @@ fn evidence_document(
         "recordCatalog": {
             "counts": &project.records.counts,
             "alignments": alignments,
+            "records": record_evidence,
         },
         "diagnostics": diagnostics,
         "validation": {
@@ -362,11 +439,25 @@ fn evidence_document(
 
 fn runtime_document(project: &ProvidenceProject) -> Result<Value> {
     let remake_only_reasons = project.remake_runtime.remake_only_reasons();
+    let script_tiers = project
+        .remake_runtime
+        .scripts
+        .iter()
+        .map(|script| script.tier)
+        .collect::<std::collections::BTreeSet<_>>();
     Ok(json!({
         "schemaVersion": REMAKE_DOCUMENT_SCHEMA_VERSION,
+        "authoringTarget": project.authoring_target,
         "recommendedGameplayProfile": &project.remake_runtime.recommended_gameplay_profile,
         "requiredExtensions": portable_value(&project.remake_runtime.required_extensions)?,
         "bindings": portable_value(&project.remake_runtime.bindings)?,
+        "scriptExecution": {
+            "apiVersion": super::scripting::SCRIPT_API_VERSION,
+            "scriptCount": project.remake_runtime.scripts.len(),
+            "tiers": script_tiers,
+            "requiresApproval": script_tiers.contains(&crate::project::RemakeScriptTier::Trusted),
+            "requiresSandbox": script_tiers.contains(&crate::project::RemakeScriptTier::Sandboxed),
+        },
         "targetSupport": {
             "realmzRemake": true,
             "nativeRealmz": remake_only_reasons.is_empty(),
@@ -438,6 +529,51 @@ fn apply_semantic_actions(
             "slot": semantic.slot,
             "operation": semantic.operation,
             "parameters": semantic.parameters,
+        }));
+        actions.sort_by_key(|action| {
+            action
+                .get("slot")
+                .and_then(Value::as_u64)
+                .unwrap_or(u64::MAX)
+        });
+    }
+}
+
+fn apply_script_attachments(
+    records: &mut Value,
+    target_kind: &str,
+    attachments: &[crate::project::RemakeScriptAttachment],
+) {
+    let Some(records) = records.as_array_mut() else {
+        return;
+    };
+    for attachment in attachments
+        .iter()
+        .filter(|attachment| attachment.target_kind == target_kind)
+    {
+        let Some(slot) = attachment.slot else {
+            continue;
+        };
+        let Some(record) = records.iter_mut().find(|record| {
+            let identity = record.get("id");
+            identity.and_then(Value::as_str) == Some(attachment.record_id.as_str())
+                || identity
+                    .and_then(Value::as_i64)
+                    .is_some_and(|id| id.to_string() == attachment.record_id)
+        }) else {
+            continue;
+        };
+        let Some(actions) = record.get_mut("actions").and_then(Value::as_array_mut) else {
+            continue;
+        };
+        actions.retain(|action| action.get("slot").and_then(Value::as_u64) != Some(slot as u64));
+        actions.push(json!({
+            "kind": "semantic",
+            "slot": slot,
+            "operation": "core.script.call",
+            "parameters": {
+                "scriptId": attachment.script_id,
+            },
         }));
         actions.sort_by_key(|action| {
             action

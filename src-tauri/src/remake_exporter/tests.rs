@@ -99,7 +99,7 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
     assert!(comparison.equivalent);
     assert_eq!(comparison.current_files, first_report.written_files.len());
     assert_eq!(comparison.candidate_files, first_report.written_files.len());
-    assert_eq!(comparison.json_documents, 10);
+    assert_eq!(comparison.json_documents, 11);
     assert_eq!(comparison.bytes_saved, 0);
 
     let documents = read_json_documents(&first);
@@ -151,10 +151,14 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
     assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
     assert_eq!(runtime_media["bytes"], png.len());
     assert_eq!(runtime_media["sha256"], hex::encode(Sha256::digest(&png)));
-    assert_eq!(
-        documents["classic/rules.json"]["ruleNames"]["sourceFile"],
-        "Data Files/Custom Names.rsrc"
-    );
+    assert!(documents["classic/rules.json"]["ruleNames"]
+        .get("sourceFile")
+        .is_none());
+    assert!(documents["classic/evidence.json"]["recordCatalog"]["records"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|record| record["metadata"]["sourceFile"] == "Data Files/Custom Names.rsrc"));
 }
 
 #[test]
@@ -702,7 +706,7 @@ fn omits_canonical_music_with_an_explicit_bundle_limitation() {
         .find(|value| value.contains("scenario music asset"))
         .unwrap();
     assert!(warning.contains("omitted"));
-    assert!(warning.contains("scenario format v2"));
+    assert!(warning.contains("scenario format v3"));
     assert!(!output.join("assets/managed").exists());
     let campaign: Value =
         serde_json::from_slice(&fs::read(output.join("campaign.json")).unwrap()).unwrap();
@@ -975,15 +979,15 @@ fn exports_authoritative_ed3_callability_from_canonical_records() {
         .unwrap();
     let map_trigger = triggers
         .iter()
-        .find(|trigger| trigger["source"] == "Data DD")
+        .find(|trigger| trigger["id"] == "Data DD:0:0")
         .unwrap();
     let called_extra_action = triggers
         .iter()
-        .find(|trigger| trigger["recordIndex"] == 2 && trigger["source"] == "Data ED3")
+        .find(|trigger| trigger["id"] == "Data ED3:macro:2")
         .unwrap();
     let unreferenced_extra_action = triggers
         .iter()
-        .find(|trigger| trigger["recordIndex"] == 3 && trigger["source"] == "Data ED3")
+        .find(|trigger| trigger["id"] == "Data ED3:macro:3")
         .unwrap();
 
     assert!(map_trigger.get("callable").is_none());
@@ -1160,9 +1164,7 @@ fn exports_runtime_reachability_without_discarding_unreferenced_records() {
     for (record_index, callable) in [(7, true), (8, true), (9, false)] {
         let trigger = triggers
             .iter()
-            .find(|trigger| {
-                trigger["source"] == "Data ED3" && trigger["recordIndex"] == record_index
-            })
+            .find(|trigger| trigger["id"] == format!("Data ED3:macro:{record_index}"))
             .unwrap();
         assert_eq!(trigger["callable"], callable);
     }
@@ -1384,7 +1386,11 @@ fn packages_scenario_owned_special_land_tiles_before_shared_fallbacks() {
     assert_eq!(report.counts.packaged_asset_payloads, 2);
     let special = &assets["catalog"]["specialLandTiles"][0];
     assert_eq!(special["resourceId"], -99);
-    assert_eq!(special["source"], "Scenario resource fork: Scenario.rsrc");
+    assert_evidence_source(
+        &output,
+        special,
+        "Scenario resource fork: Scenario.rsrc",
+    );
     let payload_path = special["payloadPath"].as_str().unwrap();
     assert_eq!(fs::read(output.join(payload_path)).unwrap(), cicn);
     assert!(output
@@ -1401,9 +1407,10 @@ fn packages_scenario_owned_special_land_tiles_before_shared_fallbacks() {
     assert_eq!(stale_report.counts.packaged_asset_payloads, 2);
     let stale_special = &stale_assets["catalog"]["specialLandTiles"][0];
     assert_eq!(stale_special["resourceId"], -99);
-    assert_eq!(
-        stale_special["source"],
-        "Scenario resource fork: Scenario.rsrc"
+    assert_evidence_source(
+        &stale_output,
+        stale_special,
+        "Scenario resource fork: Scenario.rsrc",
     );
     let stale_payload_path = stale_special["payloadPath"].as_str().unwrap();
     assert_eq!(
@@ -1431,7 +1438,7 @@ fn packages_referenced_shared_special_land_tiles_for_remake() {
     assert_eq!(report.counts.packaged_asset_payloads, 2);
     let special = &assets["catalog"]["specialLandTiles"][0];
     assert_eq!(special["resourceId"], -99);
-    assert_eq!(special["source"], "Realmz reference resources");
+    assert_evidence_source(&output, special, "Realmz reference resources");
     assert_eq!(special["payloadEncoding"], "classic-resource-data");
     assert_eq!(special["runtimeMedia"]["mediaType"], "image/png");
     for path in [
@@ -1460,7 +1467,7 @@ fn packages_transparent_runtime_fallback_for_missing_special_land_tiles() {
         .iter()
         .find(|record| record["resourceId"] == -20)
         .expect("missing cicn fallback should have a catalog row");
-    assert_eq!(special["source"], "Classic missing cicn fallback");
+    assert_evidence_source(&output, special, "Classic missing cicn fallback");
     assert!(special.get("payloadPath").is_none());
     assert_eq!(special["runtimeMedia"]["mediaType"], "image/png");
     let runtime_path = special["runtimeMedia"]["path"].as_str().unwrap();
@@ -1487,7 +1494,7 @@ fn collapses_out_of_band_negative_land_values_to_the_base_only_fallback() {
         .iter()
         .find(|record| record["resourceId"] == -999)
         .expect("out-of-band values should use the base-only fallback");
-    assert_eq!(special["source"], "Classic missing cicn fallback");
+    assert_evidence_source(&output, special, "Classic missing cicn fallback");
     assert!(special.get("payloadPath").is_none());
 }
 
@@ -1530,8 +1537,8 @@ fn packages_scenario_monster_icon_overrides_under_their_target_ids() {
     let paired_icon = icons.iter().find(|icon| icon["resourceId"] == 717).unwrap();
 
     assert_eq!(report.counts.packaged_asset_payloads, 4);
-    assert_eq!(base_icon["source"], "Scenario monster icon override");
-    assert_eq!(paired_icon["source"], "Scenario monster icon override");
+    assert_evidence_source(&output, base_icon, "Scenario monster icon override");
+    assert_evidence_source(&output, paired_icon, "Scenario monster icon override");
     assert_eq!(base_icon["runtimeMedia"]["mediaType"], "image/png");
     assert_eq!(paired_icon["runtimeMedia"]["mediaType"], "image/png");
     for icon in [base_icon, paired_icon] {
@@ -1549,6 +1556,123 @@ fn packages_scenario_monster_icon_overrides_under_their_target_ids() {
     assert!(assets["monsterIconOverrides"][0]
         .get("sourcePairedResourceBase64")
         .is_none());
+}
+
+#[test]
+fn packages_referenced_scenario_monster_icons_from_the_preserved_resource_fork() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("raw-monster-icons.providence");
+    let mut project = create_project("Raw monster icons".to_string(), &project_dir).unwrap();
+    let base = encode_cicn_resource(&RgbaImagePayload {
+        width: 32,
+        height: 32,
+        rgba_base64: STANDARD.encode(vec![224_u8; 32 * 32 * 4]),
+    })
+    .unwrap();
+    let paired = encode_cicn_resource(&RgbaImagePayload {
+        width: 32,
+        height: 32,
+        rgba_base64: STANDARD.encode(vec![96_u8; 32 * 32 * 4]),
+    })
+    .unwrap();
+    let resource_fork = write_resource_fork(&[
+        ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: 452,
+            name: "Vampire Bat".to_string(),
+            attributes: 0,
+            data: base.clone(),
+        },
+        ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: 760,
+            name: "Vampire Bat facing".to_string(),
+            attributes: 0,
+            data: paired.clone(),
+        },
+        ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: 32600,
+            name: "Unpaired high icon".to_string(),
+            attributes: 0,
+            data: base.clone(),
+        },
+        ResourceForkEntry {
+            resource_type: "cicn".to_string(),
+            id: 795,
+            name: "Unpaired facing icon".to_string(),
+            attributes: 0,
+            data: paired.clone(),
+        },
+    ])
+    .unwrap();
+    preserve_resource_fork(&mut project, &project_dir, &resource_fork);
+    project.monsters = parse_monsters(&vec![0; MONSTER_BYTES * 3]);
+    project.monsters[0].icon_id = 452;
+    project.monsters[1].icon_id = 32600;
+    project.monsters[2].icon_id = 487;
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: "scenario-cicn-452".to_string(),
+        resource_type: "cicn".to_string(),
+        resource_id: 452,
+        name: Some("Vampire Bat".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: None,
+    });
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: "scenario-cicn-795".to_string(),
+        resource_type: "cicn".to_string(),
+        resource_id: 795,
+        name: Some("Unpaired facing icon".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: None,
+    });
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: "scenario-cicn-32600".to_string(),
+        resource_type: "cicn".to_string(),
+        resource_id: 32600,
+        name: Some("Unpaired high icon".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: None,
+    });
+
+    let output = workspace.path().join("raw-monster-icons-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let icons = documents["classic/assets.json"]["catalog"]["icons"]
+        .as_array()
+        .unwrap();
+    let base_icon = icons.iter().find(|icon| icon["resourceId"] == 452).unwrap();
+    let paired_icon = icons.iter().find(|icon| icon["resourceId"] == 760).unwrap();
+
+    assert_eq!(
+        fs::read(output.join(base_icon["payloadPath"].as_str().unwrap())).unwrap(),
+        base
+    );
+    assert_eq!(
+        fs::read(output.join(paired_icon["payloadPath"].as_str().unwrap())).unwrap(),
+        paired
+    );
+    assert_evidence_source(
+        &output,
+        base_icon,
+        "Scenario resource fork: Scenario.rsrc",
+    );
+    assert_evidence_source(
+        &output,
+        paired_icon,
+        "Scenario resource fork: Scenario.rsrc",
+    );
+    let high_icon = icons
+        .iter()
+        .find(|icon| icon["resourceId"] == 32600)
+        .unwrap();
+    assert!(high_icon.get("payloadPath").is_none());
+    let unpaired_facing = icons
+        .iter()
+        .find(|icon| icon["resourceId"] == 795)
+        .unwrap();
+    assert!(unpaired_facing.get("payloadPath").is_none());
 }
 
 #[test]
@@ -1957,6 +2081,31 @@ fn read_json_documents(root: &Path) -> BTreeMap<String, Value> {
         )
     })
     .collect()
+}
+
+fn assert_evidence_source(root: &Path, runtime_record: &Value, expected: &str) {
+    assert!(
+        runtime_record.get("source").is_none(),
+        "runtime record must not retain source evidence"
+    );
+    let id = runtime_record
+        .get("id")
+        .expect("runtime record must retain its stable id");
+    let evidence: Value =
+        serde_json::from_slice(&fs::read(root.join("classic/evidence.json")).unwrap()).unwrap();
+    let matching = evidence["recordCatalog"]["records"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|record| {
+            record["document"] == "classic/assets.json"
+                && &record["id"] == id
+                && record["metadata"]["source"] == expected
+        });
+    assert!(
+        matching.is_some(),
+        "missing source evidence for runtime record {id}: expected {expected}"
+    );
 }
 
 fn assert_no_forbidden_project_state(value: &Value, context: &str) {

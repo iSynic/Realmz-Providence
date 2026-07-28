@@ -52,6 +52,96 @@ pub struct RemakeSemanticAction {
     pub parameters: serde_json::Value,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "kebab-case")]
+pub enum AuthoringTarget {
+    #[default]
+    ClassicCompatible,
+    RemakeEnhanced,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "kebab-case")]
+pub enum RemakeScriptTier {
+    Safe,
+    Sandboxed,
+    Trusted,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum RemakeScriptValueType {
+    Void,
+    Bool,
+    Int,
+    Float,
+    String,
+    BoolArray,
+    IntArray,
+    FloatArray,
+    StringArray,
+}
+
+impl RemakeScriptValueType {
+    pub fn is_array(self) -> bool {
+        matches!(
+            self,
+            Self::BoolArray | Self::IntArray | Self::FloatArray | Self::StringArray
+        )
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeScriptParameter {
+    pub name: String,
+    pub value_type: RemakeScriptValueType,
+    pub max_length: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeScript {
+    pub id: String,
+    pub name: String,
+    #[serde(default)]
+    pub documentation: String,
+    pub tier: RemakeScriptTier,
+    #[serde(default = "default_script_api_version")]
+    pub api_version: u32,
+    #[serde(default)]
+    pub parameters: Vec<RemakeScriptParameter>,
+    pub return_type: RemakeScriptValueType,
+    #[serde(default)]
+    pub requested_capabilities: Vec<String>,
+    #[serde(default)]
+    pub state_schema: serde_json::Value,
+    #[serde(default)]
+    pub source_map: serde_json::Value,
+    pub ast: Option<serde_json::Value>,
+    pub source: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeScriptAttachment {
+    pub target_kind: String,
+    pub record_id: String,
+    pub slot: Option<usize>,
+    pub hook: Option<String>,
+    pub script_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePersistentVariable {
+    pub name: String,
+    pub value_type: RemakeScriptValueType,
+    pub max_length: Option<usize>,
+    #[serde(default)]
+    pub default_value: serde_json::Value,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct RemakeRuntimeBindings {
@@ -77,6 +167,12 @@ pub struct RemakeRuntime {
     #[serde(default)]
     pub semantic_actions: Vec<RemakeSemanticAction>,
     #[serde(default)]
+    pub scripts: Vec<RemakeScript>,
+    #[serde(default)]
+    pub script_attachments: Vec<RemakeScriptAttachment>,
+    #[serde(default)]
+    pub persistent_variables: Vec<RemakePersistentVariable>,
+    #[serde(default)]
     pub bindings: RemakeRuntimeBindings,
 }
 
@@ -86,6 +182,9 @@ impl Default for RemakeRuntime {
             recommended_gameplay_profile: default_remake_gameplay_profile(),
             required_extensions: Vec::new(),
             semantic_actions: Vec::new(),
+            scripts: Vec::new(),
+            script_attachments: Vec::new(),
+            persistent_variables: Vec::new(),
             bindings: RemakeRuntimeBindings::default(),
         }
     }
@@ -96,6 +195,12 @@ impl RemakeRuntime {
         let mut reasons = Vec::new();
         if !self.semantic_actions.is_empty() {
             reasons.push("semantic-actions".to_string());
+        }
+        if !self.scripts.is_empty() || !self.script_attachments.is_empty() {
+            reasons.push("scenario-scripts".to_string());
+        }
+        if !self.persistent_variables.is_empty() {
+            reasons.push("remake-persistent-variables".to_string());
         }
         if !self.bindings.spells.is_empty()
             || !self.bindings.items.is_empty()
@@ -115,6 +220,10 @@ impl RemakeRuntime {
 
 fn default_remake_gameplay_profile() -> String {
     "core.classic".to_string()
+}
+
+fn default_script_api_version() -> u32 {
+    1
 }
 
 pub const REALMZ_RACE_NAMES: [&str; 19] = [
@@ -169,6 +278,8 @@ pub struct ProvidenceProject {
     pub app_version: String,
     pub scenario: ScenarioMeta,
     pub source: SourceSnapshot,
+    #[serde(default)]
+    pub authoring_target: AuthoringTarget,
     #[serde(default)]
     pub remake_runtime: RemakeRuntime,
     pub maps: Vec<MapEntity>,
@@ -833,6 +944,7 @@ pub enum ScenarioTarget {
 
 impl ProvidenceProject {
     pub fn normalize_project_contract(&mut self) {
+        let upgrading_to_authoring_targets = self.schema_version < 7;
         self.source.ensure_origin();
         for record in &mut self.map_records {
             normalize_map_record_markers(record);
@@ -865,6 +977,9 @@ impl ProvidenceProject {
         }
         for record in &mut self.thief_encounters {
             normalize_thief_encounter(record);
+        }
+        if upgrading_to_authoring_targets && self.remake_runtime.is_remake_only() {
+            self.authoring_target = AuthoringTarget::RemakeEnhanced;
         }
         if self.schema_version < PROJECT_SCHEMA_VERSION {
             self.schema_version = PROJECT_SCHEMA_VERSION;

@@ -2975,6 +2975,7 @@ mod tests {
                 files: Vec::new(),
                 immutable: false,
             },
+            authoring_target: crate::project::AuthoringTarget::ClassicCompatible,
             remake_runtime: crate::project::RemakeRuntime::default(),
             maps: Vec::new(),
             land_layout: None,
