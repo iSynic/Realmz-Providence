@@ -57,7 +57,7 @@ The byte-roundtrip audit found:
 - Keep scenario music separate from short sound effects in Assets.
 - Show authored custom music under Scenario Assets as files that ship with the scenario.
 - Preserve unsupported imported music and legacy slots 4 through 9 only in the bounded compatibility annex.
-- Omit canonical music from Realmz Remake scenario v2 and report an explicit limitation until that contract defines scenario music and playlist meanings.
+- Omit canonical music from Realmz Remake scenario v3 and report an explicit limitation until that contract defines scenario music and playlist meanings.
 - Keep `Format` hidden in normal UI or shown as an Advanced compatibility marker.
 
 ## Writer Gate
