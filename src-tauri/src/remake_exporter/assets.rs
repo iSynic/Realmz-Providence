@@ -1,5 +1,5 @@
 use super::portable::{portable_source_label, portable_value};
-use super::REMAKE_CLASSIC_FORMAT_VERSION;
+use super::REMAKE_DOCUMENT_SCHEMA_VERSION;
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::project::{
     ManagedAsset, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
@@ -58,7 +58,7 @@ pub(crate) struct PackagedAssets {
 impl PackagedAssets {
     pub(crate) fn document(&self) -> Value {
         json!({
-            "schemaVersion": REMAKE_CLASSIC_FORMAT_VERSION,
+            "schemaVersion": REMAKE_DOCUMENT_SCHEMA_VERSION,
             "managedAssets": &self.managed_assets,
             "catalog": &self.catalog,
             "monsterIconOverrides": &self.monster_icon_overrides,

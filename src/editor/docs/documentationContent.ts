@@ -1873,7 +1873,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           "Use the import dialog preview to compare original source media with the Realmz-ready output before committing it as a scenario asset.",
           "Use Music / standard MOD for scenario music. Providence previews modules through libopenmpt, but only validated MOD files are accepted for native export.",
           "The built-in Custom Library includes the standard MOD replacement for Outdoor Music. If an imported Custom 1/2/3 Music file exactly matches the known legacy MADG Outdoor Music fingerprint, Providence keeps the MADG bytes only in the compatibility annex and uses the bundled MOD for playback and native export.",
-          "Native Mac and Windows exports carry the original MOD bytes. Realmz Remake Classic bundle v1 omits music with an explicit warning until its playlist contract is defined.",
+          "Native Mac and Windows exports carry the original MOD bytes. Realmz Remake scenario v2 omits music with an explicit warning until its playlist contract is defined.",
           "Use usage links to jump from a picture or sound resource to scripts, startup fields, strings, or encounter records that refer to it.",
           "Treat zero-byte Format files, legacy unsuffixed Custom N files, slots 4-9, and non-MOD module formats as compatibility baggage unless a newer versioned runtime contract promotes them."
         ]

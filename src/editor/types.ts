@@ -678,6 +678,7 @@ export type DungeonCellFlagState = "on" | "off" | "mixed";
 export type LandCellSecretState = "normal" | "hidden" | "revealed";
 
 export type ProjectCommand =
+  | { kind: "updateRemakeRuntime"; label: string; runtime: RemakeRuntime }
   | { kind: "paintTiles"; mapId: string; label: string; cells: PaintCellChange[] }
   | {
       kind: "updateDungeonCellFlags";
@@ -948,11 +949,52 @@ export type MapCoordinateTarget = {
 export type ProjectOrigin = ProvidenceProjectOrigin;
 export type ProjectSource = ProvidenceProjectSource;
 
+export type RemakeExtensionRequirement = {
+  id: string;
+  apiVersion: number;
+  configuration: Record<string, unknown>;
+};
+
+export type RemakeSemanticAction = {
+  targetKind: "trigger" | "simpleEncounter" | "complexEncounter";
+  recordId: string;
+  slot: number;
+  operation: `scenario.${string}`;
+  parameters: Record<string, unknown>;
+};
+
+export type RemakeRuntime = {
+  recommendedGameplayProfile: string;
+  requiredExtensions: RemakeExtensionRequirement[];
+  semanticActions: RemakeSemanticAction[];
+  bindings: {
+    spells: Record<string, string>;
+    items: Record<string, string>;
+    encounters: Record<string, string>;
+    monsterAi: Record<string, string>;
+    lifecycle: Record<string, string>;
+  };
+};
+
+export const emptyRemakeRuntime = (): RemakeRuntime => ({
+  recommendedGameplayProfile: "core.classic",
+  requiredExtensions: [],
+  semanticActions: [],
+  bindings: {
+    spells: {},
+    items: {},
+    encounters: {},
+    monsterAi: {},
+    lifecycle: {}
+  }
+});
+
 export type Project = {
   schemaVersion: number;
   appVersion: string;
   scenario: ScenarioMeta;
   source: ProjectSource;
+  remakeRuntime: RemakeRuntime;
   maps: MapEntity[];
   landLayout?: LandLayout | null;
   triggers: TriggerRecord[];

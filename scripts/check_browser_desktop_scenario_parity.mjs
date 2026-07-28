@@ -25,6 +25,7 @@ const sourceFiles = [
   "src/editor/browser/scenarioPackage.ts",
   "src/editor/generated/realmzNativeManifestPolicy.ts",
   "src/editor/generated/providenceProjectContract.ts",
+  "src/editor/types.ts",
   "src/editor/projectOrigin.ts"
 ];
 
@@ -627,7 +628,7 @@ function firstByteDifference(left, right) {
 
 function fixtureProject(files) {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     appVersion: "browser-desktop-scenario-parity-check",
     scenario: {
       name: scenarioName,
@@ -647,6 +648,7 @@ function fixtureProject(files) {
       immutable: true,
       files: files.map(({ bytesData, originalRelativePath, targetPlatform, captureConfidence, ...file }) => file)
     },
+    remakeRuntime: emptyRemakeRuntime(),
     maps: [],
     landLayout: authoredLandLayout(),
     customLandlooks: [],
@@ -688,6 +690,15 @@ function fixtureProject(files) {
       passThroughFiles: [],
       targetCompatibilityIssues: []
     }
+  };
+}
+
+function emptyRemakeRuntime() {
+  return {
+    recommendedGameplayProfile: "core.classic",
+    requiredExtensions: [],
+    semanticActions: [],
+    bindings: { spells: {}, items: {}, encounters: {}, monsterAi: {}, lifecycle: {} }
   };
 }
 

@@ -32,6 +32,91 @@ pub const RACE_NAME_LIMIT: usize = 70;
 pub const CASTE_NAME_LIMIT: usize = 30;
 pub const CUSTOM_NAMES_SOURCE_FILE: &str = "Data Files/Custom Names.rsrc";
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeExtensionRequirement {
+    pub id: String,
+    pub api_version: u32,
+    #[serde(default)]
+    pub configuration: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeSemanticAction {
+    pub target_kind: String,
+    pub record_id: String,
+    pub slot: usize,
+    pub operation: String,
+    #[serde(default)]
+    pub parameters: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeRuntimeBindings {
+    #[serde(default)]
+    pub spells: BTreeMap<String, String>,
+    #[serde(default)]
+    pub items: BTreeMap<String, String>,
+    #[serde(default)]
+    pub encounters: BTreeMap<String, String>,
+    #[serde(default)]
+    pub monster_ai: BTreeMap<String, String>,
+    #[serde(default)]
+    pub lifecycle: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeRuntime {
+    #[serde(default = "default_remake_gameplay_profile")]
+    pub recommended_gameplay_profile: String,
+    #[serde(default)]
+    pub required_extensions: Vec<RemakeExtensionRequirement>,
+    #[serde(default)]
+    pub semantic_actions: Vec<RemakeSemanticAction>,
+    #[serde(default)]
+    pub bindings: RemakeRuntimeBindings,
+}
+
+impl Default for RemakeRuntime {
+    fn default() -> Self {
+        Self {
+            recommended_gameplay_profile: default_remake_gameplay_profile(),
+            required_extensions: Vec::new(),
+            semantic_actions: Vec::new(),
+            bindings: RemakeRuntimeBindings::default(),
+        }
+    }
+}
+
+impl RemakeRuntime {
+    pub fn remake_only_reasons(&self) -> Vec<String> {
+        let mut reasons = Vec::new();
+        if !self.semantic_actions.is_empty() {
+            reasons.push("semantic-actions".to_string());
+        }
+        if !self.bindings.spells.is_empty()
+            || !self.bindings.items.is_empty()
+            || !self.bindings.encounters.is_empty()
+            || !self.bindings.monster_ai.is_empty()
+            || !self.bindings.lifecycle.is_empty()
+        {
+            reasons.push("remake-runtime-bindings".to_string());
+        }
+        reasons
+    }
+
+    pub fn is_remake_only(&self) -> bool {
+        !self.remake_only_reasons().is_empty()
+    }
+}
+
+fn default_remake_gameplay_profile() -> String {
+    "core.classic".to_string()
+}
+
 pub const REALMZ_RACE_NAMES: [&str; 19] = [
     "Human",
     "Shadow Elf",
@@ -84,6 +169,8 @@ pub struct ProvidenceProject {
     pub app_version: String,
     pub scenario: ScenarioMeta,
     pub source: SourceSnapshot,
+    #[serde(default)]
+    pub remake_runtime: RemakeRuntime,
     pub maps: Vec<MapEntity>,
     #[serde(default)]
     pub land_layout: Option<LandLayout>,

@@ -5,7 +5,11 @@ import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const defaultFixtureRoot = "F:\\Divinity - Codex\\divinity-port\\fixtures\\isy-305-player-map-editor-divinity-authored";
+const defaultFixtureRoot = path.join(
+  repoRoot,
+  "fixtures",
+  "isy-305-player-map-editor-divinity-authored"
+);
 const fixtureRoot = process.env.ISY305_PLAYER_MAP_FIXTURE_DIR || defaultFixtureRoot;
 const buildRoot = path.join(repoRoot, "tmp", "isy305-player-map-fixture-check");
 const sourceFiles = [
@@ -213,7 +217,7 @@ async function loadFixture(name, expectedCount) {
 
 function fixtureProject(name, rawFiles, records, primaryNames, secondaryNames) {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     appVersion: "isy305-player-map-fixture-check",
     scenario: {
       name,
@@ -232,6 +236,12 @@ function fixtureProject(name, rawFiles, records, primaryNames, secondaryNames) {
       rawSourcesDir: "browser-memory",
       immutable: true,
       files: rawFiles.map(({ bytesData, originalRelativePath, targetPlatform, captureConfidence, ...file }) => file)
+    },
+    remakeRuntime: {
+      recommendedGameplayProfile: "core.classic",
+      requiredExtensions: [],
+      semanticActions: [],
+      bindings: { spells: {}, items: {}, encounters: {}, monsterAi: {}, lifecycle: {} }
     },
     maps: [],
     landLayout: null,

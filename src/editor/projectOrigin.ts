@@ -1,4 +1,10 @@
-import type { Project, ProjectOrigin, ProjectSource, SourceFileRole } from "./types";
+import {
+  emptyRemakeRuntime,
+  type Project,
+  type ProjectOrigin,
+  type ProjectSource,
+  type SourceFileRole
+} from "./types";
 import { PROVIDENCE_PROJECT_SCHEMA_VERSION } from "./generated/providenceProjectContract";
 
 export const PROJECT_SCHEMA_VERSION = PROVIDENCE_PROJECT_SCHEMA_VERSION;
@@ -21,5 +27,6 @@ export function normalizeProjectContract(project: Project): Project {
   project.source.origin = resolvedProjectOrigin(project.source);
   for (const file of project.source.files) file.role = normalizeSourceFileRole(file.role);
   if (project.schemaVersion < PROJECT_SCHEMA_VERSION) project.schemaVersion = PROJECT_SCHEMA_VERSION;
+  project.remakeRuntime ??= emptyRemakeRuntime();
   return project;
 }

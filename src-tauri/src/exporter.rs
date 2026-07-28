@@ -83,6 +83,13 @@ pub fn export_project(
 ) -> Result<ExportReport> {
     let project_dir = project_dir.as_ref();
     let output_dir = output_dir.as_ref();
+    let remake_only_reasons = project.remake_runtime.remake_only_reasons();
+    if !remake_only_reasons.is_empty() {
+        return Err(ProvidenceError::message(format!(
+            "Native Realmz export is unavailable because this project uses Remake-only behavior: {}. Remove those semantic actions or runtime bindings, or export a Realmz Remake scenario.",
+            remake_only_reasons.join(", ")
+        )));
+    }
     let compatibility_annex = CompatibilityAnnex::for_project(project_dir, project)?;
     let inputs = NativeCompilerInputs {
         compatibility_annex: compatibility_annex
