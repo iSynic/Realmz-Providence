@@ -145,21 +145,52 @@ fn decode_format_two(data: &[u8]) -> std::result::Result<SoundDecode, SoundFailu
     let command_count = u16_be(data, 4).unwrap_or(0);
     let command = u16_be(data, 6).unwrap_or(0);
     let command_param = u32_be(data, 10).unwrap_or(0);
-    if command_count == 0 || command & 0x7fff != 0x0051 {
+    let command_kind = command & 0x7fff;
+    let command_name = match command_kind {
+        0x0050 => "soundCmd",
+        0x0051 => "bufferCmd",
+        _ => {
+            return Err(SoundFailure {
+                malformed: false,
+                diagnostic: diagnostic(
+                    "warning",
+                    "snd.format2_no_sampled_command",
+                    format!(
+                        "format-2 snd expected a soundCmd or bufferCmd at offset 6; found commandCount={command_count}, command=0x{command:04X}."
+                    ),
+                    "snd",
+                )
+                .with_opcode(command)
+                .with_variant("format-2"),
+            });
+        }
+    };
+    if command_count == 0
+        || (command_kind == 0x0050 && (command & 0x8000 == 0 || command_param < 14))
+    {
         return Err(SoundFailure {
             malformed: false,
             diagnostic: diagnostic(
                 "warning",
-                "snd.format2_no_buffer_command",
-                format!("format-2 snd expected a bufferCmd at offset 6; found commandCount={command_count}, command=0x{command:04X}."),
+                "snd.format2_no_sampled_command",
+                format!(
+                    "format-2 snd expected an offset-based soundCmd or a bufferCmd at offset 6; found commandCount={command_count}, command=0x{command:04X}."
+                ),
                 "snd",
             )
             .with_opcode(command)
             .with_variant("format-2"),
         });
     }
-    let mut decoded = decode_standard_header(data, 14, 22, "format-2")?;
-    decoded.variant = format!("format-2 commandParam={command_param}");
+    let header_offset = match command_kind {
+        0x0050 => command_param,
+        0x0051 => 14,
+        _ => unreachable!("sampled command kind was validated above"),
+    };
+    let variant = format!("format-2 {command_name}");
+    let mut decoded = decode_standard_header(data, header_offset, 22, &variant)?;
+    decoded.variant =
+        format!("{variant} headerOffset={header_offset} commandParam={command_param}");
     Ok(decoded)
 }
 
@@ -227,4 +258,69 @@ fn playable_pcm(sample_rate: u32, samples: &[u8]) -> (u32, Vec<u8>) {
         output.push(samples.get(source).copied().unwrap_or(128));
     }
     (target_rate, output)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn format_two_snd(command: u16, header_offset: u32, samples: &[u8]) -> Vec<u8> {
+        let mut snd = Vec::new();
+        snd.extend_from_slice(&2u16.to_be_bytes());
+        snd.extend_from_slice(&0u16.to_be_bytes());
+        snd.extend_from_slice(&1u16.to_be_bytes());
+        snd.extend_from_slice(&command.to_be_bytes());
+        snd.extend_from_slice(&0u16.to_be_bytes());
+        snd.extend_from_slice(&header_offset.to_be_bytes());
+        snd.extend_from_slice(&0u32.to_be_bytes());
+        snd.extend_from_slice(&(samples.len() as u32).to_be_bytes());
+        snd.extend_from_slice(&(22_254u32 << 16).to_be_bytes());
+        snd.extend_from_slice(&0u32.to_be_bytes());
+        snd.extend_from_slice(&(samples.len() as u32).to_be_bytes());
+        snd.push(0);
+        snd.push(60);
+        snd.extend_from_slice(samples);
+        snd
+    }
+
+    #[test]
+    fn format_two_sound_command_uses_its_data_offset() {
+        let snd = format_two_snd(0x8050, 14, &[0x20, 0x80, 0xe0]);
+        let decoded = match decode_snd(&snd) {
+            Ok(decoded) => decoded,
+            Err(_) => panic!("format-2 soundCmd should decode"),
+        };
+
+        assert_eq!(decoded.sample_rate, 22_254);
+        assert_eq!(decoded.samples, 3);
+        assert!(decoded.variant.contains("soundCmd"));
+        assert!(decoded.variant.contains("headerOffset=14"));
+        assert_eq!(&decoded.wav[0..4], b"RIFF");
+    }
+
+    #[test]
+    fn format_two_sound_command_requires_a_resource_data_offset() {
+        let snd = format_two_snd(0x0050, 14, &[0x80]);
+        let failure = match decode_snd(&snd) {
+            Ok(_) => panic!("pointer-based soundCmd should not decode"),
+            Err(failure) => failure,
+        };
+
+        assert!(!failure.malformed);
+        assert_eq!(failure.diagnostic.code, "snd.format2_no_sampled_command");
+    }
+
+    #[test]
+    fn format_two_buffer_command_keeps_its_inline_header() {
+        let snd = format_two_snd(0x8051, 20, &[0x40, 0x80]);
+        let decoded = match decode_snd(&snd) {
+            Ok(decoded) => decoded,
+            Err(_) => panic!("format-2 bufferCmd should decode its inline header"),
+        };
+
+        assert_eq!(decoded.samples, 2);
+        assert!(decoded.variant.contains("bufferCmd"));
+        assert!(decoded.variant.contains("headerOffset=14"));
+        assert!(decoded.variant.contains("commandParam=20"));
+    }
 }

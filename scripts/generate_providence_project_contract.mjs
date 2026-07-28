@@ -330,11 +330,13 @@ for (const [category, aliases] of Object.entries(actionCategoryAliases)) {
 }
 expectSameArray(Object.keys(mapCoordinateSchema.properties ?? {}), ["x", "y"], "Action Point coordinate field inventory");
 expectSameArray(mapCoordinateSchema.required ?? [], ["x", "y"], "Action Point coordinate required field inventory");
-const actionFields = ["slot", "rawCode", "code", "id", "label", "category", "gosub"];
+const actionFields = ["slot", "rawCode", "code", "id", "label", "category", "gosub", "mediaRequiredForProgression"];
 expectSameArray(Object.keys(actionSchema.properties ?? {}), actionFields, "Action Point step field inventory");
-expectSameArray(actionSchema.required ?? [], actionFields.filter((field) => field !== "gosub"), "Action Point step browser-compatible field inventory");
+expectSameArray(actionSchema.required ?? [], actionFields.filter((field) => !["gosub", "mediaRequiredForProgression"].includes(field)), "Action Point step browser-compatible field inventory");
 expect(actionSchema.properties?.category?.type === "string", "Action Point steps must retain the editor's open author-facing category labels");
 expect(actionSchema.properties?.category?.["x-providence-rust-type"] === "ActionCategory", "Action Point steps must retain the normalized Rust boundary category type");
+expectSameArray(actionSchema["x-providence-rust-optional"] ?? [], ["mediaRequiredForProgression"], "Action Point step optional Rust inventory");
+expectSameArray(actionSchema["x-providence-rust-skip-none"] ?? [], ["mediaRequiredForProgression"], "Action Point step omitted Remake-only metadata inventory");
 const triggerFields = ["id", "source", "levelType", "levelIndex", "recordIndex", "active", "doorid", "landid", "targetX", "targetY", "percent", "coordinate", "actions", "provenance"];
 expectSameArray(Object.keys(triggerRecordSchema.properties ?? {}), triggerFields, "Action Point trigger field inventory");
 expectSameArray(triggerRecordSchema.required ?? [], triggerFields.filter((field) => !["landid", "targetX", "targetY", "provenance"].includes(field)), "Action Point trigger browser-compatible field inventory");
@@ -436,9 +438,11 @@ expect(scenarioCasteOverrideSchema.properties?.specialAbility?.items?.minItems =
 expect(scenarioCasteOverrideSchema.properties?.spellcasters?.items?.minItems === 3 && scenarioCasteOverrideSchema.properties?.spellcasters?.items?.maxItems === 3, "caste spellcaster rows must retain three values");
 expectSameArray(scenarioCasteOverrideSchema["x-providence-rust-optional"] ?? [], [], "Caste-override optional inventory");
 expect(!Object.hasOwn(scenarioCasteOverrideSchema, "x-providence-rust-skip-empty"), "caste overrides must not retain record-local byte identity");
-const encounterActionFields = ["slot", "rawCode", "id"];
+const encounterActionFields = ["slot", "rawCode", "id", "mediaRequiredForProgression"];
 expectSameArray(Object.keys(encounterActionRowSchema.properties ?? {}), encounterActionFields, "Encounter action field inventory");
-expectSameArray(encounterActionRowSchema.required ?? [], encounterActionFields, "Encounter action required field inventory");
+expectSameArray(encounterActionRowSchema.required ?? [], encounterActionFields.filter((field) => field !== "mediaRequiredForProgression"), "Encounter action required field inventory");
+expectSameArray(encounterActionRowSchema["x-providence-rust-optional"] ?? [], ["mediaRequiredForProgression"], "Encounter action optional Rust inventory");
+expectSameArray(encounterActionRowSchema["x-providence-rust-skip-none"] ?? [], ["mediaRequiredForProgression"], "Encounter action omitted Remake-only metadata inventory");
 expect(encounterActionRowSchema.properties?.slot?.minimum === 0 && encounterActionRowSchema.properties?.slot?.maximum === 31, "encounter action slots must match Realmz's 32 action rows");
 expect(encounterActionRowSchema.properties?.rawCode?.minimum === -128 && encounterActionRowSchema.properties?.rawCode?.maximum === 127, "encounter action CODE must retain the signed byte domain");
 const simpleEncounterFields = ["id", "actions", "choiceResults", "canBackOut", "maxTimes", "casteSuccess", "prompt", "texts", "authored", "provenance"];

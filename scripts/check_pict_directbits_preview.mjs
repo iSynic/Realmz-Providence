@@ -12,20 +12,24 @@ await fsp.rm(buildRoot, { recursive: true, force: true });
 await fsp.mkdir(buildRoot, { recursive: true });
 await fsp.writeFile(path.join(buildRoot, "package.json"), "{\"type\":\"commonjs\"}\n");
 
-const sourceFile = "src/editor/browser/resourcePreview.ts";
-const source = await fsp.readFile(path.join(repoRoot, sourceFile), "utf8");
-const transpiled = ts.transpileModule(source, {
-  compilerOptions: {
-    module: ts.ModuleKind.CommonJS,
-    target: ts.ScriptTarget.ES2020,
-    esModuleInterop: true,
-    isolatedModules: true
-  },
-  fileName: sourceFile
-}).outputText;
-const outputPath = path.join(buildRoot, sourceFile.replace(/\.ts$/, ".js"));
-await fsp.mkdir(path.dirname(outputPath), { recursive: true });
-await fsp.writeFile(outputPath, transpiled);
+for (const sourceFile of [
+  "src/editor/browser/resourcePreview.ts",
+  "src/editor/browser/pictQuickTime.ts"
+]) {
+  const source = await fsp.readFile(path.join(repoRoot, sourceFile), "utf8");
+  const transpiled = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2020,
+      esModuleInterop: true,
+      isolatedModules: true
+    },
+    fileName: sourceFile
+  }).outputText;
+  const outputPath = path.join(buildRoot, sourceFile.replace(/\.ts$/, ".js"));
+  await fsp.mkdir(path.dirname(outputPath), { recursive: true });
+  await fsp.writeFile(outputPath, transpiled);
+}
 
 const requireFromBuild = createRequire(path.join(buildRoot, "check.cjs"));
 const { decodePictPreviewImageForTest } = requireFromBuild("./src/editor/browser/resourcePreview.js");

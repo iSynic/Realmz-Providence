@@ -3,6 +3,7 @@ import {
   emptyRemakeRuntime,
   ItemTextRecord,
   Project,
+  ResourceAsset,
   RuleNames,
   ScenarioShell,
   ValidationReport
@@ -50,6 +51,7 @@ const BUNDLED_LANDLOOK_MAPSTATS = [
 const pendingBrowserSemantics = new Map<string, { files: Map<string, Uint8Array>; sourceFiles: Project["source"]["files"] }>();
 const browserScenarioPreviewSources = new Map<string, Map<string, Uint8Array>>();
 const browserScenarioResourcePreviewCache = new Map<string, string | null>();
+const browserScenarioItemIconAssetsCache = new Map<string, { signature: string; assets: ResourceAsset[] }>();
 const browserScenarioRawSourceSnapshots = new Map<string, BrowserRawSourceSnapshot>();
 let bundledLandlookMapstatsPromise: Promise<Project["tileAttributes"]> | null = null;
 
@@ -203,7 +205,7 @@ export async function importBrowserScenario(source: BrowserScenarioSource): Prom
     monsterSets: parsed.monsterSets,
     monsterDescriptions: parsed.monsterDescriptions,
     monsterIconOverrides: parsed.monsterIconOverrides,
-    scenarioIconResources: [],
+    scenarioIconResources: parsed.scenarioIconResources,
     scenarioItems: parsed.scenarioItems,
     itemTexts: parseBrowserItemTexts(files),
     treasures: parsed.treasures,
@@ -293,6 +295,43 @@ export function loadBrowserScenarioResourcePreview(project: Project | null | und
   return null;
 }
 
+export function loadBrowserScenarioItemIconAssets(project: Project | null | undefined): ResourceAsset[] {
+  if (!project) return [];
+  const files = browserScenarioPreviewSources.get(browserSemanticCacheKey(project));
+  if (!files) return [];
+  const wantedIds = [...new Set((project.scenarioItems ?? [])
+    .map((item) => Math.abs(item.iconId))
+    .filter((resourceId) => Number.isInteger(resourceId) && resourceId > 0))]
+    .sort((left, right) => left - right);
+  if (wantedIds.length === 0) return [];
+  const key = browserSemanticCacheKey(project);
+  const signature = wantedIds.join(",");
+  const cached = browserScenarioItemIconAssetsCache.get(key);
+  if (cached?.signature === signature) return cached.assets;
+  const wanted = new Set(wantedIds);
+  const seen = new Set<number>();
+  const assets: ResourceAsset[] = [];
+  for (const [name, bytes] of files) {
+    if (!isScenarioResourceForkName(name)) continue;
+    for (const resource of parseResourceFork(bytes)) {
+      const resourceId = Math.abs(resource.id);
+      if (normalizeResourceType(resource.resourceType) !== "cicn" || !wanted.has(resourceId) || seen.has(resourceId)) continue;
+      assets.push({
+        id: `scenario-cicn-${resourceId}`,
+        resourceType: "cicn",
+        resourceId,
+        name: resource.name || null,
+        source: `Scenario resource: browser import ${name} cicn ${resourceId}`,
+        previewPath: null
+      });
+      seen.add(resourceId);
+    }
+  }
+  assets.sort((left, right) => left.resourceId - right.resourceId);
+  browserScenarioItemIconAssetsCache.set(key, { signature, assets });
+  return assets;
+}
+
 function normalizeResourceType(resourceType: string) {
   return resourceType.trim();
 }
@@ -365,7 +404,7 @@ export async function buildBrowserSemanticSchemaForProject(
 }
 
 function browserSemanticCacheKey(project: Project) {
-  return project.source.sourcePath || project.scenario.projectPath || project.scenario.name;
+  return project.source?.sourcePath || project.scenario?.projectPath || project.scenario?.name || "";
 }
 
 export function registerBrowserSourceSnapshot(project: Project, rawSources: BrowserRawSourceSnapshot | null | undefined) {
@@ -374,6 +413,7 @@ export function registerBrowserSourceSnapshot(project: Project, rawSources: Brow
   const files = browserBuffersFromRawSourceSnapshot(rawSources);
   browserScenarioRawSourceSnapshots.set(key, rawSources);
   browserScenarioPreviewSources.set(key, files);
+  browserScenarioItemIconAssetsCache.delete(key);
   pendingBrowserSemantics.set(key, { files, sourceFiles: project.source.files ?? [] });
 }
 
@@ -1083,10 +1123,11 @@ function mergeRuleNameStrings(defaults: string[], decoded: string[]) {
 
 function parseBrowserItemTexts(files: Map<string, Uint8Array>): ItemTextRecord[] {
   const byItemId = new Map<number, ItemTextRecord>();
-  for (const [name, bytes] of files) {
-    const normalized = name.replace(/\\/g, "/").toLowerCase();
-    const baseName = normalized.split("/").pop() ?? normalized;
-    if (baseName !== "data id" && baseName !== "data id.rsrc" && baseName !== "data id.rsf" && baseName !== "._data id") continue;
+  const candidates = [...files.entries()]
+    .map(([name, bytes]) => ({ name, bytes, priority: browserItemTextResourcePriority(name) }))
+    .filter((candidate): candidate is { name: string; bytes: Uint8Array; priority: number } => candidate.priority != null)
+    .sort((left, right) => left.priority - right.priority);
+  for (const { name, bytes } of candidates) {
     for (const resource of parseResourceFork(bytes)) {
       if (resource.resourceType !== "STR#") continue;
       const resourceBase = itemTextResourceBase(resource.id);
@@ -1110,11 +1151,30 @@ function parseBrowserItemTexts(files: Map<string, Uint8Array>): ItemTextRecord[]
         if (slotKind === 0) existing.unidentifiedName = text;
         else if (slotKind === 1) existing.identifiedName = text;
         else if (slotKind === 2) existing.description = text;
+        existing.provenance = {
+          sourceFile: name,
+          recordIndex: itemId,
+          byteOffset: 0,
+          byteLength: resource.data.byteLength,
+          confidence: "source-backed"
+        };
         byItemId.set(itemId, existing);
       }
     }
   }
   return [...byItemId.values()].sort((a, b) => a.itemId - b.itemId);
+}
+
+function browserItemTextResourcePriority(name: string) {
+  const normalized = name.replace(/\\/g, "/").toLowerCase();
+  const baseName = normalized.split("/").pop() ?? normalized;
+  if (baseName === "data id" || baseName === "data id.rsrc" || baseName === "data id.rsf" || baseName === "._data id") {
+    return 0;
+  }
+  if (baseName === "scenario" || baseName === "scenario.rsrc" || baseName === "scenario.rsf") {
+    return 1;
+  }
+  return null;
 }
 
 function itemTextResourceBase(resourceId: number) {

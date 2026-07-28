@@ -1,5 +1,11 @@
-import { ACTION_OPTIONS, actionOptionFor, isDispatcherNoopOpcode } from "../../realmzActions";
+import {
+  ACTION_OPTIONS,
+  actionOptionFor,
+  isDispatcherNoopOpcode,
+  supportsRemakeProgressionMediaRequirement
+} from "../../realmzActions";
 import type { EncounterActionRow, Project } from "../../types";
+import { scriptActionAllowedInContext, type ScriptActionAuthoringContext } from "./scriptActionContexts";
 
 export const ENCOUNTER_RESULT_COUNT = 4;
 export const ENCOUNTER_RESULT_ROWS = 8;
@@ -44,10 +50,12 @@ export function signedResultActionCode(code: number, negative: boolean) {
   return negative ? -baseCode : baseCode;
 }
 
-export function resultActionOptionsFor(baseCode: number) {
-  if (RESULT_ACTION_OPTIONS.some((option) => option.code === baseCode)) return RESULT_ACTION_OPTIONS;
+export function resultActionOptionsFor(baseCode: number, recordKind: "simple" | "complex" = "simple") {
+  const context: ScriptActionAuthoringContext = recordKind === "simple" ? "simple-encounter" : "complex-encounter";
+  const appropriateOptions = RESULT_ACTION_OPTIONS.filter((option) => scriptActionAllowedInContext(option.code, context));
+  if (appropriateOptions.some((option) => option.code === baseCode)) return appropriateOptions;
   const fallback = actionOptionFor(baseCode);
-  return [fallback, ...RESULT_ACTION_OPTIONS];
+  return [fallback, ...appropriateOptions];
 }
 
 export function encounterResultStatus(actions: EncounterActionRow[], result: number): EncounterResultStatus {
@@ -224,6 +232,12 @@ export function encounterActionAt(actions: EncounterActionRow[], slot: number): 
 export function updateEncounterActionRow(actions: EncounterActionRow[], slot: number, changes: Partial<EncounterActionRow>) {
   const next = new Map(actions.map((row) => [row.slot, { ...row }]));
   const updated = { ...(next.get(slot) ?? { slot, rawCode: 0, id: 0 }), ...changes, slot };
+  if (
+    !supportsRemakeProgressionMediaRequirement(updated.rawCode) ||
+    updated.mediaRequiredForProgression !== true
+  ) {
+    delete updated.mediaRequiredForProgression;
+  }
   if (updated.rawCode === 0 && updated.id === 0) next.delete(slot);
   else next.set(slot, updated);
   return [...next.values()].sort((a, b) => a.slot - b.slot);

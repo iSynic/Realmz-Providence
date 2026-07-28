@@ -16,6 +16,13 @@
       ]
     },
     {
+      "name": "Realmz native ABI audit",
+      "command": "audit:realmz-native-abi",
+      "outputs": [
+        "docs/generated/realmz-native-abi-audit.json"
+      ]
+    },
+    {
       "name": "Scenario no-edit round-trip ledger",
       "command": "archaeology:roundtrip-audit",
       "outputs": [
@@ -119,6 +126,14 @@
       "outputs": [
         "docs/generated/ap-opcode-coverage.json",
         "docs/generated/ap-opcode-coverage.md"
+      ]
+    },
+    {
+      "name": "Encounter ECODE authoring coverage",
+      "command": "archaeology:encounter-ecode",
+      "outputs": [
+        "docs/generated/encounter-ecode-authoring.json",
+        "docs/generated/encounter-ecode-authoring.md"
       ]
     },
     {

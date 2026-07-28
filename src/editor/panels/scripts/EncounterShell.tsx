@@ -282,6 +282,8 @@ export function EncounterShell({
           <EncounterResultActionMatrix
             project={project}
             catalog={catalog}
+            recordKind={recordKind}
+            recordId={id}
             actions={actions}
             title="Result Action Columns"
             description="Simple encounters store eight CODE/ID steps for each of the four result numbers, matching the Divinity editor columns."
@@ -290,6 +292,9 @@ export function EncounterShell({
             onSelectResult={setSelectedResultIndex}
             onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
             onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
+            onApplyCommand={onApplyCommand}
+            onSelectEntity={onSelectEntity}
+            onOpenText={(editor) => onSelectEditor?.(editor)}
             renderRecordPreview={renderRecordPreview}
             previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           />
@@ -335,6 +340,8 @@ export function EncounterShell({
           <EncounterResultActionMatrix
             project={project}
             catalog={catalog}
+            recordKind={recordKind}
+            recordId={id}
             actions={actions}
             title="Result Scripts"
             description="Each result column holds the actions players see after a matching response succeeds."
@@ -343,6 +350,9 @@ export function EncounterShell({
             onSelectResult={setSelectedResultIndex}
             onUpdate={(slot, changes) => update({ actions: updateEncounterActionRow(actions, slot, changes) })}
             onCreateTarget={(recordType, targetId) => onApplyCommand?.({ kind: "createTargetRecord", label: "Create encounter action target", recordType, id: targetId })}
+            onApplyCommand={onApplyCommand}
+            onSelectEntity={onSelectEntity}
+            onOpenText={(editor) => onSelectEditor?.(editor)}
             renderRecordPreview={renderRecordPreview}
             previewContext={{ desktopRuntime, projectDir, workspaceDir }}
           />

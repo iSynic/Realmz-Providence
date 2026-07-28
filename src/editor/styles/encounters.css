@@ -1581,6 +1581,264 @@
   padding: 8px;
 }
 
+.ecode-settings-modal {
+  width: min(1040px, calc(100vw - 32px));
+  max-height: min(900px, calc(100vh - 32px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: 8px;
+  background: var(--ui-color-surface);
+  box-shadow: var(--ui-shadow-floating);
+  overflow: hidden;
+}
+
+.ecode-settings-modal-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.ecode-settings-modal-summary {
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-color-border-strong);
+  background: var(--ui-color-surface-inset);
+}
+
+.ecode-settings-modal-summary > span,
+.ecode-settings-storage-state > strong {
+  color: var(--ui-color-text-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.ecode-settings-storage-state {
+  padding: 10px 12px;
+  border: 1px solid var(--ui-color-warning-border);
+  background: var(--ui-color-warning-surface);
+}
+
+.ecode-settings-storage-state.missing,
+.ecode-settings-storage-state.conflict {
+  border-color: var(--ui-color-danger-border);
+  background: var(--ui-color-danger-surface);
+}
+
+.ecode-settings-storage-state p {
+  margin: 5px 0 0;
+}
+
+.ecode-settings-storage-state details {
+  margin-top: 7px;
+}
+
+.ecode-settings-storage-state ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.ecode-settings-write-mode {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--ui-color-border-strong);
+}
+
+.ecode-settings-write-mode label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: start;
+}
+
+.ecode-settings-write-mode label small {
+  grid-column: 2;
+  color: var(--ui-color-text-muted);
+}
+
+.ecode-settings-apply-detail {
+  margin-right: auto;
+  color: var(--ui-color-text-muted);
+}
+
+.direct-action-settings-modal {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.direct-action-settings-modal-body {
+  align-content: start;
+}
+
+.direct-action-settings-pane {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--ui-color-border-strong);
+  border-radius: 6px;
+  background: var(--ui-color-surface-inset);
+}
+
+.direct-action-settings-pane > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--ui-color-border);
+}
+
+.direct-action-settings-pane > header span {
+  color: var(--ui-color-text-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.direct-action-settings-pane > p {
+  margin: 0;
+  color: var(--ui-color-text-muted);
+  line-height: 1.45;
+}
+
+.direct-action-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--ui-color-border-strong);
+}
+
+.direct-action-choice-grid legend {
+  padding: 0 5px;
+  color: var(--ui-color-text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.direct-action-choice-grid label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: start;
+  padding: 9px;
+  border: 1px solid var(--ui-color-border);
+  border-radius: 5px;
+  background: var(--ui-color-surface);
+  cursor: pointer;
+}
+
+.direct-action-choice-grid label:has(input:checked) {
+  border-color: var(--ui-color-info-border);
+  background: var(--ui-color-info-surface);
+}
+
+.direct-action-choice-grid label.imported {
+  grid-column: 1 / -1;
+  border-color: var(--ui-color-warning-border);
+  background: var(--ui-color-warning-surface);
+}
+
+.direct-action-choice-grid label small {
+  grid-column: 2;
+  margin-top: 3px;
+  color: var(--ui-color-text-muted);
+  line-height: 1.35;
+}
+
+.direct-action-mode-grid > small {
+  grid-column: 1 / -1;
+  color: var(--ui-color-text-muted);
+}
+
+.direct-action-number-field {
+  display: grid;
+  gap: 6px;
+}
+
+.direct-action-number-field > span:first-child {
+  color: var(--ui-color-text-muted);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.direct-action-number-field > small {
+  color: var(--ui-color-text-muted);
+}
+
+.direct-action-number-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.direct-action-number-control input {
+  width: min(240px, 100%);
+}
+
+.direct-action-no-settings {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px dashed var(--ui-color-border-strong);
+}
+
+.direct-action-no-settings span,
+.direct-action-no-settings small {
+  color: var(--ui-color-text-muted);
+}
+
+.direct-action-technical-details {
+  padding: 9px 11px;
+  border: 1px solid var(--ui-color-border-strong);
+}
+
+.direct-action-technical-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.direct-action-technical-details dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+}
+
+.direct-action-technical-details dl > div {
+  display: grid;
+  gap: 3px;
+}
+
+.direct-action-technical-details dt {
+  color: var(--ui-color-text-muted);
+  font-size: 0.68rem;
+}
+
+.direct-action-technical-details dd {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .ecode-settings-modal {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .ecode-settings-modal-body {
+    padding: 10px;
+  }
+
+  .direct-action-choice-grid,
+  .direct-action-technical-details dl {
+    grid-template-columns: 1fr;
+  }
+}
+
 
 
 .simple-encounter-action-matrix > header {
@@ -2069,6 +2327,55 @@
 .simple-encounter-action-cell > .tutorial-tip {
   width: 100%;
   align-self: end;
+}
+
+.encounter-action-settings-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid #5a4f78;
+  border-radius: 4px;
+  background: #1b1730;
+  color: #d9caff;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.encounter-action-settings-field > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.encounter-action-settings-field > svg {
+  flex: 0 0 auto;
+}
+
+.encounter-action-settings-field:hover,
+.encounter-action-settings-field:focus-visible {
+  border-color: #9b82d8;
+  background: #292044;
+  color: #ffffff;
+}
+
+.encounter-action-no-settings-field {
+  border-color: #32414d;
+  background: #111a21;
+  color: #768795;
+  cursor: default;
+}
+
+.encounter-action-no-settings-field:hover {
+  border-color: #32414d;
+  background: #111a21;
+  color: #768795;
 }
 
 .encounter-action-row-actions {

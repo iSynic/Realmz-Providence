@@ -120,6 +120,24 @@ describe("encounter action row updates", () => {
     expect(encounterActionAt(inserted, 0)).toEqual({ slot: 0, rawCode: 9, id: 200 });
     expect(updateEncounterActionRow(inserted, 0, { rawCode: 0, id: 0 })).toEqual([{ slot: 8, rawCode: 1, id: 2 }]);
   });
+
+  it("retains progression requirements only on Remake media actions", () => {
+    const sound = updateEncounterActionRow([], 0, {
+      rawCode: 9,
+      id: 321,
+      mediaRequiredForProgression: true
+    });
+    expect(sound[0].mediaRequiredForProgression).toBe(true);
+
+    const picture = updateEncounterActionRow(sound, 0, { rawCode: -27 });
+    expect(picture[0].mediaRequiredForProgression).toBe(true);
+
+    const message = updateEncounterActionRow(picture, 0, { rawCode: 1 });
+    expect(message[0]).not.toHaveProperty("mediaRequiredForProgression");
+
+    const unmarkedSound = updateEncounterActionRow(message, 0, { rawCode: 9 });
+    expect(unmarkedSound[0]).not.toHaveProperty("mediaRequiredForProgression");
+  });
 });
 
 describe("encounter result action opcodes", () => {
@@ -137,5 +155,25 @@ describe("encounter result action opcodes", () => {
     expect(options[0].code).toBe(999);
     expect(options.some((option) => option.code === 0)).toBe(true);
     expect(resultActionOptionsFor(24)[0].code).toBe(0);
+  });
+
+  it("offers only actions appropriate to the selected encounter kind", () => {
+    const simple = resultActionOptionsFor(0, "simple");
+    const complex = resultActionOptionsFor(0, "complex");
+
+    expect(simple.some((option) => option.code === 34)).toBe(true);
+    expect(simple.some((option) => option.code === 35)).toBe(true);
+    expect(simple.some((option) => option.code === 44)).toBe(false);
+    expect(complex.some((option) => option.code === 34)).toBe(true);
+    expect(complex.some((option) => option.code === 35)).toBe(false);
+    expect(complex.some((option) => option.code === 44)).toBe(true);
+    expect(simple.some((option) => option.code === 122)).toBe(false);
+    expect(complex.some((option) => option.code === 126)).toBe(false);
+  });
+
+  it("retains an imported context-only opcode without offering it for new placement", () => {
+    const options = resultActionOptionsFor(122, "simple");
+    expect(options[0].code).toBe(122);
+    expect(options.slice(1).some((option) => option.code === 122)).toBe(false);
   });
 });

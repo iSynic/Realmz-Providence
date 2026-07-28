@@ -2,11 +2,13 @@ use super::portable::{portable_source_label, portable_value};
 use super::REMAKE_DOCUMENT_SCHEMA_VERSION;
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::project::{
-    ManagedAsset, ManagedAssetExportState, ManagedAssetKind, ManagedAssetLibraryScope,
-    ProvidenceProject, ResourceAsset, SourceFileRole,
+    Action, EncounterActionRow, ManagedAsset, ManagedAssetExportState, ManagedAssetKind,
+    ManagedAssetLibraryScope, ProvidenceProject, ResourceAsset, SourceFileRole,
 };
 use crate::resource_fork::parse_resource_fork_entries;
-use crate::resource_preview::{inspect_resource_preview, sound::decode_snd_to_wav};
+use crate::resource_preview::{
+    decode_classic_text, inspect_resource_preview, sound::decode_snd_to_wav,
+};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -18,6 +20,7 @@ const ASSET_DIR: &str = "assets/managed";
 const RUNTIME_IMAGE_DIR: &str = "media/images";
 const RUNTIME_PICTURE_DIR: &str = "media/pictures";
 const RUNTIME_SOUND_DIR: &str = "media/sounds";
+const CLASSIC_STYLE_RUN_BYTES: usize = 20;
 const MONSTER_ICON_FACING_OFFSET: i32 = 308;
 
 #[derive(Debug, Clone)]
@@ -29,7 +32,7 @@ struct PackagedRuntimeMedia {
 }
 
 #[derive(Debug, Clone)]
-struct ScenarioPicturePayload {
+struct PreservedResourcePayload {
     source_file: String,
     name: String,
     bytes: Vec<u8>,
@@ -37,6 +40,7 @@ struct ScenarioPicturePayload {
 
 #[derive(Debug, Clone)]
 pub(crate) struct PackagedPayload {
+    has_classic_payload: bool,
     relative_path: String,
     file_name: String,
     bytes: u64,
@@ -53,6 +57,7 @@ pub(crate) struct PackagedAssets {
     catalog: Value,
     monster_icon_overrides: Value,
     scenario_icon_resources: Value,
+    scrolling_texts: BTreeMap<i16, Value>,
 }
 
 impl PackagedAssets {
@@ -61,9 +66,14 @@ impl PackagedAssets {
             "schemaVersion": REMAKE_DOCUMENT_SCHEMA_VERSION,
             "managedAssets": &self.managed_assets,
             "catalog": &self.catalog,
+            "scrollingTexts": self.scrolling_texts.values().collect::<Vec<_>>(),
             "monsterIconOverrides": &self.monster_icon_overrides,
             "scenarioIconResources": &self.scenario_icon_resources,
         })
+    }
+
+    pub(crate) fn scrolling_text(&self, resource_id: i16) -> Option<&Value> {
+        self.scrolling_texts.get(&resource_id)
     }
 }
 
@@ -127,6 +137,8 @@ pub(crate) fn package_assets(
     let mut managed_assets = Vec::new();
     let mut written_files = Vec::new();
     let mut payloads = BTreeMap::new();
+    let mut text_payloads = BTreeMap::new();
+    let mut style_payloads = BTreeMap::new();
 
     for asset in project.assets.iter().filter(|asset| {
         !matches!(
@@ -142,6 +154,18 @@ pub(crate) fn package_assets(
             )));
         }
         let (media_type, bytes) = read_payload(asset, project_dir)?;
+        if asset.resource_type == "TEXT" {
+            text_payloads.insert(asset.resource_id, bytes.clone());
+        }
+        if asset.resource_type == "styl" {
+            if style_payloads.insert(asset.resource_id, bytes).is_some() {
+                return Err(ProvidenceError::message(format!(
+                    "Duplicate managed resource styl {}",
+                    asset.resource_id
+                )));
+            }
+            continue;
+        }
         let payload = write_payload(asset, &bytes, &media_type, output_dir)?;
         let key = (asset.resource_type.clone(), asset.resource_id);
         if payloads.insert(key, payload.clone()).is_some() {
@@ -164,11 +188,36 @@ pub(crate) fn package_assets(
         &mut payloads,
         &mut written_files,
     )?;
+    package_scenario_scrolling_texts(
+        project,
+        project_dir,
+        output_dir,
+        &mut payloads,
+        &mut text_payloads,
+        &mut style_payloads,
+        &mut written_files,
+    )?;
+    package_scenario_sounds(
+        project,
+        project_dir,
+        output_dir,
+        &mut payloads,
+        &mut written_files,
+    )?;
+    package_scenario_item_icons(project, output_dir, &mut payloads, &mut written_files)?;
+    package_scenario_special_land_tiles(
+        project,
+        project_dir,
+        output_dir,
+        &mut payloads,
+        &mut written_files,
+    )?;
     package_shared_special_land_tiles(project, output_dir, &mut payloads, &mut written_files)?;
     managed_assets.sort_by(|left, right| value_string(left, "id").cmp(&value_string(right, "id")));
     written_files.sort();
 
     let catalog = catalog_document(project, &payloads)?;
+    let scrolling_texts = scrolling_text_documents(&payloads, &text_payloads, &style_payloads);
     let monster_icon_overrides = sanitized_icon_metadata(&project.monster_icon_overrides)?;
     let scenario_icon_resources = sanitized_icon_metadata(&project.scenario_icon_resources)?;
     Ok(PackagedAssets {
@@ -177,9 +226,169 @@ pub(crate) fn package_assets(
         catalog,
         monster_icon_overrides,
         scenario_icon_resources,
+        scrolling_texts,
     })
 }
 
+fn scrolling_text_documents(
+    payloads: &BTreeMap<(String, i16), PackagedPayload>,
+    text_payloads: &BTreeMap<i16, Vec<u8>>,
+    style_payloads: &BTreeMap<i16, Vec<u8>>,
+) -> BTreeMap<i16, Value> {
+    let mut records = BTreeMap::new();
+    for (resource_id, text_bytes) in text_payloads {
+        let Some(text_payload) = payloads.get(&("TEXT".to_string(), *resource_id)) else {
+            continue;
+        };
+        let text = decode_classic_text(text_bytes);
+        let mut record = json!({
+            "resourceType": "TEXT",
+            "resourceId": resource_id,
+            "text": text,
+        });
+        add_payload_fields(&mut record, text_payload);
+        if let Some(presentation) = style_payloads
+            .get(resource_id)
+            .and_then(|style_bytes| portable_text_presentation(text_bytes, style_bytes))
+        {
+            record
+                .as_object_mut()
+                .expect("scrolling-text records are objects")
+                .insert("presentation".to_string(), presentation);
+        }
+        records.insert(*resource_id, record);
+    }
+    records
+}
+
+#[derive(Debug, Clone, Copy)]
+struct PortableTextStyle {
+    font_id: i16,
+    font_size: i16,
+    face: u8,
+    red: u16,
+    green: u16,
+    blue: u16,
+}
+
+fn portable_text_presentation(text_bytes: &[u8], style_bytes: &[u8]) -> Option<Value> {
+    let run_count = usize::from(read_u16_be(style_bytes, 0)?);
+    let expected_length = 2usize.checked_add(run_count.checked_mul(CLASSIC_STYLE_RUN_BYTES)?)?;
+    if style_bytes.len() != expected_length {
+        return None;
+    }
+
+    let (visible_start, visible_end) = classic_text_visible_range(text_bytes);
+    let mut styles_by_offset = BTreeMap::new();
+    for index in 0..run_count {
+        let offset = 2 + index * CLASSIC_STYLE_RUN_BYTES;
+        let raw_start = read_i32_be(style_bytes, offset)?;
+        if raw_start < 0 {
+            continue;
+        }
+        styles_by_offset.insert(
+            raw_start as usize,
+            PortableTextStyle {
+                font_id: read_i16_be(style_bytes, offset + 8)?,
+                face: *style_bytes.get(offset + 10)?,
+                font_size: read_i16_be(style_bytes, offset + 12)?,
+                red: read_u16_be(style_bytes, offset + 14)?,
+                green: read_u16_be(style_bytes, offset + 16)?,
+                blue: read_u16_be(style_bytes, offset + 18)?,
+            },
+        );
+    }
+
+    let offsets = styles_by_offset.keys().copied().collect::<Vec<_>>();
+    let mut runs = Vec::new();
+    for (index, raw_start) in offsets.iter().copied().enumerate() {
+        let raw_end = offsets
+            .get(index + 1)
+            .copied()
+            .unwrap_or(visible_end)
+            .min(visible_end);
+        let start = raw_start.clamp(visible_start, visible_end) - visible_start;
+        let end = raw_end.clamp(visible_start, visible_end) - visible_start;
+        if end <= start {
+            continue;
+        }
+        let style = styles_by_offset[&raw_start];
+        let stretch = if style.face & 0x20 != 0 {
+            "condensed"
+        } else if style.face & 0x40 != 0 {
+            "expanded"
+        } else {
+            "normal"
+        };
+        runs.push(json!({
+            "start": start,
+            "end": end,
+            "fontId": style.font_id,
+            "fontSize": style.font_size.max(1),
+            "color": format!(
+                "#{:02x}{:02x}{:02x}",
+                classic_color_component(style.red),
+                classic_color_component(style.green),
+                classic_color_component(style.blue),
+            ),
+            "bold": style.face & 0x01 != 0,
+            "italic": style.face & 0x02 != 0,
+            "underline": style.face & 0x04 != 0,
+            "outline": style.face & 0x08 != 0,
+            "shadow": style.face & 0x10 != 0,
+            "stretch": stretch,
+        }));
+    }
+
+    Some(json!({
+        "format": "portable-rich-text-v1",
+        "runs": runs,
+    }))
+}
+
+fn classic_text_visible_range(bytes: &[u8]) -> (usize, usize) {
+    let leading = bytes
+        .iter()
+        .take_while(|byte| classic_text_byte_is_whitespace(**byte))
+        .count();
+    let trailing = bytes
+        .iter()
+        .rev()
+        .take_while(|byte| classic_text_byte_is_whitespace(**byte))
+        .count();
+    (leading, bytes.len().saturating_sub(trailing).max(leading))
+}
+
+fn classic_text_byte_is_whitespace(byte: u8) -> bool {
+    matches!(byte, 0 | 9 | 10 | 13 | 32)
+}
+
+fn classic_color_component(value: u16) -> u8 {
+    ((u32::from(value) + 128) / 257) as u8
+}
+
+fn read_i16_be(bytes: &[u8], offset: usize) -> Option<i16> {
+    Some(i16::from_be_bytes([
+        *bytes.get(offset)?,
+        *bytes.get(offset + 1)?,
+    ]))
+}
+
+fn read_u16_be(bytes: &[u8], offset: usize) -> Option<u16> {
+    Some(u16::from_be_bytes([
+        *bytes.get(offset)?,
+        *bytes.get(offset + 1)?,
+    ]))
+}
+
+fn read_i32_be(bytes: &[u8], offset: usize) -> Option<i32> {
+    Some(i32::from_be_bytes([
+        *bytes.get(offset)?,
+        *bytes.get(offset + 1)?,
+        *bytes.get(offset + 2)?,
+        *bytes.get(offset + 3)?,
+    ]))
+}
 fn package_scenario_icon_resources(
     project: &ProvidenceProject,
     output_dir: &Path,
@@ -435,6 +644,7 @@ fn write_resource_payload(
         None
     };
     Ok(PackagedPayload {
+        has_classic_payload: true,
         relative_path,
         file_name,
         bytes: bytes.len() as u64,
@@ -566,9 +776,9 @@ fn package_scenario_pictures(
         )));
     }
 
-    let candidates = preserved_scenario_picture_payloads(project, project_dir)?;
+    let candidates = preserved_scenario_resource_payloads(project, project_dir, "PICT")?;
     for (asset, resource_id) in missing {
-        let candidate = select_scenario_picture_payload(asset, &candidates)?;
+        let candidate = select_scenario_resource_payload(asset, &candidates, "PICT")?;
         let label = asset
             .name
             .as_deref()
@@ -602,10 +812,158 @@ fn is_scenario_owned_picture(asset: &ResourceAsset) -> bool {
             && !source.contains("bundled realmz reference pict"))
 }
 
-fn preserved_scenario_picture_payloads(
+fn package_scenario_scrolling_texts(
     project: &ProvidenceProject,
     project_dir: &Path,
-) -> Result<BTreeMap<i16, Vec<ScenarioPicturePayload>>> {
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    text_payloads: &mut BTreeMap<i16, Vec<u8>>,
+    style_payloads: &mut BTreeMap<i16, Vec<u8>>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let text_candidates = preserved_scenario_resource_payloads(project, project_dir, "TEXT")?;
+    for resource_id in text_candidates.keys().copied().collect::<Vec<_>>() {
+        if payloads.contains_key(&("TEXT".to_string(), resource_id))
+            || scenario_resource_removed(project, "TEXT", resource_id)
+        {
+            continue;
+        }
+        let Some(candidate) =
+            select_uncatalogued_scenario_resource_payload(resource_id, &text_candidates, "TEXT")?
+        else {
+            continue;
+        };
+        let label = (!candidate.name.trim().is_empty())
+            .then_some(candidate.name.clone())
+            .unwrap_or_else(|| format!("Scenario scrolling text {resource_id}"));
+        let payload = write_resource_payload(
+            "TEXT",
+            resource_id,
+            &label,
+            &candidate.bytes,
+            "text/plain",
+            &format!("Scenario resource fork: {}", candidate.source_file),
+            output_dir,
+        )?;
+        text_payloads.insert(resource_id, candidate.bytes.clone());
+        written_files.push(payload.relative_path.clone());
+        payloads.insert(("TEXT".to_string(), resource_id), payload);
+    }
+
+    let style_candidates = preserved_scenario_resource_payloads(project, project_dir, "styl")?;
+    let text_ids = payloads
+        .keys()
+        .filter_map(|(resource_type, resource_id)| {
+            (resource_type == "TEXT").then_some(*resource_id)
+        })
+        .collect::<Vec<_>>();
+    for resource_id in text_ids {
+        if style_payloads.contains_key(&resource_id)
+            || scenario_resource_removed(project, "styl", resource_id)
+        {
+            continue;
+        }
+        let Some(candidate) =
+            select_uncatalogued_scenario_resource_payload(resource_id, &style_candidates, "styl")?
+        else {
+            continue;
+        };
+        style_payloads.insert(resource_id, candidate.bytes.clone());
+    }
+    Ok(())
+}
+
+fn package_scenario_sounds(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let candidates = preserved_scenario_resource_payloads(project, project_dir, "snd ")?;
+    for resource_id in candidates.keys().copied().collect::<Vec<_>>() {
+        if payloads.contains_key(&("snd ".to_string(), resource_id))
+            || scenario_resource_removed(project, "snd ", resource_id)
+        {
+            continue;
+        }
+        let catalog_asset = project.asset_catalog.sounds.iter().find(|asset| {
+            asset.resource_type == "snd "
+                && asset.resource_id == i32::from(resource_id)
+                && is_scenario_owned_sound(asset)
+        });
+        let candidate = if let Some(asset) = catalog_asset {
+            select_scenario_resource_payload(asset, &candidates, "snd ")?
+        } else {
+            let Some(candidate) =
+                select_uncatalogued_scenario_resource_payload(resource_id, &candidates, "snd ")?
+            else {
+                continue;
+            };
+            candidate
+        };
+        let label = catalog_asset
+            .and_then(|asset| asset.name.as_deref())
+            .filter(|value| !value.trim().is_empty())
+            .or_else(|| (!candidate.name.trim().is_empty()).then_some(candidate.name.as_str()))
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("Scenario sound {resource_id}"));
+        let payload = write_resource_payload(
+            "snd ",
+            resource_id,
+            &label,
+            &candidate.bytes,
+            "audio/x-mac-snd",
+            &format!("Scenario resource fork: {}", candidate.source_file),
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("snd ".to_string(), resource_id), payload);
+    }
+    Ok(())
+}
+
+fn is_scenario_owned_sound(asset: &ResourceAsset) -> bool {
+    let source = asset.source.to_ascii_lowercase();
+    asset.id.starts_with("scenario-snd-")
+        || source.starts_with("scenario resource fork:")
+        || (source.starts_with("browser import:")
+            && !source.contains("bundled realmz reference snd"))
+}
+
+fn scenario_resource_removed(
+    project: &ProvidenceProject,
+    resource_type: &str,
+    resource_id: i16,
+) -> bool {
+    project
+        .editor_metadata
+        .removed_scenario_resources
+        .iter()
+        .any(|resource| {
+            resource.resource_type == resource_type
+                && resource.resource_id == i32::from(resource_id)
+        })
+}
+
+fn preserved_scenario_resource_payloads(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    resource_type: &str,
+) -> Result<BTreeMap<i16, Vec<PreservedResourcePayload>>> {
+    let mut source_files = project
+        .source
+        .files
+        .iter()
+        .filter(|file| matches!(&file.role, SourceFileRole::ResourceFork))
+        .collect::<Vec<_>>();
+    if source_files.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    source_files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
     let raw_sources_dir = if project.source.raw_sources_dir.trim().is_empty() {
         PathBuf::from("raw-sources")
     } else {
@@ -615,15 +973,7 @@ fn preserved_scenario_picture_payloads(
         )?
     };
     let raw_sources_dir = project_dir.join(raw_sources_dir);
-    let mut source_files = project
-        .source
-        .files
-        .iter()
-        .filter(|file| matches!(&file.role, SourceFileRole::ResourceFork))
-        .collect::<Vec<_>>();
-    source_files.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
-
-    let mut pictures = BTreeMap::<i16, Vec<ScenarioPicturePayload>>::new();
+    let mut resources = BTreeMap::<i16, Vec<PreservedResourcePayload>>::new();
     for source_file in source_files {
         let relative_path = validated_relative_path(
             &source_file.relative_path,
@@ -636,37 +986,38 @@ fn preserved_scenario_picture_payloads(
         let bytes = fs::read(&path).with_path(&path)?;
         for entry in parse_resource_fork_entries(&bytes)
             .into_iter()
-            .filter(|entry| entry.resource_type == "PICT")
+            .filter(|entry| entry.resource_type == resource_type)
         {
-            pictures
+            resources
                 .entry(entry.id)
                 .or_default()
-                .push(ScenarioPicturePayload {
+                .push(PreservedResourcePayload {
                     source_file: source_file.name.clone(),
                     name: entry.name,
                     bytes: entry.data,
                 });
         }
     }
-    Ok(pictures)
+    Ok(resources)
 }
 
-fn select_scenario_picture_payload<'a>(
+fn select_scenario_resource_payload<'a>(
     asset: &ResourceAsset,
-    candidates: &'a BTreeMap<i16, Vec<ScenarioPicturePayload>>,
-) -> Result<&'a ScenarioPicturePayload> {
+    candidates: &'a BTreeMap<i16, Vec<PreservedResourcePayload>>,
+    resource_type: &str,
+) -> Result<&'a PreservedResourcePayload> {
     let resource_id = i16::try_from(asset.resource_id).map_err(|_| {
         ProvidenceError::message(format!(
-            "Scenario picture resource ID {} is outside the Classic signed 16-bit range",
-            asset.resource_id
+            "Scenario-owned {resource_type} resource ID {} is outside the Classic signed 16-bit range",
+            asset.resource_id,
         ))
     })?;
     let available = candidates.get(&resource_id).ok_or_else(|| {
         ProvidenceError::message(format!(
-            "Scenario-owned PICT {resource_id} has no managed payload and was not found in the project raw-source snapshot"
+            "Scenario-owned {resource_type} {resource_id} has no managed payload and was not found in the project raw-source snapshot"
         ))
     })?;
-    let source_hint = scenario_picture_source_hint(asset);
+    let source_hint = scenario_resource_source_hint(asset, resource_type);
     let matching = source_hint
         .as_deref()
         .map(|hint| {
@@ -684,7 +1035,7 @@ fn select_scenario_picture_payload<'a>(
         .any(|candidate| candidate.bytes != first.bytes)
     {
         return Err(ProvidenceError::message(format!(
-            "Scenario-owned PICT {resource_id} is ambiguous across preserved resource forks: {}",
+            "Scenario-owned {resource_type} {resource_id} is ambiguous across preserved resource forks: {}",
             matching
                 .iter()
                 .map(|candidate| candidate.source_file.as_str())
@@ -695,17 +1046,200 @@ fn select_scenario_picture_payload<'a>(
     Ok(first)
 }
 
-fn scenario_picture_source_hint(asset: &ResourceAsset) -> Option<String> {
+fn select_uncatalogued_scenario_resource_payload<'a>(
+    resource_id: i16,
+    candidates: &'a BTreeMap<i16, Vec<PreservedResourcePayload>>,
+    resource_type: &str,
+) -> Result<Option<&'a PreservedResourcePayload>> {
+    let Some(available) = candidates.get(&resource_id) else {
+        return Ok(None);
+    };
+    let preferred = available
+        .iter()
+        .filter(|candidate| source_file_matches(&candidate.source_file, "Scenario.rsrc"))
+        .collect::<Vec<_>>();
+    let matching = if preferred.is_empty() {
+        available.iter().collect::<Vec<_>>()
+    } else {
+        preferred
+    };
+    let first = matching
+        .first()
+        .copied()
+        .expect("resource candidate groups are non-empty");
+    if matching
+        .iter()
+        .skip(1)
+        .any(|candidate| candidate.bytes != first.bytes)
+    {
+        return Err(ProvidenceError::message(format!(
+            "Scenario-owned {resource_type} {resource_id} is ambiguous across preserved resource forks: {}",
+            matching
+                .iter()
+                .map(|candidate| candidate.source_file.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )));
+    }
+    Ok(Some(first))
+}
+
+fn scenario_resource_source_hint(asset: &ResourceAsset, resource_type: &str) -> Option<String> {
     if let Some(source) = asset.source.strip_prefix("Scenario resource fork: ") {
         return Some(source.trim().to_string());
     }
     let source = asset.source.strip_prefix("Browser import: ")?;
-    let suffix = format!(" PICT {}", asset.resource_id);
+    let suffix = format!(" {resource_type} {}", asset.resource_id);
     source
         .strip_suffix(&suffix)
         .map(|value| value.trim().to_string())
 }
 
+fn package_scenario_item_icons(
+    project: &ProvidenceProject,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let referenced = project
+        .scenario_items
+        .iter()
+        .filter_map(|item| item.icon_id.checked_abs())
+        .filter(|resource_id| *resource_id != 0)
+        .collect::<BTreeSet<_>>();
+    if referenced.is_empty() {
+        return Ok(());
+    }
+
+    let mut resources = project.scenario_icon_resources.iter().collect::<Vec<_>>();
+    resources.sort_by_key(|resource| resource.resource_id.abs());
+    for resource in resources {
+        let resource_id = i16::try_from(resource.resource_id.abs()).map_err(|_| {
+            ProvidenceError::message(format!(
+                "Scenario item icon resource ID {} is outside the Classic signed 16-bit range",
+                resource.resource_id
+            ))
+        })?;
+        if !referenced.contains(&resource_id)
+            || payloads.contains_key(&("cicn".to_string(), resource_id))
+        {
+            continue;
+        }
+        let bytes = STANDARD
+            .decode(&resource.resource_base64)
+            .map_err(|error| {
+                ProvidenceError::message(format!(
+                "Scenario item icon cicn {resource_id} has invalid Classic resource data: {error}"
+            ))
+            })?;
+        let payload = write_resource_payload(
+            "cicn",
+            resource_id,
+            &resource.label,
+            &bytes,
+            "image/cicn",
+            if resource.imported {
+                "Preserved scenario item icon"
+            } else {
+                "Scenario item icon"
+            },
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("cicn".to_string(), resource_id), payload);
+    }
+    Ok(())
+}
+
+fn package_scenario_special_land_tiles(
+    project: &ProvidenceProject,
+    project_dir: &Path,
+    output_dir: &Path,
+    payloads: &mut BTreeMap<(String, i16), PackagedPayload>,
+    written_files: &mut Vec<String>,
+) -> Result<()> {
+    let wanted = referenced_special_land_tile_ids(project);
+    let mut assets = project
+        .asset_catalog
+        .icons
+        .iter()
+        .filter(|asset| {
+            asset.resource_type == "cicn"
+                && asset.resource_id < 0
+                && i16::try_from(asset.resource_id)
+                    .ok()
+                    .is_some_and(|resource_id| wanted.contains(&resource_id))
+                && is_scenario_owned_icon(asset)
+        })
+        .collect::<Vec<_>>();
+    assets.sort_by(|left, right| {
+        left.resource_id
+            .cmp(&right.resource_id)
+            .then_with(|| left.id.cmp(&right.id))
+    });
+    let assets = assets
+        .into_iter()
+        .filter_map(|asset| {
+            i16::try_from(asset.resource_id)
+                .ok()
+                .map(|resource_id| (resource_id, asset))
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    let candidates = preserved_scenario_resource_payloads(project, project_dir, "cicn")?;
+    for resource_id in wanted {
+        if payloads.contains_key(&("cicn".to_string(), resource_id)) {
+            continue;
+        }
+        let asset = assets.get(&resource_id).copied();
+        let candidate = match asset {
+            Some(asset) => select_scenario_resource_payload(asset, &candidates, "cicn")?,
+            None => {
+                let Some(candidate) = select_uncatalogued_scenario_resource_payload(
+                    resource_id,
+                    &candidates,
+                    "cicn",
+                )?
+                else {
+                    continue;
+                };
+                candidate
+            }
+        };
+        let label = asset
+            .and_then(|asset| asset.name.as_deref())
+            .filter(|value| !value.trim().is_empty())
+            .or_else(|| (!candidate.name.trim().is_empty()).then_some(candidate.name.as_str()))
+            .map(str::to_string)
+            .unwrap_or_else(|| format!("Scenario special land tile {resource_id}"));
+        let payload = write_resource_payload(
+            "cicn",
+            resource_id,
+            &label,
+            &candidate.bytes,
+            "image/cicn",
+            &format!("Scenario resource fork: {}", candidate.source_file),
+            output_dir,
+        )?;
+        written_files.push(payload.relative_path.clone());
+        if let Some(runtime_media) = &payload.runtime_media {
+            written_files.push(runtime_media.relative_path.clone());
+        }
+        payloads.insert(("cicn".to_string(), resource_id), payload);
+    }
+    Ok(())
+}
+
+fn is_scenario_owned_icon(asset: &ResourceAsset) -> bool {
+    let source = asset.source.to_ascii_lowercase();
+    asset.id.starts_with("scenario-cicn-")
+        || source.starts_with("scenario resource fork:")
+        || (source.starts_with("browser import:")
+            && !source.contains("bundled realmz reference cicn"))
+}
 fn source_file_matches(source_file: &str, hint: &str) -> bool {
     let source_file = source_file.replace('\\', "/");
     let hint = hint.replace('\\', "/");
@@ -747,16 +1281,6 @@ fn package_shared_special_land_tiles(
     let resources = crate::realmz_reference::resources("cicn", &wanted)?;
     let found = resources.keys().copied().collect::<BTreeSet<_>>();
     let missing = wanted.difference(&found).copied().collect::<Vec<_>>();
-    if !missing.is_empty() {
-        return Err(ProvidenceError::message(format!(
-            "Realmz Remake export cannot resolve referenced shared special-land cicn resources: {}",
-            missing
-                .iter()
-                .map(i16::to_string)
-                .collect::<Vec<_>>()
-                .join(", ")
-        )));
-    }
     for (id, resource) in resources {
         let label = if resource.name.trim().is_empty() {
             format!("Realmz shared special land tile {id}")
@@ -778,6 +1302,25 @@ fn package_shared_special_land_tiles(
         }
         payloads.insert(("cicn".to_string(), id), payload);
     }
+    if !missing.is_empty() {
+        let runtime_media = write_transparent_special_land_fallback(output_dir)?;
+        written_files.push(runtime_media.relative_path.clone());
+        for id in missing {
+            payloads.insert(
+                ("cicn".to_string(), id),
+                PackagedPayload {
+                    has_classic_payload: false,
+                    relative_path: String::new(),
+                    file_name: String::new(),
+                    bytes: 0,
+                    sha256: String::new(),
+                    media_type: "image/cicn".to_string(),
+                    source: "Classic missing cicn fallback".to_string(),
+                    runtime_media: Some(runtime_media.clone()),
+                },
+            );
+        }
+    }
     Ok(())
 }
 
@@ -790,15 +1333,70 @@ fn referenced_special_land_tile_ids(project: &ProvidenceProject) -> BTreeSet<i16
             if *value >= 0 {
                 return None;
             }
-            let mut id = *value;
-            while id < -999 {
-                id += 1000;
-            }
-            Some(id)
+            Some(special_land_resource_id(remake_land_tile_value(*value)))
         })
         .collect()
 }
 
+pub(crate) fn remake_land_tile_value(value: i16) -> i16 {
+    if value < -3999 {
+        // Realmz removes at most three 1000-wide state bands before looking up
+        // a special cicn. Values below this range cannot resolve and render as
+        // the base land tile, so the Remake document uses one transparent
+        // fallback identity instead of manufacturing thousands of resource IDs.
+        -999
+    } else {
+        value
+    }
+}
+
+fn special_land_resource_id(value: i16) -> i16 {
+    let mut resource_id = value;
+    for _ in 0..3 {
+        if resource_id >= -999 {
+            break;
+        }
+        resource_id += 1000;
+    }
+    resource_id
+}
+
+fn write_transparent_special_land_fallback(output_dir: &Path) -> Result<PackagedRuntimeMedia> {
+    let mut bytes = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut bytes, 32, 32);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().map_err(|error| {
+            ProvidenceError::message(format!(
+                "Could not create transparent special-land fallback PNG: {error}"
+            ))
+        })?;
+        writer
+            .write_image_data(&vec![0_u8; 32 * 32 * 4])
+            .map_err(|error| {
+                ProvidenceError::message(format!(
+                    "Could not encode transparent special-land fallback PNG: {error}"
+                ))
+            })?;
+    }
+    let sha256 = hex::encode(Sha256::digest(&bytes));
+    let relative_path = format!(
+        "{RUNTIME_IMAGE_DIR}/cicn-missing-transparent-{}.png",
+        &sha256[..12]
+    );
+    let path = output_dir.join(PathBuf::from(&relative_path));
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).with_path(parent)?;
+    }
+    fs::write(&path, &bytes).with_path(&path)?;
+    Ok(PackagedRuntimeMedia {
+        relative_path,
+        bytes: bytes.len() as u64,
+        sha256,
+        media_type: "image/png".to_string(),
+    })
+}
 fn managed_asset_document(asset: &ManagedAsset, payload: &PackagedPayload) -> Value {
     let mut value = json!({
         "id": &asset.id,
@@ -829,7 +1427,9 @@ fn catalog_document(
     payloads: &BTreeMap<(String, i16), PackagedPayload>,
 ) -> Result<Value> {
     let mut tilesets = Vec::new();
+    let mut catalog_landlooks = BTreeSet::new();
     for tileset in &project.asset_catalog.tilesets {
+        catalog_landlooks.insert(tileset.landlook);
         let mut value = json!({
             "id": &tileset.id,
             "landlook": tileset.landlook,
@@ -853,6 +1453,13 @@ fn catalog_document(
         }
         tilesets.push(value);
     }
+    for landlook in runtime_stock_landlooks(project) {
+        if catalog_landlooks.insert(landlook)
+            && has_complete_stock_landlook_table(project, landlook)
+        {
+            tilesets.push(stock_landlook_document(landlook));
+        }
+    }
     tilesets.sort_by(|left, right| value_string(left, "id").cmp(&value_string(right, "id")));
 
     Ok(json!({
@@ -862,6 +1469,100 @@ fn catalog_document(
         "specialLandTiles": special_land_tile_catalog(project, payloads)?,
         "sounds": resource_catalog(&project.asset_catalog.sounds, "snd ", payloads)?,
     }))
+}
+
+fn runtime_stock_landlooks(project: &ProvidenceProject) -> BTreeSet<i8> {
+    let extra_codes = project
+        .extracodes
+        .iter()
+        .map(|row| (row.id, row.values))
+        .collect::<BTreeMap<_, _>>();
+    let mut landlooks = BTreeSet::new();
+    for trigger in project.triggers.iter().filter(|trigger| trigger.active) {
+        collect_action_landlooks(&trigger.actions, &extra_codes, &mut landlooks);
+    }
+    for encounter in &project.simple_encounters {
+        collect_encounter_action_landlooks(&encounter.actions, &extra_codes, &mut landlooks);
+    }
+    for encounter in &project.complex_encounters {
+        collect_encounter_action_landlooks(&encounter.actions, &extra_codes, &mut landlooks);
+    }
+    landlooks.retain(|landlook| matches!(landlook, 0 | 3 | 4 | 5 | 9 | 10));
+    landlooks
+}
+
+fn collect_action_landlooks(
+    actions: &[Action],
+    extra_codes: &BTreeMap<usize, [i16; 5]>,
+    landlooks: &mut BTreeSet<i8>,
+) {
+    for action in actions {
+        collect_landlook(action.raw_code, action.id, extra_codes, landlooks);
+    }
+}
+
+fn collect_encounter_action_landlooks(
+    actions: &[EncounterActionRow],
+    extra_codes: &BTreeMap<usize, [i16; 5]>,
+    landlooks: &mut BTreeSet<i8>,
+) {
+    for action in actions {
+        collect_landlook(action.raw_code, action.id, extra_codes, landlooks);
+    }
+}
+
+fn collect_landlook(
+    raw_code: i16,
+    extra_code_id: i16,
+    extra_codes: &BTreeMap<usize, [i16; 5]>,
+    landlooks: &mut BTreeSet<i8>,
+) {
+    if raw_code.unsigned_abs() != 57 || extra_code_id < 0 {
+        return;
+    }
+    let Some(values) = extra_codes.get(&(extra_code_id as usize)) else {
+        return;
+    };
+    if let Ok(landlook) = i8::try_from(values[0]) {
+        landlooks.insert(landlook);
+    }
+}
+
+fn has_complete_stock_landlook_table(project: &ProvidenceProject, landlook: i8) -> bool {
+    project
+        .tile_attributes
+        .iter()
+        .filter(|record| record.landlook == Some(landlook) && (1..=200).contains(&record.tile))
+        .map(|record| record.tile)
+        .collect::<BTreeSet<_>>()
+        .len()
+        == 200
+}
+
+fn stock_landlook_document(landlook: i8) -> Value {
+    let (name, base_tile) = match landlook {
+        0 => ("Plains", 156),
+        3 => ("Subterranean", 155),
+        4 => ("Castle", 111),
+        5 => ("Desert", 191),
+        9 => ("Swamp", 155),
+        10 => ("Snow", 155),
+        _ => unreachable!("filtered stock landlook"),
+    };
+    json!({
+        "id": format!("landlook-{landlook}"),
+        "landlook": landlook,
+        "name": name,
+        "source": "Realmz reference resources",
+        "available": true,
+        "pictId": 300 + i32::from(landlook),
+        "tileWidth": 32,
+        "tileHeight": 32,
+        "columns": 20,
+        "rows": 10,
+        "custom": false,
+        "baseTile": base_tile,
+    })
 }
 
 fn validate_resource_identity(asset: &ManagedAsset) -> Result<()> {
@@ -985,6 +1686,10 @@ fn resource_catalog(
 }
 
 fn add_payload_fields(value: &mut Value, payload: &PackagedPayload) {
+    if !payload.has_classic_payload {
+        add_runtime_media(value, payload);
+        return;
+    }
     let object = value
         .as_object_mut()
         .expect("asset catalog rows are objects");

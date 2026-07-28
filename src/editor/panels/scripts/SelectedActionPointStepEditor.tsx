@@ -5,9 +5,12 @@ import { categoryColor } from "../../components/TileSprite";
 import { divinityHelpForOpcode } from "../../divinityOpcodeHelp";
 import type { EdcdRowUsage } from "../../edcdRows";
 import { opcodeIdMeaning, parameterLabelsForOpcode } from "../../opcodeCrosswalk";
-import { actionOptionFor, normalizeStepOpcode } from "../../realmzActions";
+import {
+  actionOptionFor,
+  normalizeStepOpcode
+} from "../../realmzActions";
 import type { ScriptDiagnostic } from "../../scriptValidation";
-import type { LibraryCatalog, MapCoordinateTarget, Project, ProjectCommand, SelectedEntity } from "../../types";
+import type { LibraryCatalog, MapCoordinateTarget, MapEntity, Project, ProjectCommand, SelectedEntity } from "../../types";
 import { EmptyState } from "../../ui";
 import { ActionPointActionChooser } from "./ActionPointActionChooser";
 import { ActionPointDirectTargetField } from "./ActionPointDirectTargetField";
@@ -15,6 +18,7 @@ import { ActionPointInlineTargetEditor } from "./ActionPointInlineTargetEditor";
 import { ActionPointSettingsEditor } from "./ActionPointSettingsEditor";
 import { ActionPointStepReference } from "./ActionPointStepReference";
 import { ActionPointTargetPreview } from "./ActionPointTargetPreview";
+import { ContextualDirectActionModal } from "./ContextualDirectActionModal";
 import { ScriptDiagnostics } from "./ScriptDiagnostics";
 import { defaultDraftForProject } from "./actionPointDraft";
 import {
@@ -74,6 +78,7 @@ export function SelectedActionPointStepEditor({
   onPreviewEntity,
   onOpenTool,
   onOpenMapCoordinate,
+  previewMap,
   onEdcdDraftChange,
   onSecondaryEdcdDraftChange,
   onApplyCommand
@@ -81,7 +86,7 @@ export function SelectedActionPointStepEditor({
   project: Project;
   catalog?: LibraryCatalog | null;
   selectedSlot: number;
-  selectedDraft: { rawCode: number; id: number };
+  selectedDraft: { rawCode: number; id: number; mediaRequiredForProgression: boolean };
   selectedDraftDirty: boolean;
   selectedSlotApplied: boolean;
   selectedOption: ReturnType<typeof actionOptionFor>;
@@ -104,17 +109,23 @@ export function SelectedActionPointStepEditor({
   onShowTargetRecord?: () => void;
   onSetCategoryFilter: (category: ScriptActionCategoryFilter) => void;
   onSetOpcodeQuery: (query: string) => void;
-  onSetSelectedDraft: (values: { rawCode: number; id: number }) => void;
+  onSetSelectedDraft: (values: {
+    rawCode: number;
+    id: number;
+    mediaRequiredForProgression?: boolean;
+  }) => void;
   onSelectEntity: (entity: SelectedEntity) => void;
   onPreviewEntity: (entity: SelectedEntity) => void;
   onOpenTool?: (tab: "text", editor: string) => void;
   onOpenMapCoordinate?: (target: MapCoordinateTarget) => void;
+  previewMap?: Pick<MapEntity, "levelType" | "index"> | null;
   onEdcdDraftChange?: (values: number[], dirty: boolean) => void;
   onSecondaryEdcdDraftChange?: (values: number[], dirty: boolean) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [actionChooserOpen, setActionChooserOpen] = useState(false);
+  const [directSettingsOpen, setDirectSettingsOpen] = useState(false);
   const selectedDivinityHelp = divinityHelpForOpcode(selectedDraft.rawCode);
   const selectedIdLabel = selectedDefinition.target?.label ?? humanActionValueLabel(opcodeIdMeaning(selectedDraft.rawCode));
   const selectedDefaultEdcdValues = selectedDefinition.defaultDraft.parameters;
@@ -138,7 +149,11 @@ export function SelectedActionPointStepEditor({
   }, [selectedSlot, selectedDraft.rawCode, selectedDraft.id]);
   useEffect(() => {
     setActionChooserOpen(false);
+    setDirectSettingsOpen(false);
   }, [selectedSlot]);
+  useEffect(() => {
+    setDirectSettingsOpen(false);
+  }, [selectedDraft.rawCode]);
   const selectedCombatMacroActionNote = combatMacroActionNote(selectedDefinition.opcode, combatMacroContext ?? null);
   const settingLabels = visibleParameters.map((parameter) => `${parameter.index + 1}. ${parameter.label}`);
   const previewBehavior = signedTargetBehaviorLabel(selectedDraft.rawCode, selectedDraft.id);
@@ -180,7 +195,10 @@ export function SelectedActionPointStepEditor({
     return definition;
   };
   const selectActionDefinition = (definition: ScriptActionDefinition) => {
-    onSetSelectedDraft(defaultDraftForProject(project, definitionForActionChooserUse(definition)));
+    onSetSelectedDraft({
+      ...defaultDraftForProject(project, definitionForActionChooserUse(definition)),
+      mediaRequiredForProgression: false
+    });
     setActionChooserOpen(false);
   };
 
@@ -259,6 +277,8 @@ export function SelectedActionPointStepEditor({
         />
         {!isEdcdBackedStep && !hasInlineTargetPicker && !isStepOnlyAction && (
           <ActionPointDirectTargetField
+            project={project}
+            catalog={catalog}
             selectedSlot={selectedSlot}
             rawCode={selectedDraft.rawCode}
             id={selectedDraft.id}
@@ -267,7 +287,7 @@ export function SelectedActionPointStepEditor({
             sameMapActionPointStep={isSameMapActionPointStep}
             sameMapTarget={sameMapActionPointTarget}
             sameMapJumpTitle={sameMapActionPointJumpTitle}
-            onChange={onSetSelectedDraft}
+            onEdit={() => setDirectSettingsOpen(true)}
             onPreviewEntity={onPreviewEntity}
           />
         )}
@@ -288,6 +308,7 @@ export function SelectedActionPointStepEditor({
           onSelectEntity={onSelectEntity}
           onOpenText={(editor) => onOpenTool?.("text", editor)}
           onOpenMapCoordinate={onOpenMapCoordinate}
+          previewMap={previewMap}
           onDraftValuesChange={onEdcdDraftChange}
           onSecondaryDraftValuesChange={onSecondaryEdcdDraftChange}
           onApplyCommand={onApplyCommand}
@@ -303,6 +324,23 @@ export function SelectedActionPointStepEditor({
           </div>
         )}
       </div>
+      {directSettingsOpen && (
+        <ContextualDirectActionModal
+          project={project}
+          catalog={catalog}
+          title={`${selectedDefinition.label} — Action Point step ${selectedSlot + 1}`}
+          description="Choose the action behavior here, then use Apply Step to store this draft in the script."
+          rawCode={selectedDraft.rawCode}
+          initialValue={selectedDraft.id}
+          previewContext={{ desktopRuntime, projectDir, workspaceDir }}
+          onInspect={onPreviewEntity}
+          onCancel={() => setDirectSettingsOpen(false)}
+          onApply={(id) => {
+            onSetSelectedDraft({ ...selectedDraft, id });
+            setDirectSettingsOpen(false);
+          }}
+        />
+      )}
       <ActionPointStepReference
         definition={selectedDefinition}
         combatMacroContext={combatMacroContext}

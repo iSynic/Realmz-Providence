@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Dispatch } from "react";
 import { tileAtlasRect } from "./components/TileSprite";
 import { MAP_CELLS, tileValueAt } from "./map/geometry";
+import { updateEncounterActionRow } from "./panels/scripts/encounterFlow";
 import { EditorAction } from "./store";
 import { EditorTab, MapEntity, Project } from "./types";
 import { selectEntityFromId, triggerEntityId } from "./utils";
@@ -353,8 +354,19 @@ async function runPrimaryWorkflowRecordProbes({
       await settleFrames(3);
       return entityId;
     });
+    await runPrimaryWorkflowProbe(result, "Simple Encounter ECODE settings modal", async () => {
+      onStatus?.("Primary workflow harness: exercising Simple Encounter ECODE settings...");
+      return runEncounterEcodeModalProbe({
+        dispatch,
+        recordKind: "simple",
+        encounterId: simpleEncounter.id,
+        actions: simpleEncounter.actions,
+        verifyCancel: true
+      });
+    });
   } else {
     result.probes.push({ label: "Open selected Simple Encounter", durationMs: 0, ok: true, detail: "skipped: no Simple Encounter records" });
+    result.probes.push({ label: "Simple Encounter ECODE settings modal", durationMs: 0, ok: true, detail: "skipped: no Simple Encounter records" });
   }
 
   const complexEncounter = project.complexEncounters[0] ?? null;
@@ -369,9 +381,121 @@ async function runPrimaryWorkflowRecordProbes({
       await settleFrames(3);
       return entityId;
     });
+    await runPrimaryWorkflowProbe(result, "Complex Encounter ECODE settings modal", async () => {
+      onStatus?.("Primary workflow harness: exercising Complex Encounter ECODE settings...");
+      return runEncounterEcodeModalProbe({
+        dispatch,
+        recordKind: "complex",
+        encounterId: complexEncounter.id,
+        actions: complexEncounter.actions,
+        verifyCancel: false
+      });
+    });
   } else {
     result.probes.push({ label: "Open selected Complex Encounter", durationMs: 0, ok: true, detail: "skipped: no Complex Encounter records" });
+    result.probes.push({ label: "Complex Encounter ECODE settings modal", durationMs: 0, ok: true, detail: "skipped: no Complex Encounter records" });
   }
+}
+
+const ECODE_MODAL_SMOKE_SLOT = 31;
+const ECODE_MODAL_SMOKE_OPCODE = 2;
+
+async function runEncounterEcodeModalProbe({
+  dispatch,
+  recordKind,
+  encounterId,
+  actions,
+  verifyCancel
+}: {
+  dispatch: Dispatch<EditorAction>;
+  recordKind: "simple" | "complex";
+  encounterId: number;
+  actions: Project["simpleEncounters"][number]["actions"];
+  verifyCancel: boolean;
+}) {
+  const emptyActions = updateEncounterActionRow(actions ?? [], ECODE_MODAL_SMOKE_SLOT, { rawCode: 0, id: 0 });
+  dispatch({
+    type: "applyCommand",
+    command: recordKind === "simple"
+      ? {
+          kind: "updateSimpleEncounterRecord",
+          label: "Prepare Simple Encounter ECODE modal smoke",
+          id: encounterId,
+          changes: { actions: emptyActions }
+        }
+      : {
+          kind: "updateComplexEncounterRecord",
+          label: "Prepare Complex Encounter ECODE modal smoke",
+          id: encounterId,
+          changes: { actions: emptyActions }
+        }
+  });
+  const selector = `select[aria-label="Result action ${ECODE_MODAL_SMOKE_SLOT} opcode"]`;
+  await waitFor(
+    () => document.querySelector<HTMLSelectElement>(selector)?.value === "0",
+    10_000,
+    `${recordKind} Encounter smoke result row did not reset to Empty.`
+  );
+
+  await openEcodeSettingsModal(selector, recordKind, encounterId);
+  if (document.querySelector<HTMLSelectElement>(selector)?.value !== "0") {
+    throw new Error(`${recordKind} Encounter caller changed before Apply Settings.`);
+  }
+
+  if (verifyCancel) {
+    clickModalButton("Cancel");
+    await waitFor(
+      () => !document.querySelector(".ecode-settings-modal"),
+      5_000,
+      `${recordKind} Encounter settings modal did not close after Cancel.`
+    );
+    if (document.querySelector<HTMLSelectElement>(selector)?.value !== "0") {
+      throw new Error(`${recordKind} Encounter caller changed after Cancel.`);
+    }
+    await openEcodeSettingsModal(selector, recordKind, encounterId);
+  }
+
+  clickModalButton("Apply Settings");
+  await waitFor(
+    () => !document.querySelector(".ecode-settings-modal"),
+    5_000,
+    `${recordKind} Encounter settings modal did not close after Apply Settings.`
+  );
+  await waitFor(
+    () => document.querySelector<HTMLSelectElement>(selector)?.value === String(ECODE_MODAL_SMOKE_OPCODE)
+      && Boolean(document.querySelector(`[aria-label="Edit result action ${ECODE_MODAL_SMOKE_SLOT} settings"]`)),
+    10_000,
+    `${recordKind} Encounter did not retain the applied Battle settings.`
+  );
+  const summary = document.querySelector<HTMLElement>(
+    `[aria-label="Edit result action ${ECODE_MODAL_SMOKE_SLOT} settings"] span`
+  )?.textContent?.trim() ?? "";
+  if (!summary || summary.toLowerCase().includes("need review")) {
+    throw new Error(`${recordKind} Encounter applied settings have no resolved summary.`);
+  }
+  return `Battle settings applied to result step ${ECODE_MODAL_SMOKE_SLOT + 1}${verifyCancel ? " after verified cancel" : ""}: ${summary}`;
+}
+
+async function openEcodeSettingsModal(selector: string, recordKind: "simple" | "complex", encounterId: number) {
+  const select = document.querySelector<HTMLSelectElement>(selector);
+  if (!select) throw new Error(`No ${recordKind} Encounter result action selector found.`);
+  select.scrollIntoView({ block: "center", inline: "nearest" });
+  select.value = String(ECODE_MODAL_SMOKE_OPCODE);
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+  await waitForElement(".ecode-settings-modal", 5_000);
+  const title = document.querySelector(".ecode-settings-modal .workbench-modal-header-copy strong")?.textContent?.trim() ?? "";
+  const expectedFamily = recordKind === "simple" ? "Simple" : "Complex";
+  if (!title.includes("Battle") || !title.includes(`${expectedFamily} Encounter ${encounterId}`)) {
+    throw new Error(`Unexpected ${recordKind} Encounter settings modal title: ${title || "(missing)"}.`);
+  }
+}
+
+function clickModalButton(label: string) {
+  const modal = document.querySelector(".ecode-settings-modal");
+  const button = [...(modal?.querySelectorAll<HTMLButtonElement>("button") ?? [])]
+    .find((candidate) => candidate.textContent?.trim().includes(label));
+  if (!button) throw new Error(`No ${label} button found in ECODE settings modal.`);
+  button.click();
 }
 
 async function runPrimaryWorkflowProbe(

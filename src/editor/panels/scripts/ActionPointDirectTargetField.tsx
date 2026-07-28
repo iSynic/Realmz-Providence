@@ -1,9 +1,12 @@
-import { Eye } from "lucide-react";
-import type { SelectedEntity, TriggerRecord } from "../../types";
+import { Eye, SlidersHorizontal } from "lucide-react";
+import type { LibraryCatalog, Project, SelectedEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId, triggerEntityId } from "../../utils";
+import { directActionSettingsFor, directActionSummary } from "./directActionSettings";
 import type { ScriptActionDefinition } from "./scriptActionCatalog";
 
 export function ActionPointDirectTargetField({
+  project,
+  catalog,
   selectedSlot,
   rawCode,
   id,
@@ -12,9 +15,11 @@ export function ActionPointDirectTargetField({
   sameMapActionPointStep,
   sameMapTarget,
   sameMapJumpTitle,
-  onChange,
+  onEdit,
   onPreviewEntity
 }: {
+  project: Project;
+  catalog?: LibraryCatalog | null;
   selectedSlot: number;
   rawCode: number;
   id: number;
@@ -23,25 +28,25 @@ export function ActionPointDirectTargetField({
   sameMapActionPointStep: boolean;
   sameMapTarget: TriggerRecord | null;
   sameMapJumpTitle: string;
-  onChange: (draft: { rawCode: number; id: number }) => void;
+  onEdit: () => void;
   onPreviewEntity: (entity: SelectedEntity) => void;
 }) {
+  const settings = directActionSettingsFor(rawCode);
+  const summary = directActionSummary(project, catalog, rawCode, id);
   return (
     <div className="realmz-step-form-grid realmz-current-step-authoring-subpane">
       <div className={`script-required-field realmz-step-id-field${sameMapActionPointStep ? " script-source-ap-id-field" : ""}`}>
-        <span>{definition.target?.label ?? idLabel}</span>
+        <span>{settings.label || definition.target?.label || idLabel}</span>
         <div className="script-source-ap-field-row">
-          <input
-            type={sameMapActionPointStep ? "text" : "number"}
-            inputMode={sameMapActionPointStep ? "numeric" : undefined}
-            pattern={sameMapActionPointStep ? "-?[0-9]*" : undefined}
-            value={id}
-            onChange={(event) => {
-              const nextValue = Number.parseInt(event.currentTarget.value, 10);
-              onChange({ rawCode, id: Number.isFinite(nextValue) ? nextValue : 0 });
-            }}
-            aria-label={`Slot ${selectedSlot} ${idLabel}`}
-          />
+          <button
+            type="button"
+            className="direct-action-summary-button"
+            aria-label={`Edit slot ${selectedSlot + 1} ${settings.label || idLabel}`}
+            onClick={onEdit}
+          >
+            <span>{summary}</span>
+            <SlidersHorizontal size={13} />
+          </button>
           {sameMapActionPointStep && (
             <button
               type="button"
@@ -63,7 +68,7 @@ export function ActionPointDirectTargetField({
             </button>
           )}
         </div>
-        <small>{definition.target?.help || definition.description}</small>
+        <small>{settings.help || definition.target?.help || definition.description}</small>
       </div>
     </div>
   );

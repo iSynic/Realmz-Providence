@@ -1,9 +1,17 @@
 use super::*;
 use crate::importer::create_project;
 use crate::project::{
-    Action, ActionCategory, Confidence, LevelType, ManagedAsset, ManagedAssetLibraryScope,
-    MapCoordinate, ProjectOrigin, Provenance, RemakeExtensionRequirement, RemakeSemanticAction,
-    ResourceAsset, ScenarioSupportFile, ScenarioTarget, SourceFile, SourceFileRole, TriggerRecord,
+    Action, ActionCategory, Confidence, EncounterActionRow, ExtraCodeRow, LevelType, ManagedAsset,
+    ManagedAssetLibraryScope, MapCoordinate, ProjectOrigin, Provenance, RandomLevel, RandomRect,
+    RemakeExtensionRequirement, RemakeSemanticAction, ResourceAsset, ScenarioIconResource,
+    ScenarioIconResourceSource, ScenarioSupportFile, ScenarioTarget, SourceFile, SourceFileRole,
+    TriggerRecord,
+};
+use crate::realmz::{
+    parse_battles, parse_caste_overrides, parse_landlook_mapstats_data, parse_monsters,
+    parse_race_overrides, parse_simple_encounter_records, BATTLE_BYTES, CASTE_BYTES,
+    CASTE_OVERRIDE_RECORDS, MAPSTATS_RECORDS, MAPSTATS_RECORD_BYTES, MONSTER_BYTES, RACE_BYTES,
+    RACE_OVERRIDE_RECORDS, SIMPLE_ENCOUNTER_BYTES,
 };
 use crate::resource_fork::{
     encode_cicn_resource, encode_pict_resource, encode_snd_resource, write_resource_fork,
@@ -57,12 +65,29 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
 
     let first = workspace.path().join("first");
     let second = workspace.path().join("second");
+    let command_output = workspace.path().join("command");
     let first_report = export_remake_campaign(&project, &project_dir, &first).unwrap();
     let second_report = export_remake_campaign(&project, &project_dir, &second).unwrap();
+    let command_report = crate::commands::export_remake_campaign(
+        project_dir.to_string_lossy().to_string(),
+        project.clone(),
+        command_output.to_string_lossy().to_string(),
+    )
+    .unwrap();
 
     assert_eq!(first_report.written_files, second_report.written_files);
+    assert_eq!(first_report.written_files, command_report.written_files);
+    assert_eq!(first_report.counts, command_report.counts);
     assert_eq!(first_report.counts.managed_assets, 1);
     assert_eq!(first_report.counts.packaged_asset_payloads, 2);
+    let serialized_report = serde_json::to_value(&first_report).unwrap();
+    assert_eq!(
+        serialized_report["outputDir"],
+        first.to_string_lossy().as_ref()
+    );
+    assert_eq!(serialized_report["counts"]["managedAssets"], 1);
+    assert_eq!(serialized_report["counts"]["packagedAssetPayloads"], 2);
+    assert!(serialized_report["writtenFiles"].is_array());
     for relative_path in &first_report.written_files {
         assert_eq!(
             fs::read(first.join(relative_path)).unwrap(),
@@ -70,10 +95,22 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
             "{relative_path} was not deterministic"
         );
     }
+    let comparison = compare_remake_bundles(&first, &second).unwrap();
+    assert!(comparison.equivalent);
+    assert_eq!(comparison.current_files, first_report.written_files.len());
+    assert_eq!(comparison.candidate_files, first_report.written_files.len());
+    assert_eq!(comparison.json_documents, 10);
+    assert_eq!(comparison.bytes_saved, 0);
 
     let documents = read_json_documents(&first);
     for (path, value) in &documents {
         assert_no_forbidden_project_state(value, path);
+        let serialized = fs::read_to_string(first.join(path)).unwrap();
+        assert_eq!(
+            serialized.lines().count(),
+            1,
+            "{path} is not compact distribution JSON"
+        );
     }
     let manifest = &documents["campaign.json"];
     assert_eq!(manifest["format"], REMAKE_CLASSIC_FORMAT);
@@ -117,6 +154,220 @@ fn exports_a_portable_deterministic_bundle_with_managed_payloads() {
     assert_eq!(
         documents["classic/rules.json"]["ruleNames"]["sourceFile"],
         "Data Files/Custom Names.rsrc"
+    );
+}
+
+#[test]
+fn exports_quicktime_gif_pict_as_immutable_classic_bytes_and_runtime_png() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("quicktime-picture.providence");
+    let mut project = create_project("QuickTime picture".to_string(), &project_dir).unwrap();
+    let pict = conformance_pict_fixture("v2-quicktime-gif");
+    project.assets.push(managed_asset(
+        "picture",
+        ManagedAssetLibraryScope::Scenario,
+        &pict,
+    ));
+    project.asset_catalog.pictures.push(ResourceAsset {
+        id: "resource:PICT:306".to_string(),
+        resource_type: "PICT".to_string(),
+        resource_id: 306,
+        name: Some("QuickTime GIF picture".to_string()),
+        source: "Managed scenario picture".to_string(),
+        preview_path: None,
+    });
+
+    let output = workspace.path().join("bundle");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+
+    let assets = read_json_documents(&output)
+        .remove("classic/assets.json")
+        .unwrap();
+    let picture = &assets["catalog"]["pictures"][0];
+    let payload_path = picture["payloadPath"].as_str().unwrap();
+    assert!(payload_path.starts_with("assets/managed/pict-306-"));
+    assert_eq!(fs::read(output.join(payload_path)).unwrap(), pict);
+    assert_eq!(picture["payloadSha256"], hex::encode(Sha256::digest(&pict)));
+
+    let runtime_media = &picture["runtimeMedia"];
+    assert_eq!(runtime_media["mediaType"], "image/png");
+    let runtime_path = runtime_media["path"].as_str().unwrap();
+    assert!(runtime_path.starts_with("media/pictures/pict-306-"));
+    let png = fs::read(output.join(runtime_path)).unwrap();
+    assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
+    assert_eq!(runtime_media["bytes"], png.len());
+    assert_eq!(runtime_media["sha256"], hex::encode(Sha256::digest(&png)));
+    let rgba = image::load_from_memory_with_format(&png, image::ImageFormat::Png)
+        .unwrap()
+        .into_rgba8();
+    assert_eq!(rgba.dimensions(), (2, 2));
+    assert_eq!(
+        rgba.into_raw(),
+        [255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255]
+    );
+}
+
+#[test]
+fn exports_scrolling_text_semantics_with_player_map_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("scrolling-text.providence");
+    let mut project = create_project("Scrolling Text".to_string(), &project_dir).unwrap();
+    project.map_records.push(
+        serde_json::from_value(json!({
+            "id": 11,
+            "markers": [],
+            "startX": 0,
+            "startY": 0,
+            "level": 0,
+            "pictId": 0,
+            "iconSize": 0,
+            "show": -200,
+            "isDungeon": false,
+            "rect": {"top": 0, "left": 0, "bottom": 0, "right": 0},
+            "note": "",
+            "authored": true,
+            "provenance": {
+                "sourceFile": "Data MD2",
+                "recordIndex": 11,
+                "byteOffset": 3740,
+                "byteLength": 340,
+                "confidence": "fixture-backed"
+            }
+        }))
+        .unwrap(),
+    );
+    let text = b" \rFirst line.\rSecond line.\r ";
+    let style = portable_style_fixture();
+    project.assets.push(managed_text_asset("TEXT", -200, text));
+    project
+        .assets
+        .push(managed_text_asset("styl", -200, &style));
+
+    let output = workspace.path().join("scrolling-text-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let scrolling_text = &documents["classic/maps.json"]["mapRecords"][0]["scrollingText"];
+    let asset_scrolling_text = &documents["classic/assets.json"]["scrollingTexts"][0];
+
+    assert_eq!(report.counts.managed_assets, 1);
+    assert_eq!(report.counts.packaged_asset_payloads, 1);
+    assert_eq!(scrolling_text["resourceType"], "TEXT");
+    assert_eq!(scrolling_text["resourceId"], -200);
+    assert_eq!(scrolling_text["text"], "First line.\nSecond line.");
+    assert_eq!(scrolling_text["payloadEncoding"], "classic-resource-data");
+    assert_eq!(
+        scrolling_text["presentation"],
+        json!({
+            "format": "portable-rich-text-v1",
+            "runs": [{
+                "start": 0,
+                "end": 24,
+                "fontId": 4,
+                "fontSize": 18,
+                "color": "#ff8000",
+                "bold": true,
+                "italic": true,
+                "underline": true,
+                "outline": false,
+                "shadow": false,
+                "stretch": "normal",
+            }],
+        })
+    );
+    assert!(scrolling_text.get("styleResource").is_none());
+    assert!(output
+        .join(scrolling_text["payloadPath"].as_str().unwrap())
+        .is_file());
+    assert!(
+        report
+            .written_files
+            .iter()
+            .all(|path| !path.ends_with(".styl")),
+        "Remake runtime bundles must not carry Classic styl payloads"
+    );
+    assert_eq!(asset_scrolling_text, scrolling_text);
+}
+
+#[test]
+fn packages_imported_scrolling_texts_without_player_map_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("dead-of-night.providence");
+    let mut project = create_project("Dead of Night".to_string(), &project_dir).unwrap();
+    project.source.origin = Some(ProjectOrigin::Imported);
+    project.source.immutable = true;
+    project.source.source_path = "Z:\\missing\\Dead of Night".to_string();
+    project.source.raw_sources_dir = "raw-sources".to_string();
+    project.triggers = vec![trigger_record("Data DD", 0, vec![action(0, 62, -200)])];
+
+    let text = b"Imported first line.\rImported second line.";
+    let style = portable_style_fixture();
+    let resource_fork = write_resource_fork(&[
+        ResourceForkEntry {
+            resource_type: "TEXT".to_string(),
+            id: -200,
+            name: "Imported scrolling text".to_string(),
+            attributes: 0,
+            data: text.to_vec(),
+        },
+        ResourceForkEntry {
+            resource_type: "styl".to_string(),
+            id: -200,
+            name: "Imported scrolling text".to_string(),
+            attributes: 0,
+            data: style.to_vec(),
+        },
+    ])
+    .unwrap();
+    let raw_sources_dir = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources_dir).unwrap();
+    fs::write(raw_sources_dir.join("Scenario.rsrc"), &resource_fork).unwrap();
+    project.source.files.push(SourceFile {
+        name: "Scenario.rsrc".to_string(),
+        relative_path: "Scenario.rsrc".to_string(),
+        bytes: resource_fork.len() as u64,
+        sha256: hex::encode(Sha256::digest(&resource_fork)),
+        role: SourceFileRole::ResourceFork,
+        editable: false,
+    });
+
+    let output = workspace.path().join("dead-of-night-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let scrolling_texts = documents["classic/assets.json"]["scrollingTexts"]
+        .as_array()
+        .unwrap();
+
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 1);
+    assert_eq!(documents["classic/maps.json"]["mapRecords"], json!([]));
+    assert_eq!(
+        documents["classic/scripts.json"]["triggers"][0]["actions"][0]["id"],
+        -200
+    );
+    assert_eq!(scrolling_texts.len(), 1);
+    let scrolling_text = &scrolling_texts[0];
+    assert_eq!(scrolling_text["resourceType"], "TEXT");
+    assert_eq!(scrolling_text["resourceId"], -200);
+    assert_eq!(
+        scrolling_text["text"],
+        "Imported first line.\nImported second line."
+    );
+    assert_eq!(
+        fs::read(output.join(scrolling_text["payloadPath"].as_str().unwrap())).unwrap(),
+        text
+    );
+    assert_eq!(
+        scrolling_text["presentation"]["format"],
+        "portable-rich-text-v1"
+    );
+    assert_eq!(scrolling_text["presentation"]["runs"][0]["end"], text.len());
+    assert!(scrolling_text.get("styleResource").is_none());
+    assert!(
+        report
+            .written_files
+            .iter()
+            .all(|path| !path.ends_with(".styl")),
+        "preserved styl bytes are decoded but not copied to Remake"
     );
 }
 
@@ -226,6 +477,69 @@ fn packages_every_imported_scenario_picture_from_the_preserved_resource_fork() {
 }
 
 #[test]
+fn packages_referenced_scenario_item_icons_as_classic_bytes_and_runtime_png() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("dead-of-night.providence");
+    let mut project = create_project("Dead of Night".to_string(), &project_dir).unwrap();
+    let cicn = encode_cicn_resource(&RgbaImagePayload {
+        width: 2,
+        height: 2,
+        rgba_base64: STANDARD.encode([
+            0_u8, 128, 0, 255, 0, 255, 0, 255, 32, 32, 32, 255, 0, 0, 0, 0,
+        ]),
+    })
+    .unwrap();
+    let mut item = crate::realmz::parse_scenario_items(&vec![0; crate::realmz::ITEM_BYTES])
+        .into_iter()
+        .next()
+        .unwrap();
+    item.item_id = 982;
+    item.icon_id = 30061;
+    project.scenario_items.push(item);
+    project.scenario_icon_resources.push(ScenarioIconResource {
+        resource_id: 30061,
+        label: "Robe with Green Shine".to_string(),
+        source_kind: ScenarioIconResourceSource::ScenarioResource,
+        resource_base64: STANDARD.encode(&cicn),
+        preview_path: Some("assets/icons/icon_30061.png".to_string()),
+        imported: true,
+    });
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: "scenario-cicn-30061".to_string(),
+        resource_type: "cicn".to_string(),
+        resource_id: 30061,
+        name: Some("Robe with Green Shine".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: Some("assets/icons/icon_30061.png".to_string()),
+    });
+
+    let output = workspace.path().join("bundle");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let icon = &documents["classic/assets.json"]["catalog"]["icons"][0];
+
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 2);
+    assert_eq!(icon["resourceId"], 30061);
+    assert_eq!(icon["name"], "Robe with Green Shine");
+    let payload_path = icon["payloadPath"].as_str().unwrap();
+    assert!(payload_path.starts_with("assets/managed/cicn-30061-"));
+    assert!(payload_path.ends_with(".cicn"));
+    assert_eq!(fs::read(output.join(payload_path)).unwrap(), cicn);
+    let runtime_media = &icon["runtimeMedia"];
+    assert_eq!(runtime_media["mediaType"], "image/png");
+    let runtime_path = runtime_media["path"].as_str().unwrap();
+    assert!(runtime_path.starts_with("media/images/cicn-30061-"));
+    assert!(runtime_path.ends_with(".png"));
+    assert!(fs::read(output.join(runtime_path))
+        .unwrap()
+        .starts_with(b"\x89PNG\r\n\x1a\n"));
+    assert!(documents["classic/assets.json"]["scenarioIconResources"][0]
+        .get("resourceBase64")
+        .is_none());
+}
+
+#[test]
 fn rejects_scenario_pictures_that_cannot_produce_runtime_media() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("unsupported-picture.providence");
@@ -298,6 +612,77 @@ fn exports_decoded_sound_runtime_media_for_remake() {
         fs::read(first.join(runtime_path)).unwrap(),
         fs::read(second.join(runtime_path)).unwrap()
     );
+}
+
+#[test]
+fn packages_every_imported_scenario_sound_from_the_preserved_resource_fork() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("war-in-the-sword-lands.providence");
+    let mut project = create_project("War in the Sword Lands".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let first_snd = encode_snd_resource(&PcmAudioPayload {
+        sample_rate: 11_025,
+        channels: 1,
+        duration_ms: Some(23),
+        pcm8_base64: STANDARD.encode([0_u8, 64, 128, 192, 255]),
+    })
+    .unwrap();
+    let second_snd = encode_snd_resource(&PcmAudioPayload {
+        sample_rate: 11_025,
+        channels: 1,
+        duration_ms: Some(23),
+        pcm8_base64: STANDARD.encode([255_u8, 192, 128, 64, 0]),
+    })
+    .unwrap();
+    let resource_fork = write_resource_fork(&[
+        ResourceForkEntry {
+            resource_type: "snd ".to_string(),
+            id: 201,
+            name: "Creek".to_string(),
+            attributes: 0,
+            data: first_snd.clone(),
+        },
+        ResourceForkEntry {
+            resource_type: "snd ".to_string(),
+            id: 202,
+            name: "Army on the march".to_string(),
+            attributes: 0,
+            data: second_snd.clone(),
+        },
+    ])
+    .unwrap();
+    preserve_resource_fork(&mut project, &project_dir, &resource_fork);
+    project.asset_catalog.sounds.push(ResourceAsset {
+        id: "scenario-snd-201".to_string(),
+        resource_type: "snd ".to_string(),
+        resource_id: 201,
+        name: Some("Creek".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: None,
+    });
+
+    let output = workspace.path().join("war-in-the-sword-lands-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let sounds = documents["classic/assets.json"]["catalog"]["sounds"]
+        .as_array()
+        .unwrap();
+
+    assert_eq!(report.counts.managed_assets, 0);
+    assert_eq!(report.counts.packaged_asset_payloads, 4);
+    assert_eq!(sounds.len(), 2);
+    for (sound, expected_snd) in sounds.iter().zip([first_snd, second_snd]) {
+        assert_eq!(
+            fs::read(output.join(sound["payloadPath"].as_str().unwrap())).unwrap(),
+            expected_snd
+        );
+        let runtime_path = sound["runtimeMedia"]["path"].as_str().unwrap();
+        assert!(runtime_path.starts_with("media/sounds/snd-"));
+        assert!(runtime_path.ends_with(".wav"));
+        assert!(fs::read(output.join(runtime_path))
+            .unwrap()
+            .starts_with(b"RIFF"));
+    }
 }
 
 #[test]
@@ -407,6 +792,161 @@ fn imported_projects_without_catalog_pictures_do_not_require_the_compatibility_a
     for (path, value) in &documents {
         assert_no_forbidden_project_state(value, path);
     }
+}
+
+#[test]
+fn exports_authored_rule_rows_as_exact_scenario_local_changes() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("authored-rules.providence");
+    let mut project = create_project("Authored rules".to_string(), &project_dir).unwrap();
+    let race_baseline = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    let caste_baseline = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Caste",
+        CASTE_BYTES,
+        CASTE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    let mut race = parse_race_overrides(&race_baseline)[19].clone();
+    race.authored = true;
+    race.base_move += 1;
+    let mut caste = parse_caste_overrides(&caste_baseline)[20].clone();
+    caste.authored = true;
+    caste.start_money += 1;
+    project.race_overrides = vec![race];
+    project.caste_overrides = vec![caste];
+
+    let output = workspace.path().join("authored-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "scenario-local");
+    assert_eq!(
+        rules["tableSelection"]["races"]["changedRecordIds"],
+        json!([19])
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["source"],
+        "scenario-local"
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["changedRecordIds"],
+        json!([20])
+    );
+}
+
+#[test]
+fn imported_builtin_metadata_selects_shared_rule_tables() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("builtin-rules.providence");
+    let mut project = create_project("Built-in rules".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let mut race_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    race_bytes[19 * RACE_BYTES + 196] ^= 1;
+    project.race_overrides = parse_race_overrides(&race_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Race", &race_bytes);
+    let resource_fork = write_resource_fork(&[ResourceForkEntry {
+        resource_type: "RLMZ".to_string(),
+        id: 128,
+        name: "Built-in scenario index".to_string(),
+        attributes: 0,
+        data: vec![0; 8],
+    }])
+    .unwrap();
+    preserve_resource_fork(&mut project, &project_dir, &resource_fork);
+
+    let output = workspace.path().join("builtin-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "shared");
+    assert!(rules["tableSelection"]["races"]
+        .get("changedRecordIds")
+        .is_none());
+    assert_eq!(rules["tableSelection"]["castes"]["source"], "shared");
+}
+
+#[test]
+fn imported_third_party_tables_report_only_changed_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("third-party-rules.providence");
+    let mut project = create_project("Third-party rules".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let mut race_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    race_bytes[3 * RACE_BYTES + 196] ^= 1;
+    let caste_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Caste",
+        CASTE_BYTES,
+        CASTE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    project.race_overrides = parse_race_overrides(&race_bytes);
+    project.caste_overrides = parse_caste_overrides(&caste_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Race", &race_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Caste", &caste_bytes);
+    preserve_resource_fork(
+        &mut project,
+        &project_dir,
+        &write_resource_fork(&[]).unwrap(),
+    );
+
+    let output = workspace.path().join("third-party-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "scenario-local");
+    assert_eq!(
+        rules["tableSelection"]["races"]["changedRecordIds"],
+        json!([3])
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["source"],
+        "scenario-local"
+    );
+    assert_eq!(
+        rules["tableSelection"]["castes"]["changedRecordIds"],
+        json!([])
+    );
+}
+
+#[test]
+fn imported_tables_without_preserved_selection_evidence_remain_unresolved() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("unresolved-rules.providence");
+    let mut project = create_project("Unresolved rules".to_string(), &project_dir).unwrap();
+    mark_imported(&mut project);
+    let race_bytes = crate::rule_compiler::rule_compiler_baseline_bytes(
+        "Data Race",
+        RACE_BYTES,
+        RACE_OVERRIDE_RECORDS,
+    )
+    .unwrap();
+    project.race_overrides = parse_race_overrides(&race_bytes);
+    preserve_source_file(&mut project, &project_dir, "Data Race", &race_bytes);
+
+    let output = workspace.path().join("unresolved-rules-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let rules = read_json_documents(&output)["classic/rules.json"].clone();
+
+    assert_eq!(rules["tableSelection"]["races"]["source"], "unresolved");
+    assert!(rules["tableSelection"]["races"]
+        .get("changedRecordIds")
+        .is_none());
+    assert_eq!(rules["tableSelection"]["castes"]["source"], "shared");
 }
 
 #[test]
@@ -524,8 +1064,7 @@ fn exports_namespaced_semantic_actions_and_blocks_native_realmz_export() {
     assert!(message.contains("semantic-actions"));
     assert!(message.contains("Realmz Remake scenario"));
 
-    project.remake_runtime.semantic_actions[0].operation =
-        "scenario.missing.operation".to_string();
+    project.remake_runtime.semantic_actions[0].operation = "scenario.missing.operation".to_string();
     let invalid_error = export_remake_campaign(
         &project,
         &project_dir,
@@ -535,6 +1074,203 @@ fn exports_namespaced_semantic_actions_and_blocks_native_realmz_export() {
     assert!(invalid_error
         .to_string()
         .contains("uses unavailable semantic operation"));
+}
+
+#[test]
+fn exports_runtime_reachability_without_discarding_unreferenced_records() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("content-reachability.providence");
+    let mut project = create_project("Content reachability".to_string(), &project_dir).unwrap();
+    project.triggers = vec![
+        trigger_record("Data DD", 0, vec![action(0, 4, 1)]),
+        trigger_record("Data ED3", 7, vec![action(0, 1, 100)]),
+        trigger_record("Data ED3", 8, vec![action(0, 1, 101)]),
+        trigger_record("Data ED3", 9, vec![action(0, 1, 102)]),
+    ];
+    let mut stale_map_trigger = trigger_record("Data DD", 1, vec![action(0, 4, 2)]);
+    stale_map_trigger.id = "Data DD:99:1".to_string();
+    stale_map_trigger.level_index = Some(99);
+    project.triggers.push(stale_map_trigger);
+    project.extracodes = vec![ExtraCodeRow {
+        id: 0,
+        values: [3, 3, 0, 0, 0],
+        provenance: test_provenance("Data EDCD", 0, 10),
+    }];
+
+    project.simple_encounters =
+        parse_simple_encounter_records(&vec![0; SIMPLE_ENCOUNTER_BYTES * 3]);
+    project.simple_encounters[1].actions = vec![EncounterActionRow {
+        slot: 0,
+        raw_code: 2,
+        id: 0,
+        media_required_for_progression: None,
+    }];
+    project.simple_encounters[2].actions = vec![EncounterActionRow {
+        slot: 0,
+        raw_code: 120,
+        id: 0,
+        media_required_for_progression: None,
+    }];
+
+    project.battles = parse_battles(&vec![0; BATTLE_BYTES * 5]);
+    project.battles[3].grid[0] = 1;
+    project.battles[3].battle_macro = -7;
+    project.battles[4].grid[0] = 1;
+    project.random_levels = vec![RandomLevel {
+        id: "land:99:randlevel".to_string(),
+        source: "Data RD".to_string(),
+        level_type: LevelType::Land,
+        level_index: 99,
+        landlook: 0,
+        is_dark: false,
+        use_los: false,
+        rects: vec![RandomRect {
+            rect_index: 0,
+            top: 0,
+            left: 0,
+            bottom: 10,
+            right: 10,
+            percent: 100,
+            battle_range: [4, 4],
+            random_doors: [9, 0, 0],
+            random_door_percent: [100, 0, 0],
+            only: false,
+            option: 0,
+            sound: 0,
+            text: 0,
+        }],
+        provenance: test_provenance("Data RD", 99, 1),
+    }];
+    project.monsters = parse_monsters(&vec![0; MONSTER_BYTES * 2]);
+    project.monsters[1].death_macro = 8;
+
+    let output = workspace.path().join("content-reachability-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let encounters = &documents["classic/encounters.json"];
+
+    assert_eq!(encounters["simpleEncounters"][1]["callable"], true);
+    assert_eq!(encounters["simpleEncounters"][2]["callable"], false);
+    assert_eq!(encounters["battles"][3]["callable"], true);
+    assert_eq!(encounters["battles"][4]["callable"], false);
+
+    let triggers = documents["classic/scripts.json"]["triggers"]
+        .as_array()
+        .unwrap();
+    for (record_index, callable) in [(7, true), (8, true), (9, false)] {
+        let trigger = triggers
+            .iter()
+            .find(|trigger| {
+                trigger["source"] == "Data ED3" && trigger["recordIndex"] == record_index
+            })
+            .unwrap();
+        assert_eq!(trigger["callable"], callable);
+    }
+
+    let runtime = &documents["classic/evidence.json"]["semanticDecoding"]["runtimeReachability"];
+    assert_eq!(runtime["simpleEncounters"], json!([1]));
+    assert_eq!(runtime["battles"], json!([3]));
+    assert_eq!(runtime["macros"], json!([7, 8]));
+    assert_eq!(runtime["monsters"], json!([1]));
+    assert_eq!(runtime["evidence"]["battle:3"], json!(["Data ED:1:slot:0"]));
+    assert_eq!(
+        runtime["evidence"]["macro:7"],
+        json!(["Data BD:3:battleMacro"])
+    );
+    assert_eq!(
+        runtime["evidence"]["macro:8"],
+        json!(["Data MD:1:deathMacro"])
+    );
+}
+
+#[test]
+fn exports_stock_landlook_used_only_by_a_runtime_change() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("runtime-landlook.providence");
+    let mut project = create_project("Runtime landlook".to_string(), &project_dir).unwrap();
+    assert!(!project
+        .asset_catalog
+        .tilesets
+        .iter()
+        .any(|tileset| tileset.landlook == 10));
+    let snow_attributes = parse_landlook_mapstats_data(
+        &vec![0; MAPSTATS_RECORDS * MAPSTATS_RECORD_BYTES],
+        10,
+        "Data Snow BD",
+    );
+    assert_eq!(snow_attributes.len(), 201);
+    project.tile_attributes.extend(snow_attributes);
+    project.triggers = vec![trigger_record("Data DD", 0, vec![action(0, 57, 4)])];
+    project.extracodes = vec![ExtraCodeRow {
+        id: 4,
+        values: [10, 0, 0, 0, 1],
+        provenance: test_provenance("Data EDCD", 4, 10),
+    }];
+
+    let output = workspace.path().join("runtime-landlook-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let tilesets = documents["classic/assets.json"]["catalog"]["tilesets"]
+        .as_array()
+        .unwrap();
+    let snow = tilesets
+        .iter()
+        .find(|tileset| tileset["id"] == "landlook-10")
+        .expect("runtime snow landlook");
+    assert_eq!(snow["landlook"], 10);
+    assert_eq!(snow["pictId"], 310);
+    assert_eq!(snow["baseTile"], 155);
+    assert_eq!(snow["custom"], false);
+}
+
+#[test]
+fn omits_legacy_progression_media_requirements() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("media-readiness.providence");
+    let mut project = create_project("Media readiness".to_string(), &project_dir).unwrap();
+    let mut required_picture = action(0, 27, 306);
+    required_picture.media_required_for_progression = Some(true);
+    project.triggers = vec![trigger_record(
+        "Data DD",
+        0,
+        vec![required_picture, action(1, 9, 3001)],
+    )];
+    let mut encounter = crate::realmz::parse_simple_encounter_records(&vec![0; 426]).remove(0);
+    encounter.authored = true;
+    encounter.actions = vec![
+        crate::project::EncounterActionRow {
+            slot: 0,
+            raw_code: -27,
+            id: 306,
+            media_required_for_progression: Some(true),
+        },
+        crate::project::EncounterActionRow {
+            slot: 1,
+            raw_code: 9,
+            id: 3001,
+            media_required_for_progression: None,
+        },
+    ];
+    project.simple_encounters = vec![encounter];
+
+    let output = workspace.path().join("media-readiness-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+    let actions = documents["classic/scripts.json"]["triggers"][0]["actions"]
+        .as_array()
+        .unwrap();
+
+    assert!(actions[0].get("mediaRequiredForProgression").is_none());
+    assert!(actions[1].get("mediaRequiredForProgression").is_none());
+    let encounter_actions = documents["classic/encounters.json"]["simpleEncounters"][0]["actions"]
+        .as_array()
+        .unwrap();
+    assert!(encounter_actions[0]
+        .get("mediaRequiredForProgression")
+        .is_none());
+    assert!(encounter_actions[1]
+        .get("mediaRequiredForProgression")
+        .is_none());
 }
 
 #[test]
@@ -597,6 +1333,89 @@ fn preserves_negative_special_land_tile_ids_outside_the_v1_icon_catalog() {
 }
 
 #[test]
+fn packages_scenario_owned_special_land_tiles_before_shared_fallbacks() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("scenario-special-tile.providence");
+    let mut project = create_project("Scenario special tile".to_string(), &project_dir).unwrap();
+    project.maps[0].tiles[0] = -1099;
+    project.source.raw_sources_dir = "raw-sources".to_string();
+
+    let cicn = encode_cicn_resource(&RgbaImagePayload {
+        width: 2,
+        height: 2,
+        rgba_base64: STANDARD.encode([
+            12_u8, 34, 56, 255, 78, 90, 12, 255, 34, 56, 78, 255, 90, 12, 34, 255,
+        ]),
+    })
+    .unwrap();
+    let resource_fork = write_resource_fork(&[ResourceForkEntry {
+        resource_type: "cicn".to_string(),
+        id: -99,
+        name: "Scenario Night Tile".to_string(),
+        attributes: 0,
+        data: cicn.clone(),
+    }])
+    .unwrap();
+    let raw_sources_dir = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources_dir).unwrap();
+    fs::write(raw_sources_dir.join("Scenario.rsrc"), &resource_fork).unwrap();
+    project.source.files.push(SourceFile {
+        name: "Scenario.rsrc".to_string(),
+        relative_path: "Scenario.rsrc".to_string(),
+        bytes: resource_fork.len() as u64,
+        sha256: hex::encode(Sha256::digest(&resource_fork)),
+        role: SourceFileRole::ResourceFork,
+        editable: false,
+    });
+    project.asset_catalog.icons.push(ResourceAsset {
+        id: "scenario-cicn--99".to_string(),
+        resource_type: "cicn".to_string(),
+        resource_id: -99,
+        name: Some("Scenario Night Tile".to_string()),
+        source: "Scenario resource fork: Scenario.rsrc".to_string(),
+        preview_path: None,
+    });
+
+    let output = workspace.path().join("scenario-special-tile-out");
+    let report = export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let assets: Value =
+        serde_json::from_slice(&fs::read(output.join("classic/assets.json")).unwrap()).unwrap();
+
+    assert_eq!(report.counts.packaged_asset_payloads, 2);
+    let special = &assets["catalog"]["specialLandTiles"][0];
+    assert_eq!(special["resourceId"], -99);
+    assert_eq!(special["source"], "Scenario resource fork: Scenario.rsrc");
+    let payload_path = special["payloadPath"].as_str().unwrap();
+    assert_eq!(fs::read(output.join(payload_path)).unwrap(), cicn);
+    assert!(output
+        .join(special["runtimeMedia"]["path"].as_str().unwrap())
+        .is_file());
+
+    project.asset_catalog.icons.clear();
+    let stale_output = workspace.path().join("stale-scenario-special-tile-out");
+    let stale_report = export_remake_campaign(&project, &project_dir, &stale_output).unwrap();
+    let stale_assets: Value =
+        serde_json::from_slice(&fs::read(stale_output.join("classic/assets.json")).unwrap())
+            .unwrap();
+
+    assert_eq!(stale_report.counts.packaged_asset_payloads, 2);
+    let stale_special = &stale_assets["catalog"]["specialLandTiles"][0];
+    assert_eq!(stale_special["resourceId"], -99);
+    assert_eq!(
+        stale_special["source"],
+        "Scenario resource fork: Scenario.rsrc"
+    );
+    let stale_payload_path = stale_special["payloadPath"].as_str().unwrap();
+    assert_eq!(
+        fs::read(stale_output.join(stale_payload_path)).unwrap(),
+        cicn
+    );
+    assert!(stale_output
+        .join(stale_special["runtimeMedia"]["path"].as_str().unwrap())
+        .is_file());
+}
+
+#[test]
 fn packages_referenced_shared_special_land_tiles_for_remake() {
     let workspace = tempdir().unwrap();
     let project_dir = workspace.path().join("shared-special-tile.providence");
@@ -621,6 +1440,55 @@ fn packages_referenced_shared_special_land_tiles_for_remake() {
     ] {
         assert!(output.join(path).is_file(), "missing packaged {path}");
     }
+}
+
+#[test]
+fn packages_transparent_runtime_fallback_for_missing_special_land_tiles() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("missing-special-tile.providence");
+    let mut project = create_project("Missing special tile".to_string(), &project_dir).unwrap();
+    project.maps[0].tiles[0] = -20;
+
+    let output = workspace.path().join("missing-special-tile-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let assets: Value =
+        serde_json::from_slice(&fs::read(output.join("classic/assets.json")).unwrap()).unwrap();
+
+    let special = assets["catalog"]["specialLandTiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|record| record["resourceId"] == -20)
+        .expect("missing cicn fallback should have a catalog row");
+    assert_eq!(special["source"], "Classic missing cicn fallback");
+    assert!(special.get("payloadPath").is_none());
+    assert_eq!(special["runtimeMedia"]["mediaType"], "image/png");
+    let runtime_path = special["runtimeMedia"]["path"].as_str().unwrap();
+    let decoded = image::open(output.join(runtime_path)).unwrap().into_rgba8();
+    assert_eq!(decoded.dimensions(), (32, 32));
+    assert!(decoded.pixels().all(|pixel| pixel.0 == [0, 0, 0, 0]));
+}
+
+#[test]
+fn collapses_out_of_band_negative_land_values_to_the_base_only_fallback() {
+    let workspace = tempdir().unwrap();
+    let project_dir = workspace.path().join("out-of-band-land.providence");
+    let mut project = create_project("Out of band land".to_string(), &project_dir).unwrap();
+    project.maps[0].tiles[0] = i16::MIN;
+
+    let output = workspace.path().join("out-of-band-land-out");
+    export_remake_campaign(&project, &project_dir, &output).unwrap();
+    let documents = read_json_documents(&output);
+
+    assert_eq!(documents["classic/maps.json"]["maps"][0]["tiles"][0], -999);
+    let special = documents["classic/assets.json"]["catalog"]["specialLandTiles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|record| record["resourceId"] == -999)
+        .expect("out-of-band values should use the base-only fallback");
+    assert_eq!(special["source"], "Classic missing cicn fallback");
+    assert!(special.get("payloadPath").is_none());
 }
 
 #[test]
@@ -760,6 +1628,50 @@ fn refuses_to_overwrite_a_non_empty_directory() {
 }
 
 #[test]
+fn bundle_comparison_reports_semantic_and_payload_mismatches() {
+    let workspace = tempdir().unwrap();
+    let current = workspace.path().join("current");
+    let candidate = workspace.path().join("candidate");
+    fs::create_dir_all(current.join("classic")).unwrap();
+    fs::create_dir_all(candidate.join("classic")).unwrap();
+    fs::write(
+        current.join("classic/scenario.json"),
+        b"{\n  \"identity\": {\"id\": \"current\"}\n}\n",
+    )
+    .unwrap();
+    fs::write(
+        candidate.join("classic/scenario.json"),
+        b"{\"identity\":{\"id\":\"candidate\"}}\n",
+    )
+    .unwrap();
+    fs::write(current.join("payload.bin"), b"current").unwrap();
+    fs::write(candidate.join("payload.bin"), b"candidate").unwrap();
+    fs::write(candidate.join("candidate-only.bin"), b"candidate").unwrap();
+
+    let comparison = compare_remake_bundles(&current, &candidate).unwrap();
+
+    assert!(!comparison.equivalent);
+    assert_eq!(comparison.json_documents, 1);
+    assert_eq!(comparison.payload_files, 1);
+    assert_eq!(comparison.mismatches.len(), 3);
+    assert_eq!(
+        comparison.mismatches[0].kind,
+        RemakeBundleMismatchKind::MissingCurrentFile
+    );
+    assert_eq!(
+        comparison.mismatches[1].kind,
+        RemakeBundleMismatchKind::JsonValue
+    );
+    assert!(comparison.mismatches[1].detail.contains("$/identity/id"));
+    assert_eq!(
+        comparison.mismatches[2].kind,
+        RemakeBundleMismatchKind::PayloadBytes
+    );
+    assert!(comparison.mismatches[2].current_sha256.is_some());
+    assert!(comparison.mismatches[2].candidate_sha256.is_some());
+}
+
+#[test]
 fn resource_type_file_tokens_cannot_create_paths() {
     assert_eq!(super::assets::resource_type_file_token("PICT"), "pict");
     assert_eq!(
@@ -807,6 +1719,17 @@ fn action(slot: usize, code: i16, id: i16) -> Action {
         label: format!("Opcode {code}"),
         category: ActionCategory::Branch,
         gosub: false,
+        media_required_for_progression: None,
+    }
+}
+
+fn test_provenance(source: &str, record_index: usize, byte_length: usize) -> Provenance {
+    Provenance {
+        source_file: source.to_string(),
+        record_index,
+        byte_offset: record_index * byte_length,
+        byte_length,
+        confidence: Confidence::SourceBacked,
     }
 }
 
@@ -839,6 +1762,52 @@ fn managed_asset(id: &str, scope: ManagedAssetLibraryScope, bytes: &[u8]) -> Man
     .unwrap()
 }
 
+fn managed_text_asset(resource_type: &str, resource_id: i16, bytes: &[u8]) -> ManagedAsset {
+    let sha256 = hex::encode(Sha256::digest(bytes));
+    serde_json::from_value(json!({
+        "id": format!("asset:{resource_type}:{resource_id}:test"),
+        "label": format!("Managed {resource_type} {resource_id}"),
+        "kind": "text",
+        "resourceType": resource_type,
+        "resourceId": resource_id,
+        "fileName": format!("{resource_type}-{resource_id}.bin"),
+        "originalPath": "",
+        "previewPath": "",
+        "resourcePath": format!(
+            "data:application/octet-stream;base64,{}",
+            STANDARD.encode(bytes)
+        ),
+        "mimeType": "application/octet-stream",
+        "bytes": bytes.len(),
+        "sha256": sha256,
+        "width": null,
+        "height": null,
+        "durationMs": null,
+        "sampleRate": null,
+        "channels": null,
+        "exportState": "ready",
+        "libraryScope": "scenario",
+        "provenance": "canonical test data",
+        "linkedEntity": format!("resource:{resource_type}:{resource_id}"),
+        "conversion": null
+    }))
+    .unwrap()
+}
+
+fn portable_style_fixture() -> Vec<u8> {
+    vec![
+        0x00, 0x01, // run count
+        0x00, 0x00, 0x00, 0x00, // start character
+        0x00, 0x14, // line height
+        0x00, 0x0f, // ascent
+        0x00, 0x04, // Classic font ID
+        0x07, 0x00, // bold, italic, underline; filler
+        0x00, 0x12, // 18 point
+        0xff, 0xff, // red
+        0x80, 0x80, // green
+        0x00, 0x00, // blue
+    ]
+}
 fn test_pict(color: [u8; 4]) -> Vec<u8> {
     let mut rgba = Vec::with_capacity(32 * 32 * 4);
     for _ in 0..32 * 32 {
@@ -852,6 +1821,20 @@ fn test_pict(color: [u8; 4]) -> Vec<u8> {
     .unwrap()
 }
 
+fn conformance_pict_fixture(id: &str) -> Vec<u8> {
+    let manifest: Value = serde_json::from_str(include_str!(
+        "../../../fixtures/pict-conformance/manifest.json"
+    ))
+    .unwrap();
+    let encoded = manifest["fixtures"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|fixture| fixture["id"] == id)
+        .and_then(|fixture| fixture["bytesBase64"].as_str())
+        .unwrap_or_else(|| panic!("missing shared PICT fixture {id}"));
+    STANDARD.decode(encoded).unwrap()
+}
 fn managed_sound_asset(bytes: &[u8]) -> ManagedAsset {
     let sha256 = hex::encode(Sha256::digest(bytes));
     serde_json::from_value(json!({
@@ -908,6 +1891,49 @@ fn managed_music_asset() -> ManagedAsset {
         "conversion": null
     }))
     .unwrap()
+}
+
+fn mark_imported(project: &mut crate::project::ProvidenceProject) {
+    project.source.origin = Some(ProjectOrigin::Imported);
+    project.source.immutable = true;
+    project.source.raw_sources_dir = "raw-sources".to_string();
+}
+
+fn preserve_source_file(
+    project: &mut crate::project::ProvidenceProject,
+    project_dir: &Path,
+    name: &str,
+    bytes: &[u8],
+) {
+    let raw_sources = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources).unwrap();
+    fs::write(raw_sources.join(name), bytes).unwrap();
+    project.source.files.push(SourceFile {
+        name: name.to_string(),
+        relative_path: name.to_string(),
+        bytes: bytes.len() as u64,
+        sha256: hex::encode(Sha256::digest(bytes)),
+        role: SourceFileRole::SupportedBinary,
+        editable: true,
+    });
+}
+
+fn preserve_resource_fork(
+    project: &mut crate::project::ProvidenceProject,
+    project_dir: &Path,
+    bytes: &[u8],
+) {
+    let raw_sources = project_dir.join("raw-sources");
+    fs::create_dir_all(&raw_sources).unwrap();
+    fs::write(raw_sources.join("Scenario.rsrc"), bytes).unwrap();
+    project.source.files.push(SourceFile {
+        name: "Scenario.rsrc".to_string(),
+        relative_path: "Scenario.rsrc".to_string(),
+        bytes: bytes.len() as u64,
+        sha256: hex::encode(Sha256::digest(bytes)),
+        role: SourceFileRole::ResourceFork,
+        editable: false,
+    });
 }
 
 fn read_json_documents(root: &Path) -> BTreeMap<String, Value> {

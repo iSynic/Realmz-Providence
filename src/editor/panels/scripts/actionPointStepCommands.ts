@@ -1,6 +1,7 @@
 import type { Action, ProjectCommand } from "../../types";
+import { supportsRemakeProgressionMediaRequirement } from "../../realmzActions";
 
-export type ActionPointStepDraft = { rawCode: number; id: number };
+export type ActionPointStepDraft = { rawCode: number; id: number; mediaRequiredForProgression: boolean };
 export type ActionPointStepDrafts = Record<string, ActionPointStepDraft>;
 
 export function actionPointStepDraftKey(triggerId: string | null | undefined, slot: number) {
@@ -13,13 +14,19 @@ export function actionPointSlotDraft(
   slot: number,
   action?: Action
 ) {
-  return drafts[actionPointStepDraftKey(triggerId, slot)] ?? { rawCode: action?.rawCode ?? 0, id: action?.id ?? 0 };
+  return drafts[actionPointStepDraftKey(triggerId, slot)] ?? {
+    rawCode: action?.rawCode ?? 0,
+    id: action?.id ?? 0,
+    mediaRequiredForProgression: Boolean(action?.mediaRequiredForProgression)
+  };
 }
 
 export function actionPointStepDraftDirty(draft: ActionPointStepDraft, action?: Action) {
   return action
-    ? draft.rawCode !== action.rawCode || draft.id !== action.id
-    : draft.rawCode !== 0 || draft.id !== 0;
+    ? draft.rawCode !== action.rawCode ||
+      draft.id !== action.id ||
+      draft.mediaRequiredForProgression !== Boolean(action.mediaRequiredForProgression)
+    : draft.rawCode !== 0 || draft.id !== 0 || draft.mediaRequiredForProgression;
 }
 
 export function swapActionPointStepDrafts(drafts: ActionPointStepDrafts, triggerId: string, fromSlot: number, toSlot: number) {
@@ -84,6 +91,8 @@ export function actionPointStepApplyCommand({
     triggerId,
     slot,
     rawCode: draft.rawCode,
-    id: draft.id
+    id: draft.id,
+    mediaRequiredForProgression:
+      supportsRemakeProgressionMediaRequirement(draft.rawCode) && draft.mediaRequiredForProgression
   };
 }

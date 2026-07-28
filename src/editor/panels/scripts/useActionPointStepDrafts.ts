@@ -1,19 +1,32 @@
 import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useDraftChangeGuards } from "../../app/draftChangeGuard";
 import { edcdUsageForAction, edcdUsageToEditorUsage, normalizeEdcdValues } from "../../edcdRows";
-import { actionOptionFor } from "../../realmzActions";
+import {
+  actionOptionFor,
+  supportsRemakeProgressionMediaRequirement
+} from "../../realmzActions";
 import { validateActionDraft } from "../../scriptValidation";
 import type { Action, LibraryCatalog, Project, ProjectCommand, SelectedEntity, TriggerRecord } from "../../types";
 import { selectEntityFromId } from "../../utils";
 import { edcdDraftValuesEqual, type EdcdStepDraft } from "./actionPointDraft";
 import { actionSlotIndexFromSelection, actionSlotSelectionId } from "./actionPointSelection";
-import { actionPointSlotDraft, actionPointStepApplyCommand, actionPointStepDraftDirty, actionPointStepDraftKey, removeActionPointEdcdDrafts, removeActionPointStepDraft, swapActionPointStepDrafts, type ActionPointStepDrafts } from "./actionPointStepCommands";
+import {
+  actionPointSlotDraft,
+  actionPointStepApplyCommand,
+  actionPointStepDraftDirty,
+  actionPointStepDraftKey,
+  removeActionPointEdcdDrafts,
+  removeActionPointStepDraft,
+  swapActionPointStepDrafts,
+  type ActionPointStepDrafts
+} from "./actionPointStepCommands";
 import { actionDefinitionsForCategory, scriptActionDefinitionFor, type ScriptActionCategoryFilter } from "./scriptActionCatalog";
+import type { ScriptActionAuthoringContext } from "./scriptActionContexts";
 import { scriptLabel, triggerMatchesSelection } from "./scriptInventory";
 
 export function useActionPointStepDrafts({
   project, catalog, selectedTrigger, selectedSlot, setSelectedSlot, selectedEntityId,
-  categoryFilter, opcodeQuery, onSelectEntity, onApplyCommand
+  categoryFilter, opcodeQuery, authoringContexts, onSelectEntity, onApplyCommand
 }: {
   project: Project | null;
   catalog?: LibraryCatalog | null;
@@ -23,6 +36,7 @@ export function useActionPointStepDrafts({
   selectedEntityId?: string | null;
   categoryFilter: ScriptActionCategoryFilter;
   opcodeQuery: string;
+  authoringContexts?: readonly ScriptActionAuthoringContext[];
   onSelectEntity: (entity: SelectedEntity) => void;
   onApplyCommand?: (command: ProjectCommand) => void;
 }) {
@@ -62,7 +76,7 @@ export function useActionPointStepDrafts({
   const selectedEdcdDraftPrefix = selectedTrigger ? `${selectedKey}:` : "";
   const selectedEdcdStepDraft = selectedEdcdDraftKey ? edcdStepDrafts[selectedEdcdDraftKey] : undefined;
   const selectedStepDirty = selectedDraftDirty || Boolean(selectedEdcdStepDraft?.dirty || selectedEdcdStepDraft?.secondaryDirty);
-  const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery);
+  const filteredDefinitions = actionDefinitionsForCategory(categoryFilter, opcodeQuery, authoringContexts);
   const selectedEdcdUsageModel = useMemo(
     () => project && selectedOption.edcdShape ? edcdUsageForAction(project, catalog, selectedDraft.rawCode, Math.max(0, selectedDraft.id)) : null,
     [catalog, project, selectedDraft.id, selectedDraft.rawCode, selectedOption.edcdShape]
@@ -74,9 +88,27 @@ export function useActionPointStepDrafts({
   );
   const selectedEdcdRowId = selectedOption.edcdShape ? Math.max(0, selectedDraft.id) : null;
 
-  const setSelectedDraft = useCallback((values: { rawCode: number; id: number }) => {
-    setDrafts((current) => ({ ...current, [selectedKey]: values }));
-  }, [selectedKey]);
+  const setSelectedDraft = useCallback((values: {
+    rawCode: number;
+    id: number;
+    mediaRequiredForProgression?: boolean;
+  }) => {
+    setDrafts((current) => {
+      const previous = actionPointSlotDraft(
+        current,
+        selectedTrigger?.id,
+        selectedSlot,
+        selectedAction
+      );
+      const mediaRequiredForProgression = supportsRemakeProgressionMediaRequirement(values.rawCode)
+        ? values.mediaRequiredForProgression ?? previous.mediaRequiredForProgression
+        : false;
+      return {
+        ...current,
+        [selectedKey]: { ...values, mediaRequiredForProgression }
+      };
+    });
+  }, [selectedAction, selectedKey, selectedSlot, selectedTrigger?.id]);
   const updateSelectedEdcdDraft = useCallback((values: number[], dirty: boolean) => {
     if (!selectedEdcdDraftKey) return;
     const normalized = normalizeEdcdValues(values);
@@ -114,14 +146,18 @@ export function useActionPointStepDrafts({
     onApplyCommand(actionPointStepApplyCommand({
       triggerId: selectedTrigger.id,
       slot: selectedSlot,
-      draft: { rawCode: selectedDraft.rawCode, id: selectedDraft.id },
+      draft: {
+        rawCode: selectedDraft.rawCode,
+        id: selectedDraft.id,
+        mediaRequiredForProgression: selectedDraft.mediaRequiredForProgression
+      },
       edcdShape: selectedOption.edcdShape,
       edcdValues,
       secondaryEdcdValues
     }));
     discardSelectedDraft();
     return true;
-  }, [discardSelectedDraft, onApplyCommand, selectedDefinition.defaultDraft.parameters, selectedDraft.id, selectedDraft.rawCode, selectedEdcdStepDraft?.secondaryValues, selectedEdcdStepDraft?.values, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.secondaryValues, selectedEdcdUsageModel?.values, selectedOption.edcdShape, selectedSlot, selectedTrigger]);
+  }, [discardSelectedDraft, onApplyCommand, selectedDefinition.defaultDraft.parameters, selectedDraft.id, selectedDraft.mediaRequiredForProgression, selectedDraft.rawCode, selectedEdcdStepDraft?.secondaryValues, selectedEdcdStepDraft?.values, selectedEdcdUsageModel?.secondaryRowId, selectedEdcdUsageModel?.secondaryValues, selectedEdcdUsageModel?.values, selectedOption.edcdShape, selectedSlot, selectedTrigger]);
   const requestDraftNavigation = useCallback((label: string, action: () => void) => confirmBeforeDraftDiscard(label, action), [confirmBeforeDraftDiscard]);
   const selectStepSlot = useCallback((slot: number) => {
     if (slot === selectedSlot) return;

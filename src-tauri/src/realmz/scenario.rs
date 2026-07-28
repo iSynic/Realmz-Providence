@@ -177,12 +177,7 @@ pub fn parse_scenario_restrictions(buffer: &[u8]) -> Result<ScenarioRestrictions
             .filter_map(|(index, value)| (*value != 0).then_some((index + 1) as u8))
             .collect(),
         authored: false,
-        provenance: Some(provenance(
-            "Data RI",
-            0,
-            0,
-            SCENARIO_RESTRICTIONS_BYTES,
-        )),
+        provenance: Some(provenance("Data RI", 0, 0, SCENARIO_RESTRICTIONS_BYTES)),
     })
 }
 

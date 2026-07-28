@@ -1,4 +1,11 @@
 import type { DecodedResourcePreview, ResourcePreviewDiagnostic, ResourcePreviewStatus } from "../types";
+import {
+  COMPRESSED_QUICKTIME,
+  decodeQuickTimeImage,
+  parsePictQuickTimeRecord,
+  PictQuickTimeError,
+  UNCOMPRESSED_QUICKTIME
+} from "./pictQuickTime";
 
 type DecodedImage = {
   width: number;
@@ -194,11 +201,84 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
   }
 
   const stream = parsePictOpcodeStream(pict);
-  if (stream.failure) throw stream.failure;
+  const quickTimeOpcode = stream.opcodes.find((entry) =>
+    entry.opcode === COMPRESSED_QUICKTIME || entry.opcode === UNCOMPRESSED_QUICKTIME
+  );
+  const streamFailureOffset = stream.failure?.diagnostic?.offset;
+  if (stream.failure && (!quickTimeOpcode || streamFailureOffset === undefined || streamFailureOffset < quickTimeOpcode.offset)) {
+    throw stream.failure;
+  }
   const failures: PreviewFailure[] = [];
   const decodedBitmaps: Array<{ command: BitmapDrawCommand; bitmap: DecodedBitmap }> = [];
+  let quickTimeBitmapIndex: number | null = null;
+  let quickTimeFailure: PreviewFailure | null = null;
 
   for (const opcode of stream.opcodes) {
+    if (opcode.opcode === COMPRESSED_QUICKTIME || opcode.opcode === UNCOMPRESSED_QUICKTIME) {
+      try {
+        const record = parsePictQuickTimeRecord(pict, opcode.offset, opcode.opcode, opcode.opcodeBytes);
+        summary.quickTimeVariant = record.kind;
+        summary.quickTimeMatteBytes = String(record.matteBytes);
+        if (record.kind === "compressed") {
+          summary.quickTimeCodec = printableQuickTimeCodec(record.codec);
+          summary.quickTimeDepth = String(record.depth);
+          summary.quickTimeClutId = String(record.clutId);
+          summary.embeddedMediaType = record.mediaType ?? "unknown";
+          summary.embeddedBytes = String(record.encoded.byteLength);
+          summary.embeddedWidth = String(record.width);
+          summary.embeddedHeight = String(record.height);
+          const image = decodeQuickTimeImage(record);
+          const bounds: Rect = { top: 0, left: 0, bottom: image.height, right: image.width };
+          const frame = parseRect(pict, 2);
+          const dstRect = frame && rectWidth(frame) > 0 && rectHeight(frame) > 0
+            ? frame
+            : bounds;
+          decodedBitmaps.push({
+            command: {
+              opcode: record.opcode,
+              nextOffset: record.recordEnd,
+              rowBytes: image.width * 4,
+              pixelSize: 32,
+              packType: 0,
+              componentCount: 4,
+              bounds,
+              srcRect: bounds,
+              dstRect,
+              format: `quicktime-${printableQuickTimeCodec(record.codec)}`,
+              dataOffset: 0,
+              colorTableOffset: null,
+              colorTableFlags: 0,
+              colorCount: 0,
+              direct: true,
+              packed: false
+            },
+            bitmap: { image, bounds }
+          });
+        } else {
+          const command = parseBitmapCommand(pict, record.copyBitsOffset, record.copyBitsOpcode, 2);
+          if (command.nextOffset > record.recordEnd) {
+            throw previewError(
+              "malformed",
+              "pict.quicktime_copybits_truncated",
+              "PICT uncompressed QuickTime CopyBits data extends beyond its QuickTime record.",
+              "pict",
+              record.opcodeOffset,
+              formatOpcode(record.opcode),
+              formatOpcode(record.copyBitsOpcode)
+            );
+          }
+          command.format = `quicktime-${command.format}`;
+          command.opcode = record.opcode;
+          decodedBitmaps.push({ command, bitmap: decodeBitmapCommand(pict, command) });
+        }
+        quickTimeBitmapIndex = decodedBitmaps.length - 1;
+      } catch (error) {
+        quickTimeFailure = normalizePictQuickTimeError(error);
+      }
+      // QuickTime records are complete pictures. Any following drawing records are
+      // compatibility fallbacks for systems without QuickTime and must not be composited.
+      break;
+    }
     if (![BITS_RECT, BITS_RGN, PACK_BITS_RECT, PACK_BITS_RGN, DIRECT_BITS_RECT, DIRECT_BITS_RGN].includes(opcode.opcode)) continue;
     let command: BitmapDrawCommand;
     try {
@@ -215,6 +295,8 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
     }
   }
 
+  if (quickTimeFailure) throw quickTimeFailure;
+
   if (stream.version.startsWith("v1") && !stream.endPictureFound) {
     const failure = previewError("malformed", "pict.v1_missing_end_picture", "PICT v1 stream ends without the required 0xFF EndPicture opcode.", "pict");
     if (decodedBitmaps.length > 0) throw failure;
@@ -222,11 +304,13 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
   }
 
   if (decodedBitmaps.length > 0) {
-    const best = decodedBitmaps.reduce((current, candidate) => {
-      const area = candidate.bitmap.image.width * candidate.bitmap.image.height;
-      const currentArea = current.bitmap.image.width * current.bitmap.image.height;
-      return area >= currentArea ? candidate : current;
-    });
+    const best = quickTimeBitmapIndex === null
+      ? decodedBitmaps.reduce((current, candidate) => {
+        const area = candidate.bitmap.image.width * candidate.bitmap.image.height;
+        const currentArea = current.bitmap.image.width * current.bitmap.image.height;
+        return area >= currentArea ? candidate : current;
+      })
+      : decodedBitmaps[quickTimeBitmapIndex];
     const frame = parseRect(pict, 2);
     const composited = frame ? drawBitmapsToPictFrame(frame, decodedBitmaps, best.bitmap.image) : { image: best.bitmap.image, drew: false };
     summary.pictVersion = stream.version;
@@ -235,7 +319,10 @@ function decodePictPackBits(input: Uint8Array, summary: Record<string, string>):
     summary.rowBytes = String(best.command.rowBytes);
     summary.opcode = formatOpcode(best.command.opcode);
     summary.opcodeCount = String(stream.opcodes.length);
-    if (stream.unsupportedVisibleOpcodes > 0) summary.unsupportedVisibleOpcodes = String(stream.unsupportedVisibleOpcodes);
+    const unsupportedVisibleOpcodes = quickTimeOpcode
+      ? countUnsupportedVisibleOpcodes(stream.opcodes, quickTimeOpcode.offset)
+      : stream.unsupportedVisibleOpcodes;
+    if (unsupportedVisibleOpcodes > 0) summary.unsupportedVisibleOpcodes = String(unsupportedVisibleOpcodes);
     return composited.drew ? composited.image : best.bitmap.image;
   }
 
@@ -483,7 +570,45 @@ function skipPixelPattern(data: Uint8Array, cursor: number, offset: number, opco
 }
 
 function isProbablyVisiblePictOpcode(opcode: number) {
-  return (opcode >= 0x0020 && opcode <= 0x007f) || (opcode >= 0x0090 && opcode <= 0x009f) || opcode === 0x8200;
+  return (opcode >= 0x0020 && opcode <= 0x007f)
+    || (opcode >= 0x0090 && opcode <= 0x009f)
+    || opcode === COMPRESSED_QUICKTIME
+    || opcode === UNCOMPRESSED_QUICKTIME;
+}
+
+function countUnsupportedVisibleOpcodes(opcodes: PictOpcode[], stopBeforeOffset: number) {
+  return opcodes.filter((entry) =>
+    entry.offset < stopBeforeOffset
+    && isProbablyVisiblePictOpcode(entry.opcode)
+    && ![
+      BITS_RECT,
+      BITS_RGN,
+      PACK_BITS_RECT,
+      PACK_BITS_RGN,
+      DIRECT_BITS_RECT,
+      DIRECT_BITS_RGN,
+      COMPRESSED_QUICKTIME,
+      UNCOMPRESSED_QUICKTIME
+    ].includes(entry.opcode)
+  ).length;
+}
+
+function normalizePictQuickTimeError(error: unknown): PreviewFailure {
+  if (!(error instanceof PictQuickTimeError)) return error as PreviewFailure;
+  return previewError(
+    error.status,
+    error.code,
+    error.message,
+    "pict",
+    error.offset,
+    formatOpcode(error.opcode),
+    error.variant,
+    error.hint
+  );
+}
+
+function printableQuickTimeCodec(codec: string) {
+  return codec.replace(/\0/g, "\\0").trimEnd() || "unknown";
 }
 
 function parseBitmapCommand(data: Uint8Array, offset: number, opcode: number, opcodeBytes = 2): BitmapDrawCommand {

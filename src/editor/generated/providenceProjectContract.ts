@@ -192,7 +192,8 @@ export const PROVIDENCE_ACTION_FIELDS = [
   "id",
   "label",
   "category",
-  "gosub"
+  "gosub",
+  "mediaRequiredForProgression"
 ] as const;
 
 export const PROVIDENCE_EXTRA_CODE_FIELDS = [
@@ -911,6 +912,7 @@ export type ProvidenceAction = {
   label: string;
   category: string;
   gosub?: boolean;
+  mediaRequiredForProgression?: boolean;
 };
 
 export type ProvidenceTriggerRecord = {
@@ -1210,6 +1212,7 @@ export type ProvidenceEncounterActionRow = {
   slot: number;
   rawCode: number;
   id: number;
+  mediaRequiredForProgression?: boolean;
 };
 
 export type ProvidenceSimpleEncounterRecord = {

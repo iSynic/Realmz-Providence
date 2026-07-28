@@ -16,21 +16,14 @@ pub fn validate_remake_runtime(project: &ProvidenceProject) -> Vec<String> {
     let mut errors = Vec::new();
     let mut extensions = BTreeMap::<String, &Value>::new();
     let mut bindings = BTreeMap::<(String, String), (String, &Value)>::new();
-    for extension in catalog["extensions"]
-        .as_array()
-        .into_iter()
-        .flatten()
-    {
+    for extension in catalog["extensions"].as_array().into_iter().flatten() {
         let id = extension["id"].as_str().unwrap_or_default().to_string();
         extensions.insert(id.clone(), extension);
         if let Some(capabilities) = extension["capabilities"].as_object() {
             for (capability, entries) in capabilities {
                 for entry in entries.as_array().into_iter().flatten() {
                     let binding_id = binding_id(entry).to_string();
-                    bindings.insert(
-                        (capability.clone(), binding_id),
-                        (id.clone(), entry),
-                    );
+                    bindings.insert((capability.clone(), binding_id), (id.clone(), entry));
                 }
             }
         }
@@ -98,7 +91,9 @@ pub fn validate_remake_runtime(project: &ProvidenceProject) -> Vec<String> {
                     .iter()
                     .any(|record| record.id.to_string() == action.record_id)
                 {
-                    errors.push(format!("{context} references an unavailable Simple Encounter."));
+                    errors.push(format!(
+                        "{context} references an unavailable Simple Encounter."
+                    ));
                 }
                 31
             }
@@ -108,7 +103,9 @@ pub fn validate_remake_runtime(project: &ProvidenceProject) -> Vec<String> {
                     .iter()
                     .any(|record| record.id.to_string() == action.record_id)
                 {
-                    errors.push(format!("{context} references an unavailable Complex Encounter."));
+                    errors.push(format!(
+                        "{context} references an unavailable Complex Encounter."
+                    ));
                 }
                 31
             }
@@ -118,7 +115,9 @@ pub fn validate_remake_runtime(project: &ProvidenceProject) -> Vec<String> {
             }
         };
         if action.slot > max_slot {
-            errors.push(format!("{context} must use a slot from 0 through {max_slot}."));
+            errors.push(format!(
+                "{context} must use a slot from 0 through {max_slot}."
+            ));
         }
         if !is_namespaced(&action.operation) || action.operation.starts_with("core.") {
             errors.push(format!(
@@ -146,11 +145,7 @@ pub fn validate_remake_runtime(project: &ProvidenceProject) -> Vec<String> {
     }
 
     for (field, capability, values) in [
-        (
-            "spells",
-            "spells",
-            &project.remake_runtime.bindings.spells,
-        ),
+        ("spells", "spells", &project.remake_runtime.bindings.spells),
         (
             "items",
             "itemBehaviors",
@@ -261,11 +256,7 @@ fn validate_schema(value: &Value, schema: &Value, context: &str) -> Option<Strin
         }
         for (key, child) in object {
             let Some(child_schema) = properties.get(key) else {
-                if schema
-                    .get("additionalProperties")
-                    .and_then(Value::as_bool)
-                    == Some(false)
-                {
+                if schema.get("additionalProperties").and_then(Value::as_bool) == Some(false) {
                     return Some(format!("{context} does not allow '{key}'."));
                 }
                 continue;

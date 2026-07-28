@@ -43,7 +43,9 @@ fn validate_monster_record_shape(monster: &MonsterRecord, label: &str, errors: &
 pub fn validate_project(project: &ProvidenceProject) -> ValidationReport {
     let mut errors = Vec::new();
     let mut warnings = Vec::new();
-    errors.extend(crate::remake_extension_catalog::validate_remake_runtime(project));
+    errors.extend(crate::remake_extension_catalog::validate_remake_runtime(
+        project,
+    ));
     let mut exportable_files = Vec::new();
     let mut pass_through_files = Vec::new();
     let imported_project = project.source.requires_compatibility_annex();
@@ -2420,6 +2422,7 @@ mod tests {
             label: "test".to_string(),
             category: ActionCategory::Unknown,
             gosub: false,
+            media_required_for_progression: None,
         }
     }
 

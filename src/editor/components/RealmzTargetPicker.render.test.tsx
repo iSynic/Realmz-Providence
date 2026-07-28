@@ -87,4 +87,23 @@ describe("TargetPicker creation actions", () => {
     expect(renderSoundPicker()).toContain('data-reference-preview-kind="audio"');
     expect(renderSoundPicker(false)).not.toContain('data-reference-preview-kind="audio"');
   });
+
+  it("authors signed target behavior without a raw negative ID field", () => {
+    const renderSignedMessage = (value: number, showSignedBehavior?: boolean) => renderToStaticMarkup(
+      <TargetPicker
+        project={{
+          ...project,
+          messages: [{ id: 12, text: "Move quickly." }]
+        } as unknown as Project}
+        opcode={1}
+        value={value}
+        onChange={() => undefined}
+        showSignedBehavior={showSignedBehavior}
+      />
+    );
+
+    expect(renderSignedMessage(-12)).toContain("Continue without waiting");
+    expect(renderSignedMessage(-12)).toContain('type="radio" name="target-mode-1" checked=""');
+    expect(renderSignedMessage(-12, false)).not.toContain("Continue without waiting");
+  });
 });

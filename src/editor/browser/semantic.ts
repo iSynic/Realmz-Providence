@@ -20,6 +20,7 @@ import { parseResourceFork, type ResourceEntry } from "./library";
 import { CASTE_RECORD_BYTES, GLOBAL_MACRO_HOOK_BYTES, RACE_RECORD_BYTES, SCENARIO_CONTACT_INFO_BYTES, SCENARIO_RESTRICTIONS_BYTES, SCENARIO_SHELL_BYTES, SPELL_RECORD_BYTES, TILE_SOLIDS_BYTES, writeBattles, writeComplexEncounters, writeGlobalMacroHooks, writeMessages, writeMonsterDescriptions, writeMonsters, writeOptionLabels, writeScenarioContactInfo, writeScenarioItems, writeScenarioRestrictions, writeScenarioShell, writeShops, writeSimpleEncounters, writeThiefEncounters, writeTimedEncounters, writeTreasures } from "./binaryWriters";
 import { SHOP_RECORD_BYTES, shopPrefixRecordCount } from "./shopRecords";
 import { writeFreshCasteOverrides, writeFreshRaceOverrides, writeFreshSpellOverrides } from "./ruleCompiler";
+import { normalizeStepOpcode } from "../realmzActions";
 
 export type BrowserSemanticBuildProgress = {
   phase: string;
@@ -115,7 +116,10 @@ export function buildBrowserSemanticSchema(projectParts: {
       phase: "encounters",
       label: "Mapping Encounters",
       detail: `${projectParts.randomLevels.length.toLocaleString()} random encounter level(s)`,
-      run: () => addRandomLevels(schema, projectParts.randomLevels)
+      run: () => {
+        addRandomLevels(schema, projectParts.randomLevels);
+        addEncounterMacroLinks(schema, projectParts.simpleEncounters, projectParts.complexEncounters);
+      }
     },
     {
       phase: "settings",
@@ -695,6 +699,33 @@ function addComplexEncounterRecords(schema: SemanticSchema, buffer?: Uint8Array)
     schema.entities.push(browserEntity(entityId, "complex encounter", `Complex Encounter ${index}`, "Data ED2", `record:Data ED2:${index}`, start, recordBytes, summary));
     if (summary.thief && summary.thiefSuccess > 0) {
       pushLink(schema, entityId, `thief:${summary.thiefSuccess}`, "uses_thief_encounter", "source-backed", { field: "thiefSuccess" });
+    }
+  }
+}
+
+function addEncounterMacroLinks(
+  schema: SemanticSchema,
+  simpleEncounters: Project["simpleEncounters"],
+  complexEncounters: Project["complexEncounters"]
+) {
+  for (const [kind, encounters] of [
+    ["simple", simpleEncounters],
+    ["complex", complexEncounters]
+  ] as const) {
+    for (const encounter of encounters) {
+      const entityId = `encounter:${kind}:${encounter.id}`;
+      for (const action of encounter.actions) {
+        if (normalizeStepOpcode(action.rawCode) !== 39 || action.id < 0) continue;
+        const result = Math.floor(action.slot / 8) + 1;
+        const step = action.slot % 8 + 1;
+        pushLink(schema, entityId, `macro:${action.id}`, "calls_macro", "source-backed", {
+          opcode: 39,
+          rawCode: action.rawCode,
+          slot: action.slot,
+          result,
+          step
+        });
+      }
     }
   }
 }
@@ -2342,6 +2373,7 @@ function isNegativeBattleMacroLink(link: SemanticLink) {
 
 function browserRootType(from: string) {
   if (from.startsWith("action-slot:trigger:")) return "map-trigger-call";
+  if (from.startsWith("encounter:")) return "encounter-result-call";
   if (from.startsWith("random:")) return "random-region-door";
   if (from.startsWith("time:")) return "timed-encounter-door";
   if (from.startsWith("item:")) return "door-item-macro";

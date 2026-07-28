@@ -1,6 +1,12 @@
 mod assets;
+mod comparison;
 mod documents;
 mod portable;
+mod rule_selection;
+
+pub use comparison::{
+    compare_remake_bundles, RemakeBundleComparison, RemakeBundleMismatch, RemakeBundleMismatchKind,
+};
 
 use crate::error::{IoPath, JsonPath, ProvidenceError, Result};
 use crate::project::{LevelType, ProvidenceProject};
@@ -19,7 +25,7 @@ pub const REMAKE_DOCUMENT_SCHEMA_VERSION: u32 = 1;
 
 const CLASSIC_DIR: &str = "classic";
 const LIMITATIONS: [&str; 3] = [
-    "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Styled-text payloads remain Classic resource data.",
+    "Scenario-owned PICT, cicn, and snd resources include derived PNG or WAV runtime media; unsupported image or sound variants block export rather than producing an incomplete portable bundle. Scrolling TEXT is decoded for runtime use, and matching styl resources become portable rich-text presentation runs rather than binary payloads.",
     "Providence schema version 6 authors a land start; the v2 bundle can also represent dungeon starts when the canonical model gains that distinction.",
     "Negative cicn special-land-tile identities use the additive assets.catalog.specialLandTiles collection because ordinary icon identities are non-negative.",
 ];
@@ -48,7 +54,8 @@ pub struct RemakeExportCounts {
     pub packaged_asset_payloads: usize,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct RemakeExportReport {
     pub output_dir: PathBuf,
     pub written_files: Vec<String>,
@@ -87,7 +94,7 @@ pub fn export_remake_campaign(
     counts.managed_assets = packaged_assets.managed_assets.len();
     counts.packaged_asset_payloads = packaged_assets.written_files.len();
     let files = contract_files();
-    let documents = build_documents(project, &packaged_assets)?;
+    let documents = build_documents(project, &packaged_assets, project_dir)?;
     let manifest = campaign_manifest(project, &counts, &files, &limitations);
     assert_portable_value(&manifest, project_dir, "campaign.json")?;
 
@@ -101,15 +108,7 @@ pub fn export_remake_campaign(
             format!("{CLASSIC_DIR}/{name}")
         };
         assert_portable_value(&document, project_dir, &relative_path)?;
-        let compact = matches!(
-            relative_path.as_str(),
-            "classic/scripts.json" | "classic/encounters.json"
-        );
-        write_json_with_style(
-            &output_dir.join(&relative_path),
-            &document,
-            !compact,
-        )?;
+        write_json(&output_dir.join(&relative_path), &document)?;
         written_files.push(relative_path);
     }
     written_files.sort();
@@ -211,7 +210,7 @@ fn prepare_output_dir(output_dir: &Path) -> Result<()> {
 }
 
 fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
-    write_json_with_style(path, value, true)
+    write_json_with_style(path, value, false)
 }
 
 fn write_json_with_style(path: &Path, value: &impl Serialize, multiline: bool) -> Result<()> {

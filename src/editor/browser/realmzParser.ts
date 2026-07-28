@@ -21,6 +21,7 @@ import {
   OptionLabelRecord,
   Provenance,
   RandomLevel,
+  ScenarioIconResource,
   ScenarioItemRecord,
   ScenarioCasteOverride,
   ScenarioRaceOverride,
@@ -175,6 +176,7 @@ export type ParsedBrowserScenario = {
   monsterSets: MonsterSet[];
   monsterDescriptions: MonsterDescriptionRecord[];
   monsterIconOverrides: MonsterIconOverride[];
+  scenarioIconResources: ScenarioIconResource[];
   scenarioItems: ScenarioItemRecord[];
   treasures: TreasureRecord[];
   shops: ShopRecord[];
@@ -269,9 +271,10 @@ export function parseScenarioBuffers(buffers: Map<string, Uint8Array>): ParsedBr
   const spellOverrides = parseSpellOverrides(buffers.get("Data Spell"));
   const raceOverrides = parseRaceOverrides(buffers.get("Data Race"));
   const casteOverrides = parseCasteOverrides(buffers.get("Data Caste"));
-  const assetCatalog = buildAssetCatalog(maps, randomLevels, monsters, monsterSets, buffers, diagnostics);
+  const assetCatalog = buildAssetCatalog(maps, randomLevels, monsters, monsterSets, scenarioItems, buffers, diagnostics);
   const monsterIconOverrides = parseScenarioMonsterIconOverrides(monsters, monsterSets, buffers, diagnostics);
-  return { maps, landLayout, mapRecords, tileAttributes, customLandlooks, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, monsterIconOverrides, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
+  const scenarioIconResources = parseScenarioItemIconResources(scenarioItems, buffers, assetCatalog.icons);
+  return { maps, landLayout, mapRecords, tileAttributes, customLandlooks, triggers, randomLevels, extracodes, messages, optionLabels, battles, monsters, monsterSets, monsterDescriptions, monsterIconOverrides, scenarioIconResources, scenarioItems, treasures, shops, simpleEncounters, complexEncounters, thiefEncounters, timedEncounters, spellOverrides, raceOverrides, casteOverrides, assetCatalog, records, diagnostics };
 }
 
 function parseLandLayout(buffer: Uint8Array | undefined): LandLayout | null {
@@ -1090,6 +1093,7 @@ function buildAssetCatalog(
   randomLevels: RandomLevel[],
   monsters: MonsterRecord[],
   monsterSets: MonsterSet[],
+  scenarioItems: ScenarioItemRecord[],
   buffers: Map<string, Uint8Array>,
   diagnostics: Diagnostic[]
 ) {
@@ -1141,7 +1145,7 @@ function buildAssetCatalog(
   return {
     tilesets,
     pictures: buildScenarioPictureCatalog(scenarioResources, diagnostics),
-    icons: buildScenarioIconCatalog(maps, monsters, monsterSets, scenarioResources, diagnostics),
+    icons: buildScenarioIconCatalog(maps, monsters, monsterSets, scenarioItems, scenarioResources, diagnostics),
     sounds: buildScenarioSoundCatalog(scenarioResources, diagnostics)
   };
 }
@@ -1188,13 +1192,15 @@ function buildScenarioIconCatalog(
   maps: MapEntity[],
   monsters: MonsterRecord[],
   monsterSets: MonsterSet[],
+  scenarioItems: ScenarioItemRecord[],
   resources: Array<{ source: string; resource: ResourceEntry }>,
   diagnostics: Diagnostic[]
 ): ResourceAsset[] {
   const referenced = new Set([
     ...maps.flatMap((map) => referencedMapIconIds(map.tiles)),
     ...monsterIconIds(monsters),
-    ...monsterSets.flatMap((set) => monsterIconIds(set.monsters))
+    ...monsterSets.flatMap((set) => monsterIconIds(set.monsters)),
+    ...scenarioItemIconIds(scenarioItems)
   ]);
   if (referenced.size === 0) return [];
   const seen = new Set<number>();
@@ -1227,6 +1233,42 @@ function buildScenarioIconCatalog(
     seen.add(resource.id);
   }
   return icons.sort((a, b) => a.resourceId - b.resourceId);
+}
+
+function parseScenarioItemIconResources(
+  scenarioItems: ScenarioItemRecord[],
+  buffers: Map<string, Uint8Array>,
+  iconCatalog: ResourceAsset[]
+): ScenarioIconResource[] {
+  const referenced = scenarioItemIconIds(scenarioItems);
+  if (referenced.length === 0) return [];
+  const wanted = new Set(referenced);
+  const seen = new Set<number>();
+  const previewById = new Map(iconCatalog.map((asset) => [Math.abs(asset.resourceId), asset.previewPath ?? null]));
+  const resources: ScenarioIconResource[] = [];
+  for (const { resource } of scenarioResourceEntries(buffers)) {
+    const resourceId = Math.abs(resource.id);
+    if (resource.resourceType !== "cicn" || !wanted.has(resourceId) || seen.has(resourceId)) continue;
+    resources.push({
+      resourceId,
+      label: resource.name || `cicn ${resourceId}`,
+      sourceKind: "scenario-resource",
+      resourceBase64: bytesToBase64(resource.data),
+      previewPath: previewById.get(resourceId) ?? null,
+      imported: true
+    });
+    seen.add(resourceId);
+  }
+  return resources.sort((left, right) => left.resourceId - right.resourceId);
+}
+
+function scenarioItemIconIds(scenarioItems: ScenarioItemRecord[]) {
+  const ids = new Set<number>();
+  for (const item of scenarioItems) {
+    if (!Number.isInteger(item.iconId) || item.iconId === 0) continue;
+    ids.add(Math.abs(item.iconId));
+  }
+  return [...ids];
 }
 
 type BrowserMapNameHint = {

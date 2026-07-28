@@ -122,6 +122,7 @@ export const DIVINITY_CHAPTERS = {
 export const MARKDOWN_REFERENCES = {
   divinityParity: repoRef("Divinity Parity Map", "Feature crosswalk and next milestones.", "docs/divinity-parity-map.md"),
   scriptsV2: repoRef("Scripts V2 Authoring Guide", "Action Point, EDCD, target, and diagnostics workflow.", "docs/scripts-v2-authoring.md"),
+  encounterEcodeAuthoring: repoRef("Encounter ECODE Authoring", "Guided result settings, shared-row safety, raw fallback, and exhaustive opcode coverage.", "docs/encounter-ecode-authoring.md"),
   formatIntegration: repoRef("Scenario Format Integration", "Authored source, runtime cache, and resource policy.", "docs/scenario-format-integration.md"),
   scenarioStartupEvidence: repoRef("Scenario Startup Runtime Anchors", "Marker/main file, Data CI, Data RI, first-start source files, and load-readiness evidence.", "docs/format-evidence-cards/scenario-startup-runtime-anchors.md"),
   scenarioRestrictionsEvidence: repoRef("Scenario Party Restriction Runtime Anchors", "Data RI layout, banned race/caste behavior, party-count gates, and validation candidates.", "docs/format-evidence-cards/scenario-party-restrictions-runtime-anchors.md"),
@@ -1519,6 +1520,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       DIVINITY_CHAPTERS.complexEncounter,
       MARKDOWN_REFERENCES.encounterEvidence,
       MARKDOWN_REFERENCES.thiefTimedEvidence,
+      MARKDOWN_REFERENCES.encounterEcodeAuthoring,
       MARKDOWN_REFERENCES.scriptsV2
     ],
     relatedTopicIds: ["scripts", "text", "combat", "economy", "rules", "linter-release"],
@@ -1608,7 +1610,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Result Numbers and Action Columns",
         paragraphs: [
           "Simple and complex encounters both reduce player choices and tests to a result number. Providence shows four result columns because Realmz stores four compact outcome scripts inside each encounter record.",
-          "Each result column contains ordered CODE/ID steps. These steps use the same action vocabulary as Scripts, but they are local to the encounter unless they call an Extra Action Point."
+          "Each result column contains ordered CODE/ID steps. These steps use the same action vocabulary as Scripts, but they are local to the encounter unless they call an Extra Action Point.",
+          "Actions with five-value settings open a contextual editor instead of exposing the Data EDCD row ID. Apply stores the result caller and settings as one undoable change; Cancel leaves both unchanged."
         ],
         points: [
           "Result 1 runs the first column; Result 2 runs the second column; Result 3 and Result 4 run their matching columns.",
@@ -2773,7 +2776,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Export",
-            body: "Writes a Portable Providence, Mac Classic, or Windows Realmz folder and reports files, resources, pass-through data, blocked assets, and target compatibility notes.",
+            body: "Writes a Portable Providence, Mac Classic, Windows Realmz, or self-contained Realmz Remake scenario folder and reports files, resources, pass-through data, blocked assets, and target compatibility notes.",
             facts: ["writer gate"]
           },
           {
@@ -2830,8 +2833,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Export Targets and Reports",
         paragraphs: [
-          "Export target controls choose the folder shape Providence writes. Portable Providence folders are useful for internal roundtrips. Mac Classic and Windows Realmz folders are compatibility targets for actual Realmz runtimes.",
-          "The export report is the release ledger for the current session: output path, target, written source files, pass-through files, resource writes, preserved resources, blocked assets, target compatibility, and warnings."
+          "Export target controls choose the folder shape Providence writes. Portable Providence folders are useful for internal roundtrips. Mac Classic and Windows Realmz folders are compatibility targets for actual Realmz runtimes. Realmz Remake scenario folders are self-contained campaign bundles ready for Remake's normal Classic campaign installer.",
+          "The export report is the release ledger for the current session: output path, target, written files, packaged assets, pass-through files where applicable, resource writes, preserved resources, blocked assets, target compatibility, and warnings."
         ],
         points: [
           "Written files are writer-supported source files Providence encoded from the project model.",

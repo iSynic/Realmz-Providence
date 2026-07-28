@@ -106,6 +106,33 @@ describe("ResourcesPanel controls", () => {
     expect(markup).toContain("cicn 688");
   });
 
+  it("shows project-owned scenario item icons even when the imported catalog lacks them", () => {
+    const project = {
+      assets: [],
+      assetCatalog: { pictures: [], icons: [], sounds: [], tilesets: [] },
+      scenarioIconResources: [{
+        resourceId: 30061,
+        label: "Robe with Green Shine",
+        sourceKind: "scenario-resource",
+        resourceBase64: "AA==",
+        previewPath: null,
+        imported: true
+      }]
+    } as unknown as Project;
+    const markup = renderToStaticMarkup(
+      <ResourcesPanel
+        project={project}
+        selectedEntity={null}
+        activeEditor="project-assets"
+        onSelectEntity={() => undefined}
+      />
+    );
+
+    expect(markup).toContain("1 scenario asset");
+    expect(markup).toContain("Robe with Green Shine");
+    expect(markup).toContain("cicn 30061");
+  });
+
   it("presents preview size as a stable mode control", () => {
     const markup = renderToStaticMarkup(
       <AssetGalleryControls

@@ -76,34 +76,61 @@ project.landLayout = {
   authored: true,
   provenance: null
 };
-project.mapRecords = [{
-  id: 0,
-  markers: [
-    { iconId: -100, x: 11, y: 12 },
-    ...Array.from({ length: 9 }, () => ({ iconId: 0, x: 0, y: 0 }))
-  ],
-  startX: 10,
-  startY: 12,
-  level: 0,
-  pictId: 306,
-  iconSize: 32,
-  show: 1,
-  isDungeon: false,
-  rect: { top: 0, left: 0, bottom: 90, right: 90 },
-  note: "Providence owns this map record.",
-  name: "Providence Map",
-  primaryName: "Providence Map",
-  secondaryName: "Unknown Providence Map",
-  mapNameAuthored: false,
-  authored: true,
-  provenance: {
-    sourceFile: "Data MD2",
-    recordIndex: 0,
-    byteOffset: 0,
-    byteLength: 340,
-    confidence: "fixture-backed"
+project.mapRecords = [
+  {
+    id: 0,
+    markers: [
+      { iconId: -100, x: 11, y: 12 },
+      ...Array.from({ length: 9 }, () => ({ iconId: 0, x: 0, y: 0 }))
+    ],
+    startX: 10,
+    startY: 12,
+    level: 0,
+    pictId: 306,
+    iconSize: 32,
+    show: 1,
+    isDungeon: false,
+    rect: { top: 0, left: 0, bottom: 90, right: 90 },
+    note: "Providence owns this map record.",
+    name: "Providence Map",
+    primaryName: "Providence Map",
+    secondaryName: "Unknown Providence Map",
+    mapNameAuthored: false,
+    authored: true,
+    provenance: {
+      sourceFile: "Data MD2",
+      recordIndex: 0,
+      byteOffset: 0,
+      byteLength: 340,
+      confidence: "fixture-backed"
+    }
+  },
+  {
+    id: 1,
+    markers: Array.from({ length: 10 }, () => ({ iconId: 0, x: 0, y: 0 })),
+    startX: 0,
+    startY: 0,
+    level: 0,
+    pictId: 0,
+    iconSize: 0,
+    show: -200,
+    isDungeon: false,
+    rect: { top: 0, left: 0, bottom: 0, right: 0 },
+    note: "",
+    name: null,
+    primaryName: null,
+    secondaryName: null,
+    mapNameAuthored: false,
+    authored: true,
+    provenance: {
+      sourceFile: "Data MD2",
+      recordIndex: 1,
+      byteOffset: 340,
+      byteLength: 340,
+      confidence: "fixture-backed"
+    }
   }
-}];
+];
 const customLandlookRecords = Array.from({ length: 201 }, (_, tile) => ({
   tile,
   sound: 0,
@@ -249,6 +276,26 @@ project.assets.push(
     linkedEntity: "resource:styl:-200"
   })
 );
+const progressionMediaTrigger = project.triggers.find((trigger) => trigger.id === "land:0:ap:0");
+expect(progressionMediaTrigger, "Canonical project is missing its primary Action Point");
+progressionMediaTrigger.actions.push({
+  slot: 3,
+  rawCode: 9,
+  code: 9,
+  id: 321,
+  label: "Play Sound",
+  category: "ui_text",
+  gosub: false,
+  mediaRequiredForProgression: true
+});
+const progressionMediaEncounter = project.simpleEncounters.find((encounter) => encounter.id === 0);
+expect(progressionMediaEncounter, "Canonical project is missing its primary simple encounter");
+progressionMediaEncounter.actions.push({
+  slot: 2,
+  rawCode: 9,
+  id: 321,
+  mediaRequiredForProgression: true
+});
 project.validation.exportableFiles = [...new Set([...project.validation.exportableFiles, "Layout", "Data Custom 1 BD"])];
 project.validation = validateBrowserProject(project);
 expect(project.validation.ok, `Canonical project validation failed: ${project.validation.errors.join("; ")}`);
@@ -283,7 +330,7 @@ assertOwnershipMonster(project.monsters, project.monsterSets, project.monsterDes
 assertOwnershipScenarioItem(project.scenarioItems, "Canonical project");
 assertOwnershipTreasure(project.treasures, "Canonical project");
 assertOwnershipShop(project.shops, "Canonical project");
-expect(project.itemTexts.length === 1, `Expected one item-text record, found ${project.itemTexts.length}`);
+expect(project.itemTexts.length === 2, `Expected two item-text records, found ${project.itemTexts.length}`);
 assertOwnershipItemText(project.itemTexts, "Canonical project");
 expect(project.spellOverrides.length === 1, `Expected one custom spell, found ${project.spellOverrides.length}`);
 assertOwnershipSpell(project.spellOverrides, "Canonical project");
@@ -300,6 +347,18 @@ expect(project.source.files.length === 0, "Fresh canonical project must not inve
 expect(project.source.immutable === false, "Fresh canonical project must not be immutable");
 const questAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 47);
 expect(questAction?.id === 1, `First authored quest flag must be runtime-valid ID 1, found ${questAction?.id}`);
+const allyAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 89);
+expect(allyAction?.id === 1, `Authored ally action must resolve Providence Sentinel ID 1, found ${allyAction?.id}`);
+const progressionMediaAction = project.triggers.flatMap((trigger) => trigger.actions).find((action) => action.rawCode === 9 && action.id === 321);
+expect(progressionMediaAction?.mediaRequiredForProgression === true, "Canonical sound action must retain its Remake progression requirement");
+expect(
+  progressionMediaEncounter.actions.some((action) =>
+    action.rawCode === 9 &&
+    action.id === 321 &&
+    action.mediaRequiredForProgression === true
+  ),
+  "Canonical encounter sound action must retain its Remake progression requirement"
+);
 
 project.scenario.projectPath = projectDir;
 project.source.rawSourcesDir = "";
@@ -340,7 +399,7 @@ poisonedLandlook.rangeSlots[0].reserved = 0x2345;
 poisonedProject.timedEncounters[0].rawBytes = new Array(40).fill(0xa5);
 poisonedProject.timedEncounters[0].reservedWords = new Array(9).fill(0x3456);
 poisonedProject.mapRecords[0].rawBytes = new Array(340).fill(0xa5);
-poisonedProject.scenarioItems[0].rawBytes = new Array(100).fill(0xa5);
+for (const item of poisonedProject.scenarioItems) item.rawBytes = new Array(100).fill(0xa5);
 poisonedProject.treasures[0].rawBytes = new Array(48).fill(0xa5);
 poisonedProject.shops[0].rawBytes = new Array(3002).fill(0xa5);
 poisonedProject.scenario.shell.rawBytes = new Array(320).fill(0xd8);
@@ -591,6 +650,7 @@ const summary = {
     battles: project.battles.length,
     monsters: project.monsters.length,
     monsterDescriptions: project.monsterDescriptions.length,
+    scenarioItems: project.scenarioItems.length,
     itemTexts: project.itemTexts.length,
     treasures: project.treasures.length,
     shops: project.shops.length,
@@ -754,6 +814,16 @@ async function assertNoRawSources(stage) {
   assertOwnershipMessage(savedProject.messages, `Rust-saved project ${stage}`);
   assertOwnershipOptionLabels(savedProject.optionLabels, `Rust-saved project ${stage}`);
   assertOwnershipSimpleEncounter(savedProject.simpleEncounters, `Rust-saved project ${stage}`);
+  expect(
+    savedProject.simpleEncounters
+      .flatMap((encounter) => encounter.actions)
+      .some((action) =>
+        action.rawCode === 9 &&
+        action.id === 321 &&
+        action.mediaRequiredForProgression === true
+      ),
+    `Rust-saved project ${stage} lost its encounter progression-media marker`
+  );
   assertOwnershipComplexEncounter(savedProject.complexEncounters, `Rust-saved project ${stage}`);
   assertOwnershipThiefEncounter(savedProject.thiefEncounters, `Rust-saved project ${stage}`);
   assertOwnershipTimedEncounter(savedProject.timedEncounters, `Rust-saved project ${stage}`);
@@ -804,7 +874,7 @@ function assertCompleteNativeFolder(files, label) {
     ["Data Caste", 30 * 576],
     ["Data Solids", 1024],
     ["Layout", 256],
-    ["Data MD2", 340],
+    ["Data MD2", 2 * 340],
     ["Data Custom 1 BD", 8104]
   ]);
   for (const [name, bytes] of exactSizes) {
@@ -975,18 +1045,30 @@ function assertOwnershipDungeon(project, label) {
 
 function assertOwnershipItemText(records, label) {
   const itemText = records?.find((record) => record.itemId === 901);
+  const bladeText = records?.find((record) => record.itemId === 902);
   expect(itemText, `${label} is missing item-text record 901`);
   expect(itemText.unidentifiedName === "Unknown Providence Token", `${label} has the wrong unidentified item name`);
   expect(itemText.identifiedName === "Providence Token", `${label} has the wrong identified item name`);
   expect(itemText.description === "This item text was compiled from canonical Providence data.", `${label} has the wrong item description`);
+  expect(bladeText, `${label} is missing item-text record 902`);
+  expect(bladeText.unidentifiedName === "Plain Providence Blade", `${label} has the wrong unidentified blade name`);
+  expect(bladeText.identifiedName === "Providence Blade", `${label} has the wrong identified blade name`);
+  expect(bladeText.description === "A simple scenario-local weapon carried by the Providence Sentinel.", `${label} has the wrong blade description`);
 }
 
 function assertOwnershipScenarioItem(records, label) {
   const item = records?.find((record) => record.id === 101 && record.itemId === 901);
+  const blade = records?.find((record) => record.id === 102 && record.itemId === 902);
   expect(item, `${label} is missing scenario-item record 101 for item 901`);
   expect(item.cost === 1, `${label} scenario item has the wrong canonical cost`);
   expect(item.spare2?.length === 7 && item.spare2.every((value) => value === 0), `${label} scenario item does not own all seven semantic spare words`);
   expect(!Object.hasOwn(item, "rawBytes"), `${label} scenario item exposes compatibility storage`);
+  expect(blade, `${label} is missing scenario-item record 102 for item 902`);
+  expect(blade.type === 2 && blade.cost === 40 && blade.weight === 12 && blade.hands === 1, `${label} scenario blade has the wrong canonical equipment fields`);
+  expect(blade.itemCat0 === 0x10000000, `${label} scenario blade lost its dagger category`);
+  expect(blade.vSmall === 6 && blade.vLarge === 6, `${label} scenario blade has the wrong canonical damage fields`);
+  expect(blade.spare2?.length === 7 && blade.spare2.every((value) => value === 0), `${label} scenario blade does not own all seven semantic spare words`);
+  expect(!Object.hasOwn(blade, "rawBytes"), `${label} scenario blade exposes compatibility storage`);
 }
 
 function assertCompiledTileSolids(files, label) {
@@ -1101,6 +1183,7 @@ function assertOwnershipMonster(records, monsterSets, descriptions, label) {
   expect(monster.hitDice === 9 && monster.staminaBonus === 200 && monster.agility === 201 && monster.movementMax === 202, `${label} monster has the wrong unsigned-byte fields`);
   expect(monster.armor === -4 && monster.typeFlags?.join(",") === "1,-1,2,-2,3,-3,4,-4", `${label} monster has the wrong signed-byte fields`);
   expect(monster.attacks?.length === 5 && monster.attacks[0]?.join(",") === "1,8,0,0", `${label} monster has the wrong fixed attack inventory`);
+  expect(monster.items?.[0] === 902 && monster.weapon === 902, `${label} monster lost its carried and equipped scenario weapon`);
   expect(monster.displayName === "Providence Sentinel", `${label} monster has the wrong display name`);
   for (const [setId, sourceFile] of [[1, "Data MD1"], [-1, "Data MD-1"]]) {
     const set = monsterSets?.find((candidate) => candidate.setId === setId);
@@ -1467,11 +1550,38 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const maps = documents.get("classic/maps.json");
   expect(maps.maps.some((map) => map.id === "land:0" && map.tiles.at(-1) === -100), "Remake export lost the canonical map identity or special tile");
   expect(maps.maps.some((map) => map.id === "dungeon:0" && map.levelType === "dungeon" && map.tiles[5 * 90 + 4] === 0x1501), "Remake export lost the canonical dungeon map or Action Point marker");
+  const scrollingMap = maps.mapRecords.find((record) => record.id === 1);
+  expect(scrollingMap?.show === -200, "Remake export lost the scrolling-text player-map identity");
+  expect(scrollingMap.scrollingText?.resourceType === "TEXT" && scrollingMap.scrollingText.resourceId === -200, "Remake export did not link the scrolling player map to TEXT -200");
+  expect(scrollingMap.scrollingText.text === scrollingText.toString("ascii").trim(), "Remake export did not decode scrolling TEXT -200");
+  expect(scrollingMap.scrollingText.payloadEncoding === "classic-resource-data" && files.has(scrollingMap.scrollingText.payloadPath), "Remake scrolling text lost its immutable TEXT payload");
+  const presentation = scrollingMap.scrollingText.presentation;
+  expect(presentation?.format === "portable-rich-text-v1" && presentation.runs?.length === 1, "Remake scrolling text lost its portable presentation");
+  expect(
+    presentation.runs[0].start === 0 &&
+      presentation.runs[0].end === scrollingMap.scrollingText.text.length &&
+      presentation.runs[0].fontSize === 12 &&
+      presentation.runs[0].color === "#182038" &&
+      presentation.runs[0].bold === true,
+    "Remake scrolling text did not normalize its authored style run"
+  );
+  expect(scrollingMap.scrollingText.styleResource === undefined, "Remake scrolling text retained a Classic styl payload reference");
+  expect([...files.keys()].every((name) => !name.endsWith(".styl")), "Remake export copied Classic styl bytes into the runtime bundle");
   const scripts = documents.get("classic/scripts.json");
   const trigger = scripts.triggers.find((candidate) => candidate.id === "land:0:ap:0");
   expect(trigger, "Remake export lost the stable Action Point identity");
   expect(trigger.actions.some((action) => action.kind === "classic" && action.rawCode === 1 && action.code === 1 && action.gosub === false), "Remake export lost the normalized message action");
   expect(trigger.actions.some((action) => action.kind === "classic" && action.rawCode === 47 && action.code === 47 && action.gosub === false), "Remake export lost the normalized quest action");
+  expect(trigger.actions.some((action) => action.kind === "classic" && action.rawCode === 89 && action.code === 89 && action.id === 1), "Remake export lost the authored ally action");
+  expect(
+    trigger.actions.some((action) =>
+      action.kind === "classic" &&
+      action.rawCode === 9 &&
+      action.id === 321 &&
+      !Object.hasOwn(action, "mediaRequiredForProgression")
+    ),
+    "Remake export retained legacy progression-required sound policy"
+  );
   const dungeonRandomLevel = scripts.randomLevels.find((candidate) => candidate.id === "dungeon:0:randlevel");
   expect(dungeonRandomLevel?.isDark && dungeonRandomLevel.useLos && dungeonRandomLevel.landlook === 0, "Remake export lost the canonical dungeon random-level flags");
   const dungeonTrigger = scripts.triggers.find((candidate) => candidate.id === "dungeon:0:ap:1");
@@ -1484,9 +1594,21 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   const encounters = documents.get("classic/encounters.json");
   expect(encounters.simpleEncounters.some((record) => record.id === 0), "Remake export lost the stable simple-encounter identity");
   expect(encounters.complexEncounters.some((record) => record.id === 0), "Remake export lost the stable complex-encounter identity");
+  expect(
+    encounters.simpleEncounters
+      .flatMap((record) => record.actions)
+      .some((action) =>
+        action.rawCode === 9 &&
+        action.id === 321 &&
+        !Object.hasOwn(action, "mediaRequiredForProgression")
+      ),
+    "Remake export retained legacy encounter progression-media policy"
+  );
   const content = documents.get("classic/content.json");
   expect(content.monsters.some((record) => record.id === 1 && record.nameId === 1), "Remake export conflated monster record and name identities");
   expect(content.scenarioItems.some((record) => record.id === 101 && record.itemId === 901), "Remake export lost scenario-item record or item identity");
+  expect(content.scenarioItems.some((record) => record.id === 102 && record.itemId === 902), "Remake export lost the carried scenario-item record");
+  expect(content.monsters.some((record) => record.id === 1 && record.items?.[0] === 902 && record.weapon === 902), "Remake export lost the monster's carried or equipped scenario item");
   const runtime = documents.get("runtime.json");
   expect(runtime.recommendedGameplayProfile === "core.classic", "Remake runtime lost the recommended gameplay profile");
   expect(runtime.requiredExtensions.length === 0, "Ordinary Classic proof unexpectedly requires a Remake extension");
@@ -1494,7 +1616,8 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
   expect(runtime.targetSupport.remakeOnlyReasons.length === 0, "Ordinary Classic proof must not have Remake-only reasons");
 
   const assets = documents.get("classic/assets.json");
-  expect(assets.managedAssets.length === canonicalProject.assets.length, "Remake export did not package every scenario-managed asset");
+  const runtimeManagedAssets = canonicalProject.assets.filter((asset) => asset.resourceType !== "styl");
+  expect(assets.managedAssets.length === runtimeManagedAssets.length, "Remake export did not package every runtime-managed asset");
   for (const exported of assets.managedAssets) {
     const source = canonicalProject.assets.find((asset) => asset.id === exported.id);
     expect(source, `Remake export added unknown managed asset ${exported.id}`);
@@ -1538,7 +1661,7 @@ function assertRemakeCompatibilityBundle(files, canonicalProject) {
 
   for (const [name, document] of documents) assertPortableRemakeDocument(document, name);
   const runtimeMediaFiles = canonicalProject.assets.filter((asset) => ["PICT", "cicn", "snd "].includes(asset.resourceType)).length;
-  const expectedPayloadFiles = canonicalProject.assets.length + runtimeMediaFiles;
+  const expectedPayloadFiles = runtimeManagedAssets.length + runtimeMediaFiles;
   expect(manifest.counts.packagedAssetPayloads === expectedPayloadFiles, "Remake export reported the wrong packaged payload count");
   expect([...files.keys()].filter((name) => !requiredDocuments.includes(name)).length === expectedPayloadFiles, "Remake export produced an unexpected payload file set");
 }

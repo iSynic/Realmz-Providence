@@ -13,9 +13,9 @@ mod native_manifest;
 pub mod project;
 pub mod project_package;
 pub mod realmz;
-mod remake_extension_catalog;
 mod realmz_reference;
 pub mod remake_exporter;
+mod remake_extension_catalog;
 pub mod resource_fork;
 pub mod resource_preview;
 pub(crate) mod rule_compiler;
@@ -58,6 +58,7 @@ pub fn run() {
             media_assets::delete_project_asset,
             commands::save_project,
             commands::export_project,
+            commands::export_remake_campaign,
             commands::validate_project,
             commands::benchmark_project,
             harness::get_harness_config,
