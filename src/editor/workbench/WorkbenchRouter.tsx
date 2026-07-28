@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, ExportTarget, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, RandomLevel, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, ExportReport, ExportTarget, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, ProvidenceWorkspace, RandomLevel, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import type { TransientUndoScope } from "../app/transientUndo";
@@ -85,7 +85,8 @@ function WorkbenchRouterContent({
   onValidate,
   onExport,
   onExportProjectJson,
-  onBenchmark
+  onBenchmark,
+  onUpdatePreviewSettings
 }: WorkbenchRouterProps) {
   if (!state.project && state.activeWorkbench === "project") {
     return <>{emptyProjectView}</>;
@@ -364,9 +365,12 @@ function WorkbenchRouterContent({
         exportReport={exportReport}
         benchmark={benchmark}
         desktopRuntime={desktopRuntime}
+        workspace={state.workspace}
+        projectDir={projectDir}
         onExport={onExport}
         onExportProjectJson={onExportProjectJson}
         onBenchmark={onBenchmark}
+        onUpdatePreviewSettings={onUpdatePreviewSettings}
       />
     );
   }
@@ -427,6 +431,7 @@ type WorkbenchRouterProps = {
   onExport: (target?: ExportTarget) => void;
   onExportProjectJson: () => void;
   onBenchmark: () => void;
+  onUpdatePreviewSettings: (settings: ProvidenceWorkspace["remakePreview"]) => Promise<void>;
 };
 
 type EditorStateSetter<Key extends keyof EditorState> = (value: EditorState[Key]) => void;

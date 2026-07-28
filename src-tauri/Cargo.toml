@@ -18,6 +18,7 @@ tauri-build = { version = "2", features = [] }
 base64 = "0.22"
 hex = "0.4"
 image = { version = "0.25.10", default-features = false, features = ["gif", "jpeg", "png", "tiff"] }
+rand = "0.8"
 png = "0.17"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -25,6 +26,7 @@ sha2 = "0.10"
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 thiserror = "1"
+tungstenite = "0.28"
 walkdir = "2"
 zip = { version = "4", default-features = false }
 

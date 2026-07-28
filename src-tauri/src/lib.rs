@@ -12,6 +12,7 @@ pub mod music_compatibility;
 mod native_manifest;
 pub mod project;
 pub mod project_package;
+pub mod preview;
 pub mod realmz;
 mod realmz_reference;
 pub mod remake_exporter;
@@ -26,6 +27,7 @@ pub mod workspace;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(preview::PreviewManager::default())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             commands::default_storage_paths,
@@ -59,6 +61,9 @@ pub fn run() {
             commands::save_project,
             commands::export_project,
             commands::export_remake_campaign,
+            preview::launch_remake_preview,
+            preview::send_remake_preview_command,
+            preview::stop_remake_preview,
             commands::validate_project,
             commands::benchmark_project,
             harness::get_harness_config,

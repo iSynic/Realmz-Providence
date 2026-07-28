@@ -783,6 +783,14 @@ export function App() {
         onExport={exportProject}
         onExportProjectJson={downloadProjectJsonBackup}
         onBenchmark={benchmarkProject}
+        onUpdatePreviewSettings={async (settings) => {
+          if (!state.workspace) return;
+          const workspace = { ...state.workspace, remakePreview: settings };
+          dispatch({ type: "setWorkspace", workspace });
+          if (desktopRuntime) {
+            await invoke("save_workspace", { workspaceDir, workspace });
+          }
+        }}
       />
       {projectDialogOpen && (
         <ProjectNameDialog

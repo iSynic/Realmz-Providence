@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { Download, Gauge } from "lucide-react";
-import { BenchmarkReport, ExportReport, ExportTarget, Project, ScenarioTarget } from "../types";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { useEffect, useState } from "react";
+import { Download, Gauge, Play, Square } from "lucide-react";
+import { BenchmarkReport, ExportReport, ExportTarget, Project, ProvidenceWorkspace, ScenarioTarget } from "../types";
 import { InfoGrid } from "../components/InfoGrid";
 import { EmptyState, EntityRow, IssueGroup, PanelHeader, ScrollArea, ValidationGate } from "../ui";
 import { TutorialTip } from "../components/TutorialTip";
@@ -35,17 +37,23 @@ export function ExportPanel({
   exportReport,
   benchmark,
   desktopRuntime,
+  workspace,
+  projectDir,
   onExport,
   onExportProjectJson,
-  onBenchmark
+  onBenchmark,
+  onUpdatePreviewSettings
 }: {
   project: Project | null;
   exportReport: ExportReport | null;
   benchmark: BenchmarkReport | null;
   desktopRuntime: boolean;
+  workspace?: ProvidenceWorkspace | null;
+  projectDir?: string;
   onExport: (target?: ExportTarget) => void;
   onExportProjectJson: () => void;
   onBenchmark: () => void;
+  onUpdatePreviewSettings?: (settings: ProvidenceWorkspace["remakePreview"]) => Promise<void>;
 }) {
   const [target, setTarget] = useState<ExportTarget>("providence-portable-folder");
   const [browserTarget, setBrowserTarget] = useState<BrowserExportTarget>("project-zip");
@@ -138,6 +146,13 @@ export function ExportPanel({
           <EmptyState compact title="No export report yet" body="Run an export to inspect written, preserved, and blocked package contents." />
         )}
       </section>
+      <RemakePreviewPanel
+        desktopRuntime={desktopRuntime}
+        project={project}
+        projectDir={projectDir ?? ""}
+        settings={workspace?.remakePreview ?? { godotExecutable: "", remakePath: "" }}
+        onUpdateSettings={onUpdatePreviewSettings}
+      />
       <section className="tab-panel">
         <PanelHeader
           className="panel-header"
@@ -229,6 +244,195 @@ export function ExportPanel({
         </div>
       </section>
     </div>
+  );
+}
+
+type PreviewEntryKind = "start" | "map" | "ap" | "battle";
+
+function RemakePreviewPanel({
+  desktopRuntime,
+  project,
+  projectDir,
+  settings,
+  onUpdateSettings
+}: {
+  desktopRuntime: boolean;
+  project: Project | null;
+  projectDir: string;
+  settings: ProvidenceWorkspace["remakePreview"];
+  onUpdateSettings?: (settings: ProvidenceWorkspace["remakePreview"]) => Promise<void>;
+}) {
+  const [godotExecutable, setGodotExecutable] = useState(settings.godotExecutable);
+  const [remakePath, setRemakePath] = useState(settings.remakePath);
+  const [entryKind, setEntryKind] = useState<PreviewEntryKind>("start");
+  const [entryId, setEntryId] = useState("");
+  const [mapEntry, setMapEntry] = useState({ levelType: "land", levelIndex: 0, x: 0, y: 0 });
+  const [status, setStatus] = useState("Not running");
+  const [running, setRunning] = useState(false);
+  const [runtimeEvent, setRuntimeEvent] = useState<Record<string, unknown> | null>(null);
+
+  useEffect(() => {
+    setGodotExecutable(settings.godotExecutable);
+    setRemakePath(settings.remakePath);
+  }, [settings.godotExecutable, settings.remakePath]);
+
+  useEffect(() => {
+    if (!desktopRuntime) return;
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    listen<Record<string, unknown>>("remake-preview-event", (event) => {
+      if (disposed) return;
+      setRuntimeEvent(event.payload);
+      if (event.payload.type === "runtime-error") {
+        setStatus(String(event.payload.message ?? "Remake preview runtime error"));
+      } else if (event.payload.type === "response" && event.payload.status === "error") {
+        setStatus(String(event.payload.message ?? "Remake preview request failed"));
+      }
+    }).then((release) => {
+      if (disposed) release();
+      else unlisten = release;
+    });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [desktopRuntime]);
+
+  async function applyAndRestart() {
+    if (!project) return;
+    const nextSettings = { godotExecutable: godotExecutable.trim(), remakePath: remakePath.trim() };
+    try {
+      await onUpdateSettings?.(nextSettings);
+      setStatus("Exporting v3 package and starting Remake...");
+      const numericId = Number.parseInt(entryId, 10);
+      const report = await invoke<{
+        sessionId: string;
+        packagePath: string;
+        packageHash: string;
+        processId: number;
+      }>("launch_remake_preview", {
+        request: {
+          projectDir,
+          project,
+          settings: nextSettings,
+          entry: {
+            kind: entryKind,
+            triggerId: entryKind === "ap" ? entryId.trim() : "",
+            battleId: entryKind === "battle" && Number.isFinite(numericId) ? numericId : -1,
+            slot: 0,
+            ...mapEntry
+          }
+        }
+      });
+      setRunning(true);
+      setStatus(`Running package ${report.packageHash.slice(0, 12)}… in process ${report.processId}`);
+    } catch (error) {
+      setRunning(false);
+      setStatus(`Preview failed: ${String(error)}`);
+    }
+  }
+
+  async function stopPreview() {
+    try {
+      await invoke("stop_remake_preview");
+      setRunning(false);
+      setStatus("Stopped");
+    } catch (error) {
+      setStatus(`Could not stop preview: ${String(error)}`);
+    }
+  }
+
+  return (
+    <section className="tab-panel">
+      <PanelHeader className="panel-header" title="Realmz Remake Preview" />
+      {!desktopRuntime ? (
+        <EmptyState
+          compact
+          title="Preview companion requires Providence desktop"
+          body="Browser Providence can author, validate, and export v3 packages, but it cannot launch a local Remake process."
+        />
+      ) : (
+        <>
+          <div className="export-actions">
+            <label className="field compact">
+              <span>Godot executable</span>
+              <input
+                value={godotExecutable}
+                onChange={(event) => setGodotExecutable(event.target.value)}
+                placeholder="C:\Path\To\Godot.exe"
+              />
+            </label>
+            <label className="field compact">
+              <span>Remake checkout or executable</span>
+              <input
+                value={remakePath}
+                onChange={(event) => setRemakePath(event.target.value)}
+                placeholder="F:\Realmz Remake"
+              />
+            </label>
+            <label className="field compact">
+              <span>Entry point</span>
+              <select value={entryKind} onChange={(event) => setEntryKind(event.target.value as PreviewEntryKind)}>
+                <option value="start">Campaign start</option>
+                <option value="map">Map location</option>
+                <option value="ap">Action point ID</option>
+                <option value="battle">Battle ID</option>
+              </select>
+            </label>
+            {entryKind === "map" ? (
+              <>
+                <label className="field compact">
+                  <span>Map type</span>
+                  <select
+                    value={mapEntry.levelType}
+                    onChange={(event) => setMapEntry({ ...mapEntry, levelType: event.target.value })}
+                  >
+                    <option value="land">Land</option>
+                    <option value="dungeon">Dungeon</option>
+                  </select>
+                </label>
+                {(["levelIndex", "x", "y"] as const).map((field) => (
+                  <label className="field compact" key={field}>
+                    <span>{field === "levelIndex" ? "Map index" : field.toUpperCase()}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={mapEntry[field]}
+                      onChange={(event) => setMapEntry({ ...mapEntry, [field]: Number(event.target.value) })}
+                    />
+                  </label>
+                ))}
+              </>
+            ) : entryKind !== "start" ? (
+              <label className="field compact">
+                <span>{entryKind === "ap" ? "Stable trigger ID" : "Battle ID"}</span>
+                <input value={entryId} onChange={(event) => setEntryId(event.target.value)} />
+              </label>
+            ) : null}
+            <button
+              className="btn btn-primary"
+              disabled={!project || !projectDir || !remakePath.trim() || ((entryKind === "ap" || entryKind === "battle") && !entryId.trim())}
+              onClick={applyAndRestart}
+            >
+              <Play size={14} /> Apply and Restart
+            </button>
+            <button className="btn btn-secondary" disabled={!running} onClick={stopPreview}>
+              <Square size={14} /> Stop
+            </button>
+          </div>
+          <InfoGrid
+            rows={[
+              ["Status", status],
+              ["Policy", "Clean package state; Remake enforces the selected script tier"],
+              ["Latest Event", runtimeEvent ? String(runtimeEvent.type ?? "event") : "none"]
+            ]}
+          />
+          {runtimeEvent ? (
+            <pre className="code-block">{JSON.stringify(runtimeEvent, null, 2)}</pre>
+          ) : null}
+        </>
+      )}
+    </section>
   );
 }
 

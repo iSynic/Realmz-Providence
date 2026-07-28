@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://realmz-remake.local/contracts/remake-preview-protocol.v1.json",
+  "title": "Providence to Realmz Remake preview protocol",
+  "type": "object",
+  "required": ["protocolVersion", "messages"],
+  "properties": {
+    "protocolVersion": { "const": 1 },
+    "transport": { "const": "authenticated-loopback-websocket" },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "handshake",
+          "load-package",
+          "launch-entry",
+          "stop",
+          "ping",
+          "diagnostics",
+          "current-location",
+          "vm-trace",
+          "state-summary",
+          "runtime-event",
+          "runtime-error",
+          "response"
+        ]
+      },
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false,
+  "protocolVersion": 1,
+  "transport": "authenticated-loopback-websocket",
+  "messages": [
+    "handshake",
+    "load-package",
+    "launch-entry",
+    "stop",
+    "ping",
+    "diagnostics",
+    "current-location",
+    "vm-trace",
+    "state-summary",
+    "runtime-event",
+    "runtime-error",
+    "response"
+  ]
+}

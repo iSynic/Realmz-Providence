@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
 
-pub const WORKSPACE_SCHEMA_VERSION: u32 = 1;
+pub const WORKSPACE_SCHEMA_VERSION: u32 = 2;
 pub const LIBRARY_SCHEMA_VERSION: u32 = 4;
 pub const WORKSPACE_FILE_NAME: &str = "workspace.json";
 pub const LIBRARY_DIR: &str = "library";
@@ -34,7 +34,16 @@ pub struct ProvidenceWorkspace {
     pub active_library_catalog: Option<LibraryCatalog>,
     #[serde(default)]
     pub custom_assets: Vec<ManagedAsset>,
+    #[serde(default)]
+    pub remake_preview: RemakePreviewSettings,
     pub diagnostics: Vec<LibraryDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePreviewSettings {
+    pub godot_executable: String,
+    pub remake_path: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -162,6 +171,10 @@ pub fn open_workspace(workspace_dir: impl AsRef<Path>) -> Result<ProvidenceWorks
         let text = fs::read_to_string(&workspace_path).with_path(&workspace_path)?;
         let mut workspace: ProvidenceWorkspace =
             serde_json::from_str(&text).with_json_path(&workspace_path)?;
+        if workspace.schema_version < WORKSPACE_SCHEMA_VERSION {
+            workspace.schema_version = WORKSPACE_SCHEMA_VERSION;
+            save_workspace(workspace_dir, &workspace)?;
+        }
         workspace.active_library_catalog = load_catalog(workspace_dir)?;
         Ok(workspace)
     } else {
@@ -1680,6 +1693,7 @@ fn default_workspace(
         recent_projects: Vec::new(),
         active_library_catalog,
         custom_assets: Vec::new(),
+        remake_preview: RemakePreviewSettings::default(),
         diagnostics: Vec::new(),
     }
 }
