@@ -18,6 +18,7 @@ import { selectEntityFromId, semanticLabel, triggerEntityId } from "../../utils"
 import { ed3ReachabilityFor, extraActionEvidenceSummary, extraActionPointClassification } from "../../semanticGraph";
 import { resolveSignedMessageTarget, targetPickerConfig } from "../../components/RealmzTargetPicker";
 import { TutorialTip } from "../../components/TutorialTip";
+import { ContextualBehaviorCard } from "../../components/ContextualBehaviorCard";
 import { CollapsibleSection, FloatingWorkbenchPanel, PanelSection } from "../../ui";
 import { actionPointCapacity, nextActionPointRecordIndex } from "../../actionPointCapacity";
 import { realmzScriptStepDescriptorFor } from "../../realmzScriptDescriptors";
@@ -668,6 +669,16 @@ function ActionPointAuthoringWorkbench({
                 onUpdateHeader={(label, fields) => onApplyCommand?.({ kind: "updateTriggerHeader", label, triggerId: selectedTrigger.id, fields })}
                 onMoveActionPoint={moveSelectedActionPoint}
                 onOpenMapCoordinate={previewMapCoordinate}
+              />
+              <ContextualBehaviorCard
+                project={project}
+                role="action"
+                hook="run"
+                targetKind="trigger"
+                recordId={selectedTrigger.id}
+                recordLabel={scriptLabel(project, selectedTrigger)}
+                slot={selectedSlot}
+                onApplyCommand={onApplyCommand}
               />
               <div className="realmz-visual-script-scroll" aria-label="Script step authoring area">
                 <div className={`realmz-visual-script${floatingDetail ? " has-floating-detail" : ""}`}>

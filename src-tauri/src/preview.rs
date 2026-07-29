@@ -56,6 +56,23 @@ pub struct PreviewEntry {
     pub x: i64,
     #[serde(default)]
     pub y: i64,
+    #[serde(default)]
+    pub behavior_id: String,
+    #[serde(default)]
+    pub arguments: Value,
+    #[serde(default)]
+    pub context: Value,
+    #[serde(default)]
+    pub breakpoints: Vec<PreviewBreakpoint>,
+    #[serde(default)]
+    pub pause_on_start: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PreviewBreakpoint {
+    pub behavior_id: String,
+    pub source_node: String,
 }
 
 impl Default for PreviewEntry {
@@ -69,6 +86,11 @@ impl Default for PreviewEntry {
             level_index: 0,
             x: 0,
             y: 0,
+            behavior_id: String::new(),
+            arguments: json!({}),
+            context: json!({}),
+            breakpoints: Vec::new(),
+            pause_on_start: false,
         }
     }
 }

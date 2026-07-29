@@ -122,7 +122,7 @@ export const DIVINITY_CHAPTERS = {
 export const MARKDOWN_REFERENCES = {
   divinityParity: repoRef("Divinity Parity Map", "Feature crosswalk and next milestones.", "docs/divinity-parity-map.md"),
   scriptsV2: repoRef("Scripts V2 Authoring Guide", "Action Point, EDCD, target, and diagnostics workflow.", "docs/scripts-v2-authoring.md"),
-  remakeScenarioScripting: repoRef("Realmz Remake Scenario Scripting", "Safe Script language, state, attachments, full-tier policy, managed preview, and cross-runtime debugging.", "docs/remake-scenario-scripting-guide.md"),
+  remakeScenarioScripting: repoRef("Realmz Remake Scenario Scripting", "Guided behaviors, Safe language, typed state and bindings, sandbox policy, managed preview, and cross-runtime debugging.", "docs/remake-scenario-scripting-guide.md"),
   encounterEcodeAuthoring: repoRef("Encounter ECODE Authoring", "Guided result settings, shared-row safety, raw fallback, and exhaustive opcode coverage.", "docs/encounter-ecode-authoring.md"),
   formatIntegration: repoRef("Scenario Format Integration", "Authored source, runtime cache, and resource policy.", "docs/scenario-format-integration.md"),
   scenarioStartupEvidence: repoRef("Scenario Startup Runtime Anchors", "Marker/main file, Data CI, Data RI, first-start source files, and load-readiness evidence.", "docs/format-evidence-cards/scenario-startup-runtime-anchors.md"),

@@ -29,6 +29,7 @@ const AUTHORING_DOMAINS = new Set([
   "maps",
   "player-maps",
   "scripts",
+  "scripting",
   "text",
   "scenario",
   "rules",

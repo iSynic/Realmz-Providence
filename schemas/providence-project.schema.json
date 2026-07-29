@@ -53,7 +53,7 @@
   "properties": {
     "schemaVersion": {
       "type": "integer",
-      "const": 7,
+      "const": 8,
       "description": "Providence persisted-project schema version."
     },
     "appVersion": { "type": "string" },
@@ -185,9 +185,11 @@
         "recommendedGameplayProfile",
         "requiredExtensions",
         "semanticActions",
-        "scripts",
-        "scriptAttachments",
-        "persistentVariables",
+        "behaviors",
+        "behaviorBindings",
+        "stateDefinitions",
+        "migrations",
+        "requiredPlugins",
         "bindings"
       ],
       "properties": {
@@ -232,41 +234,63 @@
             }
           }
         },
-        "scripts": {
+        "behaviors": {
           "type": "array",
-          "items": { "$ref": "#/$defs/remakeScript" }
+          "items": { "$ref": "#/$defs/remakeBehavior" }
         },
-        "scriptAttachments": {
+        "behaviorBindings": {
           "type": "array",
-          "items": { "$ref": "#/$defs/remakeScriptAttachment" }
+          "items": { "$ref": "#/$defs/remakeBehaviorBinding" }
         },
-        "persistentVariables": {
+        "stateDefinitions": {
           "type": "array",
-          "items": { "$ref": "#/$defs/remakePersistentVariable" }
+          "items": { "$ref": "#/$defs/remakeStateDefinition" }
+        },
+        "migrations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/remakeStateMigration" }
+        },
+        "requiredPlugins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "apiVersion"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9.-]*$"},
+              "apiVersion": {"type": "integer", "minimum": 1}
+            }
+          }
         },
         "bindings": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["spells", "items", "encounters", "monsterAi", "lifecycle"],
+          "required": ["spells", "items", "encounters", "monsterAi", "lifecycle", "ruleModifiers"],
           "properties": {
-            "spells": {"type": "object", "additionalProperties": {"type": "string"}},
-            "items": {"type": "object", "additionalProperties": {"type": "string"}},
-            "encounters": {"type": "object", "additionalProperties": {"type": "string"}},
-            "monsterAi": {"type": "object", "additionalProperties": {"type": "string"}},
-            "lifecycle": {"type": "object", "additionalProperties": {"type": "string"}}
+            "spells": {"type": "object", "additionalProperties": {"$ref": "#/$defs/remakeProviderBinding"}},
+            "items": {"type": "object", "additionalProperties": {"$ref": "#/$defs/remakeProviderBinding"}},
+            "encounters": {"type": "object", "additionalProperties": {"$ref": "#/$defs/remakeProviderBinding"}},
+            "monsterAi": {"type": "object", "additionalProperties": {"$ref": "#/$defs/remakeProviderBinding"}},
+            "lifecycle": {"type": "object", "additionalProperties": {"$ref": "#/$defs/remakeProviderBinding"}},
+            "ruleModifiers": {"type": "object", "additionalProperties": {"$ref": "#/$defs/remakeProviderBinding"}}
           }
         }
       }
     },
-    "remakeScript": {
+    "remakeBehavior": {
       "type": "object",
       "additionalProperties": false,
       "required": [
         "id",
         "name",
-        "documentation",
+        "description",
+        "kind",
+        "role",
+        "hook",
         "tier",
         "apiVersion",
+        "behaviorVersion",
+        "stateSchemaVersion",
         "parameters",
         "returnType",
         "requestedCapabilities",
@@ -281,12 +305,17 @@
           "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9.-]*$"
         },
         "name": { "type": "string", "minLength": 1 },
-        "documentation": { "type": "string" },
+        "description": { "type": "string" },
+        "kind": {"type": "string", "enum": ["entry", "helper"]},
+        "role": {"$ref": "#/$defs/remakeBehaviorRole"},
+        "hook": {"type": "string"},
         "tier": {
           "type": "string",
-          "enum": ["safe", "sandboxed", "trusted"]
+          "enum": ["safe", "sandboxed"]
         },
         "apiVersion": { "type": "integer", "minimum": 1 },
+        "behaviorVersion": { "type": "integer", "minimum": 1 },
+        "stateSchemaVersion": { "type": "integer", "minimum": 1 },
         "parameters": {
           "type": "array",
           "items": { "$ref": "#/$defs/remakeScriptParameter" }
@@ -342,20 +371,37 @@
         "int",
         "float",
         "string",
+        "location-snapshot",
+        "time-snapshot",
+        "wealth-snapshot",
+        "character-snapshot",
+        "character-snapshot-array",
+        "combat-snapshot",
+        "action-outcome",
+        "encounter-outcome",
+        "effect-outcome",
+        "item-outcome",
+        "monster-decision",
+        "rule-modifier",
         "bool-array",
         "int-array",
         "float-array",
         "string-array"
       ]
     },
-    "remakeScriptAttachment": {
+    "remakeBehaviorRole": {
+      "type": "string",
+      "enum": ["action", "encounter", "spell", "item", "monster-ai", "lifecycle", "rule-modifier", "helper"]
+    },
+    "remakeBehaviorBinding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["targetKind", "recordId", "slot", "hook", "scriptId"],
+      "required": ["id", "targetKind", "recordId", "slot", "role", "hook", "behaviorId", "arguments", "priority"],
       "properties": {
+        "id": {"type": "string", "minLength": 1},
         "targetKind": {
           "type": "string",
-          "enum": ["trigger", "simpleEncounter", "complexEncounter", "lifecycle"]
+          "enum": ["trigger", "simpleEncounter", "complexEncounter", "spell", "item", "monster", "lifecycle", "rule"]
         },
         "recordId": { "type": "string" },
         "slot": {
@@ -364,24 +410,36 @@
             { "type": "null" }
           ]
         },
-        "hook": {
-          "oneOf": [
-            { "type": "string" },
-            { "type": "null" }
-          ]
-        },
-        "scriptId": { "type": "string" }
+        "role": {"$ref": "#/$defs/remakeBehaviorRole"},
+        "hook": {"type": "string"},
+        "behaviorId": { "type": "string" },
+        "arguments": {"type": "object", "additionalProperties": {"$ref": "#/$defs/remakeArgumentBinding"}},
+        "priority": {"type": "integer"}
       }
     },
-    "remakePersistentVariable": {
+    "remakeArgumentBinding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "valueType", "maxLength", "defaultValue"],
+      "required": ["kind", "value"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["constant", "state", "context", "record"]},
+        "value": {}
+      }
+    },
+    "remakeStateDefinition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "displayName", "documentation", "scope", "ownerId", "schemaVersion", "valueType", "maxLength", "defaultValue"],
       "properties": {
         "name": {
           "type": "string",
           "pattern": "^[a-z_][a-z0-9_]*$"
         },
+        "displayName": {"type": "string", "minLength": 1},
+        "documentation": {"type": "string"},
+        "scope": {"type": "string", "enum": ["campaign", "map", "encounter", "character", "item-instance", "combat", "transient"]},
+        "ownerId": {"type": "string"},
+        "schemaVersion": {"type": "integer", "minimum": 1},
         "valueType": { "$ref": "#/$defs/remakeScriptValueType" },
         "maxLength": {
           "oneOf": [
@@ -391,6 +449,39 @@
         },
         "defaultValue": {}
       }
+    },
+    "remakeStateMigration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fromContentVersion", "toContentVersion", "behaviorId"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "fromContentVersion": {"type": "string", "minLength": 1},
+        "toContentVersion": {"type": "string", "minLength": 1},
+        "behaviorId": {"type": "string", "minLength": 1}
+      }
+    },
+    "remakeProviderBinding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "behaviorId"],
+          "properties": {
+            "kind": {"const": "script"},
+            "behaviorId": {"type": "string"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "providerId"],
+          "properties": {
+            "kind": {"const": "extension"},
+            "providerId": {"type": "string"}
+          }
+        }
+      ]
     },
     "levelType": {
       "type": "string",

@@ -7,7 +7,7 @@ language reference, examples, preview setup, and debugging advice, start with th
 Providence projects can be compiled into two independent runtime products:
 
 ```text
-Providence canonical project (schema 7)
+Providence canonical project (schema 8)
 |- Native compiler -> native Realmz scenario folder
 `- Scenario exporter -> realmz-remake-scenario v3 -> Realmz Remake
 ```
@@ -37,12 +37,12 @@ cargo run --manifest-path src-tauri/Cargo.toml --bin realmz-remake-converter -- 
 
 | Classic bundle concept | Providence source | Result |
 | --- | --- | --- |
-| Campaign identity and start | `scenario.id`, `scenario.name`, `scenario.shell` | Compatible. Schema 7 currently authors land starts only. |
+| Campaign identity and start | `scenario.id`, `scenario.name`, `scenario.shell` | Compatible. Schema 8 currently authors land starts only. |
 | Map identity | `maps[].id`, `levelType`, `index` | Compatible namespaced string identity. |
 | Runtime landlook changes | opcode `57` plus its `Data EDCD` row | Referenced stock landlooks with complete behavior tables are added to the asset catalog even when no map starts with that landlook, allowing Remake to materialize the matching Realmz PICT atlas before play. |
 | Action Point identity | `triggers[].id` | Compatible stable identity; array position is not used. Data ED3 rows also carry authoritative `callable` reachability. Source and record-index evidence move to the sidecar. |
 | Classic trigger or encounter action | `slot`, `rawCode`, normalized `code`, `id`, `gosub` | Exported as an explicit `kind: "classic"` instruction without reinterpretation. |
-| Remake semantic action | `remakeRuntime.semanticActions[]` and script attachments | Replaces one exported action slot with a namespaced `kind: "semantic"` operation and JSON parameters. Named script attachments use `core.script.call`. |
+| Remake semantic action | `remakeRuntime.semanticActions[]` and behavior bindings | Replaces one exported action slot with a namespaced `kind: "semantic"` operation and JSON parameters. Named behavior bindings use `core.script.call`. |
 | Runtime requirements | `remakeRuntime` | Gameplay-profile recommendation, built-in extension/API requirements, provider bindings, and target-support declarations are emitted in `runtime.json`. |
 | Runtime record reachability | battle, encounter, macro, monster, map, timed-encounter, and item references | All records remain serialized. Battles and encounters carry additive `callable` markers, while `evidence.semanticDecoding.runtimeReachability` records the source-backed transitive closure and evidence paths used by Remake readiness. |
 | Monster identity | `monsters[].id` and independent `nameId` | Compatible. The two IDs remain distinct, including when an authored action adds that monster as an ally. |
@@ -185,12 +185,12 @@ Providence consumes the generated extension catalog in
 constrained by each extension's configuration and operation-parameter schemas. Extension code
 always ships with Remake and cannot be supplied or replaced by a scenario.
 
-Schema 7 adds `authoringTarget`, named script definitions, typed persistent variables, and
-attachments for AP/XAP slots, encounter results, and campaign lifecycle hooks. The target selector
+Schema 8 stores typed behavior definitions, contextual bindings, scoped state,
+versioned migrations, provider bindings, and installed plug-in requirements. The target selector
 controls which authoring tools are visible; computed target support remains authoritative.
 Switching the selector never discards an incompatible feature.
 
-Scenario scripts have three explicit tiers:
+Scenario behaviors have two package execution tiers:
 
 - **Safe** source is parsed as an allowlisted GDScript-like subset and stored as a canonical typed
   AST. Text edits must parse and type-check before replacing that AST. Export writes deterministic
@@ -198,24 +198,27 @@ Scenario scripts have three explicit tiers:
 - **Sandboxed** source is exact UTF-8 GDScript stored below `remake/source/` with its SHA-256,
   requested capabilities, API version, state-schema hash, and source map. Remake executes it only
   in the Windows isolated reducer runner.
-- **Trusted** source uses the same exact-source and reducer contract, but Remake executes it in
-  process only after Developer Scripting is enabled and the user approves the exact package hash
-  and aggregate requested capabilities.
 
-Safe syntax initially covers typed scalar values, bounded homogeneous arrays, locals, persistent
-variables, assignment, arithmetic and boolean expressions, conditions, returns, acyclic named
-script calls, and `await` only for registered yielding operations. Loops, recursion, arbitrary
-Godot APIs, reflection, dynamic calls, classes, inheritance, signals, lambdas, and file access are
-not part of the safe grammar.
+Safe syntax covers typed scalar values, optionals, enums, opaque domain references, immutable
+contexts, bounded homogeneous arrays, locals, scoped persistent variables, assignment,
+expressions, conditions, `match`, bounded `for`, collection queries, returns, acyclic named
+helper calls, and `await` only for registered yielding operations. `while`, recursion, arbitrary
+Godot APIs, reflection, dynamic calls, classes, inheritance, signals, lambdas, file access,
+network, processes, and wall-clock access are not part of the safe grammar.
 
-The initial operation catalog covers quest flags and typed variables, text, choices, teleport,
-battle start, and deterministic scenario RNG. Unavailable operations are export/readiness errors.
-Providence does not silently promote a safe draft to a full tier.
+The Scenario API catalog describes the typed state, flow, world/time, party/character,
+inventory/economy, encounter, combat/spell, presentation, lifecycle, rules, and definition
+operations currently implemented by Remake. Unavailable operations are export/readiness errors.
+Providence does not silently promote a Safe draft to the sandbox.
 
-Every full-tier `.gd` file must be declared in `remake/scripts.json` and in manifest integrity.
+Every sandboxed `.gd` file must be declared in `remake/scripts.json` and in manifest integrity.
 Undeclared `.gd`, `.gdc`, PCK, native libraries, executables, WebAssembly, and symlinks are
-rejected. Exact source bytes are preserved; a one-byte change changes the package hash and
-invalidates trusted approval.
+rejected. Exact source bytes are preserved; a one-byte change changes the package hash.
+
+Packaged scenarios never execute in-process GDScript. Raw Godot access belongs to separately
+installed engine plug-ins. A package may declare a namespaced plug-in and compatible API version;
+missing or incompatible plug-ins block readiness. Plug-ins cannot replace reserved core opcode,
+command, or provider IDs.
 
 Ordinary imported or authored Classic projects keep empty semantic actions and provider bindings,
 so they remain eligible for both native Realmz and Realmz Remake export. Semantic actions or
@@ -225,11 +228,13 @@ Removing or converting all incompatible features makes native export eligible ag
 recommending `core.samuel` or declaring an otherwise unused built-in extension does not make a
 project Remake-only.
 
-Synchronize and verify the trusted catalog against a Remake checkout with:
+Synchronize and verify the built-in extension and Scenario API catalogs against a Remake checkout
+with:
 
 ```powershell
 npm run generate:remake-extension-catalog -- --remake-root "C:\path\Realmz-Remake"
 npm run check:remake-extension-catalog -- --remake-root "C:\path\Realmz-Remake"
+npm run check:scenario-api-docs
 ```
 
 ## Managed Remake preview
@@ -245,23 +250,24 @@ diagnostics, VM trace, current location, state summary, and runtime errors. Rema
 back through script source maps and the evidence sidecar. Every run begins from clean package
 state; live VM patching is intentionally deferred.
 
-Preview follows normal Remake policy. Providence cannot bypass sandbox availability or trusted
-approval. Browser Providence can author, validate, and export, but cannot launch a local process.
+Preview follows normal Remake policy. Providence cannot bypass sandbox availability or installed
+plug-in requirements. Browser Providence can author, validate, and export, but cannot launch a
+local process.
 
 ## Genuine gaps and unresolved runtime path semantics
 
 Three boundaries remain:
 
-1. Providence schema 7 has only `scenario.shell.landLevel` for the authored start. Scenario v3 can
+1. Providence schema 8 has only `scenario.shell.landLevel` for the authored start. Scenario v3 can
    represent a dungeon start, but Providence cannot currently author that distinction. Current
    projects therefore export a land start without loss.
 2. Providence's PICT decoder does not yet support every historical PICT variant. A successful
    bundle export is complete: every scenario-owned PICT has both immutable Classic bytes and PNG
    runtime media. An unsupported variant blocks export instead of becoming an implicit Remake or
    native-installation dependency.
-3. The first scenario-script capability catalog intentionally implements only the quest vertical
-   slice. Spell, item behavior, rules, AI, encounter-resolver, and broader lifecycle APIs require
-   reviewed catalog additions before Providence can expose them.
+3. The catalog is deliberately additive. A role or domain can appear in the authoring model before
+   every desired operation in that family exists; a behavior requiring an unavailable operation is
+   rejected instead of receiving an approximation or raw engine access.
 
 Negative special-land identities remain in the additive optional
 `assets.catalog.specialLandTiles` collection without reinterpreting ordinary non-negative icon IDs.

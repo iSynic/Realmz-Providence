@@ -99,10 +99,17 @@ export function validateRemakeRuntime(project: Project): string[] {
     ["items", "itemBehaviors", project.remakeRuntime.bindings.items],
     ["encounters", "encounterResolvers", project.remakeRuntime.bindings.encounters],
     ["monsterAi", "monsterAiProviders", project.remakeRuntime.bindings.monsterAi],
-    ["lifecycle", "lifecycleHooks", project.remakeRuntime.bindings.lifecycle]
+    ["lifecycle", "lifecycleHooks", project.remakeRuntime.bindings.lifecycle],
+    ["ruleModifiers", "gameplayRuleProviders", project.remakeRuntime.bindings.ruleModifiers]
   ] as const) {
-    for (const [recordId, providerId] of Object.entries(values)) {
+    for (const [recordId, providerBinding] of Object.entries(values)) {
       const context = `remakeRuntime.bindings.${field}.${recordId}`;
+      if (providerBinding.kind === "script") {
+        const behavior = project.remakeRuntime.behaviors.find((entry) => entry.id === providerBinding.behaviorId);
+        if (!behavior) errors.push(`${context} references unavailable behavior '${providerBinding.behaviorId}'.`);
+        continue;
+      }
+      const providerId = providerBinding.providerId;
       const binding = bindings.get(`${capability}:${providerId}`);
       if (!binding) {
         errors.push(`${context} uses unavailable built-in provider '${providerId}'.`);
@@ -117,9 +124,9 @@ export function validateRemakeRuntime(project: Project): string[] {
 
 export function isRemakeOnly(project: Project) {
   return project.remakeRuntime.semanticActions.length > 0
-    || project.remakeRuntime.scripts.length > 0
-    || project.remakeRuntime.scriptAttachments.length > 0
-    || project.remakeRuntime.persistentVariables.length > 0
+    || project.remakeRuntime.behaviors.length > 0
+    || project.remakeRuntime.behaviorBindings.length > 0
+    || project.remakeRuntime.stateDefinitions.length > 0
     || Object.values(project.remakeRuntime.bindings).some(
       (bindings) => Object.keys(bindings).length > 0
     );

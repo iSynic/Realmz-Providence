@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
+import { ContextualBehaviorCard } from "../../components/ContextualBehaviorCard";
 import { LibraryAsset, ProjectCommand, ScenarioSpellOverride } from "../../types";
 import { SPELL_CASTER_CLASSES, SPELL_DAMAGE_TYPES, SPELL_RESIST_CLASSES, SPELL_TARGET_TYPES } from "../../rulesCatalog";
 import { NumberField, SelectField, TextField, CheckboxField } from "./RuleFields";
@@ -114,14 +115,34 @@ export function SpellRulesEditor({ project, catalog, selectedEntity, queueAtlasU
       </section>
       <main className="rules-detail">
         {selectedEntry && (
-          <SpellForm
-            entry={selectedEntry}
-            iconAssets={catalog?.assets ?? []}
-            queueAtlasUrl={queueAtlasUrl}
-            onCreateCustom={() => createCustomFrom(selectedEntry)}
-            canCreateCustom={selectedEntry.spellcasterClass === 4 || Boolean(nextEmptyCustomEntry)}
-            onApplyCommand={onApplyCommand}
-          />
+          <>
+            <ContextualBehaviorCard
+              project={project}
+              role="spell"
+              hook="validate"
+              targetKind="spell"
+              recordId={String(selectedEntry.packedId)}
+              recordLabel={`${selectedEntry.label} validation`}
+              onApplyCommand={onApplyCommand}
+            />
+            <ContextualBehaviorCard
+              project={project}
+              role="spell"
+              hook="effect"
+              targetKind="spell"
+              recordId={String(selectedEntry.packedId)}
+              recordLabel={`${selectedEntry.label} effect`}
+              onApplyCommand={onApplyCommand}
+            />
+            <SpellForm
+              entry={selectedEntry}
+              iconAssets={catalog?.assets ?? []}
+              queueAtlasUrl={queueAtlasUrl}
+              onCreateCustom={() => createCustomFrom(selectedEntry)}
+              canCreateCustom={selectedEntry.spellcasterClass === 4 || Boolean(nextEmptyCustomEntry)}
+              onApplyCommand={onApplyCommand}
+            />
+          </>
         )}
       </main>
     </div>

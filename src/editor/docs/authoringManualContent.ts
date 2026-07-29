@@ -559,7 +559,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       MARKDOWN_REFERENCES.opcodeEdcdEvidence,
       MARKDOWN_REFERENCES.encounterEcodeAuthoring
     ],
-    relatedTopicIds: ["maps", "text", "encounters-targets", "combat", "economy", "scenario", "linter-release"],
+    relatedTopicIds: ["behaviors", "maps", "text", "encounters-targets", "combat", "economy", "scenario", "linter-release"],
     toolTargets: [{ domain: "scripts", editor: "action-points", label: "Open Action Points" }],
     sections: [
       {
@@ -644,6 +644,102 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Script flow",
         caption: "An Action Point with its map location, ordered steps, guided action controls, string preview, and validation state.",
         imageSrc: "/manual/gallery/action-points.png"
+      }
+    ]
+  },
+  {
+    id: "behaviors",
+    groupId: "chapters",
+    label: "Scenario Behaviors",
+    title: "Guided Behaviors and Safe Scripting",
+    summary: "Add reusable Remake behavior to Action Points, encounters, spells, items, monsters, lifecycle events, and bounded rule calculations.",
+    tags: ["behavior", "Safe", "GDScript", "Remake", "state", "binding", "preview", "debugger", "spell", "item", "monster AI"],
+    badges: ["chapter", "Remake"],
+    references: [MARKDOWN_REFERENCES.remakeScenarioScripting],
+    relatedTopicIds: ["scripts", "scenario", "encounters-targets", "combat", "economy", "rules", "linter-release"],
+    toolTargets: [{ domain: "scripting", editor: "behaviors", label: "Open Behaviors" }],
+    sections: [
+      {
+        title: "Choose The Right Authoring Path",
+        paragraphs: [
+          "Classic Action Point steps remain the right tool when a Realmz opcode already expresses the behavior. Guided Safe behaviors add typed conditions, reusable helpers, persistent state, richer hooks, and combinations that Classic records cannot represent cleanly.",
+          "Create or attach a behavior from the record that owns it. The Scripting workbench is the project-wide library for larger edits, shared helpers, state, bindings, migrations, previews, and API reference."
+        ],
+        cards: [
+          { title: "Guided Safe Behavior", body: "The normal path. Build a readable vertical outline and optionally edit its synchronized Safe source.", facts: ["deterministic", "saveable"] },
+          { title: "Sandboxed GDScript", body: "An advanced reducer for behavior the Safe language cannot yet express. It still uses typed contexts and the Scenario API.", facts: ["isolated process"] },
+          { title: "Engine Plug-in", body: "A separately installed Remake component for raw Godot or engine access. Plug-ins are not packaged inside scenarios.", facts: ["separate install"] }
+        ],
+        callout: {
+          tone: "info",
+          title: "One interpreter",
+          body: "Classic instructions and Remake behaviors both run through ScenarioInterpreter. A behavior does not create a second map-script engine."
+        }
+      },
+      {
+        title: "Attach Behavior In Context",
+        steps: [
+          {
+            title: "Set the scenario target",
+            body: "Open Scenario and choose Remake Enhanced. The target controls which authoring tools are visible; Providence still computes actual export compatibility from the features the project uses.",
+            result: "Contextual Behavior sections and the Scripting workbench are available."
+          },
+          {
+            title: "Open the owning record",
+            body: "Choose an Action Point slot, encounter entry or result, spell hook, item hook, monster AI hook, or Scenario lifecycle event. Use its Behavior section to create a compatible entry behavior or attach an existing one.",
+            result: "Providence creates the stable target reference and hook internally."
+          },
+          {
+            title: "Build the readable outline",
+            body: "Add conditions, queries, state changes, calls, presentation, and a role-appropriate return. Use record pickers and typed argument controls instead of entering IDs or JSON.",
+            result: "The behavior reads from top to bottom like the intended player-facing logic."
+          },
+          {
+            title: "Preview this entry",
+            body: "Choose Preview This, select or edit a test profile, and Apply and Restart. Use the debugger dock to inspect the active behavior, stack, locals, persistent state, event timeline, pending yield, and source-linked diagnostics.",
+            result: "The same Remake runtime that players use presents and traces the behavior."
+          }
+        ]
+      },
+      {
+        title: "Roles, State, And Outcomes",
+        points: [
+          "Action and encounter behaviors control continuation with typed outcomes such as Continue, Return, Branch, Resolve, Repeat, or Close.",
+          "Spell and item hooks validate or return an effect outcome. Monster AI returns a validated combat decision. Lifecycle hooks return commands or completion.",
+          "Rule modifiers are pure and return a bounded additive, multiplicative, or clamped value; they cannot replace the core rules engine.",
+          "Persistent state must be declared with Campaign, Map, Encounter, Character, Item Instance, or Combat scope. Local variables remain transient.",
+          "Classic quest flags are available through the named compatibility adapter; new multi-stage quests usually read better as typed state."
+        ]
+      },
+      {
+        title: "Safe Language Boundaries",
+        paragraphs: [
+          "Safe source supports typed values, optionals, enums, opaque game references, bounded arrays, helpers, conditionals, match, bounded for-each, collection queries, and await only for catalog operations marked as yielding.",
+          "It does not expose Godot nodes, resources, singletons, files, network, processes, reflection, dynamic calls, classes, signals, lambdas, while loops, or recursion. Queries return immutable snapshots and mutations become validated port commands."
+        ],
+        callout: {
+          tone: "warning",
+          title: "Do not hide invalid source",
+          body: "An invalid or unsupported Safe source edit remains a draft and never replaces the last valid outline. Providence does not silently convert or escalate it."
+        }
+      },
+      {
+        title: "Updates And Common Mistakes",
+        points: [
+          "Give reusable behaviors and state meaningful names; stable IDs are generated and retained under Technical Details.",
+          "Use a helper only for typed reusable calculation or flow. Use an entry behavior for a gameplay hook.",
+          "Declare a pure, non-yielding migration for every persistent-state schema change released under the same campaign identity.",
+          "Do not request a capability that the behavior never uses, and do not attach a behavior to an incompatible role or hook.",
+          "Do not use sandboxed GDScript merely to avoid learning the guided editor. Use it when the Safe catalog genuinely lacks the required expression.",
+          "Do not package raw Godot access in a scenario. Declare a separately installed engine plug-in requirement when an engine-level provider is truly necessary."
+        ]
+      }
+    ],
+    visualSlots: [
+      {
+        title: "Contextual behavior and debugger",
+        caption: "A record-local Behavior panel beside the guided outline, synchronized Safe source, preview profile, and source-linked debugger state.",
+        imageSrc: "/manual/gallery/scenario-behaviors.png"
       }
     ]
   },

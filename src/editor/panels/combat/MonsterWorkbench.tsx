@@ -26,6 +26,7 @@ import { MonsterLibraryMultiSelection } from "./MonsterLibraryMultiSelection";
 import { MonsterLibraryOwnershipBadge } from "./MonsterLibraryOwnershipBadge";
 import { MonsterLibraryIcon, MonsterLibraryPreview } from "./MonsterLibraryPreview";
 import { useMonsterLibraryFilter } from "./monsterLibraryFilters";
+import { MonsterBehaviorCard } from "./MonsterBehaviorCard";
 import { MonsterRecordEditor } from "./MonsterRecordEditor";
 import { ScenarioMonsterList, type ScenarioMonsterListEntry } from "./ScenarioMonsterList";
 import { MissingMonsterSetEditor, MonsterSetToolbar } from "./MonsterSetControls";
@@ -44,7 +45,6 @@ import {
   visibleMonsterLibraryEntries,
   type MonsterLibraryCopyEntry
 } from "./monsterLibraryWorkflow";
-
 export { monsterRequiredWeaponDisplayCode, monsterRequiredWeaponStoredCode } from "./MonsterRecordEditor";
 export {
   copyScrapbookMonsterToScenario,
@@ -52,7 +52,6 @@ export {
   monsterIconOverrideForLibraryCopy,
   scrapbookEntryForMonsterId
 } from "./monsterLibraryWorkflow";
-
 const MONSTER_RECORDS_HELP = "Data MD records are 210-byte scenario monster templates. Realmz copies them into runtime combat state, so Providence edits the source template rather than generated bestiary cache data.";
 const MONSTER_LIBRARY_DRAG_MIME = "application/x-realmz-monster-library-id";
 const SCENARIO_MONSTER_DRAG_MIME = "application/x-realmz-scenario-monster-id";
@@ -667,6 +666,7 @@ export function MonsterWorkbench({
           headerMeta={selectedSetTools}
           onUpdate={(changes) => update(selected.id, changes, activeSetId)}
           onUpdateDescription={(text) => onApplyCommand?.({ kind: "upsertMonsterDescription", label: `Update monster ${selected.id} description`, id: selected.id, text })}
+          behaviorSection={onApplyCommand ? <MonsterBehaviorCard project={project} monster={selected} onApplyCommand={onApplyCommand} /> : null}
           onCopyToLibrary={() => copyScenarioMonsterToLibrary(selected)}
           onOpenIconSet={onSelectIconSetTab}
           onDuplicate={() => {

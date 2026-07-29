@@ -209,9 +209,10 @@ function assertNativeRealmzCompatible(project: Project) {
     : 0;
   const reasons = [
     ...(runtime?.semanticActions?.length ? ["semantic actions"] : []),
-    ...(runtime?.scripts?.length ? ["scenario scripts"] : []),
-    ...(runtime?.scriptAttachments?.length ? ["script attachments"] : []),
-    ...(runtime?.persistentVariables?.length ? ["persistent script variables"] : []),
+    ...(runtime?.behaviors?.length ? ["scenario behaviors"] : []),
+    ...(runtime?.behaviorBindings?.length ? ["behavior bindings"] : []),
+    ...(runtime?.stateDefinitions?.length ? ["persistent behavior state"] : []),
+    ...(runtime?.requiredPlugins?.length ? ["engine plug-in requirements"] : []),
     ...(bindingCount > 0 ? ["Remake runtime bindings"] : [])
   ];
   if (reasons.length > 0) {

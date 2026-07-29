@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { TutorialTip } from "../components/TutorialTip";
+import { ContextualBehaviorCard } from "../components/ContextualBehaviorCard";
 import { Project, ProjectCommand } from "../types";
 import {
   FormField,
@@ -73,6 +74,21 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
           project={project}
           onApplyCommand={onApplyCommand}
           onOpenScripting={() => onOpenTool("scripting", "scripts")}
+        />
+        <ContextualBehaviorCard
+          project={project}
+          role="lifecycle"
+          hook="campaign-start"
+          targetKind="lifecycle"
+          recordId="campaign"
+          recordLabel="Campaign Start"
+          onApplyCommand={onApplyCommand}
+          onOpenWorkbench={() => onOpenTool("scripting", "scripts")}
+        />
+        <ScenarioRuleModifierBehavior
+          project={project}
+          onApplyCommand={onApplyCommand}
+          onOpenWorkbench={() => onOpenTool("scripting", "scripts")}
         />
 
         <article id="scenario-startup" className="scenario-card scenario-card-primary">
@@ -310,6 +326,59 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
 
       </div>
     </section>
+  );
+}
+
+const RULE_MODIFIER_FAMILIES = [
+  "attack-chance",
+  "damage",
+  "healing",
+  "spell-cost",
+  "movement-cost",
+  "fatigue",
+  "experience",
+  "loot",
+  "encounter-chance",
+  "rest-recovery",
+  "time-advance",
+  "condition-resistance"
+] as const;
+
+function ScenarioRuleModifierBehavior({
+  project,
+  onApplyCommand,
+  onOpenWorkbench
+}: {
+  project: Project;
+  onApplyCommand: (command: ProjectCommand) => void;
+  onOpenWorkbench: () => void;
+}) {
+  const [family, setFamily] = useState<(typeof RULE_MODIFIER_FAMILIES)[number]>("damage");
+  if (project.authoringTarget !== "remake-enhanced") return null;
+  return (
+    <article className="scenario-card">
+      <header>
+        <div>
+          <strong>Gameplay Calculation Behavior</strong>
+          <small>Observe and modify bounded rule calculations without replacing the rules engine.</small>
+        </div>
+        <select value={family} onChange={(event) => setFamily(event.target.value as typeof family)}>
+          {RULE_MODIFIER_FAMILIES.map((entry) => (
+            <option key={entry} value={entry}>{entry.replace(/-/g, " ")}</option>
+          ))}
+        </select>
+      </header>
+      <ContextualBehaviorCard
+        project={project}
+        role="rule-modifier"
+        hook={family}
+        targetKind="rule"
+        recordId={family}
+        recordLabel={`${family.replace(/-/g, " ")} calculation`}
+        onApplyCommand={onApplyCommand}
+        onOpenWorkbench={onOpenWorkbench}
+      />
+    </article>
   );
 }
 

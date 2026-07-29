@@ -1,6 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { EditorState } from "../store";
-import { AssetSearchHint, BenchmarkReport, ExportReport, ExportTarget, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, ProvidenceWorkspace, RandomLevel, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
+import { AssetSearchHint, BenchmarkReport, EditorTab, ExportReport, ExportTarget, Issue, LibraryCatalog, ManagedAssetKind, MapCoordinateTarget, MapEntity, MapRecord, MapViewFlag, ProjectCommand, ProvidenceWorkspace, RandomLevel, ReferenceAssetScenarioCopyKind, ReferenceAssetScenarioCopyResult, SelectedEntity, SemanticEntity, TilesetAsset, TriggerRecord } from "../types";
 import { MediaAssetImportOptions } from "../mediaAssets";
 import { LibraryDraftSpec } from "../libraryDrafts";
 import type { TransientUndoScope } from "../app/transientUndo";
@@ -419,7 +419,7 @@ type WorkbenchRouterProps = {
   onSetVisibleMapRecordIds: (ids: number[]) => void;
   onClearSelection: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
-  onOpenTool: (tab: "assets" | "rules" | "scripts" | "scripting" | "text", editor: string) => void;
+  onOpenTool: (tab: EditorTab, editor: string) => void;
   onOpenMapCoordinate: (target: MapCoordinateTarget) => void;
   onOpenPlayerMapTarget: (record: MapRecord) => void;
   onBeginPaintStroke: (label: string) => void;

@@ -968,13 +968,35 @@ export type RemakeSemanticAction = {
 };
 
 export type AuthoringTarget = "classic-compatible" | "remake-enhanced";
-export type RemakeScriptTier = "safe" | "sandboxed" | "trusted";
+export type RemakeBehaviorTier = "safe" | "sandboxed";
+export type RemakeBehaviorKind = "entry" | "helper";
+export type RemakeBehaviorRole =
+  | "action"
+  | "encounter"
+  | "spell"
+  | "item"
+  | "monster-ai"
+  | "lifecycle"
+  | "rule-modifier"
+  | "helper";
 export type RemakeScriptValueType =
   | "void"
   | "bool"
   | "int"
   | "float"
   | "string"
+  | "location-snapshot"
+  | "time-snapshot"
+  | "wealth-snapshot"
+  | "character-snapshot"
+  | "character-snapshot-array"
+  | "combat-snapshot"
+  | "action-outcome"
+  | "encounter-outcome"
+  | "effect-outcome"
+  | "item-outcome"
+  | "monster-decision"
+  | "rule-modifier"
   | "bool-array"
   | "int-array"
   | "float-array"
@@ -986,12 +1008,17 @@ export type RemakeScriptParameter = {
   maxLength: number | null;
 };
 
-export type RemakeScript = {
+export type RemakeBehaviorDefinition = {
   id: string;
   name: string;
-  documentation: string;
-  tier: RemakeScriptTier;
+  description: string;
+  kind: RemakeBehaviorKind;
+  role: RemakeBehaviorRole;
+  hook: string;
+  tier: RemakeBehaviorTier;
   apiVersion: number;
+  behaviorVersion: number;
+  stateSchemaVersion: number;
   parameters: RemakeScriptParameter[];
   returnType: RemakeScriptValueType;
   requestedCapabilities: string[];
@@ -1001,34 +1028,86 @@ export type RemakeScript = {
   source: string | null;
 };
 
-export type RemakeScriptAttachment = {
-  targetKind: "trigger" | "simpleEncounter" | "complexEncounter" | "lifecycle";
-  recordId: string;
-  slot: number | null;
-  hook: string | null;
-  scriptId: string;
+export type RemakeBehaviorTargetKind =
+  | "trigger"
+  | "simpleEncounter"
+  | "complexEncounter"
+  | "spell"
+  | "item"
+  | "monster"
+  | "lifecycle"
+  | "rule";
+
+export type RemakeArgumentBinding = {
+  kind: "constant" | "state" | "context" | "record";
+  value: unknown;
 };
 
-export type RemakePersistentVariable = {
+export type RemakeBehaviorBinding = {
+  id: string;
+  targetKind: RemakeBehaviorTargetKind;
+  recordId: string;
+  slot: number | null;
+  role: RemakeBehaviorRole;
+  hook: string;
+  behaviorId: string;
+  arguments: Record<string, RemakeArgumentBinding>;
+  priority: number;
+};
+
+export type RemakeStateScope =
+  | "campaign"
+  | "map"
+  | "encounter"
+  | "character"
+  | "item-instance"
+  | "combat"
+  | "transient";
+
+export type RemakeStateDefinition = {
   name: string;
+  displayName: string;
+  documentation: string;
+  scope: RemakeStateScope;
+  ownerId: string;
+  schemaVersion: number;
   valueType: RemakeScriptValueType;
   maxLength: number | null;
   defaultValue: unknown;
+};
+
+export type RemakeStateMigration = {
+  id: string;
+  fromContentVersion: string;
+  toContentVersion: string;
+  behaviorId: string;
+};
+
+export type RemakeProviderBinding =
+  | { kind: "script"; behaviorId: string }
+  | { kind: "extension"; providerId: string };
+
+export type RemakePluginRequirement = {
+  id: string;
+  apiVersion: number;
 };
 
 export type RemakeRuntime = {
   recommendedGameplayProfile: string;
   requiredExtensions: RemakeExtensionRequirement[];
   semanticActions: RemakeSemanticAction[];
-  scripts: RemakeScript[];
-  scriptAttachments: RemakeScriptAttachment[];
-  persistentVariables: RemakePersistentVariable[];
+  behaviors: RemakeBehaviorDefinition[];
+  behaviorBindings: RemakeBehaviorBinding[];
+  stateDefinitions: RemakeStateDefinition[];
+  migrations: RemakeStateMigration[];
+  requiredPlugins: RemakePluginRequirement[];
   bindings: {
-    spells: Record<string, string>;
-    items: Record<string, string>;
-    encounters: Record<string, string>;
-    monsterAi: Record<string, string>;
-    lifecycle: Record<string, string>;
+    spells: Record<string, RemakeProviderBinding>;
+    items: Record<string, RemakeProviderBinding>;
+    encounters: Record<string, RemakeProviderBinding>;
+    monsterAi: Record<string, RemakeProviderBinding>;
+    lifecycle: Record<string, RemakeProviderBinding>;
+    ruleModifiers: Record<string, RemakeProviderBinding>;
   };
 };
 
@@ -1036,15 +1115,18 @@ export const emptyRemakeRuntime = (): RemakeRuntime => ({
   recommendedGameplayProfile: "core.classic",
   requiredExtensions: [],
   semanticActions: [],
-  scripts: [],
-  scriptAttachments: [],
-  persistentVariables: [],
+  behaviors: [],
+  behaviorBindings: [],
+  stateDefinitions: [],
+  migrations: [],
+  requiredPlugins: [],
   bindings: {
     spells: {},
     items: {},
     encounters: {},
     monsterAi: {},
-    lifecycle: {}
+    lifecycle: {},
+    ruleModifiers: {}
   }
 });
 

@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
-import { Download, Gauge, Play, Square } from "lucide-react";
+import { Bug, Download, Gauge, Pause, Play, RotateCcw, SkipForward, Square, StepForward } from "lucide-react";
 import { BenchmarkReport, ExportReport, ExportTarget, Project, ProvidenceWorkspace, ScenarioTarget } from "../types";
 import { InfoGrid } from "../components/InfoGrid";
 import { EmptyState, EntityRow, IssueGroup, PanelHeader, ScrollArea, ValidationGate } from "../ui";
@@ -247,7 +247,26 @@ export function ExportPanel({
   );
 }
 
-type PreviewEntryKind = "start" | "map" | "ap" | "battle";
+type PreviewEntryKind = "start" | "map" | "ap" | "battle" | "behavior";
+type PreviewBreakpoint = { behaviorId: string; sourceNode: string };
+type PreviewIntent = {
+  behaviorId: string;
+  role?: string;
+  hook?: string;
+  targetKind?: string;
+  recordId?: string;
+  slot?: number | null;
+};
+type PreviewEvent = Record<string, unknown>;
+
+function readPreviewIntent(): PreviewIntent | null {
+  try {
+    const stored = window.localStorage.getItem("providence.remakePreviewIntent");
+    return stored ? JSON.parse(stored) as PreviewIntent : null;
+  } catch {
+    return null;
+  }
+}
 
 function RemakePreviewPanel({
   desktopRuntime,
@@ -269,7 +288,13 @@ function RemakePreviewPanel({
   const [mapEntry, setMapEntry] = useState({ levelType: "land", levelIndex: 0, x: 0, y: 0 });
   const [status, setStatus] = useState("Not running");
   const [running, setRunning] = useState(false);
-  const [runtimeEvent, setRuntimeEvent] = useState<Record<string, unknown> | null>(null);
+  const [runtimeEvent, setRuntimeEvent] = useState<PreviewEvent | null>(null);
+  const [events, setEvents] = useState<PreviewEvent[]>([]);
+  const [debuggerState, setDebuggerState] = useState<Record<string, unknown>>({});
+  const [breakpoints, setBreakpoints] = useState<PreviewBreakpoint[]>([]);
+  const [pauseOnStart, setPauseOnStart] = useState(false);
+  const [breakpointNode, setBreakpointNode] = useState("");
+  const [previewIntent, setPreviewIntent] = useState<PreviewIntent | null>(() => readPreviewIntent());
 
   useEffect(() => {
     setGodotExecutable(settings.godotExecutable);
@@ -277,12 +302,38 @@ function RemakePreviewPanel({
   }, [settings.godotExecutable, settings.remakePath]);
 
   useEffect(() => {
+    const receiveIntent = (event: Event) => {
+      const detail = (event as CustomEvent<PreviewIntent>).detail;
+      if (!detail?.behaviorId) return;
+      setPreviewIntent(detail);
+      setEntryKind("behavior");
+      setEntryId(detail.behaviorId);
+    };
+    window.addEventListener("providence:preview-behavior", receiveIntent);
+    const initial = readPreviewIntent();
+    if (initial?.behaviorId) {
+      setPreviewIntent(initial);
+      setEntryKind("behavior");
+      setEntryId(initial.behaviorId);
+    }
+    return () => window.removeEventListener("providence:preview-behavior", receiveIntent);
+  }, []);
+
+  useEffect(() => {
     if (!desktopRuntime) return;
     let disposed = false;
     let unlisten: (() => void) | undefined;
-    listen<Record<string, unknown>>("remake-preview-event", (event) => {
+    listen<PreviewEvent>("remake-preview-event", (event) => {
       if (disposed) return;
       setRuntimeEvent(event.payload);
+      setEvents((current) => [...current.slice(-299), event.payload]);
+      const summary = event.payload.summary && typeof event.payload.summary === "object"
+        ? event.payload.summary as Record<string, unknown>
+        : null;
+      const nextDebugger = event.payload.debugger ?? summary?.debugger;
+      if (nextDebugger && typeof nextDebugger === "object") {
+        setDebuggerState(nextDebugger as Record<string, unknown>);
+      }
       if (event.payload.type === "runtime-error") {
         setStatus(String(event.payload.message ?? "Remake preview runtime error"));
       } else if (event.payload.type === "response" && event.payload.status === "error") {
@@ -305,6 +356,13 @@ function RemakePreviewPanel({
       await onUpdateSettings?.(nextSettings);
       setStatus("Exporting v3 package and starting Remake...");
       const numericId = Number.parseInt(entryId, 10);
+      const selectedBehavior = entryKind === "behavior"
+        ? project.remakeRuntime.behaviors.find((behavior) => behavior.id === entryId)
+        : null;
+      if (entryKind === "behavior" && !selectedBehavior) {
+        throw new Error("Choose a behavior from this project");
+      }
+      setEvents([]);
       const report = await invoke<{
         sessionId: string;
         packagePath: string;
@@ -319,6 +377,24 @@ function RemakePreviewPanel({
             kind: entryKind,
             triggerId: entryKind === "ap" ? entryId.trim() : "",
             battleId: entryKind === "battle" && Number.isFinite(numericId) ? numericId : -1,
+            behaviorId: entryKind === "behavior" ? entryId.trim() : "",
+            arguments: {},
+            context: previewIntent?.behaviorId === entryId
+              ? {
+                  source: "providence-preview",
+                  role: previewIntent.role ?? selectedBehavior?.role ?? "",
+                  hook: previewIntent.hook ?? selectedBehavior?.hook ?? "",
+                  targetKind: previewIntent.targetKind ?? "",
+                  recordId: previewIntent.recordId ?? "",
+                  slot: previewIntent.slot ?? null
+                }
+              : {
+                  source: "providence-preview",
+                  role: selectedBehavior?.role ?? "",
+                  hook: selectedBehavior?.hook ?? ""
+                },
+            breakpoints,
+            pauseOnStart,
             slot: 0,
             ...mapEntry
           }
@@ -341,6 +417,40 @@ function RemakePreviewPanel({
       setStatus(`Could not stop preview: ${String(error)}`);
     }
   }
+
+  async function sendPreviewCommand(type: string, extra: Record<string, unknown> = {}) {
+    try {
+      await invoke("send_remake_preview_command", {
+        message: {
+          type,
+          requestId: `providence:${type}:${Date.now()}`,
+          ...extra
+        }
+      });
+    } catch (error) {
+      setStatus(`Preview command failed: ${String(error)}`);
+    }
+  }
+
+  function addBreakpoint() {
+    const behaviorId = entryKind === "behavior" ? entryId.trim() : "";
+    const sourceNode = breakpointNode.trim();
+    if (!behaviorId || !sourceNode) return;
+    if (breakpoints.some((entry) => entry.behaviorId === behaviorId && entry.sourceNode === sourceNode)) return;
+    const next = [...breakpoints, { behaviorId, sourceNode }];
+    setBreakpoints(next);
+    setBreakpointNode("");
+    if (running) void sendPreviewCommand("set-breakpoints", { breakpoints: next, pauseOnStart });
+  }
+
+  const behaviors = project?.remakeRuntime.behaviors ?? [];
+  const paused = Boolean(debuggerState.paused);
+  const frames = Array.isArray(debuggerState.callStack)
+    ? debuggerState.callStack as Array<Record<string, unknown>>
+    : [];
+  const persistentValues = debuggerState.persistentValues && typeof debuggerState.persistentValues === "object"
+    ? debuggerState.persistentValues as Record<string, unknown>
+    : {};
 
   return (
     <section className="tab-panel">
@@ -377,6 +487,7 @@ function RemakePreviewPanel({
                 <option value="map">Map location</option>
                 <option value="ap">Action point ID</option>
                 <option value="battle">Battle ID</option>
+                <option value="behavior">Scenario behavior</option>
               </select>
             </label>
             {entryKind === "map" ? (
@@ -403,6 +514,18 @@ function RemakePreviewPanel({
                   </label>
                 ))}
               </>
+            ) : entryKind === "behavior" ? (
+              <label className="field compact">
+                <span>Behavior</span>
+                <select value={entryId} onChange={(event) => setEntryId(event.target.value)}>
+                  <option value="">Choose a behavior</option>
+                  {behaviors.map((behavior) => (
+                    <option key={behavior.id} value={behavior.id}>
+                      {behavior.name} · {behavior.role}/{behavior.hook || "helper"}
+                    </option>
+                  ))}
+                </select>
+              </label>
             ) : entryKind !== "start" ? (
               <label className="field compact">
                 <span>{entryKind === "ap" ? "Stable trigger ID" : "Battle ID"}</span>
@@ -411,7 +534,7 @@ function RemakePreviewPanel({
             ) : null}
             <button
               className="btn btn-primary"
-              disabled={!project || !projectDir || !remakePath.trim() || ((entryKind === "ap" || entryKind === "battle") && !entryId.trim())}
+              disabled={!project || !projectDir || !remakePath.trim() || ((entryKind === "ap" || entryKind === "battle" || entryKind === "behavior") && !entryId.trim())}
               onClick={applyAndRestart}
             >
               <Play size={14} /> Apply and Restart
@@ -427,9 +550,95 @@ function RemakePreviewPanel({
               ["Latest Event", runtimeEvent ? String(runtimeEvent.type ?? "event") : "none"]
             ]}
           />
-          {runtimeEvent ? (
-            <pre className="code-block">{JSON.stringify(runtimeEvent, null, 2)}</pre>
-          ) : null}
+          <section className="preview-debugger-dock" aria-label="Scenario debugger">
+            <header>
+              <div>
+                <strong><Bug size={14} /> Scenario Debugger</strong>
+                <small>{paused ? "Paused at a Safe behavior boundary" : running ? "Running" : "Start a preview to debug"}</small>
+              </div>
+              <div className="preview-debugger-controls">
+                <button className="btn btn-secondary btn-xs" disabled={!running || !paused} onClick={() => sendPreviewCommand("debug-command", { action: "resume" })}>
+                  <Play size={12} /> Resume
+                </button>
+                <button className="btn btn-secondary btn-xs" disabled={!running || !paused} onClick={() => sendPreviewCommand("debug-command", { action: "step-into" })}>
+                  <StepForward size={12} /> Into
+                </button>
+                <button className="btn btn-secondary btn-xs" disabled={!running || !paused} onClick={() => sendPreviewCommand("debug-command", { action: "step-over" })}>
+                  <SkipForward size={12} /> Over
+                </button>
+                <button className="btn btn-secondary btn-xs" disabled={!running || !paused} onClick={() => sendPreviewCommand("debug-command", { action: "step-out" })}>
+                  <RotateCcw size={12} /> Out
+                </button>
+                <button className="btn btn-ghost btn-xs" disabled={!running} onClick={() => sendPreviewCommand("debug-state")}>
+                  <Pause size={12} /> Refresh
+                </button>
+              </div>
+            </header>
+            <div className="preview-debugger-breakpoints">
+              <label className="field compact checkbox-field">
+                <input type="checkbox" checked={pauseOnStart} onChange={(event) => setPauseOnStart(event.target.checked)} />
+                <span>Pause on behavior start</span>
+              </label>
+              <label className="field compact">
+                <span>Source node</span>
+                <input
+                  value={breakpointNode}
+                  onChange={(event) => setBreakpointNode(event.target.value)}
+                  placeholder="Outline block ID"
+                  disabled={entryKind !== "behavior" || !entryId}
+                />
+              </label>
+              <button className="btn btn-secondary btn-xs" disabled={entryKind !== "behavior" || !entryId || !breakpointNode.trim()} onClick={addBreakpoint}>
+                Add Breakpoint
+              </button>
+              {breakpoints.map((breakpoint) => (
+                <button
+                  type="button"
+                  className="token-chip"
+                  key={`${breakpoint.behaviorId}:${breakpoint.sourceNode}`}
+                  onClick={() => setBreakpoints((current) => current.filter((entry) => entry !== breakpoint))}
+                  title="Remove breakpoint"
+                >
+                  {behaviors.find((behavior) => behavior.id === breakpoint.behaviorId)?.name ?? breakpoint.behaviorId}: {breakpoint.sourceNode} ×
+                </button>
+              ))}
+            </div>
+            <div className="preview-debugger-grid">
+              <section>
+                <h4>Call Stack & Locals</h4>
+                {frames.length ? frames.map((frame, index) => (
+                  <article className="preview-debug-frame" key={`${String(frame.behaviorId)}:${index}`}>
+                    <strong>{String(frame.behaviorId ?? "behavior")}</strong>
+                    <small>block depth {String(frame.blockDepth ?? 0)}</small>
+                    <pre className="code-block">{JSON.stringify(frame.locals ?? {}, null, 2)}</pre>
+                  </article>
+                )) : <EmptyState compact title="No active Safe frames" body="The stack appears when a behavior is executing or paused." />}
+              </section>
+              <section>
+                <h4>Persistent State & Watches</h4>
+                <pre className="code-block">{JSON.stringify(persistentValues, null, 2)}</pre>
+              </section>
+              <section>
+                <h4>Event & Command Timeline</h4>
+                <ScrollArea className="preview-event-timeline" aria-label="Preview event timeline">
+                  {events.length ? events.slice().reverse().map((entry, index) => (
+                    <EntityRow
+                      key={`${events.length - index}:${String(entry.type ?? "event")}`}
+                      title={String(entry.event ?? entry.type ?? "event")}
+                      subtitle={String(entry.command ?? entry.status ?? "")}
+                      meta={String(entry.message ?? "")}
+                    />
+                  )) : <EmptyState compact title="No runtime events" body="Commands, pauses, errors, and completed behavior entries appear here." />}
+                </ScrollArea>
+              </section>
+            </div>
+            {runtimeEvent ? (
+              <details>
+                <summary>Latest protocol event</summary>
+                <pre className="code-block">{JSON.stringify(runtimeEvent, null, 2)}</pre>
+              </details>
+            ) : null}
+          </section>
         </>
       )}
     </section>

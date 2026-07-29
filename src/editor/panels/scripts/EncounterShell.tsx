@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { TutorialTip } from "../../components/TutorialTip";
+import { ContextualBehaviorCard } from "../../components/ContextualBehaviorCard";
 import type {
   EncounterActionRow,
   LibraryCatalog,
@@ -259,6 +260,36 @@ export function EncounterShell({
             />
           )}
         </section>
+        <ContextualBehaviorCard
+          project={project}
+          role="encounter"
+          hook="enter"
+          targetKind={encounterRecordType}
+          recordId={String(id)}
+          recordLabel={`${recordKind === "simple" ? "Simple" : "Complex"} Encounter ${id}`}
+          onApplyCommand={onApplyCommand}
+        />
+        {selectedResultIndex != null ? (
+          <ContextualBehaviorCard
+            project={project}
+            role="encounter"
+            hook="result"
+            targetKind={encounterRecordType}
+            recordId={String(id)}
+            recordLabel={`${recordKind === "simple" ? "Simple" : "Complex"} Encounter ${id}, result ${selectedResultIndex + 1}`}
+            slot={selectedResultIndex}
+            onApplyCommand={onApplyCommand}
+          />
+        ) : null}
+        <ContextualBehaviorCard
+          project={project}
+          role="encounter"
+          hook="complete"
+          targetKind={encounterRecordType}
+          recordId={String(id)}
+          recordLabel={`${recordKind === "simple" ? "Simple" : "Complex"} Encounter ${id} completion`}
+          onApplyCommand={onApplyCommand}
+        />
       {recordKind === "simple" ? (
         <>
           <EncounterResponseEditor

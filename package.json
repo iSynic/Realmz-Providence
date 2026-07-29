@@ -115,6 +115,8 @@
     "check:providence-project-contract": "node scripts/generate_providence_project_contract.mjs --check",
     "generate:remake-extension-catalog": "node scripts/generate_remake_extension_catalog.mjs",
     "check:remake-extension-catalog": "node scripts/generate_remake_extension_catalog.mjs --check",
+    "generate:scenario-api-docs": "node scripts/generate_scenario_api_docs.mjs",
+    "check:scenario-api-docs": "node scripts/generate_scenario_api_docs.mjs --check",
     "generate:realmz-native-manifest-policy": "node scripts/generate_realmz_native_manifest_policy.mjs",
     "check:realmz-native-manifest-policy": "node scripts/generate_realmz_native_manifest_policy.mjs --check",
     "check:realmz-native-abi": "node scripts/audit_realmz_native_abi.mjs --check",
@@ -124,7 +126,7 @@
     "smoke:scenario-generation": "node scripts/run_scenario_generation_smoke.mjs",
     "check:scenario-seed": "node scripts/check_scenario_seed_schema.mjs && node scripts/check_scenario_seed_fixtures.mjs && node scripts/check_scenario_seed_report.mjs && npm run smoke:scenario-generation && npm run check:authoritative-scenario-proof",
     "check:evidence-lab": "node scripts/check_evidence_lab_policy.mjs",
-    "check": "npm run check:native-compiler-convergence && npm run check:refactor-guardrails && npm run check:ui-audit && npm run check:providence-project-contract && npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:rules-compiler-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
+    "check": "npm run check:native-compiler-convergence && npm run check:refactor-guardrails && npm run check:ui-audit && npm run check:providence-project-contract && npm run check:scenario-api-docs && npm run typecheck && npm run check:ap-action-gaps && npm run check:ap-actions && npm run check:registration-codes && npm run check:map-tile-metadata && npm run check:smart-terrain-profiles && npm run check:combat-monsters && npm run check:browser-project-package && npm run check:browser-scenario-package && npm run check:text-style-authoring && npm run check:script-diagnostics && npm run check:scenario-context && npm run check:scenario-seed && npm run check:generated-scenario-baseline && npm run check:rules-compiler-baseline && npm run check:evidence-lab && npm run build && npm run test:rust"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.0.0",

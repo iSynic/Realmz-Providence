@@ -35,6 +35,7 @@
 @import "./editor/styles/script-navigation.css";
 @import "./editor/styles/encounters.css";
 @import "./editor/styles/rules.css";
+@import "./editor/styles/scenario-behaviors.css";
 @import "./editor/styles/combat.css";
 @import "./editor/styles/combat-record-lists.css";
 @import "./editor/styles/combat-icon-sets.css";

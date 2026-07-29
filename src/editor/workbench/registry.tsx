@@ -123,13 +123,14 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
     label: "Scripting",
     shortLabel: "Scripting",
     railGroup: "story",
-    description: "Remake-only scenario scripts, persistent state, hooks, extensions, and runtime bindings.",
-    help: "Scripting is available for Remake scenarios. Safe scripts run in the scenario VM; full GDScript uses the selected sandboxed or trusted policy.",
+    description: "Remake-only guided behaviors, persistent state, contextual hooks, extensions, and runtime bindings.",
+    help: "Scripting is available for Remake scenarios. Safe behaviors run in the scenario VM; advanced GDScript runs only in the isolated sandbox.",
     tools: [
-      t({ id: "scripts", label: "Scripts", iconLabel: "SC", workbench: "project", description: "Create safe, sandboxed, and trusted scenario scripts.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
-      t({ id: "state", label: "State & Hooks", iconLabel: "SH", workbench: "project", description: "Define persistent variables and attach scripts to scenario events.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
+      t({ id: "behaviors", label: "Behaviors", iconLabel: "BH", workbench: "project", description: "Create guided Safe behaviors and optional sandboxed source.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
+      t({ id: "state", label: "State & Attachments", iconLabel: "SA", workbench: "project", description: "Define persistent state and attach behaviors to scenario records.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
       t({ id: "extensions", label: "Extensions", iconLabel: "EX", workbench: "project", description: "Select built-in extensions and semantic actions.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
-      t({ id: "bindings", label: "Bindings", iconLabel: "BI", workbench: "project", description: "Bind scenario records to built-in runtime providers.", entityTypes: ["scenario"], defaultInspector: "semantic" })
+      t({ id: "bindings", label: "Bindings", iconLabel: "BI", workbench: "project", description: "Bind scenario records to compatible behavior or extension providers.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
+      t({ id: "reference", label: "API Reference", iconLabel: "API", workbench: "project", description: "Browse typed operations, roles, examples, and limits.", entityTypes: ["scenario"], defaultInspector: "semantic" })
     ]
   },
   encounters: {
@@ -277,9 +278,9 @@ export function domainCount(
     project.scenario?.securityBackup
   ].filter(Boolean).length : 0;
   if (domain === "scripting") return project
-    ? listCount(project.remakeRuntime?.scripts)
-      + listCount(project.remakeRuntime?.persistentVariables)
-      + listCount(project.remakeRuntime?.scriptAttachments)
+    ? listCount(project.remakeRuntime?.behaviors)
+      + listCount(project.remakeRuntime?.stateDefinitions)
+      + listCount(project.remakeRuntime?.behaviorBindings)
       + listCount(project.remakeRuntime?.requiredExtensions)
     : 0;
   if (domain === "encounters") return listCount(project?.simpleEncounters) + listCount(project?.complexEncounters) + listCount(project?.thiefEncounters) + listCount(project?.timedEncounters);

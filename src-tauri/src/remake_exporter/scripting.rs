@@ -1,7 +1,7 @@
 use crate::error::{IoPath, ProvidenceError, Result};
 use crate::project::{
-    ProvidenceProject, RemakePersistentVariable, RemakeScript, RemakeScriptAttachment,
-    RemakeScriptTier, RemakeScriptValueType,
+    ProvidenceProject, RemakeBehaviorBinding, RemakeBehaviorDefinition, RemakeBehaviorKind,
+    RemakeBehaviorRole, RemakeBehaviorTier, RemakeScriptValueType, RemakeStateDefinition,
 };
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
-pub(crate) const SCRIPT_API_VERSION: u32 = 1;
+pub(crate) const SCRIPT_API_VERSION: u32 = 2;
 pub(crate) const MAX_ARRAY_LENGTH: usize = 256;
 const MAX_AST_NODES: usize = 4096;
 const MAX_SCRIPT_CALL_DEPTH: usize = 32;
@@ -33,7 +33,7 @@ const FULL_SCRIPT_DENYLIST: [&str; 17] = [
     "WebSocketPeer",
 ];
 const CAPABILITY_CATALOG_BYTES: &[u8] =
-    include_bytes!("../../../schemas/remake-scenario-capabilities.v1.json");
+    include_bytes!("../../../schemas/remake-scenario-capabilities.v2.json");
 
 pub(crate) struct CompiledScriptBundle {
     pub(crate) document: Value,
@@ -51,14 +51,19 @@ pub(crate) fn compile_project_scripts(project: &ProvidenceProject) -> Result<Com
 
     let mut compiled = Vec::new();
     let mut source_files = Vec::new();
-    for script in &project.remake_runtime.scripts {
+    for script in &project.remake_runtime.behaviors {
         let state_schema_hash = hash_json(&script.state_schema)?;
         let common = json!({
             "id": script.id,
             "name": script.name,
-            "documentation": script.documentation,
+            "description": script.description,
+            "kind": script.kind,
+            "role": script.role,
+            "hook": script.hook,
             "tier": script.tier,
             "apiVersion": script.api_version,
+            "behaviorVersion": script.behavior_version,
+            "stateSchemaVersion": script.state_schema_version,
             "parameters": script.parameters,
             "returnType": script.return_type,
             "requestedCapabilities": script.requested_capabilities,
@@ -68,12 +73,12 @@ pub(crate) fn compile_project_scripts(project: &ProvidenceProject) -> Result<Com
         });
         let mut entry = common.as_object().cloned().unwrap_or_default();
         match script.tier {
-            RemakeScriptTier::Safe => {
+            RemakeBehaviorTier::Safe => {
                 let ast = script.ast.as_ref().expect("validated safe AST");
                 entry.insert("contentHash".to_string(), Value::String(hash_json(ast)?));
                 entry.insert("program".to_string(), canonical_value(ast));
             }
-            RemakeScriptTier::Sandboxed | RemakeScriptTier::Trusted => {
+            RemakeBehaviorTier::Sandboxed => {
                 let source = script.source.as_deref().expect("validated full source");
                 let relative_path = format!("remake/source/{}.gd", script.id);
                 entry.insert(
@@ -94,23 +99,54 @@ pub(crate) fn compile_project_scripts(project: &ProvidenceProject) -> Result<Com
         serde_json::from_slice(CAPABILITY_CATALOG_BYTES).map_err(|error| {
             ProvidenceError::message(format!("Remake capability catalog is invalid: {error}"))
         })?;
+    let catalog_limits = capability_catalog
+        .get("limits")
+        .and_then(Value::as_object)
+        .ok_or_else(|| ProvidenceError::message("Remake capability catalog has no limits"))?;
+    let max_array_length = catalog_limit(catalog_limits, "maxArrayLength")?;
+    let max_ast_nodes = catalog_limit(catalog_limits, "maxAstNodes")?;
+    let max_call_depth = catalog_limit(catalog_limits, "maxCallDepth")?;
+    let execution_budget = capability_catalog
+        .get("executionBudget")
+        .and_then(Value::as_u64)
+        .ok_or_else(|| ProvidenceError::message("Remake capability catalog has no execution budget"))?;
+    if max_array_length != MAX_ARRAY_LENGTH
+        || max_ast_nodes != MAX_AST_NODES
+        || max_call_depth != MAX_SCRIPT_CALL_DEPTH
+    {
+        return Err(ProvidenceError::message(
+            "Providence Safe compiler limits do not match the Remake capability catalog",
+        ));
+    }
     Ok(CompiledScriptBundle {
         document: json!({
             "schemaVersion": super::REMAKE_DOCUMENT_SCHEMA_VERSION,
             "apiVersion": SCRIPT_API_VERSION,
             "capabilityCatalogHash": hash_json(&capability_catalog)?,
             "limits": {
-                "maxArrayLength": MAX_ARRAY_LENGTH,
-                "maxAstNodes": MAX_AST_NODES,
-                "maxCallDepth": MAX_SCRIPT_CALL_DEPTH,
+                "maxArrayLength": max_array_length,
+                "maxAstNodes": max_ast_nodes,
+                "maxCallDepth": max_call_depth,
+                "executionBudget": execution_budget,
             },
             "capabilities": safe_capability_ids(),
-            "persistentVariables": project.remake_runtime.persistent_variables,
-            "attachments": project.remake_runtime.script_attachments,
-            "scripts": compiled,
+            "stateDefinitions": project.remake_runtime.state_definitions,
+            "bindings": project.remake_runtime.behavior_bindings,
+            "migrations": project.remake_runtime.migrations,
+            "behaviors": compiled,
         }),
         source_files,
     })
+}
+
+fn catalog_limit(limits: &Map<String, Value>, name: &str) -> Result<usize> {
+    limits
+        .get(name)
+        .and_then(Value::as_u64)
+        .and_then(|value| usize::try_from(value).ok())
+        .ok_or_else(|| ProvidenceError::message(format!(
+            "Remake capability catalog has no valid {name}"
+        )))
 }
 
 pub(crate) fn write_script_sources(
@@ -134,16 +170,19 @@ pub(crate) fn write_script_sources(
 pub(crate) fn validate_project_scripts(project: &ProvidenceProject) -> Vec<String> {
     let mut errors = Vec::new();
     let mut script_ids = BTreeSet::new();
+    let mut behaviors = BTreeMap::new();
     let mut calls = BTreeMap::<String, BTreeSet<String>>::new();
 
-    for script in &project.remake_runtime.scripts {
-        let context = format!("Scenario script '{}'", script.id);
+    for script in &project.remake_runtime.behaviors {
+        let context = format!("Scenario behavior '{}'", script.id);
         if !valid_script_id(&script.id) {
             errors.push(format!("{context} must use a lowercase dotted namespace."));
         }
         if !script_ids.insert(script.id.clone()) {
             errors.push(format!("{context} is duplicated."));
         }
+        behaviors.insert(script.id.clone(), script);
+        validate_role(script, &context, &mut errors);
         if script.api_version != SCRIPT_API_VERSION {
             errors.push(format!(
                 "{context} requires API {} but Providence provides API {}.",
@@ -153,7 +192,7 @@ pub(crate) fn validate_project_scripts(project: &ProvidenceProject) -> Vec<Strin
         validate_signature(script, &context, &mut errors);
         validate_capabilities(script, &context, &mut errors);
         match script.tier {
-            RemakeScriptTier::Safe => {
+            RemakeBehaviorTier::Safe => {
                 if script.source.is_some() {
                     errors.push(format!("{context} is safe-tier and cannot own GDScript source."));
                 }
@@ -173,9 +212,9 @@ pub(crate) fn validate_project_scripts(project: &ProvidenceProject) -> Vec<Strin
                 );
                 calls.insert(script.id.clone(), script_calls);
             }
-            RemakeScriptTier::Sandboxed | RemakeScriptTier::Trusted => {
+            RemakeBehaviorTier::Sandboxed => {
                 if script.ast.is_some() {
-                    errors.push(format!("{context} is full-tier and cannot own a safe AST."));
+                    errors.push(format!("{context} is sandboxed and cannot own a Safe AST."));
                 }
                 let Some(source) = script.source.as_deref() else {
                     errors.push(format!("{context} requires exact UTF-8 GDScript source."));
@@ -186,13 +225,11 @@ pub(crate) fn validate_project_scripts(project: &ProvidenceProject) -> Vec<Strin
                         "{context} must implement func step(event, state, context)."
                     ));
                 }
-                if matches!(script.tier, RemakeScriptTier::Sandboxed) {
-                    for forbidden in FULL_SCRIPT_DENYLIST {
-                        if source.contains(forbidden) {
-                            errors.push(format!(
-                                "{context} uses forbidden sandbox API token '{forbidden}'."
-                            ));
-                        }
+                for forbidden in FULL_SCRIPT_DENYLIST {
+                    if source.contains(forbidden) {
+                        errors.push(format!(
+                            "{context} uses forbidden sandbox API token '{forbidden}'."
+                        ));
                     }
                 }
             }
@@ -209,20 +246,24 @@ pub(crate) fn validate_project_scripts(project: &ProvidenceProject) -> Vec<Strin
         }
     }
     validate_acyclic_calls(&calls, &mut errors);
-    validate_attachments(
+    validate_bindings(
         project,
-        &project.remake_runtime.script_attachments,
-        &script_ids,
+        &project.remake_runtime.behavior_bindings,
+        &behaviors,
         &mut errors,
     );
-    validate_persistent_variables(
-        &project.remake_runtime.persistent_variables,
+    validate_state_definitions(
+        &project.remake_runtime.state_definitions,
         &mut errors,
     );
     errors
 }
 
-fn validate_signature(script: &RemakeScript, context: &str, errors: &mut Vec<String>) {
+fn validate_signature(
+    script: &RemakeBehaviorDefinition,
+    context: &str,
+    errors: &mut Vec<String>,
+) {
     let mut names = BTreeSet::new();
     for parameter in &script.parameters {
         if !valid_identifier(&parameter.name) {
@@ -246,7 +287,11 @@ fn validate_signature(script: &RemakeScript, context: &str, errors: &mut Vec<Str
     }
 }
 
-fn validate_capabilities(script: &RemakeScript, context: &str, errors: &mut Vec<String>) {
+fn validate_capabilities(
+    script: &RemakeBehaviorDefinition,
+    context: &str,
+    errors: &mut Vec<String>,
+) {
     let allowed = safe_capability_ids().into_iter().collect::<BTreeSet<_>>();
     let mut seen = BTreeSet::new();
     for capability in &script.requested_capabilities {
@@ -256,6 +301,24 @@ fn validate_capabilities(script: &RemakeScript, context: &str, errors: &mut Vec<
         if !allowed.contains(capability) {
             errors.push(format!(
                 "{context} requests unavailable capability '{capability}'."
+            ));
+        }
+        let catalog: Value = serde_json::from_slice(CAPABILITY_CATALOG_BYTES)
+            .expect("checked-in Remake capability catalog must be valid JSON");
+        let role = serde_json::to_value(script.role)
+            .ok()
+            .and_then(|value| value.as_str().map(str::to_owned))
+            .unwrap_or_default();
+        let compatible = catalog["operations"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|operation| operation["id"].as_str() == Some(capability))
+            .and_then(|operation| operation["roles"].as_array())
+            .is_some_and(|roles| roles.iter().any(|entry| entry.as_str() == Some(&role)));
+        if allowed.contains(capability) && !compatible {
+            errors.push(format!(
+                "{context} cannot use capability '{capability}' from role '{role}'."
             ));
         }
     }
@@ -274,7 +337,7 @@ fn safe_capability_ids() -> Vec<String> {
 
 fn validate_ast(
     value: &Value,
-    script: &RemakeScript,
+    script: &RemakeBehaviorDefinition,
     context: &str,
     node_count: &mut usize,
     calls: &mut BTreeSet<String>,
@@ -306,6 +369,8 @@ fn validate_ast(
                     "declare",
                     "assign",
                     "if",
+                    "match",
+                    "for",
                     "return",
                     "operation",
                     "call",
@@ -314,6 +379,8 @@ fn validate_ast(
                     "array",
                     "unary",
                     "binary",
+                    "member",
+                    "collection",
                 ];
                 if !allowed.contains(&kind) {
                     errors.push(format!(
@@ -391,10 +458,52 @@ fn validate_acyclic_calls(
     }
 }
 
-fn validate_attachments(
+fn validate_role(
+    behavior: &RemakeBehaviorDefinition,
+    context: &str,
+    errors: &mut Vec<String>,
+) {
+    let allowed_hooks: &[&str] = match behavior.role {
+        RemakeBehaviorRole::Action => &["run"],
+        RemakeBehaviorRole::Encounter => &["enter", "option", "result", "complete"],
+        RemakeBehaviorRole::Spell => &["validate", "cast", "effect", "tick", "expire"],
+        RemakeBehaviorRole::Item => &[
+            "use-field", "use-combat", "equip", "unequip", "attack", "defense", "passive",
+        ],
+        RemakeBehaviorRole::MonsterAi => &["decide"],
+        RemakeBehaviorRole::Lifecycle => &[
+            "campaign-start", "campaign-resume", "campaign-complete", "map-enter", "map-leave",
+            "party-moved", "rest-start", "rest-complete", "time-advanced", "battle-start",
+            "battle-complete", "character-defeated", "party-defeated",
+        ],
+        RemakeBehaviorRole::RuleModifier => &[
+            "attack-chance", "damage", "healing", "spell-cost", "movement-cost", "fatigue",
+            "experience", "loot", "encounter-chance", "rest-recovery", "time-advance",
+            "condition-resistance",
+        ],
+        RemakeBehaviorRole::Helper => &[],
+    };
+    if matches!(behavior.kind, RemakeBehaviorKind::Helper) {
+        if behavior.role != RemakeBehaviorRole::Helper || !behavior.hook.is_empty() {
+            errors.push(format!("{context} helper must use the helper role and no hook."));
+        }
+    } else if behavior.role == RemakeBehaviorRole::Helper {
+        errors.push(format!("{context} entry behavior cannot use the helper role."));
+    } else if !allowed_hooks.contains(&behavior.hook.as_str()) {
+        errors.push(format!(
+            "{context} hook '{}' is unavailable for its role.",
+            behavior.hook
+        ));
+    }
+    if behavior.behavior_version == 0 || behavior.state_schema_version == 0 {
+        errors.push(format!("{context} versions must start at 1."));
+    }
+}
+
+fn validate_bindings(
     project: &ProvidenceProject,
-    attachments: &[RemakeScriptAttachment],
-    script_ids: &BTreeSet<String>,
+    bindings: &[RemakeBehaviorBinding],
+    behaviors: &BTreeMap<String, &RemakeBehaviorDefinition>,
     errors: &mut Vec<String>,
 ) {
     let mut occupied = BTreeSet::new();
@@ -413,22 +522,48 @@ fn validate_attachments(
         .iter()
         .map(|record| record.id.to_string())
         .collect::<BTreeSet<_>>();
-    for attachment in attachments {
+    let spell_ids = project
+        .spell_overrides
+        .iter()
+        .map(|record| record.id.to_string())
+        .collect::<BTreeSet<_>>();
+    let item_ids = project
+        .scenario_items
+        .iter()
+        .map(|record| record.id.to_string())
+        .collect::<BTreeSet<_>>();
+    let monster_ids = project
+        .monsters
+        .iter()
+        .map(|record| record.id.to_string())
+        .collect::<BTreeSet<_>>();
+    for attachment in bindings {
         let context = format!(
-            "Script attachment {}:{}",
+            "Behavior binding {}:{}",
             attachment.target_kind, attachment.record_id
         );
-        if !script_ids.contains(&attachment.script_id) {
+        let Some(behavior) = behaviors.get(&attachment.behavior_id) else {
             errors.push(format!(
-                "{context} references unavailable script '{}'.",
-                attachment.script_id
+                "{context} references unavailable behavior '{}'.",
+                attachment.behavior_id
+            ));
+            continue;
+        };
+        if behavior.role != attachment.role || behavior.hook != attachment.hook {
+            errors.push(format!(
+                "{context} role and hook do not match behavior '{}'.",
+                attachment.behavior_id
             ));
         }
         let target_exists = match attachment.target_kind.as_str() {
             "trigger" => trigger_ids.contains(attachment.record_id.as_str()),
             "simpleEncounter" => simple_ids.contains(&attachment.record_id),
             "complexEncounter" => complex_ids.contains(&attachment.record_id),
+            "spell" => spell_ids.contains(&attachment.record_id),
+            "item" => item_ids.contains(&attachment.record_id),
+            "monster" => monster_ids.contains(&attachment.record_id),
             "lifecycle" => true,
+            "rule" => true,
             _ => {
                 errors.push(format!(
                     "{context} has unsupported target kind '{}'.",
@@ -437,33 +572,37 @@ fn validate_attachments(
                 false
             }
         };
-        if !target_exists && attachment.target_kind != "lifecycle" {
+        if !target_exists && attachment.target_kind != "lifecycle" && attachment.target_kind != "rule" {
             errors.push(format!("{context} does not resolve to a project record."));
         }
         if attachment.target_kind == "lifecycle" {
-            if attachment.slot.is_some() || attachment.hook.as_deref().unwrap_or_default().is_empty()
-            {
+            if attachment.slot.is_some() || attachment.hook.is_empty() {
                 errors.push(format!(
                     "{context} requires a lifecycle hook and no action slot."
                 ));
             }
-        } else if attachment.slot.is_none() || attachment.hook.is_some() {
+        } else if ["trigger", "simpleEncounter", "complexEncounter"].contains(&attachment.target_kind.as_str())
+            && attachment.slot.is_none()
+        {
             errors.push(format!(
                 "{context} requires an action slot and no lifecycle hook."
             ));
-        } else {
+        } else if ["trigger", "simpleEncounter", "complexEncounter"].contains(&attachment.target_kind.as_str()) {
             let maximum = if attachment.target_kind == "trigger" { 7 } else { 31 };
             if attachment.slot.is_some_and(|slot| slot > maximum) {
                 errors.push(format!(
                     "{context} slot must be between 0 and {maximum}."
                 ));
             }
+        } else if attachment.slot.is_some() {
+            errors.push(format!("{context} domain binding cannot use an action slot."));
         }
         let key = (
             attachment.target_kind.clone(),
             attachment.record_id.clone(),
             attachment.slot,
             attachment.hook.clone(),
+            attachment.priority,
         );
         if !occupied.insert(key) {
             errors.push(format!("{context} is duplicated."));
@@ -471,21 +610,28 @@ fn validate_attachments(
     }
 }
 
-fn validate_persistent_variables(
-    variables: &[RemakePersistentVariable],
+fn validate_state_definitions(
+    variables: &[RemakeStateDefinition],
     errors: &mut Vec<String>,
 ) {
     let mut names = BTreeSet::new();
     for variable in variables {
-        let context = format!("Persistent variable '{}'", variable.name);
+        let context = format!("Scenario state '{}:{}'", variable.scope, variable.name);
         if !valid_identifier(&variable.name) {
             errors.push(format!("{context} is not a valid identifier."));
         }
-        if !names.insert(variable.name.clone()) {
+        if !names.insert((
+            variable.scope.clone(),
+            variable.owner_id.clone(),
+            variable.name.clone(),
+        )) {
             errors.push(format!("{context} is duplicated."));
         }
         if variable.value_type == RemakeScriptValueType::Void {
             errors.push(format!("{context} cannot use void."));
+        }
+        if variable.schema_version == 0 {
+            errors.push(format!("{context} schema version must start at 1."));
         }
         validate_array_bound(
             variable.value_type,
@@ -531,6 +677,57 @@ fn value_matches_type(
         RemakeScriptValueType::Int => value.is_i64() || value.is_u64(),
         RemakeScriptValueType::Float => value.is_number(),
         RemakeScriptValueType::String => value.is_string(),
+        RemakeScriptValueType::LocationSnapshot => value.as_object().is_some_and(|snapshot| {
+            snapshot.get("levelType").is_some_and(Value::is_string)
+                && snapshot.get("levelIndex").is_some_and(Value::is_i64)
+                && snapshot.get("x").is_some_and(Value::is_i64)
+                && snapshot.get("y").is_some_and(Value::is_i64)
+        }),
+        RemakeScriptValueType::TimeSnapshot => value.as_object().is_some_and(|snapshot| {
+            ["day", "hour", "minute", "second", "totalSeconds"]
+                .iter()
+                .all(|field| snapshot.get(*field).is_some_and(Value::is_i64))
+        }),
+        RemakeScriptValueType::WealthSnapshot => value.as_object().is_some_and(|snapshot| {
+            ["gold", "gems", "jewelry", "pooledGold"]
+                .iter()
+                .all(|field| snapshot.get(*field).is_some_and(Value::is_i64))
+        }),
+        RemakeScriptValueType::CharacterSnapshot => character_snapshot_matches(value),
+        RemakeScriptValueType::CombatSnapshot => value.as_object().is_some_and(|snapshot| {
+            snapshot.get("active").is_some_and(Value::is_boolean)
+                && snapshot.get("round").is_some_and(Value::is_i64)
+                && snapshot.get("combatants").is_some_and(|combatants| {
+                    combatants
+                        .as_array()
+                        .is_some_and(|entries| entries.iter().all(character_snapshot_matches))
+                })
+        }),
+        RemakeScriptValueType::CharacterSnapshotArray => value.as_array().is_some_and(|values| {
+            values.len() <= max_length.unwrap_or_default()
+                && values.iter().all(character_snapshot_matches)
+        }),
+        RemakeScriptValueType::ActionOutcome => {
+            outcome_kind_matches(value, &["continue", "halt", "call", "replace", "return"])
+        }
+        RemakeScriptValueType::EncounterOutcome => {
+            outcome_kind_matches(value, &["continue", "resolve", "repeat", "close", "branch"])
+        }
+        RemakeScriptValueType::EffectOutcome => {
+            outcome_kind_matches(value, &["applied", "no-effect", "invalid"])
+        }
+        RemakeScriptValueType::ItemOutcome => {
+            outcome_kind_matches(value, &["used", "rejected", "no-effect"])
+        }
+        RemakeScriptValueType::MonsterDecision => {
+            outcome_kind_matches(value, &["attack", "cast", "move", "flee", "wait", "use-item"])
+        }
+        RemakeScriptValueType::RuleModifier => value.as_object().is_some_and(|modifier| {
+            modifier.iter().all(|(key, value)| {
+                ["add", "multiply", "minimum", "maximum"].contains(&key.as_str())
+                    && value.as_f64().is_some_and(f64::is_finite)
+            })
+        }),
         RemakeScriptValueType::BoolArray
         | RemakeScriptValueType::IntArray
         | RemakeScriptValueType::FloatArray
@@ -545,6 +742,25 @@ fn value_matches_type(
                 })
         }),
     }
+}
+
+fn outcome_kind_matches(value: &Value, allowed: &[&str]) -> bool {
+    value
+        .as_object()
+        .and_then(|outcome| outcome.get("kind"))
+        .and_then(Value::as_str)
+        .is_some_and(|kind| allowed.contains(&kind))
+}
+
+fn character_snapshot_matches(value: &Value) -> bool {
+    value.as_object().is_some_and(|snapshot| {
+        snapshot.get("id").is_some_and(Value::is_string)
+            && snapshot.get("name").is_some_and(Value::is_string)
+            && ["level", "health", "maximumHealth", "spellPoints", "maximumSpellPoints"]
+                .iter()
+                .all(|field| snapshot.get(*field).is_some_and(Value::is_i64))
+            && snapshot.get("alive").is_some_and(Value::is_boolean)
+    })
 }
 
 fn valid_script_id(value: &str) -> bool {

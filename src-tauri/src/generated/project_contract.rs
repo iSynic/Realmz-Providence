@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 7;
+pub const PROVIDENCE_PROJECT_SCHEMA_VERSION: u32 = 8;
 
 #[allow(dead_code)]
 pub const PROVIDENCE_PROJECT_FIELDS: &[&str] = &[

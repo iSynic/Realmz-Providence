@@ -166,13 +166,34 @@ pub fn validate_remake_runtime(project: &ProvidenceProject) -> Vec<String> {
             "lifecycleHooks",
             &project.remake_runtime.bindings.lifecycle,
         ),
+        (
+            "ruleModifiers",
+            "gameplayRuleProviders",
+            &project.remake_runtime.bindings.rule_modifiers,
+        ),
     ] {
         for (record_id, binding) in values {
             let context = format!("remakeRuntime.bindings.{field}.{record_id}");
-            let key = (capability.to_string(), binding.clone());
+            let provider_id = match binding {
+                crate::project::RemakeProviderBinding::Script { behavior_id } => {
+                    if !project
+                        .remake_runtime
+                        .behaviors
+                        .iter()
+                        .any(|behavior| behavior.id == *behavior_id)
+                    {
+                        errors.push(format!(
+                            "{context} references unavailable behavior '{behavior_id}'."
+                        ));
+                    }
+                    continue;
+                }
+                crate::project::RemakeProviderBinding::Extension { provider_id } => provider_id,
+            };
+            let key = (capability.to_string(), provider_id.clone());
             let Some((owner, _)) = bindings.get(&key) else {
                 errors.push(format!(
-                    "{context} uses unavailable built-in provider '{binding}'."
+                    "{context} uses unavailable built-in provider '{provider_id}'."
                 ));
                 continue;
             };

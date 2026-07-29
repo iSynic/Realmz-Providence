@@ -5,15 +5,16 @@ import { PanelHeader, WorkbenchTabs, type WorkbenchTabOption } from "../ui";
 import {
   RemakeScriptingEditor,
   type RemakeScriptingSection
-} from "./rules/RemakeRuntimeEditor";
+} from "./scripting/RemakeScriptingEditor";
 
-const SCRIPTING_HELP = "Scripting adds Remake-only behavior without creating a second Action Point executor. Safe scripts compile into the scenario VM; sandboxed and trusted GDScript use explicit runtime policies.";
+const SCRIPTING_HELP = "Scripting adds Remake-only behavior without creating a second Action Point executor. Guided Safe behaviors compile into the scenario VM; advanced GDScript runs only in Remake's isolated sandbox.";
 
 const SECTION_HELP: Record<RemakeScriptingSection, string> = {
-  scripts: "Create named safe, sandboxed, or trusted scripts. Safe source is parsed and compiled into the central scenario VM.",
-  state: "Define typed state that persists in saves, then attach named scripts to AP/XAP slots, encounter results, or campaign lifecycle hooks.",
+  behaviors: "Create guided behaviors for Action Points, encounters, spells, items, monster AI, lifecycle events, and rule modifiers.",
+  state: "Define typed state that persists in saves, then attach named behaviors to meaningful scenario records and hooks.",
   extensions: "Require built-in Remake extensions and use their registered semantic operations. Scenario packages cannot add executable extensions.",
-  bindings: "Connect scenario records to stable spell, item, encounter, AI, and lifecycle provider IDs."
+  bindings: "Choose complete spell, item, encounter, AI, lifecycle, and rule implementations from compatible behaviors or extensions.",
+  reference: "Search the same typed scenario API catalog used by Providence validation and Realmz Remake."
 };
 
 export function ScriptingPanel({
@@ -50,11 +51,11 @@ export function ScriptingPanel({
   }
 
   const options: WorkbenchTabOption<RemakeScriptingSection>[] = [
-    { value: "scripts", label: scriptingTabLabel("Scripts", SECTION_HELP.scripts), meta: project.remakeRuntime.scripts.length },
+    { value: "behaviors", label: scriptingTabLabel("Behaviors", SECTION_HELP.behaviors), meta: project.remakeRuntime.behaviors.length },
     {
       value: "state",
-      label: scriptingTabLabel("State & Hooks", SECTION_HELP.state),
-      meta: project.remakeRuntime.persistentVariables.length + project.remakeRuntime.scriptAttachments.length
+      label: scriptingTabLabel("State & Attachments", SECTION_HELP.state),
+      meta: project.remakeRuntime.stateDefinitions.length + project.remakeRuntime.behaviorBindings.length
     },
     {
       value: "extensions",
@@ -65,7 +66,8 @@ export function ScriptingPanel({
       value: "bindings",
       label: scriptingTabLabel("Bindings", SECTION_HELP.bindings),
       meta: Object.values(project.remakeRuntime.bindings).reduce((total, bindings) => total + Object.keys(bindings).length, 0)
-    }
+    },
+    { value: "reference", label: scriptingTabLabel("API Reference", SECTION_HELP.reference) }
   ];
 
   const selectSection = (next: RemakeScriptingSection) => {
@@ -83,7 +85,7 @@ export function ScriptingPanel({
             <span>Scripting</span>
           </TutorialTip>
         )}
-        description="Author Remake-only scripts, explicit state, event hooks, and built-in extension bindings."
+        description="Author guided behaviors, explicit state, contextual hooks, and advanced sandboxed source."
         meta={project.scenario.name}
       />
       <WorkbenchTabs
@@ -111,6 +113,6 @@ function scriptingTabLabel(label: string, help: string) {
 }
 
 function normalizeSection(activeEditor: string): RemakeScriptingSection {
-  if (activeEditor === "state" || activeEditor === "extensions" || activeEditor === "bindings") return activeEditor;
-  return "scripts";
+  if (activeEditor === "state" || activeEditor === "extensions" || activeEditor === "bindings" || activeEditor === "reference") return activeEditor;
+  return "behaviors";
 }

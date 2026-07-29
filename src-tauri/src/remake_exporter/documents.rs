@@ -202,10 +202,10 @@ fn scripts_document(
         "trigger",
         &project.remake_runtime.semantic_actions,
     );
-    apply_script_attachments(
+    apply_behavior_bindings(
         &mut portable_triggers,
         "trigger",
-        &project.remake_runtime.script_attachments,
+        &project.remake_runtime.behavior_bindings,
     );
     let dispatcher_noops = semantic_schema
         .decoding
@@ -297,20 +297,20 @@ fn encounters_document(
         "simpleEncounter",
         &project.remake_runtime.semantic_actions,
     );
-    apply_script_attachments(
+    apply_behavior_bindings(
         &mut simple_encounters,
         "simpleEncounter",
-        &project.remake_runtime.script_attachments,
+        &project.remake_runtime.behavior_bindings,
     );
     apply_semantic_actions(
         &mut complex_encounters,
         "complexEncounter",
         &project.remake_runtime.semantic_actions,
     );
-    apply_script_attachments(
+    apply_behavior_bindings(
         &mut complex_encounters,
         "complexEncounter",
-        &project.remake_runtime.script_attachments,
+        &project.remake_runtime.behavior_bindings,
     );
     Ok(json!({
         "schemaVersion": REMAKE_DOCUMENT_SCHEMA_VERSION,
@@ -441,7 +441,7 @@ fn runtime_document(project: &ProvidenceProject) -> Result<Value> {
     let remake_only_reasons = project.remake_runtime.remake_only_reasons();
     let script_tiers = project
         .remake_runtime
-        .scripts
+        .behaviors
         .iter()
         .map(|script| script.tier)
         .collect::<std::collections::BTreeSet<_>>();
@@ -453,11 +453,11 @@ fn runtime_document(project: &ProvidenceProject) -> Result<Value> {
         "bindings": portable_value(&project.remake_runtime.bindings)?,
         "scriptExecution": {
             "apiVersion": super::scripting::SCRIPT_API_VERSION,
-            "scriptCount": project.remake_runtime.scripts.len(),
+            "behaviorCount": project.remake_runtime.behaviors.len(),
             "tiers": script_tiers,
-            "requiresApproval": script_tiers.contains(&crate::project::RemakeScriptTier::Trusted),
-            "requiresSandbox": script_tiers.contains(&crate::project::RemakeScriptTier::Sandboxed),
+            "requiresSandbox": script_tiers.contains(&crate::project::RemakeBehaviorTier::Sandboxed),
         },
+        "requiredPlugins": portable_value(&project.remake_runtime.required_plugins)?,
         "targetSupport": {
             "realmzRemake": true,
             "nativeRealmz": remake_only_reasons.is_empty(),
@@ -539,10 +539,10 @@ fn apply_semantic_actions(
     }
 }
 
-fn apply_script_attachments(
+fn apply_behavior_bindings(
     records: &mut Value,
     target_kind: &str,
-    attachments: &[crate::project::RemakeScriptAttachment],
+    attachments: &[crate::project::RemakeBehaviorBinding],
 ) {
     let Some(records) = records.as_array_mut() else {
         return;
@@ -572,7 +572,8 @@ fn apply_script_attachments(
             "slot": slot,
             "operation": "core.script.call",
             "parameters": {
-                "scriptId": attachment.script_id,
+                "behaviorId": attachment.behavior_id,
+                "argumentBindings": attachment.arguments,
             },
         }));
         actions.sort_by_key(|action| {

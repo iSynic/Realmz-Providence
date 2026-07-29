@@ -345,6 +345,9 @@ async function checkGeneratedArtifactPolicy() {
   const artifactPaths = execFileSync("git", [
     "ls-files",
     "-z",
+    "--cached",
+    "--others",
+    "--exclude-standard",
     "--",
     "docs/generated",
     "src/editor/generated",

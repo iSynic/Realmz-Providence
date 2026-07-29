@@ -1,0 +1,169 @@
+.scripting-editor-stack > .workbench-panel-section {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.behavior-outline {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.behavior-outline-list {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.behavior-outline-list > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid #253c50;
+  border-left: 3px solid #2f8bd0;
+  border-radius: 5px;
+  background: #0b1721;
+  color: #d7e7f5;
+}
+
+.behavior-outline-list strong,
+.behavior-outline-list span {
+  display: block;
+}
+
+.behavior-outline-list span {
+  margin-top: 3px;
+  color: #91aabd;
+  font-size: 11px;
+}
+
+.behavior-outline-nested {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0 12px;
+  padding-left: 10px;
+  border-left: 1px solid #31526d;
+}
+
+.rules-diagnostics {
+  margin: 7px 0;
+  color: #ffb3aa;
+}
+
+.contextual-behavior-card {
+  align-self: start;
+}
+
+.contextual-behavior-intro {
+  margin: 0;
+  color: #9db1c4;
+  line-height: 1.45;
+}
+
+.contextual-behavior-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #2a3d4f;
+  border-radius: 5px;
+  background: #0c151d;
+}
+
+.contextual-behavior-row > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.contextual-behavior-row small,
+.contextual-behavior-note {
+  color: #8fa6ba;
+}
+
+.contextual-behavior-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 6px;
+  min-height: 100%;
+}
+
+@media (max-width: 760px) {
+  .contextual-behavior-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.preview-debugger-dock {
+  background: var(--surface-deep, #07131d);
+  border: 1px solid var(--border-subtle, #274255);
+  border-radius: 6px;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.preview-debugger-dock > header,
+.preview-debugger-dock > header > div:first-child,
+.preview-debug-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.preview-debugger-dock > header {
+  align-items: center;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.preview-debugger-dock > header strong {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.preview-debugger-controls,
+.preview-debugger-breakpoints {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-debugger-breakpoints {
+  border-bottom: 1px solid var(--border-subtle, #274255);
+  margin: 10px 0;
+  padding-bottom: 10px;
+}
+
+.preview-debugger-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.preview-debugger-grid h4 {
+  margin: 0 0 6px;
+}
+
+.preview-debug-frame {
+  border-bottom: 1px solid var(--border-subtle, #274255);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+
+.preview-event-timeline {
+  max-height: 260px;
+}
+
+@media (max-width: 1100px) {
+  .preview-debugger-grid {
+    grid-template-columns: 1fr;
+  }
+}

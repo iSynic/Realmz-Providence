@@ -110,7 +110,7 @@ describe("scenario seed project compiler", () => {
     expect(result.warnings).toContain("parser warning");
   });
 
-  it("creates a schema-v5 authored project without a compatibility annex", () => {
+  it("creates a schema-v8 authored project without a compatibility annex", () => {
     const result = compileScenarioSeedProject({
       schemaVersion: 1,
       scenario: {
@@ -129,7 +129,7 @@ describe("scenario seed project compiler", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.project.schemaVersion).toBe(7);
+    expect(result.project.schemaVersion).toBe(8);
     expect(result.project.source).toEqual({
       origin: "authored",
       sourcePath: "seed://authored-from-zero",

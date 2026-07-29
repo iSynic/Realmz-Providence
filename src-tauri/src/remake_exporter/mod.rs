@@ -324,7 +324,7 @@ fn campaign_manifest(
             "semanticScenarioData": "canonical-project-projection",
             "classicResourcePayloads": "packaged-classic-resource-data",
             "generatedGdscript": false,
-            "scriptExecutionTiers": ["safe", "sandboxed", "trusted"],
+            "scriptExecutionTiers": ["safe", "sandboxed"],
         },
         "limitations": limitations,
     })

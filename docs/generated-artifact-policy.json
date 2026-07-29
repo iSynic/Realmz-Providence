@@ -16,6 +16,20 @@
       ]
     },
     {
+      "name": "Remake extension catalog",
+      "command": "generate:remake-extension-catalog",
+      "outputs": [
+        "src/editor/generated/remakeExtensionCatalog.ts"
+      ]
+    },
+    {
+      "name": "Scenario API reference",
+      "command": "generate:scenario-api-docs",
+      "outputs": [
+        "docs/generated/scenario-api-v2.md"
+      ]
+    },
+    {
       "name": "Realmz native ABI audit",
       "command": "audit:realmz-native-abi",
       "outputs": [

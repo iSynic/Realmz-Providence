@@ -115,6 +115,16 @@ export function App() {
   const historyNavigationRef = useRef(false);
   const selectedEntityId = state.selectedEntity?.id ?? "";
   const selectedCellKey = state.selectedCell ? `${state.selectedCell.x}:${state.selectedCell.y}:${state.selectedCell.tile}` : "";
+
+  useEffect(() => {
+    const openBehaviorPreview = () => {
+      dispatch({ type: "setWorkbench", workbench: "project", tab: "export" });
+      dispatch({ type: "setActiveEditor", editor: "preview" });
+      dispatch({ type: "setStatus", status: "Opened the selected behavior in Remake Preview." });
+    };
+    window.addEventListener("providence:preview-behavior", openBehaviorPreview);
+    return () => window.removeEventListener("providence:preview-behavior", openBehaviorPreview);
+  }, []);
   const activeWorkbenchLocation = useMemo<WorkbenchHistoryLocation>(() => {
     const selectionKey = workbenchHistorySelectionKey(
       state.activeDomain,
@@ -527,7 +537,7 @@ export function App() {
     dispatch({ type: "setStatus", status: "Opened selected Action Point in Scripts/AP" });
   }
 
-  function openProjectTool(tab: "assets" | "rules" | "scripts" | "scripting" | "text", editor: string) {
+  function openProjectTool(tab: EditorTab, editor: string) {
     openProjectDomain(tab);
     dispatch({ type: "setActiveEditor", editor });
     dispatch({ type: "setStatus", status: `Opened ${editor.replace(/-/g, " ")}.` });

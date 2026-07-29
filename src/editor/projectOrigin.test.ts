@@ -53,7 +53,7 @@ describe("project origin", () => {
 
     normalizeProjectContract(project);
 
-    expect(project.schemaVersion).toBe(7);
+    expect(project.schemaVersion).toBe(8);
     expect(project.source.origin).toBe("imported");
     expect(project.source.files[0].role).toBe("unknown");
   });

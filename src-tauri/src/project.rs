@@ -62,10 +62,29 @@ pub enum AuthoringTarget {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "kebab-case")]
-pub enum RemakeScriptTier {
+pub enum RemakeBehaviorTier {
     Safe,
     Sandboxed,
-    Trusted,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum RemakeBehaviorKind {
+    Entry,
+    Helper,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum RemakeBehaviorRole {
+    Action,
+    Encounter,
+    Spell,
+    Item,
+    MonsterAi,
+    Lifecycle,
+    RuleModifier,
+    Helper,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -76,6 +95,18 @@ pub enum RemakeScriptValueType {
     Int,
     Float,
     String,
+    LocationSnapshot,
+    TimeSnapshot,
+    WealthSnapshot,
+    CharacterSnapshot,
+    CharacterSnapshotArray,
+    CombatSnapshot,
+    ActionOutcome,
+    EncounterOutcome,
+    EffectOutcome,
+    ItemOutcome,
+    MonsterDecision,
+    RuleModifier,
     BoolArray,
     IntArray,
     FloatArray,
@@ -86,7 +117,11 @@ impl RemakeScriptValueType {
     pub fn is_array(self) -> bool {
         matches!(
             self,
-            Self::BoolArray | Self::IntArray | Self::FloatArray | Self::StringArray
+            Self::BoolArray
+                | Self::IntArray
+                | Self::FloatArray
+                | Self::StringArray
+                | Self::CharacterSnapshotArray
         )
     }
 }
@@ -101,14 +136,22 @@ pub struct RemakeScriptParameter {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct RemakeScript {
+pub struct RemakeBehaviorDefinition {
     pub id: String,
     pub name: String,
     #[serde(default)]
-    pub documentation: String,
-    pub tier: RemakeScriptTier,
+    pub description: String,
+    pub kind: RemakeBehaviorKind,
+    pub role: RemakeBehaviorRole,
+    #[serde(default)]
+    pub hook: String,
+    pub tier: RemakeBehaviorTier,
     #[serde(default = "default_script_api_version")]
     pub api_version: u32,
+    #[serde(default = "default_behavior_version")]
+    pub behavior_version: u32,
+    #[serde(default = "default_behavior_version")]
+    pub state_schema_version: u32,
     #[serde(default)]
     pub parameters: Vec<RemakeScriptParameter>,
     pub return_type: RemakeScriptValueType,
@@ -124,37 +167,100 @@ pub struct RemakeScript {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct RemakeScriptAttachment {
-    pub target_kind: String,
-    pub record_id: String,
-    pub slot: Option<usize>,
-    pub hook: Option<String>,
-    pub script_id: String,
+pub struct RemakeArgumentBinding {
+    pub kind: String,
+    #[serde(default)]
+    pub value: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub struct RemakePersistentVariable {
+pub struct RemakeBehaviorBinding {
+    pub id: String,
+    pub target_kind: String,
+    pub record_id: String,
+    pub slot: Option<usize>,
+    pub role: RemakeBehaviorRole,
+    pub hook: String,
+    pub behavior_id: String,
+    #[serde(default)]
+    pub arguments: BTreeMap<String, RemakeArgumentBinding>,
+    #[serde(default)]
+    pub priority: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeStateDefinition {
     pub name: String,
+    pub display_name: String,
+    #[serde(default)]
+    pub documentation: String,
+    pub scope: String,
+    #[serde(default)]
+    pub owner_id: String,
+    #[serde(default = "default_behavior_version")]
+    pub schema_version: u32,
     pub value_type: RemakeScriptValueType,
     pub max_length: Option<usize>,
     #[serde(default)]
     pub default_value: serde_json::Value,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakeStateMigration {
+    pub id: String,
+    #[serde(alias = "fromVersion", deserialize_with = "deserialize_version_string")]
+    pub from_content_version: String,
+    #[serde(alias = "toVersion", deserialize_with = "deserialize_version_string")]
+    pub to_content_version: String,
+    pub behavior_id: String,
+}
+
+fn deserialize_version_string<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    match value {
+        serde_json::Value::String(value) => Ok(value),
+        serde_json::Value::Number(value) => Ok(value.to_string()),
+        _ => Err(serde::de::Error::custom(
+            "content version must be a string or legacy integer",
+        )),
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum RemakeProviderBinding {
+    Script { behavior_id: String },
+    Extension { provider_id: String },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RemakePluginRequirement {
+    pub id: String,
+    pub api_version: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct RemakeRuntimeBindings {
     #[serde(default)]
-    pub spells: BTreeMap<String, String>,
+    pub spells: BTreeMap<String, RemakeProviderBinding>,
     #[serde(default)]
-    pub items: BTreeMap<String, String>,
+    pub items: BTreeMap<String, RemakeProviderBinding>,
     #[serde(default)]
-    pub encounters: BTreeMap<String, String>,
+    pub encounters: BTreeMap<String, RemakeProviderBinding>,
     #[serde(default)]
-    pub monster_ai: BTreeMap<String, String>,
+    pub monster_ai: BTreeMap<String, RemakeProviderBinding>,
     #[serde(default)]
-    pub lifecycle: BTreeMap<String, String>,
+    pub lifecycle: BTreeMap<String, RemakeProviderBinding>,
+    #[serde(default)]
+    pub rule_modifiers: BTreeMap<String, RemakeProviderBinding>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -167,11 +273,15 @@ pub struct RemakeRuntime {
     #[serde(default)]
     pub semantic_actions: Vec<RemakeSemanticAction>,
     #[serde(default)]
-    pub scripts: Vec<RemakeScript>,
+    pub behaviors: Vec<RemakeBehaviorDefinition>,
     #[serde(default)]
-    pub script_attachments: Vec<RemakeScriptAttachment>,
+    pub behavior_bindings: Vec<RemakeBehaviorBinding>,
     #[serde(default)]
-    pub persistent_variables: Vec<RemakePersistentVariable>,
+    pub state_definitions: Vec<RemakeStateDefinition>,
+    #[serde(default)]
+    pub migrations: Vec<RemakeStateMigration>,
+    #[serde(default)]
+    pub required_plugins: Vec<RemakePluginRequirement>,
     #[serde(default)]
     pub bindings: RemakeRuntimeBindings,
 }
@@ -182,9 +292,11 @@ impl Default for RemakeRuntime {
             recommended_gameplay_profile: default_remake_gameplay_profile(),
             required_extensions: Vec::new(),
             semantic_actions: Vec::new(),
-            scripts: Vec::new(),
-            script_attachments: Vec::new(),
-            persistent_variables: Vec::new(),
+            behaviors: Vec::new(),
+            behavior_bindings: Vec::new(),
+            state_definitions: Vec::new(),
+            migrations: Vec::new(),
+            required_plugins: Vec::new(),
             bindings: RemakeRuntimeBindings::default(),
         }
     }
@@ -196,17 +308,18 @@ impl RemakeRuntime {
         if !self.semantic_actions.is_empty() {
             reasons.push("semantic-actions".to_string());
         }
-        if !self.scripts.is_empty() || !self.script_attachments.is_empty() {
-            reasons.push("scenario-scripts".to_string());
+        if !self.behaviors.is_empty() || !self.behavior_bindings.is_empty() {
+            reasons.push("scenario-behaviors".to_string());
         }
-        if !self.persistent_variables.is_empty() {
-            reasons.push("remake-persistent-variables".to_string());
+        if !self.state_definitions.is_empty() {
+            reasons.push("remake-state-definitions".to_string());
         }
         if !self.bindings.spells.is_empty()
             || !self.bindings.items.is_empty()
             || !self.bindings.encounters.is_empty()
             || !self.bindings.monster_ai.is_empty()
             || !self.bindings.lifecycle.is_empty()
+            || !self.bindings.rule_modifiers.is_empty()
         {
             reasons.push("remake-runtime-bindings".to_string());
         }
@@ -223,6 +336,10 @@ fn default_remake_gameplay_profile() -> String {
 }
 
 fn default_script_api_version() -> u32 {
+    2
+}
+
+fn default_behavior_version() -> u32 {
     1
 }
 

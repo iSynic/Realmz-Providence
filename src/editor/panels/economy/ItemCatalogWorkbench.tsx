@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type KeyboardEvent, type ReactNode } from "react";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { TutorialTip } from "../../components/TutorialTip";
+import { ContextualBehaviorCard } from "../../components/ContextualBehaviorCard";
 import { REALMZ_NATIVE_LAYOUT } from "../../generated/realmzNativeManifestPolicy";
 import { ITEM_REFERENCE_CATEGORIES, itemReferenceOptions, itemTextDisplay, type ItemReferenceCategory, type ItemReferenceOption, type ItemTextDisplay } from "../../itemReferences";
 import type { PreviewRuntimeContext } from "../../previewUrls";
@@ -249,6 +250,24 @@ function ItemDetailPanel({
           <span>All custom item slots are currently in use.</span>
         )}
       </div>
+      <ContextualBehaviorCard
+        project={project}
+        role="item"
+        hook="use-field"
+        targetKind="item"
+        recordId={String(option.value)}
+        recordLabel={`${option.label.replace(/\s+\(-?\d+\)$/, "")} field use`}
+        onApplyCommand={onApplyCommand}
+      />
+      <ContextualBehaviorCard
+        project={project}
+        role="item"
+        hook="use-combat"
+        targetKind="item"
+        recordId={String(option.value)}
+        recordLabel={`${option.label.replace(/\s+\(-?\d+\)$/, "")} combat use`}
+        onApplyCommand={onApplyCommand}
+      />
       {!customEditable && (
         <>
           <ItemTextSummary itemText={editableItemText} />

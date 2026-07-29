@@ -24,10 +24,8 @@ import {
   updateArraySlot
 } from "./monsterReferenceModel";
 export { monsterRequiredWeaponDisplayCode, monsterRequiredWeaponStoredCode } from "./monsterReferenceModel";
-
 const MONSTER_SAVE_LABELS = RESISTANCE_TYPES.slice(0, 6).map((label) => `${label} Save`);
 const MONSTER_IMMUNITY_LABELS = RESISTANCE_TYPES.slice(0, 6).map((label) => `${label} Immune`);
-
 export function MonsterRecordEditor({
   project,
   catalog,
@@ -39,6 +37,7 @@ export function MonsterRecordEditor({
   headerMeta,
   onUpdate,
   onUpdateDescription,
+  behaviorSection,
   onCopyToLibrary,
   onReplaceScenario,
   onOpenIconSet,
@@ -58,6 +57,7 @@ export function MonsterRecordEditor({
   headerMeta?: ReactNode;
   onUpdate: (changes: Partial<MonsterRecord>) => void;
   onUpdateDescription: (text: string) => void;
+  behaviorSection?: ReactNode;
   onCopyToLibrary?: () => void;
   onReplaceScenario?: () => void;
   onOpenIconSet?: () => void;
@@ -107,6 +107,7 @@ export function MonsterRecordEditor({
           <TextAreaField label="Description" value={description} placeholder="No monster description." onCommit={onUpdateDescription} />
         </section>
       </div>
+      {behaviorSection}
       <div className="monster-editor-section-grid monster-editor-primary-grid">
         <MonsterNumberSection
           title="Combat Stats"
@@ -240,7 +241,6 @@ function MonsterNumberSection({
     </section>
   );
 }
-
 function MonsterBehaviorSection({
   project,
   catalog,
