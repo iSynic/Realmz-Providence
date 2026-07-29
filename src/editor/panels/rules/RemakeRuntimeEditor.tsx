@@ -12,7 +12,6 @@ import {
   RemakeScriptValueType,
   RemakeSemanticAction
 } from "../../types";
-import { isRemakeOnly } from "../../remakeRuntimeCatalog";
 import { parseSafeScript, printSafeScript } from "../../safeScriptLanguage";
 import { FormField, FormGrid } from "../../ui";
 
@@ -30,15 +29,18 @@ const BINDING_FIELDS = [
   ["lifecycle", "Campaign lifecycle hooks"]
 ] as const;
 
-export function RemakeRuntimeEditor({
+export type RemakeScriptingSection = "scripts" | "state" | "extensions" | "bindings";
+
+export function RemakeScriptingEditor({
   project,
+  section,
   onApplyCommand
 }: {
   project: Project;
+  section: RemakeScriptingSection;
   onApplyCommand: (command: ProjectCommand) => void;
 }) {
   const runtime = project.remakeRuntime;
-  const enhanced = project.authoringTarget === "remake-enhanced";
   const semanticOperations = useMemo<SemanticOperation[]>(
     () => REMAKE_EXTENSION_CATALOG.extensions.flatMap((extension) =>
       extension.capabilities.semanticOperations.map((operation) => ({
@@ -55,7 +57,6 @@ export function RemakeRuntimeEditor({
   const update = (changes: Partial<RemakeRuntime>, label: string) => {
     commit({ ...runtime, ...changes }, label);
   };
-  const remakeOnly = isRemakeOnly(project);
 
   const toggleExtension = (extensionId: string, apiVersion: number, enabled: boolean) => {
     const requiredExtensions = enabled
@@ -95,160 +96,115 @@ export function RemakeRuntimeEditor({
   };
 
   return (
-    <div className="rules-editor-stack">
-      <section className="panel-card">
-        <div className="section-kicker">Realmz Remake Scenario v3</div>
-        <h2>Runtime Contract</h2>
-        <p>
-          Classic-compatible projects expose the original scenario tools. Remake-enhanced projects
-          add safe, sandboxed, and trusted scenario scripting without changing the Classic records
-          you imported.
-        </p>
-        <FormGrid columns={2}>
-          <FormField
-            label="Authoring target"
-            hint={remakeOnly ? "Remove Remake-only features before returning to Classic-compatible mode." : "This changes the visible tools; export support is computed from the project contents."}
-          >
-            <select
-              value={project.authoringTarget}
-              onChange={(event) => onApplyCommand({
-                kind: "updateAuthoringTarget",
-                label: "Change scenario authoring target",
-                target: event.target.value as Project["authoringTarget"]
-              })}
-            >
-              <option value="classic-compatible" disabled={remakeOnly}>Classic-compatible</option>
-              <option value="remake-enhanced">Remake-enhanced</option>
-            </select>
-          </FormField>
-          <FormField
-            label="Recommended gameplay profile"
-            hint="This is a recommendation. The player can choose another preset before starting."
-          >
-            <select
-              value={runtime.recommendedGameplayProfile}
-              onChange={(event) => update(
-                { recommendedGameplayProfile: event.target.value },
-                "Change recommended gameplay profile"
-              )}
-            >
-              <option value="core.classic">Classic fidelity</option>
-              <option value="core.samuel">Samuel native behavior</option>
-            </select>
-          </FormField>
-          <FormField label="Native Realmz target">
-            <output>{remakeOnly ? "Blocked by Remake-only behavior" : "Available"}</output>
-          </FormField>
-        </FormGrid>
-      </section>
-
-      {enhanced && (
+    <div className="rules-editor-stack scripting-editor-stack">
+      {section === "scripts" && (
         <ScenarioScriptEditor
           project={project}
           onCommit={(scripts, label) => update({ scripts }, label)}
         />
       )}
 
-      {enhanced && (
+      {section === "state" && (
         <ScenarioStateAndAttachmentEditor
           runtime={runtime}
           onCommit={commit}
         />
       )}
 
-      {enhanced && (
-      <section className="panel-card">
-        <div className="section-kicker">Trusted Registry</div>
-        <h2>Built-In Extensions</h2>
-        {REMAKE_EXTENSION_CATALOG.extensions.map((extension) => {
-          const requirement = runtime.requiredExtensions.find((entry) => entry.id === extension.id);
-          return (
-            <div key={extension.id} className="rules-help-callout">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={Boolean(requirement)}
-                  onChange={(event) => toggleExtension(
-                    extension.id,
-                    extension.apiVersion,
-                    event.target.checked
+      {section === "extensions" && (
+        <>
+          <section className="panel-card">
+            <div className="section-kicker">Trusted Registry</div>
+            <h2>Built-In Extensions</h2>
+            <p>Only extensions shipped with Realmz Remake can be selected here. Scenario packages reference them by stable ID and API version.</p>
+            {REMAKE_EXTENSION_CATALOG.extensions.map((extension) => {
+              const requirement = runtime.requiredExtensions.find((entry) => entry.id === extension.id);
+              return (
+                <div key={extension.id} className="rules-help-callout">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(requirement)}
+                      onChange={(event) => toggleExtension(
+                        extension.id,
+                        extension.apiVersion,
+                        event.target.checked
+                      )}
+                    />
+                    {" "}{extension.id} API {extension.apiVersion}
+                  </label>
+                  <span>{extension.description}</span>
+                  {requirement && (
+                    <JsonObjectEditor
+                      label="Configuration"
+                      value={requirement.configuration}
+                      onCommit={(configuration) => update({
+                        requiredExtensions: runtime.requiredExtensions.map((entry) =>
+                          entry.id === extension.id ? { ...entry, configuration } : entry
+                        )
+                      }, "Configure Remake extension")}
+                    />
                   )}
-                />
-                {" "}{extension.id} API {extension.apiVersion}
-              </label>
-              <span>{extension.description}</span>
-              {requirement && (
-                <JsonObjectEditor
-                  label="Configuration"
-                  value={requirement.configuration}
-                  onCommit={(configuration) => update({
-                    requiredExtensions: runtime.requiredExtensions.map((entry) =>
-                      entry.id === extension.id ? { ...entry, configuration } : entry
-                    )
-                  }, "Configure Remake extension")}
-                />
-              )}
-            </div>
-          );
-        })}
-      </section>
+                </div>
+              );
+            })}
+          </section>
+
+          <section className="panel-card">
+            <div className="section-kicker">Remake-Only</div>
+            <h2>Semantic Actions</h2>
+            <p>
+              Semantic actions replace a Classic action slot in the exported v3 record. Adding one
+              automatically declares the extension that owns it and disables native Realmz export.
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled={!semanticOperations.length || !project.triggers.length}
+              onClick={addSemanticAction}
+            >
+              Add Semantic Action
+            </button>
+            {runtime.semanticActions.map((action, index) => (
+              <SemanticActionEditor
+                key={`${action.targetKind}:${action.recordId}:${action.slot}:${index}`}
+                action={action}
+                operations={semanticOperations}
+                onChange={(next) => update({
+                  semanticActions: runtime.semanticActions.map((entry, entryIndex) =>
+                    entryIndex === index ? next : entry
+                  )
+                }, "Update Remake semantic action")}
+                onDelete={() => update({
+                  semanticActions: runtime.semanticActions.filter((_, entryIndex) => entryIndex !== index)
+                }, "Delete Remake semantic action")}
+              />
+            ))}
+          </section>
+        </>
       )}
 
-      {enhanced && (
-      <section className="panel-card">
-        <div className="section-kicker">Remake-Only</div>
-        <h2>Semantic Actions</h2>
-        <p>
-          Semantic actions replace a Classic action slot in the exported v3 record. Adding one
-          automatically declares the extension that owns it and disables native Realmz export.
-        </p>
-        <button
-          type="button"
-          className="btn btn-primary btn-sm"
-          disabled={!semanticOperations.length || !project.triggers.length}
-          onClick={addSemanticAction}
-        >
-          Add Semantic Action
-        </button>
-        {runtime.semanticActions.map((action, index) => (
-          <SemanticActionEditor
-            key={`${action.targetKind}:${action.recordId}:${action.slot}:${index}`}
-            action={action}
-            operations={semanticOperations}
-            onChange={(next) => update({
-              semanticActions: runtime.semanticActions.map((entry, entryIndex) =>
-                entryIndex === index ? next : entry
-              )
-            }, "Update Remake semantic action")}
-            onDelete={() => update({
-              semanticActions: runtime.semanticActions.filter((_, entryIndex) => entryIndex !== index)
-            }, "Delete Remake semantic action")}
-          />
-        ))}
-      </section>
-      )}
-
-      {enhanced && (
-      <section className="panel-card">
-        <div className="section-kicker">Provider IDs</div>
-        <h2>Runtime Bindings</h2>
-        <p>
-          Keys are scenario record IDs; values are stable provider IDs from a required built-in
-          extension. Empty objects preserve native Realmz export eligibility.
-        </p>
-        <FormGrid columns={2}>
-          {BINDING_FIELDS.map(([field, label]) => (
-            <JsonObjectEditor
-              key={field}
-              label={label}
-              value={runtime.bindings[field]}
-              onCommit={(value) => update({
-                bindings: { ...runtime.bindings, [field]: stringRecord(value) }
-              }, `Update ${label.toLowerCase()}`)}
-            />
-          ))}
-        </FormGrid>
-      </section>
+      {section === "bindings" && (
+        <section className="panel-card">
+          <div className="section-kicker">Provider IDs</div>
+          <h2>Runtime Bindings</h2>
+          <p>
+            Keys are scenario record IDs; values are stable provider IDs from a required built-in
+            extension. Empty objects preserve native Realmz export eligibility.
+          </p>
+          <FormGrid columns={2}>
+            {BINDING_FIELDS.map(([field, label]) => (
+              <JsonObjectEditor
+                key={field}
+                label={label}
+                value={runtime.bindings[field]}
+                onCommit={(value) => update({
+                  bindings: { ...runtime.bindings, [field]: stringRecord(value) }
+                }, `Update ${label.toLowerCase()}`)}
+              />
+            ))}
+          </FormGrid>
+        </section>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import {
   AlertTriangle,
   BookOpen,
   Boxes,
+  Code2,
   Coins,
   Download,
   FileArchive,
@@ -11,7 +12,7 @@ import {
   MessageSquareText,
   Spline,
   Sword,
-  UserCog
+  WandSparkles
 } from "lucide-react";
 import { ActiveWorkbench, DomainDescriptor, EditorTab, EditorToolDescriptor, LibraryCatalog, Project } from "../types";
 
@@ -33,10 +34,11 @@ export const DOMAIN_ICONS: Record<EditorTab, JSX.Element> = {
   "player-maps": <MapIcon size={15} />,
   scripts: <Spline size={15} />,
   scenario: <Flag size={15} />,
+  scripting: <Code2 size={15} />,
   encounters: <BookOpen size={15} />,
   combat: <Sword size={15} />,
   economy: <Coins size={15} />,
-  rules: <UserCog size={15} />,
+  rules: <WandSparkles size={15} />,
   assets: <FileArchive size={15} />,
   text: <MessageSquareText size={15} />,
   records: <Boxes size={15} />,
@@ -51,6 +53,7 @@ export const DOMAIN_ORDER: EditorTab[] = [
   "text",
   "encounters",
   "scenario",
+  "scripting",
   "rules",
   "combat",
   "economy",
@@ -115,6 +118,20 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
       t({ id: "registration", label: "Security", iconLabel: "SEC", workbench: "project", description: "Legacy registration gates and code usage.", entityTypes: ["registration-security"], defaultInspector: "semantic" })
     ]
   },
+  scripting: {
+    id: "scripting",
+    label: "Scripting",
+    shortLabel: "Scripting",
+    railGroup: "story",
+    description: "Remake-only scenario scripts, persistent state, hooks, extensions, and runtime bindings.",
+    help: "Scripting is available for Remake scenarios. Safe scripts run in the scenario VM; full GDScript uses the selected sandboxed or trusted policy.",
+    tools: [
+      t({ id: "scripts", label: "Scripts", iconLabel: "SC", workbench: "project", description: "Create safe, sandboxed, and trusted scenario scripts.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
+      t({ id: "state", label: "State & Hooks", iconLabel: "SH", workbench: "project", description: "Define persistent variables and attach scripts to scenario events.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
+      t({ id: "extensions", label: "Extensions", iconLabel: "EX", workbench: "project", description: "Select built-in extensions and semantic actions.", entityTypes: ["scenario"], defaultInspector: "semantic" }),
+      t({ id: "bindings", label: "Bindings", iconLabel: "BI", workbench: "project", description: "Bind scenario records to built-in runtime providers.", entityTypes: ["scenario"], defaultInspector: "semantic" })
+    ]
+  },
   encounters: {
     id: "encounters",
     label: "Encounters",
@@ -159,16 +176,15 @@ export const DOMAIN_REGISTRY: Record<EditorTab, DomainDescriptor> = {
   },
   rules: {
     id: "rules",
-    label: "Rules",
-    shortLabel: "Rules",
+    label: "Spells, Races & Castes",
+    shortLabel: "Spells, Races & Castes",
     railGroup: "systems",
-    description: "Spells, races, castes, and Realmz Remake runtime bindings.",
-    help: "Rule editors expose authored records, shared Realmz reference catalogs, and data-only Remake v2 extension bindings.",
+    description: "Stock Realmz definitions and scenario-specific custom spells, races, and castes.",
+    help: "Browse the stock Realmz catalogs, then create only the spell, race, and caste records this scenario needs to customize.",
     tools: [
       t({ id: "spells", label: "Spell Editor", iconLabel: "SP", workbench: "both", description: "Spells and spell references.", entityTypes: ["spell", "spell-reference"], defaultInspector: "semantic" }),
       t({ id: "races", label: "Race Editor", iconLabel: "RA", workbench: "both", description: "Race records and restrictions.", entityTypes: ["race"], defaultInspector: "semantic" }),
-      t({ id: "castes", label: "Caste Editor", iconLabel: "CA", workbench: "both", description: "Caste records and restrictions.", entityTypes: ["caste"], defaultInspector: "semantic" }),
-      t({ id: "remake", label: "Remake Runtime", iconLabel: "V2", workbench: "project", description: "Gameplay profile, built-in extensions, semantic actions, and provider bindings.", entityTypes: ["scenario"], defaultInspector: "semantic" })
+      t({ id: "castes", label: "Caste Editor", iconLabel: "CA", workbench: "both", description: "Caste records and restrictions.", entityTypes: ["caste"], defaultInspector: "semantic" })
     ]
   },
   assets: {
@@ -260,6 +276,12 @@ export function domainCount(
     project.scenario?.globalMacroHooks,
     project.scenario?.securityBackup
   ].filter(Boolean).length : 0;
+  if (domain === "scripting") return project
+    ? listCount(project.remakeRuntime?.scripts)
+      + listCount(project.remakeRuntime?.persistentVariables)
+      + listCount(project.remakeRuntime?.scriptAttachments)
+      + listCount(project.remakeRuntime?.requiredExtensions)
+    : 0;
   if (domain === "encounters") return listCount(project?.simpleEncounters) + listCount(project?.complexEncounters) + listCount(project?.thiefEncounters) + listCount(project?.timedEncounters);
   if (domain === "combat") return listCount(project?.battles) + listCount(project?.monsters) + (activeWorkbench === "library" ? filteredListCount(catalog?.entities, (entity) => entity.type === "monster-scrapbook-entry") : 0);
   if (domain === "economy") return listCount(project?.treasures) + listCount(project?.shops) + listCount(project?.scenarioItems) + (activeWorkbench === "library" ? filteredListCount(catalog?.entities, (entity) => ["item", "bag-item", "vault-icon"].includes(entity.type)) : 0);

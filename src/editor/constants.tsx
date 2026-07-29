@@ -3,6 +3,7 @@ import {
   Binary,
   BookOpen,
   Brush,
+  Code2,
   Coins,
   Download,
   Eye,
@@ -19,7 +20,6 @@ import {
   Spline,
   Stamp,
   Sword,
-  UserCog,
   WandSparkles
 } from "lucide-react";
 import { EditorTab, EditorTool } from "./types";
@@ -45,7 +45,8 @@ export const TABS: { id: EditorTab; label: string; icon: JSX.Element }[] = [
   { id: "scripts", label: "Action Points", icon: <Spline size={15} /> },
   { id: "text", label: "Strings", icon: <MessageSquareText size={15} /> },
   { id: "scenario", label: "Scenario", icon: <Flag size={15} /> },
-  { id: "rules", label: "Rules", icon: <UserCog size={15} /> },
+  { id: "scripting", label: "Scripting", icon: <Code2 size={15} /> },
+  { id: "rules", label: "Spells, Races & Castes", icon: <WandSparkles size={15} /> },
   { id: "encounters", label: "Encounters", icon: <BookOpen size={15} /> },
   { id: "combat", label: "Combat", icon: <Sword size={15} /> },
   { id: "economy", label: "Economy", icon: <Coins size={15} /> },

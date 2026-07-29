@@ -134,6 +134,8 @@ Generated projects use the same validation and export paths as projects authored
 
 The in-app **Documents** workbench contains the full Providence Authoring Manual. Its chapters explain each editor, the records it owns, practical workflows, validation behavior, and relevant compatibility details.
 
+For Remake-enhanced projects, the [Realmz Remake scenario scripting guide](docs/remake-scenario-scripting-guide.md) walks through the Providence and Remake sides together: choosing a scenario format, writing and attaching Safe Scripts, using persistent state, running managed previews, understanding the sandboxed and trusted tiers, and debugging bundle v3 execution.
+
 ## Project Packages
 
 A Providence project keeps structured authoring state and the material needed to build a Realmz scenario together. The main project document is `project.json`; desktop projects use a `.providence` project directory, and `.providence.zip` is the portable package format.

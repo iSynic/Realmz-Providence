@@ -17,6 +17,7 @@ export const LazyRecordsPanel = lazyNamed(() => import("../panels/RecordsPanel")
 export const LazyResourcesPanel = lazyNamed(() => import("../panels/ResourcesPanel"), "ResourcesPanel");
 export const LazyRulesPanel = lazyNamed(() => import("../panels/RulesPanel"), "RulesPanel");
 export const LazyScenarioPanel = lazyNamed(() => import("../panels/ScenarioPanel"), "ScenarioPanel");
+export const LazyScriptingPanel = lazyNamed(() => import("../panels/ScriptingPanel"), "ScriptingPanel");
 export const LazyScriptsPanel = lazyNamed(() => import("../panels/ScriptsPanel"), "ScriptsPanel");
 export const LazySuiteDomainPanel = lazyNamed(() => import("../panels/SuiteDomainPanel"), "SuiteDomainPanel");
 export const LazyTextPanel = lazyNamed(() => import("../panels/TextPanel"), "TextPanel");

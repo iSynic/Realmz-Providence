@@ -50,6 +50,7 @@ export const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string;
       { id: "registration", label: "Scenario Security / Registration Codes", entityTypes: ["registration-security", "action-slot"] }
     ]
   },
+  scripting: { title: "Scripting", subtitle: "Remake-only scripts, explicit state, hooks, extensions, and runtime bindings.", editors: [] },
   encounters: {
     title: "Encounters",
     subtitle: "Simple, complex, rogue, and timed encounter authoring.",
@@ -82,8 +83,8 @@ export const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string;
     ]
   },
   rules: {
-    title: "Rules",
-    subtitle: "Custom spells, races, castes, and selectors used by scenario logic.",
+    title: "Spells, Races & Castes",
+    subtitle: "Stock Realmz definitions and scenario-specific custom spells, races, and castes.",
     editors: [
       { id: "spells", label: "Spell Editor", entityTypes: ["spell", "spell-reference"], createType: "spell" },
       { id: "races", label: "Race Editor", entityTypes: ["race"], createType: "race" },
@@ -127,7 +128,6 @@ export const DOMAIN_CONFIG: Record<EditorTab, { title: string; subtitle: string;
   linter: { title: "Linter", subtitle: "Compatibility diagnostics and export blockers.", editors: [] },
   export: { title: "Export", subtitle: "Realmz scenario folder export readiness.", editors: [] }
 };
-
 const DOMAIN_HEADER_HELP: Partial<Record<EditorTab, string>> = {
   economy: "Project Economy covers scenario Treasure records, Shop records, item references, and custom items. Bag of Holding and Vault of Arcana remain read-only references in Library Workbench.",
   encounters: "Encounters covers source Data ED, Data ED2, Data TD2, and Data TD3 records: simple choices, complex branch tests, rogue/thief scenes, and timed macro triggers."

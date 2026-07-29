@@ -8,10 +8,11 @@ const RAIL_HINTS: Record<EditorTab, { short: string; title: string; detail: stri
   "player-maps": { short: "Player Maps", title: "Player Maps", detail: "Maps/Notes helper maps, names, pictures, markers, and notes" },
   scripts: { short: "Action Points", title: "Action Points", detail: "Action Points, reusable actions, global events, and quest links" },
   scenario: { short: "Scenario", title: "Scenario", detail: "Startup information, restrictions, contact data, global events, registration" },
+  scripting: { short: "Scripting", title: "Scripting", detail: "Remake-only scripts, state, hooks, extensions, and runtime bindings" },
   encounters: { short: "Encounters", title: "Encounters", detail: "Simple, complex, rogue, and timed encounters" },
   combat: { short: "Combat", title: "Combat", detail: "Battles, monsters, Monster Scrapbook, Monster Mash" },
   economy: { short: "Economy", title: "Economy", detail: "Treasure, items, shops, Bag of Holding, Vault of Arcana" },
-  rules: { short: "Rules", title: "Rules", detail: "Spells, races, castes, and selector data" },
+  rules: { short: "Spells, Races & Castes", title: "Spells, Races & Castes", detail: "Stock and scenario-specific custom definitions" },
   assets: { short: "Assets", title: "Assets", detail: "Pictures, sounds, resource forks, special land tiles" },
   text: { short: "Strings", title: "Strings", detail: "Scenario strings, TEXT/styl resources, import/export spell checking" },
   records: { short: "Records", title: "Records", detail: "Realmz Data files, decoded records, byte ranges, provenance" },
@@ -36,7 +37,10 @@ export function EditorToolRail({
 }) {
   return (
     <nav className="editor-tool-rail" aria-label="Editor tools">
-      {TABS.map((tab) => {
+      {TABS.filter((tab) => (
+        tab.id !== "scripting"
+        || (activeWorkbench === "project" && project?.authoringTarget === "remake-enhanced")
+      )).map((tab) => {
         const meta = RAIL_HINTS[tab.id];
         const count = countFor(tab.id, project, catalog, activeWorkbench, issueCount);
         return (

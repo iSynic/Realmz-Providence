@@ -671,6 +671,7 @@ function primaryWorkflowTabReady(tab: EditorTab) {
   if (tab === "text") return Boolean(document.querySelector(".text-workbench"));
   if (tab === "scenario") return Boolean(document.querySelector(".scenario-workbench"));
   if (tab === "rules") return Boolean(document.querySelector(".rules-workbench"));
+  if (tab === "scripting") return Boolean(document.querySelector(".scripting-workbench"));
   if (tab === "encounters") return domainWorkbenchTitleIncludes("Encounters");
   if (tab === "combat") return Boolean(document.querySelector(".combat-workbench"));
   if (tab === "economy") return domainWorkbenchTitleIncludes("Economy");

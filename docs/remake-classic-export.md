@@ -1,5 +1,9 @@
 # Realmz Remake scenario v3 authoring and export
 
+This document is the technical exporter and package contract. For the author-facing workflow,
+language reference, examples, preview setup, and debugging advice, start with the
+[Realmz Remake scenario scripting guide](remake-scenario-scripting-guide.md).
+
 Providence projects can be compiled into two independent runtime products:
 
 ```text

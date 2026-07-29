@@ -12,6 +12,7 @@ import {
 import { ruleCasteOptions, ruleRaceOptions } from "../ruleNames";
 import { REALMZ_CASTES, REALMZ_RACES } from "../rulesCatalog";
 import { isCallableMacro } from "../semanticGraph";
+import { isRemakeOnly } from "../remakeRuntimeCatalog";
 import {
   SECURITY_SEGMENT_LENGTH,
   cleanRegistrationName,
@@ -40,7 +41,7 @@ type ScenarioPanelProps = {
   project: Project;
   onApplyCommand: (command: ProjectCommand) => void;
   onSelectMap: (id: string) => void;
-  onOpenTool: (tab: "assets" | "rules" | "scripts", editor: string) => void;
+  onOpenTool: (tab: "assets" | "rules" | "scripts" | "scripting", editor: string) => void;
 };
 
 export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool }: ScenarioPanelProps) {
@@ -68,6 +69,12 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
       />
 
       <div className="scenario-grid">
+        <ScenarioFormatCard
+          project={project}
+          onApplyCommand={onApplyCommand}
+          onOpenScripting={() => onOpenTool("scripting", "scripts")}
+        />
+
         <article id="scenario-startup" className="scenario-card scenario-card-primary">
           <header>
             <div>
@@ -303,6 +310,94 @@ export function ScenarioPanel({ project, onApplyCommand, onSelectMap, onOpenTool
 
       </div>
     </section>
+  );
+}
+
+function ScenarioFormatCard({
+  project,
+  onApplyCommand,
+  onOpenScripting
+}: {
+  project: Project;
+  onApplyCommand: (command: ProjectCommand) => void;
+  onOpenScripting: () => void;
+}) {
+  const remakeOnly = isRemakeOnly(project);
+  const enhanced = project.authoringTarget === "remake-enhanced";
+  const runtime = project.remakeRuntime;
+  const updateRuntime = (changes: Partial<typeof runtime>, label: string) => {
+    onApplyCommand({
+      kind: "updateRemakeRuntime",
+      label,
+      runtime: { ...runtime, ...changes }
+    });
+  };
+
+  return (
+    <article id="scenario-format" className="scenario-card scenario-card-wide scenario-format-card">
+      <header>
+        <div>
+          <HelpTitle
+            title="Scenario Format"
+            help="Choose whether this project stays compatible with the original Realmz scenario format or can use Realmz Remake features. Providence calculates actual export support from the content you author."
+          />
+          <small>Project-wide authoring target</small>
+        </div>
+        <b>{enhanced ? "Remake" : "Classic"}</b>
+      </header>
+      <p className="scenario-format-intro">
+        Classic scenarios use the stock Realmz data model. Remake scenarios keep those same records
+        and add the Scripting workspace for VM scripts, persistent state, hooks, and built-in extensions.
+      </p>
+      <FormGrid columns={2}>
+        <FormField
+          label="Scenario format"
+          hint={remakeOnly
+            ? "Remove Remake-only scripts and bindings before returning to Classic."
+            : "Changing this choice never deletes authored content."}
+        >
+          <select
+            value={project.authoringTarget}
+            onChange={(event) => onApplyCommand({
+              kind: "updateAuthoringTarget",
+              label: "Change scenario format",
+              target: event.currentTarget.value as Project["authoringTarget"]
+            })}
+          >
+            <option value="classic-compatible" disabled={remakeOnly}>Classic Realmz scenario</option>
+            <option value="remake-enhanced">Realmz Remake scenario</option>
+          </select>
+        </FormField>
+        {enhanced && (
+          <FormField
+            label="Recommended gameplay profile"
+            hint="This is the scenario author's recommendation. Players can choose another profile before beginning."
+          >
+            <select
+              value={runtime.recommendedGameplayProfile}
+              onChange={(event) => updateRuntime(
+                { recommendedGameplayProfile: event.currentTarget.value },
+                "Change recommended gameplay profile"
+              )}
+            >
+              <option value="core.classic">Classic fidelity</option>
+              <option value="core.samuel">Samuel native behavior</option>
+            </select>
+          </FormField>
+        )}
+        <FormField label="Original Realmz export">
+          <output>{remakeOnly ? "Unavailable while Remake-only features are present" : "Available"}</output>
+        </FormField>
+      </FormGrid>
+      {enhanced && (
+        <div className="scenario-action-row">
+          <button type="button" className="btn btn-primary btn-sm" onClick={onOpenScripting}>
+            Open Scripting
+          </button>
+          <span>Safe scripts use the central scenario VM; broader GDScript tiers remain explicit.</span>
+        </div>
+      )}
+    </article>
   );
 }
 

@@ -64,7 +64,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
           },
           {
             title: "Author",
-            body: "Use Maps, Action Points, Text, Encounters, Combat, Economy, Rules, Assets, and Scenario Shell chapters for day-to-day work.",
+            body: "Use Maps, Action Points, Text, Encounters, Combat, Economy, Spells/Races/Castes, Assets, and Scenario chapters for day-to-day work.",
             facts: ["editable"]
           },
           {
@@ -265,7 +265,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       MARKDOWN_REFERENCES.scenarioStartupEvidence,
       MARKDOWN_REFERENCES.scenarioRestrictionsEvidence,
       MARKDOWN_REFERENCES.scenarioRegistrationEvidence,
-      MARKDOWN_REFERENCES.scenarioShellEvidence
+      MARKDOWN_REFERENCES.scenarioShellEvidence,
+      MARKDOWN_REFERENCES.remakeScenarioScripting
     ],
     relatedTopicIds: ["projects", "maps", "scripts", "rules", "linter-release", "compatibility-terms"],
     toolTargets: [{ domain: "scenario", editor: "startup", label: "Open Scenario" }],
@@ -553,6 +554,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       DIVINITY_CHAPTERS.scriptingFour,
       DIVINITY_CHAPTERS.macrosQuests,
       MARKDOWN_REFERENCES.scriptsV2,
+      MARKDOWN_REFERENCES.remakeScenarioScripting,
       MARKDOWN_REFERENCES.actionPointEvidence,
       MARKDOWN_REFERENCES.opcodeEdcdEvidence,
       MARKDOWN_REFERENCES.encounterEcodeAuthoring
@@ -990,17 +992,17 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
   {
     id: "rules",
     groupId: "chapters",
-    label: "Rules",
+    label: "Spells, Races & Castes",
     title: "Spells, Races, Castes, and Scenario Overrides",
-    summary: "Browse shared Realmz rules and author scenario-local overrides deliberately, because rule changes affect the whole scenario.",
+    summary: "Browse stock Realmz spell, race, and caste definitions and author scenario-local versions deliberately, because these changes affect the whole scenario.",
     tags: ["rules", "spells", "races", "castes", "override", "custom spells", "Data Spell", "Data Race", "Data Caste"],
     badges: ["chapter", "rules"],
     references: [DIVINITY_CHAPTERS.spell, DIVINITY_CHAPTERS.race, DIVINITY_CHAPTERS.caste, MARKDOWN_REFERENCES.rulesEvidence],
     relatedTopicIds: ["scenario", "combat", "economy", "assets", "linter-release", "compatibility-terms"],
-    toolTargets: [{ domain: "rules", editor: "spells", label: "Open Rules" }],
+    toolTargets: [{ domain: "rules", editor: "spells", label: "Open Spells, Races & Castes" }],
     sections: [
       {
-        title: "Built-In Rules Versus Scenario Overrides",
+        title: "Stock Definitions Versus Scenario Versions",
         paragraphs: [
           "Realmz starts from built-in spell, race, and caste data. A scenario can override parts of that ruleset when it supplies scenario-local rule records.",
           "Providence keeps this split visible so authors can browse stock behavior without accidentally turning a reference record into project-owned data."
@@ -1012,9 +1014,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
-        title: "Inside The Rules Editors",
+        title: "Inside The Spell, Race, and Caste Editors",
         paragraphs: [
-          "Rules opens Spell Editor, Race Editor, or Caste Editor. The selector at the top chooses the record and shows whether the displayed values are built-in reference data or a scenario custom override. New Custom creates an editable scenario record; Clear Scenario Custom removes that override and returns the view to built-in behavior.",
+          "Spells, Races & Castes opens the focused editor for each record family. The selector at the top chooses the record and shows whether the displayed values are stock reference data or a scenario custom version. New Custom creates an editable scenario record; Clear Scenario Custom removes that version and returns the view to stock behavior.",
           "Each form groups related fields rather than presenting one long binary record. Spells group identity, targeting, effects, class access, text, sounds, and icons. Races group attributes, permissions, aging, and restrictions. Castes group identity, stats, movement, spellcasting, attack progression, starting items, gold, conditions, and default icon."
         ],
         points: [
@@ -1025,7 +1027,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         ]
       },
       {
-        title: "Rules Workflow",
+        title: "Definition Workflow",
         steps: [
           {
             title: "Inspect the built-in rule",
@@ -1473,8 +1475,8 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     id: "combat-economy-rules",
     groupId: "appendix",
     label: "Coverage Appendix",
-    title: "Combat, Economy, and Rules Coverage",
-    summary: "Distinguish editable scenario records from stock references and reusable libraries across Combat, Economy, and Rules.",
+    title: "Combat, Economy, and Definition Coverage",
+    summary: "Distinguish editable scenario records from stock references and reusable libraries across Combat, Economy, and Spells/Races/Castes.",
     tags: ["coverage", "combat", "economy", "rules", "editable", "libraries"],
     badges: ["appendix", "coverage"],
     references: [MARKDOWN_REFERENCES.divinityParity, MARKDOWN_REFERENCES.coreRecordEvidence],

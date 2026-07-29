@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { createBrowserProject } from "../browser/project";
 import { DomainRail } from "./DomainRail";
 
 describe("DomainRail", () => {
@@ -23,5 +24,33 @@ describe("DomainRail", () => {
     expect(markup).toContain("rail-group-world domain-player-maps");
     expect(markup).toContain("rail-group-story domain-scripts");
     expect(markup).toContain("rail-group-release domain-linter active");
+  });
+
+  it("shows Scripting only for Remake scenario projects", () => {
+    const classicProject = createBrowserProject("Classic Project");
+    const classicMarkup = renderToStaticMarkup(
+      <DomainRail
+        activeDomain="scenario"
+        project={classicProject}
+        catalog={null}
+        activeWorkbench="project"
+        issueCount={0}
+        onSelectDomain={() => undefined}
+      />
+    );
+    expect(classicMarkup).not.toContain("domain-scripting");
+
+    const remakeMarkup = renderToStaticMarkup(
+      <DomainRail
+        activeDomain="scenario"
+        project={{ ...classicProject, authoringTarget: "remake-enhanced" }}
+        catalog={null}
+        activeWorkbench="project"
+        issueCount={0}
+        onSelectDomain={() => undefined}
+      />
+    );
+    expect(remakeMarkup).toContain("domain-scripting");
+    expect(remakeMarkup).toContain("Spells, Races &amp; Castes");
   });
 });

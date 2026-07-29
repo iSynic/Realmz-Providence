@@ -15,6 +15,7 @@ import {
   LazyResourcesPanel as ResourcesPanel,
   LazyRulesPanel as RulesPanel,
   LazyScenarioPanel as ScenarioPanel,
+  LazyScriptingPanel as ScriptingPanel,
   LazyScriptsPanel as ScriptsPanel,
   LazySuiteDomainPanel as SuiteDomainPanel,
   LazyTextPanel as TextPanel,
@@ -221,6 +222,17 @@ function WorkbenchRouterContent({
     );
   }
 
+  if (state.activeTab === "scripting") {
+    return (
+      <ScriptingPanel
+        project={state.project}
+        activeEditor={state.activeEditor}
+        onSelectEditor={onSelectEditor}
+        onApplyCommand={onApplyCommand}
+      />
+    );
+  }
+
   if (state.activeTab === "encounters") {
     return (
       <SuiteDomainPanel
@@ -407,7 +419,7 @@ type WorkbenchRouterProps = {
   onSetVisibleMapRecordIds: (ids: number[]) => void;
   onClearSelection: () => void;
   onOpenScripts: (entity: SelectedEntity) => void;
-  onOpenTool: (tab: "assets" | "rules" | "scripts" | "text", editor: string) => void;
+  onOpenTool: (tab: "assets" | "rules" | "scripts" | "scripting" | "text", editor: string) => void;
   onOpenMapCoordinate: (target: MapCoordinateTarget) => void;
   onOpenPlayerMapTarget: (record: MapRecord) => void;
   onBeginPaintStroke: (label: string) => void;

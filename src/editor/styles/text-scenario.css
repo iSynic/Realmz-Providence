@@ -2731,6 +2731,26 @@
   padding: 10px;
 }
 
+.scenario-card-wide {
+  grid-column: 1 / -1;
+}
+
+.scenario-format-intro {
+  margin: 0;
+  color: #9cafc0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.scenario-format-card output {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  color: #dce8f3;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 
 
 .scenario-card > header {

@@ -23,6 +23,47 @@
   margin: 10px 0;
 }
 
+.scripting-workbench {
+  overflow-y: auto;
+  padding: 14px;
+  box-sizing: border-box;
+  background: #101113;
+}
+
+.scripting-workbench > .domain-header,
+.scripting-workbench > .scripting-tabs,
+.scripting-workbench > .scripting-editor-stack,
+.scripting-workbench > .scripting-empty-state {
+  width: min(100%, 1500px);
+  box-sizing: border-box;
+}
+
+.scripting-workbench > .domain-header {
+  border: 1px solid #2a3038;
+  border-radius: 7px;
+  background: #151719;
+  padding: 11px 12px;
+}
+
+.scripting-tabs {
+  flex: 0 0 auto;
+}
+
+.scripting-editor-stack {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.scripting-editor-stack > .panel-card {
+  min-width: 0;
+}
+
+.scripting-empty-state {
+  margin-top: 12px;
+}
+
 
 
 .rules-layout {

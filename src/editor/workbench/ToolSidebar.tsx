@@ -39,6 +39,7 @@ export function ToolSidebar({
   if (activeDomain === "economy" && activeWorkbench === "project") return null;
   if (activeDomain === "encounters" && activeWorkbench === "project") return null;
   if (activeDomain === "scripts" && activeWorkbench === "project") return null;
+  if (activeDomain === "scripting" && activeWorkbench === "project") return null;
   if (activeDomain === "rules" && activeWorkbench === "project") return null;
   if (activeDomain === "text" && activeWorkbench === "project") return null;
   if (activeDomain === "scenario" && activeWorkbench === "project") return null;

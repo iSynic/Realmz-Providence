@@ -137,6 +137,7 @@ export type EditorTab =
   | "player-maps"
   | "scripts"
   | "scenario"
+  | "scripting"
   | "encounters"
   | "combat"
   | "economy"

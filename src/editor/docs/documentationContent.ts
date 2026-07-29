@@ -122,6 +122,7 @@ export const DIVINITY_CHAPTERS = {
 export const MARKDOWN_REFERENCES = {
   divinityParity: repoRef("Divinity Parity Map", "Feature crosswalk and next milestones.", "docs/divinity-parity-map.md"),
   scriptsV2: repoRef("Scripts V2 Authoring Guide", "Action Point, EDCD, target, and diagnostics workflow.", "docs/scripts-v2-authoring.md"),
+  remakeScenarioScripting: repoRef("Realmz Remake Scenario Scripting", "Safe Script language, state, attachments, full-tier policy, managed preview, and cross-runtime debugging.", "docs/remake-scenario-scripting-guide.md"),
   encounterEcodeAuthoring: repoRef("Encounter ECODE Authoring", "Guided result settings, shared-row safety, raw fallback, and exhaustive opcode coverage.", "docs/encounter-ecode-authoring.md"),
   formatIntegration: repoRef("Scenario Format Integration", "Authored source, runtime cache, and resource policy.", "docs/scenario-format-integration.md"),
   scenarioStartupEvidence: repoRef("Scenario Startup Runtime Anchors", "Marker/main file, Data CI, Data RI, first-start source files, and load-readiness evidence.", "docs/format-evidence-cards/scenario-startup-runtime-anchors.md"),
@@ -2266,9 +2267,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
   {
     id: "rules",
     groupId: "authoring",
-    label: "Rules",
+    label: "Spells, Races & Castes",
     title: "Spells, Races, Castes, and Scenario Overrides",
-    summary: "Browse shared Realmz rules data and author the scenario-local spell, race, and caste overrides that Realmz actually loads for third-party scenarios.",
+    summary: "Browse stock Realmz definitions and author the scenario-local spell, race, and caste versions that Realmz actually loads for third-party scenarios.",
     tags: ["rules", "spells", "races", "castes", "Data Spell", "Data Race", "Data Caste", "Data S", "override", "packed spell ID"],
     badges: ["override-aware", "source-backed"],
     references: [
@@ -2281,9 +2282,9 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
     relatedTopicIds: ["scripts", "encounters-targets", "combat", "economy", "assets", "compatibility-terms"],
     sections: [
       {
-        title: "What Rules Owns",
+        title: "What This Workspace Owns",
         paragraphs: [
-          "Rules is the Providence workbench for spell records, race definitions, and caste definitions. These are not ordinary one-off scenario lists: Realmz starts with shared built-in rules data, then applies scenario-local overrides when a scenario supplies the matching data files.",
+          "Spells, Races & Castes is the Providence workbench for spell records, race definitions, and caste definitions. These are not ordinary one-off scenario lists: Realmz starts with shared stock data, then applies scenario-local versions when a scenario supplies the matching data files.",
           "Providence makes that split explicit. Built-in rules are safe reference material. Scenario overrides are writable project data and export with the scenario."
         ],
         cards: [
@@ -2326,7 +2327,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
       {
         title: "Override Authoring Workflow",
         paragraphs: [
-          "Use Rules as a compare-and-copy tool first. Inspect the shared Realmz definition, decide whether the scenario needs a local difference, then create the override only for the records that should actually diverge.",
+          "Use Spells, Races & Castes as a compare-and-copy workspace first. Inspect the shared Realmz definition, decide whether the scenario needs a local difference, then create the override only for the records that should actually diverge.",
           "Once an override exists, the edited row is scenario-owned and dirty like any other project record. Undo/redo, save, export, and validation should treat it as Providence-authored scenario data."
         ],
         points: [
@@ -2363,7 +2364,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         points: [
           "Spell classes are Sorcerer, Priest, Enchanter, Special, and Custom.",
           "Each class has seven spell levels.",
-          "Providence exposes twelve currently browsed slots per level in the Rules UI while preserving source-backed custom spell records.",
+          "Providence exposes twelve currently browsed slots per level in the Spell Editor while preserving source-backed custom spell records.",
           "Copying a built-in spell to a custom slot creates a scenario-local Data Spell override; it does not mutate the shared spell catalog.",
           "Availability, targeting, range, damage, duration, sounds, and animation fields are source-backed 30-byte spell-record fields."
         ]
@@ -2434,7 +2435,7 @@ export const DOCUMENTATION_TOPICS: DocumentationTopic[] = [
         title: "Preservation and Unknowns",
         paragraphs: [
           "Providence is intentionally strict about byte ownership here. Source-backed fields and structurally reserved words are canonical; undecoded imported packaging evidence remains compatibility data.",
-          "The current Rules UI follows Realmz source anchors and Divinity manual/editor evidence, but a few labels are still source-backed approximations rather than final Divinity wording."
+          "The current spell, race, and caste UI follows Realmz source anchors and Divinity manual/editor evidence, but a few labels are still source-backed approximations rather than final Divinity wording."
         ],
         points: [
           "Fresh Data Spell output owns all 105 custom spell records and canonical name resources; imported extra tails and unrelated resources remain preserved compatibility data.",

@@ -18,7 +18,11 @@ export function DomainRail({
   issueCount: number;
   onSelectDomain: (domain: EditorTab) => void;
 }) {
-  const options = DOMAIN_ORDER.map((domain) => ({ value: domain, label: DOMAIN_REGISTRY[domain].shortLabel }));
+  const visibleDomains = DOMAIN_ORDER.filter((domain) => (
+    domain !== "scripting"
+    || (activeWorkbench === "project" && project?.authoringTarget === "remake-enhanced")
+  ));
+  const options = visibleDomains.map((domain) => ({ value: domain, label: DOMAIN_REGISTRY[domain].shortLabel }));
   const { handleKeyDown, registerItem } = useRovingNavigation({
     options,
     value: activeDomain,
@@ -28,7 +32,7 @@ export function DomainRail({
 
   return (
     <nav className="domain-rail" aria-label="Providence domains" onKeyDown={handleKeyDown}>
-      {DOMAIN_ORDER.map((domain) => {
+      {visibleDomains.map((domain) => {
         const descriptor = DOMAIN_REGISTRY[domain];
         const count = domainCount(domain, project, catalog, activeWorkbench, issueCount);
         return (
